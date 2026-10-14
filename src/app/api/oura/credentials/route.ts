@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiSuccess,
@@ -96,6 +97,7 @@ export const DELETE = apiHandler(async () => {
     data: {
       ouraAccessTokenEncrypted: null,
       ouraRefreshTokenEncrypted: null,
+      ouraScopeDenied: Prisma.DbNull,
     },
   });
   await clearOuraClientCredentials(user.id);

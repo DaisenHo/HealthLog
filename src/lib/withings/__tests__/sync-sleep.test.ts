@@ -23,6 +23,7 @@ vi.mock("@/lib/db", () => ({
       updateMany: vi.fn(),
     },
     withingsConnection: { findUnique: vi.fn() },
+    $executeRaw: vi.fn(),
     $transaction: transactionMock,
   },
 }));
@@ -55,6 +56,7 @@ vi.mock("@/lib/logging/context", () => ({
     addExternalCall: vi.fn(),
     addWarning: vi.fn(),
   })),
+  annotate: vi.fn(),
 }));
 
 // v1.4.39.1 — the sleep sync now folds the persistent measurement
@@ -731,5 +733,108 @@ describe("syncUserSleep — measurement rollup hook (v1.4.39.1)", () => {
 
     const imported = await syncUserSleep("user-1");
     expect(imported).toBe(1);
+  });
+});
+
+describe("syncUserSleep — Withings API plan (status 277)", () => {
+  const ADVANCED = new Set(["sleep_score", "sdnn_1", "rr_average"]);
+
+  /** Segments answer normally; the summary refuses any advanced field. */
+  function installPlanFetch(refused: Set<string>) {
+    const summaryFields: string[][] = [];
+    const nightEnd = Math.floor(Date.UTC(2026, 9, 13, 6) / 1000);
+    const fetchMock = vi.fn(async (_url: string, init: { body: string }) => {
+      const params = new URLSearchParams(init.body);
+      if (params.get("action") !== "getsummary") {
+        return {
+          status: 200,
+          json: async () => ({ status: 0, body: { series: [] } }),
+        };
+      }
+      const fields = (params.get("data_fields") ?? "").split(",");
+      summaryFields.push(fields);
+      if (fields.some((f) => refused.has(f))) {
+        return { status: 200, json: async () => ({ status: 277 }) };
+      }
+      const data = Object.fromEntries(
+        fields.map((f) => [f, f === "spo2_average" ? 95 : 58]),
+      );
+      return {
+        status: 200,
+        json: async () => ({
+          status: 0,
+          body: {
+            series: [
+              {
+                id: 9,
+                startdate: nightEnd - 8 * 3600,
+                enddate: nightEnd,
+                data,
+              },
+            ],
+          },
+        }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return summaryFields;
+  }
+
+  it("drops the advanced fields, imports the rest and remembers the refusal", async () => {
+    const summaryFields = installPlanFetch(ADVANCED);
+    reconcileMock.mockResolvedValue({ status: "inserted", row: {} });
+
+    const imported = await syncUserSleep("user-1");
+
+    expect(summaryFields).toEqual([
+      ["hr_average", "rr_average", "sdnn_1", "spo2_average", "sleep_score"],
+      ["hr_average", "spo2_average"],
+    ]);
+    expect(imported).toBe(2);
+    expect(recordSyncFailure).not.toHaveBeenCalled();
+    const call = vi.mocked(prisma.$executeRaw).mock.calls[0]!;
+    expect(call[1]).toBe("sleepSummary");
+    expect(JSON.parse(String(call[2]))).toEqual({
+      unavailable: ["rr_average", "sdnn_1", "sleep_score"],
+      checkedAt: expect.any(String),
+    });
+  });
+
+  it("asks only for the allowed fields while the refusal is fresh", async () => {
+    const summaryFields = installPlanFetch(ADVANCED);
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics,user.activity",
+      apiPlanState: {
+        version: 1,
+        sleepSummary: {
+          unavailable: ["sleep_score", "sdnn_1", "rr_average"],
+          checkedAt: new Date().toISOString(),
+        },
+      },
+    } as never);
+    reconcileMock.mockResolvedValue({ status: "inserted", row: {} });
+
+    await syncUserSleep("user-1");
+
+    expect(summaryFields).toEqual([["hr_average", "spo2_average"]]);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it("does not fail the leg when the stage timeline itself is refused", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        json: async () => ({ status: 277 }),
+      })),
+    );
+
+    const imported = await syncUserSleep("user-1");
+
+    expect(imported).toBe(0);
+    expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
+      leg: "sleep",
+    });
   });
 });

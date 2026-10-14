@@ -264,6 +264,13 @@ model User {
   // `src/lib/crypto.ts`, matching every other `*Encrypted` column.
   ouraClientIdEncrypted     String? @map("oura_client_id_encrypted")
   ouraClientSecretEncrypted String? @map("oura_client_secret_encrypted")
+  /// v1.42.3 — Oura collections the current grant does not cover, as a JSON
+  /// string array of collection names (`spo2`, `vo2max`, `cardio_age`,
+  /// `resilience`). Written by the sync when a collection answers 401/403 while
+  /// its siblings succeed with the same token, which is a scope the grant never
+  /// carried, not a dead token. The Oura card reads it to ask for one
+  /// reconnect. Cleared on connect, disconnect and credential removal.
+  ouraScopeDenied           Json?   @map("oura_scope_denied")
 
   // v1.28.x — Strava OAuth credentials (per-user BYO-app, encrypted at app
   // level). Strava caps every newly-created API app at single-player mode
@@ -4149,6 +4156,13 @@ model WithingsConnection {
   /// earliest transient/pending category retry for indexed hourly discovery.
   webhookSubscriptionState   Json?     @map("webhook_subscription_state")
   webhookSubscriptionRetryAt DateTime? @map("webhook_subscription_retry_at")
+  /// v1.42.3 — what this connection's Withings API plan refuses (status 277),
+  /// per request family: `{ measures, sleepSummary, ecg }`, each
+  /// `{ unavailable, checkedAt }`. Lets the sync skip gated meastypes without
+  /// paying a refused round trip each time, re-probe them weekly, and lets the
+  /// Withings card name what the plan withholds. Versioned and validated on
+  /// read (`src/lib/withings/api-plan.ts`); reset on reconnect.
+  apiPlanState               Json?     @map("api_plan_state")
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 

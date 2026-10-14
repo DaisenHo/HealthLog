@@ -15,6 +15,7 @@ import {
   syncUserMeasurements,
 } from "@/lib/withings/sync";
 import { syncUserActivity } from "@/lib/withings/sync-activity";
+import { releasePlanGatedWithingsParks } from "@/lib/withings/api-plan";
 import { syncUserSleep } from "@/lib/withings/sync-sleep";
 import { syncUserEcg } from "@/lib/withings/sync-ecg";
 import type { WithingsEcgSyncPayload } from "@/lib/jobs/withings-ecg-queue";
@@ -73,6 +74,15 @@ export async function handleWithingsFallbackSync(
         evt.addWarning(
           "Withings subscription repair failed; continuing fallback sync",
         );
+      }
+      // Connections an earlier build parked at `error_reauth` over a Withings
+      // API-plan refusal (277) are lifted first, so this pass and the activity,
+      // sleep and ECG legs read again. Best-effort: a failure here leaves the
+      // rows parked until the next tick, it never blocks the pass.
+      try {
+        await releasePlanGatedWithingsParks();
+      } catch {
+        evt.addWarning("Withings plan-park release failed; continuing");
       }
       const connections = await prisma.withingsConnection.findMany({
         select: { userId: true },

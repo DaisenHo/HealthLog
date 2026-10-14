@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -87,6 +88,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
       data: {
         ouraAccessTokenEncrypted: encrypt(tokens.access_token),
         ouraRefreshTokenEncrypted: encrypt(tokens.refresh_token),
+        // A new grant carries the scopes asked for now; whatever the old one
+        // lacked is found out again by the first sync.
+        ouraScopeDenied: Prisma.DbNull,
       },
     });
 

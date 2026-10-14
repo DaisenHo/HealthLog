@@ -6505,6 +6505,47 @@
             "body": "Your Withings connection was authorised before activity sync was added. Reconnect once to enable steps, active energy, walking + running distance, and floors-climbed ingest from your Withings devices.",
             "action": "Reconnect Withings"
           }
+        },
+        "plan": {
+          "title": "Some readings need Withings' paid API plan",
+          "body": "Withings now offers {list} only in its paid API plan, and your Withings developer app is on the free plan. Weight, blood pressure, body composition, heart rate and sleep keep syncing.",
+          "link": "About the Withings API plans",
+          "items": {
+            "spo2": "SpO2",
+            "vascularAge": "vascular age",
+            "pulseWaveVelocity": "pulse wave velocity",
+            "vo2Max": "VO2 max",
+            "visceralFat": "visceral fat",
+            "skinTemperature": "skin temperature",
+            "ecg": "ECG and AFib",
+            "sleepScore": "sleep score",
+            "sleepHrv": "overnight HRV",
+            "sleepHeartRate": "overnight heart rate",
+            "sleepRespiratoryRate": "overnight breathing rate",
+            "sleepSpo2": "overnight SpO2",
+            "bodyTemperature": "body temperature",
+            "bodyFat": "body fat",
+            "fatMass": "fat mass",
+            "fatFreeMass": "fat-free mass",
+            "muscleMass": "muscle mass",
+            "bodyWater": "body water",
+            "boneMass": "bone mass",
+            "heartRate": "heart rate",
+            "bloodPressure": "blood pressure",
+            "weight": "weight"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "Reconnect Oura once to allow {list}. Everything else keeps syncing.",
+          "action": "Reconnect Oura",
+          "items": {
+            "spo2": "SpO2",
+            "vo2max": "VO2 max",
+            "cardio_age": "cardiovascular age",
+            "resilience": "resilience"
+          }
         }
       }
     },

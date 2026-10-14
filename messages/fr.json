@@ -6505,6 +6505,47 @@
             "body": "Votre connexion Withings a été autorisée avant l’ajout de la synchronisation d’activité. Reconnectez-vous une fois pour activer l’import des pas, de l’énergie active, de la distance à pied et en course, et des étages gravis depuis vos appareils Withings.",
             "action": "Reconnecter Withings"
           }
+        },
+        "plan": {
+          "title": "Certaines mesures nécessitent l’offre API payante de Withings",
+          "body": "Withings ne propose désormais {list} que dans son offre API payante, et votre application développeur Withings utilise l’offre gratuite. Le poids, la tension artérielle, la composition corporelle, la fréquence cardiaque et le sommeil continuent d’être synchronisés.",
+          "link": "En savoir plus sur les offres API de Withings",
+          "items": {
+            "spo2": "la SpO2",
+            "vascularAge": "l’âge vasculaire",
+            "pulseWaveVelocity": "la vitesse de l’onde de pouls",
+            "vo2Max": "la VO2 max",
+            "visceralFat": "la graisse viscérale",
+            "skinTemperature": "la température cutanée",
+            "ecg": "l’ECG et la fibrillation auriculaire",
+            "sleepScore": "le score de sommeil",
+            "sleepHrv": "la VFC nocturne",
+            "sleepHeartRate": "la fréquence cardiaque nocturne",
+            "sleepRespiratoryRate": "la fréquence respiratoire nocturne",
+            "sleepSpo2": "la SpO2 nocturne",
+            "bodyTemperature": "la température corporelle",
+            "bodyFat": "le taux de graisse corporelle",
+            "fatMass": "la masse grasse",
+            "fatFreeMass": "la masse maigre",
+            "muscleMass": "la masse musculaire",
+            "bodyWater": "l’eau corporelle",
+            "boneMass": "la masse osseuse",
+            "heartRate": "la fréquence cardiaque",
+            "bloodPressure": "la tension artérielle",
+            "weight": "le poids"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "Reconnectez Oura une fois pour autoriser {list}. Tout le reste continue d’être synchronisé.",
+          "action": "Reconnecter Oura",
+          "items": {
+            "spo2": "la SpO2",
+            "vo2max": "la VO2 max",
+            "cardio_age": "l’âge cardiovasculaire",
+            "resilience": "la résilience"
+          }
         }
       }
     },

@@ -25,6 +25,56 @@ Activity data (steps, active energy, distance, floors climbed) lands
 via the `user.activity` OAuth scope shipped in v1.4.25. Sleep stages
 arrive via the sleep series endpoint.
 
+## Withings API plans (October 2026)
+
+On 12 October 2026 Withings split its public API into plans
+([plans page](https://static.withings.com/content/api/plans/plans.html)).
+The developer app a self-hoster registers for HealthLog sits on the free
+**Start for Free** plan, which covers the core biomarkers: activity, sleep,
+body and heart. The FDA/CE-cleared biomarkers and a few body-composition
+extras now need the paid **Advanced Biomarkers** plan.
+
+A request that names anything outside the plan is refused as a whole with
+status 277 ("One of the data type requested in this API request is not
+available in your API plan"). Before v1.42.3 HealthLog asked for every type
+in one request, so from that date no Withings reading imported at all, and
+the connection showed "Reauthorisation required" although reconnecting could
+not help.
+
+**Still synced on the free plan:** weight, fat mass and fat-free mass, muscle
+mass, bone mass, body water, blood pressure, heart rate, a manual SpO2
+reading, body temperature, steps, distance and calories, and the sleep
+stages (duration, deep, light, REM, awake, wake-ups).
+
+**Needs the paid Advanced Biomarkers plan** (per Withings'
+[available health data](https://developer.withings.com/developer-guide/v3/data-api/all-available-health-data/)
+table): pulse wave velocity (meastype 91), vascular age (155), visceral fat
+(170), VO2 max (123), skin temperature (73), ECG recordings and AFib
+verdicts, and the sleep score, overnight HRV and overnight breathing rate
+from the sleep summary.
+
+**What HealthLog does about it, automatically:**
+
+- When Withings refuses a request with 277, HealthLog asks again without
+  the types Withings lists as advanced. If that is still refused, it
+  splits the remaining types until it has found the ones the plan
+  refuses, within a fixed number of requests. Everything the plan allows
+  imports as before.
+- The refused types are remembered per connection, so later syncs skip
+  them without a refused request. Once a week HealthLog asks for the full
+  set again, so a plan upgrade is picked up on its own.
+- ECG recordings are skipped quietly while the plan refuses them.
+- A plan refusal is never counted as a sync failure and never asks you to
+  reconnect. Connections that an earlier version parked over it are
+  released on the next hourly sync, and that sync imports everything since
+  the last successful one.
+- Settings → Integrations → Withings shows a short note naming the
+  readings your plan withholds, with a link to the Withings plans page.
+
+Nothing needs to be configured. If you move your developer app to the
+Advanced Biomarkers plan, the extra readings start arriving within a week,
+or right away after reconnecting Withings once.
+
 ## 1. Register a Withings developer app
 
 1. Sign in at <https://developer.withings.com/> and **create a new
@@ -166,6 +216,11 @@ in the URL Withings was handed at subscribe time. Re-subscribing
 fixes the mismatch by updating the URL Withings holds.
 
 ### Sync is stuck on "Reauthorisation required"
+
+If this started on or after 12 October 2026 and your version is older than
+v1.42.3, the cause is the API plan change, not your grant: see
+[Withings API plans (October 2026)](#withings-api-plans-october-2026).
+Updating is the fix; reconnecting is not needed.
 
 Withings revokes refresh tokens on password change, app un-authorise,
 or after extended inactivity. The `WithingsConnection` row flips to

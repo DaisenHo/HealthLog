@@ -52,7 +52,12 @@ const ouraAvailable = vi.fn(async () => false);
 vi.mock("@/lib/polar/credentials", () => ({
   getPolarClientCredentials: () => polarAvailable(),
 }));
-vi.mock("@/lib/oura/credentials", () => ({
+vi.mock("@/lib/oura/credentials", async () => ({
+  readOuraScopeDenied: (
+    await vi.importActual<typeof import("@/lib/oura/credentials")>(
+      "@/lib/oura/credentials",
+    )
+  ).readOuraScopeDenied,
   getOuraClientCredentials: () => ouraAvailable(),
 }));
 
@@ -385,5 +390,57 @@ describe("/api/integrations/status — a provider with no ledger row", () => {
     expect(whoop.state).toBe("unknown");
     expect(whoop.connected).toBe(false);
     expect(whoop.syncHealth?.verdict).toBe("disconnected");
+  });
+});
+
+describe("/api/integrations/status — what a provider withholds by contract", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("names the readings the Withings plan withholds and the Oura collections the grant lacks", async () => {
+    (
+      prisma.withingsConnection.findUnique as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      tokenExpiresAt: new Date(Date.now() + 3_600_000),
+      lastSyncedAt: null,
+      createdAt: new Date(),
+      scope: "user.metrics,user.activity",
+      apiPlanState: {
+        version: 1,
+        measures: {
+          unavailable: [155, 54],
+          checkedAt: new Date().toISOString(),
+        },
+        ecg: { unavailable: ["heart"], checkedAt: new Date().toISOString() },
+      },
+    });
+    userFind.mockResolvedValue({
+      ouraAccessTokenEncrypted: "tok",
+      ouraScopeDenied: ["resilience", "spo2", "not_a_collection"],
+    });
+
+    const entries = (await fetchEntries()) as Array<
+      Entry & { planUnavailable?: string[]; scopeReconnect?: string[] }
+    >;
+    const withings = entries.find((e) => e.integration === "withings")!;
+    const oura = entries.find((e) => e.integration === "oura")!;
+
+    expect(withings.planUnavailable).toEqual(["spo2", "vascularAge", "ecg"]);
+    expect(oura.scopeReconnect).toEqual(["spo2", "resilience"]);
+  });
+
+  it("publishes empty lists when nothing is withheld", async () => {
+    userFind.mockResolvedValue({ ouraAccessTokenEncrypted: "tok" });
+
+    const entries = (await fetchEntries()) as Array<
+      Entry & { planUnavailable?: string[]; scopeReconnect?: string[] }
+    >;
+    expect(
+      entries.find((e) => e.integration === "withings")!.planUnavailable,
+    ).toEqual([]);
+    expect(
+      entries.find((e) => e.integration === "oura")!.scopeReconnect,
+    ).toEqual([]);
   });
 });

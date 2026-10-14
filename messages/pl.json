@@ -6505,6 +6505,47 @@
             "body": "Twoje połączenie z Withings zostało autoryzowane przed dodaniem synchronizacji aktywności. Połącz ponownie jeden raz, aby włączyć import kroków, energii aktywnej, dystansu marszu i biegu oraz pokonanych pięter z urządzeń Withings.",
             "action": "Połącz ponownie Withings"
           }
+        },
+        "plan": {
+          "title": "Niektóre pomiary wymagają płatnego planu API Withings",
+          "body": "Withings udostępnia teraz te dane tylko w płatnym planie API: {list}. Twoja aplikacja deweloperska Withings korzysta z bezpłatnego planu. Waga, ciśnienie krwi, skład ciała, tętno i sen są nadal synchronizowane.",
+          "link": "Więcej o planach API Withings",
+          "items": {
+            "spo2": "SpO2",
+            "vascularAge": "wiek naczyniowy",
+            "pulseWaveVelocity": "prędkość fali tętna",
+            "vo2Max": "VO2 max",
+            "visceralFat": "tłuszcz trzewny",
+            "skinTemperature": "temperatura skóry",
+            "ecg": "EKG i migotanie przedsionków",
+            "sleepScore": "wynik snu",
+            "sleepHrv": "nocne HRV",
+            "sleepHeartRate": "nocne tętno",
+            "sleepRespiratoryRate": "nocna częstość oddechów",
+            "sleepSpo2": "nocne SpO2",
+            "bodyTemperature": "temperatura ciała",
+            "bodyFat": "tkanka tłuszczowa",
+            "fatMass": "masa tłuszczowa",
+            "fatFreeMass": "beztłuszczowa masa ciała",
+            "muscleMass": "masa mięśniowa",
+            "bodyWater": "woda w organizmie",
+            "boneMass": "masa kostna",
+            "heartRate": "tętno",
+            "bloodPressure": "ciśnienie krwi",
+            "weight": "waga"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "Połącz ponownie Oura jeden raz, aby zezwolić na te dane: {list}. Wszystko inne jest nadal synchronizowane.",
+          "action": "Połącz ponownie Oura",
+          "items": {
+            "spo2": "SpO2",
+            "vo2max": "VO2 max",
+            "cardio_age": "wiek sercowo-naczyniowy",
+            "resilience": "odporność"
+          }
         }
       }
     },

@@ -35,7 +35,19 @@ import {
   resolveSyncVerdict,
   type SyncHealth,
 } from "@/lib/integrations/sync-verdict";
-import { getOuraClientCredentials } from "@/lib/oura/credentials";
+import {
+  getOuraClientCredentials,
+  readOuraScopeDenied,
+} from "@/lib/oura/credentials";
+import {
+  ouraScopeReconnectList,
+  type OuraScopeGatedCollection,
+} from "@/lib/oura/scope";
+import { parseWithingsApiPlanState } from "@/lib/withings/api-plan";
+import {
+  withingsPlanUnavailableFeatures,
+  type WithingsPlanFeature,
+} from "@/lib/withings/plan-features";
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
 import { hasActivityScope } from "@/lib/withings/client";
@@ -92,6 +104,7 @@ export const GET = apiHandler(async () => {
         ouraAccessTokenEncrypted: true,
         ouraClientIdEncrypted: true,
         ouraClientSecretEncrypted: true,
+        ouraScopeDenied: true,
         stravaAccessTokenEncrypted: true,
         stravaClientIdEncrypted: true,
         stravaClientSecretEncrypted: true,
@@ -109,6 +122,7 @@ export const GET = apiHandler(async () => {
         lastSyncedAt: true,
         createdAt: true,
         scope: true,
+        apiPlanState: true,
       },
     }),
     prisma.whoopConnection.findUnique({
@@ -280,6 +294,13 @@ export const GET = apiHandler(async () => {
         // Null `scope` = legacy connection that predates activity-scope reads.
         scope: withingsConn?.scope ?? null,
         hasActivityScope: hasActivityScope(withingsConn?.scope ?? null),
+        // What this connection's Withings API plan withholds (status 277),
+        // resolved here so the card only renders it.
+        planUnavailable: withingsConn
+          ? withingsPlanUnavailableFeatures(
+              parseWithingsApiPlanState(withingsConn.apiPlanState),
+            )
+          : [],
         ...resolve("withings", withingsStatus, {
           connected: !!withingsConn,
           configured: withingsConfigured,
@@ -374,11 +395,17 @@ export const GET = apiHandler(async () => {
         hasOwnCredentials:
           !!dbUser?.ouraClientIdEncrypted &&
           !!dbUser?.ouraClientSecretEncrypted,
+        // Collections the stored grant does not cover; one reconnect asks for
+        // the missing scopes. Not a failure, so it never colours the pill.
+        scopeReconnect: ouraConnected
+          ? ouraScopeReconnectList(readOuraScopeDenied(dbUser?.ouraScopeDenied))
+          : [],
         ...resolve("oura", ouraStatus, {
           connected: ouraConnected,
           configured: ouraConnected,
         }),
-      } satisfies IntegrationViewModel & OAuthProviderExtras,
+      } satisfies IntegrationViewModel &
+        OAuthProviderExtras & { scopeReconnect: OuraScopeGatedCollection[] },
       {
         ...publish(stravaStatus),
         connected: stravaConnected,
@@ -442,6 +469,7 @@ interface WithingsExtras {
   tokenExpired: boolean | null;
   scope: string | null;
   hasActivityScope: boolean;
+  planUnavailable: WithingsPlanFeature[];
 }
 
 interface WhoopExtras {

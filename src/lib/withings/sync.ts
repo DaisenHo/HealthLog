@@ -10,7 +10,21 @@ import {
   fetchMeasurements,
   refreshAccessToken,
   subscribeWebhook,
+  WITHINGS_MEASTYPES,
+  type WithingsMeasure,
 } from "./client";
+import {
+  isPlanGatedError,
+  isPlanReprobeDue,
+  parseWithingsApiPlanState,
+  persistWithingsPlanLeg,
+  planSkipFor,
+  requestWithinPlan,
+  shouldPersistPlanLeg,
+  WITHINGS_ADVANCED_MEASTYPES,
+  WITHINGS_PLAN_GATED_STATUS,
+  type WithinPlanResult,
+} from "./api-plan";
 import { getUserWithingsCredentials } from "./credentials";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -233,13 +247,66 @@ export async function syncUserMeasurements(
         )
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
 
-  let fetched: Awaited<ReturnType<typeof fetchMeasurements>>;
+  // Withings API plans (2026-10-12): a request naming one meastype outside the
+  // account's plan is refused whole with 277. Leave out what the plan refused
+  // last time (unless the weekly re-probe is due), and let `requestWithinPlan`
+  // narrow the request if the plan refuses something new. A refused run never
+  // reaches the watermark stamp below, so the run after this fix reads the
+  // whole gap since the last good sync.
+  const now = new Date();
+  const planState = parseWithingsApiPlanState(connection.apiPlanState);
+  const reprobed = isPlanReprobeDue(planState.measures, now);
+  const skip = planSkipFor(planState.measures, now);
+  const requested = WITHINGS_MEASTYPES.filter((t) => !skip.includes(t));
+
+  let plan: WithinPlanResult<number, WithingsMeasure>;
   try {
-    fetched = await fetchMeasurements(tokenInfo.accessToken, startDate);
+    plan = await requestWithinPlan({
+      keys: requested,
+      knownGated: WITHINGS_ADVANCED_MEASTYPES,
+      fetch: (measTypes) =>
+        fetchMeasurements(tokenInfo.accessToken, startDate, undefined, {
+          measTypes,
+        }),
+    });
   } catch (err) {
     await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_MEASURES);
     throw err;
   }
+  if (shouldPersistPlanLeg({ gated: plan.gated, reprobed })) {
+    try {
+      await persistWithingsPlanLeg(userId, "measures", {
+        unavailable: [...skip, ...plan.unavailable].sort((a, b) => a - b),
+        checkedAt: now.toISOString(),
+      });
+    } catch (err) {
+      // Losing the memory only costs a refused round trip next run.
+      getEvent()?.addWarning(`withings: plan state write failed: ${err}`);
+    }
+  }
+  if (plan.gated) {
+    annotate({
+      action: {
+        name: "withings.sync.plan_gated",
+        details: {
+          unavailable: plan.unavailable,
+          requests: plan.requests,
+          acceptedAny: plan.acceptedAny,
+        },
+      },
+    });
+  }
+  if (plan.gated && !plan.acceptedAny) {
+    // The plan refused every type asked for. Nothing was read, so the
+    // watermark stays where it is (a later plan change re-reads the gap), and
+    // nothing failed: the connection is healthy, the plan is the limit. The
+    // settings card names what the plan withholds.
+    await recordSyncSuccess(userId, "withings", {
+      leg: WITHINGS_LEG_MEASURES,
+    });
+    return { imported: 0, failed: false };
+  }
+  const fetched = plan.results;
 
   // The app's own plausibility band applies to a provider reading exactly as
   // it applies to a typed one. A remote that reports a pulse in the millions
@@ -470,6 +537,15 @@ export async function recordWithingsSyncFailure(
   err: unknown,
   leg: WithingsSyncLeg,
 ): Promise<void> {
+  // A plan refusal (277) is a limit on the developer app, not a failure of the
+  // connection. It never enters the ledger, so no path that forgets to handle
+  // it can climb the strike ladder or park every leg over it.
+  if (isPlanGatedError(err)) {
+    annotate({
+      meta: { withings_plan_gated_unhandled: { leg } },
+    });
+    return;
+  }
   const message = err instanceof Error ? err.message : String(err);
   await recordSyncFailure({
     userId,
@@ -531,6 +607,8 @@ export function isWithingsRefreshReauthFailure(message: string): boolean {
   const n = Number.parseInt(status, 10);
   if (!Number.isFinite(n)) return false;
   if (n === 100 || n === 101 || n === 102) return true;
+  // 277 is the API-plan refusal: a limit on the developer app, not a grant.
+  if (n === WITHINGS_PLAN_GATED_STATUS) return false;
   if (n >= 200 && n <= 299) return true;
   return false;
 }
