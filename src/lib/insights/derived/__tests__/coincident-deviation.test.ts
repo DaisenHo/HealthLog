@@ -17,14 +17,11 @@ vi.mock("@/lib/rollups/measurement-coverage", () => ({
 vi.mock("@/lib/rollups/measurement-read-wmy", () => ({
   readBestGranularityRollups: vi.fn().mockResolvedValue(null),
 }));
-// v1.18.1 P4 — Rest Mode. Default inactive; the reframe test flips it active.
+// v1.18.1 P4 — the illness reframe. Default no active episode; the reframe
+// test flips it. Since #1216 the reframe reads active episodes directly
+// (chronic conditions included), not Rest Mode.
 const restModeMock = vi.hoisted(() => ({
-  resolveRestMode: vi.fn(async () => ({
-    active: false as boolean,
-    since: null as string | null,
-    episodeCount: 0,
-    episodes: [] as unknown[],
-  })),
+  hasActiveIllnessEpisode: vi.fn(async () => false as boolean),
 }));
 vi.mock("@/lib/illness/rest-mode", () => restModeMock);
 
@@ -43,12 +40,7 @@ const findMany = prisma.measurement.findMany as ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   findMany.mockResolvedValue([]);
-  restModeMock.resolveRestMode.mockResolvedValue({
-    active: false,
-    since: null,
-    episodeCount: 0,
-    episodes: [],
-  });
+  restModeMock.hasActiveIllnessEpisode.mockResolvedValue(false);
 });
 
 /** RHR + HRV each flat, then a final day that pushes both outside the band. */
@@ -184,13 +176,8 @@ describe("computeCoincidentDeviation", () => {
     }
   });
 
-  it("reframes a fired flag as illness-explained during Rest Mode (vitals unchanged)", async () => {
-    restModeMock.resolveRestMode.mockResolvedValue({
-      active: true,
-      since: "2026-05-30T00:00:00.000Z",
-      episodeCount: 1,
-      episodes: [],
-    });
+  it("reframes a fired flag as illness-explained while an episode is active (vitals unchanged)", async () => {
+    restModeMock.hasActiveIllnessEpisode.mockResolvedValue(true);
     findMany.mockImplementation(firingRows);
     const result = await computeCoincidentDeviation("u1", PROFILE, {
       now: NOW,
@@ -249,7 +236,7 @@ describe("computeCoincidentDeviation", () => {
     });
     expect(result.status === "ok" && result.value.fired).toBe(false);
     expect(result.status === "ok" && result.value.illnessExplained).toBe(false);
-    expect(restModeMock.resolveRestMode).not.toHaveBeenCalled();
+    expect(restModeMock.hasActiveIllnessEpisode).not.toHaveBeenCalled();
   });
 });
 

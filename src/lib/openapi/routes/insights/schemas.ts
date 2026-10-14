@@ -2204,7 +2204,7 @@ export const healthScoreReport = z
       .nullable()
       .optional()
       .describe(
-        "Set on every response this route produces (null when no illness episode is active). Rest Mode FRAMES the score and never changes it: the number above is left exactly as computed and this attaches the value-free context. Resolved as of the scored window, not a fresh now.",
+        "Set on every response this route produces (null when no illness episode is active, or only chronic ongoing ones are: a condition the person lives with frames a dip but never puts the account into Rest Mode). Rest Mode FRAMES the score and never changes it: the number above is left exactly as computed and this attaches the value-free context. Resolved as of the scored window, not a fresh now.",
       ),
   })
   .meta({

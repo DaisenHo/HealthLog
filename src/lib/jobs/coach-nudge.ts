@@ -942,8 +942,10 @@ export async function runCoachNudgeTick(
       }
 
       // Gate 7 — Rest Mode pause (v1.18.1 P4). A user with an active
-      // illness/condition episode should not be told to measure more often;
-      // the cadence-nudge pauses for the duration of the episode. Module-gated
+      // illness episode should not be told to measure more often; the
+      // cadence-nudge pauses for the duration of the episode. A chronic
+      // ongoing condition alone does not pause it (#1216): it never ends, so
+      // the nudge would never come back. Module-gated
       // (a non-illness account is never in Rest Mode) and only reached past
       // every cheaper gate, so the read fires for at most a nudge-eligible
       // user per tick.

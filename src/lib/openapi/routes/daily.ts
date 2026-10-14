@@ -210,7 +210,7 @@ export const dailyDigestResponse = z
       })
       .nullable()
       .describe(
-        "Rest Mode: present while an illness episode is active and the illness module is on, else null. Additive since v1.40.",
+        "Rest Mode: present while an illness episode that is not chronic ongoing (acute, recurring or flare) is active and the illness module is on, else null. A chronic ongoing condition alone never sets it; `day` counts from the earliest onset among the episodes that do. Additive since v1.40.",
       ),
     line: z
       .string()

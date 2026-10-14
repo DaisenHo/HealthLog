@@ -71,6 +71,10 @@ export const POST = apiHandler(
       RATE_WINDOW_MS,
     );
     if (!rl.allowed) {
+      annotate({
+        action: { name: "notification.action.refused" },
+        meta: { reason: "rate_limited" },
+      });
       const response = apiError("Too many requests", 429);
       for (const [k, v] of Object.entries(rateLimitHeaders(rl))) {
         response.headers.set(k, v);
