@@ -82,6 +82,17 @@ export function buildBriefingIllnessCyclePrompt(
           ? `- Aktive Erkrankung(en) gerade: ${labels}. Der Nutzer ist im Rest Mode — lies abweichende Vitalwerte oder eine niedrige Erholung als krankheitsbedingt, nicht alarmierend, und dränge NICHT auf häufigeres Messen.`
           : `- Active illness episode(s) right now: ${labels}. The user is in Rest Mode — read off-band vitals or low recovery as illness-explained rather than alarming, and do NOT push a "measure more often" cadence.`,
       );
+    } else if (ctx.illness.active.length > 0) {
+      // Chronic ongoing conditions only: context for a measured dip, but not
+      // Rest Mode, so no cadence pause and no "unwell" framing (#1216).
+      const labels = ctx.illness.active
+        .map((e) => `${e.label} (${e.type}, ${e.lifecycle})`)
+        .join("; ");
+      lines.push(
+        de
+          ? `- Bekannte chronische Erkrankung(en): ${labels}. Ein abweichender Vitalwert kann damit zusammenhängen; das ist Kontext, kein akutes Kranksein und kein Rest Mode.`
+          : `- Known chronic condition(s): ${labels}. An off-band vital may relate to them; this is context, not an acute illness and not Rest Mode.`,
+      );
     } else if (ctx.illness.recentResolved.length > 0) {
       lines.push(
         de

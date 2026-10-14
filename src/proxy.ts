@@ -310,6 +310,46 @@ function applyBaselineSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
+/**
+ * The notification quick-answer route (`/api/notifications/action/<token>`).
+ * Its caller is a notification app on a phone, not a browser, so when a tap
+ * does nothing the operator's only evidence is the server log. Every refusal
+ * this proxy makes on that path therefore writes one line with a reason,
+ * because the route's own wide event never runs for them. The token is never
+ * written: the path is logged as the prefix plus a placeholder.
+ */
+const NOTIFICATION_ACTION_PREFIX = "/api/notifications/action/";
+
+type NotificationActionRefusal =
+  "method_not_allowed" | "worker_only" | "demo_mode";
+
+function logNotificationActionRefusal(
+  request: NextRequest,
+  reason: NotificationActionRefusal,
+  status: number,
+): void {
+  if (!request.nextUrl.pathname.startsWith(NOTIFICATION_ACTION_PREFIX)) return;
+  console.warn(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: "warn",
+      kind: "http",
+      message:
+        reason === "method_not_allowed"
+          ? "Notification answer refused: the route takes POST only. A redirect in front of the app (http to https, or a sign-in gateway) turns the POST into a GET."
+          : "Notification answer refused before the route ran.",
+      action: { name: "notification.action.refused" },
+      meta: { reason },
+      http: {
+        method: request.method,
+        path: `${NOTIFICATION_ACTION_PREFIX}[REDACTED]`,
+        status,
+        user_agent: request.headers.get("user-agent") ?? undefined,
+      },
+    }),
+  );
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -317,6 +357,7 @@ export function proxy(request: NextRequest) {
   // serving requests that would either crash (no DB pool ready for writes from
   // the worker) or duplicate work that the dedicated web container is doing.
   if (!shouldRunWeb() && pathname !== "/api/health") {
+    logNotificationActionRefusal(request, "worker_only", 503);
     return applyBaselineSecurityHeaders(
       NextResponse.json(
         {
@@ -364,6 +405,29 @@ export function proxy(request: NextRequest) {
     );
   }
 
+  // A notification quick answer is a POST and nothing else. ntfy's `http`
+  // action sends one; anything else here is a request a redirect rewrote (an
+  // HTTP client follows a 301/302 with a GET) or a stray probe. Next would
+  // answer 405 on its own, but before any wide event, so the refusal is made
+  // here where it can be logged. `OPTIONS` stays with Next.
+  if (
+    pathname.startsWith(NOTIFICATION_ACTION_PREFIX) &&
+    request.method !== "POST" &&
+    request.method !== "OPTIONS"
+  ) {
+    logNotificationActionRefusal(request, "method_not_allowed", 405);
+    return applyBaselineSecurityHeaders(
+      NextResponse.json(
+        {
+          data: null,
+          error: "Method not allowed",
+          meta: { errorCode: "notification.action.method_not_allowed" },
+        },
+        { status: 405, headers: { Allow: "POST" } },
+      ),
+    );
+  }
+
   // Demo mode: block all mutations except login
   if (process.env.DEMO_MODE === "true") {
     const method = request.method.toUpperCase();
@@ -377,6 +441,7 @@ export function proxy(request: NextRequest) {
         (entry) => pathname === entry.path && method === entry.method,
       )
     ) {
+      logNotificationActionRefusal(request, "demo_mode", 403);
       return applyBaselineSecurityHeaders(
         NextResponse.json(DEMO_REFUSAL_BODY, { status: 403 }),
       );

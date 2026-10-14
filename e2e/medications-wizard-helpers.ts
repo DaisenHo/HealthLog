@@ -30,7 +30,20 @@ interface StubbedMedication {
 }
 
 export function mockMedicationsApi(page: Page, stubbed: StubbedMedication) {
-  const capture: { postBody: unknown } = { postBody: null };
+  // A body that is not JSON must fail the spec where it reads `postBody`,
+  // with the parse error, not throw inside the un-awaited route callback.
+  const capture = {
+    rawPostBody: null as unknown,
+    parseError: null as string | null,
+    get postBody(): unknown {
+      if (this.parseError !== null) {
+        throw new Error(
+          `POST /api/medications sent a body that is not JSON: ${this.parseError}`,
+        );
+      }
+      return this.rawPostBody;
+    },
+  };
 
   const listEntry = {
     id: stubbed.id,
@@ -68,7 +81,11 @@ export function mockMedicationsApi(page: Page, stubbed: StubbedMedication) {
       return;
     }
     if (req.method() === "POST") {
-      capture.postBody = JSON.parse(req.postData() ?? "null");
+      try {
+        capture.rawPostBody = JSON.parse(req.postData() ?? "null");
+      } catch (err) {
+        capture.parseError = err instanceof Error ? err.message : String(err);
+      }
       await route.fulfill({
         status: 201,
         contentType: "application/json",

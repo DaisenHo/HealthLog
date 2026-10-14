@@ -95,9 +95,8 @@ export interface LabResultBackupEntry {
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
   /**
-   * @pending-consumer(#1095) The value and unit the source report printed,
-   * kept when a write converted it. Nothing writes them yet; the backup
-   * carries them so the conversion, when it lands, needs no backup change.
+   * The value and unit the source report printed, kept when a write
+   * converted the reading into its marker's unit.
    */
   sourceValue?: number | null;
   sourceUnit?: string | null;
@@ -125,7 +124,7 @@ export interface BiomarkerBackupEntry {
   panel: string | null;
   hidden: boolean;
   context: string | null;
-  /** @pending-consumer(#1095) The catalogue key the name resolves to. */
+  /** The catalogue key the marker's name and unit resolve to. */
   analyteKey?: string | null;
   createdAt?: string;
   updatedAt?: string;

@@ -103,6 +103,8 @@ const LEGIT_IDENTICAL = new Set<string>([
   // "{hours} h {minutes} min": the SI symbols for hour and minute.
   "measurements.durationHoursMinutes",
   "settings.sections.sources.metrics.vo2Max",
+  "settings.integrations.withings.plan.items.vo2Max",
+  "settings.integrations.oura.scope.items.vo2max",
   // Brand / product / proper nouns.
   "settings.googleHealth",
   "admin.glitchtipDsn",

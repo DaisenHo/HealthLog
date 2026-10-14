@@ -22,6 +22,8 @@ import {
   resolveRestMode,
   toRestModeContext,
   REST_MODE_INACTIVE,
+  hasActiveIllnessEpisode,
+  triggersRestMode,
 } from "@/lib/illness/rest-mode";
 
 beforeEach(() => {
@@ -113,5 +115,92 @@ describe("resolveRestMode", () => {
   it("is inactive (no read) for a disabled module", async () => {
     gate.isIllnessEnabled.mockResolvedValue(false);
     await expect(resolveRestMode("u1")).resolves.toEqual(REST_MODE_INACTIVE);
+  });
+});
+
+/**
+ * #1216 — a chronic ongoing condition has no end date by design, so it must
+ * never put the account into Rest Mode on its own: Day N would count from an
+ * onset years back, nudges would never resume and streaks could never break.
+ * Only active episodes that are not CHRONIC_ONGOING trigger it, and Day N
+ * counts from the earliest of those.
+ */
+describe("Rest Mode and chronic conditions (#1216)", () => {
+  const chronic = {
+    id: "c1",
+    label: "Sleep apnoea",
+    type: "CHRONIC" as const,
+    lifecycle: "CHRONIC_ONGOING" as const,
+    onsetAt: new Date("2015-08-01T00:00:00.000Z"),
+  };
+  const acute = {
+    id: "a1",
+    label: "Cold",
+    type: "INFECTION" as const,
+    lifecycle: "ACUTE" as const,
+    onsetAt: new Date("2026-06-12T00:00:00.000Z"),
+  };
+  const flare = {
+    id: "f1",
+    label: "Flare",
+    type: "AUTOIMMUNE" as const,
+    lifecycle: "FLARE" as const,
+    onsetAt: new Date("2026-06-14T00:00:00.000Z"),
+  };
+
+  it("a chronic condition alone is not Rest Mode", () => {
+    expect(toRestModeContext([chronic])).toEqual(REST_MODE_INACTIVE);
+  });
+
+  it("chronic + acute is Rest Mode, anchored on the acute onset", () => {
+    const ctx = toRestModeContext([chronic, acute]);
+    expect(ctx.active).toBe(true);
+    expect(ctx.since).toBe("2026-06-12T00:00:00.000Z");
+    expect(ctx.episodeCount).toBe(1);
+    expect(ctx.episodes.map((e) => e.id)).toEqual(["a1"]);
+  });
+
+  it("a flare threaded under a chronic condition is Rest Mode", () => {
+    const ctx = toRestModeContext([chronic, flare]);
+    expect(ctx.active).toBe(true);
+    expect(ctx.since).toBe("2026-06-14T00:00:00.000Z");
+  });
+
+  it("anchors on the earliest triggering onset whatever the input order", () => {
+    expect(toRestModeContext([flare, chronic, acute]).since).toBe(
+      "2026-06-12T00:00:00.000Z",
+    );
+  });
+
+  it("resolveRestMode is inactive for a chronic-only account", async () => {
+    gate.isIllnessEnabled.mockResolvedValue(true);
+    db.prisma.illnessEpisode.findMany.mockResolvedValue([chronic]);
+    await expect(
+      resolveRestMode("u1", new Date("2026-06-16T00:00:00.000Z")),
+    ).resolves.toEqual(REST_MODE_INACTIVE);
+  });
+
+  it("hasActiveIllnessEpisode still sees the chronic condition as context", async () => {
+    gate.isIllnessEnabled.mockResolvedValue(true);
+    db.prisma.illnessEpisode.findMany.mockResolvedValue([chronic]);
+    await expect(
+      hasActiveIllnessEpisode("u1", new Date("2026-06-16T00:00:00.000Z")),
+    ).resolves.toBe(true);
+  });
+
+  it("hasActiveIllnessEpisode is fail-soft", async () => {
+    gate.isIllnessEnabled.mockResolvedValue(true);
+    db.prisma.illnessEpisode.findMany.mockRejectedValue(new Error("db down"));
+    await expect(
+      hasActiveIllnessEpisode("u1", new Date("2026-06-17T00:00:00.000Z")),
+    ).resolves.toBe(false);
+  });
+
+  it("triggersRestMode exempts only CHRONIC_ONGOING", () => {
+    expect(
+      ["ACUTE", "RECURRING", "FLARE", "CHRONIC_ONGOING"].map((lifecycle) =>
+        triggersRestMode({ lifecycle }),
+      ),
+    ).toEqual([true, true, true, false]);
   });
 });

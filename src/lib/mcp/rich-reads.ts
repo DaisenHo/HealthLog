@@ -1426,6 +1426,7 @@ export async function getLabHistory(
       sourceReferenceLow: true,
       sourceReferenceHigh: true,
       sourceReferenceText: true,
+      sourceUnit: true,
       takenAt: true,
       biomarkerId: true,
       biomarker: {

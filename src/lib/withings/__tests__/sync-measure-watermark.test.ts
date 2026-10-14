@@ -35,6 +35,7 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 vi.mock("../client", () => ({
+  WITHINGS_MEASTYPES: [1, 9, 10, 11],
   fetchMeasurements: vi.fn(),
   refreshAccessToken: vi.fn(),
   subscribeWebhook: vi.fn(),

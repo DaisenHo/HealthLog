@@ -40,7 +40,7 @@
 import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
-import { getEvent } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
@@ -60,6 +60,17 @@ import {
 } from "@/lib/measurements/reconcile-external-measurement";
 
 import { hasActivityScope } from "./client";
+import {
+  isPlanGatedError,
+  isPlanReprobeDue,
+  parseWithingsApiPlanState,
+  persistWithingsPlanLeg,
+  planCheckedAtFor,
+  planSkipFor,
+  requestWithinPlan,
+  shouldPersistPlanLeg,
+  WITHINGS_ADVANCED_SLEEP_FIELDS,
+} from "./api-plan";
 import {
   WithingsApiError,
   classifyWithingsResponse,
@@ -94,8 +105,13 @@ const WITHINGS_SLEEP_URL = "https://wbsapi.withings.net/v2/sleep";
  * requested; snoring / breathing-disturbance intensity have no enum and are
  * deliberately left out (no home to store them).
  */
-const SLEEP_SUMMARY_DATA_FIELDS =
-  "hr_average,rr_average,sdnn_1,spo2_average,sleep_score";
+export const SLEEP_SUMMARY_DATA_FIELDS: readonly string[] = [
+  "hr_average",
+  "rr_average",
+  "sdnn_1",
+  "spo2_average",
+  "sleep_score",
+];
 
 /**
  * One nightly summary row from `POST /v2/sleep?action=getsummary`. The vitals
@@ -276,12 +292,13 @@ export async function fetchWithingsSleepSummary(
   accessToken: string,
   startymd: string,
   endymd: string,
+  dataFields: readonly string[] = SLEEP_SUMMARY_DATA_FIELDS,
 ): Promise<WithingsSleepSummary[]> {
   const params = new URLSearchParams({
     action: "getsummary",
     startdateymd: startymd,
     enddateymd: endymd,
-    data_fields: SLEEP_SUMMARY_DATA_FIELDS,
+    data_fields: dataFields.join(","),
   });
 
   const pageStart = performance.now();
@@ -384,6 +401,15 @@ export async function syncUserSleep(
       endUnix,
     );
   } catch (err) {
+    // The stage timeline is a free-plan biomarker, so a plan refusal here is
+    // not expected. If Withings ever moves it, the leg reads nothing rather
+    // than failing: a 277 must not climb the strike ladder and park the
+    // measures, activity and ECG legs along with it.
+    if (isPlanGatedError(err)) {
+      annotate({ meta: { withings_sleep_segments_skipped: "api_plan" } });
+      await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_SLEEP });
+      return 0;
+    }
     // v1.4.43 W7-B3 — typed-classification path (see sync-activity.ts
     // for the full rationale). The thrown `WithingsApiError` carries
     // the classification verdict; `recordWithingsSyncFailure` routes
@@ -513,13 +539,46 @@ export async function syncUserSleep(
   // v1.18.10 P0 — nightly sleep vitals (avg HR / respiratory rate / SDNN HRV
   // / avg SpO2 / sleep score) from the per-night summary. Fetch failure stays
   // isolated from the stage writes; database failures are hard sync failures.
+  //
+  // Withings API plans (2026-10-12): the sleep score, the overnight HRV and the
+  // respiration rate are Advanced Biomarkers, and one of them in `data_fields`
+  // has the whole summary refused with 277. Ask only for what the plan allows,
+  // remember what it refused, and re-probe weekly.
   let summaries: WithingsSleepSummary[] = [];
   try {
-    summaries = await fetchWithingsSleepSummary(
-      tokenInfo.accessToken,
-      ymdUtc(start),
-      ymdUtc(now),
-    );
+    const planRow = await prisma.withingsConnection.findUnique({
+      where: { userId },
+      select: { apiPlanState: true },
+    });
+    const sleepPlan = parseWithingsApiPlanState(
+      planRow?.apiPlanState,
+    ).sleepSummary;
+    const reprobed = isPlanReprobeDue(sleepPlan, now);
+    const skip = planSkipFor(sleepPlan, now);
+    const plan = await requestWithinPlan({
+      keys: SLEEP_SUMMARY_DATA_FIELDS.filter((f) => !skip.includes(f)),
+      knownGated: WITHINGS_ADVANCED_SLEEP_FIELDS,
+      fetch: (fields) =>
+        fetchWithingsSleepSummary(
+          tokenInfo.accessToken,
+          ymdUtc(start),
+          ymdUtc(now),
+          fields,
+        ),
+    });
+    summaries = plan.results;
+    if (
+      shouldPersistPlanLeg({
+        gated: plan.gated,
+        reprobed,
+        acceptedAny: plan.acceptedAny,
+      })
+    ) {
+      await persistWithingsPlanLeg(userId, "sleepSummary", {
+        unavailable: [...skip, ...plan.unavailable],
+        checkedAt: planCheckedAtFor(sleepPlan, reprobed, now),
+      });
+    }
   } catch (err) {
     getEvent()?.addWarning(
       `withings sleep: summary fetch failed for ${userId}: ${err}`,

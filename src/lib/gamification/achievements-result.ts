@@ -12,6 +12,7 @@
  * stays OUT of the cached factory — see v1.18.0 B5 notes on the route).
  */
 import { prisma } from "@/lib/db";
+import { REST_MODE_EPISODE_WHERE } from "@/lib/illness/rest-mode";
 import { requireAuth } from "@/lib/api-handler";
 import type { ModuleKey } from "@/lib/modules/gate";
 import {
@@ -614,11 +615,16 @@ export async function buildAchievementsResult(
     // never freezes anything. Both ongoing and already-resolved episodes are
     // read: a past illness should not retroactively break a historical
     // streak, just as an active one should not break the current run.
+    // A chronic ongoing condition never freezes anything (#1216): it has no
+    // end date, so it would bridge every gap from its onset on and a streak
+    // could no longer break. A flare under it carries its own lifecycle and
+    // still does.
     moduleMap.illness !== false
       ? prisma.illnessEpisode.findMany({
           where: {
             userId,
             deletedAt: null,
+            ...REST_MODE_EPISODE_WHERE,
             onsetAt: { lte: now },
             OR: [{ resolvedAt: null }, { resolvedAt: { gte: startDate } }],
           },

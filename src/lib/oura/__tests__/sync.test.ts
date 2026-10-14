@@ -34,6 +34,7 @@ const {
   invalidateMock,
   transactionMock,
   reconcileMock,
+  scopeDeniedMock,
 } = vi.hoisted(() => ({
   getConnMock: vi.fn(),
   storeTokensMock: vi.fn(),
@@ -60,12 +61,14 @@ const {
   invalidateMock: vi.fn(),
   transactionMock: vi.fn(),
   reconcileMock: vi.fn(),
+  scopeDeniedMock: vi.fn(),
 }));
 
 vi.mock("../credentials", () => ({
   getOuraConnection: getConnMock,
   storeOuraTokens: storeTokensMock,
   getOuraClientCredentials: getCredsMock,
+  syncOuraScopeDenied: scopeDeniedMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -159,6 +162,7 @@ beforeEach(() => {
   fetchResilienceMock.mockReset().mockResolvedValue([]);
   fetchCyclePhasesMock.mockReset().mockResolvedValue([]);
   refreshMock.mockReset();
+  scopeDeniedMock.mockReset().mockResolvedValue(undefined);
   transactionMock
     .mockReset()
     .mockImplementation(async (run: (tx: unknown) => unknown) => run({}));
@@ -892,5 +896,161 @@ describe("resolveOuraLookbackDays", () => {
       measuredAt: new Date(Date.now() - 20 * DAY_MS),
     });
     expect(await resolveOuraLookbackDays("u1")).toBe(21);
+  });
+});
+
+describe("syncUserOura — a grant without the spo2 / heart_health scopes", () => {
+  const SCOPED = ["spo2", "vo2max", "cardio_age", "resilience"];
+
+  function denyScopedCollections() {
+    fetchSpo2Mock.mockRejectedValue(err401());
+    fetchVo2MaxMock.mockRejectedValue(err401());
+    fetchCardioAgeMock.mockRejectedValue(err401());
+    fetchResilienceMock.mockRejectedValue(err401());
+    fetchReadinessMock.mockResolvedValue([
+      { id: "x", day: "2026-06-10", score: 70 },
+    ]);
+  }
+
+  it("records the scope gap instead of a failure, and never toward the reconnect count", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    denyScopedCollections();
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+
+    const result = await syncUserOura("u1");
+
+    expect(result).toEqual({ imported: 1, failed: false });
+    expect(recordFailureMock).not.toHaveBeenCalled();
+    expect(recordSuccessMock).toHaveBeenCalledWith("u1", "oura");
+    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", SCOPED);
+  });
+
+  it("spends no token refresh on a scope gap it already knows", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: SCOPED });
+    denyScopedCollections();
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(result.failed).toBe(false);
+    expect(recordFailureMock).not.toHaveBeenCalled();
+    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", SCOPED);
+  });
+
+  it("clears the note once the grant covers every collection", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: SCOPED });
+
+    await syncUserOura("u1");
+
+    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", []);
+    expect(recordSuccessMock).toHaveBeenCalledWith("u1", "oura");
+  });
+
+  it("keeps a 401 on a core collection a failure even when siblings succeed", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchReadinessMock.mockResolvedValue([
+      { id: "x", day: "2026-06-10", score: 70 },
+    ]);
+    fetchSleepMock.mockRejectedValue(err401());
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(result.failed).toBe(true);
+    expect(scopeDeniedMock).not.toHaveBeenCalledWith(
+      "u1",
+      expect.arrayContaining(["sleep"]),
+    );
+    expect(recordFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({ integration: "oura" }),
+    );
+    expect(recordSuccessMock).not.toHaveBeenCalled();
+  });
+
+  it("does not let a stored core name skip the refresh", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: ["sleep"] });
+    fetchReadinessMock.mockResolvedValue([
+      { id: "x", day: "2026-06-10", score: 70 },
+    ]);
+    fetchSleepMock.mockRejectedValueOnce(err401()).mockResolvedValue([]);
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(result.failed).toBe(false);
+  });
+
+  it("still treats a 401 on every collection as a dead token", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    for (const m of [
+      fetchReadinessMock,
+      fetchSleepMock,
+      fetchActivityMock,
+      fetchDailySleepMock,
+      fetchSpo2Mock,
+      fetchVo2MaxMock,
+      fetchCardioAgeMock,
+      fetchResilienceMock,
+    ]) {
+      m.mockRejectedValue(err401());
+    }
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+
+    const result = await syncUserOura("u1");
+
+    expect(result.failed).toBe(true);
+    // Nothing proved the token, so nothing was learned about the grant.
+    expect(scopeDeniedMock).not.toHaveBeenCalled();
+    expect(recordFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({ integration: "oura", kind: "reauth_required" }),
+    );
+  });
+
+  it("keeps the scope note when the refresh is abandoned for want of credentials", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: SCOPED });
+    // A new 401 the note does not explain sends the run to the refresh.
+    fetchSleepMock.mockRejectedValue(err401());
+    denyScopedCollections();
+    getCredsMock.mockResolvedValue(null);
+
+    await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(scopeDeniedMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the scope note when the refresh loses its token to a peer", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: SCOPED });
+    fetchSleepMock.mockRejectedValue(err401());
+    denyScopedCollections();
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+    storeTokensMock.mockResolvedValue(null);
+
+    await syncUserOura("u1");
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(scopeDeniedMock).not.toHaveBeenCalled();
   });
 });

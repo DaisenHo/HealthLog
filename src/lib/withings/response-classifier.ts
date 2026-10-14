@@ -100,12 +100,20 @@ const TRANSIENT_CODES = new Set<number>([503, 601, 2554, 2555, 2556]);
  *   - 294 = "already subscribed" (subscribeWebhook treats it as success;
  *           any OTHER endpoint receiving 294 is a contract bug)
  *
+ *   - 277 = "One of the data type requested in this API request is not
+ *           available in your API plan" (Withings API plans, 2026-10-12).
+ *           A contract limit on the developer app, not a revoked grant, so it
+ *           must never park the connection at `error_reauth` the way the
+ *           200..299 range below would. The sync paths handle it before it
+ *           reaches the ledger (`src/lib/withings/api-plan.ts`); this entry is
+ *           the floor for any path that does not.
+ *
  * Note: 294 is intentionally listed here. `subscribeWebhook` overrides
  * the classification for its own call site (already-subscribed is
  * idempotent there); every other client call that sees 294 surfaces it
  * as a persistent failure so the bug doesn't hide.
  */
-const PERSISTENT_CODES = new Set<number>([293, 294]);
+const PERSISTENT_CODES = new Set<number>([277, 293, 294]);
 
 /**
  * Classify a single Withings API response.

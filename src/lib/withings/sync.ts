@@ -10,7 +10,23 @@ import {
   fetchMeasurements,
   refreshAccessToken,
   subscribeWebhook,
+  WITHINGS_MEASTYPES,
+  type WithingsMeasure,
 } from "./client";
+import {
+  isPlanGatedError,
+  isPlanReprobeDue,
+  parseWithingsApiPlanState,
+  persistWithingsPlanLeg,
+  planCheckedAtFor,
+  planSkipFor,
+  requestWithinPlan,
+  shouldPersistPlanLeg,
+  WITHINGS_ADVANCED_MEASTYPES,
+  WITHINGS_CORE_MEASTYPES,
+  WITHINGS_PLAN_GATED_STATUS,
+  type WithinPlanResult,
+} from "./api-plan";
 import { getUserWithingsCredentials } from "./credentials";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -233,13 +249,84 @@ export async function syncUserMeasurements(
         )
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
 
-  let fetched: Awaited<ReturnType<typeof fetchMeasurements>>;
+  // Withings API plans (2026-10-12): a request naming one meastype outside the
+  // account's plan is refused whole with 277. Leave out what the plan refused
+  // last time (unless the weekly re-probe is due), and let `requestWithinPlan`
+  // narrow the request if the plan refuses something new. A refused run never
+  // reaches the watermark stamp below, so the run after this fix reads the
+  // whole gap since the last good sync.
+  const now = new Date();
+  const planState = parseWithingsApiPlanState(connection.apiPlanState);
+  const reprobed = isPlanReprobeDue(planState.measures, now);
+  const skip = planSkipFor(planState.measures, now);
+  const requested = WITHINGS_MEASTYPES.filter((t) => !skip.includes(t));
+
+  let plan: WithinPlanResult<number, WithingsMeasure>;
   try {
-    fetched = await fetchMeasurements(tokenInfo.accessToken, startDate);
+    plan = await requestWithinPlan({
+      keys: requested,
+      knownGated: WITHINGS_ADVANCED_MEASTYPES,
+      fetch: (measTypes) =>
+        fetchMeasurements(tokenInfo.accessToken, startDate, undefined, {
+          measTypes,
+        }),
+    });
   } catch (err) {
     await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_MEASURES);
     throw err;
   }
+  if (
+    shouldPersistPlanLeg({
+      gated: plan.gated,
+      reprobed,
+      acceptedAny: plan.acceptedAny,
+    })
+  ) {
+    try {
+      await persistWithingsPlanLeg(userId, "measures", {
+        unavailable: [...skip, ...plan.unavailable].sort((a, b) => a - b),
+        checkedAt: planCheckedAtFor(planState.measures, reprobed, now),
+      });
+    } catch (err) {
+      // Losing the memory only costs a refused round trip next run.
+      getEvent()?.addWarning(`withings: plan state write failed: ${err}`);
+    }
+  }
+  if (plan.gated) {
+    annotate({
+      action: {
+        name: "withings.sync.plan_gated",
+        details: {
+          unavailable: plan.unavailable,
+          unverified: plan.unverified,
+          requests: plan.requests,
+          acceptedAny: plan.acceptedAny,
+        },
+      },
+    });
+  }
+  if (!plan.acceptedAny) {
+    // Nothing was read: either plan memory left nothing to ask for, or every
+    // request was refused. Every plan carries weight and blood pressure, so a
+    // run where all of it was refused is a fault upstream, not a plan answer.
+    // Nothing is remembered (above), the watermark stays where it is so the
+    // next run reads the whole gap, and the run reports that it did not land.
+    // It stays off the failure ledger like every other 277: a plan answer must
+    // never climb the strike ladder or park the connection.
+    getEvent()?.addWarning(
+      requested.length === 0
+        ? "withings: plan memory left no measure type to request"
+        : "withings: every measure request was refused with 277",
+    );
+    annotate({
+      action: {
+        name: "withings.sync.plan_nothing_read",
+        details: { requested: requested.length, requests: plan.requests },
+      },
+    });
+    return { imported: 0, failed: true };
+  }
+  const fetched = plan.results;
 
   // The app's own plausibility band applies to a provider reading exactly as
   // it applies to a typed one. A remote that reports a pulse in the millions
@@ -419,11 +506,27 @@ export async function syncUserMeasurements(
     return { imported, failed: true };
   }
 
-  // Update last synced timestamp
-  await prisma.withingsConnection.update({
-    where: { userId },
-    data: { lastSyncedAt: new Date() },
-  });
+  // Types the probe budget could not resolve were not read this run. Moving
+  // the watermark past them would drop their readings in this window for
+  // good, so it stays put until a run reads (or proves refused) every type.
+  // Re-reading the accepted types is idempotent.
+  // The same holds for a core type left out on the strength of plan memory:
+  // that memory may be wrong, and the re-probe must find the window intact.
+  const skippedCore = skip.filter((t) => WITHINGS_CORE_MEASTYPES.includes(t));
+  const holdWatermark = plan.unverified.length > 0 || skippedCore.length > 0;
+  if (holdWatermark) {
+    annotate({
+      action: {
+        name: "withings.sync.plan_watermark_held",
+        details: { unverified: plan.unverified, skippedCore },
+      },
+    });
+  } else {
+    await prisma.withingsConnection.update({
+      where: { userId },
+      data: { lastSyncedAt: new Date() },
+    });
+  }
 
   // Record success — even when measures.length === 0, completing the
   // round-trip is the signal "the connection is healthy". A user who
@@ -470,6 +573,15 @@ export async function recordWithingsSyncFailure(
   err: unknown,
   leg: WithingsSyncLeg,
 ): Promise<void> {
+  // A plan refusal (277) is a limit on the developer app, not a failure of the
+  // connection. It never enters the ledger, so no path that forgets to handle
+  // it can climb the strike ladder or park every leg over it.
+  if (isPlanGatedError(err)) {
+    annotate({
+      meta: { withings_plan_gated_unhandled: { leg } },
+    });
+    return;
+  }
   const message = err instanceof Error ? err.message : String(err);
   await recordSyncFailure({
     userId,
@@ -531,6 +643,8 @@ export function isWithingsRefreshReauthFailure(message: string): boolean {
   const n = Number.parseInt(status, 10);
   if (!Number.isFinite(n)) return false;
   if (n === 100 || n === 101 || n === 102) return true;
+  // 277 is the API-plan refusal: a limit on the developer app, not a grant.
+  if (n === WITHINGS_PLAN_GATED_STATUS) return false;
   if (n >= 200 && n <= 299) return true;
   return false;
 }

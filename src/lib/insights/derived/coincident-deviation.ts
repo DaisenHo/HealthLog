@@ -45,7 +45,7 @@ import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { VITALS_BASELINE_TYPES } from "./registry";
 import type { Derived, DerivedProvenanceSource } from "./types";
-import { resolveRestMode } from "@/lib/illness/rest-mode";
+import { hasActiveIllnessEpisode } from "@/lib/illness/rest-mode";
 import {
   isPlausibleMetricValue,
   plausibleMetricRange,
@@ -463,8 +463,11 @@ export async function computeCoincidentDeviation(
   // v1.18.1 P4 — when the flag fired, reframe it as illness-explained if an
   // episode is active. Only resolved when the flag fired (no read on the
   // common quiet day). Annotation only — the vital deviations are unchanged.
+  // Any active episode counts, a chronic condition included: it explains a
+  // coincident dip as much as an acute one, even though it does not put the
+  // account into Rest Mode (#1216).
   const illnessExplained = fired
-    ? (await resolveRestMode(userId, now)).active
+    ? await hasActiveIllnessEpisode(userId, now)
     : false;
 
   const { coverage: cov, confidence } = deriveCoverage({

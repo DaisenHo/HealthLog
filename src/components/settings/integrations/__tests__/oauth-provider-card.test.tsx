@@ -232,3 +232,43 @@ describe("OAuthProviderCard — sync-now action", () => {
     ).not.toContain('data-testid="polar-sync"');
   });
 });
+
+describe("OAuthProviderCard — Oura scope note", () => {
+  const scopeGap = {
+    connected: true,
+    configured: true,
+    available: true,
+    state: "connected" as const,
+    lastSuccessAt: "2026-10-14T00:00:00.000Z",
+    lastError: null,
+    syncHealth: { verdict: "fresh" as const, since: null },
+    scopeReconnect: ["spo2" as const, "vo2max" as const],
+  };
+
+  function renderOura(viewModel: ViewModel) {
+    return renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <OAuthProviderCard
+          provider="oura"
+          statusQueryKey={["oura"]}
+          i18nPrefix="settings.oura"
+          icon={Watch}
+          dataHref="/insights/sleep"
+          viewModel={viewModel}
+          callbackUrl="https://app.example/api/oura/callback"
+        />
+      </I18nProvider>,
+    );
+  }
+
+  it("asks for one reconnect beside a healthy pill, not an error", () => {
+    const html = renderOura(scopeGap);
+    expect(html).toContain('data-testid="oura-scope-note"');
+    expect(html).toContain("Reconnect Oura once to allow SpO2 and VO2 max.");
+    expect(html).not.toContain('data-testid="oura-error"');
+  });
+
+  it("stays away from the other OAuth providers", () => {
+    expect(render({ viewModel: scopeGap })).not.toContain("scope-note");
+  });
+});

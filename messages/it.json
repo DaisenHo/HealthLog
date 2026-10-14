@@ -6505,6 +6505,47 @@
             "body": "La tua connessione Withings è stata autorizzata prima dell’aggiunta della sincronizzazione attività. Riconnettiti una volta per abilitare l’importazione di passi, energia attiva, distanza a piedi e di corsa, e piani saliti dai tuoi dispositivi Withings.",
             "action": "Riconnetti Withings"
           }
+        },
+        "plan": {
+          "title": "Alcuni valori richiedono il piano API a pagamento di Withings",
+          "body": "Withings ora offre {list} solo nel suo piano API a pagamento, e la tua app sviluppatore Withings usa il piano gratuito. Peso, pressione arteriosa, composizione corporea, frequenza cardiaca e sonno continuano a sincronizzarsi.",
+          "link": "Informazioni sui piani API di Withings",
+          "items": {
+            "spo2": "SpO2",
+            "vascularAge": "età vascolare",
+            "pulseWaveVelocity": "velocità dell’onda di polso",
+            "vo2Max": "VO2 max",
+            "visceralFat": "grasso viscerale",
+            "skinTemperature": "temperatura cutanea",
+            "ecg": "ECG e fibrillazione atriale",
+            "sleepScore": "punteggio del sonno",
+            "sleepHrv": "HRV notturna",
+            "sleepHeartRate": "frequenza cardiaca notturna",
+            "sleepRespiratoryRate": "frequenza respiratoria notturna",
+            "sleepSpo2": "SpO2 notturna",
+            "bodyTemperature": "temperatura corporea",
+            "bodyFat": "grasso corporeo",
+            "fatMass": "massa grassa",
+            "fatFreeMass": "massa magra",
+            "muscleMass": "massa muscolare",
+            "bodyWater": "acqua corporea",
+            "boneMass": "massa ossea",
+            "heartRate": "frequenza cardiaca",
+            "bloodPressure": "pressione arteriosa",
+            "weight": "peso"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "Riconnetti Oura una volta per consentire {list}. Tutto il resto continua a sincronizzarsi.",
+          "action": "Riconnetti Oura",
+          "items": {
+            "spo2": "SpO2",
+            "vo2max": "VO2 max",
+            "cardio_age": "età cardiovascolare",
+            "resilience": "resilienza"
+          }
         }
       }
     },
@@ -9522,6 +9563,7 @@
     },
     "noteLoadFailed": "Impossibile caricare la nota; resterà invariata al salvataggio.",
     "showingLatestOf": "Visualizzazione degli ultimi {shown} risultati su {total}",
+    "convertedFrom": "convertito da {value} {unit}",
     "ocr": {
       "scanButton": "Scansiona un referto",
       "addScan": "Scansiona un documento",
@@ -9568,6 +9610,7 @@
       "errorUnit": "Inserisci un'unità.",
       "errorUnitMismatch": "Questo marcatore è registrato in {markerUnit}. Cambia l’unità se il referto è stato letto male, oppure deseleziona questo valore.",
       "unitDiffersBadge": "Registrato in {markerUnit}; questo referto indica {unit}",
+      "unitConvertedBadge": "Verrà salvato come {value} {markerUnit}, convertito da {statedValue} {unit}",
       "savedPartialUnitToast": "{count} risultati salvati. Non salvati perché l’unità è diversa da quella del marcatore: {analytes}",
       "savedNothingUnitToast": "Nulla salvato: l’unità è diversa da quella del marcatore per {analytes}",
       "saveFailed": "Impossibile salvare i valori. Riprova.",
@@ -9588,7 +9631,8 @@
     "notLinkedYet": "Non ancora collegato a un biomarcatore",
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
-      "catalogDiffers": "il tuo intervallo {range}"
+      "catalogDiffers": "il tuo intervallo {range}",
+      "printed": "stampato in {unit}: {range}"
     }
   },
   "modules": {

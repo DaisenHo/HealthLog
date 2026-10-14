@@ -34,6 +34,8 @@ import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { fitbitCredentialsSchema } from "@/lib/validations/fitbit";
 import { googleHealthCredentialsSchema } from "@/lib/validations/google-health";
+import { WITHINGS_PLAN_FEATURES } from "@/lib/withings/plan-features";
+import { OURA_SCOPE_GATED_COLLECTIONS } from "@/lib/oura/scope";
 import { ouraCredentialsSchema } from "@/lib/validations/oura";
 import { polarCredentialsSchema } from "@/lib/validations/polar";
 import { stravaCredentialsSchema } from "@/lib/validations/strava";
@@ -925,12 +927,24 @@ const integrationEnvelopeEntry = z
     backfillCompleted: z.boolean().nullable().optional(),
     scope: z.string().nullable().optional().describe("Withings only."),
     hasActivityScope: z.boolean().optional().describe("Withings only."),
+    planUnavailable: z
+      .array(z.enum(WITHINGS_PLAN_FEATURES))
+      .optional()
+      .describe(
+        "Withings only. The readings this connection's Withings API plan withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when the plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when the weekly re-probe asks again.",
+      ),
     needsReauth: z.boolean().optional().describe("Google Health only."),
     available: z.boolean().optional().describe("Oura / Polar / Strava only."),
     hasOwnCredentials: z
       .boolean()
       .optional()
       .describe("Oura / Polar / Strava only."),
+    scopeReconnect: z
+      .array(z.enum(OURA_SCOPE_GATED_COLLECTIONS))
+      .optional()
+      .describe(
+        "Oura only. Collections the stored grant does not cover: they answered 401 while sibling collections succeeded with the same token. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
+      ),
     hasToken: z.boolean().optional().describe("Nightscout only."),
     allowPrivateHost: z.boolean().optional().describe("Nightscout only."),
   })

@@ -27,6 +27,7 @@ vi.mock("@/lib/db", () => {
       withingsConnection: {
         findUnique: vi.fn(),
       },
+      $executeRaw: vi.fn(),
       $transaction: vi.fn(
         async (fn: (tx: unknown) => unknown) => await fn({ ecgRecording }),
       ),
@@ -463,6 +464,85 @@ describe("syncUserEcg", () => {
     expect(prisma.ecgRecording.upsert).not.toHaveBeenCalled();
     expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
       leg: "ecg",
+    });
+  });
+});
+
+describe("syncUserEcg — Withings API plan (status 277)", () => {
+  function install277() {
+    const fetchMock = vi.fn(async () => ({
+      status: 200,
+      json: async () => ({
+        status: 277,
+        error:
+          "One of the data type requested in this API request is not available in your API plan",
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  /** The leg the plan-state write merged in, read off the raw SQL values. */
+  function persistedLeg(): { leg: unknown; value: unknown } | null {
+    const call = vi.mocked(prisma.$executeRaw).mock.calls[0];
+    if (!call) return null;
+    const values = call.slice(1);
+    return { leg: values[0], value: JSON.parse(String(values[1])) };
+  }
+
+  it("skips quietly on a 277: no failure, no throw, the refusal remembered", async () => {
+    install277();
+    const imported = await syncUserEcg("user-1");
+
+    expect(imported).toBe(0);
+    expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(recordWithingsSyncFailure).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
+      leg: "ecg",
+    });
+    expect(persistedLeg()).toEqual({
+      leg: "ecg",
+      value: { unavailable: ["heart"], checkedAt: expect.any(String) },
+    });
+  });
+
+  it("does not ask the Heart endpoint again while the refusal is fresh", async () => {
+    const fetchMock = install277();
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      id: "connection-1",
+      apiPlanState: {
+        version: 1,
+        ecg: { unavailable: ["heart"], checkedAt: new Date().toISOString() },
+      },
+    } as never);
+
+    const imported = await syncUserEcg("user-1");
+
+    expect(imported).toBe(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it("re-probes after a week and forgets the refusal when the plan now allows it", async () => {
+    const fetchMock = installFetchMock([]);
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      id: "connection-1",
+      apiPlanState: {
+        version: 1,
+        ecg: {
+          unavailable: ["heart"],
+          checkedAt: new Date(Date.now() - 8 * 86_400_000).toISOString(),
+        },
+      },
+    } as never);
+
+    await syncUserEcg("user-1");
+
+    expect(fetchMock).toHaveBeenCalled();
+    expect(persistedLeg()).toEqual({
+      leg: "ecg",
+      value: { unavailable: [], checkedAt: expect.any(String) },
     });
   });
 });

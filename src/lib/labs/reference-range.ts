@@ -65,11 +65,23 @@ export function formatReferenceRange(
 /**
  * The reference range a lab report printed beside ONE reading, as stored on
  * `LabResult.sourceReference*`.
+ *
+ * `sourceUnit` is set when the reading was converted into its marker's unit:
+ * the bounds were converted with the value, but the text is the report's own
+ * and stays in the unit the report printed. It is required, so a reader cannot
+ * forget to select it and present that text beside numbers in another unit.
  */
 export interface SourceReferenceRange {
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
+  sourceUnit: string | null;
+}
+
+/** A converted reading's printed range text, with the unit it is written in. */
+export interface PrintedReferenceRange {
+  text: string;
+  unit: string;
 }
 
 /** Where the bounds a reading is judged against came from. */
@@ -84,8 +96,19 @@ export interface EffectiveReferenceRange {
   /** The catalog band, kept alongside so a surface can show both. */
   catalogLow: number | null;
   catalogHigh: number | null;
-  /** The printed window, kept verbatim. Null when the report stated none. */
+  /**
+   * The printed window, kept verbatim, in the reading's unit. Null when the
+   * report stated none, and null for a converted reading: its text is in the
+   * unit the report printed, not the unit of the value and bounds beside it,
+   * and moves to `printed`.
+   */
   sourceText: string | null;
+  /**
+   * For a converted reading only: the window as the report printed it and the
+   * unit it is in. Evidence, never a statement about the stored numbers; a
+   * surface that shows it names the unit with it.
+   */
+  printed: PrintedReferenceRange | null;
   /**
    * True when the source window is in force AND the catalog states a window
    * that differs from it. This is the case a reader must be told about: the
@@ -132,7 +155,15 @@ export function resolveEffectiveReferenceRange(
   const cHigh = catalogHigh ?? null;
   const sLow = source?.sourceReferenceLow ?? null;
   const sHigh = source?.sourceReferenceHigh ?? null;
-  const sourceText = source?.sourceReferenceText ?? null;
+  const verbatim = source?.sourceReferenceText ?? null;
+  const sourceUnit = source?.sourceUnit ?? null;
+  // A converted reading's text is in the printed unit; it is never presented as
+  // the window of the converted value.
+  const sourceText = sourceUnit === null ? verbatim : null;
+  const printed: PrintedReferenceRange | null =
+    sourceUnit !== null && verbatim !== null
+      ? { text: verbatim, unit: sourceUnit }
+      : null;
 
   if (sLow !== null || sHigh !== null) {
     return {
@@ -142,6 +173,7 @@ export function resolveEffectiveReferenceRange(
       catalogLow: cLow,
       catalogHigh: cHigh,
       sourceText,
+      printed,
       divergesFromCatalog:
         (cLow !== null || cHigh !== null) &&
         !sameWindow(sLow, sHigh, cLow, cHigh),
@@ -155,6 +187,7 @@ export function resolveEffectiveReferenceRange(
     catalogLow: cLow,
     catalogHigh: cHigh,
     sourceText,
+    printed,
     divergesFromCatalog: false,
   };
 }

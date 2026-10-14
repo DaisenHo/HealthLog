@@ -18,6 +18,8 @@ import type {
   SyncVerdict,
 } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
+import type { WithingsPlanFeature } from "@/lib/withings/plan-features";
+import type { OuraScopeGatedCollection } from "@/lib/oura/scope";
 
 // v1.4.15 Phase B2: shared status payload for both integration cards.
 // v1.4.19 Phase A5: the redundant in-card status banner is gone — the
@@ -70,6 +72,10 @@ export interface IntegrationStatusViewModel {
   // Withings activity-scope reconnect banner.
   scope?: string | null;
   hasActivityScope?: boolean;
+  // Withings: readings the account's API plan withholds (server-resolved).
+  planUnavailable?: WithingsPlanFeature[];
+  // Oura: collections the stored grant does not cover (server-resolved).
+  scopeReconnect?: OuraScopeGatedCollection[];
   // WHOOP / Fitbit backfill-in-progress note.
   backfillCompleted?: boolean | null;
   // v1.27.0 — Google Health surfaces `needsReauth` when the refresh token has

@@ -190,6 +190,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
         scope: WITHINGS_OAUTH_SCOPE,
         webhookSubscriptionState: Prisma.DbNull,
         webhookSubscriptionRetryAt: subscriptionRetryAt,
+        // A reconnect may come with another developer app (another plan), so
+        // what the old grant's plan refused is asked for again.
+        apiPlanState: Prisma.DbNull,
       },
       create: {
         userId: user.id,
