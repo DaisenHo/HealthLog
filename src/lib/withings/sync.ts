@@ -22,6 +22,7 @@ import {
   requestWithinPlan,
   shouldPersistPlanLeg,
   WITHINGS_ADVANCED_MEASTYPES,
+  WITHINGS_CORE_MEASTYPES,
   WITHINGS_PLAN_GATED_STATUS,
   type WithinPlanResult,
 } from "./api-plan";
@@ -273,7 +274,13 @@ export async function syncUserMeasurements(
     await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_MEASURES);
     throw err;
   }
-  if (shouldPersistPlanLeg({ gated: plan.gated, reprobed })) {
+  if (
+    shouldPersistPlanLeg({
+      gated: plan.gated,
+      reprobed,
+      acceptedAny: plan.acceptedAny,
+    })
+  ) {
     try {
       await persistWithingsPlanLeg(userId, "measures", {
         unavailable: [...skip, ...plan.unavailable].sort((a, b) => a - b),
@@ -297,15 +304,26 @@ export async function syncUserMeasurements(
       },
     });
   }
-  if (plan.gated && !plan.acceptedAny) {
-    // The plan refused every type asked for. Nothing was read, so the
-    // watermark stays where it is (a later plan change re-reads the gap), and
-    // nothing failed: the connection is healthy, the plan is the limit. The
-    // settings card names what the plan withholds.
-    await recordSyncSuccess(userId, "withings", {
-      leg: WITHINGS_LEG_MEASURES,
+  if (!plan.acceptedAny) {
+    // Nothing was read: either plan memory left nothing to ask for, or every
+    // request was refused. Every plan carries weight and blood pressure, so a
+    // run where all of it was refused is a fault upstream, not a plan answer.
+    // Nothing is remembered (above), the watermark stays where it is so the
+    // next run reads the whole gap, and the run reports that it did not land.
+    // It stays off the failure ledger like every other 277: a plan answer must
+    // never climb the strike ladder or park the connection.
+    getEvent()?.addWarning(
+      requested.length === 0
+        ? "withings: plan memory left no measure type to request"
+        : "withings: every measure request was refused with 277",
+    );
+    annotate({
+      action: {
+        name: "withings.sync.plan_nothing_read",
+        details: { requested: requested.length, requests: plan.requests },
+      },
     });
-    return { imported: 0, failed: false };
+    return { imported: 0, failed: true };
   }
   const fetched = plan.results;
 
@@ -491,12 +509,15 @@ export async function syncUserMeasurements(
   // the watermark past them would drop their readings in this window for
   // good, so it stays put until a run reads (or proves refused) every type.
   // Re-reading the accepted types is idempotent.
-  const holdWatermark = plan.unverified.length > 0;
+  // The same holds for a core type left out on the strength of plan memory:
+  // that memory may be wrong, and the re-probe must find the window intact.
+  const skippedCore = skip.filter((t) => WITHINGS_CORE_MEASTYPES.includes(t));
+  const holdWatermark = plan.unverified.length > 0 || skippedCore.length > 0;
   if (holdWatermark) {
     annotate({
       action: {
         name: "withings.sync.plan_watermark_held",
-        details: { unverified: plan.unverified },
+        details: { unverified: plan.unverified, skippedCore },
       },
     });
   } else {

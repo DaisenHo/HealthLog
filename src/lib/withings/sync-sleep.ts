@@ -566,7 +566,13 @@ export async function syncUserSleep(
         ),
     });
     summaries = plan.results;
-    if (shouldPersistPlanLeg({ gated: plan.gated, reprobed })) {
+    if (
+      shouldPersistPlanLeg({
+        gated: plan.gated,
+        reprobed,
+        acceptedAny: plan.acceptedAny,
+      })
+    ) {
       await persistWithingsPlanLeg(userId, "sleepSummary", {
         unavailable: [...skip, ...plan.unavailable],
         checkedAt: now.toISOString(),

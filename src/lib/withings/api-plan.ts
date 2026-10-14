@@ -59,6 +59,18 @@ export const WITHINGS_ADVANCED_MEASTYPES: readonly number[] = [
 ];
 
 /**
+ * The meastypes Withings lists as free in every plan and that carry the core
+ * of the measure leg: weight (1), blood pressure (9, 10), pulse (11) and the
+ * body-composition readings the table lists as free (fat-free mass 5, fat
+ * mass 8, muscle mass 76, hydration 77, bone mass 88). A run that leaves one
+ * of them out on the strength of plan memory has not read the window for it,
+ * so the measure watermark must not move past it.
+ */
+export const WITHINGS_CORE_MEASTYPES: readonly number[] = [
+  1, 5, 8, 9, 10, 11, 76, 77, 88,
+];
+
+/**
  * Sleep-summary fields HealthLog requests that the table marks advanced: the
  * sleep score, the overnight HRV and the respiration rate. The nightly average
  * heart rate is listed both ways (free for trackers, advanced for the Sleep
@@ -323,15 +335,23 @@ export async function persistWithingsPlanLeg(
 }
 
 /**
- * Decide whether a run's outcome is worth writing down. A run that met a 277
- * always is; so is a re-probe (the full set was asked for), whatever it found;
- * a run that skipped remembered keys and was accepted changes nothing.
+ * Decide whether a run's outcome is worth writing down.
+ *
+ * A run that met a 277 is, but only when some other request in the same run
+ * was accepted: a plan never refuses everything, so a run where every request
+ * was refused (a transient fault upstream, a misconfigured developer app)
+ * proves nothing about any single key, and remembering it would skip weight
+ * and blood pressure for a week. A re-probe that met no 277 is written down
+ * too, so a cleared refusal is forgotten. A run that skipped remembered keys
+ * and was accepted changes nothing.
  */
 export function shouldPersistPlanLeg(opts: {
   gated: boolean;
   reprobed: boolean;
+  acceptedAny: boolean;
 }): boolean {
-  return opts.gated || opts.reprobed;
+  if (opts.gated) return opts.acceptedAny;
+  return opts.reprobed;
 }
 
 // ── lifting parks an earlier build left ──────────────────────────────────────

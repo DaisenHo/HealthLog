@@ -105,6 +105,7 @@ import {
 import {
   releasePlanGatedWithingsParks,
   requestWithinPlan,
+  shouldPersistPlanLeg,
   WITHINGS_ADVANCED_MEASTYPES,
   WITHINGS_PLAN_MAX_REQUESTS,
 } from "../api-plan";
@@ -394,19 +395,128 @@ describe("syncUserMeasurements inside the Withings API plan", () => {
     expect(requestedStartdates.every((s) => s === expected)).toBe(true);
   });
 
-  it("holds the watermark and records no failure when the plan refuses everything", async () => {
+  it("treats a run where every request was refused as transient: nothing remembered, watermark held", async () => {
     refused = new Set([
       1, 5, 6, 8, 9, 10, 11, 12, 35, 54, 71, 76, 77, 88, 91, 123, 155, 170, 73,
     ]);
 
     const result = await syncUserMeasurements("user-1");
 
-    expect(result).toEqual({ imported: 0, failed: false });
+    expect(result).toEqual({ imported: 0, failed: true });
     expect(prisma.withingsConnection.update).not.toHaveBeenCalled();
+    // A 277 stays off the ledger, and a run that read nothing is no success.
     expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
     expect(requestedTypes.length).toBeLessThanOrEqual(
       WITHINGS_PLAN_MAX_REQUESTS,
     );
+    // Weight and blood pressure are not remembered as refused.
+    expect(persistedLegs()).toEqual([]);
+
+    // The fault clears; the next run asks for everything again and reads the
+    // whole gap since the last good sync.
+    refused = new Set(WITHINGS_ADVANCED_MEASTYPES);
+    requestedTypes.length = 0;
+    requestedStartdates.length = 0;
+    const next = await syncUserMeasurements("user-1");
+    expect(next.failed).toBe(false);
+    expect(requestedTypes[0]).toEqual(expect.arrayContaining([1, 9, 10, 11]));
+    expect(createdTypes()).toEqual(
+      expect.arrayContaining(["WEIGHT", "BLOOD_PRESSURE_SYS", "PULSE"]),
+    );
+    const fromLastGood = String(
+      Math.floor(
+        (LAST_GOOD_SYNC.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS) / 1000,
+      ),
+    );
+    expect(requestedStartdates.every((s) => s === fromLastGood)).toBe(true);
+  });
+
+  it("holds the watermark when plan memory leaves nothing to request", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [...WITHINGS_MEASTYPES],
+          checkedAt: new Date().toISOString(),
+        },
+      }) as never,
+    );
+
+    const result = await syncUserMeasurements("user-1");
+
+    expect(requestedTypes).toHaveLength(0);
+    expect(result).toEqual({ imported: 0, failed: true });
+    expect(prisma.withingsConnection.update).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
+  });
+
+  it("holds the watermark when a core type was skipped from plan memory", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [1, ...WITHINGS_ADVANCED_MEASTYPES],
+          checkedAt: new Date().toISOString(),
+        },
+      }) as never,
+    );
+
+    const result = await syncUserMeasurements("user-1");
+
+    expect(requestedTypes).toHaveLength(1);
+    expect(requestedTypes[0]).not.toContain(1);
+    expect(result.failed).toBe(false);
+    expect(createdTypes()).toContain("BLOOD_PRESSURE_SYS");
+    // Weight was not read in this window, so the window stays open for it.
+    expect(prisma.withingsConnection.update).not.toHaveBeenCalled();
+  });
+
+  it("still moves the watermark when only advanced types are remembered", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [...WITHINGS_ADVANCED_MEASTYPES],
+          checkedAt: new Date().toISOString(),
+        },
+      }) as never,
+    );
+
+    await syncUserMeasurements("user-1");
+
+    expect(prisma.withingsConnection.update).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { lastSyncedAt: expect.any(Date) },
+    });
+  });
+});
+
+describe("shouldPersistPlanLeg", () => {
+  it("remembers a refusal only from a run where something else was accepted", () => {
+    expect(
+      shouldPersistPlanLeg({ gated: true, reprobed: false, acceptedAny: true }),
+    ).toBe(true);
+    expect(
+      shouldPersistPlanLeg({
+        gated: true,
+        reprobed: false,
+        acceptedAny: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldPersistPlanLeg({ gated: true, reprobed: true, acceptedAny: false }),
+    ).toBe(false);
+    expect(
+      shouldPersistPlanLeg({ gated: false, reprobed: true, acceptedAny: true }),
+    ).toBe(true);
+    expect(
+      shouldPersistPlanLeg({
+        gated: false,
+        reprobed: false,
+        acceptedAny: true,
+      }),
+    ).toBe(false);
   });
 });
 
