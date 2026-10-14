@@ -299,7 +299,7 @@ export async function persistWithingsPlanLeg(
           )
           || jsonb_build_object('version', 1)
           || jsonb_build_object(${leg}::text, ${value}::jsonb),
-        "updated_at" = NOW()
+        "updated_at" = ${new Date()}
     WHERE "user_id" = ${userId}`;
   annotate({
     meta: {
