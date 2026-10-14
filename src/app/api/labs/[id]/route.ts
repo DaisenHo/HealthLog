@@ -192,6 +192,9 @@ export const PUT = apiHandler(
     const data: Record<string, unknown> = {};
     if (d.panel !== undefined) data.panel = d.panel;
     if (d.analyte !== undefined) data.analyte = d.analyte;
+    // Set when a changed value retires a conversion whose printed range text is
+    // in the report's unit (see below).
+    let dropPrintedText = false;
     if (d.value !== undefined) {
       data.value = d.value;
       // A number the person typed is no longer the conversion of what the
@@ -205,6 +208,18 @@ export const PUT = apiHandler(
       ) {
         data.sourceValue = null;
         data.sourceUnit = null;
+        // The printed range text belonged to the printed value and is written
+        // in the report's unit. With `sourceUnit` gone nothing would say so,
+        // and every reader would present it as the marker unit's window, so
+        // it goes with the record. The bounds stay: they were converted with
+        // the value and are already in the marker's unit.
+        if (
+          existing.sourceUnit !== null &&
+          existing.sourceReferenceText !== null
+        ) {
+          data.sourceReferenceText = null;
+          dropPrintedText = true;
+        }
       }
     }
     // v1.18.9 — qualitative edit. A row stays single-typed: editing `value` on a
@@ -220,7 +235,15 @@ export const PUT = apiHandler(
     if (d.sourceReferenceHigh !== undefined) {
       data.sourceReferenceHigh = d.sourceReferenceHigh;
     }
-    if (d.sourceReferenceText !== undefined) {
+    // A whole-form echo of the old printed text does not bring it back once the
+    // value change retired it; a text that differs is a new statement and wins.
+    if (
+      d.sourceReferenceText !== undefined &&
+      !(
+        dropPrintedText &&
+        d.sourceReferenceText === existing.sourceReferenceText
+      )
+    ) {
       data.sourceReferenceText = d.sourceReferenceText;
     }
     if (d.takenAt !== undefined) data.takenAt = d.takenAt;

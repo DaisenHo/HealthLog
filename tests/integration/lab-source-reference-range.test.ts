@@ -297,6 +297,81 @@ describe("a printed reference range, end to end", () => {
     expect(observations[0].valueQuantity?.unit).toBe("mg/dL");
   });
 
+  it("drops the printed text with the conversion record when the value is edited", async () => {
+    const prisma = getPrismaClient();
+    const marker = await prisma.biomarker.create({
+      data: {
+        userId: USER_ID,
+        name: "Glucose",
+        unit: "mg/dL",
+        lowerBound: 70,
+        upperBound: 100,
+      },
+    });
+    const PRINTED_MMOL = "3,9 - 5,5 mmol/l";
+    const { POST } = await import("@/app/api/labs/route");
+    const created = await POST(
+      postReq({
+        biomarkerId: marker.id,
+        value: 5.6,
+        unit: "mmol/L",
+        sourceReferenceLow: 3.9,
+        sourceReferenceHigh: 5.5,
+        sourceReferenceText: PRINTED_MMOL,
+        takenAt: "2026-07-03T08:00:00.000Z",
+      }),
+    );
+    expect(created.status).toBe(201);
+    const id = (await created.json()).data.id as string;
+
+    // The person types a new number in mg/dL, and the form echoes the old
+    // printed text back with it.
+    const { PUT } = await import("@/app/api/labs/[id]/route");
+    const edited = await PUT(
+      new NextRequest(`http://localhost/api/labs/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ value: 104, sourceReferenceText: PRINTED_MMOL }),
+      }),
+      { params: Promise.resolve({ id }) },
+    );
+    expect(edited.status).toBe(200);
+
+    const row = await prisma.labResult.findUniqueOrThrow({ where: { id } });
+    expect(row.sourceUnit).toBeNull();
+    expect(row.sourceValue).toBeNull();
+    expect(row.sourceReferenceText).toBeNull();
+    // The bounds were converted with the value and stay, in mg/dL.
+    expect(row.sourceReferenceLow).toBeCloseTo(3.9 * 18.0182, 6);
+    expect(row.sourceReferenceHigh).toBeCloseTo(5.5 * 18.0182, 6);
+
+    // No surface shows mmol/L text beside the mg/dL numbers.
+    const dto = await readDto("Glucose");
+    expect(dto.converted).toBe(false);
+    expect(dto.sourceReferenceText).toBeNull();
+    expect(dto.printedReferenceText).toBeNull();
+    expect(dto.referenceOrigin).toBe("source");
+    expect(dto.referenceHigh).toBeCloseTo(5.5 * 18.0182, 6);
+
+    const { loadLabResults } =
+      await import("@/lib/doctor-report/clinical-records");
+    const labs = await loadLabResults(
+      USER_ID,
+      new Date("2026-01-01T00:00:00.000Z"),
+      new Date("2026-12-31T23:59:59.000Z"),
+    );
+    expect(labs?.[0].sourceReferenceText).toBeNull();
+
+    const { labObservations } = await import("@/lib/fhir/resources/labs");
+    let seq = 0;
+    const observations = labObservations(
+      { labResults: labs } as Parameters<typeof labObservations>[0],
+      () => `obs-${++seq}`,
+    );
+    expect(observations[0].referenceRange?.[0]?.text).toBeUndefined();
+    expect(observations[0].referenceRange?.[0]?.high?.unit).toBe("mg/dL");
+  });
+
   it("keeps a window it cannot read as text and leaves the catalog in force", async () => {
     const prisma = getPrismaClient();
     await seedMarker();
