@@ -195,8 +195,14 @@ export const PUT = apiHandler(
     if (d.value !== undefined) {
       data.value = d.value;
       // A number the person typed is no longer the conversion of what the
-      // report printed, so the "converted from" record would now be wrong.
-      if (existing.sourceValue !== null || existing.sourceUnit !== null) {
+      // report printed, so the "converted from" record would now be wrong. Only
+      // a CHANGED value says so: a client that sends the whole form back with
+      // the value untouched (the web edit dialog does) must not erase the
+      // record. Both sides are plain numbers (`value` is a Float column).
+      if (
+        d.value !== existing.value &&
+        (existing.sourceValue !== null || existing.sourceUnit !== null)
+      ) {
         data.sourceValue = null;
         data.sourceUnit = null;
       }

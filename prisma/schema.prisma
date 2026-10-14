@@ -6152,7 +6152,7 @@ model LabResult {
   sourceReferenceText String?   @map("source_reference_text")
   /// @pending-consumer(#1095) v1.42 — the value as printed on the source
   /// report, kept when a write converted it into the biomarker's canonical
-  /// unit. NULL when no conversion happened. A later edit of `value` clears it.
+  /// unit. NULL when no conversion happened. An edit that changes `value` clears it.
   sourceValue         Float?    @map("source_value")
   /// @pending-consumer(#1095) v1.42 — the unit the source report printed,
   /// paired with `sourceValue`.

@@ -14,7 +14,8 @@
  *     the printed unit is in range after conversion;
  *   - the OCR commit converts, and the same scan committed again is a duplicate
  *     (the stored number is converted, so the printed one is what matches);
- *   - editing the value of a converted reading clears the conversion record;
+ *   - changing the value of a converted reading clears the conversion record,
+ *     and an edit that sends the value back unchanged keeps it;
  *   - the list returns the fields.
  */
 import { NextRequest } from "next/server";
@@ -338,10 +339,24 @@ describe("editing and reading back", () => {
       takenAt: "2026-07-02T08:00:00.000Z",
     });
     const id = created.json.data!.id;
-    const edited = await call<Dto>("one", "PUT", { note: "fasting" }, id);
+    const storedValue = created.json.data!.value;
+    // The web edit dialog sends the form back whole, the unchanged value
+    // included; only a changed value clears the record.
+    const edited = await call<Dto>(
+      "one",
+      "PUT",
+      {
+        value: storedValue,
+        takenAt: "2026-07-02T09:00:00.000Z",
+        note: "fasting",
+      },
+      id,
+    );
     expect(edited.status).toBe(200);
+    expect(edited.json.data!.value).toBe(storedValue);
     expect(edited.json.data!.converted).toBe(true);
     expect(edited.json.data!.sourceValue).toBe(6.1);
+    expect(edited.json.data!.sourceUnit).toBe("mmol/L");
   });
 
   it("returns the fields on the list and on the single reading", async () => {

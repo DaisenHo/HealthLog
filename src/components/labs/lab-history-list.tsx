@@ -32,6 +32,7 @@ import { localizedApiError } from "@/lib/api/localized-error";
 import { formatLabReading } from "@/lib/labs/format-value";
 import { LabConvertedNote } from "./lab-converted-note";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
+import { resolveValueForUpdate, valueEditSeed } from "@/lib/labs/value-update";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -177,7 +178,8 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
   const updateMutation = useMutation({
     mutationFn: (body: {
       id: string;
-      // Exactly one of value / valueText is set, matching the row's type.
+      // At most one of value / valueText is set, matching the row's type;
+      // null leaves the field out of the PUT (an untouched value).
       value: number | null;
       valueText: string | null;
       takenAt: string;
@@ -219,7 +221,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
 
   async function openEdit(reading: LabResultDto) {
     const seed = {
-      value: reading.value !== null ? String(reading.value) : "",
+      value: reading.value !== null ? valueEditSeed(reading.value) : "",
       valueText: reading.valueText ?? "",
       takenAt: toDateTimeLocal(reading.takenAt),
       note: "",
@@ -275,11 +277,20 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       }
       qualitativeValue = trimmed;
     } else {
-      numericValue = parseDecimal(editValue);
-      if (numericValue === null) {
+      const parsed = parseDecimal(editValue);
+      if (parsed === null) {
         setEditError(t("labs.form.requiredError"));
         return;
       }
+      // An untouched field is left out of the PUT (null here), so the stored
+      // full-precision value and a conversion record survive a date or note
+      // edit.
+      numericValue =
+        resolveValueForUpdate({
+          seed: editSeed.value,
+          editorValue: editValue,
+          parsed,
+        }) ?? null;
     }
     const takenDate = new Date(editTakenAt);
     if (Number.isNaN(takenDate.getTime())) {
