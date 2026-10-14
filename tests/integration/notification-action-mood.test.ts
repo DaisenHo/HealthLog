@@ -116,3 +116,86 @@ describe("POST /api/notifications/action/{token}", () => {
     ).toBe(0);
   });
 });
+
+/**
+ * #1203 — the request in ntfy's own shape, from the published message to the
+ * row. The action is taken from the JSON body `buildNtfyMessage` publishes,
+ * and sent the way ntfy's Android app sends an `http` action: POST, empty
+ * body, no cookie, no Origin, an okhttp user agent. It goes through the real
+ * proxy first and then the real route, with the route param taken from the
+ * URL path the way Next derives it.
+ */
+describe("a ntfy http action through the proxy and the route", () => {
+  async function ntfyAction() {
+    const { buildMoodQuickActions } =
+      await import("@/lib/notifications/action-token");
+    const { buildNtfyMessage } =
+      await import("@/lib/notifications/senders/ntfy");
+    const quickActions = buildMoodQuickActions({
+      userId: USER,
+      origin: "https://health.example.test",
+      labels: { "mood-good": "Good", "mood-okay": "Okay", "mood-bad": "Bad" },
+    });
+    const message = buildNtfyMessage("topic", {
+      userId: USER,
+      eventType: "MOOD_REMINDER",
+      title: "Mood",
+      message: "How are you?",
+      quickActions,
+    } as Parameters<typeof buildNtfyMessage>[1]);
+    // Round-trip through JSON: what the phone holds is the parsed publish body.
+    const published = JSON.parse(JSON.stringify(message)) as typeof message;
+    const okay = published.actions?.find((a) => a.label === "Okay");
+    if (!okay) throw new Error("no Okay action in the published message");
+    return okay;
+  }
+
+  async function send(method: string, url: string) {
+    const { proxy } = await import("@/proxy");
+    const request = new NextRequest(url, {
+      method,
+      headers: { "user-agent": "okhttp/4.12.0", "content-length": "0" },
+      ...(method === "POST" ? { body: "" } : {}),
+    });
+    const edge = proxy(request);
+    if (edge.headers.get("x-middleware-next") !== "1") return edge;
+    const token = decodeURIComponent(
+      new URL(url).pathname.split("/").pop() ?? "",
+    );
+    const { POST } =
+      await import("@/app/api/notifications/action/[token]/route");
+    return POST(request, { params: Promise.resolve({ token }) });
+  }
+
+  it("logs the mood when the phone POSTs the published action", async () => {
+    const action = await ntfyAction();
+    expect(action).toMatchObject({ action: "http", method: "POST" });
+
+    const res = await send(action.method, action.url);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      data: { logged: true, action: "mood-okay" },
+    });
+    const rows = await getPrismaClient().moodEntry.findMany({
+      where: { userId: USER },
+      select: { source: true, score: true },
+    });
+    expect(rows).toEqual([{ source: "NOTIFICATION", score: 3 }]);
+  });
+
+  it("refuses a GET (a POST a redirect rewrote) at the proxy and writes nothing", async () => {
+    const action = await ntfyAction();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const res = await send("GET", action.url);
+      expect(res.status).toBe(405);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toContain("method_not_allowed");
+    } finally {
+      warn.mockRestore();
+    }
+    expect(
+      await getPrismaClient().moodEntry.count({ where: { userId: USER } }),
+    ).toBe(0);
+  });
+});
