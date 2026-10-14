@@ -246,11 +246,13 @@ export interface OuraFetchResult {
    */
   sleepSweeps: SleepSegmentSweep[];
   /**
-   * Collections refused with 401/403 while a sibling succeeded with the same
+   * Collections refused with 401 while a sibling succeeded with the same
    * token: the token is fine, the grant does not cover them. Not failures; the
-   * card asks for one reconnect instead.
+   * card asks for one reconnect instead. `null` when the run never proved the
+   * token (no collection succeeded, or the refresh was abandoned): it learned
+   * nothing about the grant, so the note from the last run that did stands.
    */
-  scopeDenied: string[];
+  scopeDenied: string[] | null;
 }
 
 /**
@@ -286,8 +288,8 @@ function isScopeRefusal(f: OuraCollectionFailure): boolean {
 function splitScopeDenied(
   failures: OuraCollectionFailure[],
   tokenProven: boolean,
-): { failures: OuraCollectionFailure[]; scopeDenied: string[] } {
-  if (!tokenProven) return { failures, scopeDenied: [] };
+): { failures: OuraCollectionFailure[]; scopeDenied: string[] | null } {
+  if (!tokenProven) return { failures, scopeDenied: null };
   return {
     failures: failures.filter((f) => !isScopeRefusal(f)),
     scopeDenied: failures.filter(isScopeRefusal).map((f) => f.name),
@@ -490,7 +492,7 @@ async function fetchAll(
       readings: first.readings,
       failures: first.failures,
       sleepSweeps,
-      scopeDenied: [],
+      scopeDenied: null,
     };
 
   const rotated = await refreshAccessToken(refreshToken, creds);
@@ -508,7 +510,7 @@ async function fetchAll(
       readings: first.readings,
       failures: first.failures,
       sleepSweeps,
-      scopeDenied: [],
+      scopeDenied: null,
     };
 
   const retry = await attempt(usableToken, first.failed);
@@ -565,15 +567,20 @@ export async function syncUserOura(
   // Remember which collections the grant does not cover, so the settings card
   // can ask for one reconnect. Best-effort: the note is a convenience, the
   // sync outcome does not depend on it.
-  if (result.scopeDenied.length > 0) {
+  // A run that never proved the token says nothing about the grant and leaves
+  // the note as it was.
+  const scopeDenied = result.scopeDenied;
+  if (scopeDenied && scopeDenied.length > 0) {
     annotate({
-      meta: { oura_scope_denied: result.scopeDenied },
+      meta: { oura_scope_denied: scopeDenied },
     });
   }
-  try {
-    await syncOuraScopeDenied(userId, result.scopeDenied);
-  } catch (err) {
-    getEvent()?.addWarning(`oura: scope note write failed: ${err}`);
+  if (scopeDenied) {
+    try {
+      await syncOuraScopeDenied(userId, scopeDenied);
+    } catch (err) {
+      getEvent()?.addWarning(`oura: scope note write failed: ${err}`);
+    }
   }
 
   // Clear whatever an earlier scoring left under the re-fetched sleep records

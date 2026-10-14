@@ -1017,9 +1017,40 @@ describe("syncUserOura — a grant without the spo2 / heart_health scopes", () =
     const result = await syncUserOura("u1");
 
     expect(result.failed).toBe(true);
-    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", []);
+    // Nothing proved the token, so nothing was learned about the grant.
+    expect(scopeDeniedMock).not.toHaveBeenCalled();
     expect(recordFailureMock).toHaveBeenCalledWith(
       expect.objectContaining({ integration: "oura", kind: "reauth_required" }),
     );
+  });
+
+  it("keeps the scope note when the refresh is abandoned for want of credentials", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: SCOPED });
+    // A new 401 the note does not explain sends the run to the refresh.
+    fetchSleepMock.mockRejectedValue(err401());
+    denyScopedCollections();
+    getCredsMock.mockResolvedValue(null);
+
+    await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(scopeDeniedMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the scope note when the refresh loses its token to a peer", async () => {
+    getConnMock.mockResolvedValue({ ...CONN, scopeDenied: SCOPED });
+    fetchSleepMock.mockRejectedValue(err401());
+    denyScopedCollections();
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+    storeTokensMock.mockResolvedValue(null);
+
+    await syncUserOura("u1");
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(scopeDeniedMock).not.toHaveBeenCalled();
   });
 });
