@@ -20,6 +20,8 @@ const baseRow: LabRow = {
   sourceReferenceLow: null,
   sourceReferenceHigh: null,
   sourceReferenceText: null,
+  sourceValue: null,
+  sourceUnit: null,
   takenAt: new Date("2026-01-01T08:00:00.000Z"),
   source: "MANUAL",
   biomarkerId: "bm_1",

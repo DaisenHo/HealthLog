@@ -732,6 +732,7 @@ const OCR_EXCEPTIONS: Readonly<Record<string, string>> = {
   "inserted.sourceReferenceLow": OCR_ROW_EXCEPTION,
   "inserted.sourceReferenceHigh": OCR_ROW_EXCEPTION,
   "inserted.sourceReferenceText": OCR_ROW_EXCEPTION,
+  "inserted.printedReferenceText": OCR_ROW_EXCEPTION,
   "inserted.referenceOrigin": OCR_ROW_EXCEPTION,
   "inserted.referenceDivergesFromCatalog": OCR_ROW_EXCEPTION,
   "inserted.takenAt": OCR_ROW_EXCEPTION,

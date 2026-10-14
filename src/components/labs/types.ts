@@ -38,6 +38,11 @@ export interface LabResultDto {
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
+  /**
+   * A converted reading's printed range text, verbatim and in `sourceUnit`;
+   * `sourceReferenceText` is then null. Null for every other reading.
+   */
+  printedReferenceText: string | null;
   /** Which window is in force. */
   referenceOrigin: ReferenceRangeOrigin;
   /** True when the report's window and the catalog band state different limits. */

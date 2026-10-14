@@ -9590,7 +9590,8 @@
     "notLinkedYet": "Non ancora collegato a un biomarcatore",
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
-      "catalogDiffers": "il tuo intervallo {range}"
+      "catalogDiffers": "il tuo intervallo {range}",
+      "printed": "stampato in {unit}: {range}"
     }
   },
   "modules": {

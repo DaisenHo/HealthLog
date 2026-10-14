@@ -37,6 +37,7 @@ function row(
     sourceReferenceLow: opts.sourceLow ?? null,
     sourceReferenceHigh: opts.sourceHigh ?? null,
     sourceReferenceText: opts.sourceText ?? null,
+    sourceUnit: null,
     takenAt: new Date(`${day}T08:00:00.000Z`),
   };
 }

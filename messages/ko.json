@@ -9590,7 +9590,8 @@
     "notLinkedYet": "아직 바이오마커에 연결되지 않았어요",
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",
-      "catalogDiffers": "내 범위 {range}"
+      "catalogDiffers": "내 범위 {range}",
+      "printed": "결과지 원문({unit}): {range}"
     }
   },
   "modules": {

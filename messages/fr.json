@@ -9590,7 +9590,8 @@
     "notLinkedYet": "Pas encore lié à un biomarqueur",
     "sourceRange": {
       "fromReport": "Plage du compte rendu {range}",
-      "catalogDiffers": "votre plage {range}"
+      "catalogDiffers": "votre plage {range}",
+      "printed": "imprimé en {unit} : {range}"
     }
   },
   "modules": {

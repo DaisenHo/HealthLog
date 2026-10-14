@@ -9590,7 +9590,8 @@
     "notLinkedYet": "Not linked to a biomarker yet",
     "sourceRange": {
       "fromReport": "Report range {range}",
-      "catalogDiffers": "your range {range}"
+      "catalogDiffers": "your range {range}",
+      "printed": "as printed in {unit}: {range}"
     }
   },
   "modules": {

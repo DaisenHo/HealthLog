@@ -9,6 +9,7 @@ const NO_SOURCE = {
   sourceReferenceLow: null,
   sourceReferenceHigh: null,
   sourceReferenceText: null,
+  sourceUnit: null,
 };
 
 describe("resolveEffectiveReferenceRange", () => {
@@ -36,6 +37,7 @@ describe("resolveEffectiveReferenceRange", () => {
       sourceReferenceLow: 3.9,
       sourceReferenceHigh: 5.4,
       sourceReferenceText: "3,9 - 5,4",
+      sourceUnit: null,
     });
     expect(eff).toMatchObject({
       low: 3.9,
@@ -53,6 +55,7 @@ describe("resolveEffectiveReferenceRange", () => {
       sourceReferenceLow: 3.5,
       sourceReferenceHigh: 5,
       sourceReferenceText: "3,5 - 5,0",
+      sourceUnit: null,
     });
     expect(eff.origin).toBe("source");
     expect(eff.divergesFromCatalog).toBe(false);
@@ -65,6 +68,7 @@ describe("resolveEffectiveReferenceRange", () => {
       sourceReferenceLow: null,
       sourceReferenceHigh: 4.2,
       sourceReferenceText: "< 4,2",
+      sourceUnit: null,
     });
     expect(eff).toMatchObject({
       low: null,
@@ -81,6 +85,7 @@ describe("resolveEffectiveReferenceRange", () => {
       sourceReferenceLow: null,
       sourceReferenceHigh: null,
       sourceReferenceText: "negativ",
+      sourceUnit: null,
     });
     expect(eff).toMatchObject({
       low: 3.5,
@@ -96,9 +101,54 @@ describe("resolveEffectiveReferenceRange", () => {
       sourceReferenceLow: 3.9,
       sourceReferenceHigh: 5.4,
       sourceReferenceText: "3,9 - 5,4",
+      sourceUnit: null,
     });
     expect(eff.origin).toBe("source");
     expect(eff.divergesFromCatalog).toBe(false);
+  });
+});
+
+describe("a converted reading's printed text", () => {
+  // 5.6 mmol/L stored as mg/dL, with the printed 3.9 to 5.5 mmol/L window
+  // converted alongside; the text stays as the report printed it.
+  const CONVERTED = {
+    sourceReferenceLow: 3.9 * 18.0182,
+    sourceReferenceHigh: 5.5 * 18.0182,
+    sourceReferenceText: "3,9 - 5,5",
+    sourceUnit: "mmol/L",
+  };
+
+  it("is never the window's text, so no statement mixes two units", () => {
+    const eff = resolveEffectiveReferenceRange(70, 100, CONVERTED);
+    expect(eff.origin).toBe("source");
+    expect(eff.low).toBeCloseTo(70.27, 2);
+    expect(eff.sourceText).toBeNull();
+  });
+
+  it("is kept as evidence with the unit it is written in", () => {
+    const eff = resolveEffectiveReferenceRange(70, 100, CONVERTED);
+    expect(eff.printed).toEqual({ text: "3,9 - 5,5", unit: "mmol/L" });
+  });
+
+  it("stays the window's text for a reading stored as stated", () => {
+    const eff = resolveEffectiveReferenceRange(70, 100, {
+      ...CONVERTED,
+      sourceUnit: null,
+    });
+    expect(eff.sourceText).toBe("3,9 - 5,5");
+    expect(eff.printed).toBeNull();
+  });
+
+  it("moves an unreadable printed text the same way", () => {
+    const eff = resolveEffectiveReferenceRange(70, 100, {
+      sourceReferenceLow: null,
+      sourceReferenceHigh: null,
+      sourceReferenceText: "siehe Befund",
+      sourceUnit: "mmol/L",
+    });
+    expect(eff.origin).toBe("catalog");
+    expect(eff.sourceText).toBeNull();
+    expect(eff.printed).toEqual({ text: "siehe Befund", unit: "mmol/L" });
   });
 });
 
@@ -110,6 +160,7 @@ describe("classifyAgainstEffectiveRange", () => {
       sourceReferenceLow: 3.9,
       sourceReferenceHigh: 5.4,
       sourceReferenceText: "3,9 - 5,4",
+      sourceUnit: null,
     });
     expect(classifyAgainstEffectiveRange(5.2, eff)).toBe("in-range");
     expect(classifyAgainstEffectiveRange(3.7, eff)).toBe("below");

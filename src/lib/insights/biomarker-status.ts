@@ -172,6 +172,7 @@ export async function generateBiomarkerStatus(args: {
       sourceReferenceLow: true,
       sourceReferenceHigh: true,
       sourceReferenceText: true,
+      sourceUnit: true,
     },
   });
   if (rows.length === 0) {

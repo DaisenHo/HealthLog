@@ -78,6 +78,7 @@ function reading(id: string, value: number, takenAt: string): LabResultDto {
     sourceReferenceLow: null,
     sourceReferenceHigh: null,
     sourceReferenceText: null,
+    printedReferenceText: null,
     referenceOrigin: "catalog",
     referenceDivergesFromCatalog: false,
     takenAt,

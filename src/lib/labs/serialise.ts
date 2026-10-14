@@ -25,7 +25,11 @@
  *  - `catalogReferenceLow` / `catalogReferenceHigh` — the catalog band, so a
  *    surface can paint both and show where they part.
  *  - `sourceReferenceLow` / `sourceReferenceHigh` / `sourceReferenceText` —
- *    what the report printed, the last verbatim.
+ *    what the report printed, the last verbatim. For a reading converted into
+ *    its marker's unit the bounds were converted with the value, but the text
+ *    is still in the unit the report printed, so it is never sent as
+ *    `sourceReferenceText` (that would put two units in one statement): it
+ *    travels as `printedReferenceText`, in `sourceUnit`.
  *
  * `referenceOrigin` names which window is in force and
  * `referenceDivergesFromCatalog` flags the case a reader must be told about.
@@ -80,8 +84,8 @@ export interface LabRow {
    * When the reading was converted into the marker's unit: the value and unit
    * as the report printed them. Both null for a reading stored as stated.
    */
-  sourceValue?: number | null;
-  sourceUnit?: string | null;
+  sourceValue: number | null;
+  sourceUnit: string | null;
   noteEncrypted: Uint8Array | null;
   createdAt: Date;
   updatedAt: Date;
@@ -97,6 +101,7 @@ export type LabFieldRow = Pick<
   | "sourceReferenceLow"
   | "sourceReferenceHigh"
   | "sourceReferenceText"
+  | "sourceUnit"
   | "panel"
   | "biomarkerId"
 >;
@@ -115,7 +120,13 @@ export interface ResolvedLabFields {
   /** What the source report printed for this reading. */
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
+  /** Null for a converted reading; see `printedReferenceText`. */
   sourceReferenceText: string | null;
+  /**
+   * A converted reading's printed range text, verbatim, in `sourceUnit` (the
+   * unit the report printed); null for every other reading.
+   */
+  printedReferenceText: string | null;
   referenceOrigin: ReferenceRangeOrigin;
   referenceDivergesFromCatalog: boolean;
   /** The resolved window as one value, for callers that pass it on. */
@@ -172,6 +183,7 @@ export function resolveLabFields(
     sourceReferenceLow: row.sourceReferenceLow,
     sourceReferenceHigh: row.sourceReferenceHigh,
     sourceReferenceText: effectiveRange.sourceText,
+    printedReferenceText: effectiveRange.printed?.text ?? null,
     referenceOrigin: effectiveRange.origin,
     referenceDivergesFromCatalog: effectiveRange.divergesFromCatalog,
     effectiveRange,
@@ -206,6 +218,7 @@ export function serialiseLabResult(
     sourceReferenceLow: resolved.sourceReferenceLow,
     sourceReferenceHigh: resolved.sourceReferenceHigh,
     sourceReferenceText: resolved.sourceReferenceText,
+    printedReferenceText: resolved.printedReferenceText,
     referenceOrigin: resolved.referenceOrigin,
     referenceDivergesFromCatalog: resolved.referenceDivergesFromCatalog,
     takenAt: row.takenAt.toISOString(),
@@ -265,6 +278,7 @@ export function serialiseLabResultDetail(
     sourceReferenceLow: resolved.sourceReferenceLow,
     sourceReferenceHigh: resolved.sourceReferenceHigh,
     sourceReferenceText: resolved.sourceReferenceText,
+    printedReferenceText: resolved.printedReferenceText,
     referenceOrigin: resolved.referenceOrigin,
     referenceDivergesFromCatalog: resolved.referenceDivergesFromCatalog,
     takenAt: row.takenAt.toISOString(),

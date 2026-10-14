@@ -9590,7 +9590,8 @@
     "notLinkedYet": "Jeszcze niepowiązane z biomarkerem",
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
-      "catalogDiffers": "twój zakres {range}"
+      "catalogDiffers": "twój zakres {range}",
+      "printed": "wydrukowano w {unit}: {range}"
     }
   },
   "modules": {

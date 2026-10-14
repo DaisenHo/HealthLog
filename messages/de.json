@@ -9590,7 +9590,8 @@
     "notLinkedYet": "Noch keinem Biomarker zugeordnet",
     "sourceRange": {
       "fromReport": "Befundbereich {range}",
-      "catalogDiffers": "dein Bereich {range}"
+      "catalogDiffers": "dein Bereich {range}",
+      "printed": "auf dem Befund in {unit}: {range}"
     }
   },
   "modules": {

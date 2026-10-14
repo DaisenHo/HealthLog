@@ -129,6 +129,7 @@ const committedRow = z
     sourceReferenceLow: z.number().nullable(),
     sourceReferenceHigh: z.number().nullable(),
     sourceReferenceText: z.string().nullable(),
+    printedReferenceText: z.string().nullable(),
     referenceOrigin: z.enum(["source", "catalog", "none"]),
     referenceDivergesFromCatalog: z.boolean(),
     takenAt: z.string(),
@@ -141,7 +142,7 @@ const committedRow = z
   .meta({
     id: "OcrCommittedLabResult",
     description:
-      "A written reading. Its reference window resolves exactly as it does on `/api/labs` — see `LabResult`. `converted`, `sourceValue` and `sourceUnit` say when the row's unit was converted into its marker's and what the report printed.",
+      "A written reading. Its reference window resolves exactly as it does on `/api/labs` — see `LabResult`. `converted`, `sourceValue` and `sourceUnit` say when the row's unit was converted into its marker's and what the report printed; for a converted row the printed range text is in `printedReferenceText` (in `sourceUnit`) and `sourceReferenceText` is null.",
   });
 
 const commitResponse = z

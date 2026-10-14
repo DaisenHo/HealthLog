@@ -67435,6 +67435,10 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        printedReferenceText:
+          anyOf:
+            - type: string
+            - type: "null"
         referenceOrigin:
           $ref: "#/components/schemas/LabReferenceRangeOrigin"
         referenceDivergesFromCatalog:
@@ -67469,6 +67473,7 @@ components:
         - sourceReferenceLow
         - sourceReferenceHigh
         - sourceReferenceText
+        - printedReferenceText
         - referenceOrigin
         - referenceDivergesFromCatalog
         - takenAt
@@ -67494,9 +67499,12 @@ components:
         catalog band state different limits — a surface showing only one of the two is showing a partial answer. The
         client renders these values and never recomputes the range. `converted` is true when the stored `value` was
         converted into the marker's `unit` from another unit; `sourceValue` and `sourceUnit` are then what the report
-        printed (full precision, round for display), and the report's own window was converted with it. A reading stored
-        as stated has `converted: false` and two nulls. The encrypted note is never echoed in list rows; `hasNote` flags
-        its presence and the single-resource GET returns the decrypted `note`.
+        printed (full precision, round for display), and the report's own window was converted with it:
+        `sourceReferenceLow` / `sourceReferenceHigh` are then in the marker's `unit`. The printed range text is not
+        converted and stays in `sourceUnit`, so for a converted reading `sourceReferenceText` is null and the verbatim
+        text is in `printedReferenceText` instead, never mixed with the converted numbers. A reading stored as stated
+        has `converted: false`, two nulls and a null `printedReferenceText`. The encrypted note is never echoed in list
+        rows; `hasNote` flags its presence and the single-resource GET returns the decrypted `note`.
     LabReferenceRangeOrigin:
       type: string
       enum:
@@ -67613,6 +67621,10 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        printedReferenceText:
+          anyOf:
+            - type: string
+            - type: "null"
         referenceOrigin:
           $ref: "#/components/schemas/LabReferenceRangeOrigin"
         referenceDivergesFromCatalog:
@@ -67649,6 +67661,7 @@ components:
         - sourceReferenceLow
         - sourceReferenceHigh
         - sourceReferenceText
+        - printedReferenceText
         - referenceOrigin
         - referenceDivergesFromCatalog
         - takenAt
@@ -67938,6 +67951,10 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        printedReferenceText:
+          anyOf:
+            - type: string
+            - type: "null"
         referenceOrigin:
           type: string
           enum:
@@ -67981,6 +67998,7 @@ components:
         - sourceReferenceLow
         - sourceReferenceHigh
         - sourceReferenceText
+        - printedReferenceText
         - referenceOrigin
         - referenceDivergesFromCatalog
         - takenAt
@@ -67992,7 +68010,8 @@ components:
       additionalProperties: false
       description: A written reading. Its reference window resolves exactly as it does on `/api/labs` — see `LabResult`.
         `converted`, `sourceValue` and `sourceUnit` say when the row's unit was converted into its marker's and what the
-        report printed.
+        report printed; for a converted row the printed range text is in `printedReferenceText` (in `sourceUnit`) and
+        `sourceReferenceText` is null.
     AiRunEnvelope:
       type: object
       properties:

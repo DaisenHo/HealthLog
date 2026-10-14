@@ -165,6 +165,47 @@ describe("lab-result FHIR Observations", () => {
     expect(crp?.referenceRange).toBeUndefined();
   });
 
+  it("states a converted reading's window only in the value's unit", () => {
+    // A reading converted from mmol/L: the resolved entry carries the bounds
+    // in mg/dL and no text (the printed text is in mmol/L and would disagree
+    // with low and high), so the element carries the two bounds alone.
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        labResults: [
+          {
+            panel: null,
+            analyte: "Glucose",
+            value: 100.9,
+            valueText: null,
+            unit: "mg/dL",
+            referenceLow: 70.27,
+            referenceHigh: 99.1,
+            catalogReferenceLow: 70,
+            catalogReferenceHigh: 100,
+            sourceReferenceText: null,
+            referenceOrigin: "source" as const,
+            referenceDivergesFromCatalog: true,
+            takenAt: "2026-04-10T08:00:00.000Z",
+            count: 1,
+          },
+        ],
+      }),
+      { insuranceNumber: "A123456780" },
+      FIXED_NOW,
+    );
+    const [obs] = observationsOf(bundle).filter((o) =>
+      o.category?.some((c) =>
+        c.coding?.some((code) => code.code === "laboratory"),
+      ),
+    );
+    expect(obs.referenceRange).toEqual([
+      {
+        low: expect.objectContaining({ value: 70.27, unit: "mg/dL" }),
+        high: expect.objectContaining({ value: 99.1, unit: "mg/dL" }),
+      },
+    ]);
+  });
+
   it("emits no lab Observations when labResults is null", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({ labResults: null }),
