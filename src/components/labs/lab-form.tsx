@@ -448,7 +448,12 @@ export function LabForm({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* One column at every width, as in the measurement form. A second
+            column halved the draw date's cell, and `DateTimeField` sets its
+            date and time halves side by side from `sm:` up, so the date
+            itself was squeezed until it could only be set through the
+            calendar (#1214). */}
+        <div className="grid gap-4">
           <div className="space-y-1.5">
             {resultType === "numeric" ? (
               <>
