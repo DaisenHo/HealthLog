@@ -85,6 +85,31 @@ describe("buildBriefingIllnessCyclePrompt", () => {
     expect(out).toContain("SYSTEM CONTEXT");
   });
 
+  it("names a chronic-only condition as context, not Rest Mode (#1216)", () => {
+    const out = buildBriefingIllnessCyclePrompt(
+      {
+        illness: {
+          restMode: false,
+          active: [
+            {
+              label: "Sleep apnoea",
+              type: "CHRONIC",
+              lifecycle: "CHRONIC_ONGOING",
+              onsetAt: "x",
+            },
+          ],
+          recentResolved: [],
+        },
+        cycle: null,
+      },
+      "en",
+    );
+    expect(out).toContain("Sleep apnoea");
+    expect(out).toContain("chronic condition");
+    expect(out).not.toContain("The user is in Rest Mode");
+    expect(out).not.toContain("measure more often");
+  });
+
   it("emits a cycle day/phase line", () => {
     const out = buildBriefingIllnessCyclePrompt(
       {

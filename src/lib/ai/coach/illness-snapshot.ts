@@ -12,12 +12,14 @@
  * Server-authoritative and module-gated: a non-illness / opted-out account
  * gets `null` (no block, no read). Since v1.40 it also names the person's own
  * symptoms of the last two weeks (their names, sanitised, and counts), which
- * reach the model the way custom mood-tag names reach the mood analysis. The active set drives the `restMode` flag
+ * reach the model the way custom mood-tag names reach the mood analysis. The active set, chronic conditions
+ * included, is context; only its non-chronic part drives the `restMode` flag
  * the Coach reads; a short resolved-history tail lets it answer "how often do
  * I get sick" without re-deriving anything.
  */
 import { prisma } from "@/lib/db";
 import { isIllnessEnabled } from "@/lib/illness/gate";
+import { triggersRestMode } from "@/lib/illness/rest-mode";
 import { computeEpisodeCorrelation } from "@/lib/illness/correlation-read";
 import {
   BASELINE_WINDOW_DAYS,
@@ -90,7 +92,10 @@ function siteFields(row: {
 }
 
 export interface CoachIllnessBlock {
-  /** True when ≥ 1 episode is active right now (the Rest Mode flag). */
+  /**
+   * The Rest Mode flag: true when ≥ 1 active episode is not CHRONIC_ONGOING.
+   * A chronic condition alone is context (it is in `active`), not Rest Mode.
+   */
   restMode: boolean;
   /** Active (unresolved) episodes — the Coach frames its reply around these. */
   active: Array<{
@@ -255,7 +260,7 @@ export async function buildIllnessSnapshotBlock(
   }
 
   return {
-    restMode: activeRows.length > 0,
+    restMode: activeRows.some(triggersRestMode),
     active: activeRows.map((e) => ({
       label: sanitizeLabel(e.label),
       type: e.type,
