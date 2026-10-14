@@ -105,10 +105,12 @@ import {
 import {
   releasePlanGatedWithingsParks,
   requestWithinPlan,
+  shouldPersistPlanLeg,
   WITHINGS_ADVANCED_MEASTYPES,
   WITHINGS_PLAN_MAX_REQUESTS,
 } from "../api-plan";
 import { withingsPlanUnavailableFeatures } from "../plan-features";
+import { WITHINGS_MEASTYPES } from "../client";
 
 const LAST_GOOD_SYNC = new Date("2026-10-12T21:12:00Z");
 
@@ -315,6 +317,102 @@ describe("syncUserMeasurements inside the Withings API plan", () => {
     expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
+  it("never remembers a type the budget could not resolve, and converges over runs", async () => {
+    // Two undocumented refusals on top of the documented set. Over the 19
+    // types the first run runs out of budget before it reaches 12, 54, 71,
+    // 76, 77 and 88, all free.
+    refused = new Set([...WITHINGS_ADVANCED_MEASTYPES, 6, 35]);
+    let stored: unknown = null;
+    let lastSyncedAt = LAST_GOOD_SYNC;
+    vi.mocked(prisma.withingsConnection.findUnique).mockImplementation(
+      (async () => connection(stored, lastSyncedAt)) as never,
+    );
+    vi.mocked(prisma.withingsConnection.update).mockImplementation(
+      (async (args: { data: { lastSyncedAt: Date } }) => {
+        lastSyncedAt = args.data.lastSyncedAt;
+        return {};
+      }) as never,
+    );
+    const runs: Array<{ unavailable: number[]; startdates: string[] }> = [];
+    const read = new Set<number>();
+
+    for (let run = 0; run < 4; run++) {
+      vi.mocked(prisma.$executeRaw).mockClear();
+      vi.mocked(prisma.measurement.create).mockClear();
+      requestedStartdates.length = 0;
+      await syncUserMeasurements("user-1");
+      const [persisted] = persistedLegs();
+      if (persisted) {
+        const value = persisted.value as {
+          unavailable: number[];
+          checkedAt: string;
+        };
+        stored = { version: 1, measures: value };
+      }
+      for (const types of requestedTypes.splice(0)) {
+        if (!types.some((t) => refused.has(t)))
+          types.forEach((t) => read.add(t));
+      }
+      const current = stored as {
+        measures?: { unavailable: number[] };
+      } | null;
+      runs.push({
+        unavailable: current?.measures?.unavailable ?? [],
+        startdates: [...requestedStartdates],
+      });
+    }
+
+    const truly = [...refused].sort((a, b) => a - b);
+    // No run ever stored a type Withings did not refuse.
+    for (const r of runs) {
+      expect(r.unavailable.every((t) => refused.has(t))).toBe(true);
+    }
+    expect(runs.at(-1)!.unavailable).toEqual(truly);
+    // Every type the plan allows was read in an accepted request, the free
+    // ones the first run never reached included.
+    expect(read).toEqual(
+      new Set(WITHINGS_MEASTYPES.filter((t) => !refused.has(t))),
+    );
+    expect([...read]).toEqual(expect.arrayContaining([12, 54, 71, 76, 77, 88]));
+    // The first run read nothing for the unresolved types, so the second
+    // still reads from the last good sync.
+    const fromLastGood = String(
+      Math.floor(
+        (LAST_GOOD_SYNC.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS) / 1000,
+      ),
+    );
+    expect(runs[1]!.startdates.every((s) => s === fromLastGood)).toBe(true);
+  });
+
+  it("keeps the remembered date when a run that is not the re-probe finds one more refusal", async () => {
+    const remembered = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [...WITHINGS_ADVANCED_MEASTYPES],
+          checkedAt: remembered,
+        },
+      }) as never,
+    );
+    // The plan starts refusing fat ratio too.
+    refused = new Set([...WITHINGS_ADVANCED_MEASTYPES, 6]);
+
+    await syncUserMeasurements("user-1");
+
+    expect(persistedLegs()).toEqual([
+      {
+        leg: "measures",
+        value: {
+          unavailable: [6, ...WITHINGS_ADVANCED_MEASTYPES].sort(
+            (a, b) => a - b,
+          ),
+          checkedAt: remembered,
+        },
+      },
+    ]);
+  });
+
   it("reads the whole gap since the last good sync", async () => {
     await syncUserMeasurements("user-1");
 
@@ -326,19 +424,128 @@ describe("syncUserMeasurements inside the Withings API plan", () => {
     expect(requestedStartdates.every((s) => s === expected)).toBe(true);
   });
 
-  it("holds the watermark and records no failure when the plan refuses everything", async () => {
+  it("treats a run where every request was refused as transient: nothing remembered, watermark held", async () => {
     refused = new Set([
       1, 5, 6, 8, 9, 10, 11, 12, 35, 54, 71, 76, 77, 88, 91, 123, 155, 170, 73,
     ]);
 
     const result = await syncUserMeasurements("user-1");
 
-    expect(result).toEqual({ imported: 0, failed: false });
+    expect(result).toEqual({ imported: 0, failed: true });
     expect(prisma.withingsConnection.update).not.toHaveBeenCalled();
+    // A 277 stays off the ledger, and a run that read nothing is no success.
     expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
     expect(requestedTypes.length).toBeLessThanOrEqual(
       WITHINGS_PLAN_MAX_REQUESTS,
     );
+    // Weight and blood pressure are not remembered as refused.
+    expect(persistedLegs()).toEqual([]);
+
+    // The fault clears; the next run asks for everything again and reads the
+    // whole gap since the last good sync.
+    refused = new Set(WITHINGS_ADVANCED_MEASTYPES);
+    requestedTypes.length = 0;
+    requestedStartdates.length = 0;
+    const next = await syncUserMeasurements("user-1");
+    expect(next.failed).toBe(false);
+    expect(requestedTypes[0]).toEqual(expect.arrayContaining([1, 9, 10, 11]));
+    expect(createdTypes()).toEqual(
+      expect.arrayContaining(["WEIGHT", "BLOOD_PRESSURE_SYS", "PULSE"]),
+    );
+    const fromLastGood = String(
+      Math.floor(
+        (LAST_GOOD_SYNC.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS) / 1000,
+      ),
+    );
+    expect(requestedStartdates.every((s) => s === fromLastGood)).toBe(true);
+  });
+
+  it("holds the watermark when plan memory leaves nothing to request", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [...WITHINGS_MEASTYPES],
+          checkedAt: new Date().toISOString(),
+        },
+      }) as never,
+    );
+
+    const result = await syncUserMeasurements("user-1");
+
+    expect(requestedTypes).toHaveLength(0);
+    expect(result).toEqual({ imported: 0, failed: true });
+    expect(prisma.withingsConnection.update).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
+  });
+
+  it("holds the watermark when a core type was skipped from plan memory", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [1, ...WITHINGS_ADVANCED_MEASTYPES],
+          checkedAt: new Date().toISOString(),
+        },
+      }) as never,
+    );
+
+    const result = await syncUserMeasurements("user-1");
+
+    expect(requestedTypes).toHaveLength(1);
+    expect(requestedTypes[0]).not.toContain(1);
+    expect(result.failed).toBe(false);
+    expect(createdTypes()).toContain("BLOOD_PRESSURE_SYS");
+    // Weight was not read in this window, so the window stays open for it.
+    expect(prisma.withingsConnection.update).not.toHaveBeenCalled();
+  });
+
+  it("still moves the watermark when only advanced types are remembered", async () => {
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [...WITHINGS_ADVANCED_MEASTYPES],
+          checkedAt: new Date().toISOString(),
+        },
+      }) as never,
+    );
+
+    await syncUserMeasurements("user-1");
+
+    expect(prisma.withingsConnection.update).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { lastSyncedAt: expect.any(Date) },
+    });
+  });
+});
+
+describe("shouldPersistPlanLeg", () => {
+  it("remembers a refusal only from a run where something else was accepted", () => {
+    expect(
+      shouldPersistPlanLeg({ gated: true, reprobed: false, acceptedAny: true }),
+    ).toBe(true);
+    expect(
+      shouldPersistPlanLeg({
+        gated: true,
+        reprobed: false,
+        acceptedAny: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldPersistPlanLeg({ gated: true, reprobed: true, acceptedAny: false }),
+    ).toBe(false);
+    expect(
+      shouldPersistPlanLeg({ gated: false, reprobed: true, acceptedAny: true }),
+    ).toBe(true);
+    expect(
+      shouldPersistPlanLeg({
+        gated: false,
+        reprobed: false,
+        acceptedAny: true,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -423,7 +630,7 @@ describe("requestWithinPlan", () => {
     expect(second.unavailable.sort()).toEqual(["c", "f"]);
   });
 
-  it("stops at the request budget and counts what is left as unavailable", async () => {
+  it("stops at the request budget and leaves what is left unverified, not unavailable", async () => {
     const result = await requestWithinPlan({
       keys: ["a", "b", "c", "d", "e", "f", "g", "h"],
       knownGated: [],
@@ -433,7 +640,10 @@ describe("requestWithinPlan", () => {
       },
     });
     expect(result.requests).toBe(3);
-    expect(result.unavailable.sort()).toEqual([
+    // Only the requests actually made prove anything: [a..h], [a..d] and [a,b]
+    // were refused, which isolates no single key.
+    expect(result.unavailable).toEqual([]);
+    expect(result.unverified.sort()).toEqual([
       "a",
       "b",
       "c",

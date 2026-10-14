@@ -12,6 +12,18 @@ describe("valueEditSeed", () => {
     expect(valueEditSeed(110)).toBe("110");
     expect(valueEditSeed(4.567)).toBe("4.57");
   });
+
+  it("never opens a small nonzero value as zero", () => {
+    expect(valueEditSeed(0.004)).toBe("0.004");
+    expect(valueEditSeed(0.0123456)).toBe("0.0123");
+    expect(valueEditSeed(0.87)).toBe("0.87");
+    expect(valueEditSeed(0.123456)).toBe("0.123");
+    expect(valueEditSeed(-0.004)).toBe("-0.004");
+    expect(valueEditSeed(0.0000004)).toBe("0.0000004");
+    for (const v of [0.004, 0.0004, 0.00004, 1e-9]) {
+      expect(Number(valueEditSeed(v))).not.toBe(0);
+    }
+  });
 });
 
 describe("resolveValueForUpdate", () => {

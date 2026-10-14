@@ -16,7 +16,8 @@
  *     documents as advanced, then, if it is still refused, splits what is left
  *     in halves until every accepted subset has been read and every refused key
  *     is isolated. Bounded by `WITHINGS_PLAN_MAX_REQUESTS`; anything the budget
- *     could not resolve counts as unavailable until the next probe.
+ *     could not resolve is unverified, never remembered as refused, and asked
+ *     for again on the next run, which starts from what this one proved.
  *   - `WithingsApiPlanState` remembers per request family what the plan
  *     refused, so later runs skip those keys without paying a refused round
  *     trip, and re-probes them weekly in case the account's plan changes.
@@ -58,6 +59,18 @@ export const WITHINGS_ADVANCED_MEASTYPES: readonly number[] = [
 ];
 
 /**
+ * The meastypes Withings lists as free in every plan and that carry the core
+ * of the measure leg: weight (1), blood pressure (9, 10), pulse (11) and the
+ * body-composition readings the table lists as free (fat-free mass 5, fat
+ * mass 8, muscle mass 76, hydration 77, bone mass 88). A run that leaves one
+ * of them out on the strength of plan memory has not read the window for it,
+ * so the measure watermark must not move past it.
+ */
+export const WITHINGS_CORE_MEASTYPES: readonly number[] = [
+  1, 5, 8, 9, 10, 11, 76, 77, 88,
+];
+
+/**
  * Sleep-summary fields HealthLog requests that the table marks advanced: the
  * sleep score, the overnight HRV and the respiration rate. The nightly average
  * heart rate is listed both ways (free for trackers, advanced for the Sleep
@@ -91,8 +104,16 @@ const PLAN_GATED_MESSAGE = /Withings\s+\w+\s+error:\s*277\b/;
 export interface WithinPlanResult<K, R> {
   /** Everything the accepted requests returned. */
   results: R[];
-  /** The requested keys the plan refused (or the budget could not clear). */
+  /**
+   * The requested keys the plan refused: isolated alone, or dropped as
+   * documented advanced after the whole request was refused.
+   */
   unavailable: K[];
+  /**
+   * The requested keys the budget ran out on. Neither read nor proven
+   * refused: not to be remembered as unavailable, and to be asked for again.
+   */
+  unverified: K[];
   /** True when at least one request was refused with 277. */
   gated: boolean;
   /** True when at least one request was accepted. */
@@ -108,8 +129,9 @@ export interface WithinPlanResult<K, R> {
  * are dropped and the rest asked for again; on a further 277 the remainder is
  * split in halves, depth first and in input order, so the same refusal always
  * spends the same requests. A single key that is still refused is unavailable.
- * When the budget runs out, the subsets not yet tried count as unavailable for
- * now; the weekly re-probe asks for them again.
+ * When the budget runs out, the subsets not yet resolved are unverified: the
+ * caller remembers only what was proven, so the next run skips that and spends
+ * its budget on the rest.
  *
  * Any error other than a 277 propagates unchanged: this only decides what the
  * plan allows, never whether the connection works.
@@ -124,6 +146,7 @@ export async function requestWithinPlan<K, R>(opts: {
   const keys = [...opts.keys];
   const results: R[] = [];
   const unavailable: K[] = [];
+  const unverified: K[] = [];
   let requests = 0;
   let gated = false;
   let acceptedAny = false;
@@ -143,10 +166,10 @@ export async function requestWithinPlan<K, R>(opts: {
   };
 
   if (keys.length === 0) {
-    return { results, unavailable, gated, acceptedAny, requests };
+    return { results, unavailable, unverified, gated, acceptedAny, requests };
   }
   if (await attempt(keys)) {
-    return { results, unavailable, gated, acceptedAny, requests };
+    return { results, unavailable, unverified, gated, acceptedAny, requests };
   }
 
   const knownGated = new Set(opts.knownGated);
@@ -155,14 +178,14 @@ export async function requestWithinPlan<K, R>(opts: {
   if (dropped.length > 0) {
     unavailable.push(...dropped);
     if (remaining.length === 0) {
-      return { results, unavailable, gated, acceptedAny, requests };
+      return { results, unavailable, unverified, gated, acceptedAny, requests };
     }
     if (requests >= budget) {
-      unavailable.push(...remaining);
-      return { results, unavailable, gated, acceptedAny, requests };
+      unverified.push(...remaining);
+      return { results, unavailable, unverified, gated, acceptedAny, requests };
     }
     if (await attempt(remaining)) {
-      return { results, unavailable, gated, acceptedAny, requests };
+      return { results, unavailable, unverified, gated, acceptedAny, requests };
     }
   }
 
@@ -170,14 +193,14 @@ export async function requestWithinPlan<K, R>(opts: {
   // part has been read and each refused key stands alone.
   if (remaining.length === 1) {
     unavailable.push(...remaining);
-    return { results, unavailable, gated, acceptedAny, requests };
+    return { results, unavailable, unverified, gated, acceptedAny, requests };
   }
   const stack: K[][] = halves(remaining).reverse();
   remaining = [];
   while (stack.length > 0) {
     const subset = stack.pop()!;
     if (requests >= budget) {
-      unavailable.push(...subset);
+      unverified.push(...subset);
       continue;
     }
     if (await attempt(subset)) continue;
@@ -188,7 +211,7 @@ export async function requestWithinPlan<K, R>(opts: {
     stack.push(...halves(subset).reverse());
   }
 
-  return { results, unavailable, gated, acceptedAny, requests };
+  return { results, unavailable, unverified, gated, acceptedAny, requests };
 }
 
 function halves<K>(list: K[]): K[][] {
@@ -275,6 +298,24 @@ export function planSkipFor<K>(
 }
 
 /**
+ * The `checkedAt` to store with a run's outcome. Only a re-probe asked for the
+ * full set, so only a re-probe (or a leg with nothing remembered yet) starts
+ * the week again. A run that skipped remembered keys and found one more
+ * refusal keeps the old date: moving it would push the re-probe of the keys it
+ * never asked for further out on every such run.
+ */
+export function planCheckedAtFor<K>(
+  leg: WithingsPlanLegState<K> | undefined,
+  reprobed: boolean,
+  now: Date,
+): string {
+  if (reprobed || !leg || leg.unavailable.length === 0) {
+    return now.toISOString();
+  }
+  return leg.checkedAt;
+}
+
+/**
  * Write one leg of the plan state. A single statement merges the leg into the
  * stored object, so the measures, sleep and ECG legs (separate crons, separate
  * minutes) cannot overwrite each other's memory with a stale read.
@@ -312,15 +353,23 @@ export async function persistWithingsPlanLeg(
 }
 
 /**
- * Decide whether a run's outcome is worth writing down. A run that met a 277
- * always is; so is a re-probe (the full set was asked for), whatever it found;
- * a run that skipped remembered keys and was accepted changes nothing.
+ * Decide whether a run's outcome is worth writing down.
+ *
+ * A run that met a 277 is, but only when some other request in the same run
+ * was accepted: a plan never refuses everything, so a run where every request
+ * was refused (a transient fault upstream, a misconfigured developer app)
+ * proves nothing about any single key, and remembering it would skip weight
+ * and blood pressure for a week. A re-probe that met no 277 is written down
+ * too, so a cleared refusal is forgotten. A run that skipped remembered keys
+ * and was accepted changes nothing.
  */
 export function shouldPersistPlanLeg(opts: {
   gated: boolean;
   reprobed: boolean;
+  acceptedAny: boolean;
 }): boolean {
-  return opts.gated || opts.reprobed;
+  if (opts.gated) return opts.acceptedAny;
+  return opts.reprobed;
 }
 
 // ── lifting parks an earlier build left ──────────────────────────────────────
