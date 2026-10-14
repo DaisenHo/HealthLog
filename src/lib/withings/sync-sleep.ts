@@ -65,6 +65,7 @@ import {
   isPlanReprobeDue,
   parseWithingsApiPlanState,
   persistWithingsPlanLeg,
+  planCheckedAtFor,
   planSkipFor,
   requestWithinPlan,
   shouldPersistPlanLeg,
@@ -575,7 +576,7 @@ export async function syncUserSleep(
     ) {
       await persistWithingsPlanLeg(userId, "sleepSummary", {
         unavailable: [...skip, ...plan.unavailable],
-        checkedAt: now.toISOString(),
+        checkedAt: planCheckedAtFor(sleepPlan, reprobed, now),
       });
     }
   } catch (err) {

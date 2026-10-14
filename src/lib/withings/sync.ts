@@ -18,6 +18,7 @@ import {
   isPlanReprobeDue,
   parseWithingsApiPlanState,
   persistWithingsPlanLeg,
+  planCheckedAtFor,
   planSkipFor,
   requestWithinPlan,
   shouldPersistPlanLeg,
@@ -284,7 +285,7 @@ export async function syncUserMeasurements(
     try {
       await persistWithingsPlanLeg(userId, "measures", {
         unavailable: [...skip, ...plan.unavailable].sort((a, b) => a - b),
-        checkedAt: now.toISOString(),
+        checkedAt: planCheckedAtFor(planState.measures, reprobed, now),
       });
     } catch (err) {
       // Losing the memory only costs a refused round trip next run.

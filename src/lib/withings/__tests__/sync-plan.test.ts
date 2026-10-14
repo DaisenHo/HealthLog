@@ -384,6 +384,35 @@ describe("syncUserMeasurements inside the Withings API plan", () => {
     expect(runs[1]!.startdates.every((s) => s === fromLastGood)).toBe(true);
   });
 
+  it("keeps the remembered date when a run that is not the re-probe finds one more refusal", async () => {
+    const remembered = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(
+      connection({
+        version: 1,
+        measures: {
+          unavailable: [...WITHINGS_ADVANCED_MEASTYPES],
+          checkedAt: remembered,
+        },
+      }) as never,
+    );
+    // The plan starts refusing fat ratio too.
+    refused = new Set([...WITHINGS_ADVANCED_MEASTYPES, 6]);
+
+    await syncUserMeasurements("user-1");
+
+    expect(persistedLegs()).toEqual([
+      {
+        leg: "measures",
+        value: {
+          unavailable: [6, ...WITHINGS_ADVANCED_MEASTYPES].sort(
+            (a, b) => a - b,
+          ),
+          checkedAt: remembered,
+        },
+      },
+    ]);
+  });
+
   it("reads the whole gap since the last good sync", async () => {
     await syncUserMeasurements("user-1");
 

@@ -298,6 +298,24 @@ export function planSkipFor<K>(
 }
 
 /**
+ * The `checkedAt` to store with a run's outcome. Only a re-probe asked for the
+ * full set, so only a re-probe (or a leg with nothing remembered yet) starts
+ * the week again. A run that skipped remembered keys and found one more
+ * refusal keeps the old date: moving it would push the re-probe of the keys it
+ * never asked for further out on every such run.
+ */
+export function planCheckedAtFor<K>(
+  leg: WithingsPlanLegState<K> | undefined,
+  reprobed: boolean,
+  now: Date,
+): string {
+  if (reprobed || !leg || leg.unavailable.length === 0) {
+    return now.toISOString();
+  }
+  return leg.checkedAt;
+}
+
+/**
  * Write one leg of the plan state. A single statement merges the leg into the
  * stored object, so the measures, sleep and ECG legs (separate crons, separate
  * minutes) cannot overwrite each other's memory with a stale read.
