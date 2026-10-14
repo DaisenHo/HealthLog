@@ -230,7 +230,7 @@ export function analyteConversionFor(
   return analyteKey ? (BY_KEY.get(analyteKey) ?? null) : null;
 }
 
-/** Every entry, once each, for the guard test and for phase 3's key matching. */
+/** Every entry, once each, for the guard test and the analyte key matching. */
 export function allAnalyteConversions(): readonly AnalyteConversion[] {
   return ENTRIES;
 }

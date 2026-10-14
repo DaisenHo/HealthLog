@@ -30,10 +30,10 @@ export async function ensureAnalyteKey(
   marker: MarkerKeyState,
 ): Promise<string | null> {
   let current: MarkerKeyState = marker;
-  // Two rounds: the caller's copy, then the row as it stands if that copy was
+  // Two attempts: the caller's copy, then the row as it stands if that copy was
   // stale. A third writer racing both is vanishingly rare; the derived key is
   // still the right answer for the name this call saw.
-  for (let round = 0; round < 2; round++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     const derived = matchAnalyteKey({ name: current.name, unit: current.unit });
     const stored = current.analyteKey ?? null;
     if (stored === derived) return derived;
