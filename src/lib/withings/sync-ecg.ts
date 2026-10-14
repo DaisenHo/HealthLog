@@ -70,6 +70,12 @@ import {
   recordWithingsSyncFailure,
 } from "./sync";
 import {
+  isPlanGatedError,
+  isPlanReprobeDue,
+  parseWithingsApiPlanState,
+  persistWithingsPlanLeg,
+} from "./api-plan";
+import {
   isReauthRequired,
   recordSyncFailure,
   recordSyncSuccess,
@@ -370,6 +376,22 @@ export async function syncUserEcg(
     ? Math.max(defaultEndUnix, options.enddate!)
     : defaultEndUnix;
 
+  // Withings API plans (2026-10-12): ECG signals and the AFib verdicts are
+  // Advanced Biomarkers. On the free plan the Heart endpoints answer 277; that
+  // is remembered, and the leg stays quiet until the weekly re-probe asks again.
+  const planRow = await prisma.withingsConnection.findUnique({
+    where: { userId },
+    select: { apiPlanState: true },
+  });
+  const ecgPlan = parseWithingsApiPlanState(planRow?.apiPlanState).ecg;
+  const ecgRefused = (ecgPlan?.unavailable.length ?? 0) > 0;
+  const ecgReprobe = isPlanReprobeDue(ecgPlan, now);
+  if (ecgRefused && !ecgReprobe) {
+    annotate({ meta: { withings_ecg_skipped: "api_plan" } });
+    await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_ECG });
+    return 0;
+  }
+
   let entries: WithingsHeartEntry[];
   try {
     entries = await fetchWithingsHeartList(
@@ -378,6 +400,12 @@ export async function syncUserEcg(
       endUnix,
     );
   } catch (err) {
+    if (isPlanGatedError(err)) {
+      await rememberEcgPlan(userId, ["heart"], now);
+      annotate({ meta: { withings_ecg_skipped: "api_plan" } });
+      await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_ECG });
+      return 0;
+    }
     // The Heart List endpoint rides the user.metrics scope, so a 403 here is a
     // genuine token-revoked / reauth case rather than the activity-scope skip
     // the sleep/activity syncs guard against.
@@ -397,6 +425,9 @@ export async function syncUserEcg(
     await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_ECG);
     throw err;
   }
+
+  // A re-probe the plan now accepts: forget the refusal.
+  if (ecgRefused) await rememberEcgPlan(userId, [], now);
 
   let imported = 0;
   let waveformsCaptured = 0;
@@ -519,4 +550,19 @@ export async function syncUserEcg(
 
   await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_ECG });
   return imported;
+}
+
+async function rememberEcgPlan(
+  userId: string,
+  unavailable: string[],
+  now: Date,
+): Promise<void> {
+  try {
+    await persistWithingsPlanLeg(userId, "ecg", {
+      unavailable,
+      checkedAt: now.toISOString(),
+    });
+  } catch (err) {
+    getEvent()?.addWarning(`withings ecg: plan state write failed: ${err}`);
+  }
 }

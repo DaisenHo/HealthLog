@@ -244,17 +244,26 @@ export interface WithingsMeasureGroup {
   measures: Array<{ type: number; value: number; unit: number }>;
 }
 
+/** Every meastype HealthLog maps, in ascending order. */
+export const WITHINGS_MEASTYPES: readonly number[] =
+  Object.keys(MEASURE_TYPE_MAP).map(Number);
+
 /**
  * Fetch measurements from Withings API.
+ *
+ * `measTypes` narrows the request to a subset of `MEASURE_TYPE_MAP` (the sync
+ * leaves out what the account's API plan refuses); omitted, every mapped type
+ * is asked for.
  */
 export async function fetchMeasurements(
   accessToken: string,
   startDate?: Date,
   endDate?: Date,
+  opts: { measTypes?: readonly number[] } = {},
 ): Promise<WithingsMeasure[]> {
   const baseParams: Record<string, string> = {
     action: "getmeas",
-    meastypes: Object.keys(MEASURE_TYPE_MAP).join(","),
+    meastypes: (opts.measTypes ?? WITHINGS_MEASTYPES).join(","),
   };
   if (startDate) {
     baseParams.startdate = String(Math.floor(startDate.getTime() / 1000));

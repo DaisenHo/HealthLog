@@ -59,6 +59,7 @@ import {
   getValidToken,
   recordWithingsSyncFailure,
 } from "./sync";
+import { isPlanGatedError } from "./api-plan";
 import {
   isReauthRequired,
   parkIntegrationAtReauth,
@@ -298,6 +299,19 @@ export async function syncUserActivity(
     // (Withings emits 403 only through the HTTP layer for scope-gated
     // resources), so the override has to live at the call site rather
     // than in the shared classifier.
+    //
+    // Steps, distance and calories are free-plan biomarkers, so a plan refusal
+    // (277) is not expected. If Withings ever moves one, the leg reads nothing
+    // rather than failing, so a plan limit cannot park every Withings leg.
+    if (isPlanGatedError(err)) {
+      getEvent()?.addWarning(
+        "withings activity: refused by the API plan (277), skipped",
+      );
+      await recordSyncSuccess(userId, "withings", {
+        leg: WITHINGS_LEG_ACTIVITY,
+      });
+      return 0;
+    }
     const withingsStatus =
       err instanceof WithingsApiError ? err.withingsStatus : undefined;
     if (withingsStatus === 403) {
