@@ -75326,6 +75326,36 @@ components:
         hasActivityScope:
           description: Withings only.
           type: boolean
+        planUnavailable:
+          description: Withings only. The readings this connection's Withings API plan withholds (status 277 since the 2026-10-12
+            plan split), deduplicated and in display order. Empty when the plan refuses nothing. The sync skips these
+            and keeps importing everything else; the list refreshes when the weekly re-probe asks again.
+          type: array
+          items:
+            type: string
+            enum:
+              - spo2
+              - vascularAge
+              - pulseWaveVelocity
+              - vo2Max
+              - visceralFat
+              - skinTemperature
+              - ecg
+              - sleepScore
+              - sleepHrv
+              - sleepHeartRate
+              - sleepRespiratoryRate
+              - sleepSpo2
+              - bodyTemperature
+              - bodyFat
+              - fatMass
+              - fatFreeMass
+              - muscleMass
+              - bodyWater
+              - boneMass
+              - heartRate
+              - bloodPressure
+              - weight
         needsReauth:
           description: Google Health only.
           type: boolean
@@ -75335,6 +75365,18 @@ components:
         hasOwnCredentials:
           description: Oura / Polar / Strava only.
           type: boolean
+        scopeReconnect:
+          description: "Oura only. Collections the stored grant does not cover: they answered 401 while sibling collections
+            succeeded with the same token. Not a failure and not counted toward the reconnect threshold; one reconnect
+            asks for the missing scopes. Empty when the grant covers everything HealthLog reads."
+          type: array
+          items:
+            type: string
+            enum:
+              - spo2
+              - vo2max
+              - cardio_age
+              - resilience
         hasToken:
           description: Nightscout only.
           type: boolean

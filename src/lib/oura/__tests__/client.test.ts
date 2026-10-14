@@ -670,8 +670,13 @@ describe("mapResilience", () => {
 });
 
 describe("OURA_OAUTH_SCOPE", () => {
-  it("requests daily + personal", () => {
-    expect(OURA_OAUTH_SCOPE).toBe("daily personal");
+  it("requests daily, personal and the scopes behind SpO2 and heart health", () => {
+    expect(OURA_OAUTH_SCOPE.split(" ")).toEqual([
+      "daily",
+      "personal",
+      "spo2",
+      "heart_health",
+    ]);
   });
 });
 

@@ -11,6 +11,7 @@
  * tokens).
  */
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { persistRotatedToken } from "@/lib/integrations/oauth-refresh";
 import { getOuraCredentials, type OuraCredentials } from "./client";
@@ -84,6 +85,8 @@ export interface OuraConnection {
    * concurrent sync that already rotated the token is not clobbered.
    */
   refreshTokenCiphertext: string;
+  /** Collections the grant was last seen not to cover (`ouraScopeDenied`). */
+  scopeDenied?: string[];
 }
 
 export async function getOuraConnection(
@@ -94,6 +97,7 @@ export async function getOuraConnection(
     select: {
       ouraAccessTokenEncrypted: true,
       ouraRefreshTokenEncrypted: true,
+      ouraScopeDenied: true,
     },
   });
   if (!user?.ouraAccessTokenEncrypted || !user?.ouraRefreshTokenEncrypted) {
@@ -103,6 +107,7 @@ export async function getOuraConnection(
     accessToken: decrypt(user.ouraAccessTokenEncrypted),
     refreshToken: decrypt(user.ouraRefreshTokenEncrypted),
     refreshTokenCiphertext: user.ouraRefreshTokenEncrypted,
+    scopeDenied: readOuraScopeDenied(user.ouraScopeDenied),
   };
 }
 
@@ -146,5 +151,39 @@ export async function storeOuraTokens(
         ? decrypt(fresh.ouraAccessTokenEncrypted)
         : null;
     },
+  });
+}
+
+/**
+ * Collections the current Oura grant does not cover, by collection name. Read
+ * by the settings envelope; an absent or malformed value reads as none.
+ */
+export function readOuraScopeDenied(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (v): v is string => typeof v === "string" && /^[a-z0-9_]{1,40}$/.test(v),
+  );
+}
+
+/**
+ * Record which collections the grant does not cover after a sync, writing only
+ * when the set changed so an hourly poll does not touch the user row for
+ * nothing. An empty set clears the column.
+ */
+export async function syncOuraScopeDenied(
+  userId: string,
+  denied: readonly string[],
+): Promise<void> {
+  const next = [...new Set(denied)].sort();
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { ouraScopeDenied: true },
+  });
+  const current = readOuraScopeDenied(row?.ouraScopeDenied).sort();
+  if (current.length === next.length && current.every((v, i) => v === next[i]))
+    return;
+  await prisma.user.update({
+    where: { id: userId },
+    data: { ouraScopeDenied: next.length > 0 ? next : Prisma.DbNull },
   });
 }

@@ -6505,6 +6505,47 @@
             "body": "Tu conexión con Withings se autorizó antes de añadir la sincronización de actividad. Vuelve a conectar una vez para habilitar la importación de pasos, energía activa, distancia caminando y corriendo, y pisos subidos desde tus dispositivos Withings.",
             "action": "Reconectar Withings"
           }
+        },
+        "plan": {
+          "title": "Algunos valores requieren el plan de API de pago de Withings",
+          "body": "Withings ahora ofrece {list} solo en su plan de API de pago, y tu app de desarrollador de Withings usa el plan gratuito. El peso, la presión arterial, la composición corporal, la frecuencia cardíaca y el sueño se siguen sincronizando.",
+          "link": "Sobre los planes de API de Withings",
+          "items": {
+            "spo2": "SpO2",
+            "vascularAge": "edad vascular",
+            "pulseWaveVelocity": "velocidad de onda de pulso",
+            "vo2Max": "VO2 máx.",
+            "visceralFat": "grasa visceral",
+            "skinTemperature": "temperatura de la piel",
+            "ecg": "ECG y fibrilación auricular",
+            "sleepScore": "puntuación de sueño",
+            "sleepHrv": "VFC nocturna",
+            "sleepHeartRate": "frecuencia cardíaca nocturna",
+            "sleepRespiratoryRate": "frecuencia respiratoria nocturna",
+            "sleepSpo2": "SpO2 nocturna",
+            "bodyTemperature": "temperatura corporal",
+            "bodyFat": "grasa corporal",
+            "fatMass": "masa grasa",
+            "fatFreeMass": "masa libre de grasa",
+            "muscleMass": "masa muscular",
+            "bodyWater": "agua corporal",
+            "boneMass": "masa ósea",
+            "heartRate": "frecuencia cardíaca",
+            "bloodPressure": "presión arterial",
+            "weight": "peso"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "Vuelve a conectar Oura una vez para permitir {list}. Todo lo demás se sigue sincronizando.",
+          "action": "Volver a conectar Oura",
+          "items": {
+            "spo2": "SpO2",
+            "vo2max": "VO2 máx.",
+            "cardio_age": "edad cardiovascular",
+            "resilience": "resiliencia"
+          }
         }
       }
     },

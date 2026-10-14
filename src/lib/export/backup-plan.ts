@@ -885,6 +885,9 @@ export const USER_COLUMN_BACKUP_CLASS = {
   ouraRefreshTokenEncrypted: "CREDENTIAL",
   ouraClientIdEncrypted: "CREDENTIAL",
   ouraClientSecretEncrypted: "CREDENTIAL",
+  // What the Oura grant on this host does not cover; meaningless beside a
+  // grant that does not travel, and found out again by the first sync.
+  ouraScopeDenied: "CREDENTIAL",
   stravaClientIdEncrypted: "CREDENTIAL",
   stravaClientSecretEncrypted: "CREDENTIAL",
   stravaAccessTokenEncrypted: "CREDENTIAL",

@@ -54,6 +54,7 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { MetricFreshnessDisclosure } from "./metric-freshness-disclosure";
+import { OuraScopeNote } from "./oura-scope-note";
 import {
   readSyncOutcome,
   useSyncOutcomeMessage,
@@ -72,6 +73,7 @@ import {
   type IntegrationDocsProvider,
 } from "./setup-guide-link";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
+import type { OuraScopeGatedCollection } from "@/lib/oura/scope";
 import { loadDocument } from "@/lib/navigation/load-document";
 
 export interface OAuthProviderStatus {
@@ -99,6 +101,8 @@ export interface OAuthProviderStatus {
   /** The server-resolved liveness verdict; the pill is a projection of it. */
   syncHealth?: SyncHealth;
   metricFreshness?: MetricFreshnessEntry[];
+  /** Oura: collections the stored grant does not cover. */
+  scopeReconnect?: OuraScopeGatedCollection[];
 }
 
 export interface OAuthProviderCardProps {
@@ -328,6 +332,14 @@ export function OAuthProviderCard({
               {t("settings.integrationPill.resumeCta")}
             </Button>
           </div>
+        )}
+
+        {provider === "oura" && status?.connected && (
+          <OuraScopeNote
+            collections={status.scopeReconnect}
+            onReconnect={handleConnect}
+            disabled={serverUnavailable}
+          />
         )}
 
         {status?.connected && (

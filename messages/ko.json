@@ -6505,6 +6505,47 @@
             "body": "활동 동기화가 추가되기 전에 Withings 연결을 승인했어요. 한 번만 다시 연결하면 Withings 기기에서 걸음 수, 활동 에너지, 걷기·달리기 거리, 오른 층수를 가져올 수 있어요.",
             "action": "Withings 다시 연결"
           }
+        },
+        "plan": {
+          "title": "일부 측정값은 Withings 유료 API 요금제가 필요해요",
+          "body": "Withings는 이제 {list} 데이터를 유료 API 요금제에서만 제공하고, 사용 중인 Withings 개발자 앱은 무료 요금제예요. 체중, 혈압, 체성분, 심박수, 수면은 계속 동기화돼요.",
+          "link": "Withings API 요금제 알아보기",
+          "items": {
+            "spo2": "SpO2",
+            "vascularAge": "혈관 나이",
+            "pulseWaveVelocity": "맥파 속도",
+            "vo2Max": "VO2 max",
+            "visceralFat": "내장 지방",
+            "skinTemperature": "피부 온도",
+            "ecg": "심전도와 심방세동",
+            "sleepScore": "수면 점수",
+            "sleepHrv": "야간 HRV",
+            "sleepHeartRate": "야간 심박수",
+            "sleepRespiratoryRate": "야간 호흡수",
+            "sleepSpo2": "야간 SpO2",
+            "bodyTemperature": "체온",
+            "bodyFat": "체지방률",
+            "fatMass": "체지방량",
+            "fatFreeMass": "제지방량",
+            "muscleMass": "근육량",
+            "bodyWater": "체수분",
+            "boneMass": "골량",
+            "heartRate": "심박수",
+            "bloodPressure": "혈압",
+            "weight": "체중"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "{list} 데이터를 허용하려면 Oura를 한 번 다시 연결하세요. 나머지는 계속 동기화돼요.",
+          "action": "Oura 다시 연결",
+          "items": {
+            "spo2": "SpO2",
+            "vo2max": "VO2 max",
+            "cardio_age": "심혈관 나이",
+            "resilience": "회복탄력성"
+          }
         }
       }
     },

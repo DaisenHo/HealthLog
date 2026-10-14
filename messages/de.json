@@ -6505,6 +6505,47 @@
             "body": "Deine Withings-Verbindung wurde autorisiert, bevor der Aktivitäts-Sync hinzugefügt wurde. Verbinde einmal neu, um Schritte, aktive Energie, Geh- und Laufdistanz sowie Stockwerke aus deinen Withings-Geräten zu übernehmen.",
             "action": "Withings neu verbinden"
           }
+        },
+        "plan": {
+          "title": "Einige Werte brauchen den kostenpflichtigen API-Plan von Withings",
+          "body": "Withings bietet {list} jetzt nur noch im kostenpflichtigen API-Plan an, und deine Withings-Entwickler-App nutzt den kostenlosen Plan. Gewicht, Blutdruck, Körperzusammensetzung, Herzfrequenz und Schlaf werden weiter synchronisiert.",
+          "link": "Mehr zu den API-Plänen von Withings",
+          "items": {
+            "spo2": "SpO2",
+            "vascularAge": "Gefäßalter",
+            "pulseWaveVelocity": "Pulswellengeschwindigkeit",
+            "vo2Max": "VO2max",
+            "visceralFat": "Viszeralfett",
+            "skinTemperature": "Hauttemperatur",
+            "ecg": "EKG und Vorhofflimmern",
+            "sleepScore": "Schlaf-Score",
+            "sleepHrv": "nächtliche HRV",
+            "sleepHeartRate": "nächtliche Herzfrequenz",
+            "sleepRespiratoryRate": "nächtliche Atemfrequenz",
+            "sleepSpo2": "nächtliche SpO2",
+            "bodyTemperature": "Körpertemperatur",
+            "bodyFat": "Körperfett",
+            "fatMass": "Fettmasse",
+            "fatFreeMass": "fettfreie Masse",
+            "muscleMass": "Muskelmasse",
+            "bodyWater": "Körperwasser",
+            "boneMass": "Knochenmasse",
+            "heartRate": "Herzfrequenz",
+            "bloodPressure": "Blutdruck",
+            "weight": "Gewicht"
+          }
+        }
+      },
+      "oura": {
+        "scope": {
+          "body": "Verbinde Oura einmal neu, um {list} freizugeben. Alles andere wird weiter synchronisiert.",
+          "action": "Oura neu verbinden",
+          "items": {
+            "spo2": "SpO2",
+            "vo2max": "VO2max",
+            "cardio_age": "kardiovaskuläres Alter",
+            "resilience": "Resilienz"
+          }
         }
       }
     },

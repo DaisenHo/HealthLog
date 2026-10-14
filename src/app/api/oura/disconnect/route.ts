@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError } from "@/lib/api-response";
@@ -37,6 +38,7 @@ export const POST = apiHandler(async () => {
     data: {
       ouraAccessTokenEncrypted: null,
       ouraRefreshTokenEncrypted: null,
+      ouraScopeDenied: Prisma.DbNull,
     },
   });
 

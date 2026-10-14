@@ -49,6 +49,7 @@ import {
   type IntegrationStatusViewModel,
 } from "./shared";
 import { MetricFreshnessDisclosure } from "./metric-freshness-disclosure";
+import { WithingsPlanNote } from "./withings-plan-note";
 import {
   readSyncOutcome,
   useSyncOutcomeMessage,
@@ -314,6 +315,10 @@ export function WithingsCard({
           >
             {t("settings.integrationPill.resumeError")}
           </p>
+        )}
+
+        {status?.connected && (
+          <WithingsPlanNote features={status.planUnavailable} />
         )}
 
         {status?.connected && (

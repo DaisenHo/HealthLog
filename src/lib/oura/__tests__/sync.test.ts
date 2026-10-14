@@ -34,6 +34,7 @@ const {
   invalidateMock,
   transactionMock,
   reconcileMock,
+  scopeDeniedMock,
 } = vi.hoisted(() => ({
   getConnMock: vi.fn(),
   storeTokensMock: vi.fn(),
@@ -60,12 +61,14 @@ const {
   invalidateMock: vi.fn(),
   transactionMock: vi.fn(),
   reconcileMock: vi.fn(),
+  scopeDeniedMock: vi.fn(),
 }));
 
 vi.mock("../credentials", () => ({
   getOuraConnection: getConnMock,
   storeOuraTokens: storeTokensMock,
   getOuraClientCredentials: getCredsMock,
+  syncOuraScopeDenied: scopeDeniedMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -159,6 +162,7 @@ beforeEach(() => {
   fetchResilienceMock.mockReset().mockResolvedValue([]);
   fetchCyclePhasesMock.mockReset().mockResolvedValue([]);
   refreshMock.mockReset();
+  scopeDeniedMock.mockReset().mockResolvedValue(undefined);
   transactionMock
     .mockReset()
     .mockImplementation(async (run: (tx: unknown) => unknown) => run({}));
