@@ -1,15 +1,19 @@
 /**
- * A marker is linked to its analyte, once, and the link is never overwritten.
+ * A marker is linked to its analyte, and the link follows its name and unit.
  *
  * `Biomarker.analyteKey` says which analyte a marker is, so a reading in another
- * unit can be converted (#1095). It is set when a marker is created, by all
- * three creation paths, and, for a marker that already exists, the first time
- * it is needed. Against a real Postgres:
+ * unit can be converted (#1095). There is no manual choice: the key is derived
+ * from the name and unit. It is set when a marker is created, by all three
+ * creation paths, re-derived when a rename or unit change moves it, and, for a
+ * marker that already exists, brought in line the first time it is needed.
+ * Against a real Postgres:
  *   - a marker created by name is linked when the name is a known analyte and
  *     its unit is one the analyte reaches, and left null otherwise;
  *   - the key reaches the API response;
- *   - `ensureAnalyteKey` fills a null key once and never replaces a key that is
- *     set, even by a different match, and two concurrent calls converge;
+ *   - a rename moves the key, or clears it, and the next reading in another
+ *     unit converts with the new analyte's factor;
+ *   - `ensureAnalyteKey` fills a null key, replaces one that disagrees with the
+ *     name, and two concurrent calls converge;
  *   - the mint path used by the lab writes and the legacy backfill set it too.
  */
 import { NextRequest } from "next/server";
@@ -100,6 +104,109 @@ describe("POST /api/biomarkers", () => {
   });
 });
 
+async function patch(id: string, body: Record<string, unknown>) {
+  const s = await prisma.session.create({
+    data: { userId: USER, expiresAt: new Date(Date.now() + 3_600_000) },
+  });
+  cookieJar.clear();
+  cookieJar.set("healthlog_session", s.id);
+  const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+  return PUT(
+    new NextRequest(`http://localhost/api/biomarkers/${id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+    { params: Promise.resolve({ id }) },
+  );
+}
+
+async function postReading(body: Record<string, unknown>) {
+  const s = await prisma.session.create({
+    data: { userId: USER, expiresAt: new Date(Date.now() + 3_600_000) },
+  });
+  cookieJar.clear();
+  cookieJar.set("healthlog_session", s.id);
+  const { POST } = await import("@/app/api/labs/route");
+  return POST(
+    new NextRequest("http://localhost/api/labs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+describe("PUT /api/biomarkers/[id]", () => {
+  it("moves the key with a rename, and the next reading converts with the new analyte", async () => {
+    const created = await post({ name: "Blood sugar", unit: "mg/dL" });
+    const { data: marker } = (await created.json()) as {
+      data: { id: string; analyteKey: string | null };
+    };
+    expect(marker.analyteKey).toBe("fasting-glucose");
+
+    const res = await patch(marker.id, { name: "Cholesterol" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { analyteKey: string | null };
+    };
+    expect(body.data.analyteKey).toBe("total-cholesterol");
+    expect(
+      (await prisma.biomarker.findUnique({ where: { id: marker.id } }))
+        ?.analyteKey,
+    ).toBe("total-cholesterol");
+
+    // 5.2 mmol/L of cholesterol is 201.07 mg/dL (C27H46O, 386.664 g/mol). With
+    // the glucose key left over it would have been stored as 93.7.
+    const reading = await postReading({
+      biomarkerId: marker.id,
+      value: 5.2,
+      unit: "mmol/L",
+      takenAt: "2026-05-03T08:00:00.000Z",
+    });
+    expect(reading.status).toBe(201);
+    const { data: dto } = (await reading.json()) as {
+      data: { value: number; unit: string; converted: boolean };
+    };
+    expect(dto.converted).toBe(true);
+    expect(dto.unit).toBe("mg/dL");
+    expect(dto.value.toFixed(2)).toBe("201.07");
+  });
+
+  it("clears the key when the new name matches no analyte", async () => {
+    const created = await post({ name: "Harnstoff", unit: "mg/dL" });
+    const { data: marker } = (await created.json()) as {
+      data: { id: string; analyteKey: string | null };
+    };
+    expect(marker.analyteKey).toBe("urea");
+    const res = await patch(marker.id, { name: "Harnstoff (eigene Notiz)" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { analyteKey: string | null } };
+    expect(body.data.analyteKey).toBeNull();
+  });
+
+  it("re-derives the key when the unit changes on a marker without readings", async () => {
+    const created = await post({ name: "Glukose", unit: "mEq/L" });
+    const { data: marker } = (await created.json()) as {
+      data: { id: string; analyteKey: string | null };
+    };
+    expect(marker.analyteKey).toBeNull();
+    const res = await patch(marker.id, { unit: "mg/dL" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { analyteKey: string | null } };
+    expect(body.data.analyteKey).toBe("fasting-glucose");
+  });
+
+  it("leaves the key alone on an edit that touches neither name nor unit", async () => {
+    const created = await post({ name: "Kalzium gesamt", unit: "mmol/L" });
+    const { data: marker } = (await created.json()) as { data: { id: string } };
+    const res = await patch(marker.id, { lowerBound: 2.1 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { analyteKey: string | null } };
+    expect(body.data.analyteKey).toBe("calcium-total");
+  });
+});
+
 describe("ensureAnalyteKey", () => {
   it("fills a null key once", async () => {
     const marker = await prisma.biomarker.create({
@@ -113,7 +220,12 @@ describe("ensureAnalyteKey", () => {
     ).toBe("uric-acid");
   });
 
-  it("never replaces a key that is set, even when the name would match another", async () => {
+  // This used to pin the opposite: a set key was never replaced. With no
+  // manual choice of analyte, a key that disagrees with the name can only be
+  // left over from a rename (or written in an older form), and keeping it
+  // converted readings with the wrong analyte's factor. So the key follows the
+  // name.
+  it("replaces a key that disagrees with the marker's name", async () => {
     const marker = await prisma.biomarker.create({
       data: {
         userId: USER,
@@ -122,16 +234,47 @@ describe("ensureAnalyteKey", () => {
         analyteKey: "hba1c",
       },
     });
-    // The caller read the row with the key set.
-    expect(await ensureAnalyteKey(prisma, marker)).toBe("hba1c");
-    // A caller holding a stale copy with a null key does not overwrite either.
-    expect(
-      await ensureAnalyteKey(prisma, { ...marker, analyteKey: null }),
-    ).toBe("hba1c");
+    expect(await ensureAnalyteKey(prisma, marker)).toBe("fasting-glucose");
     expect(
       (await prisma.biomarker.findUnique({ where: { id: marker.id } }))
         ?.analyteKey,
-    ).toBe("hba1c");
+    ).toBe("fasting-glucose");
+  });
+
+  it("clears a key when the name matches no analyte", async () => {
+    const marker = await prisma.biomarker.create({
+      data: {
+        userId: USER,
+        name: "Some other marker",
+        unit: "mg/dL",
+        analyteKey: "fasting-glucose",
+      },
+    });
+    expect(await ensureAnalyteKey(prisma, marker)).toBeNull();
+    expect(
+      (await prisma.biomarker.findUnique({ where: { id: marker.id } }))
+        ?.analyteKey,
+    ).toBeNull();
+  });
+
+  it("re-reads the row when the caller's copy is stale", async () => {
+    const marker = await prisma.biomarker.create({
+      data: {
+        userId: USER,
+        name: "Urea",
+        unit: "mg/dL",
+        analyteKey: "urea",
+      },
+    });
+    // A copy read before the key was set: the gated write misses, the row as it
+    // stands already agrees, and nothing is overwritten.
+    expect(
+      await ensureAnalyteKey(prisma, { ...marker, analyteKey: null }),
+    ).toBe("urea");
+    expect(
+      (await prisma.biomarker.findUnique({ where: { id: marker.id } }))
+        ?.analyteKey,
+    ).toBe("urea");
   });
 
   it("converges when two callers fill the same marker", async () => {

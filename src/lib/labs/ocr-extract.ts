@@ -146,16 +146,18 @@ export async function annotateRow(
   // Biomarker match — case-insensitive on the catalog identity, presence-only.
   const existingBiomarker = await prisma.biomarker.findFirst({
     where: { userId, name: { equals: analyte, mode: "insensitive" } },
-    select: { id: true, name: true, unit: true, analyteKey: true },
+    select: { id: true, name: true, unit: true },
   });
   // The analyte the marker is, so the review can say whether a row in another
-  // unit converts. Read only: the key is filled when a reading is written.
+  // unit converts. Derived from the name and unit exactly as the commit derives
+  // it (a stored key is only that derivation, written down), so the review and
+  // the commit cannot disagree. Read only: the key is stored when a reading is
+  // written.
   const markerAnalyteKey = existingBiomarker
-    ? (existingBiomarker.analyteKey ??
-      matchAnalyteKey({
+    ? matchAnalyteKey({
         name: existingBiomarker.name,
         unit: existingBiomarker.unit,
-      }))
+      })
     : null;
 
   // Duplicate check: a live lab_results row with the same analyte (fuzzy,
