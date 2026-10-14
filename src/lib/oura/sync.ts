@@ -91,6 +91,7 @@ import {
 } from "./credentials";
 import { OuraApiError, classifyOuraError } from "./response-classifier";
 import { syncUserOuraCyclePhases } from "./cycle-sync";
+import { OURA_SCOPE_GATED_COLLECTIONS } from "./scope";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
@@ -261,13 +262,26 @@ function isAuthRefusal(err: unknown): boolean {
   return err instanceof OuraApiError && err.httpStatus === 401;
 }
 
+const SCOPE_GATED: ReadonlySet<string> = new Set(OURA_SCOPE_GATED_COLLECTIONS);
+
 /**
- * Split the auth refusals out of a run's failures once a sibling collection has
- * proven the token. Oura's authorization server enforces scopes per collection,
- * so a grant issued without `spo2` / `heart_health` answers 401 on exactly the
- * collections behind them and 200 everywhere else. Counting those toward the
- * reconnect ladder painted a working connection as broken on every sync, and
- * refreshing the token over them changed nothing.
+ * A 401 that can be the grant's scope rather than the token: only the
+ * collections behind `spo2` / `heart_health` sit outside the `daily` scope
+ * every grant carries. A 401 on sleep, readiness or activity is a real auth
+ * failure whatever its siblings did.
+ */
+function isScopeRefusal(f: OuraCollectionFailure): boolean {
+  return SCOPE_GATED.has(f.name) && isAuthRefusal(f.err);
+}
+
+/**
+ * Split the scope refusals out of a run's failures once a sibling collection
+ * has proven the token. Oura's authorization server enforces scopes per
+ * collection, so a grant issued without `spo2` / `heart_health` answers 401 on
+ * exactly the collections behind them and 200 everywhere else. Counting those
+ * toward the reconnect ladder painted a working connection as broken on every
+ * sync, and refreshing the token over them changed nothing. Any other failure,
+ * a 401 on a core collection included, stays a failure.
  */
 function splitScopeDenied(
   failures: OuraCollectionFailure[],
@@ -275,10 +289,8 @@ function splitScopeDenied(
 ): { failures: OuraCollectionFailure[]; scopeDenied: string[] } {
   if (!tokenProven) return { failures, scopeDenied: [] };
   return {
-    failures: failures.filter((f) => !isAuthRefusal(f.err)),
-    scopeDenied: failures
-      .filter((f) => isAuthRefusal(f.err))
-      .map((f) => f.name),
+    failures: failures.filter((f) => !isScopeRefusal(f)),
+    scopeDenied: failures.filter(isScopeRefusal).map((f) => f.name),
   };
 }
 
@@ -455,7 +467,9 @@ async function fetchAll(
   // to collections that succeeded, is the grant's scope again: a refresh cannot
   // widen it, so none is spent. Any other 401 still takes the one refresh, and
   // whatever 401s after it beside a success is recorded as scope.
-  const knownDenied = new Set(knownScopeDenied);
+  const knownDenied = new Set(
+    knownScopeDenied.filter((name) => SCOPE_GATED.has(name)),
+  );
   const onlyKnownScope401 = first.failures
     .filter((f) => isAuthRefusal(f.err))
     .every((f) => knownDenied.has(f.name));
