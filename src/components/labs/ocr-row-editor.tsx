@@ -191,11 +191,13 @@ export function OcrRowEditor({
               {conversion ? (
                 <Badge
                   variant="outline"
-                  className="max-w-full"
+                  // Wraps rather than truncates: the printed value is the end
+                  // of the sentence, exactly what a cut at 390 px would hide.
+                  className="h-auto max-w-full justify-start rounded-md text-left whitespace-normal"
                   data-slot="ocr-row-converted-badge"
                 >
                   <Ruler aria-hidden />
-                  <span className="truncate">
+                  <span className="min-w-0 break-words">
                     {t("labs.ocr.unitConvertedBadge", {
                       value: labNumber(conversion.value),
                       markerUnit: conversion.unit,

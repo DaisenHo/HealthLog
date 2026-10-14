@@ -176,6 +176,18 @@ describe("<OcrRowEditor> unit differs but converts", () => {
     expect(html).not.toContain('aria-invalid="true"');
   });
 
+  it("wraps the sentence instead of cutting off the printed value", () => {
+    const html = render(undefined, "en", converts);
+    const badge =
+      /<span[^>]*data-slot="ocr-row-converted-badge"[^>]*>([\s\S]*?)<\/span><\/span>/.exec(
+        html,
+      );
+    expect(badge).not.toBeNull();
+    const tag = badge![0].slice(0, badge![0].indexOf(">"));
+    expect(tag).toContain("whitespace-normal");
+    expect(badge![0]).not.toContain("truncate");
+  });
+
   it("speaks German too", () => {
     const html = render(undefined, "de", converts);
     expect(html).toContain("umgerechnet aus 5,6 mmol/L");
