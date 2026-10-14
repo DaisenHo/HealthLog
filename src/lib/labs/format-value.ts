@@ -3,8 +3,9 @@
  *
  * The list card, the detail history rows, and the chart tooltip all trim a
  * lab reading the same way: whole numbers render bare, fractional values keep
- * up to two decimals (no trailing-zero noise). Centralised so the three
- * surfaces stay byte-identical.
+ * up to two decimals (no trailing-zero noise), and a value below 1 keeps three
+ * significant digits so a small reading (TSH 0.004, troponin 0.012) never
+ * reads as zero. Centralised so the three surfaces stay byte-identical.
  *
  * The digits themselves come from the caller's locale number formatter
  * (`useFormatters().number`), so a German reader sees "1,8 mIU/L" where an
@@ -16,9 +17,12 @@ export function formatLabValue(
   value: number,
   formatNumber: LabNumberFormat,
 ): string {
-  return formatNumber(
-    Number.isInteger(value) ? value : Number(value.toFixed(2)),
-  );
+  if (Number.isInteger(value)) return formatNumber(value);
+  const rounded =
+    Math.abs(value) < 1
+      ? Number(value.toPrecision(3))
+      : Number(value.toFixed(2));
+  return formatNumber(rounded);
 }
 
 /**
