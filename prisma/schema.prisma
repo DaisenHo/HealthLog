@@ -6164,11 +6164,11 @@ model LabResult {
   sourceReferenceLow  Float?    @map("source_reference_low")
   sourceReferenceHigh Float?    @map("source_reference_high")
   sourceReferenceText String?   @map("source_reference_text")
-  /// @pending-consumer(#1095) v1.42 — the value as printed on the source
+  /// v1.42 — the value as printed on the source
   /// report, kept when a write converted it into the biomarker's canonical
   /// unit. NULL when no conversion happened. An edit that changes `value` clears it.
   sourceValue         Float?    @map("source_value")
-  /// @pending-consumer(#1095) v1.42 — the unit the source report printed,
+  /// v1.42 — the unit the source report printed,
   /// paired with `sourceValue`.
   sourceUnit          String?   @map("source_unit")
   /// When the sample was taken (UTC instant; wall-clock anchoring is the
@@ -6239,7 +6239,7 @@ model Biomarker {
   /// and from the lab-entry pickers, but never deleted — its readings and
   /// canonical unit/range definition survive.
   hidden           Boolean  @default(false) @map("hidden")
-  /// @pending-consumer(#1095) v1.42 — the catalogue analyte this marker
+  /// v1.42 — the catalogue analyte this marker
   /// resolves to (alias list in `src/lib/labs/biomarker-catalog.ts`), which
   /// selects the unit-conversion table. NULL = not resolved; no conversion.
   analyteKey       String?  @map("analyte_key")
