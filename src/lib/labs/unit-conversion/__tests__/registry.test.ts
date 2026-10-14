@@ -28,7 +28,7 @@ const MOLAR_MASS: Record<string, number> = {
   "uric-acid": 168.112, // C5H4N4O3
   "calcium-total": 40.078, // Ca
   "bilirubin-total": 584.673, // C33H36N4O6
-  "vitamin-d": 400.647, // C27H44O2
+  "vitamin-d": 400.647, // C27H44O2, 25-hydroxyvitamin D3 (calcifediol)
 };
 
 /** Of the entry's amount unit: how many of its mass unit one of it is, per g/mol. */
@@ -43,6 +43,23 @@ const POWER_OF_TEN: Record<string, number> = {
   "bilirubin-total": 1 / 10_000,
   "vitamin-d": 1 / 1_000, // nmol/L -> ng/mL
 };
+
+describe("the vitamin D entry", () => {
+  const entry = analyteConversionFor("vitamin-d")!;
+
+  it("names the molecule its factor comes from: calcifediol, not vitamin D3", () => {
+    // Cholecalciferol is C27H44O; the factor uses C27H44O2, which is the
+    // 25-hydroxy form a lab reports. The note must say which one it is.
+    expect(entry.source).toContain("calcifediol");
+    expect(entry.source).toContain("C27H44O2");
+    expect(entry.source).not.toMatch(/cholecalciferol \(C27H44O2\)/);
+  });
+
+  it("converts 1 ng/mL to 2.496 nmol/L", () => {
+    // ng/mL is the hub; nmol/L maps to it by 400.647 / 1000.
+    expect(1 / entry.units["nmol/L"].a).toBeCloseTo(2.496, 3);
+  });
+});
 
 describe("the registry's entries", () => {
   const entries = allAnalyteConversions();

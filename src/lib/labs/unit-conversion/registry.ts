@@ -187,7 +187,12 @@ const ENTRIES: readonly AnalyteConversion[] = [
     formula: { C: 27, H: 44, O: 2 },
     mass: "ng/mL",
     amount: "nmol/L",
-    note: "25-hydroxyvitamin D, taken as cholecalciferol (C27H44O2).",
+    // What a lab measures and reports is 25-hydroxyvitamin D (calcifediol),
+    // so its molar mass sets the factor: 1 ng/mL is 2.496 nmol/L. Vitamin D3
+    // itself (cholecalciferol, C27H44O) is lighter by the one oxygen atom.
+    note:
+      "25-hydroxyvitamin D3 (calcifediol, C27H44O2), the form the assay reports; " +
+      "1 ng/mL = 2.496 nmol/L.",
   }),
   defineAnalyteConversion({
     key: "hba1c",
