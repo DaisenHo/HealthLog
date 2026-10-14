@@ -452,8 +452,12 @@ export function LabForm({
             column halved the draw date's cell, and `DateTimeField` sets its
             date and time halves side by side from `sm:` up, so the date
             itself was squeezed until it could only be set through the
-            calendar (#1214). */}
-        <div className="grid gap-4">
+            calendar (#1214). The column is `grid-cols-1`, not the implicit
+            `auto` column: an `auto` track grows to the widest cell's
+            min-content, and the date and time inputs' intrinsic widths
+            follow the font, so with wider metrics the track outgrew the
+            dialog body and the value input ran into its padding. */}
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-1.5">
             {resultType === "numeric" ? (
               <>
