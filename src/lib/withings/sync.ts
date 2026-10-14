@@ -290,6 +290,7 @@ export async function syncUserMeasurements(
         name: "withings.sync.plan_gated",
         details: {
           unavailable: plan.unavailable,
+          unverified: plan.unverified,
           requests: plan.requests,
           acceptedAny: plan.acceptedAny,
         },
@@ -486,11 +487,24 @@ export async function syncUserMeasurements(
     return { imported, failed: true };
   }
 
-  // Update last synced timestamp
-  await prisma.withingsConnection.update({
-    where: { userId },
-    data: { lastSyncedAt: new Date() },
-  });
+  // Types the probe budget could not resolve were not read this run. Moving
+  // the watermark past them would drop their readings in this window for
+  // good, so it stays put until a run reads (or proves refused) every type.
+  // Re-reading the accepted types is idempotent.
+  const holdWatermark = plan.unverified.length > 0;
+  if (holdWatermark) {
+    annotate({
+      action: {
+        name: "withings.sync.plan_watermark_held",
+        details: { unverified: plan.unverified },
+      },
+    });
+  } else {
+    await prisma.withingsConnection.update({
+      where: { userId },
+      data: { lastSyncedAt: new Date() },
+    });
+  }
 
   // Record success — even when measures.length === 0, completing the
   // round-trip is the signal "the connection is healthy". A user who

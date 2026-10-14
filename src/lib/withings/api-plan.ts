@@ -16,7 +16,8 @@
  *     documents as advanced, then, if it is still refused, splits what is left
  *     in halves until every accepted subset has been read and every refused key
  *     is isolated. Bounded by `WITHINGS_PLAN_MAX_REQUESTS`; anything the budget
- *     could not resolve counts as unavailable until the next probe.
+ *     could not resolve is unverified, never remembered as refused, and asked
+ *     for again on the next run, which starts from what this one proved.
  *   - `WithingsApiPlanState` remembers per request family what the plan
  *     refused, so later runs skip those keys without paying a refused round
  *     trip, and re-probes them weekly in case the account's plan changes.
@@ -91,8 +92,16 @@ const PLAN_GATED_MESSAGE = /Withings\s+\w+\s+error:\s*277\b/;
 export interface WithinPlanResult<K, R> {
   /** Everything the accepted requests returned. */
   results: R[];
-  /** The requested keys the plan refused (or the budget could not clear). */
+  /**
+   * The requested keys the plan refused: isolated alone, or dropped as
+   * documented advanced after the whole request was refused.
+   */
   unavailable: K[];
+  /**
+   * The requested keys the budget ran out on. Neither read nor proven
+   * refused: not to be remembered as unavailable, and to be asked for again.
+   */
+  unverified: K[];
   /** True when at least one request was refused with 277. */
   gated: boolean;
   /** True when at least one request was accepted. */
@@ -108,8 +117,9 @@ export interface WithinPlanResult<K, R> {
  * are dropped and the rest asked for again; on a further 277 the remainder is
  * split in halves, depth first and in input order, so the same refusal always
  * spends the same requests. A single key that is still refused is unavailable.
- * When the budget runs out, the subsets not yet tried count as unavailable for
- * now; the weekly re-probe asks for them again.
+ * When the budget runs out, the subsets not yet resolved are unverified: the
+ * caller remembers only what was proven, so the next run skips that and spends
+ * its budget on the rest.
  *
  * Any error other than a 277 propagates unchanged: this only decides what the
  * plan allows, never whether the connection works.
@@ -124,6 +134,7 @@ export async function requestWithinPlan<K, R>(opts: {
   const keys = [...opts.keys];
   const results: R[] = [];
   const unavailable: K[] = [];
+  const unverified: K[] = [];
   let requests = 0;
   let gated = false;
   let acceptedAny = false;
@@ -143,10 +154,10 @@ export async function requestWithinPlan<K, R>(opts: {
   };
 
   if (keys.length === 0) {
-    return { results, unavailable, gated, acceptedAny, requests };
+    return { results, unavailable, unverified, gated, acceptedAny, requests };
   }
   if (await attempt(keys)) {
-    return { results, unavailable, gated, acceptedAny, requests };
+    return { results, unavailable, unverified, gated, acceptedAny, requests };
   }
 
   const knownGated = new Set(opts.knownGated);
@@ -155,14 +166,14 @@ export async function requestWithinPlan<K, R>(opts: {
   if (dropped.length > 0) {
     unavailable.push(...dropped);
     if (remaining.length === 0) {
-      return { results, unavailable, gated, acceptedAny, requests };
+      return { results, unavailable, unverified, gated, acceptedAny, requests };
     }
     if (requests >= budget) {
-      unavailable.push(...remaining);
-      return { results, unavailable, gated, acceptedAny, requests };
+      unverified.push(...remaining);
+      return { results, unavailable, unverified, gated, acceptedAny, requests };
     }
     if (await attempt(remaining)) {
-      return { results, unavailable, gated, acceptedAny, requests };
+      return { results, unavailable, unverified, gated, acceptedAny, requests };
     }
   }
 
@@ -170,14 +181,14 @@ export async function requestWithinPlan<K, R>(opts: {
   // part has been read and each refused key stands alone.
   if (remaining.length === 1) {
     unavailable.push(...remaining);
-    return { results, unavailable, gated, acceptedAny, requests };
+    return { results, unavailable, unverified, gated, acceptedAny, requests };
   }
   const stack: K[][] = halves(remaining).reverse();
   remaining = [];
   while (stack.length > 0) {
     const subset = stack.pop()!;
     if (requests >= budget) {
-      unavailable.push(...subset);
+      unverified.push(...subset);
       continue;
     }
     if (await attempt(subset)) continue;
@@ -188,7 +199,7 @@ export async function requestWithinPlan<K, R>(opts: {
     stack.push(...halves(subset).reverse());
   }
 
-  return { results, unavailable, gated, acceptedAny, requests };
+  return { results, unavailable, unverified, gated, acceptedAny, requests };
 }
 
 function halves<K>(list: K[]): K[][] {

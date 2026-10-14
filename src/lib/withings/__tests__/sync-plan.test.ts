@@ -109,6 +109,7 @@ import {
   WITHINGS_PLAN_MAX_REQUESTS,
 } from "../api-plan";
 import { withingsPlanUnavailableFeatures } from "../plan-features";
+import { WITHINGS_MEASTYPES } from "../client";
 
 const LAST_GOOD_SYNC = new Date("2026-10-12T21:12:00Z");
 
@@ -315,6 +316,73 @@ describe("syncUserMeasurements inside the Withings API plan", () => {
     expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
+  it("never remembers a type the budget could not resolve, and converges over runs", async () => {
+    // Two undocumented refusals on top of the documented set. Over the 19
+    // types the first run runs out of budget before it reaches 12, 54, 71,
+    // 76, 77 and 88, all free.
+    refused = new Set([...WITHINGS_ADVANCED_MEASTYPES, 6, 35]);
+    let stored: unknown = null;
+    let lastSyncedAt = LAST_GOOD_SYNC;
+    vi.mocked(prisma.withingsConnection.findUnique).mockImplementation(
+      (async () => connection(stored, lastSyncedAt)) as never,
+    );
+    vi.mocked(prisma.withingsConnection.update).mockImplementation(
+      (async (args: { data: { lastSyncedAt: Date } }) => {
+        lastSyncedAt = args.data.lastSyncedAt;
+        return {};
+      }) as never,
+    );
+    const runs: Array<{ unavailable: number[]; startdates: string[] }> = [];
+    const read = new Set<number>();
+
+    for (let run = 0; run < 4; run++) {
+      vi.mocked(prisma.$executeRaw).mockClear();
+      vi.mocked(prisma.measurement.create).mockClear();
+      requestedStartdates.length = 0;
+      await syncUserMeasurements("user-1");
+      const [persisted] = persistedLegs();
+      if (persisted) {
+        const value = persisted.value as {
+          unavailable: number[];
+          checkedAt: string;
+        };
+        stored = { version: 1, measures: value };
+      }
+      for (const types of requestedTypes.splice(0)) {
+        if (!types.some((t) => refused.has(t)))
+          types.forEach((t) => read.add(t));
+      }
+      const current = stored as {
+        measures?: { unavailable: number[] };
+      } | null;
+      runs.push({
+        unavailable: current?.measures?.unavailable ?? [],
+        startdates: [...requestedStartdates],
+      });
+    }
+
+    const truly = [...refused].sort((a, b) => a - b);
+    // No run ever stored a type Withings did not refuse.
+    for (const r of runs) {
+      expect(r.unavailable.every((t) => refused.has(t))).toBe(true);
+    }
+    expect(runs.at(-1)!.unavailable).toEqual(truly);
+    // Every type the plan allows was read in an accepted request, the free
+    // ones the first run never reached included.
+    expect(read).toEqual(
+      new Set(WITHINGS_MEASTYPES.filter((t) => !refused.has(t))),
+    );
+    expect([...read]).toEqual(expect.arrayContaining([12, 54, 71, 76, 77, 88]));
+    // The first run read nothing for the unresolved types, so the second
+    // still reads from the last good sync.
+    const fromLastGood = String(
+      Math.floor(
+        (LAST_GOOD_SYNC.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS) / 1000,
+      ),
+    );
+    expect(runs[1]!.startdates.every((s) => s === fromLastGood)).toBe(true);
+  });
+
   it("reads the whole gap since the last good sync", async () => {
     await syncUserMeasurements("user-1");
 
@@ -423,7 +491,7 @@ describe("requestWithinPlan", () => {
     expect(second.unavailable.sort()).toEqual(["c", "f"]);
   });
 
-  it("stops at the request budget and counts what is left as unavailable", async () => {
+  it("stops at the request budget and leaves what is left unverified, not unavailable", async () => {
     const result = await requestWithinPlan({
       keys: ["a", "b", "c", "d", "e", "f", "g", "h"],
       knownGated: [],
@@ -433,7 +501,10 @@ describe("requestWithinPlan", () => {
       },
     });
     expect(result.requests).toBe(3);
-    expect(result.unavailable.sort()).toEqual([
+    // Only the requests actually made prove anything: [a..h], [a..d] and [a,b]
+    // were refused, which isolates no single key.
+    expect(result.unavailable).toEqual([]);
+    expect(result.unverified.sort()).toEqual([
       "a",
       "b",
       "c",
