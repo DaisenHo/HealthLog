@@ -1,5 +1,58 @@
 # Changelog
 
+## [1.42.3] — 2026-10-15
+
+Withings API plans, lab unit conversion, chronic conditions and rest mode,
+Oura scopes.
+
+### Added
+
+- **Lab unit conversion (#1095).** A registry of convertible analytes with a
+  hub unit per analyte, derived from molar masses (glucose, cholesterol,
+  triglycerides, creatinine, urea and BUN, uric acid, calcium, bilirubin,
+  vitamin D, HbA1c in both directions, power-of-ten pairs). Markers carry
+  `analyteKey`, the catalog slug matched from name and unit and re-derived
+  whenever either changes. `POST /api/labs`, the OCR commit and the
+  document commit convert a reading into its marker's unit when the pair is
+  known (201 with `converted: true`) and keep the printed value, unit and
+  range text; unconvertible pairs still answer 422 `labs.unit.mismatch`,
+  now with a `reason`. Converted ranges are stated in the marker unit
+  everywhere (note, Coach, MCP, doctor report, FHIR); the printed text is
+  shown as printed, with its unit. Contributed by @BernhardBuckel.
+
+### Fixed
+
+- **Withings API plans (since 2026-10-12).** A request for a data type
+  outside the account's Withings API plan fails whole with status 277, so
+  every measure sync failed. Syncs now drop the documented advanced types
+  on a 277, bisect any remainder, remember unavailable types per connection
+  (`withings_connections.api_plan_state`, migration 0398) and re-probe
+  weekly. ECG and sleep-summary fields outside the plan are skipped
+  quietly. A 277 never counts as an auth failure; connections parked by it
+  are released by the fallback cron. The Withings card lists the types the
+  plan excludes (`planUnavailable`).
+- **Oura scopes (#1204).** The authorize request adds `spo2` and
+  `heart_health`. A 401 on single collections next to successful ones is
+  recorded as a missing scope (`users.oura_scope_denied`, migration 0398),
+  counts as success and shows a reconnect hint (`scopeReconnect`) instead
+  of an error state.
+- **Rest mode and chronic conditions (#1216).** Only active episodes that
+  are not `CHRONIC_ONGOING` trigger rest mode; Day N, the nudge pause, the
+  streak freeze and the banners follow. Chronic conditions stay context for
+  the Coach and for coincident vital deviations.
+- **ntfy quick answers (#1203).** Every refusal on
+  `/api/notifications/action/*` is logged with a reason; a non-POST request
+  gets 405 with `Allow: POST`.
+- **Lab form (#1214).** The draw date gets a full-width row.
+- **Lab edits** keep the conversion record unless the value changes.
+
+### API
+
+- `LabResult`: `converted`, `sourceValue`, `sourceUnit`,
+  `printedReferenceText`; `sourceReferenceText` is null for a converted
+  reading. `Biomarker.analyteKey`.
+- Integration status: Withings `planUnavailable`, Oura `scopeReconnect`.
+
 ## [1.42.2] — 2026-10-11
 
 Actionable notifications, record search in the command palette, automatic
