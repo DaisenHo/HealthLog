@@ -246,7 +246,8 @@ async function seedWeight(userId: string, value: number) {
       type: "WEIGHT",
       value,
       unit: "kg",
-      measuredAt: new Date("2026-07-15T08:00:00Z"),
+      // Relative to now: a fixed date ages out of the 90-day series window.
+      measuredAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       source: "MANUAL",
     },
   });
@@ -281,7 +282,7 @@ contract<number>("GET /api/measurements/series-batch", {
     const { GET } = await import("@/app/api/measurements/series-batch/route");
     return call(
       GET as Handler,
-      "/api/measurements/series-batch?types=WEIGHT&from=2026-01-01T00:00:00Z&to=2026-12-31T00:00:00Z",
+      `/api/measurements/series-batch?types=WEIGHT&from=${new Date(Date.now() - 365 * 86_400_000).toISOString()}&to=${new Date(Date.now() + 86_400_000).toISOString()}`,
     );
   },
   seed: seedWeight,
