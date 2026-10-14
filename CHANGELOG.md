@@ -9,7 +9,7 @@ Oura scopes.
 
 - **Lab unit conversion (#1095).** A registry of convertible analytes with a
   hub unit per analyte, derived from molar masses (glucose, cholesterol,
-  triglycerides, creatinine, urea and BUN, uric acid, calcium, bilirubin,
+  creatinine, urea and BUN, uric acid, calcium, bilirubin,
   vitamin D, HbA1c in both directions, power-of-ten pairs). Markers carry
   `analyteKey`, the catalog slug matched from name and unit and re-derived
   whenever either changes. `POST /api/labs`, the OCR commit and the
