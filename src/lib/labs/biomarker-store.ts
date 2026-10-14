@@ -13,6 +13,7 @@ import { Buffer } from "node:buffer";
 
 import { decrypt, encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
+import { matchAnalyteKey } from "@/lib/labs/analyte-match";
 import { getEvent } from "@/lib/logging/context";
 
 /** Encrypt a UTF-8 context note into the `Bytes` payload the schema stores. */
@@ -64,6 +65,7 @@ export interface MintedBiomarker {
   lowerBound: number | null;
   upperBound: number | null;
   panel: string | null;
+  analyteKey: string | null;
 }
 
 /**
@@ -101,6 +103,7 @@ export async function resolveOrMintBiomarker(
     lowerBound: true,
     upperBound: true,
     panel: true,
+    analyteKey: true,
   } as const;
 
   // Case-insensitive match on the catalog identity. Postgres is the store;
@@ -120,6 +123,7 @@ export async function resolveOrMintBiomarker(
         lowerBound: input.referenceLow,
         upperBound: input.referenceHigh,
         panel: input.panel,
+        analyteKey: matchAnalyteKey({ name, unit: input.unit }),
       },
       select,
     });

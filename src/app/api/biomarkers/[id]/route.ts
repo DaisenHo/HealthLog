@@ -17,6 +17,7 @@ import {
   decryptContextFromBytes,
   encryptContextToBytes,
 } from "@/lib/labs/biomarker-store";
+import { matchAnalyteKey } from "@/lib/labs/analyte-match";
 import { annotate } from "@/lib/logging/context";
 import { updateBiomarkerSchema } from "@/lib/validations/biomarkers";
 import { effectiveBound, isInvertedRange } from "@/lib/validations/labs";
@@ -41,6 +42,7 @@ function serialiseBiomarker(row: {
   lowerBound: number | null;
   upperBound: number | null;
   panel: string | null;
+  analyteKey: string | null;
   hidden: boolean;
   contextEncrypted: Uint8Array | null;
   createdAt: Date;
@@ -53,6 +55,7 @@ function serialiseBiomarker(row: {
     lowerBound: row.lowerBound,
     upperBound: row.upperBound,
     panel: row.panel,
+    analyteKey: row.analyteKey,
     hasContext: row.contextEncrypted !== null,
     context: row.contextEncrypted
       ? decryptContextFromBytes(row.contextEncrypted)
@@ -174,6 +177,16 @@ export const PUT = apiHandler(
     if (d.upperBound !== undefined) data.upperBound = d.upperBound;
     if (d.panel !== undefined) data.panel = d.panel;
     if (d.hidden !== undefined) data.hidden = d.hidden;
+    // The analyte a marker is follows from its name and unit, the same match
+    // the creation paths use. A rename must move it, or a marker renamed from
+    // "Glucose" to "Cholesterol" would keep converting readings with the
+    // glucose factor; a name that now matches nothing clears it.
+    if (d.name !== undefined || d.unit !== undefined) {
+      data.analyteKey = matchAnalyteKey({
+        name: d.name ?? existing.name,
+        unit: d.unit ?? existing.unit,
+      });
+    }
 
     // Inverted-range guard for a PARTIAL bound update. The schema refine only
     // fires when both bounds arrive together; moving a single bound past the

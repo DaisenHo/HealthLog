@@ -16,6 +16,14 @@ export interface LabResultDto {
   valueText: string | null;
   unit: string;
   /**
+   * True when the stored number was converted into the marker's unit from
+   * another one; `sourceValue` and `sourceUnit` are then what the report
+   * printed. A reading stored as stated has `converted: false` and two nulls.
+   */
+  converted: boolean;
+  sourceValue: number | null;
+  sourceUnit: string | null;
+  /**
    * The window this reading is judged against and the one `rangeStatus` was
    * computed from: the range its own report printed when it carries one, the
    * catalog band otherwise. Render these and the range shown always matches
@@ -30,6 +38,11 @@ export interface LabResultDto {
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
+  /**
+   * A converted reading's printed range text, verbatim and in `sourceUnit`;
+   * `sourceReferenceText` is then null. Null for every other reading.
+   */
+  printedReferenceText: string | null;
   /** Which window is in force. */
   referenceOrigin: ReferenceRangeOrigin;
   /** True when the report's window and the catalog band state different limits. */
@@ -60,6 +73,11 @@ export interface BiomarkerDto {
   lowerBound: number | null;
   upperBound: number | null;
   panel: string | null;
+  /**
+   * Which analyte the marker is, for converting a reading in another unit
+   * (the catalog slug, e.g. `ldl`, or a registry-only key such as `urea`), or null when it is none that is known.
+   */
+  analyteKey: string | null;
   hasContext: boolean;
   context: string | null;
   /** v1.22 — a hidden marker drops from the active list + lab-entry pickers. */

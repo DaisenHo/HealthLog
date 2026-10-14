@@ -56,6 +56,7 @@ export async function loadLabResults(
       sourceReferenceLow: true,
       sourceReferenceHigh: true,
       sourceReferenceText: true,
+      sourceUnit: true,
       takenAt: true,
     },
   });

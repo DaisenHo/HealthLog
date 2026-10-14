@@ -9563,6 +9563,7 @@
     },
     "noteLoadFailed": "Nie udało się wczytać notatki; pozostanie niezmieniona po zapisaniu.",
     "showingLatestOf": "Wyświetlanie najnowszych {shown} z {total} wyników",
+    "convertedFrom": "przeliczono z {value} {unit}",
     "ocr": {
       "scanButton": "Zeskanuj wynik",
       "addScan": "Zeskanuj dokument",
@@ -9609,6 +9610,7 @@
       "errorUnit": "Podaj jednostkę.",
       "errorUnitMismatch": "Ten wskaźnik jest prowadzony w {markerUnit}. Zmień jednostkę, jeśli wynik został źle odczytany, albo odznacz tę wartość.",
       "unitDiffersBadge": "Prowadzony w {markerUnit}; ten wynik podaje {unit}",
+      "unitConvertedBadge": "Zostanie zapisane jako {value} {markerUnit}, przeliczone z {statedValue} {unit}",
       "savedPartialUnitToast": "Zapisano {count} wyników. Nie zapisano, bo jednostka różni się od jednostki wskaźnika: {analytes}",
       "savedNothingUnitToast": "Nic nie zapisano: jednostka różni się od jednostki wskaźnika dla {analytes}",
       "saveFailed": "Nie udało się zapisać wyników. Spróbuj ponownie.",
@@ -9629,7 +9631,8 @@
     "notLinkedYet": "Jeszcze niepowiązane z biomarkerem",
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
-      "catalogDiffers": "twój zakres {range}"
+      "catalogDiffers": "twój zakres {range}",
+      "printed": "wydrukowano w {unit}: {range}"
     }
   },
   "modules": {

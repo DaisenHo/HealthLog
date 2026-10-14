@@ -18,6 +18,11 @@ import { useLabNumber } from "./use-lab-format";
  * the same number, so a surface that shows one silently is showing a partial
  * answer.
  *
+ * A reading converted into its marker's unit carries bounds that were converted
+ * with it, but the report's own text is still in the unit it printed. The note
+ * then states the window in the marker's unit and adds the printed text as
+ * evidence, labelled with its unit, so no single statement mixes two units.
+ *
  * Neutral by construction: no tint, no icon, muted text. The in/out verdict is
  * the badge's job — this element states where the window came from, nothing
  * about whether the value is good news.
@@ -34,6 +39,8 @@ export function SourceRangeNote({
     | "catalogReferenceLow"
     | "catalogReferenceHigh"
     | "sourceReferenceText"
+    | "printedReferenceText"
+    | "sourceUnit"
     | "referenceOrigin"
     | "referenceDivergesFromCatalog"
   >;
@@ -43,7 +50,9 @@ export function SourceRangeNote({
   const labNumber = useLabNumber();
   if (reading.referenceOrigin !== "source") return null;
 
-  const printed =
+  // `sourceReferenceText` is null for a converted reading, so the window is
+  // then stated from the converted bounds, in the marker's unit.
+  const inForce =
     reading.sourceReferenceText ??
     `${formatReferenceRange(
       reading.referenceLow,
@@ -59,7 +68,13 @@ export function SourceRangeNote({
 
   return (
     <span className={className}>
-      {t("labs.sourceRange.fromReport", { range: printed })}
+      {t("labs.sourceRange.fromReport", { range: inForce })}
+      {reading.printedReferenceText && reading.sourceUnit
+        ? ` · ${t("labs.sourceRange.printed", {
+            range: reading.printedReferenceText,
+            unit: reading.sourceUnit,
+          })}`
+        : null}
       {reading.referenceDivergesFromCatalog && catalog
         ? ` · ${t("labs.sourceRange.catalogDiffers", {
             range: `${catalog} ${reading.unit}`.trim(),

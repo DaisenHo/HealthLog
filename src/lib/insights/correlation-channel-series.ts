@@ -1072,6 +1072,7 @@ export async function fetchLabDraws(
       sourceReferenceLow: true,
       sourceReferenceHigh: true,
       sourceReferenceText: true,
+      sourceUnit: true,
       panel: true,
       value: true,
       takenAt: true,

@@ -52,6 +52,7 @@ export const GET = apiHandler(async () => {
       sourceReferenceLow: true,
       sourceReferenceHigh: true,
       sourceReferenceText: true,
+      sourceUnit: true,
       takenAt: true,
     },
     orderBy: { takenAt: "desc" },
@@ -67,6 +68,7 @@ export const GET = apiHandler(async () => {
       sourceReferenceLow: r.sourceReferenceLow,
       sourceReferenceHigh: r.sourceReferenceHigh,
       sourceReferenceText: r.sourceReferenceText,
+      sourceUnit: r.sourceUnit,
       takenAt: r.takenAt,
     })),
   );

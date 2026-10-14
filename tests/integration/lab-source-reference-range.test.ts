@@ -225,6 +225,78 @@ describe("a printed reference range, end to end", () => {
     });
   });
 
+  it("keeps a converted reading's printed text as evidence, never as the window of the converted value", async () => {
+    const prisma = getPrismaClient();
+    // A glucose marker tracked in mg/dL; the report prints mmol/L.
+    const marker = await prisma.biomarker.create({
+      data: {
+        userId: USER_ID,
+        name: "Glucose",
+        unit: "mg/dL",
+        lowerBound: 70,
+        upperBound: 100,
+      },
+    });
+    const PRINTED_MMOL = "3,9 - 5,5 mmol/l";
+    const { POST } = await import("@/app/api/labs/route");
+    const res = await POST(
+      postReq({
+        biomarkerId: marker.id,
+        value: 5.6,
+        unit: "mmol/L",
+        sourceReferenceLow: 3.9,
+        sourceReferenceHigh: 5.5,
+        sourceReferenceText: PRINTED_MMOL,
+        takenAt: "2026-07-03T08:00:00.000Z",
+      }),
+    );
+    expect(res.status).toBe(201);
+
+    // The record keeps what the report printed, verbatim.
+    const row = await prisma.labResult.findFirstOrThrow({
+      where: { userId: USER_ID },
+    });
+    expect(row.sourceReferenceText).toBe(PRINTED_MMOL);
+    expect(row.sourceUnit).toBe("mmol/L");
+
+    // The DTO states the window in force in mg/dL only, and hands the printed
+    // text over separately, beside the unit it is in.
+    const dto = await readDto("Glucose");
+    expect(dto.converted).toBe(true);
+    expect(dto.unit).toBe("mg/dL");
+    expect(dto.referenceOrigin).toBe("source");
+    expect(dto.referenceLow).toBeCloseTo(3.9 * 18.0182, 6);
+    expect(dto.referenceHigh).toBeCloseTo(5.5 * 18.0182, 6);
+    expect(dto.sourceReferenceText).toBeNull();
+    expect(dto.printedReferenceText).toBe(PRINTED_MMOL);
+    expect(dto.sourceUnit).toBe("mmol/L");
+
+    // The doctor report has no mmol/L text to print beside mg/dL numbers.
+    const { loadLabResults } =
+      await import("@/lib/doctor-report/clinical-records");
+    const labs = await loadLabResults(
+      USER_ID,
+      new Date("2026-01-01T00:00:00.000Z"),
+      new Date("2026-12-31T23:59:59.000Z"),
+    );
+    expect(labs?.[0].sourceReferenceText).toBeNull();
+    expect(labs?.[0].referenceLow).toBeCloseTo(3.9 * 18.0182, 6);
+
+    // FHIR: the text, when present, must agree with low and high. Here it is
+    // left out, and the bounds carry the marker's unit like the value.
+    const { labObservations } = await import("@/lib/fhir/resources/labs");
+    let seq = 0;
+    const observations = labObservations(
+      { labResults: labs } as Parameters<typeof labObservations>[0],
+      () => `obs-${++seq}`,
+    );
+    const range = observations[0].referenceRange?.[0];
+    expect(range?.text).toBeUndefined();
+    expect(range?.low?.unit).toBe("mg/dL");
+    expect(range?.high?.value).toBeCloseTo(5.5 * 18.0182, 6);
+    expect(observations[0].valueQuantity?.unit).toBe("mg/dL");
+  });
+
   it("keeps a window it cannot read as text and leaves the catalog in force", async () => {
     const prisma = getPrismaClient();
     await seedMarker();

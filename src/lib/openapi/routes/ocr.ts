@@ -75,7 +75,11 @@ const extractedRow = z
     biomarkerMatch: z.enum(["new", "existing"]),
     markerUnit: z.string().nullable().meta({
       description:
-        "The unit the matched marker is tracked in, or null when the marker does not exist yet (it will adopt this row's unit). A row whose `unit` differs from it cannot be committed: the commit skips it with `reason: unit_mismatch`, and the review screen marks it before Save.",
+        "The unit the matched marker is tracked in, or null when the marker does not exist yet (it will adopt this row's unit). A row whose `unit` differs from it is converted on commit when the marker's analyte is known and the pair is in the unit-conversion registry; otherwise the commit skips it with `reason: unit_mismatch`, and the review screen marks it before Save.",
+    }),
+    markerAnalyteKey: z.string().nullable().meta({
+      description:
+        "The analyte the matched marker is (the catalog slug, e.g. `fasting-glucose` or `ldl`, or a registry-only key such as `urea`), or null when the marker does not exist yet or its name matches none. With `markerUnit` it tells a client whether a row in another unit can be converted on commit.",
     }),
     duplicateOf: z.string().nullable(),
   })
@@ -115,6 +119,9 @@ const committedRow = z
     value: z.number().nullable(),
     valueText: z.string().nullable(),
     unit: z.string(),
+    converted: z.boolean(),
+    sourceValue: z.number().nullable(),
+    sourceUnit: z.string().nullable(),
     referenceLow: z.number().nullable(),
     referenceHigh: z.number().nullable(),
     catalogReferenceLow: z.number().nullable(),
@@ -122,6 +129,7 @@ const committedRow = z
     sourceReferenceLow: z.number().nullable(),
     sourceReferenceHigh: z.number().nullable(),
     sourceReferenceText: z.string().nullable(),
+    printedReferenceText: z.string().nullable(),
     referenceOrigin: z.enum(["source", "catalog", "none"]),
     referenceDivergesFromCatalog: z.boolean(),
     takenAt: z.string(),
@@ -134,7 +142,7 @@ const committedRow = z
   .meta({
     id: "OcrCommittedLabResult",
     description:
-      "A written reading. Its reference window resolves exactly as it does on `/api/labs` — see `LabResult`.",
+      "A written reading. Its reference window resolves exactly as it does on `/api/labs` — see `LabResult`. `converted`, `sourceValue` and `sourceUnit` say when the row's unit was converted into its marker's and what the report printed; for a converted row the printed range text is in `printedReferenceText` (in `sourceUnit`) and `sourceReferenceText` is null.",
   });
 
 const commitResponse = z
@@ -145,7 +153,7 @@ const commitResponse = z
         analyte: z.string(),
         reason: z.enum(["duplicate", "unit_mismatch"]).meta({
           description:
-            "`duplicate`: the row matched a live reading at commit time. `unit_mismatch`: the row states a unit other than the one its marker is tracked in, so it was not written.",
+            "`duplicate`: the row matched a live reading at commit time. `unit_mismatch`: the row states a unit other than the one its marker is tracked in and the pair cannot be converted, so it was not written. A pair that can be converted is written in the marker's unit and reported with `converted: true`.",
         }),
       }),
     ),
