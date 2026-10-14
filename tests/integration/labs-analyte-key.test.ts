@@ -88,6 +88,33 @@ describe("POST /api/biomarkers", () => {
     expect(data.analyteKey).toBe("total-cholesterol");
   });
 
+  it("stores the catalog slug for LDL and HDL, and converts them as cholesterol", async () => {
+    for (const [name, key] of [
+      ["LDL cholesterol", "ldl"],
+      ["HDL-Cholesterin", "hdl"],
+    ]) {
+      const res = await post({ name, unit: "mg/dL" });
+      const { data } = (await res.json()) as { data: { analyteKey: string } };
+      expect(data.analyteKey, name).toBe(key);
+    }
+    const ldl = await prisma.biomarker.findFirstOrThrow({
+      where: { userId: USER, name: "LDL cholesterol" },
+    });
+    const reading = await postReading({
+      biomarkerId: ldl.id,
+      value: 3,
+      unit: "mmol/L",
+      takenAt: "2026-05-04T08:00:00.000Z",
+    });
+    expect(reading.status).toBe(201);
+    const { data: dto } = (await reading.json()) as {
+      data: { value: number; converted: boolean };
+    };
+    expect(dto.converted).toBe(true);
+    // 3 mmol/L x 38.6664 (C27H46O, 386.664 g/mol).
+    expect(dto.value.toFixed(2)).toBe("116.00");
+  });
+
   it("leaves a free name, and a known name in an unreachable unit, unlinked", async () => {
     for (const [name, unit] of [
       ["My own marker", "mg/dL"],
@@ -275,6 +302,24 @@ describe("ensureAnalyteKey", () => {
       (await prisma.biomarker.findUnique({ where: { id: marker.id } }))
         ?.analyteKey,
     ).toBe("urea");
+  });
+
+  it("corrects a key stored as the registry entry rather than the catalog slug", async () => {
+    // Before the slug was stored, an LDL marker got the cholesterol entry's
+    // key. Same conversion, wrong identity; the fill step rewrites it once.
+    const marker = await prisma.biomarker.create({
+      data: {
+        userId: USER,
+        name: "LDL-Cholesterin",
+        unit: "mg/dL",
+        analyteKey: "total-cholesterol",
+      },
+    });
+    expect(await ensureAnalyteKey(prisma, marker)).toBe("ldl");
+    const row = await prisma.biomarker.findUnique({ where: { id: marker.id } });
+    expect(row?.analyteKey).toBe("ldl");
+    // And a second run changes nothing.
+    expect(await ensureAnalyteKey(prisma, row!)).toBe("ldl");
   });
 
   it("converges when two callers fill the same marker", async () => {

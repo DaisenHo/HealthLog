@@ -75,7 +75,7 @@ export interface BiomarkerDto {
   panel: string | null;
   /**
    * Which analyte the marker is, for converting a reading in another unit
-   * (the unit-conversion registry's key), or null when it is none that is known.
+   * (the catalog slug, e.g. `ldl`, or a registry-only key such as `urea`), or null when it is none that is known.
    */
   analyteKey: string | null;
   hasContext: boolean;

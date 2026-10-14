@@ -26,15 +26,22 @@ describe("the catalog's own names, in every language", () => {
     ["Gesamtcholesterin", "mg/dL", "total-cholesterol"],
     ["Cholestérol total", "mmol/L", "total-cholesterol"],
     ["LDL cholesterol", "mg/dL", "ldl"],
-    ["LDL-Cholesterin", "mg/dL", "total-cholesterol"],
-    ["Colesterolo HDL", "mg/dL", "total-cholesterol"],
+    ["LDL-Cholesterin", "mg/dL", "ldl"],
+    ["Colesterolo HDL", "mg/dL", "hdl"],
     ["Vitamin D (25-OH)", "ng/mL", "vitamin-d"],
     ["Créatinine", "mg/dL", "creatinine"],
     ["Kreatynina", "µmol/L", "creatinine"],
   ])("%s (%s) is %s", (name, unit, key) => {
-    // LDL and HDL are aliases of cholesterol: the registry reports one key.
-    const expected = analyteConversionFor(key)!.key;
-    expect(match(name, unit)).toBe(expected);
+    // The key is the catalog slug the name belongs to, so LDL and HDL keep
+    // their own identity even though they convert with the cholesterol entry.
+    expect(match(name, unit)).toBe(key);
+  });
+
+  it("resolves an LDL or HDL key to the cholesterol entry for the conversion", () => {
+    expect(match("LDL cholesterol", "mg/dL")).toBe("ldl");
+    expect(analyteConversionFor("ldl")?.key).toBe("total-cholesterol");
+    expect(analyteConversionFor("hdl")?.key).toBe("total-cholesterol");
+    expect(analyteAcceptsUnit("ldl", "mmol/L")).toBe(true);
   });
 
   it("recognises a seed typed without the app's gloss", () => {
@@ -65,7 +72,7 @@ describe("typed names", () => {
 
   it("folds case, accents, hyphens and spacing the same on both sides", () => {
     expect(match("  HARNSÄURE ", "mg/dL")).toBe("uric-acid");
-    expect(match("ldl-c", "mg/dL")).toBe(analyteConversionFor("ldl")!.key);
+    expect(match("ldl-c", "mg/dL")).toBe("ldl");
     expect(match("blood  urea-nitrogen", "mg/dL")).toBe("blood-urea-nitrogen");
   });
 });

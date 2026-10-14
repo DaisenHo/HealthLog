@@ -279,7 +279,9 @@ export const BIOMARKER_PANELS = [
 
 /**
  * Names a marker may carry for an analyte the unit-conversion registry knows
- * (`src/lib/labs/unit-conversion/registry.ts`), keyed by the registry's key.
+ * (`src/lib/labs/unit-conversion/registry.ts`), keyed by the analyte key a
+ * marker stores: the catalog slug (`ldl`, `hdl`, `fasting-glucose`), or a
+ * registry-only key for an analyte with no seed.
  *
  * A `Biomarker` row keeps only its name, not the seed it came from, so this is
  * how a marker is told which analyte it is: its folded name equals one of these,
@@ -296,7 +298,7 @@ export const BIOMARKER_PANELS = [
  * names live only here.
  */
 export interface AnalyteAliases {
-  /** The registry key of the analyte. */
+  /** The analyte key: a catalog slug, or a registry-only key. */
   key: string;
   names: readonly string[];
 }

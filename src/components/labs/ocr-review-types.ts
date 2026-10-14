@@ -30,7 +30,7 @@ export interface OcrReviewRow {
    * Save when it can be (see `readingConversion`) and cannot be saved when not.
    */
   markerUnit: string | null;
-  /** Which analyte the matched marker is (conversion registry key), or null. */
+  /** Which analyte the matched marker is (catalog slug or registry-only key), or null. */
   markerAnalyteKey: string | null;
   /** Non-null when the server flagged a likely duplicate of a live reading. */
   duplicateOf: string | null;

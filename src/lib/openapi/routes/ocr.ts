@@ -79,7 +79,7 @@ const extractedRow = z
     }),
     markerAnalyteKey: z.string().nullable().meta({
       description:
-        "The analyte the matched marker is (the unit-conversion registry's key, e.g. `fasting-glucose`), or null when the marker does not exist yet or its name matches none. With `markerUnit` it tells a client whether a row in another unit can be converted on commit.",
+        "The analyte the matched marker is (the catalog slug, e.g. `fasting-glucose` or `ldl`, or a registry-only key such as `urea`), or null when the marker does not exist yet or its name matches none. With `markerUnit` it tells a client whether a row in another unit can be converted on commit.",
     }),
     duplicateOf: z.string().nullable(),
   })

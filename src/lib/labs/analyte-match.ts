@@ -12,8 +12,12 @@
  *   - the marker's own unit must be one the analyte reaches, so a marker called
  *     "Glucose" in a unit the registry cannot convert is left unlinked.
  *
- * Returns the registry key, or null. Pure apart from reading the message
- * bundles once.
+ * Returns the catalog slug the name was recognised as (`ldl`, `hdl`,
+ * `fasting-glucose`), or the registry-only key for an analyte with no seed
+ * (`urea`, `uric-acid`), or null. LDL stays `ldl` even though the registry
+ * converts it with the cholesterol entry: the key says which marker this is,
+ * and `analyteConversionFor` resolves it to its entry. Pure apart from reading
+ * the message bundles once.
  */
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
 import { localisedValues } from "@/lib/i18n/shared-resolve";
@@ -30,7 +34,7 @@ function withoutGloss(folded: string): string {
 let cache: ReadonlyMap<string, string> | null = null;
 
 /**
- * folded name -> registry key, with every name two analytes claim removed.
+ * folded name -> analyte key, with every name two keys claim removed.
  * Exported for the guard test, which asserts nothing was dropped silently.
  */
 export function analyteNameIndex(): {
@@ -47,18 +51,16 @@ export function analyteNameIndex(): {
   };
 
   for (const seed of BIOMARKER_CATALOG) {
-    const entry = analyteConversionFor(seed.slug);
-    if (!entry) continue;
+    if (!analyteConversionFor(seed.slug)) continue;
     for (const name of localisedValues(`labs.catalog.${seed.slug}`)) {
-      claim(name, entry.key);
+      claim(name, seed.slug);
       // The bare name too, for a marker typed without the app's gloss.
-      claim(withoutGloss(foldForMatch(name)), entry.key);
+      claim(withoutGloss(foldForMatch(name)), seed.slug);
     }
   }
   for (const { key, names } of ANALYTE_ALIASES) {
-    const entry = analyteConversionFor(key);
-    if (!entry) continue;
-    for (const name of names) claim(name, entry.key);
+    if (!analyteConversionFor(key)) continue;
+    for (const name of names) claim(name, key);
   }
 
   const index = new Map<string, string>();

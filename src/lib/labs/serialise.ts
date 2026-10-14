@@ -57,7 +57,7 @@ export interface ResolvedBiomarker {
   lowerBound: number | null;
   upperBound: number | null;
   panel: string | null;
-  /** Which analyte the marker is (unit-conversion registry key), if known. */
+  /** Which analyte the marker is (catalog slug or registry-only key), if known. */
   analyteKey?: string | null;
 }
 
