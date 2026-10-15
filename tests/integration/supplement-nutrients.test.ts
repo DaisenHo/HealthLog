@@ -425,13 +425,14 @@ describe("taken doses become the day's SUPPLEMENT micronutrients", () => {
 
   it("notes a day above the upper limit once the doses pass it", async () => {
     const { medicationId } = await setUp();
-    // Three doses of 50 µg on one morning: 150 µg against a limit of 100.
-    for (const hoursAgo of [3, 2, 1]) {
-      await logDose(medicationId, earlierToday(hoursAgo));
-    }
-    const day = userDayKey(earlierToday(1), TZ);
-    const { entry } = await vitaminDOn(day);
-    expect(entry.amount).toBe(150);
+    // 60 µg a capsule, two a dose: 120 µg against a total limit of 100.
+    await putIngredients(medicationId, {
+      ingredients: [{ nutrient: "vitamin_d", amount: 60, unit: "ug" }],
+    });
+    const takenAt = earlierToday(2);
+    await logDose(medicationId, takenAt);
+    const { entry } = await vitaminDOn(userDayKey(takenAt, TZ));
+    expect(entry.amount).toBe(120);
     expect(entry.aboveUpperLimit).toBe(true);
   });
 
@@ -481,9 +482,26 @@ describe("taken doses become the day's SUPPLEMENT micronutrients", () => {
 
   it("recomputes the history when the composition changes", async () => {
     const { userId, medicationId } = await setUp();
-    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
-    await logDose(medicationId, twoDaysAgo);
+    // One dose through the route today, and one recorded two days ago
+    // straight into the table (an imported history the PUT has to re-read).
     await logDose(medicationId, earlierToday(1));
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
+    await getPrismaClient().medicationIntakeEvent.create({
+      data: {
+        userId,
+        medicationId,
+        scheduledFor: twoDaysAgo,
+        takenAt: twoDaysAgo,
+      },
+    });
+    const { recomputeMedicationComplianceForEvent } =
+      await import("@/lib/rollups/medication-compliance-rollups");
+    await recomputeMedicationComplianceForEvent({
+      userId,
+      medicationId,
+      scheduledFor: twoDaysAgo,
+      tz: TZ,
+    });
     expect((await supplementRows(userId)).map((r) => r.amount)).toEqual([
       50, 50,
     ]);
