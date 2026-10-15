@@ -432,12 +432,29 @@ tight one. The 429 names the actual wait (the window is an hour) and
 carries the reset instant in `X-RateLimit-Reset`.
 
 `AI_SYNC_REGEN_GAP_HOURS` (default `6`, whole hours from 1 to 48) is
-the minimum time between two regenerations of a status card after a sync.
-A watch or an integration delivers readings all day, and each delivery
-moves today's figures, so without a gap every touched card regenerated
-about once an hour. A reading entered by hand keeps a one-hour gap, so it
-is still narrated the same day. The value set under Admin > AI wins over
-the environment.
+the minimum time between two regenerations of a status card after a sync
+at the `standard` AI usage level. A watch or an integration delivers
+readings all day, and each delivery moves today's figures, so without a
+gap every touched card regenerated about once an hour. A reading entered
+by hand keeps a one-hour gap, so it is still narrated the same day. The
+value set under Admin > Coach (AI usage levels) wins over the environment.
+
+Each account runs at one of three AI usage levels, chosen under
+Settings > AI within the bounds the operator sets under Admin > Coach (the
+highest level allowed and the default for accounts without a choice):
+
+|                                 | `frugal`           | `standard`           | `full`               |
+| ------------------------------- | ------------------ | -------------------- | -------------------- |
+| Status cards after a sync       | at most once a day | the gap above        | hourly               |
+| Status cards after a hand entry | every 6 hours      | hourly               | hourly               |
+| Snapshot size (compact JSON)    | 10 000 characters  | 14 000               | 14 000               |
+| Background reasoning            | off                | job default          | job default          |
+| Daily briefing                  | short form         | full                 | full                 |
+| Automatic document reading      | on request only    | the account's switch | the account's switch |
+| Supplement label photo          | not offered        | offered              | offered              |
+
+The Coach is the same at every level. Settings shows an estimate of
+tokens per day for each level, scaled from the account's last seven days.
 
 `LABS_OCR_LIMIT_PER_HOUR` (default `6`, clamped to 1–1000) does the
 same for lab-report scans. The photo or PDF scan and the browser-OCR
