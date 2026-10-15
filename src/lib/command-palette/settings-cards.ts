@@ -281,8 +281,8 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   },
   {
     section: "anamnesis",
-    anchor: "profile-facts",
-    titleKey: "records.profileFacts.cardTitle",
+    anchor: "life-circumstances",
+    titleKey: "records.life.cardTitle",
   },
   {
     section: "anamnesis",

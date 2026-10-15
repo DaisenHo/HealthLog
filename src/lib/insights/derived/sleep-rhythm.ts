@@ -47,6 +47,11 @@ import {
   resolveSleepDebtSource,
 } from "@/lib/validations/source-priority";
 import { loadBaselineProfile } from "./baseline";
+import {
+  dayTypeForNight,
+  type FreeWeekdaysSpan,
+} from "@/lib/profile/life-derived";
+import { loadFreeWeekdaySpans } from "@/lib/profile/life-circumstances";
 import { reconstructNights, sleepNeedMinutes } from "./sleep-score";
 import {
   computeSleepDebt,
@@ -255,6 +260,10 @@ export function computeSleepRhythmFromNights(
   // COMPUTED (the only producer today) so the dashboard + Coach snapshot
   // callers, which always surface our own estimate, need not thread it.
   sleepDebtSource: MeasurementSource = "COMPUTED",
+  // v1.43 (#614) — the record's dated "free weekdays" answers. Each night is
+  // read against the answer in force on its wake day; a night no answer
+  // covers keeps the weekend default.
+  freeWeekdaySpans: readonly FreeWeekdaysSpan[] = [],
 ): SleepRhythmDto {
   // Sort ascending by wake-day key so "trailing N" is well-defined regardless
   // of the caller's input order, then keep only scorable nights.
@@ -279,7 +288,7 @@ export function computeSleepRhythmFromNights(
       night: n.night,
       midpointMinutes: n.midpoint as number,
       asleepMinutes: n.asleepMinutes,
-      dayType: defaultDayType(n.night),
+      dayType: dayTypeForNight(n.night, freeWeekdaySpans),
     }));
   const chronotype = computeChronotype(chronoNights);
 
@@ -310,9 +319,10 @@ export async function buildSleepRhythm(
   const windowDays = opts.windowDays ?? DEFAULT_WINDOW_DAYS;
   const now = opts.now ?? new Date();
   const tz = opts.tz ?? (await resolveUserTimezone(userId));
-  const [priorityJson, profile] = await Promise.all([
+  const [priorityJson, profile, freeWeekdaySpans] = await Promise.all([
     loadUserSourcePriority(userId),
     loadBaselineProfile(prisma, userId),
+    loadFreeWeekdaySpans(userId),
   ]);
   const since = new Date(now.getTime() - windowDays * MS_PER_DAY);
 
@@ -347,5 +357,10 @@ export async function buildSleepRhythm(
   const sleepDebtSource = resolveSleepDebtSource(
     parseSourcePriority(priorityJson),
   );
-  return computeSleepRhythmFromNights(nights, needMinutes, sleepDebtSource);
+  return computeSleepRhythmFromNights(
+    nights,
+    needMinutes,
+    sleepDebtSource,
+    freeWeekdaySpans,
+  );
 }

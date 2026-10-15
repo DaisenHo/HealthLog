@@ -384,7 +384,20 @@
     "immunizationsColDose": "Dose",
     "immunizationsColLot": "Lot",
     "courseRange": "Course {start} to {end}",
-    "courseSince": "Course since {start}"
+    "courseSince": "Course since {start}",
+    "lifePackYears": "Pack-years",
+    "lifeAuditC": "AUDIT-C (screening)",
+    "lifeAuditCScore": "{score} of 12 on {date}.",
+    "lifeAuditCAbove": "At or above the cut-off of {cutoff} ({source}).",
+    "lifeAuditCBelow": "Below the cut-off of {cutoff} ({source}).",
+    "lifeAuditCNoCutoff": "No sex-specific cut-off applied.",
+    "lifeActivity": "Physical activity",
+    "lifeActivityValue": "{minutes} minutes a week, self-reported",
+    "lifeSitting": "Sitting on a workday",
+    "lifeSittingValue": "{hours} hours, self-reported",
+    "lifeWork": "Work",
+    "lifeNightWork": "night work",
+    "lifeExposures": "exposures: {list}"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -10826,25 +10839,11 @@
     },
     "profileFacts": {
       "cardTitle": "Lifestyle context",
-      "cardDescription": "Record the current facts that change how your health readings should be interpreted.",
       "smokingLabel": "Smoking status",
       "alcoholLabel": "Alcohol pattern",
       "shiftLabel": "Work schedule",
       "notRecorded": "Not recorded",
-      "unreadable": "Stored value could not be read",
-      "save": "Save",
-      "savedToast": "Lifestyle context saved",
-      "savePartialError": "Couldn't save {kinds}. Please try again.",
-      "saveKindError": "Not saved",
-      "loadError": "Could not load lifestyle context",
       "remove": "Remove {kind}",
-      "removeShort": "Remove",
-      "removeConfirmTitle": "Remove {kind}?",
-      "removeConfirmDescription": "The current value will become not recorded. Its dated history will be retained.",
-      "removedToast": "{kind} removed from current lifestyle context",
-      "removeError": "Could not remove {kind}",
-      "historyTitle": "Previous values",
-      "to": "to",
       "values": {
         "SMOKING_STATUS": {
           "NEVER": "Never smoked",
@@ -11024,6 +11023,228 @@
       "savedToast": "Emergency information saved",
       "saveError": "Couldn't save your emergency information.",
       "loadError": "Couldn't load your emergency information."
+    },
+    "life": {
+      "cardTitle": "Life circumstances",
+      "cardDescription": "Smoking, alcohol, activity, work, habits and goals, dated and each optional.",
+      "loadError": "Your life circumstances could not be loaded.",
+      "noAnswer": "No answer",
+      "yes": "Yes",
+      "no": "No",
+      "validSince": "Valid since",
+      "month": "Month",
+      "year": "Year",
+      "lastConfirmed": "Last confirmed on {date}",
+      "notAnswered": "Not answered yet",
+      "unreadable": "This answer cannot be read on this server.",
+      "save": "Save section",
+      "savedToast": "Section saved",
+      "saveError": "The section could not be saved.",
+      "review": {
+        "question": "Is this still true? Your last answer is more than a year old.",
+        "confirm": "Still true",
+        "confirmedToast": "Thanks, marked as still true",
+        "confirmError": "The confirmation could not be saved."
+      },
+      "ai": {
+        "label": "Share this section with the AI",
+        "shiftLabel": "Share shift work with the AI",
+        "hint": "Off means the Coach and the briefings never see these answers.",
+        "savedToast": "AI sharing updated",
+        "saveError": "The AI setting could not be saved."
+      },
+      "sections": {
+        "tobacco": {
+          "title": "Smoking and nicotine"
+        },
+        "alcohol": {
+          "title": "Alcohol"
+        },
+        "activity": {
+          "title": "Activity and sitting"
+        },
+        "work": {
+          "title": "Work and rhythm"
+        },
+        "habits": {
+          "title": "Sleep, diet and caffeine"
+        },
+        "goals": {
+          "title": "Goals"
+        }
+      },
+      "fields": {
+        "smokingStatus": "Smoking status",
+        "products": "Products used",
+        "cigarettesPerDay": "Cigarettes per day",
+        "startYear": "Year you started",
+        "quitMonth": "When you stopped",
+        "secondhandSmoke": "Regular secondhand smoke",
+        "moderateDaysPerWeek": "Days per week with moderate to strenuous activity, such as brisk walking",
+        "moderateMinutesPerDay": "Minutes on those days, on average",
+        "sittingHoursWorkday": "Hours sitting on a workday",
+        "shiftSchedule": "Shift work",
+        "situation": "Work situation",
+        "physicalNature": "Kind of work",
+        "nightWork": "Night work",
+        "exposures": "Exposures at work",
+        "freeWeekdays": "Free days of the week",
+        "napRegularly": "Regular nap",
+        "snoringReported": "Others say you snore",
+        "dietPattern": "Diet",
+        "dietSpecifics": "Specifics",
+        "lateMealsPerWeek": "Meals after 9 pm per week",
+        "fruitVegPortionsPerDay": "Portions of fruit and vegetables per day",
+        "caffeineDrinksPerDay": "Caffeinated drinks per day",
+        "latestCaffeine": "Latest caffeine of the day",
+        "goals": "What you want to work on",
+        "goalsHint": "Up to three."
+      },
+      "values": {
+        "products": {
+          "cigarettes": "Cigarettes",
+          "cigars_pipe": "Cigars or pipe",
+          "e_cigarette": "E-cigarette",
+          "heated_tobacco": "Heated tobacco",
+          "snus_pouches": "Snus or nicotine pouches"
+        },
+        "situation": {
+          "none": "Not in paid work",
+          "indoor": "Mostly indoors",
+          "outdoor": "Mostly outdoors",
+          "mixed": "Indoors and outdoors"
+        },
+        "physicalNature": {
+          "mostly_sitting": "Mostly sitting",
+          "standing_walking": "Standing or walking",
+          "heavy_physical": "Heavy physical work"
+        },
+        "exposures": {
+          "heat": "Heat",
+          "cold": "Cold",
+          "dust": "Dust",
+          "fumes_solvents": "Fumes or solvents",
+          "noise": "Noise"
+        },
+        "dietPattern": {
+          "mixed": "Mixed diet",
+          "vegetarian": "Vegetarian",
+          "vegan": "Vegan",
+          "pescetarian": "Pescetarian",
+          "other": "Other"
+        },
+        "dietSpecifics": {
+          "intermittent_fasting": "Intermittent fasting",
+          "low_carb": "Low carb",
+          "prescribed_diet": "Diet prescribed by a doctor"
+        },
+        "latestCaffeine": {
+          "before_12": "Before noon",
+          "12_15": "Noon to 3 pm",
+          "15_18": "3 to 6 pm",
+          "after_18": "After 6 pm"
+        },
+        "goals": {
+          "weight": "Weight",
+          "blood_pressure": "Blood pressure",
+          "blood_sugar": "Blood sugar",
+          "sleep": "Sleep",
+          "fitness": "Fitness",
+          "stress_recovery": "Stress and recovery",
+          "medication_routine": "Taking medication regularly",
+          "quit_smoking": "Stop smoking",
+          "less_alcohol": "Drink less alcohol"
+        },
+        "weekdays": {
+          "1": "Mon",
+          "2": "Tue",
+          "3": "Wed",
+          "4": "Thu",
+          "5": "Fri",
+          "6": "Sat",
+          "7": "Sun"
+        }
+      },
+      "derived": {
+        "packYears": "{value} pack-years",
+        "packYearsMissing": "Pack-years need cigarettes per day and the year you started.",
+        "activityMinutes": "{value} minutes a week",
+        "meetsWho": "That meets the WHO recommendation of 150 minutes a week.",
+        "belowWho": "That is below the WHO recommendation of 150 minutes a week.",
+        "measuredSteps": "Your measured steps come first; this answer adds context.",
+        "freeDaysDefault": "Without an answer, Saturday and Sunday count as free days."
+      },
+      "auditC": {
+        "intro": "Three questions on alcohol from the WHO AUDIT. A screening, not a diagnosis.",
+        "start": "Answer the questions",
+        "again": "Answer again",
+        "offerDue": "A quick look once a year is enough.",
+        "notValidated": "There is no validated translation for your language yet, so the questions are shown in English.",
+        "submit": "Save answers",
+        "savedToast": "Answers saved",
+        "saveError": "The answers could not be saved.",
+        "result": "{score} of 12 points",
+        "above": "At or above the screening cut-off of {cutoff}.",
+        "below": "Below the screening cut-off of {cutoff}.",
+        "noCutoff": "Without a sex in your profile only the sum is shown.",
+        "source": "Source: {source}",
+        "history": "Earlier entries",
+        "remove": "Remove entry",
+        "removeConfirmTitle": "Remove this entry?",
+        "removeConfirmBody": "The entry leaves your history. This cannot be undone here.",
+        "removedToast": "Entry removed",
+        "removeError": "The entry could not be removed.",
+        "historyEntry": "{date}: {score} of 12"
+      },
+      "takeOver": {
+        "conditionsButton": "Add to condition journal",
+        "allergiesButton": "Add to allergies",
+        "conditionsTitle": "Add a chronic condition",
+        "allergiesTitle": "Add an allergy",
+        "description": "Your free text stays as it is until you clear it yourself.",
+        "freeTextLabel": "Your free text",
+        "conditionLabel": "Condition",
+        "onset": "Since",
+        "save": "Add",
+        "savedToast": "Entry added",
+        "saveError": "The entry could not be added.",
+        "clearQuestion": "The entry is saved. Clear the free text now?",
+        "clear": "Clear free text",
+        "keep": "Keep it",
+        "clearedToast": "Free text cleared",
+        "clearError": "The free text could not be cleared."
+      },
+      "screening": {
+        "cardTitle": "Screening hints",
+        "cardDescription": "From your life circumstances, with the rule and the country it comes from.",
+        "noReminder": "This is a hint only; set a reminder yourself if you want one.",
+        "source": "Source: {source}",
+        "titles": {
+          "lung_ldct": "Low-dose CT for lung cancer",
+          "aaa_ultrasound": "Ultrasound of the abdominal aorta"
+        },
+        "status": {
+          "suggested": "May apply to you",
+          "not_eligible": "Does not apply to you",
+          "unknown": "Not enough information"
+        },
+        "reasons": {
+          "never_smoked": "You have never smoked.",
+          "missing_birth_date": "Your birth date is missing.",
+          "age_out_of_range": "Your age is outside the range.",
+          "missing_smoking_status": "Your smoking status is missing.",
+          "no_cigarettes": "The rule counts cigarettes only.",
+          "missing_smoking_history": "Cigarettes per day or the start year is missing.",
+          "pack_years_below_15": "Fewer than 15 pack-years.",
+          "pack_years_below_20": "Fewer than 20 pack-years.",
+          "smoked_years_below_25": "Fewer than 25 years of smoking.",
+          "missing_quit_date": "The date you stopped is missing.",
+          "quit_over_10_years": "You stopped more than 10 years ago.",
+          "quit_over_15_years": "You stopped more than 15 years ago.",
+          "missing_sex": "Your sex is missing in the profile.",
+          "sex_not_male": "The rule applies to men."
+        }
+      }
     }
   },
   "environment": {

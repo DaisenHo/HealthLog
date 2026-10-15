@@ -384,7 +384,20 @@
     "immunizationsColDose": "차수",
     "immunizationsColLot": "로트번호",
     "courseRange": "복용 기간 {start}부터 {end}까지",
-    "courseSince": "복용 기간 {start}부터"
+    "courseSince": "복용 기간 {start}부터",
+    "lifePackYears": "갑년",
+    "lifeAuditC": "AUDIT-C (선별검사)",
+    "lifeAuditCScore": "{date}, 12점 중 {score}점.",
+    "lifeAuditCAbove": "기준점 {cutoff}점 이상 ({source}).",
+    "lifeAuditCBelow": "기준점 {cutoff}점 미만 ({source}).",
+    "lifeAuditCNoCutoff": "성별 기준점을 적용하지 않음.",
+    "lifeActivity": "신체 활동",
+    "lifeActivityValue": "주당 {minutes}분, 본인 응답",
+    "lifeSitting": "평일 앉아 있는 시간",
+    "lifeSittingValue": "{hours}시간, 본인 응답",
+    "lifeWork": "일",
+    "lifeNightWork": "야간 근무",
+    "lifeExposures": "노출: {list}"
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -10826,25 +10839,11 @@
     },
     "profileFacts": {
       "cardTitle": "생활 습관 정보",
-      "cardDescription": "측정값을 어떻게 해석해야 하는지에 영향을 주는 현재 상황을 기록해 주세요.",
       "smokingLabel": "흡연 상태",
       "alcoholLabel": "음주 패턴",
       "shiftLabel": "근무 일정",
       "notRecorded": "기록 없음",
-      "unreadable": "저장된 값을 읽지 못했어요",
-      "save": "저장",
-      "savedToast": "생활 습관 정보를 저장했어요",
-      "savePartialError": "저장 실패: {kinds}. 다시 시도해 주세요.",
-      "saveKindError": "저장 안 됨",
-      "loadError": "생활 습관 정보를 불러오지 못했어요",
       "remove": "삭제: {kind}",
-      "removeShort": "삭제",
-      "removeConfirmTitle": "{kind} 삭제할까요?",
-      "removeConfirmDescription": "현재 값이 '기록 없음'으로 바뀌어요. 날짜별 이력은 그대로 남아요.",
-      "removedToast": "현재 생활 습관 정보에서 삭제함: {kind}",
-      "removeError": "삭제하지 못함: {kind}",
-      "historyTitle": "이전 값",
-      "to": "~",
       "values": {
         "SMOKING_STATUS": {
           "NEVER": "피운 적 없음",
@@ -11024,6 +11023,228 @@
       "savedToast": "응급 정보를 저장했어요",
       "saveError": "응급 정보를 저장하지 못했어요.",
       "loadError": "응급 정보를 불러오지 못했어요."
+    },
+    "life": {
+      "cardTitle": "생활 환경",
+      "cardDescription": "흡연, 음주, 활동, 일, 습관과 목표를 날짜와 함께, 모두 선택적으로 기록해요.",
+      "loadError": "생활 환경을 불러오지 못했어요.",
+      "noAnswer": "응답 안 함",
+      "yes": "예",
+      "no": "아니요",
+      "validSince": "적용 시작",
+      "month": "월",
+      "year": "연도",
+      "lastConfirmed": "{date}에 마지막으로 확인함",
+      "notAnswered": "아직 답하지 않음",
+      "unreadable": "이 서버에서는 이 응답을 읽을 수 없어요.",
+      "save": "이 항목 저장",
+      "savedToast": "항목을 저장했어요",
+      "saveError": "항목을 저장하지 못했어요.",
+      "review": {
+        "question": "아직 그대로인가요? 마지막 응답이 1년도 더 지났어요.",
+        "confirm": "그대로예요",
+        "confirmedToast": "고마워요. 여전히 맞다고 표시했어요",
+        "confirmError": "확인을 저장하지 못했어요."
+      },
+      "ai": {
+        "label": "이 항목을 AI와 공유",
+        "shiftLabel": "교대 근무를 AI와 공유",
+        "hint": "끄면 코치와 브리핑이 이 응답을 전혀 보지 않아요.",
+        "savedToast": "AI 공유 설정을 바꿨어요",
+        "saveError": "AI 설정을 저장하지 못했어요."
+      },
+      "sections": {
+        "tobacco": {
+          "title": "흡연과 니코틴"
+        },
+        "alcohol": {
+          "title": "음주"
+        },
+        "activity": {
+          "title": "활동과 앉아 있는 시간"
+        },
+        "work": {
+          "title": "일과 생활 리듬"
+        },
+        "habits": {
+          "title": "수면, 식사, 카페인"
+        },
+        "goals": {
+          "title": "목표"
+        }
+      },
+      "fields": {
+        "smokingStatus": "흡연 상태",
+        "products": "사용하는 제품",
+        "cigarettesPerDay": "하루 담배 개비 수",
+        "startYear": "흡연을 시작한 해",
+        "quitMonth": "금연한 시기",
+        "secondhandSmoke": "간접흡연에 자주 노출",
+        "moderateDaysPerWeek": "빠르게 걷기처럼 중간 강도 이상으로 움직이는 날, 주당",
+        "moderateMinutesPerDay": "그런 날의 평균 시간(분)",
+        "sittingHoursWorkday": "평일에 앉아 있는 시간",
+        "shiftSchedule": "교대 근무",
+        "situation": "근무 환경",
+        "physicalNature": "일의 종류",
+        "nightWork": "야간 근무",
+        "exposures": "일할 때의 노출",
+        "freeWeekdays": "쉬는 요일",
+        "napRegularly": "규칙적인 낮잠",
+        "snoringReported": "다른 사람이 코를 곤다고 함",
+        "dietPattern": "식사 방식",
+        "dietSpecifics": "특이 사항",
+        "lateMealsPerWeek": "주당 밤 9시 이후 식사 횟수",
+        "fruitVegPortionsPerDay": "하루 과일·채소 섭취량(회)",
+        "caffeineDrinksPerDay": "하루 카페인 음료 수",
+        "latestCaffeine": "하루 중 마지막 카페인",
+        "goals": "노력하고 싶은 부분",
+        "goalsHint": "최대 세 가지."
+      },
+      "values": {
+        "products": {
+          "cigarettes": "궐련",
+          "cigars_pipe": "시가 또는 파이프",
+          "e_cigarette": "전자담배",
+          "heated_tobacco": "궐련형 전자담배",
+          "snus_pouches": "스누스 또는 니코틴 파우치"
+        },
+        "situation": {
+          "none": "유급 노동 안 함",
+          "indoor": "주로 실내",
+          "outdoor": "주로 실외",
+          "mixed": "실내와 실외"
+        },
+        "physicalNature": {
+          "mostly_sitting": "주로 앉아서",
+          "standing_walking": "서 있거나 걸으며",
+          "heavy_physical": "힘든 육체노동"
+        },
+        "exposures": {
+          "heat": "더위",
+          "cold": "추위",
+          "dust": "먼지",
+          "fumes_solvents": "연기 또는 용제",
+          "noise": "소음"
+        },
+        "dietPattern": {
+          "mixed": "일반식",
+          "vegetarian": "채식",
+          "vegan": "비건",
+          "pescetarian": "페스코 채식",
+          "other": "기타"
+        },
+        "dietSpecifics": {
+          "intermittent_fasting": "간헐적 단식",
+          "low_carb": "저탄수화물",
+          "prescribed_diet": "의사가 처방한 식단"
+        },
+        "latestCaffeine": {
+          "before_12": "정오 전",
+          "12_15": "정오부터 오후 3시",
+          "15_18": "오후 3시부터 6시",
+          "after_18": "오후 6시 이후"
+        },
+        "goals": {
+          "weight": "체중",
+          "blood_pressure": "혈압",
+          "blood_sugar": "혈당",
+          "sleep": "수면",
+          "fitness": "체력",
+          "stress_recovery": "스트레스와 회복",
+          "medication_routine": "약을 규칙적으로 복용",
+          "quit_smoking": "금연",
+          "less_alcohol": "음주 줄이기"
+        },
+        "weekdays": {
+          "1": "월",
+          "2": "화",
+          "3": "수",
+          "4": "목",
+          "5": "금",
+          "6": "토",
+          "7": "일"
+        }
+      },
+      "derived": {
+        "packYears": "{value}갑년",
+        "packYearsMissing": "갑년을 계산하려면 하루 개비 수와 흡연 시작 연도가 필요해요.",
+        "activityMinutes": "주당 {value}분",
+        "meetsWho": "WHO 권장량인 주당 150분을 채워요.",
+        "belowWho": "WHO 권장량인 주당 150분보다 적어요.",
+        "measuredSteps": "측정된 걸음 수가 우선이고, 이 응답은 맥락을 더해요.",
+        "freeDaysDefault": "응답이 없으면 토요일과 일요일을 쉬는 날로 봐요."
+      },
+      "auditC": {
+        "intro": "WHO AUDIT의 음주 관련 세 문항이에요. 선별검사이며 진단이 아니에요.",
+        "start": "문항에 답하기",
+        "again": "다시 답하기",
+        "offerDue": "1년에 한 번 확인하면 충분해요.",
+        "notValidated": "사용하는 언어로 검증된 번역이 아직 없어 문항을 영어로 보여 드려요.",
+        "submit": "답변 저장",
+        "savedToast": "답변을 저장했어요",
+        "saveError": "답변을 저장하지 못했어요.",
+        "result": "12점 중 {score}점",
+        "above": "선별 기준점 {cutoff}점 이상이에요.",
+        "below": "선별 기준점 {cutoff}점 미만이에요.",
+        "noCutoff": "프로필에 성별이 없어 합계만 보여 드려요.",
+        "source": "출처: {source}",
+        "history": "이전 기록",
+        "remove": "기록 삭제",
+        "removeConfirmTitle": "이 기록을 삭제할까요?",
+        "removeConfirmBody": "기록이 내역에서 사라져요. 여기서는 되돌릴 수 없어요.",
+        "removedToast": "기록을 삭제했어요",
+        "removeError": "기록을 삭제하지 못했어요.",
+        "historyEntry": "{date}: 12점 중 {score}점"
+      },
+      "takeOver": {
+        "conditionsButton": "상태 일지로 옮기기",
+        "allergiesButton": "알레르기로 옮기기",
+        "conditionsTitle": "만성 질환 추가",
+        "allergiesTitle": "알레르기 추가",
+        "description": "직접 지우기 전까지 자유 입력 내용은 그대로 남아요.",
+        "freeTextLabel": "자유 입력 내용",
+        "conditionLabel": "질환",
+        "onset": "시작",
+        "save": "추가",
+        "savedToast": "항목을 추가했어요",
+        "saveError": "항목을 추가하지 못했어요.",
+        "clearQuestion": "항목을 저장했어요. 지금 자유 입력 내용을 지울까요?",
+        "clear": "자유 입력 지우기",
+        "keep": "그대로 두기",
+        "clearedToast": "자유 입력 내용을 지웠어요",
+        "clearError": "자유 입력 내용을 지우지 못했어요."
+      },
+      "screening": {
+        "cardTitle": "검진 안내",
+        "cardDescription": "생활 환경에서 나온 안내로, 기준과 그 기준을 만든 나라를 함께 보여 줘요.",
+        "noReminder": "안내일 뿐이에요. 알림이 필요하면 직접 만들어 주세요.",
+        "source": "출처: {source}",
+        "titles": {
+          "lung_ldct": "폐암 저선량 CT",
+          "aaa_ultrasound": "복부 대동맥 초음파"
+        },
+        "status": {
+          "suggested": "해당될 수 있어요",
+          "not_eligible": "해당되지 않아요",
+          "unknown": "정보가 부족해요"
+        },
+        "reasons": {
+          "never_smoked": "담배를 피운 적이 없어요.",
+          "missing_birth_date": "생년월일이 없어요.",
+          "age_out_of_range": "나이가 기준 범위 밖이에요.",
+          "missing_smoking_status": "흡연 상태가 없어요.",
+          "no_cigarettes": "이 기준은 궐련만 세어요.",
+          "missing_smoking_history": "하루 개비 수나 흡연 시작 연도가 없어요.",
+          "pack_years_below_15": "15갑년 미만이에요.",
+          "pack_years_below_20": "20갑년 미만이에요.",
+          "smoked_years_below_25": "흡연 기간이 25년 미만이에요.",
+          "missing_quit_date": "금연 시기가 없어요.",
+          "quit_over_10_years": "금연한 지 10년이 넘었어요.",
+          "quit_over_15_years": "금연한 지 15년이 넘었어요.",
+          "missing_sex": "프로필에 성별이 없어요.",
+          "sex_not_male": "이 기준은 남성에게 적용돼요."
+        }
+      }
     }
   },
   "environment": {

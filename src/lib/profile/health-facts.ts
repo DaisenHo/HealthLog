@@ -3,7 +3,10 @@ import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
-import { invalidateUserInsights } from "@/lib/cache/invalidate";
+import {
+  invalidateUserDashboardSnapshot,
+  invalidateUserInsights,
+} from "@/lib/cache/invalidate";
 import { getEvent } from "@/lib/logging/context";
 import {
   HEALTH_PROFILE_FACT_KINDS,
@@ -70,6 +73,8 @@ export async function invalidateHealthProfileFactConsumers(
     },
   });
   invalidateUserInsights(userId);
+  // The dashboard's chronotype reads the free-weekday answers (v1.43).
+  invalidateUserDashboardSnapshot(userId);
 }
 
 export function decryptHealthProfileFactValue(

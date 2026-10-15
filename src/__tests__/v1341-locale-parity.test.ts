@@ -47,7 +47,6 @@ const REQUIRED_KEYS = [
   "insights.healthScore.versionAndNoise",
   "insights.healthScore.methodVersion",
   "insights.healthScore.source",
-  "records.profileFacts.save",
   "records.allergies.add",
   "records.allergies.addFirst",
   "records.family.add",
@@ -62,6 +61,9 @@ const OBSOLETE_KEYS = [
   "insights.healthScore.composition",
   "documents.detail.summary.regenerate",
   "records.profileFacts.correct",
+  // v1.43 — the profile-facts card became the life-circumstances card, whose
+  // sections save on their own.
+  "records.profileFacts.save",
   "settings.nightscoutPrivateHost",
   "settings.nightscoutPrivateHostHelp",
 ] as const;
