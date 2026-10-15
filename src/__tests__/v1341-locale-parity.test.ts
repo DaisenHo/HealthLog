@@ -30,7 +30,9 @@ const REQUIRED_KEYS = [
   "common.networkError",
   "settings.googleHealthSyncResult",
   "settings.googleHealthSyncFailed",
-  "settings.googleHealthBackfillInProgress",
+  // `settings.googleHealthBackfillInProgress` left this list in v1.42.4: the
+  // history-loading line became a sentence variant of the shared integration
+  // card (`settings.integrationCard.reason.dataArrivingHistory`).
   "settings.syncOutcome.empty",
   "settings.syncOutcome.partial",
   "settings.syncOutcome.failed",

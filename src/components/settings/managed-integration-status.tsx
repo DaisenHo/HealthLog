@@ -1,28 +1,27 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Plug } from "lucide-react";
+import { Droplet, ExternalLink, Plug } from "lucide-react";
 
-import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { IntegrationStatusPill } from "@/components/settings/integration-status-pill";
-import { SettingsCard } from "@/components/settings/settings-card";
+import { IntegrationCard } from "@/components/settings/integrations/integration-card";
+import { OAUTH_INTEGRATIONS } from "@/components/settings/integrations/oauth-integration-card";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
+import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import { queryKeys } from "@/lib/query-keys";
 import { assertRecordSettingsResponseForRecord } from "@/lib/record-settings";
 
-type ManagedIntegrationState =
-  "connected" | "error_transient" | "error_reauth" | "disconnected" | "parked";
+type ManagedIntegrationKey = keyof typeof INTEGRATION_DISPLAY_NAMES;
 
 interface ManagedIntegrationStatusResponse {
   recordId: string;
   integrations: Array<{
-    integration: keyof typeof INTEGRATION_DISPLAY_NAMES;
-    state: ManagedIntegrationState;
-    lastSuccessAt: string | null;
-    lastAttemptAt: string | null;
+    integration: ManagedIntegrationKey;
+    /** The server-resolved state; null while the provider is not connected. */
+    health: ConnectionHealth | null;
   }>;
 }
 
@@ -37,25 +36,24 @@ const INTEGRATION_DISPLAY_NAMES = {
   strava: "Strava",
 } as const;
 
-function recordStatusPillState(state: ManagedIntegrationState) {
-  switch (state) {
-    case "connected":
-      return "connected" as const;
-    case "error_transient":
-      return "warning" as const;
-    case "error_reauth":
-      return "error" as const;
-    case "parked":
-      return "parked" as const;
-    case "disconnected":
-      return "disconnected" as const;
-  }
+/** Where the guardian boundary is explained, connected services included. */
+const SHARING_DOCS_HREF =
+  "https://docs.healthlog.dev/self-hosting/account-sharing#records-with-no-login";
+
+function iconFor(key: ManagedIntegrationKey) {
+  if (key === "nightscout") return Droplet;
+  return OAUTH_INTEGRATIONS[key]?.icon ?? Plug;
 }
 
 /**
- * The managed-record integration view is deliberately a status projection.
- * It reads the active record's id from the resolved account-access payload and
- * has no connection, credential, sync, or provider-control affordance.
+ * The managed record's connections, on the same card every integration in
+ * Settings renders, from the same server-resolved `health`.
+ *
+ * Read-only by construction: a guardian cannot connect, reconnect, resume,
+ * sync, test or disconnect a managed record's provider, because an OAuth flow
+ * cannot safely carry a record selector. So the cards carry no menu and no
+ * button, and one sentence above them says why, with the page that explains
+ * the boundary.
  */
 export function ManagedIntegrationStatus() {
   const { t } = useTranslations();
@@ -78,60 +76,58 @@ export function ManagedIntegrationStatus() {
     return <QueryErrorCard onRetry={() => void statusQuery.refetch()} />;
   }
 
-  if (statusQuery.isLoading || !statusQuery.data) {
-    return (
-      <SettingsCard
-        aria-busy="true"
-        aria-live="polite"
-        data-record-id={recordId ?? undefined}
-        data-record-settings-family="integrations"
-      >
-        <SettingsCardHeader
-          icon={Plug}
-          title={t("settings.sections.integrations.title")}
-          description={t("settings.sharedRecord.integrationStatusDescription")}
-        />
-        <p className="text-sm">
-          {t("settings.sharedRecord.integrationStatusDetail")}
-        </p>
-      </SettingsCard>
+  const loading = statusQuery.isLoading || !statusQuery.data;
+  const entries =
+    statusQuery.data?.integrations ??
+    (Object.keys(INTEGRATION_DISPLAY_NAMES) as ManagedIntegrationKey[]).map(
+      (integration) => ({ integration, health: null }),
     );
-  }
 
   return (
-    <SettingsCard
-      aria-labelledby="managed-integration-status-title"
+    <section
+      className="space-y-4"
+      aria-labelledby={loading ? undefined : "managed-integration-status-title"}
+      aria-busy={loading || undefined}
+      aria-live={loading ? "polite" : undefined}
       data-record-id={recordId ?? undefined}
       data-record-settings-family="integrations"
     >
-      <SettingsCardHeader
+      <SectionHeading
         icon={Plug}
+        id="managed-integration-status-title"
         title={t("settings.sections.integrations.title")}
-        titleId="managed-integration-status-title"
-        description={t("settings.sharedRecord.integrationStatusDescription")}
+        subtitle={t("settings.sharedRecord.integrationStatusDescription")}
       />
+      <p className="text-sm" data-slot="managed-integration-read-only">
+        {t("settings.sharedRecord.integrationStatusDetail")}{" "}
+        <a
+          href={SHARING_DOCS_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary inline-flex items-center gap-1 underline-offset-2 hover:underline"
+        >
+          {t("settings.sharedRecord.integrationStatusDocs")}
+          <ExternalLink className="size-3" aria-hidden="true" />
+        </a>
+      </p>
       <ul
-        className="space-y-3"
+        className="space-y-4"
         aria-label={activeRecord?.displayName ?? undefined}
       >
-        {statusQuery.data.integrations.map((integration) => (
-          <li
-            key={integration.integration}
-            className="flex items-center justify-between gap-3"
-          >
-            <span className="text-sm font-medium">
-              {INTEGRATION_DISPLAY_NAMES[integration.integration]}
-            </span>
-            <IntegrationStatusPill
-              state={recordStatusPillState(integration.state)}
-              lastSyncAt={
-                integration.lastSuccessAt ?? integration.lastAttemptAt
-              }
-              testId={`managed-integration-${integration.integration}`}
+        {entries.map((entry) => (
+          <li key={entry.integration}>
+            <IntegrationCard
+              provider={entry.integration}
+              providerName={INTEGRATION_DISPLAY_NAMES[entry.integration]}
+              icon={iconFor(entry.integration)}
+              loading={loading}
+              connected={entry.health !== null}
+              health={entry.health}
+              testId={`managed-integration-${entry.integration}`}
             />
           </li>
         ))}
       </ul>
-    </SettingsCard>
+    </section>
   );
 }

@@ -616,21 +616,25 @@ const REGISTRY: DestructiveEntry[] = [
   },
 
   // ── Integrations ────────────────────────────────────────────────────────
-  ...(
-    [
-      ["withings-card.tsx", "Withings"],
-      ["fitbit-card.tsx", "Fitbit"],
-      ["whoop-card.tsx", "WHOOP"],
-      ["google-health-card.tsx", "Google Health"],
-      ["nightscout-card.tsx", "Nightscout"],
-      ["oauth-provider-card.tsx", "the generic OAuth providers"],
-    ] as const
-  ).map(([f, name]): DestructiveEntry => ({
-    file: `components/settings/integrations/${f}`,
-    destroys: `the stored ${name} credentials — reconnecting means authorising again`,
+  // Every connection renders the shared integration card, whose three-dot
+  // menu raises the confirmation for the destructive entry; the controllers
+  // below only hold the request.
+  {
+    file: "components/settings/integrations/oauth-integration-card.tsx",
+    destroys:
+      "the stored Withings, WHOOP, Fitbit, Google Health, Polar, Oura or Strava grant — reconnecting means authorising again",
+    triggers: ["components/settings/integrations/integration-card.tsx"],
     recovery: "permanent",
-    confirm: ["AlertDialog"],
-  })),
+    confirm: ["ConfirmDialog"],
+  },
+  {
+    file: "components/settings/integrations/nightscout-card.tsx",
+    destroys:
+      "the stored Nightscout address and token — reconnecting means typing them again",
+    triggers: ["components/settings/integrations/integration-card.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmDialog"],
+  },
   {
     file: "components/settings/integrations/document-sources-card.tsx",
     destroys:

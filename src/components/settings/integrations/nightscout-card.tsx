@@ -1,50 +1,36 @@
 "use client";
 
-// v1.17.0 — Nightscout CGM integration card. Unlike WHOOP / Fitbit (OAuth,
-// BYO-key), Nightscout is a URL + token the self-hoster pastes once: the user
-// runs their own instance and HealthLog pulls continuous glucose off it. The
-// card reads the consolidated `/api/integrations/status` envelope like every
-// sibling — it was the last card firing its own status round-trip, and the
-// last place a fourth status dialect could hide. Warm copy, mobile-first, the
-// private-network access is operator-owned through an exact-origin server
-// allowlist; ordinary users cannot weaken the outbound-request policy.
+// Nightscout CGM. Unlike the OAuth providers, Nightscout is a URL and an
+// optional token the self-hoster pastes once: they run their own instance and
+// HealthLog pulls continuous glucose from it. The card reads the consolidated
+// `/api/integrations/status` envelope like every sibling and renders the
+// shared integration card. Private-network access is operator-owned through an
+// exact-origin server allowlist; an ordinary user cannot weaken the
+// outbound-request policy, and the card says so when that is what stands in
+// the way.
 
 import { useRef, useState } from "react";
-import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
+  BookOpen,
   Droplet,
+  KeyRound,
   Link2,
   Loader2,
+  Plug,
   RefreshCw,
   Save,
   Unlink,
 } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { TagChip } from "@/components/ui/tag-chip";
-import { SettingsCard } from "@/components/settings/settings-card";
-import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { IntegrationStatusPill } from "@/components/settings/integration-status-pill";
-import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
-import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   invalidateKeys,
@@ -52,20 +38,21 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 
-import { MetricFreshnessDisclosure } from "./metric-freshness-disclosure";
 import {
-  readSyncOutcome,
-  useSyncOutcomeMessage,
-  type SyncOutcomeState,
-} from "./sync-outcome";
+  ActionResultLines,
+  useConnectionTest,
+  useStandardSync,
+} from "./integration-actions";
 import {
-  IntegrationErrorMessage,
-  pillFailurePropsFor,
-  pillStateForVerdict,
-  pillTimestampFor,
-  type IntegrationStatusViewModel,
-} from "./shared";
-import { IntegrationCardDescription } from "./setup-guide-link";
+  IntegrationCard,
+  type IntegrationMenuAction,
+} from "./integration-card";
+import { MetricFreshnessList } from "./metric-freshness-list";
+import {
+  IntegrationCardDescription,
+  integrationDocsHref,
+} from "./setup-guide-link";
+import { failureStreakFor, type IntegrationStatusViewModel } from "./shared";
 
 export function NightscoutCard({
   viewModel,
@@ -73,19 +60,17 @@ export function NightscoutCard({
   viewModel?: IntegrationStatusViewModel;
 }) {
   const { t } = useTranslations();
-  const describeSyncOutcome = useSyncOutcomeMessage();
   const queryClient = useQueryClient();
-
-  const [url, setUrl] = useState("");
-  const [token, setToken] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<SyncOutcomeState | null>(null);
-
   const status = viewModel;
+  const connected = status?.connected ?? false;
 
+  const sync = useStandardSync({
+    provider: "nightscout",
+    i18nPrefix: "settings.nightscout",
+    acceptsFullSync: false,
+  });
+  const test = useConnectionTest("/api/nightscout/test");
+  const [editing, setEditing] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const disconnect = useMutation({
@@ -93,114 +78,50 @@ export function NightscoutCard({
       await apiPost("/api/nightscout/disconnect");
     },
     onSuccess: () => {
-      setUrl("");
-      setToken("");
       // The card reads the consolidated envelope, so that is the one key a
-      // disconnect has to invalidate for the pill to flip back.
+      // disconnect has to invalidate for the card to flip back.
       queryClient.invalidateQueries({
         queryKey: queryKeys.integrationsStatus(),
       });
     },
   });
 
-  async function handleConnect(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setMsg(null);
-    setMsgType(null);
-    try {
-      const res = await apiFetchRaw("/api/nightscout/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: url.trim(),
-          token: token.trim(),
-        }),
-      });
-      if (res.ok) {
-        setMsg(t("settings.nightscoutConnected"));
-        setMsgType("success");
-        setToken("");
-        void invalidateKeys(queryClient, measurementDependentKeys);
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.integrationsStatus(),
-        });
-      } else {
-        let detail = t("settings.nightscoutConnectFailed");
-        try {
-          const json = await res.json();
-          if (json.error) detail = json.error;
-        } catch {
-          // keep the generic message
-        }
-        setMsg(detail);
-        setMsgType("error");
-      }
-    } catch {
-      setMsg(t("common.networkError"));
-      setMsgType("error");
-    }
-    setSaving(false);
+  // A pause or a lapsed token is resolved by submitting the address again:
+  // there is no OAuth round-trip to re-run, so the button opens the form and
+  // puts the cursor in the URL field.
+  function openForm() {
+    setEditing(true);
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      formRef.current
+        ?.querySelector<HTMLInputElement>("#nightscout-url")
+        ?.focus();
+    });
   }
 
-  // Sync now. Same shape as the WHOOP card's incremental arm, minus the
-  // full-history dialog — Nightscout has no full-sync arm to call.
-  async function handleSync() {
-    setSyncing(true);
-    setSyncResult(null);
-    try {
-      const res = await apiFetchRaw("/api/nightscout/sync", { method: "POST" });
-      const json = await res.json();
-      const result = res.ok ? readSyncOutcome(json) : null;
-      if (result) {
-        // The tone comes off what the run wrote, not off `res.ok`.
-        setSyncResult({
-          outcome: result.outcome,
-          message: describeSyncOutcome(
-            result,
-            t("settings.nightscoutSyncResult", { count: result.imported }),
-          ),
-        });
-        void invalidateKeys(queryClient, measurementDependentKeys);
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.integrationsStatus(),
-        });
-      } else {
-        setSyncResult({
-          outcome: "failed",
-          message: json?.error || t("settings.nightscoutSyncFailed"),
-        });
-      }
-    } catch {
-      setSyncResult({
-        outcome: "failed",
-        message: t("settings.nightscoutSyncFailed"),
-      });
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  const pillState = pillStateForVerdict(status?.syncHealth?.verdict);
+  // The newest recorded attempt names the one failure the person cannot fix
+  // from here: the instance sits on a private network the operator has not
+  // approved. Read from the health diagnostics' short error code, never from
+  // a stored message.
   const operatorApprovalRequired =
-    status?.lastError?.startsWith("private_origin_not_approved") ?? false;
-  // `warning` joins the set now that a transient failure paints amber rather
-  // than red — the detail belongs on this line, not in a colour that tells the
-  // user to reconnect against something reconnecting cannot fix.
-  const errorMessage =
-    (pillState === "error" ||
-      pillState === "parked" ||
-      pillState === "warning") &&
-    status?.lastError &&
-    !operatorApprovalRequired
-      ? status.lastError
-      : null;
+    status?.health?.diagnostics.recentCalls[0]?.errorCode ===
+    "private_origin_not_approved";
 
-  return (
-    <SettingsCard data-testid="nightscout-card">
-      <SettingsCardHeader
+  const form = (
+    <NightscoutForm
+      formRef={formRef}
+      connected={connected}
+      configured={status?.configured ?? false}
+      hasToken={status?.hasToken ?? false}
+    />
+  );
+
+  if (!connected) {
+    return (
+      <IntegrationCard
+        provider="nightscout"
+        providerName={t("settings.nightscout")}
         icon={Droplet}
-        title={t("settings.nightscout")}
         titleAccessory={<TagChip>{t("settings.nightscoutTag")}</TagChip>}
         description={
           <IntegrationCardDescription
@@ -208,231 +129,247 @@ export function NightscoutCard({
             provider="nightscout"
           />
         }
-        status={
-          <IntegrationStatusPill
-            state={pillState}
-            lastSyncAt={pillTimestampFor(status)}
-            {...pillFailurePropsFor(status)}
-          />
-        }
+        loading={viewModel === undefined}
+        connected={false}
+        health={null}
+        setup={form}
       />
+    );
+  }
 
-      <div className="space-y-4">
-        {errorMessage && <IntegrationErrorMessage message={errorMessage} />}
-        {operatorApprovalRequired && (
-          <div
-            data-testid="nightscout-private-operator-required"
-            className="border-warning/30 bg-warning/10 space-y-1 rounded-md border px-3 py-2"
-          >
-            <p className="text-warning text-sm font-medium">
-              {t("settings.nightscoutPrivateOperatorTitle")}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {t("settings.nightscoutPrivateOperatorDescription")}
-            </p>
-          </div>
-        )}
+  const menu: IntegrationMenuAction[] = [
+    ...(operatorApprovalRequired
+      ? []
+      : [
+          {
+            id: "sync",
+            label: t("settings.nightscoutSync"),
+            icon: RefreshCw,
+            disabled: sync.syncing,
+            onSelect: () => sync.run(false),
+          },
+          {
+            id: "test",
+            label: t("settings.testConnection.test"),
+            icon: Plug,
+            disabled: test.testing,
+            onSelect: test.run,
+          },
+        ]),
+    {
+      id: "view-data",
+      label: t("settings.nightscoutViewData"),
+      icon: ArrowRight,
+      href: "/insights/blood-glucose",
+    },
+    {
+      id: "credentials",
+      label: t("settings.integrationCard.menu.address"),
+      icon: KeyRound,
+      onSelect: () => setEditing((open) => !open),
+    },
+    {
+      id: "setup-guide",
+      label: t("settings.integrationSetupGuide"),
+      icon: BookOpen,
+      href: integrationDocsHref("nightscout"),
+      external: true,
+    },
+    {
+      id: "disconnect",
+      label: t("settings.nightscoutDisconnect"),
+      icon: Unlink,
+      destructive: true,
+      onSelect: () => disconnect.mutate(),
+      confirm: {
+        title: t("settings.nightscoutDisconnectTitle"),
+        body: t("settings.nightscoutDisconnectDescription"),
+        confirmLabel: t("settings.nightscoutDisconnect"),
+      },
+    },
+  ];
 
-        {/* Parked-integration resume CTA. Surfaces only when the row state
-            is `parked` (>24h of persistent failures). Nightscout has no OAuth
-            redirect — the user re-validates by re-submitting the connect form,
-            so "reconnect" scrolls the form into view + focuses the URL field.
-            Markup matches the WHOOP card byte for byte. */}
-        {pillState === "parked" && (
-          <div
-            data-testid="nightscout-parked-banner"
-            className="border-warning/30 bg-warning/10 flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
-          >
-            <span className="text-warning min-w-0 text-xs break-words">
-              {t("settings.integrationPill.parkedReconnect")}
-            </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                formRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "center",
-                });
-                formRef.current
-                  ?.querySelector<HTMLInputElement>("#nightscout-url")
-                  ?.focus();
-              }}
-              data-testid="nightscout-resume-button"
-              className="min-h-11"
-            >
-              <Link2 className="h-3.5 w-3.5" />
-              {t("settings.integrationPill.resumeCta")}
-            </Button>
-          </div>
-        )}
+  const streak = failureStreakFor(status);
 
-        {status?.connected && (
-          <MetricFreshnessDisclosure
-            entries={status.metricFreshness}
-            idPrefix="nightscout"
-          />
-        )}
+  return (
+    <IntegrationCard
+      provider="nightscout"
+      providerName={t("settings.nightscout")}
+      icon={Droplet}
+      titleAccessory={<TagChip>{t("settings.nightscoutTag")}</TagChip>}
+      connected
+      health={status?.health ?? null}
+      primary={{ onReconnect: openForm, onResume: openForm }}
+      menu={menu}
+      diagnosticsExtra={
+        streak
+          ? [
+              t("settings.integrationCard.details.failureStreak", {
+                count: streak.count,
+                threshold: streak.threshold,
+              }),
+            ]
+          : undefined
+      }
+      details={
+        status?.metricFreshness?.length ? (
+          <MetricFreshnessList entries={status.metricFreshness} />
+        ) : undefined
+      }
+    >
+      {operatorApprovalRequired ? (
+        // The one fact the generic sentence cannot carry: the instance sits
+        // on a private network the operator has not approved, which the
+        // person cannot fix from here. Said in the body, not as a banner.
+        <p
+          className="text-sm"
+          data-testid="nightscout-private-operator-required"
+        >
+          {t("settings.nightscoutPrivateOperatorTitle")}{" "}
+          {t("settings.nightscoutPrivateOperatorDescription")}
+        </p>
+      ) : null}
+      <ActionResultLines provider="nightscout" sync={sync} test={test} />
+      {editing ? form : null}
+    </IntegrationCard>
+  );
+}
 
-        <form ref={formRef} onSubmit={handleConnect} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="nightscout-url">
-              {t("settings.nightscoutUrl")}
-            </Label>
-            <Input
-              id="nightscout-url"
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={
-                status?.configured
-                  ? t("settings.nightscoutUrlSavedPlaceholder")
-                  : "https://your-site.up.railway.app"
-              }
-              maxLength={2048}
-              autoComplete="off"
-              inputMode="url"
-              spellCheck={false}
-              autoCapitalize="none"
-              enterKeyHint="next"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="nightscout-token">
-              {t("settings.nightscoutToken")}
-            </Label>
-            <PasswordInput
-              id="nightscout-token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder={
-                status?.hasToken
-                  ? t("settings.nightscoutTokenSavedPlaceholder")
-                  : t("settings.nightscoutTokenOptional")
-              }
-              maxLength={512}
-              autoComplete="off"
-              spellCheck={false}
-              autoCapitalize="none"
-              enterKeyHint="done"
-            />
-            <p className="text-muted-foreground text-xs">
-              {t("settings.nightscoutTokenHelp")}
-            </p>
-          </div>
+function NightscoutForm({
+  formRef,
+  connected,
+  configured,
+  hasToken,
+}: {
+  formRef: React.RefObject<HTMLFormElement | null>;
+  connected: boolean;
+  configured: boolean;
+  hasToken: boolean;
+}) {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  const [url, setUrl] = useState("");
+  const [token, setToken] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{
+    kind: "success" | "error";
+    text: string;
+  } | null>(null);
 
-          <SettingsCardActions>
-            <Button
-              type="submit"
-              variant="outline"
-              size="sm"
-              className="min-h-11 w-full sm:w-auto"
-              disabled={saving || !url.trim()}
-            >
-              {saving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : status?.connected ? (
-                <Save className="h-3.5 w-3.5" />
-              ) : (
-                <Link2 className="h-3.5 w-3.5" />
-              )}
-              {status?.connected
-                ? t("settings.nightscoutUpdate")
-                : t("settings.nightscoutConnect")}
-            </Button>
-          </SettingsCardActions>
+  async function handleConnect(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setMsg(null);
+    try {
+      const res = await apiFetchRaw("/api/nightscout/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim(), token: token.trim() }),
+      });
+      if (res.ok) {
+        setMsg({ kind: "success", text: t("settings.nightscoutConnected") });
+        setToken("");
+        void invalidateKeys(queryClient, measurementDependentKeys);
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.integrationsStatus(),
+        });
+      } else {
+        let text = t("settings.nightscoutConnectFailed");
+        try {
+          const json = await res.json();
+          if (json.error) text = json.error;
+        } catch {
+          // keep the generic message
+        }
+        setMsg({ kind: "error", text });
+      }
+    } catch {
+      setMsg({ kind: "error", text: t("common.networkError") });
+    }
+    setSaving(false);
+  }
 
-          {msg && (
-            <p
-              role="alert"
-              className={`text-sm ${msgType === "success" ? "text-success" : "text-destructive"}`}
-            >
-              {msg}
-            </p>
-          )}
-        </form>
-
-        {status?.connected && (
-          <>
-            <div className="flex flex-wrap items-start gap-2 [&>*]:min-w-[10rem] sm:[&>*]:min-w-0">
-              {!operatorApprovalRequired && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11"
-                    onClick={handleSync}
-                    disabled={syncing}
-                    data-testid="nightscout-sync"
-                  >
-                    {syncing ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                    ) : (
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    )}
-                    {t("settings.nightscoutSync")}
-                  </Button>
-                  <TestConnectionButton
-                    endpoint="/api/nightscout/test"
-                    disabled={!status?.connected}
-                  />
-                </>
-              )}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive min-h-11"
-                  >
-                    <Unlink className="h-3.5 w-3.5" />
-                    {t("settings.nightscoutDisconnect")}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {t("settings.nightscoutDisconnectTitle")}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("settings.nightscoutDisconnectDescription")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() => disconnect.mutate()}
-                    >
-                      {t("settings.nightscoutDisconnect")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            {syncResult && (
-              <WrittenOutcomeLine
-                outcome={syncResult.outcome}
-                message={syncResult.message}
-                testId="nightscout-sync-result"
-              />
-            )}
-            {/* connect→data loop: a discreet link to where the glucose
-                readings now surface — doubles as the "your data is richer"
-                cue. */}
-            <Link
-              href="/insights/blood-glucose"
-              data-testid="nightscout-data-link"
-              className="text-primary inline-flex items-center gap-1 text-xs underline-offset-2 hover:underline"
-            >
-              {t("settings.nightscoutViewData")}
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </>
-        )}
+  return (
+    <form
+      ref={formRef}
+      onSubmit={handleConnect}
+      className="space-y-3"
+      data-testid="nightscout-form"
+    >
+      <div className="space-y-1.5">
+        <Label htmlFor="nightscout-url">{t("settings.nightscoutUrl")}</Label>
+        <Input
+          id="nightscout-url"
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder={
+            configured
+              ? t("settings.nightscoutUrlSavedPlaceholder")
+              : "https://your-site.up.railway.app"
+          }
+          maxLength={2048}
+          autoComplete="off"
+          inputMode="url"
+          spellCheck={false}
+          autoCapitalize="none"
+          enterKeyHint="next"
+        />
       </div>
-    </SettingsCard>
+      <div className="space-y-1.5">
+        <Label htmlFor="nightscout-token">
+          {t("settings.nightscoutToken")}
+        </Label>
+        <PasswordInput
+          id="nightscout-token"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder={
+            hasToken
+              ? t("settings.nightscoutTokenSavedPlaceholder")
+              : t("settings.nightscoutTokenOptional")
+          }
+          maxLength={512}
+          autoComplete="off"
+          spellCheck={false}
+          autoCapitalize="none"
+          enterKeyHint="done"
+        />
+        <p className="text-muted-foreground text-xs">
+          {t("settings.nightscoutTokenHelp")}
+        </p>
+      </div>
+      {msg && (
+        <p
+          role={msg.kind === "error" ? "alert" : "status"}
+          className={`text-sm ${msg.kind === "success" ? "text-success" : "text-destructive"}`}
+        >
+          {msg.text}
+        </p>
+      )}
+      <SettingsCardActions>
+        <Button
+          type="submit"
+          size="sm"
+          variant={connected ? "outline" : "default"}
+          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
+          disabled={saving || !url.trim()}
+          data-slot={connected ? undefined : "integration-primary-action"}
+          data-action={connected ? undefined : "connect"}
+          data-testid="nightscout-connect"
+        >
+          {saving ? (
+            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
+          ) : connected ? (
+            <Save className="size-3.5" aria-hidden="true" />
+          ) : (
+            <Link2 className="size-3.5" aria-hidden="true" />
+          )}
+          {connected
+            ? t("settings.nightscoutUpdate")
+            : t("settings.nightscoutConnect")}
+        </Button>
+      </SettingsCardActions>
+    </form>
   );
 }

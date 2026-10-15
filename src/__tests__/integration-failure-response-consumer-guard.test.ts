@@ -441,7 +441,7 @@ function assertBucketConsumerLineage(
   const declaration = file.statements.find(
     (statement): statement is ts.FunctionDeclaration =>
       ts.isFunctionDeclaration(statement) &&
-      statement.name?.text === "pillFailurePropsFor",
+      statement.name?.text === "failureStreakFor",
   );
   expect(declaration?.body).toBeDefined();
   let bucketInitializer: string | null = null;
@@ -473,7 +473,7 @@ function assertBucketConsumerLineage(
   for (const kind of kinds) {
     expect(
       accesses,
-      `pillFailurePropsFor must read buckets.${kind} from that response value`,
+      `failureStreakFor must read buckets.${kind} from that response value`,
     ).toContain(`buckets.${kind}`);
   }
 }

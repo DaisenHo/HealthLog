@@ -628,8 +628,21 @@ test.describe.serial("scoped sharing browser journeys", () => {
     );
     await expect(integrations).toBeVisible();
     await expect(integrations).toHaveAttribute("data-record-id", accountId);
+    // Read-only: the shared integration cards render, but nothing on them
+    // acts on a provider. The only buttons are each card's own "details for a
+    // bug report" toggle and its copy button.
     await expect(
-      integrations.locator("button, input, select, textarea"),
+      integrations.locator('[data-slot="integration-card"]'),
+    ).toHaveCount(8);
+    await expect(
+      integrations.locator(
+        '[data-slot="integration-primary-action"], [data-slot="integration-menu-trigger"], input, select, textarea',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      integrations.locator(
+        'button:not([data-slot="integration-details-toggle"]):not([data-slot="integration-diagnostics-copy"])',
+      ),
     ).toHaveCount(0);
 
     await page.goBack();

@@ -14,7 +14,7 @@ type Payload = {
   lastSyncedAt: string | null;
   lastSyncTrigger?: "foreground" | "background" | "push" | null;
   lastBackgroundSyncAt?: string | null;
-  syncHealth?: { verdict: string; since: string | null };
+  health?: ConnectionHealth | null;
   metricFreshness?: Array<{
     type: string;
     lastSeenAt: string;
@@ -38,7 +38,10 @@ vi.mock("@tanstack/react-query", () => ({
   }),
 }));
 
+import type { ConnectionHealth } from "@/lib/integrations/connection-health";
+
 import { AppleHealthCard, ArrivalDetail } from "../apple-health-card";
+import { healthFixture } from "./health-fixture";
 
 function render(locale: Locale = "en") {
   return renderToStaticMarkup(
@@ -56,76 +59,62 @@ describe("<AppleHealthCard>", () => {
   });
 
   it("explains that live sync uses the iOS app rather than OAuth", () => {
-    statusPayload = {
-      lastSyncedAt: null,
-      syncHealth: { verdict: "pending_first_sync", since: null },
-    };
+    statusPayload = { lastSyncedAt: null, health: null };
 
     const html = render();
 
     expect(html).toContain('data-testid="apple-health-card"');
+    expect(html).toContain('data-state="not_connected"');
     expect(html).toContain("HealthLog iOS app");
     expect(html).toContain("not from a web or OAuth connection");
     expect(html).toContain("Settings → Apple Health");
     expect(html).toContain("when iOS grants background time");
-    expect(html).not.toContain(">Connected<");
+    expect(html).toContain("Not connected.");
+    expect(html).not.toContain('data-slot="integration-health-badge"');
   });
 
-  /**
-   * The defect this card carried: any `lastSyncedAt` at all painted the green
-   * "data received" chip, so a pipe dead for three weeks looked exactly like
-   * one that delivered this morning. The verdict now decides.
-   */
-  it("shows a week-old delivery as stale, not as data received", () => {
+  it("says when data stopped and what to do, from the server's health", () => {
     const eightDaysAgo = new Date(
       Date.now() - 8 * 24 * 60 * 60 * 1000,
     ).toISOString();
     statusPayload = {
       lastSyncedAt: eightDaysAgo,
-      syncHealth: { verdict: "stale", since: eightDaysAgo },
+      health: healthFixture({
+        state: "degraded",
+        reason: "no_new_data",
+        since: eightDaysAgo,
+        lastDataAt: eightDaysAgo,
+      }),
     };
 
     const html = render();
 
-    expect(html).toContain('data-testid="apple-health-status"');
-    expect(html).toContain('data-state="stale"');
-    expect(html).toContain("no recent data");
-    // And it says what to do about it.
-    expect(html).toContain('data-testid="apple-health-stale"');
-    expect(html).not.toContain('data-state="connected"');
+    expect(html).toMatch(
+      /data-slot="integration-health-badge"[^>]*data-state="degraded"/,
+    );
+    expect(html).toContain("Delayed");
+    // Apple Health's own variant: the iPhone app is what moves the data.
+    expect(html).toContain("Open HealthLog on your iPhone once.");
   });
 
-  it("shows a recent delivery as connected with its relative time", () => {
+  it("reads a recent delivery as working", () => {
     const anHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     statusPayload = {
       lastSyncedAt: anHourAgo,
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture({ lastDataAt: anHourAgo }),
     };
 
     const html = render();
 
-    expect(html).toContain('data-state="connected"');
-    expect(html).toMatch(/1\s+h\s+ago/);
-    expect(html).not.toContain('data-testid="apple-health-stale"');
+    expect(html).toContain('data-state="ok"');
+    expect(html).toContain("Data is arriving.");
+    expect(html).toContain("Last data: today,");
   });
 
-  it("waits for the first delivery rather than claiming a connection", () => {
-    statusPayload = {
-      lastSyncedAt: null,
-      syncHealth: { verdict: "pending_first_sync", since: null },
-    };
-
-    const html = render();
-
-    expect(html).toContain('data-state="pending-setup"');
-    expect(html).toContain("Waiting for first data");
-    expect(html).not.toContain('data-state="connected"');
-  });
-
-  it("renders per-metric freshness so one dead permission is visible", () => {
+  it("keeps per-metric freshness in the details so one dead permission stays findable", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
       metricFreshness: [
         {
           type: "RESPIRATORY_RATE",
@@ -143,26 +132,14 @@ describe("<AppleHealthCard>", () => {
     };
 
     const html = render();
+    const details = html.slice(html.indexOf('data-slot="integration-details"'));
 
-    expect(html).toContain('data-slot="metric-freshness"');
-    // The collapsed summary already names the problem — the signal must not
-    // hide behind a click.
-    expect(html).toContain("quiet");
-  });
-
-  it("carries no card divider — the card gap does that job", () => {
-    statusPayload = {
-      lastSyncedAt: null,
-      syncHealth: { verdict: "pending_first_sync", since: null },
-    };
-    expect(render()).not.toContain('data-testid="integration-card-divider"');
+    expect(details).toContain('data-slot="metric-freshness"');
+    expect(details).toContain("1 quiet");
   });
 
   it("links to the existing one-shot Apple Health import fallback", () => {
-    statusPayload = {
-      lastSyncedAt: null,
-      syncHealth: { verdict: "pending_first_sync", since: null },
-    };
+    statusPayload = { lastSyncedAt: null, health: null };
 
     const html = render();
 
@@ -173,14 +150,15 @@ describe("<AppleHealthCard>", () => {
     expect(html).toContain("Open one-shot import");
   });
 
-  it("claims no status at all while the read is in flight", () => {
+  it("paints the card and its header while the read is in flight, and no state", () => {
     statusPayload = undefined;
     statusLoading = true;
 
     const html = render();
 
-    expect(html).not.toContain('data-testid="apple-health-status"');
-    expect(html).not.toContain("Connected");
+    expect(html).toContain('data-state="loading"');
+    expect(html).not.toContain('data-slot="integration-health-badge"');
+    expect(html).not.toContain("Not connected.");
   });
 
   it("treats a failed status read as an error line, not a status", () => {
@@ -189,9 +167,8 @@ describe("<AppleHealthCard>", () => {
     const html = render();
 
     expect(html).toContain("Apple Health status unavailable");
-    expect(html).toContain('data-testid="integration-error-message"');
-    expect(html).not.toContain('data-testid="apple-health-status"');
-    expect(html).not.toContain("Connected");
+    expect(html).not.toContain('data-slot="integration-health-badge"');
+    expect(html).not.toContain("Not connected.");
   });
 
   it("defines every card key in all six locale catalogs", () => {
@@ -203,7 +180,6 @@ describe("<AppleHealthCard>", () => {
       "backgroundStep",
       "importNote",
       "importAction",
-      "staleNote",
     ] as const;
 
     for (const catalog of [en, de, es, fr, itMessages, pl]) {
@@ -212,8 +188,6 @@ describe("<AppleHealthCard>", () => {
         expect(appleHealth[key]).toBeTypeOf("string");
         expect(appleHealth[key].length).toBeGreaterThan(0);
       }
-      // The status copy the pill now owns is gone from the catalog; only the
-      // failed-read line survives here.
       expect(Object.keys(appleHealth.status).sort()).toEqual(["unavailable"]);
     }
   });
@@ -221,10 +195,7 @@ describe("<AppleHealthCard>", () => {
   it.each(["en", "de", "es", "fr", "it", "pl", "ko"] as const)(
     "renders localized Apple Health copy for %s without leaking keys",
     (locale) => {
-      statusPayload = {
-        lastSyncedAt: null,
-        syncHealth: { verdict: "pending_first_sync", since: null },
-      };
+      statusPayload = { lastSyncedAt: null, health: null };
 
       const html = render(locale);
 
@@ -246,7 +217,7 @@ describe("<AppleHealthCard> — delivery diagnostic (#586)", () => {
       lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
       lastSyncTrigger: "background",
       lastBackgroundSyncAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
     };
 
     const html = render();
@@ -261,7 +232,7 @@ describe("<AppleHealthCard> — delivery diagnostic (#586)", () => {
       lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
       lastSyncTrigger: "foreground",
       lastBackgroundSyncAt: null,
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
     };
 
     const html = render();
@@ -277,7 +248,7 @@ describe("<AppleHealthCard> — delivery diagnostic (#586)", () => {
       lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
       lastSyncTrigger: null,
       lastBackgroundSyncAt: null,
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
     };
 
     const html = render();
@@ -287,15 +258,16 @@ describe("<AppleHealthCard> — delivery diagnostic (#586)", () => {
     );
   });
 
-  it("says there is nothing to report when no sync has ever arrived", () => {
+  it("shows the setup steps instead of an empty delivery report before any sync", () => {
     statusPayload = {
       lastSyncedAt: null,
-      syncHealth: { verdict: "pending_first_sync", since: null },
+      health: null,
     };
 
     const html = render();
 
-    expect(html).toContain("No sync has arrived yet");
+    expect(html).toContain("Turn on live sync");
+    expect(html).not.toContain('data-testid="apple-health-delivery"');
     expect(html).not.toContain("Last background sync");
   });
 });
@@ -312,7 +284,7 @@ describe("<AppleHealthCard> — sync progress (#778)", () => {
   it("shows the accepted-row count and the oldest reading reached", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
       syncProgress: {
         recordsAccepted: 12345,
         oldestMeasuredAt: "2019-05-04T06:00:00.000Z",
@@ -334,7 +306,7 @@ describe("<AppleHealthCard> — sync progress (#778)", () => {
   it("reads as flowing while batches keep arriving", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
       syncProgress: { recordsAccepted: 100, oldestMeasuredAt: null },
     };
 
@@ -348,7 +320,7 @@ describe("<AppleHealthCard> — sync progress (#778)", () => {
   it("waits honestly instead of inventing throttle state when batches pause", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
       syncProgress: { recordsAccepted: 100, oldestMeasuredAt: null },
     };
 
@@ -364,7 +336,7 @@ describe("<AppleHealthCard> — sync progress (#778)", () => {
   it("renders no progress section before anything has arrived", () => {
     statusPayload = {
       lastSyncedAt: null,
-      syncHealth: { verdict: "pending_first_sync", since: null },
+      health: null,
       syncProgress: { recordsAccepted: 0, oldestMeasuredAt: null },
     };
 
@@ -377,7 +349,7 @@ describe("<AppleHealthCard> — sync progress (#778)", () => {
   it("renders no progress section when the server read failed", () => {
     statusPayload = {
       lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
       syncProgress: null,
     };
 
@@ -472,7 +444,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
   it("titles the list by data type", () => {
     statusPayload = {
       lastSyncedAt: hoursAgo(1),
-      syncHealth: { verdict: "fresh", since: null },
+      health: healthFixture(),
       metricFreshness: [{ ...base }],
     };
     expect(render()).toContain("By data type");

@@ -1,36 +1,29 @@
 "use client";
 
 /**
- * Apple Health — the one integration with no ledger row and no cron.
+ * Apple Health: the one integration with no ledger row and no cron.
  *
- * The iOS app pushes; nothing here polls. The card used to derive its status
- * from the mere presence of `lastSyncedAt`, so any timestamp at all painted the
- * green "data received" chip — a pipe dead for three weeks looked exactly like
- * one that delivered this morning. It now reads the server's verdict, which
- * applies a seven-day threshold to the same timestamp, and renders the shared
- * pill instead of a bespoke badge so the flagship integration speaks the same
- * status language as its siblings.
+ * The iOS app pushes; nothing here polls. The card renders the shared
+ * integration card from the server's `health`, so the flagship integration
+ * speaks the same status language as its siblings. What only Apple Health
+ * knows (how the last batch arrived, how far the first backfill reached, when
+ * each data type last came in) lives in the card's details.
  */
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { HeartPulse, Upload } from "lucide-react";
 
-import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { SettingsCard } from "@/components/settings/settings-card";
-import {
-  formatRelative,
-  IntegrationStatusPill,
-} from "@/components/settings/integration-status-pill";
+import { formatRelative } from "@/components/settings/integration-status-pill";
 import { Button } from "@/components/ui/button";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import type { HealthKitFreshnessEntry } from "@/lib/integrations/healthkit-type-sync";
-import type { SyncHealth } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
 
-import { MetricFreshnessDisclosure } from "./metric-freshness-disclosure";
-import { IntegrationErrorMessage, pillStateForVerdict } from "./shared";
+import { IntegrationCard } from "./integration-card";
+import { MetricFreshnessList } from "./metric-freshness-list";
 
 type SyncTrigger = "foreground" | "background" | "push" | "manual";
 
@@ -40,7 +33,8 @@ interface HealthKitStatus {
   lastSyncTrigger?: SyncTrigger | null;
   /** When data last arrived without the app being opened. */
   lastBackgroundSyncAt?: string | null;
-  syncHealth?: SyncHealth;
+  /** The unified connection state; null until the phone has delivered. */
+  health?: ConnectionHealth | null;
   /** Per type: newest sample, plus when it last arrived and how (#1173). */
   metricFreshness?: HealthKitFreshnessEntry[];
   /** Server-side backfill progress (#778); null when the read failed. */
@@ -188,7 +182,7 @@ export function ArrivalDetail({
       data-state="received"
       data-trigger={trigger ?? "unknown"}
     >
-      {parts.join(" · ")}
+      {parts.join(", ")}
     </span>
   );
 }
@@ -279,88 +273,84 @@ export function AppleHealthCard({ enabled }: { enabled: boolean }) {
     refetchOnWindowFocus: true,
   });
 
-  const verdict = status?.syncHealth?.verdict;
-  const pillState = pillStateForVerdict(verdict);
-  // A failed status read is an error line, not a status state — the card says
-  // nothing about the pipe it could not ask about.
-  const showPill = !isLoading && !isError && !!status;
+  const health = status?.health ?? null;
+  // Apple Health has nothing to connect: it counts as connected once the
+  // phone has delivered anything, which is exactly when the server resolves a
+  // health for it. A failed read is neither, so the card says it could not
+  // ask instead of claiming "not connected".
+  const connected = isError || health !== null;
+
+  const importLink = (
+    <Button
+      asChild
+      variant="outline"
+      size="sm"
+      className="min-h-11 w-full sm:min-h-9 sm:w-auto"
+    >
+      <Link
+        href="/settings/export#settings-section-import-title"
+        data-testid="apple-health-import-link"
+      >
+        <Upload className="size-3.5" aria-hidden="true" />
+        {t("settings.appleHealth.importAction")}
+      </Link>
+    </Button>
+  );
 
   return (
-    <SettingsCard
-      as="section"
-      aria-labelledby="apple-health-card-title"
-      data-testid="apple-health-card"
-    >
-      <SettingsCardHeader
-        icon={HeartPulse}
-        titleId="apple-health-card-title"
-        title={t("settings.appleHealth.title")}
-        description={t("settings.appleHealth.description")}
-        status={
-          showPill ? (
-            <IntegrationStatusPill
-              testId="apple-health-status"
-              state={pillState}
-              lastSyncAt={status?.lastSyncedAt ?? null}
-            />
-          ) : null
-        }
-      />
-
-      <div className="space-y-4">
-        {isError && (
-          <IntegrationErrorMessage
-            message={t("settings.appleHealth.status.unavailable")}
-          />
-        )}
-
-        {verdict === "stale" && (
-          <p className="text-warning text-sm" data-testid="apple-health-stale">
-            {t("settings.appleHealth.staleNote")}
-          </p>
-        )}
-
-        {showPill && <DeliveryDiagnostic status={status} t={t} />}
-
-        {showPill && <SyncProgress status={status} t={t} />}
-
-        <MetricFreshnessDisclosure
-          entries={status?.metricFreshness}
-          idPrefix="apple-health"
-          title={t("settings.appleHealth.freshness.title")}
-          detail={(entry) => <ArrivalDetail entry={entry} t={t} />}
-        />
-
-        <div className="space-y-2">
-          <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {t("settings.appleHealth.setupTitle")}
-          </h3>
-          <ol className="text-muted-foreground list-decimal space-y-2 pl-5 text-sm">
-            <li>{t("settings.appleHealth.permissionStep")}</li>
-            <li>{t("settings.appleHealth.backgroundStep")}</li>
-          </ol>
-        </div>
-
-        <div className="border-border bg-muted/30 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-muted-foreground text-xs sm:max-w-xl">
+    <IntegrationCard
+      provider="apple-health"
+      providerName={t("settings.appleHealth.title")}
+      icon={HeartPulse}
+      description={t("settings.appleHealth.description")}
+      loading={enabled && isLoading}
+      connected={connected}
+      health={health}
+      appleHealth
+      setup={
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              {t("settings.appleHealth.setupTitle")}
+            </h3>
+            <ol className="list-decimal space-y-2 pl-5 text-sm">
+              <li>{t("settings.appleHealth.permissionStep")}</li>
+              <li>{t("settings.appleHealth.backgroundStep")}</li>
+            </ol>
+          </div>
+          <p className="text-muted-foreground text-xs">
             {t("settings.appleHealth.importNote")}
           </p>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="min-h-11 shrink-0 sm:min-h-9"
-          >
-            <Link
-              href="/settings/export#settings-section-import-title"
-              data-testid="apple-health-import-link"
-            >
-              <Upload className="h-3.5 w-3.5" aria-hidden="true" />
-              {t("settings.appleHealth.importAction")}
-            </Link>
-          </Button>
         </div>
-      </div>
-    </SettingsCard>
+      }
+      connectAction={importLink}
+      menu={[
+        {
+          id: "import",
+          label: t("settings.appleHealth.importAction"),
+          icon: Upload,
+          href: "/settings/export#settings-section-import-title",
+        },
+      ]}
+      details={
+        status && !isError ? (
+          <>
+            <DeliveryDiagnostic status={status} t={t} />
+            <SyncProgress status={status} t={t} />
+            <MetricFreshnessList
+              entries={status.metricFreshness}
+              title={t("settings.appleHealth.freshness.title")}
+              detail={(entry) => <ArrivalDetail entry={entry} t={t} />}
+            />
+          </>
+        ) : undefined
+      }
+    >
+      {isError ? (
+        <p role="alert" className="text-destructive text-sm">
+          {t("settings.appleHealth.status.unavailable")}
+        </p>
+      ) : null}
+    </IntegrationCard>
   );
 }
