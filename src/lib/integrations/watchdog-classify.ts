@@ -69,6 +69,10 @@ export const INCIDENT_AFTER_MS = DAY_MS;
  *     low on storage, in low-power mode or simply not unlocked, and a day of
  *     that is ordinary too.
  *
+ * Dawarich is on-demand as well: it records where a phone was, and a phone
+ * left at home or switched off for days is ordinary. It is watched for
+ * errors only, never for silence.
+ *
  * The history gate already limits the check to sources that deliver almost
  * daily; the window only decides how long a gap is ordinary.
  */
@@ -81,6 +85,7 @@ export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
   "google-health": { kind: "continuous", silenceWindowMs: DAY_MS },
   polar: { kind: "continuous", silenceWindowMs: DAY_MS },
   nightscout: { kind: "continuous", silenceWindowMs: DAY_MS },
+  dawarich: { kind: "on_demand", silenceWindowMs: DAY_MS },
   "apple-health": { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
 };
 

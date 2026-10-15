@@ -71,6 +71,7 @@ const LABELS: Record<ConnectionKey, string> = {
   oura: "Oura",
   strava: "Strava",
   nightscout: "Nightscout",
+  dawarich: "Dawarich",
   "apple-health": "Apple Health",
 };
 
@@ -127,6 +128,7 @@ async function listWatchedUserIds(): Promise<string[]> {
             { ouraAccessTokenEncrypted: { not: null } },
             { stravaAccessTokenEncrypted: { not: null } },
             { nightscoutUrlEncrypted: { not: null } },
+            { dawarichUrlEncrypted: { not: null } },
             { healthKitLastSyncedAt: { not: null } },
           ],
         },

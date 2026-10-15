@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { CloudSun, MapPin, Plane, Trash2, Wind } from "lucide-react";
 
+import { TravelSuggestions } from "@/components/settings/environment-travel-suggestions";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -415,6 +416,16 @@ export function EnvironmentSection() {
         <p className="text-sm leading-relaxed">
           {t("settings.sections.environment.travel.description")}
         </p>
+        <TravelSuggestions
+          enabled={enabled}
+          onUse={({ startDate, endDate, place }) => {
+            setTravelStart(startDate);
+            setTravelEnd(endDate);
+            setTravelQuery(place);
+            setTravelLoc(null);
+            setTravelSearched(false);
+          }}
+        />
         <div className="space-y-3">
           {data && data.travel.length > 0 ? (
             <ul className="divide-border divide-y rounded-md border">

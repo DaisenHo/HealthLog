@@ -77,6 +77,9 @@ const CHANNEL_LABEL_KEY: Record<string, string> = {
   ENV_PM25: "environment.fields.pm25",
   ENV_OZONE_8H: "environment.fields.ozone8h",
   ENV_POLLEN_MAX: "environment.fields.pollenMax",
+  // v1.43 — the Dawarich movement channels.
+  MOVEMENT_AWAY: "environment.movement.awayFromHome",
+  MOVEMENT_DISTANCE: "environment.movement.distance",
 };
 
 /** Keep only the discovered pairs that involve the mood channel. */

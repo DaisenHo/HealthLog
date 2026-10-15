@@ -438,6 +438,7 @@ function makePrisma() {
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     // The Coach transcript. Deliberately NOT `?? []` at the call site, so a
     // future `include` that forgets the relation fails here loudly instead of
     // exporting an account whose Coach never spoke.

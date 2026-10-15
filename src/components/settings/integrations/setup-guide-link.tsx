@@ -33,7 +33,9 @@ export type IntegrationDocsProvider =
   // v1.27.0 — Google Health runbook (docs.healthlog.dev/integrations/google-health).
   | "google-health"
   // v1.28.x — Strava runbook (docs.healthlog.dev/integrations/strava).
-  | "strava";
+  | "strava"
+  // v1.43 — Dawarich runbook (docs.healthlog.dev/integrations/dawarich).
+  | "dawarich";
 
 export function integrationDocsHref(provider: IntegrationDocsProvider): string {
   return `${INTEGRATION_DOCS_BASE}/${provider}`;

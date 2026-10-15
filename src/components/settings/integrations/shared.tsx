@@ -26,7 +26,9 @@ export type IntegrationKey =
   | "strava"
   // Nightscout folds onto the envelope so the card stops fetching its own
   // status and inherits the shared verdict.
-  | "nightscout";
+  | "nightscout"
+  // v1.43 — Dawarich movement context; publishes `health` only.
+  | "dawarich";
 /**
  * One envelope entry as the cards read it. Since v1.42.4 the cards render
  * `health` alone; the older health-shaped fields (ledger `state`, `lastError`,

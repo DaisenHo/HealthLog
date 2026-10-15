@@ -53,6 +53,7 @@ process.env.ENCRYPTION_KEY ??=
 import type { PrismaClient } from "@/generated/prisma/client";
 import { decrypt, decryptBytes, encrypt, encryptBytes } from "@/lib/crypto";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { sealDayCountry } from "@/lib/dawarich/connection";
 import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import { readNote } from "@/lib/crypto/note-cipher";
 import {
@@ -342,6 +343,7 @@ const COUNT_BACK: Record<
     p.environmentContext.count({ where: { userId } }),
   EnvironmentTravelLocation: (p, userId) =>
     p.environmentTravelLocation.count({ where: { userId } }),
+  DawarichDay: (p, userId) => p.dawarichDay.count({ where: { userId } }),
   EcgRecording: (p, userId) => p.ecgRecording.count({ where: { userId } }),
   // No own `userId` column — reached through the drug, like the schedules.
   MedicationEfficacyTarget: (p, userId) =>
@@ -1514,6 +1516,21 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // a restore rounds anything finer, so finer values would not round-trip.
   // Since v1.42 the location is stored sealed (`locationEncrypted`), the way
   // the writers store it; it is the only copy since v1.43.
+  // v1.43 — one Dawarich day abroad, with its sealed country.
+  await prisma.dawarichDay.create({
+    data: {
+      userId: OWNER_ID,
+      date: "2026-06-15",
+      totalDistanceM: 48_300,
+      drivingDistanceM: 12_000,
+      trainDistanceM: 30_500,
+      placesVisited: 4,
+      awayFromHomeMinutes: 1440,
+      countryCodeEncrypted: sealDayCountry("ES"),
+      isTravelDay: true,
+      fetchedAt: new Date("2026-06-16T03:20:00.000Z"),
+    },
+  });
   await prisma.environmentTravelLocation.create({
     data: {
       userId: OWNER_ID,

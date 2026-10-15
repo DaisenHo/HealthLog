@@ -1652,6 +1652,37 @@ const environmentTravelLocationBackupSchema = z
   .passthrough();
 
 /**
+ * v1.43 — one local day of Dawarich movement values. Daily values only; the
+ * country rides readable (portable) or sealed (disaster recovery).
+ */
+const dawarichDayBackupSchema = z
+  .object({
+    date: environmentDayKey,
+    totalDistanceM: z.number().int().nonnegative().nullable().optional(),
+    drivingDistanceM: z.number().int().nonnegative().nullable().optional(),
+    trainDistanceM: z.number().int().nonnegative().nullable().optional(),
+    placesVisited: z.number().int().nonnegative().nullable().optional(),
+    awayFromHomeMinutes: z
+      .number()
+      .int()
+      .min(0)
+      .max(25 * 60)
+      .nullable()
+      .optional(),
+    countryCode: z
+      .string()
+      .regex(/^[A-Z]{2}$/)
+      .nullable()
+      .optional(),
+    countryCodeEncrypted: base64BytesSchema.nullable().optional(),
+    isTravelDay: z.boolean().nullable().optional(),
+    fetchedAt: isoDateTime.optional(),
+    createdAt: isoDateTime.optional(),
+    updatedAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+/**
  * A turn's stored tables, bounded at restore. The live path never stores more
  * than `RESULTS_MAX_BYTES` of table JSON per turn (`fitResultsToStorage`), so
  * a file this release writes always fits; a larger value is a damaged or
@@ -2293,6 +2324,9 @@ export const backupPayloadSchema = z
     environmentTravelLocations: z
       .array(environmentTravelLocationBackupSchema)
       .default([]),
+    // v1.43 — the Dawarich movement days, restored with the environment
+    // section. A file written before them carries no key.
+    dawarichDays: z.array(dawarichDayBackupSchema).default([]),
     // The ECG strips. Defaulted for the same reason as the sections above: a
     // file written before the recordings travelled carries no key, and an
     // account whose watch has never taken one writes [].

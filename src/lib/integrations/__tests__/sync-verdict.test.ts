@@ -200,9 +200,11 @@ describe("resolveSyncVerdict — the ladder", () => {
     ).toEqual({ verdict: "fresh", since: null });
   });
 
-  it("puts every ledger-backed integration on the polled cadence", () => {
-    for (const cadence of Object.values(INTEGRATION_CADENCE)) {
-      expect(cadence.attemptStaleAfterMs).toBe(24 * HOUR);
+  it("puts every hourly ledger-backed integration on the polled cadence", () => {
+    for (const [key, cadence] of Object.entries(INTEGRATION_CADENCE)) {
+      // Dawarich runs once a night; a run is overdue after two days.
+      const expected = key === "dawarich" ? 48 * HOUR : 24 * HOUR;
+      expect(cadence.attemptStaleAfterMs, key).toBe(expected);
     }
   });
 });

@@ -30,6 +30,8 @@ import {
 import {
   FACTOR_CHANNEL_PREFIX,
   MEDICATION_COMPLIANCE_CHANNEL_KEY,
+  MOVEMENT_AWAY_CHANNEL_KEY,
+  MOVEMENT_DISTANCE_CHANNEL_KEY,
   SYMPTOM_SEVERITY_CHANNEL_KEY,
   type DailySeriesPoint,
   type LabDrawPoint,
@@ -58,7 +60,7 @@ import {
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
-import { isNearUtc, shiftDateKey } from "@/lib/tz/format";
+import { isNearUtc, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import type {
@@ -330,6 +332,49 @@ export function averageWithPreviousDay(
     out.push({ day, value: (prev + (byDay.get(day) as number)) / 2 });
   }
   return out;
+}
+
+/**
+ * v1.43 — the movement BEHAVIOUR channels from the stored Dawarich days:
+ * hours away from home and kilometres travelled. A day without a value (no
+ * home place, no visit, no summary) has no point; it is no coverage, not
+ * zero. Empty for an account that never connected Dawarich.
+ */
+export async function fetchMovementSeries(
+  userId: string,
+  tz: string,
+  since: Date,
+): Promise<NamedSeries[]> {
+  const rows = await prisma.dawarichDay.findMany({
+    where: { userId, date: { gte: userDayKey(since, tz) } },
+    orderBy: { date: "asc" },
+    take: 1000,
+    select: { date: true, awayFromHomeMinutes: true, totalDistanceM: true },
+  });
+  const away: DailySeriesPoint[] = [];
+  const distance: DailySeriesPoint[] = [];
+  for (const row of rows) {
+    if (row.awayFromHomeMinutes !== null) {
+      away.push({ day: row.date, value: row.awayFromHomeMinutes / 60 });
+    }
+    if (row.totalDistanceM !== null) {
+      distance.push({ day: row.date, value: row.totalDistanceM / 1000 });
+    }
+  }
+  return [
+    {
+      key: MOVEMENT_AWAY_CHANNEL_KEY,
+      role: "behaviour",
+      label: "time away from home",
+      points: away,
+    },
+    {
+      key: MOVEMENT_DISTANCE_CHANNEL_KEY,
+      role: "behaviour",
+      label: "distance travelled",
+      points: distance,
+    },
+  ];
 }
 
 /** Explicit deterministic ceiling on opt-in custom behaviour channels. */

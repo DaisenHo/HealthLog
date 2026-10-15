@@ -54,6 +54,7 @@ vi.mock("@/lib/db", () => ({
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     coachConversation: { findMany: vi.fn().mockResolvedValue([]) },
     moodTagCategory: { findMany: vi.fn().mockResolvedValue([]) },
     moodTagHidden: { findMany: vi.fn().mockResolvedValue([]) },

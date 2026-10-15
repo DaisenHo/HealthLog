@@ -39,6 +39,9 @@ vi.mock("@/lib/insights/correlation-channel-series", () => ({
   fetchEnvironmentSeries: vi.fn(async () => [
     { key: "ENV_TEMP_MEAN", role: "behaviour", points: pts },
   ]),
+  fetchMovementSeries: vi.fn(async () => [
+    { key: "MOVEMENT_AWAY", role: "behaviour", points: pts },
+  ]),
   fetchCustomMetricBehaviourSeries: vi.fn(async () => [
     { key: "CUSTOM_METRIC:abc", role: "behaviour", points: pts },
   ]),
@@ -54,7 +57,10 @@ import {
   assembleDiscoveryMatrix,
   maskSeriesByModules,
 } from "@/lib/insights/discovery-matrix";
-import { fetchEnvironmentSeries } from "@/lib/insights/correlation-channel-series";
+import {
+  fetchEnvironmentSeries,
+  fetchMovementSeries,
+} from "@/lib/insights/correlation-channel-series";
 
 const OPTS = {
   tz: "UTC",
@@ -110,6 +116,7 @@ describe("assembleDiscoveryMatrix — switched-off modules", () => {
       "SYMPTOM_SEVERITY",
       "SYMPTOM:def1",
       "ENV_TEMP_MEAN",
+      "MOVEMENT_AWAY",
     ]) {
       expect(keys, gone).not.toContain(gone);
       expect(byMetric.has(gone), gone).toBe(false);
@@ -130,6 +137,19 @@ describe("assembleDiscoveryMatrix — switched-off modules", () => {
     expect(read).not.toHaveBeenCalled();
     await assembleDiscoveryMatrix("u1", OPTS);
     expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not read the Dawarich days with the environment module off", async () => {
+    const read = vi.mocked(fetchMovementSeries);
+    read.mockClear();
+    await assembleDiscoveryMatrix("u1", {
+      ...OPTS,
+      modules: { environment: false },
+    });
+    expect(read).not.toHaveBeenCalled();
+    const on = await assembleDiscoveryMatrix("u1", OPTS);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(on.series.map((s) => s.key)).toContain("MOVEMENT_AWAY");
   });
 
   it("drops nothing for AI analysis off", async () => {

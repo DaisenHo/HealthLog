@@ -372,6 +372,11 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 2,
   },
   // The saved-credentials confirmation line.
+  // Connected, a fetch queued, the home saved: confirmations of a request
+  // that wrote no record (the fetch itself reports through `health`).
+  "src/components/settings/integrations/dawarich-card.tsx": {
+    "toast.success": 3,
+  },
   "src/components/settings/integrations/credentials-form.tsx": {
     "text-success": 1,
   },

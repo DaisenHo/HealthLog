@@ -5894,7 +5894,10 @@
           "remove": "Remove location period",
           "removeConfirmTitle": "Remove this trip?",
           "removeConfirmBody": "Readings taken during it stay in your record; only the trip entry goes.",
-          "range": "{start} to {end}"
+          "range": "{start} to {end}",
+          "suggestionsIntro": "Dawarich found days abroad that no period covers yet.",
+          "suggestionUse": "Use",
+          "suggestionDismiss": "Dismiss suggestion"
         },
         "backfill": {
           "title": "Backfill past days",
@@ -7374,6 +7377,46 @@
         "failureStreak": "Failure streak: {count} of {threshold}",
         "copyFailed": "Could not copy. Select the text and copy it by hand."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Movement",
+    "dawarichDescription": "Connect your Dawarich instance to bring in daily distance, time away from home and travel days.",
+    "dawarichUrl": "Dawarich address",
+    "dawarichApiKey": "API key",
+    "dawarichApiKeyHelp": "You find it in Dawarich under Account. HealthLog uses it to read daily values only, never coordinates or place names.",
+    "dawarichConnect": "Connect",
+    "dawarichUpdate": "Save changes",
+    "dawarichConnected": "Dawarich connected. The last 30 days are loading now.",
+    "dawarichSync": "Fetch now",
+    "dawarichSyncQueued": "The last seven days will be fetched shortly.",
+    "dawarichSyncAlreadyQueued": "A fetch is already on its way.",
+    "dawarichDisconnect": "Disconnect",
+    "dawarichDisconnectTitle": "Disconnect Dawarich?",
+    "dawarichDisconnectDescription": "Future fetches stop. Days already stored stay.",
+    "dawarichDisconnectDelete": "Disconnect and delete days",
+    "dawarichDisconnectDeleteTitle": "Disconnect and delete every day?",
+    "dawarichDisconnectDeleteDescription": "The connection and every stored movement day are removed. This cannot be undone.",
+    "dawarichHomePlaceSet": "Home is set.",
+    "dawarichHomePlaceMissing": "Set your home so time away from home can be measured.",
+    "dawarichHomeCountryIs": "Home country: {country}.",
+    "dawarichHomeCountryMissing": "No home country yet, so no travel days.",
+    "dawarichDaysStored": "Days stored: {count}",
+    "dawarichHomePlace": "Home",
+    "dawarichHomePlaceChoose": "Choose a place from Dawarich",
+    "dawarichHomePlaceChange": "Choose home",
+    "dawarichHomeCountry": "Home country",
+    "dawarichHomeCountryHelp": "Two-letter country code, such as DE. Left empty, the country you spent most days in over the last year counts.",
+    "dawarichHomeSave": "Save",
+    "dawarichHomeSaved": "Saved.",
+    "dawarichErrors": {
+      "invalid": "That address does not work. Use the instance address without credentials.",
+      "privateOrigin": "This instance is on a private network. Ask the server operator to approve it.",
+      "credentials": "Dawarich did not accept the API key.",
+      "unreachable": "Dawarich cannot be reached. Check the address and that the instance is running.",
+      "rateLimited": "Too many attempts. Wait a moment, then try again.",
+      "homePlaceUnknown": "The Dawarich instance no longer knows this place.",
+      "notConnected": "Dawarich is not connected.",
+      "generic": "That did not work. Try again."
     }
   },
   "admin": {
@@ -11057,6 +11100,10 @@
       "mugwort": "mugwort",
       "olive": "olive",
       "ragweed": "ragweed"
+    },
+    "movement": {
+      "awayFromHome": "Time away from home",
+      "distance": "Distance travelled"
     }
   },
   "documents": {
@@ -12596,7 +12643,8 @@
       "scores": "Scores",
       "running": "Running that day",
       "values": "Values",
-      "happened": "What happened"
+      "happened": "What happened",
+      "movement": "On the move"
     },
     "notable": {
       "extremeHigh": "Highest daily value since {since}",
@@ -12652,7 +12700,18 @@
     "today": "Today",
     "hasEntries": "has entries",
     "dayNSince": "Day {n}, since {date}",
-    "sinceDate": "Since {date}"
+    "sinceDate": "Since {date}",
+    "movement": {
+      "total": "Distance",
+      "driving": "By car",
+      "train": "By train",
+      "places": "Places visited",
+      "away": "Away from home",
+      "travel": "Travel day",
+      "travelYes": "Yes",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Timeline",

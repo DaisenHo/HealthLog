@@ -127,7 +127,14 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
-    dawarich: ["dawarich.invalid", "dawarich.rate_limited"],
+    dawarich: [
+      "dawarich.credentials_rejected",
+      "dawarich.home_place_unknown",
+      "dawarich.invalid",
+      "dawarich.not_connected",
+      "dawarich.rate_limited",
+      "dawarich.unreachable",
+    ],
     day: ["day.invalid"],
     demo: ["demo.readOnly"],
     documents: [
@@ -193,6 +200,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "environment.no_home",
       "environment.range_too_large",
       "environment.travel.not_found",
+      "environment.travel_suggestion.not_found",
     ],
     export: ["export.selection.empty", "export.selection.unknown_leaf"],
     familyHistory: ["familyHistory.invalid"],

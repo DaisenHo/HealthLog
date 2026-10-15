@@ -195,6 +195,7 @@ const SUMMARY_COUNTS = [
   "userAchievements",
   "environmentContexts",
   "environmentTravelLocations",
+  "dawarichDays",
   "ecgRecordings",
 ] as const satisfies readonly (keyof BackupSummary & keyof FullBackupCounts)[];
 

@@ -478,6 +478,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "environment-fetch": short(
     "A fan-out of sends, or one account's bounded archive range.",
   ),
+  "dawarich-sync": short(
+    "A fan-out of sends, or one account's range: one timeline request per 30 days (at most 13), one visits request and at most two residency requests.",
+  ),
   "environment-aq-history": short(
     "A fan-out of sends, or one account's history run: at most eight ranges of up to 90 days, two requests each, then a follow-up.",
   ),

@@ -5894,7 +5894,10 @@
           "remove": "Rimuovi periodo di posizione",
           "removeConfirmTitle": "Rimuovere questo viaggio?",
           "removeConfirmBody": "Le misurazioni di quel periodo restano nel tuo archivio; sparisce solo la voce del viaggio.",
-          "range": "Dal {start} al {end}"
+          "range": "Dal {start} al {end}",
+          "suggestionsIntro": "Dawarich ha trovato giorni all’estero non ancora coperti da un periodo.",
+          "suggestionUse": "Usa",
+          "suggestionDismiss": "Ignora il suggerimento"
         },
         "backfill": {
           "title": "Recupera i giorni passati",
@@ -7374,6 +7377,46 @@
         "failureStreak": "Serie di errori: {count} su {threshold}",
         "copyFailed": "Copia non riuscita. Seleziona il testo e copialo a mano."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Movimento",
+    "dawarichDescription": "Collega la tua istanza Dawarich per importare la distanza giornaliera, il tempo fuori casa e i giorni di viaggio.",
+    "dawarichUrl": "Indirizzo Dawarich",
+    "dawarichApiKey": "Chiave API",
+    "dawarichApiKeyHelp": "La trovi in Dawarich alla voce Account. HealthLog legge solo valori giornalieri, mai coordinate o nomi di luoghi.",
+    "dawarichConnect": "Collega",
+    "dawarichUpdate": "Salva modifiche",
+    "dawarichConnected": "Dawarich collegato. Gli ultimi 30 giorni si stanno caricando.",
+    "dawarichSync": "Recupera ora",
+    "dawarichSyncQueued": "Gli ultimi sette giorni verranno recuperati a breve.",
+    "dawarichSyncAlreadyQueued": "Un recupero è già in corso.",
+    "dawarichDisconnect": "Disconnetti",
+    "dawarichDisconnectTitle": "Disconnettere Dawarich?",
+    "dawarichDisconnectDescription": "I recuperi futuri si fermano. I giorni già salvati restano.",
+    "dawarichDisconnectDelete": "Disconnetti ed elimina i giorni",
+    "dawarichDisconnectDeleteTitle": "Disconnettere ed eliminare tutti i giorni?",
+    "dawarichDisconnectDeleteDescription": "Vengono rimossi il collegamento e tutti i giorni di movimento salvati. Non si può annullare.",
+    "dawarichHomePlaceSet": "La casa è impostata.",
+    "dawarichHomePlaceMissing": "Imposta la tua casa per poter misurare il tempo fuori casa.",
+    "dawarichHomeCountryIs": "Paese di residenza: {country}.",
+    "dawarichHomeCountryMissing": "Nessun paese di residenza per ora, quindi niente giorni di viaggio.",
+    "dawarichDaysStored": "Giorni salvati: {count}",
+    "dawarichHomePlace": "Casa",
+    "dawarichHomePlaceChoose": "Scegli un luogo da Dawarich",
+    "dawarichHomePlaceChange": "Scegli la casa",
+    "dawarichHomeCountry": "Paese di residenza",
+    "dawarichHomeCountryHelp": "Codice paese di due lettere, ad esempio DE. Se lo lasci vuoto, vale il paese in cui hai passato più giorni nell’ultimo anno.",
+    "dawarichHomeSave": "Salva",
+    "dawarichHomeSaved": "Salvato.",
+    "dawarichErrors": {
+      "invalid": "Questo indirizzo non funziona. Usa l’indirizzo dell’istanza senza credenziali.",
+      "privateOrigin": "Questa istanza è in una rete privata. Chiedi all’operatore del server di autorizzarla.",
+      "credentials": "Dawarich non ha accettato la chiave API.",
+      "unreachable": "Dawarich non è raggiungibile. Controlla l’indirizzo e che l’istanza sia attiva.",
+      "rateLimited": "Troppi tentativi. Attendi un momento e riprova.",
+      "homePlaceUnknown": "L’istanza Dawarich non conosce più questo luogo.",
+      "notConnected": "Dawarich non è collegato.",
+      "generic": "Non ha funzionato. Riprova."
     }
   },
   "admin": {
@@ -11057,6 +11100,10 @@
       "mugwort": "artemisia",
       "olive": "olivo",
       "ragweed": "ambrosia"
+    },
+    "movement": {
+      "awayFromHome": "Tempo fuori casa",
+      "distance": "Distanza percorsa"
     }
   },
   "documents": {
@@ -12596,7 +12643,8 @@
       "scores": "Punteggi",
       "running": "In corso quel giorno",
       "values": "Valori",
-      "happened": "Cosa è successo"
+      "happened": "Cosa è successo",
+      "movement": "In movimento"
     },
     "notable": {
       "extremeHigh": "Valore giornaliero più alto dal {since}",
@@ -12652,7 +12700,18 @@
     "today": "Oggi",
     "hasEntries": "con voci",
     "dayNSince": "Giorno {n}, dal {date}",
-    "sinceDate": "Dal {date}"
+    "sinceDate": "Dal {date}",
+    "movement": {
+      "total": "Distanza",
+      "driving": "In auto",
+      "train": "In treno",
+      "places": "Luoghi visitati",
+      "away": "Fuori casa",
+      "travel": "Giorno di viaggio",
+      "travelYes": "Sì",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Cronologia",

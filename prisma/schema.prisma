@@ -236,15 +236,16 @@ model User {
   // v1.43 — Dawarich movement context (per-user, encrypted at app level, part
   // of the `environment` module). Base URL and API key sealed like the
   // Nightscout pair; `dawarichPrefsEncrypted` seals
-  // `{ homePlaceId, homeCountry, dismissedSuggestionIds }`. Same SSRF floor:
-  // a private host needs `DAWARICH_PRIVATE_ORIGINS` or this switch.
-  /// @pending-consumer(#v143-B7) Sealed Dawarich base URL.
+  // `{ homePlaceId, homeCountry, derivedHomeCountry, dismissedSuggestionIds }`.
+  // Same SSRF floor as Nightscout: a private host needs its exact origin in
+  // `DAWARICH_PRIVATE_ORIGINS`; the switch below never grants it.
+  /// Sealed Dawarich base URL.
   dawarichUrlEncrypted     String? @map("dawarich_url_encrypted")
-  /// @pending-consumer(#v143-B7) Sealed Dawarich API key.
+  /// Sealed Dawarich API key.
   dawarichApiKeyEncrypted  String? @map("dawarich_api_key_encrypted")
-  /// @pending-consumer(#v143-B7) Sealed home place id, home country and dismissed travel suggestions.
+  /// Sealed home place id, home country and dismissed travel suggestions.
   dawarichPrefsEncrypted   Bytes?  @map("dawarich_prefs_encrypted")
-  /// @pending-consumer(#v143-B7) Opt this Dawarich instance past the public-host requirement.
+  /// @internal: display only; whether the operator list approved the instance at connect time. Egress is re-decided from `DAWARICH_PRIVATE_ORIGINS` on every request, never from this column.
   dawarichAllowPrivateHost Boolean @default(false) @map("dawarich_allow_private_host")
 
   // v1.17.0 — Polar OAuth credentials (F4, per-user, encrypted at app level).
@@ -9987,27 +9988,27 @@ model MedicationIngredient {
 
 /// v1.43 — one local day of Dawarich movement context. Daily values only:
 /// no coordinate, no place name, no visit is ever stored. The country code is
-/// sealed (AAD as the environment location). Part of the `environment` module.
+/// sealed under its own label. Part of the `environment` module.
 model DawarichDay {
   id                   String   @id @default(cuid())
   userId               String   @map("user_id")
   /// Local calendar day (`YYYY-MM-DD`) in the account's timezone.
   date                 String   @db.VarChar(10)
-  /// @pending-consumer(#v143-B7) Timeline `summary.total_distance`, metres.
+  /// Timeline `summary.total_distance`, metres.
   totalDistanceM       Int?     @map("total_distance_m")
-  /// @pending-consumer(#v143-B7) Timeline `summary.mode_distances.driving`, metres.
+  /// Timeline `summary.mode_distances.driving`, metres.
   drivingDistanceM     Int?     @map("driving_distance_m")
-  /// @pending-consumer(#v143-B7) Timeline `summary.mode_distances.train`, metres.
+  /// Timeline `summary.mode_distances.train`, metres.
   trainDistanceM       Int?     @map("train_distance_m")
-  /// @pending-consumer(#v143-B7) Timeline `summary.places_visited`.
+  /// Timeline `summary.places_visited`.
   placesVisited        Int?     @map("places_visited")
-  /// @pending-consumer(#v143-B7) Minutes away from the home place; NULL = no visit coverage that day.
+  /// Minutes away from the home place; NULL = no visit coverage that day.
   awayFromHomeMinutes  Int?     @map("away_from_home_minutes")
-  /// @pending-consumer(#v143-B7) Sealed ISO-3166 alpha-2 country of the day (`/residency`).
+  /// Sealed ISO-3166 alpha-2 country of the day (`/residency`).
   countryCodeEncrypted Bytes?   @map("country_code_encrypted")
-  /// @pending-consumer(#v143-B7) Country differs from the home country.
+  /// Country differs from the home country.
   isTravelDay          Boolean? @map("is_travel_day")
-  /// @pending-consumer(#v143-B7) When the day was last fetched from Dawarich.
+  /// When the day was last fetched from Dawarich.
   fetchedAt            DateTime @map("fetched_at")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")

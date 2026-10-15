@@ -5894,7 +5894,10 @@
           "remove": "위치 기간 삭제",
           "removeConfirmTitle": "이 여행을 삭제할까요?",
           "removeConfirmBody": "그 기간에 측정한 값은 기록에 그대로 남고, 여행 항목만 사라져요.",
-          "range": "{start}~{end}"
+          "range": "{start}~{end}",
+          "suggestionsIntro": "Dawarich가 아직 어떤 기간에도 속하지 않은 해외 체류일을 찾았습니다.",
+          "suggestionUse": "사용",
+          "suggestionDismiss": "제안 닫기"
         },
         "backfill": {
           "title": "지난 날짜 채우기",
@@ -7374,6 +7377,46 @@
         "failureStreak": "연속 실패: {threshold}회 중 {count}회",
         "copyFailed": "복사하지 못했어요. 텍스트를 선택해서 직접 복사해 주세요."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "이동",
+    "dawarichDescription": "Dawarich 인스턴스를 연결해 하루 이동 거리, 집 밖에 있던 시간, 여행일을 가져옵니다.",
+    "dawarichUrl": "Dawarich 주소",
+    "dawarichApiKey": "API 키",
+    "dawarichApiKeyHelp": "Dawarich의 계정 메뉴에서 찾을 수 있습니다. HealthLog는 이 키로 하루 단위 값만 읽고 좌표나 장소 이름은 읽지 않습니다.",
+    "dawarichConnect": "연결",
+    "dawarichUpdate": "변경 사항 저장",
+    "dawarichConnected": "Dawarich가 연결되었습니다. 최근 30일을 불러오는 중입니다.",
+    "dawarichSync": "지금 가져오기",
+    "dawarichSyncQueued": "최근 7일을 곧 가져옵니다.",
+    "dawarichSyncAlreadyQueued": "이미 가져오는 중입니다.",
+    "dawarichDisconnect": "연결 해제",
+    "dawarichDisconnectTitle": "Dawarich 연결을 해제할까요?",
+    "dawarichDisconnectDescription": "앞으로의 가져오기가 중단됩니다. 이미 저장된 날은 남습니다.",
+    "dawarichDisconnectDelete": "연결 해제 후 기록 삭제",
+    "dawarichDisconnectDeleteTitle": "연결을 해제하고 모든 날을 삭제할까요?",
+    "dawarichDisconnectDeleteDescription": "연결과 저장된 모든 이동 기록이 삭제됩니다. 되돌릴 수 없습니다.",
+    "dawarichHomePlaceSet": "집이 설정되어 있습니다.",
+    "dawarichHomePlaceMissing": "집 밖에 있던 시간을 재려면 집을 설정하세요.",
+    "dawarichHomeCountryIs": "거주 국가: {country}.",
+    "dawarichHomeCountryMissing": "거주 국가가 없어 여행일도 없습니다.",
+    "dawarichDaysStored": "저장된 날: {count}",
+    "dawarichHomePlace": "집",
+    "dawarichHomePlaceChoose": "Dawarich에서 장소 선택",
+    "dawarichHomePlaceChange": "집 선택",
+    "dawarichHomeCountry": "거주 국가",
+    "dawarichHomeCountryHelp": "DE처럼 두 글자 국가 코드입니다. 비워 두면 지난 1년 동안 가장 많은 날을 보낸 나라가 기준이 됩니다.",
+    "dawarichHomeSave": "저장",
+    "dawarichHomeSaved": "저장했습니다.",
+    "dawarichErrors": {
+      "invalid": "이 주소는 사용할 수 없습니다. 인증 정보 없이 인스턴스 주소를 입력하세요.",
+      "privateOrigin": "이 인스턴스는 사설 네트워크에 있습니다. 서버 운영자에게 허용을 요청하세요.",
+      "credentials": "Dawarich가 API 키를 받아들이지 않았습니다.",
+      "unreachable": "Dawarich에 연결할 수 없습니다. 주소와 인스턴스 실행 여부를 확인하세요.",
+      "rateLimited": "시도가 너무 많습니다. 잠시 후 다시 시도하세요.",
+      "homePlaceUnknown": "Dawarich 인스턴스에 이 장소가 더 이상 없습니다.",
+      "notConnected": "Dawarich가 연결되어 있지 않습니다.",
+      "generic": "실패했습니다. 다시 시도하세요."
     }
   },
   "admin": {
@@ -11057,6 +11100,10 @@
       "mugwort": "쑥",
       "olive": "올리브",
       "ragweed": "돼지풀"
+    },
+    "movement": {
+      "awayFromHome": "집 밖에 있던 시간",
+      "distance": "이동 거리"
     }
   },
   "documents": {
@@ -12596,7 +12643,8 @@
       "scores": "점수",
       "running": "그날 진행 중",
       "values": "수치",
-      "happened": "있었던 일"
+      "happened": "있었던 일",
+      "movement": "이동"
     },
     "notable": {
       "extremeHigh": "{since} 이후 가장 높은 하루 값",
@@ -12652,7 +12700,18 @@
     "today": "오늘",
     "hasEntries": "기록 있음",
     "dayNSince": "{n}일째, {date}부터",
-    "sinceDate": "{date}부터"
+    "sinceDate": "{date}부터",
+    "movement": {
+      "total": "이동 거리",
+      "driving": "자동차",
+      "train": "기차",
+      "places": "방문한 장소",
+      "away": "집 밖",
+      "travel": "여행일",
+      "travelYes": "예",
+      "kilometres": "{value}km",
+      "miles": "{value}mi"
+    }
   },
   "timeline": {
     "title": "타임라인",
