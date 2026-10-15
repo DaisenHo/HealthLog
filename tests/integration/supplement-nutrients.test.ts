@@ -618,7 +618,10 @@ describe("POST /api/medications/{id}/ingredients/extract", () => {
     const { POST } =
       await import("@/app/api/medications/[id]/ingredients/extract/route");
     const form = new FormData();
-    form.append("file", new File([bytes], "label.png", { type: "image/png" }));
+    form.append(
+      "file",
+      new File([new Uint8Array(bytes)], "label.png", { type: "image/png" }),
+    );
     const res = await (POST as Handler)(
       new NextRequest(
         `http://localhost/api/medications/${medicationId}/ingredients/extract`,
