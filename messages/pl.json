@@ -12342,6 +12342,30 @@
       "period": {
         "showing": "Okres: {period}"
       }
+    },
+    "related": {
+      "title": "Powiązane",
+      "kind": {
+        "labResult": "Wynik badania",
+        "encounter": "Wizyta",
+        "document": "Dokument",
+        "conditionEpisode": "Choroba",
+        "medication": "Lek",
+        "vaccination": "Szczepienie"
+      },
+      "via": {
+        "encounter": "przez wizytę",
+        "efficacyTarget": "przez cel skuteczności"
+      },
+      "pick": {
+        "conditionEpisode": "Choroby",
+        "document": "Dokumenty",
+        "encounter": "Wizyty",
+        "medication": "Leki",
+        "vaccination": "Szczepienia"
+      },
+      "nothingToOffer": "Na razie nie ma czego powiązać.",
+      "saveError": "Nie udało się zapisać powiązania."
     }
   },
   "bodySites": {

@@ -12342,6 +12342,30 @@
       "period": {
         "showing": "Showing {period}"
       }
+    },
+    "related": {
+      "title": "Related",
+      "kind": {
+        "labResult": "Lab result",
+        "encounter": "Visit",
+        "document": "Document",
+        "conditionEpisode": "Condition",
+        "medication": "Medication",
+        "vaccination": "Vaccination"
+      },
+      "via": {
+        "encounter": "through a visit",
+        "efficacyTarget": "through the efficacy target"
+      },
+      "pick": {
+        "conditionEpisode": "Conditions",
+        "document": "Documents",
+        "encounter": "Visits",
+        "medication": "Medications",
+        "vaccination": "Vaccinations"
+      },
+      "nothingToOffer": "Nothing to link yet.",
+      "saveError": "The link could not be saved."
     }
   },
   "bodySites": {

@@ -12342,6 +12342,30 @@
       "period": {
         "showing": "Période : {period}"
       }
+    },
+    "related": {
+      "title": "Liés",
+      "kind": {
+        "labResult": "Résultat d’analyse",
+        "encounter": "Consultation",
+        "document": "Document",
+        "conditionEpisode": "Maladie",
+        "medication": "Médicament",
+        "vaccination": "Vaccination"
+      },
+      "via": {
+        "encounter": "via une consultation",
+        "efficacyTarget": "via la cible d’efficacité"
+      },
+      "pick": {
+        "conditionEpisode": "Maladies",
+        "document": "Documents",
+        "encounter": "Consultations",
+        "medication": "Médicaments",
+        "vaccination": "Vaccinations"
+      },
+      "nothingToOffer": "Rien à lier pour l’instant.",
+      "saveError": "Le lien n’a pas pu être enregistré."
     }
   },
   "bodySites": {

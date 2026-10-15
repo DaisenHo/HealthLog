@@ -60,6 +60,7 @@ import {
   nowLocalValue,
   type EncounterDraft,
 } from "./encounter-form";
+import { EncounterRelatedLinks } from "./encounter-related-links";
 
 export function EncounterSheet({
   open,
@@ -163,6 +164,12 @@ export function EncounterSheet({
     >
       <div className="space-y-4">
         <EncounterForm draft={draft} onChange={setDraft} isEdit={isEdit} />
+        {isEdit ? (
+          <EncounterRelatedLinks
+            encounterId={encounter.id}
+            occurredAt={encounter.occurredAt}
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-destructive text-sm">
             {error}

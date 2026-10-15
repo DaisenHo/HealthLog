@@ -12342,6 +12342,30 @@
       "period": {
         "showing": "{period} 표시 중"
       }
+    },
+    "related": {
+      "title": "관련 항목",
+      "kind": {
+        "labResult": "검사 결과",
+        "encounter": "진료",
+        "document": "문서",
+        "conditionEpisode": "질환",
+        "medication": "약",
+        "vaccination": "예방접종"
+      },
+      "via": {
+        "encounter": "진료를 통해",
+        "efficacyTarget": "효과 목표를 통해"
+      },
+      "pick": {
+        "conditionEpisode": "질환",
+        "document": "문서",
+        "encounter": "진료",
+        "medication": "약",
+        "vaccination": "예방접종"
+      },
+      "nothingToOffer": "아직 연결할 항목이 없습니다.",
+      "saveError": "연결을 저장하지 못했습니다."
     }
   },
   "bodySites": {

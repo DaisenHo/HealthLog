@@ -318,6 +318,30 @@ describe("related[]", () => {
     ]);
   });
 
+  it("lists a dose's visit named by the form's scalar field, once", async () => {
+    const prisma = getPrismaClient();
+    await prisma.vaccinationRecord.update({
+      where: { id: owner.vaccination.id },
+      data: { encounterId: owner.encounter.id },
+    });
+    await linkTargets(prisma, {
+      userId: OWNER,
+      sourceKind: "vaccination",
+      sourceId: owner.vaccination.id,
+      targetKind: "encounter",
+      targetIds: [owner.encounter.id],
+    });
+    const fromDose = await related("vaccination", owner.vaccination.id);
+    expect(fromDose.filter((r) => r.kind === "encounter")).toHaveLength(1);
+    const fromVisit = await related("encounter", owner.encounter.id);
+    expect(fromVisit.filter((r) => r.kind === "vaccination")).toEqual([
+      expect.objectContaining({
+        id: owner.vaccination.id,
+        href: `/vaccinations?dose=${owner.vaccination.id}`,
+      }),
+    ]);
+  });
+
   it("never lists another account's records, nor a deleted one", async () => {
     const prisma = getPrismaClient();
     await linkTargets(prisma, {

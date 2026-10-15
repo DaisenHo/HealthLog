@@ -300,7 +300,25 @@ async function stored(
     sourceId,
     targetKind: to as LinkTargetKind,
   });
-  return rows.map((row) => ({ kind: to, id: row.id, via: "direct" }));
+  const ids = rows.map((row) => row.id);
+  // A dose also names its visit by scalar (`VaccinationRecord.encounterId`,
+  // the form's visit field). Both say the same thing, so both are read and
+  // the visit is listed once.
+  if (from === "vaccination" && to === "encounter") {
+    const dose = await tx.vaccinationRecord.findFirst({
+      where: { id: sourceId, userId },
+      select: { encounterId: true },
+    });
+    if (dose?.encounterId) ids.push(dose.encounterId);
+  } else if (from === "encounter" && to === "vaccination") {
+    const doses = await tx.vaccinationRecord.findMany({
+      where: { encounterId: sourceId, userId, deletedAt: null },
+      select: { id: true },
+      orderBy: { occurredAt: "asc" },
+    });
+    ids.push(...doses.map((dose) => dose.id));
+  }
+  return [...new Set(ids)].map((id) => ({ kind: to, id, via: "direct" }));
 }
 
 /** The things filed against the visits this record is filed against. */
