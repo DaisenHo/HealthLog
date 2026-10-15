@@ -186,18 +186,21 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // the web login page otherwise. Deletes the single-use state cookie either
   // way. An error redirect carries no code, ticket, or session, so routing it
   // to the scheme leaks nothing (spec §1).
+  // v1.43 (#959) — a refused claim returns to the claim page, never the
+  // sign-in page, and takes the claim cookie with it: the person starts again
+  // from the link, which is still theirs to use if the refusal left it open.
+  // Browser-only, like `errorRedirect`: a claim is never native.
+  const claimRedirect = (reason: string): NextResponse => {
+    const response = NextResponse.redirect(
+      oidcAppUrl(`${CLAIM_ERROR_PATH}?error=${reason}`),
+    );
+    deleteStateCookie(response);
+    clearClaimCookie(response);
+    return response;
+  };
+
   const failRedirect = (reason: string): NextResponse => {
-    if (isClaim) {
-      // A refused claim returns to the claim page, never the sign-in page,
-      // and takes the claim cookie with it: the person starts again from the
-      // link, which is still theirs to use if the refusal left it open.
-      const response = NextResponse.redirect(
-        oidcAppUrl(`${CLAIM_ERROR_PATH}?error=${reason}`),
-      );
-      deleteStateCookie(response);
-      clearClaimCookie(response);
-      return response;
-    }
+    if (isClaim) return claimRedirect(reason);
     if (isNative) {
       const response = NextResponse.redirect(
         buildNativeCallbackUrl({ error: reason }),
@@ -238,7 +241,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // resolve to the web `oidc_state` fallback: the flow is fundamentally broken
   // and there is nothing safe to hand the app (spec §1 web-fallback).
   if (!code || !state) {
-    return isClaim ? failRedirect("oidc_state") : errorRedirect("oidc_state");
+    return isClaim ? claimRedirect("oidc_state") : errorRedirect("oidc_state");
   }
 
   if (!stored) {
@@ -281,7 +284,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     !timingSafeEqual(Buffer.from(state), Buffer.from(stored.state))
   ) {
     annotate({ meta: { reason: "csrf" } });
-    return isClaim ? failRedirect("oidc_state") : errorRedirect("oidc_state");
+    return isClaim ? claimRedirect("oidc_state") : errorRedirect("oidc_state");
   }
 
   // v1.43 (#959) — a claim is never finished over a live session (the claim
