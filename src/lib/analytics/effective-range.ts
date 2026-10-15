@@ -332,7 +332,12 @@ export function resolveWeightTargetOverride(
   return { min, max };
 }
 
-function resolveThresholdOverride(
+/**
+ * Narrow one metric's own target out of a raw `User.thresholdsJson`, the same
+ * way `resolveWeightTargetOverride` does for weight. `null` for anything that
+ * is not a well-formed, ordered pair of finite numbers.
+ */
+export function resolveThresholdOverride(
   thresholdsJson: unknown,
   metric: ThresholdMetric,
 ): { min: number; max: number } | null {

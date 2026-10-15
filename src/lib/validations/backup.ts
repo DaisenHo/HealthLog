@@ -993,6 +993,12 @@ const intradayProfileBackupSchema = z
     hourlyCumulative: z.array(z.number()),
     dayTotal: z.number(),
     sampleCount: z.number().int(),
+    // v1.43 (ios #77) — the hours the phone posted, what the curve was built
+    // from, and how many hours there were. Defaulted so a file written before
+    // the hours existed restores as a fold of single samples, which it was.
+    hourlyIncrements: z.array(z.number()).default([]),
+    basis: z.enum(["PER_SAMPLE", "HOUR_BUCKETS"]).default("PER_SAMPLE"),
+    bucketCount: z.number().int().nonnegative().nullable().default(null),
     // The zone the day was cut on. The reader compares it against the
     // account's current zone and drops the mismatched days, so a restore that
     // dropped this column would make old curves look comparable when their
@@ -1120,7 +1126,10 @@ const labResultBackupSchema = z
     analyte: z.string().min(1),
     value: z.number().nullable().optional(),
     valueText: z.string().nullable().optional(),
-    unit: z.string().min(1),
+    // A qualitative reading ("positive", "trace") has no unit and is stored
+    // under its marker's empty one (`POST /api/labs`); the refine below keeps
+    // the unit required for every numeric reading.
+    unit: z.string(),
     referenceLow: z.number().nullable().optional(),
     referenceHigh: z.number().nullable().optional(),
     // Optional so a backup written before these columns existed still
@@ -1142,13 +1151,29 @@ const labResultBackupSchema = z
     deletedAt: isoDateTime.nullable().optional(),
     updatedAt: isoDateTime.optional(),
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((reading, ctx) => {
+    const qualitative =
+      (reading.value === null || reading.value === undefined) &&
+      typeof reading.valueText === "string" &&
+      reading.valueText.length > 0;
+    if (reading.unit.length === 0 && !qualitative) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["unit"],
+        message: "A numeric lab reading needs its unit",
+      });
+    }
+  });
 
 const biomarkerBackupSchema = z
   .object({
     id: z.string().min(1).optional(),
     name: z.string().min(1),
-    unit: z.string().min(1),
+    // Empty for a qualitative marker, minted from a reading with no unit. The
+    // payload refine below refuses an empty unit on a marker a numeric
+    // reading is filed under.
+    unit: z.string(),
     lowerBound: z.number().nullable().optional(),
     upperBound: z.number().nullable().optional(),
     panel: z.string().nullable().optional(),
@@ -2246,6 +2271,30 @@ export const backupPayloadSchema = z
   })
   .passthrough()
   .superRefine((payload, ctx) => {
+    // A marker without a unit is a qualitative one. A numeric reading filed
+    // under it would restore as a number with no unit, so the file is refused
+    // naming the marker rather than restored into that.
+    const numericByMarker = new Set<string>();
+    for (const reading of payload.labResults) {
+      if (reading.value === null || reading.value === undefined) continue;
+      if (reading.biomarkerId) numericByMarker.add(`id:${reading.biomarkerId}`);
+      if (reading.biomarkerName) {
+        numericByMarker.add(`name:${reading.biomarkerName}`);
+      }
+    }
+    payload.biomarkers.forEach((marker, index) => {
+      if (marker.unit.length > 0) return;
+      if (
+        (marker.id && numericByMarker.has(`id:${marker.id}`)) ||
+        numericByMarker.has(`name:${marker.name}`)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["biomarkers", index, "unit"],
+          message: `Biomarker "${marker.name}" has numeric readings and needs its unit`,
+        });
+      }
+    });
     if (payload.schemaVersion !== BACKUP_SCHEMA_VERSION) return;
     payload.measurements.forEach((measurement, index) => {
       if (!measurement.id) {

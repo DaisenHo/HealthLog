@@ -533,8 +533,70 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       lastTrigger: "foreground",
       lastNewSampleAt: null,
       lastBackgroundAt: backgroundAt.toISOString(),
+      lastBackfillAt: null,
     });
     expect(byType.PULSE).toMatchObject({ lastBackgroundAt: null });
+  });
+
+  // v1.43 (ios #77) — a backfill's own ledger row reads as `lastBackfillAt`
+  // of its type and moves none of the live facts.
+  it("serves lastBackfillAt from the backfill row, apart from the live arrival", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: ago(60 * 60 * 1000),
+    } as never);
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue([
+      "PULSE",
+      "ACTIVITY_STEPS",
+    ]);
+    mockProbes([
+      { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
+      { type: "ACTIVITY_STEPS", last_seen: ago(60 * 60 * 1000) },
+    ]);
+    const receivedAt = ago(5 * 60 * 60 * 1000);
+    const backfillAt = ago(60 * 1000);
+    vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([
+      {
+        type: "PULSE",
+        lastReceivedAt: receivedAt,
+        lastTrigger: "foreground",
+        lastNewSampleAt: receivedAt,
+        lastBackgroundAt: null,
+      },
+      {
+        type: "backfill:PULSE",
+        lastReceivedAt: backfillAt,
+        lastTrigger: null,
+        lastNewSampleAt: null,
+        lastBackgroundAt: null,
+      },
+      {
+        type: "backfill:ACTIVITY_STEPS",
+        lastReceivedAt: backfillAt,
+        lastTrigger: null,
+        lastNewSampleAt: null,
+        lastBackgroundAt: null,
+      },
+    ] as never);
+
+    const body = await read();
+    const byType = Object.fromEntries(
+      body.metricFreshness.map((entry) => [entry.type, entry]),
+    );
+    expect(byType.PULSE).toMatchObject({
+      lastReceivedAt: receivedAt.toISOString(),
+      lastTrigger: "foreground",
+      lastBackfillAt: backfillAt.toISOString(),
+    });
+    // A type that only ever arrived through a backfill has no live arrival.
+    expect(byType.ACTIVITY_STEPS).toMatchObject({
+      lastReceivedAt: null,
+      lastTrigger: null,
+      lastBackfillAt: backfillAt.toISOString(),
+    });
+    expect(body.metricFreshness.map((e) => e.type)).not.toContain(
+      "backfill:PULSE",
+    );
   });
 
   it("leaves the dose entry out when there is no Apple Health dose", async () => {

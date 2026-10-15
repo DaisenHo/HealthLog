@@ -15,6 +15,7 @@
  *
  * Read-only. A connection that does not exist resolves to null.
  */
+import { BACKFILL_LEDGER_PREFIX } from "./healthkit-type-sync";
 import { prisma } from "@/lib/db";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import type { IntegrationKey } from "./status";
@@ -194,7 +195,12 @@ export async function loadConnectionFacts(
       : null,
     wanted.has("apple-health")
       ? prisma.healthKitTypeSync.findMany({
-          where: { userId },
+          // A backfill's own ledger row is a catch-up, not a live arrival,
+          // and must not make the connection look alive (ios #77).
+          where: {
+            userId,
+            NOT: { type: { startsWith: BACKFILL_LEDGER_PREFIX } },
+          },
           select: { type: true, lastReceivedAt: true, lastNewSampleAt: true },
           orderBy: { lastReceivedAt: "desc" },
         })

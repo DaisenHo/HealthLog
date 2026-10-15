@@ -65,6 +65,10 @@ import {
   type WeightTrendJudgement,
 } from "@/lib/targets/weight-trend";
 import {
+  resolveSummaryVerdicts,
+  type TrendVerdict,
+} from "@/lib/targets/trend-verdict";
+import {
   probeRollupCoverage,
   typesWithReadingsInFoldWindow,
   type RollupCoverageMap,
@@ -452,6 +456,15 @@ export interface DashboardSnapshot {
      * builder always sets it.
      */
     weightTrend?: WeightTrendJudgement;
+    /**
+     * v1.43 (ios #116 item 3) — per measurement type (and `MOOD`,
+     * `BLOOD_PRESSURE_IN_TARGET`), which way a change counts for this
+     * person, against their own target or a profile default where one
+     * applies (`src/lib/targets/trend-verdict.ts`). Every tile colours its
+     * arrow and deltas from this; `weightTrend` stays for older clients.
+     * Optional on the type so older cached snapshots stay valid.
+     */
+    directions?: Record<string, TrendVerdict>;
   };
   /** Thick phase — null on a rollup-coverage miss. */
   extras: DashboardSnapshotExtras | null;
@@ -1496,6 +1509,14 @@ export async function buildDashboardSnapshot(
         weightTargetOverride,
         weightTrendReferenceKg(slim.summaries.WEIGHT),
       ),
+      directions: resolveSummaryVerdicts(slim.summaries, {
+        profile: {
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          heightCm: user.heightCm ?? null,
+        },
+        thresholdsJson: user.thresholdsJson,
+      }),
     },
     extras: extrasResult?.extras ?? null,
     medsToday,

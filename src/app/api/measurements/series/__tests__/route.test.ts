@@ -536,6 +536,117 @@ describe("GET /api/measurements/series", () => {
   );
 });
 
+describe("GET /api/measurements/series — resolved judgements (v1.43, ios #116)", () => {
+  function bpDays(values: Array<[string, number]>) {
+    vi.mocked(prisma.measurement.findMany).mockImplementation(((
+      args: unknown,
+    ) => {
+      const a = args as { where: { type: string } };
+      if (a.where.type !== "BLOOD_PRESSURE_SYS") return Promise.resolve([]);
+      return Promise.resolve(
+        values.map(([day, value], i) => ({
+          id: `s${i}`,
+          value,
+          measuredAt: new Date(`${day}T08:00:00.000Z`),
+        })),
+      );
+    }) as never);
+  }
+
+  it("judges the window's change against the person's own target and draws its lines", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      glucoseUnit: "mg/dL",
+      dateOfBirth: null,
+      gender: null,
+      heightCm: null,
+      locale: "en",
+      thresholdsJson: { BLOOD_PRESSURE_SYS: { min: 115, max: 125 } },
+    } as never);
+    bpDays([
+      ["2026-05-01", 128],
+      ["2026-05-02", 130],
+      ["2026-05-03", 134],
+    ]);
+    const res = await GET(req("kind=bloodPressure&days=30"));
+    const body = (await res.json()) as {
+      data: {
+        direction: unknown;
+        change: unknown;
+        referenceLines: Array<Record<string, unknown>>;
+      };
+    };
+    expect(body.data.direction).toEqual({
+      direction: "up-bad",
+      targetPosition: "above",
+      basis: "personal_target",
+    });
+    expect(body.data.change).toEqual({
+      from: 128,
+      to: 134,
+      delta: 6,
+      sentiment: "negative",
+    });
+    expect(
+      body.data.referenceLines.map((l) => [
+        l.appliesTo,
+        l.kind,
+        l.value,
+        l.source,
+      ]),
+    ).toEqual([
+      ["value", "lower", 115, "personal"],
+      ["value", "upper", 125, "personal"],
+      ["secondary", "upper", 90, "clinical"],
+    ]);
+    expect(body.data.referenceLines[0].label).toBe("Your target, lower limit");
+  });
+
+  it("calls the same rise progress for someone below their target", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      glucoseUnit: "mg/dL",
+      dateOfBirth: null,
+      gender: null,
+      heightCm: null,
+      locale: "en",
+      thresholdsJson: { BLOOD_PRESSURE_SYS: { min: 115, max: 125 } },
+    } as never);
+    bpDays([
+      ["2026-05-01", 100],
+      ["2026-05-03", 106],
+    ]);
+    const res = await GET(req("kind=bloodPressure&days=30"));
+    const body = (await res.json()) as {
+      data: { change: { sentiment: string } };
+    };
+    expect(body.data.change.sentiment).toBe("positive");
+  });
+
+  it("has no change under two days and the clinical glucose lines in mmol/L", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      glucoseUnit: "mmol/L",
+      locale: "de",
+      thresholdsJson: null,
+    } as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      { id: "g1", value: 100, measuredAt: new Date("2026-05-01T08:00:00Z") },
+    ] as never);
+    const res = await GET(req("kind=glucose&days=30"));
+    const body = (await res.json()) as {
+      data: {
+        change: unknown;
+        direction: { direction: string };
+        referenceLines: Array<{ value: number; label: string }>;
+      };
+    };
+    expect(body.data.change).toBeNull();
+    expect(body.data.referenceLines.map((l) => l.value)).toEqual([3.9, 10]);
+    expect(body.data.referenceLines[0].label).toBe("Klinische Untergrenze");
+  });
+});
+
 describe("GET /api/measurements/series — dense-kind day-bucketing (v1.28.25)", () => {
   it("day-buckets glucose in SQL beyond the 90-day raw window", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);

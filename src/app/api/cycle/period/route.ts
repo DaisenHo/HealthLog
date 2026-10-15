@@ -7,7 +7,8 @@
  * and writes the boundary `CycleDayLog(flow=MEDIUM)`. `action:"end"`
  * stamps the current cycle's `periodEndDate` and writes the boundary
  * day-log. Convenience over §2.A; returns
- * `{ cycle: MenstrualCycleDTO, dayLog: CycleDayLogDTO }`.
+ * `{ cycle: MenstrualCycleDTO, dayLog: CycleDayLogDTO, absorbed }`, where
+ * `absorbed` names a later start this one folded in (v1.43, null otherwise).
  */
 import { NextRequest } from "next/server";
 
@@ -221,12 +222,22 @@ async function postPeriod(request: NextRequest): Promise<Response> {
   return apiSuccess({
     cycle: toMenstrualCycleDTO(cycleRow),
     dayLog: toCycleDayLogDTO(dayLogRow),
+    // v1.43 (ios #116 item 9) — a later start inside the same period that
+    // this start folded in, so the client can say which date stopped being a
+    // start. Null when nothing was folded; present on every `start`.
+    absorbed:
+      txResult.moved.absorbedCycleId && txResult.moved.absorbedStartDate
+        ? {
+            cycleId: txResult.moved.absorbedCycleId,
+            startDate: txResult.moved.absorbedStartDate,
+          }
+        : null,
   });
 }
 
 /** `end` with no preceding cycle is a no-op the client should not hit. */
 function apiSuccessNoCycle(): Response {
-  return apiSuccess({ cycle: null, dayLog: null });
+  return apiSuccess({ cycle: null, dayLog: null, absorbed: null });
 }
 
 /**

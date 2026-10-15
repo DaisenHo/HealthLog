@@ -34,6 +34,9 @@ function sourceRow() {
     hourlyCumulative: CURVE,
     dayTotal: CURVE[23],
     sampleCount: 96,
+    hourlyIncrements: [] as number[],
+    basis: "PER_SAMPLE",
+    bucketCount: null,
     timezone: "Europe/Berlin",
     createdAt: new Date("2026-07-19T02:00:00.000Z"),
     updatedAt: new Date("2026-07-19T02:00:00.000Z"),
@@ -57,6 +60,9 @@ function entry(
     hourlyCumulative: CURVE,
     dayTotal: CURVE[23],
     sampleCount: 96,
+    hourlyIncrements: [],
+    basis: "PER_SAMPLE",
+    bucketCount: null,
     timezone: "Europe/Berlin",
     ...overrides,
   };
@@ -163,5 +169,63 @@ describe("intraday profile backup", () => {
       }),
     ).rejects.toThrow(/23 hourly slots, not 24/);
     expect(created, "a row every reader drops is worse than none").toEqual([]);
+  });
+
+  // v1.43 (ios #77) — the posted hours travel with the day.
+  it("carries the posted hours, the basis and the hour count both ways", async () => {
+    const hours = Array.from({ length: 24 }, (_, h) => (h < 8 ? -1 : 100));
+    const built = await buildIntradayProfileBackupSection(
+      {
+        intradayCumulativeProfile: {
+          findMany: vi.fn().mockResolvedValue([
+            {
+              ...sourceRow(),
+              hourlyIncrements: hours,
+              basis: "HOUR_BUCKETS",
+              bucketCount: 16,
+            },
+          ]),
+        },
+      } as never,
+      "user-A",
+    );
+    expect(built.intradayProfiles[0]).toMatchObject({
+      hourlyIncrements: hours,
+      basis: "HOUR_BUCKETS",
+      bucketCount: 16,
+    });
+
+    const created: Array<Record<string, unknown>> = [];
+    await restoreIntradayProfileData(tx(created), "user-B", {
+      intradayProfiles: [built.intradayProfiles[0]],
+    });
+    expect(created[0]).toMatchObject({
+      hourlyIncrements: hours,
+      basis: "HOUR_BUCKETS",
+      bucketCount: 16,
+    });
+  });
+
+  it("restores a day that so far holds only a few posted hours", async () => {
+    const hours = Array.from({ length: 24 }, (_, h) => (h === 9 ? 120 : -1));
+    const created: Array<Record<string, unknown>> = [];
+    await restoreIntradayProfileData(tx(created), "user-B", {
+      intradayProfiles: [
+        entry({
+          hourlyCumulative: [],
+          dayTotal: 0,
+          sampleCount: 0,
+          hourlyIncrements: hours,
+          bucketCount: 1,
+        }),
+      ],
+    });
+    expect(created[0]).toMatchObject({ hourlyCumulative: [], bucketCount: 1 });
+
+    await expect(
+      restoreIntradayProfileData(tx([]), "user-B", {
+        intradayProfiles: [entry({ hourlyIncrements: hours.slice(0, 3) })],
+      }),
+    ).rejects.toThrow(/3 posted-hour slots/);
   });
 });

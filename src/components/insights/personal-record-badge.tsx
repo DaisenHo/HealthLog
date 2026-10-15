@@ -41,6 +41,17 @@ interface PersonalRecordRow {
   value: number;
   unit: string;
   achievedAt: string;
+  /**
+   * v1.43 — the cited band for the age the record was set at, resolved on
+   * the server; null (or absent on an older server) when none applies.
+   */
+  benchmark?: {
+    low: number;
+    high: number;
+    unit: string;
+    source: string;
+    sourceLabel: string;
+  } | null;
 }
 
 interface PersonalRecordBadgeProps {
@@ -146,6 +157,19 @@ export function PersonalRecordBadge({
         data-slot="insights-pr-badge-tooltip"
       >
         <span className="text-xs">{tooltipText}</span>
+        {fresh.benchmark ? (
+          <span
+            className="text-muted-foreground block text-xs"
+            data-slot="insights-pr-badge-benchmark"
+          >
+            {t("insights.personalRecord.benchmark", {
+              low: fmt.number(fresh.benchmark.low, 1),
+              high: fmt.number(fresh.benchmark.high, 1),
+              unit: fresh.benchmark.unit,
+              source: fresh.benchmark.sourceLabel,
+            })}
+          </span>
+        ) : null}
       </TooltipContent>
     </Tooltip>
   );

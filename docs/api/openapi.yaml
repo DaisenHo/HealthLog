@@ -447,17 +447,36 @@ paths:
       tags:
         - Cycle
       summary: Soft-delete a cycle day-log (v1.15.0)
-      description: Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. 204.
-        Idempotent.
+      description: "Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. A
+        day that opened a cycle takes that cycle with it, which gives back any start that cycle had folded in. 204, or
+        200 with `CycleDeleteOutcome` under `Prefer: return=representation`. Idempotent."
       parameters:
         - in: path
           name: id
           schema:
             type: string
           required: true
+        - name: Prefer
+          in: header
+          required: false
+          schema:
+            type: string
+            example: return=representation
+          description: "v1.43 — send `return=representation` (RFC 7240) to get 200 with what the delete changed
+            (`CycleDeleteOutcome`) and a `Preference-Applied: return=representation` header. Without it the route
+            answers 204 with no body, as before."
       responses:
         "200":
-          description: "v1.43 — with `Prefer: return=representation`: what the delete changed."
+          description: "v1.43 — with `Prefer: return=representation`: the removed cycle (null when the delete removed none, e.g. a
+            day that opened no cycle or a repeated delete) and the starts the removal gave back."
+          headers:
+            Preference-Applied:
+              required: true
+              description: "The route honoured `Prefer: return=representation`."
+              schema:
+                type: string
+                const: return=representation
+                description: "The route honoured `Prefer: return=representation`."
           content:
             application/json:
               schema:
@@ -618,16 +637,35 @@ paths:
       tags:
         - Cycle
       summary: Soft-delete a menstrual cycle (v1.15.0)
-      description: Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. 204. Idempotent.
+      description: "Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. Any start this cycle had folded
+        in stands again. 204, or 200 with `CycleDeleteOutcome` under `Prefer: return=representation`. Idempotent."
       parameters:
         - in: path
           name: id
           schema:
             type: string
           required: true
+        - name: Prefer
+          in: header
+          required: false
+          schema:
+            type: string
+            example: return=representation
+          description: "v1.43 — send `return=representation` (RFC 7240) to get 200 with what the delete changed
+            (`CycleDeleteOutcome`) and a `Preference-Applied: return=representation` header. Without it the route
+            answers 204 with no body, as before."
       responses:
         "200":
-          description: "v1.43 — with `Prefer: return=representation`: what the delete changed."
+          description: "v1.43 — with `Prefer: return=representation`: the removed cycle (null when the delete removed none, e.g. a
+            day that opened no cycle or a repeated delete) and the starts the removal gave back."
+          headers:
+            Preference-Applied:
+              required: true
+              description: "The route honoured `Prefer: return=representation`."
+              schema:
+                type: string
+                const: return=representation
+                description: "The route honoured `Prefer: return=representation`."
           content:
             application/json:
               schema:
@@ -4738,59 +4776,6 @@ paths:
         "401": *a1
         "403": *a13
         "422": *a4
-        "429": *a5
-  /api/personal-records:
-    get:
-      tags:
-        - Awards
-      summary: List detected personal bests
-      description: >-
-        The record's personal bests, newest achievement first. Read-only — rows come from the detection worker and no
-        endpoint creates or edits one.
-
-
-        Both query parameters are validated and a bad value is a 422. They were forgiving until this release, and in one
-        direction that was worse than merely quiet: dropping an unrecognised `metricType` WIDENED the read to every
-        metric, so a typo returned more rows than the caller asked for. The `limit` ceiling refuses rather than clamps
-        for the same reason.
-
-
-        Delegable on a `measurements` grant.
-      parameters:
-        - name: metricType
-          in: query
-          required: false
-          schema:
-            type: string
-          description: A `MeasurementType` to filter to. A value outside the enum is refused with 422 — it is not dropped, because
-            dropping it would widen the read rather than narrow it.
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 100
-          description: Page cap, default 100, ceiling 500. A non-integer, a zero, a negative value or anything above 500 is
-            refused with 422 rather than corrected — serving a different number of rows than were asked for is another
-            difference nobody is told about.
-      responses:
-        "200":
-          description: The record's personal bests, newest first.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListPersonalRecordsEnvelope"
-        "401": *a1
-        "403": *a11
-        "422":
-          description: "`metricType` or `limit` carried an unacceptable value. `meta.errorCode` =
-            `personal_records.invalid_query`, with the offending path under `details.issues`."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/workouts:
     get:
@@ -22360,6 +22345,59 @@ paths:
                 anyOf:
                   - $ref: "#/components/schemas/HealthAdminResponse"
                   - $ref: "#/components/schemas/HealthPublicResponse"
+  /api/personal-records:
+    get:
+      tags:
+        - Awards
+      summary: List detected personal bests
+      description: >-
+        The record's personal bests, newest achievement first. Read-only — rows come from the detection worker and no
+        endpoint creates or edits one.
+
+
+        Both query parameters are validated and a bad value is a 422. They were forgiving until this release, and in one
+        direction that was worse than merely quiet: dropping an unrecognised `metricType` WIDENED the read to every
+        metric, so a typo returned more rows than the caller asked for. The `limit` ceiling refuses rather than clamps
+        for the same reason.
+
+
+        Delegable on a `measurements` grant.
+      parameters:
+        - name: metricType
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A `MeasurementType` to filter to. A value outside the enum is refused with 422 — it is not dropped, because
+            dropping it would widen the read rather than narrow it.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          description: Page cap, default 100, ceiling 500. A non-integer, a zero, a negative value or anything above 500 is
+            refused with 422 rather than corrected — serving a different number of rows than were asked for is another
+            difference nobody is told about.
+      responses:
+        "200":
+          description: The record's personal bests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPersonalRecordsEnvelope"
+        "401": *a1
+        "403": *a11
+        "422":
+          description: "`metricType` or `limit` carried an unacceptable value. `meta.errorCode` =
+            `personal_records.invalid_query`, with the offending path under `details.issues`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
   /api/gamification/achievements:
     get:
       tags:
@@ -26438,19 +26476,24 @@ components:
             $ref: "#/components/schemas/AppleHealthBatchEntry"
         syncTrigger:
           description: 'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or
-            a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the
-            account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both
-            readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the
-            batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on
-            each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background`
-            trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and
-            backward-compatible: pre-#66 clients omit it.'
+            a user-initiated `manual` "Sync all" run, since v1.42). `backfill` (v1.43, ios #77; send it only when `GET
+            /api/auth/me` reports `features.syncTriggerBackfill: true`, an older server refuses the whole batch with
+            422) names a history catch-up: it moves only `syncProgress` and the per-type `lastBackfillAt` in `GET
+            /api/integrations/healthkit`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt`, `lastSyncTrigger`,
+            `lastBackgroundSyncAt` or the sync checkpoint. Recorded on the ingest wide event and kept on the account as
+            `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from
+            `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried
+            (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each
+            `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background` trigger. It
+            does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66
+            clients omit it.'
           type: string
           enum:
             - foreground
             - background
             - push
             - manual
+            - backfill
       required:
         - entries
       description: Apple Health batch ingest. ≤500 entries per call; idempotent via `Idempotency-Key`.
@@ -26515,7 +26558,7 @@ components:
           minLength: 1
           maxLength: 120
           description: >-
-            Dedup key for the `(userId, type, source, externalId)` composite index. Three shapes:
+            Dedup key for the `(userId, type, source, externalId)` composite index. Four shapes:
 
             • `HKSample.uuid` — a per-sample reading. First-write-wins: a re-post returns `duplicate` and the stored row
             is immutable.
@@ -26529,6 +26572,17 @@ components:
             {00,10,20,30,40,50}, trailing `Z` (e.g. `2026-06-21T14:10:00.000Z`). A re-post OVERWRITES the row and
             returns `updated`, so iOS uploads ~144 rows/day instead of one per raw HR sample. A row that targets this
             prefix with a malformed bucket-start suffix is `skipped` with reason `malformed_hr_bucket_id`.
+
+            • `stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>T<HH>` — v1.43 (ios #77), only when `GET /api/auth/me`
+            reports `features.cumulativeHourBuckets: true`: one local hour's SUM of steps, active energy, walking and
+            running distance or flights climbed, the date and the zero-padded hour being the local hour in the account's
+            zone (`timezone` on `/api/auth/me`). `value` is the hour's sum in the unit of the day form, `startDate` the
+            first instant of that local hour, `endDate` one hour later. Such a row is never a measurement and never
+            changes the day total, which stays the day form: it feeds the intraday profile behind the same-time baseline
+            (a day with at least four posted hours is built from them). A re-post overwrites (`updated`). Skipped with
+            `hour_bucket_misaligned` when `startDate` is not the start of that local hour,
+            `hour_bucket_unsupported_type` for any other identifier or a `MANUAL` / bridge entry, `hour_bucket_too_old`
+            when the day is more than 400 days back.
 
             The id MUST be stable across app restarts. An object description or memory address (`<Class: 0x…>`,
             `0x12ab34cd`) is a new value on every launch, so it can never match its own earlier row; such an entry is
@@ -27033,17 +27087,20 @@ components:
           items:
             $ref: "#/components/schemas/BulkMedicationIntakeEntry"
         syncTrigger:
-          description: 'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client
-            for this sync. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated`
-            or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET
+          description: "Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client
+            for this sync. `backfill` (v1.43, only when `features.syncTriggerBackfill` is `true`) marks a history
+            catch-up, which moves only the `MEDICATION_DOSE` entry's `lastBackfillAt` and leaves its live stamps and the
+            sync checkpoint alone. When the batch carries entries with `source: \"APPLE_HEALTH\"` that land (`inserted`,
+            `updated` or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET
             /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`.
-            It changes no dose row. Optional; omitted records a null trigger.'
+            It changes no dose row. Optional; omitted records a null trigger."
           type: string
           enum:
             - foreground
             - background
             - push
             - manual
+            - backfill
       required:
         - entries
       description: iOS SyncMode bulk intake backfill. 1–500 entries per call; idempotent via `Idempotency-Key` and per-entry
@@ -36140,7 +36197,8 @@ components:
             - type: object
               properties:
                 restored:
-                  description: v1.43 — starts given back because this edit cleared the flow on a start day.
+                  description: v1.43 — starts given back because this edit cleared the flow on a start day; empty when it gave back none.
+                    Absent on older servers.
                   type: array
                   items:
                     $ref: "#/components/schemas/CycleRestoredStart"
@@ -36296,7 +36354,8 @@ components:
                 - $ref: "#/components/schemas/CycleDayLogDTO"
                 - type: "null"
             absorbed:
-              description: 'v1.43 — on `action: "start"`: a later start within the period length folded into this one, or null.'
+              description: 'v1.43 — a later start within the period length that this start folded in (it stops being a start of its
+                own), or null. Present on every `action: "start"` answer; null on `end`.'
               anyOf:
                 - $ref: "#/components/schemas/CycleRestoredStart"
                 - type: "null"
@@ -40106,7 +40165,6 @@ components:
                   - type: "null"
               unit:
                 type: string
-                minLength: 1
               referenceLow:
                 anyOf:
                   - type: number
@@ -40189,7 +40247,6 @@ components:
                 minLength: 1
               unit:
                 type: string
-                minLength: 1
               lowerBound:
                 anyOf:
                   - type: number
@@ -41599,6 +41656,24 @@ components:
                 type: integer
                 minimum: -9007199254740991
                 maximum: 9007199254740991
+              hourlyIncrements:
+                default: []
+                type: array
+                items:
+                  type: number
+              basis:
+                default: PER_SAMPLE
+                type: string
+                enum:
+                  - PER_SAMPLE
+                  - HOUR_BUCKETS
+              bucketCount:
+                default: null
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: "null"
               timezone:
                 type: string
                 minLength: 1
@@ -41614,6 +41689,9 @@ components:
               - hourlyCumulative
               - dayTotal
               - sampleCount
+              - hourlyIncrements
+              - basis
+              - bucketCount
               - timezone
             additionalProperties: {}
         healthScoreRecords:
@@ -46778,7 +46856,9 @@ components:
         reason:
           description: "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean
             type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same
-            source already covers. Nothing to retry; treat it like any duplicate."
+            source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`,
+            `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly
+            `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent."
           type: string
         convertedValue:
           description: "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored
@@ -47388,115 +47468,6 @@ components:
       description: "Server-authoritative sleep-rhythm read: the outstanding sleep-debt balance over the rolling window + MCTQ
         chronotype (MSF/MSFsc band, social jetlag). Free vs work nights default to weekend = free in the user's timezone
         (no work calendar). A view over existing per-stage SLEEP_DURATION rows — no schema, no new type."
-    ListPersonalRecordsEnvelope:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/PersonalRecord"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    PersonalRecord:
-      type: object
-      properties:
-        id:
-          type: string
-        userId:
-          type: string
-          description: The RECORD's user id — under a delegated read this is the owner, not the caller.
-        metricType:
-          $ref: "#/components/schemas/MeasurementType"
-        metricSlot:
-          anyOf:
-            - type: string
-            - type: "null"
-          description: Per-sport bucket for workout-driven bests (e.g. "running_5km_time"). Null for a plain measurement-driven
-            best, where the metric type alone is the dimension.
-        direction:
-          type: string
-          enum:
-            - MAX
-            - MIN
-          description: Which way is better. MAX for steps / VO2 max / HRV / distance; MIN for resting heart rate, body fat, audio
-            exposure.
-        value:
-          type: number
-        unit:
-          type: string
-        achievedAt:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-        sourceMeasurementId:
-          anyOf:
-            - type: string
-            - type: "null"
-          description: The measurement that achieved the record. Nulled rather than cascaded when that measurement is later
-            deleted, so the historical fact survives the reading behind it.
-        source:
-          $ref: "#/components/schemas/MeasurementSource"
-        externalId:
-          anyOf:
-            - type: string
-            - type: "null"
-        createdAt:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-        benchmark:
-          description: v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null
-            otherwise.
-          anyOf:
-            - $ref: "#/components/schemas/RecordBenchmark"
-            - type: "null"
-      required:
-        - id
-        - userId
-        - metricType
-        - metricSlot
-        - direction
-        - value
-        - unit
-        - achievedAt
-        - sourceMeasurementId
-        - source
-        - externalId
-        - createdAt
-      additionalProperties: false
-      description: One detected personal best. Rows are written by the detection worker, never by a client — there is no write
-        endpoint on this resource.
-    RecordBenchmark:
-      type: object
-      properties:
-        low:
-          type: number
-        high:
-          type: number
-        unit:
-          type: string
-        source:
-          type: string
-        sourceLabel:
-          type: string
-      required:
-        - low
-        - high
-        - unit
-        - source
-        - sourceLabel
-      additionalProperties: false
-      description: An age- and sex-aware comparison band from a cited norm, in the record's unit.
     ListWorkoutsResponse:
       type: object
       properties:
@@ -63897,9 +63868,11 @@ components:
             `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in
             `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to
             discover by inspecting a live payload. `VITALS_BASELINE` returns { type, center, low, high, spread,
-            sampleDays, k, series }, where `series` is the trailing per-day means for the inline sparkline. The
-            remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside
-            their engines under `src/lib/insights/derived/`.
+            sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline
+            and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with
+            `center` placed against their own target or a profile default. The remaining metrics' value objects are not
+            modelled here yet; their shapes are TypeScript interfaces beside their engines under
+            `src/lib/insights/derived/`.
         coverage:
           $ref: "#/components/schemas/DerivedCoverage"
         confidence:
@@ -82404,6 +82377,115 @@ components:
       additionalProperties: false
       description: "What an unauthenticated (or non-admin) caller sees: the aggregate verdict and nothing else. No component
         detail, so an uptime probe cannot be used to fingerprint which part of a self-hosted instance is unwell."
+    ListPersonalRecordsEnvelope:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonalRecord"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PersonalRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+          description: The RECORD's user id — under a delegated read this is the owner, not the caller.
+        metricType:
+          $ref: "#/components/schemas/MeasurementType"
+        metricSlot:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Per-sport bucket for workout-driven bests (e.g. "running_5km_time"). Null for a plain measurement-driven
+            best, where the metric type alone is the dimension.
+        direction:
+          type: string
+          enum:
+            - MAX
+            - MIN
+          description: Which way is better. MAX for steps / VO2 max / HRV / distance; MIN for resting heart rate, body fat, audio
+            exposure.
+        value:
+          type: number
+        unit:
+          type: string
+        achievedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        sourceMeasurementId:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The measurement that achieved the record. Nulled rather than cascaded when that measurement is later
+            deleted, so the historical fact survives the reading behind it.
+        source:
+          $ref: "#/components/schemas/MeasurementSource"
+        externalId:
+          anyOf:
+            - type: string
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        benchmark:
+          description: v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null
+            otherwise.
+          anyOf:
+            - $ref: "#/components/schemas/RecordBenchmark"
+            - type: "null"
+      required:
+        - id
+        - userId
+        - metricType
+        - metricSlot
+        - direction
+        - value
+        - unit
+        - achievedAt
+        - sourceMeasurementId
+        - source
+        - externalId
+        - createdAt
+      additionalProperties: false
+      description: One detected personal best. Rows are written by the detection worker, never by a client — there is no write
+        endpoint on this resource.
+    RecordBenchmark:
+      type: object
+      properties:
+        low:
+          type: number
+        high:
+          type: number
+        unit:
+          type: string
+        source:
+          type: string
+        sourceLabel:
+          type: string
+      required:
+        - low
+        - high
+        - unit
+        - source
+        - sourceLabel
+      additionalProperties: false
+      description: An age- and sex-aware comparison band from a cited norm, in the record's unit.
     AchievementsEnvelope:
       type: object
       properties:

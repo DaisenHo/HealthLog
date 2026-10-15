@@ -28,6 +28,10 @@
  * statistics helpers below are exported so the unit test can assert the
  * composed-bucket baseline matches the raw-DAY baseline within tolerance.
  */
+import {
+  resolveTrendVerdict,
+  type TrendVerdict,
+} from "@/lib/targets/trend-verdict";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
@@ -91,6 +95,14 @@ export interface VitalsBaselineValue {
    * band is already computed from (no extra read).
    */
   series: number[];
+  /**
+   * v1.43 (ios #116 item 3) — which way a change of this vital counts for
+   * the person, with the band's centre placed against their own target or a
+   * profile default (`src/lib/targets/trend-verdict.ts`). The tile colours
+   * its delta from this instead of a fixed polarity. Absent when the caller
+   * passed no profile facts to judge with.
+   */
+  direction?: TrendVerdict;
 }
 
 /** Caller-supplied profile (read once per request, never re-fetched here). */
@@ -109,6 +121,13 @@ export interface BaselineProfile {
    * metric (weight ÷ height²); `null` when the profile has no height.
    */
   heightCm?: number | null;
+  /**
+   * v1.43 — the date of birth and the person's own targets, which the trend
+   * verdict on `VITALS_BASELINE` is judged with. Optional: a caller that does
+   * not read them gets no verdict rather than a wrong one.
+   */
+  dateOfBirth?: Date | null;
+  thresholdsJson?: unknown;
 }
 
 /**
@@ -127,13 +146,20 @@ export async function loadBaselineProfile(
 ): Promise<BaselineProfile> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { dateOfBirth: true, gender: true, heightCm: true },
+    select: {
+      dateOfBirth: true,
+      gender: true,
+      heightCm: true,
+      thresholdsJson: true,
+    },
   });
   const sex = toProfileSex(user?.gender);
   return {
     ageYears: getAgeFromDateOfBirth(user?.dateOfBirth ?? null),
     sex,
     heightCm: user?.heightCm ?? null,
+    dateOfBirth: user?.dateOfBirth ?? null,
+    thresholdsJson: user?.thresholdsJson ?? null,
   };
 }
 
@@ -311,7 +337,7 @@ export async function readDayMeanSeries(
  */
 export async function computeVitalsBaseline(
   userId: string,
-  _profile: BaselineProfile,
+  profile: BaselineProfile,
   opts: VitalsBaselineOpts,
 ): Promise<Derived<VitalsBaselineValue>> {
   const windowDays = opts.windowDays ?? DEFAULT_WINDOW_DAYS;
@@ -403,8 +429,22 @@ export async function computeVitalsBaseline(
   // means the band is built from, capped to the recent window.
   const series = points.slice(-SPARKLINE_MAX_POINTS).map((p) => p.mean);
 
+  // Judged only when the caller read the facts it is judged with; the
+  // nightly engines that never show a delta pass a bare profile.
+  const direction =
+    profile.dateOfBirth !== undefined
+      ? resolveTrendVerdict(type, {
+          profile: {
+            dateOfBirth: profile.dateOfBirth,
+            gender: profile.sex,
+            heightCm: profile.heightCm ?? null,
+          },
+          thresholdsJson: profile.thresholdsJson ?? null,
+          referenceValue: band.center,
+        })
+      : undefined;
   return buildOk<VitalsBaselineValue>({
-    value: { type, ...band, series },
+    value: { type, ...band, series, ...(direction ? { direction } : {}) },
     coverage: cov,
     confidence,
     provenance: { inputs: [String(type)], source, windowDays, computedAt },

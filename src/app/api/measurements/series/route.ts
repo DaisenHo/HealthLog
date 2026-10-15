@@ -7,6 +7,12 @@
  *
  * The `kind=bloodPressure` case pairs systolic + diastolic by
  * `measuredAt` so iOS can render the dual-line chart with one fetch.
+ *
+ * v1.43 (ios #116 items 3 and 4) — the answer also carries what a client
+ * would otherwise decide itself: `direction` (which way a change of this
+ * metric counts for this person), `change` (first and last day value of the
+ * window, judged by that direction) and `referenceLines` (the person's own
+ * target lines, else the clinical ones, in the unit of the points).
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -37,6 +43,15 @@ import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
+import { resolveTrendVerdict } from "@/lib/targets/trend-verdict";
+import {
+  computeSeriesChange,
+  seriesDayValues,
+  seriesReferenceValue,
+} from "@/lib/measurements/series-change";
+import { resolveSeriesReferenceLines } from "@/lib/measurements/series-reference-lines";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 
 /**
  * v1.11.4 — sleep is read row-per-stage (not from the day rollup), so its
@@ -199,7 +214,7 @@ function stdDev(values: number[]): number {
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireRecordAuth("read", "measurements");
+  const { user, actor } = await requireRecordAuth("read", "measurements");
 
   const rawQuery = Object.fromEntries(request.nextUrl.searchParams);
   const parsed = querySchema.safeParse(rawQuery);
@@ -814,6 +829,55 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const summary = dataPoints.length > 0 ? summarize(dataPoints) : null;
   const values = dataPoints.map((p) => p.value);
 
+  // v1.43 — the resolved judgements. The profile and targets are the
+  // RECORD's (the chart is theirs); the labels are in the language of the
+  // account reading it.
+  const [record, reader, seriesTz] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        dateOfBirth: true,
+        gender: true,
+        heightCm: true,
+        thresholdsJson: true,
+        glucoseUnit: true,
+        locale: true,
+      },
+    }),
+    actor.id === user.id
+      ? null
+      : prisma.user.findUnique({
+          where: { id: actor.id },
+          select: { locale: true },
+        }),
+    resolveUserTimezone(user.id),
+  ]);
+  const rangeProfile = {
+    dateOfBirth: record?.dateOfBirth ?? null,
+    gender: record?.gender ?? null,
+    heightCm: record?.heightCm ?? null,
+  };
+  const verdictType = KIND_TO_TYPE[kind];
+  const dayValues = seriesDayValues(verdictType, points, seriesTz);
+  const reference = seriesReferenceValue(dayValues);
+  const direction = resolveTrendVerdict(verdictType, {
+    profile: rangeProfile,
+    thresholdsJson: record?.thresholdsJson ?? null,
+    // The verdict reads stored units: sleep is served in hours here and
+    // stored in minutes. Glucose has no band of its own on this chart.
+    referenceValue:
+      reference !== null && kind === "sleep" ? reference * 60 : reference,
+  });
+  const translator = getServerTranslator(
+    await resolveJobLocale((reader ?? record)?.locale ?? null),
+  );
+  const referenceLines = resolveSeriesReferenceLines(kind, {
+    profile: rangeProfile,
+    thresholdsJson: record?.thresholdsJson ?? null,
+    glucoseUnit: resolveGlucoseUnit(record?.glucoseUnit ?? null),
+    t: (key) => translator.t(key),
+  });
+
   annotate({
     action: { name: "measurements.series" },
     meta: { kind, days, count: points.length },
@@ -823,6 +887,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     kind,
     unit,
     points,
+    direction,
+    change: computeSeriesChange(dayValues, direction),
+    referenceLines,
     stats:
       statsOverride ??
       (summary

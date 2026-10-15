@@ -2723,7 +2723,8 @@
     "bmiEmptyAction": "Ouvrir les paramètres du compte",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Record personnel : {value} {unit} le {date}"
+      "tooltip": "Record personnel : {value} {unit} le {date}",
+      "benchmark": "Valeur typique à cet âge : de {low} à {high} {unit} ({source})"
     },
     "loadError": "Impossible de charger les analyses",
     "heroPersonalBaseline": "Basé sur tes 90 derniers jours",
@@ -4277,6 +4278,21 @@
         "learning": "Phase d'apprentissage : {entries} journées sur {threshold} enregistrées. La comparaison apparaît une fois qu'il y en a assez.",
         "noPattern": "Dans les {entries} journées enregistrées jusqu'ici, rien n'est assez régulier pour comparer une journée. Quand tu notes aussi le contexte d'une journée, tu en rends davantage comparable.",
         "featureValue": "{field} : {value}"
+      },
+      "patterns": {
+        "title": "Tendances de votre humeur",
+        "basedOn": "Sur la base de {subject} et {comparison} jours. Une tendance, pas une cause.",
+        "previousDayHigher": "Après une journée en dessous de l’habitude, le lendemain est souvent meilleur ({subject} contre {comparison} après une journée au-dessus).",
+        "previousDayLower": "Une journée en dessous de l’habitude a tendance à se prolonger le lendemain ({subject} contre {comparison} après une journée au-dessus).",
+        "weekendHigher": "Votre humeur a tendance à être meilleure le week-end ({subject} contre {comparison} en semaine).",
+        "weekendLower": "Votre humeur a tendance à être plus basse le week-end ({subject} contre {comparison} en semaine).",
+        "bestWeekday": "{weekday} est souvent votre meilleur jour ({subject} contre {comparison} les autres jours).",
+        "notesHigher": "Les jours avec une note, votre humeur a tendance à être meilleure ({subject} contre {comparison} sans note).",
+        "notesLower": "Les jours avec une note, votre humeur a tendance à être plus basse ({subject} contre {comparison} sans note).",
+        "delayedTagHigher": "Le lendemain de « {tag} », votre humeur a tendance à être meilleure ({subject} contre {comparison} sinon).",
+        "delayedTagLower": "Le lendemain de « {tag} », votre humeur a tendance à être plus basse ({subject} contre {comparison} sinon).",
+        "multipleEntriesHigher": "Les jours où vous notez plusieurs fois, votre humeur a tendance à être meilleure ({subject} contre {comparison} avec une seule saisie).",
+        "multipleEntriesLower": "Les jours où vous notez plusieurs fois, votre humeur a tendance à être plus basse ({subject} contre {comparison} avec une seule saisie)."
       }
     },
     "derived": {
@@ -7223,7 +7239,8 @@
         "lastReceived": "Dernière réception {relative}",
         "lastNewValue": "Dernière nouvelle valeur {relative}",
         "lastBackground": "Dernière fois en arrière-plan {relative}",
-        "never": "Pas encore reçu"
+        "never": "Pas encore reçu",
+        "lastBackfill": "Historique rattrapé {relative}"
       }
     },
     "garminInfo": {
@@ -9325,7 +9342,9 @@
     "periodStartSaved": "Début des règles enregistré",
     "periodEndSaved": "Fin des règles enregistrée",
     "startedPeriodOnDate": "Mes règles ont commencé ce jour-là",
-    "endedPeriodOnDate": "Mes règles se sont terminées ce jour-là"
+    "endedPeriodOnDate": "Mes règles se sont terminées ce jour-là",
+    "startAbsorbed": "Début des règles enregistré. Votre début du {absorbed} a été fusionné avec celui du {date}.",
+    "startRestored": "Enregistré. Le début du {dates} est de retour."
   },
   "cycleReminders": {
     "periodSoonTitle": "Règles probablement bientôt",
@@ -12943,5 +12962,13 @@
     "lastUpdated": "Dernière mise à jour : {date}",
     "project": "Projet",
     "credits": "Crédits"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Votre objectif, limite haute",
+      "targetLower": "Votre objectif, limite basse",
+      "clinicalUpper": "Limite clinique haute",
+      "clinicalLower": "Limite clinique basse"
+    }
   }
 }

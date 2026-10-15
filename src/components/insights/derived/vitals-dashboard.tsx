@@ -28,7 +28,6 @@ import {
 } from "./use-dashboard-derived";
 import { SAME_TIME_BASELINE_MIN_HISTORY_DAYS } from "@/lib/insights/derived/registry";
 import { resolveTileLayout, type InsightsLayout } from "@/lib/insights-layout";
-import type { TrendDirectionSentiment } from "@/lib/insights/trend-sentiment";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { VitalsBaselineValue } from "@/lib/insights/derived/baseline";
 import type { FitnessAgeValue } from "@/lib/insights/derived/fitness-age";
@@ -63,26 +62,6 @@ import type { DerivedProvenance } from "@/lib/insights/derived/types";
 // v1.12.6 — `SECTION_VITALS`, `SECTION_MOBILITY` and the batch token list
 // moved to `use-dashboard-derived.ts` so the page can own the one shared batch
 // and feed it to both the wellness strip and this grid. Imported above.
-
-/**
- * Up-is-bad for the vitals where a rise is unfavourable. Weight is not one of
- * them: which way it should move depends on the person's own target (#1006,
- * `src/lib/targets/weight-trend.ts`), and this grid has no target in hand, so
- * it stays neutral rather than assuming a fall is good.
- */
-const UP_BAD_VITALS = new Set([
-  "RESTING_HEART_RATE",
-  "BODY_TEMPERATURE",
-  "BLOOD_GLUCOSE",
-]);
-/** Up-is-good for the vitals where a rise is favourable. */
-const UP_GOOD_VITALS = new Set(["HEART_RATE_VARIABILITY", "OXYGEN_SATURATION"]);
-
-function vitalSentiment(type: string): TrendDirectionSentiment {
-  if (UP_BAD_VITALS.has(type)) return "up-bad";
-  if (UP_GOOD_VITALS.has(type)) return "up-good";
-  return "neutral";
-}
 
 interface DashboardProps {
   /**
@@ -306,7 +285,10 @@ function BaselineTile({
         icon={Icon}
         series={displaySeries}
         framing={framing}
-        directionSentiment={vitalSentiment(type)}
+        // v1.43 — resolved on the server against the person's own target
+        // or profile default; an older server sends none and the tile
+        // stays neutral rather than assuming a polarity.
+        directionSentiment={v.direction?.direction ?? "neutral"}
         provenance={
           // v1.29.1 muted this on VITALS_BASELINE tiles because the always-on
           // "typical range = median ± MAD" caption repeated across every vital

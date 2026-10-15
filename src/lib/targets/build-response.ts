@@ -39,6 +39,11 @@ import { buildSleepTarget } from "./sleep-builder";
 import { buildTargetPageSummary } from "./summary-builder";
 import { buildVitalTargets } from "./vitals-builder";
 import type { TargetItem, TargetMoodEntry, TargetValueByType } from "./types";
+import {
+  resolveTrendVerdict,
+  trendSentimentOfTrend,
+  type TrendVerdictContext,
+} from "./trend-verdict";
 
 import type { User } from "@/generated/prisma/client";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
@@ -362,6 +367,18 @@ export async function buildTargetsResponse(user: AuthedUser) {
     }),
   );
 
+  // v1.43 (ios #116 item 3) — every item carries which way its change
+  // counts, judged with the same rule the dashboard tiles use.
+  const verdictTargets = withTargetVerdicts(targets, {
+    profile: {
+      heightCm,
+      dateOfBirth: dbUser?.dateOfBirth ?? null,
+      gender: dbUser?.gender ?? null,
+    },
+    thresholdsJson: dbUser?.thresholdsJson ?? null,
+  });
+  targets.splice(0, targets.length, ...verdictTargets);
+
   const pageSummary = buildTargetPageSummary(targets);
   annotate({
     action: { name: "insights.targets" },
@@ -392,4 +409,36 @@ export async function buildTargetsResponse(user: AuthedUser) {
       glucoseUnit,
     },
   };
+}
+
+/**
+ * Lay the verdict over each target item. The reference is the item's latest
+ * value, else its thirty-day average, in the unit the item is served in:
+ * sleep is served in hours and judged in minutes, and BMI is judged by the
+ * weight it is derived from.
+ */
+export function withTargetVerdicts(
+  targets: readonly TargetItem[],
+  ctx: Omit<TrendVerdictContext, "referenceValue">,
+): TargetItem[] {
+  const weight = targets.find((item) => item.type === "WEIGHT");
+  const weightReference = weight ? (weight.current ?? weight.average30) : null;
+  return targets.map((item) => {
+    const own = item.current ?? item.average30;
+    const reference =
+      item.type === "BMI"
+        ? weightReference
+        : own !== null && item.type === "SLEEP_DURATION"
+          ? own * 60
+          : own;
+    const direction = resolveTrendVerdict(item.type, {
+      ...ctx,
+      referenceValue: reference,
+    });
+    return {
+      ...item,
+      direction,
+      trendSentiment: trendSentimentOfTrend(item.trend, direction),
+    };
+  });
 }

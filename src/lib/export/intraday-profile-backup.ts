@@ -60,6 +60,18 @@ export interface IntradayProfileBackupEntry {
   dayTotal: number;
   sampleCount: number;
   /**
+   * v1.43 (ios #77) — the hours the phone posted for the day, 24 slots with
+   * -1 for an hour not posted, or empty for a day folded from single samples
+   * only. A day with fewer than four posted hours keeps its posted hours here
+   * while its curve is still the fold's, or empty when the drain never saw
+   * the day.
+   */
+  hourlyIncrements: number[];
+  /** What `hourlyCumulative` was built from. */
+  basis: "PER_SAMPLE" | "HOUR_BUCKETS";
+  /** Posted hours behind the day; null when none were posted. */
+  bucketCount: number | null;
+  /**
    * The IANA zone the day was cut on. Carried because the reader compares it
    * against the account's current zone and drops the mismatched days; a
    * restore that guessed the zone would make old days look comparable when
@@ -113,6 +125,9 @@ export async function buildIntradayProfileBackupSection(
       hourlyCumulative: row.hourlyCumulative,
       dayTotal: row.dayTotal,
       sampleCount: row.sampleCount,
+      hourlyIncrements: row.hourlyIncrements,
+      basis: row.basis === "HOUR_BUCKETS" ? "HOUR_BUCKETS" : "PER_SAMPLE",
+      bucketCount: row.bucketCount,
       timezone: row.timezone,
     })),
   };
@@ -180,7 +195,24 @@ export async function restoreIntradayProfileData(
     }
     seen.add(key);
 
-    if (profile.hourlyCumulative.length !== PROFILE_BACKUP_HOURS) {
+    const increments = profile.hourlyIncrements ?? [];
+    if (increments.length !== 0 && increments.length !== PROFILE_BACKUP_HOURS) {
+      throw new Error(
+        `Intraday profile for ${profile.type} on ${profile.dateKey} carries ` +
+          `${increments.length} posted-hour slots, not ${PROFILE_BACKUP_HOURS} or none.`,
+      );
+    }
+    // A day that so far holds only a few posted hours has no curve yet; the
+    // reader skips it until it does, and the hours are what it is restored
+    // for. Every other row must carry a full day.
+    const hoursOnly =
+      profile.hourlyCumulative.length === 0 &&
+      increments.length === PROFILE_BACKUP_HOURS &&
+      (profile.basis ?? "PER_SAMPLE") === "PER_SAMPLE";
+    if (
+      !hoursOnly &&
+      profile.hourlyCumulative.length !== PROFILE_BACKUP_HOURS
+    ) {
       throw new Error(
         `Intraday profile for ${profile.type} on ${profile.dateKey} carries ` +
           `${profile.hourlyCumulative.length} hourly slots, not ${PROFILE_BACKUP_HOURS}. ` +
@@ -200,6 +232,9 @@ export async function restoreIntradayProfileData(
         hourlyCumulative: profile.hourlyCumulative,
         dayTotal: profile.dayTotal,
         sampleCount: profile.sampleCount,
+        hourlyIncrements: profile.hourlyIncrements ?? [],
+        basis: profile.basis ?? "PER_SAMPLE",
+        bucketCount: profile.bucketCount ?? null,
         timezone: profile.timezone,
         ...(profile.createdAt
           ? { createdAt: new Date(profile.createdAt) }

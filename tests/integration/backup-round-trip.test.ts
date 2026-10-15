@@ -3661,14 +3661,7 @@ const COLUMN_PRESENCE_ONLY: Readonly<Record<string, string>> = {
  * starts coming back, so the entry has to go in the change that carries it.
  * The list is empty again before the release is tagged.
  */
-const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {
-  "IntradayCumulativeProfile.hourlyIncrements":
-    "hour buckets for summed types (ios #77): the intraday section carries it with the hour-bucket ingest",
-  "IntradayCumulativeProfile.basis":
-    "hour buckets for summed types (ios #77): the intraday section carries it with the hour-bucket ingest",
-  "IntradayCumulativeProfile.bucketCount":
-    "hour buckets for summed types (ios #77): the intraday section carries it with the hour-bucket ingest",
-};
+const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {};
 
 /**
  * Columns every reader parses through one function before using, compared
@@ -3697,6 +3690,12 @@ const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "CorrelationPattern.dismissedEvidenceHash": "ab".repeat(32),
   // CHECK in migration 0408: the profile is built from samples or from hour buckets.
   "IntradayCumulativeProfile.basis": "HOUR_BUCKETS",
+  // The posted hours are a whole day of slots (-1 for an hour not posted);
+  // the restore refuses any other length, as it does for the curve.
+  "IntradayCumulativeProfile.hourlyIncrements": Array.from(
+    { length: 24 },
+    (_, hour) => (hour < 6 ? -1 : 350),
+  ),
 };
 
 /**

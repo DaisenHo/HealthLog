@@ -2723,7 +2723,8 @@
     "bmiEmptyAction": "Open account settings",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Personal record: {value} {unit} on {date}"
+      "tooltip": "Personal record: {value} {unit} on {date}",
+      "benchmark": "Typical at that age: {low} to {high} {unit} ({source})"
     },
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",
@@ -4277,6 +4278,21 @@
         "learning": "Learning phase: {entries} of {threshold} days recorded. A comparison appears once there are enough of them.",
         "noPattern": "Nothing in the {entries} days recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Patterns in your mood",
+        "basedOn": "Based on {subject} and {comparison} days. A pattern, not a cause.",
+        "previousDayHigher": "After a below-usual day, the next day tends to be better ({subject} against {comparison} after an above-usual day).",
+        "previousDayLower": "A below-usual day tends to carry over into the next one ({subject} against {comparison} after an above-usual day).",
+        "weekendHigher": "Your mood tends to be higher at the weekend ({subject} against {comparison} on weekdays).",
+        "weekendLower": "Your mood tends to be lower at the weekend ({subject} against {comparison} on weekdays).",
+        "bestWeekday": "{weekday} tends to be your best day ({subject} against {comparison} on the other days).",
+        "notesHigher": "On days with a note your mood tends to be higher ({subject} against {comparison} without one).",
+        "notesLower": "On days with a note your mood tends to be lower ({subject} against {comparison} without one).",
+        "delayedTagHigher": "The day after “{tag}”, your mood tends to be higher ({subject} against {comparison} otherwise).",
+        "delayedTagLower": "The day after “{tag}”, your mood tends to be lower ({subject} against {comparison} otherwise).",
+        "multipleEntriesHigher": "On days you log more than once, your mood tends to be higher ({subject} against {comparison} on single-entry days).",
+        "multipleEntriesLower": "On days you log more than once, your mood tends to be lower ({subject} against {comparison} on single-entry days)."
       }
     },
     "derived": {
@@ -7223,7 +7239,8 @@
         "lastReceived": "Last received {relative}",
         "lastNewValue": "Last new value {relative}",
         "lastBackground": "Last in background {relative}",
-        "never": "Not received yet"
+        "never": "Not received yet",
+        "lastBackfill": "History caught up {relative}"
       }
     },
     "garminInfo": {
@@ -9325,7 +9342,9 @@
     "periodStartSaved": "Period start saved",
     "periodEndSaved": "End of period saved",
     "startedPeriodOnDate": "My period started this day",
-    "endedPeriodOnDate": "My period ended this day"
+    "endedPeriodOnDate": "My period ended this day",
+    "startAbsorbed": "Period start saved. Your start on {absorbed} was merged into {date}.",
+    "startRestored": "Saved. The start on {dates} is back."
   },
   "cycleReminders": {
     "periodSoonTitle": "Period likely soon",
@@ -12943,5 +12962,13 @@
     "lastUpdated": "Last updated: {date}",
     "project": "Project",
     "credits": "Credits"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Your target, upper limit",
+      "targetLower": "Your target, lower limit",
+      "clinicalUpper": "Clinical upper limit",
+      "clinicalLower": "Clinical lower limit"
+    }
   }
 }

@@ -210,6 +210,69 @@ describe("backupPayloadSchema — v1.28 backup-completeness domains", () => {
     }
   });
 
+  // A qualitative marker is minted with an empty unit and its readings are
+  // stored under it; the file the account's own backup wrote must parse.
+  describe("units of qualitative lab markers", () => {
+    const base = {
+      schemaVersion: "1",
+      exportedAt: "2026-05-08T07:00:00.000Z",
+      userId: "u1",
+    };
+    const qualitativeMarker = { id: "bm-1", name: "Urine glucose", unit: "" };
+    const qualitativeReading = {
+      analyte: "Urine glucose",
+      value: null,
+      valueText: "negative",
+      unit: "",
+      takenAt: "2026-04-01T09:00:00.000Z",
+      source: "MANUAL",
+      biomarkerId: "bm-1",
+      biomarkerName: "Urine glucose",
+    };
+
+    it("accepts an empty unit on a qualitative marker and its reading", () => {
+      const r = backupPayloadSchema.safeParse({
+        ...base,
+        biomarkers: [qualitativeMarker],
+        labResults: [qualitativeReading],
+      });
+      expect(r.success).toBe(true);
+    });
+
+    it("still needs the unit on a numeric reading", () => {
+      const r = backupPayloadSchema.safeParse({
+        ...base,
+        labResults: [
+          {
+            ...qualitativeReading,
+            value: 5,
+            valueText: null,
+            biomarkerId: null,
+          },
+        ],
+      });
+      expect(r.success).toBe(false);
+      expect(r.error?.issues.map((i) => i.path.join("."))).toEqual([
+        "labResults.0.unit",
+      ]);
+    });
+
+    it("refuses an empty unit on a marker a numeric reading is filed under", () => {
+      const r = backupPayloadSchema.safeParse({
+        ...base,
+        biomarkers: [qualitativeMarker],
+        labResults: [
+          qualitativeReading,
+          { ...qualitativeReading, value: 5, valueText: null, unit: "mg/dL" },
+        ],
+      });
+      expect(r.success).toBe(false);
+      expect(r.error?.issues.map((i) => i.path.join("."))).toEqual([
+        "biomarkers.0.unit",
+      ]);
+    });
+  });
+
   it("round-trips an illness episode with a flare referencing its parent + nested day-logs", () => {
     const r = backupPayloadSchema.safeParse({
       schemaVersion: "1",

@@ -289,3 +289,134 @@ describe("resolved-field consumer guard", () => {
     expect(total).toBeGreaterThanOrEqual(6);
   });
 });
+
+/**
+ * v1.43 (ios #116 items 3, 4, 5, 6, 9; #77) — the fields the server resolves
+ * for the native client reach the web as well, so the two clients render the
+ * same answer. Each field names the web module that reads it, by a pattern
+ * over that module's code. A field the web has no screen for names the web
+ * twin it is resolved alongside (the same resolver, published where the web
+ * reads it) and why; the twin's reader is checked the same way.
+ *
+ * The rebuild side of the same rule (a client deciding a polarity or drawing
+ * a threshold of its own) is `client-threshold-literal-guard.test.ts`.
+ */
+interface WebReader {
+  file: string;
+  pattern: RegExp;
+}
+
+interface ResolvedFieldReader {
+  field: string;
+  readers: WebReader[];
+  /** Set when the web reads a twin rather than this route's field. */
+  twin?: string;
+}
+
+const V143_FIELDS: ResolvedFieldReader[] = [
+  {
+    field: "GET /api/dashboard/snapshot tiles.directions",
+    readers: [
+      { file: "src/app/page-client.tsx", pattern: /tiles\.directions/ },
+    ],
+  },
+  {
+    field:
+      "GET /api/dashboard/summary DashboardMetricCard.direction / trendSentiment",
+    twin: "the summary route is the native client's dashboard; the web dashboard reads the same `resolveTrendVerdict` answer from the snapshot's `tiles.directions`",
+    readers: [{ file: "src/app/page-client.tsx", pattern: /directionOf\(/ }],
+  },
+  {
+    field: "GET /api/insights/targets TargetItem.direction / trendSentiment",
+    twin: "the web target panels show the band, not a change; the change they would colour is the dashboard tile's, read from `tiles.directions`",
+    readers: [
+      { file: "src/app/page-client.tsx", pattern: /tileDirections\?\.\[key\]/ },
+    ],
+  },
+  {
+    field: "GET /api/insights/derived VITALS_BASELINE value.direction",
+    readers: [
+      {
+        file: "src/components/insights/derived/vitals-dashboard.tsx",
+        pattern: /v\.direction\?\.direction/,
+      },
+    ],
+  },
+  {
+    field: "GET /api/measurements/series direction / change / referenceLines",
+    twin: "the web charts read the series-batch and draw the person's bands from the snapshot's `targetBands`; the series read is the native chart source",
+    readers: [{ file: "src/app/page-client.tsx", pattern: /targetBands/ }],
+  },
+  {
+    field: "GET /api/personal-records benchmark",
+    readers: [
+      {
+        file: "src/components/insights/personal-record-badge.tsx",
+        pattern: /fresh\.benchmark/,
+      },
+    ],
+  },
+  {
+    field: "GET /api/mood/insights patterns",
+    readers: [
+      {
+        file: "src/components/insights/mood/mood-insights-breakdowns.tsx",
+        pattern: /data\.patterns/,
+      },
+      {
+        file: "src/components/insights/mood/mood-patterns.tsx",
+        pattern: /pattern\.values\.subject/,
+      },
+    ],
+  },
+  {
+    field: "POST /api/cycle/period absorbed",
+    readers: [
+      {
+        file: "src/components/cycle/use-cycle.ts",
+        pattern: /data\?\.absorbed/,
+      },
+    ],
+  },
+  {
+    field: "DELETE /api/cycle/day-logs/{id} (Prefer) and PATCH restored",
+    readers: [
+      {
+        file: "src/components/cycle/use-cycle.ts",
+        pattern: /Prefer: "return=representation"/,
+      },
+      {
+        file: "src/components/cycle/use-cycle.ts",
+        pattern: /data\?\.restored/,
+      },
+    ],
+  },
+  {
+    field: "GET /api/integrations/healthkit metricFreshness[].lastBackfillAt",
+    readers: [
+      {
+        file: "src/components/settings/integrations/apple-health-card.tsx",
+        pattern: /entry\.lastBackfillAt/,
+      },
+    ],
+  },
+];
+
+describe("v1.43 resolved fields reach the web", () => {
+  for (const entry of V143_FIELDS) {
+    it(`${entry.field} has a web reader${entry.twin ? " through its twin" : ""}`, () => {
+      expect(entry.readers.length).toBeGreaterThan(0);
+      if (entry.twin !== undefined)
+        expect(entry.twin.length).toBeGreaterThan(40);
+      for (const reader of entry.readers) {
+        const code = stripComments(
+          readFileSync(join(ROOT, reader.file), "utf8"),
+        );
+        expect(
+          reader.pattern.test(code),
+          `${reader.file} no longer reads ${entry.field} (${reader.pattern})`,
+        ).toBe(true);
+      }
+    });
+  }
+});

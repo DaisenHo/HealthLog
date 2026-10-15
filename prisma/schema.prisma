@@ -2334,16 +2334,18 @@ model IntradayCumulativeProfile {
   /// two rows is not a shape; the baseline reader uses this to refuse such
   /// a day rather than let it drag the median.
   sampleCount      Int             @map("sample_count")
-  /// @pending-consumer(#v143-B9) v1.43 (#77) — per-hour increments posted as
-  /// `stats:<HK>:<YYYY-MM-DD>T<HH>` rows, 24 slots in canonical units. Empty
-  /// for a profile folded from per-sample rows.
+  /// v1.43 (#77) — per-hour increments posted as
+  /// `stats:<HK>:<YYYY-MM-DD>T<HH>` rows (`intraday-hour-buckets.ts`), 24
+  /// slots in canonical units, -1 for an hour not posted. Empty for a day
+  /// the phone never posted hours for.
   hourlyIncrements Float[]         @map("hourly_increments")
-  /// @pending-consumer(#v143-B9) What `hourlyCumulative` was built from:
-  /// `PER_SAMPLE` (the fold of raw rows) or `HOUR_BUCKETS` (the posted hour
-  /// rows). CHECK in migration 0408.
+  /// What `hourlyCumulative` was built from: `PER_SAMPLE` (the fold of raw
+  /// rows) or `HOUR_BUCKETS` (the posted hours, once a day holds four).
+  /// CHECK in migration 0408. Read by the profile reader and the drain's
+  /// merge, which leaves a bucket-built day alone.
   basis            String          @default("PER_SAMPLE")
-  /// @pending-consumer(#v143-B9) How many hour buckets backed a
-  /// `HOUR_BUCKETS` profile; NULL for `PER_SAMPLE`.
+  /// How many hours the phone posted for the day; NULL when it posted none.
+  /// Below four the day keeps the per-sample fold (or no curve yet).
   bucketCount      Int?            @map("bucket_count")
   /// The IANA zone the day was bucketed in. A user who later moves zones
   /// leaves behind profiles cut on the old clock; carrying the zone lets
@@ -4044,7 +4046,11 @@ model HealthKitTypeSync {
   /// A `MeasurementType` name for rows the measurement batch writes, or
   /// `MEDICATION_DOSE` for Apple Health doses the intake bulk route
   /// receives. Text, not the enum, since v1.42.4 (migration 0401) because a
-  /// dose is not a measurement type.
+  /// dose is not a measurement type. Since v1.43 (ios #77) a
+  /// `backfill:<type>` row records when a `syncTrigger: "backfill"` batch
+  /// last carried the type (its `lastReceivedAt`, every other column NULL),
+  /// so a catch-up leaves the live row of the type untouched; live readers
+  /// skip the prefix (`healthkit-type-sync.ts`).
   type             String
   /// Last batch that carried this type.
   lastReceivedAt   DateTime  @map("last_received_at")

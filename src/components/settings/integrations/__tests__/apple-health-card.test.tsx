@@ -474,6 +474,31 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
     expect(out).not.toContain("Last in background");
   });
 
+  // v1.43 (ios #77) — a history catch-up is named apart, and a type that
+  // only ever arrived through one still reads as not received live.
+  it("names the last backfill apart from the live arrival", () => {
+    const live = html({
+      ...base,
+      lastReceivedAt: hoursAgo(1),
+      lastTrigger: "foreground",
+      lastNewSampleAt: hoursAgo(1),
+      lastBackfillAt: hoursAgo(3),
+    });
+    expect(live).toContain('data-state="received"');
+    expect(live).toContain("History caught up 3 h ago");
+    const backfillOnly = html({
+      ...base,
+      lastReceivedAt: null,
+      lastTrigger: null,
+      lastNewSampleAt: null,
+      lastBackfillAt: hoursAgo(2),
+    });
+    expect(backfillOnly).toContain('data-state="never"');
+    expect(backfillOnly).toContain(
+      "Not received yet, History caught up 2 h ago",
+    );
+  });
+
   it("names the medication dose row in the freshness list", () => {
     statusPayload = {
       lastSyncedAt: hoursAgo(1),

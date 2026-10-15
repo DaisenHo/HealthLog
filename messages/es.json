@@ -2723,7 +2723,8 @@
     "bmiEmptyAction": "Abrir ajustes de cuenta",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Récord personal: {value} {unit} el {date}"
+      "tooltip": "Récord personal: {value} {unit} el {date}",
+      "benchmark": "Lo típico a esa edad: de {low} a {high} {unit} ({source})"
     },
     "loadError": "No se han podido cargar los análisis",
     "heroPersonalBaseline": "Basado en tus últimos 90 días",
@@ -4277,6 +4278,21 @@
         "learning": "Fase de aprendizaje: {entries} de {threshold} días registrados. La comparación aparece cuando haya suficientes.",
         "noPattern": "En los {entries} días registrados hasta ahora no hay nada lo bastante constante para comparar un día. Cuando anotas también el contexto del día, se puede comparar una parte mayor.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Patrones en tu estado de ánimo",
+        "basedOn": "Basado en {subject} y {comparison} días. Un patrón, no una causa.",
+        "previousDayHigher": "Después de un día por debajo de lo habitual, el siguiente suele ser mejor ({subject} frente a {comparison} tras un día por encima).",
+        "previousDayLower": "Un día por debajo de lo habitual suele arrastrarse al siguiente ({subject} frente a {comparison} tras un día por encima).",
+        "weekendHigher": "Tu estado de ánimo suele ser mejor el fin de semana ({subject} frente a {comparison} entre semana).",
+        "weekendLower": "Tu estado de ánimo suele ser peor el fin de semana ({subject} frente a {comparison} entre semana).",
+        "bestWeekday": "{weekday} suele ser tu mejor día ({subject} frente a {comparison} el resto de días).",
+        "notesHigher": "Los días con una nota tu estado de ánimo suele ser mejor ({subject} frente a {comparison} sin nota).",
+        "notesLower": "Los días con una nota tu estado de ánimo suele ser peor ({subject} frente a {comparison} sin nota).",
+        "delayedTagHigher": "El día después de «{tag}», tu estado de ánimo suele ser mejor ({subject} frente a {comparison} en otros casos).",
+        "delayedTagLower": "El día después de «{tag}», tu estado de ánimo suele ser peor ({subject} frente a {comparison} en otros casos).",
+        "multipleEntriesHigher": "Los días que registras más de una vez, tu estado de ánimo suele ser mejor ({subject} frente a {comparison} con un solo registro).",
+        "multipleEntriesLower": "Los días que registras más de una vez, tu estado de ánimo suele ser peor ({subject} frente a {comparison} con un solo registro)."
       }
     },
     "derived": {
@@ -7223,7 +7239,8 @@
         "lastReceived": "Última recepción {relative}",
         "lastNewValue": "Último valor nuevo {relative}",
         "lastBackground": "Última vez en segundo plano {relative}",
-        "never": "Aún no recibido"
+        "never": "Aún no recibido",
+        "lastBackfill": "Historial recuperado {relative}"
       }
     },
     "garminInfo": {
@@ -9325,7 +9342,9 @@
     "periodStartSaved": "Inicio del periodo guardado",
     "periodEndSaved": "Fin del periodo guardado",
     "startedPeriodOnDate": "Mi periodo empezó este día",
-    "endedPeriodOnDate": "Mi periodo terminó este día"
+    "endedPeriodOnDate": "Mi periodo terminó este día",
+    "startAbsorbed": "Inicio del periodo guardado. Tu inicio del {absorbed} se ha unido al del {date}.",
+    "startRestored": "Guardado. El inicio del {dates} vuelve a estar."
   },
   "cycleReminders": {
     "periodSoonTitle": "El periodo llegará pronto",
@@ -12943,5 +12962,13 @@
     "lastUpdated": "Última actualización: {date}",
     "project": "Proyecto",
     "credits": "Créditos"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Tu objetivo, límite superior",
+      "targetLower": "Tu objetivo, límite inferior",
+      "clinicalUpper": "Límite clínico superior",
+      "clinicalLower": "Límite clínico inferior"
+    }
   }
 }

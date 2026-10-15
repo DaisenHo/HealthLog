@@ -2723,7 +2723,8 @@
     "bmiEmptyAction": "Otwórz ustawienia konta",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}"
+      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}",
+      "benchmark": "Typowo w tym wieku: od {low} do {high} {unit} ({source})"
     },
     "loadError": "Nie udało się załadować analiz",
     "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",
@@ -4277,6 +4278,21 @@
         "learning": "Faza uczenia: zapisano {entries} z {threshold} dni. Porównanie pojawi się, gdy będzie ich dość.",
         "noPattern": "W zapisanych dotąd {entries} dniach nic nie jest na tyle regularne, by porównać z nimi dzień. Gdy zapisujesz też kontekst dnia, więcej da się porównać.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Wzorce w twoim nastroju",
+        "basedOn": "Na podstawie {subject} i {comparison} dni. Wzorzec, nie przyczyna.",
+        "previousDayHigher": "Po dniu poniżej twojej normy następny dzień jest zwykle lepszy ({subject} wobec {comparison} po dniu powyżej normy).",
+        "previousDayLower": "Dzień poniżej twojej normy zwykle przenosi się na następny ({subject} wobec {comparison} po dniu powyżej normy).",
+        "weekendHigher": "W weekendy twój nastrój jest zwykle lepszy ({subject} wobec {comparison} w dni robocze).",
+        "weekendLower": "W weekendy twój nastrój jest zwykle gorszy ({subject} wobec {comparison} w dni robocze).",
+        "bestWeekday": "{weekday} to zwykle twój najlepszy dzień ({subject} wobec {comparison} w pozostałe dni).",
+        "notesHigher": "W dni z notatką twój nastrój jest zwykle lepszy ({subject} wobec {comparison} bez notatki).",
+        "notesLower": "W dni z notatką twój nastrój jest zwykle gorszy ({subject} wobec {comparison} bez notatki).",
+        "delayedTagHigher": "Dzień po „{tag}” twój nastrój jest zwykle lepszy ({subject} wobec {comparison} w pozostałe dni).",
+        "delayedTagLower": "Dzień po „{tag}” twój nastrój jest zwykle gorszy ({subject} wobec {comparison} w pozostałe dni).",
+        "multipleEntriesHigher": "W dni z kilkoma wpisami twój nastrój jest zwykle lepszy ({subject} wobec {comparison} przy jednym wpisie).",
+        "multipleEntriesLower": "W dni z kilkoma wpisami twój nastrój jest zwykle gorszy ({subject} wobec {comparison} przy jednym wpisie)."
       }
     },
     "derived": {
@@ -7223,7 +7239,8 @@
         "lastReceived": "Ostatnio odebrano {relative}",
         "lastNewValue": "Ostatnia nowa wartość {relative}",
         "lastBackground": "Ostatnio w tle {relative}",
-        "never": "Jeszcze nie odebrano"
+        "never": "Jeszcze nie odebrano",
+        "lastBackfill": "Historia uzupełniona {relative}"
       }
     },
     "garminInfo": {
@@ -9325,7 +9342,9 @@
     "periodStartSaved": "Początek miesiączki zapisany",
     "periodEndSaved": "Koniec miesiączki zapisany",
     "startedPeriodOnDate": "Miesiączka zaczęła się tego dnia",
-    "endedPeriodOnDate": "Miesiączka skończyła się tego dnia"
+    "endedPeriodOnDate": "Miesiączka skończyła się tego dnia",
+    "startAbsorbed": "Początek miesiączki zapisany. Twój początek z {absorbed} został połączony z {date}.",
+    "startRestored": "Zapisano. Początek z {dates} jest z powrotem."
   },
   "cycleReminders": {
     "periodSoonTitle": "Miesiączka prawdopodobnie wkrótce",
@@ -12943,5 +12962,13 @@
     "lastUpdated": "Ostatnia aktualizacja: {date}",
     "project": "Projekt",
     "credits": "Podziękowania"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Twój cel, górna granica",
+      "targetLower": "Twój cel, dolna granica",
+      "clinicalUpper": "Kliniczna górna granica",
+      "clinicalLower": "Kliniczna dolna granica"
+    }
   }
 }

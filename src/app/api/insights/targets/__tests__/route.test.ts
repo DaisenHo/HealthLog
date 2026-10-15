@@ -533,6 +533,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "WHO BMI",
+            direction: {
+              direction: "up-bad",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fourDaysInRange,
           },
           {
@@ -548,6 +554,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--info)",
             },
             source: "ESH 2023",
+            direction: {
+              direction: "hold",
+              targetPosition: "inside",
+              basis: "profile_default",
+            },
+            trendSentiment: "positive",
             ...fourDaysInRange,
           },
           {
@@ -563,6 +575,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "ESH 2023",
+            direction: {
+              direction: "up-good",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fourDaysInRange,
           },
           {
@@ -578,6 +596,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--warning)",
             },
             source: "CDC/NCHS",
+            direction: {
+              direction: "up-good",
+              targetPosition: "below",
+              basis: "profile_default",
+            },
+            trendSentiment: "neutral",
             daysInRange7d: 0,
             daysLogged7d: 4,
             daysInRange30d: 0,
@@ -600,6 +624,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "AASM/SRS",
+            direction: {
+              direction: "up-good",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fourDaysInRange,
           },
           {
@@ -615,6 +645,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "WHO",
+            direction: {
+              direction: "up-bad",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fourDaysInRange,
           },
           {
@@ -630,6 +666,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--warning)",
             },
             source: "ACE",
+            direction: {
+              direction: "hold",
+              targetPosition: "inside",
+              basis: "profile_default",
+            },
+            trendSentiment: "positive",
             ...fourDaysInRange,
           },
           {
@@ -645,6 +687,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "Saint-Maurice JAMA 2020",
+            direction: {
+              direction: "up-good",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fourDaysInRange,
           },
           {
@@ -657,6 +705,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
             range: { min: 90, max: 100 },
             classification: null,
             source: "7-day",
+            direction: {
+              direction: "up-good",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             details: {
               medications: [
                 {
@@ -688,6 +742,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "Mood entries",
+            direction: {
+              direction: "up-good",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fiveDaysInRange,
           },
           {
@@ -703,6 +763,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "Mood entries",
+            direction: {
+              direction: "neutral",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             ...fiveDaysInRange,
           },
           {
@@ -718,6 +784,12 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--success)",
             },
             source: "ADA 2024 / DDG",
+            direction: {
+              direction: "neutral",
+              targetPosition: null,
+              basis: "metric_default",
+            },
+            trendSentiment: "neutral",
             daysInRange7d: 3,
             daysLogged7d: 3,
             daysInRange30d: 3,

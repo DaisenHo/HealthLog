@@ -12,6 +12,8 @@ import {
   type MoodStabilityWindow,
 } from "@/lib/insights/mood-aggregates";
 import { requireModuleEnabled } from "@/lib/modules/gate";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +35,8 @@ export const dynamic = "force-dynamic";
  */
 /**
  * `?days=N` cuts `stability` to the trailing N days, so a period picker shows
- * the steadiness of the period it shows. Without it the score covers the
+ * the steadiness of the period it shows. Since v1.43 it cuts `patterns` the
+ * same way. Without it the score covers the
  * whole year, as it always has; `stabilityWindowDays` names the window the
  * served score covers either way.
  */
@@ -75,5 +78,10 @@ export const GET = apiHandler(async (request: Request) => {
     },
   });
 
-  return apiSuccess(moodInsightsWire(result, stabilityWindowDays));
+  // v1.43 — `patterns` follows the same `?days` window, and a catalogue
+  // tag in a pattern is named in the reader's language.
+  const translator = getServerTranslator(await resolveJobLocale(user.locale));
+  return apiSuccess(
+    moodInsightsWire(result, stabilityWindowDays, (key) => translator.t(key)),
+  );
 });

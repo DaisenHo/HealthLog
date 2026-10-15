@@ -58,7 +58,8 @@ import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { markSyncCheckpoint } from "@/lib/sync/checkpoint";
 import {
-  HEALTHKIT_SYNC_TRIGGERS,
+  BACKFILL_SYNC_TRIGGER,
+  HEALTHKIT_REQUEST_SYNC_TRIGGERS,
   MEDICATION_DOSE_ARRIVAL_TYPE,
   recordHealthKitTypeArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
@@ -176,7 +177,9 @@ const bulkPayloadSchema = z.object({
   // v1.42.4 — what woke the phone for this sync, the same diagnostic-only
   // field `POST /api/measurements/batch` takes. It changes no row; it only
   // feeds the `MEDICATION_DOSE` arrival record below.
-  syncTrigger: z.enum(HEALTHKIT_SYNC_TRIGGERS).optional(),
+  // v1.43 (ios #77) — `backfill` for a history catch-up: it moves only the
+  // dose entry's `lastBackfillAt`, never the live stamps or the checkpoint.
+  syncTrigger: z.enum(HEALTHKIT_REQUEST_SYNC_TRIGGERS).optional(),
 });
 
 // v1.8.2 — `updated` joins the per-entry status vocabulary: a write that
@@ -1038,8 +1041,10 @@ async function postBulk(request: NextRequest): Promise<Response> {
   // The SyncMode checkpoint belongs to the push that moved the data, not to
   // the `/api/sync/state` handshake that reports it. This endpoint is one of
   // the three domains that handshake summarises, so an intake drain advances
-  // it.
-  await markSyncCheckpoint(user.id);
+  // it. A `backfill` catch-up does not: it is history, not a sync.
+  if (syncTrigger !== BACKFILL_SYNC_TRIGGER) {
+    await markSyncCheckpoint(user.id);
+  }
 
   return apiSuccess({
     processed: entries.length,

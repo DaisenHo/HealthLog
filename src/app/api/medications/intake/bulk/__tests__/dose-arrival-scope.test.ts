@@ -80,7 +80,9 @@ const USER = {
 };
 
 /** A replayed Apple dose: the cheapest batch that still counts as an arrival. */
-async function postReplayedDose(): Promise<Response> {
+async function postReplayedDose(
+  syncTrigger: string = "background",
+): Promise<Response> {
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValueOnce([
     { id: "row-existing", externalId: "hk-dose-1" },
   ] as never);
@@ -89,7 +91,7 @@ async function postReplayedDose(): Promise<Response> {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        syncTrigger: "background",
+        syncTrigger,
         entries: [
           {
             medicationId: "med-apple",
@@ -133,5 +135,34 @@ describe("the dose arrival record and the credential that sent the batch", () =>
     const res = await postReplayedDose();
     expect(res.status).toBe(200);
     expect(recordHealthKitTypeArrivals).not.toHaveBeenCalled();
+  });
+
+  // v1.43 (ios #77) — a history catch-up records the dose arrival under
+  // `lastBackfillAt` only, and does not move the sync checkpoint.
+  it("passes a backfill through and leaves the checkpoint where it was", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { id: "s" },
+      user: USER,
+    } as never);
+    const res = await postReplayedDose("backfill");
+    expect(res.status).toBe(200);
+    expect(recordHealthKitTypeArrivals).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ trigger: "backfill" }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("moves the checkpoint for a live sync", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { id: "s" },
+      user: USER,
+    } as never);
+    await postReplayedDose("background");
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ lastSyncedAt: expect.any(Date) }),
+      }),
+    );
   });
 });

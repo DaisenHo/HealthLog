@@ -9,7 +9,6 @@ import {
   seriesChange,
   seriesReferenceLine,
   trendVerdict,
-  recordBenchmark,
 } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
@@ -93,10 +92,11 @@ const batchEntrySchema = z
       .min(1)
       .max(120)
       .describe(
-        "Dedup key for the `(userId, type, source, externalId)` composite index. Three shapes:\n" +
+        "Dedup key for the `(userId, type, source, externalId)` composite index. Four shapes:\n" +
           "• `HKSample.uuid` — a per-sample reading. First-write-wins: a re-post returns `duplicate` and the stored row is immutable.\n" +
           "• `stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>` — a per-day cumulative total (Steps, Active Energy, Sleep Duration, Walking/Running Distance, Flights Climbed). A re-post OVERWRITES the row and returns `updated`.\n" +
           "• `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start>` — v1.19.0 (iOS #34), refined to 10-minute granularity in v1.30.7, heart-rate bucket carrying the bucket's AVERAGE bpm as one PULSE row. `<bucket-start>` is the ISO-8601 UTC 10-minute boundary — zeroed seconds/millis, minutes ∈ {00,10,20,30,40,50}, trailing `Z` (e.g. `2026-06-21T14:10:00.000Z`). A re-post OVERWRITES the row and returns `updated`, so iOS uploads ~144 rows/day instead of one per raw HR sample. A row that targets this prefix with a malformed bucket-start suffix is `skipped` with reason `malformed_hr_bucket_id`.\n" +
+          "• `stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>T<HH>` — v1.43 (ios #77), only when `GET /api/auth/me` reports `features.cumulativeHourBuckets: true`: one local hour's SUM of steps, active energy, walking and running distance or flights climbed, the date and the zero-padded hour being the local hour in the account's zone (`timezone` on `/api/auth/me`). `value` is the hour's sum in the unit of the day form, `startDate` the first instant of that local hour, `endDate` one hour later. Such a row is never a measurement and never changes the day total, which stays the day form: it feeds the intraday profile behind the same-time baseline (a day with at least four posted hours is built from them). A re-post overwrites (`updated`). Skipped with `hour_bucket_misaligned` when `startDate` is not the start of that local hour, `hour_bucket_unsupported_type` for any other identifier or a `MANUAL` / bridge entry, `hour_bucket_too_old` when the day is more than 400 days back.\n" +
           "The id MUST be stable across app restarts. An object description or memory address (`<Class: 0x…>`, `0x12ab34cd`) is a new value on every launch, so it can never match its own earlier row; such an entry is `skipped` with reason `unstable_external_id` while the rest of the batch still lands.",
       ),
     externalSourceVersion: z.string().min(1).max(120).optional(),
@@ -133,10 +133,10 @@ const batchPayloadSchema = z
     // used in attribution — sending it or omitting it produces byte-identical
     // row outcomes. Omit on any client that does not track its wake reason.
     syncTrigger: z
-      .enum(["foreground", "background", "push", "manual"])
+      .enum(["foreground", "background", "push", "manual", "backfill"])
       .optional()
       .describe(
-        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background` trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
+        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). `backfill` (v1.43, ios #77; send it only when `GET /api/auth/me` reports `features.syncTriggerBackfill: true`, an older server refuses the whole batch with 422) names a history catch-up: it moves only `syncProgress` and the per-type `lastBackfillAt` in `GET /api/integrations/healthkit`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt`, `lastSyncTrigger`, `lastBackgroundSyncAt` or the sync checkpoint. Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background` trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
       ),
   })
   .meta({
@@ -157,7 +157,7 @@ const batchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate.",
+        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
       ),
     convertedValue: z
       .number()
@@ -595,86 +595,8 @@ export const sleepRhythmResponse = z
       "Server-authoritative sleep-rhythm read: the outstanding sleep-debt balance over the rolling window + MCTQ chronotype (MSF/MSFsc band, social jetlag). Free vs work nights default to weekend = free in the user's timezone (no work calendar). A view over existing per-stage SLEEP_DURATION rows — no schema, no new type.",
   });
 
-// ── Personal records ─────────────────────────────────────────────────
-//
-// `GET /api/personal-records` shipped as a schema-only contract so the native
-// client could build its query path against a stable shape before the
-// detection worker landed. It answers the stored rows verbatim — including
-// `userId` and the provenance foreign key — because the handler passes the
-// Prisma result straight to `apiSuccess` with no projection.
-
-const personalRecordQuery = z
-  .object({
-    metricType: measurementTypeEnum
-      .optional()
-      .describe(
-        "Restrict to one measurement type. A value outside the enum is DROPPED rather than refused — the read then covers every metric, which is indistinguishable from omitting the parameter.",
-      ),
-    limit: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(500)
-      .optional()
-      .default(100)
-      .describe(
-        "Row cap, 1..500, default 100. A non-integer, zero, negative or non-numeric value falls back to the default and a value above the ceiling clamps to 500 — none of them 422.",
-      ),
-  })
-  .meta({ id: "PersonalRecordQuery" });
-
-const personalRecordResource = z
-  .object({
-    id: z.string(),
-    userId: z
-      .string()
-      .describe(
-        "The RECORD owner's id, which is not the caller's id on a delegated read.",
-      ),
-    metricType: measurementTypeEnum,
-    metricSlot: z
-      .string()
-      .nullable()
-      .describe(
-        "Per-sport-type bucket for workout-driven records (e.g. `running_5km_time`). Null for a plain measurement-driven record, where the metric type alone is the dimension.",
-      ),
-    direction: z
-      .enum(["MAX", "MIN"])
-      .describe(
-        "Which way is better for this metric: `MAX` for steps / VO2 max / HRV / distance / daylight, `MIN` for resting heart rate / body fat / audio exposure.",
-      ),
-    value: z.number(),
-    unit: z.string(),
-    achievedAt: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "When the record was set. The list orders on this, newest first.",
-      ),
-    sourceMeasurementId: z
-      .string()
-      .nullable()
-      .describe(
-        "The measurement row that achieved the record. Nulled rather than cascaded when that measurement is deleted, so the historical fact survives its source.",
-      ),
-    source: measurementSourceEnum,
-    externalId: z.string().nullable(),
-    createdAt: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "When the detection worker wrote the row — distinct from `achievedAt`, which is when the reading happened.",
-      ),
-    benchmark: recordBenchmark
-      .nullable()
-      .optional()
-      .describe(
-        "v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null otherwise.",
-      ),
-  })
-  .meta({
-    id: "PersonalRecord",
-    description:
-      "One personal record: the best value a metric (optionally within a per-sport slot) has reached, in the direction that counts as better for it.",
-  });
+// `GET /api/personal-records` is documented once, in `./awards.ts`, beside the
+// other read of earned bests.
 
 // ── Time-series adapter (iOS chart source) ───────────────────────────
 //
@@ -1251,30 +1173,6 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...recordRefusal(MODULE_DISABLED_DESCRIPTION),
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/personal-records": {
-    get: {
-      tags: ["Measurements"],
-      summary: "List the record's personal records",
-      description:
-        "Returns the account's personal-record rows, `achievedAt` descending. Both query parameters are FORGIVING rather than strict: an unrecognised `metricType` is dropped (the read falls back to every metric) and an unusable `limit` clamps to the default instead of 422-ing, so a loosely-typed client filter cannot take the page down. Rows are the stored entities verbatim, including `userId` and the provenance `sourceMeasurementId`. Delegable at READ level over the `measurements` section. Not module-gated: the list spans metrics from several modules and is filtered by the caller's `metricType`, not by the account's module map — a record achieved under a metric whose module is now off is still returned. Cookie or Bearer auth.",
-      requestParams: { query: personalRecordQuery },
-      responses: {
-        ...recordRefusal(),
-        "200": {
-          description: "The personal-record rows (possibly empty).",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                z.array(personalRecordResource),
-                "PersonalRecordListEnvelope",
-              ),
-            },
-          },
-        },
         ...stdResponses,
       },
     },
