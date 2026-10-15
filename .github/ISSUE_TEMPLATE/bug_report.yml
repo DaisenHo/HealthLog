@@ -15,7 +15,7 @@ body:
     id: version
     attributes:
       label: HealthLog version
-      description: Output of `/api/version` or the tag of the GHCR image you're running.
+      description: Settings, About shows it, as does `/api/version`, or the tag of the GHCR image you're running.
       placeholder: "1.4.19"
     validations:
       required: true
@@ -55,11 +55,27 @@ body:
         3. See error
     validations:
       required: true
+  - type: input
+    id: error-id
+    attributes:
+      label: Error ID
+      description: If the failure showed an error ID (eight characters, e.g. `3f9a2c1b`), paste it here. The operator finds the event with it under Admin, App logs.
+      placeholder: "3f9a2c1b"
+  - type: textarea
+    id: support-info
+    attributes:
+      label: Support info / support report
+      description: |
+        Everyone: Settings, About, "Copy support info".
+        Operators: Admin, System status, "Support report", then Copy.
+        Both are redacted (no names, emails, values or tokens); read them before you paste.
+        See https://github.com/MBombeck/HealthLog/blob/main/docs/self-hosting/support.md
+      render: text
   - type: textarea
     id: logs
     attributes:
-      label: Relevant logs / screenshots
-      description: Paste any relevant log output (redact secrets) or attach screenshots. Wide-event logs from `/admin/app-logs` are useful.
+      label: Screenshots / other logs
+      description: Attach screenshots, or paste other log output if you have it. Redact secrets and personal data first.
       render: shell
   - type: input
     id: browser

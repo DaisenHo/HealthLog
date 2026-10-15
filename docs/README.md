@@ -33,7 +33,10 @@ notes, and machine-readable specs that ship alongside the source:
   three access levels, the eight sections a grant can be narrowed to,
   managed profiles for somebody with no login and the guardians who look
   after them, what revocation does and does not undo, and which trust
-  properties of the instance are unchanged by any of it.
+  properties of the instance are unchanged by any of it. And
+  [`self-hosting/support.md`](./self-hosting/support.md) — reporting a
+  problem: error ids, the support info every account can copy, the
+  operator's redacted support report, and finding an error in the admin log.
 - [`using/`](./using/) — notes on using the app that sit close to the
   code. [`using/search.md`](./using/search.md) covers the command palette's
   record search: opening it, what it finds, how matching works, and its
