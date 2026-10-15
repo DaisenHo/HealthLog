@@ -38740,6 +38740,50 @@ components:
                     - pausedAt
                     - resumedAt
                   additionalProperties: {}
+              ingredients:
+                default: []
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                    nutrient:
+                      type: string
+                      minLength: 1
+                      maxLength: 40
+                    amountPerUnit:
+                      type: number
+                      exclusiveMinimum: 0
+                    unit:
+                      type: string
+                      minLength: 1
+                      maxLength: 8
+                    enteredAmount:
+                      anyOf:
+                        - type: number
+                        - type: "null"
+                    enteredUnit:
+                      anyOf:
+                        - type: string
+                          maxLength: 8
+                        - type: "null"
+                    source:
+                      default: MANUAL
+                      type: string
+                      enum:
+                        - MANUAL
+                        - LABEL_AI
+                    createdAt:
+                      type: string
+                      minLength: 1
+                  required:
+                    - nutrient
+                    - amountPerUnit
+                    - unit
+                    - source
+                  additionalProperties: {}
               doseChanges:
                 default: []
                 type: array
@@ -39092,6 +39136,7 @@ components:
               - schedules
               - sideEffects
               - pauseEras
+              - ingredients
               - doseChanges
               - inventoryItems
               - inventoryEvents

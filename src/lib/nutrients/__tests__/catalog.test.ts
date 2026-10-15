@@ -309,6 +309,8 @@ describe("the batch contract stays the syncable codes (v1.43)", () => {
     });
     expect(nutrientBatchSchema.safeParse(entry("dha")).success).toBe(false);
     expect(nutrientBatchSchema.safeParse(entry("epa")).success).toBe(false);
-    expect(nutrientBatchSchema.safeParse(entry("magnesium")).success).toBe(true);
+    expect(nutrientBatchSchema.safeParse(entry("magnesium")).success).toBe(
+      true,
+    );
   });
 });
