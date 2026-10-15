@@ -20,6 +20,7 @@
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
+import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { annotate } from "@/lib/logging/context";
 import { getDayArgsSchema } from "@/lib/ai/coach/tools/definitions";
 import { readDayForTool } from "@/lib/ai/coach/tools/day-read";
@@ -1510,10 +1511,18 @@ function readLabs(
       limit: LAB_HISTORY_MAX_LIMIT,
     });
   }
-  // Default: latest reading per biomarker via the Coach labs read.
-  return runCoachTool(ctx, "get_labs", {
-    ...(typeof args.analyte === "string" ? { analyte: args.analyte } : {}),
-  });
+  // Default: latest reading per biomarker via the Coach labs read. A name that
+  // resolves to one of the user's markers (an alias or a catalog abbreviation
+  // such as "GPT" for "ALT") is read as that marker's own name (v1.43).
+  return (async () => {
+    const asked = typeof args.analyte === "string" ? args.analyte : null;
+    const marker = asked?.trim()
+      ? await resolveMarkerForRead(ctx.userId, asked)
+      : null;
+    return runCoachTool(ctx, "get_labs", {
+      ...(asked !== null ? { analyte: marker?.name ?? asked } : {}),
+    });
+  })();
 }
 
 export const MCP_TOOLS: McpToolDefinition[] = [

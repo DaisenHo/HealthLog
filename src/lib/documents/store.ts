@@ -16,7 +16,13 @@ import type {
   InboundDocument,
   InboundDocumentStatus,
 } from "@/generated/prisma/client";
+import { prisma } from "@/lib/db";
 import { servingClassFor } from "@/lib/documents/upload-policy";
+import {
+  loadMarkerIndex,
+  matchForReview,
+  type MarkerIndex,
+} from "@/lib/labs/biomarker-resolve";
 import {
   toDocumentSourceSystem,
   toIndexOutcome,
@@ -32,6 +38,7 @@ import type {
   FactProvenance,
   InboundDocumentDetailDto,
   InboundDocumentDto,
+  ObservationFactData,
   InboundDocumentKindValue,
   InboundFactType,
 } from "@/lib/validations/inbound-documents";
@@ -254,19 +261,54 @@ export function serialiseDocument(
   };
 }
 
-/** Map a persisted staged-fact row to the review DTO. */
-export function serialiseFact(fact: ExtractedFact): ExtractedFactDto {
-  return {
+/**
+ * Map a persisted staged-fact row to the review DTO.
+ *
+ * v1.43 (D1223) — with the account's `markerIndex`, a pending OBSERVATION
+ * also says which marker its label resolves to (`biomarkerId`, `matchKind`)
+ * or offers up to three (`suggestions`), the same resolution the confirm
+ * applies. Without an index, or for any other fact, the fields are absent.
+ */
+export function serialiseFact(
+  fact: ExtractedFact,
+  markerIndex?: MarkerIndex | null,
+): ExtractedFactDto {
+  const data = decryptFactData(fact.dataEncrypted);
+  const dto: ExtractedFactDto = {
     id: fact.id,
     factType: fact.factType as InboundFactType,
     status: fact.status as ExtractedFactStatus,
     confidence: fact.confidence,
     needsReview: fact.needsReview,
-    data: decryptFactData(fact.dataEncrypted),
+    data,
     provenance: decryptFactProvenance(fact.provenanceEncrypted),
     committedRecordId: fact.committedRecordId,
     committedRecordType: fact.committedRecordType,
   };
+  if (markerIndex && fact.factType === "OBSERVATION") {
+    const observation = data as ObservationFactData;
+    const isNumeric = typeof observation.value === "number";
+    const { match, suggestions } = matchForReview(
+      markerIndex,
+      observation.label ?? "",
+      isNumeric ? (observation.unit ?? null) : null,
+    );
+    dto.biomarkerId = match?.marker.id ?? null;
+    dto.matchKind = match?.matchKind ?? null;
+    dto.suggestions = suggestions;
+  }
+  return dto;
+}
+
+/** The marker index a review needs, or null when no fact would use it. */
+export async function markerIndexForFacts(
+  userId: string,
+  facts: readonly Pick<ExtractedFact, "factType" | "status">[],
+): Promise<MarkerIndex | null> {
+  const needed = facts.some(
+    (f) => f.factType === "OBSERVATION" && f.status === "PENDING",
+  );
+  return needed ? loadMarkerIndex(prisma, userId) : null;
 }
 
 /** Assemble the detail DTO (document + its staged facts + links). */
@@ -279,6 +321,7 @@ export function serialiseDocumentDetail(
   hasThumbnail = false,
   encounterLinks: DocumentEncounterLinkDto[] = [],
   vaccinationLinks: DocumentVaccinationLinkDto[] | null = [],
+  markerIndex: MarkerIndex | null = null,
 ): InboundDocumentDetailDto {
   const pendingCount = facts.filter((f) => f.status === "PENDING").length;
   // `factCount` excludes REJECTED facts (a rejected fact is discarded, not part
@@ -327,7 +370,7 @@ export function serialiseDocumentDetail(
       hasThumbnail,
       encounterLinks,
     ),
-    facts: facts.map(serialiseFact),
+    facts: facts.map((fact) => serialiseFact(fact, markerIndex)),
     vaccinationLinks,
     summary,
     summaryGeneratedAt: doc.summaryGeneratedAt

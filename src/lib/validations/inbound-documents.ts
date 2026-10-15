@@ -340,6 +340,18 @@ export interface ExtractedFactDto {
   provenance: FactProvenance;
   committedRecordId: string | null;
   committedRecordType: string | null;
+  /**
+   * v1.43 (D1223), pending OBSERVATION facts only — the marker the label
+   * resolves to and how, or up to three markers to choose from.
+   */
+  biomarkerId?: string | null;
+  matchKind?: "name" | "alias" | "catalog" | null;
+  suggestions?: Array<{
+    biomarkerId: string;
+    name: string;
+    unit: string;
+    matchKind: "catalog" | "similar";
+  }>;
 }
 
 /** One condition link on a document DTO (chip → `/illness/[id]`). */
@@ -602,6 +614,15 @@ export const inboundConfirmSchema = z.object({
       z.object({
         factId: z.string().trim().min(1).max(40),
         action: z.enum(["approve", "reject"]),
+        /**
+         * v1.43 (D1223), OBSERVATION only — the marker the person chose for
+         * the fact; the reading is filed under it whatever the label says.
+         * An id that is not one of the record's markers fails the fact with
+         * `observation.unknownBiomarker`.
+         */
+        biomarkerId: z.string().trim().min(1).max(64).optional(),
+        /** With `biomarkerId`: remember the label as an alias. Default true. */
+        rememberAlias: z.boolean().optional(),
       }),
     )
     .min(1)

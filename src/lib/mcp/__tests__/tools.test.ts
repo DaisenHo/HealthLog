@@ -23,6 +23,11 @@ vi.mock("@/lib/mcp/record-search", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/mcp/record-search")>()),
   loadRecordCandidates: vi.fn(async () => []),
 }));
+// v1.43 — a lab name resolves to a marker through the account's names and
+// aliases; no marker resolves here, so the reads keep their text match.
+vi.mock("@/lib/labs/biomarker-resolve", () => ({
+  resolveMarkerForRead: vi.fn(async () => null),
+}));
 // v1.22.0 — `search` reads the record directly via Prisma; stub it so the
 // registry-wide loops never reach a DB.
 vi.mock("@/lib/db", () => ({

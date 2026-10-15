@@ -73,6 +73,8 @@ function buildMockPrisma() {
         },
       ]),
     },
+    biomarkerAlias: { findMany: vi.fn().mockResolvedValue([]) },
+    biomarkerMerge: { findMany: vi.fn().mockResolvedValue([]) },
     illnessEpisode: {
       findMany: vi.fn().mockResolvedValue([
         {

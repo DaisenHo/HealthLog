@@ -16,6 +16,9 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn(),
       create: vi.fn(),
     },
+    // v1.43 — the account's markers and aliases, loaded once per commit.
+    biomarker: { findMany: vi.fn() },
+    biomarkerAlias: { findMany: vi.fn(), upsert: vi.fn() },
     auditLog: { create: vi.fn() },
   },
 }));
@@ -107,6 +110,8 @@ beforeEach(() => {
   // No live reading collides at commit time — the in-batch path is what's
   // under test, so the DB-visibility check returns empty for every row.
   vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
   let nextId = 0;
   vi.mocked(prisma.labResult.create).mockImplementation((() =>
     Promise.resolve({ id: `lr-${++nextId}` })) as never);

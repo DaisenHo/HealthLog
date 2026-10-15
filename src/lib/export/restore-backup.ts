@@ -72,6 +72,7 @@ import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 import { annotate } from "@/lib/logging/context";
+import { foldForMatch } from "@/lib/i18n/fold-for-match";
 import type { BackupMeasurement } from "@/lib/validations/backup";
 import {
   isCompatibleSchemaVersion,
@@ -2076,6 +2077,76 @@ export async function restoreBackup(
           });
           biomarkerByName.set(biomarker.name, created.id);
           restoredBiomarkerIds.add(created.id);
+          // v1.43 (D1223) — the other spellings, folded the way the resolver
+          // reads them, so the next scan matches them again.
+          const aliasRows = (biomarker.aliases ?? [])
+            .map((alias) => ({
+              id: alias.id,
+              name: alias.name.trim().slice(0, 120),
+              nameFolded: foldForMatch(alias.name).slice(0, 120),
+              source: alias.source,
+              createdAt: alias.createdAt,
+            }))
+            .filter(
+              (alias) =>
+                alias.nameFolded !== "" &&
+                alias.nameFolded !== foldForMatch(biomarker.name),
+            );
+          if (aliasRows.length > 0) {
+            await tx.biomarkerAlias.createMany({
+              data: aliasRows.map((alias) => ({
+                ...(alias.id ? { id: alias.id } : {}),
+                userId: ownerId,
+                biomarkerId: created.id,
+                name: alias.name,
+                nameFolded: alias.nameFolded,
+                source: alias.source,
+                ...(alias.createdAt
+                  ? { createdAt: new Date(alias.createdAt) }
+                  : {}),
+              })),
+              // One spelling answers to one marker per account; a file that
+              // names it twice keeps the first.
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        // v1.43 (D1223) — the merge ledger, against the markers just written:
+        // by id where the file carries one this restore kept, by name
+        // otherwise. A row whose target the file does not carry has nothing
+        // to point at and is left out (counted on the event).
+        let unresolvedMerges = 0;
+        const mergeRows = (payload.biomarkerMerges ?? []).flatMap((merge) => {
+          const targetId =
+            merge.targetBiomarkerId &&
+            restoredBiomarkerIds.has(merge.targetBiomarkerId)
+              ? merge.targetBiomarkerId
+              : biomarkerByName.get(merge.targetName);
+          if (!targetId) {
+            unresolvedMerges += 1;
+            return [];
+          }
+          return [
+            {
+              ...(merge.id ? { id: merge.id } : {}),
+              userId: ownerId,
+              targetBiomarkerId: targetId,
+              sourceBiomarkerId: merge.sourceBiomarkerId,
+              sourceName: merge.sourceName,
+              readingCount: merge.readingCount,
+              mergedAt: new Date(merge.mergedAt),
+            },
+          ];
+        });
+        if (mergeRows.length > 0) {
+          await tx.biomarkerMerge.createMany({ data: mergeRows });
+        }
+        if (unresolvedMerges > 0) {
+          annotate({
+            action: { name: "backup.restore.biomarkerMerge.unresolved" },
+            meta: { count: unresolvedMerges },
+          });
         }
 
         // Collected for the staged facts further down: an approved fact's

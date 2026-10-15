@@ -18,7 +18,11 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { encryptFactData, serialiseFact } from "@/lib/documents/store";
+import {
+  encryptFactData,
+  markerIndexForFacts,
+  serialiseFact,
+} from "@/lib/documents/store";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import {
@@ -125,6 +129,8 @@ export const PATCH = apiHandler(
       meta: { documentId: id, factId: fact.id, factType: fact.factType },
     });
 
-    return apiSuccess(serialiseFact(updated));
+    return apiSuccess(
+      serialiseFact(updated, await markerIndexForFacts(user.id, [updated])),
+    );
   },
 );

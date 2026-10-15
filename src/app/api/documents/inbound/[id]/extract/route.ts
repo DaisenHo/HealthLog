@@ -55,7 +55,10 @@ import {
 } from "@/lib/ai/coach/budget";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { prisma } from "@/lib/db";
-import { serialiseDocumentDetail } from "@/lib/documents/store";
+import {
+  markerIndexForFacts,
+  serialiseDocumentDetail,
+} from "@/lib/documents/store";
 import {
   requireDocumentTextProvider,
   requireDocumentVisionProvider,
@@ -241,7 +244,19 @@ async function runNow(
     origin: { ipAddress: getClientIp(request), worker: false },
   });
   if (!outcome.ok) return outcomeResponse(outcome);
-  return apiSuccess(serialiseDocumentDetail(outcome.data, outcome.data.facts));
+  return apiSuccess(
+    serialiseDocumentDetail(
+      outcome.data,
+      outcome.data.facts,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      await markerIndexForFacts(userId, outcome.data.facts),
+    ),
+  );
 }
 
 /** TEXT mode — structure in-browser-OCR'd text against the stored row. */

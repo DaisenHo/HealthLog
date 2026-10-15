@@ -13,10 +13,9 @@ import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { withIdempotency } from "@/lib/idempotency";
-import {
-  decryptContextSoft,
-  encryptContextToBytes,
-} from "@/lib/labs/biomarker-store";
+import { aliasNamesByMarker } from "@/lib/labs/biomarker-aliases";
+import { serialiseBiomarker } from "@/lib/labs/biomarker-dto";
+import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
 import { annotate } from "@/lib/logging/context";
 import { createBiomarkerSchema } from "@/lib/validations/biomarkers";
@@ -45,35 +44,6 @@ import { createBiomarkerSchema } from "@/lib/validations/biomarkers";
 // a bad-key / malformed row) so one un-decryptable row never 500s the whole
 // catalog — the single-resource GET is the authoritative read for the
 // plaintext context. This bounds the fail-closed blast radius to one marker.
-function serialiseBiomarker(row: {
-  id: string;
-  name: string;
-  unit: string;
-  lowerBound: number | null;
-  upperBound: number | null;
-  panel: string | null;
-  analyteKey: string | null;
-  hidden: boolean;
-  contextEncrypted: Uint8Array | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: row.id,
-    name: row.name,
-    unit: row.unit,
-    lowerBound: row.lowerBound,
-    upperBound: row.upperBound,
-    panel: row.panel,
-    analyteKey: row.analyteKey,
-    hasContext: row.contextEncrypted !== null,
-    context: decryptContextSoft(row.contextEncrypted),
-    hidden: row.hidden,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
 export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("read", "labs");
 
@@ -84,12 +54,19 @@ export const GET = apiHandler(async () => {
     orderBy: [{ hidden: "asc" }, { name: "asc" }],
   });
 
+  // v1.43 — every marker's other spellings, one read for the whole list.
+  const aliases = await aliasNamesByMarker(prisma, user.id, rows);
+
   annotate({
     action: { name: "labs.biomarker.list" },
     meta: { total: rows.length },
   });
 
-  return apiSuccess({ biomarkers: rows.map(serialiseBiomarker) });
+  return apiSuccess({
+    biomarkers: rows.map((row) =>
+      serialiseBiomarker(row, aliases.get(row.id) ?? [], { soft: true }),
+    ),
+  });
 });
 
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBiomarker));
@@ -179,5 +156,5 @@ async function postBiomarker(request: NextRequest) {
     meta: { biomarkerId: created.id },
   });
 
-  return apiSuccess(serialiseBiomarker(created), 201);
+  return apiSuccess(serialiseBiomarker(created, [], { soft: true }), 201);
 }

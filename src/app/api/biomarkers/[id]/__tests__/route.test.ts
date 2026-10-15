@@ -1,14 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    biomarker: { findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() },
+vi.mock("@/lib/db", () => {
+  const prisma = {
+    biomarker: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(async () => []),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    // v1.43 — the marker's other spellings, read and replaced with it.
+    biomarkerAlias: {
+      findMany: vi.fn(async () => []),
+      deleteMany: vi.fn(),
+      createMany: vi.fn(),
+    },
+    biomarkerMerge: { findFirst: vi.fn(async () => null) },
     labResult: { deleteMany: vi.fn() },
     auditLog: { create: vi.fn().mockResolvedValue({}) },
-    $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
-  },
-}));
+  };
+  // `$transaction` is set in `beforeEach`: the batch form for the delete, the
+  // callback form for the edit.
+  return { prisma: { ...prisma, $transaction: vi.fn() } };
+});
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
@@ -82,9 +96,13 @@ beforeEach(() => {
   // v1.37.0 — the 422 breadcrumb goes through `auditLog()` and the route
   // chains `.catch()` on it; `resetAllMocks` clears the factory's resolution.
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
-  vi.mocked(prisma.$transaction).mockImplementation((async (
-    ops: Promise<unknown>[],
-  ) => Promise.all(ops)) as never);
+  vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
+    typeof arg === "function"
+      ? (arg as (tx: unknown) => Promise<unknown>)(prisma)
+      : Promise.all(arg as Promise<unknown>[])) as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null as never);
 });
 
 describe("DELETE /api/biomarkers/[id]", () => {

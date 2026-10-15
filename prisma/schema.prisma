@@ -9905,11 +9905,11 @@ model BiomarkerAlias {
   id          String   @id @default(cuid())
   userId      String   @map("user_id")
   biomarkerId String   @map("biomarker_id")
-  /// @pending-consumer(#v143-B3) The alias as written, shown on the marker.
+  /// The alias as written, shown on the marker.
   name        String   @db.VarChar(120)
-  /// @pending-consumer(#v143-B3) `foldForMatch(name)`, the match key; unique per account.
+  /// `foldForMatch(name)`, the match key; unique per account.
   nameFolded  String   @map("name_folded") @db.VarChar(120)
-  /// @pending-consumer(#v143-B3) `MERGE`, `IMPORT_CHOICE` or `MANUAL` (CHECK in migration 0403).
+  /// `MERGE`, `IMPORT_CHOICE` or `MANUAL` (CHECK in migration 0403).
   source      String
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -9927,15 +9927,15 @@ model BiomarkerAlias {
 model BiomarkerMerge {
   id                String   @id @default(cuid())
   userId            String   @map("user_id")
-  /// @pending-consumer(#v143-B3) The marker the source was folded into.
+  /// The marker the source was folded into.
   targetBiomarkerId String   @map("target_biomarker_id")
-  /// @pending-consumer(#v143-B3) Id of the deleted source marker (no FK: the row is gone).
+  /// Id of the deleted source marker (no FK: the row is gone).
   sourceBiomarkerId String   @map("source_biomarker_id")
-  /// @pending-consumer(#v143-B3) The source marker's name at merge time.
+  /// The source marker's name at merge time.
   sourceName        String   @map("source_name") @db.VarChar(120)
-  /// @pending-consumer(#v143-B3) How many readings moved from the source.
+  /// How many readings moved from the source.
   readingCount      Int      @map("reading_count")
-  /// @pending-consumer(#v143-B3) When the merge ran.
+  /// When the merge ran.
   mergedAt          DateTime @default(now()) @map("merged_at")
 
   user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)

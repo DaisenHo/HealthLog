@@ -138,6 +138,19 @@ export interface OcrExtractedRowDto {
    */
   markerAnalyteKey: string | null;
   duplicateOf: string | null;
+  /**
+   * v1.43 (D1223) — the marker the row was matched to automatically: by its
+   * name, an alias of the account, or a catalog abbreviation. Null when none.
+   */
+  biomarkerId: string | null;
+  matchKind: "name" | "alias" | "catalog" | null;
+  /** Up to three markers to choose from when nothing matched; else empty. */
+  suggestions: Array<{
+    biomarkerId: string;
+    name: string;
+    unit: string;
+    matchKind: "catalog" | "similar";
+  }>;
 }
 
 export interface OcrExtractResponseDto {
@@ -190,6 +203,18 @@ export const ocrCommitRowSchema = z
       .optional()
       .or(z.literal("").transform(() => undefined)),
     takenAt: takenAtField,
+    /**
+     * v1.43 (D1223) — the marker the person chose for this row on the review
+     * screen. The row is written under it whatever `analyte` says; an id that
+     * is not one of the record's markers skips the row (`unknown_biomarker`).
+     */
+    biomarkerId: z.string().trim().min(1).max(64).optional(),
+    /**
+     * With `biomarkerId`: remember `analyte` as another spelling of that
+     * marker, so the next report with the same name matches on its own.
+     * Default true. Ignored when the name is the marker's own.
+     */
+    rememberAlias: z.boolean().optional(),
   })
   // Numeric XOR qualitative: exactly one of value / valueText.
   .refine((d) => (d.value !== undefined) !== (d.valueText !== undefined), {
@@ -246,11 +271,12 @@ export type OcrCommitInput = z.infer<typeof ocrCommitSchema>;
 /**
  * A row the commit route did not write. `duplicate`: it matched a live reading
  * at commit time. `unit_mismatch`: it states a unit other than the one its
- * marker is tracked in.
+ * marker is tracked in. `unknown_biomarker`: the chosen `biomarkerId` is not
+ * one of the record's markers.
  */
 export interface OcrSkippedRowDto {
   analyte: string;
-  reason: "duplicate" | "unit_mismatch";
+  reason: "duplicate" | "unit_mismatch" | "unknown_biomarker";
 }
 
 export interface OcrCommitResponseDto {

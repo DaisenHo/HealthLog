@@ -4,6 +4,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     medication: { findMany: vi.fn(), findFirst: vi.fn() },
     labResult: { findMany: vi.fn() },
+    biomarker: { findMany: vi.fn(async () => []) },
     // v1.30 (G1) — the nutrients pipeline.
     nutrientIntakeDay: {
       findMany: vi.fn(async () => []),
@@ -13,6 +14,9 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/labs/biomarker-resolve", () => ({
+  resolveMarkerForRead: vi.fn(async () => null),
+}));
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
   executeCoachTool: vi.fn(),
 }));
@@ -284,15 +288,25 @@ describe("argument completion (user-scoped, doubles as discovery)", () => {
   });
 
   it("completes analytes from ONLY the user's own lab set", async () => {
+    // One name per marker: the markers with readings, then the names of
+    // readings filed under no marker (v1.43).
+    vi.mocked(prisma.biomarker.findMany).mockResolvedValue([
+      { name: "LDL" },
+    ] as never);
     vi.mocked(prisma.labResult.findMany).mockResolvedValue([
-      { analyte: "LDL" },
       { analyte: "HDL" },
+      { analyte: "ldl" },
     ] as never);
     const complete = template("lab").complete!.analyte;
     const result = await complete(CTX, "ld");
+    expect(prisma.biomarker.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1", results: { some: { deletedAt: null } } },
+      }),
+    );
     expect(prisma.labResult.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: "user-1", deletedAt: null },
+        where: { userId: "user-1", deletedAt: null, biomarkerId: null },
         distinct: ["analyte"],
       }),
     );

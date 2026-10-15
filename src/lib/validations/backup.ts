@@ -1134,8 +1134,35 @@ const biomarkerBackupSchema = z
     // v1.42 (#1095) — the catalogue analyte the marker resolves to.
     analyteKey: z.string().nullable().optional(),
     context: z.string().nullable().optional(),
+    // v1.43 (D1223) — the other spellings the marker answers to. Absent on
+    // files written before them.
+    aliases: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).optional(),
+            name: z.string().min(1).max(120),
+            source: z.enum(["MERGE", "IMPORT_CHOICE", "MANUAL"]),
+            createdAt: isoDateTime.optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+// v1.43 (D1223) — the ledger of markers merged into others.
+const biomarkerMergeBackupSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    targetBiomarkerId: z.string().min(1).optional(),
+    targetName: z.string().min(1),
+    sourceBiomarkerId: z.string().min(1),
+    sourceName: z.string().min(1).max(120),
+    readingCount: z.number().int().min(0),
+    mergedAt: isoDateTime,
   })
   .passthrough();
 
@@ -2101,6 +2128,8 @@ export const backupPayloadSchema = z
     // fields; portable exports retain the metadata-only subset.
     labResults: z.array(labResultBackupSchema).default([]),
     biomarkers: z.array(biomarkerBackupSchema).default([]),
+    // Defaulted: a file written before v1.43 carries no key.
+    biomarkerMerges: z.array(biomarkerMergeBackupSchema).default([]),
     illnessEpisodes: z.array(illnessEpisodeBackupSchema).default([]),
     // Defaulted: a file written before v1.40 carries no key.
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),

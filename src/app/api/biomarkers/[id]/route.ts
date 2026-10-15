@@ -17,9 +17,13 @@ import {
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import {
-  decryptContextFromBytes,
-  encryptContextToBytes,
-} from "@/lib/labs/biomarker-store";
+  aliasNamesByMarker,
+  findAliasConflict,
+  replaceAliases,
+} from "@/lib/labs/biomarker-aliases";
+import { serialiseBiomarker } from "@/lib/labs/biomarker-dto";
+import { mergedInto } from "@/lib/labs/biomarker-merge";
+import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
 import { annotate } from "@/lib/logging/context";
 import { updateBiomarkerSchema } from "@/lib/validations/biomarkers";
@@ -38,37 +42,6 @@ import { effectiveBound, isInvertedRange } from "@/lib/validations/labs";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-function serialiseBiomarker(row: {
-  id: string;
-  name: string;
-  unit: string;
-  lowerBound: number | null;
-  upperBound: number | null;
-  panel: string | null;
-  analyteKey: string | null;
-  hidden: boolean;
-  contextEncrypted: Uint8Array | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: row.id,
-    name: row.name,
-    unit: row.unit,
-    lowerBound: row.lowerBound,
-    upperBound: row.upperBound,
-    panel: row.panel,
-    analyteKey: row.analyteKey,
-    hasContext: row.contextEncrypted !== null,
-    context: row.contextEncrypted
-      ? decryptContextFromBytes(row.contextEncrypted)
-      : null,
-    hidden: row.hidden,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
     const { user } = await requireRecordAuth("read", "labs");
@@ -76,15 +49,23 @@ export const GET = apiHandler(
 
     const row = await prisma.biomarker.findFirst({ where: { id } });
     if (!row || row.userId !== user.id) {
-      return apiError("Biomarker not found", 404);
+      // v1.43 — a marker merged into another names where it went, so a
+      // client holding the old id (a cached screen, a bookmark) can follow.
+      const into = await mergedInto(user.id, id);
+      return apiError("Biomarker not found", 404, {
+        errorCode: "labs.biomarker.notFound",
+        ...(into ? { mergedInto: into } : {}),
+      });
     }
+
+    const aliases = await aliasNamesByMarker(prisma, user.id, [row]);
 
     annotate({
       action: { name: "labs.biomarker.get" },
       meta: { biomarkerId: id },
     });
 
-    return apiSuccess(serialiseBiomarker(row));
+    return apiSuccess(serialiseBiomarker(row, aliases.get(row.id) ?? []));
   },
 );
 
@@ -171,6 +152,20 @@ export const PUT = apiHandler(
       }
     }
 
+    // v1.43 — the aliases, when sent, become the marker's whole set. A
+    // spelling another marker already answers to (its name or one of its
+    // aliases) is refused rather than silently moved.
+    if (d.aliases !== undefined) {
+      const conflict = await findAliasConflict(prisma, user.id, id, d.aliases);
+      if (conflict) {
+        return apiError("Another biomarker already answers to this name", 409, {
+          errorCode: "labs.biomarker.alias.taken",
+          alias: conflict.alias,
+          biomarkerId: conflict.biomarkerId,
+        });
+      }
+    }
+
     // Build `data` field-by-field. `undefined` → leave the column untouched;
     // an explicit `null` on `context` / `panel` / a bound clears it.
     const data: Record<string, unknown> = {};
@@ -212,7 +207,17 @@ export const PUT = apiHandler(
         : null;
     }
 
-    const updated = await prisma.biomarker.update({ where: { id }, data });
+    const aliasesBefore =
+      (await aliasNamesByMarker(prisma, user.id, [existing])).get(id) ?? [];
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.biomarker.update({ where: { id }, data });
+      if (d.aliases !== undefined) {
+        await replaceAliases(tx, user.id, row, d.aliases);
+      }
+      return row;
+    });
+    const aliasesAfter =
+      (await aliasNamesByMarker(prisma, user.id, [updated])).get(id) ?? [];
     invalidateUserHealthScore(user.id);
 
     await auditLog("biomarker.update", {
@@ -241,7 +246,13 @@ export const PUT = apiHandler(
             panel: updated.panel,
             hidden: updated.hidden,
           },
-          redacted: d.context !== undefined ? ["context"] : [],
+          redacted: [
+            ...(d.context !== undefined ? ["context"] : []),
+            // Named, not quoted: the spellings are the person's own text.
+            ...(aliasesBefore.join("\n") !== aliasesAfter.join("\n")
+              ? ["aliases"]
+              : []),
+          ],
         }),
       },
     });
@@ -251,7 +262,7 @@ export const PUT = apiHandler(
       meta: { biomarkerId: id },
     });
 
-    return apiSuccess(serialiseBiomarker(updated));
+    return apiSuccess(serialiseBiomarker(updated, aliasesAfter));
   },
 );
 

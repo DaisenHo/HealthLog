@@ -7,19 +7,32 @@
  * (`MERGE`), one `biomarker_merges` row is written per source and the sources
  * are deleted. A pair of units without a known conversion refuses the whole
  * merge (422 `labs.biomarker.merge.unitMismatch`); nothing moves. `dryRun`
- * answers the same result and writes nothing. There is no undo.
+ * answers the same result and writes nothing, refusals included, so the
+ * preview can show them. There is no undo. See `src/lib/labs/biomarker-merge.ts`.
  *
- * Contract authority: `requireRecordAuth("manage", "labs")` with the shared
- * record-write ceiling. Until the merge lands the stub resolves the caller's
- * own record only.
+ * Authority: `requireRecordAuth("manage", "labs")`, the same as the edit and
+ * the delete beside it, because a merge rewrites and deletes markers. The
+ * shared record-write ceiling is charged to the ACTOR (C1). Each deleted
+ * source files what was destroyed (C3): its id and how many readings it took
+ * along, never its name; the name stays in the merge ledger.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, returnAllZodIssues, safeJson } from "@/lib/api-response";
-import { notImplemented } from "@/lib/http/not-implemented";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import {
+  apiError,
+  apiSuccess,
+  getClientIp,
+  returnAllZodIssues,
+  safeJson,
+} from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
+import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
+import { mergeBiomarkers as runMerge } from "@/lib/labs/biomarker-merge";
+import { annotate } from "@/lib/logging/context";
 import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
+import { destroyedDetails } from "@/lib/sharing/audit-details";
 import { biomarkerMergeSchema } from "@/lib/validations/biomarker-merge";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -32,10 +45,10 @@ async function mergeBiomarkers(
   request: NextRequest,
   { params }: RouteParams,
 ): Promise<Response> {
-  const { user } = await requireAuth();
+  const { user, actor } = await requireRecordAuth("manage", "labs");
   const { id } = await params;
 
-  const writeRl = await checkRecordWriteRateLimit(user.id);
+  const writeRl = await checkRecordWriteRateLimit(actor.id);
   if (!writeRl.allowed) {
     return apiError("Too many writes, try again later", 429, {
       errorCode: "record_write.rate_limited",
@@ -58,5 +71,74 @@ async function mergeBiomarkers(
     });
   }
 
-  return notImplemented("labs.biomarker.merge");
+  const outcome = await runMerge({
+    userId: user.id,
+    targetId: id,
+    sourceIds: parsed.data.sourceIds,
+    dryRun: parsed.data.dryRun,
+  });
+
+  if (outcome.kind === "notFound") {
+    return apiError("Biomarker not found", 404, {
+      errorCode: "labs.biomarker.notFound",
+      ids: outcome.ids,
+    });
+  }
+  if (outcome.kind === "unitMismatch") {
+    annotate({
+      action: { name: "labs.biomarker.merge.unit-mismatch" },
+      meta: { biomarkerId: id, refused: outcome.sources.length },
+    });
+    return apiError(
+      "Some readings are in a unit that cannot be converted to the target's unit",
+      422,
+      {
+        errorCode: "labs.biomarker.merge.unitMismatch",
+        sources: outcome.sources,
+      },
+    );
+  }
+
+  const { result } = outcome;
+  annotate({
+    action: {
+      name: result.dryRun
+        ? "labs.biomarker.merge.preview"
+        : "labs.biomarker.merge",
+    },
+    meta: {
+      biomarkerId: id,
+      sources: result.sources.length,
+      movedReadings: result.movedReadings,
+      convertedReadings: result.convertedReadings,
+    },
+  });
+  if (result.dryRun) return apiSuccess(result);
+
+  invalidateUserHealthScore(user.id);
+  const ipAddress = getClientIp(request);
+  for (const source of result.sources) {
+    await auditLog("labs.biomarker.merge", {
+      userId: user.id,
+      ipAddress,
+      // IDs and numbers only. The source's name is not filed here; the merge
+      // ledger keeps it with the row this audit points at.
+      details: {
+        biomarkerId: id,
+        mergeId: result.mergeId,
+        ...destroyedDetails({
+          model: "Biomarker",
+          id: source.id,
+          label: null,
+          effectiveAt: new Date(),
+          extra: {
+            readingCount: source.readingCount,
+            converted: source.conversion === "converted",
+          },
+        }),
+      },
+    });
+  }
+
+  return apiSuccess(result);
 }

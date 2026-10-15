@@ -160,6 +160,8 @@ function sourceClient() {
     // Records section: empty, exercised by its own suite.
     labResult: empty,
     biomarker: empty,
+    biomarkerAlias: empty,
+    biomarkerMerge: empty,
     illnessEpisode: empty,
     allergy: empty,
     familyHistoryEntry: empty,
