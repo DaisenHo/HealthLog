@@ -1,3 +1,4 @@
+import { lifeReportRows } from "@/lib/profile/life-report-rows";
 import type { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { EncounterKind, Laterality } from "@/generated/prisma/client";
@@ -603,6 +604,12 @@ export function buildClinicalRecordsNotesSection(
         t("doctorReport.anamnesisShiftSchedule"),
         factValue("SHIFT_SCHEDULE", data.anamnesis.shiftSchedule),
       ],
+      ...lifeReportRows(
+        data.anamnesis.life,
+        t,
+        (value) => num(value, 1),
+        fmtDate,
+      ),
     ];
 
     autoTable(doc, {

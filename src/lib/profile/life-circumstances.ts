@@ -42,6 +42,7 @@ import {
   screeningHints,
   type FreeWeekdaysSpan,
   type PackYears,
+  type LifeClinicalSummary,
   type ScreeningHint,
 } from "@/lib/profile/life-derived";
 import {
@@ -56,6 +57,7 @@ import {
   type LifeAiSection,
   type LifeSectionKey,
   type TobaccoDetailValue,
+  type WorkContextValue,
 } from "@/lib/validations/life-circumstances";
 
 const MS_PER_DAY = 86_400_000;
@@ -614,4 +616,85 @@ export async function removeAuditC(
   if (removed.count !== 1) return null;
   await invalidateHealthProfileFactConsumers(userId, prisma);
   return { id, removedAt: now.toISOString() };
+}
+
+// ── Clinical summary (doctor report, FHIR) ───────────────────────────────────
+
+export async function loadLifeClinicalSummary(
+  userId: string,
+  now: Date = new Date(),
+): Promise<LifeClinicalSummary> {
+  const [user, rows, audit] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { gender: true, locale: true },
+    }),
+    prisma.healthProfileFactRevision.findMany({
+      where: {
+        userId,
+        kind: {
+          in: [
+            "SMOKING_STATUS",
+            "TOBACCO_DETAIL",
+            "ACTIVITY_HABIT",
+            "WORK_CONTEXT",
+          ],
+        },
+        validUntil: null,
+        supersededByRevisionId: null,
+      },
+      select: {
+        id: true,
+        kind: true,
+        valueEncrypted: true,
+        validFrom: true,
+        provenance: true,
+        createdAt: true,
+      },
+    }),
+    prisma.mentalHealthAssessment.findFirst({
+      where: { userId, instrument: "AUDIT_C", deletedAt: null },
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
+      select: { id: true, takenAt: true, totalScore: true, locale: true },
+    }),
+  ]);
+  const facts = rows.map(toLifeFactRevisionDto);
+  const value = <T>(kind: string): T | null =>
+    (facts.find((fact) => fact.kind === kind)?.value as T | undefined) ?? null;
+  const packYears = computePackYears(
+    value<string>("SMOKING_STATUS"),
+    value<TobaccoDetailValue>("TOBACCO_DETAIL"),
+    now,
+  );
+  const activity = value<ActivityHabitValue>("ACTIVITY_HABIT");
+  const work = value<WorkContextValue>("WORK_CONTEXT");
+  const cutoff = audit
+    ? auditCCutoff(audit.locale, user?.gender ?? null, user?.locale ?? "en")
+    : null;
+  return {
+    packYears: packYears.value,
+    auditC: audit
+      ? {
+          id: audit.id,
+          takenAt: audit.takenAt.toISOString(),
+          totalScore: audit.totalScore,
+          aboveCutoff: cutoff ? audit.totalScore >= cutoff.value : null,
+          cutoffValue: cutoff?.value ?? null,
+          cutoffSourceLabel: cutoff?.sourceLabel ?? null,
+        }
+      : null,
+    activityMinutesPerWeek: activityMinutesPerWeek(
+      activity?.moderateDaysPerWeek ?? null,
+      activity?.moderateMinutesPerDay ?? null,
+    ).value,
+    sittingHoursWorkday: activity?.sittingHoursWorkday ?? null,
+    work: work
+      ? {
+          situation: work.situation,
+          physicalNature: work.physicalNature,
+          nightWork: work.nightWork,
+          exposures: work.exposures,
+        }
+      : null,
+  };
 }

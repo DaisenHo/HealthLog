@@ -280,7 +280,13 @@ export function ClinicianView({
 
             {/* ── the fenced tier, as the owner chose it ───────────── */}
             <FamilyHistorySection t={t} report={report} scope={scope} />
-            <AnamnesisSection t={t} report={report} scope={scope} />
+            <AnamnesisSection
+              t={t}
+              report={report}
+              scope={scope}
+              fmtNum={fmtNum}
+              fmtDate={fmtDate}
+            />
             <MoodSection t={t} report={report} scope={scope} fmtNum={fmtNum} />
             <CycleSection
               t={t}

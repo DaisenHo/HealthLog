@@ -17,6 +17,7 @@ import type {
   LifeFactKind,
   LifeSectionKey,
   TobaccoDetailValue,
+  WorkContextValue,
 } from "@/lib/validations/life-circumstances";
 
 /** The kinds a section shows, in display order. Alcohol is AUDIT-C, not a fact. */
@@ -375,4 +376,32 @@ function aaaHint(
 export function screeningHints(input: ScreeningInputs): ScreeningHint[] {
   const region = screeningRegion(input.locale);
   return [lungHint(input, region), aaaHint(input, region)];
+}
+
+// ── Clinical summary ─────────────────────────────────────────────────────────
+
+/**
+ * What the doctor report and the FHIR export carry from the life
+ * circumstances: pack-years, the newest AUDIT-C as a screening result,
+ * activity and work. Diet and goals are deliberately absent (coach-only by
+ * design): they are context for a conversation, not clinical findings.
+ */
+export interface LifeClinicalSummary {
+  packYears: number | null;
+  auditC: {
+    id: string;
+    takenAt: string;
+    totalScore: number;
+    aboveCutoff: boolean | null;
+    cutoffValue: number | null;
+    cutoffSourceLabel: string | null;
+  } | null;
+  activityMinutesPerWeek: number | null;
+  sittingHoursWorkday: number | null;
+  work: {
+    situation: WorkContextValue["situation"];
+    physicalNature: WorkContextValue["physicalNature"];
+    nightWork: boolean | null;
+    exposures: WorkContextValue["exposures"];
+  } | null;
 }

@@ -121,7 +121,7 @@ export function anamnesisObservationsFromReportData(
     "SHIFT_SCHEDULE",
   ];
 
-  return kinds.map((kind, index) => {
+  const facts = kinds.map((kind, index): FhirObservation => {
     const definition = FACT_DEFINITIONS[kind];
     const value = values[kind];
     const unreadable = anamnesis.unreadableFacts.includes(kind);
@@ -157,6 +157,7 @@ export function anamnesisObservationsFromReportData(
         : {}),
     };
   });
+  return [...facts, ...lifeObservationsFromReportData(data)];
 }
 
 /** Raw narrative text; the document builder performs XHTML escaping once. */
@@ -182,5 +183,137 @@ export function anamnesisNarrativeFromReportData(
     `Smoking status: ${factText("SMOKING_STATUS", anamnesis.smokingStatus)}.`,
     `Alcohol pattern: ${factText("ALCOHOL_PATTERN", anamnesis.alcoholPattern)}.`,
     `Shift schedule: ${factText("SHIFT_SCHEDULE", anamnesis.shiftSchedule)}.`,
+    ...(anamnesis.life?.packYears != null
+      ? [`Pack-years: ${anamnesis.life.packYears}.`]
+      : []),
+    ...(anamnesis.life?.auditC
+      ? [
+          `AUDIT-C (screening): ${anamnesis.life.auditC.totalScore} of 12 on ${anamnesis.life.auditC.takenAt.slice(0, 10)}.`,
+        ]
+      : []),
   ].join(" ");
+}
+
+/**
+ * v1.43 (#614) — the clinical part of the life circumstances: AUDIT-C as a
+ * screening score (LOINC 75626-2), pack-years (SNOMED CT 401201003), and the
+ * self-reported activity and work context as text observations. Only present
+ * values emit; diet and goals never do (coach-only by design).
+ */
+function lifeObservationsFromReportData(
+  data: DoctorReportData,
+): FhirObservation[] {
+  const life = data.anamnesis?.life;
+  if (!life) return [];
+  const out: FhirObservation[] = [];
+  const base = (id: string, category: string) => ({
+    resourceType: "Observation" as const,
+    id,
+    status: "final" as const,
+    category: [categoryConcept(category)],
+    subject: patientRef,
+  });
+
+  if (life.auditC) {
+    const a = life.auditC;
+    const verdict =
+      a.aboveCutoff === null || a.cutoffValue === null
+        ? "No sex-specific cut-off applied (no binary sex in the profile)."
+        : `${a.aboveCutoff ? "At or above" : "Below"} the screening cut-off of ${a.cutoffValue} (${a.cutoffSourceLabel ?? "source not named"}).`;
+    out.push({
+      ...base("obs-life-audit-c", "survey"),
+      code: {
+        coding: [
+          {
+            system: LOINC_SYSTEM,
+            code: "75626-2",
+            display: "Total score [AUDIT-C]",
+          },
+        ],
+        text: "AUDIT-C total score",
+      },
+      effectiveDateTime: a.takenAt,
+      valueInteger: a.totalScore,
+      note: [
+        {
+          text: `Screening result, not a diagnosis. ${verdict}`,
+        },
+      ],
+    });
+  }
+
+  if (life.packYears !== null) {
+    out.push({
+      ...base("obs-life-pack-years", "social-history"),
+      code: {
+        coding: [
+          {
+            system: SNOMED_SYSTEM,
+            code: "401201003",
+            display: "Cigarette pack-years",
+          },
+        ],
+        text: "Cigarette pack-years",
+      },
+      valueQuantity: { value: life.packYears, unit: "pack-years" },
+      note: [
+        {
+          text: "Computed from self-reported cigarettes per day and years smoked.",
+        },
+      ],
+    });
+  }
+
+  if (
+    life.activityMinutesPerWeek !== null ||
+    life.sittingHoursWorkday !== null
+  ) {
+    const parts: string[] = [];
+    if (life.activityMinutesPerWeek !== null) {
+      parts.push(
+        `${life.activityMinutesPerWeek} minutes of moderate to strenuous activity per week (Exercise Vital Sign)`,
+      );
+    }
+    if (life.sittingHoursWorkday !== null) {
+      parts.push(`${life.sittingHoursWorkday} hours sitting on a workday`);
+    }
+    out.push({
+      ...base("obs-life-activity", "social-history"),
+      code: { text: "Self-reported physical activity" },
+      valueString: `${parts.join("; ")}.`,
+    });
+  }
+
+  const work = life.work;
+  if (work) {
+    const parts = [
+      work.situation ? `situation: ${work.situation.replace(/_/g, " ")}` : null,
+      work.physicalNature
+        ? `physical nature: ${work.physicalNature.replace(/_/g, " ")}`
+        : null,
+      work.nightWork === null
+        ? null
+        : `night work: ${work.nightWork ? "yes" : "no"}`,
+      work.exposures.length > 0
+        ? `exposures: ${work.exposures.map((e) => e.replace(/_/g, " ")).join(", ")}`
+        : null,
+    ].filter((part): part is string => part !== null);
+    if (parts.length > 0) {
+      out.push({
+        ...base("obs-life-work", "social-history"),
+        code: {
+          coding: [
+            {
+              system: LOINC_SYSTEM,
+              code: "11341-5",
+              display: "History of Occupation",
+            },
+          ],
+          text: "Self-reported work context",
+        },
+        valueString: `${parts.join("; ")}.`,
+      });
+    }
+  }
+  return out;
 }

@@ -23,13 +23,15 @@ import { decryptAllergyReaction } from "@/lib/doctor-report-helpers";
 import type { DoctorReportData } from "@/lib/doctor-report-types";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { decryptHealthProfileFactValue } from "@/lib/profile/health-facts";
+import { loadLifeClinicalSummary } from "@/lib/profile/life-circumstances";
 import {
   emergencyProfileHasContent,
   readEmergencyProfile,
 } from "@/lib/profile/emergency-profile";
-import type {
-  HealthProfileFactKind,
-  HealthProfileFactValue,
+import {
+  HEALTH_PROFILE_FACT_KINDS,
+  type HealthProfileFactKind,
+  type HealthProfileFactValue,
 } from "@/lib/validations/health-profile-facts";
 
 /**
@@ -435,7 +437,7 @@ export async function loadEmergency(
 export async function loadAnamnesis(
   userId: string,
 ): Promise<NonNullable<DoctorReportData["anamnesis"]>> {
-  const [profile, factRows] = await Promise.all([
+  const [profile, factRows, life] = await Promise.all([
     prisma.userHealthProfile.findUnique({
       where: { userId },
       select: { conditionsEncrypted: true },
@@ -443,11 +445,15 @@ export async function loadAnamnesis(
     prisma.healthProfileFactRevision.findMany({
       where: {
         userId,
+        // The three closed kinds; the life-circumstance kinds arrive through
+        // `loadLifeClinicalSummary` with their own codec.
+        kind: { in: [...HEALTH_PROFILE_FACT_KINDS] },
         validUntil: null,
         supersededByRevisionId: null,
       },
       select: { kind: true, valueEncrypted: true },
     }),
+    loadLifeClinicalSummary(userId),
   ]);
 
   let conditions: string | null = null;
@@ -492,5 +498,6 @@ export async function loadAnamnesis(
       DoctorReportData["anamnesis"]
     >["shiftSchedule"],
     unreadableFacts,
+    life,
   };
 }
