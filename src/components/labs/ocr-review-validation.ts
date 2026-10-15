@@ -129,7 +129,12 @@ export function toCommitRow(row: OcrReviewRow): OcrCommitRowInput | null {
   if (isQualitativeRow(row)) {
     const valueText = (row.valueText ?? "").trim();
     if (!valueText) return null;
-    return { analyte, valueText, takenAt: takenAt.toISOString() };
+    return {
+      analyte,
+      valueText,
+      takenAt: takenAt.toISOString(),
+      ...chosen(row),
+    };
   }
 
   if (row.value === null || !Number.isFinite(row.value)) return null;
@@ -144,7 +149,13 @@ export function toCommitRow(row: OcrReviewRow): OcrCommitRowInput | null {
     ...(row.referenceLow !== null ? { referenceLow: row.referenceLow } : {}),
     ...(row.referenceHigh !== null ? { referenceHigh: row.referenceHigh } : {}),
     ...(row.referenceText ? { referenceText: row.referenceText } : {}),
+    ...chosen(row),
   };
+}
+
+/** The marker the person picked, which the commit then files the row under. */
+function chosen(row: OcrReviewRow): { biomarkerId?: string } {
+  return row.chosenBiomarkerId ? { biomarkerId: row.chosenBiomarkerId } : {};
 }
 
 /** Blocking fields per CONFIRMED row, keyed by the row's key; writable rows are absent. */

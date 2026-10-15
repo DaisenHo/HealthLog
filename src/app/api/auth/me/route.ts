@@ -89,7 +89,7 @@ const SERVER_FEATURES = {
   // form work; until then a client must not send it (contract §0.6).
   cumulativeHourBuckets: false,
   syncTriggerBackfill: false,
-  biomarkerMerge: false,
+  biomarkerMerge: true,
   lifeCircumstances: false,
 } as const;
 

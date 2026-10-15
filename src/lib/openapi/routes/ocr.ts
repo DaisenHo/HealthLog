@@ -177,10 +177,12 @@ const commitResponse = z
     skipped: z.array(
       z.object({
         analyte: z.string(),
-        reason: z.enum(["duplicate", "unit_mismatch"]).meta({
-          description:
-            "`duplicate`: the row matched a live reading at commit time. `unit_mismatch`: the row states a unit other than the one its marker is tracked in and the pair cannot be converted, so it was not written. A pair that can be converted is written in the marker's unit and reported with `converted: true`.",
-        }),
+        reason: z
+          .enum(["duplicate", "unit_mismatch", "unknown_biomarker"])
+          .meta({
+            description:
+              "`duplicate`: the row matched a live reading at commit time. `unit_mismatch`: the row states a unit other than the one its marker is tracked in and the pair cannot be converted, so it was not written. A pair that can be converted is written in the marker's unit and reported with `converted: true`. `unknown_biomarker` (v1.43): the row named a `biomarkerId` that is not one of the record's markers.",
+          }),
       }),
     ),
     outcome: z.enum(["empty", "failed", "partial", "success"]).meta({

@@ -26,7 +26,9 @@ vi.mock("@/hooks/use-ai-capability", () => ({
     onDeviceAllowed: true,
   }),
 }));
-vi.mock("@/lib/api/api-fetch", () => ({
+vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
+  ApiError: (await importOriginal<typeof import("@/lib/api/api-fetch")>())
+    .ApiError,
   apiGet: () => new Promise(() => {}),
   apiDelete: vi.fn(),
   apiPut: vi.fn(),

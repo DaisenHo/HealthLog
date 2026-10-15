@@ -66,6 +66,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const VISIT_AT = "2019-04-03T09:30:00.000Z";
 const FERRITIN_AT = new Date("2019-04-03T07:00:00.000Z");
 const RESULT_COUNT = 1_200;
+/** What the hook adds to every request: the UI locale and the person's zone. */
+const CTX = { locale: "en", timeZone: "Europe/Berlin" } as const;
 
 async function seedOwner() {
   const prisma = getPrismaClient();
@@ -161,6 +163,7 @@ describe("the visit form's lab picker on a 1,200-result record", () => {
       pivot,
       term: "",
       cursor: null,
+      ...CTX,
     });
     expect(first.results.some((row) => row.id === ferritinId)).toBe(true);
     // Nothing after the window's split is on it.
@@ -182,6 +185,7 @@ describe("the visit form's lab picker on a 1,200-result record", () => {
         pivot,
         term: "",
         cursor,
+        ...CTX,
       });
       for (const row of page.results) {
         expect(seen.has(row.id)).toBe(false);
@@ -207,6 +211,7 @@ describe("the visit form's lab picker on a 1,200-result record", () => {
         pivot: null,
         term,
         cursor: null,
+        ...CTX,
       });
       expect(page.results.map((row) => row.id)).toEqual([ferritinId]);
     }
@@ -240,6 +245,7 @@ describe("the visit form's lab picker on a 1,200-result record", () => {
         pivot: pickerPivot(VISIT_AT),
         term: "",
         cursor: null,
+        ...CTX,
       }),
     );
     expect(list.past).toHaveLength(1);
@@ -276,7 +282,13 @@ describe("the condition picker's window and search", () => {
     const pivot = pickerPivot(VISIT_AT);
     const around = await get<Array<{ id: string; onsetAt: string }>>(
       listEpisodes as never,
-      episodePickerUrl({ direction: "older", pivot, term: "", cursor: null }),
+      episodePickerUrl({
+        direction: "older",
+        pivot,
+        term: "",
+        cursor: null,
+        ...CTX,
+      }),
     );
     expect(around[0]!.id).toBe(old.id);
 
@@ -287,6 +299,7 @@ describe("the condition picker's window and search", () => {
         pivot: null,
         term: "tendin",
         cursor: null,
+        ...CTX,
       }),
     );
     expect(found.map((row) => row.id)).toEqual([old.id]);
@@ -297,7 +310,13 @@ describe("the condition picker's window and search", () => {
     for (let guard = 0; guard < 5; guard++) {
       const page: Array<{ id: string }> = await get(
         listEpisodes as never,
-        episodePickerUrl({ direction: "newer", pivot, term: "", cursor }),
+        episodePickerUrl({
+          direction: "newer",
+          pivot,
+          term: "",
+          cursor,
+          ...CTX,
+        }),
       );
       for (const row of page) {
         expect(ids.has(row.id)).toBe(false);

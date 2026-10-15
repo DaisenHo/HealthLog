@@ -179,6 +179,8 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.biomarkerUpdate", { name });
     case "biomarker.delete":
       return t("recordSharing.activityVerb.biomarkerDelete", { name });
+    case "labs.biomarker.merge":
+      return t("recordSharing.activityVerb.biomarkerMerge", { name });
 
     case "allergy.update":
       return t("recordSharing.activityVerb.allergyUpdate", { name });

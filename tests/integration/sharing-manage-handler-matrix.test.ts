@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(88);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(89);
   });
 });
 
@@ -1122,6 +1122,51 @@ manageContract("DELETE /api/biomarkers/[id]", {
     (await getPrismaClient().biomarker.findUnique({
       where: { id: row.id },
     })) === null,
+});
+
+manageContract("POST /api/biomarkers/[id]/merge", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) => entry.route === "/api/biomarkers/[id]/merge",
+  )!,
+  prepare: async (userId) => {
+    const prisma = getPrismaClient();
+    const target = await prisma.biomarker.create({
+      data: { userId, name: "Alkaline Phosphatase", unit: "U/L" },
+    });
+    const source = await prisma.biomarker.create({
+      data: { userId, name: "Alk.P", unit: "U/L" },
+    });
+    await prisma.labResult.create({
+      data: {
+        userId,
+        biomarkerId: source.id,
+        analyte: "Alk.P",
+        value: 81,
+        unit: "U/L",
+        takenAt: new Date("2026-05-01T08:00:00.000Z"),
+      },
+    });
+    return { id: target.id, sourceId: source.id };
+  },
+  act: async (row) => {
+    const { POST } = await import("@/app/api/biomarkers/[id]/merge/route");
+    return call(
+      POST as Handler,
+      "POST",
+      `/api/biomarkers/${row.id}/merge`,
+      { sourceIds: [row.sourceId] },
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "labs.biomarker.merge",
+  applied: async (row) =>
+    (await getPrismaClient().biomarker.findUnique({
+      where: { id: row.sourceId },
+    })) === null &&
+    (await getPrismaClient().labResult.count({
+      where: { biomarkerId: row.id },
+    })) === 1,
 });
 
 manageContract("POST /api/allergies", {
@@ -2878,13 +2923,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(88);
+    expect(STRICT_DRIVER_KEYS.size).toBe(89);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(88);
+    expect(REAL_EFFECT_KEYS.size).toBe(89);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

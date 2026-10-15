@@ -9624,12 +9624,16 @@
         "apob": "L'apolipoproteina B è la proteina strutturale presente su ciascuna delle particelle di lipoproteine aterogene, quindi misurarla significa contare direttamente quelle particelle anziché il colesterolo che trasportano. Poiché c'è una molecola di ApoB su ogni particella di LDL, VLDL e affini, può cogliere un rischio cardiovascolare che un valore di colesterolo LDL non rileva, soprattutto quando il numero di particelle e il loro contenuto di colesterolo divergono. Per questo è sempre più usata per affinare la valutazione del rischio basata sui lipidi. Si interpreta insieme al consueto profilo lipidico.",
         "lp-a": "La lipoproteina(a) è una particella simile all'LDL con una proteina aggiuntiva attaccata, il cui livello è in gran parte determinato dalla genetica e resta piuttosto stabile per tutta la vita. Una Lp(a) elevata è un fattore di rischio indipendente ed ereditario di malattia cardiovascolare e di restringimento della valvola aortica. Poiché varia poco, di solito si misura una sola volta per stabilire il rischio di una persona lungo l'arco della vita, anziché seguirla ripetutamente. Si esprime in unità molari e si legge nell'ambito del rischio cardiovascolare complessivo.",
         "fasting-insulin": "L'insulina a digiuno è il livello di insulina (l'ormone che fa passare il glucosio dal sangue alle cellule) misurato dopo un digiuno notturno. Insieme alla glicemia a digiuno, aiuta a stimare la resistenza all'insulina, lo stato in cui il corpo ha bisogno di più insulina per mantenere il glucosio nel suo intervallo. Un'insulina a digiuno alta con una glicemia normale può essere un segno precoce che questa compensazione è in atto. Si legge nell'ambito di un quadro di salute metabolica e non isolatamente.",
-        "omega-3-index": "L'indice omega-3 è la quota di EPA e DHA (i due acidi grassi omega-3 marini a catena lunga) tra gli acidi grassi delle membrane dei globuli rossi. Poiché i globuli rossi si rinnovano lentamente, riflette l'apporto di omega-3 a lungo termine anziché un pasto recente. Un indice più alto è stato associato, in studi osservazionali, a un rischio cardiovascolare più basso. Si segue come un marcatore stabile dello stato di omega-3 che risponde alla dieta nell'arco di mesi."
+        "omega-3-index": "L'indice omega-3 è la quota di EPA e DHA (i due acidi grassi omega-3 marini a catena lunga) tra gli acidi grassi delle membrane dei globuli rossi. Poiché i globuli rossi si rinnovano lentamente, riflette l'apporto di omega-3 a lungo termine anziché un pasto recente. Un indice più alto è stato associato, in studi osservazionali, a un rischio cardiovascolare più basso. Si segue come un marcatore stabile dello stato di omega-3 che risponde alla dieta nell'arco di mesi.",
+        "alkaline-phosphatase": "La fosfatasi alcalina (ALP) è un enzima presente soprattutto nel fegato, nelle vie biliari e nell'osso. Sale quando il flusso della bile è ostacolato e nelle fasi di formazione ossea attiva, come la crescita nei bambini e negli adolescenti o la guarigione di una frattura. Poiché la rilasciano entrambi gli organi, un valore alto si legge di solito insieme alla GGT e agli altri indici epatici per distinguere un'origine epatica da una ossea. È uno degli indici abituali del profilo epatico.",
+        "bilirubin-total": "La bilirubina totale è il prodotto giallo della degradazione dell'emoglobina dei globuli rossi invecchiati, misurato come somma delle sue forme non coniugata e coniugata. Il fegato la capta, la coniuga e la elimina con la bile, quindi il suo livello riflette il funzionamento di questa via. Può salire con malattie del fegato, ostruzione delle vie biliari o aumentata distruzione dei globuli rossi, e in modo innocuo nella sindrome di Gilbert. Si legge insieme agli altri indici epatici."
       },
       "apob": "Apolipoproteina B (ApoB)",
       "lp-a": "Lipoproteina(a)",
       "fasting-insulin": "Insulina a digiuno",
-      "omega-3-index": "Indice omega-3"
+      "omega-3-index": "Indice omega-3",
+      "alkaline-phosphatase": "Fosfatasi alcalina (ALP)",
+      "bilirubin-total": "Bilirubina totale"
     },
     "noteLoadFailed": "Impossibile caricare la nota; resterà invariata al salvataggio.",
     "showingLatestOf": "Visualizzazione degli ultimi {shown} risultati su {total}",
@@ -9703,6 +9707,54 @@
       "fromReport": "Intervallo del referto {range}",
       "catalogDiffers": "il tuo intervallo {range}",
       "printed": "stampato in {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "tramite un nome che hai scelto in precedenza",
+      "viaCatalog": "riconosciuto come abbreviazione comune",
+      "chooseLabel": "Appartiene a",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Un nuovo biomarcatore",
+      "rememberHint": "Questo nome verrà ricordato per il prossimo referto.",
+      "chooseHint": "Scegli un biomarcatore se lo registri già."
+    },
+    "aliases": {
+      "title": "Scritto anche come",
+      "taken": "{alias} appartiene già a un altro biomarcatore.",
+      "saveError": "Non è stato possibile salvare i nomi. Riprova.",
+      "remove": "Rimuovi {alias}",
+      "empty": "Aggiungi i nomi che altri laboratori stampano per {name}, così i loro referti arrivano qui.",
+      "placeholder": "es. ALP",
+      "addLabel": "Altro nome per questo biomarcatore",
+      "add": "Aggiungi",
+      "alsoWritten": "Scritto anche come {aliases}"
+    },
+    "merge": {
+      "open": "Unisci",
+      "title": "Unisci biomarcatori",
+      "description": "Riunisci i biomarcatori che sono lo stesso esame scritto in modo diverso.",
+      "pickHint": "Seleziona almeno due biomarcatori.",
+      "keepLabel": "Mantieni",
+      "keepHint": "Gli altri confluiscono in questo e i loro nomi diventano i suoi altri nomi.",
+      "showPreview": "Mostra anteprima",
+      "back": "Indietro",
+      "confirm": "Unisci ora",
+      "previewSummaryOne": "{count} misurazione passa a {name} ({unit}).",
+      "previewSummaryFew": "{count} misurazioni passano a {name} ({unit}).",
+      "previewSummaryOther": "{count} misurazioni passano a {name} ({unit}).",
+      "movesOne": "{count} misurazione, già nella stessa unità",
+      "movesFew": "{count} misurazioni, già nella stessa unità",
+      "movesOther": "{count} misurazioni, già nella stessa unità",
+      "convertedOne": "{count} misurazione, convertita da {unit} a {targetUnit}",
+      "convertedFew": "{count} misurazioni, convertite da {unit} a {targetUnit}",
+      "convertedOther": "{count} misurazioni, convertite da {unit} a {targetUnit}",
+      "refused": "{unit} non può essere convertito in {targetUnit}.",
+      "aliasesAdded": "Questi nomi porteranno al biomarcatore mantenuto:",
+      "blocked": "Non si unisce nulla finché un'unità non può essere convertita. Escludi quel biomarcatore o mantienine un altro.",
+      "noUndo": "Un'unione non può essere annullata.",
+      "doneToastOne": "Unito in {name}, {count} misurazione spostata",
+      "doneToastFew": "Unito in {name}, {count} misurazioni spostate",
+      "doneToastOther": "Unito in {name}, {count} misurazioni spostate",
+      "error": "Non è stato possibile unire i biomarcatori. Riprova."
     }
   },
   "modules": {
@@ -11142,7 +11194,8 @@
       "extractEmpty": "Non è stato possibile estrarre valori da questo documento.",
       "failUnitRequired": "Un valore numerico ha bisogno di un’unità prima di poter essere salvato.",
       "failUnitMismatch": "L’unità indicata non corrisponde all’unità salvata per questo marcatore. Correggila e concludi di nuovo la revisione.",
-      "failGeneric": "Questo valore non è stato salvato."
+      "failGeneric": "Questo valore non è stato salvato.",
+      "failUnknownBiomarker": "Il biomarcatore scelto non esiste più. Scegline un altro."
     },
     "contentIndex": {
       "indexPrompt": "Rendi ricercabile il contenuto dei documenti.",
@@ -12028,7 +12081,8 @@
       "customVaccineDelete": "{name} ha rimosso un vaccino personale",
       "lifeEventCreate": "{name} ha aggiunto un evento della vita",
       "lifeEventUpdate": "{name} ha modificato un evento della vita",
-      "lifeEventDelete": "{name} ha rimosso un evento della vita"
+      "lifeEventDelete": "{name} ha rimosso un evento della vita",
+      "biomarkerMerge": "{name} ha unito dei biomarcatori"
     },
     "section": {
       "measurements": {
@@ -12247,7 +12301,10 @@
       "removed": "Collegamento a {name} rimosso",
       "linked": "Collegati",
       "loadNewer": "Carica più recenti",
-      "loadOlder": "Carica meno recenti"
+      "loadOlder": "Carica meno recenti",
+      "period": {
+        "showing": "Periodo: {period}"
+      }
     }
   },
   "bodySites": {

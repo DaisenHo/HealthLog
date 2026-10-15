@@ -26,6 +26,7 @@
  * external-assistant boundary.
  */
 import { prisma } from "@/lib/db";
+import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { resolveMedicationCategories } from "@/lib/medication-category";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
@@ -397,13 +398,35 @@ async function completeMetric(
 async function userAnalytes(ctx: McpAuthContext): Promise<string[]> {
   // A switched-off labs module lists and completes nothing (v1.39.3).
   if (!(await isModuleEnabled(ctx.userId, "labs"))) return [];
-  const rows = await prisma.labResult.findMany({
-    where: { userId: ctx.userId, deletedAt: null },
-    select: { analyte: true },
-    distinct: ["analyte"],
-    take: 200,
-  });
-  return rows.map((r) => r.analyte);
+  // One name per marker (v1.43): readings filed under a biomarker list as the
+  // marker's name, whatever each report printed, so two spellings merged into
+  // one marker are one resource. A legacy unlinked reading keeps its own name.
+  const [markers, unlinked] = await Promise.all([
+    prisma.biomarker.findMany({
+      where: {
+        userId: ctx.userId,
+        results: { some: { deletedAt: null } },
+      },
+      select: { name: true },
+      orderBy: { name: "asc" },
+      take: 200,
+    }),
+    prisma.labResult.findMany({
+      where: { userId: ctx.userId, deletedAt: null, biomarkerId: null },
+      select: { analyte: true },
+      distinct: ["analyte"],
+      take: 200,
+    }),
+  ]);
+  const names = new Map<string, string>();
+  for (const name of [
+    ...markers.map((m) => m.name),
+    ...unlinked.map((r) => r.analyte),
+  ]) {
+    const key = name.trim().toLowerCase();
+    if (!names.has(key)) names.set(key, name);
+  }
+  return [...names.values()].slice(0, 200);
 }
 
 async function completeAnalyte(
@@ -514,7 +537,12 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
       if (!(await isModuleEnabled(ctx.userId, "labs"))) {
         return MODULE_DISABLED;
       }
-      const analyte = decodeURIComponent(firstVar(variables.analyte));
+      const asked = decodeURIComponent(firstVar(variables.analyte));
+      // An alias or a catalog abbreviation reads as the marker's own name.
+      const marker = asked.trim()
+        ? await resolveMarkerForRead(ctx.userId, asked)
+        : null;
+      const analyte = marker?.name ?? asked;
       const result = await executeCoachTool({
         userId: ctx.userId,
         name: "get_labs",

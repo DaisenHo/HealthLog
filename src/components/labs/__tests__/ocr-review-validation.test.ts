@@ -28,6 +28,10 @@ function row(overrides: Partial<OcrReviewRow> = {}): OcrReviewRow {
     markerUnit: "mmol/L",
     markerAnalyteKey: null,
     duplicateOf: null,
+    biomarkerId: "bm-ldl",
+    matchKind: "name",
+    suggestions: [],
+    chosenBiomarkerId: null,
     confirmed: true,
     ...overrides,
   };
@@ -205,6 +209,9 @@ describe("a reading in another unit than its marker's", () => {
       markerUnit,
       markerAnalyteKey: null,
       duplicateOf: null,
+      biomarkerId: "bm-glucose",
+      matchKind: "name" as const,
+      suggestions: [],
     });
     const [same, other, fresh] = seedReviewRows(
       [dto("mmol/L", "mmol/L"), dto("mmol/L", "mg/dL"), dto("mmol/L", null)],
@@ -271,6 +278,9 @@ describe("a reading in another unit that can be converted", () => {
       markerUnit: "mg/dL",
       markerAnalyteKey: "fasting-glucose",
       duplicateOf: null,
+      biomarkerId: "bm-glucose",
+      matchKind: "name" as const,
+      suggestions: [],
     };
     const [converts, blocked] = seedReviewRows(
       [dto, { ...dto, markerAnalyteKey: null }],

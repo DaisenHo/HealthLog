@@ -125,6 +125,41 @@ describe("paged link picker", () => {
     expect(html).toContain('data-slot="labs-add"');
   });
 
+  it("names the period a date term searches, and does not filter its answer by the digits", () => {
+    const html = render(
+      <EntityLinkPicker
+        {...base}
+        options={loaded}
+        selected={[]}
+        server={server({
+          term: "03.2019",
+          filterLocally: true,
+          period: {
+            year: 2019,
+            month: 3,
+            fromDay: "2019-03-01",
+            toDay: "2019-03-31",
+          },
+        })}
+      />,
+    );
+    expect(html).toContain('data-slot="labs-period"');
+    expect(html).toContain("Showing March 2019");
+    expect(html).toContain('data-slot="labs-option"');
+  });
+
+  it("shows no period line for a plain term", () => {
+    const html = render(
+      <EntityLinkPicker
+        {...base}
+        options={loaded}
+        selected={[]}
+        server={server({ term: "metabolic" })}
+      />,
+    );
+    expect(html).not.toContain('data-slot="labs-period"');
+  });
+
   it("does not filter a server answer again by the term", () => {
     // The route matched on the panel name; the option does not render it.
     const html = render(

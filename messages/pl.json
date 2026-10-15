@@ -9624,12 +9624,16 @@
         "apob": "Apolipoproteina B to białko strukturalne obecne na każdej z aterogennych cząstek lipoprotein, więc jej pomiar zlicza te cząstki bezpośrednio, a nie cholesterol, który przenoszą. Ponieważ na każdej cząstce LDL, VLDL i pokrewnej znajduje się jedna cząsteczka ApoB, może ona wychwycić ryzyko sercowo-naczyniowe, które umyka wartości cholesterolu LDL, zwłaszcza gdy liczba cząstek i ich zawartość cholesterolu się rozchodzą. Z tego powodu coraz częściej używa się jej do uściślenia oceny ryzyka opartej na lipidach. Interpretuje się ją wraz ze zwykłym profilem lipidowym.",
         "lp-a": "Lipoproteina(a) to cząstka podobna do LDL z dodatkowo przyłączonym białkiem, której poziom jest w dużej mierze uwarunkowany genetycznie i pozostaje dość stabilny przez całe życie. Podwyższona Lp(a) jest niezależnym, dziedzicznym czynnikiem ryzyka chorób sercowo-naczyniowych i zwężenia zastawki aortalnej. Ponieważ niewiele się zmienia, zwykle oznacza się ją raz, aby ustalić ryzyko danej osoby na całe życie, a nie śledzić wielokrotnie. Podaje się ją w jednostkach molowych i odczytuje w ramach całościowego ryzyka sercowo-naczyniowego.",
         "fasting-insulin": "Insulina na czczo to poziom insuliny (hormonu, który przenosi glukozę z krwi do komórek) mierzony po nocnym poście. W połączeniu z glukozą na czczo pomaga oszacować insulinooporność, czyli stan, w którym organizm potrzebuje więcej insuliny, aby utrzymać glukozę w zakresie. Wysoka insulina na czczo przy prawidłowej glukozie może być wczesnym znakiem, że ta kompensacja jest w toku. Odczytuje się ją w ramach obrazu zdrowia metabolicznego, a nie w oderwaniu.",
-        "omega-3-index": "Indeks omega-3 to udział EPA i DHA (dwóch długołańcuchowych morskich kwasów tłuszczowych omega-3) wśród kwasów tłuszczowych błon czerwonych krwinek. Ponieważ czerwone krwinki odnawiają się powoli, odzwierciedla on długoterminowe spożycie omega-3, a nie niedawny posiłek. Wyższy indeks wiązano w badaniach obserwacyjnych z niższym ryzykiem sercowo-naczyniowym. Śledzi się go jako stabilny marker stanu omega-3, który reaguje na dietę w ciągu miesięcy."
+        "omega-3-index": "Indeks omega-3 to udział EPA i DHA (dwóch długołańcuchowych morskich kwasów tłuszczowych omega-3) wśród kwasów tłuszczowych błon czerwonych krwinek. Ponieważ czerwone krwinki odnawiają się powoli, odzwierciedla on długoterminowe spożycie omega-3, a nie niedawny posiłek. Wyższy indeks wiązano w badaniach obserwacyjnych z niższym ryzykiem sercowo-naczyniowym. Śledzi się go jako stabilny marker stanu omega-3, który reaguje na dietę w ciągu miesięcy.",
+        "alkaline-phosphatase": "Fosfataza alkaliczna (ALP) to enzym występujący głównie w wątrobie, drogach żółciowych i kościach. Rośnie przy utrudnionym odpływie żółci oraz w okresach aktywnej przebudowy kości, na przykład podczas wzrostu u dzieci i młodzieży albo gojenia złamania. Ponieważ uwalniają ją oba narządy, podwyższony wynik czyta się zwykle razem z GGTP i pozostałymi próbami wątrobowymi, aby odróżnić przyczynę wątrobową od kostnej. Należy do standardowych prób wątrobowych.",
+        "bilirubin-total": "Bilirubina całkowita to żółty produkt rozpadu hemoglobiny ze zużytych czerwonych krwinek, mierzony jako suma jej postaci niesprzężonej i sprzężonej. Wątroba ją wychwytuje, sprzęga i wydala z żółcią, więc jej poziom pokazuje, jak działa ta droga. Może rosnąć przy chorobach wątroby, zablokowanych drogach żółciowych lub nasilonym rozpadzie czerwonych krwinek, a nieszkodliwie w zespole Gilberta. Odczytuje się ją razem z pozostałymi próbami wątrobowymi."
       },
       "apob": "Apolipoproteina B (ApoB)",
       "lp-a": "Lipoproteina(a)",
       "fasting-insulin": "Insulina na czczo",
-      "omega-3-index": "Indeks omega-3"
+      "omega-3-index": "Indeks omega-3",
+      "alkaline-phosphatase": "Fosfataza alkaliczna (ALP)",
+      "bilirubin-total": "Bilirubina całkowita"
     },
     "noteLoadFailed": "Nie udało się wczytać notatki; pozostanie niezmieniona po zapisaniu.",
     "showingLatestOf": "Wyświetlanie najnowszych {shown} z {total} wyników",
@@ -9703,6 +9707,54 @@
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}",
       "printed": "wydrukowano w {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "według nazwy, którą wybrałeś wcześniej",
+      "viaCatalog": "rozpoznano jako popularny skrót",
+      "chooseLabel": "Należy do",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Nowy biomarker",
+      "rememberHint": "Ta nazwa zostanie zapamiętana na następny wynik.",
+      "chooseHint": "Wybierz biomarker, jeśli już go śledzisz."
+    },
+    "aliases": {
+      "title": "Zapisywany też jako",
+      "taken": "{alias} należy już do innego biomarkera.",
+      "saveError": "Nie udało się zapisać nazw. Spróbuj ponownie.",
+      "remove": "Usuń {alias}",
+      "empty": "Dodaj nazwy, które inne laboratoria drukują dla {name}, aby ich wyniki trafiały tutaj.",
+      "placeholder": "np. ALP",
+      "addLabel": "Inna nazwa tego biomarkera",
+      "add": "Dodaj",
+      "alsoWritten": "Zapisywany też jako {aliases}"
+    },
+    "merge": {
+      "open": "Scal",
+      "title": "Scal biomarkery",
+      "description": "Połącz biomarkery, które są tym samym badaniem zapisanym inaczej.",
+      "pickHint": "Zaznacz co najmniej dwa biomarkery.",
+      "keepLabel": "Zachowaj",
+      "keepHint": "Pozostałe zostaną włączone do tego, a ich nazwy staną się jego innymi nazwami.",
+      "showPreview": "Pokaż podgląd",
+      "back": "Wstecz",
+      "confirm": "Scal teraz",
+      "previewSummaryOne": "{count} pomiar przechodzi do {name} ({unit}).",
+      "previewSummaryFew": "{count} pomiary przechodzą do {name} ({unit}).",
+      "previewSummaryOther": "{count} pomiarów przechodzi do {name} ({unit}).",
+      "movesOne": "{count} pomiar, już w tej samej jednostce",
+      "movesFew": "{count} pomiary, już w tej samej jednostce",
+      "movesOther": "{count} pomiarów, już w tej samej jednostce",
+      "convertedOne": "{count} pomiar, przeliczony z {unit} na {targetUnit}",
+      "convertedFew": "{count} pomiary, przeliczone z {unit} na {targetUnit}",
+      "convertedOther": "{count} pomiarów, przeliczonych z {unit} na {targetUnit}",
+      "refused": "Nie można przeliczyć {unit} na {targetUnit}.",
+      "aliasesAdded": "Te nazwy będą prowadzić do zachowanego biomarkera:",
+      "blocked": "Nic nie zostanie scalone, dopóki jednej jednostki nie da się przeliczyć. Pomiń ten biomarker albo zachowaj inny.",
+      "noUndo": "Scalenia nie można cofnąć.",
+      "doneToastOne": "Scalono w {name}, przeniesiono {count} pomiar",
+      "doneToastFew": "Scalono w {name}, przeniesiono {count} pomiary",
+      "doneToastOther": "Scalono w {name}, przeniesiono {count} pomiarów",
+      "error": "Nie udało się scalić biomarkerów. Spróbuj ponownie."
     }
   },
   "modules": {
@@ -11142,7 +11194,8 @@
       "extractEmpty": "Z tego dokumentu nie udało się odczytać żadnych wartości.",
       "failUnitRequired": "Wartość liczbowa potrzebuje jednostki, zanim będzie można ją zapisać.",
       "failUnitMismatch": "Podana jednostka nie zgadza się z zapisaną jednostką tego wskaźnika. Popraw ją i zakończ przegląd ponownie.",
-      "failGeneric": "Nie udało się zapisać tej wartości."
+      "failGeneric": "Nie udało się zapisać tej wartości.",
+      "failUnknownBiomarker": "Wybrany biomarker już nie istnieje. Wybierz inny."
     },
     "contentIndex": {
       "indexPrompt": "Udostępnij treść dokumentów do wyszukiwania.",
@@ -12028,7 +12081,8 @@
       "customVaccineDelete": "{name} usunął własną szczepionkę",
       "lifeEventCreate": "{name} dodał wydarzenie życiowe",
       "lifeEventUpdate": "{name} zmienił wydarzenie życiowe",
-      "lifeEventDelete": "{name} usunął wydarzenie życiowe"
+      "lifeEventDelete": "{name} usunął wydarzenie życiowe",
+      "biomarkerMerge": "{name} scalił biomarkery"
     },
     "section": {
       "measurements": {
@@ -12247,7 +12301,10 @@
       "removed": "Odłączono: {name}",
       "linked": "Połączone",
       "loadNewer": "Wczytaj nowsze",
-      "loadOlder": "Wczytaj starsze"
+      "loadOlder": "Wczytaj starsze",
+      "period": {
+        "showing": "Okres: {period}"
+      }
     }
   },
   "bodySites": {

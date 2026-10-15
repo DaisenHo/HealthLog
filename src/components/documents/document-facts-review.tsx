@@ -26,6 +26,7 @@
  */
 import { useCalendarDate } from "@/hooks/use-calendar-date";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FlaskConical, Loader2, ScanSearch } from "lucide-react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -36,7 +37,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MarkerMatchField } from "@/components/labs/marker-match-field";
+import type { BiomarkerListResponse } from "@/components/labs/types";
+import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type {
   ConditionFactData,
@@ -62,6 +67,8 @@ function commitFailureKey(reason: string): string {
       return "documents.review.failUnitRequired";
     case "observation.unitMismatch":
       return "documents.review.failUnitMismatch";
+    case "observation.unknownBiomarker":
+      return "documents.review.failUnknownBiomarker";
     default:
       return "documents.review.failGeneric";
   }
@@ -203,6 +210,9 @@ function FactRow({
   checked,
   onCheckedChange,
   failure,
+  chosenBiomarkerId,
+  onChooseBiomarker,
+  markerName,
 }: {
   documentId: string;
   fact: ExtractedFactDto;
@@ -210,6 +220,11 @@ function FactRow({
   onCheckedChange: (checked: boolean) => void;
   /** A per-fact commit refusal from the last confirm attempt, or null. */
   failure: string | null;
+  /** v1.43 — the suggestion the person picked for a lab value, or null. */
+  chosenBiomarkerId: string | null;
+  onChooseBiomarker: (biomarkerId: string | null) => void;
+  /** The account's marker name by id, for the matched marker. */
+  markerName: (biomarkerId: string) => string | null;
 }) {
   const { t } = useTranslations();
   const calendarDate = useCalendarDate();
@@ -265,6 +280,25 @@ function FactRow({
             {typeLabel}
             {date ? `, ${calendarDate(date)}` : ""}
           </p>
+          {isObservation &&
+          (fact.biomarkerId !== undefined ||
+            (fact.suggestions?.length ?? 0) > 0) ? (
+            <MarkerMatchField
+              matchedName={
+                fact.biomarkerId
+                  ? (markerName(fact.biomarkerId) ??
+                    (fact.data as ObservationFactData).label)
+                  : null
+              }
+              matchKind={fact.matchKind ?? null}
+              suggestions={fact.suggestions ?? []}
+              chosenId={chosenBiomarkerId}
+              onChoose={(suggestion) =>
+                onChooseBiomarker(suggestion?.biomarkerId ?? null)
+              }
+              slot="document-fact-marker"
+            />
+          ) : null}
           {isObservation && (fact.data as ObservationFactData).referenceText ? (
             <p className="text-muted-foreground text-xs break-words">
               {t("documents.review.statedRange", {
@@ -461,6 +495,18 @@ export function DocumentFactsSection({
   // until it is verified (which checks it).
   const [included, setIncluded] = useState<Record<string, boolean>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
+  // v1.43 — the marker the person picked per lab value, keyed by fact.
+  const [chosen, setChosen] = useState<Record<string, string | null>>({});
+  const hasObservations = doc.facts.some(
+    (fact) => fact.factType === "OBSERVATION" && fact.status === "PENDING",
+  );
+  const markers = useQuery({
+    queryKey: queryKeys.biomarkers(),
+    queryFn: () => apiGet<BiomarkerListResponse>("/api/biomarkers"),
+    enabled: canManage && hasObservations && open,
+  });
+  const markerName = (id: string) =>
+    markers.data?.biomarkers.find((m) => m.id === id)?.name ?? null;
 
   const pending = doc.facts.filter((fact) => fact.status === "PENDING");
   const approvedCount = doc.facts.filter(
@@ -483,6 +529,7 @@ export function DocumentFactsSection({
     const decisions = decidable.map((fact) => ({
       factId: fact.id,
       action: isChecked(fact) ? ("approve" as const) : ("reject" as const),
+      ...(chosen[fact.id] ? { biomarkerId: chosen[fact.id] as string } : {}),
     }));
     confirmFacts.mutate(
       { documentId: doc.id, decisions },
@@ -567,6 +614,11 @@ export function DocumentFactsSection({
                     checked={isChecked(fact)}
                     onCheckedChange={(checked) => setChecked(fact.id, checked)}
                     failure={failures[fact.id] ?? null}
+                    chosenBiomarkerId={chosen[fact.id] ?? null}
+                    onChooseBiomarker={(id) =>
+                      setChosen((prev) => ({ ...prev, [fact.id]: id }))
+                    }
+                    markerName={markerName}
                   />
                 ))}
               </ul>

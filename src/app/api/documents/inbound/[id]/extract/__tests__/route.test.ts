@@ -51,6 +51,7 @@ vi.mock("@/lib/documents/store", () => ({
   encryptFactData: vi.fn(() => new Uint8Array([1])),
   encryptFactProvenance: vi.fn(() => new Uint8Array([2])),
   serialiseDocumentDetail: vi.fn(() => ({ id: "doc-1", facts: [] })),
+  markerIndexForFacts: vi.fn(async () => null),
 }));
 vi.mock("@/lib/documents/content-index", () => ({
   loadDocumentChatText: vi.fn(),

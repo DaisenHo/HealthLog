@@ -100,7 +100,12 @@ async function confirmDocument(
     }
 
     try {
-      const ref = await commitApprovedFact(user.id, fact);
+      // v1.43 (D1223) — an OBSERVATION may name the marker the person chose
+      // on the review screen; the label is then remembered as its alias.
+      const ref = await commitApprovedFact(user.id, fact, {
+        biomarkerId: decision.biomarkerId,
+        rememberAlias: decision.rememberAlias,
+      });
       await prisma.extractedFact.update({
         where: { id: fact.id },
         data: {

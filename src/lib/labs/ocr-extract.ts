@@ -29,6 +29,11 @@ import {
   parseReferenceRange,
 } from "@/lib/labs/parse-reference-range";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
+import {
+  loadMarkerIndex,
+  matchForReview,
+  type MarkerIndex,
+} from "@/lib/labs/biomarker-resolve";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -138,16 +143,18 @@ export async function annotateRow(
   row: ExtractedRow,
   reportDate: string | null,
   tz: string,
+  /** The account's markers and aliases, loaded once per extraction. */
+  markerIndex?: MarkerIndex,
 ): Promise<OcrExtractedRowDto> {
   const analyte = row.analyte.trim();
   const takenAt = normaliseDate(row.takenAt) ?? reportDate;
   const printed = parseReferenceRange(row.referenceText, row.unit);
 
-  // Biomarker match — case-insensitive on the catalog identity, presence-only.
-  const existingBiomarker = await prisma.biomarker.findFirst({
-    where: { userId, name: { equals: analyte, mode: "insensitive" } },
-    select: { id: true, name: true, unit: true },
-  });
+  // v1.43 (D1223) — the marker this name resolves to (name, alias, catalog),
+  // exactly as the commit resolves it, or up to three to choose from.
+  const index = markerIndex ?? (await loadMarkerIndex(prisma, userId));
+  const { match, suggestions } = matchForReview(index, analyte, row.unit);
+  const existingBiomarker = match?.marker ?? null;
   // The analyte the marker is, so the review can say whether a row in another
   // unit converts. Derived from the name and unit exactly as the commit derives
   // it (a stored key is only that derivation, written down), so the review and
@@ -171,7 +178,12 @@ export async function annotateRow(
       where: {
         userId,
         deletedAt: null,
-        analyte: { equals: analyte, mode: "insensitive" },
+        // The printed name, or any reading already filed under the marker it
+        // resolves to: an earlier report may have spelled it another way.
+        OR: [
+          { analyte: { equals: analyte, mode: "insensitive" } },
+          ...(existingBiomarker ? [{ biomarkerId: existingBiomarker.id }] : []),
+        ],
         takenAt: labReadingDaySearchRange(takenAt),
       },
       select: {
@@ -235,6 +247,9 @@ export async function annotateRow(
     markerUnit: existingBiomarker?.unit ?? null,
     markerAnalyteKey,
     duplicateOf,
+    biomarkerId: existingBiomarker?.id ?? null,
+    matchKind: match?.matchKind ?? null,
+    suggestions,
   };
 }
 
@@ -322,11 +337,12 @@ export async function runOcrExtraction(
   // hearing about it. A count only: the string is the user's document.
   let unreadableRanges = 0;
   const tz = await resolveUserTimezone(args.userId);
+  const markerIndex = await loadMarkerIndex(prisma, args.userId);
   for (const row of envelope.rows.slice(0, OCR_MAX_ROWS)) {
     if (isUnreadableRange(parseReferenceRange(row.referenceText, row.unit))) {
       unreadableRanges += 1;
     }
-    rows.push(await annotateRow(args.userId, row, reportDate, tz));
+    rows.push(await annotateRow(args.userId, row, reportDate, tz, markerIndex));
   }
 
   annotate({
@@ -337,6 +353,8 @@ export async function runOcrExtraction(
       rows: rows.length,
       duplicates: rows.filter((r) => r.duplicateOf !== null).length,
       newBiomarkers: rows.filter((r) => r.biomarkerMatch === "new").length,
+      aliasMatches: rows.filter((r) => r.matchKind === "alias").length,
+      catalogMatches: rows.filter((r) => r.matchKind === "catalog").length,
       unreadableRanges,
     },
   });

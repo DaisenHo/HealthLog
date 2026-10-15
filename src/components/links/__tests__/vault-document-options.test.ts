@@ -113,6 +113,8 @@ describe("fetchVaultPage", () => {
         pivot: "2026-05-17T23:59:59.999Z",
         term: "",
         cursor: "z",
+        locale: "en",
+        timeZone: "UTC",
       });
       expect(page.items.map((d) => d.id)).toEqual(["a"]);
       expect(page.next).toBe("a");

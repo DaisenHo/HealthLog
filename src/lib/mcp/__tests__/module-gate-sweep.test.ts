@@ -51,6 +51,7 @@ vi.mock("@/lib/db", () => ({
       })),
     },
     labResult: { findMany: vi.fn(async () => [{ analyte: "LDL" }]) },
+    biomarker: { findMany: vi.fn(async () => []) },
     encounter: {
       findMany: vi.fn(async () => [
         {

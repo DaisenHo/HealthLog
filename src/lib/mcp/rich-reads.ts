@@ -31,6 +31,7 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
+import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
@@ -1400,18 +1401,33 @@ export async function getLabHistory(
       : LAB_HISTORY_MAX_LIMIT;
   const limit = Math.min(LAB_HISTORY_MAX_LIMIT, rawLimit);
 
-  // Match the analyte either on the LabResult's own `analyte` column or on the
-  // linked Biomarker's canonical name. `take: limit + 1` peeks one row past the
-  // page to decide whether a `nextCursor` is warranted. Field-by-field `where`.
+  // A name that resolves to one marker (its name, an alias of the account, a
+  // catalog abbreviation) reads that marker's whole series, merged spellings
+  // included (v1.43). Anything else matches the analyte either on the
+  // LabResult's own `analyte` column, on the linked Biomarker's canonical name
+  // or on one of its aliases. `take: limit + 1` peeks one row past the page to
+  // decide whether a `nextCursor` is warranted. Field-by-field `where`.
+  const marker = await resolveMarkerForRead(userId, needle);
   const rows = await prisma.labResult.findMany({
-    where: {
-      userId,
-      deletedAt: null,
-      OR: [
-        { analyte: { contains: needle, mode: "insensitive" } },
-        { biomarker: { name: { contains: needle, mode: "insensitive" } } },
-      ],
-    },
+    where: marker
+      ? { userId, deletedAt: null, biomarkerId: marker.id }
+      : {
+          userId,
+          deletedAt: null,
+          OR: [
+            { analyte: { contains: needle, mode: "insensitive" } },
+            {
+              biomarker: { name: { contains: needle, mode: "insensitive" } },
+            },
+            {
+              biomarker: {
+                aliases: {
+                  some: { name: { contains: needle, mode: "insensitive" } },
+                },
+              },
+            },
+          ],
+        },
     orderBy: { takenAt: "desc" },
     skip: offset,
     take: limit + 1,

@@ -51,6 +51,11 @@ export interface OcrCommitRowInput {
   referenceHigh?: number;
   referenceText?: string;
   takenAt: string;
+  /**
+   * v1.43 — the marker the person chose on the review screen; the server then
+   * remembers the analyte as its alias. Absent for an automatic match.
+   */
+  biomarkerId?: string;
 }
 
 export interface OcrCommitResult extends OcrCommitResponseDto {

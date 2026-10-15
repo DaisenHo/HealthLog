@@ -29,7 +29,6 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
-  notImplementedResponse,
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
@@ -85,6 +84,14 @@ const listResponse = z
 const conflict = {
   "409": {
     description: "A biomarker with this name already exists for the caller.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+};
+
+const updateConflict = {
+  "409": {
+    description:
+      "`labs.biomarker.duplicate`: a rename collides with another of the caller's markers. `labs.biomarker.alias.taken` (v1.43): one of `aliases` is already the name or an alias of another marker; `meta.alias` names the spelling and `meta.biomarkerId` the marker that answers to it.",
     content: { "application/json": { schema: errorEnvelope } },
   },
 };
@@ -184,7 +191,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Labs"],
       summary: "Fetch a single biomarker",
       description:
-        "Returns the biomarker including its decrypted `context`. Cross-user rows surface as 404.",
+        "Returns the biomarker including its decrypted `context` and, since v1.43, its `aliases`. Cross-user rows surface as 404. A marker merged into another answers 404 with `meta.mergedInto`.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
         ...recordRefusal(),
@@ -204,7 +211,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Labs"],
       summary: "Edit a biomarker",
       description:
-        "Partial edit; omitted fields are untouched, an explicit null clears `context` / `panel` / a bound. Audits as `biomarker.update`. Since v1.40.0 a `unit` different from the stored one is refused with 422 `biomarkers.unit.locked` while any reading is linked to the marker (`meta.readingCount` carries how many): readers label every linked reading with the marker's unit, so a change would relabel stored numbers without converting them. Sending the current unit, or changing it on a marker with no readings, is accepted.",
+        "Partial edit; omitted fields are untouched, an explicit null clears `context` / `panel` / a bound. Since v1.43 `aliases` (0..50, each 1..120 characters) replaces the marker's set of other spellings: listed spellings stay or are added, unlisted ones are removed; omitting the field leaves them as they are. Audits as `biomarker.update`. Since v1.40.0 a `unit` different from the stored one is refused with 422 `biomarkers.unit.locked` while any reading is linked to the marker (`meta.readingCount` carries how many): readers label every linked reading with the marker's unit, so a change would relabel stored numbers without converting them. Sending the current unit, or changing it on a marker with no readings, is accepted.",
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,
@@ -220,7 +227,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        ...conflict,
+        ...updateConflict,
         ...notFound,
         ...stdResponses,
       },
@@ -263,8 +270,10 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
       responses: {
         ...idempotentWrite(),
+        ...recordRefusal(),
         "200": {
-          description: "The merge result (or the dry-run preview).",
+          description:
+            'The merge result, or the dry-run preview. A preview reports a source that cannot be converted with `conversion: "refused"` and its `refusal`; the same request without `dryRun` answers 422 `labs.biomarker.merge.unitMismatch`.',
           content: {
             "application/json": {
               schema: dataEnvelope(
@@ -276,8 +285,12 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...notFound,
         ...stdResponses,
+        "422": {
+          description:
+            "`labs.biomarker.merge.invalid`: a malformed body, or the target among the sources (Zod issues in `details.issues[]`). `labs.biomarker.merge.unitMismatch`: a source holds readings in a unit the registry cannot convert to the target's; `meta.sources` lists each `{ id, unit, targetUnit, reason }` with `reason` one of `unknown_analyte`, `unknown_unit`, `not_finite`. Nothing was moved.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         ...recordWriteRateLimitResponse,
-        ...notImplementedResponse,
       },
     },
   },

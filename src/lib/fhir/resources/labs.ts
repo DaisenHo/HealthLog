@@ -35,9 +35,9 @@ export function labObservations(
   const observations: FhirObservation[] = [];
 
   for (const lab of data.labResults ?? []) {
-    // Forward-compat: when the DTO carries a resolved canonical analyte name,
-    // thread it as the third arg so the catalog name wins over the free-text
-    // `analyte`. Absent today.
+    // `analyte` is the marker's own name (v1.43): readings of one biomarker
+    // are one Observation whatever each report printed, so two spellings
+    // merged into one marker never reach a receiver as two analytes.
     const coding = resolveLabCoding(lab.analyte, lab.unit);
     const text = lab.panel ? `${lab.analyte} (${lab.panel})` : lab.analyte;
     const code = coding

@@ -244,6 +244,8 @@ const COUNT_BACK: Record<
   MoodTag: (p, userId) => p.moodTag.count({ where: { userId } }),
   LabResult: (p, userId) => p.labResult.count({ where: { userId } }),
   Biomarker: (p, userId) => p.biomarker.count({ where: { userId } }),
+  BiomarkerAlias: (p, userId) => p.biomarkerAlias.count({ where: { userId } }),
+  BiomarkerMerge: (p, userId) => p.biomarkerMerge.count({ where: { userId } }),
   Allergy: (p, userId) => p.allergy.count({ where: { userId } }),
   FamilyHistoryEntry: (p, userId) =>
     p.familyHistoryEntry.count({ where: { userId } }),
@@ -737,6 +739,26 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
 
   const biomarker = await prisma.biomarker.create({
     data: { userId: OWNER_ID, name: "Ferritin", unit: "ng/mL" },
+  });
+  // Another spelling of the marker, and the ledger row of a marker that was
+  // merged into it: both ride the marker (D1223).
+  await prisma.biomarkerAlias.create({
+    data: {
+      userId: OWNER_ID,
+      biomarkerId: biomarker.id,
+      name: "Ferr.",
+      nameFolded: "ferr.",
+      source: "IMPORT_CHOICE",
+    },
+  });
+  await prisma.biomarkerMerge.create({
+    data: {
+      userId: OWNER_ID,
+      targetBiomarkerId: biomarker.id,
+      sourceBiomarkerId: "merged-away-marker",
+      sourceName: "Ferritin (Serum)",
+      readingCount: 3,
+    },
   });
   const labResult = await prisma.labResult.create({
     data: {

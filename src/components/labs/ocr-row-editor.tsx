@@ -15,13 +15,7 @@
  */
 import { useId } from "react";
 
-import {
-  AlertCircle,
-  FilePlus2,
-  Link2,
-  Ruler,
-  TriangleAlert,
-} from "lucide-react";
+import { AlertCircle, Ruler, TriangleAlert } from "lucide-react";
 
 import { FieldError } from "@/components/forms/field-error";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
 
-import type { OcrReviewRow } from "./ocr-review-types";
+import { MarkerMatchField } from "./marker-match-field";
+import { chooseMarker, type OcrReviewRow } from "./ocr-review-types";
 import {
   readingConversion,
   readingUnitBlocked,
@@ -55,9 +50,18 @@ export function OcrRowEditor({
   row,
   onChange,
   errors,
+  markerLookup = () => null,
 }: {
   row: OcrReviewRow;
   onChange: (next: OcrReviewRow) => void;
+  /**
+   * The account's marker by id, for the matched marker's name and the
+   * analyte a chosen suggestion converts with. Absent: names fall back to the
+   * printed analyte.
+   */
+  markerLookup?: (
+    biomarkerId: string,
+  ) => { name: string; analyteKey: string | null } | null;
   /** The blocking fields of this row, once a save has been attempted. */
   errors?: OcrRowErrors;
 }) {
@@ -151,26 +155,29 @@ export function OcrRowEditor({
               className="font-medium"
             />
             {fieldError("analyte", "labs.ocr.errorAnalyte")}
+            {/* v1.43 (D1223) — the marker this value goes to: the server's
+                match, or a choice between its suggestions and a new one. */}
+            <MarkerMatchField
+              matchedName={
+                row.biomarkerId !== null
+                  ? (markerLookup(row.biomarkerId)?.name ?? row.analyte)
+                  : null
+              }
+              matchKind={row.matchKind}
+              suggestions={row.suggestions}
+              chosenId={row.chosenBiomarkerId}
+              onChoose={(suggestion) =>
+                onChange(
+                  chooseMarker(
+                    row,
+                    suggestion,
+                    (id) => markerLookup(id)?.analyteKey ?? null,
+                  ),
+                )
+              }
+              slot="ocr-row-marker"
+            />
             <div className="flex flex-wrap items-center gap-1.5">
-              {row.biomarkerMatch === "existing" ? (
-                // The chip repeats the analyte, so a long panel name ran past
-                // the row on a phone; it truncates inside the row instead.
-                <Badge
-                  variant="outline"
-                  className="text-muted-foreground max-w-full"
-                  title={t("labs.ocr.linksExisting", { name: row.analyte })}
-                >
-                  <Link2 aria-hidden />
-                  <span className="truncate">
-                    {t("labs.ocr.linksExisting", { name: row.analyte })}
-                  </span>
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                  <FilePlus2 aria-hidden />
-                  {t("labs.ocr.newBiomarker")}
-                </Badge>
-              )}
               {row.duplicateOf ? (
                 <Badge variant="secondary">
                   <TriangleAlert aria-hidden />

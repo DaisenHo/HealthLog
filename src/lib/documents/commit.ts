@@ -27,7 +27,11 @@ import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { decryptFactData } from "@/lib/documents/store";
-import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
+import { rememberImportAlias } from "@/lib/labs/biomarker-aliases";
+import {
+  resolveOrMintBiomarker,
+  type MintedBiomarker,
+} from "@/lib/labs/biomarker-store";
 import { readingInMarkerUnit } from "@/lib/labs/reading-conversion";
 import {
   isUnreadableRange,
@@ -67,9 +71,19 @@ function statedDateOrNow(date: string | null): Date {
   return new Date();
 }
 
+/**
+ * v1.43 (D1223) — the marker the person picked for an OBSERVATION on the
+ * review screen, and whether to remember the label as its alias.
+ */
+export interface ObservationChoice {
+  biomarkerId?: string;
+  rememberAlias?: boolean;
+}
+
 async function commitObservation(
   userId: string,
   data: ObservationFactData,
+  choice: ObservationChoice = {},
 ): Promise<CommittedRecordRef> {
   const isQualitative = typeof data.value !== "number";
   // A numeric reading needs a unit so the catalog has something to mint with —
@@ -121,13 +135,41 @@ async function commitObservation(
     });
   }
 
-  const biomarker = await resolveOrMintBiomarker(userId, {
-    analyte: data.label,
-    unit: isQualitative ? (data.unit ?? "") : (data.unit as string),
-    referenceLow: isQualitative ? null : sourceLow,
-    referenceHigh: isQualitative ? null : sourceHigh,
-    panel: null,
-  });
+  // The marker the person chose wins; otherwise the label resolves through
+  // the account's names, aliases and the catalog, or a marker is minted.
+  let biomarker: MintedBiomarker;
+  if (choice.biomarkerId) {
+    const chosen = await prisma.biomarker.findFirst({
+      where: { id: choice.biomarkerId, userId },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        lowerBound: true,
+        upperBound: true,
+        panel: true,
+        analyteKey: true,
+      },
+    });
+    if (!chosen) {
+      throw new FactCommitError(
+        "observation.unknownBiomarker",
+        "The chosen marker does not exist",
+      );
+    }
+    if (choice.rememberAlias !== false) {
+      await rememberImportAlias(prisma, userId, chosen, data.label);
+    }
+    biomarker = chosen;
+  } else {
+    biomarker = await resolveOrMintBiomarker(userId, {
+      analyte: data.label,
+      unit: isQualitative ? (data.unit ?? "") : (data.unit as string),
+      referenceLow: isQualitative ? null : sourceLow,
+      referenceHigh: isQualitative ? null : sourceHigh,
+      panel: null,
+    });
+  }
   // A unit that differs from an EXISTING marker's is converted when the
   // marker's analyte is known and the registry has the pair (a document states
   // "6.1 mmol/L" against a marker stored in mg/dL), keeping what the document
@@ -274,12 +316,13 @@ async function commitMedication(
 export async function commitApprovedFact(
   userId: string,
   fact: ExtractedFact,
+  choice: ObservationChoice = {},
 ): Promise<CommittedRecordRef> {
   // Decrypt the staged payload at confirm time to write it into the normal
   // structured store. Fail-closed: a bad key id throws and aborts the commit.
   const data = decryptFactData(fact.dataEncrypted);
   if (fact.factType === "OBSERVATION") {
-    return commitObservation(userId, data as ObservationFactData);
+    return commitObservation(userId, data as ObservationFactData, choice);
   }
   if (fact.factType === "CONDITION") {
     return commitCondition(userId, data as ConditionFactData);

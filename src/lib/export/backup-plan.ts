@@ -576,6 +576,14 @@ export const TWO_ENDED_MODELS = [
   // questionnaire over every module decision taken in Settings since. It is
   // carried and asserted, not defaulted.
   "OnboardingRecord",
+  // v1.43 (D1223) — a marker's other spellings ride on the marker as
+  // `aliases[]`, and the merge ledger travels as its own list whose target is
+  // resolved by id or by name like a lab result's marker. Without the aliases a
+  // restored account is asked again at the next scan which marker each
+  // spelling belongs to; without the ledger a link to a merged marker reads as
+  // a plain 404 instead of leading to the marker it went into.
+  "BiomarkerAlias",
+  "BiomarkerMerge",
 ] as const;
 
 /** One model claimed to travel both ways. */
@@ -614,10 +622,6 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
   // v1.43 — the new tables are declared here with the schema and move to
   // TWO_ENDED_MODELS when their section writer and restore branch land.
-  BiomarkerAlias:
-    "Every other spelling a marker answers to: the names folded in by a merge, the choices made at a scan or a document import, the ones typed on the marker. Without them a restored account asks again at the next scan which marker each spelling belongs to.",
-  BiomarkerMerge:
-    "The ledger of which markers were merged into which. Without it a link or a cached screen that still names a merged marker reads as a plain 404 instead of being sent to the marker it went into.",
   MedicationIngredient:
     "What one tablet or capsule of a supplement contains. Without it a restored account's supplements stop counting toward the day's micronutrients, and the composition has to be typed in again from the label.",
   DawarichDay:

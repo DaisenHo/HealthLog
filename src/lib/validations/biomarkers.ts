@@ -75,6 +75,10 @@ export const updateBiomarkerSchema = z
     // v1.22 — hide / unhide a marker. An omitted key leaves visibility
     // untouched; `true` drops the marker from the active list + pickers.
     hidden: z.boolean().optional(),
+    // v1.43 (D1223) — the other spellings this marker answers to, as a whole
+    // set: what is listed stays or is added, what is not is removed. Omitted
+    // leaves them untouched, so an older client's PUT keeps them.
+    aliases: z.array(z.string().trim().min(1).max(120)).max(50).optional(),
   })
   .refine(
     (d) =>

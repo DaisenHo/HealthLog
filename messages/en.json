@@ -9624,12 +9624,16 @@
         "apob": "Apolipoprotein B is the structural protein carried by each of the atherogenic lipoprotein particles, so measuring it counts those particles directly rather than the cholesterol they carry. Because one ApoB molecule sits on each LDL, VLDL, and related particle, it can capture cardiovascular risk that an LDL-cholesterol value misses, particularly when particle number and cholesterol content diverge. For this reason it is increasingly used to refine lipid-based risk assessment. It is interpreted alongside the standard lipid panel.",
         "lp-a": "Lipoprotein(a) is an LDL-like particle with an extra attached protein, and its level is largely set by genetics and stays fairly stable through life. Elevated Lp(a) is an independent, inherited risk factor for cardiovascular disease and aortic-valve narrowing. Because it changes little, it is usually measured once to establish a person's lifelong risk rather than tracked repeatedly. It is reported in molar units and read as part of overall cardiovascular risk.",
         "fasting-insulin": "Fasting insulin is the level of insulin (the hormone that moves glucose from the blood into cells) measured after an overnight fast. Paired with fasting glucose, it helps estimate insulin resistance, the state in which the body needs more insulin to keep glucose in range. A high fasting insulin alongside normal glucose can be an early sign that this compensation is under way. It is read as part of a metabolic-health picture rather than in isolation.",
-        "omega-3-index": "The omega-3 index is the share of EPA and DHA (the two long-chain marine omega-3 fatty acids) among the fatty acids in red-blood-cell membranes. Because red cells turn over slowly, it reflects long-term omega-3 intake rather than a recent meal. A higher index has been associated in observational studies with lower cardiovascular risk. It is tracked as a stable marker of omega-3 status that responds to diet over months."
+        "omega-3-index": "The omega-3 index is the share of EPA and DHA (the two long-chain marine omega-3 fatty acids) among the fatty acids in red-blood-cell membranes. Because red cells turn over slowly, it reflects long-term omega-3 intake rather than a recent meal. A higher index has been associated in observational studies with lower cardiovascular risk. It is tracked as a stable marker of omega-3 status that responds to diet over months.",
+        "alkaline-phosphatase": "Alkaline phosphatase (ALP) is an enzyme found mainly in the liver, the bile ducts and bone. It rises when bile flow is blocked and during phases of active bone building, such as growth in children and adolescents or bone healing. Because both organs release it, a raised value is usually read together with GGT and the other liver markers to tell a liver source from a bone source. It is one of the standard liver-panel markers.",
+        "bilirubin-total": "Total bilirubin is the yellow breakdown product of haemoglobin from worn-out red blood cells, measured as the sum of its unconjugated and conjugated forms. The liver takes it up, conjugates it and excretes it in bile, so the level reflects how well this pathway is working. It can rise with liver disease, blocked bile ducts or increased breakdown of red cells, and harmlessly in Gilbert's syndrome. It is read alongside the other liver markers."
       },
       "apob": "Apolipoprotein B (ApoB)",
       "lp-a": "Lipoprotein(a)",
       "fasting-insulin": "Fasting insulin",
-      "omega-3-index": "Omega-3 index"
+      "omega-3-index": "Omega-3 index",
+      "alkaline-phosphatase": "Alkaline phosphatase (ALP)",
+      "bilirubin-total": "Total bilirubin"
     },
     "noteLoadFailed": "Note could not be loaded; it will be kept unchanged when you save.",
     "showingLatestOf": "Showing the latest {shown} of {total} readings",
@@ -9703,6 +9707,54 @@
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}",
       "printed": "as printed in {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "by a name you chose before",
+      "viaCatalog": "recognised as a common abbreviation",
+      "chooseLabel": "Belongs to",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "A new biomarker",
+      "rememberHint": "This name will be remembered for the next report.",
+      "chooseHint": "Pick a biomarker if this is one you already track."
+    },
+    "aliases": {
+      "title": "Also written as",
+      "taken": "{alias} already belongs to another biomarker.",
+      "saveError": "The names could not be saved. Try again.",
+      "remove": "Remove {alias}",
+      "empty": "Add the names other labs print for {name}, so their reports land here.",
+      "placeholder": "e.g. Alk.P",
+      "addLabel": "Another name for this biomarker",
+      "add": "Add",
+      "alsoWritten": "Also written as {aliases}"
+    },
+    "merge": {
+      "open": "Merge",
+      "title": "Merge biomarkers",
+      "description": "Combine markers that are the same test written differently.",
+      "pickHint": "Select at least two biomarkers.",
+      "keepLabel": "Keep",
+      "keepHint": "The others move into this one and their names become its other names.",
+      "showPreview": "Show preview",
+      "back": "Back",
+      "confirm": "Merge now",
+      "previewSummaryOne": "{count} reading moves to {name} ({unit}).",
+      "previewSummaryFew": "{count} readings move to {name} ({unit}).",
+      "previewSummaryOther": "{count} readings move to {name} ({unit}).",
+      "movesOne": "{count} reading, already in the same unit",
+      "movesFew": "{count} readings, already in the same unit",
+      "movesOther": "{count} readings, already in the same unit",
+      "convertedOne": "{count} reading, converted from {unit} to {targetUnit}",
+      "convertedFew": "{count} readings, converted from {unit} to {targetUnit}",
+      "convertedOther": "{count} readings, converted from {unit} to {targetUnit}",
+      "refused": "{unit} cannot be converted to {targetUnit}.",
+      "aliasesAdded": "These names will lead to the kept biomarker:",
+      "blocked": "Nothing can be merged while a unit cannot be converted. Leave that biomarker out or keep another one.",
+      "noUndo": "A merge cannot be undone.",
+      "doneToastOne": "Merged into {name}, {count} reading moved",
+      "doneToastFew": "Merged into {name}, {count} readings moved",
+      "doneToastOther": "Merged into {name}, {count} readings moved",
+      "error": "The biomarkers could not be merged. Try again."
     }
   },
   "modules": {
@@ -11142,7 +11194,8 @@
       "extractEmpty": "No values could be extracted from this document.",
       "failUnitRequired": "A numeric value needs a unit before it can be saved.",
       "failUnitMismatch": "The stated unit does not match the saved unit for this marker. Adjust it, then finish the review again.",
-      "failGeneric": "This value could not be saved."
+      "failGeneric": "This value could not be saved.",
+      "failUnknownBiomarker": "The chosen biomarker no longer exists. Pick another one."
     },
     "contentIndex": {
       "indexPrompt": "Make document contents searchable.",
@@ -12028,7 +12081,8 @@
       "customVaccineDelete": "{name} removed an own vaccine",
       "lifeEventCreate": "{name} added a life event",
       "lifeEventUpdate": "{name} changed a life event",
-      "lifeEventDelete": "{name} removed a life event"
+      "lifeEventDelete": "{name} removed a life event",
+      "biomarkerMerge": "{name} merged biomarkers"
     },
     "section": {
       "measurements": {
@@ -12247,7 +12301,10 @@
       "removed": "Unlinked {name}",
       "linked": "Linked",
       "loadNewer": "Load newer",
-      "loadOlder": "Load older"
+      "loadOlder": "Load older",
+      "period": {
+        "showing": "Showing {period}"
+      }
     }
   },
   "bodySites": {

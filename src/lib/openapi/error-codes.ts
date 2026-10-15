@@ -216,9 +216,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "insights.generate.scopeChanged",
     ],
     labs: [
+      "labs.biomarker.alias.taken",
       "labs.biomarker.create.invalid",
       "labs.biomarker.duplicate",
       "labs.biomarker.merge.invalid",
+      "labs.biomarker.merge.unitMismatch",
       "labs.biomarker.notFound",
       "labs.biomarker.update.invalid",
       "labs.biomarker.update.referenceRangeInvalid",

@@ -32,7 +32,10 @@ import {
   replaceVaccinationLinks,
 } from "@/lib/documents/links";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
-import { serialiseDocumentDetail } from "@/lib/documents/store";
+import {
+  markerIndexForFacts,
+  serialiseDocumentDetail,
+} from "@/lib/documents/store";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -138,6 +141,8 @@ export const GET = apiHandler(
         thumbnail !== null,
         visitLinks.get(document.id) ?? [],
         doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
+        // v1.43 — the marker each pending lab value resolves to, or choices.
+        await markerIndexForFacts(user.id, document.facts),
       ),
     );
   },
