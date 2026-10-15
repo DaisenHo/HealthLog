@@ -156,7 +156,6 @@ export function redactSupportText(
 export function supportLine(value: unknown, max = 80): string {
   if (typeof value !== "string" && typeof value !== "number") return "";
   const folded = String(value)
-    // eslint-disable-next-line no-control-regex
     .replace(/[\u0000-\u001f\u007f]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
