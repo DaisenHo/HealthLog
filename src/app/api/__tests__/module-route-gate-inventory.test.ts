@@ -252,6 +252,11 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/labs/restore/route.ts",
   "src/app/api/biomarkers/route.ts",
   "src/app/api/biomarkers/[id]/route.ts",
+  // v1.43 — merging markers and filing a reading against its report or visit
+  // are the same row-store operations: the history and its links must stay
+  // consistent while the Labs surface is hidden.
+  "src/app/api/biomarkers/[id]/merge/route.ts",
+  "src/app/api/labs/[id]/links/route.ts",
   // v1.18.9 — the Lab-OCR ingestion routes share the LabResult data-layer
   // reasoning: the labs module gates the SURFACE (the Labs page + scan
   // affordance), not the row store. The extract route is read-only vision
@@ -315,6 +320,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // SURFACE (the detail-page tab + the insights summary), not the row store.
   "src/app/api/medications/[id]/efficacy/route.ts",
   "src/app/api/medications/[id]/efficacy/target/route.ts",
+  // v1.43 — a medication's links to its visits, documents and indication are
+  // raw link CRUD over the person's own rows, like the vaccination links.
+  "src/app/api/medications/[id]/links/route.ts",
   // ── INFRA / UI-ONLY ───────────────────────────────────────────────
   // Static FHIR CapabilityStatement — server metadata, no user data.
   "src/app/api/fhir/metadata/route.ts",

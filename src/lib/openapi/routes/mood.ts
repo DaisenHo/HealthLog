@@ -19,6 +19,7 @@
  * twin was in the YAML, which left grant-scope reviewers unable to see the
  * cross-section read at all.
  */
+import { moodPattern } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
@@ -1196,6 +1197,12 @@ const moodAggregatesResponse = z
       )
       .describe(
         "Mood against five health channels, keyed `sleep`, `steps`, `pulse`, `weight`, `bloodPressureSystolic`. Every key is always present; an empty channel carries `result: null` with no points.",
+      ),
+    patterns: z
+      .array(moodPattern)
+      .optional()
+      .describe(
+        "v1.43 — the patterns that passed the gate over the `?days` window, on the account's mood day. Empty means none was found.",
       ),
   })
   .meta({

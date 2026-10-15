@@ -82,6 +82,32 @@ const extractedRow = z
         "The analyte the matched marker is (the catalog slug, e.g. `fasting-glucose` or `ldl`, or a registry-only key such as `urea`), or null when the marker does not exist yet or its name matches none. With `markerUnit` it tells a client whether a row in another unit can be converted on commit.",
     }),
     duplicateOf: z.string().nullable(),
+    biomarkerId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43 — the marker this row was matched to automatically (by name, by an alias of the account, or by a catalogue abbreviation); null without a match.",
+      ),
+    matchKind: z
+      .enum(["name", "alias", "catalog"])
+      .nullable()
+      .optional()
+      .describe("v1.43 — how `biomarkerId` was found."),
+    suggestions: z
+      .array(
+        z.object({
+          biomarkerId: z.string(),
+          name: z.string(),
+          unit: z.string(),
+          matchKind: z.enum(["catalog", "similar"]),
+        }),
+      )
+      .max(3)
+      .optional()
+      .describe(
+        "v1.43 — up to three markers to choose from when nothing matched; empty when `biomarkerId` is set.",
+      ),
   })
   .meta({
     id: "OcrExtractedRow",

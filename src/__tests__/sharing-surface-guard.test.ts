@@ -887,6 +887,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "profile",
     why: "The record's health-profile facts, read through `readHealthProfileFacts(user.id)`. The module holds write helpers, and the GET calls none of them.",
   },
+  "app/api/anamnesis/life-circumstances/route.ts": {
+    domain: "profile",
+    why: "The record's life circumstances (v1.43), the structured sibling of the facts above and under the same `profile` grant. Read-only: the section switches, confirmations and AUDIT-C are written through their own routes, none of them delegable.",
+  },
   "app/api/profile/summary/route.ts": {
     domain: "profile",
     why: "The bounded shared profile read combines only the record's allergies, family history, and current lifestyle facts. It carries no settings, AI configuration, mutations, or encrypted free text.",
@@ -930,6 +934,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/sleep/rhythm/route.ts": {
     domain: "measurements",
     why: "The record's sleep rhythm, built from `buildSleepRhythm(user.id)` and gated on the record's sleep module.",
+  },
+  "app/api/nutrients/catalog/route.ts": {
+    domain: "measurements",
+    why: "The nutrient catalogue as the composition form reads it (v1.43): codes, units and upper limits, labels in the record's language. Reference data the record's module gate opens; nothing of the record itself.",
   },
   "app/api/nutrients/route.ts": {
     domain: "measurements",
@@ -2104,8 +2112,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.42.4 -- the Labs list's per-marker overview joins the record list
  * beside `GET /api/labs`, the rows it groups. 255 -> 256.
+ *
+ * v1.43 -- two reads join the record list: the life circumstances beside the
+ * facts (`profile`) and the nutrient catalogue beside the nutrient reads
+ * (`measurements`). The biomarker DELETE joins the manage literal on a module
+ * that was already there. 256 -> 258.
  */
-const FROZEN_ENTRY_COUNT = 256;
+const FROZEN_ENTRY_COUNT = 258;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

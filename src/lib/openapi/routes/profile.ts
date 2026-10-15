@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { aiUsageState } from "./ai-usage";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { notificationPrefsSchema } from "@/lib/validations/notification-prefs";
@@ -198,7 +199,15 @@ export const aiProviderState = z
   });
 
 export const aiAccountBlock = z
-  .object({ capabilities: aiCapabilities, provider: aiProviderState })
+  .object({
+    capabilities: aiCapabilities,
+    provider: aiProviderState,
+    usage: aiUsageState
+      .optional()
+      .describe(
+        "v1.43 — the account's AI usage level. Absent on older servers; hide the setting then.",
+      ),
+  })
   .meta({
     id: "AiAccountBlock",
     description:

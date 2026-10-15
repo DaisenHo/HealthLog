@@ -83,6 +83,8 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "Previews a managed-profile handover link for a person who has no credential yet; the one-time token in the body is the credential.",
   "/api/auth/claim":
     "Turns a managed profile into the claimant's own account and creates their first credential; the one-time token in the body authorises it.",
+  "/api/auth/claim/sso":
+    "Starts claiming a managed profile through the identity provider; the claimant has no credential yet, and the one-time token in the body authorises it.",
   // The tombstones, sourced from the registry rather than restated one by one.
   // A retired path answers 410 from the proxy before any handler runs, and that
   // answer never reads the request's cookies or Authorization header — so it is

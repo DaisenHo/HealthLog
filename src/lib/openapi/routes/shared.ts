@@ -551,6 +551,19 @@ export function recordRefusal(...alsoRefusesFor: string[]): RefusalResponse {
 export const MODULE_DISABLED_DESCRIPTION =
   'Module disabled for this account: the user (or operator) has the module turned off. `meta.errorCode` = `module.disabled` and `meta.module` carries the disabled module key (e.g. "sleep"). Returned even for a valid Bearer token. Clients hide the whole module surface end-to-end rather than retry.';
 
+/**
+ * The 501 a published operation answers while its behaviour has not landed on
+ * this server (`src/lib/http/not-implemented.ts`). Spread into an operation's
+ * responses with the stub, and removed with it.
+ */
+export const notImplementedResponse = {
+  "501": {
+    description:
+      "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` = `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation already answer as documented. A client reaches this only by ignoring the server feature flag that guards the operation.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+};
+
 export const moduleDisabledResponse = {
   "403": {
     description: MODULE_DISABLED_DESCRIPTION,

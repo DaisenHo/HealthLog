@@ -10,6 +10,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { HANDOVER_METHODS, claimSsoSchema } from "@/lib/validations/claim-sso";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import {
@@ -42,6 +43,7 @@ import {
 } from "@/lib/validations/step-up";
 import {
   dataEnvelope,
+  notImplementedResponse,
   profileEmailRateLimitResponse,
   stdResponses,
   errorEnvelope,
@@ -730,8 +732,27 @@ const claimPreview = z
       .describe(
         "Each guardian and the access they keep after the claim, as proposed. The new owner confirms or changes it after signing in.",
       ),
+    methods: z
+      .array(z.enum(HANDOVER_METHODS))
+      .optional()
+      .describe(
+        "v1.43 — how this link can be redeemed: `password` and/or `sso`. Absent on older servers.",
+      ),
+    ssoProviderName: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'v1.43 — the identity provider\'s display name for the "Continue with …" button; null without one.',
+      ),
   })
   .meta({ id: "ProfileClaimPreview" });
+
+const claimSsoRequest = claimSsoSchema.meta({
+  id: "ProfileClaimSsoRequest",
+  description:
+    "`token` is the `hlp_` token from the handover link, in the body; `username` follows the registration rules and may not start with `managed-`.",
+});
 
 const claimRequest = claimSchema.meta({
   id: "ProfileClaimRequest",
@@ -740,6 +761,44 @@ const claimRequest = claimSchema.meta({
 });
 
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/auth/claim/sso": {
+    post: {
+      // No credential: the token in the body is the credential.
+      security: [],
+      tags: ["Auth"],
+      summary: "Claim a managed profile through single sign-on (v1.43)",
+      description:
+        "Web only. Checks the link and the username, sets a sealed `hl_claim` cookie (10 minutes, `httpOnly`) and answers where to continue: `/api/auth/oidc/login?intent=claim`. The OIDC callback binds the identity provider's subject to the profile and signs the new owner in; a subject already bound to an account, or a verified email another account holds, is refused there. Works on a single-sign-on-only instance. 404 `profile_claim.invalid` (no usable link) or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken` (username) or `auth.already_authenticated`; rate-limited per source address like the password claim.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: claimSsoRequest } },
+      },
+      responses: {
+        "200": {
+          description: "Continue at `redirectTo`.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ redirectTo: z.string() }),
+                "ProfileClaimSsoEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "`profile_claim.invalid` or `profile_claim.sso_unavailable`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description: "`profile_claim.taken` or `auth.already_authenticated`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
   "/api/auth/claim/preview": {
     post: {
       // No credential: the person claiming the profile has none yet. The

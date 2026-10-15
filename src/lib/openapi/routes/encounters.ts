@@ -14,6 +14,7 @@
  * reaches no response, because every preventive-care read excludes it. The
  * published contract stays at two members deliberately.
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -465,7 +466,10 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The visit.",
           content: {
             "application/json": {
-              schema: dataEnvelope(encounter, "GetEncounterEnvelope"),
+              schema: dataEnvelope(
+                withRelated(encounter),
+                "GetEncounterEnvelope",
+              ),
             },
           },
         },

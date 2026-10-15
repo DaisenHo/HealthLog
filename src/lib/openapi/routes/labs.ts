@@ -7,6 +7,7 @@
  * here (the route serialises a derived `rangeStatus` + `hasNote` the input
  * schema doesn't carry).
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -233,7 +234,10 @@ export const labsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Lab-result detail.",
           content: {
             "application/json": {
-              schema: dataEnvelope(labResultDetail, "GetLabResultResponse"),
+              schema: dataEnvelope(
+                withRelated(labResultDetail),
+                "GetLabResultResponse",
+              ),
             },
           },
         },

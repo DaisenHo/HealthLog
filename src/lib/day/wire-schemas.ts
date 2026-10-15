@@ -184,6 +184,42 @@ const dayNotable = z
   })
   .meta({ id: "DayNotable" });
 
+/**
+ * v1.43 — the day's movement context from Dawarich: daily values only, never
+ * a coordinate or a place name. The record owner's only, like the
+ * environment readings; a delegate never receives it.
+ */
+export const dayMovementSchema = z
+  .object({
+    source: z.literal("dawarich"),
+    distance: z.object({
+      unit: z
+        .enum(["km", "mi"])
+        .describe("Resolved from the account's unit preference."),
+      total: z.number().nullable(),
+      driving: z.number().nullable(),
+      train: z.number().nullable(),
+    }),
+    placesVisited: z.number().int().nullable(),
+    awayFromHomeMinutes: z
+      .number()
+      .int()
+      .nullable()
+      .describe("`null` means no coverage that day, not zero."),
+    travel: z
+      .object({
+        isTravelDay: z.boolean(),
+        countryCode: z.string().nullable(),
+      })
+      .nullable(),
+    fetchedAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "DayMovement",
+    description:
+      "Distances to one decimal in `distance.unit`. Hide a null field; never show it as zero.",
+  });
+
 export const dayResponseSchema = z
   .object({
     date: dateKeySchema,
@@ -211,6 +247,12 @@ export const dayResponseSchema = z
       )
       .describe(
         "Sections the caller cannot see. A section of a switched-off module is left out entirely rather than listed.",
+      ),
+    movement: dayMovementSchema
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43 — the day's movement context; absent for a delegate, with the `environment` module off, with no Dawarich connection, and on older servers.",
       ),
   })
   .meta({ id: "Day" });

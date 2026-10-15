@@ -28,6 +28,10 @@ import {
   recordScopeParameter,
 } from "./account-sharing";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
+import { aiUsagePaths } from "./ai-usage";
+import { dawarichPaths } from "./dawarich";
+import { lifeCircumstancesPaths } from "./life-circumstances";
+import { relationLinkPaths } from "./relation-links";
 import { adminBackupPaths } from "./admin-backups";
 import { allergyPaths } from "./allergies";
 import { analyticsPaths } from "./analytics";
@@ -71,6 +75,7 @@ import { measurementPaths } from "./measurements";
 import { measurementReminderPaths } from "./measurement-reminders";
 import { mentalHealthPaths } from "./mental-health";
 import {
+  medicationIngredientPaths,
   medicationPaths,
   medicationResource,
   medicationDoseHistoryImportFatalReasonEnum,
@@ -187,6 +192,14 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // order is load-bearing).
   ...dayPaths,
   ...searchPaths,
+  // v1.43 — the new contract surfaces: AI usage levels, supplement
+  // composition, life circumstances and AUDIT-C, Dawarich movement context and
+  // the relation links (appended, spread order is load-bearing).
+  ...aiUsagePaths,
+  ...medicationIngredientPaths,
+  ...lifeCircumstancesPaths,
+  ...dawarichPaths,
+  ...relationLinkPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

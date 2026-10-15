@@ -252,6 +252,13 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .describe(
         'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so opening the app does not hide an earlier background arrival. Null when the type has never arrived in the background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose latest arrival then was a background one starts with that date and every other type starts null. Same omission rules as `lastReceivedAt`.',
       ),
+    lastBackfillAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .optional()
+      .describe(
+        'v1.43 — when a batch with `syncTrigger: "backfill"` last carried this type. A backfill moves only this and `syncProgress`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt` or the account-level sync stamps, so catching up history does not read as a run of healthy daily syncs. Absent on older servers.',
+      ),
   })
   .meta({
     id: "AppleHealthMetricFreshnessEntry",

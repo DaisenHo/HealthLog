@@ -14,6 +14,7 @@
  * the single-source `@/lib/dashboard-layout` module so the contract cannot
  * drift. Part of the OpenAPI route table; aggregated in `./index.ts`.
  */
+import { trendSentiment, trendVerdict } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
@@ -243,6 +244,13 @@ const dashboardMetricCard = z
       .describe(
         "The metric's newest reading, for the 'last reading N days ago' caption when it is older than the sparkline window.",
       ),
+    direction: trendVerdict
+      .nullable()
+      .optional()
+      .describe("v1.43 — which way a change of this metric counts."),
+    trendSentiment: trendSentiment
+      .optional()
+      .describe("v1.43 — the verdict applied to this card's `trend`."),
   })
   .meta({
     id: "DashboardMetricCard",

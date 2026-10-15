@@ -88,6 +88,36 @@ export const nutrientOverviewQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(365).default(14),
 });
 
+/**
+ * v1.43 — the tolerable upper intake level of a nutrient (EFSA), applied by
+ * the server to the day's total or to the supplemental share as `scope` says.
+ */
+export const nutrientUpperLimitSchema = z
+  .object({
+    value: z.number(),
+    unit: z.string(),
+    scope: z.enum(["total", "supplemental"]),
+    source: z.string(),
+  })
+  .meta({
+    id: "NutrientUpperLimit",
+    description:
+      "The tolerable upper intake level, with the unit, whether it applies to the total intake or to the supplemental share only, and the cited source. `null` where no level is established.",
+  });
+
+/** v1.43 — a day total split by where it came from. */
+export const nutrientBySourceSchema = z
+  .object({
+    APPLE_HEALTH: z.number().optional(),
+    MANUAL: z.number().optional(),
+    SUPPLEMENT: z.number().optional(),
+  })
+  .meta({
+    id: "NutrientAmountBySource",
+    description:
+      "The amount split by source: synced from Apple Health, entered by hand, and counted from taken supplement doses. A source with nothing is absent.",
+  });
+
 export const nutrientOverviewSchema = z
   .object({
     windowDays: z.number().int().min(1),
@@ -98,6 +128,20 @@ export const nutrientOverviewSchema = z
         latestDay: z.string(),
         latestAmount: z.number(),
         daysWithData: z.number().int().min(1),
+        latestBySource: nutrientBySourceSchema
+          .optional()
+          .describe("v1.43 — `latestAmount` split by source."),
+        upperLimit: nutrientUpperLimitSchema
+          .nullable()
+          .optional()
+          .describe("v1.43 — the nutrient's upper intake level, or null."),
+        latestAboveUpperLimit: z
+          .boolean()
+          .nullable()
+          .optional()
+          .describe(
+            "v1.43 — whether the latest day is above the upper limit; null without one.",
+          ),
       }),
     ),
     lastAttempt: z
@@ -177,8 +221,27 @@ export const nutrientDailySeriesSchema = z
     nutrient: nutrientCodeEnum,
     unit: z.string(),
     windowDays: z.number().int().min(1),
-    days: z.array(z.object({ day: z.string(), amount: z.number() })),
+    days: z.array(
+      z.object({
+        day: z.string(),
+        amount: z.number(),
+        bySource: nutrientBySourceSchema
+          .optional()
+          .describe("v1.43 — the day's amount split by source."),
+        aboveUpperLimit: z
+          .boolean()
+          .nullable()
+          .optional()
+          .describe(
+            "v1.43 — whether the day is above the upper limit; null without one.",
+          ),
+      }),
+    ),
     reference: resolvedNutrientReferenceSchema.nullable(),
+    upperLimit: nutrientUpperLimitSchema
+      .nullable()
+      .optional()
+      .describe("v1.43 — the nutrient's upper intake level, or null."),
   })
   .meta({
     id: "NutrientDailySeries",

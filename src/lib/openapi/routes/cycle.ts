@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { cycleDeleteOutcome, cycleRestoredStart } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import {
@@ -327,9 +328,20 @@ const cycleHistoryResponse = z.object({
   }),
 });
 
+const cycleDeleteOutcomeEnvelope = dataEnvelope(
+  cycleDeleteOutcome,
+  "CycleDeleteOutcomeEnvelope",
+);
+
 const cyclePeriodResponse = z.object({
   cycle: menstrualCycleDto.nullable(),
   dayLog: cycleDayLogDto.nullable(),
+  absorbed: cycleRestoredStart
+    .nullable()
+    .optional()
+    .describe(
+      'v1.43 — on `action: "start"`: a later start within the period length folded into this one, or null.',
+    ),
 });
 
 const cyclePhaseCrosstabRow = z
@@ -767,7 +779,20 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Day-log updated.",
           content: {
             "application/json": {
-              schema: dataEnvelope(cycleDayLogDto, "CycleDayLogPatchEnvelope"),
+              schema: dataEnvelope(
+                z.intersection(
+                  cycleDayLogDto,
+                  z.object({
+                    restored: z
+                      .array(cycleRestoredStart)
+                      .optional()
+                      .describe(
+                        "v1.43 — starts given back because this edit cleared the flow on a start day.",
+                      ),
+                  }),
+                ),
+                "CycleDayLogPatchEnvelope",
+              ),
             },
           },
         },
@@ -786,6 +811,13 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. 204. Idempotent.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
+        "200": {
+          description:
+            "v1.43 — with `Prefer: return=representation`: what the delete changed.",
+          content: {
+            "application/json": { schema: cycleDeleteOutcomeEnvelope },
+          },
+        },
         "204": { description: "Soft-deleted (no body)." },
         "404": {
           description: "Day-log not found / not owned.",
@@ -941,6 +973,13 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. 204. Idempotent.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
+        "200": {
+          description:
+            "v1.43 — with `Prefer: return=representation`: what the delete changed.",
+          content: {
+            "application/json": { schema: cycleDeleteOutcomeEnvelope },
+          },
+        },
         "204": { description: "Soft-deleted (no body)." },
         "404": {
           description: "Cycle not found / not owned.",
