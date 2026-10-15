@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(88);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(89);
   });
 });
 
@@ -2211,6 +2211,35 @@ proveManageRoute("POST /api/medications/[id]/glp1", {
     })) === 1,
 });
 
+proveManageRoute("PUT /api/medications/[id]/ingredients", {
+  route: "/api/medications/[id]/ingredients",
+  prepare: async (ownerId) => {
+    // The composition lives behind the opt-in nutrients module.
+    await getPrismaClient().user.update({
+      where: { id: ownerId },
+      data: { modulePreferencesJson: { nutrients: true } },
+    });
+    return {
+      ownerId,
+      medication: await getPrismaClient().medication.create({
+        data: { userId: ownerId, name: "Vitamin D3", dose: "1000 IU" },
+      }),
+    };
+  },
+  params: ({ medication }) => ({ id: medication.id }),
+  body: () => ({
+    ingredients: [{ nutrient: "vitamin_d", amount: 1000, unit: "IU" }],
+  }),
+  ok: 200,
+  auditAction: "medication.ingredients.update",
+  applied: async ({ medication }) =>
+    (
+      await getPrismaClient().medicationIngredient.findFirst({
+        where: { medicationId: medication.id },
+      })
+    )?.amountPerUnit === 25,
+});
+
 proveManageRoute("PUT /api/medications/[id]/intake/[eventId]", {
   route: "/api/medications/[id]/intake/[eventId]",
   action: "PUT",
@@ -2878,13 +2907,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(88);
+    expect(STRICT_DRIVER_KEYS.size).toBe(89);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(88);
+    expect(REAL_EFFECT_KEYS.size).toBe(89);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

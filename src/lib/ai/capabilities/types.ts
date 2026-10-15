@@ -29,6 +29,7 @@ export const AI_CAPABILITY_KEYS = [
   "documentAi",
   "labsOcr",
   "medicationExtract",
+  "supplementLabel",
 ] as const;
 
 export type AiCapabilityKey = (typeof AI_CAPABILITY_KEYS)[number];
@@ -288,6 +289,17 @@ export const AI_CAPABILITIES: Readonly<
     consent: { rule: "document", kinds: EXTRACTION_KINDS },
     modality: "text",
     providerOrder: "chain",
+  },
+  // v1.43 — reading a supplement's label photo into its ingredients. A photo
+  // is a document, and an extra model run per label, so it is not offered on
+  // the `frugal` usage level.
+  supplementLabel: {
+    key: "supplementLabel",
+    operatorSwitch: "documentAi",
+    modules: { mode: "all", keys: ["medications", "nutrients"] },
+    consent: { rule: "document", kinds: EXTRACTION_KINDS },
+    modality: "document",
+    providerOrder: "document",
   },
 });
 

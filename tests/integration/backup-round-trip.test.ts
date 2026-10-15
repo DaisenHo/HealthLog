@@ -235,6 +235,8 @@ const COUNT_BACK: Record<
     p.medicationCategoryAssignment.count({ where: { medication: { userId } } }),
   MedicationCategoryLabel: (p, userId) =>
     p.medicationCategoryLabel.count({ where: { userId } }),
+  MedicationIngredient: (p, userId) =>
+    p.medicationIngredient.count({ where: { userId } }),
   MedicationCourse: (p, userId) =>
     p.medicationCourse.count({ where: { userId } }),
   MoodEntry: (p, userId) => p.moodEntry.count({ where: { userId } }),
@@ -658,6 +660,21 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       payload: [{ windowStart: "12:00", windowEnd: "13:00", dose: "10 mg" }],
       source: "ARCHIVED",
       supersededByRevisionId: correctionEra.id,
+    },
+  });
+
+  // v1.43 — a composition entered in a non-canonical unit, so the entered
+  // amount and unit are set too.
+  await prisma.medicationIngredient.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: medication.id,
+      nutrient: "vitamin_d",
+      amountPerUnit: 25,
+      unit: "ug",
+      enteredAmount: 1000,
+      enteredUnit: "IU",
+      source: "LABEL_AI",
     },
   });
 

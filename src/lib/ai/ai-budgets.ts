@@ -199,6 +199,13 @@ export const AI_BUDGETS = {
   ocrExtract: { temperature: 0, maxTokens: 8000 },
 
   /**
+   * v1.43 — a supplement label photo read into its ingredients. One vision
+   * call; a label lists a few dozen lines at most, so half the lab budget
+   * holds the JSON with room for reasoning. Temperature 0: transcription.
+   */
+  supplementLabel: { temperature: 0, maxTokens: 4000 },
+
+  /**
    * v1.20.1 — Lab-OCR text-mode structuring. The browser OCR's the image
    * (tesseract.js) and POSTs only the extracted TEXT, so the provider does a
    * plain text→JSON structuring pass — no expensive vision input tokens. The

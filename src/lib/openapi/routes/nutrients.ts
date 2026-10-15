@@ -28,7 +28,6 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
-  notImplementedResponse,
   recordRefusal,
   stdResponses,
 } from "./shared";
@@ -97,7 +96,6 @@ export const nutrientPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },

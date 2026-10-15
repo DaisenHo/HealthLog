@@ -90,6 +90,11 @@ import {
 } from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
+import {
+  SUPPLEMENT_LABEL_MODEL_CALLS,
+  executeSupplementLabelExtraction,
+  requireSupplementLabelProvider,
+} from "@/lib/medications/ingredients/label-extract";
 
 export const DOCUMENT_AI_RUN_QUEUE = "document-ai-run";
 
@@ -281,6 +286,33 @@ async function runLabsOcr(
   });
 }
 
+/** v1.43 — a supplement label read into a proposed composition. */
+async function runSupplementLabel(
+  run: ClaimedAiRun,
+  deadlineAt: number | undefined,
+  now: () => number,
+): Promise<AiRunOutcome<AiRunResult>> {
+  if (!run.input) throw new Error("label run without an input");
+  const mime = run.params.mime;
+  if (!mime) throw new Error("label run without a MIME type");
+  const pick = await requireSupplementLabelProvider(run.userId);
+  await assertRunMayEgress("supplementLabel", run.userId, [pick.providerType]);
+  await armDeadline(
+    run.id,
+    callTimeoutMs({}, pick.entry.instance.responseTimeoutSeconds),
+    SUPPLEMENT_LABEL_MODEL_CALLS,
+    deadlineAt,
+    now,
+  );
+  return executeSupplementLabelExtraction({
+    userId: run.userId,
+    bytes: run.input,
+    mime,
+    pick,
+    budget: run.params.budget,
+  });
+}
+
 /** The owned document a run reads, or the route's own 404 when it is gone. */
 async function loadRunDocument(run: ClaimedAiRun) {
   const document = run.documentId
@@ -469,6 +501,7 @@ const RUN_DISPATCH: Record<DocumentAiRunKindValue, RunDispatcher> = {
   DOCUMENT_SUMMARY: runDocumentSummaryRead,
   DOCUMENT_SUGGEST: runDocumentSuggestRead,
   DOCUMENT_EXTRACT: runDocumentExtractRead,
+  SUPPLEMENT_LABEL_EXTRACT: runSupplementLabel,
 };
 
 /**

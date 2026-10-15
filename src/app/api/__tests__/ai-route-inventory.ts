@@ -92,6 +92,11 @@ export const AI_ROUTES: Readonly<Record<string, AiRouteEntry>> = {
     capabilities: ["labsOcr"],
     why: "Reads a lab report image with a model.",
   },
+  "src/app/api/medications/[id]/ingredients/extract/route.ts": {
+    kind: "action",
+    capabilities: ["supplementLabel"],
+    why: "Reads a supplement label photo with a model into a proposed composition.",
+  },
   "src/app/api/medications/extract/route.ts": {
     kind: "action",
     capabilities: ["medicationExtract"],

@@ -584,6 +584,39 @@ export function toCanonicalNutrientAmount(
   return roundAmount(amount * input.factorToCanonical);
 }
 
+/**
+ * How labels print the input units, folded to lower case without dots or
+ * spaces. A label says "mcg", "µg" or "μg" for microgram and "IE" (German),
+ * "UI" (French, Spanish, Italian) or "j.m." (Polish) for the international
+ * unit.
+ */
+const INPUT_UNIT_SPELLINGS: Readonly<Record<string, NutrientInputUnitCode>> = {
+  mg: NUTRIENT_UNIT.mg,
+  ug: NUTRIENT_UNIT.ug,
+  µg: NUTRIENT_UNIT.ug,
+  μg: NUTRIENT_UNIT.ug,
+  mcg: NUTRIENT_UNIT.ug,
+  g: NUTRIENT_UNIT.g,
+  ml: NUTRIENT_UNIT.ml,
+  l: NUTRIENT_UNIT.l,
+  iu: NUTRIENT_UNIT.IU,
+  ie: NUTRIENT_UNIT.IU,
+  ui: NUTRIENT_UNIT.IU,
+  jm: NUTRIENT_UNIT.IU,
+};
+
+/**
+ * v1.43 — read a unit as a label prints it into the catalogue's input-unit
+ * code, or `null` when it is not one. Whether the code accepts it is a second
+ * question ({@link toCanonicalNutrientAmount}).
+ */
+export function parseNutrientInputUnit(
+  raw: string,
+): NutrientInputUnitCode | null {
+  const folded = raw.trim().toLowerCase().replace(/[\s.]/g, "");
+  return INPUT_UNIT_SPELLINGS[folded] ?? null;
+}
+
 /** Whether `unit` is the code's canonical unit (nothing to convert). */
 export function isCanonicalNutrientUnit(
   code: NutrientCode,

@@ -763,6 +763,9 @@ export async function buildFullBackupPayload(
         inventoryItems: { orderBy: { createdAt: "asc" } },
         inventoryEvents: { orderBy: { occurredAt: "asc" } },
         phaseConfig: true,
+        // v1.43 — the composition per unit; ordered so two exports of the
+        // same account write it identically.
+        ingredients: { orderBy: { nutrient: "asc" } },
         // The archived schedule eras. Ordered TOTALLY, not just by the column
         // that reads like the sort key: the position in this list is the
         // identifier the supersede pointer travels as, so two eras sharing a
@@ -1165,6 +1168,20 @@ export async function buildFullBackupPayload(
       // v1.40 (#1024) — the courses: "when did I last take this" lives here
       // and nowhere else once a second course exists. The medication's own
       // window above is the projection of the latest one.
+      // v1.43 — what one unit contains. Both purposes: it is something the
+      // person typed off a label, and without it the supplement's doses stop
+      // counting toward the day's micronutrients. Canonical amount plus the
+      // amount as entered, so the form shows what was typed.
+      ingredients: m.ingredients.map((i) => ({
+        ...(disasterRecovery ? { id: i.id } : {}),
+        nutrient: i.nutrient,
+        amountPerUnit: i.amountPerUnit,
+        unit: i.unit,
+        enteredAmount: i.enteredAmount,
+        enteredUnit: i.enteredUnit,
+        source: i.source,
+        createdAt: i.createdAt.toISOString(),
+      })),
       courses: m.courses.map((c) => ({
         startsOn: dayKeyOfDate(c.startsOn),
         endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,

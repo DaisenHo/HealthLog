@@ -91,7 +91,7 @@ export const errorEnvelope = z
           .string()
           .optional()
           .describe(
-            "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`, `briefing`, `periodNarrative`, `statusText`, `workoutInsights`, `reactionLines`, `aboutMeQuestions`, `documentAi`, `labsOcr`, `medicationExtract`).",
+            "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`, `briefing`, `periodNarrative`, `statusText`, `workoutInsights`, `reactionLines`, `aboutMeQuestions`, `documentAi`, `labsOcr`, `medicationExtract`, `supplementLabel`).",
           ),
         reason: z
           .string()

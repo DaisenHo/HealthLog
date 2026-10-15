@@ -15,11 +15,18 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
-  moduleDisabledResponse,
-  notImplementedResponse,
+  recordRefusal,
   stdResponses,
 } from "../shared";
 import { aiRunAccepted } from "../ai-run-accepted";
+import {
+  aiCheckFailedResponse,
+  aiNoProviderResponse,
+  aiRefusal403Description,
+} from "../ai-refusal";
+
+const NUTRIENTS_MODULE_OFF =
+  'The opt-in `nutrients` module is off for this account: 403 `module.disabled` with `meta.module: "nutrients"`.';
 
 export const medicationIngredient = z
   .object({
@@ -81,7 +88,7 @@ export const medicationIngredientPaths: NonNullable<ZodOpenApiObject["paths"]> =
         tags: ["Medications"],
         summary: "Replace a supplement's composition (v1.43)",
         description:
-          'Stores the composition per unit in canonical units and re-counts every taken dose of this medication into the day\'s micronutrients (`recompute.queued`). Needs the `nutrients` module (403 `module.disabled`, `meta.module: "nutrients"`). 404 `medications.notFound`; 422 `medications.ingredients.invalid` (body, duplicate or unknown code); 422 `medications.ingredients.unitMismatch` with `meta.index` and `meta.allowedUnits`.',
+          'Stores the composition per unit in canonical units and re-counts every taken dose of this medication into the day\'s micronutrients: `recompute.queued` is true when the worker has the recompute (the rows follow within moments), false when it ran before this answer. Needs the `nutrients` module (403 `module.disabled`, `meta.module: "nutrients"`). Delegable at MANAGE on the `medications` domain. 404 `medications.notFound`; 422 `medications.ingredients.invalid` (body, duplicate code, or unknown code with `meta.index`); 422 `medications.ingredients.unitMismatch` with `meta.index` and `meta.allowedUnits`; 429 above 30 a minute per caller.',
         parameters: [idempotencyKeyParameter],
         requestParams: { path: z.object({ id: z.string() }) },
         requestBody: {
@@ -106,13 +113,12 @@ export const medicationIngredientPaths: NonNullable<ZodOpenApiObject["paths"]> =
               },
             },
           },
-          ...moduleDisabledResponse,
+          ...recordRefusal(NUTRIENTS_MODULE_OFF),
           "404": {
-            description: "Medication not found.",
+            description: "`medications.notFound`.",
             content: { "application/json": { schema: errorEnvelope } },
           },
           ...stdResponses,
-          ...notImplementedResponse,
         },
       },
     },
@@ -121,7 +127,7 @@ export const medicationIngredientPaths: NonNullable<ZodOpenApiObject["paths"]> =
         tags: ["Medications"],
         summary: "Read a supplement label (v1.43)",
         description:
-          "Multipart `file` (JPEG, PNG, HEIC, WebP or PDF, at most 10 MB). 202 with an AI run; poll `GET /api/ai-runs/{id}` (kind `SUPPLEMENT_LABEL_EXTRACT`, result `SupplementLabelExtractResult`). Needs `ai.capabilities.supplementLabel.available` (refused like every AI capability, reason `usage_level` included) and the `nutrients` module. 422 `medications.ingredients.extract.fileType`, 413 `medications.ingredients.extract.fileTooLarge`, 429 `medications.ingredients.extract.rateLimited` (six an hour).",
+          "Multipart `file` (JPEG, PNG, WebP or PDF, at most 10 MB; the bytes decide the type, not the header). HEIC is refused with `medications.ingredients.extract.fileType`: send the photo as JPEG. 202 with an AI run; poll `GET /api/ai-runs/{id}` (kind `SUPPLEMENT_LABEL_EXTRACT`, result `SupplementLabelExtractResult`). Amounts in the proposal are per single unit: a label printed per serving of several units is divided down, and `servingNote` says what was printed. Needs `ai.capabilities.supplementLabel.available` (refused like every AI capability, reason `usage_level` included) and the `nutrients` module. The account's own session only: provider work is never admitted inside somebody else's record. 404 `medications.notFound`; 422 `medications.ingredients.extract.fileType`; 413 `medications.ingredients.extract.fileTooLarge`; 429 `medications.ingredients.extract.rateLimited` (six an hour) or `medications.ingredients.extract.budgetExceeded` (the day's AI budget). A run that fails carries `medications.ingredients.extract.failed`.",
         requestParams: { path: z.object({ id: z.string() }) },
         requestBody: {
           required: true,
@@ -135,13 +141,24 @@ export const medicationIngredientPaths: NonNullable<ZodOpenApiObject["paths"]> =
         },
         responses: {
           ...aiRunAccepted,
-          ...moduleDisabledResponse,
+          "403": {
+            description: `${NUTRIENTS_MODULE_OFF} ${aiRefusal403Description("supplementLabel")}`,
+            content: { "application/json": { schema: errorEnvelope } },
+          },
+          "404": {
+            description: "`medications.notFound`.",
+            content: { "application/json": { schema: errorEnvelope } },
+          },
           "413": {
             description: "`medications.ingredients.extract.fileTooLarge`.",
             content: { "application/json": { schema: errorEnvelope } },
           },
           ...stdResponses,
-          ...notImplementedResponse,
+          "422": {
+            description: `\`medications.ingredients.extract.fileType\`: the upload is not a JPEG, PNG, WebP or PDF, or carries no \`file\` field. ${aiNoProviderResponse("supplementLabel").description}`,
+            content: { "application/json": { schema: errorEnvelope } },
+          },
+          "503": aiCheckFailedResponse,
         },
       },
     },
