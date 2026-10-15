@@ -49,6 +49,7 @@ import {
   completeSsoClaim,
   SSO_CLAIM_LANDING,
 } from "@/lib/managed-profiles/claim-sso";
+import { isHandoverUsable } from "@/lib/managed-profiles/handover";
 
 const LOGIN_ERROR_URL = "/auth/login";
 
@@ -283,28 +284,30 @@ export const GET = apiHandler(async (req: NextRequest) => {
     return isClaim ? failRedirect("oidc_state") : errorRedirect("oidc_state");
   }
 
-  // v1.43 (#959) — a claim is admitted only with its own sealed cookie, still
-  // bound to this sign-in, and never over a live session (the claim routes'
-  // rule: a Guardian finishing their own link would otherwise be signed out
-  // of their account and into the person's). Both before the code is
-  // redeemed, so a refused claim spends nothing at the provider.
+  // v1.43 (#959) — a claim is never finished over a live session (the claim
+  // routes' rule: a Guardian finishing their own link would otherwise be
+  // signed out of their account and into the person's), and is admitted only
+  // with its own sealed cookie, still bound to this sign-in, for a link that
+  // is still usable. All of it before the code is redeemed, so a refused claim
+  // spends nothing at the provider.
   const pendingClaim = isClaim
     ? readClaimCookie(req.cookies.get(CLAIM_COOKIE)?.value)
     : null;
   if (isClaim) {
-    if (
-      !pendingClaim ||
-      !claimMatchesBinding(pendingClaim, stored.claimBinding as string)
-    ) {
-      annotate({ meta: { reason: "claim_cookie" } });
-      return failRedirect("claim_expired");
-    }
     const liveSession = await validateSessionFromCookieValue(
       req.cookies.get(SESSION_COOKIE_NAME)?.value,
     );
     if (liveSession) {
       annotate({ meta: { reason: "claim_signed_in" } });
       return failRedirect("claim_signed_in");
+    }
+    if (
+      !pendingClaim ||
+      !claimMatchesBinding(pendingClaim, stored.claimBinding as string) ||
+      !(await isHandoverUsable(pendingClaim.handoverId))
+    ) {
+      annotate({ meta: { reason: "claim_expired" } });
+      return failRedirect("claim_expired");
     }
   }
 

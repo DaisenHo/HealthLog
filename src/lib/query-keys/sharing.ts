@@ -99,4 +99,6 @@ export const sharingKeys = {
     ["managed-profiles", "handover", "revoke"] as const,
   handoverDecide: () => ["account", "handover-decision", "decide"] as const,
   profileClaim: () => ["profile-claim", "submit"] as const,
+  /** v1.43 (#959) — starting the claim through single sign-on. */
+  profileClaimSso: () => ["profile-claim", "sso"] as const,
 };
