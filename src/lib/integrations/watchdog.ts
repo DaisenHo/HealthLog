@@ -31,6 +31,7 @@ import {
 } from "./connection-health-load";
 import { INTEGRATION_MEASUREMENT_SOURCE } from "./metric-freshness";
 import {
+  FIRST_RUN_ALERTED_AT,
   HISTORY_DAYS,
   SOURCE_PROFILES,
   classifySilence,
@@ -529,8 +530,9 @@ async function watchConnection(input: {
       incidentOpenedAt = now;
       if (summary.firstRun) {
         // Standing since before the watchdog first looked: recorded as
-        // announced, not paged (see `WatchdogSummary.firstRun`).
-        alertedAt = now;
+        // announced, not paged (see `WatchdogSummary.firstRun`), and marked
+        // so its end sends no recovery note either.
+        alertedAt = FIRST_RUN_ALERTED_AT;
       } else {
         announce(transition.reason, transition.since);
       }

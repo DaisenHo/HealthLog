@@ -189,6 +189,22 @@ export function currentIncident(input: {
   return null;
 }
 
+/**
+ * The `alertedAt` an incident gets when the watchdog's first pass after a
+ * deploy found it already standing: counted as announced, so it is never
+ * paged, but never actually sent either, so its end sends no recovery note.
+ * The epoch, because no real announcement can carry it, and it keeps the
+ * marker inside the existing row.
+ */
+export const FIRST_RUN_ALERTED_AT = new Date(0);
+
+/** Whether an `alertedAt` records a message that was really sent. */
+export function wasAnnounced(alertedAt: Date | null | undefined): boolean {
+  return (
+    alertedAt != null && alertedAt.getTime() !== FIRST_RUN_ALERTED_AT.getTime()
+  );
+}
+
 export type WatchTransition =
   /** No incident before, none now. */
   | { kind: "none" }
@@ -220,7 +236,7 @@ export function decideWatchTransition(input: {
   if (input.incident === null) {
     return {
       kind: "close",
-      notify: input.row?.alertedAt != null,
+      notify: wasAnnounced(input.row?.alertedAt),
       previousReason: open,
     };
   }

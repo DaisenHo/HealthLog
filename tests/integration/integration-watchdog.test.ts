@@ -333,6 +333,24 @@ describe("what pages and what does not", () => {
       expect(second.firstRun).toBe(false);
       expect(dispatchNotification).not.toHaveBeenCalled();
 
+      // It ends without a recovery note: nothing was ever sent about it.
+      await prisma().measurement.create({
+        data: {
+          userId: USER,
+          type: "RESTING_HEART_RATE",
+          value: 61,
+          unit: "bpm",
+          source: "OURA",
+          measuredAt: new Date(later.getTime() - 10 * 60 * 1000),
+        },
+      });
+      const recovered = await runIntegrationWatchdog({
+        mode: "hourly",
+        now: new Date(later.getTime() + HOUR),
+      });
+      expect(recovered.incidentsClosed).toBe(1);
+      expect(dispatchNotification).not.toHaveBeenCalled();
+
       // A new incident after the first pass pages as usual.
       for (let i = 0; i < 3; i++) {
         await recordSyncFailure({

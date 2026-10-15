@@ -4,6 +4,7 @@ import {
   NORMAL_DELIVERY_MIN_DAYS,
   SOURCE_PROFILES,
   classifySilence,
+  FIRST_RUN_ALERTED_AT,
   currentIncident,
   decideWatchTransition,
   type WatchRow,
@@ -290,6 +291,27 @@ describe("currentIncident", () => {
         now: NOW,
       }),
     ).toBeNull();
+  });
+});
+
+describe("decideWatchTransition: an incident recorded on the first run", () => {
+  it("closes without a recovery note, since none was ever sent", () => {
+    expect(
+      decideWatchTransition({
+        row: {
+          silentSince: ago(30),
+          incidentReason: "unexpected_silence",
+          incidentOpenedAt: ago(2),
+          alertedAt: FIRST_RUN_ALERTED_AT,
+        },
+        incident: null,
+        ledgerAlerted: false,
+      }),
+    ).toEqual({
+      kind: "close",
+      notify: false,
+      previousReason: "unexpected_silence",
+    });
   });
 });
 
