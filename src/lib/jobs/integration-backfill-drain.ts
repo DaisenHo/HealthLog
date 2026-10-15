@@ -143,6 +143,49 @@ async function runAdmitted(
   }
 }
 
+/** The task name of the event each admitted run writes. */
+export const INTEGRATION_BACKFILL_RUN_TASK = "job.integration_backfill";
+
+/**
+ * Run one admitted job inside its own background event.
+ *
+ * The runners write what they do through the ambient event: every request a
+ * provider walk makes (`addExternalCall`, with its status, duration and the
+ * page it asked for), every warning, every `annotate`. Without an event in
+ * scope each of those is a no-op, so a full-history import that failed left
+ * nothing behind but the job's own error message: not the collection it was
+ * on, not the status the provider answered, not how far it got (#1220). The
+ * hourly syncs always ran inside one; the imports did not. Every kind gets
+ * one here, emitted when the run settles, thrown error included.
+ */
+async function runObserved(
+  job: Job<IntegrationBackfillAdmissionPayload>,
+  identity: string,
+  shouldStop: () => boolean,
+  totals: RunCounts,
+): Promise<void> {
+  await withBackgroundEvent(INTEGRATION_BACKFILL_RUN_TASK, async (event) => {
+    event.addMeta("kind", job.data.kind);
+    event.addMeta("identity", identity);
+    event.addMeta("job_id", job.id);
+    event.addMeta("slice", job.data.data.slice ?? 0);
+    const before = { ...totals };
+    await runAdmitted(job.data, shouldStop, totals);
+    event.setBackground({
+      task_name: INTEGRATION_BACKFILL_RUN_TASK,
+      result: {
+        kind: job.data.kind,
+        imported: totals.imported - before.imported,
+        continued: totals.continued - before.continued,
+        removed: totals.removed - before.removed,
+        deleted: totals.deleted - before.deleted,
+        markers: totals.markers - before.markers,
+        linked: totals.linked - before.linked,
+      },
+    });
+  });
+}
+
 /**
  * Drain a batch of admission jobs. There is no per-job error isolation: a
  * runner that throws fails the job and the admission retry policy applies. So
@@ -166,7 +209,7 @@ export async function drainIntegrationBackfillAdmission(
   for (const job of jobs) {
     const identity = integrationBackfillIdentity(job.data);
     const run = await withIntegrationBackfillLock(identity, () =>
-      runAdmitted(job.data, shouldStop, totals),
+      runObserved(job, identity, shouldStop, totals),
     );
     if (!run.ran) {
       alreadyRunning += 1;
