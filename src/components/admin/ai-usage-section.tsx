@@ -18,6 +18,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Gauge } from "lucide-react";
 import { toast } from "sonner";
 
+import { showErrorToast } from "@/lib/errors/error-toast";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -120,10 +122,11 @@ function AiUsageForm({ bounds }: { bounds: AiUsageBounds }) {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.settingsSaveError"),
+        { cause: err },
       );
     },
   });

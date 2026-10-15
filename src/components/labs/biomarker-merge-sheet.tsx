@@ -13,7 +13,7 @@
  */
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -83,7 +83,7 @@ export function BiomarkerMergeSheet({
       reset();
       onOpenChange(false);
     },
-    onError: () => toast.error(t("labs.merge.error")),
+    onError: (err) => showErrorToast(t("labs.merge.error"), { cause: err }),
   });
 
   const toggle = (id: string, checked: boolean) => {
