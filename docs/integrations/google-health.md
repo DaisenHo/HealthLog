@@ -143,16 +143,24 @@ Google answers that first resumed request with `400`, the slice reads the data
 type again without the bound, passes over the readings newer than its note
 without writing them, and carries on writing from there. The refusal is noted
 per data type, so later slices read without the bound straight away. The pages
-passed over are not counted against the slice's five minutes or 500 pages:
-otherwise a history deeper than one slice would spend every slice passing over
-what earlier slices wrote and never write anything new. Only the job's own
-time limit stops a slice while it is passing over, so on such an account each
-slice takes longer the further back the backfill has got. A `400` that names
-something else (the page token, the page size) is still a failure.
+passed over are not counted against the slice's 500 pages, but they do run on
+its five minutes, and passing over stops after three minutes at most, so a
+slice never holds the account longer than a slice. Wherever the walk stops, on
+a limit or on a rate limit, it keeps Google's page token for the page it read
+last, and the next slice reads that one page again and goes on from there
+instead of passing over everything earlier slices wrote: the pages read stay
+in proportion to the history. If Google no longer takes the token, or the page
+it returns no longer reaches the noted reading, the slice starts again from the
+newest page and passes over as before. A `400` that names something else (the
+page size, or the page token of a walk that did not start from a kept one) is
+still a failure.
 
 The hourly sync waits for the slice that is running (up to eight minutes)
 instead of skipping the account, so recent data keeps arriving while an old
-history is still coming in.
+history is still coming in. The hourly job stays inside its own fifteen-minute
+limit: the wait is cut short when the job's time runs low, the sync after it
+gets only what is left and leaves the rest of its window to the next hour, and
+an account the job reaches after its time is up waits for the next hour.
 
 Google limits how many requests one account may make per minute. When a sync
 reaches that limit Google answers `429`, and HealthLog waits and repeats the

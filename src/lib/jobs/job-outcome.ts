@@ -113,6 +113,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "fetches",
   "finalised",
   "finalized",
+  // v1.42.4 — integration watchdog: the pass found no watch row (first run).
+  "first_run",
   "forced",
   "generated",
   "geo_backfill_carrier_resolved",

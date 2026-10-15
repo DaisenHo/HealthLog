@@ -354,3 +354,144 @@ describe("an extra dose from Apple Health is stored as an unscheduled dose", () 
     expect(adHoc.map(takenAtOf)).toEqual([wednesdayDose.getTime()]);
   });
 });
+
+/** Stock the medication with one open bottle of 100 units, one per dose. */
+async function stock(userId: string, medicationId: string): Promise<void> {
+  const prisma = getPrismaClient();
+  await prisma.medication.update({
+    where: { id: medicationId },
+    data: { unitsPerDose: 1 },
+  });
+  await prisma.medicationInventoryItem.create({
+    data: {
+      userId,
+      medicationId,
+      state: "IN_USE",
+      containerType: "BOTTLE",
+      unitsTotal: 100,
+      unitsRemaining: 100,
+      firstUseAt: new Date(Date.now() - 60 * DAY_MS),
+    },
+  });
+}
+
+async function unitsRemaining(medicationId: string): Promise<number> {
+  const item = await getPrismaClient().medicationInventoryItem.findFirstOrThrow(
+    { where: { medicationId } },
+  );
+  return Number(item.unitsRemaining);
+}
+
+/** A take tapped in HealthLog: no external record, no Apple provenance. */
+async function postAppTap(medicationId: string, slot: Date, takenAt: Date) {
+  const { POST } = await import("@/app/api/medications/intake/bulk/route");
+  const response = await POST(
+    new NextRequest("http://localhost/api/medications/intake/bulk", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        entries: [
+          {
+            medicationId,
+            scheduledFor: slot.toISOString(),
+            takenAt: takenAt.toISOString(),
+          },
+        ],
+      }),
+    }),
+  );
+  expect(response.status).toBe(200);
+}
+
+describe("the same dose recorded twice is one dose", () => {
+  it("(d) a tap in HealthLog at 08:00 and the dose in Health at 08:20 the same day", async () => {
+    const userId = await signedInUser();
+    const medicationId = await seedMedication(userId, {
+      timesOfDay: ["08:00"],
+      daysOfWeek: null,
+    });
+    await stock(userId, medicationId);
+    const day = pastLocalDay(4);
+    const slot = localHmAsUtc(day, TZ, 8, 0);
+    const tapAt = slot;
+    const appleAt = new Date(slot.getTime() + 20 * MIN);
+
+    await postAppTap(medicationId, slot, tapAt);
+    expect(await unitsRemaining(medicationId)).toBe(99);
+    // Health sends it as the slot's scheduled dose, and once more as an
+    // unscheduled one: either way it is the tapped dose.
+    for (const [externalId, scheduledFor] of [
+      ["hk-d-1", slot],
+      ["hk-d-2", appleAt],
+    ] as const) {
+      const results = await postBulk([
+        appleDose(medicationId, appleAt, externalId, scheduledFor),
+      ]);
+      expect(results.map((r) => r.status)).toEqual(["updated"]);
+    }
+
+    const rows = await rowsOf(medicationId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.scheduledFor.getTime()).toBe(slot.getTime());
+    // One dose, one unit off the bottle.
+    expect(await unitsRemaining(medicationId)).toBe(99);
+    const ledger = await readLedger(
+      medicationId,
+      new Date(slot.getTime() - 6 * 3_600_000),
+      new Date(slot.getTime() + 6 * 3_600_000),
+    );
+    expect(ledger.filter((row) => row.kind === "ad_hoc")).toHaveLength(0);
+  });
+
+  it("(e) a dose edited in Health: a new record, moved by 30 minutes, inside the same slot", async () => {
+    const userId = await signedInUser();
+    const medicationId = await seedMedication(userId, {
+      timesOfDay: ["22:00"],
+      daysOfWeek: null,
+    });
+    await stock(userId, medicationId);
+    const slot = localHmAsUtc(pastLocalDay(2), TZ, 22, 0);
+    const firstAt = new Date(slot.getTime() + 2 * MIN);
+    const editedAt = new Date(slot.getTime() + 32 * MIN);
+
+    await postBulk([appleDose(medicationId, firstAt, "hk-e-1", slot)]);
+    // Health replaces an edited dose with a new record; it still names the
+    // slot as its scheduled time.
+    const results = await postBulk([
+      appleDose(medicationId, editedAt, "hk-e-2", slot),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(["updated"]);
+
+    const rows = await rowsOf(medicationId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.externalId).toBe("hk-e-2");
+    expect(rows[0]!.takenAt?.getTime()).toBe(editedAt.getTime());
+    expect(rows[0]!.scheduledFor.getTime()).toBe(slot.getTime());
+    expect(await unitsRemaining(medicationId)).toBe(99);
+  });
+
+  it("(f) an extra dose the next day still stays its own dose, consuming its own unit", async () => {
+    const userId = await signedInUser();
+    const medicationId = await seedMedication(userId, {
+      timesOfDay: ["22:00"],
+      daysOfWeek: "2,5",
+    });
+    await stock(userId, medicationId);
+    const tuesday = pastLocalDay(2);
+    const tuesdaySlot = localHmAsUtc(tuesday, TZ, 22, 0);
+    const wednesdayDose = localHmAsUtc(
+      new Date(tuesday.getTime() + DAY_MS),
+      TZ,
+      20,
+      45,
+    );
+
+    await postAppTap(medicationId, tuesdaySlot, tuesdaySlot);
+    const results = await postBulk([
+      appleDose(medicationId, wednesdayDose, "hk-f-wed"),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(["inserted"]);
+    expect(await rowsOf(medicationId)).toHaveLength(2);
+    expect(await unitsRemaining(medicationId)).toBe(98);
+  });
+});

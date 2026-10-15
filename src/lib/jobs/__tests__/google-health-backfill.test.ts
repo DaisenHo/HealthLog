@@ -281,9 +281,10 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
 
   it("derives the chain's ceiling from the work a backfill can do", () => {
     // Every collection once, plus every page the resumable collections may
-    // ever read (heart rate's 10 000 and four others' 1 000), plus slack.
+    // ever write (heart rate's 10 000 and four others' 1 000) and as many
+    // again for a saved place in the list moving forward, plus slack.
     expect(GOOGLE_HEALTH_BACKFILL_MAX_SLICE).toBe(
-      17 + GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING + 2,
+      17 + 2 * GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING + 2,
     );
     expect(GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING).toBe(10_000 + 4 * 1000);
   });

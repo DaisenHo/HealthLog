@@ -24,10 +24,12 @@
  *   - every slice writes a log event naming its requests and where it got to;
  *   - the heap does not grow with the history (run it under the production
  *     ceiling: `NODE_OPTIONS=--max-old-space-size=524`);
- *   - and, in a second run over two years, a Google that refuses the resume
+ *   - and, in a second run over four years, a Google that refuses the resume
  *     edge's upper bound (`<=`): the backfill falls back to reading without
- *     it, notes the refusal so it is met only once, and still imports every
- *     reading exactly once.
+ *     it, notes the refusal so it is met only once, keeps its place in the
+ *     unbounded list from slice to slice so the pages it reads stay linear in
+ *     the history (before, every slice passed over everything the slices
+ *     before it wrote), and still imports every reading exactly once.
  *
  * Google is replaced at the `safeFetch` seam by a generator that builds each
  * page on request from the filter and page token it is asked with, so the
@@ -433,9 +435,11 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
   }, 3_600_000);
 
   it("completes when Google refuses the resume edge's upper bound, meeting the refusal once", async () => {
-    // Two years: the first slice reads without an edge, the second resumes
-    // with the bound and is refused, the third reads without it from the start.
-    const points = 2 * 365 * 24 * 60;
+    // Four years: the first slice reads without an edge, the second resumes
+    // with the bound and is refused, every later one reads without it. Long
+    // enough that passing over everything already written on every slice
+    // would read the history several times over.
+    const points = 4 * 365 * 24 * 60;
     await seed(points);
     fake.refuseUpperBound = true;
 
@@ -445,6 +449,8 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
       await import("@/lib/jobs/reminder/google-health-sync");
     const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
       await import("@/lib/google-health/client");
+    const { GOOGLE_HEALTH_BACKFILL_SLICE_PAGES } =
+      await import("@/lib/jobs/google-health-backfill");
     GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
 
     const prisma = getPrismaClient();
@@ -452,6 +458,7 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
       kind: "google-health-backfill",
       data: { userId: USER, enqueuedAt: new Date().toISOString() },
     };
+    let hourlyRuns = 0;
     const slices: Array<{
       imported: number;
       continued: number;
@@ -495,6 +502,7 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
           ok: true,
           did: { users_skipped: 0, users_failed: 0, users_parked: 0 },
         });
+        hourlyRuns += 1;
       }
     }
 
@@ -506,6 +514,22 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
     expect(connection.backfillProgress).toBeNull();
     expect(payload).toBeNull();
     expect(slices.slice(0, -1).every((s) => s.continued === 1)).toBe(true);
+    // The hourly sync ran between every two slices.
+    expect(slices.length).toBeGreaterThan(4);
+    expect(hourlyRuns).toBe(slices.length - 1);
+
+    // The pages read stay linear in the history: every page once, the one
+    // pass over what the first slice wrote when the refusal was met, and a
+    // page or two per slice where it picks up again. Passing over everything
+    // already written on every slice read more than three times as many.
+    const historyPages = Math.ceil(points / 1000);
+    report(
+      `refusing run: backfill requests=${fake.backfillRequests} ` +
+        `history pages=${historyPages} slices=${slices.length}`,
+    );
+    expect(fake.backfillRequests).toBeLessThanOrEqual(
+      historyPages + GOOGLE_HEALTH_BACKFILL_SLICE_PAGES + 2 * slices.length,
+    );
 
     // The bound was asked for once, refused once, and never again: the
     // refusal was noted on the slice that met it and honoured after.
@@ -514,10 +538,11 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
     expect(slices.filter((s) => s.refusalNoted !== undefined)).toEqual([
       expect.objectContaining({ refusalNoted: ["fetchHeartRate"] }),
     ]);
-    // More than one slice had to pass over what the ones before it wrote,
-    // and each still wrote its share.
+    // Only the slice that met the refusal passed over what the slice before
+    // it wrote, and it still wrote its share; every later one went on from
+    // where the last stopped.
     const skipping = slices.filter((s) => s.skippedPages > 0);
-    expect(skipping.length).toBeGreaterThan(1);
+    expect(skipping).toHaveLength(1);
     expect(skipping.every((s) => s.imported > 0)).toBe(true);
 
     // Every reading exactly once, none of them rewritten.

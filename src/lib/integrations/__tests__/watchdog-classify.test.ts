@@ -4,6 +4,7 @@ import {
   NORMAL_DELIVERY_MIN_DAYS,
   SOURCE_PROFILES,
   classifySilence,
+  FIRST_RUN_ALERTED_AT,
   currentIncident,
   decideWatchTransition,
   type WatchRow,
@@ -244,6 +245,43 @@ describe("currentIncident", () => {
     ).toEqual({ reason: "unexpected_silence", since: ago(30) });
   });
 
+  it("never opens an incident for stale or stalled data on its own, however long it lasts", () => {
+    // An Apple Health account whose phone app stopped running reads as
+    // `no_new_data` for good; nothing an operator can do about it.
+    for (const reason of ["no_new_data", "sync_stalled"] as const) {
+      expect(
+        currentIncident({
+          health: health("degraded", reason, ago(24 * 90)),
+          silentSince: null,
+          ledgerAlerted: false,
+          now: NOW,
+        }),
+      ).toBeNull();
+    }
+  });
+
+  it("opens an incident for provider errors that have lasted more than a day", () => {
+    expect(
+      currentIncident({
+        health: health("degraded", "provider_errors", ago(25)),
+        silentSince: null,
+        ledgerAlerted: false,
+        now: NOW,
+      }),
+    ).toEqual({ reason: "provider_errors", since: ago(25) });
+  });
+
+  it("still opens a silence incident beside stale data", () => {
+    expect(
+      currentIncident({
+        health: health("degraded", "no_new_data", ago(50)),
+        silentSince: ago(30),
+        ledgerAlerted: false,
+        now: NOW,
+      }),
+    ).toEqual({ reason: "unexpected_silence", since: ago(30) });
+  });
+
   it("has no incident for a limited connection", () => {
     expect(
       currentIncident({
@@ -253,6 +291,27 @@ describe("currentIncident", () => {
         now: NOW,
       }),
     ).toBeNull();
+  });
+});
+
+describe("decideWatchTransition: an incident recorded on the first run", () => {
+  it("closes without a recovery note, since none was ever sent", () => {
+    expect(
+      decideWatchTransition({
+        row: {
+          silentSince: ago(30),
+          incidentReason: "unexpected_silence",
+          incidentOpenedAt: ago(2),
+          alertedAt: FIRST_RUN_ALERTED_AT,
+        },
+        incident: null,
+        ledgerAlerted: false,
+      }),
+    ).toEqual({
+      kind: "close",
+      notify: false,
+      previousReason: "unexpected_silence",
+    });
   });
 });
 

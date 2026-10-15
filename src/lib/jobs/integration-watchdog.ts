@@ -57,6 +57,7 @@ function handlerFor(mode: WatchdogMode) {
             incidents_opened: s.incidentsOpened,
             incidents_closed: s.incidentsClosed,
             notified: s.notified,
+            first_run: s.firstRun ? 1 : 0,
           });
         } catch (err) {
           evt.addWarning(`integration watchdog failed: ${err}`);
