@@ -20466,12 +20466,12 @@ paths:
       tags:
         - Integrations
       summary: Read every integration's status in one call
-      description: "The consolidated envelope behind the integrations settings surface: all eight providers, always, in a
-        fixed order, each with the ledger core, the server-resolved liveness verdict and its own extras. Prefer this
-        over eight per-provider round-trips. Pure read. Auth via cookie or Bearer."
+      description: "The consolidated envelope behind the integrations settings surface: all nine providers, always, in a fixed
+        order, each with the ledger core, the server-resolved liveness verdict and its own extras. Prefer this over nine
+        per-provider round-trips. Pure read. Auth via cookie or Bearer."
       responses:
         "200":
-          description: All eight provider entries plus the alert threshold.
+          description: All nine provider entries plus the alert threshold.
           content:
             application/json:
               schema:
@@ -24359,7 +24359,6 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/dawarich/status:
     get:
       tags:
@@ -24376,7 +24375,6 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/dawarich/places:
     get:
       tags:
@@ -24407,7 +24405,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a69
         "502":
           description: "`dawarich.unreachable`."
           content:
@@ -24419,7 +24416,10 @@ paths:
       tags:
         - Integrations
       summary: Dawarich home place and country (v1.43)
-      description: 422 `dawarich.invalid`; 422 `dawarich.home_place_unknown` for a place id the instance does not have.
+      description: 422 `dawarich.invalid`; 422 `dawarich.home_place_unknown` for a place id the instance does not have; 409
+        `dawarich.not_connected`; 502 `dawarich.unreachable` when the place cannot be checked. A new home country
+        re-judges the stored travel days at once; a new home place fetches the stored days again in the background (up
+        to a year).
       requestBody:
         required: true
         content:
@@ -24435,16 +24435,29 @@ paths:
                 $ref: "#/components/schemas/DawarichSettingsEnvelope"
         "401": *a1
         "403": *a19
+        "409":
+          description: "`dawarich.not_connected`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a69
+        "502":
+          description: "`dawarich.unreachable`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/dawarich/test:
     post:
       tags:
         - Integrations
       summary: Probe the Dawarich connection (v1.43)
-      description: Answers the shared integration probe shape; a failed probe is an error status. The probe classes are those
-        of the other `/test` routes.
+      description: Answers the shared integration probe shape. A failed probe is a 502 whose `errorCode` is one of the shared
+        probe classes (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `url_not_public`,
+        `connection_failed`); 422 `not_configured` without a connection; 429 `rate_limited_self` past five probes a
+        minute.
       responses:
         "200":
           description: The probe reached the instance.
@@ -24456,13 +24469,20 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a69
+        "502":
+          description: A probe class; see the description.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/dawarich/sync:
     post:
       tags:
         - Integrations
       summary: Fetch Dawarich daily values again (v1.43)
-      description: From `fromDate` (at most 365 days back). 409 `dawarich.not_connected`; 422 `dawarich.invalid`.
+      description: From `fromDate` (inside the 365 days ending yesterday; without it the nightly window of seven days).
+        `enqueued` is false when a run for this account is already queued or no worker is bound. 409
+        `dawarich.not_connected`; 422 `dawarich.invalid`.
       requestBody:
         required: false
         content:
@@ -24491,13 +24511,13 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/dawarich/disconnect:
     post:
       tags:
         - Integrations
       summary: Disconnect Dawarich (v1.43)
-      description: "Forgets the connection; with `deleteData: true` the stored days go too."
+      description: "Forgets the connection; with `deleteData: true` the stored days go too. No body is `{ deleteData: false
+        }`. Disconnecting twice is harmless."
       requestBody:
         required: false
         content:
@@ -24520,12 +24540,13 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/environment/travel/suggestions:
     get:
       tags:
         - Environment
       summary: Suggested trips from Dawarich travel days (v1.43)
+      description: Runs of at least two consecutive travel days in one country, inside the last year, that no stored trip
+        overlaps and the person has not dismissed; newest first. Empty without a Dawarich connection.
       responses:
         "200":
           description: The suggestions.
@@ -24537,7 +24558,6 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/environment/travel/suggestions/{id}/dismiss:
     post:
       tags:
@@ -24567,7 +24587,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/medications/{id}/links:
     post:
       tags:
@@ -35713,42 +35732,43 @@ components:
                 cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
                 cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
                 cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
-                dawarich — dawarich.invalid, dawarich.rate_limited; day — day.invalid; demo — demo.readOnly; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
-                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
-                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
-                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
-                documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid,
+                dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo —
+                demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
+                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
+                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
+                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
+                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
                 encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; encryption
                 — encryption.keyBackup.stale, encryption.key_mismatch; environment — environment.backfill_pending,
                 environment.backfill_rate_limited, environment.invalid, environment.no_home,
-                environment.range_too_large, environment.travel.not_found; export — export.selection.empty,
-                export.selection.unknown_leaf; familyHistory — familyHistory.invalid; feedback — feedback.body.invalid;
-                health_score_config — health_score_config.invalid, health_score_config.too_narrow; illness —
-                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
-                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
-                import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
-                insights.generate.budgetExceeded, insights.generate.outboundScreened,
-                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
-                labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
-                labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
-                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
-                labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
-                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
-                labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
-                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
+                export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
+                feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
+                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
+                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
+                illness.episode.parent-not-found, illness.insights.invalid; import — import.apple_health.busy,
+                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
+                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
+                insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
+                labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
+                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
+                labs.create.invalid, labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed,
+                labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic,
+                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound,
+                labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
@@ -43343,6 +43363,71 @@ components:
               - lon
               - label
             additionalProperties: {}
+        dawarichDays:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+              totalDistanceM:
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: "null"
+              drivingDistanceM:
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: "null"
+              trainDistanceM:
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: "null"
+              placesVisited:
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: "null"
+              awayFromHomeMinutes:
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 1500
+                  - type: "null"
+              countryCode:
+                anyOf:
+                  - type: string
+                    pattern: ^[A-Z]{2}$
+                  - type: "null"
+              countryCodeEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              isTravelDay:
+                anyOf:
+                  - type: boolean
+                  - type: "null"
+              fetchedAt:
+                type: string
+                minLength: 1
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+            required:
+              - date
+            additionalProperties: {}
         ecgRecordings:
           default: []
           type: array
@@ -43541,6 +43626,7 @@ components:
         - userAchievements
         - environmentContexts
         - environmentTravelLocations
+        - dawarichDays
         - ecgRecordings
         - manifest
         - decryptFailures
@@ -77836,26 +77922,26 @@ components:
         metricFreshnessDegraded:
           type: boolean
           description: "The per-metric freshness query failed, so EVERY entry's `metricFreshness` is an empty array regardless of
-            what the record actually holds. One flag rather than one per entry, because it is a single query for all
-            eight providers: it fails for all of them or for none. When true, render the freshness section as
-            unavailable rather than as 'no metric has gone quiet' — the two used to be indistinguishable on the wire,
-            which turned the honesty signal into the thing it was built to prevent. The rest of the envelope is
-            unaffected and still complete."
+            what the record actually holds. One flag rather than one per entry, because it is a single query for every
+            provider: it fails for all of them or for none. When true, render the freshness section as unavailable
+            rather than as 'no metric has gone quiet' — the two used to be indistinguishable on the wire, which turned
+            the honesty signal into the thing it was built to prevent. The rest of the envelope is unaffected and still
+            complete."
         integrations:
           type: array
           items:
             $ref: "#/components/schemas/IntegrationStatusEntry"
-          description: "All eight providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura,
-            strava, nightscout. A provider the user has never touched still appears, with `connected: false` and a
-            synthesised `connected` ledger state — absence from this list never means anything, because nothing is ever
-            absent from it."
+          description: "All nine providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura,
+            strava, nightscout, dawarich. A provider the user has never touched still appears, with `connected: false`
+            and a synthesised `connected` ledger state — absence from this list never means anything, because nothing is
+            ever absent from it."
       required:
         - threshold
         - metricFreshnessDegraded
         - integrations
       additionalProperties: false
       description: The one read behind the integrations settings surface. It carries every field the per-provider status
-        routes carry, so a client has the choice of eight round-trips or this one; the per-provider routes remain for
+        routes carry, so a client has the choice of nine round-trips or this one; the per-provider routes remain for
         callers that want a single provider.
     IntegrationStatusEntry:
       type: object
@@ -77871,6 +77957,7 @@ components:
             - oura
             - strava
             - nightscout
+            - dawarich
           description: Which provider this entry describes.
         state:
           type: string

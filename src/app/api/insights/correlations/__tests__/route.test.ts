@@ -160,6 +160,7 @@ beforeEach(() => {
   ).mockResolvedValue([]);
   vi.mocked(prisma.customMetric.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.dawarichDay.findMany).mockResolvedValue([] as never);
   vi.mocked(hadFindingsBeforeSeasonalAdjustment).mockResolvedValue(false);
 });
 

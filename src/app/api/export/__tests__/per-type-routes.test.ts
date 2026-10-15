@@ -216,6 +216,7 @@ beforeEach(() => {
   vi.mocked(prisma.environmentTravelLocation.findMany).mockResolvedValue(
     [] as never,
   );
+  vi.mocked(prisma.dawarichDay.findMany).mockResolvedValue([] as never);
 });
 
 afterEach(() => {
