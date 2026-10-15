@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 process.env.API_TOKEN_HMAC_KEY ??=
   "test-hmac-key-oidc-pending-link-32-bytes-minimum-1234567890";
@@ -186,7 +187,9 @@ describe("under an SSO-only policy", () => {
     const wrong = await passwordLogin("acct-b", "not the password");
     expect(right.status).toBe(403);
     expect(wrong.status).toBe(403);
-    expect(await wrong.json()).toEqual(await right.json());
+    expect(await bodyWithoutRequestId(wrong)).toBe(
+      await bodyWithoutRequestId(right),
+    );
   });
 
   it("keeps it closed for any other account", async () => {
