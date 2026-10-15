@@ -9687,6 +9687,54 @@
       "fromReport": "Befundbereich {range}",
       "catalogDiffers": "dein Bereich {range}",
       "printed": "auf dem Befund in {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "über einen Namen, den du früher zugeordnet hast",
+      "viaCatalog": "als übliche Abkürzung erkannt",
+      "chooseLabel": "Gehört zu",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Ein neuer Biomarker",
+      "rememberHint": "Der Name wird für den nächsten Befund gemerkt.",
+      "chooseHint": "Wähle einen Biomarker, wenn du ihn schon erfasst."
+    },
+    "aliases": {
+      "title": "Auch geschrieben als",
+      "taken": "{alias} gehört schon zu einem anderen Biomarker.",
+      "saveError": "Die Namen konnten nicht gespeichert werden. Versuche es erneut.",
+      "remove": "{alias} entfernen",
+      "empty": "Ergänze die Namen, die andere Labore für {name} drucken, damit ihre Befunde hier landen.",
+      "placeholder": "z. B. Alk.P",
+      "addLabel": "Weiterer Name für diesen Biomarker",
+      "add": "Hinzufügen",
+      "alsoWritten": "Auch geschrieben als {aliases}"
+    },
+    "merge": {
+      "open": "Zusammenführen",
+      "title": "Biomarker zusammenführen",
+      "description": "Fasse Biomarker zusammen, die derselbe Test unter anderem Namen sind.",
+      "pickHint": "Wähle mindestens zwei Biomarker aus.",
+      "keepLabel": "Behalten",
+      "keepHint": "Die anderen gehen in diesen auf, und ihre Namen werden seine weiteren Namen.",
+      "showPreview": "Vorschau zeigen",
+      "back": "Zurück",
+      "confirm": "Jetzt zusammenführen",
+      "previewSummaryOne": "{count} Messung wechselt zu {name} ({unit}).",
+      "previewSummaryFew": "{count} Messungen wechseln zu {name} ({unit}).",
+      "previewSummaryOther": "{count} Messungen wechseln zu {name} ({unit}).",
+      "movesOne": "{count} Messung, schon in derselben Einheit",
+      "movesFew": "{count} Messungen, schon in derselben Einheit",
+      "movesOther": "{count} Messungen, schon in derselben Einheit",
+      "convertedOne": "{count} Messung, umgerechnet von {unit} in {targetUnit}",
+      "convertedFew": "{count} Messungen, umgerechnet von {unit} in {targetUnit}",
+      "convertedOther": "{count} Messungen, umgerechnet von {unit} in {targetUnit}",
+      "refused": "{unit} lässt sich nicht in {targetUnit} umrechnen.",
+      "aliasesAdded": "Diese Namen führen danach zum behaltenen Biomarker:",
+      "blocked": "Solange sich eine Einheit nicht umrechnen lässt, wird nichts zusammengeführt. Lass diesen Biomarker weg oder behalte einen anderen.",
+      "noUndo": "Das Zusammenführen lässt sich nicht rückgängig machen.",
+      "doneToastOne": "In {name} zusammengeführt, {count} Messung verschoben",
+      "doneToastFew": "In {name} zusammengeführt, {count} Messungen verschoben",
+      "doneToastOther": "In {name} zusammengeführt, {count} Messungen verschoben",
+      "error": "Die Biomarker konnten nicht zusammengeführt werden. Versuche es erneut."
     }
   },
   "modules": {
@@ -11126,7 +11174,8 @@
       "extractEmpty": "Aus diesem Dokument konnten keine Werte ausgelesen werden.",
       "failUnitRequired": "Ein Zahlenwert braucht eine Einheit, bevor er gespeichert werden kann.",
       "failUnitMismatch": "Die angegebene Einheit passt nicht zur gespeicherten Einheit dieses Markers. Passe sie an und schließe die Prüfung erneut ab.",
-      "failGeneric": "Dieser Wert konnte nicht gespeichert werden."
+      "failGeneric": "Dieser Wert konnte nicht gespeichert werden.",
+      "failUnknownBiomarker": "Den gewählten Biomarker gibt es nicht mehr. Wähle einen anderen."
     },
     "contentIndex": {
       "indexPrompt": "Dokumentinhalte durchsuchbar machen.",

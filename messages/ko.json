@@ -9687,6 +9687,54 @@
       "fromReport": "결과지 범위 {range}",
       "catalogDiffers": "내 범위 {range}",
       "printed": "결과지 원문({unit}): {range}"
+    },
+    "match": {
+      "viaAlias": "전에 고른 이름으로 연결됨",
+      "viaCatalog": "흔히 쓰는 약어로 인식됨",
+      "chooseLabel": "연결할 항목",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "새 바이오마커",
+      "rememberHint": "다음 결과지를 위해 이 이름을 기억해요.",
+      "chooseHint": "이미 기록 중인 바이오마커라면 골라 주세요."
+    },
+    "aliases": {
+      "title": "다른 표기",
+      "taken": "{alias}은(는) 이미 다른 바이오마커에 연결돼 있어요.",
+      "saveError": "이름을 저장하지 못했어요. 다시 시도해 주세요.",
+      "remove": "{alias} 삭제",
+      "empty": "다른 검사기관이 {name}에 쓰는 이름을 추가하면 그 결과지도 여기로 모여요.",
+      "placeholder": "예: ALP",
+      "addLabel": "이 바이오마커의 다른 이름",
+      "add": "추가",
+      "alsoWritten": "다른 표기: {aliases}"
+    },
+    "merge": {
+      "open": "합치기",
+      "title": "바이오마커 합치기",
+      "description": "이름만 다르게 적힌 같은 검사 항목을 하나로 모아요.",
+      "pickHint": "바이오마커를 두 개 이상 골라 주세요.",
+      "keepLabel": "남길 항목",
+      "keepHint": "나머지는 이 항목으로 옮겨지고, 그 이름은 이 항목의 다른 표기가 돼요.",
+      "showPreview": "미리 보기",
+      "back": "뒤로",
+      "confirm": "지금 합치기",
+      "previewSummaryOne": "측정값 {count}개가 {name} ({unit})(으)로 옮겨져요.",
+      "previewSummaryFew": "측정값 {count}개가 {name} ({unit})(으)로 옮겨져요.",
+      "previewSummaryOther": "측정값 {count}개가 {name} ({unit})(으)로 옮겨져요.",
+      "movesOne": "측정값 {count}개, 이미 같은 단위",
+      "movesFew": "측정값 {count}개, 이미 같은 단위",
+      "movesOther": "측정값 {count}개, 이미 같은 단위",
+      "convertedOne": "측정값 {count}개, {unit}에서 {targetUnit}(으)로 환산",
+      "convertedFew": "측정값 {count}개, {unit}에서 {targetUnit}(으)로 환산",
+      "convertedOther": "측정값 {count}개, {unit}에서 {targetUnit}(으)로 환산",
+      "refused": "{unit}은(는) {targetUnit}(으)로 환산할 수 없어요.",
+      "aliasesAdded": "이 이름들은 남긴 바이오마커로 연결돼요:",
+      "blocked": "환산할 수 없는 단위가 있으면 아무것도 합치지 않아요. 그 바이오마커를 빼거나 다른 항목을 남겨 주세요.",
+      "noUndo": "합친 뒤에는 되돌릴 수 없어요.",
+      "doneToastOne": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
+      "doneToastFew": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
+      "doneToastOther": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
+      "error": "바이오마커를 합치지 못했어요. 다시 시도해 주세요."
     }
   },
   "modules": {
@@ -11126,7 +11174,8 @@
       "extractEmpty": "이 문서에서 추출할 수 있는 값이 없었어요.",
       "failUnitRequired": "숫자 값을 저장하려면 단위가 필요해요.",
       "failUnitMismatch": "기재된 단위가 이 지표에 저장된 단위와 달라요. 수정한 뒤 검토를 다시 완료해 주세요.",
-      "failGeneric": "이 값을 저장하지 못했어요."
+      "failGeneric": "이 값을 저장하지 못했어요.",
+      "failUnknownBiomarker": "고른 바이오마커가 더 이상 없어요. 다른 항목을 골라 주세요."
     },
     "contentIndex": {
       "indexPrompt": "문서 내용을 검색할 수 있게 만들어요.",

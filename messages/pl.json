@@ -9687,6 +9687,54 @@
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}",
       "printed": "wydrukowano w {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "według nazwy, którą wybrałeś wcześniej",
+      "viaCatalog": "rozpoznano jako popularny skrót",
+      "chooseLabel": "Należy do",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Nowy biomarker",
+      "rememberHint": "Ta nazwa zostanie zapamiętana na następny wynik.",
+      "chooseHint": "Wybierz biomarker, jeśli już go śledzisz."
+    },
+    "aliases": {
+      "title": "Zapisywany też jako",
+      "taken": "{alias} należy już do innego biomarkera.",
+      "saveError": "Nie udało się zapisać nazw. Spróbuj ponownie.",
+      "remove": "Usuń {alias}",
+      "empty": "Dodaj nazwy, które inne laboratoria drukują dla {name}, aby ich wyniki trafiały tutaj.",
+      "placeholder": "np. ALP",
+      "addLabel": "Inna nazwa tego biomarkera",
+      "add": "Dodaj",
+      "alsoWritten": "Zapisywany też jako {aliases}"
+    },
+    "merge": {
+      "open": "Scal",
+      "title": "Scal biomarkery",
+      "description": "Połącz biomarkery, które są tym samym badaniem zapisanym inaczej.",
+      "pickHint": "Zaznacz co najmniej dwa biomarkery.",
+      "keepLabel": "Zachowaj",
+      "keepHint": "Pozostałe zostaną włączone do tego, a ich nazwy staną się jego innymi nazwami.",
+      "showPreview": "Pokaż podgląd",
+      "back": "Wstecz",
+      "confirm": "Scal teraz",
+      "previewSummaryOne": "{count} pomiar przechodzi do {name} ({unit}).",
+      "previewSummaryFew": "{count} pomiary przechodzą do {name} ({unit}).",
+      "previewSummaryOther": "{count} pomiarów przechodzi do {name} ({unit}).",
+      "movesOne": "{count} pomiar, już w tej samej jednostce",
+      "movesFew": "{count} pomiary, już w tej samej jednostce",
+      "movesOther": "{count} pomiarów, już w tej samej jednostce",
+      "convertedOne": "{count} pomiar, przeliczony z {unit} na {targetUnit}",
+      "convertedFew": "{count} pomiary, przeliczone z {unit} na {targetUnit}",
+      "convertedOther": "{count} pomiarów, przeliczonych z {unit} na {targetUnit}",
+      "refused": "Nie można przeliczyć {unit} na {targetUnit}.",
+      "aliasesAdded": "Te nazwy będą prowadzić do zachowanego biomarkera:",
+      "blocked": "Nic nie zostanie scalone, dopóki jednej jednostki nie da się przeliczyć. Pomiń ten biomarker albo zachowaj inny.",
+      "noUndo": "Scalenia nie można cofnąć.",
+      "doneToastOne": "Scalono w {name}, przeniesiono {count} pomiar",
+      "doneToastFew": "Scalono w {name}, przeniesiono {count} pomiary",
+      "doneToastOther": "Scalono w {name}, przeniesiono {count} pomiarów",
+      "error": "Nie udało się scalić biomarkerów. Spróbuj ponownie."
     }
   },
   "modules": {
@@ -11126,7 +11174,8 @@
       "extractEmpty": "Z tego dokumentu nie udało się odczytać żadnych wartości.",
       "failUnitRequired": "Wartość liczbowa potrzebuje jednostki, zanim będzie można ją zapisać.",
       "failUnitMismatch": "Podana jednostka nie zgadza się z zapisaną jednostką tego wskaźnika. Popraw ją i zakończ przegląd ponownie.",
-      "failGeneric": "Nie udało się zapisać tej wartości."
+      "failGeneric": "Nie udało się zapisać tej wartości.",
+      "failUnknownBiomarker": "Wybrany biomarker już nie istnieje. Wybierz inny."
     },
     "contentIndex": {
       "indexPrompt": "Udostępnij treść dokumentów do wyszukiwania.",

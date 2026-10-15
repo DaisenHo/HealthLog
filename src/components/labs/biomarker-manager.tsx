@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, FlaskConical, Pencil, Plus } from "lucide-react";
+import { Eye, EyeOff, FlaskConical, Merge, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { DeleteButton } from "@/components/data-list";
@@ -17,7 +17,10 @@ import { formatReferenceRange } from "@/lib/labs/reference-range";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+
 import { BiomarkerForm } from "./biomarker-form";
+import { BiomarkerMergeSheet } from "./biomarker-merge-sheet";
 import type { BiomarkerDto, BiomarkerListResponse } from "./types";
 import { useLabNumber } from "./use-lab-format";
 
@@ -48,6 +51,10 @@ export function BiomarkerManager() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BiomarkerDto | null>(null);
   const [formFooterEl, setFormFooterEl] = useState<HTMLDivElement | null>(null);
+  // v1.43 (D1223) — merging is a manage-level act, like edit and delete.
+  const { canManageDomain } = useRecordCapabilities();
+  const canMerge = canManageDomain("labs");
+  const [mergeOpen, setMergeOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.biomarkers(),
@@ -122,6 +129,16 @@ export function BiomarkerManager() {
               : t("labs.biomarker.noRange")}
             {marker.panel ? ` · ${marker.panel}` : ""}
           </p>
+          {marker.aliases && marker.aliases.length > 0 ? (
+            <p
+              className="text-muted-foreground truncate text-xs"
+              data-slot="biomarker-row-aliases"
+            >
+              {t("labs.aliases.alsoWritten", {
+                aliases: marker.aliases.join(", "),
+              })}
+            </p>
+          ) : null}
         </div>
         <Button
           size="icon"
@@ -213,11 +230,31 @@ export function BiomarkerManager() {
           state's own button, so the card never offers the same action twice. */}
       {!isLoading && !isError && markers.length > 0 ? (
         <SettingsCardActions>
+          {canMerge && markers.length >= 2 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMergeOpen(true)}
+              className="min-h-11 sm:min-h-9"
+              data-slot="biomarker-merge-open"
+            >
+              <Merge className="h-4 w-4" />
+              {t("labs.merge.open")}
+            </Button>
+          ) : null}
           <Button size="sm" onClick={openNew} className="min-h-11 sm:min-h-9">
             <Plus className="h-4 w-4" />
             {t("labs.biomarker.define")}
           </Button>
         </SettingsCardActions>
+      ) : null}
+
+      {canMerge ? (
+        <BiomarkerMergeSheet
+          open={mergeOpen}
+          onOpenChange={setMergeOpen}
+          markers={markers}
+        />
       ) : null}
 
       <ResponsiveSheet

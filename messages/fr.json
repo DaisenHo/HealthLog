@@ -9687,6 +9687,54 @@
       "fromReport": "Plage du compte rendu {range}",
       "catalogDiffers": "votre plage {range}",
       "printed": "imprimé en {unit} : {range}"
+    },
+    "match": {
+      "viaAlias": "par un nom que tu as choisi auparavant",
+      "viaCatalog": "reconnu comme une abréviation courante",
+      "chooseLabel": "Correspond à",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Un nouveau biomarqueur",
+      "rememberHint": "Ce nom sera retenu pour le prochain compte rendu.",
+      "chooseHint": "Choisis un biomarqueur si tu le suis déjà."
+    },
+    "aliases": {
+      "title": "Aussi écrit",
+      "taken": "{alias} appartient déjà à un autre biomarqueur.",
+      "saveError": "Les noms n'ont pas pu être enregistrés. Réessaie.",
+      "remove": "Retirer {alias}",
+      "empty": "Ajoute les noms que d'autres laboratoires impriment pour {name}, pour que leurs comptes rendus arrivent ici.",
+      "placeholder": "p. ex. PAL",
+      "addLabel": "Autre nom pour ce biomarqueur",
+      "add": "Ajouter",
+      "alsoWritten": "Aussi écrit {aliases}"
+    },
+    "merge": {
+      "open": "Fusionner",
+      "title": "Fusionner des biomarqueurs",
+      "description": "Réunis les biomarqueurs qui sont le même examen écrit autrement.",
+      "pickHint": "Sélectionne au moins deux biomarqueurs.",
+      "keepLabel": "Conserver",
+      "keepHint": "Les autres sont fondus dans celui-ci et leurs noms deviennent ses autres noms.",
+      "showPreview": "Voir l'aperçu",
+      "back": "Retour",
+      "confirm": "Fusionner maintenant",
+      "previewSummaryOne": "{count} mesure passe à {name} ({unit}).",
+      "previewSummaryFew": "{count} mesures passent à {name} ({unit}).",
+      "previewSummaryOther": "{count} mesures passent à {name} ({unit}).",
+      "movesOne": "{count} mesure, déjà dans la même unité",
+      "movesFew": "{count} mesures, déjà dans la même unité",
+      "movesOther": "{count} mesures, déjà dans la même unité",
+      "convertedOne": "{count} mesure, convertie de {unit} en {targetUnit}",
+      "convertedFew": "{count} mesures, converties de {unit} en {targetUnit}",
+      "convertedOther": "{count} mesures, converties de {unit} en {targetUnit}",
+      "refused": "{unit} ne peut pas être converti en {targetUnit}.",
+      "aliasesAdded": "Ces noms mèneront au biomarqueur conservé :",
+      "blocked": "Rien n'est fusionné tant qu'une unité ne peut pas être convertie. Laisse ce biomarqueur de côté ou conserve-en un autre.",
+      "noUndo": "Une fusion ne peut pas être annulée.",
+      "doneToastOne": "Fusionné dans {name}, {count} mesure déplacée",
+      "doneToastFew": "Fusionné dans {name}, {count} mesures déplacées",
+      "doneToastOther": "Fusionné dans {name}, {count} mesures déplacées",
+      "error": "Les biomarqueurs n'ont pas pu être fusionnés. Réessaie."
     }
   },
   "modules": {
@@ -11126,7 +11174,8 @@
       "extractEmpty": "Aucune valeur n’a pu être extraite de ce document.",
       "failUnitRequired": "Une valeur numérique a besoin d’une unité avant de pouvoir être enregistrée.",
       "failUnitMismatch": "L’unité indiquée ne correspond pas à l’unité enregistrée pour ce marqueur. Ajustez-la, puis terminez à nouveau la vérification.",
-      "failGeneric": "Cette valeur n’a pas pu être enregistrée."
+      "failGeneric": "Cette valeur n’a pas pu être enregistrée.",
+      "failUnknownBiomarker": "Le biomarqueur choisi n'existe plus. Choisis-en un autre."
     },
     "contentIndex": {
       "indexPrompt": "Rendre le contenu des documents consultable.",

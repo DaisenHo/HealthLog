@@ -33,7 +33,7 @@ import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { MetricStatStrip } from "@/components/insights/metric-stat-strip";
 import { useInsightBiomarkerAssessment } from "@/hooks/use-insight-status";
 import { useMounted } from "@/hooks/use-mounted";
-import { apiDelete, apiGet } from "@/lib/api/api-fetch";
+import { ApiError, apiDelete, apiGet } from "@/lib/api/api-fetch";
 import { summarize, type DataSummary } from "@/lib/analytics/trends";
 import { BIOMARKER_CATALOG } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
@@ -51,6 +51,7 @@ import { ChartErrorBoundary } from "@/components/charts/chart-error-state";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { importWithRetry } from "@/lib/retry-import";
 
+import { BiomarkerAliases } from "./biomarker-aliases";
 import { BiomarkerForm } from "./biomarker-form";
 import { LabForm } from "./lab-form";
 import type {
@@ -157,11 +158,28 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
   const {
     data: marker,
     isError: markerError,
+    error: markerFailure,
     refetch: refetchMarker,
   } = useQuery({
     queryKey: queryKeys.biomarkerDetail(biomarkerId),
     queryFn: () => apiGet<BiomarkerDto>(`/api/biomarkers/${biomarkerId}`),
   });
+
+  // v1.43 (D1223) — a marker merged into another answers 404 with the
+  // marker it went into; a bookmark or a stale screen follows it there.
+  const mergedInto =
+    markerFailure instanceof ApiError &&
+    markerFailure.status === 404 &&
+    typeof markerFailure.meta?.mergedInto === "string"
+      ? markerFailure.meta.mergedInto
+      : null;
+  useEffect(() => {
+    if (!mergedInto) return;
+    queryClient.removeQueries({
+      queryKey: queryKeys.biomarkerDetail(biomarkerId),
+    });
+    router.replace(`/labs/${mergedInto}`);
+  }, [mergedInto, biomarkerId, queryClient, router]);
 
   // v1.25 — offset-paginated reading feed. The page no longer fetches a single
   // `limit=500` window (which silently truncated a marker once it crossed 500
@@ -303,7 +321,8 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
   // v1.25.1 (H2-M2) — the error state keeps the heading + description and adds a
   // retry, mirroring the insights `SubPageShell` recovery affordance rather than
   // collapsing to a bare line with no context and no way back.
-  if (markerError || listError) {
+  // A merged marker is on its way to its target (see above), not failed.
+  if ((markerError && !mergedInto) || listError) {
     return (
       <div className="space-y-6">
         <PageHeader
@@ -405,6 +424,11 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
           {marker.unit}
           {marker.panel ? ` · ${marker.panel}` : ""}
         </p>
+      ) : null}
+
+      {/* v1.43 (D1223) — the other spellings this marker answers to. */}
+      {marker ? (
+        <BiomarkerAliases marker={marker} canEdit={canManageLabs} />
       ) : null}
 
       {/* Bridge to the source report PDFs. There is no per-value document

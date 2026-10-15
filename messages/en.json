@@ -9687,6 +9687,54 @@
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}",
       "printed": "as printed in {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "by a name you chose before",
+      "viaCatalog": "recognised as a common abbreviation",
+      "chooseLabel": "Belongs to",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "A new biomarker",
+      "rememberHint": "This name will be remembered for the next report.",
+      "chooseHint": "Pick a biomarker if this is one you already track."
+    },
+    "aliases": {
+      "title": "Also written as",
+      "taken": "{alias} already belongs to another biomarker.",
+      "saveError": "The names could not be saved. Try again.",
+      "remove": "Remove {alias}",
+      "empty": "Add the names other labs print for {name}, so their reports land here.",
+      "placeholder": "e.g. Alk.P",
+      "addLabel": "Another name for this biomarker",
+      "add": "Add",
+      "alsoWritten": "Also written as {aliases}"
+    },
+    "merge": {
+      "open": "Merge",
+      "title": "Merge biomarkers",
+      "description": "Combine markers that are the same test written differently.",
+      "pickHint": "Select at least two biomarkers.",
+      "keepLabel": "Keep",
+      "keepHint": "The others move into this one and their names become its other names.",
+      "showPreview": "Show preview",
+      "back": "Back",
+      "confirm": "Merge now",
+      "previewSummaryOne": "{count} reading moves to {name} ({unit}).",
+      "previewSummaryFew": "{count} readings move to {name} ({unit}).",
+      "previewSummaryOther": "{count} readings move to {name} ({unit}).",
+      "movesOne": "{count} reading, already in the same unit",
+      "movesFew": "{count} readings, already in the same unit",
+      "movesOther": "{count} readings, already in the same unit",
+      "convertedOne": "{count} reading, converted from {unit} to {targetUnit}",
+      "convertedFew": "{count} readings, converted from {unit} to {targetUnit}",
+      "convertedOther": "{count} readings, converted from {unit} to {targetUnit}",
+      "refused": "{unit} cannot be converted to {targetUnit}.",
+      "aliasesAdded": "These names will lead to the kept biomarker:",
+      "blocked": "Nothing can be merged while a unit cannot be converted. Leave that biomarker out or keep another one.",
+      "noUndo": "A merge cannot be undone.",
+      "doneToastOne": "Merged into {name}, {count} reading moved",
+      "doneToastFew": "Merged into {name}, {count} readings moved",
+      "doneToastOther": "Merged into {name}, {count} readings moved",
+      "error": "The biomarkers could not be merged. Try again."
     }
   },
   "modules": {
@@ -11126,7 +11174,8 @@
       "extractEmpty": "No values could be extracted from this document.",
       "failUnitRequired": "A numeric value needs a unit before it can be saved.",
       "failUnitMismatch": "The stated unit does not match the saved unit for this marker. Adjust it, then finish the review again.",
-      "failGeneric": "This value could not be saved."
+      "failGeneric": "This value could not be saved.",
+      "failUnknownBiomarker": "The chosen biomarker no longer exists. Pick another one."
     },
     "contentIndex": {
       "indexPrompt": "Make document contents searchable.",

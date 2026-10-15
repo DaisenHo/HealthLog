@@ -9687,6 +9687,54 @@
       "fromReport": "Rango del informe {range}",
       "catalogDiffers": "tu rango {range}",
       "printed": "impreso en {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "por un nombre que elegiste antes",
+      "viaCatalog": "reconocido como una abreviatura habitual",
+      "chooseLabel": "Pertenece a",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Un biomarcador nuevo",
+      "rememberHint": "Este nombre se recordará para el próximo informe.",
+      "chooseHint": "Elige un biomarcador si ya lo registras."
+    },
+    "aliases": {
+      "title": "También escrito como",
+      "taken": "{alias} ya pertenece a otro biomarcador.",
+      "saveError": "No se pudieron guardar los nombres. Inténtalo de nuevo.",
+      "remove": "Quitar {alias}",
+      "empty": "Añade los nombres que otros laboratorios imprimen para {name}, para que sus informes lleguen aquí.",
+      "placeholder": "p. ej. FA",
+      "addLabel": "Otro nombre para este biomarcador",
+      "add": "Añadir",
+      "alsoWritten": "También escrito como {aliases}"
+    },
+    "merge": {
+      "open": "Combinar",
+      "title": "Combinar biomarcadores",
+      "description": "Une los biomarcadores que son la misma prueba escrita de otra forma.",
+      "pickHint": "Selecciona al menos dos biomarcadores.",
+      "keepLabel": "Conservar",
+      "keepHint": "Los demás pasan a este y sus nombres se convierten en sus otros nombres.",
+      "showPreview": "Ver vista previa",
+      "back": "Atrás",
+      "confirm": "Combinar ahora",
+      "previewSummaryOne": "{count} medición pasa a {name} ({unit}).",
+      "previewSummaryFew": "{count} mediciones pasan a {name} ({unit}).",
+      "previewSummaryOther": "{count} mediciones pasan a {name} ({unit}).",
+      "movesOne": "{count} medición, ya en la misma unidad",
+      "movesFew": "{count} mediciones, ya en la misma unidad",
+      "movesOther": "{count} mediciones, ya en la misma unidad",
+      "convertedOne": "{count} medición, convertida de {unit} a {targetUnit}",
+      "convertedFew": "{count} mediciones, convertidas de {unit} a {targetUnit}",
+      "convertedOther": "{count} mediciones, convertidas de {unit} a {targetUnit}",
+      "refused": "{unit} no se puede convertir a {targetUnit}.",
+      "aliasesAdded": "Estos nombres llevarán al biomarcador conservado:",
+      "blocked": "No se combina nada mientras una unidad no se pueda convertir. Deja fuera ese biomarcador o conserva otro.",
+      "noUndo": "Una combinación no se puede deshacer.",
+      "doneToastOne": "Combinado en {name}, {count} medición movida",
+      "doneToastFew": "Combinado en {name}, {count} mediciones movidas",
+      "doneToastOther": "Combinado en {name}, {count} mediciones movidas",
+      "error": "No se pudieron combinar los biomarcadores. Inténtalo de nuevo."
     }
   },
   "modules": {
@@ -11126,7 +11174,8 @@
       "extractEmpty": "No se pudieron extraer valores de este documento.",
       "failUnitRequired": "Un valor numérico necesita una unidad antes de poder guardarse.",
       "failUnitMismatch": "La unidad indicada no coincide con la unidad guardada de este marcador. Ajústala y termina la revisión de nuevo.",
-      "failGeneric": "Este valor no se pudo guardar."
+      "failGeneric": "Este valor no se pudo guardar.",
+      "failUnknownBiomarker": "El biomarcador elegido ya no existe. Elige otro."
     },
     "contentIndex": {
       "indexPrompt": "Haz que el contenido de los documentos sea buscable.",

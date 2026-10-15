@@ -18,12 +18,16 @@ import { toast } from "sonner";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { ApiError } from "@/lib/api/api-fetch";
+import { useQuery } from "@tanstack/react-query";
+
+import { ApiError, apiGet } from "@/lib/api/api-fetch";
+import { queryKeys } from "@/lib/query-keys";
 import type { OcrSkippedRowDto } from "@/lib/validations/labs-ocr";
 import { EncounterSuggestionField } from "@/components/encounters/encounter-suggestion-field";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { OcrRowEditor } from "./ocr-row-editor";
+import type { BiomarkerListResponse } from "./types";
 import { seedReviewRows, type OcrReviewRow } from "./ocr-review-types";
 import { collectRowErrors, planSave } from "./ocr-review-validation";
 import {
@@ -176,6 +180,24 @@ export function OcrReviewDialog({
   const textExtract = useOcrTextExtract();
   const extract = mode === "text" ? textExtract : visionExtract;
   const commit = useOcrCommit();
+  // v1.43 — the account's markers, so a matched row names its marker and a
+  // chosen suggestion brings the analyte it converts with. Only once rows are
+  // on screen; the review works without it (names fall back to the printed
+  // analyte).
+  const markers = useQuery({
+    queryKey: queryKeys.biomarkers(),
+    queryFn: () => apiGet<BiomarkerListResponse>("/api/biomarkers"),
+    enabled: rows.length > 0,
+  });
+  const markerLookup = useMemo(() => {
+    const byId = new Map(
+      (markers.data?.biomarkers ?? []).map((m) => [
+        m.id,
+        { name: m.name, analyteKey: m.analyteKey },
+      ]),
+    );
+    return (id: string) => byId.get(id) ?? null;
+  }, [markers.data]);
   // Text mode never accepts PDFs (tesseract.js can't read them).
   const allowPdf = mode === "vision" && pdfSupported;
 
@@ -437,6 +459,7 @@ export function OcrReviewDialog({
             <OcrRowEditor
               key={row.key}
               row={row}
+              markerLookup={markerLookup}
               errors={showErrors ? rowErrors.get(row.key) : undefined}
               onChange={(next) =>
                 setRows((prev) =>

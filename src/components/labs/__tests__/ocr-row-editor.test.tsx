@@ -21,6 +21,10 @@ const baseRow: OcrReviewRow = {
   markerUnit: "mmol/L",
   markerAnalyteKey: null,
   duplicateOf: null,
+  biomarkerId: "bm-ldl",
+  matchKind: "name",
+  suggestions: [],
+  chosenBiomarkerId: null,
   confirmed: true,
 };
 

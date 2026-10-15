@@ -114,7 +114,12 @@ export function useConfirmFacts() {
     Error,
     {
       documentId: string;
-      decisions: { factId: string; action: "approve" | "reject" }[];
+      decisions: {
+        factId: string;
+        action: "approve" | "reject";
+        /** v1.43 — the marker the person chose for a lab value. */
+        biomarkerId?: string;
+      }[];
     }
   >({
     mutationFn: ({ documentId, decisions }) =>
