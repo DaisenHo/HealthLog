@@ -23,7 +23,11 @@
  *     it) instead of being skipped for as long as the import runs;
  *   - every slice writes a log event naming its requests and where it got to;
  *   - the heap does not grow with the history (run it under the production
- *     ceiling: `NODE_OPTIONS=--max-old-space-size=524`).
+ *     ceiling: `NODE_OPTIONS=--max-old-space-size=524`);
+ *   - and, in a second run over two years, a Google that refuses the resume
+ *     edge's upper bound (`<=`): the backfill falls back to reading without
+ *     it, notes the refusal so it is met only once, and still imports every
+ *     reading exactly once.
  *
  * Google is replaced at the `safeFetch` seam by a generator that builds each
  * page on request from the filter and page token it is asked with, so the
@@ -68,6 +72,11 @@ const fake = vi.hoisted(() => ({
   /** Faults to inject, keyed by the backfill request number they hit. */
   faults: new Map<number, "503" | "timeout" | "429-long">(),
   onRequest: null as (() => void) | null,
+  /** Refuse any filter with an upper bound, and count the refusals. */
+  refuseUpperBound: false,
+  refused: 0,
+  /** Backfill requests that carried an upper bound. */
+  upperBoundRequests: 0,
 }));
 
 vi.mock("@/lib/safe-fetch", async (importOriginal) => {
@@ -93,6 +102,22 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
       const filter = u.searchParams.get("filter") ?? "";
       const fromBackfill = !filter.includes(">=");
       if (fromBackfill) fake.backfillRequests += 1;
+      if (filter.includes("<=")) {
+        fake.upperBoundRequests += 1;
+        if (fake.refuseUpperBound) {
+          fake.refused += 1;
+          return respond(
+            {
+              error: {
+                code: 400,
+                status: "INVALID_ARGUMENT",
+                message: "Invalid filter expression.",
+              },
+            },
+            400,
+          );
+        }
+      }
       const fault = fromBackfill
         ? fake.faults.get(fake.backfillRequests)
         : undefined;
@@ -197,7 +222,8 @@ function report(line: string): void {
   process.stderr.write(`[gh-multi-year] ${line}\n`);
 }
 
-beforeAll(async () => {
+/** A fresh account with `points` minutes of heart rate behind it. */
+async function seed(points: number): Promise<void> {
   const prisma = getPrismaClient();
   await truncateAllTables(prisma);
   const { encrypt } = await import("@/lib/crypto");
@@ -214,7 +240,19 @@ beforeAll(async () => {
     },
   });
   fake.now = NOW;
-  fake.total = POINTS;
+  fake.total = points;
+  fake.heartRateRequests = 0;
+  fake.backfillRequests = 0;
+  fake.servedPoints = 0;
+  fake.faults.clear();
+  fake.onRequest = null;
+  fake.refuseUpperBound = false;
+  fake.refused = 0;
+  fake.upperBoundRequests = 0;
+}
+
+beforeAll(async () => {
+  await seed(POINTS);
 }, 120_000);
 
 afterAll(async () => {
@@ -392,5 +430,107 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
     );
     expect(samples).toBeGreaterThan(5);
     expect(growth).toBeLessThan(GROWTH_BUDGET_BYTES);
+  }, 3_600_000);
+
+  it("completes when Google refuses the resume edge's upper bound, meeting the refusal once", async () => {
+    // Two years: the first slice reads without an edge, the second resumes
+    // with the bound and is refused, the third reads without it from the start.
+    const points = 2 * 365 * 24 * 60;
+    await seed(points);
+    fake.refuseUpperBound = true;
+
+    const { drainIntegrationBackfillAdmission } =
+      await import("@/lib/jobs/integration-backfill-drain");
+    const { handleGoogleHealthSync } =
+      await import("@/lib/jobs/reminder/google-health-sync");
+    const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
+      await import("@/lib/google-health/client");
+    GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
+
+    const prisma = getPrismaClient();
+    let payload: AdmissionPayload | null = {
+      kind: "google-health-backfill",
+      data: { userId: USER, enqueuedAt: new Date().toISOString() },
+    };
+    const slices: Array<{
+      imported: number;
+      continued: number;
+      skippedPages: number;
+      refusalNoted: unknown;
+    }> = [];
+
+    for (let n = 0; payload && n < 40; n++) {
+      sent.jobs = [];
+      logged.events = [];
+      const outcome = await drainIntegrationBackfillAdmission([
+        admissionJob(payload, n),
+      ]);
+      expect(outcome.ok).toBe(true);
+      const did = (outcome as { did: Record<string, number> }).did;
+      const runEvents = logged.events.filter(
+        (e) => e.background?.task_name === "job.integration_backfill",
+      );
+      expect(runEvents).toHaveLength(1);
+      const meta = runEvents[0]!.meta ?? {};
+      const sliceMeta = meta["googleHealth.backfill.slice"] as {
+        pages: number;
+        skippedPages: number;
+        stopReason: string | null;
+      };
+      slices.push({
+        imported: did.imported,
+        continued: did.continued,
+        skippedPages: sliceMeta.skippedPages,
+        refusalNoted: meta["googleHealth.backfill.edgeFilterUnsupported"],
+      });
+      report(
+        `refusing slice ${payload.data.slice ?? 0}: pages=${sliceMeta.pages} ` +
+          `skipped=${sliceMeta.skippedPages} stop=${sliceMeta.stopReason} ` +
+          `imported=${did.imported}`,
+      );
+      payload = nextSlice();
+      if (payload) {
+        const hourly = await handleGoogleHealthSync([] as never);
+        expect(hourly).toMatchObject({
+          ok: true,
+          did: { users_skipped: 0, users_failed: 0, users_parked: 0 },
+        });
+      }
+    }
+
+    const connection = await prisma.googleHealthConnection.findUniqueOrThrow({
+      where: { userId: USER },
+      select: { backfillCompletedAt: true, backfillProgress: true },
+    });
+    expect(connection.backfillCompletedAt).toBeInstanceOf(Date);
+    expect(connection.backfillProgress).toBeNull();
+    expect(payload).toBeNull();
+    expect(slices.slice(0, -1).every((s) => s.continued === 1)).toBe(true);
+
+    // The bound was asked for once, refused once, and never again: the
+    // refusal was noted on the slice that met it and honoured after.
+    expect(fake.upperBoundRequests).toBe(1);
+    expect(fake.refused).toBe(1);
+    expect(slices.filter((s) => s.refusalNoted !== undefined)).toEqual([
+      expect.objectContaining({ refusalNoted: ["fetchHeartRate"] }),
+    ]);
+    // More than one slice had to pass over what the ones before it wrote,
+    // and each still wrote its share.
+    const skipping = slices.filter((s) => s.skippedPages > 0);
+    expect(skipping.length).toBeGreaterThan(1);
+    expect(skipping.every((s) => s.imported > 0)).toBe(true);
+
+    // Every reading exactly once, none of them rewritten.
+    const rows = await prisma.measurement.count({
+      where: { userId: USER, type: "PULSE", source: "GOOGLE_HEALTH" },
+    });
+    expect(rows).toBe(points);
+    expect(slices.reduce((sum, s) => sum + s.imported, 0)).toBe(points);
+    const versions = await prisma.measurement.aggregate({
+      where: { userId: USER, type: "PULSE", source: "GOOGLE_HEALTH" },
+      _max: { syncVersion: true },
+      _min: { syncVersion: true },
+    });
+    expect(versions._max.syncVersion).toBe(versions._min.syncVersion);
   }, 3_600_000);
 });

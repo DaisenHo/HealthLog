@@ -545,7 +545,8 @@ async function persistBackfillProgress(
     edgeFilterUnsupported?: Set<string>;
   },
 ): Promise<void> {
-  const unsupported = next.edgeFilterUnsupported ?? tracker.edgeFilterUnsupported;
+  const unsupported =
+    next.edgeFilterUnsupported ?? tracker.edgeFilterUnsupported;
   await prisma.googleHealthConnection.update({
     where: { userId: tracker.userId },
     data: {
