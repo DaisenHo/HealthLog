@@ -43,6 +43,10 @@ import { computeWeightGoal } from "./weight-goal";
 import { DAY_MS, uniqueSources } from "./shared";
 import type { DerivedProvenanceSource } from "@/lib/insights/derived/types";
 import type { GlucoseUnit } from "@/lib/glucose";
+import {
+  SCREENER_INSTRUMENTS,
+  isScreenerInstrument,
+} from "@/lib/validations/mental-health";
 
 const HISTORY_OFFSET_DAYS = 14;
 const SCORE_READ_DAYS = 365 + HISTORY_OFFSET_DAYS;
@@ -687,20 +691,32 @@ export async function computeUserHealthScore(
     ),
     input.modules.mentalHealth
       ? capture(
-          db.mentalHealthAssessment.findMany({
-            where: {
-              userId: input.userId,
-              takenAt: { gte: since },
-              deletedAt: null,
-            },
-            orderBy: { takenAt: "asc" },
-            select: {
-              instrument: true,
-              totalScore: true,
-              item9Flagged: true,
-              takenAt: true,
-            },
-          }),
+          db.mentalHealthAssessment
+            .findMany({
+              where: {
+                userId: input.userId,
+                takenAt: { gte: since },
+                deletedAt: null,
+                // The wellbeing screeners only. AUDIT-C shares the table for
+                // its storage, but it belongs to the life circumstances, not
+                // to this pillar.
+                instrument: { in: [...SCREENER_INSTRUMENTS] },
+              },
+              orderBy: { takenAt: "asc" },
+              select: {
+                instrument: true,
+                totalScore: true,
+                item9Flagged: true,
+                takenAt: true,
+              },
+            })
+            .then((rows) =>
+              rows.flatMap((row) =>
+                isScreenerInstrument(row.instrument)
+                  ? [{ ...row, instrument: row.instrument }]
+                  : [],
+              ),
+            ),
           [],
           "WELLBEING",
         )

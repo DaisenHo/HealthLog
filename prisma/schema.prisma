@@ -94,9 +94,6 @@ model User {
   // without a home set) simply has no environment rows. `homeTimezone` anchors
   // the day-key an observation is stored under (it can differ from the display
   // `timezone` above for an account that tracks weather for another locale).
-  homeLat                      Float?    @map("home_lat")
-  homeLon                      Float?    @map("home_lon")
-  homeLabel                    String?   @map("home_label")
   homeTimezone                 String?   @map("home_timezone")
   // v1.25 — effective-from instant for the home location. Stamped the moment a
   // home is set/updated. Day resolution attributes a past day to home ONLY when
@@ -105,9 +102,8 @@ model User {
   // dated location period instead. Backfill defaults its start to this instant.
   homeSince                    DateTime? @map("home_since")
   /// v1.42 — sealed home location (lat, lon, label)
-  /// under AAD `healthlog/environment-location/v1`. Replaces the plaintext
-  /// `homeLat` / `homeLon` / `homeLabel` once the free-text encryption backfill
-  /// reports zero remaining rows; the plaintext columns drop in v1.43.
+  /// under AAD `healthlog/environment-location/v1`. The only copy since
+  /// v1.43: migration 0409 dropped the plaintext columns it replaced.
   homeLocationEncrypted        Bytes?    @map("home_location_encrypted")
   /// v1.42 — per-user switch for the air-quality and
   /// pollen part of the environment module. On by default; off means the
@@ -236,6 +232,20 @@ model User {
   nightscoutUrlEncrypted     String? @map("nightscout_url_encrypted")
   nightscoutTokenEncrypted   String? @map("nightscout_token_encrypted")
   nightscoutAllowPrivateHost Boolean @default(false) @map("nightscout_allow_private_host")
+
+  // v1.43 — Dawarich movement context (per-user, encrypted at app level, part
+  // of the `environment` module). Base URL and API key sealed like the
+  // Nightscout pair; `dawarichPrefsEncrypted` seals
+  // `{ homePlaceId, homeCountry, dismissedSuggestionIds }`. Same SSRF floor:
+  // a private host needs `DAWARICH_PRIVATE_ORIGINS` or this switch.
+  /// @pending-consumer(#v143-B7) Sealed Dawarich base URL.
+  dawarichUrlEncrypted     String? @map("dawarich_url_encrypted")
+  /// @pending-consumer(#v143-B7) Sealed Dawarich API key.
+  dawarichApiKeyEncrypted  String? @map("dawarich_api_key_encrypted")
+  /// @pending-consumer(#v143-B7) Sealed home place id, home country and dismissed travel suggestions.
+  dawarichPrefsEncrypted   Bytes?  @map("dawarich_prefs_encrypted")
+  /// @pending-consumer(#v143-B7) Opt this Dawarich instance past the public-host requirement.
+  dawarichAllowPrivateHost Boolean @default(false) @map("dawarich_allow_private_host")
 
   // v1.17.0 — Polar OAuth credentials (F4, per-user, encrypted at app level).
   // Mirrors the WHOOP credential columns: the per-app authorized-user cap on
@@ -611,6 +621,14 @@ model User {
   // round-trip surfaces the new value to every Coach gate via the
   // `useAuth()` hook.
   disableCoach Boolean @default(false) @map("disable_coach")
+
+  /// @pending-consumer(#v143-B1) The account's own AI usage level (#1217).
+  /// NULL follows the instance default (`AppSettings.aiUsageDefaultLevel`);
+  /// a stored level above `AppSettings.aiUsageMaxLevel` is kept but capped
+  /// at read time. Written by `PUT /api/auth/me/ai-usage`, resolved in
+  /// `src/lib/ai/usage-level.ts` and published as `ai.usage` on
+  /// `GET /api/auth/me`.
+  aiUsageLevel AiUsageLevel? @map("ai_usage_level")
 
   // v1.18.0 — module enable/disable foundation.
   //
@@ -1017,6 +1035,18 @@ model User {
   // move, a birth, a new job. Shared under the `profile` domain; never sent to
   // a model.
   lifeEvents                                LifeEvent[]
+  // v1.43 — biomarker aliases and the merge ledger (D1223), supplement
+  // composition, Dawarich daily values, and the relation links that close
+  // the remaining pairs of the relation matrix.
+  biomarkerAliases                          BiomarkerAlias[]
+  biomarkerMerges                           BiomarkerMerge[]
+  medicationIngredients                     MedicationIngredient[]
+  dawarichDays                              DawarichDay[]
+  labResultDocumentLinks                    LabResultDocumentLink[]
+  encounterMedicationLinks                  EncounterMedicationLink[]
+  encounterVaccinationLinks                 EncounterVaccinationLink[]
+  medicationDocumentLinks                   MedicationDocumentLink[]
+  medicationConditionLinks                  MedicationConditionLink[]
   measurementFoldRepair                     MeasurementFoldRepair?
 
   // v1.7.0 profile — optional patient-identity fields surfaced on the
@@ -1120,20 +1150,9 @@ model EnvironmentContext {
   /// YYYY-MM-DD anchored to the resolved location's timezone.
   date String
 
-  /// Coarse resolved location for the day (lat/lon rounded to 1 decimal, about
-  /// 11 km, + label + the source that won precedence). Nullable since v1.42:
-  /// the sealed copy in `locationEncrypted` replaces the plaintext once the
-  /// encryption backfill has run; the plaintext columns drop in v1.43.
-  lat               Float?
-  lon               Float?
-  /// @internal: human-readable label of the resolved location, stored as
-  /// operator/debug provenance beside the coordinates; surfaces select the
-  /// numeric and weather columns only, never this label. The backup selects it
-  /// (`src/lib/export/environment-backup.ts`) with the rest of the row: a
-  /// restored reading has to keep saying where it was read.
-  locationLabel     String?                   @map("location_label")
-  /// v1.42 — sealed (lat, lon, label) for the day,
-  /// AAD `healthlog/environment-location/v1`.
+  /// v1.42 — sealed coarse resolved location for the day (lat/lon rounded to
+  /// 1 decimal, about 11 km, + label), AAD `healthlog/environment-location/v1`.
+  /// The only copy since v1.43: migration 0409 dropped the plaintext columns.
   locationEncrypted Bytes?                    @map("location_encrypted")
   source            EnvironmentLocationSource
 
@@ -1219,8 +1238,7 @@ model EnvironmentContext {
   @@unique([userId, date])
   @@index([userId, date])
   // `environment_contexts_aq_gap_idx` (user_id, date) WHERE aq_fetched_at IS
-  // NULL and `environment_contexts_plain_location_idx` (id) WHERE lat IS NOT
-  // NULL are partial indexes from migrations 0381 / 0382 (raw SQL only).
+  // NULL is a partial index from migration 0381 (raw SQL only).
   @@map("environment_contexts")
 }
 
@@ -1241,22 +1259,15 @@ model EnvironmentTravelLocation {
   startDate String @map("start_date")
   endDate   String @map("end_date")
 
-  /// Plaintext coarse location. Nullable since v1.42: the sealed copy in
-  /// `locationEncrypted` replaces it once the encryption backfill has run;
-  /// the plaintext columns drop in v1.43.
-  lat               Float?
-  lon               Float?
-  label             String?
-  /// v1.42 — sealed (lat, lon, label) for the
-  /// period, AAD `healthlog/environment-location/v1`.
-  locationEncrypted Bytes?  @map("location_encrypted")
+  /// v1.42 — sealed coarse location (lat, lon, label) for the period, AAD
+  /// `healthlog/environment-location/v1`. The only copy since v1.43:
+  /// migration 0409 dropped the plaintext columns.
+  locationEncrypted Bytes? @map("location_encrypted")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId, startDate, endDate])
-  // `environment_travel_locations_plain_location_idx` (id) WHERE lat IS NOT
-  // NULL is a partial index from migration 0382 (raw SQL only).
   @@map("environment_travel_locations")
 }
 
@@ -1701,6 +1712,13 @@ enum AssessmentInstrument {
   GAD7
   WHO5
   SCI
+  /// v1.43 (#614) — AUDIT-C, the alcohol section of the life circumstances.
+  /// Stored here for the scoring, encryption and backup it shares with the
+  /// screeners, but never served by `/api/mental-health/assessments` (a
+  /// closed decoder in older app builds): read through
+  /// `GET /api/anamnesis/life-circumstances`, written through
+  /// `POST /api/anamnesis/audit-c`.
+  AUDIT_C
 
   @@map("assessment_instrument")
 }
@@ -2316,6 +2334,17 @@ model IntradayCumulativeProfile {
   /// two rows is not a shape; the baseline reader uses this to refuse such
   /// a day rather than let it drag the median.
   sampleCount      Int             @map("sample_count")
+  /// @pending-consumer(#v143-B9) v1.43 (#77) — per-hour increments posted as
+  /// `stats:<HK>:<YYYY-MM-DD>T<HH>` rows, 24 slots in canonical units. Empty
+  /// for a profile folded from per-sample rows.
+  hourlyIncrements Float[]         @map("hourly_increments")
+  /// @pending-consumer(#v143-B9) What `hourlyCumulative` was built from:
+  /// `PER_SAMPLE` (the fold of raw rows) or `HOUR_BUCKETS` (the posted hour
+  /// rows). CHECK in migration 0408.
+  basis            String          @default("PER_SAMPLE")
+  /// @pending-consumer(#v143-B9) How many hour buckets backed a
+  /// `HOUR_BUCKETS` profile; NULL for `PER_SAMPLE`.
+  bucketCount      Int?            @map("bucket_count")
   /// The IANA zone the day was bucketed in. A user who later moves zones
   /// leaves behind profiles cut on the old clock; carrying the zone lets
   /// the reader drop the mismatched days instead of silently comparing
@@ -2898,6 +2927,12 @@ model Medication {
 
   schedules          MedicationSchedule[]
   intakeEvents       MedicationIntakeEvent[]
+  /// v1.43 — composition per unit (supplements), and the relation links to
+  /// visits, documents and conditions (indication).
+  ingredients        MedicationIngredient[]
+  encounterLinks     EncounterMedicationLink[]
+  documentLinks      MedicationDocumentLink[]
+  conditionLinks     MedicationConditionLink[]
   intakeImportJobs   MedicationIntakeImportJob[]
   phaseConfig        ReminderPhaseConfig?
   telegramMessages   TelegramReminderMessage[]
@@ -5227,6 +5262,19 @@ model AppSettings {
   assistantInsightStatusEnabled Boolean @default(true) @map("assistant_insight_status_enabled")
   assistantDocumentAiEnabled    Boolean @default(true) @map("assistant_document_ai_enabled")
 
+  // v1.43 — the operator's AI usage bounds (#1217). `aiUsageMaxLevel` is the
+  // highest level an account may choose, `aiUsageDefaultLevel` the level an
+  // account without its own choice runs at (never above the ceiling),
+  // `aiSyncRegenGapHours` the minimum gap between status-card regenerations
+  // after a sync at `standard` (NULL = env `AI_SYNC_REGEN_GAP_HOURS`, else 6).
+  // Edited through `PUT /api/admin/settings/assistant-flags` (`aiUsage`).
+  /// @pending-consumer(#v143-B1) Instance ceiling for the per-account AI usage level.
+  aiUsageMaxLevel     AiUsageLevel @default(STANDARD) @map("ai_usage_max_level")
+  /// @pending-consumer(#v143-B1) Level for accounts without their own choice.
+  aiUsageDefaultLevel AiUsageLevel @default(STANDARD) @map("ai_usage_default_level")
+  /// @pending-consumer(#v143-B1) Sync regeneration gap in hours (1..48); NULL = env or 6.
+  aiSyncRegenGapHours Int?         @map("ai_sync_regen_gap_hours")
+
   // v1.41 — the operator's reasoning controls. `aiReasoningEnabled` switches
   // provider-side reasoning off for every surface (the Coach and the three
   // background jobs that use it); `aiReasoningMaxEffort` caps the level a
@@ -5282,6 +5330,17 @@ model AppSettings {
   /// a discovery pattern created before it (or any, while it is null) as a
   /// finding of the earlier engine and so earns the one-time note.
   correlationSeasonalEngineSince DateTime? @map("correlation_seasonal_engine_since")
+
+  // v1.43 — pulse day-mean method (#1107 follow-up). `hour_mean_v1` weighs
+  // every hour alike; `weighted_hour_mean_v2` weighs an hour by
+  // `min(1, n / 3)`. Switched only by the admin apply step after a dry run;
+  // the dry-run result is the only thing a dry run writes.
+  /// @pending-consumer(#v143-B8) Active pulse day-mean method (CHECK in migration 0407).
+  pulseDayMeanMethod     String    @default("hour_mean_v1") @map("pulse_day_mean_method")
+  /// @pending-consumer(#v143-B8) When the admin applied the current method.
+  pulseDayMeanAppliedAt  DateTime? @map("pulse_day_mean_applied_at")
+  /// @pending-consumer(#v143-B8) Last dry-run status and result (account labels only, no ids).
+  pulseDayMeanDryRunJson Json?     @map("pulse_day_mean_dry_run_json")
 
   @@map("app_settings")
 }
@@ -6250,9 +6309,10 @@ model LabResult {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt           DateTime? @map("deleted_at")
 
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  biomarker      Biomarker?         @relation(fields: [biomarkerId], references: [id], onDelete: SetNull)
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  biomarker      Biomarker?              @relation(fields: [biomarkerId], references: [id], onDelete: SetNull)
   encounterLinks EncounterLabLink[]
+  documentLinks  LabResultDocumentLink[]
 
   @@index([userId, analyte, takenAt])
   @@index([userId, deletedAt])
@@ -6309,6 +6369,10 @@ model Biomarker {
   /// v1.28 — medications the user has pinned to this biomarker as their
   /// efficacy target. SetNull on delete keeps the override rows as orphans.
   efficacyTargets MedicationEfficacyTarget[]
+  /// v1.43 — other spellings that resolve to this marker, and the merges that
+  /// folded other markers into it.
+  aliases         BiomarkerAlias[]
+  mergesInto      BiomarkerMerge[]
 
   @@unique([userId, name])
   @@index([userId])
@@ -6962,6 +7026,12 @@ model UserHealthProfile {
   emergencyContactsEncrypted Bytes?                   @map("emergency_contacts_encrypted")
   emergencyImplantsEncrypted Bytes?                   @map("emergency_implants_encrypted")
   emergencyNoteEncrypted     Bytes?                   @map("emergency_note_encrypted")
+  /// @pending-consumer(#v143-B6) v1.43 (#614) — "still true" confirmations of the life
+  /// circumstance sections: `{ "<section key>": "<ISO instant>" }`. Written by
+  /// `POST /api/anamnesis/life-circumstances/confirm`, read as
+  /// `lastConfirmedAt` / `reviewDue` by the life-circumstances read route.
+  /// Plaintext: section keys and timestamps only, never an answer.
+  lifeConfirmedJson          Json?                    @map("life_confirmed_json")
   createdAt                  DateTime                 @default(now()) @map("created_at")
   updatedAt                  DateTime                 @updatedAt @map("updated_at")
 
@@ -7006,6 +7076,18 @@ enum AdvanceDirectiveStatus {
   @@map("advance_directive_status")
 }
 
+/// v1.43 — how much background AI work an account asks for (#1217): status
+/// card regeneration cadence, snapshot ceiling, background reasoning, briefing
+/// length and automatic document reading. Wire form is lower case
+/// (`frugal` / `standard` / `full`); the order is the ceiling order.
+enum AiUsageLevel {
+  FRUGAL
+  STANDARD
+  FULL
+
+  @@map("ai_usage_level")
+}
+
 /// Sections of the health profile that may enter AI prompt context. This is an
 /// inclusion list: a section absent from the array is neither decrypted nor
 /// assembled for Coach or comprehensive briefings.
@@ -7018,6 +7100,14 @@ enum HealthProfileAiSection {
   SMOKING_STATUS
   ALCOHOL_PATTERN
   SHIFT_SCHEDULE
+  /// v1.43 (#614) — life-circumstance sections. Never in the column default
+  /// and never listed by `GET /api/coach/about-me` (a closed decoder in older
+  /// app builds); switched through
+  /// `PATCH /api/anamnesis/life-circumstances/ai-sections`.
+  ACTIVITY
+  WORK
+  HABITS
+  GOALS
 
   @@map("health_profile_ai_section")
 }
@@ -7029,6 +7119,16 @@ enum HealthProfileFactKind {
   SMOKING_STATUS
   ALCOHOL_PATTERN
   SHIFT_SCHEDULE
+  /// v1.43 (#614) — life-circumstance facts. The value is a sealed JSON object
+  /// with `schema: 1`, one Zod schema per kind. `GET /api/anamnesis/facts`
+  /// never returns these (a closed decoder in older app builds); they are read
+  /// through `GET /api/anamnesis/life-circumstances`.
+  TOBACCO_DETAIL
+  ACTIVITY_HABIT
+  WORK_CONTEXT
+  FREE_WEEKDAYS
+  HABITS
+  HEALTH_GOALS
 
   @@map("health_profile_fact_kind")
 }
@@ -8175,15 +8275,16 @@ model IllnessEpisode {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt         DateTime?        @map("deleted_at")
 
-  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Parent condition for a flare/recurrence (self-relation).
-  parent         IllnessEpisode?          @relation("IllnessFlares", fields: [parentConditionId], references: [id], onDelete: SetNull)
-  flares         IllnessEpisode[]         @relation("IllnessFlares")
-  dayLogs        IllnessDayLog[]
-  documentLinks  DocumentConditionLink[]
-  encounterLinks EncounterConditionLink[]
+  parent          IllnessEpisode?           @relation("IllnessFlares", fields: [parentConditionId], references: [id], onDelete: SetNull)
+  flares          IllnessEpisode[]          @relation("IllnessFlares")
+  dayLogs         IllnessDayLog[]
+  documentLinks   DocumentConditionLink[]
+  encounterLinks  EncounterConditionLink[]
+  medicationLinks MedicationConditionLink[]
   /// Symptom events the person filed against this episode while it was open.
-  symptomEvents  SymptomEvent[]
+  symptomEvents   SymptomEvent[]
 
   @@index([userId, deletedAt])
   @@index([userId, onsetAt])
@@ -8762,6 +8863,9 @@ model InboundDocument {
 
   user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   encounterLinks   EncounterDocumentLink[]
+  /// v1.43 — lab results and medications filed against this document.
+  labResultLinks   LabResultDocumentLink[]
+  medicationLinks  MedicationDocumentLink[]
   /// Vaccination memberships (m:n via `VaccinationDocumentLink`): a scanned
   /// Impfpass page carries many doses, and a dose may be evidenced by more
   /// than one page.
@@ -9215,15 +9319,17 @@ model Encounter {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt         DateTime?       @map("deleted_at")
 
-  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  practitioner   Practitioner?            @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
-  reminder       MeasurementReminder?     @relation(fields: [reminderId], references: [id], onDelete: SetNull)
-  documentLinks  EncounterDocumentLink[]
-  labLinks       EncounterLabLink[]
-  conditionLinks EncounterConditionLink[]
+  user             User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practitioner     Practitioner?              @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  reminder         MeasurementReminder?       @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+  documentLinks    EncounterDocumentLink[]
+  labLinks         EncounterLabLink[]
+  conditionLinks   EncounterConditionLink[]
+  medicationLinks  EncounterMedicationLink[]
+  vaccinationLinks EncounterVaccinationLink[]
   /// Doses administered at this visit. SetNull on the far side: deleting the
   /// visit leaves the immunization history intact.
-  vaccinations   VaccinationRecord[]
+  vaccinations     VaccinationRecord[]
 
   @@index([userId, deletedAt, occurredAt])
   @@index([userId, status, occurredAt])
@@ -9477,12 +9583,13 @@ model VaccinationRecord {
   /// Soft-delete tombstone. NULL = live; non-NULL = deleted at the instant.
   deletedAt       DateTime?        @map("deleted_at")
 
-  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  practitioner  Practitioner?             @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
-  encounter     Encounter?                @relation(fields: [encounterId], references: [id], onDelete: SetNull)
-  reminder      MeasurementReminder?      @relation(fields: [reminderId], references: [id], onDelete: SetNull)
-  customVaccine CustomVaccine?            @relation(fields: [customVaccineId], references: [id], onDelete: SetNull)
-  documentLinks VaccinationDocumentLink[]
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practitioner   Practitioner?              @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  encounter      Encounter?                 @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+  reminder       MeasurementReminder?       @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+  customVaccine  CustomVaccine?             @relation(fields: [customVaccineId], references: [id], onDelete: SetNull)
+  documentLinks  VaccinationDocumentLink[]
+  encounterLinks EncounterVaccinationLink[]
 
   @@index([userId, deletedAt, occurredAt])
   @@index([userId, antigenSlug, occurredAt])
@@ -9635,6 +9742,9 @@ enum DocumentAiRunKind {
   /// Structured facts read out of a stored document, staged PENDING for the
   /// review step. The confirm route stays the only write into the record.
   DOCUMENT_EXTRACT
+  /// v1.43 — a supplement label read into a proposed composition. Nothing is
+  /// stored until the person saves it through the ingredients route.
+  SUPPLEMENT_LABEL_EXTRACT
 
   @@map("document_ai_run_kind")
 }
@@ -9783,4 +9893,210 @@ model MeasurementFoldRepair {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("measurement_fold_repairs")
+}
+
+// ─── v1.43 contract tables ───────────────────────────────────
+
+/// v1.43 (D1223) — another spelling of a biomarker on one account: a name a
+/// merge folded in, a name chosen at import, or one typed on the marker. The
+/// resolver (`src/lib/labs/biomarker-resolve.ts`) matches a printed name
+/// against `nameFolded` after the marker name and before the catalogue.
+model BiomarkerAlias {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  biomarkerId String   @map("biomarker_id")
+  /// @pending-consumer(#v143-B3) The alias as written, shown on the marker.
+  name        String   @db.VarChar(120)
+  /// @pending-consumer(#v143-B3) `foldForMatch(name)`, the match key; unique per account.
+  nameFolded  String   @map("name_folded") @db.VarChar(120)
+  /// @pending-consumer(#v143-B3) `MERGE`, `IMPORT_CHOICE` or `MANUAL` (CHECK in migration 0403).
+  source      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  biomarker Biomarker @relation(fields: [biomarkerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nameFolded])
+  @@index([biomarkerId])
+  @@map("biomarker_aliases")
+}
+
+/// v1.43 (D1223) — one source marker folded into a target. The source row is
+/// gone after the merge; this ledger is what answers `GET /api/biomarkers/{id}`
+/// for a merged id with `meta.mergedInto`, and what a later split would need.
+model BiomarkerMerge {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  /// @pending-consumer(#v143-B3) The marker the source was folded into.
+  targetBiomarkerId String   @map("target_biomarker_id")
+  /// @pending-consumer(#v143-B3) Id of the deleted source marker (no FK: the row is gone).
+  sourceBiomarkerId String   @map("source_biomarker_id")
+  /// @pending-consumer(#v143-B3) The source marker's name at merge time.
+  sourceName        String   @map("source_name") @db.VarChar(120)
+  /// @pending-consumer(#v143-B3) How many readings moved from the source.
+  readingCount      Int      @map("reading_count")
+  /// @pending-consumer(#v143-B3) When the merge ran.
+  mergedAt          DateTime @default(now()) @map("merged_at")
+
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  target Biomarker @relation(fields: [targetBiomarkerId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sourceBiomarkerId])
+  @@index([targetBiomarkerId])
+  @@map("biomarker_merges")
+}
+
+/// v1.43 — what one unit (tablet, capsule) of a medication contains, in the
+/// nutrient catalogue's canonical unit. Every taken dose contributes
+/// `amountPerUnit × unitsPerDose` to that day's `NutrientIntakeDay` row with
+/// `source = "SUPPLEMENT"`. A changed formula is a new medication.
+model MedicationIngredient {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  medicationId  String   @map("medication_id")
+  /// @pending-consumer(#v143-B4) Nutrient catalogue code (`src/lib/nutrients/catalog.ts`).
+  nutrient      String   @db.VarChar(40)
+  /// @pending-consumer(#v143-B4) Amount per unit in the canonical unit (> 0, CHECK in migration 0404).
+  amountPerUnit Float    @map("amount_per_unit")
+  /// @pending-consumer(#v143-B4) The catalogue's canonical unit for `nutrient`.
+  unit          String   @db.VarChar(8)
+  /// @pending-consumer(#v143-B4) The amount as entered, when it was entered in another input unit.
+  enteredAmount Float?   @map("entered_amount")
+  /// @pending-consumer(#v143-B4) The input unit it was entered in (e.g. `IU`).
+  enteredUnit   String?  @map("entered_unit") @db.VarChar(8)
+  /// @pending-consumer(#v143-B4) `MANUAL` or `LABEL_AI` (CHECK in migration 0404).
+  source        String
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@unique([medicationId, nutrient])
+  @@index([userId])
+  @@map("medication_ingredients")
+}
+
+/// v1.43 — one local day of Dawarich movement context. Daily values only:
+/// no coordinate, no place name, no visit is ever stored. The country code is
+/// sealed (AAD as the environment location). Part of the `environment` module.
+model DawarichDay {
+  id                   String   @id @default(cuid())
+  userId               String   @map("user_id")
+  /// Local calendar day (`YYYY-MM-DD`) in the account's timezone.
+  date                 String   @db.VarChar(10)
+  /// @pending-consumer(#v143-B7) Timeline `summary.total_distance`, metres.
+  totalDistanceM       Int?     @map("total_distance_m")
+  /// @pending-consumer(#v143-B7) Timeline `summary.mode_distances.driving`, metres.
+  drivingDistanceM     Int?     @map("driving_distance_m")
+  /// @pending-consumer(#v143-B7) Timeline `summary.mode_distances.train`, metres.
+  trainDistanceM       Int?     @map("train_distance_m")
+  /// @pending-consumer(#v143-B7) Timeline `summary.places_visited`.
+  placesVisited        Int?     @map("places_visited")
+  /// @pending-consumer(#v143-B7) Minutes away from the home place; NULL = no visit coverage that day.
+  awayFromHomeMinutes  Int?     @map("away_from_home_minutes")
+  /// @pending-consumer(#v143-B7) Sealed ISO-3166 alpha-2 country of the day (`/residency`).
+  countryCodeEncrypted Bytes?   @map("country_code_encrypted")
+  /// @pending-consumer(#v143-B7) Country differs from the home country.
+  isTravelDay          Boolean? @map("is_travel_day")
+  /// @pending-consumer(#v143-B7) When the day was last fetched from Dawarich.
+  fetchedAt            DateTime @map("fetched_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("dawarich_days")
+}
+
+/// v1.43 — lab result ↔ document (the report it was read from). A scan commit
+/// with a `documentId` files the link itself.
+model LabResultDocumentLink {
+  id          String   @id @default(cuid())
+  labResultId String   @map("lab_result_id")
+  documentId  String   @map("document_id")
+  userId      String   @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  labResult LabResult       @relation(fields: [labResultId], references: [id], onDelete: Cascade)
+  document  InboundDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([labResultId, documentId])
+  @@index([documentId])
+  @@index([userId])
+  @@map("lab_result_document_links")
+}
+
+/// v1.43 — visit ↔ medication (prescribed, changed or reviewed at the visit).
+model EncounterMedicationLink {
+  id           String   @id @default(cuid())
+  encounterId  String   @map("encounter_id")
+  medicationId String   @map("medication_id")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  encounter  Encounter  @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([encounterId, medicationId])
+  @@index([medicationId])
+  @@index([userId])
+  @@map("encounter_medication_links")
+}
+
+/// v1.43 — visit ↔ vaccination dose (given at the visit).
+model EncounterVaccinationLink {
+  id            String   @id @default(cuid())
+  encounterId   String   @map("encounter_id")
+  vaccinationId String   @map("vaccination_id")
+  userId        String   @map("user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  encounter   Encounter         @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  vaccination VaccinationRecord @relation(fields: [vaccinationId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([encounterId, vaccinationId])
+  @@index([vaccinationId])
+  @@index([userId])
+  @@map("encounter_vaccination_links")
+}
+
+/// v1.43 — medication ↔ document (a prescription, a package insert, a plan).
+model MedicationDocumentLink {
+  id           String   @id @default(cuid())
+  medicationId String   @map("medication_id")
+  documentId   String   @map("document_id")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  medication Medication      @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  document   InboundDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([medicationId, documentId])
+  @@index([documentId])
+  @@index([userId])
+  @@map("medication_document_links")
+}
+
+/// v1.43 — medication ↔ condition episode (the indication).
+model MedicationConditionLink {
+  id           String   @id @default(cuid())
+  medicationId String   @map("medication_id")
+  episodeId    String   @map("episode_id")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  medication Medication     @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  episode    IllnessEpisode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([medicationId, episodeId])
+  @@index([episodeId])
+  @@index([userId])
+  @@map("medication_condition_links")
 }

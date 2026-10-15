@@ -53,7 +53,8 @@ function storedDay(date: string, extra: Record<string, unknown> = {}) {
   return {
     date,
     source: "HOME",
-    // A row as the database might still hold it; none of this may leave.
+    // A row carrying location-shaped fields (a mocked row can, the table no
+    // longer does); none of this may leave.
     lat: 51.5,
     lon: 7.2,
     locationLabel: "Bochum, Germany",

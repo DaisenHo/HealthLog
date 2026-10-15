@@ -81,6 +81,9 @@ export const WIPE_MODELS = [
   "MedicationCategoryLabel",
   // The courses (v1.40, #1024), before the medications they cascade from.
   "MedicationCourse",
+  // v1.43 — what one unit of a supplement contains. Cascades from the
+  // medication; named before it so the count reads true.
+  "MedicationIngredient",
 
   // ── Mood ────────────────────────────────────────────────────────────────
   // The day context, before the entry it hangs off: it cascades either way,
@@ -104,9 +107,18 @@ export const WIPE_MODELS = [
   // are deleted before any of those, or their per-model counts read zero on an
   // audit row that claims to say what was removed. The encounter follows its
   // own links; the address book it points at is a parent and goes last.
+  // v1.43 adds the remaining relation links (a lab result's document, a
+  // visit's medications and doses, a medication's documents and conditions);
+  // they cascade from both ends the same way, so they go first for the same
+  // reason.
   "EncounterDocumentLink",
   "EncounterLabLink",
   "EncounterConditionLink",
+  "EncounterMedicationLink",
+  "EncounterVaccinationLink",
+  "LabResultDocumentLink",
+  "MedicationDocumentLink",
+  "MedicationConditionLink",
   "Encounter",
 
   // ── Vaccinations ────────────────────────────────────────────────────────
@@ -124,6 +136,10 @@ export const WIPE_MODELS = [
   // ── Clinical record ─────────────────────────────────────────────────────
   "MentalHealthAssessment",
   "LabResult",
+  // v1.43 — a marker's other spellings and the merges folded into it. Both
+  // cascade from the marker; named before it so their counts read true.
+  "BiomarkerAlias",
+  "BiomarkerMerge",
   "Biomarker",
   "CustomMetricEntry",
   "MenstrualCycle",
@@ -150,6 +166,8 @@ export const WIPE_MODELS = [
   // ── Context and engagement ──────────────────────────────────────────────
   "EnvironmentContext",
   "EnvironmentTravelLocation",
+  // v1.43 — Dawarich daily movement values. Part of the environment record.
+  "DawarichDay",
   "HealthProfileFactRevision",
   "CorrelationPattern",
   "UserHealthProfile",
@@ -372,9 +390,6 @@ export const USER_RESET = {
   avatarUpdatedAt: null,
 
   // Where the person lives — an environment-context input, and a location
-  homeLat: null,
-  homeLon: null,
-  homeLabel: null,
   homeTimezone: null,
   homeSince: null,
   homeLocationEncrypted: null,
@@ -406,6 +421,7 @@ export const USER_RESET = {
   aiProviderChain: Prisma.DbNull,
   aiResponseTimeoutSeconds: null,
   disableCoach: false,
+  aiUsageLevel: null,
   coachPrefsJson: Prisma.DbNull,
   coachLastSeenAt: null,
   documentsAutoAiRead: false,
@@ -432,6 +448,10 @@ export const USER_RESET = {
   nightscoutUrlEncrypted: null,
   nightscoutTokenEncrypted: null,
   nightscoutAllowPrivateHost: false,
+  dawarichUrlEncrypted: null,
+  dawarichApiKeyEncrypted: null,
+  dawarichPrefsEncrypted: null,
+  dawarichAllowPrivateHost: false,
   polarAccessTokenEncrypted: null,
   polarUserIdEncrypted: null,
   polarClientIdEncrypted: null,

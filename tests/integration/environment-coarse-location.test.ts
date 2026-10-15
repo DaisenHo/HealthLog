@@ -5,16 +5,14 @@
  *   - setting a home and adding a travel period store the coarse value, and
  *     the home answer carries it in the same shape as before (numbers);
  *   - a restore of a file written with 2-decimal coordinates stores them
- *     coarse;
- *   - the rounding block of migration 0361 coarsens rows written before it,
- *     and running it twice changes nothing more.
+ *     coarse.
  *
  * v1.42 (#615): the locations are stored sealed, so the coarse value is
- * asserted on the opened sealed copy, and the readable columns are empty. The
- * rounding still happens before sealing; nothing finer is ever stored.
+ * asserted on the opened sealed copy. The rounding happens before sealing;
+ * nothing finer is ever stored. Since v1.43 (migration 0409) the readable
+ * columns no longer exist, so the rounding block of migration 0361, which
+ * worked on them, has nothing left to test against.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
@@ -100,11 +98,6 @@ describe("environment coordinates at one decimal", () => {
     const user = await getPrismaClient().user.findUniqueOrThrow({
       where: { id: OWNER_ID },
     });
-    expect([user.homeLat, user.homeLon, user.homeLabel]).toEqual([
-      null,
-      null,
-      null,
-    ]);
     expect(openLocation(user.homeLocationEncrypted!)).toEqual({
       lat: 52.5,
       lon: 13.4,
@@ -125,9 +118,6 @@ describe("environment coordinates at one decimal", () => {
     const stored = await getPrismaClient().environmentTravelLocation.findMany({
       where: { userId: OWNER_ID },
     });
-    expect(stored.map((t) => [t.lat, t.lon, t.label])).toEqual([
-      [null, null, null],
-    ]);
     expect(stored.map((t) => openLocation(t.locationEncrypted!))).toEqual([
       { lat: 48.1, lon: 11.6, label: "Munich, Germany" },
     ]);
@@ -169,68 +159,5 @@ describe("environment coordinates at one decimal", () => {
     expect(days.map((d) => openLocation(d.locationEncrypted!))).toEqual([
       { lat: 48.1, lon: 11.6, label: "Munich, Germany" },
     ]);
-    expect(days.map((d) => [d.lat, d.lon, d.locationLabel])).toEqual([
-      [null, null, null],
-    ]);
-  });
-
-  it("coarsens rows written before migration 0361, idempotently", async () => {
-    const prisma = getPrismaClient();
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: { homeLat: 52.52, homeLon: 13.38 },
-    });
-    await prisma.environmentTravelLocation.create({
-      data: {
-        userId: OWNER_ID,
-        startDate: "2026-08-01",
-        endDate: "2026-08-10",
-        lat: 48.14,
-        lon: 11.58,
-        label: "Munich, Germany",
-      },
-    });
-    await prisma.environmentContext.create({
-      data: {
-        userId: OWNER_ID,
-        date: "2026-08-02",
-        lat: -33.87,
-        lon: 151.21,
-        locationLabel: "Sydney, Australia",
-        source: "TRAVEL",
-      },
-    });
-
-    const sql = readFileSync(
-      join(
-        __dirname,
-        "../../prisma/migrations/0361_encrypt_route_geometry_and_practitioner_contact/migration.sql",
-      ),
-      "utf8",
-    );
-    const statements = sql
-      .slice(sql.indexOf('UPDATE "users"'))
-      .split(";")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    expect(statements).toHaveLength(3);
-
-    for (let pass = 0; pass < 2; pass++) {
-      for (const statement of statements) {
-        await prisma.$executeRawUnsafe(statement);
-      }
-      const user = await prisma.user.findUniqueOrThrow({
-        where: { id: OWNER_ID },
-      });
-      expect([user.homeLat, user.homeLon]).toEqual([52.5, 13.4]);
-      const travel = await prisma.environmentTravelLocation.findFirstOrThrow({
-        where: { userId: OWNER_ID },
-      });
-      expect([travel.lat, travel.lon]).toEqual([48.1, 11.6]);
-      const day = await prisma.environmentContext.findFirstOrThrow({
-        where: { userId: OWNER_ID },
-      });
-      expect([day.lat, day.lon]).toEqual([-33.9, 151.2]);
-    }
   });
 });

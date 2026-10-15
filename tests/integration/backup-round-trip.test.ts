@@ -1426,7 +1426,7 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // coordinates are at 1 decimal, the precision the app stores since v1.39.4;
   // a restore rounds anything finer, so finer values would not round-trip.
   // Since v1.42 the location is stored sealed (`locationEncrypted`), the way
-  // the writers store it; the readable columns stay empty.
+  // the writers store it; it is the only copy since v1.43.
   await prisma.environmentTravelLocation.create({
     data: {
       userId: OWNER_ID,
@@ -3602,22 +3602,6 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
     "insert stamp of a symptom link; no reader, the day log's own timestamps travel",
   "IllnessSymptomLink.createdAt":
     "insert stamp of a symptom link; no reader, the illness day log's own timestamps travel",
-  // v1.42 (#615) — the readable copies of the sealed environment locations.
-  // The restore seals whatever location a file carries into
-  // `locationEncrypted` and writes these empty; the location itself is
-  // compared through the sealed column. They drop in v1.43.
-  "EnvironmentContext.lat":
-    "readable copy of the sealed day location; the restore seals it and writes this empty",
-  "EnvironmentContext.lon":
-    "readable copy of the sealed day location; the restore seals it and writes this empty",
-  "EnvironmentContext.locationLabel":
-    "readable copy of the sealed day location; the restore seals it and writes this empty",
-  "EnvironmentTravelLocation.lat":
-    "readable copy of the sealed period location; the restore seals it and writes this empty",
-  "EnvironmentTravelLocation.lon":
-    "readable copy of the sealed period location; the restore seals it and writes this empty",
-  "EnvironmentTravelLocation.label":
-    "readable copy of the sealed period location; the restore seals it and writes this empty",
 };
 
 /**
@@ -3638,7 +3622,14 @@ const COLUMN_PRESENCE_ONLY: Readonly<Record<string, string>> = {
  * starts coming back, so the entry has to go in the change that carries it.
  * The list is empty again before the release is tagged.
  */
-const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {};
+const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {
+  "IntradayCumulativeProfile.hourlyIncrements":
+    "hour buckets for summed types (ios #77): the intraday section carries it with the hour-bucket ingest",
+  "IntradayCumulativeProfile.basis":
+    "hour buckets for summed types (ios #77): the intraday section carries it with the hour-bucket ingest",
+  "IntradayCumulativeProfile.bucketCount":
+    "hour buckets for summed types (ios #77): the intraday section carries it with the hour-bucket ingest",
+};
 
 /**
  * Columns every reader parses through one function before using, compared
@@ -3665,6 +3656,8 @@ const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "MoodEntry.tags": JSON.stringify(["round-trip-tag"]),
   "CorrelationPattern.qValue": 0.04,
   "CorrelationPattern.dismissedEvidenceHash": "ab".repeat(32),
+  // CHECK in migration 0408: the profile is built from samples or from hour buckets.
+  "IntradayCumulativeProfile.basis": "HOUR_BUCKETS",
 };
 
 /**
@@ -4156,17 +4149,6 @@ const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
 };
 
 /**
- * v1.42 (#615) — readable setting columns the restore seals into another
- * column and writes empty. The value they held is compared through the sealed
- * column (`homeLocationEncrypted`).
- */
-const SEALED_ON_RESTORE: Readonly<Record<string, string>> = {
-  homeLat: "sealed into homeLocationEncrypted",
-  homeLon: "sealed into homeLocationEncrypted",
-  homeLabel: "sealed into homeLocationEncrypted",
-};
-
-/**
  * Columns of the account row the restore writes for reasons of its own, so
  * "unchanged on the target" does not apply to them.
  */
@@ -4302,15 +4284,8 @@ describe("the account's own settings survive a real restore", () => {
     })) as unknown as Record<string, unknown>;
 
     const lost = [...settings].filter(
-      (name) =>
-        !Object.hasOwn(SEALED_ON_RESTORE, name) &&
-        opened(after[name]) !== opened(source[name]),
+      (name) => opened(after[name]) !== opened(source[name]),
     );
-    // The readable home columns come back empty by design; the home itself
-    // came back sealed, compared above through `homeLocationEncrypted`.
-    for (const name of Object.keys(SEALED_ON_RESTORE)) {
-      expect(after[name], name).toBeNull();
-    }
     expect(
       lost,
       "these settings left with a value and came back without it",

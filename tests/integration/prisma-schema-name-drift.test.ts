@@ -146,9 +146,6 @@ describe("environment context — the write the enum drift blocked", () => {
         create: {
           userId: user.id,
           date,
-          lat: 52.5,
-          lon: 13.4,
-          locationLabel: "Somewhere",
           source,
           tempMean: 12.5,
           fetchedAt: new Date(),
@@ -174,9 +171,6 @@ describe("environment context — the write the enum drift blocked", () => {
       create: {
         userId: user.id,
         date: "2026-03-01",
-        lat: 52.5,
-        lon: 13.4,
-        locationLabel: "Somewhere",
         source: "HOME",
         fetchedAt: new Date(),
       },
@@ -200,9 +194,6 @@ describe("environment context — the write the enum drift blocked", () => {
       data: {
         userId: user.id,
         date: "2026-04-01",
-        lat: 52.5,
-        lon: 13.4,
-        locationLabel: "Somewhere",
         source: "TRAVEL",
         fetchedAt: new Date(),
       },

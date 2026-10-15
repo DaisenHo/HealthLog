@@ -146,14 +146,7 @@ export async function enqueueEnvironmentFetchDiscovery(
   // consults the per-user preference map + the operator availability.
   const [candidates, operatorAvailability] = await Promise.all([
     prisma.user.findMany({
-      // The sealed home (v1.42), or the readable one a row the encryption
-      // backfill has not reached yet still carries.
-      where: {
-        OR: [
-          { homeLocationEncrypted: { not: null } },
-          { homeLat: { not: null }, homeLon: { not: null } },
-        ],
-      },
+      where: { homeLocationEncrypted: { not: null } },
       select: { id: true, modulePreferencesJson: true },
     }),
     getOperatorModuleAvailability(),

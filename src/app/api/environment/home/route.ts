@@ -57,9 +57,6 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     where: { id: user.id },
     data: {
       homeLocationEncrypted: sealLocation(home),
-      homeLat: null,
-      homeLon: null,
-      homeLabel: null,
       homeTimezone: timezone,
       homeSince,
     },

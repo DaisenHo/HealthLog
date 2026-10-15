@@ -14,8 +14,8 @@
  * the environmental readings mean anything", and the second line is the one
  * that decides the design.
  *
- * A reading carries the coarse location it was fetched for (`lat`, `lon`,
- * `locationLabel`) and the precedence rule that chose it (`source`). A
+ * A reading carries the coarse location it was fetched for (sealed; `lat`,
+ * `lon`, `locationLabel` in a portable file) and the precedence rule that chose it (`source`). A
  * `TRAVEL` reading exists because an explicit dated location period covered
  * that day. `resolveLocationForDay` in `src/lib/environment/service.ts` reads
  * those periods live, every time; nothing else can produce a `TRAVEL`
@@ -60,14 +60,13 @@
  *   - a portable export opens the sealed location and writes the readable
  *     `lat` / `lon` / label, and no `locationEncrypted` at all, so the file
  *     reads anywhere;
- *   - a disaster-recovery file carries `locationEncrypted` verbatim (base64)
- *     beside whatever readable columns the row still holds, for a host with
- *     the same keys.
+ *   - a disaster-recovery file carries `locationEncrypted` verbatim (base64),
+ *     for a host with the same keys; its readable fields are null.
  *
  * The restore takes either: a sealed value is written as it came, a readable
- * one is sealed under this host's key, and the readable columns are written
- * empty in both cases. A row that holds neither restores without a location;
- * it is never invented.
+ * one (a portable file, or a disaster-recovery file written before v1.43) is
+ * sealed under this host's key. A row that holds neither restores without a
+ * location; it is never invented.
  *
  * The air-quality columns (v1.42) are plain values and ride both purposes
  * alike. Every one is optional on the way in: a file written before them
@@ -129,8 +128,8 @@ export interface EnvironmentContextBackupEntry extends AirQualityBackupColumns {
   /** `YYYY-MM-DD`, anchored to the resolved location's timezone. */
   date: string;
   /**
-   * Plaintext coarse location. Nullable since v1.42 (migration 0382): the
-   * sealed copy replaces it once the encryption backfill has run.
+   * Readable coarse location: set in a portable file, null in a
+   * disaster-recovery file (which carries `locationEncrypted`).
    */
   lat: number | null;
   lon: number | null;
@@ -169,7 +168,7 @@ export interface EnvironmentTravelLocationBackupEntry {
   /** Inclusive `YYYY-MM-DD` bounds. Strings end to end; see the file header. */
   startDate: string;
   endDate: string;
-  /** Plaintext coarse location; nullable since v1.42 (migration 0382). */
+  /** Readable coarse location; set in a portable file, null otherwise. */
   lat: number | null;
   lon: number | null;
   label: string | null;
@@ -198,9 +197,6 @@ export interface EnvironmentBackupCounts {
  */
 const ENVIRONMENT_CONTEXT_BACKUP_SELECT = {
   date: true,
-  lat: true,
-  lon: true,
-  locationLabel: true,
   locationEncrypted: true,
   source: true,
   tempMin: true,
@@ -245,9 +241,6 @@ const ENVIRONMENT_CONTEXT_BACKUP_SELECT = {
 const ENVIRONMENT_TRAVEL_LOCATION_BACKUP_SELECT = {
   startDate: true,
   endDate: true,
-  lat: true,
-  lon: true,
-  label: true,
   locationEncrypted: true,
   createdAt: true,
   updatedAt: true,
@@ -261,16 +254,12 @@ function toBase64(bytes: Uint8Array | null): string | null {
 }
 
 /**
- * The location columns of one entry: opened and readable for a portable
- * file, as stored plus the sealed value for a disaster-recovery file.
+ * The location fields of one entry: opened and readable for a portable file;
+ * the sealed value for a disaster-recovery file, whose readable fields stay
+ * null (the database holds no readable copy since v1.43).
  */
 function locationFields(
-  row: {
-    lat: number | null;
-    lon: number | null;
-    label: string | null;
-    locationEncrypted: Uint8Array | null;
-  },
+  sealed: Uint8Array | null,
   disasterRecovery: boolean,
 ): {
   lat: number | null;
@@ -280,19 +269,13 @@ function locationFields(
 } {
   if (disasterRecovery) {
     return {
-      lat: row.lat,
-      lon: row.lon,
-      label: row.label,
-      locationEncrypted: toBase64(row.locationEncrypted),
+      lat: null,
+      lon: null,
+      label: null,
+      locationEncrypted: toBase64(sealed),
     };
   }
-  const location = readLocation({
-    sealed: row.locationEncrypted,
-    lat: row.lat,
-    lon: row.lon,
-    label: row.label,
-  });
-  return location ?? { lat: null, lon: null, label: null };
+  return readLocation(sealed) ?? { lat: null, lon: null, label: null };
 }
 
 /**
@@ -326,12 +309,7 @@ export async function buildEnvironmentBackupSection(
   return {
     environmentContexts: contextRows.map((row) => {
       const { label, ...location } = locationFields(
-        {
-          lat: row.lat,
-          lon: row.lon,
-          label: row.locationLabel,
-          locationEncrypted: row.locationEncrypted,
-        },
+        row.locationEncrypted,
         disasterRecovery,
       );
       return {
@@ -381,7 +359,7 @@ export async function buildEnvironmentBackupSection(
     environmentTravelLocations: travelRows.map((row) => ({
       startDate: row.startDate,
       endDate: row.endDate,
-      ...locationFields(row, disasterRecovery),
+      ...locationFields(row.locationEncrypted, disasterRecovery),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     })),
@@ -543,9 +521,6 @@ export async function restoreEnvironmentData(
           `environmentTravelLocations.${entry.startDate}..${entry.endDate}`,
           unopened,
         ),
-        lat: null,
-        lon: null,
-        label: null,
         ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
         ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
       })),
@@ -567,9 +542,6 @@ export async function restoreEnvironmentData(
           `environmentContexts.${entry.date}`,
           unopened,
         ),
-        lat: null,
-        lon: null,
-        locationLabel: null,
         source: entry.source,
         tempMin: entry.tempMin ?? null,
         tempMax: entry.tempMax ?? null,

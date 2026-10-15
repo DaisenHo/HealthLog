@@ -499,13 +499,7 @@ async function seed() {
     // start of a chart together. Every other tile stays one switch away in
     // the layout settings; its data is seeded either way. Writing the layout
     // verbatim keeps the demo's home page stable across default tweaks.
-    const SHOWCASE_TILE_IDS = new Set([
-      "weight",
-      "bp",
-      "pulse",
-      "hrv",
-      "mood",
-    ]);
+    const SHOWCASE_TILE_IDS = new Set(["weight", "bp", "pulse", "hrv", "mood"]);
     const demoDashboardLayout = serializeDashboardLayout({
       ...DEFAULT_DASHBOARD_LAYOUT,
       widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => ({
@@ -2798,12 +2792,11 @@ async function seed() {
     }
 
     // The timeline module is opt-in; the demo shows it. The home location
-    // is sealed the way the settings route writes it (readable columns null).
+    // is sealed the way the settings route writes it.
     const homeSince = daysAgoAt(HISTORY_DAYS, 12);
     await client.query(
       `UPDATE users
           SET module_preferences_json = $2,
-              home_lat = NULL, home_lon = NULL, home_label = NULL,
               home_location_encrypted = $3,
               home_timezone = 'Europe/Berlin',
               home_since = $4,
@@ -2913,9 +2906,6 @@ async function seed() {
         cuid(),
         userId,
         key,
-        null,
-        null,
-        null,
         away ? sealedHoliday : sealedHome,
         away ? "TRAVEL" : "HOME",
         tempMin,
@@ -2964,9 +2954,6 @@ async function seed() {
         "id",
         "user_id",
         "date",
-        "lat",
-        "lon",
-        "location_label",
         "location_encrypted",
         "source",
         "temp_min",
