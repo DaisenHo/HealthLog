@@ -51,17 +51,15 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
   "environment/travel/suggestions/route.ts": [
     "environment.travel_suggestions.get",
   ],
-  "labs/[id]/links/route.ts": ["labs.link."],
   "medications/[id]/ingredients/extract/route.ts": [
     "medications.ingredients.extract",
   ],
   "medications/[id]/ingredients/route.ts": ["medications.ingredients.put"],
-  "medications/[id]/links/route.ts": ["medication.link."],
   "nutrients/catalog/route.ts": ["nutrients.catalog.get"],
 };
 
 /** The size of the register when it was written; see the header. */
-const REGISTER_SIZE = 21;
+const REGISTER_SIZE = 19;
 
 function routeFiles(): string[] {
   return walkSourceFiles(API_ROOT, { floor: 400, extensions: [".ts"] })

@@ -552,7 +552,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "File targets against a visit",
       description:
-        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document link and unlink.",
+        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document link and unlink. Since v1.43 `targetKind` also takes `medication` and `vaccination`; those links show in the visit's `related` list (`GET /api/encounters/{id}`), not in `links`.",
       requestParams: idPath,
       requestBody: {
         required: true,

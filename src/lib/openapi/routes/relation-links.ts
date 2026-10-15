@@ -16,12 +16,7 @@ import {
   medicationLinkSchema,
 } from "@/lib/validations/relation-links";
 
-import {
-  dataEnvelope,
-  errorEnvelope,
-  notImplementedResponse,
-  stdResponses,
-} from "./shared";
+import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 export const relatedLink = z
   .object({
@@ -118,7 +113,6 @@ function linkOperations(
         content: { "application/json": { schema: errorEnvelope } },
       },
       ...stdResponses,
-      ...notImplementedResponse,
     },
   });
   return { [path]: { post: op("post"), delete: op("delete") } };

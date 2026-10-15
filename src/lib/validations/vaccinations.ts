@@ -253,13 +253,11 @@ export type CustomVaccineUpdate = z.infer<typeof customVaccineUpdateSchema>;
 /* ── links ────────────────────────────────────────────────────────── */
 
 /**
- * The one link family a dose has.
- *
- * A single-member enum rather than a bare constant, so the wire shape matches
- * the encounter link route's and a second family — if this venture ever loses
- * the argument against one — is an added member rather than a changed shape.
+ * The link families a dose has: the page it was transcribed from and, since
+ * v1.43, the visit it was given at (`encounter_vaccination_links`, the same
+ * table the visit's own links route writes from its end).
  */
-export const vaccinationLinkTargetEnum = z.enum(["document"]);
+export const vaccinationLinkTargetEnum = z.enum(["document", "encounter"]);
 
 export const vaccinationLinkSchema = z
   .object({

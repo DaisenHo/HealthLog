@@ -74,6 +74,7 @@ const TARGET_DOMAIN: Record<LinkTargetKind, ShareDomain> = {
   encounter: "profile",
   // A dose lives in the health background, like the visit itself.
   vaccination: "profile",
+  medication: "medications",
 };
 
 /**
