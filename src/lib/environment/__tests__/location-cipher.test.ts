@@ -56,27 +56,23 @@ describe("sealLocation / openLocation", () => {
 });
 
 describe("readLocation", () => {
-  it("prefers the sealed value over readable columns", () => {
+  it("opens the sealed value", () => {
     const sealed = sealLocation({ lat: 48.1, lon: 11.6, label: "Munich" });
-    expect(
-      readLocation({ sealed, lat: 52.5, lon: 13.4, label: "Berlin" }),
-    ).toEqual({ lat: 48.1, lon: 11.6, label: "Munich" });
+    expect(readLocation(sealed)).toEqual({
+      lat: 48.1,
+      lon: 11.6,
+      label: "Munich",
+    });
   });
 
-  it("falls back to the readable columns for a row the backfill has not reached", () => {
-    expect(
-      readLocation({ sealed: null, lat: 52.5, lon: 13.4, label: "Berlin" }),
-    ).toEqual({ lat: 52.5, lon: 13.4, label: "Berlin" });
-    expect(
-      readLocation({ sealed: null, lat: 52.5, lon: null, label: "Berlin" }),
-    ).toBeNull();
+  it("reads a row without a sealed value as no location", () => {
+    expect(readLocation(null)).toBeNull();
+    expect(readLocation(new Uint8Array())).toBeNull();
   });
 
-  it("reads a value that does not open as no location, never as the readable columns", () => {
+  it("reads a value that does not open as no location", () => {
     const sealed = sealLocation({ lat: 48.1, lon: 11.6, label: "Munich" });
     vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
-    expect(
-      readLocation({ sealed, lat: 52.5, lon: 13.4, label: "Berlin" }),
-    ).toBeNull();
+    expect(readLocation(sealed)).toBeNull();
   });
 });

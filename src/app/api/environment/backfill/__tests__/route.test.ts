@@ -61,7 +61,6 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
       findUnique: vi.fn(async () => ({
-        homeLat: null,
         homeLocationEncrypted: new Uint8Array([1]),
         homeSince: new Date("2025-01-01T00:00:00Z"),
       })),

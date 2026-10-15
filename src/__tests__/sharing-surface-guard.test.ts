@@ -853,7 +853,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/biomarkers/route.ts": {
     domain: "labs",
-    why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are refused.",
+    why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are manage-level.",
   },
   "app/api/biomarkers/[id]/route.ts": {
     domain: "labs",
@@ -886,6 +886,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/anamnesis/facts/route.ts": {
     domain: "profile",
     why: "The record's health-profile facts, read through `readHealthProfileFacts(user.id)`. The module holds write helpers, and the GET calls none of them.",
+  },
+  "app/api/anamnesis/life-circumstances/route.ts": {
+    domain: "profile",
+    why: "The record's life circumstances (v1.43), the structured sibling of the facts above and under the same `profile` grant. Read-only: the section switches, confirmations and AUDIT-C are written through their own routes, none of them delegable.",
   },
   "app/api/profile/summary/route.ts": {
     domain: "profile",
@@ -930,6 +934,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/sleep/rhythm/route.ts": {
     domain: "measurements",
     why: "The record's sleep rhythm, built from `buildSleepRhythm(user.id)` and gated on the record's sleep module.",
+  },
+  "app/api/nutrients/catalog/route.ts": {
+    domain: "measurements",
+    why: "The nutrient catalogue as the composition form reads it (v1.43): codes, units and upper limits, labels in the record's language. Reference data the record's module gate opens; nothing of the record itself.",
   },
   "app/api/nutrients/route.ts": {
     domain: "measurements",
@@ -1601,8 +1609,8 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
   },
   "app/api/biomarkers/[id]/route.ts": {
     domain: "labs",
-    conditions: ["C4"],
-    why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it stays refused.",
+    conditions: ["C3", "C4"],
+    why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it resolves through the same labs authority since v1.43 instead of a bare requireAuth; it hard-deletes the marker with its readings, so C3 files the name, unit and reading count it took.",
   },
   "app/api/allergies/route.ts": {
     domain: "profile",
@@ -2104,8 +2112,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.42.4 -- the Labs list's per-marker overview joins the record list
  * beside `GET /api/labs`, the rows it groups. 255 -> 256.
+ *
+ * v1.43 -- two reads join the record list: the life circumstances beside the
+ * facts (`profile`) and the nutrient catalogue beside the nutrient reads
+ * (`measurements`). The biomarker DELETE joins the manage literal on a module
+ * that was already there. 256 -> 258.
  */
-const FROZEN_ENTRY_COUNT = 256;
+const FROZEN_ENTRY_COUNT = 258;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2866,7 +2879,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(88);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

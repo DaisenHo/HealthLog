@@ -83,7 +83,15 @@ export const dynamic = "force-dynamic";
  * by design: a feature the server supports is supported for every account,
  * and a per-account answer belongs in `modules` or `ai`, not here.
  */
-const SERVER_FEATURES = { trackIntake: true } as const;
+const SERVER_FEATURES = {
+  trackIntake: true,
+  // v1.43 — each turns true in the change that makes its route or request
+  // form work; until then a client must not send it (contract §0.6).
+  cumulativeHourBuckets: false,
+  syncTriggerBackfill: false,
+  biomarkerMerge: false,
+  lifeCircumstances: false,
+} as const;
 
 export const GET = apiHandler(async () => {
   const auth = await requireActorAuth();

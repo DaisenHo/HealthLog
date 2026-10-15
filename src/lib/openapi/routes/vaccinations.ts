@@ -18,6 +18,7 @@
  * two-member `origin` enum. The match key that connects them is a server-side
  * column and reaches no response.
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -470,7 +471,10 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The dose.",
           content: {
             "application/json": {
-              schema: dataEnvelope(vaccination, "GetVaccinationEnvelope"),
+              schema: dataEnvelope(
+                withRelated(vaccination),
+                "GetVaccinationEnvelope",
+              ),
             },
           },
         },

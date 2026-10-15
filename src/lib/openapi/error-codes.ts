@@ -43,6 +43,8 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "ai.provider.none",
       "ai.record.notPermitted",
       "ai.unavailable",
+      "ai.usage.invalid",
+      "ai.usage.rateLimited",
     ],
     ai_provider: ["ai_provider.invalid", "ai_provider.no_fields"],
     aiRuns: [
@@ -54,9 +56,13 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     allergy: ["allergy.invalid"],
     analytics: ["analytics.invalid_query"],
     anamnesis: [
+      "anamnesis.auditC.invalid",
+      "anamnesis.auditC.rateLimited",
       "anamnesis.fact.conflict",
       "anamnesis.fact.currentExists",
       "anamnesis.fact.invalidValue",
+      "anamnesis.lifeConfirm.invalid",
+      "anamnesis.lifeSections.invalid",
     ],
     auth: [
       "auth.admin.required",
@@ -118,6 +124,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
+    dawarich: ["dawarich.invalid", "dawarich.rate_limited"],
     day: ["day.invalid"],
     demo: ["demo.readOnly"],
     documents: [
@@ -211,10 +218,12 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     labs: [
       "labs.biomarker.create.invalid",
       "labs.biomarker.duplicate",
+      "labs.biomarker.merge.invalid",
       "labs.biomarker.notFound",
       "labs.biomarker.update.invalid",
       "labs.biomarker.update.referenceRangeInvalid",
       "labs.create.invalid",
+      "labs.link.invalid",
       "labs.ocr.budgetExceeded",
       "labs.ocr.extractFailed",
       "labs.ocr.fileTooLarge",
@@ -257,6 +266,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     medication: [
       "medication.intake.import.invalid_format",
       "medication.intake.notTracked",
+      "medication.link.invalid",
     ],
     medications: [
       "medications.category.invalid",
@@ -269,6 +279,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "medications.course.oneShot",
       "medications.course.overlap",
       "medications.course.windowRequired",
+      "medications.ingredients.invalid",
       "medications.intake.bulk.apple_health_not_mirrored",
       "medications.intake.bulk.invalid",
       "medications.intake.bulk.too_large",
@@ -435,6 +446,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "modules_conflict",
       "mood_tag_layout_conflict",
       "not_configured",
+      "not_implemented",
       "notification_prefs_conflict",
       "oidc_only",
       "private_origin_not_approved",

@@ -1,0 +1,356 @@
+/**
+ * OpenAPI route table — life circumstances and AUDIT-C (v1.43, #614).
+ *
+ * Part of the OpenAPI route table; aggregated in `./index.ts`. Request bodies
+ * reuse the runtime schemas from `@/lib/validations/life-circumstances`. Every
+ * route here is new: the new fact kinds never appear on
+ * `GET /api/anamnesis/facts`, and AUDIT-C never on
+ * `/api/mental-health/assessments`, because older app builds decode both
+ * lists closed. Only when `features.lifeCircumstances` is true.
+ */
+import type { ZodOpenApiObject } from "zod-openapi";
+import { z } from "zod/v4";
+
+import {
+  AUDIT_C_CUTOFF_SOURCES,
+  LIFE_AI_SECTIONS,
+  LIFE_FACT_KINDS,
+  LIFE_SECTION_KEYS,
+  auditCRequestSchema,
+  lifeAiSectionsPatchSchema,
+  lifeConfirmSchema,
+} from "@/lib/validations/life-circumstances";
+
+import {
+  dataEnvelope,
+  errorEnvelope,
+  idempotencyKeyParameter,
+  idempotentWrite,
+  notImplementedResponse,
+  recordRefusal,
+  stdResponses,
+} from "./shared";
+
+const lifeFactRevision = z
+  .object({
+    id: z.string(),
+    kind: z.enum(["SMOKING_STATUS", "SHIFT_SCHEDULE", ...LIFE_FACT_KINDS]),
+    value: z
+      .unknown()
+      .describe(
+        "`SMOKING_STATUS` and `SHIFT_SCHEDULE` carry their string value; every other kind an object with `schema: 1` whose shape is fixed per kind (see the life-circumstances contract). `null` when `unreadable`.",
+      ),
+    unreadable: z
+      .boolean()
+      .describe("The sealed value could not be opened on this host."),
+    validFrom: z.iso.datetime({ offset: true }),
+    validUntil: z.null(),
+    provenance: z.enum(["USER_REPORTED", "USER_CORRECTION"]),
+    createdAt: z.iso.datetime({ offset: true }),
+  })
+  .meta({
+    id: "LifeFactRevision",
+    description: "The current revision of one life-circumstance fact.",
+  });
+
+const auditCCutoff = z.object({
+  value: z.number().int(),
+  sex: z.enum(["male", "female"]),
+  source: z.enum(AUDIT_C_CUTOFF_SOURCES),
+  sourceLabel: z.string(),
+  sourceUrl: z.string(),
+});
+
+const auditCResult = z
+  .object({
+    id: z.string(),
+    takenAt: z.iso.datetime({ offset: true }),
+    items: z.tuple([z.number().int(), z.number().int(), z.number().int()]),
+    totalScore: z.number().int().min(0).max(12),
+    locale: z.string(),
+    cutoff: auditCCutoff
+      .nullable()
+      .describe(
+        "The screening cut-off for the entry's language and the profile's sex (German S3 guideline, Korean KNHANES, else Bradley 2007). `null` when the profile has no sex; show the sum only.",
+      ),
+    aboveCutoff: z.boolean().nullable(),
+    validatedLocale: z
+      .boolean()
+      .describe(
+        "Whether the item wording shown was a validated translation for `locale`.",
+      ),
+  })
+  .meta({
+    id: "AuditCResult",
+    description:
+      "One AUDIT-C entry, scored on the server. A screening result, not a diagnosis.",
+  });
+
+const screeningHint = z.object({
+  id: z.enum(["lung_ldct", "aaa_ultrasound"]),
+  status: z.enum(["suggested", "not_eligible", "unknown"]),
+  reasonKeys: z.array(z.string()),
+  region: z.enum(["DE", "US"]),
+  sourceLabel: z.string(),
+  sourceUrl: z.string(),
+});
+
+const lifeCircumstances = z
+  .object({
+    sections: z
+      .array(
+        z.object({
+          key: z.enum(LIFE_SECTION_KEYS),
+          aiSection: z.enum([
+            "SMOKING_STATUS",
+            "ALCOHOL_PATTERN",
+            "ACTIVITY",
+            "WORK",
+            "HABITS",
+            "GOALS",
+          ]),
+          aiIncluded: z.boolean(),
+          lastConfirmedAt: z.iso.datetime({ offset: true }).nullable(),
+          reviewDue: z
+            .boolean()
+            .describe("Older than 365 days; show the quiet yearly check."),
+          facts: z.array(lifeFactRevision),
+        }),
+      )
+      .describe("Always all six, in this order."),
+    extraAiSections: z.object({ SHIFT_SCHEDULE: z.boolean() }),
+    derived: z.object({
+      packYears: z.object({
+        value: z.number().nullable(),
+        status: z.enum(["computed", "not_applicable", "missing_inputs"]),
+      }),
+      activityMinutesPerWeek: z.object({
+        value: z.number().int().nullable(),
+        meetsWho150: z.boolean().nullable(),
+        measuredStepsAvailable: z.boolean(),
+      }),
+      freeWeekdays: z.object({
+        days: z.array(z.number().int().min(1).max(7)),
+        source: z.enum(["fact", "default_weekend"]),
+      }),
+      screeningHints: z.array(screeningHint),
+    }),
+    auditC: z.object({
+      latest: auditCResult.nullable(),
+      history: z
+        .array(
+          z.object({
+            id: z.string(),
+            takenAt: z.iso.datetime({ offset: true }),
+            totalScore: z.number().int(),
+          }),
+        )
+        .describe("Newest first, at most 20."),
+      offerDue: z.boolean(),
+      instrument: z.object({
+        items: z
+          .array(
+            z.object({
+              stem: z.string(),
+              options: z.array(
+                z.object({ value: z.number().int(), label: z.string() }),
+              ),
+            }),
+          )
+          .describe(
+            "The three items verbatim in the account language; render as delivered.",
+          ),
+        locale: z.string(),
+        validatedLocale: z.boolean(),
+        standardDrink: z.string(),
+        attribution: z.string(),
+      }),
+    }),
+    takeOver: z.array(
+      z.object({
+        field: z.enum(["conditions", "allergies"]),
+        freeTextPresent: z.boolean(),
+        structuredCount: z.number().int(),
+        available: z.boolean(),
+      }),
+    ),
+  })
+  .meta({
+    id: "LifeCircumstances",
+    description:
+      "The six life-circumstance sections with their answers, AI switches and review state, the derived values with their sources, AUDIT-C, and the take-over hints for the free-text conditions and allergies. Every number is resolved on the server.",
+  });
+
+const lifeAiSectionsPatchRequest = lifeAiSectionsPatchSchema.meta({
+  id: "LifeAiSectionsPatchRequest",
+});
+const lifeConfirmRequest = lifeConfirmSchema.meta({
+  id: "LifeConfirmRequest",
+});
+const auditCRequest = auditCRequestSchema.meta({ id: "AuditCRequest" });
+
+export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/anamnesis/life-circumstances": {
+    get: {
+      tags: ["Anamnesis"],
+      summary: "Life circumstances (v1.43)",
+      description:
+        "The life-circumstance sections of the record. Delegates read it under the `profile` grant, like the facts.",
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The life circumstances.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                lifeCircumstances,
+                "LifeCircumstancesEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/anamnesis/life-circumstances/ai-sections": {
+    patch: {
+      tags: ["Anamnesis"],
+      summary: "Switch life-circumstance sections for the AI (v1.43)",
+      description:
+        "Sections not named keep their state. Own account only. 422 `anamnesis.lifeSections.invalid`; 409 `about_me_conflict` for a stale `baseUpdatedAt`.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: lifeAiSectionsPatchRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The switches after the change.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  aiSections: z.partialRecord(
+                    z.enum(LIFE_AI_SECTIONS),
+                    z.boolean(),
+                  ),
+                  updatedAt: z.iso.datetime({ offset: true }),
+                }),
+                "LifeAiSectionsEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "`about_me_conflict`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/anamnesis/life-circumstances/confirm": {
+    post: {
+      tags: ["Anamnesis"],
+      summary: "Confirm a life-circumstance section is still true (v1.43)",
+      description:
+        "Stores the confirmation instant only, never a new revision. Own account only. 422 `anamnesis.lifeConfirm.invalid`.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: lifeConfirmRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The confirmed section.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  section: z.enum(LIFE_SECTION_KEYS),
+                  lastConfirmedAt: z.iso.datetime({ offset: true }),
+                }),
+                "LifeConfirmEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/anamnesis/audit-c": {
+    post: {
+      tags: ["Anamnesis"],
+      summary: "Record an AUDIT-C (v1.43)",
+      description:
+        "Scores the three items on the server. A replay with the same `externalId` answers 200 with the stored result. 422 `anamnesis.auditC.invalid`; 429 `anamnesis.auditC.rateLimited` after 30 in an hour.",
+      parameters: [idempotencyKeyParameter],
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: auditCRequest } },
+      },
+      responses: {
+        ...idempotentWrite(),
+        "200": {
+          description: "A replay of an entry already stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ result: auditCResult }),
+                "AuditCReplayEnvelope",
+              ),
+            },
+          },
+        },
+        "201": {
+          description: "The stored and scored entry.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ result: auditCResult }),
+                "AuditCCreatedEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
+  "/api/anamnesis/audit-c/{id}": {
+    delete: {
+      tags: ["Anamnesis"],
+      summary: "Remove an AUDIT-C entry (v1.43)",
+      description: "Soft delete. 404 `anamnesis.auditC.notFound`.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      responses: {
+        "200": {
+          description: "The removed entry.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  id: z.string(),
+                  removedAt: z.iso.datetime({ offset: true }),
+                }),
+                "AuditCRemovedEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "`anamnesis.auditC.notFound`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
+};

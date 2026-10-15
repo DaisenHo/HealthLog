@@ -358,9 +358,6 @@ export async function collectAirQualityHistory(
       select: {
         date: true,
         aqFetchedAt: true,
-        lat: true,
-        lon: true,
-        locationLabel: true,
         locationEncrypted: true,
         source: true,
       },
@@ -375,12 +372,7 @@ export async function collectAirQualityHistory(
     const row = rowByDate.get(date);
     let location: ResolvedLocation | null;
     if (row) {
-      const stored = readLocation({
-        sealed: row.locationEncrypted,
-        lat: row.lat,
-        lon: row.lon,
-        label: row.locationLabel,
-      });
+      const stored = readLocation(row.locationEncrypted);
       location = stored ? { ...stored, source: row.source } : null;
     } else if (inAnyPeriod(date, travel.unreadable)) {
       location = null;

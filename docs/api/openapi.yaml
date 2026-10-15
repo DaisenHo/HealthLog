@@ -456,6 +456,12 @@ paths:
             type: string
           required: true
       responses:
+        "200":
+          description: "v1.43 — with `Prefer: return=representation`: what the delete changed."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CycleDeleteOutcomeEnvelope"
         "204":
           description: Soft-deleted (no body).
         "401": *a1
@@ -620,6 +626,12 @@ paths:
             type: string
           required: true
       responses:
+        "200":
+          description: "v1.43 — with `Prefer: return=representation`: what the delete changed."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CycleDeleteOutcomeEnvelope"
         "204":
           description: Soft-deleted (no body).
         "401": *a1
@@ -1852,6 +1864,55 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/auth/claim/sso:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Claim a managed profile through single sign-on (v1.43)
+      description: "Web only. Checks the link and the username, sets a sealed `hl_claim` cookie (10 minutes, `httpOnly`) and
+        answers where to continue: `/api/auth/oidc/login?intent=claim`. The OIDC callback binds the identity provider's
+        subject to the profile and signs the new owner in; a subject already bound to an account, or a verified email
+        another account holds, is refused there. Works on a single-sign-on-only instance. 404 `profile_claim.invalid`
+        (no usable link) or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken`
+        (username) or `auth.already_authenticated`; rate-limited per source address like the password claim."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileClaimSsoRequest"
+      responses:
+        "200":
+          description: Continue at `redirectTo`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileClaimSsoEnvelope"
+        "401": *a1
+        "404":
+          description: "`profile_claim.invalid` or `profile_claim.sso_unavailable`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "`profile_claim.taken` or `auth.already_authenticated`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": &a30
+          description: "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` =
+            `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation
+            already answer as documented. A client reaches this only by ignoring the server feature flag that guards the
+            operation."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/auth/claim/preview:
     post:
       security: []
@@ -15110,7 +15171,7 @@ paths:
             schema:
               $ref: "#/components/schemas/OcrTextExtractRequest"
       responses:
-        "202": &a38
+        "202": &a39
           description: Queued for the background worker. Every refusal the route can answer quickly (capability, provider, rate
             limit, budget, validation) has already been answered; anything that goes wrong from here is reported on the
             run.
@@ -15287,7 +15348,9 @@ paths:
         "401": *a1
         "403": *a11
         "404": &a28
-          description: Biomarker not found (or owned by another user).
+          description: "Biomarker not found (or owned by another user). `meta.errorCode` = `labs.biomarker.notFound`. Since v1.43
+            a marker that was merged into another answers with `meta.mergedInto` naming the marker it went into: drop
+            the cached marker and open that one."
           content:
             application/json:
               schema:
@@ -15332,8 +15395,10 @@ paths:
       tags:
         - Labs
       summary: Delete a biomarker
-      description: "Hard-deletes the catalog definition. The `onDelete: SetNull` FK unlinks every reading (they keep their
-        legacy `analyte` / `unit`), so the history survives. Audits as `biomarker.delete`."
+      description: Hard-deletes the catalog definition together with every reading filed under it, in one transaction. Since
+        v1.43 it needs the same record authority as the edit (manage on the labs section), so a manager of a shared
+        record may delete and the owner is unaffected. Audits as `biomarker.delete` with the marker's name, unit and the
+        number of readings removed.
       parameters:
         - in: path
           name: id
@@ -15348,9 +15413,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteBiomarkerResponse"
         "401": *a1
+        "403": *a11
         "404": *a28
         "422": *a4
         "429": *a5
+  /api/biomarkers/{id}/merge:
+    post:
+      tags:
+        - Labs
+      summary: Merge markers into this one (v1.43)
+      description: Moves every reading of the source markers onto the marker in the path, converting units where the analyte's
+        conversion table knows them, turns the source names into aliases and deletes the sources, in one transaction. A
+        source in a unit without a known conversion refuses the whole merge with 422 `labs.biomarker.merge.unitMismatch`
+        (`meta.sources` names each `{ id, unit, targetUnit, reason }`) and nothing moves. 404 `labs.biomarker.notFound`
+        with `meta.ids` when the target or a source is missing; 422 `labs.biomarker.merge.invalid` for a malformed body
+        or a target among the sources. No undo. Only when `features.biomarkerMerge` is true.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BiomarkerMergeRequest"
+      responses:
+        "200":
+          description: The merge result (or the dry-run preview).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeBiomarkersResponse"
+        "401": *a1
+        "404": *a28
+        "409": *a7
+        "422": *a4
+        "429": *a12
+        "501": *a30
   /api/encounters:
     get:
       tags:
@@ -15563,7 +15666,7 @@ paths:
                 $ref: "#/components/schemas/GetEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a30
+        "404": &a31
           description: Visit not found (or owned by another user).
           content:
             application/json:
@@ -15597,7 +15700,7 @@ paths:
                 $ref: "#/components/schemas/UpdateEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
     delete:
@@ -15622,7 +15725,7 @@ paths:
                 $ref: "#/components/schemas/DeleteEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/encounters/{id}/restore:
@@ -15648,7 +15751,7 @@ paths:
                 $ref: "#/components/schemas/RestoreEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/encounters/{id}/links:
@@ -15678,7 +15781,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkEncounterEnvelope"
         "401": *a1
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
     delete:
@@ -15707,7 +15810,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkEncounterEnvelope"
         "401": *a1
-        "404": *a30
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/practitioners:
@@ -15786,7 +15889,7 @@ paths:
                 $ref: "#/components/schemas/GetPractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a31
+        "404": &a32
           description: Practitioner not found (or owned by another user).
           content:
             application/json:
@@ -15820,7 +15923,7 @@ paths:
                 $ref: "#/components/schemas/UpdatePractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a31
+        "404": *a32
         "422": *a4
         "429": *a5
     delete:
@@ -15844,7 +15947,7 @@ paths:
                 $ref: "#/components/schemas/DeletePractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a31
+        "404": *a32
         "422": *a4
         "429": *a5
   /api/practitioners/{id}/restore:
@@ -15870,7 +15973,7 @@ paths:
                 $ref: "#/components/schemas/RestorePractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a31
+        "404": *a32
         "422": *a4
         "429": *a5
   /api/vaccinations/custom:
@@ -15914,7 +16017,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomVaccineEnvelope"
         "401": *a1
         "403": *a11
-        "409": &a32
+        "409": &a33
           description: A live definition on the record already carries this name, compared without case
             (`vaccination.custom.name-taken`).
           content:
@@ -15951,13 +16054,13 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomVaccineEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a33
+        "404": &a34
           description: No live definition with this id on the record (`vaccination.custom.not-found`).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "409": *a32
+        "409": *a33
         "422": *a4
         "429": *a5
     delete:
@@ -15982,7 +16085,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomVaccineEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a33
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/vaccinations:
@@ -16084,7 +16187,7 @@ paths:
                 $ref: "#/components/schemas/GetVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a34
+        "404": &a35
           description: Vaccination not found (or owned by another user).
           content:
             application/json:
@@ -16119,7 +16222,7 @@ paths:
                 $ref: "#/components/schemas/UpdateVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a34
+        "404": *a35
         "422": *a4
         "429": *a5
     delete:
@@ -16144,7 +16247,7 @@ paths:
                 $ref: "#/components/schemas/DeleteVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a34
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/restore:
@@ -16169,7 +16272,7 @@ paths:
                 $ref: "#/components/schemas/RestoreVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a34
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/booster:
@@ -16235,7 +16338,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": *a34
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/vaccinations/suggest:
@@ -16293,7 +16396,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkVaccinationEnvelope"
         "401": *a1
-        "404": *a34
+        "404": *a35
         "422": *a4
         "429": *a5
     delete:
@@ -16322,7 +16425,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkVaccinationEnvelope"
         "401": *a1
-        "404": *a34
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/illness/episodes:
@@ -16437,7 +16540,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a35
+        "404": &a36
           description: Illness episode not found (or owned by another user).
           content:
             application/json:
@@ -16472,7 +16575,7 @@ paths:
                 $ref: "#/components/schemas/UpdateIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a36
         "422": *a4
         "429": *a5
     delete:
@@ -16496,7 +16599,7 @@ paths:
                 $ref: "#/components/schemas/DeleteIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a36
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/restore:
@@ -16524,7 +16627,7 @@ paths:
                 $ref: "#/components/schemas/RestoreIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a36
         "409": *a7
         "422": *a4
         "429": *a5
@@ -16557,7 +16660,7 @@ paths:
                 $ref: "#/components/schemas/ResolveIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a36
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/day-logs:
@@ -16608,7 +16711,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessDayLogEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a36
         "422": *a4
         "429": *a5
     post:
@@ -16645,7 +16748,7 @@ paths:
                 $ref: "#/components/schemas/UpsertIllnessDayLogCreatedEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a36
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/correlation:
@@ -16672,7 +16775,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IllnessCorrelationEnvelope"
         "401": *a1
-        "404": *a35
+        "404": *a36
         "422": *a4
         "429": *a5
   /api/illness/insights:
@@ -16888,7 +16991,7 @@ paths:
                 $ref: "#/components/schemas/GetAllergyEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a36
+        "404": &a37
           description: Allergy not found (or owned by another user).
           content:
             application/json:
@@ -16922,7 +17025,7 @@ paths:
                 $ref: "#/components/schemas/UpdateAllergyEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a37
         "422": *a4
         "429": *a5
     delete:
@@ -16946,7 +17049,7 @@ paths:
                 $ref: "#/components/schemas/DeleteAllergyEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a37
         "422": *a4
         "429": *a5
   /api/family-history:
@@ -17020,7 +17123,7 @@ paths:
                 $ref: "#/components/schemas/GetFamilyHistoryEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a37
+        "404": &a38
           description: Family history entry not found (or owned by another user).
           content:
             application/json:
@@ -17054,7 +17157,7 @@ paths:
                 $ref: "#/components/schemas/UpdateFamilyHistoryEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a37
+        "404": *a38
         "422": *a4
         "429": *a5
     delete:
@@ -17078,7 +17181,7 @@ paths:
                 $ref: "#/components/schemas/DeleteFamilyHistoryEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a37
+        "404": *a38
         "422": *a4
         "429": *a5
   /api/documents/inbound:
@@ -17743,7 +17846,7 @@ paths:
           required: true
           schema:
             type: string
-        - &a39
+        - &a40
           name: Prefer
           in: header
           required: false
@@ -17768,9 +17871,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InboundExtractEnvelope"
-        "202": *a38
+        "202": *a39
         "401": *a1
-        "403": &a40
+        "403": &a41
           description: "AI refusal: the `documentAi` capability is unavailable for this record. The envelope carries
             `meta.errorCode`, `meta.capability` and `meta.reason` (one of `AiUnavailableReason`).
             `assistant.disabled.documentAi` — the operator turned off reading documents, or every AI feature (the master
@@ -17794,7 +17897,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "503": &a41
+        "503": &a42
           description: "`ai.unavailable` — the inputs behind the AI capability could not be read, and the answer failed closed.
             Nothing was sent. Retry later."
           content:
@@ -17824,7 +17927,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a39
+        - *a40
       requestBody:
         required: false
         content:
@@ -17860,12 +17963,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSuggestEnvelope"
-        "202": *a38
+        "202": *a39
         "401": *a1
-        "403": *a40
+        "403": *a41
         "422": *a4
         "429": *a5
-        "503": *a41
+        "503": *a42
   /api/documents/inbound/{id}/summary:
     post:
       tags:
@@ -17915,7 +18018,7 @@ paths:
             type: boolean
             default: false
           description: With `persist=true`, explicitly replace an existing stored summary.
-        - *a39
+        - *a40
       requestBody:
         required: false
         content:
@@ -17951,12 +18054,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSummaryEnvelope"
-        "202": *a38
+        "202": *a39
         "401": *a1
-        "403": *a40
+        "403": *a41
         "422": *a4
         "429": *a5
-        "503": *a41
+        "503": *a42
   /api/documents/inbound/{id}/index:
     post:
       tags:
@@ -17982,7 +18085,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a39
+        - *a40
       requestBody:
         required: false
         content:
@@ -18018,12 +18121,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentIndexEnvelope"
-        "202": *a38
+        "202": *a39
         "401": *a1
-        "403": *a40
+        "403": *a41
         "422": *a4
         "429": *a5
-        "503": *a41
+        "503": *a42
   /api/documents/inbound/{id}/chat:
     post:
       tags:
@@ -18063,10 +18166,10 @@ paths:
                 type: string
                 description: "SSE frames: `data: <json>\\n\\n`. See the operation description for the per-`type` frame shapes."
         "401": *a1
-        "403": *a40
+        "403": *a41
         "422": *a4
         "429": *a5
-        "503": *a41
+        "503": *a42
     get:
       tags:
         - Documents
@@ -18129,10 +18232,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReindexEnvelope"
         "401": *a1
-        "403": *a40
+        "403": *a41
         "422": *a4
         "429": *a5
-        "503": *a41
+        "503": *a42
   /api/documents/inbound/{id}/facts/{factId}:
     patch:
       tags:
@@ -18239,7 +18342,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricResponse"
         "401": *a1
-        "409": &a43
+        "409": &a44
           description: A custom metric with this name already exists for the caller.
           content:
             application/json:
@@ -18268,7 +18371,7 @@ paths:
                 $ref: "#/components/schemas/GetCustomMetricResponse"
         "401": *a1
         "403": *a11
-        "404": &a42
+        "404": &a43
           description: Custom metric not found (or owned by another user).
           content:
             application/json:
@@ -18302,8 +18405,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricResponse"
         "401": *a1
-        "404": *a42
-        "409": *a43
+        "404": *a43
+        "409": *a44
         "422": *a4
         "429": *a5
     delete:
@@ -18326,7 +18429,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricResponse"
         "401": *a1
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries:
@@ -18370,7 +18473,7 @@ paths:
                 $ref: "#/components/schemas/ListCustomMetricEntriesEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
     post:
@@ -18399,7 +18502,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricEntryResponse"
         "401": *a1
-        "404": *a42
+        "404": *a43
         "409": *a7
         "422": *a4
         "429": *a12
@@ -18435,7 +18538,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricEntryResponse"
         "401": *a1
-        "404": &a44
+        "404": &a45
           description: Custom metric entry not found (or owned by another user).
           content:
             application/json:
@@ -18468,7 +18571,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricEntryResponse"
         "401": *a1
-        "404": *a44
+        "404": *a45
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries/restore:
@@ -18755,6 +18858,44 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a5
+  /api/nutrients/catalog:
+    get:
+      tags:
+        - Nutrients
+      summary: The nutrient catalogue (v1.43)
+      description: Every nutrient code with its canonical unit, label in the account language, input units and upper intake
+        level. Behind the opt-in `nutrients` module (403 `module.disabled` when off).
+      responses:
+        "200":
+          description: The catalogue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NutrientCatalogEnvelope"
+        "401": *a1
+        "403": &a46
+          description: >-
+            The opt-in `nutrients` module is off for this account (errorCode `module.disabled`). Stop syncing and do not
+            retry; offer the enable-in-settings hint. Only run the HealthKit read-authorization flow while the module is
+            on.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
   /api/nutrients/batch:
     post:
       tags:
@@ -18880,26 +19021,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientOverviewEnvelope"
         "401": *a1
-        "403": &a45
-          description: >-
-            The opt-in `nutrients` module is off for this account (errorCode `module.disabled`). Stop syncing and do not
-            retry; offer the enable-in-settings hint. Only run the HealthKit read-authorization flow while the module is
-            on.
-
-
-            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
-            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
-            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
-            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
-            audit trail instead. On the cookie transport the same code answers one further case: a session that has
-            entered a shared record and sends a request without its record-context assertion, which is a client older
-            than the fence — leave the record and reload. A request that names no record but the caller's own never
-            reaches this response, so a client that never switches and never sends the per-request account selector will
-            not see it.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+        "403": *a46
         "422": *a4
         "429": *a5
   /api/nutrients/daily:
@@ -18935,7 +19057,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientDailySeriesEnvelope"
         "401": *a1
-        "403": *a45
+        "403": *a46
         "422": *a4
         "429": *a5
   /api/nutrients/water:
@@ -18964,7 +19086,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientWaterWriteEnvelope"
         "401": *a1
-        "403": *a45
+        "403": *a46
         "409": *a7
         "422": *a4
         "429": *a5
@@ -19466,26 +19588,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithingsCredentialsUpdateEnvelope"
-        "400": &a46
+        "400": &a47
           description: Body is not parseable JSON.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "413": &a47
+        "413": &a48
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a48
+        "415": &a49
           description: Content-Type is not `application/json`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a49
+        "422": &a50
           description: "`clientId` and `clientSecret` are both required and each must be 1–200 characters. The envelope carries a
             single fixed message, not per-field issues."
           content:
@@ -19671,11 +19793,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FitbitCredentialsUpdateEnvelope"
-        "400": *a46
+        "400": *a47
         "401": *a1
-        "413": *a47
-        "415": *a48
-        "422": *a49
+        "413": *a48
+        "415": *a49
+        "422": *a50
         "429": *a5
     delete:
       tags:
@@ -19818,11 +19940,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GoogleHealthCredentialsUpdateEnvelope"
-        "400": *a46
+        "400": *a47
         "401": *a1
-        "413": *a47
-        "415": *a48
-        "422": *a49
+        "413": *a48
+        "415": *a49
+        "422": *a50
         "429": *a5
     delete:
       tags:
@@ -19983,11 +20105,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OuraCredentialsUpdateEnvelope"
-        "400": *a46
+        "400": *a47
         "401": *a1
-        "413": *a47
-        "415": *a48
-        "422": *a49
+        "413": *a48
+        "415": *a49
+        "422": *a50
         "429": *a5
     delete:
       tags:
@@ -20063,21 +20185,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/OuraTestEnvelope"
         "401": *a1
-        "422": &a50
+        "422": &a51
           description: No usable connection for this provider — nothing stored, or the stored grant could no longer be resolved
             into an access token. `meta.errorCode` = `not_configured`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a51
+        "429": &a52
           description: More than 5 requests in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local
             limiter, distinct from a `rate_limited` 502 which is the provider's.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": &a52
+        "502": &a53
           description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the provider
             answered 401/403 — the stored grant is gone), `rate_limited` (the PROVIDER answered 429, which is not this
             endpoint's own limiter), `upstream_error` (5xx), `timeout` (no answer within 5 s), `connection_failed`
@@ -20122,11 +20244,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolarCredentialsUpdateEnvelope"
-        "400": *a46
+        "400": *a47
         "401": *a1
-        "413": *a47
-        "415": *a48
-        "422": *a49
+        "413": *a48
+        "415": *a49
+        "422": *a50
         "429": *a5
     delete:
       tags:
@@ -20202,9 +20324,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/PolarTestEnvelope"
         "401": *a1
-        "422": *a50
-        "429": *a51
-        "502": *a52
+        "422": *a51
+        "429": *a52
+        "502": *a53
   /api/strava/credentials:
     get:
       tags:
@@ -20240,11 +20362,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StravaCredentialsUpdateEnvelope"
-        "400": *a46
+        "400": *a47
         "401": *a1
-        "413": *a47
-        "415": *a48
-        "422": *a49
+        "413": *a48
+        "415": *a49
+        "422": *a50
         "429": *a5
     delete:
       tags:
@@ -20322,9 +20444,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/StravaTestEnvelope"
         "401": *a1
-        "422": *a50
-        "429": *a51
-        "502": *a52
+        "422": *a51
+        "429": *a52
+        "502": *a53
   /api/integrations/status:
     get:
       tags:
@@ -20360,7 +20482,7 @@ paths:
                 $ref: "#/components/schemas/FitbitResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a51
+        "429": *a52
   /api/integrations/fitbit/test:
     post:
       tags:
@@ -20378,9 +20500,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/FitbitIntegrationTestEnvelope"
         "401": *a1
-        "422": *a50
-        "429": *a51
-        "502": *a52
+        "422": *a51
+        "429": *a52
+        "502": *a53
   /api/integrations/google-health/resume:
     post:
       tags:
@@ -20397,7 +20519,7 @@ paths:
                 $ref: "#/components/schemas/GoogleHealthResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a51
+        "429": *a52
   /api/integrations/google-health/test:
     post:
       tags:
@@ -20430,9 +20552,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a50
-        "429": *a51
-        "502": *a52
+        "422": *a51
+        "429": *a52
+        "502": *a53
   /api/integrations/whoop/resume:
     post:
       tags:
@@ -20449,7 +20571,7 @@ paths:
                 $ref: "#/components/schemas/WhoopResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a51
+        "429": *a52
   /api/integrations/whoop/test:
     post:
       tags:
@@ -20466,9 +20588,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/WhoopIntegrationTestEnvelope"
         "401": *a1
-        "422": *a50
-        "429": *a51
-        "502": *a52
+        "422": *a51
+        "429": *a52
+        "502": *a53
   /api/integrations/withings/resume:
     post:
       tags:
@@ -20486,7 +20608,7 @@ paths:
                 $ref: "#/components/schemas/WithingsResumeEnvelope"
         "401": *a1
         "422": *a4
-        "429": *a51
+        "429": *a52
   /api/integrations/withings/test:
     post:
       tags:
@@ -20504,8 +20626,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/WithingsIntegrationTestEnvelope"
         "401": *a1
-        "422": *a50
-        "429": *a51
+        "422": *a51
+        "429": *a52
         "502":
           description: "The probe did not complete. The shared codes apply (`credentials_rejected`, `rate_limited`,
             `upstream_error`, `timeout`, `connection_failed`) and this path adds one of its own:
@@ -20907,7 +21029,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordActivityEnvelope"
         "401": *a1
-        "403": &a53
+        "403": &a54
           description: Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another
             account (grant management is never delegable), or `sharing.access.denied` when the caller may not act as the
             account they named. The latter is byte-identical for an account that does not exist and one that granted
@@ -20932,7 +21054,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountGrantListEnvelope"
         "401": *a1
-        "403": *a53
+        "403": *a54
         "422": *a4
         "429": *a5
     post:
@@ -21034,7 +21156,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AcceptedAccountGrantEnvelope"
         "401": *a1
-        "403": *a53
+        "403": *a54
         "404":
           description: No such invitation for this account.
           content:
@@ -21078,7 +21200,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RevokedAccountGrantEnvelope"
         "401": *a1
-        "403": *a53
+        "403": *a54
         "404":
           description: No such grant on this account's record.
           content:
@@ -21119,7 +21241,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RenouncedAccountGrantEnvelope"
         "401": *a1
-        "403": *a53
+        "403": *a54
         "404":
           description: No such grant held by this account.
           content:
@@ -21501,7 +21623,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a53
+        "403": *a54
         "409":
           description: "The record this browser session is on is not the record the request asserted. `meta.errorCode` is
             `sharing.session.changed`. It is not a refusal of access — the caller may well be entitled to both records —
@@ -21881,7 +22003,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionListEnvelope"
         "401": *a1
-        "403": &a54
+        "403": &a55
           description: The operator has disabled the API instance-wide. Every route in this module refuses while that setting is
             off, for a cookie session as well as for a Bearer token; it is not a per-user permission and retrying will
             not help.
@@ -21914,7 +22036,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionRevokeEnvelope"
         "401": *a1
-        "403": *a54
+        "403": *a55
         "404":
           description: No live connection with this id for this caller — also the answer for an already-revoked one, so a repeat
             revoke is 404 rather than an idempotent 200.
@@ -21941,7 +22063,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenListEnvelope"
         "401": *a1
-        "403": *a54
+        "403": *a55
         "422": *a4
         "429": *a5
     post:
@@ -21974,7 +22096,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a54
+        "403": *a55
         "413":
           description: Body exceeds 16 KiB.
           content:
@@ -22017,7 +22139,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenRevokeEnvelope"
         "401": *a1
-        "403": *a54
+        "403": *a55
         "404":
           description: No `health:read` token with this id for this caller. An already-revoked token is still found, so a repeat
             revoke answers 200.
@@ -22076,7 +22198,7 @@ paths:
       description: Returns the named family's resolved settings for the record the session is acting on. Cookie session or
         Bearer, while acting on a managed record the caller guards.
       parameters:
-        - &a55
+        - &a56
           name: family
           in: path
           required: true
@@ -22120,7 +22242,7 @@ paths:
         ride the audit row. Body capped at 64 KiB. Cookie session or Bearer, while acting on a managed record the caller
         guards.
       parameters:
-        - *a55
+        - *a56
       requestBody:
         required: true
         content:
@@ -22693,13 +22815,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupDocument"
-        "403": &a56
+        "403": &a57
           description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": &a57
+        "404": &a58
           description: No stored copy with this id.
           content:
             application/json:
@@ -22773,8 +22895,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "403": *a56
-        "404": *a57
+        "403": *a57
+        "404": *a58
         "409":
           description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
             `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked
@@ -22818,7 +22940,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobListResponse"
-        "403": *a56
+        "403": *a57
   /api/admin/backups/restores/{jobId}:
     get:
       tags:
@@ -22841,7 +22963,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobResponse"
-        "403": *a56
+        "403": *a57
         "404":
           description: No restore job with this id.
           content:
@@ -22860,7 +22982,7 @@ paths:
         request leaves the server. Needs neither the Documents module nor the list: with the list unset, `available` is
         false and any connection still stored is listed (with `originAllowed: false`) so it can be removed. Cookie
         session only; not delegable."
-      security: &a58
+      security: &a59
         - cookieAuth: []
       responses:
         "200":
@@ -22870,7 +22992,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourcesStatusEnvelope"
         "401": *a1
-        "403": &a59
+        "403": &a60
           description: "Refused before any request to the source: `documents.sources.browserOnly` for a Bearer caller,
             `sharing.not_permitted` while acting on another person's record (a delegate or guardian never uses the
             owner's archive), or `module.disabled` when the Documents module is off."
@@ -22893,9 +23015,9 @@ paths:
         `documents.sources.tokenRequired`), so a stored token is never sent to an address it was not saved for. A Papra
         organization id is letters, digits, `_` and `-`. The token is stored encrypted (AES-256-GCM) and never returned.
         Ten saves and tests a minute per person. Cookie session only; not delegable."
-      security: *a58
+      security: *a59
       parameters:
-        - &a60
+        - &a61
           name: system
           in: path
           required: true
@@ -22934,8 +23056,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceConnectionEnvelope"
         "401": *a1
-        "403": *a59
-        "404": &a61
+        "403": *a60
+        "404": &a62
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
             `documents.sources.notFound`: the source has no such document, or (Papra) no such organization, including
@@ -22954,7 +23076,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": &a62
+        "502": &a63
           description: "The source could not answer usefully, with the reason in `meta.errorCode` and, when the source answered at
             all, its HTTP status in `meta.upstreamStatus` (its body is never passed on): `documents.sources.unreachable`
             (no connection, timeout, or a destination refused at dial time), `documents.sources.redirected` (the source
@@ -22973,9 +23095,9 @@ paths:
       description: Deletes the caller's connection for this system, and its token with it. Works even after the operator
         removed the origin from the list, and with the Documents module switched off. `disconnected` is false when there
         was nothing to delete. Cookie session only; not delegable.
-      security: *a58
+      security: *a59
       parameters:
-        - *a60
+        - *a61
       responses:
         "200":
           description: Removed, or there was nothing to remove.
@@ -22984,7 +23106,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceDisconnectEnvelope"
         "401": *a1
-        "403": *a59
+        "403": *a60
         "422": *a4
         "429": *a5
   /api/documents/sources/{system}/test:
@@ -22995,9 +23117,9 @@ paths:
       description: One request to the source with the stored token. Answers `ok` with the round-trip time and stamps
         `lastVerifiedAt`, or the reason in `meta.errorCode`. Shares the save's allowance of ten a minute. Cookie session
         only; not delegable.
-      security: *a58
+      security: *a59
       parameters:
-        - *a60
+        - *a61
       responses:
         "200":
           description: The source answered.
@@ -23006,9 +23128,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTestEnvelope"
         "401": *a1
-        "403": *a59
-        "404": *a61
-        "422": &a63
+        "403": *a60
+        "404": *a62
+        "422": &a64
           description: "`documents.sources.originNotAllowed`: the base address's origin is not on the operator's list (checked on
             every request, so a connection saved earlier is cut off once its origin is removed), or another validation
             failure."
@@ -23017,7 +23139,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": *a62
+        "502": *a63
   /api/documents/sources/{system}/tags:
     get:
       tags:
@@ -23025,9 +23147,9 @@ paths:
       summary: Tags of a connected archive
       description: The source's tags for the picker's filter, the first 250 by name, in the source's own ids. Shares the
         search allowance of sixty a minute. Cookie session only; not delegable.
-      security: *a58
+      security: *a59
       parameters:
-        - *a60
+        - *a61
       responses:
         "200":
           description: The tags.
@@ -23036,11 +23158,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTagsEnvelope"
         "401": *a1
-        "403": *a59
-        "404": *a61
-        "422": *a63
+        "403": *a60
+        "404": *a62
+        "422": *a64
         "429": *a5
-        "502": *a62
+        "502": *a63
   /api/documents/sources/{system}/search:
     get:
       tags:
@@ -23054,9 +23176,9 @@ paths:
         under that source key: `new`, `imported` with the vault document's `documentId`, or `deleted` (deleted in
         HealthLog; importing it again stores nothing). Nothing is stored. Sixty searches a minute, shared with the tag
         read. Cookie session only; not delegable."
-      security: *a58
+      security: *a59
       parameters:
-        - *a60
+        - *a61
         - name: q
           in: query
           required: false
@@ -23097,11 +23219,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceSearchEnvelope"
         "401": *a1
-        "403": *a59
-        "404": *a61
-        "422": *a63
+        "403": *a60
+        "404": *a62
+        "422": *a64
         "429": *a5
-        "502": *a62
+        "502": *a63
   /api/documents/sources/{system}/import:
     post:
       tags:
@@ -23120,9 +23242,9 @@ paths:
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
-      security: *a58
+      security: *a59
       parameters:
-        - *a60
+        - *a61
       requestBody:
         required: true
         content:
@@ -23180,7 +23302,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceImportEnvelope"
         "401": *a1
-        "403": *a59
+        "403": *a60
         "404":
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
@@ -23211,7 +23333,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a63
+        "422": *a64
         "429":
           description: "`documents.inbound.rateLimited` (the person's hourly upload allowance, with the rate-limit headers) or
             `documents.inbound.uploadBusy` (too many uploads in progress; `Retry-After: 1`)."
@@ -23219,7 +23341,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": *a62
+        "502": *a63
   /api/symptoms/definitions:
     get:
       tags:
@@ -23243,7 +23365,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomDefinitionsEnvelope"
         "401": *a1
-        "403": &a64
+        "403": &a65
           description: >-
             `illness.disabled`: the record has the illness module switched off (or the operator turned it off
             server-wide); symptoms ride that module.
@@ -23286,7 +23408,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a64
+        "403": *a65
         "409": *a7
         "422": *a4
         "429": *a5
@@ -23316,8 +23438,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a64
-        "404": &a65
+        "403": *a65
+        "404": &a66
           description: "`symptoms.definition.notFound`: no definition with this id on the record."
           content:
             application/json:
@@ -23351,8 +23473,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a64
-        "404": *a65
+        "403": *a65
+        "404": *a66
         "422": *a4
         "429": *a5
   /api/symptoms/events:
@@ -23401,7 +23523,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomEventsEnvelope"
         "401": *a1
-        "403": *a64
+        "403": *a65
         "422": *a4
         "429": *a5
     post:
@@ -23427,8 +23549,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomEventEnvelope"
         "401": *a1
-        "403": *a64
-        "404": *a65
+        "403": *a65
+        "404": *a66
         "409": *a7
         "422": *a4
         "429": *a5
@@ -23458,8 +23580,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomEventEnvelope"
         "401": *a1
-        "403": *a64
-        "404": &a66
+        "403": *a65
+        "404": &a67
           description: "`symptoms.event.notFound`: no occurrence with this id on the record."
           content:
             application/json:
@@ -23486,8 +23608,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomEventEnvelope"
         "401": *a1
-        "403": *a64
-        "404": *a66
+        "403": *a65
+        "404": *a67
         "422": *a4
         "429": *a5
   /api/day/index:
@@ -23637,7 +23759,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineEnvelope"
         "401": *a1
-        "403": &a67
+        "403": &a68
           description: >-
             `module.disabled` with `meta.module = timeline`: the record has the timeline switched off (it is opt-in), or
             the operator turned it off server-wide.
@@ -23674,7 +23796,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineReadinessEnvelope"
         "401": *a1
-        "403": *a67
+        "403": *a68
         "422": *a4
         "429": *a5
   /api/life-events:
@@ -23692,7 +23814,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LifeEventListEnvelope"
         "401": *a1
-        "403": &a68
+        "403": &a69
           description: >-
             Owner-only in v1.42: no share reaches life events, not a `profile` share, a whole-record share or MANAGE,
             and not a guardian acting for a managed profile.
@@ -23732,7 +23854,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
-        "403": *a68
+        "403": *a69
         "409": *a7
         "422": *a4
         "429": *a12
@@ -23763,8 +23885,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "403": *a68
-        "404": &a69
+        "403": *a69
+        "404": &a70
           description: No such life event on this account.
           content:
             application/json:
@@ -23791,8 +23913,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "403": *a68
-        "404": *a69
+        "403": *a69
+        "404": *a70
         "422": *a4
         "429": *a5
   /api/search:
@@ -23841,6 +23963,640 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
+  /api/auth/me/ai-usage:
+    put:
+      tags:
+        - Profile
+      summary: Set the AI usage level (v1.43)
+      description: "Own account only: a cookie session or a full-scope token. Answers the resolved `AiUsageState`. 422
+        `ai.usage.invalid` for a malformed body; 422 `ai.usage.aboveCeiling` with `meta.maxLevel` for a level above the
+        operator's ceiling; 429 `ai.usage.rateLimited` after 30 changes in an hour."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiUsagePutRequest"
+      responses:
+        "200":
+          description: The resolved AI usage state after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PutAiUsageResponse"
+        "401": *a1
+        "422":
+          description: "`ai.usage.invalid` (body) or `ai.usage.aboveCeiling` (`meta.maxLevel` names the ceiling)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+        "501": *a30
+  /api/medications/{id}/ingredients:
+    put:
+      tags:
+        - Medications
+      summary: Replace a supplement's composition (v1.43)
+      description: "Stores the composition per unit in canonical units and re-counts every taken dose of this medication into
+        the day's micronutrients (`recompute.queued`). Needs the `nutrients` module (403 `module.disabled`,
+        `meta.module: \"nutrients\"`). 404 `medications.notFound`; 422 `medications.ingredients.invalid` (body,
+        duplicate or unknown code); 422 `medications.ingredients.unitMismatch` with `meta.index` and
+        `meta.allowedUnits`."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationIngredientsPutRequest"
+      responses:
+        "200":
+          description: The stored composition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PutMedicationIngredientsResponse"
+        "401": *a1
+        "403": *a19
+        "404":
+          description: Medication not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/medications/{id}/ingredients/extract:
+    post:
+      tags:
+        - Medications
+      summary: Read a supplement label (v1.43)
+      description: Multipart `file` (JPEG, PNG, HEIC, WebP or PDF, at most 10 MB). 202 with an AI run; poll `GET
+        /api/ai-runs/{id}` (kind `SUPPLEMENT_LABEL_EXTRACT`, result `SupplementLabelExtractResult`). Needs
+        `ai.capabilities.supplementLabel.available` (refused like every AI capability, reason `usage_level` included)
+        and the `nutrients` module. 422 `medications.ingredients.extract.fileType`, 413
+        `medications.ingredients.extract.fileTooLarge`, 429 `medications.ingredients.extract.rateLimited` (six an hour).
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "202": *a39
+        "401": *a1
+        "403": *a19
+        "413":
+          description: "`medications.ingredients.extract.fileTooLarge`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+        "503":
+          description: "`aiRuns.workerUnavailable`: the run could not be handed to the background worker. Nothing was read and
+            nothing was charged; try again."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/anamnesis/life-circumstances:
+    get:
+      tags:
+        - Anamnesis
+      summary: Life circumstances (v1.43)
+      description: The life-circumstance sections of the record. Delegates read it under the `profile` grant, like the facts.
+      responses:
+        "200":
+          description: The life circumstances.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LifeCircumstancesEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/anamnesis/life-circumstances/ai-sections:
+    patch:
+      tags:
+        - Anamnesis
+      summary: Switch life-circumstance sections for the AI (v1.43)
+      description: Sections not named keep their state. Own account only. 422 `anamnesis.lifeSections.invalid`; 409
+        `about_me_conflict` for a stale `baseUpdatedAt`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LifeAiSectionsPatchRequest"
+      responses:
+        "200":
+          description: The switches after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LifeAiSectionsEnvelope"
+        "401": *a1
+        "409":
+          description: "`about_me_conflict`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/anamnesis/life-circumstances/confirm:
+    post:
+      tags:
+        - Anamnesis
+      summary: Confirm a life-circumstance section is still true (v1.43)
+      description: Stores the confirmation instant only, never a new revision. Own account only. 422
+        `anamnesis.lifeConfirm.invalid`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LifeConfirmRequest"
+      responses:
+        "200":
+          description: The confirmed section.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LifeConfirmEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/anamnesis/audit-c:
+    post:
+      tags:
+        - Anamnesis
+      summary: Record an AUDIT-C (v1.43)
+      description: Scores the three items on the server. A replay with the same `externalId` answers 200 with the stored
+        result. 422 `anamnesis.auditC.invalid`; 429 `anamnesis.auditC.rateLimited` after 30 in an hour.
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditCRequest"
+      responses:
+        "200":
+          description: A replay of an entry already stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditCReplayEnvelope"
+        "201":
+          description: The stored and scored entry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditCCreatedEnvelope"
+        "401": *a1
+        "409": *a7
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/anamnesis/audit-c/{id}:
+    delete:
+      tags:
+        - Anamnesis
+      summary: Remove an AUDIT-C entry (v1.43)
+      description: Soft delete. 404 `anamnesis.auditC.notFound`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The removed entry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditCRemovedEnvelope"
+        "401": *a1
+        "404":
+          description: "`anamnesis.auditC.notFound`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/dawarich/connect:
+    post:
+      tags:
+        - Integrations
+      summary: Connect Dawarich (v1.43)
+      description: Checks the key against the instance, stores the connection sealed and starts a 30-day backfill. 422
+        `dawarich.invalid`, `private_origin_not_approved`, `dawarich.credentials_rejected` or `dawarich.unreachable`;
+        429 `dawarich.rate_limited` (ten a minute).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DawarichConnectRequest"
+      responses:
+        "200":
+          description: Connected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichConnectEnvelope"
+        "401": *a1
+        "403": *a19
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/dawarich/status:
+    get:
+      tags:
+        - Integrations
+      summary: Dawarich connection status (v1.43)
+      responses:
+        "200":
+          description: The connection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichStatusEnvelope"
+        "401": *a1
+        "403": *a19
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/dawarich/places:
+    get:
+      tags:
+        - Integrations
+      summary: Places on the Dawarich instance (v1.43)
+      description: Read live from Dawarich to pick the home place (at most 200, filtered by `q`); never stored. 409
+        `dawarich.not_connected`; 502 `dawarich.unreachable`.
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+            maxLength: 80
+      responses:
+        "200":
+          description: The places.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichPlacesEnvelope"
+        "401": *a1
+        "403": *a19
+        "409":
+          description: "`dawarich.not_connected`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+        "502":
+          description: "`dawarich.unreachable`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/dawarich/settings:
+    patch:
+      tags:
+        - Integrations
+      summary: Dawarich home place and country (v1.43)
+      description: 422 `dawarich.invalid`; 422 `dawarich.home_place_unknown` for a place id the instance does not have.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DawarichSettings"
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichSettingsEnvelope"
+        "401": *a1
+        "403": *a19
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/dawarich/test:
+    post:
+      tags:
+        - Integrations
+      summary: Probe the Dawarich connection (v1.43)
+      description: Answers the shared integration probe shape; a failed probe is an error status. The probe classes are those
+        of the other `/test` routes.
+      responses:
+        "200":
+          description: The probe reached the instance.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichProbeEnvelope"
+        "401": *a1
+        "403": *a19
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/dawarich/sync:
+    post:
+      tags:
+        - Integrations
+      summary: Fetch Dawarich daily values again (v1.43)
+      description: From `fromDate` (at most 365 days back). 409 `dawarich.not_connected`; 422 `dawarich.invalid`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromDate:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+              additionalProperties: false
+      responses:
+        "202":
+          description: Queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichSyncEnvelope"
+        "401": *a1
+        "403": *a19
+        "409":
+          description: "`dawarich.not_connected`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/dawarich/disconnect:
+    post:
+      tags:
+        - Integrations
+      summary: Disconnect Dawarich (v1.43)
+      description: "Forgets the connection; with `deleteData: true` the stored days go too."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deleteData:
+                  default: false
+                  type: boolean
+              additionalProperties: false
+      responses:
+        "200":
+          description: Disconnected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DawarichDisconnectEnvelope"
+        "401": *a1
+        "403": *a19
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/environment/travel/suggestions:
+    get:
+      tags:
+        - Environment
+      summary: Suggested trips from Dawarich travel days (v1.43)
+      responses:
+        "200":
+          description: The suggestions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelSuggestionsEnvelope"
+        "401": *a1
+        "403": *a19
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/environment/travel/suggestions/{id}/dismiss:
+    post:
+      tags:
+        - Environment
+      summary: Dismiss a suggested trip (v1.43)
+      description: 404 `environment.travel_suggestion.not_found`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Dismissed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelSuggestionDismissEnvelope"
+        "401": *a1
+        "403": *a19
+        "404":
+          description: "`environment.travel_suggestion.not_found`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/medications/{id}/links:
+    post:
+      tags:
+        - Links
+      summary: File records against a medication (v1.43)
+      description: Idempotent; at most 100 ids. An id that names nothing this account owns comes back in `unknown` instead of
+        failing. 404 when the medication is not found; 422 `medication.link.invalid` for a malformed body. Own account
+        only, as the other link routes.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationLinkRequest"
+      responses:
+        "200":
+          description: How many links changed, and which ids were unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicationLinkResponse"
+        "401": *a1
+        "404":
+          description: The medication was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+    delete:
+      tags:
+        - Links
+      summary: Unfile records from a medication (v1.43)
+      description: Idempotent; at most 100 ids. An id that names nothing this account owns comes back in `unknown` instead of
+        failing. 404 when the medication is not found; 422 `medication.link.invalid` for a malformed body. Own account
+        only, as the other link routes.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationLinkRequest"
+      responses:
+        "200":
+          description: How many links changed, and which ids were unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicationUnlinkResponse"
+        "401": *a1
+        "404":
+          description: The medication was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+  /api/labs/{id}/links:
+    post:
+      tags:
+        - Links
+      summary: File records against a lab result (v1.43)
+      description: Idempotent; at most 100 ids. An id that names nothing this account owns comes back in `unknown` instead of
+        failing. 404 when the lab result is not found; 422 `labs.link.invalid` for a malformed body. Own account only,
+        as the other link routes.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabResultLinkRequest"
+      responses:
+        "200":
+          description: How many links changed, and which ids were unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabResultLinkResponse"
+        "401": *a1
+        "404":
+          description: The lab result was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
+    delete:
+      tags:
+        - Links
+      summary: Unfile records from a lab result (v1.43)
+      description: Idempotent; at most 100 ids. An id that names nothing this account owns comes back in `unknown` instead of
+        failing. 404 when the lab result is not found; 422 `labs.link.invalid` for a malformed body. Own account only,
+        as the other link routes.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabResultLinkRequest"
+      responses:
+        "200":
+          description: How many links changed, and which ids were unknown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabResultUnlinkResponse"
+        "401": *a1
+        "404":
+          description: The lab result was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+        "501": *a30
   /api/bugreport:
     post:
       security: []
@@ -24717,6 +25473,24 @@ components:
             server-side recovery.
       required:
         - passphrase
+    ProfileClaimSsoRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 80
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: ^[a-zA-Z0-9_-]+$
+      required:
+        - token
+        - username
+      additionalProperties: false
+      description: "`token` is the `hlp_` token from the handover link, in the body; `username` follows the registration rules
+        and may not start with `managed-`."
     ProfileClaimPreviewRequest:
       type: object
       properties:
@@ -30541,6 +31315,26 @@ components:
       description: Partial edit of a biomarker. An omitted key leaves the column untouched; an explicit `null` on `context` /
         `panel` / a bound clears it. Set `hidden` to drop / restore the marker in the active list + lab-entry pickers. A
         rename that collides with another of the caller's markers is rejected 409.
+    BiomarkerMergeRequest:
+      type: object
+      properties:
+        sourceIds:
+          minItems: 1
+          maxItems: 10
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        dryRun:
+          default: false
+          type: boolean
+      required:
+        - sourceIds
+      additionalProperties: false
+      description: Fold `sourceIds` (1..10, unique, without the target) into the marker in the path. `dryRun` (default false)
+        answers the same result and writes nothing; a client shows it before asking to confirm, because a merge cannot
+        be undone.
     CreateEncounterRequest:
       type: object
       properties:
@@ -34290,6 +35084,213 @@ components:
               maxLength: 2000
             - type: "null"
       additionalProperties: false
+    AiUsagePutRequest:
+      type: object
+      properties:
+        level:
+          anyOf:
+            - type: string
+              enum:
+                - frugal
+                - standard
+                - full
+            - type: "null"
+      required:
+        - level
+      additionalProperties: false
+      description: Set the account's own AI usage level; `null` returns to the instance default. A level above `maxLevel` is
+        refused, never capped silently.
+    MedicationIngredientsPutRequest:
+      type: object
+      properties:
+        ingredients:
+          maxItems: 40
+          type: array
+          items:
+            type: object
+            properties:
+              nutrient:
+                type: string
+                minLength: 1
+                maxLength: 40
+              amount:
+                type: number
+                exclusiveMinimum: 0
+              unit:
+                type: string
+                minLength: 1
+                maxLength: 8
+            required:
+              - nutrient
+              - amount
+              - unit
+            additionalProperties: false
+        source:
+          default: MANUAL
+          type: string
+          enum:
+            - MANUAL
+            - LABEL_AI
+      required:
+        - ingredients
+      additionalProperties: false
+      description: "Replace the composition: 0..40 entries, one per nutrient code, `amount` > 0 in one of the code's
+        `inputUnits` (`GET /api/nutrients/catalog`). `source` is `MANUAL` (default) or `LABEL_AI` after a label proposal
+        was reviewed."
+    LifeAiSectionsPatchRequest:
+      type: object
+      properties:
+        sections:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - SMOKING_STATUS
+              - ALCOHOL_PATTERN
+              - SHIFT_SCHEDULE
+              - ACTIVITY
+              - WORK
+              - HABITS
+              - GOALS
+          additionalProperties:
+            type: boolean
+        baseUpdatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - sections
+      additionalProperties: false
+    LifeConfirmRequest:
+      type: object
+      properties:
+        section:
+          type: string
+          enum:
+            - tobacco
+            - alcohol
+            - activity
+            - work
+            - habits
+            - goals
+      required:
+        - section
+      additionalProperties: false
+    AuditCRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          prefixItems:
+            - type: integer
+              minimum: 0
+              maximum: 4
+            - type: integer
+              minimum: 0
+              maximum: 4
+            - type: integer
+              minimum: 0
+              maximum: 4
+        takenAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        tz:
+          type: string
+          minLength: 1
+          maxLength: 64
+        locale:
+          type: string
+          minLength: 2
+          maxLength: 16
+        source:
+          type: string
+          enum:
+            - WEB
+            - IOS
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - items
+        - source
+      additionalProperties: false
+    DawarichConnectRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+          format: uri
+        apiKey:
+          type: string
+          minLength: 1
+          maxLength: 512
+      required:
+        - url
+        - apiKey
+      additionalProperties: false
+      description: "`url` (http or https, at most 2048) and `apiKey` (1..512); both sealed at rest. A private host needs its
+        origin in `DAWARICH_PRIVATE_ORIGINS`."
+    DawarichSettings:
+      type: object
+      properties:
+        homePlaceId:
+          anyOf:
+            - type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        homeCountry:
+          anyOf:
+            - type: string
+              pattern: ^[A-Z]{2}$
+            - type: "null"
+      additionalProperties: false
+      description: The home place (an id on the Dawarich instance) and the home country (ISO 3166-1 alpha-2). Without a home
+        country the most frequent country of the last 365 days is used, and without one there is no travel day.
+    MedicationLinkRequest:
+      type: object
+      properties:
+        targetKind:
+          type: string
+          enum:
+            - conditionEpisode
+            - document
+            - encounter
+        targetIds:
+          minItems: 1
+          maxItems: 100
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+        - targetKind
+        - targetIds
+      additionalProperties: false
+    LabResultLinkRequest:
+      type: object
+      properties:
+        targetKind:
+          type: string
+          enum:
+            - document
+            - encounter
+        targetIds:
+          minItems: 1
+          maxItems: 100
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+        - targetKind
+        - targetIds
+      additionalProperties: false
     MedicationTreatmentClass:
       type: string
       enum:
@@ -34503,26 +35504,28 @@ components:
                 (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `connection_failed` and the
                 per-provider additions) are enumerated in each `/test` operation instead, where the differences can be
                 stated; and a 401 raised by a route checking a credential of its own may carry no code at all. ai —
-                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable; ai_provider —
-                ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
-                aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
-                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue; auth —
-                auth.admin.required, auth.already_authenticated, auth.mfa.code_invalid, auth.missing,
-                auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed,
-                auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
-                auth.stepup.required, auth.token.expired, auth.token.invalid; backup — backup.foreign_reference,
-                backup.key.missing, backup.payload.undecryptable, backup.restore.active, backup.section.missing,
-                backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach —
-                coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
-                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
-                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
-                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
-                coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle — cycle.bulk.invalid,
-                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
-                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
-                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; day — day.invalid; demo —
-                demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.invalid,
+                ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed,
+                aiRuns.notFound, aiRuns.timedOut, aiRuns.workerUnavailable; allergy — allergy.invalid; analytics —
+                analytics.invalid_query; anamnesis — anamnesis.auditC.invalid, anamnesis.auditC.rateLimited,
+                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
+                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.admin.required,
+                auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
+                auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
+                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport, auth.stepup.required,
+                auth.token.expired, auth.token.invalid; backup — backup.foreign_reference, backup.key.missing,
+                backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
+                biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
+                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
+                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
+                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
+                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
+                consent — consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
+                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
+                disable-coach.body.invalid_json; dawarich — dawarich.invalid, dawarich.rate_limited; day — day.invalid;
+                demo — demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
                 documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
                 documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
                 documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
@@ -34550,12 +35553,12 @@ components:
                 import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
                 insights.generate.budgetExceeded, insights.generate.outboundScreened,
                 insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
-                labs.biomarker.create.invalid, labs.biomarker.duplicate, labs.biomarker.notFound,
-                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
-                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
-                labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
-                labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
-                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                labs.biomarker.create.invalid, labs.biomarker.duplicate, labs.biomarker.merge.invalid,
+                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
+                labs.create.invalid, labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed,
+                labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic,
+                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound,
+                labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
@@ -34565,24 +35568,24 @@ components:
                 measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
                 measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,
                 measurement.update.server_owned_source; medication — medication.intake.import.invalid_format,
-                medication.intake.notTracked; medications — medications.category.invalid,
+                medication.intake.notTracked, medication.link.invalid; medications — medications.category.invalid,
                 medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
                 medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
                 medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
-                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
-                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
-                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
-                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded; mentalHealth —
-                mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
-                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
-                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
-                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
-                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
-                notification — notification.action.already_used, notification.action.expired,
-                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
-                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid,
-                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
-                onboarding.complete.invalid, onboarding.complete.recordNotFound,
+                medications.ingredients.invalid, medications.intake.bulk.apple_health_not_mirrored,
+                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
+                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
+                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
+                medications.mirror.limit_exceeded; mentalHealth — mentalHealth.rateLimited; module — module.disabled;
+                modules — modules.body.invalid_json, modules.invalid; mood — mood.bulk-delete.invalid,
+                mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable, mood.create.invalid,
+                mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid, mood.not_found,
+                mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid; notification-prefs —
+                notification-prefs.body.invalid_json; notification — notification.action.already_used,
+                notification.action.expired, notification.action.invalid, notification.action.module_disabled; nutrient
+                — nutrient.batch.invalid, nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid,
+                nutrient.water.invalid, nutrient.water.invalid_day; onboarding — onboarding.answers.invalid,
+                onboarding.answers.rateLimited, onboarding.complete.invalid, onboarding.complete.recordNotFound,
                 onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
                 onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
                 passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
@@ -34614,9 +35617,10 @@ components:
                 — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
-                modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
-                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, sync_in_progress,
-                too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
+                modules_conflict, mood_tag_layout_conflict, not_configured, not_implemented,
+                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
+                rate_limited_self, sync_in_progress, too_many_rows, unreadable_json, upstream_invalid_json,
+                vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -34988,7 +35992,16 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/CycleDayLogDTO"
+          allOf:
+            - $ref: "#/components/schemas/CycleDayLogDTO"
+            - type: object
+              properties:
+                restored:
+                  description: v1.43 — starts given back because this edit cleared the flow on a start day.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CycleRestoredStart"
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -35001,6 +36014,52 @@ components:
         - data
         - error
       additionalProperties: false
+    CycleRestoredStart:
+      type: object
+      properties:
+        cycleId:
+          type: string
+        startDate:
+          type: string
+      required:
+        - cycleId
+        - startDate
+      additionalProperties: false
+      description: A cycle start that was folded into another start, or given back after the start it was folded into went away.
+    CycleDeleteOutcomeEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CycleDeleteOutcome"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CycleDeleteOutcome:
+      type: object
+      properties:
+        removedCycleId:
+          anyOf:
+            - type: string
+            - type: "null"
+        restored:
+          type: array
+          items:
+            $ref: "#/components/schemas/CycleRestoredStart"
+      required:
+        - removedCycleId
+        - restored
+      additionalProperties: false
+      description: "What a delete changed, answered with 200 when the request sent `Prefer: return=representation` (RFC 7240;
+        the response carries `Preference-Applied`). Without the header the delete answers 204 as before."
     CycleBulkEnvelope:
       type: object
       properties:
@@ -35092,6 +36151,11 @@ components:
             dayLog:
               anyOf:
                 - $ref: "#/components/schemas/CycleDayLogDTO"
+                - type: "null"
+            absorbed:
+              description: 'v1.43 — on `action: "start"`: a later start within the period length folded into this one, or null.'
+              anyOf:
+                - $ref: "#/components/schemas/CycleRestoredStart"
                 - type: "null"
           required:
             - cycle
@@ -37056,6 +38120,10 @@ components:
                     type: string
                 disableCoach:
                   type: boolean
+                aiUsageLevel:
+                  anyOf:
+                    - type: string
+                    - type: "null"
                 coachPrefsJson: {}
                 documentsAutoAiRead:
                   type: boolean
@@ -39808,6 +40876,16 @@ components:
                       - SMOKING_STATUS
                       - ALCOHOL_PATTERN
                       - SHIFT_SCHEDULE
+                lifeConfirmedJson:
+                  anyOf:
+                    - type: object
+                      propertyNames:
+                        type: string
+                        maxLength: 64
+                      additionalProperties:
+                        type: string
+                        maxLength: 64
+                    - type: "null"
                 emergencyBloodType:
                   default: null
                   anyOf:
@@ -40938,6 +42016,7 @@ components:
                   - GAD7
                   - WHO5
                   - SCI
+                  - AUDIT_C
               locale:
                 type: string
                 minLength: 1
@@ -42045,6 +43124,29 @@ components:
         omissions there is a real, undeclared gap: roughly thirty of the models the backup plan marks as backed up have
         neither a reader here nor a restore branch yet, and `src/lib/export/backup-plan.ts` is the enumeration of which.
         `schemaVersion` is `2` on everything written today; the parser still accepts `1`."
+    ProfileClaimSsoEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            redirectTo:
+              type: string
+          required:
+            - redirectTo
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     ProfileClaimPreviewEnvelope:
       type: object
       properties:
@@ -42093,6 +43195,19 @@ components:
             additionalProperties: false
           description: Each guardian and the access they keep after the claim, as proposed. The new owner confirms or changes it
             after signing in.
+        methods:
+          description: "v1.43 — how this link can be redeemed: `password` and/or `sso`. Absent on older servers."
+          type: array
+          items:
+            type: string
+            enum:
+              - password
+              - sso
+        ssoProviderName:
+          description: v1.43 — the identity provider's display name for the "Continue with …" button; null without one.
+          anyOf:
+            - type: string
+            - type: "null"
       required:
         - displayName
         - expiresAt
@@ -44784,6 +45899,21 @@ components:
             - count
           additionalProperties: false
           description: Summary over the returned points; all-zero when empty.
+        direction:
+          description: v1.43 — which way a change of this metric counts.
+          anyOf:
+            - $ref: "#/components/schemas/TrendVerdict"
+            - type: "null"
+        change:
+          description: v1.43 — first and last day value; null under two days.
+          anyOf:
+            - $ref: "#/components/schemas/SeriesChange"
+            - type: "null"
+        referenceLines:
+          description: v1.43 — lines to draw; empty when there is nothing to draw.
+          type: array
+          items:
+            $ref: "#/components/schemas/SeriesReferenceLine"
       required:
         - kind
         - unit
@@ -44798,6 +45928,104 @@ components:
         the mean as `value` and otherwise has the shape of a reading of its kind; a `pulse` bucket also carries its
         range as `valueMin` / `valueMax`, and a `glucose` bucket is converted to the user's unit like a raw reading.
         `stats` is always computed over the underlying readings, never over the buckets."
+    TrendVerdict:
+      type: object
+      properties:
+        direction:
+          type: string
+          enum:
+            - up-good
+            - up-bad
+            - neutral
+            - hold
+          description: "How a change counts: `up-good` a rise is progress, `up-bad` a fall is progress, `hold` the value is inside
+            its band so staying is progress, `neutral` no judgement."
+        targetPosition:
+          anyOf:
+            - type: string
+              enum:
+                - below
+                - inside
+                - above
+            - type: "null"
+          description: Where the value sits against the band; null without one.
+        basis:
+          type: string
+          enum:
+            - personal_target
+            - profile_default
+            - metric_default
+          description: "What the verdict was judged against: the person's own target, a profile-derived default (e.g. the
+            age-based blood pressure target), or the metric's default direction."
+      required:
+        - direction
+        - targetPosition
+        - basis
+      additionalProperties: false
+      description: Which way a change of a metric counts as progress for this person. The generalisation of `tiles.weightTrend`.
+    SeriesChange:
+      type: object
+      properties:
+        from:
+          type: number
+        to:
+          type: number
+        delta:
+          type: number
+        sentiment:
+          $ref: "#/components/schemas/TrendSentiment"
+      required:
+        - from
+        - to
+        - delta
+        - sentiment
+      additionalProperties: false
+      description: First and last day value in the window (by the metric's day statistic) and how the change counts. Null
+        under two days.
+    TrendSentiment:
+      type: string
+      enum:
+        - positive
+        - negative
+        - neutral
+      description: The verdict applied to one delivered change, with the noise floor applied. Colour the change from this.
+    SeriesReferenceLine:
+      type: object
+      properties:
+        value:
+          type: number
+          description: In the unit of the response.
+        kind:
+          type: string
+          enum:
+            - lower
+            - upper
+        source:
+          type: string
+          enum:
+            - personal
+            - clinical
+        appliesTo:
+          type: string
+          enum:
+            - value
+            - secondary
+          description: "`secondary` is the diastolic value of a blood pressure."
+        labelKey:
+          type: string
+        label:
+          type: string
+          description: In the account language.
+      required:
+        - value
+        - kind
+        - source
+        - appliesTo
+        - labelKey
+        - label
+      additionalProperties: false
+      description: A horizontal line to draw on the chart. A personal line replaces the clinical one for the same edge. Empty
+        list when there is nothing to draw.
     ListMeasurementsResponse:
       type: object
       properties:
@@ -45976,6 +47204,12 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        benchmark:
+          description: v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null
+            otherwise.
+          anyOf:
+            - $ref: "#/components/schemas/RecordBenchmark"
+            - type: "null"
       required:
         - id
         - userId
@@ -45992,6 +47226,27 @@ components:
       additionalProperties: false
       description: One detected personal best. Rows are written by the detection worker, never by a client — there is no write
         endpoint on this resource.
+    RecordBenchmark:
+      type: object
+      properties:
+        low:
+          type: number
+        high:
+          type: number
+        unit:
+          type: string
+        source:
+          type: string
+        sourceLabel:
+          type: string
+      required:
+        - low
+        - high
+        - unit
+        - source
+        - sourceLabel
+      additionalProperties: false
+      description: An age- and sex-aware comparison band from a cited norm, in the record's unit.
     ListWorkoutsResponse:
       type: object
       properties:
@@ -47970,6 +49225,10 @@ components:
           description: v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate (the same math the
             low-stock notification engine runs, so the wire and the push can never disagree). NULL = inventory tracking
             off or no consuming cadence derivable; 0 = tracking on, supply ran out. Read-only — computed, not stored.
+        hasIngredients:
+          description: v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`).
+            Absent on older servers.
+          type: boolean
       required:
         - id
         - name
@@ -48316,6 +49575,16 @@ components:
             - type: "null"
           description: v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate; NULL = tracking off
             or no consuming cadence.
+        ingredients:
+          description: v1.43 — the composition per unit, empty when none is stored. Absent on older servers.
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicationIngredient"
+        related:
+          description: v1.43 — records related to this one, resolved on the server. Absent on older servers.
+          type: array
+          items:
+            $ref: "#/components/schemas/RelatedLink"
       required:
         - id
         - name
@@ -48357,6 +49626,86 @@ components:
       additionalProperties: false
       description: Detail variant of the medication resource enriched with the joined `category`. The base medication fields
         are inlined; see the `Medication` component for their semantics.
+    MedicationIngredient:
+      type: object
+      properties:
+        nutrient:
+          type: string
+          description: Nutrient catalogue code.
+        amountPerUnit:
+          type: number
+          description: Amount in one unit (tablet, capsule), canonical unit.
+        unit:
+          type: string
+          description: The catalogue's canonical unit for the code.
+        enteredAmount:
+          anyOf:
+            - type: number
+            - type: "null"
+          description: The amount as entered when it was entered in another unit.
+        enteredUnit:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The input unit it was entered in (e.g. `IU`).
+        labelKey:
+          type: string
+        label:
+          type: string
+          description: The nutrient's name in the account language.
+      required:
+        - nutrient
+        - amountPerUnit
+        - unit
+        - enteredAmount
+        - enteredUnit
+        - labelKey
+        - label
+      additionalProperties: false
+      description: What one unit of a medication (usually a supplement) contains. Every taken dose adds `amountPerUnit ×
+        unitsPerDose` to the day's micronutrients under the source `SUPPLEMENT`.
+    RelatedLink:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - labResult
+            - encounter
+            - document
+            - conditionEpisode
+            - medication
+            - vaccination
+        id:
+          type: string
+        label:
+          type: string
+        date:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: "`YYYY-MM-DD` or an ISO instant, as the record carries it."
+        href:
+          type: string
+          description: The web path of the related record, the same form as a push `url`.
+        via:
+          type: string
+          enum:
+            - direct
+            - encounter
+            - efficacyTarget
+          description: "`direct` for a stored link; `encounter` when the relation runs through a visit both are filed against;
+            `efficacyTarget` for a medication whose efficacy target is this lab marker."
+      required:
+        - kind
+        - id
+        - label
+        - date
+        - href
+        - via
+      additionalProperties: false
+      description: One record related to the one shown. Only kinds whose module is on and that the caller's sharing grant
+        covers are listed. Skip an unknown `kind`.
     ListMedicationCategoriesResponse:
       type: object
       properties:
@@ -58628,6 +59977,13 @@ components:
         tiles:
           type: object
           properties:
+            directions:
+              description: v1.43 — per measurement type, which way a change counts. `weightTrend` stays.
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                $ref: "#/components/schemas/TrendVerdict"
             summaries:
               type: object
               propertyNames:
@@ -61744,6 +63100,16 @@ components:
                   - compliance30
                 additionalProperties: false
           additionalProperties: false
+        direction:
+          description: v1.43 — which way a change of this target counts.
+          anyOf:
+            - $ref: "#/components/schemas/TrendVerdict"
+            - type: "null"
+        trendSentiment:
+          description: v1.43 — the verdict applied to this tile's change.
+          anyOf:
+            - $ref: "#/components/schemas/TrendSentiment"
+            - type: "null"
       required:
         - type
         - label
@@ -64376,6 +65742,12 @@ components:
             additionalProperties: false
           description: "Mood against five health channels, keyed `sleep`, `steps`, `pulse`, `weight`, `bloodPressureSystolic`.
             Every key is always present; an empty channel carries `result: null` with no points."
+        patterns:
+          description: v1.43 — the patterns that passed the gate over the `?days` window, on the account's mood day. Empty means
+            none was found.
+          type: array
+          items:
+            $ref: "#/components/schemas/MoodPattern"
       required:
         - summary
         - heatmap
@@ -64565,6 +65937,80 @@ components:
         - low
         - medium
         - high
+    MoodPattern:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "Stable: `previous_day`, `weekend`, `best_weekday`, `notes`, `multiple_entries` or `delayed_tag:<tagKey>`."
+        kind:
+          type: string
+          enum:
+            - previous_day
+            - weekend
+            - best_weekday
+            - notes
+            - delayed_tag
+            - multiple_entries
+        strength:
+          type: string
+          enum:
+            - weak
+            - moderate
+            - strong
+        direction:
+          type: string
+          enum:
+            - higher
+            - lower
+            - none
+        values:
+          type: object
+          properties:
+            subject:
+              type: number
+            comparison:
+              type: number
+            delta:
+              type: number
+            weekday:
+              type: integer
+              minimum: 0
+              maximum: 6
+            tagKey:
+              type: string
+            tagLabel:
+              type: string
+          required:
+            - subject
+            - comparison
+            - delta
+          additionalProperties: false
+        sampleSize:
+          type: object
+          properties:
+            subject:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            comparison:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - subject
+            - comparison
+          additionalProperties: false
+      required:
+        - id
+        - kind
+        - strength
+        - direction
+        - values
+        - sampleSize
+      additionalProperties: false
+      description: A mood pattern that passed the server's gate (at least 8 days on each side, Welch test, false discovery
+        control). Skip an unknown `kind`.
     MoodPrognosisEnvelope:
       type: object
       properties:
@@ -67693,7 +69139,16 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/LabResultDetail"
+          allOf:
+            - $ref: "#/components/schemas/LabResultDetail"
+            - type: object
+              properties:
+                related:
+                  description: v1.43 — records related to this one, resolved on the server. Absent on older servers.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/RelatedLink"
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -68190,6 +69645,7 @@ components:
             - DOCUMENT_SUMMARY
             - DOCUMENT_SUGGEST
             - DOCUMENT_EXTRACT
+            - SUPPLEMENT_LABEL_EXTRACT
         documentId:
           anyOf:
             - type: string
@@ -68210,12 +69666,14 @@ components:
                 - $ref: "#/components/schemas/DocumentSummaryResponse"
                 - $ref: "#/components/schemas/DocumentSuggestResponse"
                 - $ref: "#/components/schemas/DocumentExtractRunResult"
+                - $ref: "#/components/schemas/SupplementLabelExtractResult"
             - type: "null"
           description: "Present once `status` is `SUCCEEDED`: the body the queuing route answers with synchronously.
             `DOCUMENT_INDEX` carries `DocumentIndexResponse`, `LABS_OCR_EXTRACT` carries `OcrExtractResponse`,
             `DOCUMENT_SUMMARY` carries `DocumentSummaryResponse`, `DOCUMENT_SUGGEST` carries `DocumentSuggestResponse`,
-            `DOCUMENT_EXTRACT` carries `DocumentExtractRunResult` (not the extract route's detail body). Decode by
-            `kind`; treat an unknown `kind` as a run this client did not start."
+            `DOCUMENT_EXTRACT` carries `DocumentExtractRunResult` (not the extract route's detail body),
+            `SUPPLEMENT_LABEL_EXTRACT` (v1.43) carries `SupplementLabelExtractResult`. Decode by `kind`; treat an
+            unknown `kind` as a run this client did not start."
         error:
           anyOf:
             - type: object
@@ -68413,6 +69871,45 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        biomarkerId:
+          description: v1.43 — the marker this row was matched to automatically (by name, by an alias of the account, or by a
+            catalogue abbreviation); null without a match.
+          anyOf:
+            - type: string
+            - type: "null"
+        matchKind:
+          description: v1.43 — how `biomarkerId` was found.
+          anyOf:
+            - type: string
+              enum:
+                - name
+                - alias
+                - catalog
+            - type: "null"
+        suggestions:
+          description: v1.43 — up to three markers to choose from when nothing matched; empty when `biomarkerId` is set.
+          maxItems: 3
+          type: array
+          items:
+            type: object
+            properties:
+              biomarkerId:
+                type: string
+              name:
+                type: string
+              unit:
+                type: string
+              matchKind:
+                type: string
+                enum:
+                  - catalog
+                  - similar
+            required:
+              - biomarkerId
+              - name
+              - unit
+              - matchKind
+            additionalProperties: false
       required:
         - analyte
         - value
@@ -68509,6 +70006,56 @@ components:
         - factsStaged
         - status
       additionalProperties: false
+    SupplementLabelExtractResult:
+      type: object
+      properties:
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              nutrient:
+                type: string
+              amount:
+                type: number
+              unit:
+                type: string
+              confidence:
+                type: string
+                enum:
+                  - high
+                  - low
+              printedText:
+                type: string
+            required:
+              - nutrient
+              - amount
+              - unit
+              - confidence
+              - printedText
+            additionalProperties: false
+        unmatched:
+          type: array
+          items:
+            type: object
+            properties:
+              printedText:
+                type: string
+            required:
+              - printedText
+            additionalProperties: false
+        servingNote:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: e.g. "per 2 capsules"; shown, never stored.
+      required:
+        - ingredients
+        - unmatched
+        - servingNote
+      additionalProperties: false
+      description: "The `result` of an AI run of kind `SUPPLEMENT_LABEL_EXTRACT`: a proposal only. Nothing is stored until the
+        composition is saved through `PUT /api/medications/{id}/ingredients`."
     ListBiomarkersEnvelope:
       type: object
       properties:
@@ -68569,6 +70116,12 @@ components:
             - type: "null"
         hidden:
           type: boolean
+        aliases:
+          description: v1.43 — other spellings that resolve to this marker (folded in by a merge, chosen at an import, or typed on
+            the marker), sorted, without the marker's own name. Absent on older servers.
+          type: array
+          items:
+            type: string
         createdAt:
           type: string
         updatedAt:
@@ -68669,6 +70222,97 @@ components:
         - data
         - error
       additionalProperties: false
+    MergeBiomarkersResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/BiomarkerMergeResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    BiomarkerMergeResult:
+      type: object
+      properties:
+        dryRun:
+          type: boolean
+        target:
+          description: The marker after the merge (unchanged on a dry run).
+          $ref: "#/components/schemas/Biomarker"
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              unit:
+                type: string
+              readingCount:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              conversion:
+                type: string
+                enum:
+                  - none
+                  - converted
+                  - refused
+              refusal:
+                anyOf:
+                  - type: string
+                    enum:
+                      - unknown_analyte
+                      - unknown_unit
+                      - not_finite
+                  - type: "null"
+            required:
+              - id
+              - name
+              - unit
+              - readingCount
+              - conversion
+              - refusal
+            additionalProperties: false
+        movedReadings:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        convertedReadings:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        aliasesAdded:
+          type: array
+          items:
+            type: string
+          description: Names that become aliases of the target.
+        mergeId:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: "`null` on a dry run."
+      required:
+        - dryRun
+        - target
+        - sources
+        - movedReadings
+        - convertedReadings
+        - aliasesAdded
+        - mergeId
+      additionalProperties: false
+      description: What a merge did, or would do on a dry run. Readings in another unit are converted where the analyte's
+        conversion table knows it; the printed value stays in `sourceValue` / `sourceUnit` on each reading.
     ListEncountersEnvelope:
       type: object
       properties:
@@ -69267,7 +70911,16 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/Encounter"
+          allOf:
+            - $ref: "#/components/schemas/Encounter"
+            - type: object
+              properties:
+                related:
+                  description: v1.43 — records related to this one, resolved on the server. Absent on older servers.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/RelatedLink"
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -69959,7 +71612,16 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/Vaccination"
+          allOf:
+            - $ref: "#/components/schemas/Vaccination"
+            - type: object
+              properties:
+                related:
+                  description: v1.43 — records related to this one, resolved on the server. Absent on older servers.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/RelatedLink"
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -70331,7 +71993,16 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/IllnessEpisode"
+          allOf:
+            - $ref: "#/components/schemas/IllnessEpisode"
+            - type: object
+              properties:
+                related:
+                  description: v1.43 — records related to this one, resolved on the server. Absent on older servers.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/RelatedLink"
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -71991,7 +73662,16 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/InboundDocumentDetail"
+          allOf:
+            - $ref: "#/components/schemas/InboundDocumentDetail"
+            - type: object
+              properties:
+                related:
+                  description: v1.43 — records related to this one, resolved on the server. Absent on older servers.
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/RelatedLink"
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -72251,6 +73931,45 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        biomarkerId:
+          description: v1.43, OBSERVATION only — the marker matched automatically (name, alias or catalogue abbreviation); null
+            without a match.
+          anyOf:
+            - type: string
+            - type: "null"
+        matchKind:
+          description: v1.43, OBSERVATION only — how `biomarkerId` was found.
+          anyOf:
+            - type: string
+              enum:
+                - name
+                - alias
+                - catalog
+            - type: "null"
+        suggestions:
+          description: v1.43, OBSERVATION only — up to three markers to choose from when nothing matched.
+          maxItems: 3
+          type: array
+          items:
+            type: object
+            properties:
+              biomarkerId:
+                type: string
+              name:
+                type: string
+              unit:
+                type: string
+              matchKind:
+                type: string
+                enum:
+                  - catalog
+                  - similar
+            required:
+              - biomarkerId
+              - name
+              - unit
+              - matchKind
+            additionalProperties: false
       required:
         - id
         - factType
@@ -73266,6 +74985,99 @@ components:
         - progress
       additionalProperties: false
       description: The persisted completion flag and resume point after the write.
+    NutrientCatalogEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            entries:
+              type: array
+              items:
+                $ref: "#/components/schemas/NutrientCatalogEntry"
+          required:
+            - entries
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NutrientCatalogEntry:
+      type: object
+      properties:
+        code:
+          type: string
+        unit:
+          type: string
+          description: The canonical unit amounts are stored in.
+        labelKey:
+          type: string
+        label:
+          type: string
+          description: The nutrient's name in the account language.
+        syncable:
+          type: boolean
+          description: "Whether HealthKit may send this code in the nutrient batch. `dha` and `epa` are not syncable: they appear
+            in responses only."
+        inputUnits:
+          type: array
+          items:
+            type: object
+            properties:
+              unit:
+                type: string
+              factorToCanonical:
+                type: number
+            required:
+              - unit
+              - factorToCanonical
+            additionalProperties: false
+          description: "Units an amount may be entered in, with the factor to the canonical unit (vitamin D: `IU` = 0.025 µg)."
+        upperLimit:
+          anyOf:
+            - $ref: "#/components/schemas/NutrientUpperLimit"
+            - type: "null"
+      required:
+        - code
+        - unit
+        - labelKey
+        - label
+        - syncable
+        - inputUnits
+        - upperLimit
+      additionalProperties: false
+      description: One nutrient of the catalogue as the composition form uses it. Clients build the form from this and never
+        convert units themselves.
+    NutrientUpperLimit:
+      type: object
+      properties:
+        value:
+          type: number
+        unit:
+          type: string
+        scope:
+          type: string
+          enum:
+            - total
+            - supplemental
+        source:
+          type: string
+      required:
+        - value
+        - unit
+        - scope
+        - source
+      additionalProperties: false
+      description: The tolerable upper intake level, with the unit, whether it applies to the total intake or to the
+        supplemental share only, and the cited source. `null` where no level is established.
     NutrientBatchEnvelope:
       type: object
       properties:
@@ -73392,6 +75204,19 @@ components:
                 type: integer
                 minimum: 1
                 maximum: 9007199254740991
+              latestBySource:
+                description: v1.43 — `latestAmount` split by source.
+                $ref: "#/components/schemas/NutrientAmountBySource"
+              upperLimit:
+                description: v1.43 — the nutrient's upper intake level, or null.
+                anyOf:
+                  - $ref: "#/components/schemas/NutrientUpperLimit"
+                  - type: "null"
+              latestAboveUpperLimit:
+                description: v1.43 — whether the latest day is above the upper limit; null without one.
+                anyOf:
+                  - type: boolean
+                  - type: "null"
             required:
               - nutrient
               - unit
@@ -73424,6 +75249,18 @@ components:
       additionalProperties: false
       description: "Per-nutrient window summary in catalog order: latest synced day + total, and the count of days carrying
         data inside the window. Nutrients without data in the window are omitted."
+    NutrientAmountBySource:
+      type: object
+      properties:
+        APPLE_HEALTH:
+          type: number
+        MANUAL:
+          type: number
+        SUPPLEMENT:
+          type: number
+      additionalProperties: false
+      description: "The amount split by source: synced from Apple Health, entered by hand, and counted from taken supplement
+        doses. A source with nothing is absent."
     NutrientDailySeriesEnvelope:
       type: object
       properties:
@@ -73461,6 +75298,14 @@ components:
                 type: string
               amount:
                 type: number
+              bySource:
+                description: v1.43 — the day's amount split by source.
+                $ref: "#/components/schemas/NutrientAmountBySource"
+              aboveUpperLimit:
+                description: v1.43 — whether the day is above the upper limit; null without one.
+                anyOf:
+                  - type: boolean
+                  - type: "null"
             required:
               - day
               - amount
@@ -73490,6 +75335,11 @@ components:
                 - value
                 - source
               additionalProperties: false
+            - type: "null"
+        upperLimit:
+          description: v1.43 — the nutrient's upper intake level, or null.
+          anyOf:
+            - $ref: "#/components/schemas/NutrientUpperLimit"
             - type: "null"
       required:
         - nutrient
@@ -73731,6 +75581,15 @@ components:
             background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose
             latest arrival then was a background one starts with that date and every other type starts null. Same
             omission rules as `lastReceivedAt`.'
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lastBackfillAt:
+          description: 'v1.43 — when a batch with `syncTrigger: "backfill"` last carried this type. A backfill moves only this and
+            `syncProgress`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt` or the account-level sync stamps,
+            so catching up history does not read as a run of healthy daily syncs. Absent on older servers.'
           anyOf:
             - type: string
               format: date-time
@@ -76743,6 +78602,14 @@ components:
             - type: "null"
           description: The metric's newest reading, for the 'last reading N days ago' caption when it is older than the sparkline
             window.
+        direction:
+          description: v1.43 — which way a change of this metric counts.
+          anyOf:
+            - $ref: "#/components/schemas/TrendVerdict"
+            - type: "null"
+        trendSentiment:
+          description: v1.43 — the verdict applied to this card's `trend`.
+          $ref: "#/components/schemas/TrendSentiment"
       required:
         - id
         - kind
@@ -77331,7 +79198,17 @@ components:
       properties:
         available:
           type: boolean
-          description: False on an instance that allows single sign-on only, where a handover cannot be created.
+          description: Whether a handover can be created on this instance. Up to v1.42 false on an instance that allows single
+            sign-on only; from v1.43 true whenever `methods` is not empty.
+        methods:
+          description: "v1.43 — how a link can be redeemed here: `password` (not on a single-sign-on-only instance) and `sso`
+            (whenever an identity provider is configured). Absent on older servers."
+          type: array
+          items:
+            type: string
+            enum:
+              - password
+              - sso
         open:
           anyOf:
             - type: object
@@ -77565,12 +79442,29 @@ components:
               const: true
               description: "Medications take `trackIntake`: a medication can be kept as a record whose doses are never due, and a dose
                 written against one is refused with `medication.intake.notTracked`."
+            cumulativeHourBuckets:
+              description: "v1.43 — `POST /api/measurements/batch` takes hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` rows for steps, active
+                energy, walking and running distance and flights climbed. Send them only when this is `true`: an older
+                server stores every hour as its own measurement."
+              type: boolean
+            syncTriggerBackfill:
+              description: 'v1.43 — `syncTrigger: "backfill"` is accepted on the measurement batch and the intake bulk. Send it only
+                when this is `true`: an older server refuses the whole batch.'
+              type: boolean
+            biomarkerMerge:
+              description: v1.43 — `POST /api/biomarkers/{id}/merge` is available.
+              type: boolean
+            lifeCircumstances:
+              description: v1.43 — the life-circumstances routes under `/api/anamnesis/life-circumstances` and
+                `/api/anamnesis/audit-c` are available.
+              type: boolean
           required:
             - trackIntake
           additionalProperties: false
-          description: What this server understands, for a client released apart from it. Constant across accounts; a flag appears
-            once the server supports the feature and stays `true`. Absent on servers older than v1.42.0. A client that
-            meets a flag it does not know ignores it.
+          description: What this server understands, for a client released apart from it. Constant across accounts. A flag that is
+            absent or `false` means this server does not have the feature; a client checks for `true` before it calls a
+            route or sends a request form the flag names. Absent on servers older than v1.42.0. A client that meets a
+            flag it does not know ignores it.
         accountAccess:
           $ref: "#/components/schemas/AccountAccess"
         moduleAccess:
@@ -78031,6 +79925,9 @@ components:
           $ref: "#/components/schemas/AiCapabilities"
         provider:
           $ref: "#/components/schemas/AiProviderState"
+        usage:
+          description: v1.43 — the account's AI usage level. Absent on older servers; hide the setting then.
+          $ref: "#/components/schemas/AiUsageState"
       required:
         - capabilities
         - provider
@@ -78127,6 +80024,94 @@ components:
         - responseTimeoutMs
       additionalProperties: false
       description: The account-level companion to the capability map.
+    AiUsageState:
+      type: object
+      properties:
+        level:
+          description: The level in effect for this record.
+          $ref: "#/components/schemas/AiUsageLevel"
+        preference:
+          anyOf:
+            - $ref: "#/components/schemas/AiUsageLevel"
+            - type: "null"
+          description: The account's stored choice; `null` follows the instance default.
+        defaultLevel:
+          description: The level an account without its own choice runs at.
+          $ref: "#/components/schemas/AiUsageLevel"
+        maxLevel:
+          description: The highest level the operator allows on this server.
+          $ref: "#/components/schemas/AiUsageLevel"
+        source:
+          type: string
+          enum:
+            - user
+            - default
+            - admin_cap
+          description: "Where `level` comes from: the stored choice, the instance default, or the operator's ceiling capping a
+            stored choice above it (the choice is kept)."
+        options:
+          minItems: 3
+          maxItems: 3
+          type: array
+          items:
+            type: object
+            properties:
+              level:
+                $ref: "#/components/schemas/AiUsageLevel"
+              allowed:
+                type: boolean
+                description: "`level` is at or below `maxLevel`."
+              estimatedTokensPerDay:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+                description: An estimate, from this account's measured use scaled to the level. `null` without three days of history.
+                  Show it as an estimate; never compute one on the client.
+            required:
+              - level
+              - allowed
+              - estimatedTokensPerDay
+            additionalProperties: false
+          description: Always three entries, in the order frugal, standard, full.
+        measuredTokensPerDay:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Mean tokens per day over the last seven full days (Coach and background work together); `null` without
+            history.
+        measuredDays:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: How many days stand behind `measuredTokensPerDay`.
+      required:
+        - level
+        - preference
+        - defaultLevel
+        - maxLevel
+        - source
+        - options
+        - measuredTokensPerDay
+        - measuredDays
+      additionalProperties: false
+      description: The account's AI usage level, resolved on the server. Clients render the picker from `options` and never
+        derive allowance or estimates themselves. Absent on servers older than v1.43.
+    AiUsageLevel:
+      type: string
+      enum:
+        - frugal
+        - standard
+        - full
+      description: "How much background AI work an account asks for, in ceiling order. `frugal`: status cards regenerate at
+        most every 24 h after a sync and every 6 h after a hand entry, a smaller snapshot, no background reasoning, a
+        short daily briefing (`recommendations` holds at most one entry, every field stays present), no automatic
+        document reading, no supplement label reading. `standard`: the operator's sync gap (default 6 h), 1 h after a
+        hand entry, background reasoning at the job default. `full`: 1 h after any ingest (the behaviour before v1.43).
+        The interactive Coach is the same at every level."
     CoachReasoningState:
       type: object
       properties:
@@ -82122,6 +84107,12 @@ components:
               - reason
             additionalProperties: false
           description: Sections the caller cannot see. A section of a switched-off module is left out entirely rather than listed.
+        movement:
+          description: v1.43 — the day's movement context; absent for a delegate, with the `environment` module off, with no
+            Dawarich connection, and on older servers.
+          anyOf:
+            - $ref: "#/components/schemas/DayMovement"
+            - type: "null"
       required:
         - date
         - tz
@@ -82450,6 +84441,80 @@ components:
         - source
         - band
       additionalProperties: false
+    DayMovement:
+      type: object
+      properties:
+        source:
+          type: string
+          const: dawarich
+        distance:
+          type: object
+          properties:
+            unit:
+              type: string
+              enum:
+                - km
+                - mi
+              description: Resolved from the account's unit preference.
+            total:
+              anyOf:
+                - type: number
+                - type: "null"
+            driving:
+              anyOf:
+                - type: number
+                - type: "null"
+            train:
+              anyOf:
+                - type: number
+                - type: "null"
+          required:
+            - unit
+            - total
+            - driving
+            - train
+          additionalProperties: false
+        placesVisited:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        awayFromHomeMinutes:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: "`null` means no coverage that day, not zero."
+        travel:
+          anyOf:
+            - type: object
+              properties:
+                isTravelDay:
+                  type: boolean
+                countryCode:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+              required:
+                - isTravelDay
+                - countryCode
+              additionalProperties: false
+            - type: "null"
+        fetchedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - source
+        - distance
+        - placesVisited
+        - awayFromHomeMinutes
+        - travel
+        - fetchedAt
+      additionalProperties: false
+      description: Distances to one decimal in `distance.unit`. Hide a null field; never show it as zero.
     TimelineEnvelope:
       type: object
       properties:
@@ -83104,6 +85169,1012 @@ components:
       required:
         - text
         - marks
+      additionalProperties: false
+    PutAiUsageResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AiUsageState"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PutMedicationIngredientsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            ingredients:
+              type: array
+              items:
+                $ref: "#/components/schemas/MedicationIngredient"
+            recompute:
+              type: object
+              properties:
+                queued:
+                  type: boolean
+              required:
+                - queued
+              additionalProperties: false
+          required:
+            - ingredients
+            - recompute
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LifeCircumstancesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LifeCircumstances"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LifeCircumstances:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - tobacco
+                  - alcohol
+                  - activity
+                  - work
+                  - habits
+                  - goals
+              aiSection:
+                type: string
+                enum:
+                  - SMOKING_STATUS
+                  - ALCOHOL_PATTERN
+                  - ACTIVITY
+                  - WORK
+                  - HABITS
+                  - GOALS
+              aiIncluded:
+                type: boolean
+              lastConfirmedAt:
+                anyOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  - type: "null"
+              reviewDue:
+                type: boolean
+                description: Older than 365 days; show the quiet yearly check.
+              facts:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LifeFactRevision"
+            required:
+              - key
+              - aiSection
+              - aiIncluded
+              - lastConfirmedAt
+              - reviewDue
+              - facts
+            additionalProperties: false
+          description: Always all six, in this order.
+        extraAiSections:
+          type: object
+          properties:
+            SHIFT_SCHEDULE:
+              type: boolean
+          required:
+            - SHIFT_SCHEDULE
+          additionalProperties: false
+        derived:
+          type: object
+          properties:
+            packYears:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                    - type: number
+                    - type: "null"
+                status:
+                  type: string
+                  enum:
+                    - computed
+                    - not_applicable
+                    - missing_inputs
+              required:
+                - value
+                - status
+              additionalProperties: false
+            activityMinutesPerWeek:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                    - type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    - type: "null"
+                meetsWho150:
+                  anyOf:
+                    - type: boolean
+                    - type: "null"
+                measuredStepsAvailable:
+                  type: boolean
+              required:
+                - value
+                - meetsWho150
+                - measuredStepsAvailable
+              additionalProperties: false
+            freeWeekdays:
+              type: object
+              properties:
+                days:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 7
+                source:
+                  type: string
+                  enum:
+                    - fact
+                    - default_weekend
+              required:
+                - days
+                - source
+              additionalProperties: false
+            screeningHints:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    enum:
+                      - lung_ldct
+                      - aaa_ultrasound
+                  status:
+                    type: string
+                    enum:
+                      - suggested
+                      - not_eligible
+                      - unknown
+                  reasonKeys:
+                    type: array
+                    items:
+                      type: string
+                  region:
+                    type: string
+                    enum:
+                      - DE
+                      - US
+                  sourceLabel:
+                    type: string
+                  sourceUrl:
+                    type: string
+                required:
+                  - id
+                  - status
+                  - reasonKeys
+                  - region
+                  - sourceLabel
+                  - sourceUrl
+                additionalProperties: false
+          required:
+            - packYears
+            - activityMinutesPerWeek
+            - freeWeekdays
+            - screeningHints
+          additionalProperties: false
+        auditC:
+          type: object
+          properties:
+            latest:
+              anyOf:
+                - $ref: "#/components/schemas/AuditCResult"
+                - type: "null"
+            history:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  takenAt:
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  totalScore:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - id
+                  - takenAt
+                  - totalScore
+                additionalProperties: false
+              description: Newest first, at most 20.
+            offerDue:
+              type: boolean
+            instrument:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      stem:
+                        type: string
+                      options:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: integer
+                              minimum: -9007199254740991
+                              maximum: 9007199254740991
+                            label:
+                              type: string
+                          required:
+                            - value
+                            - label
+                          additionalProperties: false
+                    required:
+                      - stem
+                      - options
+                    additionalProperties: false
+                  description: The three items verbatim in the account language; render as delivered.
+                locale:
+                  type: string
+                validatedLocale:
+                  type: boolean
+                standardDrink:
+                  type: string
+                attribution:
+                  type: string
+              required:
+                - items
+                - locale
+                - validatedLocale
+                - standardDrink
+                - attribution
+              additionalProperties: false
+          required:
+            - latest
+            - history
+            - offerDue
+            - instrument
+          additionalProperties: false
+        takeOver:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                enum:
+                  - conditions
+                  - allergies
+              freeTextPresent:
+                type: boolean
+              structuredCount:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              available:
+                type: boolean
+            required:
+              - field
+              - freeTextPresent
+              - structuredCount
+              - available
+            additionalProperties: false
+      required:
+        - sections
+        - extraAiSections
+        - derived
+        - auditC
+        - takeOver
+      additionalProperties: false
+      description: The six life-circumstance sections with their answers, AI switches and review state, the derived values
+        with their sources, AUDIT-C, and the take-over hints for the free-text conditions and allergies. Every number is
+        resolved on the server.
+    LifeFactRevision:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - SMOKING_STATUS
+            - SHIFT_SCHEDULE
+            - TOBACCO_DETAIL
+            - ACTIVITY_HABIT
+            - WORK_CONTEXT
+            - FREE_WEEKDAYS
+            - HABITS
+            - HEALTH_GOALS
+        value:
+          description: "`SMOKING_STATUS` and `SHIFT_SCHEDULE` carry their string value; every other kind an object with `schema:
+            1` whose shape is fixed per kind (see the life-circumstances contract). `null` when `unreadable`."
+        unreadable:
+          type: boolean
+          description: The sealed value could not be opened on this host.
+        validFrom:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        validUntil:
+          type: "null"
+        provenance:
+          type: string
+          enum:
+            - USER_REPORTED
+            - USER_CORRECTION
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      required:
+        - id
+        - kind
+        - value
+        - unreadable
+        - validFrom
+        - validUntil
+        - provenance
+        - createdAt
+      additionalProperties: false
+      description: The current revision of one life-circumstance fact.
+    AuditCResult:
+      type: object
+      properties:
+        id:
+          type: string
+        takenAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        items:
+          type: array
+          prefixItems:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+        totalScore:
+          type: integer
+          minimum: 0
+          maximum: 12
+        locale:
+          type: string
+        cutoff:
+          anyOf:
+            - type: object
+              properties:
+                value:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                sex:
+                  type: string
+                  enum:
+                    - male
+                    - female
+                source:
+                  type: string
+                  enum:
+                    - S3_ALCOHOL_DE
+                    - KNHANES_KR
+                    - BRADLEY_2007
+                sourceLabel:
+                  type: string
+                sourceUrl:
+                  type: string
+              required:
+                - value
+                - sex
+                - source
+                - sourceLabel
+                - sourceUrl
+              additionalProperties: false
+            - type: "null"
+          description: The screening cut-off for the entry's language and the profile's sex (German S3 guideline, Korean KNHANES,
+            else Bradley 2007). `null` when the profile has no sex; show the sum only.
+        aboveCutoff:
+          anyOf:
+            - type: boolean
+            - type: "null"
+        validatedLocale:
+          type: boolean
+          description: Whether the item wording shown was a validated translation for `locale`.
+      required:
+        - id
+        - takenAt
+        - items
+        - totalScore
+        - locale
+        - cutoff
+        - aboveCutoff
+        - validatedLocale
+      additionalProperties: false
+      description: One AUDIT-C entry, scored on the server. A screening result, not a diagnosis.
+    LifeAiSectionsEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            aiSections:
+              type: object
+              propertyNames:
+                type: string
+                enum:
+                  - SMOKING_STATUS
+                  - ALCOHOL_PATTERN
+                  - SHIFT_SCHEDULE
+                  - ACTIVITY
+                  - WORK
+                  - HABITS
+                  - GOALS
+              additionalProperties:
+                type: boolean
+            updatedAt:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - aiSections
+            - updatedAt
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LifeConfirmEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            section:
+              type: string
+              enum:
+                - tobacco
+                - alcohol
+                - activity
+                - work
+                - habits
+                - goals
+            lastConfirmedAt:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - section
+            - lastConfirmedAt
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AuditCReplayEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            result:
+              $ref: "#/components/schemas/AuditCResult"
+          required:
+            - result
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AuditCCreatedEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            result:
+              $ref: "#/components/schemas/AuditCResult"
+          required:
+            - result
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AuditCRemovedEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            removedAt:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - id
+            - removedAt
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichConnectEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            connected:
+              type: boolean
+              const: true
+          required:
+            - connected
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichStatusEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DawarichStatus"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        configured:
+          type: boolean
+        homePlaceSet:
+          type: boolean
+        homeCountry:
+          anyOf:
+            - type: string
+            - type: "null"
+        daysStored:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        oldestDay:
+          anyOf:
+            - type: string
+            - type: "null"
+        latestDay:
+          anyOf:
+            - type: string
+            - type: "null"
+        health:
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
+      required:
+        - connected
+        - configured
+        - homePlaceSet
+        - homeCountry
+        - daysStored
+        - oldestDay
+        - latestDay
+        - health
+      additionalProperties: false
+      description: The Dawarich connection. `health` is the shape every connection publishes; there are no legacy ledger fields.
+    DawarichPlacesEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            places:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  name:
+                    type: string
+                required:
+                  - id
+                  - name
+                additionalProperties: false
+          required:
+            - places
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichSettingsEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            homePlaceId:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+            homeCountry:
+              anyOf:
+                - type: string
+                - type: "null"
+          required:
+            - homePlaceId
+            - homeCountry
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichProbeEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            ok:
+              type: boolean
+              const: true
+            lastSyncedAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            latencyMs:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - ok
+            - lastSyncedAt
+            - latencyMs
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichSyncEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            enqueued:
+              type: boolean
+          required:
+            - enqueued
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DawarichDisconnectEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            disconnected:
+              type: boolean
+              const: true
+            deletedDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - disconnected
+            - deletedDays
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    TravelSuggestionsEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            suggestions:
+              type: array
+              items:
+                $ref: "#/components/schemas/TravelSuggestion"
+          required:
+            - suggestions
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    TravelSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        countryCode:
+          type: string
+      required:
+        - id
+        - startDate
+        - endDate
+        - countryCode
+      additionalProperties: false
+      description: A run of consecutive travel days no stored trip covers. Accept it through `POST /api/environment/travel`
+        (the person picks the place).
+    TravelSuggestionDismissEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            dismissed:
+              type: boolean
+              const: true
+          required:
+            - dismissed
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MedicationLinkResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RelationLinkResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    RelationLinkResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        unknown:
+          type: array
+          items:
+            type: string
+          description: Ids that name nothing this account owns; nothing failed.
+      required:
+        - changed
+        - unknown
+      additionalProperties: false
+    MedicationUnlinkResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RelationLinkResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LabResultLinkResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RelationLinkResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LabResultUnlinkResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RelationLinkResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
       additionalProperties: false
     __schema0:
       anyOf:

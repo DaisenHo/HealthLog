@@ -5,6 +5,12 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import {
+  seriesChange,
+  seriesReferenceLine,
+  trendVerdict,
+  recordBenchmark,
+} from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
@@ -657,6 +663,12 @@ const personalRecordResource = z
       .describe(
         "When the detection worker wrote the row — distinct from `achievedAt`, which is when the reading happened.",
       ),
+    benchmark: recordBenchmark
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null otherwise.",
+      ),
   })
   .meta({
     id: "PersonalRecord",
@@ -758,6 +770,18 @@ const seriesResponse = z
         count: z.number().int().nonnegative(),
       })
       .describe("Summary over the returned points; all-zero when empty."),
+    direction: trendVerdict
+      .nullable()
+      .optional()
+      .describe("v1.43 — which way a change of this metric counts."),
+    change: seriesChange
+      .nullable()
+      .optional()
+      .describe("v1.43 — first and last day value; null under two days."),
+    referenceLines: z
+      .array(seriesReferenceLine)
+      .optional()
+      .describe("v1.43 — lines to draw; empty when there is nothing to draw."),
   })
   .meta({
     id: "MeasurementsSeriesResponse",

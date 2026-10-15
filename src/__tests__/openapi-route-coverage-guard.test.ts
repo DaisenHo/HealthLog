@@ -258,6 +258,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     kind: "adminConsole",
     methods: ["POST"],
   },
+  "/api/admin/maintenance/pulse-day-mean": {
+    kind: "adminConsole",
+    methods: ["GET", "POST"],
+  },
   "/api/admin/monitoring/glitchtip-test": {
     kind: "adminConsole",
     methods: ["POST"],
@@ -284,6 +288,7 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     methods: ["POST"],
   },
   "/api/admin/status": { kind: "adminConsole", methods: ["GET"] },
+  "/api/admin/support-report": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/tokens": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/users": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/users/{id}": { kind: "adminConsole", methods: ["PUT"] },

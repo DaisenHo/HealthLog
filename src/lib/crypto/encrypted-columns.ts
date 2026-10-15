@@ -68,6 +68,16 @@ export const DOCUMENT_AI_RUN_RESULT_AAD = "healthlog/document-ai-run-result/v1";
  */
 export const ENVIRONMENT_LOCATION_AAD = "healthlog/environment-location/v1";
 
+/**
+ * The associated-data labels for the Dawarich context (v1.43): the sealed
+ * connection preferences on the user row (home place id, home country,
+ * dismissed travel suggestions) and each stored day's country code. Labelled
+ * like the environment locations, each with its own label so a country code
+ * never opens as a location or as the preferences.
+ */
+export const DAWARICH_PREFS_AAD = "healthlog/dawarich-prefs/v1";
+export const DAWARICH_DAY_COUNTRY_AAD = "healthlog/dawarich-day-country/v1";
+
 export interface EncryptedColumn {
   /** Prisma model name (PascalCase, as declared in schema.prisma). */
   readonly model: string;
@@ -149,6 +159,9 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "User", field: "googleHealthClientSecretEncrypted", kind: "string" },
   { model: "User", field: "nightscoutUrlEncrypted", kind: "string" },
   { model: "User", field: "nightscoutTokenEncrypted", kind: "string" },
+  // v1.43 — Dawarich connection (URL and API key, like the Nightscout pair).
+  { model: "User", field: "dawarichUrlEncrypted", kind: "string" },
+  { model: "User", field: "dawarichApiKeyEncrypted", kind: "string" },
   { model: "User", field: "polarAccessTokenEncrypted", kind: "string" },
   { model: "User", field: "polarUserIdEncrypted", kind: "string" },
   { model: "User", field: "polarClientIdEncrypted", kind: "string" },
@@ -408,8 +421,8 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
 
   // ───── v1.42 environment locations (Bytes, binary2) ─────
   // The coarse home, each dated location period, and each day's resolved
-  // location, sealed as (lat, lon, label) under one label. The plaintext
-  // columns beside them empty as the encryption backfill runs.
+  // location, sealed as (lat, lon, label) under one label. The only copy since
+  // v1.43 (migration 0409 dropped the plaintext columns).
   {
     model: "User",
     field: "homeLocationEncrypted",
@@ -430,6 +443,25 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     kind: "bytes",
     codec: "binary2",
     aad: ENVIRONMENT_LOCATION_AAD,
+  },
+
+  // ───── v1.43 Dawarich context (Bytes, binary2) ─────
+  // The connection preferences (a place id on the Dawarich instance, the home
+  // country, dismissed travel suggestions) and each day's country code. Daily
+  // values only; no coordinate or place name is ever stored.
+  {
+    model: "User",
+    field: "dawarichPrefsEncrypted",
+    kind: "bytes",
+    codec: "binary2",
+    aad: DAWARICH_PREFS_AAD,
+  },
+  {
+    model: "DawarichDay",
+    field: "countryCodeEncrypted",
+    kind: "bytes",
+    codec: "binary2",
+    aad: DAWARICH_DAY_COUNTRY_AAD,
   },
 
   // ───── v1.38.0 dose free text (Bytes column) ─────
@@ -583,6 +615,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "CoachPlan",
   "CoachReminder",
   "CycleDayLog",
+  "DawarichDay",
   "DocumentContentIndex",
   "DocumentSourceConnection",
   "DocumentThumbnail",

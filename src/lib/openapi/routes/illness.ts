@@ -13,6 +13,7 @@
  * the module off (or an operator-disabled instance) 403s with
  * `errorCode:"illness.disabled"` even with a valid Bearer token.
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -350,7 +351,10 @@ export const illnessPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The episode.",
           content: {
             "application/json": {
-              schema: dataEnvelope(illnessEpisode, "GetIllnessEpisodeEnvelope"),
+              schema: dataEnvelope(
+                withRelated(illnessEpisode),
+                "GetIllnessEpisodeEnvelope",
+              ),
             },
           },
         },

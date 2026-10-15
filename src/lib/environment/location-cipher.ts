@@ -1,22 +1,21 @@
 /**
  * The environment module's coarse locations, sealed at rest (v1.42, #615).
  *
- * Three places held a location in readable columns: the home on the user row
- * (`homeLat` / `homeLon` / `homeLabel`), each dated location period
- * (`EnvironmentTravelLocation.lat` / `lon` / `label`), and each stored day
- * (`EnvironmentContext.lat` / `lon` / `locationLabel`). Coarse as they are
- * (one decimal, about 11 km), a home city and a dated list of trips are still
- * a movement profile. From v1.42 each row stores ONE sealed value instead, the
- * JSON `{ lat, lon, label }` under AES-256-GCM with the associated-data label
+ * Three places hold a location: the home on the user row
+ * (`homeLocationEncrypted`), each dated location period
+ * (`EnvironmentTravelLocation.locationEncrypted`), and each stored day
+ * (`EnvironmentContext.locationEncrypted`). Coarse as they are (one decimal,
+ * about 11 km), a home city and a dated list of trips are still a movement
+ * profile, so each row stores ONE sealed value, the JSON `{ lat, lon, label }`
+ * under AES-256-GCM with the associated-data label
  * {@link ENVIRONMENT_LOCATION_AAD}: one decrypt per row, and the three parts
  * can never drift apart.
  *
- * Writers seal through {@link sealLocation}; the readable columns are written
- * as null. Readers go through {@link readLocation}: the sealed value when a
- * row has one, the readable columns only for a row the boot-time encryption
- * backfill (`free-text-encryption-backfill.ts`) has not reached yet. A sealed
- * value that does not open reads as no location, with a warning on the
- * request's event, and is never replaced by the readable columns.
+ * Writers seal through {@link sealLocation}; readers go through
+ * {@link readLocation}. A sealed value that does not open reads as no
+ * location, with a warning on the request's event. The readable columns the
+ * sealed value replaced were dropped in v1.43 (migration 0409), which refuses
+ * to run while any of them still held a value.
  *
  * The coordinates are rounded to the privacy floor BEFORE sealing, so the
  * sealed value never carries more precision than the readable column did,
@@ -78,37 +77,21 @@ export function openLocation(sealed: Uint8Array): CoarseLocation {
 }
 
 /**
- * The location a row holds: the sealed value first, the legacy readable
- * columns only when there is no sealed value. Null when the row holds
- * neither (or only part of the readable triple), and null with a warning when
- * the sealed value does not open.
- *
- * `fallbackLabel` stands in for a missing readable label, which the home has
- * always allowed (`homeLabel` was nullable from the start).
+ * The location a row holds, from its sealed value. Null when the row holds
+ * none, and null with a warning when the sealed value does not open.
  */
 export function readLocation(
-  row: {
-    sealed: Uint8Array | null | undefined;
-    lat: number | null | undefined;
-    lon: number | null | undefined;
-    label: string | null | undefined;
-  },
-  fallbackLabel?: string,
+  sealed: Uint8Array | null | undefined,
 ): CoarseLocation | null {
-  if (row.sealed && row.sealed.byteLength > 0) {
-    try {
-      return openLocation(row.sealed);
-    } catch (err) {
-      getEvent()?.addWarning(
-        `environment location decrypt failed: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
-      return null;
-    }
+  if (!sealed || sealed.byteLength === 0) return null;
+  try {
+    return openLocation(sealed);
+  } catch (err) {
+    getEvent()?.addWarning(
+      `environment location decrypt failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return null;
   }
-  if (row.lat == null || row.lon == null) return null;
-  const label = row.label ?? fallbackLabel;
-  if (label == null) return null;
-  return { lat: row.lat, lon: row.lon, label };
 }

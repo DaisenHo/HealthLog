@@ -306,6 +306,8 @@ async function main() {
     "googleHealthClientSecretEncrypted",
     "nightscoutUrlEncrypted",
     "nightscoutTokenEncrypted",
+    "dawarichUrlEncrypted",
+    "dawarichApiKeyEncrypted",
     "polarAccessTokenEncrypted",
     "polarUserIdEncrypted",
     "polarClientIdEncrypted",
@@ -825,8 +827,8 @@ async function main() {
 
   // ───── v1.42 environment locations (Bytes, binary2, batched) ─────
   // The sealed home, each dated location period and each day's resolved
-  // location, all under the environment-location label. NULL on a row the
-  // encryption backfill has not reached yet, which the walk skips.
+  // location, all under the environment-location label. NULL on a row
+  // without a location, which the walk skips.
   results.push(
     await rotateRegistryColumn("User", "homeLocationEncrypted", {
       user: prisma.user,
@@ -844,6 +846,20 @@ async function main() {
   results.push(
     await rotateRegistryColumn("EnvironmentContext", "locationEncrypted", {
       environmentContext: prisma.environmentContext,
+    } as unknown as CorpusClient),
+  );
+
+  // ───── v1.43 Dawarich context (Bytes, binary2, batched) ─────
+  // The sealed connection preferences on the user row and each stored day's
+  // country code, each under its own label. NULL rows are skipped.
+  results.push(
+    await rotateRegistryColumn("User", "dawarichPrefsEncrypted", {
+      user: prisma.user,
+    } as unknown as CorpusClient),
+  );
+  results.push(
+    await rotateRegistryColumn("DawarichDay", "countryCodeEncrypted", {
+      dawarichDay: prisma.dawarichDay,
     } as unknown as CorpusClient),
   );
 

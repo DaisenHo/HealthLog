@@ -205,6 +205,21 @@ export const BACKED_UP_MODELS = [
   // restore without the row opens a blank questionnaire for somebody who has
   // already answered it.
   "OnboardingRecord",
+
+  // ── v1.43 ─────────────────────────────────────────────────────────────────
+  // A marker's other spellings and its merge ledger, a supplement's
+  // composition, the Dawarich daily values, and the five relation links that
+  // close the relation matrix. Each is owned data nothing recomputes; each is
+  // on COVERAGE_PENDING until its section carries it.
+  "BiomarkerAlias",
+  "BiomarkerMerge",
+  "MedicationIngredient",
+  "DawarichDay",
+  "LabResultDocumentLink",
+  "EncounterMedicationLink",
+  "EncounterVaccinationLink",
+  "MedicationDocumentLink",
+  "MedicationConditionLink",
 ] as const;
 
 /**
@@ -597,6 +612,26 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
  * rather than by what is cheapest to write.
  */
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
+  // v1.43 — the new tables are declared here with the schema and move to
+  // TWO_ENDED_MODELS when their section writer and restore branch land.
+  BiomarkerAlias:
+    "Every other spelling a marker answers to: the names folded in by a merge, the choices made at a scan or a document import, the ones typed on the marker. Without them a restored account asks again at the next scan which marker each spelling belongs to.",
+  BiomarkerMerge:
+    "The ledger of which markers were merged into which. Without it a link or a cached screen that still names a merged marker reads as a plain 404 instead of being sent to the marker it went into.",
+  MedicationIngredient:
+    "What one tablet or capsule of a supplement contains. Without it a restored account's supplements stop counting toward the day's micronutrients, and the composition has to be typed in again from the label.",
+  DawarichDay:
+    "The daily movement values fetched from Dawarich: distances, places visited, time away from home, travel days. Days the Dawarich instance has since pruned cannot be fetched again, so they are lost for good.",
+  LabResultDocumentLink:
+    "Which stored report a lab result was read from. Without it the result and the report stop pointing at each other, and the result loses its source.",
+  EncounterMedicationLink:
+    "Which medications a visit prescribed, changed or reviewed. Without it the visit and the medication stop pointing at each other.",
+  EncounterVaccinationLink:
+    "Which doses were given at a visit. Without it the visit and the dose stop pointing at each other.",
+  MedicationDocumentLink:
+    "Which documents belong to a medication: the prescription, the plan, the package insert. Without it they stop pointing at each other.",
+  MedicationConditionLink:
+    "Which condition a medication treats (its indication). Without it the medication and the condition stop pointing at each other.",
   WorkoutRoute:
     "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
   WorkoutSamples:
@@ -879,6 +914,13 @@ export const USER_COLUMN_BACKUP_CLASS = {
   nightscoutUrlEncrypted: "CREDENTIAL",
   nightscoutTokenEncrypted: "CREDENTIAL",
   nightscoutAllowPrivateHost: "CREDENTIAL",
+  // v1.43 — the Dawarich connection, credentials like the Nightscout pair. The
+  // sealed preferences name a place id on that instance, which means nothing
+  // without the key, so they stay behind with it.
+  dawarichUrlEncrypted: "CREDENTIAL",
+  dawarichApiKeyEncrypted: "CREDENTIAL",
+  dawarichPrefsEncrypted: "CREDENTIAL",
+  dawarichAllowPrivateHost: "CREDENTIAL",
   polarAccessTokenEncrypted: "CREDENTIAL",
   polarUserIdEncrypted: "CREDENTIAL",
   polarClientIdEncrypted: "CREDENTIAL",
@@ -935,13 +977,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   avatarContentType: "SETTING",
   avatarUpdatedAt: "SETTING",
   // Home, which the environment history is resolved against.
-  homeLat: "SETTING",
-  homeLon: "SETTING",
-  homeLabel: "SETTING",
   homeTimezone: "SETTING",
   homeSince: "SETTING",
-  // v1.42 (#615) — the sealed copy of the same home location, and the
-  // account's switch for the air-quality part of the module.
+  // v1.42 (#615) — the sealed home location (the only copy since v1.43),
+  // and the account's switch for the air-quality part of the module.
   homeLocationEncrypted: "SETTING",
   environmentAirQualityEnabled: "SETTING",
   // How the interface reads.
@@ -983,6 +1022,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   insightsPrivacyMode: "SETTING",
   insightsExcludeMetrics: "SETTING",
   disableCoach: "SETTING",
+  // v1.43 (#1217) — the account's own AI usage level; NULL follows the
+  // instance default, and a restored level above this host's ceiling is
+  // capped at read time like any stored choice.
+  aiUsageLevel: "SETTING",
   coachPrefsJson: "SETTING",
   documentsAutoAiRead: "SETTING",
   labsLocalOcrEnabled: "SETTING",

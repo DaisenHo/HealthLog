@@ -48,9 +48,6 @@ export const GET = apiHandler(async () => {
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
-        homeLat: true,
-        homeLon: true,
-        homeLabel: true,
         homeLocationEncrypted: true,
         homeTimezone: true,
         homeSince: true,
@@ -66,9 +63,6 @@ export const GET = apiHandler(async () => {
         id: true,
         startDate: true,
         endDate: true,
-        lat: true,
-        lon: true,
-        label: true,
         locationEncrypted: true,
       },
     }),
@@ -116,14 +110,7 @@ export const GET = apiHandler(async () => {
   ]);
 
   const homeLocation = profile
-    ? readLocation({
-        sealed: profile.homeLocationEncrypted,
-        lat: profile.homeLat,
-        lon: profile.homeLon,
-        // The label may be absent on a pre-v1.42 home; the answer has
-        // always allowed a null label there.
-        label: profile.homeLabel ?? "",
-      })
+    ? readLocation(profile.homeLocationEncrypted)
     : null;
   const home =
     profile && homeLocation
@@ -139,12 +126,7 @@ export const GET = apiHandler(async () => {
       : null;
 
   const travel = travelRows.flatMap((row) => {
-    const location = readLocation({
-      sealed: row.locationEncrypted,
-      lat: row.lat,
-      lon: row.lon,
-      label: row.label,
-    });
+    const location = readLocation(row.locationEncrypted);
     return location
       ? [
           {

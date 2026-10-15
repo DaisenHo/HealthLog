@@ -9,6 +9,7 @@
  * under the owner's name — and both are read-only in fact as well as in
  * declaration.
  */
+import { recordBenchmark } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
@@ -54,6 +55,12 @@ const personalRecord = z
     source: measurementSourceEnum,
     externalId: z.string().nullable(),
     createdAt: z.iso.datetime({ offset: true }),
+    benchmark: recordBenchmark
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null otherwise.",
+      ),
   })
   .meta({
     id: "PersonalRecord",

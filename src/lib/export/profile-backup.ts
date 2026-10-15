@@ -23,7 +23,7 @@
  */
 import { Buffer } from "node:buffer";
 
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { getEvent } from "@/lib/logging/context";
@@ -47,6 +47,19 @@ export interface ProfileBackupOptions {
  * The account's durable self-context. One row per user, so there is no
  * reference to resolve on the way back in — the owner is the key.
  */
+/**
+ * The stored section confirmations as the file carries them: an object of
+ * strings, anything else read as none.
+ */
+function lifeConfirmed(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const out: Record<string, string> = {};
+  for (const [key, stamp] of Object.entries(value)) {
+    if (typeof stamp === "string") out[key] = stamp;
+  }
+  return out;
+}
+
 export interface HealthProfileBackupEntry {
   /** Present in canonical DR payloads so the row keeps a stable identity. */
   id?: string;
@@ -91,6 +104,12 @@ export interface HealthProfileBackupEntry {
    * state it was in, pending prompts included.
    */
   pendingQuestionsEncrypted?: string | null;
+  /**
+   * v1.43 (#614) — when each life-circumstance section was last confirmed as
+   * still true: section key to ISO instant. Plaintext keys and stamps only,
+   * carried by value in both purposes. Absent in files written before v1.43.
+   */
+  lifeConfirmedJson?: Record<string, string> | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -329,6 +348,7 @@ export async function buildProfileBackupSection(
             HealthProfileAiSection[] | undefined) ?? [
             ...DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
           ],
+          lifeConfirmedJson: lifeConfirmed(profileRow.lifeConfirmedJson),
           emergencyBloodType: profileRow.emergencyBloodType ?? null,
           organDonorStatus: profileRow.organDonorStatus ?? null,
           advanceDirectiveStatus: profileRow.advanceDirectiveStatus ?? null,
@@ -377,6 +397,7 @@ export async function buildProfileBackupSection(
             HealthProfileAiSection[] | undefined) ?? [
             ...DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
           ],
+          lifeConfirmedJson: lifeConfirmed(profileRow.lifeConfirmedJson),
           emergencyBloodType: profileRow.emergencyBloodType ?? null,
           organDonorStatus: profileRow.organDonorStatus ?? null,
           advanceDirectiveStatus: profileRow.advanceDirectiveStatus ?? null,
@@ -788,6 +809,9 @@ export async function restoreProfileData(
         // resolution as the self-context columns above.
         emergencyBloodType: p.emergencyBloodType,
         organDonorStatus: p.organDonorStatus,
+        // A file written before v1.43 says nothing about confirmations; the
+        // account then has none, which only re-offers the yearly check.
+        lifeConfirmedJson: p.lifeConfirmedJson ?? Prisma.DbNull,
         advanceDirectiveStatus: p.advanceDirectiveStatus,
         emergencyContactsEncrypted: resolveProfileColumn(
           p.emergencyContactsEncrypted,

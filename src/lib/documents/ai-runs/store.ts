@@ -30,6 +30,7 @@ import {
   type AiRunParams,
   type AiRunResult,
   type DocumentAiRunKindValue,
+  servedRunKind,
 } from "./types";
 
 /** The longest a client is told to wait between polls. */
@@ -113,7 +114,7 @@ export async function claimAiRun(
   return {
     id: row.id,
     userId: row.userId,
-    kind: row.kind,
+    kind: servedRunKind(row.kind),
     documentId: row.documentId,
     params: row.paramsJson as unknown as AiRunParams,
     input,
@@ -252,7 +253,7 @@ export async function readAiRunForUser(
     : 0;
   return {
     id: row.id,
-    kind: row.kind,
+    kind: servedRunKind(row.kind),
     documentId: row.documentId,
     status: unreadable ? "FAILED" : row.status,
     result,

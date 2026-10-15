@@ -96,6 +96,9 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "refuses to claim a profile over a live session",
     "app/api/auth/claim/preview/route.ts":
       "refuses to preview a handover link over a live session",
+    // v1.43 (#959) — the single-sign-on claim start, same argument.
+    "app/api/auth/claim/sso/route.ts":
+      "refuses to start a single-sign-on claim over a live session",
     // Anonymous IdP callback. Probes for an already-valid session so a
     // replayed callback redirects instead of minting a second identity.
     "app/api/auth/oidc/callback/route.ts":

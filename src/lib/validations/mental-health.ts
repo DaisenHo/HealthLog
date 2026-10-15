@@ -17,6 +17,21 @@ import { isValidTimezone } from "@/lib/tz/format";
 export const assessmentInstrumentEnum = z.enum(["PHQ9", "GAD7", "WHO5", "SCI"]);
 
 /**
+ * The mental-health screeners, as opposed to every `AssessmentInstrument`.
+ * Since v1.43 the table also stores AUDIT-C (the alcohol section of the life
+ * circumstances), which no mental-health surface may list or score: older app
+ * builds decode `instrument` against exactly these four values.
+ */
+export const SCREENER_INSTRUMENTS = assessmentInstrumentEnum.options;
+export type ScreenerInstrument = (typeof SCREENER_INSTRUMENTS)[number];
+
+export function isScreenerInstrument(
+  instrument: string,
+): instrument is ScreenerInstrument {
+  return (SCREENER_INSTRUMENTS as readonly string[]).includes(instrument);
+}
+
+/**
  * Client provenance for an administration. Closed enum so the column can never
  * carry a free-form label. `WEB` is the in-app questionnaire (the DB default);
  * `IOS` is the native client. Distinct from `MeasurementSource` on purpose — a

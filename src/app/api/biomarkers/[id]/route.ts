@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -10,7 +10,10 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
-import { overwriteDetails } from "@/lib/sharing/audit-details";
+import {
+  destroyedDetails,
+  overwriteDetails,
+} from "@/lib/sharing/audit-details";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import {
@@ -90,8 +93,8 @@ export const PUT = apiHandler(
     // v1.37.0 — MANAGE, and the closest call in this domain: a reference range
     // recolours every reading under it, so this is the one admitted edit whose
     // error is silent rather than visible. C4 on the audit row is what puts it
-    // in the owner's feed. The DELETE below stays refused — it takes the
-    // readings with it and files an id.
+    // in the owner's feed. The DELETE below resolves through the same labs
+    // authority; it takes the readings with it and files the id.
     const { user } = await requireRecordAuth("manage", "labs");
     const { id } = await params;
 
@@ -254,7 +257,10 @@ export const PUT = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // The same record-scoped labs authority as the PUT above. A bare
+    // `requireAuth()` here held the one destructive biomarker write to a
+    // weaker gate than the edit beside it: no labs domain, no grant level.
+    const { user } = await requireRecordAuth("manage", "labs");
     const { id } = await params;
 
     const existing = await prisma.biomarker.findFirst({ where: { id } });
@@ -267,7 +273,7 @@ export const DELETE = apiHandler(
     // readings go with it rather than lingering as orphaned, unlinked rows.
     // Both legs are userId-narrowed so a cross-user id can never reach another
     // account's data.
-    await prisma.$transaction([
+    const [removedReadings] = await prisma.$transaction([
       prisma.labResult.deleteMany({
         where: { userId: user.id, biomarkerId: id },
       }),
@@ -278,7 +284,22 @@ export const DELETE = apiHandler(
     await auditLog("biomarker.delete", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      details: { biomarkerId: id },
+      // C3: a hard delete files what it destroyed — the marker's name, unit,
+      // and how many readings went with it — so the owner's feed can say what
+      // a manager removed, not just an id that now points at nothing.
+      details: {
+        biomarkerId: id,
+        ...destroyedDetails({
+          model: "Biomarker",
+          id,
+          label: existing.name,
+          effectiveAt: existing.createdAt,
+          extra: {
+            unit: existing.unit,
+            readingCount: removedReadings?.count ?? 0,
+          },
+        }),
+      },
     });
 
     annotate({

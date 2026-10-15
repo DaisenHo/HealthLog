@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { trendSentiment, trendVerdict } from "../trend-verdict";
 import { z } from "zod/v4";
 import { measurementSourceEnum, measurementTypeEnum } from "../shared";
 import { METRIC_STATUS_IDS } from "@/lib/insights/metric-status-registry";
@@ -1258,6 +1259,12 @@ export const dashboardSnapshotResponse = z
         "Server-computed band / target math resolved from the user's profile facts, so the client reads these numbers instead of recomputing them. Every sub-field is null only when the driving profile fact is missing (no date of birth for blood pressure, no height and no weight target for weight).",
       ),
     tiles: z.object({
+      directions: z
+        .record(z.string(), trendVerdict)
+        .optional()
+        .describe(
+          "v1.43 — per measurement type, which way a change counts. `weightTrend` stays.",
+        ),
       summaries: dataSummaryRecord,
       lastSeenByType: z.record(z.string(), z.unknown()),
       mood: z.object({
@@ -2478,6 +2485,14 @@ const targetItem = z
       .describe(
         "Per-tile extras. Only the medication-compliance tile carries any today; every other tile omits the key.",
       ),
+    direction: trendVerdict
+      .nullable()
+      .optional()
+      .describe("v1.43 — which way a change of this target counts."),
+    trendSentiment: trendSentiment
+      .nullable()
+      .optional()
+      .describe("v1.43 — the verdict applied to this tile's change."),
   })
   .meta({
     id: "TargetItem",

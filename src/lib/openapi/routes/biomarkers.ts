@@ -18,12 +18,18 @@ import {
   createBiomarkerSchema,
   updateBiomarkerSchema,
 } from "@/lib/validations/biomarkers";
+import {
+  BIOMARKER_MERGE_CONVERSIONS,
+  BIOMARKER_MERGE_REFUSALS,
+  biomarkerMergeSchema,
+} from "@/lib/validations/biomarker-merge";
 
 import {
   dataEnvelope,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  notImplementedResponse,
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
@@ -57,6 +63,12 @@ const biomarkerRow = z
     hasContext: z.boolean(),
     context: z.string().nullable(),
     hidden: z.boolean(),
+    aliases: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "v1.43 — other spellings that resolve to this marker (folded in by a merge, chosen at an import, or typed on the marker), sorted, without the marker's own name. Absent on older servers.",
+      ),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
@@ -79,10 +91,46 @@ const conflict = {
 
 const notFound = {
   "404": {
-    description: "Biomarker not found (or owned by another user).",
+    description:
+      "Biomarker not found (or owned by another user). `meta.errorCode` = `labs.biomarker.notFound`. Since v1.43 a marker that was merged into another answers with `meta.mergedInto` naming the marker it went into: drop the cached marker and open that one.",
     content: { "application/json": { schema: errorEnvelope } },
   },
 };
+
+const biomarkerMergeRequest = biomarkerMergeSchema.meta({
+  id: "BiomarkerMergeRequest",
+  description:
+    "Fold `sourceIds` (1..10, unique, without the target) into the marker in the path. `dryRun` (default false) answers the same result and writes nothing; a client shows it before asking to confirm, because a merge cannot be undone.",
+});
+
+const biomarkerMergeResult = z
+  .object({
+    dryRun: z.boolean(),
+    target: biomarkerRow.describe(
+      "The marker after the merge (unchanged on a dry run).",
+    ),
+    sources: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        unit: z.string(),
+        readingCount: z.number().int(),
+        conversion: z.enum(BIOMARKER_MERGE_CONVERSIONS),
+        refusal: z.enum(BIOMARKER_MERGE_REFUSALS).nullable(),
+      }),
+    ),
+    movedReadings: z.number().int(),
+    convertedReadings: z.number().int(),
+    aliasesAdded: z
+      .array(z.string())
+      .describe("Names that become aliases of the target."),
+    mergeId: z.string().nullable().describe("`null` on a dry run."),
+  })
+  .meta({
+    id: "BiomarkerMergeResult",
+    description:
+      "What a merge did, or would do on a dry run. Readings in another unit are converted where the analyte's conversion table knows it; the printed value stays in `sourceValue` / `sourceUnit` on each reading.",
+  });
 
 export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/biomarkers": {
@@ -181,9 +229,10 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Labs"],
       summary: "Delete a biomarker",
       description:
-        "Hard-deletes the catalog definition. The `onDelete: SetNull` FK unlinks every reading (they keep their legacy `analyte` / `unit`), so the history survives. Audits as `biomarker.delete`.",
+        "Hard-deletes the catalog definition together with every reading filed under it, in one transaction. Since v1.43 it needs the same record authority as the edit (manage on the labs section), so a manager of a shared record may delete and the owner is unaffected. Audits as `biomarker.delete` with the marker's name, unit and the number of readings removed.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Deletion succeeded.",
           content: {
@@ -197,6 +246,38 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...notFound,
         ...stdResponses,
+      },
+    },
+  },
+  "/api/biomarkers/{id}/merge": {
+    post: {
+      tags: ["Labs"],
+      summary: "Merge markers into this one (v1.43)",
+      description:
+        "Moves every reading of the source markers onto the marker in the path, converting units where the analyte's conversion table knows them, turns the source names into aliases and deletes the sources, in one transaction. A source in a unit without a known conversion refuses the whole merge with 422 `labs.biomarker.merge.unitMismatch` (`meta.sources` names each `{ id, unit, targetUnit, reason }`) and nothing moves. 404 `labs.biomarker.notFound` with `meta.ids` when the target or a source is missing; 422 `labs.biomarker.merge.invalid` for a malformed body or a target among the sources. No undo. Only when `features.biomarkerMerge` is true.",
+      parameters: [idempotencyKeyParameter],
+      requestParams: { path: z.object({ id: z.string() }) },
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: biomarkerMergeRequest } },
+      },
+      responses: {
+        ...idempotentWrite(),
+        "200": {
+          description: "The merge result (or the dry-run preview).",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                biomarkerMergeResult,
+                "MergeBiomarkersResponse",
+              ),
+            },
+          },
+        },
+        ...notFound,
+        ...stdResponses,
+        ...recordWriteRateLimitResponse,
+        ...notImplementedResponse,
       },
     },
   },

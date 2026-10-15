@@ -9,6 +9,7 @@
  * per type from here (this is the documented home of that table).
  */
 import type { ZodOpenApiObject } from "zod-openapi";
+import { z } from "zod/v4";
 
 import { NUTRIENT_DEFINITIONS } from "@/lib/nutrients/catalog";
 import {
@@ -18,6 +19,7 @@ import {
   nutrientDailySeriesSchema,
   nutrientOverviewQuerySchema,
   nutrientOverviewSchema,
+  nutrientUpperLimitSchema,
   nutrientWaterWriteSchema,
   nutrientWaterWriteResponseSchema,
 } from "@/lib/validations/nutrients";
@@ -26,6 +28,7 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  notImplementedResponse,
   recordRefusal,
   stdResponses,
 } from "./shared";
@@ -49,7 +52,55 @@ const catalogTable = NUTRIENT_DEFINITIONS.map(
   (d) => `| ${d.code} | ${d.hkIdentifier} | ${d.unit} |`,
 ).join("\n");
 
+const nutrientCatalogEntry = z
+  .object({
+    code: z.string(),
+    unit: z.string().describe("The canonical unit amounts are stored in."),
+    labelKey: z.string(),
+    label: z.string().describe("The nutrient's name in the account language."),
+    syncable: z
+      .boolean()
+      .describe(
+        "Whether HealthKit may send this code in the nutrient batch. `dha` and `epa` are not syncable: they appear in responses only.",
+      ),
+    inputUnits: z
+      .array(z.object({ unit: z.string(), factorToCanonical: z.number() }))
+      .describe(
+        "Units an amount may be entered in, with the factor to the canonical unit (vitamin D: `IU` = 0.025 µg).",
+      ),
+    upperLimit: nutrientUpperLimitSchema.nullable(),
+  })
+  .meta({
+    id: "NutrientCatalogEntry",
+    description:
+      "One nutrient of the catalogue as the composition form uses it. Clients build the form from this and never convert units themselves.",
+  });
+
 export const nutrientPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/nutrients/catalog": {
+    get: {
+      tags: ["Nutrients"],
+      summary: "The nutrient catalogue (v1.43)",
+      description:
+        "Every nutrient code with its canonical unit, label in the account language, input units and upper intake level. Behind the opt-in `nutrients` module (403 `module.disabled` when off).",
+      responses: {
+        ...recordRefusal(NUTRIENTS_DISABLED_DESCRIPTION),
+        "200": {
+          description: "The catalogue.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ entries: z.array(nutrientCatalogEntry) }),
+                "NutrientCatalogEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...notImplementedResponse,
+      },
+    },
+  },
   "/api/nutrients/batch": {
     post: {
       parameters: [idempotencyKeyParameter],

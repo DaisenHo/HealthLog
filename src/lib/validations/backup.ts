@@ -811,6 +811,13 @@ const healthProfileBackupSchema = z
     aiIncludedSections: z
       .array(healthProfileAiSectionSchema)
       .default([...DEFAULT_HEALTH_PROFILE_AI_SECTIONS]),
+    // v1.43 (#614) — section confirmations, section key to ISO instant.
+    // Carried as stored; the read route judges each stamp, so an unreadable
+    // one costs a "still true?" prompt rather than the whole restore.
+    lifeConfirmedJson: z
+      .record(z.string().max(64), z.string().max(64))
+      .nullable()
+      .optional(),
     // Emergency profile: three plaintext enums (carried by value in both
     // purposes), three free-text columns following the ciphertext-or-plaintext
     // split of the self-context fields above.
@@ -2031,6 +2038,8 @@ const accountSettingsBackupSchema = z
     insightsPrivacyMode: z.string().optional(),
     insightsExcludeMetrics: z.array(z.string()).optional(),
     disableCoach: z.boolean().optional(),
+    // v1.43 (#1217) — the account's AI usage level; the codec checks the value.
+    aiUsageLevel: z.string().nullable().optional(),
     coachPrefsJson: z.unknown().optional(),
     documentsAutoAiRead: z.boolean().optional(),
     labsLocalOcrEnabled: z.boolean().optional(),

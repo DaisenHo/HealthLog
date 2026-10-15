@@ -26,6 +26,19 @@ export const DOCUMENT_AI_RUN_KINDS = [
 export type DocumentAiRunKindValue = (typeof DOCUMENT_AI_RUN_KINDS)[number];
 
 /**
+ * A stored run's kind as one this build can serve. The database enum may
+ * carry a kind ahead of its worker (a value added with its migration before
+ * the run that uses it lands); such a row is refused here rather than handed
+ * to a dispatcher that has no entry for it.
+ */
+export function servedRunKind(kind: string): DocumentAiRunKindValue {
+  if ((DOCUMENT_AI_RUN_KINDS as readonly string[]).includes(kind)) {
+    return kind as DocumentAiRunKindValue;
+  }
+  throw new Error(`document AI run kind not served by this build: ${kind}`);
+}
+
+/**
  * The capability each kind of run answers to: the one its queuing route asks,
  * asked again by the worker for the record before anything leaves.
  */

@@ -132,7 +132,6 @@ export async function discoverAirQualityHistory(
         environmentAirQualityEnabled: true,
         OR: [
           { homeLocationEncrypted: { not: null } },
-          { homeLat: { not: null }, homeLon: { not: null } },
           { environmentTravelLocations: { some: {} } },
         ],
       },

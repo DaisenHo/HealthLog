@@ -5,6 +5,8 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { relatedList } from "../relation-links";
+import { medicationIngredient } from "./ingredients";
 import { z } from "zod/v4";
 import { baseUpdatedAtField } from "../shared";
 import {
@@ -420,6 +422,12 @@ export const medicationListEntry = medicationResource
       .describe(
         "v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate (the same math the low-stock notification engine runs, so the wire and the push can never disagree). NULL = inventory tracking off or no consuming cadence derivable; 0 = tracking on, supply ran out. Read-only — computed, not stored.",
       ),
+    hasIngredients: z
+      .boolean()
+      .optional()
+      .describe(
+        "v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`). Absent on older servers.",
+      ),
   })
   .meta({
     id: "MedicationListEntry",
@@ -468,6 +476,13 @@ export const medicationDetailEntry = medicationResource
       .describe(
         "v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate; NULL = tracking off or no consuming cadence.",
       ),
+    ingredients: z
+      .array(medicationIngredient)
+      .optional()
+      .describe(
+        "v1.43 — the composition per unit, empty when none is stored. Absent on older servers.",
+      ),
+    related: relatedList,
   })
   .meta({
     id: "MedicationDetail",
