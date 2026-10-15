@@ -19,6 +19,10 @@ type Payload = {
     type: string;
     lastSeenAt: string;
     stale: boolean;
+    lastReceivedAt?: string | null;
+    lastTrigger?: "foreground" | "background" | "push" | "manual" | null;
+    lastNewSampleAt?: string | null;
+    lastBackgroundAt?: string | null;
   }>;
   syncProgress?: {
     recordsAccepted: number;
