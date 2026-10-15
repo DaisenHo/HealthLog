@@ -300,3 +300,15 @@ describe("upper intake levels (v1.43)", () => {
     ).toBeNull();
   });
 });
+
+describe("the batch contract stays the syncable codes (v1.43)", () => {
+  it("refuses dha and epa in the HealthKit batch and accepts a syncable code", async () => {
+    const { nutrientBatchSchema } = await import("@/lib/validations/nutrients");
+    const entry = (nutrient: string) => ({
+      entries: [{ day: "2026-07-10", nutrient, unit: "mg", amount: 100 }],
+    });
+    expect(nutrientBatchSchema.safeParse(entry("dha")).success).toBe(false);
+    expect(nutrientBatchSchema.safeParse(entry("epa")).success).toBe(false);
+    expect(nutrientBatchSchema.safeParse(entry("magnesium")).success).toBe(true);
+  });
+});
