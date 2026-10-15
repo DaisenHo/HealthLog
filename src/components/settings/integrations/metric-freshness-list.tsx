@@ -10,18 +10,17 @@
  * an upstream that quietly stopped returning one data type. The integration
  * pill cannot express it, because the integration itself is fine.
  *
- * Collapsed by default: a Withings or Google Health user carries 15-25 types
- * and an always-open list would bury the card's actions. The collapsed summary
- * still names how many types have gone quiet, so the signal never hides behind
- * a click.
+ * It lives in the card's collapsed details: a Withings or Google Health user
+ * carries 15-25 types and an always-open list would bury the card. The summary
+ * line above the rows still names how many types have gone quiet.
  *
  * Honest absence is structural: the server only reports `(source, type)` pairs
  * that have rows, so a type a provider never delivered simply is not here. No
  * "expected but missing" row is invented.
  */
 
-import { useState, type ReactNode } from "react";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import type { ReactNode } from "react";
+import { AlertTriangle } from "lucide-react";
 
 import { formatRelative } from "@/components/settings/integration-status-pill";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/components/measurements/measurement-list-meta";
@@ -42,18 +41,15 @@ function humanise(type: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export function MetricFreshnessDisclosure<
+export function MetricFreshnessList<
   Entry extends MetricFreshnessEntry = MetricFreshnessEntry,
 >({
   entries,
-  idPrefix,
   now,
   title,
   detail,
 }: {
   entries: Entry[] | undefined;
-  /** Namespaces the disclosure's ids so several cards can coexist. */
-  idPrefix: string;
   /** Override "now" for deterministic testing. */
   now?: Date;
   /** Replaces the shared "received data" heading. */
@@ -65,7 +61,6 @@ export function MetricFreshnessDisclosure<
   detail?: (entry: Entry) => ReactNode;
 }) {
   const { t } = useTranslations();
-  const [open, setOpen] = useState(false);
 
   if (!entries?.length) return null;
 
@@ -92,93 +87,76 @@ export function MetricFreshnessDisclosure<
   const newest = entries.reduce((max, entry) =>
     entry.lastSeenAt > max.lastSeenAt ? entry : max,
   );
-  const panelId = `${idPrefix}-metric-freshness-panel`;
 
   return (
     <div data-slot="metric-freshness" className="space-y-2">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-controls={panelId}
-        data-slot="metric-freshness-toggle"
-        className="flex w-full items-center gap-2 text-left"
-      >
-        <ChevronDown
-          aria-hidden="true"
-          className={cn(
-            "text-muted-foreground size-3.5 shrink-0 transition-transform",
-            open && "rotate-180",
-          )}
-        />
+      <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
         <span className="text-sm font-medium">
           {title ?? t("settings.integrationFreshness.title")}
         </span>
-        <span className="text-muted-foreground min-w-0 truncate text-xs">
+        <span className="text-muted-foreground text-xs">
           {t("settings.integrationFreshness.summary", {
             count: entries.length,
             relative: relative(newest.lastSeenAt),
           })}
           {staleCount > 0 ? (
             <span className="text-warning">
-              {" · "}
+              {", "}
               {t("settings.integrationFreshness.quiet", { count: staleCount })}
             </span>
           ) : null}
         </span>
-      </button>
+      </p>
 
-      {open && (
-        <ul id={panelId} className={detail ? "space-y-2.5" : "space-y-1"}>
-          {sorted.map((entry) => {
-            const extra = detail?.(entry);
-            return (
-              <li
-                key={entry.type}
-                data-slot="metric-freshness-row"
-                data-metric={entry.type}
-                data-state={entry.stale ? "stale" : "fresh"}
-                className={cn(
-                  "text-xs",
-                  entry.stale ? "text-warning" : "text-muted-foreground",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {entry.stale ? (
-                      <AlertTriangle
-                        aria-hidden="true"
-                        className="size-3 shrink-0"
-                      />
-                    ) : null}
-                    {/* With a detail line under it, the type name is the
+      <ul className={detail ? "space-y-2.5" : "space-y-1"}>
+        {sorted.map((entry) => {
+          const extra = detail?.(entry);
+          return (
+            <li
+              key={entry.type}
+              data-slot="metric-freshness-row"
+              data-metric={entry.type}
+              data-state={entry.stale ? "stale" : "fresh"}
+              className={cn(
+                "text-xs",
+                entry.stale ? "text-warning" : "text-muted-foreground",
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  {entry.stale ? (
+                    <AlertTriangle
+                      aria-hidden="true"
+                      className="size-3 shrink-0"
+                    />
+                  ) : null}
+                  {/* With a detail line under it, the type name is the
                         row's content and the line its meta. */}
-                    <span
-                      className={cn(
-                        "truncate",
-                        extra && !entry.stale && "text-foreground",
-                      )}
-                    >
-                      {label(entry.type)}
-                    </span>
-                  </span>
-                  <time
-                    dateTime={entry.lastSeenAt}
-                    className="shrink-0 tabular-nums"
+                  <span
+                    className={cn(
+                      "truncate",
+                      extra && !entry.stale && "text-foreground",
+                    )}
                   >
-                    {relative(entry.lastSeenAt)}
-                  </time>
+                    {label(entry.type)}
+                  </span>
+                </span>
+                <time
+                  dateTime={entry.lastSeenAt}
+                  className="shrink-0 tabular-nums"
+                >
+                  {relative(entry.lastSeenAt)}
+                </time>
+              </div>
+              {extra ? (
+                <div data-slot="metric-freshness-detail" className="mt-0.5">
+                  {extra}
                 </div>
-                {extra ? (
-                  <div data-slot="metric-freshness-detail" className="mt-0.5">
-                    {extra}
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

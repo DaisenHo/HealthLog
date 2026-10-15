@@ -96,12 +96,13 @@ beforeEach(async () => {
 
 describe("integration watchdog", () => {
   it("flags a normally-daily wearable gone silent, alerts once, then sends one recovery note", async () => {
-    // Fourteen consecutive days of data before the window, newest 30 h ago.
+    // Thirteen consecutive days of data before the window, newest 54 h ago:
+    // past Oura's 48 h window (it uploads only when its phone app is opened).
     await seedDailyReadings(
       USER,
       "OURA",
-      Array.from({ length: 13 }, (_, i) => i + 2),
-      30,
+      Array.from({ length: 13 }, (_, i) => i + 3),
+      54,
     );
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
@@ -170,7 +171,7 @@ describe("integration watchdog", () => {
   });
 
   it("leaves a wearable alone when its owner wears it only now and then", async () => {
-    await seedDailyReadings(USER, "OURA", [3, 7, 11], 30);
+    await seedDailyReadings(USER, "OURA", [3, 7, 11], 54);
     await recordSyncSuccess(USER, "oura");
     const summary = await runIntegrationWatchdog({ mode: "hourly", now: NOW });
     expect(summary.silencesFlagged).toBe(0);

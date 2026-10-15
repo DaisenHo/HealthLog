@@ -5315,7 +5315,8 @@
       "unavailableTitle": "Indisponible dans ce dossier partagé",
       "unavailableDescription": "Cette section des réglages est volontairement indisponible lorsque vous consultez le dossier d’une autre personne.",
       "integrationStatusDescription": "État de connexion pour ce dossier géré.",
-      "integrationStatusDetail": "Les commandes de connexion ne sont pas disponibles."
+      "integrationStatusDetail": "Un profil géré affiche ses services connectés uniquement sous forme d’état. Les personnes qui le gèrent ne peuvent ni connecter, ni reconnecter, ni synchroniser, ni déconnecter.",
+      "integrationStatusDocs": "Comment fonctionne le partage"
     },
     "sections": {
       "account": {
@@ -6391,7 +6392,6 @@
     "whoopDisconnectDescription": "La connexion à WHOOP sera déconnectée. Les données déjà synchronisées seront conservées.",
     "whoopConnect": "Se connecter avec WHOOP",
     "whoopNoCredentials": "Veuillez saisir vos identifiants API ci-dessus pour connecter WHOOP.",
-    "whoopBackfillInProgress": "Importation de votre historique WHOOP en arrière-plan…",
     "whoopOauthConnected": "WHOOP connecté. La première synchronisation démarre en arrière-plan.",
     "whoopOauthFailed": "Échec de la connexion à WHOOP",
     "whoopOauthError": {
@@ -6427,7 +6427,6 @@
     "fitbitDisconnectDescription": "La connexion à Fitbit sera déconnectée. Les données déjà synchronisées seront conservées.",
     "fitbitConnect": "Se connecter à Fitbit",
     "fitbitNoCredentials": "Veuillez saisir vos identifiants d'API ci-dessus pour connecter Fitbit.",
-    "fitbitBackfillInProgress": "Importation de votre historique Fitbit en arrière-plan…",
     "fitbitOauthConnected": "Fitbit connecté. La première synchronisation démarre en arrière-plan.",
     "fitbitOauthFailed": "Échec de la connexion à Fitbit",
     "googleHealth": "Google Health",
@@ -6472,9 +6471,6 @@
     "googleHealthDisconnectDescription": "La connexion à Google Health sera déconnectée. Les données déjà synchronisées seront conservées.",
     "googleHealthConnect": "Se connecter avec Google",
     "googleHealthNoCredentials": "Saisis tes identifiants d'API ci-dessus pour connecter Google Health.",
-    "googleHealthBackfillInProgress": "Importation de ton historique Google Health en arrière-plan…",
-    "googleHealthReauthBanner": "Google a expiré la connexion. Cela arrive régulièrement tant que ton application OAuth reste en mode Test. Reconnecte-toi pour reprendre la synchronisation.",
-    "googleHealthReconnect": "Se reconnecter",
     "googleHealthOauthConnected": "Google Health connecté. La première synchronisation démarre en arrière-plan.",
     "googleHealthOauthFailed": "Échec de la connexion à Google Health",
     "googleHealthOauthError": {
@@ -6499,16 +6495,7 @@
     },
     "integrations": {
       "withings": {
-        "reconnect": {
-          "banner": {
-            "title": "Synchronisation d’activité disponible",
-            "body": "Votre connexion Withings a été autorisée avant l’ajout de la synchronisation d’activité. Reconnectez-vous une fois pour activer l’import des pas, de l’énergie active, de la distance à pied et en course, et des étages gravis depuis vos appareils Withings.",
-            "action": "Reconnecter Withings"
-          }
-        },
         "plan": {
-          "title": "Certaines mesures nécessitent l’offre API payante de Withings",
-          "body": "Withings ne propose désormais {list} que dans son offre API payante, et votre application développeur Withings utilise l’offre gratuite. Le poids, la tension artérielle, la composition corporelle, la fréquence cardiaque et le sommeil continuent d’être synchronisés.",
           "link": "En savoir plus sur les offres API de Withings",
           "items": {
             "spo2": "la SpO2",
@@ -6538,10 +6525,7 @@
       },
       "oura": {
         "scope": {
-          "body": "Reconnectez Oura une fois pour autoriser {list}. Tout le reste continue d’être synchronisé.",
-          "action": "Reconnecter Oura",
           "items": {
-            "spo2": "la SpO2",
             "vo2max": "la VO2 max",
             "cardio_age": "l’âge cardiovasculaire",
             "resilience": "la résilience"
@@ -6560,7 +6544,6 @@
       "minutesAgo": "il y a {count} min",
       "hoursAgo": "il y a {count} h",
       "daysAgo": "il y a {count} j",
-      "resumeCta": "Reconnecter",
       "resumeSuccess": "Intégration reprise",
       "resumeError": "Échec de la reconnexion",
       "stale": "Connecté, aucune donnée récente",
@@ -6574,9 +6557,7 @@
       "workouts": "Séances"
     },
     "integrationFallback": {
-      "description": "Configuré sur ce compte sans carte de réglages dédiée.",
-      "lastAttempt": "Dernière tentative {relative}",
-      "noAttempt": "Aucune tentative de synchronisation enregistrée"
+      "description": "Configuré sur ce compte sans carte de réglages dédiée."
     },
     "withingsViewData": "Voir vos mesures",
     "whoopViewData": "Voir votre récupération",
@@ -7124,7 +7105,6 @@
       "backgroundStep": "Laisse l’actualisation en arrière-plan activée. L’app synchronise automatiquement les nouvelles données au premier plan et lorsque iOS lui accorde du temps en arrière-plan.",
       "importNote": "Besoin d’un ancien historique ou impossible d’utiliser l’app iOS ? L’envoi XML/ZIP Apple Health est une solution ponctuelle et n’active pas la synchronisation en direct.",
       "importAction": "Ouvrir l’import ponctuel",
-      "staleNote": "Aucune donnée Apple Health n'est arrivée depuis plus d'une semaine. Ouvrez l'app HealthLog sur votre iPhone et vérifiez les autorisations Apple Health.",
       "progress": {
         "title": "Progression de la synchronisation",
         "receivedLabel": "Enregistrements reçus",
@@ -7217,6 +7197,73 @@
     "displayCard": {
       "title": "Affichage",
       "description": "Langue, unités et formats, enregistrés dès que vous les modifiez."
+    },
+    "integrationCard": {
+      "state": {
+        "ok": "Fonctionne",
+        "limited": "Limitée",
+        "degraded": "Retardée",
+        "actionRequired": "Action requise"
+      },
+      "reason": {
+        "dataArriving": "Les données arrivent.",
+        "dataArrivingHistory": "Les données arrivent. L’historique plus ancien se charge en arrière-plan.",
+        "firstSyncPending": "Connecté. La première synchronisation aura lieu sous peu.",
+        "planLimited": "Les données arrivent. Votre forfait {provider} n’inclut pas {list}.",
+        "permissionLimited": "Les données arrivent. L’autorisation manque pour {list}.",
+        "providerErrors": "{provider} ne répond plus de façon fiable depuis {since}. HealthLog continue d’essayer, vous n’avez rien à faire.",
+        "providerErrorsNoSince": "{provider} ne répond pas de façon fiable en ce moment. HealthLog continue d’essayer, vous n’avez rien à faire.",
+        "syncStalled": "HealthLog n’a plus synchronisé depuis {since}. Le problème vient du serveur, pas de votre appareil.",
+        "syncStalledNoSince": "HealthLog ne synchronise pas en ce moment. Le problème vient du serveur, pas de votre appareil.",
+        "noNewData": "Aucune nouvelle donnée depuis {since}.",
+        "noNewDataNoSince": "Aucune nouvelle donnée depuis un moment.",
+        "noNewDataApple": "Aucune nouvelle donnée depuis {since}. Ouvrez HealthLog une fois sur votre iPhone.",
+        "noNewDataAppleNoSince": "Aucune nouvelle donnée depuis un moment. Ouvrez HealthLog une fois sur votre iPhone.",
+        "unexpectedSilence": "Rien n’est arrivé depuis {since}, alors que {provider} envoie d’habitude des données chaque jour.",
+        "unexpectedSilenceNoSince": "Rien n’arrive, alors que {provider} envoie d’habitude des données chaque jour.",
+        "reauthRequired": "La connexion à {provider} a expiré. Reconnectez-vous pour continuer à recevoir des données.",
+        "pausedAfterErrors": "{provider} est en pause, car il n’y a eu que des erreurs depuis {since}.",
+        "pausedAfterErrorsNoSince": "{provider} est en pause, car il n’y a eu que des erreurs récemment."
+      },
+      "when": {
+        "today": "aujourd’hui, {time}",
+        "yesterday": "hier, {time}",
+        "date": "{date}, {time}"
+      },
+      "items": {
+        "activity": "l’activité",
+        "sleep": "le sommeil"
+      },
+      "moreValuesOne": "{count} autre valeur",
+      "moreValuesFew": "{count} autres valeurs",
+      "moreValuesOther": "{count} autres valeurs",
+      "notConnected": "Non connecté.",
+      "lastData": "Dernières données : {when}",
+      "lastDataNone": "Dernières données : aucune pour l’instant",
+      "reconnect": "Reconnecter",
+      "resume": "Reprendre",
+      "menuLabel": "Plus d’actions pour {provider}",
+      "menu": {
+        "credentials": "Modifier les identifiants",
+        "address": "Modifier l’adresse et le jeton"
+      },
+      "syncing": "Synchronisation en cours…",
+      "details": {
+        "title": "Détails pour un rapport de bug",
+        "none": "aucune",
+        "state": "État",
+        "since": "depuis",
+        "lastSync": "Dernière synchronisation",
+        "lastData": "Dernières données",
+        "failingParts": "parties en échec",
+        "recentCalls": "Derniers appels",
+        "unavailable": "Non disponible",
+        "unavailableList": "Non disponible : {list}",
+        "causePlan": "forfait",
+        "causePermission": "autorisation",
+        "failureStreak": "Série d’échecs : {count} sur {threshold}",
+        "copyFailed": "La copie a échoué. Sélectionnez le texte et copiez-le à la main."
+      }
     }
   },
   "admin": {

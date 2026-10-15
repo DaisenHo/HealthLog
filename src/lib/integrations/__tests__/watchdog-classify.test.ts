@@ -47,7 +47,8 @@ const openRow = (overrides: Partial<WatchRow> = {}): WatchRow => ({
 });
 
 describe("classifySilence", () => {
-  const oura = SOURCE_PROFILES.oura;
+  // A wearable whose cloud receives data on its own: the 24 h window.
+  const wearable = SOURCE_PROFILES.fitbit;
   const withings = SOURCE_PROFILES.withings;
 
   it("never flags an on-demand source for silence, however long and however regular", () => {
@@ -67,7 +68,7 @@ describe("classifySilence", () => {
   it("is clear while a continuous source delivers inside its window", () => {
     expect(
       classifySilence({
-        profile: oura,
+        profile: wearable,
         lastDataAt: ago(20),
         deliveredDays: null,
         currentSilentSince: null,
@@ -79,7 +80,7 @@ describe("classifySilence", () => {
   it("asks for the history before flagging (the cheap hourly pass reads it lazily)", () => {
     expect(
       classifySilence({
-        profile: oura,
+        profile: wearable,
         lastDataAt: ago(30),
         deliveredDays: null,
         currentSilentSince: null,
@@ -91,7 +92,7 @@ describe("classifySilence", () => {
   it("flags a silent source that delivered on most of the previous 14 days", () => {
     expect(
       classifySilence({
-        profile: oura,
+        profile: wearable,
         lastDataAt: ago(30),
         deliveredDays: NORMAL_DELIVERY_MIN_DAYS,
         currentSilentSince: null,
@@ -103,7 +104,7 @@ describe("classifySilence", () => {
   it("does not flag a source its owner wears only now and then", () => {
     expect(
       classifySilence({
-        profile: oura,
+        profile: wearable,
         lastDataAt: ago(30),
         deliveredDays: NORMAL_DELIVERY_MIN_DAYS - 1,
         currentSilentSince: null,
@@ -115,7 +116,7 @@ describe("classifySilence", () => {
   it("keeps a standing flag on the hourly pass without re-reading history", () => {
     expect(
       classifySilence({
-        profile: oura,
+        profile: wearable,
         lastDataAt: ago(50),
         deliveredDays: null,
         currentSilentSince: ago(50),
@@ -127,7 +128,7 @@ describe("classifySilence", () => {
   it("drops a standing flag on the daily re-check once the history no longer says it delivers", () => {
     expect(
       classifySilence({
-        profile: oura,
+        profile: wearable,
         lastDataAt: ago(24 * 6),
         deliveredDays: 8,
         currentSilentSince: ago(24 * 6),
@@ -136,7 +137,55 @@ describe("classifySilence", () => {
     ).toEqual({ kind: "not_expected" });
   });
 
+  it("waits 48 h for Oura and WHOOP, which upload only when their phone app is opened", () => {
+    for (const key of ["oura", "whoop"] as const) {
+      const profile = SOURCE_PROFILES[key];
+      expect(profile.kind).toBe("continuous");
+      // A day and a half without opening the app is ordinary.
+      expect(
+        classifySilence({
+          profile,
+          lastDataAt: ago(36),
+          deliveredDays: 14,
+          currentSilentSince: null,
+          now: NOW,
+        }),
+      ).toEqual({ kind: "clear" });
+      // Past two days it is not.
+      expect(
+        classifySilence({
+          profile,
+          lastDataAt: ago(49),
+          deliveredDays: 14,
+          currentSilentSince: null,
+          now: NOW,
+        }),
+      ).toEqual({ kind: "flag", silentSince: ago(49) });
+    }
+  });
+
+  it("keeps the 24 h window for wearables whose cloud receives data on its own", () => {
+    for (const key of [
+      "fitbit",
+      "google-health",
+      "polar",
+      "nightscout",
+    ] as const) {
+      expect(SOURCE_PROFILES[key]).toEqual({
+        kind: "continuous",
+        silenceWindowMs: 24 * HOUR,
+      });
+    }
+  });
+
+  it("never alerts on silence for scales, cuffs and workout logs", () => {
+    for (const key of ["withings", "strava"] as const) {
+      expect(SOURCE_PROFILES[key].kind).toBe("on_demand");
+    }
+  });
+
   it("gives Apple Health a wider window than a wearable", () => {
+    expect(SOURCE_PROFILES["apple-health"].silenceWindowMs).toBe(48 * HOUR);
     const apple = SOURCE_PROFILES["apple-health"];
     expect(
       classifySilence({

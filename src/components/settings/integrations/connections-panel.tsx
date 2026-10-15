@@ -17,23 +17,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
-import { FitbitCard } from "@/components/settings/integrations/fitbit-card";
 import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
 import { IntegrationFallbackRow } from "@/components/settings/integrations/integration-fallback-row";
 import { NightscoutCard } from "@/components/settings/integrations/nightscout-card";
-import type { OAuthProviderStatus } from "@/components/settings/integrations/oauth-provider-card";
-import { OuraCard } from "@/components/settings/integrations/oura-card";
-import { PolarCard } from "@/components/settings/integrations/polar-card";
-import { StravaCard } from "@/components/settings/integrations/strava-card";
+import {
+  OAUTH_INTEGRATIONS,
+  OAuthIntegrationCard,
+} from "@/components/settings/integrations/oauth-integration-card";
 import {
   pickStatus,
   useIntegrationStatuses,
   type IntegrationKey,
-  type IntegrationStatusViewModel,
 } from "@/components/settings/integrations/shared";
-import { WhoopCard } from "@/components/settings/integrations/whoop-card";
-import { WithingsCard } from "@/components/settings/integrations/withings-card";
+import { Badge } from "@/components/ui/badge";
+import { TagChip } from "@/components/ui/tag-chip";
 import { useAuth } from "@/hooks/use-auth";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
 import { useTranslations } from "@/lib/i18n/context";
@@ -180,32 +178,6 @@ export function oauthReasonKey(
 }
 
 /**
- * Adapt the consolidated-envelope view-model into the OAuth card's status
- * shape. Returns `undefined` when the envelope hasn't loaded so the card
- * renders its loading/disconnected default rather than a half-populated state.
- */
-function toOAuthStatus(
-  vm: IntegrationStatusViewModel | undefined,
-): OAuthProviderStatus | undefined {
-  if (!vm) return undefined;
-  return {
-    connected: vm.connected ?? false,
-    configured: vm.configured ?? false,
-    available: vm.available ?? false,
-    hasOwnCredentials: vm.hasOwnCredentials,
-    state: vm.state,
-    lastSuccessAt: vm.lastSuccessAt,
-    lastAttemptAt: vm.lastAttemptAt,
-    lastError: vm.lastError,
-    legacyLastSyncedAt: vm.legacyLastSyncedAt,
-    consecutiveFailuresByKind: vm.consecutiveFailuresByKind,
-    failureThreshold: vm.failureThreshold,
-    syncHealth: vm.syncHealth,
-    metricFreshness: vm.metricFreshness,
-  };
-}
-
-/**
  * The keys a bespoke card on this panel renders. Every OTHER configured
  * envelope entry falls through to `IntegrationFallbackRow` — the panel's unit
  * of coverage is the envelope entry, not the card, so a provider can never
@@ -320,21 +292,6 @@ export function ConnectionsPanel({
     }
   }, [oauthOutcome, router, queryClient, t]);
 
-  const withingsViewModel = pickStatus(integrationStatus, "withings");
-  const whoopViewModel = pickStatus(integrationStatus, "whoop");
-  const fitbitViewModel = pickStatus(integrationStatus, "fitbit");
-  // v1.27.0 — Google Health reads off the same consolidated envelope; the
-  // ledger integration key is the hyphenated `google-health`.
-  const googleHealthViewModel = pickStatus(integrationStatus, "google-health");
-  // v1.17.1 — Polar/Oura now read off the same consolidated envelope; the cards
-  // no longer fire their own /api/<provider>/status round-trip.
-  const polarViewModel = toOAuthStatus(pickStatus(integrationStatus, "polar"));
-  const ouraViewModel = toOAuthStatus(pickStatus(integrationStatus, "oura"));
-  // v1.28.x — Strava reads off the same consolidated envelope.
-  const stravaViewModel = toOAuthStatus(
-    pickStatus(integrationStatus, "strava"),
-  );
-  const nightscoutViewModel = pickStatus(integrationStatus, "nightscout");
   const unclaimedIntegrations = (integrationStatus?.integrations ?? [])
     .filter(
       (entry) =>
@@ -351,26 +308,41 @@ export function ConnectionsPanel({
       {/* Per-provider anchors so deep-links (onboarding "more sources" chips,
           `/settings/integrations#oura`) scroll straight to the right card. */}
       <div id="withings" className="scroll-mt-28">
-        <WithingsCard
-          viewModel={withingsViewModel}
+        <OAuthIntegrationCard
+          config={OAUTH_INTEGRATIONS.withings}
+          viewModel={pickStatus(integrationStatus, "withings")}
           callbackUrl={callbackUrls.withings}
         />
       </div>
       <div id="whoop" className="scroll-mt-28">
-        <WhoopCard
-          viewModel={whoopViewModel}
+        <OAuthIntegrationCard
+          config={OAUTH_INTEGRATIONS.whoop}
+          viewModel={pickStatus(integrationStatus, "whoop")}
           callbackUrl={callbackUrls.whoop}
         />
       </div>
       <div id="fitbit" className="scroll-mt-28">
-        <FitbitCard
-          viewModel={fitbitViewModel}
+        <OAuthIntegrationCard
+          config={OAUTH_INTEGRATIONS.fitbit}
+          viewModel={pickStatus(integrationStatus, "fitbit")}
           callbackUrl={callbackUrls.fitbit}
+          titleAccessory={
+            <>
+              <TagChip>{t("settings.fitbitTag")}</TagChip>
+              <Badge
+                variant="outline"
+                data-testid="fitbit-experimental-badge"
+                className="border-warning/50 text-warning"
+              >
+                {t("settings.fitbitExperimentalBadge")}
+              </Badge>
+            </>
+          }
         />
       </div>
       <div id="google-health" className="scroll-mt-28">
         <GoogleHealthCard
-          viewModel={googleHealthViewModel}
+          viewModel={pickStatus(integrationStatus, "google-health")}
           callbackUrl={callbackUrls["google-health"]}
         />
       </div>
@@ -378,22 +350,30 @@ export function ConnectionsPanel({
         <AppleHealthCard enabled={isAuthenticated} />
       </div>
       <div id="polar" className="scroll-mt-28">
-        <PolarCard
-          viewModel={polarViewModel}
+        <OAuthIntegrationCard
+          config={OAUTH_INTEGRATIONS.polar}
+          viewModel={pickStatus(integrationStatus, "polar")}
           callbackUrl={callbackUrls.polar}
         />
       </div>
       <div id="oura" className="scroll-mt-28">
-        <OuraCard viewModel={ouraViewModel} callbackUrl={callbackUrls.oura} />
+        <OAuthIntegrationCard
+          config={OAUTH_INTEGRATIONS.oura}
+          viewModel={pickStatus(integrationStatus, "oura")}
+          callbackUrl={callbackUrls.oura}
+        />
       </div>
       <div id="strava" className="scroll-mt-28">
-        <StravaCard
-          viewModel={stravaViewModel}
+        <OAuthIntegrationCard
+          config={OAUTH_INTEGRATIONS.strava}
+          viewModel={pickStatus(integrationStatus, "strava")}
           callbackUrl={callbackUrls.strava}
         />
       </div>
       <div id="nightscout" className="scroll-mt-28">
-        <NightscoutCard viewModel={nightscoutViewModel} />
+        <NightscoutCard
+          viewModel={pickStatus(integrationStatus, "nightscout")}
+        />
       </div>
       {/* Every configured envelope entry no card above claims. Normally this
           renders nothing; on an account carrying a dropped-but-still-running

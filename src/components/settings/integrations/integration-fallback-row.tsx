@@ -20,21 +20,10 @@
 
 import { Plug } from "lucide-react";
 
-import { SettingsCard } from "@/components/settings/settings-card";
-import { SettingsCardHeader } from "@/components/settings/_card-header";
-import {
-  formatRelative,
-  IntegrationStatusPill,
-} from "@/components/settings/integration-status-pill";
 import { useTranslations } from "@/lib/i18n/context";
 
-import {
-  pillFailurePropsFor,
-  pillStateFor,
-  pillTimestampFor,
-  type IntegrationKey,
-  type IntegrationStatusViewModel,
-} from "./shared";
+import { IntegrationCard } from "./integration-card";
+import type { IntegrationKey, IntegrationStatusViewModel } from "./shared";
 
 /**
  * Display names, mirroring the server-side `INTEGRATION_LABELS`. Only the
@@ -52,50 +41,28 @@ export const INTEGRATION_DISPLAY_NAMES: Record<IntegrationKey, string> = {
   strava: "Strava",
 };
 
+/**
+ * The same card every integration renders, read-only: the server's health,
+ * its sentence and its details, and no menu, because a dropped integration
+ * does not get its management surface back.
+ */
 export function IntegrationFallbackRow({
   status,
-  now,
 }: {
   status: IntegrationStatusViewModel;
-  /** Override "now" for deterministic testing. */
-  now?: Date;
 }) {
   const { t } = useTranslations();
-
-  const pillState = pillStateFor(status);
-  const reference = now ?? new Date();
-  const lastAttemptAt =
-    status.lastAttemptAt ?? status.syncHealth?.since ?? null;
-  const meta = lastAttemptAt
-    ? t("settings.integrationFallback.lastAttempt", {
-        relative: formatRelative(
-          Math.max(0, reference.getTime() - new Date(lastAttemptAt).getTime()),
-          t,
-        ),
-      })
-    : t("settings.integrationFallback.noAttempt");
-
+  const name =
+    INTEGRATION_DISPLAY_NAMES[status.integration] ?? status.integration;
   return (
-    <SettingsCard
-      data-testid="integration-fallback-row"
-      data-integration={status.integration}
-    >
-      <SettingsCardHeader
-        icon={Plug}
-        title={
-          INTEGRATION_DISPLAY_NAMES[status.integration] ?? status.integration
-        }
-        description={t("settings.integrationFallback.description")}
-        status={
-          <IntegrationStatusPill
-            state={pillState}
-            lastSyncAt={pillTimestampFor(status)}
-            {...pillFailurePropsFor(status)}
-            now={now}
-          />
-        }
-      />
-      <p className="text-muted-foreground text-xs">{meta}</p>
-    </SettingsCard>
+    <IntegrationCard
+      provider={status.integration}
+      providerName={name}
+      icon={Plug}
+      description={t("settings.integrationFallback.description")}
+      connected={(status.connected ?? status.configured) === true}
+      health={status.health ?? null}
+      testId="integration-fallback-row"
+    />
   );
 }

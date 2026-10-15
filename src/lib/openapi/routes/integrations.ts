@@ -105,7 +105,7 @@ const syncHealth = z
 
 // Mirrors `ConnectionHealth` in `src/lib/integrations/connection-health.ts`:
 // the one server-resolved state per connection every client renders.
-const connectionHealth = z
+export const connectionHealth = z
   .object({
     state: z
       .enum(CONNECTION_HEALTH_STATES)

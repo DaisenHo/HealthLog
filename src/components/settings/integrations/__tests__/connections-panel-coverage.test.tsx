@@ -49,6 +49,7 @@ vi.mock("@tanstack/react-query", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { ConnectionsPanel } from "../connections-panel";
 import { INTEGRATION_DISPLAY_NAMES } from "../integration-fallback-row";
+import { healthFixture } from "./health-fixture";
 
 const MONTH_AGO = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -64,14 +65,16 @@ const CARD_LESS_KEY = "example-provider";
 function entry(integration: string) {
   return {
     integration,
-    state: "error_transient",
-    lastSuccessAt: MONTH_AGO,
-    lastAttemptAt: MONTH_AGO,
     lastError: null,
     configured: true,
     connected: true,
     available: true,
-    syncHealth: { verdict: "stalled", since: MONTH_AGO },
+    health: healthFixture({
+      state: "degraded",
+      reason: "sync_stalled",
+      since: MONTH_AGO,
+      lastDataAt: MONTH_AGO,
+    }),
     metricFreshness: [],
   };
 }
@@ -117,7 +120,7 @@ describe("ConnectionsPanel — every envelope entry surfaces", () => {
     }
   });
 
-  it("gives a card-less provider a fallback row with the stalled pill", () => {
+  it("gives a card-less provider the shared card, read-only, with its server state", () => {
     // The shape the mechanism exists for. With no display name registered the
     // row falls back to the raw key, which is still an honest surface — far
     // better than the provider rendering nowhere at all.
@@ -130,9 +133,15 @@ describe("ConnectionsPanel — every envelope entry surfaces", () => {
     expect(html).toContain('data-testid="integration-fallback-row"');
     expect(html).toContain(`data-integration="${CARD_LESS_KEY}"`);
     expect(html).toContain(CARD_LESS_KEY);
-    expect(html).toContain('data-state="stalled"');
-    expect(html).toContain("Sync stopped");
-    expect(html).toContain("Last attempt");
+    const row = html.slice(
+      html.indexOf('data-testid="integration-fallback-row"'),
+    );
+    expect(row).toMatch(
+      /data-slot="integration-health-badge"[^>]*data-state="degraded"/,
+    );
+    expect(row).toContain("HealthLog has not synced since");
+    // Read-only: no menu and no button for a dropped integration.
+    expect(html).not.toContain(`data-testid="${CARD_LESS_KEY}-menu"`);
   });
 
   it("renders no fallback row when every entry is card-backed", () => {
@@ -149,12 +158,9 @@ describe("ConnectionsPanel — every envelope entry surfaces", () => {
       integrations: [
         {
           ...entry(CARD_LESS_KEY),
-          state: "disconnected",
-          lastSuccessAt: null,
-          lastAttemptAt: null,
           configured: false,
           connected: false,
-          syncHealth: { verdict: "disconnected", since: null },
+          health: null,
         },
       ],
     };

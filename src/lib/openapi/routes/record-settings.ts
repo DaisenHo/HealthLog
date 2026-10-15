@@ -25,6 +25,7 @@ import { z } from "zod/v4";
 
 import { METRIC_BOUNDS } from "@/lib/analytics/effective-range";
 import { MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS } from "@/lib/record-settings";
+import { connectionHealth } from "./integrations";
 import {
   dataEnvelope,
   errorEnvelope,
@@ -96,6 +97,11 @@ const recordSettingsIntegrationsResponse = z
           ]),
           lastSuccessAt: z.iso.datetime({ offset: true }).nullable(),
           lastAttemptAt: z.iso.datetime({ offset: true }).nullable(),
+          health: connectionHealth
+            .nullable()
+            .describe(
+              "The same server-resolved connection state the owner's own envelope carries, null while the provider is not connected. The web renders this; `state` stays for one transition release.",
+            ),
         }),
       )
       .describe(
@@ -105,7 +111,7 @@ const recordSettingsIntegrationsResponse = z
   .meta({
     id: "RecordSettingsIntegrationsResponse",
     description:
-      "Whether the managed record's integrations are connected, and nothing else. Deliberately no control and no credential projection — OAuth and provider state cannot safely carry a record selector, so a Guardian can see that a pipe exists but cannot connect, disconnect, probe or resume it from here. A provider with no real credential reads `disconnected` even when its ledger row says otherwise, because a synthesised healthy ledger is not proof of a connection.",
+      "Whether the managed record's integrations are connected and how each is doing (`health`), and nothing else. Deliberately no control and no credential projection — OAuth and provider state cannot safely carry a record selector, so a Guardian can see that a pipe exists but cannot connect, disconnect, probe or resume it from here. A provider with no real credential reads `disconnected` even when its ledger row says otherwise, because a synthesised healthy ledger is not proof of a connection.",
   });
 
 // ── The six family DTOs ──────────────────────────────────────────────
@@ -353,7 +359,7 @@ export const recordSettingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Read the managed record's integration connection states",
       description:
-        "Disclosure only: whether each of the record's integrations is connected and when it last succeeded. There is deliberately no control arm and no credential projection anywhere under this path — a Guardian cannot connect, disconnect, probe or resume a managed record's provider, because an OAuth flow cannot safely carry a record selector. Cookie session or Bearer, while acting on a managed record the caller guards.",
+        "Disclosure only: whether each of the record's integrations is connected, when it last succeeded, and its server-resolved health. There is deliberately no control arm and no credential projection anywhere under this path — a Guardian cannot connect, disconnect, probe or resume a managed record's provider, because an OAuth flow cannot safely carry a record selector. Cookie session or Bearer, while acting on a managed record the caller guards.",
       responses: {
         ...recordRefusal(),
         "200": {

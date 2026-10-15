@@ -126,12 +126,10 @@ const NO_REFETCH_ALLOWLIST = [
   // Background integration-sync completion on the Settings surface — the user
   // is configuring an integration, not acting on the hero; convergence via the
   // daily reads' own poll/focus refetch is the intended behaviour.
-  "components/settings/integrations/fitbit-card.tsx",
   "components/settings/integrations/google-health-card.tsx",
+  "components/settings/integrations/integration-actions.tsx",
   "components/settings/integrations/nightscout-card.tsx",
-  "components/settings/integrations/oauth-provider-card.tsx",
-  "components/settings/integrations/whoop-card.tsx",
-  "components/settings/integrations/withings-card.tsx",
+  "components/settings/integrations/oauth-integration-card.tsx",
   // Cycle writes: `cycleDependentKeys` carries no daily-read key and neither
   // the dashboard snapshot nor the Today digest reads cycle rows today, so
   // the forced refetch would be a no-op round-trip. The bundle is in the

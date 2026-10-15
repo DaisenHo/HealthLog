@@ -50,20 +50,29 @@ export const INCIDENT_AFTER_MS = DAY_MS;
 
 /**
  * Per connection. Withings is mostly scales and cuffs, Strava is workouts:
- * both are on-demand. Everything worn or attached around the clock is
- * continuous.
+ * both are on-demand and never alert on silence, only on errors. Everything
+ * worn or attached around the clock is continuous.
  *
- * Apple Health gets 48 h instead of 24 h. iOS defers background delivery when
- * the phone is low on storage, in low-power mode or simply not unlocked, and a
- * day of that is ordinary; the history gate already limits the check to
- * phones that deliver almost daily, and the longer window keeps an ordinary
- * quiet day from paging anyone.
+ * The window is how long a continuous source may stay quiet before silence
+ * counts, and it follows how each source actually delivers:
+ *
+ *   - 24 h for wearables and CGMs whose cloud receives data on its own
+ *     (Fitbit, Google Health, Polar, Nightscout).
+ *   - 48 h for Oura and WHOOP. Their rings and straps upload only when the
+ *     phone app is opened, so a day without opening it is ordinary and must
+ *     not page anyone.
+ *   - 48 h for Apple Health. iOS defers background delivery when the phone is
+ *     low on storage, in low-power mode or simply not unlocked, and a day of
+ *     that is ordinary too.
+ *
+ * The history gate already limits the check to sources that deliver almost
+ * daily; the window only decides how long a gap is ordinary.
  */
 export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
   withings: { kind: "on_demand", silenceWindowMs: DAY_MS },
   strava: { kind: "on_demand", silenceWindowMs: DAY_MS },
-  whoop: { kind: "continuous", silenceWindowMs: DAY_MS },
-  oura: { kind: "continuous", silenceWindowMs: DAY_MS },
+  whoop: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
+  oura: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
   fitbit: { kind: "continuous", silenceWindowMs: DAY_MS },
   "google-health": { kind: "continuous", silenceWindowMs: DAY_MS },
   polar: { kind: "continuous", silenceWindowMs: DAY_MS },

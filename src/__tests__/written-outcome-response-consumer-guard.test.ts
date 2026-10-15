@@ -644,7 +644,7 @@ const SYNC_ROUTES: readonly SyncRouteSpec[] = [
     id: "fitbit",
     path: join(ROOT, "src/app/api/fitbit/sync/route.ts"),
     responseClass: "resolved-with-full-sync-echo",
-    card: join(SYNC_CARD_ROOT, "fitbit-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: { fullSync: FULL_SYNC_EXCEPTION },
   },
   {
@@ -663,42 +663,42 @@ const SYNC_ROUTES: readonly SyncRouteSpec[] = [
     id: "nightscout",
     path: join(ROOT, "src/app/api/nightscout/sync/route.ts"),
     responseClass: "resolved",
-    card: join(SYNC_CARD_ROOT, "nightscout-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: {},
   },
   {
     id: "oura",
     path: join(ROOT, "src/app/api/oura/sync/route.ts"),
     responseClass: "resolved",
-    card: join(SYNC_CARD_ROOT, "oauth-provider-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: {},
   },
   {
     id: "polar",
     path: join(ROOT, "src/app/api/polar/sync/route.ts"),
     responseClass: "resolved",
-    card: join(SYNC_CARD_ROOT, "oauth-provider-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: {},
   },
   {
     id: "strava",
     path: join(ROOT, "src/app/api/strava/sync/route.ts"),
     responseClass: "resolved",
-    card: join(SYNC_CARD_ROOT, "oauth-provider-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: {},
   },
   {
     id: "whoop",
     path: join(ROOT, "src/app/api/whoop/sync/route.ts"),
     responseClass: "resolved-with-full-sync-echo",
-    card: join(SYNC_CARD_ROOT, "whoop-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: { fullSync: FULL_SYNC_EXCEPTION },
   },
   {
     id: "withings",
     path: join(ROOT, "src/app/api/withings/sync/route.ts"),
     responseClass: "resolved-with-full-sync-echo",
-    card: join(SYNC_CARD_ROOT, "withings-card.tsx"),
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
     exceptions: { fullSync: FULL_SYNC_EXCEPTION },
   },
 ] as const;
@@ -908,7 +908,7 @@ function assertSyncCardConsumesFetchedResponse(
     return;
   }
   const endpoint = responseInitializer.arguments[0];
-  const expectedEndpoint = path.endsWith("oauth-provider-card.tsx")
+  const expectedEndpoint = path.endsWith("integration-actions.tsx")
     ? "`/api/${provider}/sync`"
     : `"/api/${routeId}/sync"`;
   expect(

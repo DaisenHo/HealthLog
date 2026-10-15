@@ -9,6 +9,7 @@ import {
   getIntegrationStatus,
   type IntegrationKey,
 } from "@/lib/integrations/status";
+import { loadConnectionHealth } from "@/lib/integrations/connection-health-load";
 import { annotate } from "@/lib/logging/context";
 import {
   resolveGuardianRecordSettingsAccess,
@@ -70,6 +71,13 @@ export const GET = apiHandler(async () => {
     oura: context.user.ouraAccessTokenEncrypted !== null,
     strava: context.user.stravaAccessTokenEncrypted !== null,
   };
+  // The one server-resolved state per connection, from the same loader the
+  // owner's own envelope uses, so a guardian reads the record's connections in
+  // the words the record's owner would.
+  const health = await loadConnectionHealth(
+    access.recordId,
+    MANAGED_INTEGRATIONS,
+  );
   const integrations = statuses.map((status) => ({
     integration: status.integration,
     state: resolveManagedIntegrationState(
@@ -79,6 +87,7 @@ export const GET = apiHandler(async () => {
     ),
     lastSuccessAt: status.lastSuccessAt,
     lastAttemptAt: status.lastAttemptAt,
+    health: health[status.integration],
   }));
 
   annotate({ action: { name: "record-settings.integrations.get" } });
