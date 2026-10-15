@@ -43,10 +43,3 @@ export type MedicationIngredientsPutInput = z.infer<
 
 /** Label photo upload limits for `POST /api/medications/{id}/ingredients/extract`. */
 export const SUPPLEMENT_LABEL_MAX_BYTES = 10 * 1024 * 1024;
-export const SUPPLEMENT_LABEL_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/heic",
-  "image/webp",
-  "application/pdf",
-] as const;

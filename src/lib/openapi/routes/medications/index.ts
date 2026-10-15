@@ -9,7 +9,6 @@ export {
 } from "./schemas";
 export { medicationPaths } from "./paths";
 export {
-  medicationIngredient,
   medicationIngredientPaths,
   supplementLabelExtractResult,
 } from "./ingredients";

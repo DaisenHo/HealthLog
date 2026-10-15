@@ -12,8 +12,6 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
 
-export type AliasSource = "MERGE" | "IMPORT_CHOICE" | "MANUAL";
-
 type AliasClient = Pick<PrismaClient, "biomarkerAlias" | "biomarker">;
 type AliasTx = Prisma.TransactionClient;
 

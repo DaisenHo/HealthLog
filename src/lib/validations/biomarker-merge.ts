@@ -36,10 +36,3 @@ export const BIOMARKER_MERGE_REFUSALS = [
   "unknown_unit",
   "not_finite",
 ] as const;
-
-/** Where an alias came from (`biomarker_aliases.source`). */
-export const BIOMARKER_ALIAS_SOURCES = [
-  "MERGE",
-  "IMPORT_CHOICE",
-  "MANUAL",
-] as const;
