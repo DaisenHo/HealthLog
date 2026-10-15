@@ -68,11 +68,16 @@ import {
 /** The app version the build stamped; empty in a dev build. */
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "";
 
+/**
+ * The three calm states take the status token on a light wash. "Action
+ * needed" is the solid destructive badge: red text on a red wash falls below
+ * AA in both themes, and this is the one state that should stand out anyway.
+ */
 const BADGE_TONE: Record<ConnectionHealthState, string> = {
   ok: "border-success/30 bg-success/15 text-success",
   limited: "border-info/30 bg-info/15 text-info",
   degraded: "border-warning/30 bg-warning/15 text-warning",
-  action_required: "border-destructive/30 bg-destructive/15 text-destructive",
+  action_required: "",
 };
 
 /** The status badge: a dot and one word. The word is the accessible name. */
@@ -82,7 +87,7 @@ export function HealthBadge({ state }: { state: ConnectionHealthState }) {
     <Badge
       data-slot="integration-health-badge"
       data-state={state}
-      variant="outline"
+      variant={state === "action_required" ? "destructive" : "outline"}
       className={cn("gap-1.5", BADGE_TONE[state])}
     >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
