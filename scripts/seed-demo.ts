@@ -24,7 +24,10 @@
  * - ~3-4 workouts/week (running, strength, cycling) with per-workout HR
  *   samples and per-workout strain
  * - 3 medications with schedules and ~90 days of intake history at high
- *   compliance, with today scheduled on-track (taken or not-yet-due)
+ *   compliance, with today scheduled on-track (taken or not-yet-due); each
+ *   filed under a category, the evening supplement recording itself
+ * - Two lab readings the report printed in SI units, stored converted with
+ *   the printed value kept beside them
  * - 90 days of mood entries
  * - Six mental-wellbeing screeners (WHO-5, PHQ-9, GAD-7) spread over the
  *   window, item answers encrypted the way the check-in route writes them
@@ -1298,12 +1301,15 @@ async function seed() {
       [sched2Id, med2Id],
     );
 
-    // Medication 3: Magnesium (evening)
+    // Medication 3: Magnesium (evening). A supplement taken reliably every
+    // night, so it records itself: `auto_mark_taken` is on from its first day
+    // and the intake-auto-take job fills each evening slot once 20:00 has
+    // passed. Its history below is written the way that job writes it.
     const med3Id = cuid();
     await client.query(
-      `INSERT INTO medications (id, user_id, name, dose, active, notifications_enabled, starts_on, created_at, updated_at)
-       VALUES ($1, $2, 'Magnesium', '400mg', true, true, $3, $4, $4)`,
-      [med3Id, userId, formatDate(daysAgo(60)), daysAgo(60)],
+      `INSERT INTO medications (id, user_id, name, dose, active, notifications_enabled, starts_on, auto_mark_taken, auto_mark_taken_since, created_at, updated_at)
+       VALUES ($1, $2, 'Magnesium', '400mg', true, true, $3, true, $4, $5, $5)`,
+      [med3Id, userId, formatDate(daysAgo(60)), daysAgo(60), daysAgo(60)],
     );
     const sched3Id = cuid();
     await client.query(
@@ -1311,6 +1317,20 @@ async function seed() {
        VALUES ($1, $2, '20:00', '22:00', 'Evening')`,
       [sched3Id, med3Id],
     );
+
+    // The category each medication is filed under, so the list groups the
+    // blood-pressure prescription apart from the two supplements.
+    for (const [medicationId, category] of [
+      [med1Id, "BLOOD_PRESSURE"],
+      [med2Id, "VITAMIN"],
+      [med3Id, "SUPPLEMENT"],
+    ] as const) {
+      await client.query(
+        `INSERT INTO medication_categories (medication_id, category, updated_at)
+         VALUES ($1, $2, NOW())`,
+        [medicationId, category],
+      );
+    }
 
     // ── Medication Intake Events ──────────────
     // High compliance with no overdue doses. Historical days (i < days) carry
@@ -1371,26 +1391,14 @@ async function seed() {
         );
       }
 
-      // Magnesium: only last 60 days, 94% compliance
+      // Magnesium: only the last 60 days, recorded automatically at the
+      // slot instant, the shape the intake-auto-take job writes.
       if (i >= 30) {
-        const takeMed3 = Math.random() > 0.06;
-        if (takeMed3) {
-          const takenTime = new Date(eveningSlotFor);
-          takenTime.setMinutes(
-            takenTime.getMinutes() + Math.floor(Math.random() * 60) + 1,
-          );
-          await client.query(
-            `INSERT INTO medication_intake_events (id, user_id, medication_id, scheduled_for, taken_at, skipped, source, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, false, 'WEB', $5, $5)`,
-            [cuid(), userId, med3Id, eveningSlotFor, takenTime],
-          );
-        } else {
-          await client.query(
-            `INSERT INTO medication_intake_events (id, user_id, medication_id, scheduled_for, taken_at, skipped, source, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, NULL, true, 'WEB', $4, $4)`,
-            [cuid(), userId, med3Id, eveningSlotFor],
-          );
-        }
+        await client.query(
+          `INSERT INTO medication_intake_events (id, user_id, medication_id, scheduled_for, taken_at, skipped, auto_recorded, source, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $4, false, true, 'REMINDER', $4, $4)`,
+          [cuid(), userId, med3Id, eveningSlotFor],
+        );
       }
     }
 
@@ -1535,6 +1543,12 @@ async function seed() {
       unit: string;
       low: number;
       high: number;
+      /**
+       * What the report printed when it used another unit than the marker's.
+       * The stored value is the conversion; the printed pair is kept beside
+       * it, as the lab write path does, so the list shows "converted from".
+       */
+      printed?: { value: number; unit: string };
     };
     type QualLab = { analyte: string; valueText: string; unit: string };
 
@@ -1551,14 +1565,24 @@ async function seed() {
       { analyte: "HDL", value: 58, unit: "mg/dL", low: 40, high: 100 },
       { analyte: "Triglycerides", value: 92, unit: "mg/dL", low: 0, high: 150 },
       { analyte: "HbA1c", value: 5.2, unit: "%", low: 4.0, high: 5.6 },
+      // Both printed in SI units by the lab: 4.94 mmol/L is 89 mg/dL
+      // (factor 18.0156) and 104.83 nmol/L is 42 ng/mL (factor 2.496).
       {
         analyte: "Fasting Glucose",
-        value: 89,
+        value: 4.94 * 18.0156,
         unit: "mg/dL",
         low: 70,
         high: 99,
+        printed: { value: 4.94, unit: "mmol/L" },
       },
-      { analyte: "Vitamin D", value: 42, unit: "ng/mL", low: 30, high: 100 },
+      {
+        analyte: "Vitamin D",
+        value: 104.83 / 2.496,
+        unit: "ng/mL",
+        low: 30,
+        high: 100,
+        printed: { value: 104.83, unit: "nmol/L" },
+      },
       { analyte: "TSH", value: 1.8, unit: "mIU/L", low: 0.4, high: 4.0 },
       { analyte: "Ferritin", value: 120, unit: "ng/mL", low: 30, high: 400 },
       { analyte: "CRP", value: 0.8, unit: "mg/L", low: 0, high: 3.0 },
@@ -1602,8 +1626,8 @@ async function seed() {
 
     const insertQuant = async (panel: string, lab: QuantLab, takenAt: Date) => {
       await client.query(
-        `INSERT INTO lab_results (id, user_id, panel, analyte, value, value_text, unit, reference_low, reference_high, taken_at, source, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, 'MANUAL', NOW(), NOW())`,
+        `INSERT INTO lab_results (id, user_id, panel, analyte, value, value_text, unit, reference_low, reference_high, source_value, source_unit, taken_at, source, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, $10, $11, 'MANUAL', NOW(), NOW())`,
         [
           cuid(),
           userId,
@@ -1613,6 +1637,8 @@ async function seed() {
           lab.unit,
           lab.low,
           lab.high,
+          lab.printed?.value ?? null,
+          lab.printed?.unit ?? null,
           takenAt,
         ],
       );
