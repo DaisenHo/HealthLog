@@ -628,7 +628,6 @@ describe("routes outside apiHandler refuse while the key does not match", () => 
     );
     expect(res.status).toBe(503);
     expect((await res.json()).meta).toEqual({
-      requestId: expect.any(String),
       errorCode: "encryption.key_mismatch",
     });
   });
