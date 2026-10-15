@@ -24,10 +24,6 @@ const API_ROOT = join(process.cwd(), "src", "app", "api");
 
 /** Route file (under `src/app/api`) to the operations it still stubs. */
 const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
-  "admin/maintenance/pulse-day-mean/route.ts": [
-    "admin.pulse_day_mean.get",
-    "admin.pulse_day_mean.post",
-  ],
   "anamnesis/audit-c/[id]/route.ts": ["anamnesis.audit_c.delete"],
   "anamnesis/audit-c/route.ts": ["anamnesis.audit_c.create"],
   "anamnesis/life-circumstances/ai-sections/route.ts": [
@@ -53,7 +49,7 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** The size of the register when it was written; see the header. */
-const REGISTER_SIZE = 15;
+const REGISTER_SIZE = 14;
 
 function routeFiles(): string[] {
   return walkSourceFiles(API_ROOT, { floor: 400, extensions: [".ts"] })

@@ -5343,11 +5343,14 @@ model AppSettings {
   // every hour alike; `weighted_hour_mean_v2` weighs an hour by
   // `min(1, n / 3)`. Switched only by the admin apply step after a dry run;
   // the dry-run result is the only thing a dry run writes.
-  /// @pending-consumer(#v143-B8) Active pulse day-mean method (CHECK in migration 0407).
+  /// Active pulse day-mean method (CHECK in migration 0407). Readers: every
+  /// process's mirror (`pulse-day-mean-method.ts`) and the rollup tier
+  /// (`storedHourWeightSql`); the admin status route.
   pulseDayMeanMethod     String    @default("hour_mean_v1") @map("pulse_day_mean_method")
-  /// @pending-consumer(#v143-B8) When the admin applied the current method.
+  /// When the admin applied the current method; shown on the admin card.
   pulseDayMeanAppliedAt  DateTime? @map("pulse_day_mean_applied_at")
-  /// @pending-consumer(#v143-B8) Last dry-run status and result (account labels only, no ids).
+  /// Last dry-run status and result (account ordinals only, no ids); the apply
+  /// step's precondition and the admin card's result.
   pulseDayMeanDryRunJson Json?     @map("pulse_day_mean_dry_run_json")
 
   @@map("app_settings")

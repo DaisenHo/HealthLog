@@ -84,6 +84,11 @@ import {
   type MeasurementMaintenancePayload,
 } from "@/lib/jobs/measurement-maintenance";
 import {
+  PULSE_DAY_MEAN_QUEUE,
+  handlePulseDayMean,
+  type PulseDayMeanPayload,
+} from "@/lib/jobs/pulse-day-mean";
+import {
   HEALTH_CONNECT_IMPORT_QUEUE,
   HEALTH_CONNECT_IMPORT_CONCURRENCY,
   handleHealthConnectImport,
@@ -496,6 +501,8 @@ const allQueues = [
   // cron: the admin route enqueues it. Without this entry the trigger
   // silently no-ops.
   MEASUREMENT_MAINTENANCE_QUEUE,
+  // v1.43 — the pulse day-mean dry run and rebuild, admin-triggered only.
+  PULSE_DAY_MEAN_QUEUE,
   // v1.8.2 — one-time duplicate dose-slot cleanup. Boot discovery enqueues
   // one job per user holding two live intake rows that snap to the same
   // canonical slot (the pre-fix REMINDER-pending + API-taken pair). Also
@@ -834,6 +841,12 @@ const queuePolicies: QueuePolicyTable = {
     policy: "exclusive",
     reason:
       "Fixed singleton key, admin-triggered. Two maintenance passes would rebuild the same indexes side by side; the route reports a suppressed send back as enqueued: false.",
+  },
+  // v1.43 — the pulse day-mean dry run and rebuild.
+  [PULSE_DAY_MEAN_QUEUE]: {
+    policy: "exclusive",
+    reason:
+      "Fixed singleton key, admin-triggered. A dry run beside a rebuild would compare against rollups being rewritten; the route answers 409 busy instead.",
   },
   // v1.42 — compaction-tombstone backlog purge. `short`, not `exclusive`:
   // a run that stops early sends its own follow-up while it is still active,
@@ -1227,6 +1240,13 @@ export async function registerMaintenanceQueues(
     MEASUREMENT_MAINTENANCE_QUEUE,
     { localConcurrency: 1 },
     handleMeasurementMaintenance,
+  );
+  // v1.43 — pulse day-mean dry run and rebuild, operator-triggered only.
+  await createAndWork<PulseDayMeanPayload>(
+    boss,
+    PULSE_DAY_MEAN_QUEUE,
+    { localConcurrency: 1 },
+    handlePulseDayMean,
   );
   // v1.32.1 (issue #588) — periodic orphan-ImportJob sweep. Single-flight:
   // the underlying `updateMany` is idempotent and two ticks racing the same

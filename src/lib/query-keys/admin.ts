@@ -53,6 +53,8 @@ export const adminKeys = {
   adminEncryptionStatus: () => ["admin", "encryption", "status"] as const,
   adminMeasurementMaintenance: () =>
     ["admin", "maintenance", "measurements"] as const,
+  /** v1.43 — the pulse day-mean method, its dry run and apply step. */
+  adminPulseDayMean: () => ["admin", "maintenance", "pulse-day-mean"] as const,
   /** v1.40.0 — the "Back up your encryption key" step (admin + dashboard banner). */
   adminEncryptionKeyBackup: () =>
     ["admin", "encryption", "key-backup"] as const,

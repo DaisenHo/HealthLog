@@ -8126,6 +8126,48 @@
         "started": "Konserwacja uruchomiona.",
         "alreadyQueued": "Konserwacja jest już w kolejce lub trwa.",
         "startFailed": "Nie udało się uruchomić konserwacji."
+      },
+      "pulseDayMean": {
+        "title": "Dzienna średnia tętna",
+        "description": "Jak godziny z niewieloma pomiarami liczą się do tętna danego dnia.",
+        "body": "Dotąd każda godzina z pomiarem liczy się tak samo, więc jeden przypadkowy pomiar może przesunąć cały dzień. Metoda ważona sprawia, że godzina liczy się w pełni od trzech pomiarów, a pojedynczy pomiar w jednej trzeciej. Najpierw uruchom próbę, aby zobaczyć, ile dni by się zmieniło. Zastosowanie przelicza zapisane dni tętna w tle.",
+        "method": {
+          "hourly": "Każda godzina tak samo",
+          "weighted": "Rzadkie godziny ważone"
+        },
+        "loading": "Sprawdzanie dziennej średniej tętna…",
+        "loadError": "Nie udało się odczytać stanu dziennej średniej tętna.",
+        "state": {
+          "idle": "Jeszcze nie było próby.",
+          "queued": "Próba czeka na proces w tle.",
+          "running": "Próba trwa.",
+          "done": "Próba zakończona {at}.",
+          "failed": "Próba została przerwana. Dziennik aplikacji podaje przyczynę; uruchom ją ponownie."
+        },
+        "result": {
+          "days": "Porównane dni",
+          "changed": "Dni ze zmianą powyżej 1 bpm",
+          "max": "Największa zmiana",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Konto {account}",
+          "accountDays": "Zmienia się {changed} z {days} dni"
+        },
+        "appliedAt": "Metoda ważona zastosowana {at}.",
+        "dryRun": "Próba",
+        "apply": "Zastosuj",
+        "confirmTitle": "Zastosować ważoną dzienną średnią tętna?",
+        "confirmBody": "Od tej chwili dni tętna wszystkich kont są liczone z ważonymi rzadkimi godzinami. Zapisane dni tętna są przeliczane w tle, co na dużej instancji może chwilę potrwać.",
+        "confirm": "Zastosuj",
+        "cancel": "Anuluj",
+        "dryRunStarted": "Próba uruchomiona.",
+        "applied": "Metoda ważona zastosowana. Dni tętna są przeliczane.",
+        "appliedNoRebuild": "Metoda ważona zastosowana. Inny przebieg wciąż trwa; zastosuj ponownie, gdy się zakończy, aby przeliczyć dni tętna.",
+        "error": {
+          "busy": "Próba lub przeliczanie wciąż trwa. Spróbuj ponownie, gdy się zakończy.",
+          "dryRunRequired": "Najpierw uruchom próbę. Do zastosowania potrzebna jest próba zakończona w ciągu ostatnich siedmiu dni.",
+          "generic": "Żądanie nie zostało zrealizowane."
+        }
       }
     },
     "carrier": "Operator",

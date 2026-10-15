@@ -201,6 +201,11 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
     reason:
       "A size probe for an admin card: null shows no figure, and the status read must not fail over it.",
   },
+  "lib/jobs/pulse-day-mean.ts::isPulseDayMeanRunActive": {
+    count: 1,
+    reason:
+      "No pgboss schema on a web-only deployment, so no run can be active; the route answers 503 there before it asks.",
+  },
   "lib/jobs/job-observer.ts::emitJobLine": {
     count: 1,
     reason:

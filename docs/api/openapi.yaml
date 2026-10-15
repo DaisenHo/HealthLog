@@ -35753,7 +35753,8 @@ components:
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
                 managed_profile.guardian.required, managed_profile.handover.no_pending,
-                managed_profile.handover.unknown_guardian, managed_profile.not_found; measurement —
+                managed_profile.handover.unknown_guardian, managed_profile.not_found; maintenance —
+                maintenance.pulseDayMean.busy, maintenance.pulseDayMean.dryRunRequired; measurement —
                 measurement.batch.invalid, measurement.batch.source_not_permitted, measurement.batch.too_large,
                 measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
                 measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,

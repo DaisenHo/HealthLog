@@ -8126,6 +8126,48 @@
         "started": "Manutenzione avviata.",
         "alreadyQueued": "Una manutenzione è già in coda o in corso.",
         "startFailed": "Impossibile avviare la manutenzione."
+      },
+      "pulseDayMean": {
+        "title": "Media giornaliera del polso",
+        "description": "Come contano le ore con poche misurazioni nel polso di una giornata.",
+        "body": "Finora ogni ora con una misurazione conta allo stesso modo, quindi una sola misurazione isolata può spostare un'intera giornata. Il metodo ponderato fa contare un'ora per intero da tre misurazioni in su, e una misurazione isolata per un terzo. Avvia prima la prova per vedere quanti giorni cambierebbero. Applicandolo, i giorni di polso salvati vengono ricalcolati in background.",
+        "method": {
+          "hourly": "Tutte le ore uguali",
+          "weighted": "Ore rade ponderate"
+        },
+        "loading": "Controllo della media giornaliera del polso…",
+        "loadError": "Impossibile leggere lo stato della media giornaliera del polso.",
+        "state": {
+          "idle": "Ancora nessuna prova.",
+          "queued": "La prova è in attesa del processo in background.",
+          "running": "La prova è in corso.",
+          "done": "Prova terminata il {at}.",
+          "failed": "La prova si è interrotta. Il registro dell'app ne indica la causa; avviala di nuovo."
+        },
+        "result": {
+          "days": "Giorni confrontati",
+          "changed": "Giorni che cambiano di oltre 1 bpm",
+          "max": "Variazione maggiore",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Account {account}",
+          "accountDays": "Cambiano {changed} giorni su {days}"
+        },
+        "appliedAt": "Metodo ponderato applicato il {at}.",
+        "dryRun": "Prova",
+        "apply": "Applica",
+        "confirmTitle": "Applicare la media giornaliera del polso ponderata?",
+        "confirmBody": "Da quel momento i giorni di polso di tutti gli account vengono calcolati con le ore rade ponderate. I giorni salvati vengono ricalcolati in background, il che può richiedere un po' su un'istanza grande.",
+        "confirm": "Applica",
+        "cancel": "Annulla",
+        "dryRunStarted": "Prova avviata.",
+        "applied": "Metodo ponderato applicato. I giorni di polso vengono ricalcolati.",
+        "appliedNoRebuild": "Metodo ponderato applicato. Un'altra esecuzione è ancora in corso; applica di nuovo quando è terminata per ricalcolare i giorni di polso.",
+        "error": {
+          "busy": "Una prova o un ricalcolo è ancora in corso. Riprova quando è terminato.",
+          "dryRunRequired": "Avvia prima una prova. Per applicare ne serve una terminata negli ultimi sette giorni.",
+          "generic": "La richiesta non è andata a buon fine."
+        }
       }
     },
     "carrier": "Operatore",

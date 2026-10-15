@@ -39,6 +39,16 @@ export async function register() {
       // A diagnostic must never break boot.
     }
 
+    // Every pulse reader follows the operator's pulse day-mean method; mirror
+    // it in this process and keep the mirror current.
+    try {
+      const { startPulseDayMeanMethodSync } =
+        await import("@/lib/measurements/pulse-day-mean-method");
+      await startPulseDayMeanMethodSync();
+    } catch {
+      // Without the mirror the process keeps the default method.
+    }
+
     // Every Node process watches its own event loop — web-only
     // containers included; a stall report from the process serving
     // requests is the whole point.

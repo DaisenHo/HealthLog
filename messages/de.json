@@ -8126,6 +8126,48 @@
         "started": "Pflege gestartet.",
         "alreadyQueued": "Ein Pflegelauf ist bereits eingeplant oder läuft.",
         "startFailed": "Die Pflege konnte nicht gestartet werden."
+      },
+      "pulseDayMean": {
+        "title": "Puls-Tagesmittel",
+        "description": "Wie Stunden mit nur wenigen Messwerten in den Tagespuls eingehen.",
+        "body": "Bisher zählt jede Stunde mit einem Messwert gleich viel, sodass ein einzelner Ausreißer einen ganzen Tag verschieben kann. Die gewichtete Methode lässt eine Stunde ab drei Messwerten voll zählen und einen einzelnen Messwert zu einem Drittel. Starte zuerst den Probelauf, um zu sehen, wie viele Tage sich ändern würden. Beim Anwenden werden die gespeicherten Pulstage im Hintergrund neu berechnet.",
+        "method": {
+          "hourly": "Jede Stunde gleich",
+          "weighted": "Dünne Stunden gewichtet"
+        },
+        "loading": "Puls-Tagesmittel wird geprüft…",
+        "loadError": "Der Stand des Puls-Tagesmittels konnte nicht gelesen werden.",
+        "state": {
+          "idle": "Noch kein Probelauf.",
+          "queued": "Der Probelauf wartet auf den Hintergrunddienst.",
+          "running": "Der Probelauf läuft.",
+          "done": "Probelauf am {at} abgeschlossen.",
+          "failed": "Der Probelauf wurde abgebrochen. Das App-Protokoll nennt die Ursache; starte ihn erneut."
+        },
+        "result": {
+          "days": "Verglichene Tage",
+          "changed": "Tage mit mehr als 1 bpm Änderung",
+          "max": "Größte Änderung",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Konto {account}",
+          "accountDays": "{changed} von {days} Tagen ändern sich"
+        },
+        "appliedAt": "Gewichtete Methode angewendet am {at}.",
+        "dryRun": "Probelauf",
+        "apply": "Anwenden",
+        "confirmTitle": "Gewichtetes Puls-Tagesmittel anwenden?",
+        "confirmBody": "Danach werden die Pulstage aller Konten mit gewichteten dünnen Stunden berechnet. Die gespeicherten Pulstage werden im Hintergrund neu berechnet, was auf einer großen Instanz eine Weile dauern kann.",
+        "confirm": "Anwenden",
+        "cancel": "Abbrechen",
+        "dryRunStarted": "Probelauf gestartet.",
+        "applied": "Gewichtete Methode angewendet. Die Pulstage werden neu berechnet.",
+        "appliedNoRebuild": "Gewichtete Methode angewendet. Ein anderer Lauf arbeitet noch; wende sie erneut an, sobald er fertig ist, damit die Pulstage neu berechnet werden.",
+        "error": {
+          "busy": "Ein Probelauf oder eine Neuberechnung läuft noch. Versuche es erneut, sobald er fertig ist.",
+          "dryRunRequired": "Starte zuerst einen Probelauf. Zum Anwenden braucht es einen, der in den letzten sieben Tagen abgeschlossen wurde.",
+          "generic": "Die Anfrage ist nicht durchgegangen."
+        }
       }
     },
     "carrier": "Netzbetreiber",
