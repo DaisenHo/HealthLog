@@ -11,6 +11,7 @@ import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   runWithGoogleHealthClientOutcome,
+  runWithGoogleHealthStop,
   type GoogleHealthClientOutcome,
 } from "./client";
 import { syncUserActivity } from "./sync-activity";
@@ -100,6 +101,14 @@ export interface GoogleHealthSyncOptions {
    * account's sync lock. Zero (the default) answers `busy` at once.
    */
   waitForLockMs?: number;
+  /**
+   * The caller's time limit, asked before every request once the run holds
+   * the account (the hourly job's expiry). A walk that is told to stop ends
+   * there and reports itself truncated: the cycle is not stamped, so the next
+   * run reads the rest from the same watermark. Not for the backfill, which
+   * sets its own limits around the whole run.
+   */
+  shouldStop?: () => boolean;
 }
 
 const RESOURCE_STATUSES = new Set<GoogleHealthResourceStatus>([
@@ -292,7 +301,7 @@ async function runGoogleHealthSyncCycle(
     { name: "dense-heart-rate", fn: syncUserMetrics },
   ];
 
-  const cycle = await runWithGoogleHealthSyncCycle(async () => {
+  const runResources = async () => {
     let total = 0;
     let anyFailed = false;
     const resourceOutcomes: GoogleHealthResourceOutcome[] = [];
@@ -334,7 +343,13 @@ async function runGoogleHealthSyncCycle(
       await persistProgress("in_progress", total, anyFailed, resourceOutcomes);
     }
     return { total, anyFailed, resources: resourceOutcomes };
-  });
+  };
+  const shouldStop = opts.shouldStop;
+  const cycle = await runWithGoogleHealthSyncCycle(() =>
+    shouldStop
+      ? runWithGoogleHealthStop(shouldStop, runResources)
+      : runResources(),
+  );
 
   const total = cycle.result.total;
   let anyFailed = cycle.result.anyFailed || cycle.hardFailures.length > 0;

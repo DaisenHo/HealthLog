@@ -157,7 +157,10 @@ still a failure.
 
 The hourly sync waits for the slice that is running (up to eight minutes)
 instead of skipping the account, so recent data keeps arriving while an old
-history is still coming in.
+history is still coming in. The hourly job stays inside its own fifteen-minute
+limit: the wait is cut short when the job's time runs low, the sync after it
+gets only what is left and leaves the rest of its window to the next hour, and
+an account the job reaches after its time is up waits for the next hour.
 
 Google limits how many requests one account may make per minute. When a sync
 reaches that limit Google answers `429`, and HealthLog waits and repeats the
