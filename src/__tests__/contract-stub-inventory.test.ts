@@ -37,7 +37,6 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
     "anamnesis.life_circumstances.confirm",
   ],
   "anamnesis/life-circumstances/route.ts": ["anamnesis.life_circumstances.get"],
-  "auth/claim/sso/route.ts": ["profile_claim.sso.start"],
   "auth/me/ai-usage/route.ts": ["auth.me.ai_usage.put"],
   "biomarkers/[id]/merge/route.ts": ["labs.biomarker.merge"],
   "dawarich/connect/route.ts": ["dawarich.connect"],
@@ -63,7 +62,7 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** The size of the register when it was written; see the header. */
-const REGISTER_SIZE = 23;
+const REGISTER_SIZE = 22;
 
 function routeFiles(): string[] {
   return walkSourceFiles(API_ROOT, { floor: 400, extensions: [".ts"] })

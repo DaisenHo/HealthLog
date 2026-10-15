@@ -1,11 +1,14 @@
 /**
- * v1.42 (#959) — the refusals both anonymous claim routes give before they
- * look at a token, in one place so the preview and the claim cannot disagree.
+ * v1.42 (#959) — the refusals the anonymous claim routes give before they look
+ * at a token, in one place so the preview and the claims cannot disagree.
  *
  * Order matters and is the register route's order:
  *
- *   1. A single-sign-on-only instance admits no password, and the claim sets
- *      one, so the handover is refused outright in v1.42.
+ *   1. What this server cannot do at all. The password claim sets a password,
+ *      so a single-sign-on-only instance refuses it outright; the
+ *      single-sign-on claim (v1.43) needs an identity provider, and answers
+ *      404 `profile_claim.sso_unavailable` without one. The preview is
+ *      refused by neither: it is what tells the page which way is open.
  *   2. A signed-in caller is refused with 409. Claiming creates a session for
  *      the new owner, and a Guardian testing their own link would otherwise be
  *      signed out of their account and into the person's. Refused before the
@@ -13,12 +16,14 @@
  *      would lock out the person the link is for, who may share the address.
  *   3. The per-address rate limit, the anonymous auth-surface pattern: a
  *      misconfigured proxy trust chain collapses every caller into one tight
- *      bucket rather than one free-for-all.
+ *      bucket rather than one free-for-all. Both claims share one bucket, so
+ *      switching between them buys no extra attempts.
  */
 import { NextResponse } from "next/server";
 
 import { apiError } from "@/lib/api-response";
-import { isOidcOnly } from "@/lib/auth/oidc";
+import { getOidcConfig, isOidcConfigured, isOidcOnly } from "@/lib/auth/oidc";
+import type { HandoverMethod } from "@/lib/validations/claim-sso";
 import { annotate } from "@/lib/logging/context";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
@@ -29,9 +34,28 @@ export function claimInvalid() {
   });
 }
 
+/**
+ * v1.43 (#959) — how a handover link can be redeemed on this server: with a
+ * password unless the server allows single sign-on only, and through the
+ * identity provider whenever one is configured. Never empty in practice
+ * (`OIDC_ONLY` only takes effect with a configured provider), but the Guardian
+ * side refuses on an empty list rather than assuming it.
+ */
+export function handoverMethods(): HandoverMethod[] {
+  const methods: HandoverMethod[] = [];
+  if (!isOidcOnly()) methods.push("password");
+  if (isOidcConfigured()) methods.push("sso");
+  return methods;
+}
+
+/** The provider's name for the "Continue with …" button, or null. */
+export function ssoProviderName(): string | null {
+  return getOidcConfig()?.buttonLabel ?? null;
+}
+
 export async function claimGate(
   request: Request,
-  surface: "preview" | "claim",
+  surface: "preview" | "claim" | "sso",
   /**
    * Whether the request carries a live session. Resolved by the ROUTE with
    * `getSession()` and handed in, rather than resolved here: a session read
@@ -41,12 +65,21 @@ export async function claimGate(
    */
   signedIn: boolean,
 ): Promise<{ refusal: Response } | { refusal: null; ip: string | null }> {
-  if (isOidcOnly()) {
+  if (surface === "claim" && isOidcOnly()) {
     return {
       refusal: apiError(
-        "Taking over a profile is not available while this server allows single sign-on only",
+        "This server allows single sign-on only; take the profile over through the identity provider",
         403,
         { errorCode: "profile_claim.oidc_only_unsupported" },
+      ),
+    };
+  }
+  if (surface === "sso" && !isOidcConfigured()) {
+    return {
+      refusal: apiError(
+        "Single sign-on is not configured on this server",
+        404,
+        { errorCode: "profile_claim.sso_unavailable" },
       ),
     };
   }

@@ -15,3 +15,4 @@ export type ClaimSsoInput = z.infer<typeof claimSsoSchema>;
 
 /** How a handover link can be redeemed on this server. */
 export const HANDOVER_METHODS = ["password", "sso"] as const;
+export type HandoverMethod = (typeof HANDOVER_METHODS)[number];

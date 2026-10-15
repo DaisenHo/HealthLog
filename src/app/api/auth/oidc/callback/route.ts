@@ -38,6 +38,17 @@ import {
   mintNativeHandoff,
 } from "@/lib/auth/oidc-native-handoff";
 import { setPendingLinkCookie } from "@/lib/auth/oidc-pending-link";
+import {
+  CLAIM_COOKIE,
+  CLAIM_ERROR_PATH,
+  claimMatchesBinding,
+  clearClaimCookie,
+  readClaimCookie,
+} from "@/lib/managed-profiles/claim-cookie";
+import {
+  completeSsoClaim,
+  SSO_CLAIM_LANDING,
+} from "@/lib/managed-profiles/claim-sso";
 
 const LOGIN_ERROR_URL = "/auth/login";
 
@@ -102,6 +113,14 @@ interface StoredOidcState {
   native?: boolean;
   /** The app's S256 PKCE challenge, bound at login; verified at the exchange. */
   appCodeChallenge?: string;
+  /**
+   * v1.43 (#959) — set only when the login carried `intent=claim` and a valid
+   * `hl_claim` cookie. The callback then claims the managed profile the
+   * cookie names instead of signing in, and only when the cookie still
+   * carries this exact binding. Web only: never together with `native`.
+   */
+  intent?: "claim";
+  claimBinding?: string;
 }
 
 function isStoredOidcState(value: unknown): value is StoredOidcState {
@@ -121,6 +140,13 @@ function isStoredOidcState(value: unknown): value is StoredOidcState {
   if (v.native !== undefined) {
     if (v.native !== true) return false;
     if (typeof v.appCodeChallenge !== "string") return false;
+  }
+  if (v.intent !== undefined) {
+    if (v.intent !== "claim") return false;
+    if (typeof v.claimBinding !== "string" || v.claimBinding.length === 0) {
+      return false;
+    }
+    if (v.native !== undefined) return false;
   }
   return true;
 }
@@ -153,12 +179,24 @@ export const GET = apiHandler(async (req: NextRequest) => {
     }
   }
   const isNative = stored?.native === true;
+  const isClaim = stored?.intent === "claim";
 
   // Native-aware error redirect: the custom scheme for a decrypted native flow,
   // the web login page otherwise. Deletes the single-use state cookie either
   // way. An error redirect carries no code, ticket, or session, so routing it
   // to the scheme leaks nothing (spec §1).
   const failRedirect = (reason: string): NextResponse => {
+    if (isClaim) {
+      // A refused claim returns to the claim page, never the sign-in page,
+      // and takes the claim cookie with it: the person starts again from the
+      // link, which is still theirs to use if the refusal left it open.
+      const response = NextResponse.redirect(
+        oidcAppUrl(`${CLAIM_ERROR_PATH}?error=${reason}`),
+      );
+      deleteStateCookie(response);
+      clearClaimCookie(response);
+      return response;
+    }
     if (isNative) {
       const response = NextResponse.redirect(
         buildNativeCallbackUrl({ error: reason }),
@@ -198,7 +236,9 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // Broken round-trip / missing-or-unreadable state blob / CSRF mismatch all
   // resolve to the web `oidc_state` fallback: the flow is fundamentally broken
   // and there is nothing safe to hand the app (spec §1 web-fallback).
-  if (!code || !state) return errorRedirect("oidc_state");
+  if (!code || !state) {
+    return isClaim ? failRedirect("oidc_state") : errorRedirect("oidc_state");
+  }
 
   if (!stored) {
     // Defence-in-depth idempotency for a duplicated callback. The single-use
@@ -240,7 +280,32 @@ export const GET = apiHandler(async (req: NextRequest) => {
     !timingSafeEqual(Buffer.from(state), Buffer.from(stored.state))
   ) {
     annotate({ meta: { reason: "csrf" } });
-    return errorRedirect("oidc_state");
+    return isClaim ? failRedirect("oidc_state") : errorRedirect("oidc_state");
+  }
+
+  // v1.43 (#959) — a claim is admitted only with its own sealed cookie, still
+  // bound to this sign-in, and never over a live session (the claim routes'
+  // rule: a Guardian finishing their own link would otherwise be signed out
+  // of their account and into the person's). Both before the code is
+  // redeemed, so a refused claim spends nothing at the provider.
+  const pendingClaim = isClaim
+    ? readClaimCookie(req.cookies.get(CLAIM_COOKIE)?.value)
+    : null;
+  if (isClaim) {
+    if (
+      !pendingClaim ||
+      !claimMatchesBinding(pendingClaim, stored.claimBinding as string)
+    ) {
+      annotate({ meta: { reason: "claim_cookie" } });
+      return failRedirect("claim_expired");
+    }
+    const liveSession = await validateSessionFromCookieValue(
+      req.cookies.get(SESSION_COOKIE_NAME)?.value,
+    );
+    if (liveSession) {
+      annotate({ meta: { reason: "claim_signed_in" } });
+      return failRedirect("claim_signed_in");
+    }
   }
 
   try {
@@ -272,6 +337,28 @@ export const GET = apiHandler(async (req: NextRequest) => {
       });
       email = userinfo.email;
       emailVerified = userinfo.emailVerified;
+    }
+
+    // v1.43 (#959) — the claim. The provider has authenticated somebody; bind
+    // that subject to the profile the cookie names, or refuse. Never falls
+    // through to the sign-in below: a refused claim signs nobody in, and
+    // provisions and links nothing.
+    if (pendingClaim) {
+      const outcome = await completeSsoClaim({
+        handoverId: pendingClaim.handoverId,
+        username: pendingClaim.username,
+        issuer: metadata.issuer,
+        sub: identity.sub,
+        email,
+        emailVerified,
+        ipAddress: ip,
+        userAgent: req.headers.get("user-agent"),
+      });
+      if (!outcome.ok) return failRedirect(outcome.reason);
+      const response = NextResponse.redirect(oidcAppUrl(SSO_CLAIM_LANDING));
+      deleteStateCookie(response);
+      clearClaimCookie(response);
+      return response;
     }
 
     // (1) Durable identity match — the (issuer, sub) pair stamped on a

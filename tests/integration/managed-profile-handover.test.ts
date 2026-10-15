@@ -811,7 +811,7 @@ describe("claiming the profile", () => {
     // cookie jar, and the race is between the two transactions, not cookies.
     const [claimed, minted] = await Promise.allSettled([
       claimManagedProfile({
-        rawToken: first,
+        link: { rawToken: first },
         username: "racer",
         email: "racer@example.test",
         passwordHash: "hash",

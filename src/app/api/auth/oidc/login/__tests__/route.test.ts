@@ -214,3 +214,50 @@ describe("GET /api/auth/oidc/login", () => {
     });
   });
 });
+
+describe("GET /api/auth/oidc/login?intent=claim (v1.43, #959)", () => {
+  beforeEach(() => {
+    vi.mocked(getOidcConfig).mockReturnValue({
+      issuerUrl: "https://idp.example.com",
+      clientId: "client-1",
+      clientSecret: "secret-1",
+      scopes: "openid email profile",
+      buttonLabel: "SSO",
+    });
+  });
+
+  it("refuses a claim on the native leg with oidc_invalid_request", async () => {
+    const res = await GET(
+      makeRequest(
+        `/api/auth/oidc/login?intent=claim&client=native&code_challenge=${"a".repeat(43)}`,
+      ),
+    );
+    expect(res.headers.get("location")).toMatch(
+      /^healthlog:\/\/oidc-callback\?error=oidc_invalid_request$/,
+    );
+    expect(discoverOidcMetadata).not.toHaveBeenCalled();
+    expect(res.cookies.get("oidc_auth_state")).toBeUndefined();
+  });
+
+  it("sends a claim without its cookie back to the claim page, before the provider", async () => {
+    const res = await GET(makeRequest("/api/auth/oidc/login?intent=claim"));
+    expect(res.headers.get("location")).toBe(
+      "https://healthlog.example.com/auth/claim?error=claim_expired",
+    );
+    expect(discoverOidcMetadata).not.toHaveBeenCalled();
+    expect(res.cookies.get("oidc_auth_state")).toBeUndefined();
+  });
+
+  it("routes the claim's other failures to the claim page too", async () => {
+    vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      reset: 0,
+      ip: "1.2.3.4",
+    } as never);
+    const res = await GET(makeRequest("/api/auth/oidc/login?intent=claim"));
+    expect(res.headers.get("location")).toBe(
+      "https://healthlog.example.com/auth/claim?error=oidc_rate_limited",
+    );
+  });
+});

@@ -104,7 +104,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   let claimed;
   try {
     claimed = await claimManagedProfile({
-      rawToken: token,
+      link: { rawToken: token },
       username,
       email,
       passwordHash,

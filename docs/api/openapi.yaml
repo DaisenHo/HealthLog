@@ -1873,9 +1873,15 @@ paths:
       description: "Web only. Checks the link and the username, sets a sealed `hl_claim` cookie (10 minutes, `httpOnly`) and
         answers where to continue: `/api/auth/oidc/login?intent=claim`. The OIDC callback binds the identity provider's
         subject to the profile and signs the new owner in; a subject already bound to an account, or a verified email
-        another account holds, is refused there. Works on a single-sign-on-only instance. 404 `profile_claim.invalid`
-        (no usable link) or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken`
-        (username) or `auth.already_authenticated`; rate-limited per source address like the password claim."
+        another account holds, is refused there. Works on a single-sign-on-only instance. When the callback refuses, the
+        browser lands on `/auth/claim?error=<reason>` with reason `claim_expired` (the link was used, withdrawn,
+        replaced or expired in the meantime, or the cookie is missing, expired or belongs to another start),
+        `claim_sso_subject_bound`, `claim_email_taken`, `claim_username_taken` (taken during the round trip),
+        `claim_signed_in`, or one of the sign-in reasons (`oidc_denied`, `oidc_state`, `oidc_failed`,
+        `oidc_rate_limited`, `oidc_disabled`); on success it lands on `/onboarding/handover`, where the new owner
+        decides each guardian's access. The cookie is cleared either way. 404 `profile_claim.invalid` (no usable link)
+        or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken` (username) or
+        `auth.already_authenticated`; rate-limited per source address like the password claim."
       requestBody:
         required: true
         content:
@@ -1904,15 +1910,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": &a30
-          description: "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` =
-            `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation
-            already answer as documented. A client reaches this only by ignoring the server feature flag that guards the
-            operation."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
   /api/auth/claim/preview:
     post:
       security: []
@@ -1921,7 +1918,8 @@ paths:
       summary: Preview a managed-profile handover link
       description: "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's
         proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link
-        whose creator lost access, all answer the same 404. Rate-limited per source address."
+        whose creator lost access, all answer the same 404. Rate-limited per source address. Since v1.43 answered on a
+        single-sign-on-only instance too, with `methods` naming the ways in."
       requestBody:
         required: true
         content:
@@ -1936,12 +1934,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProfileClaimPreviewEnvelope"
         "401": *a1
-        "403":
-          description: "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`)."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
         "404":
           description: "No usable link behind this token (`meta.errorCode: profile_claim.invalid`). Every failure class answers
             identically."
@@ -3739,6 +3731,19 @@ paths:
           description: "Browser leg only: where to land after login. Sanitised to an in-app path; ignored entirely on the native
             leg."
         - in: query
+          name: intent
+          schema:
+            description: "v1.43 — `claim` continues a managed-profile claim started at POST /api/auth/claim/sso; the link and
+              username ride the sealed `hl_claim` cookie that call set, never this URL. Without a valid cookie for a
+              still-usable link the start redirects to `/auth/claim?error=claim_expired`. Browser leg only: with
+              `client=native` it fails with `oidc_invalid_request`. `next` is ignored."
+            type: string
+            const: claim
+          description: "v1.43 — `claim` continues a managed-profile claim started at POST /api/auth/claim/sso; the link and
+            username ride the sealed `hl_claim` cookie that call set, never this URL. Without a valid cookie for a
+            still-usable link the start redirects to `/auth/claim?error=claim_expired`. Browser leg only: with
+            `client=native` it fails with `oidc_invalid_request`. `next` is ignored."
+        - in: query
           name: client_proto
           schema:
             description: "Browser leg only: the scheme of the page the SSO button was pressed on. With `http` on a non-loopback
@@ -3762,7 +3767,8 @@ paths:
           description: "Browser leg only: `location.host` of that page, read together with `client_proto`."
       responses:
         "302":
-          description: Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser) or
+          description: Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser;
+            `/auth/claim?error=<reason>` with `intent=claim`, where `claim_expired` is one more reason) or
             `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`,
             `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see
             `client_proto`). The provider then returns to the callback (not listed here, because the identity provider
@@ -15171,7 +15177,7 @@ paths:
             schema:
               $ref: "#/components/schemas/OcrTextExtractRequest"
       responses:
-        "202": &a39
+        "202": &a38
           description: Queued for the background worker. Every refusal the route can answer quickly (capability, provider, rate
             limit, budget, validation) has already been answered; anything that goes wrong from here is reported on the
             run.
@@ -15453,7 +15459,15 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a12
-        "501": *a30
+        "501": &a45
+          description: "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` =
+            `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation
+            already answer as documented. A client reaches this only by ignoring the server feature flag that guards the
+            operation."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/encounters:
     get:
       tags:
@@ -15666,7 +15680,7 @@ paths:
                 $ref: "#/components/schemas/GetEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a31
+        "404": &a30
           description: Visit not found (or owned by another user).
           content:
             application/json:
@@ -15700,7 +15714,7 @@ paths:
                 $ref: "#/components/schemas/UpdateEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a31
+        "404": *a30
         "422": *a4
         "429": *a5
     delete:
@@ -15725,7 +15739,7 @@ paths:
                 $ref: "#/components/schemas/DeleteEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a31
+        "404": *a30
         "422": *a4
         "429": *a5
   /api/encounters/{id}/restore:
@@ -15751,7 +15765,7 @@ paths:
                 $ref: "#/components/schemas/RestoreEncounterEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a31
+        "404": *a30
         "422": *a4
         "429": *a5
   /api/encounters/{id}/links:
@@ -15781,7 +15795,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkEncounterEnvelope"
         "401": *a1
-        "404": *a31
+        "404": *a30
         "422": *a4
         "429": *a5
     delete:
@@ -15810,7 +15824,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkEncounterEnvelope"
         "401": *a1
-        "404": *a31
+        "404": *a30
         "422": *a4
         "429": *a5
   /api/practitioners:
@@ -15889,7 +15903,7 @@ paths:
                 $ref: "#/components/schemas/GetPractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a32
+        "404": &a31
           description: Practitioner not found (or owned by another user).
           content:
             application/json:
@@ -15923,7 +15937,7 @@ paths:
                 $ref: "#/components/schemas/UpdatePractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a32
+        "404": *a31
         "422": *a4
         "429": *a5
     delete:
@@ -15947,7 +15961,7 @@ paths:
                 $ref: "#/components/schemas/DeletePractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a32
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/practitioners/{id}/restore:
@@ -15973,7 +15987,7 @@ paths:
                 $ref: "#/components/schemas/RestorePractitionerEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a32
+        "404": *a31
         "422": *a4
         "429": *a5
   /api/vaccinations/custom:
@@ -16017,7 +16031,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomVaccineEnvelope"
         "401": *a1
         "403": *a11
-        "409": &a33
+        "409": &a32
           description: A live definition on the record already carries this name, compared without case
             (`vaccination.custom.name-taken`).
           content:
@@ -16054,13 +16068,13 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomVaccineEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a34
+        "404": &a33
           description: No live definition with this id on the record (`vaccination.custom.not-found`).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "409": *a33
+        "409": *a32
         "422": *a4
         "429": *a5
     delete:
@@ -16085,7 +16099,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomVaccineEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a34
+        "404": *a33
         "422": *a4
         "429": *a5
   /api/vaccinations:
@@ -16187,7 +16201,7 @@ paths:
                 $ref: "#/components/schemas/GetVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a35
+        "404": &a34
           description: Vaccination not found (or owned by another user).
           content:
             application/json:
@@ -16222,7 +16236,7 @@ paths:
                 $ref: "#/components/schemas/UpdateVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a34
         "422": *a4
         "429": *a5
     delete:
@@ -16247,7 +16261,7 @@ paths:
                 $ref: "#/components/schemas/DeleteVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/restore:
@@ -16272,7 +16286,7 @@ paths:
                 $ref: "#/components/schemas/RestoreVaccinationEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a35
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/booster:
@@ -16338,7 +16352,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": *a35
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/vaccinations/suggest:
@@ -16396,7 +16410,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LinkVaccinationEnvelope"
         "401": *a1
-        "404": *a35
+        "404": *a34
         "422": *a4
         "429": *a5
     delete:
@@ -16425,7 +16439,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnlinkVaccinationEnvelope"
         "401": *a1
-        "404": *a35
+        "404": *a34
         "422": *a4
         "429": *a5
   /api/illness/episodes:
@@ -16540,7 +16554,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a36
+        "404": &a35
           description: Illness episode not found (or owned by another user).
           content:
             application/json:
@@ -16575,7 +16589,7 @@ paths:
                 $ref: "#/components/schemas/UpdateIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a35
         "422": *a4
         "429": *a5
     delete:
@@ -16599,7 +16613,7 @@ paths:
                 $ref: "#/components/schemas/DeleteIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/restore:
@@ -16627,7 +16641,7 @@ paths:
                 $ref: "#/components/schemas/RestoreIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a35
         "409": *a7
         "422": *a4
         "429": *a5
@@ -16660,7 +16674,7 @@ paths:
                 $ref: "#/components/schemas/ResolveIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/day-logs:
@@ -16711,7 +16725,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessDayLogEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a35
         "422": *a4
         "429": *a5
     post:
@@ -16748,7 +16762,7 @@ paths:
                 $ref: "#/components/schemas/UpsertIllnessDayLogCreatedEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a36
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/correlation:
@@ -16775,7 +16789,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IllnessCorrelationEnvelope"
         "401": *a1
-        "404": *a36
+        "404": *a35
         "422": *a4
         "429": *a5
   /api/illness/insights:
@@ -16991,7 +17005,7 @@ paths:
                 $ref: "#/components/schemas/GetAllergyEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a37
+        "404": &a36
           description: Allergy not found (or owned by another user).
           content:
             application/json:
@@ -17025,7 +17039,7 @@ paths:
                 $ref: "#/components/schemas/UpdateAllergyEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a37
+        "404": *a36
         "422": *a4
         "429": *a5
     delete:
@@ -17049,7 +17063,7 @@ paths:
                 $ref: "#/components/schemas/DeleteAllergyEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a37
+        "404": *a36
         "422": *a4
         "429": *a5
   /api/family-history:
@@ -17123,7 +17137,7 @@ paths:
                 $ref: "#/components/schemas/GetFamilyHistoryEnvelope"
         "401": *a1
         "403": *a11
-        "404": &a38
+        "404": &a37
           description: Family history entry not found (or owned by another user).
           content:
             application/json:
@@ -17157,7 +17171,7 @@ paths:
                 $ref: "#/components/schemas/UpdateFamilyHistoryEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a38
+        "404": *a37
         "422": *a4
         "429": *a5
     delete:
@@ -17181,7 +17195,7 @@ paths:
                 $ref: "#/components/schemas/DeleteFamilyHistoryEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a38
+        "404": *a37
         "422": *a4
         "429": *a5
   /api/documents/inbound:
@@ -17846,7 +17860,7 @@ paths:
           required: true
           schema:
             type: string
-        - &a40
+        - &a39
           name: Prefer
           in: header
           required: false
@@ -17871,9 +17885,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InboundExtractEnvelope"
-        "202": *a39
+        "202": *a38
         "401": *a1
-        "403": &a41
+        "403": &a40
           description: "AI refusal: the `documentAi` capability is unavailable for this record. The envelope carries
             `meta.errorCode`, `meta.capability` and `meta.reason` (one of `AiUnavailableReason`).
             `assistant.disabled.documentAi` — the operator turned off reading documents, or every AI feature (the master
@@ -17897,7 +17911,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "503": &a42
+        "503": &a41
           description: "`ai.unavailable` — the inputs behind the AI capability could not be read, and the answer failed closed.
             Nothing was sent. Retry later."
           content:
@@ -17927,7 +17941,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a40
+        - *a39
       requestBody:
         required: false
         content:
@@ -17963,12 +17977,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSuggestEnvelope"
-        "202": *a39
+        "202": *a38
         "401": *a1
-        "403": *a41
+        "403": *a40
         "422": *a4
         "429": *a5
-        "503": *a42
+        "503": *a41
   /api/documents/inbound/{id}/summary:
     post:
       tags:
@@ -18018,7 +18032,7 @@ paths:
             type: boolean
             default: false
           description: With `persist=true`, explicitly replace an existing stored summary.
-        - *a40
+        - *a39
       requestBody:
         required: false
         content:
@@ -18054,12 +18068,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSummaryEnvelope"
-        "202": *a39
+        "202": *a38
         "401": *a1
-        "403": *a41
+        "403": *a40
         "422": *a4
         "429": *a5
-        "503": *a42
+        "503": *a41
   /api/documents/inbound/{id}/index:
     post:
       tags:
@@ -18085,7 +18099,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a40
+        - *a39
       requestBody:
         required: false
         content:
@@ -18121,12 +18135,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentIndexEnvelope"
-        "202": *a39
+        "202": *a38
         "401": *a1
-        "403": *a41
+        "403": *a40
         "422": *a4
         "429": *a5
-        "503": *a42
+        "503": *a41
   /api/documents/inbound/{id}/chat:
     post:
       tags:
@@ -18166,10 +18180,10 @@ paths:
                 type: string
                 description: "SSE frames: `data: <json>\\n\\n`. See the operation description for the per-`type` frame shapes."
         "401": *a1
-        "403": *a41
+        "403": *a40
         "422": *a4
         "429": *a5
-        "503": *a42
+        "503": *a41
     get:
       tags:
         - Documents
@@ -18232,10 +18246,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReindexEnvelope"
         "401": *a1
-        "403": *a41
+        "403": *a40
         "422": *a4
         "429": *a5
-        "503": *a42
+        "503": *a41
   /api/documents/inbound/{id}/facts/{factId}:
     patch:
       tags:
@@ -18342,7 +18356,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricResponse"
         "401": *a1
-        "409": &a44
+        "409": &a43
           description: A custom metric with this name already exists for the caller.
           content:
             application/json:
@@ -18371,7 +18385,7 @@ paths:
                 $ref: "#/components/schemas/GetCustomMetricResponse"
         "401": *a1
         "403": *a11
-        "404": &a43
+        "404": &a42
           description: Custom metric not found (or owned by another user).
           content:
             application/json:
@@ -18405,8 +18419,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricResponse"
         "401": *a1
-        "404": *a43
-        "409": *a44
+        "404": *a42
+        "409": *a43
         "422": *a4
         "429": *a5
     delete:
@@ -18429,7 +18443,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricResponse"
         "401": *a1
-        "404": *a43
+        "404": *a42
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries:
@@ -18473,7 +18487,7 @@ paths:
                 $ref: "#/components/schemas/ListCustomMetricEntriesEnvelope"
         "401": *a1
         "403": *a11
-        "404": *a43
+        "404": *a42
         "422": *a4
         "429": *a5
     post:
@@ -18502,7 +18516,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateCustomMetricEntryResponse"
         "401": *a1
-        "404": *a43
+        "404": *a42
         "409": *a7
         "422": *a4
         "429": *a12
@@ -18538,7 +18552,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateCustomMetricEntryResponse"
         "401": *a1
-        "404": &a45
+        "404": &a44
           description: Custom metric entry not found (or owned by another user).
           content:
             application/json:
@@ -18571,7 +18585,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteCustomMetricEntryResponse"
         "401": *a1
-        "404": *a45
+        "404": *a44
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries/restore:
@@ -18895,7 +18909,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/nutrients/batch:
     post:
       tags:
@@ -20883,7 +20897,9 @@ paths:
                 $ref: "#/components/schemas/ManagedProfileHandoverEnvelope"
         "401": *a1
         "403":
-          description: "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`)."
+          description: "Neither a password nor single sign-on could redeem a link on this instance (`meta.errorCode:
+            profile_claim.oidc_only_unsupported`). Since v1.43 a single-sign-on-only instance hands over through the
+            identity provider, so a working configuration never answers this."
           content:
             application/json:
               schema:
@@ -23992,7 +24008,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/medications/{id}/ingredients:
     put:
       tags:
@@ -24034,7 +24050,7 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/medications/{id}/ingredients/extract:
     post:
       tags:
@@ -24064,7 +24080,7 @@ paths:
               required:
                 - file
       responses:
-        "202": *a39
+        "202": *a38
         "401": *a1
         "403": *a19
         "413":
@@ -24075,7 +24091,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
         "503":
           description: "`aiRuns.workerUnavailable`: the run could not be handed to the background worker. Nothing was read and
             nothing was charged; try again."
@@ -24100,7 +24116,7 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/anamnesis/life-circumstances/ai-sections:
     patch:
       tags:
@@ -24130,7 +24146,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/anamnesis/life-circumstances/confirm:
     post:
       tags:
@@ -24154,7 +24170,7 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/anamnesis/audit-c:
     post:
       tags:
@@ -24187,7 +24203,7 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/anamnesis/audit-c/{id}:
     delete:
       tags:
@@ -24216,7 +24232,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/dawarich/connect:
     post:
       tags:
@@ -24242,7 +24258,7 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/dawarich/status:
     get:
       tags:
@@ -24259,7 +24275,7 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/dawarich/places:
     get:
       tags:
@@ -24290,7 +24306,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
         "502":
           description: "`dawarich.unreachable`."
           content:
@@ -24320,7 +24336,7 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/dawarich/test:
     post:
       tags:
@@ -24339,7 +24355,7 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/dawarich/sync:
     post:
       tags:
@@ -24374,7 +24390,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/dawarich/disconnect:
     post:
       tags:
@@ -24403,7 +24419,7 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/environment/travel/suggestions:
     get:
       tags:
@@ -24420,7 +24436,7 @@ paths:
         "403": *a19
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/environment/travel/suggestions/{id}/dismiss:
     post:
       tags:
@@ -24450,7 +24466,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/medications/{id}/links:
     post:
       tags:
@@ -24487,7 +24503,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
     delete:
       tags:
         - Links
@@ -24523,7 +24539,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/labs/{id}/links:
     post:
       tags:
@@ -24560,7 +24576,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
     delete:
       tags:
         - Links
@@ -24596,7 +24612,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a30
+        "501": *a45
   /api/bugreport:
     post:
       security: []
@@ -35592,17 +35608,17 @@ components:
                 personal_records.invalid_query; practitioner — practitioner.invalid; profile —
                 profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
                 profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
-                profile_claim.oidc_only_unsupported, profile_claim.taken; record_write — record_write.rate_limited;
-                report-selection — report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; route — route.retired; search — search.invalid; share-link —
-                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
-                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.refused, sharing.invite.self, sharing.not_permitted,
-                sharing.renounce.already_ended, sharing.renounce.not_found, sharing.revoke.already_ended,
-                sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
+                record_write.rate_limited; report-selection — report-selection.body.invalid_json,
+                report-selection.body.invalid_shape, report-selection.leaves.unknown; route — route.retired; search —
+                search.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
                 symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;

@@ -736,7 +736,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+            "Neither a password nor single sign-on could redeem a link on this instance (`meta.errorCode: profile_claim.oidc_only_unsupported`). Since v1.43 a single-sign-on-only instance hands over through the identity provider, so a working configuration never answers this.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {
