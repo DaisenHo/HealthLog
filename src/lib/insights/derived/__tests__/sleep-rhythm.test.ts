@@ -3,7 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock the DB so the builder is hermetic — we control the rows.
 const findMany = vi.fn();
 vi.mock("@/lib/db", () => ({
-  prisma: { measurement: { findMany: (...a: unknown[]) => findMany(...a) } },
+  prisma: {
+    measurement: { findMany: (...a: unknown[]) => findMany(...a) },
+    // v1.43 — the free-weekday answers; none here, so the weekend default.
+    healthProfileFactRevision: { findMany: vi.fn(async () => []) },
+  },
 }));
 vi.mock("@/lib/rollups/measurement-read", () => ({
   loadUserSourcePriority: vi.fn(async () => null),
@@ -145,6 +149,21 @@ describe("computeSleepRhythmFromNights window cap", () => {
     // is the invariant the dashboard summary (365-day read) + the /api/sleep/
     // rhythm route (42-day read) both depend on to render identical values.
     expect(oneYear.chronotype).toEqual(sixWeeks.chronotype);
+  });
+
+  it("counts the answered free weekdays as free nights instead of the weekend (v1.43)", () => {
+    const nights = trailingNights(42);
+    const weekend = computeSleepRhythmFromNights(nights, 420);
+    const tueWed = computeSleepRhythmFromNights(nights, 420, "COMPUTED", [
+      {
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validUntil: null,
+        days: [2, 3, 4],
+      },
+    ]);
+    expect(weekend.chronotype.freeNightsCounted).toBe(12);
+    // Three free weekdays over six weeks: 18 free nights, not the weekend 12.
+    expect(tueWed.chronotype.freeNightsCounted).toBe(18);
   });
 });
 

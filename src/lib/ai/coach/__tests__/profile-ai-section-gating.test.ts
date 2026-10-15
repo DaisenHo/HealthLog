@@ -169,4 +169,89 @@ describe("profile section access in AI prompt paths", () => {
     expect(mocks.factFindMany).toHaveBeenCalledOnce();
     expect(text).toContain("Penicillin");
   });
+
+  describe("life circumstances (v1.43)", () => {
+    const habitsBytes = new Uint8Array([20]);
+    const goalsBytes = new Uint8Array([21]);
+    const validFrom = new Date("2026-03-01T00:00:00.000Z");
+
+    beforeEach(() => {
+      // Answer with exactly the kinds the query asked for, the way the
+      // database would, so a kind left out of the query is never returned.
+      mocks.factFindMany.mockImplementation(
+        ({ where }: { where: { kind: { in: string[] } } }) =>
+          Promise.resolve(
+            [
+              { kind: "HABITS", valueEncrypted: habitsBytes, validFrom },
+              { kind: "HEALTH_GOALS", valueEncrypted: goalsBytes, validFrom },
+            ].filter((row) => where.kind.in.includes(row.kind)),
+          ),
+      );
+      mocks.decrypt.mockImplementation((bytes: Uint8Array) => {
+        if (bytes[0] === 20) {
+          return JSON.stringify({
+            schema: 1,
+            napRegularly: null,
+            snoringReported: true,
+            dietPattern: "vegan",
+            dietSpecifics: [],
+            lateMealsPerWeek: null,
+            fruitVegPortionsPerDay: null,
+            caffeineDrinksPerDay: 4,
+            latestCaffeine: "after_18",
+          });
+        }
+        if (bytes[0] === 21) {
+          return JSON.stringify({ schema: 1, goals: ["sleep"] });
+        }
+        return "unknown";
+      });
+    });
+
+    it("never decrypts a section without its switch", async () => {
+      mockIncluded(["GOALS"]);
+      const text = await getSelfContextTextForUser("user-1", "en");
+
+      const decrypted = mocks.decrypt.mock.calls.map(([bytes]) => bytes);
+      expect(decrypted).not.toContain(habitsBytes);
+      expect(decrypted).toContain(goalsBytes);
+      const query = mocks.factFindMany.mock.calls[0][0] as {
+        where: { kind: { in: string[] } };
+      };
+      expect(query.where.kind.in).not.toContain("HABITS");
+      expect(text).toContain("Health goals: sleep");
+      expect(text).toContain("self-report, valid since 2026-03");
+      expect(text).not.toContain("vegan");
+    });
+
+    it("adds the section once it is switched on", async () => {
+      mockIncluded(["HABITS"]);
+      const text = await getSelfContextTextForUser("user-1", "en");
+      expect(mocks.decrypt.mock.calls.map(([bytes]) => bytes)).toContain(
+        habitsBytes,
+      );
+      expect(text).toContain("Diet pattern: vegan");
+      expect(text).toContain("Latest caffeine: after 18");
+    });
+
+    it("gives AUDIT-C as a sum with its screening verdict under the alcohol switch only", async () => {
+      mocks.auditFindFirst.mockResolvedValue({
+        totalScore: 5,
+        takenAt: new Date("2026-10-01T09:00:00.000Z"),
+        locale: "de",
+      });
+      mocks.userFindUnique.mockResolvedValue({ gender: "MALE", locale: "de" });
+
+      mockIncluded(["ALCOHOL_PATTERN"]);
+      const text = await getSelfContextTextForUser("user-1", "de");
+      expect(text).toContain(
+        "AUDIT-C (Screening, keine Diagnose): 5 von 12 am 2026-10-01, Screening-Grenzwert 5 erreicht",
+      );
+
+      mocks.auditFindFirst.mockClear();
+      mockIncluded(["GOALS"]);
+      await getSelfContextTextForUser("user-1", "de");
+      expect(mocks.auditFindFirst).not.toHaveBeenCalled();
+    });
+  });
 });
