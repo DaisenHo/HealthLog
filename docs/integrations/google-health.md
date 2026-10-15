@@ -137,6 +137,19 @@ time of the oldest reading it has written, so the next slice asks Google only
 for what is older. A restart or an update in the middle loses at most the page
 that was being read.
 
+Asking for "what is older" uses an upper bound on the sample time, which
+Google's filter grammar allows but which a given account may still refuse. If
+Google answers that first resumed request with `400`, the slice reads the data
+type again without the bound, passes over the readings newer than its note
+without writing them, and carries on writing from there. The refusal is noted
+per data type, so later slices read without the bound straight away. The pages
+passed over are not counted against the slice's five minutes or 500 pages:
+otherwise a history deeper than one slice would spend every slice passing over
+what earlier slices wrote and never write anything new. Only the job's own
+time limit stops a slice while it is passing over, so on such an account each
+slice takes longer the further back the backfill has got. A `400` that names
+something else (the page token, the page size) is still a failure.
+
 The hourly sync waits for the slice that is running (up to eight minutes)
 instead of skipping the account, so recent data keeps arriving while an old
 history is still coming in.
@@ -172,12 +185,15 @@ reading:
   `status` the HTTP status, `duration_ms` how long it took. A request that was
   repeated carries a `note` (`rate_limited_retrying_in_ms=4000`,
   `server_error_retrying_in_ms=2000`, `no_response_retrying_in_ms=2000`,
-  `token_rejected_retrying_with_fresh_token`); one that failed for good
+  `token_rejected_retrying_with_fresh_token`,
+  `edge_filter_rejected_reading_without_it`); one that failed for good
   carries an `error`. Successful requests are listed up to 60 per line and
   everything up to 200; `external_calls_omitted` counts the rest.
 - `meta["googleHealth.backfill.slice"]` sums the slice up:
   - `pages`, `elapsedMs` and `imported`: what the slice read, how long it
-    took, how many readings it wrote.
+    took, how many readings it wrote. `skippedPages` is the part of `pages`
+    read only to pass over readings already written, on a data type whose
+    upper-bound filter Google refused.
   - `stopReason`: why it ended early. `time_budget` and `page_budget` are the
     normal end of a slice, `rate_limited` means Google would not take more
     requests for now, `job_budget` that the job itself ran out of time.
@@ -191,6 +207,9 @@ reading:
     `edgeFrom` and `edgeTo`, the oldest reading written before and after the
     slice.
   - `edges`: where every unfinished page-by-page data type stands now.
+- `meta["googleHealth.backfill.edgeFilterUnsupported"]` appears on the slice
+  where Google refused the upper-bound filter, listing the data types noted
+  as refusing it.
 - `action.name` is `google_health.backfill.continued` for a slice that made
   progress and queued the next one, `google_health.backfill.complete` for the
   one that finished the history, and `google_health.backfill.stuck` for one

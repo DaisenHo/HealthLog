@@ -426,6 +426,13 @@ export async function runWithGoogleHealthSyncCycle<T>(
  * years that one attempt could not finish (its budget, a rate limit, one
  * failed page among thousands) started again from the newest page on every
  * attempt and never reached the end (#1220).
+ *
+ * The upper bound (`<=`) a newest-first walk resumes with is valid filter
+ * grammar but has not been seen working against the live API. A collection
+ * whose resumed request Google refuses with a 400 is noted in
+ * `edgeFilterUnsupported`, and its walks from then on read without the bound
+ * and pass over the samples beyond the edge themselves (see
+ * `forEachDataPointPage`).
  */
 export interface GoogleHealthBackfillCursor {
   /** The edge: the sample instant (ISO 8601) the walk has written up to. */
@@ -462,6 +469,8 @@ interface BackfillResumeTracker {
   /** Collections whose edge this attempt moved, with the edge they started from. */
   advanced: Map<string, string | null>;
   collections: GoogleHealthBackfillCollectionReport[];
+  /** Collections whose resumed request Google refused the edge filter on. */
+  edgeFilterUnsupported: Set<string>;
 }
 const backfillResumeStorage = new AsyncLocalStorage<BackfillResumeTracker>();
 
@@ -507,6 +516,23 @@ export function readGoogleHealthBackfillCursors(
 }
 
 /**
+ * Read the `backfillProgress` column into the collections Google refused the
+ * edge filter on.
+ */
+export function readGoogleHealthBackfillEdgeFilterUnsupported(
+  value: unknown,
+): Set<string> {
+  const keys = progressRecord(value).edgeFilterUnsupported;
+  return new Set(
+    Array.isArray(keys)
+      ? keys.filter(
+          (key): key is string => typeof key === "string" && key.length <= 64,
+        )
+      : [],
+  );
+}
+
+/**
  * Write the tracker's progress with one change applied, and apply it to the
  * tracker only once the write has landed: progress that is not on disk is
  * progress the next attempt cannot see, so it must not count in this one.
@@ -516,8 +542,11 @@ async function persistBackfillProgress(
   next: {
     done: Set<string>;
     cursors: Map<string, GoogleHealthBackfillCursor>;
+    edgeFilterUnsupported?: Set<string>;
   },
 ): Promise<void> {
+  const unsupported =
+    next.edgeFilterUnsupported ?? tracker.edgeFilterUnsupported;
   await prisma.googleHealthConnection.update({
     where: { userId: tracker.userId },
     data: {
@@ -529,9 +558,17 @@ async function persistBackfillProgress(
             { at: c.at, order: c.order, pages: c.pages },
           ]),
         ),
+        // Only once there is something to say, so a backfill that never met
+        // the refusal keeps the shape it always had.
+        ...(unsupported.size > 0
+          ? { edgeFilterUnsupported: [...unsupported] }
+          : {}),
       },
     },
   });
+  if (unsupported !== tracker.edgeFilterUnsupported) {
+    for (const key of unsupported) tracker.edgeFilterUnsupported.add(key);
+  }
   // `next` may be the tracker's own collections: copy before clearing.
   const done = [...next.done];
   const cursors = [...next.cursors];
@@ -561,6 +598,7 @@ export async function runWithGoogleHealthBackfillResume<T>(
   done: Set<string>,
   fn: () => Promise<T>,
   cursors: Map<string, GoogleHealthBackfillCursor> = new Map(),
+  edgeFilterUnsupported: Set<string> = new Set(),
 ): Promise<GoogleHealthBackfillAttempt<T>> {
   const tracker: BackfillResumeTracker = {
     userId,
@@ -569,6 +607,7 @@ export async function runWithGoogleHealthBackfillResume<T>(
     skipped: [],
     advanced: new Map(),
     collections: [],
+    edgeFilterUnsupported,
   };
   const result = await backfillResumeStorage.run(tracker, fn);
   return {
@@ -581,11 +620,13 @@ export async function runWithGoogleHealthBackfillResume<T>(
 
 /**
  * Where a resumable collection's walk starts in this backfill attempt: the
- * edge an earlier attempt recorded (if any) and the pages it has already
- * read. Null outside a backfill, where every walk reads its whole window.
+ * edge an earlier attempt recorded (if any), whether Google may be asked for
+ * it with a filter (false once Google refused that filter for the
+ * collection), and the pages it has already read. Null outside a backfill,
+ * where every walk reads its whole window.
  */
 export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
-  edge?: { at: Date; order: "desc" | "asc" };
+  edge?: { at: Date; order: "desc" | "asc"; filter: boolean };
   pagesSoFar: number;
 } | null {
   const resume = backfillResumeStorage.getStore();
@@ -593,10 +634,45 @@ export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
   const cursor = resume.cursors.get(key);
   return cursor
     ? {
-        edge: { at: new Date(cursor.at), order: cursor.order },
+        edge: {
+          at: new Date(cursor.at),
+          order: cursor.order,
+          filter: !resume.edgeFilterUnsupported.has(key),
+        },
         pagesSoFar: cursor.pages,
       }
     : { pagesSoFar: 0 };
+}
+
+/**
+ * Note that Google refused the edge filter on a resumed request of this
+ * collection, so every later slice reads without it from the start instead
+ * of paying for the refusal again. Annotated as
+ * `googleHealth.backfill.edgeFilterUnsupported` (the collections noted so
+ * far) on the run that met the refusal. A note that cannot be written is a
+ * warning, not a failure: the next slice meets the refusal once more and
+ * falls back again. Outside a backfill this does nothing.
+ */
+export async function noteGoogleHealthEdgeFilterUnsupported(
+  key: GoogleHealthCollectionKey,
+): Promise<void> {
+  const resume = backfillResumeStorage.getStore();
+  if (!resume || resume.edgeFilterUnsupported.has(key)) return;
+  const unsupported = new Set([...resume.edgeFilterUnsupported, key]);
+  annotate({
+    meta: { "googleHealth.backfill.edgeFilterUnsupported": [...unsupported] },
+  });
+  try {
+    await persistBackfillProgress(resume, {
+      done: resume.done,
+      cursors: resume.cursors,
+      edgeFilterUnsupported: unsupported,
+    });
+  } catch (err) {
+    getEvent()?.addWarning(
+      `google-health: backfill progress write failed for ${key}: ${err}`,
+    );
+  }
 }
 
 /**

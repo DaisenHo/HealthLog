@@ -61,6 +61,7 @@ vi.mock("@/lib/google-health/sync-core", () => ({
   GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
   readGoogleHealthBackfillDone: () => new Set<string>(resumeState.doneBefore),
   readGoogleHealthBackfillCursors: () => new Map(),
+  readGoogleHealthBackfillEdgeFilterUnsupported: () => new Set<string>(),
   runWithGoogleHealthBackfillResume: async (
     _userId: string,
     done: Set<string>,
@@ -316,6 +317,7 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
         deadline: null,
         maxPages: 500,
         pages: 3,
+        skippedPages: 0,
         stopReason: "rate_limited",
         now: Date.now,
       }));
