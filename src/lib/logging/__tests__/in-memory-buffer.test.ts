@@ -3,7 +3,9 @@ import {
   appendLogEvent,
   readLogBuffer,
   clearLogBuffer,
+  getLogBufferSize,
   LOG_BUFFER_MAX,
+  PROBLEMS_BUFFER_MAX,
 } from "../in-memory-buffer";
 import type { WideEvent } from "../types";
 
@@ -115,5 +117,40 @@ describe("in-memory log buffer", () => {
     expect(readLogBuffer({})).toHaveLength(2);
     clearLogBuffer();
     expect(readLogBuffer({})).toHaveLength(0);
+  });
+
+  it("keeps warn and error in the problems ring while info traffic turns the main ring over", () => {
+    expect(PROBLEMS_BUFFER_MAX).toBe(1000);
+    appendLogEvent(
+      makeEvent({ level: "error", request_id: "3f9a2c1b-dead-beef" }),
+    );
+    appendLogEvent(makeEvent({ level: "warn", request_id: "warn-0001" }));
+    for (let i = 0; i < LOG_BUFFER_MAX + 50; i++) {
+      appendLogEvent(makeEvent({ level: "info" }));
+    }
+    // The main ring lost both; the problems ring kept them.
+    expect(readLogBuffer({ requestId: "3f9a2c1b" })).toHaveLength(0);
+    const found = readLogBuffer({ ring: "problems", requestId: "3f9a2c1b" });
+    expect(found.map((e) => e.request_id)).toEqual(["3f9a2c1b-dead-beef"]);
+    expect(getLogBufferSize("problems")).toBe(2);
+  });
+
+  it("FIFO-evicts the problems ring at its own cap and never admits info or debug", () => {
+    appendLogEvent(makeEvent({ level: "debug" }));
+    for (let i = 0; i < PROBLEMS_BUFFER_MAX + 5; i++) {
+      appendLogEvent(makeEvent({ level: "error", request_id: `e-${i}` }));
+    }
+    const out = readLogBuffer({ ring: "problems" });
+    expect(out).toHaveLength(PROBLEMS_BUFFER_MAX);
+    expect(out[0].request_id).toBe(`e-${PROBLEMS_BUFFER_MAX + 4}`);
+    expect(out.every((e) => e.level === "error")).toBe(true);
+  });
+
+  it("matches a request id by case-insensitive prefix", () => {
+    appendLogEvent(makeEvent({ request_id: "ABCDEF12-0000" }));
+    appendLogEvent(makeEvent({ request_id: "abcdef99-0000" }));
+    expect(readLogBuffer({ requestId: "abcdef12" })).toHaveLength(1);
+    expect(readLogBuffer({ requestId: "abcdef" })).toHaveLength(2);
+    expect(readLogBuffer({ requestId: "ABCDEF12-0000" })).toHaveLength(1);
   });
 });

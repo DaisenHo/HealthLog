@@ -67,6 +67,7 @@ interface AppLogsResponse {
   meta: {
     total: number;
     bufferMax: number;
+    problemsBufferMax?: number;
   };
 }
 
@@ -94,6 +95,7 @@ function levelIcon(level: LogLevel) {
 export function AppLogPreviewSection() {
   const { t } = useTranslations();
 
+  const [requestId, setRequestId] = useState("");
   const [traceId, setTraceId] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [level, setLevel] = useState<LogLevel | "__all__">("__all__");
@@ -103,16 +105,32 @@ export function AppLogPreviewSection() {
 
   const params = useMemo(() => {
     const p = new URLSearchParams();
+    // An error id is the first characters of a request id. The ids people
+    // read out come from 5xx answers, which are logged at `error`, so a
+    // search by id, like a filter on warn or error, reads the problems ring:
+    // it keeps the last 1,000 warnings and errors, where the main ring keeps
+    // 500 events of every kind and turns over in minutes on a busy host.
+    const id = requestId.trim();
+    if (id.length >= 8) p.set("requestId", id);
+    if (id.length >= 8 || level === "warn" || level === "error") {
+      p.set("ring", "problems");
+    }
     if (traceId.trim()) p.set("traceId", traceId.trim());
     if (actionFilter.trim()) p.set("action", actionFilter.trim());
     if (level !== "__all__") p.set("level", level);
     const since = rangeToSince(range);
     if (since) p.set("since", since);
     return p;
-  }, [traceId, actionFilter, level, range]);
+  }, [requestId, traceId, actionFilter, level, range]);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: queryKeys.adminAppLogs(traceId, actionFilter, level, range),
+    queryKey: queryKeys.adminAppLogs(
+      traceId,
+      actionFilter,
+      level,
+      range,
+      requestId.trim(),
+    ),
     queryFn: async () => {
       return apiGet<AppLogsResponse>(
         `/api/admin/app-logs?${params.toString()}`,
@@ -144,7 +162,19 @@ export function AppLogPreviewSection() {
       {/* Filters and the refresh share one toolbar row above the table; the
           header status slot carries status, not actions (design standards
           §12). */}
-      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+        <Input
+          type="search"
+          placeholder={t("admin.section.app-logs.filterErrorId")}
+          value={requestId}
+          maxLength={64}
+          onChange={(e) => {
+            setRequestId(e.target.value);
+            setPage(1);
+          }}
+          aria-label={t("admin.section.app-logs.filterErrorId")}
+          data-slot="app-logs-error-id-filter"
+        />
         <Input
           type="search"
           placeholder={t("admin.section.app-logs.filterTraceId")}
