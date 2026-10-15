@@ -31,7 +31,8 @@
  * - 90 days of mood entries
  * - Six mental-wellbeing screeners (WHO-5, PHQ-9, GAD-7) spread over the
  *   window, item answers encrypted the way the check-in route writes them
- * - Vorsorge (preventive-care) reminders — upcoming dental + annual physical
+ * - Vorsorge (preventive-care) reminders — a dental check-up due today and
+ *   an annual physical in three months
  * - Two lab panels of biomarkers across two dates (quantitative with
  *   reference ranges + qualitative "negativ" rows)
  * - Two illness episodes — a resolved acute cold with a day-by-day symptom
@@ -1511,14 +1512,15 @@ async function seed() {
 
     // ── Vorsorge reminders (preventive care) ──
     // User-created (origin VORSORGE) checklist reminders with no auto-resolve
-    // measurement target. Both anchored to fire comfortably in the future so
-    // the Vorsorge surface shows sensible upcoming items, not overdue ones.
+    // measurement target. The dental check-up falls due this morning, so the
+    // dashboard's "worth a look" carries it beside tomorrow's appointment; the
+    // annual physical sits comfortably in the future.
     console.log("Creating Vorsorge reminders...");
-    const dentalNextDue = daysAgo(-45); // ~6 weeks out
+    const dentalNextDue = berlinHmAsUtc(9, 0); // due today, 09:00 local
     await client.query(
       `INSERT INTO measurement_reminders (id, user_id, label, interval_days, anchor_date, origin, notify_hour, location, next_due_at, created_at, updated_at)
        VALUES ($1, $2, 'Dental check-up', 365, $3, 'VORSORGE', 9, 'Dentist', $4, NOW(), NOW())`,
-      [cuid(), userId, daysAgo(320), dentalNextDue],
+      [cuid(), userId, daysAgo(365), dentalNextDue],
     );
     const physicalNextDue = daysAgo(-90); // ~3 months out
     await client.query(
