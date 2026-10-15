@@ -24,10 +24,12 @@
  *       · per-day cumulative totals — `stats:<HK>:<YYYY-MM-DD>` (Steps,
  *         Active Energy, Sleep Duration, Walking/Running Distance,
  *         Flights Climbed);
- *       · v1.19.0 (iOS #34) hourly heart-rate buckets —
- *         `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start-hour>`
- *         carrying the hour's AVERAGE bpm as one PULSE row, so iOS stops
- *         uploading one row per raw HR sample.
+ *       · v1.19.0 (iOS #34) heart-rate buckets, 10 minutes wide since
+ *         v1.30.7 — `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start>`
+ *         where `<bucket-start>` is the ISO-8601 UTC 10-minute boundary
+ *         (minutes 00/10/20/30/40/50), carrying the bucket's AVERAGE bpm
+ *         as one PULSE row, so iOS stops uploading one row per raw HR
+ *         sample.
  *     Both surface as `updated` (the row's value is overwritten) rather
  *     than `duplicate` (the new value dropped). Sample-class externalIds
  *     (every other prefix) keep the strict immutable `duplicate`
@@ -153,11 +155,11 @@ const batchEntrySchema = z.object({
   // device's own verdict / severity; resolved to a `rhythmClassification`
   // by `mapAppleHealthEntry`. Ignored for every non-event identifier.
   categoryValue: z.number().int().min(0).max(20).optional(),
-  // v1.19.2 (iOS #34 extension) — per-bucket spread for the hourly
-  // heart-rate bucket. `value` carries the hour's AVERAGE bpm; these carry
-  // the hour's MIN / MAX so a client renders the intra-hour band without
+  // v1.19.2 (iOS #34 extension) — per-bucket spread for the 10-minute
+  // heart-rate bucket. `value` carries the bucket's AVERAGE bpm; these carry
+  // its MIN / MAX so a client renders the band inside the bucket without
   // re-uploading raw samples. Persisted ONLY on a well-formed
-  // `stats:HKQuantityTypeIdentifierHeartRate:<hour>` row; ignored (stored
+  // `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start>` row; ignored (stored
   // NULL) for every other entry. Optional + backward-compatible: a pre-W192
   // iOS build omits them and the bucket keeps the avg-only contract.
   valueMin: z.number().finite().optional(),
