@@ -3,7 +3,11 @@
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -110,6 +114,16 @@ function entryI18nKey(entry: MedicationSideEffectEntry): string {
     .replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
+/** Entries per page of the side-effect list. */
+const SIDE_EFFECTS_PAGE_SIZE = 50;
+
+interface SideEffectPageParam {
+  /** The window start, fixed when the first page loaded. */
+  from: string;
+  /** Exclusive upper bound: just after the oldest entry already shown. */
+  to: string;
+}
+
 export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
   const { t } = useTranslations();
   const { canWriteDomain, canManageDomain } = useRecordCapabilities();
@@ -133,18 +147,40 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
 
   const listKey = queryKeys.medicationSideEffects(medicationId);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  // The last 30 days, newest first, one page at a time. The window is fixed
+  // when the first page loads; each further page asks for the entries before
+  // the oldest one shown (`to` is exclusive, so the boundary instant is
+  // re-asked one millisecond later and the overlap is dropped by id).
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: listKey,
-    queryFn: async () => {
-      // Last 30 days, newest-first.
-      const to = new Date();
-      const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const url = `/api/medications/${medicationId}/side-effects?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&limit=100`;
+    initialPageParam: null as SideEffectPageParam | null,
+    queryFn: async ({ pageParam }) => {
+      const to = pageParam ? new Date(pageParam.to) : new Date();
+      const from = pageParam
+        ? new Date(pageParam.from)
+        : new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const url = `/api/medications/${medicationId}/side-effects?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&limit=${SIDE_EFFECTS_PAGE_SIZE}`;
       const { data: payload } = await apiFetchEnvelope<{
         items: SideEffectRow[];
         meta: { total: number };
       }>(url);
-      return payload;
+      return { ...payload, from: from.toISOString() };
+    },
+    getNextPageParam: (lastPage): SideEffectPageParam | undefined => {
+      if (lastPage.items.length < SIDE_EFFECTS_PAGE_SIZE) return undefined;
+      const oldest = lastPage.items[lastPage.items.length - 1];
+      return {
+        from: lastPage.from,
+        to: new Date(Date.parse(oldest.occurredAt) + 1).toISOString(),
+      };
     },
     staleTime: 30 * 1000,
   });
@@ -184,7 +220,18 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
     },
   });
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    const out: SideEffectRow[] = [];
+    for (const page of data?.pages ?? []) {
+      for (const row of page.items) {
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        out.push(row);
+      }
+    }
+    return out;
+  }, [data]);
 
   const filteredEntries = useMemo(
     () => entriesByCategory(category),
@@ -363,6 +410,20 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
               </li>
             ))}
           </ul>
+          {hasNextPage ? (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isFetchingNextPage}
+                onClick={() => void fetchNextPage()}
+              >
+                {isFetchingNextPage
+                  ? t("common.loading")
+                  : t("medications.sideEffects.loadMore")}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
 

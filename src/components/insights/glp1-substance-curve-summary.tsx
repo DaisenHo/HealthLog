@@ -9,9 +9,12 @@
  *
  * Gating: reads `GET /api/insights/glp1-timeline` — the server-authoritative
  * GLP-1 signal. When `hasGlp1` is false the block renders nothing. The set of
- * GLP-1 medication names comes from the timeline's entries (every entry is
- * from a `treatmentClass === "GLP1"` medication), and the passed medication
- * list is filtered to that set so non-GLP-1 medications never render a curve.
+ * GLP-1 medications comes from the response's `medications` list, which the
+ * server fills from every `treatmentClass === "GLP1"` medication independent
+ * of the entry cap, and the passed medication list is filtered to that set so
+ * non-GLP-1 medications never render a curve. (It used to be derived from the
+ * names in a capped page of entries, which dropped a medication whose events
+ * were all older than that page.)
  *
  * The chart carries its own `MedicationDetailSection` card chrome + estimate
  * disclaimer, so it reads as one system with the surrounding Insights cards
@@ -36,7 +39,7 @@ const DrugLevelChart = dynamic(
 
 interface Glp1TimelineResponse {
   hasGlp1: boolean;
-  entries: { medicationName?: string }[];
+  medications: { id: string; name: string }[];
 }
 
 export function Glp1SubstanceCurveSummary({
@@ -45,24 +48,17 @@ export function Glp1SubstanceCurveSummary({
   medications: { id: string; name: string; dose: string }[];
 }) {
   const { data } = useQuery({
-    queryKey: queryKeys.insightsGlp1Timeline(200),
+    // Only `medications` is read, so the smallest page of entries will do.
+    queryKey: queryKeys.insightsGlp1Timeline(1),
     queryFn: () =>
-      apiGet<Glp1TimelineResponse>("/api/insights/glp1-timeline?limit=200"),
+      apiGet<Glp1TimelineResponse>("/api/insights/glp1-timeline?limit=1"),
     staleTime: 60_000,
   });
 
   if (!data?.hasGlp1) return null;
 
-  // Every timeline entry is from a GLP-1 medication (server filters on
-  // `treatmentClass: "GLP1"`). Medication names match the comprehensive
-  // list exactly — both derive from `medication.name` server-side.
-  const glp1Names = new Set(
-    data.entries
-      .map((e) => e.medicationName)
-      .filter((n): n is string => typeof n === "string" && n.length > 0),
-  );
-
-  const glp1Meds = medications.filter((m) => glp1Names.has(m.name));
+  const glp1Ids = new Set(data.medications.map((m) => m.id));
+  const glp1Meds = medications.filter((m) => glp1Ids.has(m.id));
   if (glp1Meds.length === 0) return null;
 
   const showNameLabel = glp1Meds.length > 1;

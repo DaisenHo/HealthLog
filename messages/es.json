@@ -1386,6 +1386,7 @@
       "emptyState": "Aún no hay efectos secundarios registrados. Hacer seguimiento puede ayudar a tu médico y revelar patrones a lo largo del tiempo.",
       "recentTitle": "Últimos 30 días",
       "loading": "Cargando…",
+      "loadMore": "Cargar más",
       "deleteCta": "Eliminar",
       "deleteError": "No se pudo eliminar la entrada",
       "errorSeverity": "La gravedad debe estar entre 1 y 5",

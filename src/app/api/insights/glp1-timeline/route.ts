@@ -68,7 +68,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   });
 
   if (meds.length === 0) {
-    return apiSuccess({ hasGlp1: false, entries: [] });
+    return apiSuccess({ hasGlp1: false, entries: [], medications: [] });
   }
 
   const ninetyDaysAgo = new Date();
@@ -173,5 +173,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  return apiSuccess({ hasGlp1: true, entries: entries.slice(0, limit) });
+  // `medications` is every GLP-1 medication, independent of `limit`: a
+  // consumer that needs the set (the substance-curve summary) must not
+  // derive it from a capped page of entries.
+  return apiSuccess({
+    hasGlp1: true,
+    entries: entries.slice(0, limit),
+    medications: meds.map((med) => ({ id: med.id, name: med.name })),
+  });
 });

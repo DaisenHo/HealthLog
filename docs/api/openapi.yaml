@@ -61229,9 +61229,26 @@ components:
             additionalProperties: false
           description: "Newest first, capped at `limit`. A heterogeneous union: which optional keys are present depends on `kind`,
             and no entry carries all of them."
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+            required:
+              - id
+              - name
+            additionalProperties: false
+          description: "Every medication classified GLP-1 in the record, whatever `limit` cut from `entries`. Read this, not the
+            entry names, to know which medications are GLP-1: a medication whose events are all older than the newest
+            `limit` entries has none in `entries`. Empty when `hasGlp1` is false."
       required:
         - hasGlp1
         - entries
+        - medications
       additionalProperties: false
       description: "A chronological merge of the GLP-1-relevant events the record holds: titration steps, injections with
         their sites, legacy stock-ledger movements, and side-effect-tagged mood days from the trailing 90 days.

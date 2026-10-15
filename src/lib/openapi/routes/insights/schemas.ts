@@ -2878,6 +2878,11 @@ export const glp1TimelineResponse = z
       .describe(
         "Newest first, capped at `limit`. A heterogeneous union: which optional keys are present depends on `kind`, and no entry carries all of them.",
       ),
+    medications: z
+      .array(z.object({ id: z.string(), name: z.string() }))
+      .describe(
+        "Every medication classified GLP-1 in the record, whatever `limit` cut from `entries`. Read this, not the entry names, to know which medications are GLP-1: a medication whose events are all older than the newest `limit` entries has none in `entries`. Empty when `hasGlp1` is false.",
+      ),
   })
   .meta({
     id: "Glp1TimelineResponse",
