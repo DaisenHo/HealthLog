@@ -4569,7 +4569,7 @@
       "description": "Cómo se ha recuperado tu cuerpo: las señales de recuperación, esfuerzo y carga que tu wearable registra durante la noche.",
       "scoreCrossLink": "Ver la puntuación de recuperación combinada",
       "emptyTitle": "Aún no hay datos de recuperación",
-      "empty": "Aún no hay datos de recuperación. Conecta una cuenta de WHOOP, Polar u Oura y estas puntuaciones se completarán cuando tu dispositivo sincronice.",
+      "empty": "Aún no hay nada que mostrar aquí. Esta página muestra las lecturas de recarga, esfuerzo y carga que registran WHOOP y Polar, y el nivel de resiliencia de Oura. La preparación (readiness) de Oura aparece como tu puntuación de recuperación, enlazada arriba.",
       "block": {
         "ansChargeExplainer": "Cuán cargado está tu sistema nervioso autónomo para el día: una lectura de recarga obtenida de tus señales nocturnas de corazón y respiración.",
         "dayStrainExplainer": "La carga cardiovascular del día en la escala de esfuerzo de tu dispositivo. Léela en relación con tu recuperación, no como una meta en sí.",

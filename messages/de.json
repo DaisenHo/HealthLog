@@ -4569,7 +4569,7 @@
       "description": "Wie gut sich dein Körper erholt hat: die Erholungs-, Belastungs- und Load-Signale, die dein Wearable über Nacht aufzeichnet.",
       "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
-      "empty": "Noch keine Erholungsdaten. Verbinde ein WHOOP-, Polar- oder Oura-Konto, dann füllen sich diese Werte, sobald dein Gerät synchronisiert.",
+      "empty": "Hier ist noch nichts zu sehen. Diese Seite zeigt die Werte zu Aufladung, Belastung und Trainingslast, die WHOOP und Polar aufzeichnen, und Ouras Resilienz-Stufe. Ouras Readiness erscheint als dein Erholungs-Score, oben verlinkt.",
       "block": {
         "ansChargeExplainer": "Wie aufgeladen dein autonomes Nervensystem in den Tag startet, ein Recharge-Wert aus deinen nächtlichen Herz- und Atemsignalen.",
         "dayStrainExplainer": "Die kardiovaskuläre Tagesbelastung auf der Belastungsskala deines Geräts. Lies sie im Verhältnis zu deiner Erholung, nicht als Ziel für sich.",
