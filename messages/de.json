@@ -6255,7 +6255,8 @@
         "subLabel": "Dein KI-Anbieter liest und indiziert neue Dokumente, ohne dass du jedes einzeln bestätigst.",
         "honesty": "Wenn aktiviert, wird jedes hochgeladene Dokument an deinen konfigurierten KI-Anbieter gesendet, um gelesen, beschrieben und für die Suche indiziert zu werden, ohne Bestätigung pro Dokument. Das Einschalten wirkt außerdem rückwirkend: Bereits hochgeladene Dokumente ohne Zusammenfassung werden ebenfalls gesendet, bis zu 200 pro Einschaltvorgang. Das geschieht auf dem Server, und der Inhalt des Dokuments verlässt dabei diese Maschine in Richtung dieses Anbieters. Wenn dein konfigurierter Anbieter eine Abo-Verbindung ist (ein angemeldetes KI-Konto statt eines API-Schlüssels), gelten dessen eigene Datenschutzeinstellungen: Abo-Anbieter dürfen den Inhalt zur Verbesserung ihrer Modelle verwenden, und kein Auftragsverarbeitungsvertrag deckt das ab. Dokumente, die von einem selbst gehosteten lokalen Modell gelesen werden, verlassen deinen Server nie. Standardmäßig aus; aktiviere es nur, wenn du diesen Kompromiss für deine Dokumente akzeptierst.",
         "confirm": "Verstanden, aktivieren",
-        "cancel": "Abbrechen"
+        "cancel": "Abbrechen",
+        "restingFrugal": "Pausiert auf der sparsamen KI-Stufe: Dokumente werden nur auf Knopfdruck gelesen."
       },
       "centralCodex": {
         "title": "Gemeinsamen KI-Zugang des Servers nutzen",
@@ -6313,7 +6314,32 @@
         "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen."
       },
       "providerCardDescription": "Der Anbieter, den HealthLog zuerst fragt, mit Schlüssel und Modell.",
-      "runtimeTitle": "Prüfen und aktualisieren"
+      "runtimeTitle": "Prüfen und aktualisieren",
+      "usage": {
+        "title": "KI-Einsatz",
+        "description": "Wie viel KI-Arbeit im Hintergrund für dich läuft, während der Coach auf jeder Stufe gleich bleibt.",
+        "levels": {
+          "frugal": {
+            "label": "Sparsam",
+            "hint": "Karten erneuern sich nach einem Sync höchstens einmal am Tag, ein kurzes Tagesbriefing, Dokumente werden nur auf Knopfdruck gelesen."
+          },
+          "standard": {
+            "label": "Standard",
+            "hint": "Karten erneuern sich nach einem Sync alle paar Stunden, das volle Tagesbriefing."
+          },
+          "full": {
+            "label": "Voll",
+            "hint": "Karten erneuern sich nach neuen Daten bis zu stündlich, wie vor dieser Einstellung."
+          }
+        },
+        "limited": "Vom Betreiber begrenzt.",
+        "estimate": "etwa {tokens} Tokens am Tag, geschätzt",
+        "measured": "Gemessen: {tokens} Tokens am Tag in den letzten {days} Tagen, Coach eingeschlossen. Die Werte je Stufe sind Schätzungen.",
+        "noEstimate": "Eine Schätzung je Stufe erscheint nach drei Tagen KI-Nutzung.",
+        "capped": "Du hast {choice} gewählt, das der Server gerade nicht erlaubt, deshalb gilt {level}. Deine Wahl bleibt gespeichert.",
+        "followsDefault": "Du folgst dem Standard des Servers ({level}).",
+        "useDefault": "Standard des Servers verwenden ({level})"
+      }
     },
     "dashboard": {
       "units": {
@@ -7343,7 +7369,8 @@
       "spendToday": "Heute, jeweils am eigenen Kalendertag jedes Kontos: {total} Tokens, davon {operator} auf dem Schlüssel des Betreibers (Konten mit Verbrauch: {accounts}).",
       "statusPaused": "Pausiert",
       "pausedHint": "Nach wiederholten Fehlern für {count} Nutzer pausiert bis {at}. Danach wird er automatisch wieder versucht.",
-      "modelNotServed": "Der Endpunkt bietet das Modell {model} nicht mehr an. Wähle in den KI-Einstellungen ein Modell, das er anbietet."
+      "modelNotServed": "Der Endpunkt bietet das Modell {model} nicht mehr an. Wähle in den KI-Einstellungen ein Modell, das er anbietet.",
+      "usageLevels": "Konten je KI-Stufe: {frugal} sparsam, {standard} Standard, {full} voll."
     },
     "aiQuality": {
       "title": "Auswertungs-Qualität",
@@ -8120,7 +8147,16 @@
       "codes": "Für den Betrieb: API-Anfragen antworten mit 503 und dem Fehlercode {code}, /api/health meldet den Grund {reason}."
     },
     "loginOverviewCardTitle": "Anmeldeereignisse",
-    "userColumn": "Nutzer"
+    "userColumn": "Nutzer",
+    "aiUsage": {
+      "title": "KI-Einsatz-Stufen",
+      "description": "Die höchste Stufe, die Konten wählen dürfen, und die Stufe, mit der sie starten.",
+      "maxLabel": "Höchste Stufe",
+      "defaultLabel": "Standardstufe",
+      "defaultAboveCeiling": "Die Standardstufe darf nicht über der höchsten Stufe liegen.",
+      "gapLabel": "Stunden zwischen Karten-Erneuerungen nach einem Sync (Standard)",
+      "gapHint": "Ganze Stunden von 1 bis 48. Leer lassen für AI_SYNC_REGEN_GAP_HOURS, sonst 6. Gerade wirksam: {hours} h."
+    }
   },
   "achievements": {
     "title": "Erfolge",

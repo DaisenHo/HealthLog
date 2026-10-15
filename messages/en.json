@@ -6255,7 +6255,8 @@
         "subLabel": "Your AI provider reads and indexes each new document without a tap per document.",
         "honesty": "When on, each document you upload is sent to your configured AI provider to be read, described, and indexed for search, with no per-document confirmation. Turning it on also reaches backwards: documents you have already uploaded that carry no summary yet are sent too, up to 200 each time you switch it on. This happens on the server and the document's contents leave this machine to that provider. If your configured provider is a subscription connection (a signed-in AI account rather than an API key), that provider's own data settings apply: subscription providers may use the content to improve their models, and no data-processing agreement covers it. Documents read by a self-hosted local model never leave your server. Off by default; turn it on only if you accept this trade for your documents.",
         "confirm": "I understand, turn on",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "restingFrugal": "Paused at the frugal AI usage level: documents are read only when you ask."
       },
       "centralCodex": {
         "title": "Use the server's shared AI access",
@@ -6313,7 +6314,32 @@
         "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
       },
       "providerCardDescription": "The provider HealthLog asks first, and its key and model.",
-      "runtimeTitle": "Check and refresh"
+      "runtimeTitle": "Check and refresh",
+      "usage": {
+        "title": "AI usage",
+        "description": "How much AI work runs in the background for you, while the Coach stays the same at every level.",
+        "levels": {
+          "frugal": {
+            "label": "Frugal",
+            "hint": "Cards refresh at most once a day after a sync, a short daily briefing, documents are read only when you ask."
+          },
+          "standard": {
+            "label": "Standard",
+            "hint": "Cards refresh every few hours after a sync, the full daily briefing."
+          },
+          "full": {
+            "label": "Full",
+            "hint": "Cards refresh up to every hour after new data, as before this setting existed."
+          }
+        },
+        "limited": "Limited by the server operator.",
+        "estimate": "about {tokens} tokens a day, estimated",
+        "measured": "Measured: {tokens} tokens a day over the last {days} days, the Coach included. The figures per level are estimates.",
+        "noEstimate": "An estimate per level appears after three days of AI use.",
+        "capped": "You chose {choice}, which the server does not allow at the moment, so {level} applies. Your choice is kept.",
+        "followsDefault": "You follow the server default ({level}).",
+        "useDefault": "Use the server default ({level})"
+      }
     },
     "dashboard": {
       "units": {
@@ -7343,7 +7369,8 @@
       "spendToday": "Today, on each account's own calendar day: {total} tokens, {operator} of them on the operator's own key (accounts with spend: {accounts}).",
       "statusPaused": "Paused",
       "pausedHint": "Paused after repeated failures for {count} users until {at}. It is tried again automatically then.",
-      "modelNotServed": "The endpoint no longer offers the model {model}. Choose a model it lists in the AI settings."
+      "modelNotServed": "The endpoint no longer offers the model {model}. Choose a model it lists in the AI settings.",
+      "usageLevels": "Accounts per AI usage level: {frugal} frugal, {standard} standard, {full} full."
     },
     "aiQuality": {
       "title": "Insights Quality",
@@ -8120,7 +8147,16 @@
       "codes": "For the operator: API requests answer 503 with error code {code}, and /api/health reports reason {reason}."
     },
     "loginOverviewCardTitle": "Sign-in events",
-    "userColumn": "User"
+    "userColumn": "User",
+    "aiUsage": {
+      "title": "AI usage levels",
+      "description": "The highest level accounts may choose and the level they start at.",
+      "maxLabel": "Highest level",
+      "defaultLabel": "Default level",
+      "defaultAboveCeiling": "The default level cannot be above the highest level.",
+      "gapLabel": "Hours between card refreshes after a sync (Standard)",
+      "gapHint": "Whole hours from 1 to 48. Leave empty to use AI_SYNC_REGEN_GAP_HOURS, else 6. In effect now: {hours} h."
+    }
   },
   "achievements": {
     "title": "Achievements",

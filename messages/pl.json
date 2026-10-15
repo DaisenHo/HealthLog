@@ -6255,7 +6255,8 @@
         "subLabel": "Dokumenty są czytane i indeksowane przez skonfigurowanego dostawcę AI bez potwierdzania każdego dokumentu.",
         "honesty": "Po włączeniu każdy przesłany dokument jest wysyłany do skonfigurowanego dostawcy AI, aby go odczytać, opisać i zaindeksować do wyszukiwania, bez potwierdzania każdego dokumentu. Włączenie działa też wstecz: dokumenty już przesłane, które nie mają jeszcze streszczenia, również zostaną wysłane (do 200 przy każdym włączeniu). Dzieje się to na serwerze, a treść dokumentu opuszcza to urządzenie i trafia do tego dostawcy. Jeśli skonfigurowany dostawca to połączenie subskrypcyjne (zalogowane konto AI zamiast klucza API), obowiązują jego własne ustawienia danych: dostawcy subskrypcyjni mogą wykorzystywać treść do ulepszania swoich modeli i nie obejmuje tego żadna umowa powierzenia przetwarzania danych. Dokumenty odczytywane przez samodzielnie hostowany model lokalny nigdy nie opuszczają Twojego serwera. Domyślnie wyłączone; włącz je tylko wtedy, gdy akceptujesz ten kompromis dla swoich dokumentów.",
         "confirm": "Rozumiem, włącz",
-        "cancel": "Anuluj"
+        "cancel": "Anuluj",
+        "restingFrugal": "Wstrzymane na oszczędnym poziomie AI: dokumenty są czytane tylko na żądanie."
       },
       "centralCodex": {
         "title": "Użyj wspólnego dostępu AI serwera",
@@ -6313,7 +6314,32 @@
         "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
       },
       "providerCardDescription": "Dostawca, którego HealthLog pyta najpierw, wraz z kluczem i modelem.",
-      "runtimeTitle": "Sprawdź i odśwież"
+      "runtimeTitle": "Sprawdź i odśwież",
+      "usage": {
+        "title": "Użycie AI",
+        "description": "Ile pracy AI wykonuje się dla Ciebie w tle, przy czym Coach działa tak samo na każdym poziomie.",
+        "levels": {
+          "frugal": {
+            "label": "Oszczędny",
+            "hint": "Karty odświeżają się po synchronizacji najwyżej raz dziennie, krótkie podsumowanie dnia, dokumenty są czytane tylko na żądanie."
+          },
+          "standard": {
+            "label": "Standardowy",
+            "hint": "Karty odświeżają się po synchronizacji co kilka godzin, pełne podsumowanie dnia."
+          },
+          "full": {
+            "label": "Pełny",
+            "hint": "Karty odświeżają się po nowych danych nawet co godzinę, jak przed wprowadzeniem tego ustawienia."
+          }
+        },
+        "limited": "Ograniczone przez administratora serwera.",
+        "estimate": "około {tokens} tokenów dziennie, szacunkowo",
+        "measured": "Zmierzono: {tokens} tokenów dziennie w ostatnich {days} dniach, łącznie z Coachem. Wartości dla poziomów są szacunkami.",
+        "noEstimate": "Szacunek dla każdego poziomu pojawi się po trzech dniach korzystania z AI.",
+        "capped": "Wybrano poziom {choice}, na który serwer obecnie nie pozwala, więc obowiązuje {level}. Twój wybór zostaje zapisany.",
+        "followsDefault": "Korzystasz z ustawienia domyślnego serwera ({level}).",
+        "useDefault": "Użyj ustawienia domyślnego serwera ({level})"
+      }
     },
     "dashboard": {
       "units": {
@@ -7343,7 +7369,8 @@
       "spendToday": "Dzisiaj, według dnia kalendarzowego każdego konta: {total} tokenów, w tym {operator} na kluczu operatora (konta ze zużyciem: {accounts}).",
       "statusPaused": "Wstrzymany",
       "pausedHint": "Wstrzymany po powtarzających się błędach dla {count} użytkowników do {at}. Potem zostanie automatycznie ponowiony.",
-      "modelNotServed": "Punkt końcowy nie oferuje już modelu {model}. Wybierz w ustawieniach AI model, który oferuje."
+      "modelNotServed": "Punkt końcowy nie oferuje już modelu {model}. Wybierz w ustawieniach AI model, który oferuje.",
+      "usageLevels": "Konta według poziomu użycia AI: oszczędny {frugal}, standardowy {standard}, pełny {full}."
     },
     "aiQuality": {
       "title": "Jakość analiz",
@@ -8120,7 +8147,16 @@
       "codes": "Dla administratora: żądania API odpowiadają 503 z kodem błędu {code}, a /api/health podaje powód {reason}."
     },
     "loginOverviewCardTitle": "Zdarzenia logowania",
-    "userColumn": "Użytkownik"
+    "userColumn": "Użytkownik",
+    "aiUsage": {
+      "title": "Poziomy użycia AI",
+      "description": "Najwyższy poziom, jaki mogą wybrać konta, i poziom, od którego zaczynają.",
+      "maxLabel": "Najwyższy poziom",
+      "defaultLabel": "Poziom domyślny",
+      "defaultAboveCeiling": "Poziom domyślny nie może być wyższy niż najwyższy poziom.",
+      "gapLabel": "Godziny między odświeżeniami kart po synchronizacji (Standardowy)",
+      "gapHint": "Pełne godziny od 1 do 48. Zostaw puste, aby użyć AI_SYNC_REGEN_GAP_HOURS, w przeciwnym razie 6. Obecnie obowiązuje: {hours} h."
+    }
   },
   "achievements": {
     "title": "Osiągnięcia",

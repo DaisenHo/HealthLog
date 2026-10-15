@@ -6255,7 +6255,8 @@
         "subLabel": "I documenti vengono letti e indicizzati dal provider di IA configurato, senza confermare ogni documento.",
         "honesty": "Quando è attivo, ogni documento che carichi viene inviato al provider di IA configurato per essere letto, descritto e indicizzato per la ricerca, senza conferma per singolo documento. Attivarlo agisce anche retroattivamente: i documenti che hai già caricato e che non hanno ancora un riassunto vengono inviati anch'essi, fino a 200 per ogni attivazione. Questo avviene sul server e il contenuto del documento lascia questa macchina verso quel provider. Se il provider configurato è una connessione in abbonamento (un account IA con accesso effettuato anziché una chiave API), si applicano le sue impostazioni sui dati: i provider in abbonamento possono usare il contenuto per migliorare i propri modelli e nessun accordo sul trattamento dei dati lo copre. I documenti letti da un modello locale self-hosted non lasciano mai il tuo server. Disattivato per impostazione predefinita; attivalo solo se accetti questo compromesso per i tuoi documenti.",
         "confirm": "Ho capito, attiva",
-        "cancel": "Annulla"
+        "cancel": "Annulla",
+        "restingFrugal": "In pausa al livello di IA a risparmio: i documenti vengono letti solo su richiesta."
       },
       "centralCodex": {
         "title": "Usa l'accesso IA condiviso del server",
@@ -6313,7 +6314,32 @@
         "coachNote": "Nel Coach vale la profondità di ragionamento delle impostazioni del Coach."
       },
       "providerCardDescription": "Il fornitore che HealthLog interpella per primo, con chiave e modello.",
-      "runtimeTitle": "Verifica e aggiorna"
+      "runtimeTitle": "Verifica e aggiorna",
+      "usage": {
+        "title": "Uso dell'IA",
+        "description": "Quanto lavoro di IA viene svolto in background per te, mentre il Coach resta uguale a ogni livello.",
+        "levels": {
+          "frugal": {
+            "label": "Risparmio",
+            "hint": "Le schede si aggiornano al massimo una volta al giorno dopo una sincronizzazione, un riepilogo giornaliero breve, i documenti vengono letti solo su richiesta."
+          },
+          "standard": {
+            "label": "Standard",
+            "hint": "Le schede si aggiornano ogni poche ore dopo una sincronizzazione, il riepilogo giornaliero completo."
+          },
+          "full": {
+            "label": "Completo",
+            "hint": "Le schede si aggiornano fino a ogni ora con nuovi dati, come prima di questa impostazione."
+          }
+        },
+        "limited": "Limitato dall'amministratore del server.",
+        "estimate": "circa {tokens} token al giorno, stima",
+        "measured": "Misurato: {tokens} token al giorno negli ultimi {days} giorni, Coach compreso. I valori per livello sono stime.",
+        "noEstimate": "La stima per livello compare dopo tre giorni di uso dell'IA.",
+        "capped": "Hai scelto {choice}, che il server al momento non consente, quindi vale {level}. La tua scelta resta salvata.",
+        "followsDefault": "Segui l'impostazione predefinita del server ({level}).",
+        "useDefault": "Usa l'impostazione predefinita del server ({level})"
+      }
     },
     "dashboard": {
       "units": {
@@ -7343,7 +7369,8 @@
       "spendToday": "Oggi, secondo il giorno di calendario di ciascun account: {total} token, di cui {operator} sulla chiave dell'operatore (account con consumo: {accounts}).",
       "statusPaused": "In pausa",
       "pausedHint": "In pausa dopo errori ripetuti per {count} utenti fino al {at}. Poi viene ritentato automaticamente.",
-      "modelNotServed": "L’endpoint non offre più il modello {model}. Scegli nelle impostazioni IA un modello che offre."
+      "modelNotServed": "L’endpoint non offre più il modello {model}. Scegli nelle impostazioni IA un modello che offre.",
+      "usageLevels": "Account per livello di uso dell'IA: {frugal} risparmio, {standard} standard, {full} completo."
     },
     "aiQuality": {
       "title": "Qualità delle analisi",
@@ -8120,7 +8147,16 @@
       "codes": "Per chi gestisce il server: le richieste API rispondono 503 con il codice di errore {code}, e /api/health indica il motivo {reason}."
     },
     "loginOverviewCardTitle": "Eventi di accesso",
-    "userColumn": "Utente"
+    "userColumn": "Utente",
+    "aiUsage": {
+      "title": "Livelli di uso dell'IA",
+      "description": "Il livello più alto che gli account possono scegliere e il livello di partenza.",
+      "maxLabel": "Livello più alto",
+      "defaultLabel": "Livello predefinito",
+      "defaultAboveCeiling": "Il livello predefinito non può superare il livello più alto.",
+      "gapLabel": "Ore tra due aggiornamenti delle schede dopo una sincronizzazione (Standard)",
+      "gapHint": "Ore intere da 1 a 48. Lascia vuoto per usare AI_SYNC_REGEN_GAP_HOURS, altrimenti 6. In vigore ora: {hours} h."
+    }
   },
   "achievements": {
     "title": "Obiettivi",
