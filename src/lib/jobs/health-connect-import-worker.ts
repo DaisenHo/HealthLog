@@ -32,6 +32,7 @@ import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalida
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { annotate } from "@/lib/logging/context";
+import { withBackgroundEvent } from "@/lib/logging/background";
 import {
   recomputeUserRollups,
   ROLLUP_FOLD_WINDOW_MS,
@@ -102,7 +103,18 @@ export async function handleHealthConnectImport(
 ): Promise<JobOutcome> {
   let failure: JobOutcome | null = null;
   for (const job of jobs) {
-    const outcome = await runHealthConnectImport(job.data);
+    // Its own event per import, so the `annotate` calls below and anything
+    // the import records on the ambient event reach the log instead of
+    // vanishing for want of one.
+    const outcome = await withBackgroundEvent(
+      "job.health_connect_import",
+      async (event) => {
+        event.addMeta("import_job_id", job.data.importJobId);
+        const result = await runHealthConnectImport(job.data);
+        if (!result.ok) event.setError(result.cause ?? result.reason);
+        return result;
+      },
+    );
     if (!outcome.ok && failure === null) failure = outcome;
   }
   return failure ?? jobDone({ jobs: jobs.length });

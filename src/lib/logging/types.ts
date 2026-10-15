@@ -123,6 +123,11 @@ export interface WideEvent {
      */
     note?: string;
   }>;
+  /**
+   * How many external calls the event did not list because it had already
+   * listed its share (`EXTERNAL_CALLS_MAX`, `EXTERNAL_CALLS_PLAIN_MAX`).
+   */
+  external_calls_omitted?: number;
 
   // Hintergrundaufgabe (nur bei kind === "background")
   background?: {

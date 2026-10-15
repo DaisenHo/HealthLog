@@ -122,21 +122,86 @@ The Google Cloud client id/secret are per-user (Settings), not env vars.
 
 ## Backfill, the hourly sync and Google's rate limit
 
-Only one sync runs per account at a time. While the history backfill that
-follows a connect is running, the hourly sync leaves that account alone, and
-**Sync now** reports that a sync is already in progress and shows its progress
-instead of starting a second one.
+Only one sync runs per account at a time. **Sync now** reports that a sync is
+already in progress while the history backfill that follows a connect is
+running, and shows its progress instead of starting a second one.
+
+The backfill reads the account's whole history, and for a watch that records
+heart rate every minute that is a thousand-odd pages per year. It runs in
+slices: a slice reads for up to five minutes or 500 pages, writes what it
+read, notes how far it got and lets go of the account. The next slice starts
+a minute later where the last one stopped. Two kinds of note are kept: a data
+type read to the end is not read again, and a data type read page by page
+(heart rate, weight, body fat, blood glucose, core temperature) keeps the
+time of the oldest reading it has written, so the next slice asks Google only
+for what is older. A restart or an update in the middle loses at most the page
+that was being read.
+
+The hourly sync waits for the slice that is running (up to eight minutes)
+instead of skipping the account, so recent data keeps arriving while an old
+history is still coming in.
 
 Google limits how many requests one account may make per minute. When a sync
-reaches that limit, Google answers `429`, and HealthLog waits and repeats the
-request; the connection is never marked as needing a reconnect because of it.
-Access tokens last an hour, and a long backfill renews its token as it goes.
-A backfill that stops part-way (a restart, the job's time budget) picks up
-with the data types it has not finished yet on its next attempt.
+reaches that limit Google answers `429`, and HealthLog waits and repeats the
+request. If Google asks for a longer wait than a minute, the slice ends there
+and the next one starts five minutes later. A server error (`500`, `502`,
+`503`, `504`), a request that times out and a dropped connection are repeated
+three times before they count as a failure. None of these mark the connection
+as needing a reconnect. Access tokens last an hour, and a long backfill renews
+its token as it goes.
+
+A slice that moved nothing forward (no data type finished, no reading older
+than before) is a real failure: the job fails with the reason, pg-boss retries
+it a few times, and after that the next restart offers the backfill again.
+Everything already written stays.
 
 If an older version left your Google Health card asking for a reconnect after
 a backfill, the first sync after updating checks the stored grant and resumes
 on its own when the grant is still valid.
+
+### Reading the backfill in the logs
+
+Every slice writes one log line when it ends, with
+`"background":{"task_name":"job.integration_backfill"}`. The parts worth
+reading:
+
+- `meta.kind` is `google-health-backfill`, `meta.slice` the slice number
+  (0 for the first), `meta.job_id` the pg-boss job.
+- `external_calls` lists the requests the slice made to Google, one entry per
+  request: `method` names the data type and page (`fetchHeartRate(page=212)`),
+  `status` the HTTP status, `duration_ms` how long it took. A request that was
+  repeated carries a `note` (`rate_limited_retrying_in_ms=4000`,
+  `server_error_retrying_in_ms=2000`, `no_response_retrying_in_ms=2000`,
+  `token_rejected_retrying_with_fresh_token`); one that failed for good
+  carries an `error`. Successful requests are listed up to 60 per line and
+  everything up to 200; `external_calls_omitted` counts the rest.
+- `meta["googleHealth.backfill.slice"]` sums the slice up:
+  - `pages`, `elapsedMs` and `imported`: what the slice read, how long it
+    took, how many readings it wrote.
+  - `stopReason`: why it ended early. `time_budget` and `page_budget` are the
+    normal end of a slice, `rate_limited` means Google would not take more
+    requests for now, `job_budget` that the job itself ran out of time.
+    `null` means the slice read everything it started.
+  - `collectionsDone` of `collectionsTotal`: data types read to the end so
+    far.
+  - `collections`: one entry per data type the slice touched, with its
+    `status` (`done`, `stopped` short on a budget or a rate limit,
+    `deferred` to the next slice, or `failed`), its `pages`, and for the
+    page-by-page types
+    `edgeFrom` and `edgeTo`, the oldest reading written before and after the
+    slice.
+  - `edges`: where every unfinished page-by-page data type stands now.
+- `action.name` is `google_health.backfill.continued` for a slice that made
+  progress and queued the next one, `google_health.backfill.complete` for the
+  one that finished the history, and `google_health.backfill.stuck` for one
+  that moved nothing. A stuck slice also fails the job with a message that
+  names each unfinished data type and its status, for example
+  `no progress in slice 4, stopped on rate_limited; fetchHeartRate:stopped`.
+
+While a slice runs, the usual `job.progress` line for the
+`integration-backfill-admission` queue reports
+`google_health_backfill_slice`, `google_health_backfill_pages` and
+`google_health_backfill_collections_done` every two minutes.
 
 ## The 7-day re-consent caveat
 

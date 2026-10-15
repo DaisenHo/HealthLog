@@ -35,6 +35,12 @@ function redactDeep<T>(value: T, depth = 0): T {
   return value;
 }
 
+/** The most external calls one event lists. */
+export const EXTERNAL_CALLS_MAX = 200;
+
+/** The most calls without an error or a note one event lists. */
+export const EXTERNAL_CALLS_PLAIN_MAX = 60;
+
 /**
  * Baut ein Wide Event Schritt fuer Schritt auf.
  * Wird am Anfang eines Requests/Tasks erstellt und am Ende emittiert.
@@ -44,6 +50,7 @@ export class WideEventBuilder {
   private startTime: number;
   private highestLevel: LogLevel = "info";
   private statusLevelCeiling: LogLevel = "error";
+  private plainExternalCalls = 0;
 
   constructor(kind: EventKind = "http") {
     this.startTime = performance.now();
@@ -208,6 +215,23 @@ export class WideEventBuilder {
 
   addExternalCall(call: NonNullable<WideEvent["external_calls"]>[0]): this {
     if (!this.event.external_calls) this.event.external_calls = [];
+    // Bounded. A long background run (a full-history backfill walks hundreds
+    // of pages in one event) would otherwise hold every call in memory and
+    // write them all as one log line. Calls that failed or carry a note are
+    // what a reader looks for, so they keep the larger share; plain successes
+    // stop being listed sooner. Whatever is left out is counted, never lost
+    // silently.
+    const calls = this.event.external_calls;
+    const notable = call.error !== undefined || call.note !== undefined;
+    if (
+      calls.length >= EXTERNAL_CALLS_MAX ||
+      (!notable && this.plainExternalCalls >= EXTERNAL_CALLS_PLAIN_MAX)
+    ) {
+      this.event.external_calls_omitted =
+        (this.event.external_calls_omitted ?? 0) + 1;
+      return this;
+    }
+    if (!notable) this.plainExternalCalls += 1;
     // An outbound failure carries whatever the remote said, and for several
     // integrations that is the request URL — which for Telegram embeds the bot
     // token. `setError` and `setHttp` scrub on the way in; this entry point did

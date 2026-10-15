@@ -37,6 +37,9 @@ import {
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import {
   googleHealthOutcomeTruncated,
+  googleHealthSliceExhausted,
+  googleHealthSlicePagesRead,
+  noteGoogleHealthDeferred,
   noteGoogleHealthMapped,
   noteGoogleHealthOutcomeFailure,
   noteGoogleHealthWritten,
@@ -402,33 +405,75 @@ export async function runWithGoogleHealthSyncCycle<T>(
 }
 
 /**
- * Collections a full-history backfill already walked to the end, carried from
- * one attempt of the backfill to the next.
+ * How far a full-history backfill has got, carried from one attempt of the
+ * backfill to the next.
  *
- * A backfill that ended early (its job budget ran out, a collection failed)
- * used to start the next attempt from the first page of the first collection,
- * so the dense heart-rate walk, thousands of pages, was paid for again on
- * every retry, and an account whose walk never fit into one attempt never
- * finished at all. Each collection that completes cleanly is now written to
- * `backfillProgress`, and the next attempt skips it and goes on with the
- * collections it did not reach. A collection is the unit because Google
- * offers no cursor that survives between attempts; its page tokens are not
- * documented to outlive the walk that received them.
+ * Two grains. A collection walked to the end is noted in `done`, and the next
+ * attempt skips it. A collection read page by page (the spot readings: heart
+ * rate, weight, glucose, ...) also notes, after every page it writes, the
+ * edge it has reached: the oldest sample written so far when the walk runs
+ * newest first, as Google's list does. The next attempt asks Google only for
+ * the samples at or beyond that edge, so a collection that does not fit into
+ * one attempt is worked through over several instead of being read from its
+ * first page every time.
+ *
+ * The edge is a sample time, not Google's page token: page tokens are not
+ * documented to outlive the walk that received them, a sample time is a
+ * filter Google documents. The one sample on the edge itself is read twice
+ * and overwrites its own row.
+ *
+ * Before the edge existed only `done` was kept, and a heart-rate history of
+ * years that one attempt could not finish (its budget, a rate limit, one
+ * failed page among thousands) started again from the newest page on every
+ * attempt and never reached the end (#1220).
  */
+export interface GoogleHealthBackfillCursor {
+  /** The edge: the sample instant (ISO 8601) the walk has written up to. */
+  at: string;
+  /** The order the walk returned samples in: newest first, or oldest first. */
+  order: "desc" | "asc";
+  /** Pages this collection has read across every attempt so far. */
+  pages: number;
+}
+
+/** What one collection came to in one backfill attempt. */
+export interface GoogleHealthBackfillCollectionReport {
+  key: string;
+  /**
+   * `done`: walked to the end. `stopped`: ended short on a budget, a page
+   * ceiling or a rate limit, with nothing failed. `deferred`: not started,
+   * left for the next slice. `failed`: a request or a write failed, or the
+   * collection answered 403.
+   */
+  status: "done" | "stopped" | "deferred" | "failed";
+  pages: number;
+  durationMs: number;
+  /** The edge before and after this attempt, for a resumable collection. */
+  edgeFrom?: string | null;
+  edgeTo?: string | null;
+}
+
 interface BackfillResumeTracker {
   userId: string;
   done: Set<string>;
+  cursors: Map<string, GoogleHealthBackfillCursor>;
   /** Collections this attempt skipped because an earlier one finished them. */
   skipped: string[];
+  /** Collections whose edge this attempt moved, with the edge they started from. */
+  advanced: Map<string, string | null>;
+  collections: GoogleHealthBackfillCollectionReport[];
 }
 const backfillResumeStorage = new AsyncLocalStorage<BackfillResumeTracker>();
 
+function progressRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 /** Read the `backfillProgress` column into the set of finished collections. */
 export function readGoogleHealthBackfillDone(value: unknown): Set<string> {
-  const done =
-    value && typeof value === "object" && !Array.isArray(value)
-      ? (value as { done?: unknown }).done
-      : undefined;
+  const done = progressRecord(value).done;
   return new Set(
     Array.isArray(done)
       ? done.filter(
@@ -438,20 +483,188 @@ export function readGoogleHealthBackfillDone(value: unknown): Set<string> {
   );
 }
 
+/** Read the `backfillProgress` column into the per-collection edges. */
+export function readGoogleHealthBackfillCursors(
+  value: unknown,
+): Map<string, GoogleHealthBackfillCursor> {
+  const out = new Map<string, GoogleHealthBackfillCursor>();
+  const cursors = progressRecord(progressRecord(value).cursors);
+  for (const [key, raw] of Object.entries(cursors)) {
+    if (key.length > 64) continue;
+    const c = progressRecord(raw);
+    const at = typeof c.at === "string" ? c.at : null;
+    if (!at || Number.isNaN(Date.parse(at))) continue;
+    out.set(key, {
+      at: new Date(at).toISOString(),
+      order: c.order === "asc" ? "asc" : "desc",
+      pages:
+        typeof c.pages === "number" && Number.isFinite(c.pages) && c.pages > 0
+          ? Math.trunc(c.pages)
+          : 0,
+    });
+  }
+  return out;
+}
+
+/**
+ * Write the tracker's progress with one change applied, and apply it to the
+ * tracker only once the write has landed: progress that is not on disk is
+ * progress the next attempt cannot see, so it must not count in this one.
+ */
+async function persistBackfillProgress(
+  tracker: BackfillResumeTracker,
+  next: {
+    done: Set<string>;
+    cursors: Map<string, GoogleHealthBackfillCursor>;
+  },
+): Promise<void> {
+  await prisma.googleHealthConnection.update({
+    where: { userId: tracker.userId },
+    data: {
+      backfillProgress: {
+        done: [...next.done],
+        cursors: Object.fromEntries(
+          [...next.cursors].map(([key, c]) => [
+            key,
+            { at: c.at, order: c.order, pages: c.pages },
+          ]),
+        ),
+      },
+    },
+  });
+  // `next` may be the tracker's own collections: copy before clearing.
+  const done = [...next.done];
+  const cursors = [...next.cursors];
+  tracker.done.clear();
+  for (const key of done) tracker.done.add(key);
+  tracker.cursors.clear();
+  for (const [key, c] of cursors) tracker.cursors.set(key, c);
+}
+
+/** What one backfill attempt did, as `runWithGoogleHealthBackfillResume` reports it. */
+export interface GoogleHealthBackfillAttempt<T> {
+  result: T;
+  skipped: string[];
+  /** Collections whose edge moved, each with the edge it started from. */
+  advanced: Map<string, string | null>;
+  collections: GoogleHealthBackfillCollectionReport[];
+}
+
 /**
  * Run a full-history backfill attempt that resumes: collections in `done` are
- * skipped, and each collection finished cleanly during this attempt is added
- * to it and persisted at once, so an attempt that dies part-way keeps what it
- * finished.
+ * skipped, a collection with an edge in `cursors` starts from it, and each
+ * collection finished or page written during this attempt is persisted at
+ * once, so an attempt that dies part-way keeps what it did.
  */
 export async function runWithGoogleHealthBackfillResume<T>(
   userId: string,
   done: Set<string>,
   fn: () => Promise<T>,
-): Promise<{ result: T; skipped: string[] }> {
-  const tracker: BackfillResumeTracker = { userId, done, skipped: [] };
+  cursors: Map<string, GoogleHealthBackfillCursor> = new Map(),
+): Promise<GoogleHealthBackfillAttempt<T>> {
+  const tracker: BackfillResumeTracker = {
+    userId,
+    done,
+    cursors,
+    skipped: [],
+    advanced: new Map(),
+    collections: [],
+  };
   const result = await backfillResumeStorage.run(tracker, fn);
-  return { result, skipped: tracker.skipped };
+  return {
+    result,
+    skipped: tracker.skipped,
+    advanced: tracker.advanced,
+    collections: tracker.collections,
+  };
+}
+
+/**
+ * Where a resumable collection's walk starts in this backfill attempt: the
+ * edge an earlier attempt recorded (if any) and the pages it has already
+ * read. Null outside a backfill, where every walk reads its whole window.
+ */
+export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
+  edge?: { at: Date; order: "desc" | "asc" };
+  pagesSoFar: number;
+} | null {
+  const resume = backfillResumeStorage.getStore();
+  if (!resume) return null;
+  const cursor = resume.cursors.get(key);
+  return cursor
+    ? {
+        edge: { at: new Date(cursor.at), order: cursor.order },
+        pagesSoFar: cursor.pages,
+      }
+    : { pagesSoFar: 0 };
+}
+
+/**
+ * Record that a resumable collection wrote one more page, holding samples
+ * from `first` to `last` in the order Google returned them. Moves the
+ * collection's edge to the far end of the page and persists it. Outside a
+ * backfill this does nothing.
+ *
+ * The order is read off the first page whose two ends differ and kept for
+ * the rest of the backfill; Google returns its lists newest first, which is
+ * also what a page that cannot tell is taken to mean.
+ */
+export async function recordGoogleHealthBackfillPage(
+  key: GoogleHealthCollectionKey,
+  page: { first: Date | null; last: Date | null },
+): Promise<void> {
+  const resume = backfillResumeStorage.getStore();
+  if (!resume) return;
+  const current = resume.cursors.get(key);
+  const order: "desc" | "asc" =
+    current?.order ??
+    (page.first && page.last && page.first.getTime() < page.last.getTime()
+      ? "asc"
+      : "desc");
+  const ends = [page.first, page.last].filter((d): d is Date => d !== null);
+  const far =
+    ends.length === 0
+      ? null
+      : new Date(
+          order === "desc"
+            ? Math.min(...ends.map((d) => d.getTime()))
+            : Math.max(...ends.map((d) => d.getTime())),
+        );
+  const currentAt = current ? Date.parse(current.at) : null;
+  const moved =
+    far !== null &&
+    (currentAt === null ||
+      (order === "desc"
+        ? far.getTime() < currentAt
+        : far.getTime() > currentAt));
+  if (!current && !moved) return;
+  const nextCursor: GoogleHealthBackfillCursor = {
+    at: moved ? far.toISOString() : current!.at,
+    order,
+    pages: (current?.pages ?? 0) + 1,
+  };
+  const cursors = new Map(resume.cursors);
+  cursors.set(key, nextCursor);
+  try {
+    await persistBackfillProgress(resume, { done: resume.done, cursors });
+    if (moved && !resume.advanced.has(key)) {
+      resume.advanced.set(key, current?.at ?? null);
+    }
+  } catch (err) {
+    // The page's rows are written; only the note of how far the walk got is
+    // missing, so the next attempt reads this page again. Not a failure.
+    getEvent()?.addWarning(
+      `google-health: backfill progress write failed for ${key}: ${err}`,
+    );
+    annotate({
+      meta: { "googleHealth.backfill.progressWriteFailed": key },
+    });
+  }
+}
+
+/** Hard failures the cycle in scope has recorded so far. */
+export function googleHealthHardFailureCount(): number {
+  return hardFailStorage.getStore()?.failures.length ?? 0;
 }
 
 /**
@@ -459,10 +672,12 @@ export async function runWithGoogleHealthBackfillResume<T>(
  * one in scope. Outside a backfill this is just `fn()`.
  *
  * Inside one, a collection already walked to the end by an earlier attempt is
- * skipped. Otherwise it runs, and it counts as finished only when nothing
- * went wrong while it ran: no hard failure on the cycle's ledger, no 403
- * soft-skip, and no walk that ended short (its page ceiling, or the job's
- * budget asking it to stop). Anything less is walked again next attempt.
+ * skipped, and so is one the slice has no budget left to start: it is left
+ * for the next slice, and the cycle reports itself incomplete. Otherwise it
+ * runs, and it counts as finished only when nothing went wrong while it ran:
+ * no hard failure on the cycle's ledger, no 403 soft-skip, and no walk that
+ * ended short (its page ceiling, or a budget asking it to stop). Anything
+ * less is walked again next attempt, from its edge when it has one.
  */
 export async function runGoogleHealthCollection(
   key: GoogleHealthCollectionKey,
@@ -474,15 +689,29 @@ export async function runGoogleHealthCollection(
     resume.skipped.push(key);
     return 0;
   }
+  if (googleHealthSliceExhausted()) {
+    noteGoogleHealthDeferred();
+    resume.collections.push({
+      key,
+      status: "deferred",
+      pages: 0,
+      durationMs: 0,
+    });
+    return 0;
+  }
+  const startedAt = performance.now();
+  const pagesBefore = googleHealthSlicePagesRead();
+  const edgeFrom = resume.cursors.get(key)?.at ?? null;
   const hardBefore = hardFailStorage.getStore()?.failures.length ?? 0;
   const softBefore = softSkipStorage.getStore()?.count ?? 0;
   const truncatedBefore = googleHealthOutcomeTruncated();
   const imported = await fn();
-  const clean =
-    (hardFailStorage.getStore()?.failures.length ?? 0) === hardBefore &&
-    (softSkipStorage.getStore()?.count ?? 0) === softBefore &&
-    !truncatedBefore &&
-    !googleHealthOutcomeTruncated();
+  const failedHard =
+    (hardFailStorage.getStore()?.failures.length ?? 0) !== hardBefore ||
+    (softSkipStorage.getStore()?.count ?? 0) !== softBefore;
+  const truncated = truncatedBefore || googleHealthOutcomeTruncated();
+  const clean = !failedHard && !truncated;
+  let finished = false;
   if (clean) {
     // The collection counts as finished only once the note says so. The job
     // reads the size of `done` as this attempt's progress and sends another
@@ -490,11 +719,13 @@ export async function runGoogleHealthCollection(
     // progress nobody can see next attempt, and a chain of slices could keep
     // "progressing" over the same collection forever.
     try {
-      await prisma.googleHealthConnection.update({
-        where: { userId: resume.userId },
-        data: { backfillProgress: { done: [...resume.done, key] } },
+      const cursors = new Map(resume.cursors);
+      cursors.delete(key);
+      await persistBackfillProgress(resume, {
+        done: new Set([...resume.done, key]),
+        cursors,
       });
-      resume.done.add(key);
+      finished = true;
     } catch (err) {
       // Not finished, then: the collection is walked again next attempt. It
       // must not fail a collection whose rows are written.
@@ -506,6 +737,14 @@ export async function runGoogleHealthCollection(
       });
     }
   }
+  const edgeTo = finished ? null : (resume.cursors.get(key)?.at ?? null);
+  resume.collections.push({
+    key,
+    status: finished ? "done" : failedHard ? "failed" : "stopped",
+    pages: googleHealthSlicePagesRead() - pagesBefore,
+    durationMs: Math.round(performance.now() - startedAt),
+    ...(edgeFrom !== null || edgeTo !== null ? { edgeFrom, edgeTo } : {}),
+  });
   return imported;
 }
 

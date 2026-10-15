@@ -16,7 +16,9 @@
  * the hourly poll skips the account for this tick, the manual trigger answers
  * that a sync is already running, and the backfill and the repair wait a
  * bounded time for a short run to finish before handing their job back to
- * pg-boss to retry.
+ * pg-boss to retry. The hourly poll waits too, for about one backfill slice:
+ * a backfill lets go of the account between its slices, so the hourly sync
+ * gets its turn instead of being skipped for as long as the import runs.
  */
 import { withJobLock, type GuardedRun } from "@/lib/jobs/job-lock";
 
@@ -31,6 +33,16 @@ export function googleHealthSyncLockKey(userId: string): string {
  * minutes covers one that is also sitting out a rate limit.
  */
 export const GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS = 10 * 60 * 1000;
+
+/**
+ * How long the hourly poll waits for an account another run holds. A backfill
+ * slice walks for five minutes and then lets go
+ * (`GOOGLE_HEALTH_BACKFILL_SLICE_MS`); the page in flight, a rate-limit wait
+ * and the slice's own bookkeeping can add a minute or two, and the next slice
+ * starts a minute after this one ends. Eight minutes covers that, and leaves
+ * the hourly job well inside its fifteen-minute expiry.
+ */
+export const GOOGLE_HEALTH_POLL_LOCK_WAIT_MS = 8 * 60 * 1000;
 
 /**
  * Run `run` while holding the account's Google Health lock. Resolves

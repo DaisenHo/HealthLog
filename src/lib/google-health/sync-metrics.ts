@@ -27,12 +27,14 @@
  */
 import {
   GOOGLE_HEALTH_DATA_TYPES,
+  GOOGLE_HEALTH_DEFAULT_MAX_PAGES,
   GOOGLE_HEALTH_DENSE_MAX_PAGES,
   type GoogleHealthDataType,
   type GoogleHealthMappedMeasurement,
   type GoogleHealthTokenSource,
   fetchDataPoints,
   forEachDataPointPage,
+  googleHealthSampleInstant,
   mapBloodGlucose,
   mapBodyFat,
   mapCoreBodyTemperature,
@@ -44,11 +46,15 @@ import {
   mapRestingHeartRate,
   mapWeight,
   mapWristTemperature,
+  noteGoogleHealthDeferred,
 } from "./client";
 import {
   getValidToken,
+  googleHealthBackfillCursor,
+  googleHealthHardFailureCount,
   googleHealthTokenSource,
   handleCollectionFetchError,
+  recordGoogleHealthBackfillPage,
   runGoogleHealthCollection,
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
@@ -109,13 +115,6 @@ const METRIC_RESOURCES: MetricResource[] = [
     verb: "fetchRespiratoryRate",
   },
   {
-    dataType: GOOGLE_HEALTH_DATA_TYPES.heartRate,
-    map: mapHeartRate,
-    verb: "fetchHeartRate",
-    maxPages: GOOGLE_HEALTH_DENSE_MAX_PAGES,
-    intraday: true,
-  },
-  {
     dataType: GOOGLE_HEALTH_DATA_TYPES.bloodGlucose,
     map: mapBloodGlucose,
     verb: "fetchBloodGlucose",
@@ -133,7 +132,33 @@ const METRIC_RESOURCES: MetricResource[] = [
     map: mapWristTemperature,
     verb: "fetchSleepTemperature",
   },
+  // Last: the dense stream. A backfill finishes every light collection in
+  // its first slice and then works through this one slice by slice; ahead
+  // of them it held them back until the whole stream was in.
+  {
+    dataType: GOOGLE_HEALTH_DATA_TYPES.heartRate,
+    map: mapHeartRate,
+    verb: "fetchHeartRate",
+    maxPages: GOOGLE_HEALTH_DENSE_MAX_PAGES,
+    intraday: true,
+  },
 ];
+
+/**
+ * Whether a metric is walked resumably by a backfill: written page by page,
+ * and a spot reading whose sample time can mark how far the walk got.
+ */
+function isResumable(resource: MetricResource): boolean {
+  return resource.dataType.timeField === "sample";
+}
+
+/**
+ * The page ceilings of every resumable collection, summed: the most pages a
+ * backfill can ever spend on them across all of its attempts.
+ */
+export const GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING = METRIC_RESOURCES.filter(
+  isResumable,
+).reduce((sum, r) => sum + (r.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES), 0);
 
 export async function syncUserMetrics(
   userId: string,
@@ -245,6 +270,27 @@ async function syncMetricCollection(
   opts: GoogleHealthResourceSyncOptions,
 ): Promise<number> {
   let imported = 0;
+  // Inside a backfill a spot-reading collection keeps its place: it starts
+  // from the edge an earlier attempt reached and records its new edge after
+  // every page it writes (see `GoogleHealthBackfillCursor`). Its page ceiling
+  // then counts across attempts, so a cursor that never ends is still bounded.
+  const cursor = isResumable(resource)
+    ? googleHealthBackfillCursor(resource.verb)
+    : null;
+  const maxPages =
+    (resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES) -
+    (cursor?.pagesSoFar ?? 0);
+  if (cursor && maxPages <= 0) {
+    getEvent()?.addWarning(
+      `google-health ${resource.verb}: backfill reached its page ceiling of ${resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES} pages for ${userId}`,
+    );
+    noteGoogleHealthDeferred();
+    return 0;
+  }
+  // Once one page's write fails, the edge stays where it is for the rest of
+  // the walk: moving it past the failed page would leave that page's rows
+  // behind it for good.
+  let edgeHeld = false;
   try {
     await forEachDataPointPage(
       resource.dataType,
@@ -254,7 +300,8 @@ async function syncMetricCollection(
         start: resource.intraday
           ? (opts.intradayStart ?? opts.start)
           : opts.start,
-        maxPages: resource.maxPages,
+        maxPages,
+        ...(cursor ? { resumable: true, edge: cursor.edge } : {}),
       },
       async (points) => {
         const readings: GoogleHealthMeasurementUpsert[] = [];
@@ -269,11 +316,23 @@ async function syncMetricCollection(
             });
           }
         }
+        const failuresBefore = googleHealthHardFailureCount();
         imported += (
           await upsertGoogleHealthMeasurements(userId, readings, {
             deferRollup: opts.deferRollup,
           })
         ).imported;
+        if (!cursor || points.length === 0) return;
+        if (googleHealthHardFailureCount() !== failuresBefore) edgeHeld = true;
+        if (edgeHeld) return;
+        await recordGoogleHealthBackfillPage(resource.verb, {
+          first: googleHealthSampleInstant(points[0]!, resource.dataType, tz),
+          last: googleHealthSampleInstant(
+            points[points.length - 1]!,
+            resource.dataType,
+            tz,
+          ),
+        });
       },
     );
   } catch (err) {

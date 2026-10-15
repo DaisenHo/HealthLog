@@ -57,6 +57,8 @@ const fake = vi.hoisted(() => ({
   throttledPages: new Set<number>(),
   /** Revoke the current access token when this heart-rate page is asked. */
   revokeAtPage: -1,
+  /** Answer every heart-rate request with a 500. */
+  failHeartRate: false,
   /** Hold the request for this heart-rate page until `release` is called. */
   holdAtPage: -1,
   release: null as null | (() => void),
@@ -138,13 +140,24 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
             { "retry-after": "0" },
           );
         }
+        if (fake.failHeartRate) {
+          return json({ error: { code: 500, status: "INTERNAL" } }, 500);
+        }
         if (page === fake.holdAtPage) {
           fake.holdAtPage = -1;
           await fake.held;
         }
-        const end = Math.min(fake.heartRatePoints, (page + 1) * 10);
+        // Newest first, one point a minute; a resumed walk's `<=` edge
+        // filter starts the list at the edge.
+        const edge = /physical_time <= "([^"]+)"/.exec(
+          u.searchParams.get("filter") ?? "",
+        )?.[1];
+        const first = edge
+          ? Math.ceil((fake.now - Date.parse(edge)) / 60_000)
+          : 0;
+        const end = Math.min(fake.heartRatePoints, first + (page + 1) * 10);
         const dataPoints = [];
-        for (let g = page * 10; g < end; g++) {
+        for (let g = first + page * 10; g < end; g++) {
           dataPoints.push({
             name: `users/me/dataTypes/heart-rate/dataPoints/${1_000_000 + g}`,
             heartRate: {
@@ -221,6 +234,7 @@ beforeEach(async () => {
   fake.throttledPages = new Set();
   fake.revokeAtPage = -1;
   fake.holdAtPage = -1;
+  fake.failHeartRate = false;
   fake.release = null;
   fake.held = null;
   fake.requestsByPath = new Map();
@@ -398,8 +412,19 @@ describe("Google Health backfill under rate limits and token expiry (#1194)", ()
     );
     expect(done).not.toContain("fetchHeartRate");
 
+    // And the heart-rate stream keeps the edge it reached: the oldest of
+    // the thirty samples it wrote.
+    expect(
+      (afterFirst?.backfillProgress as { cursors: Record<string, unknown> })
+        .cursors.fetchHeartRate,
+    ).toMatchObject({
+      at: new Date(fake.now - 29 * 60_000).toISOString(),
+      pages: 3,
+    });
+
     // Second attempt, the queued slice: the finished collections are not
-    // read again.
+    // read again, and the stream starts at its edge, not at its newest page:
+    // the 31 samples from the edge on are four pages, not six.
     fake.requestsByPath = new Map();
     await runGoogleHealthBackfillForUser(USER, undefined, 1);
 
@@ -408,7 +433,7 @@ describe("Google Health backfill under rate limits and token expiry (#1194)", ()
     expect(
       fake.requestsByPath.get("steps/dataPoints:dailyRollUp"),
     ).toBeUndefined();
-    expect(fake.requestsByPath.get("heart-rate/dataPoints")).toBe(6);
+    expect(fake.requestsByPath.get("heart-rate/dataPoints")).toBe(4);
     expect(await pulseRows()).toBe(60);
     const afterSecond =
       await getPrismaClient().googleHealthConnection.findUnique({
@@ -418,7 +443,7 @@ describe("Google Health backfill under rate limits and token expiry (#1194)", ()
     expect(afterSecond?.backfillProgress).toBeNull();
   });
 
-  it("keeps failing a backfill whose slice finished nothing new", async () => {
+  it("continues a slice that only moved the stream's edge, and fails one that moved nothing", async () => {
     const { runGoogleHealthBackfillForUser } =
       await import("@/lib/jobs/google-health-backfill");
 
@@ -428,13 +453,29 @@ describe("Google Health backfill under rate limits and token expiry (#1194)", ()
     await runGoogleHealthBackfillForUser(USER, stopAtThirdPage);
     expect(sent.jobs).toHaveLength(1);
 
-    // The next slice cannot get through the heart-rate stream either: no
-    // collection finishes, so this one is stuck and says so.
+    // The next slice finishes no collection either, but it moves the edge
+    // thirty samples further back: progress, so it continues.
     fake.requestsByPath = new Map();
     await expect(
       runGoogleHealthBackfillForUser(USER, stopAtThirdPage, 1),
-    ).rejects.toThrow(/incomplete/);
-    expect(sent.jobs).toHaveLength(1);
+    ).resolves.toMatchObject({ continued: true });
+    expect(sent.jobs).toHaveLength(2);
+
+    // A slice whose every heart-rate request fails moves nothing: it is
+    // stuck, says where, and queues nothing.
+    const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
+      await import("@/lib/google-health/client");
+    const baseDelay = GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs;
+    GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
+    fake.failHeartRate = true;
+    try {
+      await expect(
+        runGoogleHealthBackfillForUser(USER, undefined, 2),
+      ).rejects.toThrow(/no progress in slice 2; fetchHeartRate:failed/);
+    } finally {
+      GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = baseDelay;
+    }
+    expect(sent.jobs).toHaveLength(2);
     const row = await getPrismaClient().googleHealthConnection.findUnique({
       where: { userId: USER },
     });
@@ -459,27 +500,32 @@ describe("Google Health backfill under rate limits and token expiry (#1194)", ()
     }
     expect(fake.holdAtPage).toBe(-1);
 
-    const requestsBefore = [...fake.requestsByPath.values()].reduce(
-      (a, b) => a + b,
-      0,
-    );
+    const total = () =>
+      [...fake.requestsByPath.values()].reduce((a, b) => a + b, 0);
+    const requestsBefore = total();
     const manual = await syncUserGoogleHealth(USER);
     expect(manual.busy).toBe(true);
 
-    const hourly = await handleGoogleHealthSync([] as never);
-    expect(hourly).toMatchObject({
-      ok: true,
-      did: { users_skipped: 1, users_parked: 0, users_failed: 0 },
+    // The hourly poll waits for the account instead of skipping it: it does
+    // nothing while the backfill holds the lock ...
+    let hourlySettled = false;
+    const hourly = handleGoogleHealthSync([] as never).finally(() => {
+      hourlySettled = true;
     });
-    const requestsAfter = [...fake.requestsByPath.values()].reduce(
-      (a, b) => a + b,
-      0,
-    );
-    expect(requestsAfter).toBe(requestsBefore);
+    await new Promise((r) => setTimeout(r, 2_500));
+    expect(hourlySettled).toBe(false);
+    expect(total()).toBe(requestsBefore);
 
+    // ... and runs once the backfill lets go.
     fake.release?.();
     await backfill;
+    const requestsAfterBackfill = total();
+    expect(await hourly).toMatchObject({
+      ok: true,
+      did: { users_skipped: 0, users_parked: 0, users_failed: 0 },
+    });
+    expect(total()).toBeGreaterThan(requestsAfterBackfill);
     expect(await pulseRows()).toBe(60);
     expect(await ledgerState()).toBe("connected");
-  });
+  }, 60_000);
 });
