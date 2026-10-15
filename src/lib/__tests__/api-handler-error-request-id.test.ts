@@ -30,9 +30,7 @@ function call(
   headers: Record<string, string> = {},
 ) {
   const route = apiHandler(async (_request: NextRequest) => handler());
-  return route(
-    new NextRequest("http://localhost/api/probe", { headers }),
-  );
+  return route(new NextRequest("http://localhost/api/probe", { headers }));
 }
 
 describe("meta.requestId on every error envelope", () => {
