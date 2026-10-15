@@ -10,6 +10,8 @@
  *
  * Edge-safe: no Node imports, because `src/proxy.ts` reads it too.
  */
+import { randomId } from "@/lib/random-id";
+
 export const REQUEST_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/;
 
 /** The incoming id when it is well-formed, else `null`. */
@@ -22,5 +24,5 @@ export function acceptIncomingRequestId(
 
 /** The incoming id when it is well-formed, else a fresh UUID. */
 export function resolveRequestId(value: string | null | undefined): string {
-  return acceptIncomingRequestId(value) ?? crypto.randomUUID();
+  return acceptIncomingRequestId(value) ?? randomId();
 }
