@@ -420,8 +420,15 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
     // doesn't trigger a tz divergence on its own. The point is to
     // confirm the route returns a non-zero streak and goes through
     // the user-tz path without crashing.
+    // Three consecutive days ending a week back: the summary reads its
+    // streaks from a window that ends now, so fixed dates would slide out.
+    const firstDay = Date.UTC(
+      new Date().getUTCFullYear(),
+      new Date().getUTCMonth(),
+      new Date().getUTCDate() - 9,
+    );
     for (let i = 0; i < 3; i++) {
-      const dt = new Date(`2026-05-${12 + i}T11:30:00.000Z`);
+      const dt = new Date(firstDay + i * 86_400_000 + 11.5 * 3_600_000);
       await prisma.measurement.create({
         data: {
           userId: me.id,

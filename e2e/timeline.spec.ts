@@ -560,7 +560,7 @@ test("a chosen range lives in the URL: reload keeps it, Back returns to it", asy
 
   // A parameter it cannot read opens the same default as no zoom: this
   // record has entries in the last three months, so three months.
-  await page.goto("/timeline?zoom=range&from=nonsense&to=2026-01-01");
+  await page.goto(`/timeline?zoom=range&from=nonsense&to=${TODAY}`);
   await expect(zoom("quarter")).toHaveAttribute("aria-checked", "true", {
     timeout: 20_000,
   });

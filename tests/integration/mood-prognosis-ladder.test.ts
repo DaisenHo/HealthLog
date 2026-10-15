@@ -15,7 +15,7 @@
  * tooltip.
  */
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar } from "./mock-next-headers";
 import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
@@ -46,7 +46,14 @@ vi.mock("@/lib/db-compat", () => ({
 }));
 
 /** Fixed clock: a ladder test that slides with the calendar is a date bomb. */
-const NOW = new Date("2026-08-08T09:00:00.000Z");
+const FIXED_NOW = new Date("2026-08-08T09:00:00.000Z");
+/**
+ * The instant the seed and the job are dated against. The ladder cases keep
+ * the fixed clock; the route cases move it to the real one, because the route
+ * reads the forecast against the wall clock and a forecast seeded at a fixed
+ * date goes stale under it as the calendar moves on.
+ */
+let NOW = FIXED_NOW;
 
 function dayKey(daysAgo: number): string {
   return new Date(NOW.getTime() - daysAgo * DAY_MS).toISOString().slice(0, 10);
@@ -271,6 +278,13 @@ describe("the minimum-n ladder, end to end", () => {
 });
 
 describe("GET /api/mood/prognosis", () => {
+  beforeEach(() => {
+    NOW = new Date();
+  });
+  afterEach(() => {
+    NOW = FIXED_NOW;
+  });
+
   /**
    * A signed-in browser session.
    *

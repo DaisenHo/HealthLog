@@ -795,7 +795,12 @@ manageContract("POST /api/measurement-reminders/[id]/snooze", {
       POST as Handler,
       "POST",
       `/api/measurement-reminders/${row.id}/snooze`,
-      { until: "2027-01-15" },
+      // A snooze must end in the future; a fixed date stops being one.
+      {
+        until: new Date(Date.now() + 90 * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+      },
       { id: row.id },
     );
   },
