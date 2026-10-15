@@ -23,6 +23,7 @@ import {
 import {
   readGoogleHealthBackfillCursors,
   readGoogleHealthBackfillDone,
+  readGoogleHealthBackfillEdgeFilterUnsupported,
   runWithGoogleHealthBackfillResume,
 } from "@/lib/google-health/sync-core";
 import {
@@ -185,6 +186,9 @@ export async function runGoogleHealthBackfillForUser(
   }
   const done = readGoogleHealthBackfillDone(connection?.backfillProgress);
   const cursors = readGoogleHealthBackfillCursors(connection?.backfillProgress);
+  const edgeFilterUnsupported = readGoogleHealthBackfillEdgeFilterUnsupported(
+    connection?.backfillProgress,
+  );
   const doneBefore = done.size;
 
   const budget = googleHealthSliceBudget(
@@ -211,6 +215,7 @@ export async function runGoogleHealthBackfillForUser(
         budget,
       ),
     cursors,
+    edgeFilterUnsupported,
   );
 
   const finished = done.size - doneBefore;
@@ -218,6 +223,9 @@ export async function runGoogleHealthBackfillForUser(
     slice,
     elapsedMs: Date.now() - startedAt,
     pages: budget.pages,
+    // Of those, the pages read only to pass over samples beyond an edge,
+    // where Google refused the edge filter.
+    skippedPages: budget.skippedPages,
     stopReason: budget.stopReason,
     imported,
     collectionsDone: done.size,

@@ -54,6 +54,7 @@ import {
   googleHealthHardFailureCount,
   googleHealthTokenSource,
   handleCollectionFetchError,
+  noteGoogleHealthEdgeFilterUnsupported,
   recordGoogleHealthBackfillPage,
   runGoogleHealthCollection,
   upsertGoogleHealthMeasurements,
@@ -277,9 +278,8 @@ async function syncMetricCollection(
   const cursor = isResumable(resource)
     ? googleHealthBackfillCursor(resource.verb)
     : null;
-  const maxPages =
-    (resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES) -
-    (cursor?.pagesSoFar ?? 0);
+  const ceiling = resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES;
+  const maxPages = ceiling - (cursor?.pagesSoFar ?? 0);
   if (cursor && maxPages <= 0) {
     getEvent()?.addWarning(
       `google-health ${resource.verb}: backfill reached its page ceiling of ${resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES} pages for ${userId}`,
@@ -301,7 +301,20 @@ async function syncMetricCollection(
           ? (opts.intradayStart ?? opts.start)
           : opts.start,
         maxPages,
-        ...(cursor ? { resumable: true, edge: cursor.edge } : {}),
+        ...(cursor
+          ? {
+              resumable: true,
+              edge: cursor.edge && {
+                ...cursor.edge,
+                tz,
+                // Without the bound the walk passes over what earlier slices
+                // wrote, and they wrote no more than the collection's ceiling.
+                maxSkipPages: ceiling,
+                onFilterUnsupported: () =>
+                  noteGoogleHealthEdgeFilterUnsupported(resource.verb),
+              },
+            }
+          : {}),
       },
       async (points) => {
         const readings: GoogleHealthMeasurementUpsert[] = [];

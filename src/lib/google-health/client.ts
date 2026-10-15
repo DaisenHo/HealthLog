@@ -43,10 +43,11 @@ import {
   classifyGoogleHealthResponse,
   type GoogleHealthClassification,
 } from "./response-classifier";
-import type {
-  GoogleHealthDataPoint,
-  GoogleHealthDataType,
-  GoogleHealthRollupPoint,
+import {
+  googleHealthSampleInstant,
+  type GoogleHealthDataPoint,
+  type GoogleHealthDataType,
+  type GoogleHealthRollupPoint,
 } from "./mappers";
 import { envValue } from "@/lib/env";
 
@@ -165,6 +166,12 @@ export interface GoogleHealthSliceBudget {
   deadline: number | null;
   maxPages: number;
   pages: number;
+  /**
+   * Of `pages`, those a walk only passed over on its way to its edge, because
+   * Google refused the edge filter (see `forEachDataPointPage`). They are not
+   * charged against `maxPages`, and the time they took moves `deadline` on.
+   */
+  skippedPages: number;
   stopReason: GoogleHealthSliceStopReason | null;
   now: () => number;
 }
@@ -180,6 +187,7 @@ export function googleHealthSliceBudget(
     deadline: null,
     maxPages,
     pages: 0,
+    skippedPages: 0,
     stopReason: null,
     now,
   };
@@ -192,7 +200,9 @@ function sliceExhausted(slice: GoogleHealthSliceBudget): boolean {
   if (slice.stopReason) return true;
   slice.deadline ??= slice.now() + slice.ms;
   if (slice.now() >= slice.deadline) slice.stopReason = "time_budget";
-  else if (slice.pages >= slice.maxPages) slice.stopReason = "page_budget";
+  else if (slice.pages - slice.skippedPages >= slice.maxPages) {
+    slice.stopReason = "page_budget";
+  }
   return slice.stopReason !== null;
 }
 
@@ -240,6 +250,22 @@ export function googleHealthSlicePagesRead(): number {
 function noteSlicePage(): void {
   const slice = stopStorage.getStore()?.slice;
   if (slice) slice.pages += 1;
+}
+
+/**
+ * Give back to the slice in scope the pages and time a walk spent passing
+ * over samples beyond its edge (no-op outside a slice).
+ */
+function refundSliceSkip(pages: number, ms: number): void {
+  const slice = stopStorage.getStore()?.slice;
+  if (!slice) return;
+  slice.skippedPages += pages;
+  if (slice.deadline !== null) slice.deadline += ms;
+}
+
+/** The slice clock in scope, or the wall clock outside a slice. */
+function sliceNow(): number {
+  return stopStorage.getStore()?.slice?.now() ?? Date.now();
 }
 
 /** End the slice in scope for `reason` (no-op outside a slice). */
@@ -716,8 +742,22 @@ interface DataPointQuery {
    * when the walk ran newest first (`desc`), the newest when it ran oldest
    * first (`asc`). The walk asks only for the samples at or beyond it; the
    * one sample on the edge itself is read again and overwrites in place.
+   *
+   * `filter: false` reads without the edge bound and passes over the samples
+   * beyond the edge here instead (see `forEachDataPointPage`); the walk falls
+   * back to that on its own when Google refuses the bound, and calls
+   * `onFilterUnsupported` once when it does. `tz` reads an offset-less sample
+   * time the way the edge was recorded. `maxSkipPages` bounds how many pages
+   * the walk may pass over before it reaches the edge.
    */
-  edge?: { at: Date; order: "desc" | "asc" };
+  edge?: {
+    at: Date;
+    order: "desc" | "asc";
+    filter?: boolean;
+    tz?: string;
+    onFilterUnsupported?: () => void | Promise<void>;
+    maxSkipPages?: number;
+  };
 }
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
@@ -984,7 +1024,10 @@ async function googleHealthDataRequest<T>(
   token: GoogleHealthAccessToken,
   label: string,
   send: (accessToken: string) => Promise<Response>,
-  isExpectedFallback: (status: number) => boolean = () => false,
+  expectedFallbackNote: (
+    status: number,
+    apiErrorDetail: string | undefined,
+  ) => string | undefined = () => undefined,
 ): Promise<GoogleHealthDataResponse<T>> {
   let rateLimited = 0;
   let transient = 0;
@@ -1060,8 +1103,8 @@ async function googleHealthDataRequest<T>(
       method: label,
       duration_ms: Math.round(performance.now() - started),
       status: res.status,
-      ...(isExpectedFallback(res.status)
-        ? { note: "date_filter_rejected_retrying_snake_case" }
+      ...(expectedFallbackNote(res.status, apiErrorDetail)
+        ? { note: expectedFallbackNote(res.status, apiErrorDetail) }
         : willWait
           ? { note: `rate_limited_retrying_in_ms=${backoffMs}` }
           : willRefresh
@@ -1152,99 +1195,163 @@ export async function forEachDataPointPage(
   const maxPages = query.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES;
   const pageSize = query.pageSize ?? GOOGLE_HEALTH_PAGE_SIZE;
   const resumable = query.resumable === true;
+  const edge = query.edge;
 
   let requestCount = 0;
 
   const walk = async (
     dateStyle: GoogleHealthDateFilterStyle,
+    edgeBy: "filter" | "skip",
   ): Promise<void> => {
     let fetched = 0;
     let pageToken: string | null | undefined;
     let pageCount = 0;
     let stopped = false;
+    // Reading without the edge bound: the pages before the edge are passed
+    // over, not written, until the first sample at or beyond it.
+    const skipTo = edge && edgeBy === "skip" ? edge : undefined;
+    let crossed = skipTo === undefined;
+    let skipped = 0;
+    const skipStartedAt = skipTo ? sliceNow() : 0;
+    const maxSkip = skipTo?.maxSkipPages ?? GOOGLE_HEALTH_DENSE_MAX_PAGES;
+    const beyondEdge = (point: GoogleHealthDataPoint): boolean | null => {
+      const t = googleHealthSampleInstant(point, dataType, skipTo?.tz);
+      if (t === null || !skipTo) return null;
+      return skipTo.order === "desc"
+        ? t.getTime() > skipTo.at.getTime()
+        : t.getTime() < skipTo.at.getTime();
+    };
+    const refundSkip = () => {
+      if (skipped > 0) refundSliceSkip(skipped, sliceNow() - skipStartedAt);
+      skipped = 0;
+    };
 
-    do {
-      if (stopRequested(resumable)) {
-        stopped = true;
-        break;
-      }
-      const params = new URLSearchParams({ pageSize: String(pageSize) });
-      const filters: string[] = [];
-      if (query.start) {
-        const { field, bound } = incrementalFilter(
-          dataType,
-          query.start,
-          query.tz,
-          dateStyle,
-        );
-        filters.push(`${field} >= "${bound}"`);
-      }
-      if (query.edge) {
-        const { field, bound } = incrementalFilter(
-          dataType,
-          query.edge.at,
-          query.tz,
-          dateStyle,
-        );
-        filters.push(
-          `${field} ${query.edge.order === "desc" ? "<=" : ">="} "${bound}"`,
-        );
-      }
-      if (filters.length > 0) params.set("filter", filters.join(" AND "));
-      if (pageToken) params.set("pageToken", pageToken);
+    try {
+      do {
+        // A walk still passing over the samples beyond its edge does not stop
+        // on the slice's budget, only on the job's: the skip writes nothing,
+        // so a slice that stopped inside it would have nothing to show, and
+        // the next slice would start the same skip over (see
+        // `GoogleHealthSliceBudget.skippedPages`).
+        if (crossed ? stopRequested(resumable) : stopRequested(false)) {
+          stopped = true;
+          break;
+        }
+        if (!crossed && skipped >= maxSkip) {
+          getEvent()?.addWarning(
+            `google-health ${verb}: passed over ${skipped} pages without reaching the resume edge`,
+          );
+          stopped = true;
+          break;
+        }
+        const params = new URLSearchParams({ pageSize: String(pageSize) });
+        const filters: string[] = [];
+        if (query.start) {
+          const { field, bound } = incrementalFilter(
+            dataType,
+            query.start,
+            query.tz,
+            dateStyle,
+          );
+          filters.push(`${field} >= "${bound}"`);
+        }
+        const edgeFiltered = edge !== undefined && edgeBy === "filter";
+        if (edgeFiltered) {
+          const { field, bound } = incrementalFilter(
+            dataType,
+            edge.at,
+            query.tz,
+            dateStyle,
+          );
+          filters.push(
+            `${field} ${edge.order === "desc" ? "<=" : ">="} "${bound}"`,
+          );
+        }
+        if (filters.length > 0) params.set("filter", filters.join(" AND "));
+        if (pageToken) params.set("pageToken", pageToken);
 
-      requestCount += 1;
-      // v1.42 (#1023) — the first filtered daily-summary read answering 400
-      // is the expected trigger for the snake_case retry below, not a
-      // failure: some accounts reject the documented camelCase prefix on
-      // some types, and the very next request answers 200. It was logged as
-      // an error next to the 200 that followed it. It is recorded as a note
-      // now; any other 400 still carries its error.
-      const firstRequest = requestCount === 1;
-      const { status, json, verdict, apiErrorDetail } =
-        await googleHealthDataRequest<GoogleHealthDataPointPage>(
-          accessToken,
-          `${verb}(page=${pageCount})`,
-          (token) =>
-            safeFetch(
-              `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints?${params}`,
-              {
-                method: "GET",
-                headers: { Authorization: `Bearer ${token}` },
-              },
-            ),
-          (status) =>
-            canFallBack &&
-            dateStyle === "camel" &&
-            firstRequest &&
-            status === 400,
-        );
-      // A rate limit the request could not wait out ends a resumable walk
-      // inside a backfill slice where it is: the pages before it are written
-      // and their edge recorded, so this is a pause, not a failure. The slice
-      // ends with it, since every other walk would meet the same quota.
-      if (status === 429 && resumable && inSlice()) {
-        endSlice("rate_limited");
-        stopped = true;
-        break;
-      }
-      if (verdict.classification !== "success") {
-        throw new GoogleHealthApiError({
-          verb,
-          classification: verdict.classification,
-          httpStatus: verdict.httpStatus,
-          reason: verdict.reason,
-          upstreamError: apiErrorDetail,
-        });
-      }
+        requestCount += 1;
+        // v1.42 (#1023) — the first filtered daily-summary read answering 400
+        // is the expected trigger for the snake_case retry below, not a
+        // failure: some accounts reject the documented camelCase prefix on
+        // some types, and the very next request answers 200. It was logged as
+        // an error next to the 200 that followed it. It is recorded as a note
+        // now; any other 400 still carries its error. The same holds for the
+        // first resumed request refusing the edge bound.
+        const firstRequest = requestCount === 1;
+        const firstOfWalk = pageCount === 0;
+        const edgeRefused = (status: number, detail: string | undefined) =>
+          edgeFiltered &&
+          firstOfWalk &&
+          status === 400 &&
+          refusesEdgeFilter(detail);
+        const { status, json, verdict, apiErrorDetail } =
+          await googleHealthDataRequest<GoogleHealthDataPointPage>(
+            accessToken,
+            `${verb}(page=${pageCount})`,
+            (token) =>
+              safeFetch(
+                `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints?${params}`,
+                {
+                  method: "GET",
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              ),
+            (status, detail) =>
+              canFallBack &&
+              dateStyle === "camel" &&
+              firstRequest &&
+              status === 400
+                ? "date_filter_rejected_retrying_snake_case"
+                : edgeRefused(status, detail)
+                  ? "edge_filter_rejected_reading_without_it"
+                  : undefined,
+          );
+        if (edgeRefused(status, apiErrorDetail)) {
+          throw new EdgeFilterRefused();
+        }
+        // A rate limit the request could not wait out ends a resumable walk
+        // inside a backfill slice where it is: the pages before it are written
+        // and their edge recorded, so this is a pause, not a failure. The slice
+        // ends with it, since every other walk would meet the same quota.
+        if (status === 429 && resumable && inSlice()) {
+          endSlice("rate_limited");
+          stopped = true;
+          break;
+        }
+        if (verdict.classification !== "success") {
+          throw new GoogleHealthApiError({
+            verb,
+            classification: verdict.classification,
+            httpStatus: verdict.httpStatus,
+            reason: verdict.reason,
+            upstreamError: apiErrorDetail,
+          });
+        }
 
-      const page = json?.dataPoints ?? [];
-      pageToken = json?.nextPageToken ?? null;
-      pageCount += 1;
-      fetched += page.length;
-      noteSlicePage();
-      await onPage(page);
-    } while (pageToken && pageCount < maxPages);
+        let page = json?.dataPoints ?? [];
+        pageToken = json?.nextPageToken ?? null;
+        pageCount += 1;
+        fetched += page.length;
+        noteSlicePage();
+        if (!crossed) {
+          // Placed samples beyond the edge were written by an earlier slice;
+          // one without a sample time cannot be placed and is passed over
+          // with them until the walk is past the edge.
+          const kept = page.filter((p) => beyondEdge(p) === false);
+          if (kept.length === 0) {
+            skipped += 1;
+            continue;
+          }
+          crossed = true;
+          refundSkip();
+          page = page.filter((p) => beyondEdge(p) !== true);
+        }
+        await onPage(page);
+      } while (pageToken && pageCount - skipped < maxPages);
+    } finally {
+      refundSkip();
+    }
 
     notePagination(pageCount, fetched, stopped || Boolean(pageToken));
   };
@@ -1255,8 +1362,20 @@ export async function forEachDataPointPage(
     dataType.timeField === "date" && query.start !== undefined;
 
   let style: GoogleHealthDateFilterStyle = "camel";
+  let edgeBy: "filter" | "skip" = edge?.filter === false ? "skip" : "filter";
+  const run = async (dateStyle: GoogleHealthDateFilterStyle) => {
+    try {
+      await walk(dateStyle, edgeBy);
+    } catch (err) {
+      if (!(err instanceof EdgeFilterRefused)) throw err;
+      // Once: the walk without the bound sends no edge filter to refuse.
+      edgeBy = "skip";
+      await edge?.onFilterUnsupported?.();
+      await walk(dateStyle, edgeBy);
+    }
+  };
   try {
-    await walk("camel");
+    await run("camel");
   } catch (err) {
     const firstRequestRejected =
       canFallBack &&
@@ -1265,12 +1384,37 @@ export async function forEachDataPointPage(
       err.httpStatus === 400;
     if (!firstRequestRejected) throw err;
     style = "snake";
-    await walk("snake");
+    await run("snake");
   }
   if (canFallBack) {
     annotate({ meta: { "googleHealth.dateFilter.style": style } });
     query.onDateFilterStyle?.(style);
   }
+}
+
+/**
+ * Thrown inside a walk whose first request Google refused because of the
+ * resume edge's bound; `forEachDataPointPage` reads the collection again
+ * without it.
+ */
+class EdgeFilterRefused extends Error {
+  constructor() {
+    super("google-health: edge filter refused");
+  }
+}
+
+/**
+ * Whether a 400 on the first resumed request is Google refusing the edge
+ * bound, rather than something else about the request. The request differs
+ * from one Google answers every hour only by that bound, so a bare 400 or an
+ * INVALID_ARGUMENT counts, and so does any message naming the filter; one
+ * naming the page token, the page size or the access token does not.
+ */
+export function refusesEdgeFilter(detail: string | undefined): boolean {
+  if (detail === undefined) return true;
+  if (/filter/i.test(detail)) return true;
+  if (/token|page.?size/i.test(detail)) return false;
+  return /INVALID_ARGUMENT/.test(detail);
 }
 
 // ─── Daily roll-up reads (`POST …/dataPoints:dailyRollUp`) ─────────────────
