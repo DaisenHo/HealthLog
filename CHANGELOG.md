@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.42.4] — 2026-10-16
+
+Reliability: one integration health model with a watchdog and a shared
+card, a resumable Google Health backfill, no fixed list cut-offs.
+
+### Added
+
+- **Connection health.** Every integration status route (and
+  `/api/integrations/status`, `/api/integrations/healthkit`,
+  `/api/record-settings/integrations`) carries `health`: state
+  (`ok | limited | degraded | action_required`), reason, since, one action,
+  unavailable types, last success, last data and redacted diagnostics
+  (`integration_statuses.recent_calls`, migration 0400).
+- **Watchdog.** Hourly and daily passes flag a continuous source that goes
+  silent (24 h; 48 h for Apple Health, Oura and WHOOP; never for scales, BP
+  cuffs or Strava) and pages the admin once per incident for action needed,
+  provider errors or silence, with one recovery note; provider-wide incidents
+  are aggregated; the first run records standing incidents without paging.
+- **Integration cards.** One card for every connection and the managed
+  profile view, rendered from `health` only, with a three-dot menu and a
+  collapsed, copyable diagnostics section.
+- **HealthKit arrivals.** Medication doses record arrivals as
+  `MEDICATION_DOSE`; every type carries `lastBackgroundAt` (migration 0401
+  turns `healthkit_type_syncs.type` into text).
+- `GET /api/labs/overview`: one row per biomarker with its latest reading.
+- The container logs pending migrations before `migrate deploy`.
+
+### Fixed
+
+- **Google Health backfill (#1220).** Progress is saved per page inside a
+  collection; slices of five minutes or 500 pages; server errors and
+  timeouts are retried; a long rate limit ends the slice and keeps the place;
+  a refused resume filter falls back to a client-side skip that keeps its
+  own place. Every admitted import runs in its own background event. The
+  hourly sync waits for a running slice and stays inside its expiry.
+- **Fixed list limits (#1222).** Visit link pickers open on the record's date
+  with search and paging (`/api/labs` `q`; illness episodes `from`, `to`,
+  `offset`, `sortDir`, `q`; encounters `offset`); the lab list reads the
+  overview; side effects, GLP-1 medications, drug-level intakes and symptoms
+  page through all entries. A guard rejects new fixed client limits.
+- **Extra Apple Health dose (#1221).** A dose on another local day than the
+  held take is stored unscheduled instead of overwriting it; a same-day
+  entry converges onto the slot; dose history lets the slot's own take claim
+  it first.
+- **Sleep score.** A night's midpoint comes from its main session; Oura
+  `rest` and `deleted` periods are skipped and earlier imports retired.
+- Recovery page empty state; aging test fixtures made relative with a guard.
+
+### API
+
+- `health` on integration status responses; `metricFreshness[]` gains
+  `MEDICATION_DOSE` and `lastBackgroundAt`; `POST /api/medications/intake/bulk`
+  accepts `syncTrigger`; GLP-1 timeline adds `medications[]`.
+
 ## [1.42.3] — 2026-10-15
 
 Withings API plans, lab unit conversion, chronic conditions and rest mode,
