@@ -394,9 +394,9 @@ HealthLog: Running database migrations...
 ```
 
 or `HealthLog: Database schema is up to date.` when the image brings none.
-The line is a notice and does not pause the start. If you see a count and
-have no dump yet, stop the container (`docker compose stop app`), take the
-dump, and start it again; the migrations run on that start.
+The line is a notice and does not pause the start: the migrations run right
+after it. So the dump belongs before step 2, not after you see the line; by
+then the database is already being migrated.
 
 For the ordering on a host where you want the migration result before the
 new container takes traffic, see [`docs/ops/deploy.md`](../ops/deploy.md).
