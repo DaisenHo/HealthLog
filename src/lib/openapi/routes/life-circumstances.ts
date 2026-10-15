@@ -14,8 +14,8 @@ import { z } from "zod/v4";
 import {
   AUDIT_C_CUTOFF_SOURCES,
   LIFE_AI_SECTIONS,
-  LIFE_FACT_KINDS,
   LIFE_SECTION_KEYS,
+  lifeFactRevisionSchema,
   auditCRequestSchema,
   lifeAiSectionsPatchSchema,
   lifeConfirmSchema,
@@ -26,32 +26,14 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
-  notImplementedResponse,
   recordRefusal,
   stdResponses,
 } from "./shared";
 
-const lifeFactRevision = z
-  .object({
-    id: z.string(),
-    kind: z.enum(["SMOKING_STATUS", "SHIFT_SCHEDULE", ...LIFE_FACT_KINDS]),
-    value: z
-      .unknown()
-      .describe(
-        "`SMOKING_STATUS` and `SHIFT_SCHEDULE` carry their string value; every other kind an object with `schema: 1` whose shape is fixed per kind (see the life-circumstances contract). `null` when `unreadable`.",
-      ),
-    unreadable: z
-      .boolean()
-      .describe("The sealed value could not be opened on this host."),
-    validFrom: z.iso.datetime({ offset: true }),
-    validUntil: z.null(),
-    provenance: z.enum(["USER_REPORTED", "USER_CORRECTION"]),
-    createdAt: z.iso.datetime({ offset: true }),
-  })
-  .meta({
-    id: "LifeFactRevision",
-    description: "The current revision of one life-circumstance fact.",
-  });
+const lifeFactRevision = lifeFactRevisionSchema.meta({
+  id: "LifeFactRevision",
+  description: "The current revision of one life-circumstance fact.",
+});
 
 const auditCCutoff = z.object({
   value: z.number().int(),
@@ -210,7 +192,6 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -249,7 +230,6 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -279,7 +259,6 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -295,6 +274,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: auditCRequest } },
       },
       responses: {
+        ...recordRefusal(),
         ...idempotentWrite(),
         "200": {
           description: "A replay of an entry already stored.",
@@ -319,7 +299,6 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -330,6 +309,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description: "Soft delete. 404 `anamnesis.auditC.notFound`.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The removed entry.",
           content: {
@@ -349,7 +329,6 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },

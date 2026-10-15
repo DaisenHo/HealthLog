@@ -13,15 +13,27 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
   correctHealthProfileFact,
+  correctLifeFact,
   removeHealthProfileFact,
 } from "@/lib/profile/health-facts";
+import { dayStartUtc } from "@/lib/profile/life-derived";
 import {
-  healthProfileFactCorrectionSchema,
   validateCorrectedFactValue,
   type HealthProfileFactKind,
 } from "@/lib/validations/health-profile-facts";
+import {
+  factCorrectionSchema,
+  isLifeFactKind,
+  parseLifeFactValue,
+} from "@/lib/validations/life-circumstances";
 
 type RouteParams = { params: Promise<{ id: string }> };
+
+function invalidValue(): Response {
+  return apiError("Value is not valid for this fact kind", 422, {
+    errorCode: "anamnesis.fact.invalidValue",
+  });
+}
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
@@ -32,7 +44,7 @@ export const PATCH = apiHandler(
     });
     if (error) return error;
 
-    const parsed = healthProfileFactCorrectionSchema.safeParse(rawBody);
+    const parsed = factCorrectionSchema.safeParse(rawBody);
     if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
 
     const current = await prisma.healthProfileFactRevision.findFirst({
@@ -46,17 +58,38 @@ export const PATCH = apiHandler(
     });
     if (!current) return apiError("Current profile fact not found", 404);
 
-    const value = validateCorrectedFactValue(
-      current.kind as HealthProfileFactKind,
-      parsed.data.value,
-    );
-    if (!value) {
-      return apiError("Value is not valid for this fact kind", 422, {
-        errorCode: "anamnesis.fact.invalidValue",
-      });
+    // The value's form follows the stored kind: a string from the closed set
+    // for the three original kinds, an object with `schema: 1` for the life
+    // circumstances (v1.43, #614).
+    const now = new Date();
+    const validFrom = parsed.data.validFrom
+      ? dayStartUtc(parsed.data.validFrom)
+      : undefined;
+    let corrected: { id: string; kind: string } | null;
+    if (isLifeFactKind(current.kind)) {
+      const value =
+        typeof parsed.data.value === "string"
+          ? null
+          : parseLifeFactValue(current.kind, parsed.data.value);
+      if (!value) return invalidValue();
+      corrected = await correctLifeFact(user.id, id, value, now, validFrom);
+    } else {
+      const value =
+        typeof parsed.data.value === "string"
+          ? validateCorrectedFactValue(
+              current.kind as HealthProfileFactKind,
+              parsed.data.value,
+            )
+          : null;
+      if (!value) return invalidValue();
+      corrected = await correctHealthProfileFact(
+        user.id,
+        id,
+        value,
+        now,
+        validFrom,
+      );
     }
-
-    const corrected = await correctHealthProfileFact(user.id, id, value);
     if (!corrected) {
       return apiError("Profile fact changed since it was loaded", 409, {
         errorCode: "anamnesis.fact.conflict",

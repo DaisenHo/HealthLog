@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
   HEALTH_PROFILE_AI_SECTIONS,
-  removedHealthProfileFactSchema,
 } from "../health-profile-facts";
+import { removedFactSchema as removedHealthProfileFactSchema } from "../life-circumstances";
 
 describe("health profile AI inclusion defaults", () => {
   it("keeps the legacy opt-in list independent from accepted section values", () => {

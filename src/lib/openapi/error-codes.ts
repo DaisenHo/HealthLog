@@ -60,6 +60,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     analytics: ["analytics.invalid_query"],
     anamnesis: [
       "anamnesis.auditC.invalid",
+      "anamnesis.auditC.notFound",
       "anamnesis.auditC.rateLimited",
       "anamnesis.fact.conflict",
       "anamnesis.fact.currentExists",

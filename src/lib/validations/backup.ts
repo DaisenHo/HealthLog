@@ -77,10 +77,12 @@ import {
 } from "@/generated/prisma/enums";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
-  healthProfileAiSectionSchema,
-  healthProfileFactKindSchema,
-  isHealthProfileFactValue,
+  storedHealthProfileAiSectionSchema,
 } from "@/lib/validations/health-profile-facts";
+import {
+  STORED_FACT_KINDS,
+  isStoredFactPlaintext,
+} from "@/lib/validations/life-circumstances";
 import {
   advanceDirectiveStatusSchema,
   emergencyBloodTypeSchema,
@@ -830,8 +832,10 @@ const healthProfileBackupSchema = z
     conditions: z.string().nullable().default(null),
     allergies: z.string().nullable().default(null),
     coachFocus: z.string().nullable().default(null),
+    // Every stored section, the four life-circumstance ones included (v1.43):
+    // a file written by an account that opted one in must restore it opted in.
     aiIncludedSections: z
-      .array(healthProfileAiSectionSchema)
+      .array(storedHealthProfileAiSectionSchema)
       .default([...DEFAULT_HEALTH_PROFILE_AI_SECTIONS]),
     // v1.43 (#614) — section confirmations, section key to ISO instant.
     // Carried as stored; the read route judges each stamp, so an unreadable
@@ -867,7 +871,7 @@ const healthProfileBackupSchema = z
 const healthProfileFactBackupSchema = z
   .object({
     id: z.string().min(1),
-    kind: healthProfileFactKindSchema,
+    kind: z.enum(STORED_FACT_KINDS),
     value: z.string().nullable().default(null),
     valueEncrypted: base64BytesSchema.optional(),
     validFrom: isoDateTime,
@@ -881,7 +885,7 @@ const healthProfileFactBackupSchema = z
     if (fact.valueEncrypted === undefined) {
       if (
         fact.value === null ||
-        !isHealthProfileFactValue(fact.kind, fact.value)
+        !isStoredFactPlaintext(fact.kind, fact.value)
       ) {
         ctx.addIssue({
           code: "custom",

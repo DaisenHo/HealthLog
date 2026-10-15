@@ -11,6 +11,13 @@
 import { z } from "zod/v4";
 
 import { assertStableExternalId } from "@/lib/validations/external-id";
+import {
+  ALCOHOL_PATTERN_VALUES,
+  HEALTH_PROFILE_FACT_KINDS,
+  SHIFT_SCHEDULE_VALUES,
+  SMOKING_STATUS_VALUES,
+  isHealthProfileFactValue,
+} from "@/lib/validations/health-profile-facts";
 
 // ── Fact kinds and their values ──────────────────────────────────────────────
 
@@ -219,3 +226,162 @@ export const AUDIT_C_CUTOFF_SOURCES = [
   "KNHANES_KR",
   "BRADLEY_2007",
 ] as const;
+
+// ── Writing facts through `/api/anamnesis/facts` ─────────────────────────────
+
+/** Every kind a fact revision row can carry: the three closed ones and the six above. */
+export const STORED_FACT_KINDS = [
+  ...HEALTH_PROFILE_FACT_KINDS,
+  ...LIFE_FACT_KINDS,
+] as const;
+export type StoredFactKind = (typeof STORED_FACT_KINDS)[number];
+
+export function isLifeFactKind(kind: string): kind is LifeFactKind {
+  return (LIFE_FACT_KINDS as readonly string[]).includes(kind);
+}
+
+/**
+ * "Valid since", a calendar day. Optional: without it the answer holds from
+ * the moment it is saved. The web form sends the first of a month, because a
+ * month is as precise as anyone remembers when they stopped smoking.
+ */
+const validFromDay = z.iso
+  .date()
+  .optional()
+  .describe(
+    "The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today; an earlier day than the end of the previous answer of the same kind starts at that end instead.",
+  );
+
+/**
+ * `POST /api/anamnesis/facts`. The three closed kinds keep their string value
+ * (older app builds send exactly that); the six life-circumstance kinds send
+ * their object value with `schema: 1`.
+ */
+export const factWriteSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("SMOKING_STATUS"),
+    value: z.enum(SMOKING_STATUS_VALUES),
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("ALCOHOL_PATTERN"),
+    value: z.enum(ALCOHOL_PATTERN_VALUES),
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("SHIFT_SCHEDULE"),
+    value: z.enum(SHIFT_SCHEDULE_VALUES),
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("TOBACCO_DETAIL"),
+    value: tobaccoDetailValueSchema,
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("ACTIVITY_HABIT"),
+    value: activityHabitValueSchema,
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("WORK_CONTEXT"),
+    value: workContextValueSchema,
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("FREE_WEEKDAYS"),
+    value: freeWeekdaysValueSchema,
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("HABITS"),
+    value: habitsValueSchema,
+    validFrom: validFromDay,
+  }),
+  z.object({
+    kind: z.literal("HEALTH_GOALS"),
+    value: healthGoalsValueSchema,
+    validFrom: validFromDay,
+  }),
+]);
+export type FactWriteInput = z.infer<typeof factWriteSchema>;
+
+/**
+ * `PATCH /api/anamnesis/facts/{id}`: the closed kinds take a string, the life
+ * kinds an object; which one the row needs is checked against the stored
+ * kind after the row is found.
+ */
+export const factCorrectionSchema = z.object({
+  value: z.union([z.string().trim().min(1), z.record(z.string(), z.unknown())]),
+  validFrom: validFromDay,
+});
+
+/** Parse a life-circumstance value against its kind's schema; null when it does not fit. */
+export function parseLifeFactValue(
+  kind: LifeFactKind,
+  value: unknown,
+): LifeFactValue | null {
+  const parsed = LIFE_FACT_VALUE_SCHEMAS[kind].safeParse(value);
+  return parsed.success ? (parsed.data as LifeFactValue) : null;
+}
+
+export type TobaccoDetailValue = z.infer<typeof tobaccoDetailValueSchema>;
+export type ActivityHabitValue = z.infer<typeof activityHabitValueSchema>;
+export type WorkContextValue = z.infer<typeof workContextValueSchema>;
+export type FreeWeekdaysValue = z.infer<typeof freeWeekdaysValueSchema>;
+export type HabitsValue = z.infer<typeof habitsValueSchema>;
+export type HealthGoalsValue = z.infer<typeof healthGoalsValueSchema>;
+export type LifeFactValue =
+  | TobaccoDetailValue
+  | ActivityHabitValue
+  | WorkContextValue
+  | FreeWeekdaysValue
+  | HabitsValue
+  | HealthGoalsValue;
+
+/** `DELETE /api/anamnesis/facts/{id}`: the revision whose interval was closed. */
+export const removedFactSchema = z.object({
+  id: z.string(),
+  kind: z.enum(STORED_FACT_KINDS),
+  removedAt: z.iso.datetime({ offset: true }),
+});
+
+/**
+ * A life-circumstance revision as `/api/anamnesis/life-circumstances` and the
+ * fact writes answer it. `SMOKING_STATUS` and `SHIFT_SCHEDULE` ride along in
+ * their sections with their string value.
+ */
+export const lifeFactRevisionSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["SMOKING_STATUS", "SHIFT_SCHEDULE", ...LIFE_FACT_KINDS]),
+  value: z
+    .unknown()
+    .describe(
+      "`SMOKING_STATUS` and `SHIFT_SCHEDULE` carry their string value; every other kind an object with `schema: 1` whose shape is fixed per kind (see the life-circumstances contract). `null` when `unreadable`.",
+    ),
+  unreadable: z
+    .boolean()
+    .describe("The sealed value could not be opened on this host."),
+  validFrom: z.iso.datetime({ offset: true }),
+  validUntil: z.null(),
+  provenance: z.enum(["USER_REPORTED", "USER_CORRECTION"]),
+  createdAt: z.iso.datetime({ offset: true }),
+});
+
+/**
+ * Whether `raw` is a valid plaintext for a stored fact of `kind`: one of the
+ * closed values for the three original kinds, the JSON of a value that fits
+ * its schema for the life kinds. The portable backup carries exactly this
+ * plaintext, so its writer and its restore share this one check.
+ */
+export function isStoredFactPlaintext(
+  kind: StoredFactKind,
+  raw: string,
+): boolean {
+  if (!isLifeFactKind(kind)) return isHealthProfileFactValue(kind, raw);
+  try {
+    return parseLifeFactValue(kind, JSON.parse(raw)) !== null;
+  } catch {
+    return false;
+  }
+}

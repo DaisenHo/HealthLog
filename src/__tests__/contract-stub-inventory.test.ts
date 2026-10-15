@@ -28,15 +28,6 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
     "admin.pulse_day_mean.get",
     "admin.pulse_day_mean.post",
   ],
-  "anamnesis/audit-c/[id]/route.ts": ["anamnesis.audit_c.delete"],
-  "anamnesis/audit-c/route.ts": ["anamnesis.audit_c.create"],
-  "anamnesis/life-circumstances/ai-sections/route.ts": [
-    "anamnesis.life_circumstances.ai_sections.patch",
-  ],
-  "anamnesis/life-circumstances/confirm/route.ts": [
-    "anamnesis.life_circumstances.confirm",
-  ],
-  "anamnesis/life-circumstances/route.ts": ["anamnesis.life_circumstances.get"],
   "dawarich/connect/route.ts": ["dawarich.connect"],
   "dawarich/disconnect/route.ts": ["dawarich.disconnect"],
   "dawarich/places/route.ts": ["dawarich.places.get"],
@@ -53,7 +44,7 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** The size of the register when it was written; see the header. */
-const REGISTER_SIZE = 15;
+const REGISTER_SIZE = 10;
 
 function routeFiles(): string[] {
   return walkSourceFiles(API_ROOT, { floor: 400, extensions: [".ts"] })

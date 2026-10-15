@@ -357,3 +357,207 @@ export function isSafetyFlagged(
   if (idx === null) return false;
   return (items[idx] ?? 0) > 0;
 }
+
+// ── AUDIT-C (v1.43, #614) ────────────────────────────────────────────────────
+//
+// The first three questions of the WHO AUDIT, served verbatim by
+// `GET /api/anamnesis/life-circumstances` (`auditC.instrument`) so the web and
+// the app render one wording. Not part of `INSTRUMENTS`: AUDIT-C is stored
+// beside the screeners but never listed or scored by a mental-health surface
+// (older app builds decode that instrument list closed). Scoring and the
+// national cut-offs live in `audit-c.ts`.
+//
+// Licence: "As a WHO-approved instrument, the AUDIT is in the public domain"
+// (auditscreen.org FAQ); reproduction is free as long as the wording is not
+// materially changed and the WHO note is shown. Adapting the standard drink to
+// the country is foreseen by the WHO manual, which is why that sentence is
+// help text per language and not part of the items.
+//
+// Wording is taken from primary sources only. A language without a verified,
+// published validated translation ships the WHO English original with
+// `validatedLocale: false`, never a translation of our own:
+//  - en: Babor et al., AUDIT manual, WHO/MSD/MSB/01.6a (2001), Box 4.
+//        https://www.paho.org/sites/default/files/Auditmanual_ENG.pdf
+//  - de: AUDIT Lübeck (Rumpf et al.), the version attached to the German S3
+//        guideline (AWMF 076-001), as distributed on auditscreen.org:
+//        https://auditscreen.org/cmsb/uploads/audit-german-l-beck.pdf
+//        (the guideline PDF's own annex misprints item 2 as "7 oder 8", so
+//        the Lübeck sheet is the one reproduced).
+//  - ko: AUDIT-KR, Kim CG, Kim JS et al., Korean J Fam Med 2014;35:2-10,
+//        Appendix 1. https://www.kjfm.or.kr/upload/pdf/kjfm-35-2.pdf
+//        Item 2 prints two answer rows (soju bottles and standard glasses of
+//        other drinks); each option carries both, in the source's order. Item 3
+//        uses the Korean threshold (more than one bottle of soju, or five
+//        standard glasses), which the KNHANES cut-offs were set against.
+//  - pl: Klimkiewicz A et al., "Psychometric properties of the Polish version
+//        of the AUDIT", Drug Alcohol Depend 2021; interview form as published
+//        on auditscreen.org:
+//        https://auditscreen.org/cmsb/uploads/audit_-polish_-interview_new.pdf
+//  - es, fr, it: English with `validatedLocale: false`. Published official
+//        wordings exist (WHO manual in Spanish; HAS 2023 guide in French; an
+//        ISS leaflet in Italian), but no validation paper for them was read
+//        and the Spanish and Italian sources carry misprints in the options.
+//        Enabling one needs the wording read from its validation source.
+
+export const AUDIT_C_ATTRIBUTION =
+  "As a WHO-approved instrument, the AUDIT is in the public domain.";
+
+interface AuditCItemWording {
+  stem: string;
+  /** Answer labels in score order, 0 to 4. */
+  options: readonly [string, string, string, string, string];
+}
+
+interface AuditCWording {
+  locale: string;
+  items: readonly [AuditCItemWording, AuditCItemWording, AuditCItemWording];
+}
+
+/** Validated item wording by language. A language missing here renders `en`. */
+export const AUDIT_C_ITEMS: Readonly<Record<string, AuditCWording>> = {
+  en: {
+    locale: "en",
+    items: [
+      {
+        stem: "How often do you have a drink containing alcohol?",
+        options: [
+          "Never",
+          "Monthly or less",
+          "2 to 4 times a month",
+          "2 to 3 times a week",
+          "4 or more times a week",
+        ],
+      },
+      {
+        stem: "How many drinks containing alcohol do you have on a typical day when you are drinking?",
+        options: ["1 or 2", "3 or 4", "5 or 6", "7, 8, or 9", "10 or more"],
+      },
+      {
+        stem: "How often do you have six or more drinks on one occasion?",
+        options: [
+          "Never",
+          "Less than monthly",
+          "Monthly",
+          "Weekly",
+          "Daily or almost daily",
+        ],
+      },
+    ],
+  },
+  de: {
+    locale: "de",
+    items: [
+      {
+        stem: "Wie oft nehmen Sie ein alkoholisches Getränk zu sich?",
+        options: [
+          "Niemals",
+          "1 mal im Monat oder seltener",
+          "2 bis 4 mal im Monat",
+          "2 bis 3 mal pro Woche",
+          "4 mal oder mehrmals in der Woche",
+        ],
+      },
+      {
+        stem: "Wenn Sie alkoholische Getränke zu sich nehmen, wieviel trinken Sie dann typischerweise an einem Tag?",
+        options: ["1 - 2", "3 - 4", "5 - 6", "7 - 9", "10 oder mehr"],
+      },
+      {
+        stem: "Wie oft trinken Sie 6 oder mehr Gläser Alkohol bei einer Gelegenheit?",
+        options: [
+          "Niemals",
+          "Seltener als 1 mal im Monat",
+          "1 mal im Monat",
+          "1 mal pro Woche",
+          "Täglich oder fast täglich",
+        ],
+      },
+    ],
+  },
+  ko: {
+    locale: "ko",
+    items: [
+      {
+        stem: "술을 마시는 횟수는 어느 정도입니까?",
+        options: [
+          "전혀 안 마신다",
+          "한 달에 1회 이하",
+          "한 달에 2–4회",
+          "일주일에 2–3회",
+          "일주일에 4회 이상",
+        ],
+      },
+      {
+        stem: "술을 마시는 날은 보통 어느 정도를 마십니까?",
+        options: [
+          "소주: 반 병 이하 / 기타 술: 1–2잔",
+          "소주: 1병 이하 / 기타 술: 3–4잔",
+          "소주: 1.5병 정도 / 기타 술: 5–6잔",
+          "소주: 2병 정도 / 기타 술: 7–9잔",
+          "소주: 2.5병 이상 / 기타 술: 10잔 이상",
+        ],
+      },
+      {
+        stem: "한 번의 술좌석에서 소주 1병을 초과해서 마시는 횟수는 어느 정도입니까?(기타 술은 표준 5잔 이상)",
+        options: [
+          "전혀 없다",
+          "한 달에 1회 미만",
+          "한 달에 1회정도",
+          "일주일에 1회 정도",
+          "거의 매일",
+        ],
+      },
+    ],
+  },
+  pl: {
+    locale: "pl",
+    items: [
+      {
+        stem: "Jak często pije Pani/Pan napoje zawierające alkohol?",
+        options: [
+          "nigdy",
+          "raz w miesiącu lub rzadziej",
+          "2 do 4 razy w miesiącu",
+          "2 do 3 razy w tygodniu",
+          "4 razy w tygodniu lub częściej",
+        ],
+      },
+      {
+        stem: "Ile standardowych porcji alkoholu wypija Pani/Pan podczas typowego dnia, w którym spożywa Pani/Pan alkohol?",
+        options: [
+          "1 lub 2",
+          "3 lub 4",
+          "5 lub 6",
+          "7, 8 lub 9",
+          "10 lub więcej",
+        ],
+      },
+      {
+        stem: "Jak często wypija Pani/Pan sześć lub więcej porcji alkoholu przy jednej okazji?",
+        options: [
+          "nigdy",
+          "rzadziej niż raz w miesiącu",
+          "raz w miesiącu",
+          "raz w tygodniu",
+          "codziennie lub prawie codziennie",
+        ],
+      },
+    ],
+  },
+};
+
+/**
+ * One sentence on what counts as one drink, in each app language. Help text,
+ * not part of the validated items. German and French follow their national
+ * sources (alkoholleitlinie.de: about 10 to 12 g; HAS: 10 g), Korean quotes
+ * the AUDIT-KR footnote, and the languages that show the English items use
+ * the WHO manual's 10 g so the note matches the wording beside it.
+ */
+export const AUDIT_C_STANDARD_DRINK: Readonly<Record<string, string>> = {
+  en: "One drink means a standard drink of about 10 g of pure alcohol, for example 330 ml of beer at 5%, 140 ml of wine at 12% or 40 ml of spirits at 40%.",
+  de: "Ein Glas Alkohol entspricht etwa 10 bis 12 g reinem Alkohol, zum Beispiel 0,25 l Bier, 0,125 l Wein oder Sekt oder 4 cl Spirituosen.",
+  es: "Una bebida equivale a una bebida estándar de unos 10 g de alcohol puro, la definición de la OMS que siguen estas preguntas.",
+  fr: "Un verre standard contient 10 g d'alcool pur, par exemple 25 cl de bière à 5°, 10 cl de vin à 12° ou 3 cl d'alcool à 40°.",
+  it: "Una bevanda corrisponde a una bevanda standard di circa 10 g di alcol puro, la definizione dell'OMS su cui si basano queste domande.",
+  pl: "Standardowa porcja alkoholu to około 10 g czystego alkoholu, zgodnie z definicją WHO, na której opierają się te pytania.",
+  ko: "표준 1잔: 양주잔으로 양주 1잔, 와인잔으로 와인 1잔, 막걸리 1사발이 각각 표준 1잔이다. 맥주는 캔맥주 1캔 또는 작은 병맥주 1병이며 생맥주는 500 mL가 표준 1잔이다. 소주는 1/4병이 표준 1잔에 해당한다.",
+};
