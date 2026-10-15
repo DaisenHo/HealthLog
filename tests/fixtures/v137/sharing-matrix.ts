@@ -571,6 +571,14 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "delete",
   ),
   handler(
+    "app/api/medications/[id]/ingredients/route.ts",
+    "/api/medications/[id]/ingredients",
+    "PUT",
+    "medications",
+    "manage",
+    "update",
+  ),
+  handler(
     "app/api/medications/[id]/glp1/route.ts",
     "/api/medications/[id]/glp1",
     "POST",

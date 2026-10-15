@@ -33,6 +33,13 @@
 
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
 import { CoursesRow } from "@/components/medications/sections/courses-section";
+import {
+  COMPOSITION_CATEGORIES,
+  CompositionRow,
+  CompositionSection,
+} from "@/components/medications/sections/composition-section";
+import type { MedicationIngredientDto } from "@/components/medications/sections/use-composition";
+import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   useCallback,
@@ -184,6 +191,8 @@ export interface MedicationDetailSnapshot {
   canStartCourse?: boolean;
   recordedSchedules?: ScheduleSnapshot[];
   schedules: ScheduleSnapshot[];
+  /** v1.43 — the composition per unit, as the server delivered it. */
+  ingredients?: MedicationIngredientDto[];
 }
 
 // Slugs are ASCII / locale-independent so the URL stays stable across
@@ -315,6 +324,15 @@ export function MedicationDetailTabs({
   const oneShot = medication.oneShot === true;
   const asNeeded = medication.asNeeded === true;
   const isGlp1 = !oneShot && medication.treatmentClass === "GLP1";
+  // v1.43 — the composition: offered up front for a vitamin or a supplement,
+  // shown for any medication that has one, and possible for every other one
+  // from the lifecycle group. Behind the opt-in nutrients module.
+  const { user: account } = useAuth();
+  const nutrientsOn = account?.modules?.nutrients === true;
+  const ingredients = medication.ingredients ?? [];
+  const showComposition =
+    nutrientsOn &&
+    (COMPOSITION_CATEGORIES.has(medication.category) || ingredients.length > 0);
   const isInjectable = medication.deliveryForm === "INJECTION";
 
   // v1.28 — the "Wirkung" tab appears only when the medication resolves to a
@@ -660,6 +678,14 @@ export function MedicationDetailTabs({
               )}
             </MedicationDetailSection>
           )}
+          {showComposition && (
+            <CompositionSection
+              medicationId={id}
+              ingredients={ingredients}
+              canEdit={canManageMedications}
+              ownRecord={!inSharedRecord}
+            />
+          )}
         </TabsContent>
 
         {/* WIRKUNG — the per-medication efficacy view: the outcome metric(s)/
@@ -941,6 +967,9 @@ export function MedicationDetailTabs({
                 {t("medications.detail.erweitert.editor.button")}
               </Button>
             </div>
+            {nutrientsOn && !showComposition && (
+              <CompositionRow medicationId={id} ownRecord={!inSharedRecord} />
+            )}
             {isGlp1 && (
               <div className="py-3">
                 <PhasesRow

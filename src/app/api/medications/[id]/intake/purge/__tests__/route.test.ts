@@ -17,6 +17,8 @@ vi.mock("@/lib/db", () => ({
     medication: { findUnique: vi.fn() },
     medicationIntakeEvent: { updateMany: vi.fn() },
     medicationComplianceRollup: { deleteMany: vi.fn() },
+    // v1.43 — no composition, so no supplement recompute is queued.
+    medicationIngredient: { findFirst: vi.fn().mockResolvedValue(null) },
   },
 }));
 

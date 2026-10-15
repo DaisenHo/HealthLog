@@ -156,9 +156,27 @@ describe("getNutrients — overview mode (no `nutrient` arg)", () => {
   it("sums a day across sources and reports latest day / total / days-with-data", async () => {
     vi.mocked(nutrientIntakeDay.findMany).mockResolvedValue([
       // Two sources on the SAME latest day — must sum, not double-count the day.
-      { nutrient: "water", unit: "ml", day: "2026-07-10", amount: 1200 },
-      { nutrient: "water", unit: "ml", day: "2026-07-10", amount: 500 },
-      { nutrient: "water", unit: "ml", day: "2026-07-09", amount: 2000 },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-10",
+        amount: 1200,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-10",
+        amount: 500,
+        source: "MANUAL",
+      },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-09",
+        amount: 2000,
+        source: "APPLE_HEALTH",
+      },
     ] as never);
 
     const result = overview(await getNutrients("user-1", {}));
@@ -171,6 +189,9 @@ describe("getNutrients — overview mode (no `nutrient` arg)", () => {
         latestDay: "2026-07-10",
         latestAmount: 1700,
         daysWithData: 2,
+        latestBySource: { APPLE_HEALTH: 1200, MANUAL: 500 },
+        upperLimit: null,
+        latestAboveUpperLimit: null,
       },
     ]);
   });

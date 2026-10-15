@@ -9956,17 +9956,17 @@ model MedicationIngredient {
   id            String   @id @default(cuid())
   userId        String   @map("user_id")
   medicationId  String   @map("medication_id")
-  /// @pending-consumer(#v143-B4) Nutrient catalogue code (`src/lib/nutrients/catalog.ts`).
+  /// Nutrient catalogue code (`src/lib/nutrients/catalog.ts`).
   nutrient      String   @db.VarChar(40)
-  /// @pending-consumer(#v143-B4) Amount per unit in the canonical unit (> 0, CHECK in migration 0404).
+  /// Amount per unit in the canonical unit (> 0, CHECK in migration 0404).
   amountPerUnit Float    @map("amount_per_unit")
-  /// @pending-consumer(#v143-B4) The catalogue's canonical unit for `nutrient`.
+  /// The catalogue's canonical unit for `nutrient`.
   unit          String   @db.VarChar(8)
-  /// @pending-consumer(#v143-B4) The amount as entered, when it was entered in another input unit.
+  /// The amount as entered, when it was entered in another input unit.
   enteredAmount Float?   @map("entered_amount")
-  /// @pending-consumer(#v143-B4) The input unit it was entered in (e.g. `IU`).
+  /// The input unit it was entered in (e.g. `IU`).
   enteredUnit   String?  @map("entered_unit") @db.VarChar(8)
-  /// @pending-consumer(#v143-B4) `MANUAL` or `LABEL_AI` (CHECK in migration 0404).
+  /// `MANUAL` or `LABEL_AI` (CHECK in migration 0404).
   source        String
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

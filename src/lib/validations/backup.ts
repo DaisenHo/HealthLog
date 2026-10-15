@@ -218,6 +218,25 @@ const medicationPauseEraSchema = z
   .passthrough();
 
 /**
+ * v1.43 — one ingredient of a medication's composition per unit, in the
+ * catalogue's canonical unit. The code stays a string: a file from a newer
+ * server may name a nutrient this one does not know, and the row is still
+ * the person's.
+ */
+const medicationIngredientSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    nutrient: z.string().min(1).max(40),
+    amountPerUnit: z.number().finite().positive(),
+    unit: z.string().min(1).max(8),
+    enteredAmount: z.number().finite().nullable().optional(),
+    enteredUnit: z.string().max(8).nullable().optional(),
+    source: z.enum(["MANUAL", "LABEL_AI"]).default("MANUAL"),
+    createdAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+/**
  * v1.40 (#1024) — one course of a medication: a calendar span (both ends
  * inclusive, `YYYY-MM-DD`). The note travels decrypted in both purposes and
  * is sealed again on restore, like the custom category label.
@@ -424,6 +443,9 @@ const medicationSchema = z
     // Defaulted for the same reason: a file written before pause eras rode the
     // wire still parses, and a drug that was never paused writes [].
     pauseEras: z.array(medicationPauseEraSchema).default([]),
+    // v1.43 — defaulted: a file written before compositions travelled, or a
+    // drug without one, writes [].
+    ingredients: z.array(medicationIngredientSchema).default([]),
     // Same default, same reason: an older file parses, a drug never titrated
     // writes [].
     doseChanges: z.array(medicationDoseChangeSchema).default([]),

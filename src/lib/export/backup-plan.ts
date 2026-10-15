@@ -210,7 +210,8 @@ export const BACKED_UP_MODELS = [
   // A marker's other spellings and its merge ledger, a supplement's
   // composition, the Dawarich daily values, and the five relation links that
   // close the relation matrix. Each is owned data nothing recomputes; each is
-  // on COVERAGE_PENDING until its section carries it.
+  // on COVERAGE_PENDING until its section carries it (the composition does:
+  // TWO_ENDED_MODELS).
   "BiomarkerAlias",
   "BiomarkerMerge",
   "MedicationIngredient",
@@ -352,6 +353,8 @@ export const TWO_ENDED_MODELS = [
   "MedicationCategoryAssignment",
   "MedicationCategoryLabel",
   "MedicationCourse",
+  // v1.43 — a supplement's composition, nested in its medication both ways.
+  "MedicationIngredient",
   "MoodEntry",
   "MoodContext",
   "MoodEntryTagLink",
@@ -622,8 +625,6 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
   // v1.43 — the new tables are declared here with the schema and move to
   // TWO_ENDED_MODELS when their section writer and restore branch land.
-  MedicationIngredient:
-    "What one tablet or capsule of a supplement contains. Without it a restored account's supplements stop counting toward the day's micronutrients, and the composition has to be typed in again from the label.",
   DawarichDay:
     "The daily movement values fetched from Dawarich: distances, places visited, time away from home, travel days. Days the Dawarich instance has since pruned cannot be fetched again, so they are lost for good.",
   LabResultDocumentLink:

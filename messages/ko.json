@@ -157,6 +157,20 @@
       "event": {
         "notFound": "이 기록은 더 이상 없습니다."
       }
+    },
+    "medications": {
+      "notFound": "이 약은 더 이상 없어요.",
+      "ingredients": {
+        "invalid": "성분을 확인한 뒤 다시 시도하세요.",
+        "unitMismatch": "이 영양소에는 이 단위를 쓸 수 없어요.",
+        "extract": {
+          "fileType": "JPEG, PNG, WebP 또는 PDF를 올려 주세요.",
+          "fileTooLarge": "파일이 10MB보다 커요.",
+          "rateLimited": "라벨을 너무 많이 읽었어요. 한 시간 뒤에 다시 시도하세요.",
+          "budgetExceeded": "오늘의 AI 사용 한도에 도달했어요.",
+          "failed": "라벨을 읽지 못했어요. 더 선명한 사진으로 다시 시도하세요."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2414,6 +2428,34 @@
         "invalidRange": "마지막 날은 첫날보다 앞설 수 없어요.",
         "generic": "저장하지 못했어요. 다시 시도해 주세요."
       }
+    },
+    "composition": {
+      "title": "성분",
+      "empty": "정제나 캡슐 하나에 든 성분을 입력하면 복용한 모든 용량이 미량영양소에 반영돼요.",
+      "perUnitNote": "정제 또는 캡슐 1개 기준이며, 복용한 용량마다 그날의 미량영양소에 더해져요.",
+      "add": "추가",
+      "edit": "수정",
+      "rowHelper": "정제나 캡슐 하나에 든 성분으로, 미량영양소에 반영돼요.",
+      "sheetTitle": "1회 단위에 든 성분",
+      "sheetDescription": "라벨에 적힌 대로 정제 또는 캡슐 1개당 함량을 입력하세요.",
+      "nutrientLabel": "영양소",
+      "amountLabel": "함량",
+      "unitLabel": "단위",
+      "choose": "영양소 선택",
+      "addRow": "영양소 추가",
+      "removeRow": "{name} 삭제",
+      "editorEmpty": "아직 영양소가 없어요. 라벨 한 줄마다 하나씩 추가하세요.",
+      "labelPhoto": "라벨 사진에서 읽기",
+      "labelReading": "라벨을 읽는 중…",
+      "labelWaiting": "백그라운드 작업이 아직 라벨을 처리하지 않았어요.",
+      "labelReviewNote": "저장하기 전에 각 줄을 라벨과 비교해 확인하세요.",
+      "lowConfidence": "이 줄은 읽기 어려웠어요. 라벨과 비교해 확인하세요.",
+      "unmatchedTitle": "맞는 영양소가 없는 줄이에요. 필요하면 직접 입력하세요:",
+      "servingNote": "라벨 표기: {note}. 함량은 1개 기준으로 표시돼요.",
+      "labelError": "라벨을 읽지 못했어요",
+      "saveError": "성분을 저장하지 못했어요",
+      "catalogError": "영양소 목록을 불러오지 못했어요",
+      "invalidRow": "모든 줄에서 영양소를 고르고 0보다 큰 함량을 입력하세요."
     }
   },
   "charts": {
@@ -11465,7 +11507,9 @@
       "molybdenum": "몰리브덴",
       "iodine": "요오드",
       "water": "수분",
-      "caffeine": "카페인"
+      "caffeine": "카페인",
+      "dha": "DHA (오메가-3)",
+      "epa": "EPA (오메가-3)"
     },
     "page": {
       "title": "영양소 섭취",
@@ -11497,9 +11541,20 @@
       "rowMetaNoRef": "{window}일 중 {days}일",
       "footer": "이 기간에 데이터가 있는 미량영양소는 추적 중인 {total}개 중 {tracked}개예요.",
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
-      "loadError": "영양소 데이터를 불러오지 못했어요"
+      "loadError": "영양소 데이터를 불러오지 못했어요",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "하루 상한 섭취량 {value} {unit}을(를) 넘었어요 ({source}).",
+      "aboveUpperLimitSupplemental": "보충제로 섭취한 양이 보충제 기준 하루 상한 섭취량 {value} {unit}을(를) 넘었어요 ({source})."
     },
-    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요."
+    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요.",
+    "units": {
+      "IU": "IU"
+    },
+    "sources": {
+      "APPLE_HEALTH": "동기화됨",
+      "MANUAL": "직접 입력",
+      "SUPPLEMENT": "보충제"
+    }
   },
   "daily": {
     "line": {
@@ -12132,7 +12187,8 @@
       "lifeEventCreate": "{name} 님이 삶의 사건을 추가했어요",
       "lifeEventUpdate": "{name} 님이 삶의 사건을 수정했어요",
       "lifeEventDelete": "{name} 님이 삶의 사건을 삭제했어요",
-      "biomarkerMerge": "{name} 님이 바이오마커를 합쳤어요"
+      "biomarkerMerge": "{name} 님이 바이오마커를 합쳤어요",
+      "medicationIngredientsUpdate": "{name} 님이 보충제 성분을 수정했어요"
     },
     "section": {
       "measurements": {

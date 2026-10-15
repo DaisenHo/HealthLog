@@ -157,6 +157,20 @@
       "event": {
         "notFound": "Cette entrée n'existe plus."
       }
+    },
+    "medications": {
+      "notFound": "Ce médicament n’est plus disponible.",
+      "ingredients": {
+        "invalid": "Vérifiez la composition et réessayez.",
+        "unitMismatch": "Cette unité n’est pas proposée pour ce nutriment.",
+        "extract": {
+          "fileType": "Importez un JPEG, PNG, WebP ou PDF.",
+          "fileTooLarge": "Le fichier dépasse 10 Mo.",
+          "rateLimited": "Trop de lectures d’étiquettes. Réessayez dans une heure.",
+          "budgetExceeded": "Votre budget d’IA du jour est atteint.",
+          "failed": "L’étiquette n’a pas pu être lue. Essayez une photo plus nette."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2414,6 +2428,34 @@
         "invalidRange": "Le dernier jour ne peut pas précéder le premier.",
         "generic": "L’enregistrement a échoué. Réessaie."
       }
+    },
+    "composition": {
+      "title": "Composition",
+      "empty": "Indiquez ce que contient un comprimé ou une gélule pour que chaque prise compte dans vos micronutriments.",
+      "perUnitNote": "Par comprimé ou gélule ; chaque prise s’ajoute aux micronutriments du jour.",
+      "add": "Ajouter",
+      "edit": "Modifier",
+      "rowHelper": "Ce que contient un comprimé ou une gélule, pour les micronutriments.",
+      "sheetTitle": "Ce que contient une unité",
+      "sheetDescription": "Saisissez les quantités par comprimé ou gélule telles qu’indiquées sur l’étiquette.",
+      "nutrientLabel": "Nutriment",
+      "amountLabel": "Quantité",
+      "unitLabel": "Unité",
+      "choose": "Choisissez un nutriment",
+      "addRow": "Ajouter un nutriment",
+      "removeRow": "Retirer {name}",
+      "editorEmpty": "Aucun nutriment pour l’instant. Ajoutez-en un par ligne de l’étiquette.",
+      "labelPhoto": "Lire depuis une photo de l’étiquette",
+      "labelReading": "Lecture de l’étiquette…",
+      "labelWaiting": "Le service en arrière-plan n’a pas encore pris l’étiquette en charge.",
+      "labelReviewNote": "Vérifiez chaque ligne avec l’étiquette avant d’enregistrer.",
+      "lowConfidence": "Cette ligne était difficile à lire ; vérifiez-la avec l’étiquette.",
+      "unmatchedTitle": "Lignes sans nutriment correspondant, à saisir à la main si besoin :",
+      "servingNote": "L’étiquette indique : {note}. Les quantités sont données par unité.",
+      "labelError": "L’étiquette n’a pas pu être lue",
+      "saveError": "La composition n’a pas pu être enregistrée",
+      "catalogError": "La liste des nutriments n’a pas pu être chargée",
+      "invalidRow": "Choisissez un nutriment et saisissez une quantité supérieure à zéro sur chaque ligne."
     }
   },
   "charts": {
@@ -11465,7 +11507,9 @@
       "molybdenum": "Molybdène",
       "iodine": "Iode",
       "water": "Eau",
-      "caffeine": "Caféine"
+      "caffeine": "Caféine",
+      "dha": "DHA (oméga-3)",
+      "epa": "EPA (oméga-3)"
     },
     "page": {
       "title": "Apports en nutriments",
@@ -11497,9 +11541,20 @@
       "rowMetaNoRef": "{days} sur {window} jours",
       "footer": "{tracked} des {total} micronutriments suivis ont des données sur cette période.",
       "emptyTitle": "Aucune donnée de micronutriments synchronisée pour l'instant",
-      "loadError": "Tes données de nutriments n'ont pas pu être chargées"
+      "loadError": "Tes données de nutriments n'ont pas pu être chargées",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Au-dessus de la limite supérieure de sécurité de {value} {unit} par jour ({source}).",
+      "aboveUpperLimitSupplemental": "La part des compléments dépasse la limite supérieure de sécurité de {value} {unit} par jour pour les compléments ({source})."
     },
-    "sparseNote": "Une valeur basse ici signifie généralement un suivi partiel, pas une carence : les totaux journaliers Apple Health reflètent ce que vos applis ont enregistré, pas l'apport alimentaire total."
+    "sparseNote": "Une valeur basse ici signifie généralement un suivi partiel, pas une carence : les totaux journaliers Apple Health reflètent ce que vos applis ont enregistré, pas l'apport alimentaire total.",
+    "units": {
+      "IU": "UI"
+    },
+    "sources": {
+      "APPLE_HEALTH": "Synchronisé",
+      "MANUAL": "Saisi",
+      "SUPPLEMENT": "Compléments"
+    }
   },
   "daily": {
     "line": {
@@ -12132,7 +12187,8 @@
       "lifeEventCreate": "{name} a ajouté un événement de vie",
       "lifeEventUpdate": "{name} a modifié un événement de vie",
       "lifeEventDelete": "{name} a supprimé un événement de vie",
-      "biomarkerMerge": "{name} a fusionné des biomarqueurs"
+      "biomarkerMerge": "{name} a fusionné des biomarqueurs",
+      "medicationIngredientsUpdate": "{name} a modifié la composition d’un complément"
     },
     "section": {
       "measurements": {

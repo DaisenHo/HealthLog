@@ -1330,6 +1330,22 @@ export async function restoreBackup(
               // running when the backup was taken is still running after the
               // restore, and closing it here would silently convert an
               // ongoing decision into a historical one.
+              // v1.43 — the composition, nested so it binds to the id the
+              // drug actually got. Restored as written; the SUPPLEMENT
+              // nutrient rows it produced travel in the nutrient section.
+              ingredients: {
+                create: m.ingredients.map((i) => ({
+                  ...(i.id ? { id: i.id } : {}),
+                  userId: ownerId,
+                  nutrient: i.nutrient,
+                  amountPerUnit: i.amountPerUnit,
+                  unit: i.unit,
+                  enteredAmount: i.enteredAmount ?? null,
+                  enteredUnit: i.enteredUnit ?? null,
+                  source: i.source,
+                  ...(i.createdAt ? { createdAt: new Date(i.createdAt) } : {}),
+                })),
+              },
               pauseEras: {
                 create: m.pauseEras.map((p) => ({
                   ...(p.id ? { id: p.id } : {}),

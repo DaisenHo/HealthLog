@@ -257,6 +257,10 @@ export function recordActivityVerbLine(
       });
     case "medication.delete":
       return t("recordSharing.activityVerb.medicationDelete", { name });
+    case "medication.ingredients.update":
+      return t("recordSharing.activityVerb.medicationIngredientsUpdate", {
+        name,
+      });
     case "medication.glp1.update":
       return t("recordSharing.activityVerb.medicationGlp1Update", { name });
     case "medication.schedule_revision.created":

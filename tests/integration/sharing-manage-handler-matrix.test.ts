@@ -2256,6 +2256,36 @@ proveManageRoute("POST /api/medications/[id]/glp1", {
     })) === 1,
 });
 
+proveManageRoute("PUT /api/medications/[id]/ingredients", {
+  route: "/api/medications/[id]/ingredients",
+  action: "PUT",
+  prepare: async (ownerId) => {
+    // The composition lives behind the opt-in nutrients module.
+    await getPrismaClient().user.update({
+      where: { id: ownerId },
+      data: { modulePreferencesJson: { nutrients: true } },
+    });
+    return {
+      ownerId,
+      medication: await getPrismaClient().medication.create({
+        data: { userId: ownerId, name: "Vitamin D3", dose: "1000 IU" },
+      }),
+    };
+  },
+  params: ({ medication }) => ({ id: medication.id }),
+  body: () => ({
+    ingredients: [{ nutrient: "vitamin_d", amount: 1000, unit: "IU" }],
+  }),
+  ok: 200,
+  auditAction: "medication.ingredients.update",
+  applied: async ({ medication }) =>
+    (
+      await getPrismaClient().medicationIngredient.findFirst({
+        where: { medicationId: medication.id },
+      })
+    )?.amountPerUnit === 25,
+});
+
 proveManageRoute("PUT /api/medications/[id]/intake/[eventId]", {
   route: "/api/medications/[id]/intake/[eventId]",
   action: "PUT",

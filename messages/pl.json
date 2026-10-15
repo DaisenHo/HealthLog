@@ -157,6 +157,20 @@
       "event": {
         "notFound": "Ten wpis już nie istnieje."
       }
+    },
+    "medications": {
+      "notFound": "Ten lek nie jest już dostępny.",
+      "ingredients": {
+        "invalid": "Sprawdź skład i spróbuj ponownie.",
+        "unitMismatch": "Ta jednostka nie jest dostępna dla tego składnika.",
+        "extract": {
+          "fileType": "Prześlij plik JPEG, PNG, WebP lub PDF.",
+          "fileTooLarge": "Plik jest większy niż 10 MB.",
+          "rateLimited": "Za dużo odczytów etykiet. Spróbuj ponownie za godzinę.",
+          "budgetExceeded": "Dzisiejszy budżet AI został wykorzystany.",
+          "failed": "Nie udało się odczytać etykiety. Spróbuj ostrzejszego zdjęcia."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2414,6 +2428,34 @@
         "invalidRange": "Ostatni dzień nie może być przed pierwszym.",
         "generic": "Nie udało się zapisać. Spróbuj ponownie."
       }
+    },
+    "composition": {
+      "title": "Skład",
+      "empty": "Dodaj, co zawiera jedna tabletka lub kapsułka, aby każda przyjęta dawka liczyła się do twoich mikroskładników.",
+      "perUnitNote": "Na tabletkę lub kapsułkę; każda przyjęta dawka dolicza się do mikroskładników dnia.",
+      "add": "Dodaj",
+      "edit": "Edytuj",
+      "rowHelper": "Co zawiera jedna tabletka lub kapsułka, dla mikroskładników.",
+      "sheetTitle": "Co zawiera jedna jednostka",
+      "sheetDescription": "Wpisz ilości na tabletkę lub kapsułkę tak, jak podano na etykiecie.",
+      "nutrientLabel": "Składnik",
+      "amountLabel": "Ilość",
+      "unitLabel": "Jednostka",
+      "choose": "Wybierz składnik",
+      "addRow": "Dodaj składnik",
+      "removeRow": "Usuń {name}",
+      "editorEmpty": "Brak składników. Dodaj jeden na każdą linię etykiety.",
+      "labelPhoto": "Odczytaj ze zdjęcia etykiety",
+      "labelReading": "Odczytywanie etykiety…",
+      "labelWaiting": "Usługa w tle jeszcze nie zajęła się etykietą.",
+      "labelReviewNote": "Sprawdź każdą linię z etykietą przed zapisaniem.",
+      "lowConfidence": "Ta linia była trudna do odczytania; sprawdź ją z etykietą.",
+      "unmatchedTitle": "Linie bez pasującego składnika, w razie potrzeby wpisz je ręcznie:",
+      "servingNote": "Na etykiecie: {note}. Ilości podano na jedną jednostkę.",
+      "labelError": "Nie udało się odczytać etykiety",
+      "saveError": "Nie udało się zapisać składu",
+      "catalogError": "Nie udało się wczytać listy składników",
+      "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
     }
   },
   "charts": {
@@ -11465,7 +11507,9 @@
       "molybdenum": "Molibden",
       "iodine": "Jod",
       "water": "Woda",
-      "caffeine": "Kofeina"
+      "caffeine": "Kofeina",
+      "dha": "DHA (kwas omega-3)",
+      "epa": "EPA (kwas omega-3)"
     },
     "page": {
       "title": "Spożycie składników odżywczych",
@@ -11497,9 +11541,20 @@
       "rowMetaNoRef": "{days} z {window} dni",
       "footer": "{tracked} z {total} śledzonych mikroskładników ma dane w tym okresie.",
       "emptyTitle": "Brak jeszcze zsynchronizowanych danych o mikroskładnikach",
-      "loadError": "Nie udało się wczytać danych o składnikach odżywczych"
+      "loadError": "Nie udało się wczytać danych o składnikach odżywczych",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Powyżej tolerowanego górnego poziomu spożycia {value} {unit} dziennie ({source}).",
+      "aboveUpperLimitSupplemental": "Część z suplementów przekracza tolerowany górny poziom {value} {unit} dziennie dla suplementów ({source})."
     },
-    "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy z Apple Health odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie."
+    "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy z Apple Health odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie.",
+    "units": {
+      "IU": "j.m."
+    },
+    "sources": {
+      "APPLE_HEALTH": "Zsynchronizowane",
+      "MANUAL": "Wpisane",
+      "SUPPLEMENT": "Suplementy"
+    }
   },
   "daily": {
     "line": {
@@ -12132,7 +12187,8 @@
       "lifeEventCreate": "{name} dodał wydarzenie życiowe",
       "lifeEventUpdate": "{name} zmienił wydarzenie życiowe",
       "lifeEventDelete": "{name} usunął wydarzenie życiowe",
-      "biomarkerMerge": "{name} scalił biomarkery"
+      "biomarkerMerge": "{name} scalił biomarkery",
+      "medicationIngredientsUpdate": "{name} zmienił skład suplementu"
     },
     "section": {
       "measurements": {

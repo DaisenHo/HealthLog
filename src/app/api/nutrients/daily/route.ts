@@ -18,7 +18,6 @@
  */
 import { NextRequest } from "next/server";
 
-import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -29,7 +28,8 @@ import {
   resolveNutrientReference,
 } from "@/lib/nutrients/catalog";
 import { nutrientDailyQuerySchema } from "@/lib/validations/nutrients";
-import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { readNutrientDaily } from "@/lib/nutrients/read";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 export const dynamic = "force-dynamic";
 
@@ -51,34 +51,23 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { nutrient, days } = parsed.data;
   const definition = NUTRIENT_CATALOG[nutrient];
 
+  // Summed across sources within a day, split by source and judged against
+  // the upper intake level in `readNutrientDaily` (v1.43), the same read the
+  // overview and the MCP tool use.
   const userTz = user.timezone || DEFAULT_TIMEZONE;
-  const todayKey = userDayKey(new Date(), userTz);
-  const sinceKey = shiftDateKey(todayKey, -(days - 1));
-
-  const rows = await prisma.nutrientIntakeDay.findMany({
-    where: { userId: user.id, nutrient, day: { gte: sinceKey } },
-    select: { day: true, amount: true },
-  });
-
-  // Sum across sources within a day BEFORE bucketing — the same fold
-  // `GET /api/nutrients` applies (migration 0249 note there).
-  const sumByDay = new Map<string, number>();
-  for (const row of rows) {
-    sumByDay.set(row.day, (sumByDay.get(row.day) ?? 0) + row.amount);
-  }
-
-  const daySeries: Array<{ day: string; amount: number }> = [];
-  for (let i = 0; i < days; i++) {
-    const key = shiftDateKey(sinceKey, i);
-    daySeries.push({ day: key, amount: sumByDay.get(key) ?? 0 });
-  }
+  const { days: daySeries, rowCount } = await readNutrientDaily(
+    user.id,
+    userTz,
+    nutrient,
+    days,
+  );
 
   const sex = binaryReferenceSex(user.gender);
   const reference = resolveNutrientReference(nutrient, sex);
 
   annotate({
     action: { name: "nutrient.daily.read" },
-    meta: { nutrient, window_days: days, row_count: rows.length },
+    meta: { nutrient, window_days: days, row_count: rowCount },
   });
 
   return apiSuccess({
@@ -87,5 +76,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
     windowDays: days,
     days: daySeries,
     reference,
+    upperLimit: definition.upperLimit,
   });
 });

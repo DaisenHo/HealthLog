@@ -157,6 +157,20 @@
       "event": {
         "notFound": "This entry no longer exists."
       }
+    },
+    "medications": {
+      "notFound": "This medication is no longer available.",
+      "ingredients": {
+        "invalid": "Check the composition and try again.",
+        "unitMismatch": "This unit is not offered for the nutrient.",
+        "extract": {
+          "fileType": "Upload a JPEG, PNG, WebP or PDF.",
+          "fileTooLarge": "The file is larger than 10 MB.",
+          "rateLimited": "Too many label reads. Try again in an hour.",
+          "budgetExceeded": "Your AI usage budget for today is reached.",
+          "failed": "The label could not be read. Try a sharper photo."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2414,6 +2428,34 @@
         "invalidRange": "The last day cannot be before the first.",
         "generic": "That did not save. Please try again."
       }
+    },
+    "composition": {
+      "title": "Composition",
+      "empty": "Add what one tablet or capsule contains to count every dose taken in your micronutrients.",
+      "perUnitNote": "Per tablet or capsule; every dose taken adds this to the day's micronutrients.",
+      "add": "Add",
+      "edit": "Edit",
+      "rowHelper": "What one tablet or capsule contains, for its micronutrients.",
+      "sheetTitle": "What one unit contains",
+      "sheetDescription": "Enter the amounts per tablet or capsule as the label states them.",
+      "nutrientLabel": "Nutrient",
+      "amountLabel": "Amount",
+      "unitLabel": "Unit",
+      "choose": "Choose a nutrient",
+      "addRow": "Add a nutrient",
+      "removeRow": "Remove {name}",
+      "editorEmpty": "No nutrient yet. Add one per line of the label.",
+      "labelPhoto": "Read from a label photo",
+      "labelReading": "Reading the label…",
+      "labelWaiting": "Still waiting for the background worker to pick this up.",
+      "labelReviewNote": "Check each line against the label before you save.",
+      "lowConfidence": "This line was hard to read; check it against the label.",
+      "unmatchedTitle": "Lines without a matching nutrient, to enter by hand if needed:",
+      "servingNote": "The label states: {note}. The amounts are shown per single unit.",
+      "labelError": "The label could not be read",
+      "saveError": "The composition could not be saved",
+      "catalogError": "The list of nutrients could not be loaded",
+      "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
     }
   },
   "charts": {
@@ -11465,7 +11507,9 @@
       "molybdenum": "Molybdenum",
       "iodine": "Iodine",
       "water": "Water",
-      "caffeine": "Caffeine"
+      "caffeine": "Caffeine",
+      "dha": "DHA (omega-3)",
+      "epa": "EPA (omega-3)"
     },
     "page": {
       "title": "Nutrient intake",
@@ -11497,9 +11541,20 @@
       "rowMetaNoRef": "{days} of {window} days",
       "footer": "{tracked} of {total} tracked micronutrients have data in this window.",
       "emptyTitle": "No micronutrient data synced yet",
-      "loadError": "Your nutrient data could not be loaded"
+      "loadError": "Your nutrient data could not be loaded",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Above the tolerable upper intake level of {value} {unit} a day ({source}).",
+      "aboveUpperLimitSupplemental": "The supplement share is above the tolerable upper intake level of {value} {unit} a day for supplements ({source})."
     },
-    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake."
+    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake.",
+    "units": {
+      "IU": "IU"
+    },
+    "sources": {
+      "APPLE_HEALTH": "Synced",
+      "MANUAL": "Entered",
+      "SUPPLEMENT": "Supplements"
+    }
   },
   "daily": {
     "line": {
@@ -12132,7 +12187,8 @@
       "lifeEventCreate": "{name} added a life event",
       "lifeEventUpdate": "{name} changed a life event",
       "lifeEventDelete": "{name} removed a life event",
-      "biomarkerMerge": "{name} merged biomarkers"
+      "biomarkerMerge": "{name} merged biomarkers",
+      "medicationIngredientsUpdate": "{name} changed what a supplement contains"
     },
     "section": {
       "measurements": {

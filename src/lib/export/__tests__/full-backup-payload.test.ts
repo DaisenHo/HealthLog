@@ -190,6 +190,19 @@ function makePrisma() {
               createdAt: new Date("2026-07-15T08:01:00.000Z"),
             },
           ],
+          // v1.43 — a composition entered in IU, stored canonically.
+          ingredients: [
+            {
+              id: "ingredient-vitamin-d",
+              nutrient: "vitamin_d",
+              amountPerUnit: 25,
+              unit: "ug",
+              enteredAmount: 1000,
+              enteredUnit: "IU",
+              source: "MANUAL",
+              createdAt: new Date("2026-07-01T08:00:00.000Z"),
+            },
+          ],
           // v1.40 (#1024) — one ended course with a note, one running.
           courses: [
             {
@@ -786,6 +799,35 @@ describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
           endsOn: null,
           note: null,
           createdAt: "2026-06-10T08:00:00.000Z",
+        },
+      ]);
+    },
+  );
+});
+
+describe("buildFullBackupPayload — supplement composition (v1.43)", () => {
+  it.each(["portable-export", "disaster-recovery"] as const)(
+    "carries the composition with its entered unit in a %s file",
+    async (purpose) => {
+      installSectionMocks();
+      const { payload } = await buildFullBackupPayload(
+        makePrisma() as never,
+        "user-1",
+        { purpose, exportedAt: new Date("2026-07-20T00:00:00.000Z") },
+      );
+      const parsed = parseBackupPayload(payload);
+      expect(parsed.medications[0].ingredients).toEqual([
+        {
+          ...(purpose === "disaster-recovery"
+            ? { id: "ingredient-vitamin-d" }
+            : {}),
+          nutrient: "vitamin_d",
+          amountPerUnit: 25,
+          unit: "ug",
+          enteredAmount: 1000,
+          enteredUnit: "IU",
+          source: "MANUAL",
+          createdAt: "2026-07-01T08:00:00.000Z",
         },
       ]);
     },

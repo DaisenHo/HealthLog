@@ -18921,15 +18921,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": &a69
-          description: "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` =
-            `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation
-            already answer as documented. A client reaches this only by ignoring the server feature flag that guards the
-            operation."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
   /api/nutrients/batch:
     post:
       tags:
@@ -19074,8 +19065,9 @@ paths:
           schema:
             $ref: "#/components/schemas/NutrientCode"
           required: true
-          description: Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine. Energy,
-            macros and sodium/potassium are out of scope.
+          description: Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and
+            (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and
+            sodium/potassium are out of scope. Decode unknown values leniently.
         - in: query
           name: days
           schema:
@@ -24034,10 +24026,12 @@ paths:
         - Medications
       summary: Replace a supplement's composition (v1.43)
       description: "Stores the composition per unit in canonical units and re-counts every taken dose of this medication into
-        the day's micronutrients (`recompute.queued`). Needs the `nutrients` module (403 `module.disabled`,
-        `meta.module: \"nutrients\"`). 404 `medications.notFound`; 422 `medications.ingredients.invalid` (body,
-        duplicate or unknown code); 422 `medications.ingredients.unitMismatch` with `meta.index` and
-        `meta.allowedUnits`."
+        the day's micronutrients: `recompute.queued` is true when the worker has the recompute (the rows follow within
+        moments), false when it ran before this answer. Needs the `nutrients` module (403 `module.disabled`,
+        `meta.module: \"nutrients\"`). Delegable at MANAGE on the `medications` domain. 404 `medications.notFound`; 422
+        `medications.ingredients.invalid` (body, duplicate code, or unknown code with `meta.index`); 422
+        `medications.ingredients.unitMismatch` with `meta.index` and `meta.allowedUnits`; 429 above 30 a minute per
+        caller."
       parameters:
         - in: path
           name: id
@@ -24059,9 +24053,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/PutMedicationIngredientsResponse"
         "401": *a1
-        "403": *a19
+        "403":
+          description: >-
+            The opt-in `nutrients` module is off for this account: 403 `module.disabled` with `meta.module:
+            "nutrients"`.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: Medication not found.
+          description: "`medications.notFound`."
           content:
             application/json:
               schema:
@@ -24069,17 +24081,21 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/medications/{id}/ingredients/extract:
     post:
       tags:
         - Medications
       summary: Read a supplement label (v1.43)
-      description: Multipart `file` (JPEG, PNG, HEIC, WebP or PDF, at most 10 MB). 202 with an AI run; poll `GET
-        /api/ai-runs/{id}` (kind `SUPPLEMENT_LABEL_EXTRACT`, result `SupplementLabelExtractResult`). Needs
-        `ai.capabilities.supplementLabel.available` (refused like every AI capability, reason `usage_level` included)
-        and the `nutrients` module. 422 `medications.ingredients.extract.fileType`, 413
-        `medications.ingredients.extract.fileTooLarge`, 429 `medications.ingredients.extract.rateLimited` (six an hour).
+      description: "Multipart `file` (JPEG, PNG, WebP or PDF, at most 10 MB; the bytes decide the type, not the header). HEIC
+        is refused with `medications.ingredients.extract.fileType`: send the photo as JPEG. 202 with an AI run; poll
+        `GET /api/ai-runs/{id}` (kind `SUPPLEMENT_LABEL_EXTRACT`, result `SupplementLabelExtractResult`). Amounts in the
+        proposal are per single unit: a label printed per serving of several units is divided down, and `servingNote`
+        says what was printed. Needs `ai.capabilities.supplementLabel.available` (refused like every AI capability,
+        reason `usage_level` included) and the `nutrients` module. The account's own session only: provider work is
+        never admitted inside somebody else's record. 404 `medications.notFound`; 422
+        `medications.ingredients.extract.fileType`; 413 `medications.ingredients.extract.fileTooLarge`; 429
+        `medications.ingredients.extract.rateLimited` (six an hour) or `medications.ingredients.extract.budgetExceeded`
+        (the day's AI budget). A run that fails carries `medications.ingredients.extract.failed`."
       parameters:
         - in: path
           name: id
@@ -24101,23 +24117,40 @@ paths:
       responses:
         "202": *a37
         "401": *a1
-        "403": *a19
+        "403":
+          description: "The opt-in `nutrients` module is off for this account: 403 `module.disabled` with `meta.module:
+            \"nutrients\"`. The `supplementLabel` AI capability is unavailable for this record. `meta.capability` =
+            `supplementLabel` and `meta.reason` says which layer refused: the operator's switch
+            (`assistant.disabled.documentAi`, or `assistant.disabled.enabled` for the master switch), an owning module
+            or the person's own AI opt-out (`module.disabled` with `meta.module`), a delegate inside somebody else's
+            record (`ai.record.notPermitted`), or a missing consent receipt (`consent.ai.required`). Nothing was
+            generated, read from a stored model answer, or enqueued."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "`medications.notFound`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: "`medications.ingredients.extract.fileTooLarge`."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a4
-        "429": *a5
-        "501": *a69
-        "503":
-          description: "`aiRuns.workerUnavailable`: the run could not be handed to the background worker. Nothing was read and
-            nothing was charged; try again."
+        "422":
+          description: "`medications.ingredients.extract.fileType`: the upload is not a JPEG, PNG, WebP or PDF, or carries no
+            `file` field. No configured AI provider can serve the `supplementLabel` capability: `meta.errorCode` =
+            `ai.provider.none`, `meta.reason` = `no_provider`."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+        "503": *a18
   /api/anamnesis/life-circumstances:
     get:
       tags:
@@ -24135,7 +24168,15 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-        "501": *a69
+        "501": &a69
+          description: "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` =
+            `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation
+            already answer as documented. A client reaches this only by ignoring the server feature flag that guards the
+            operation."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/anamnesis/life-circumstances/ai-sections:
     patch:
       tags:
@@ -33289,7 +33330,7 @@ components:
           type: string
           pattern: ^\d{4}-\d{2}-\d{2}$
         nutrient:
-          $ref: "#/components/schemas/NutrientCode"
+          $ref: "#/components/schemas/SyncableNutrientCode"
         unit:
           type: string
           minLength: 1
@@ -33308,6 +33349,37 @@ components:
         - amount
       description: One nutrient day total. day = YYYY-MM-DD in the user's IANA timezone; unit must equal the catalog's
         canonical unit for the code (mg | ug | ml) or the entry is skipped unit_mismatch.
+    SyncableNutrientCode:
+      type: string
+      enum:
+        - vitamin_a
+        - thiamin
+        - riboflavin
+        - niacin
+        - pantothenic_acid
+        - vitamin_b6
+        - biotin
+        - folate
+        - vitamin_b12
+        - vitamin_c
+        - vitamin_d
+        - vitamin_e
+        - vitamin_k
+        - calcium
+        - iron
+        - magnesium
+        - phosphorus
+        - zinc
+        - copper
+        - manganese
+        - selenium
+        - chromium
+        - molybdenum
+        - iodine
+        - water
+        - caffeine
+      description: "A nutrient code HealthKit may send: the 24 Dietary vitamin/mineral types plus water and caffeine. Never
+        `dha` or `epa`."
     NutrientCode:
       type: string
       enum:
@@ -33337,8 +33409,11 @@ components:
         - iodine
         - water
         - caffeine
-      description: Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine. Energy,
-        macros and sodium/potassium are out of scope.
+        - dha
+        - epa
+      description: Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and
+        (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and
+        sodium/potassium are out of scope. Decode unknown values leniently.
     NutrientWaterWriteRequest:
       type: object
       properties:
@@ -35628,37 +35703,41 @@ components:
                 medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
                 medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
                 medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
-                medications.ingredients.invalid, medications.intake.bulk.apple_health_not_mirrored,
+                medications.ingredients.extract.budgetExceeded, medications.ingredients.extract.failed,
+                medications.ingredients.extract.fileTooLarge, medications.ingredients.extract.fileType,
+                medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
+                medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
                 medications.intake.bulk.invalid, medications.intake.bulk.too_large,
                 medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
                 medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
-                medications.mirror.limit_exceeded; mentalHealth — mentalHealth.rateLimited; module — module.disabled;
-                modules — modules.body.invalid_json, modules.invalid; mood — mood.bulk-delete.invalid,
-                mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable, mood.create.invalid,
-                mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid, mood.not_found,
-                mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid; notification-prefs —
-                notification-prefs.body.invalid_json; notification — notification.action.already_used,
-                notification.action.expired, notification.action.invalid, notification.action.module_disabled; nutrient
-                — nutrient.batch.invalid, nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid,
-                nutrient.water.invalid, nutrient.water.invalid_day; onboarding — onboarding.answers.invalid,
-                onboarding.answers.rateLimited, onboarding.complete.invalid, onboarding.complete.recordNotFound,
-                onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
-                onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
-                passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
-                personal_records.invalid_query; practitioner — practitioner.invalid; profile —
-                profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
-                profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
-                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
-                record_write.rate_limited; report-selection — report-selection.body.invalid_json,
-                report-selection.body.invalid_shape, report-selection.leaves.unknown; route — route.retired; search —
-                search.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
-                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
-                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
-                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
-                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
-                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
+                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
+                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
+                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
+                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
+                notification-prefs — notification-prefs.body.invalid_json; notification —
+                notification.action.already_used, notification.action.expired, notification.action.invalid,
+                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
+                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
+                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
+                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
+                onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
+                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
+                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
+                practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
+                profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
+                profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
+                profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited;
+                report-selection — report-selection.body.invalid_json, report-selection.body.invalid_shape,
+                report-selection.leaves.unknown; route — route.retired; search — search.invalid; share-link —
+                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
+                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
+                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
+                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
+                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
+                sharing.invite.manage_browser_only, sharing.invite.refused, sharing.invite.self, sharing.not_permitted,
+                sharing.renounce.already_ended, sharing.renounce.not_found, sharing.revoke.already_ended,
+                sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
                 symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
@@ -38726,6 +38805,50 @@ components:
                     - pausedAt
                     - resumedAt
                   additionalProperties: {}
+              ingredients:
+                default: []
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                    nutrient:
+                      type: string
+                      minLength: 1
+                      maxLength: 40
+                    amountPerUnit:
+                      type: number
+                      exclusiveMinimum: 0
+                    unit:
+                      type: string
+                      minLength: 1
+                      maxLength: 8
+                    enteredAmount:
+                      anyOf:
+                        - type: number
+                        - type: "null"
+                    enteredUnit:
+                      anyOf:
+                        - type: string
+                          maxLength: 8
+                        - type: "null"
+                    source:
+                      default: MANUAL
+                      type: string
+                      enum:
+                        - MANUAL
+                        - LABEL_AI
+                    createdAt:
+                      type: string
+                      minLength: 1
+                  required:
+                    - nutrient
+                    - amountPerUnit
+                    - unit
+                    - source
+                  additionalProperties: {}
               doseChanges:
                 default: []
                 type: array
@@ -39078,6 +39201,7 @@ components:
               - schedules
               - sideEffects
               - pauseEras
+              - ingredients
               - doseChanges
               - inventoryItems
               - inventoryEvents

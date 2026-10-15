@@ -16,4 +16,10 @@ export const nutrientKeys = {
    */
   nutrientDaily: (nutrient: string, days: number) =>
     ["nutrients", "daily", nutrient, days] as const,
+  /**
+   * v1.43 — the nutrient catalogue from `GET /api/nutrients/catalog`: codes,
+   * labels, input units and upper limits. The composition form is built from
+   * it.
+   */
+  nutrientCatalog: () => ["nutrients", "catalog"] as const,
 };

@@ -157,6 +157,20 @@
       "event": {
         "notFound": "Questa voce non esiste più."
       }
+    },
+    "medications": {
+      "notFound": "Questo farmaco non è più disponibile.",
+      "ingredients": {
+        "invalid": "Controlla la composizione e riprova.",
+        "unitMismatch": "Questa unità non è prevista per il nutriente.",
+        "extract": {
+          "fileType": "Carica un JPEG, PNG, WebP o PDF.",
+          "fileTooLarge": "Il file supera i 10 MB.",
+          "rateLimited": "Troppe letture di etichette. Riprova tra un'ora.",
+          "budgetExceeded": "Hai raggiunto il budget di IA di oggi.",
+          "failed": "Non è stato possibile leggere l'etichetta. Prova con una foto più nitida."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2414,6 +2428,34 @@
         "invalidRange": "L’ultimo giorno non può precedere il primo.",
         "generic": "Il salvataggio non è riuscito. Riprova."
       }
+    },
+    "composition": {
+      "title": "Composizione",
+      "empty": "Aggiungi cosa contiene una compressa o capsula, così ogni dose assunta conta nei tuoi micronutrienti.",
+      "perUnitNote": "Per compressa o capsula; ogni dose assunta si aggiunge ai micronutrienti del giorno.",
+      "add": "Aggiungi",
+      "edit": "Modifica",
+      "rowHelper": "Cosa contiene una compressa o capsula, per i micronutrienti.",
+      "sheetTitle": "Cosa contiene un'unità",
+      "sheetDescription": "Inserisci le quantità per compressa o capsula come riportate in etichetta.",
+      "nutrientLabel": "Nutriente",
+      "amountLabel": "Quantità",
+      "unitLabel": "Unità",
+      "choose": "Scegli un nutriente",
+      "addRow": "Aggiungi un nutriente",
+      "removeRow": "Rimuovi {name}",
+      "editorEmpty": "Nessun nutriente ancora. Aggiungine uno per ogni riga dell'etichetta.",
+      "labelPhoto": "Leggi da una foto dell'etichetta",
+      "labelReading": "Lettura dell'etichetta…",
+      "labelWaiting": "Il servizio in background non ha ancora preso in carico l'etichetta.",
+      "labelReviewNote": "Controlla ogni riga con l'etichetta prima di salvare.",
+      "lowConfidence": "Questa riga era difficile da leggere; controllala con l'etichetta.",
+      "unmatchedTitle": "Righe senza nutriente corrispondente, da inserire a mano se serve:",
+      "servingNote": "L'etichetta riporta: {note}. Le quantità sono indicate per singola unità.",
+      "labelError": "Non è stato possibile leggere l'etichetta",
+      "saveError": "Non è stato possibile salvare la composizione",
+      "catalogError": "Non è stato possibile caricare l'elenco dei nutrienti",
+      "invalidRow": "Scegli un nutriente e inserisci una quantità maggiore di zero in ogni riga."
     }
   },
   "charts": {
@@ -11465,7 +11507,9 @@
       "molybdenum": "Molibdeno",
       "iodine": "Iodio",
       "water": "Acqua",
-      "caffeine": "Caffeina"
+      "caffeine": "Caffeina",
+      "dha": "DHA (acido grasso omega-3)",
+      "epa": "EPA (acido grasso omega-3)"
     },
     "page": {
       "title": "Apporto di nutrienti",
@@ -11497,9 +11541,20 @@
       "rowMetaNoRef": "{days} di {window} giorni",
       "footer": "{tracked} di {total} micronutrienti monitorati hanno dati in questo periodo.",
       "emptyTitle": "Nessun dato sui micronutrienti ancora sincronizzato",
-      "loadError": "Non è stato possibile caricare i tuoi dati sui nutrienti"
+      "loadError": "Non è stato possibile caricare i tuoi dati sui nutrienti",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Sopra il livello massimo tollerabile di {value} {unit} al giorno ({source}).",
+      "aboveUpperLimitSupplemental": "La quota degli integratori supera il livello massimo tollerabile di {value} {unit} al giorno per gli integratori ({source})."
     },
-    "sparseNote": "Un valore basso qui di solito indica una registrazione poco frequente, non una carenza: i totali giornalieri di Apple Health riflettono ciò che le tue app hanno registrato, non l'apporto alimentare totale."
+    "sparseNote": "Un valore basso qui di solito indica una registrazione poco frequente, non una carenza: i totali giornalieri di Apple Health riflettono ciò che le tue app hanno registrato, non l'apporto alimentare totale.",
+    "units": {
+      "IU": "UI"
+    },
+    "sources": {
+      "APPLE_HEALTH": "Sincronizzato",
+      "MANUAL": "Inserito",
+      "SUPPLEMENT": "Integratori"
+    }
   },
   "daily": {
     "line": {
@@ -12132,7 +12187,8 @@
       "lifeEventCreate": "{name} ha aggiunto un evento della vita",
       "lifeEventUpdate": "{name} ha modificato un evento della vita",
       "lifeEventDelete": "{name} ha rimosso un evento della vita",
-      "biomarkerMerge": "{name} ha unito dei biomarcatori"
+      "biomarkerMerge": "{name} ha unito dei biomarcatori",
+      "medicationIngredientsUpdate": "{name} ha modificato la composizione di un integratore"
     },
     "section": {
       "measurements": {

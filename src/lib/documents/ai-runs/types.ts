@@ -22,6 +22,7 @@ export const DOCUMENT_AI_RUN_KINDS = [
   "DOCUMENT_SUMMARY",
   "DOCUMENT_SUGGEST",
   "DOCUMENT_EXTRACT",
+  "SUPPLEMENT_LABEL_EXTRACT",
 ] as const;
 export type DocumentAiRunKindValue = (typeof DOCUMENT_AI_RUN_KINDS)[number];
 
@@ -51,6 +52,7 @@ export const DOCUMENT_AI_RUN_CAPABILITY: Record<
   DOCUMENT_SUMMARY: "documentAi",
   DOCUMENT_SUGGEST: "documentAi",
   DOCUMENT_EXTRACT: "documentAi",
+  SUPPLEMENT_LABEL_EXTRACT: "supplementLabel",
 };
 
 export const DOCUMENT_AI_RUN_STATUSES = [
@@ -97,7 +99,7 @@ export interface AiRunBudget {
 export interface AiRunParams {
   /** `vision` reads the stored original or the uploaded scan; `text` reads text the browser read. */
   mode: "vision" | "text";
-  /** The sniffed MIME of an uploaded scan (lab scan, vision mode only). */
+  /** The sniffed MIME of an uploaded scan (lab scan or label, vision mode only). */
   mime?: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
   /** Present when the enqueue reserved budget for a provider call. */
   budget?: AiRunBudget;
@@ -145,12 +147,29 @@ export interface DocumentExtractRunResult {
   status: InboundDocumentStatusValue;
 }
 
+/**
+ * v1.43 — a supplement label read: a proposal only. Nothing is stored until
+ * the person saves the composition through `PUT /api/medications/{id}/ingredients`.
+ */
+export interface SupplementLabelExtractRunResult {
+  ingredients: Array<{
+    nutrient: string;
+    amount: number;
+    unit: string;
+    confidence: "high" | "low";
+    printedText: string;
+  }>;
+  unmatched: Array<{ printedText: string }>;
+  servingNote: string | null;
+}
+
 export type AiRunResult =
   | DocumentIndexRunResult
   | OcrExtractResponseDto
   | DocumentSummaryRunResult
   | DocumentSuggestRunResult
-  | DocumentExtractRunResult;
+  | DocumentExtractRunResult
+  | SupplementLabelExtractRunResult;
 
 /**
  * What one run body produced: the success body, or the failure the

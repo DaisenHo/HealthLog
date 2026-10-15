@@ -157,6 +157,20 @@
       "event": {
         "notFound": "Diesen Eintrag gibt es nicht mehr."
       }
+    },
+    "medications": {
+      "notFound": "Dieses Medikament ist nicht mehr vorhanden.",
+      "ingredients": {
+        "invalid": "Prüf die Zusammensetzung und versuch es noch einmal.",
+        "unitMismatch": "Diese Einheit gibt es für den Nährstoff nicht.",
+        "extract": {
+          "fileType": "Lade ein JPEG, PNG, WebP oder PDF hoch.",
+          "fileTooLarge": "Die Datei ist größer als 10 MB.",
+          "rateLimited": "Zu viele Etiketten gelesen. Versuch es in einer Stunde noch einmal.",
+          "budgetExceeded": "Dein KI-Budget für heute ist aufgebraucht.",
+          "failed": "Das Etikett konnte nicht gelesen werden. Versuch ein schärferes Foto."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2414,6 +2428,34 @@
         "invalidRange": "Der letzte Tag kann nicht vor dem ersten liegen.",
         "generic": "Das wurde nicht gespeichert. Bitte versuch es noch einmal."
       }
+    },
+    "composition": {
+      "title": "Zusammensetzung",
+      "empty": "Trag ein, was eine Tablette oder Kapsel enthält, damit jede genommene Dosis in deine Mikronährstoffe zählt.",
+      "perUnitNote": "Pro Tablette oder Kapsel; jede genommene Dosis zählt in die Mikronährstoffe des Tages.",
+      "add": "Hinzufügen",
+      "edit": "Bearbeiten",
+      "rowHelper": "Was eine Tablette oder Kapsel enthält, für die Mikronährstoffe.",
+      "sheetTitle": "Was eine Einheit enthält",
+      "sheetDescription": "Trag die Mengen pro Tablette oder Kapsel so ein, wie sie auf dem Etikett stehen.",
+      "nutrientLabel": "Nährstoff",
+      "amountLabel": "Menge",
+      "unitLabel": "Einheit",
+      "choose": "Nährstoff wählen",
+      "addRow": "Nährstoff hinzufügen",
+      "removeRow": "{name} entfernen",
+      "editorEmpty": "Noch kein Nährstoff. Füge einen pro Zeile des Etiketts hinzu.",
+      "labelPhoto": "Vom Etikettfoto lesen",
+      "labelReading": "Etikett wird gelesen…",
+      "labelWaiting": "Der Hintergrunddienst hat das Etikett noch nicht übernommen.",
+      "labelReviewNote": "Prüf jede Zeile mit dem Etikett, bevor du speicherst.",
+      "lowConfidence": "Diese Zeile war schwer lesbar; prüf sie mit dem Etikett.",
+      "unmatchedTitle": "Zeilen ohne passenden Nährstoff, bei Bedarf von Hand eintragen:",
+      "servingNote": "Auf dem Etikett steht: {note}. Die Mengen sind pro einzelner Einheit angegeben.",
+      "labelError": "Das Etikett konnte nicht gelesen werden",
+      "saveError": "Die Zusammensetzung konnte nicht gespeichert werden",
+      "catalogError": "Die Nährstoffliste konnte nicht geladen werden",
+      "invalidRow": "Wähl in jeder Zeile einen Nährstoff und trag eine Menge über null ein."
     }
   },
   "charts": {
@@ -11465,7 +11507,9 @@
       "molybdenum": "Molybdän",
       "iodine": "Jod",
       "water": "Wasser",
-      "caffeine": "Koffein"
+      "caffeine": "Koffein",
+      "dha": "DHA (Omega-3)",
+      "epa": "EPA (Omega-3)"
     },
     "page": {
       "title": "Nährstoffaufnahme",
@@ -11497,9 +11541,20 @@
       "rowMetaNoRef": "{days} von {window} Tagen",
       "footer": "{tracked} von {total} erfassten Mikronährstoffen haben Daten in diesem Zeitraum.",
       "emptyTitle": "Noch keine Mikronährstoffdaten synchronisiert",
-      "loadError": "Deine Nährstoffdaten konnten nicht geladen werden"
+      "loadError": "Deine Nährstoffdaten konnten nicht geladen werden",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Über der tolerierbaren Höchstmenge von {value} {unit} pro Tag ({source}).",
+      "aboveUpperLimitSupplemental": "Der Anteil aus Präparaten liegt über der tolerierbaren Höchstmenge von {value} {unit} pro Tag für Präparate ({source})."
     },
-    "sparseNote": "Ein niedriger Wert bedeutet hier meist lückenhafte Erfassung, keinen Mangel. Die Tagessummen aus Apple Health spiegeln wider, was deine Apps erfasst haben, nicht die gesamte Nahrungsaufnahme."
+    "sparseNote": "Ein niedriger Wert bedeutet hier meist lückenhafte Erfassung, keinen Mangel. Die Tagessummen aus Apple Health spiegeln wider, was deine Apps erfasst haben, nicht die gesamte Nahrungsaufnahme.",
+    "units": {
+      "IU": "IE"
+    },
+    "sources": {
+      "APPLE_HEALTH": "Synchronisiert",
+      "MANUAL": "Eingetragen",
+      "SUPPLEMENT": "Präparate"
+    }
   },
   "daily": {
     "line": {
@@ -12132,7 +12187,8 @@
       "lifeEventCreate": "{name} hat ein Lebensereignis hinzugefügt",
       "lifeEventUpdate": "{name} hat ein Lebensereignis geändert",
       "lifeEventDelete": "{name} hat ein Lebensereignis entfernt",
-      "biomarkerMerge": "{name} hat Biomarker zusammengeführt"
+      "biomarkerMerge": "{name} hat Biomarker zusammengeführt",
+      "medicationIngredientsUpdate": "{name} hat die Zusammensetzung eines Präparats geändert"
     },
     "section": {
       "measurements": {

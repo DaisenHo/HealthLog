@@ -890,7 +890,11 @@ describe("GET /api/medications — provenance echo (v1.32.25)", () => {
       end: new Date("2026-07-24T23:59:59Z"),
     } as never);
     vi.mocked(prisma.medication.findMany).mockResolvedValue(
-      medications as never,
+      // v1.43 — every row carries the ingredient count the list reads.
+      medications.map((m) => ({
+        _count: { ingredients: 0 },
+        ...(m as object),
+      })) as never,
     );
     vi.mocked(prisma.medicationIntakeEvent.groupBy).mockResolvedValue(
       [] as never,
@@ -1018,6 +1022,8 @@ describe("GET /api/medications — intake actions follow the course (#1040)", ()
           dose: null,
         },
       ],
+      // v1.43 — the ingredient count the list reads for `hasIngredients`.
+      _count: { ingredients: 0 },
       ...over,
     };
   }

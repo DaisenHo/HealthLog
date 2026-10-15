@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Leaf } from "lucide-react";
+import { Info, Leaf } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -19,14 +19,16 @@ import {
   resolveNutrientReference,
   type NutrientCode,
 } from "@/lib/nutrients/catalog";
-import type { NutrientIntakeOverview } from "./types";
+import type {
+  NutrientAmountBySource,
+  NutrientIntakeOverview,
+  NutrientOverviewRow,
+} from "./types";
+import { nutrientUnitLabel } from "./unit-label";
 
 const WINDOW_DAYS = 30;
 
-/** Wire `ug` renders as µg; mg / ml pass through. */
-const UNIT_LABELS: Record<string, string> = { mg: "mg", ug: "µg", ml: "ml" };
-
-/** The 24 vitamin/mineral codes — water + caffeine ride their own cards. */
+/** The vitamin/mineral codes — water + caffeine ride their own cards. */
 const MICRONUTRIENT_CODES = NUTRIENT_CODES.filter(
   (code) => code !== "water" && code !== "caffeine",
 );
@@ -36,6 +38,102 @@ function formatAmount(
   amount: number,
 ): string {
   return fmt.number(Math.round(amount * 10) / 10, 1);
+}
+
+/** The sources in the order the split reads, each with its bar colour. */
+const SOURCES = [
+  { key: "APPLE_HEALTH", color: "var(--chart-1)" },
+  { key: "MANUAL", color: "var(--chart-2)" },
+  { key: "SUPPLEMENT", color: "var(--chart-3)" },
+] as const;
+
+/**
+ * v1.43 — the latest day split by source: a thin bar and a one-line legend.
+ * Shown only when the day has more than one source or a supplement share,
+ * because a single synced total has nothing to split.
+ */
+function SourceSplit({
+  bySource,
+  unitLabel,
+}: {
+  bySource: NutrientAmountBySource;
+  unitLabel: string;
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const parts = SOURCES.filter((s) => (bySource[s.key] ?? 0) > 0);
+  const total = parts.reduce((sum, s) => sum + (bySource[s.key] ?? 0), 0);
+  if (total <= 0 || (parts.length < 2 && !bySource.SUPPLEMENT)) return null;
+  const legend = parts
+    .map((s) =>
+      t("nutrients.micronutrients.sourcePart", {
+        source: t(`nutrients.sources.${s.key}`),
+        value: formatAmount(fmt, bySource[s.key] ?? 0),
+        unit: unitLabel,
+      }),
+    )
+    .join(", ");
+  return (
+    <div className="space-y-1" data-slot="nutrients-source-split">
+      <div
+        className="bg-muted flex h-1.5 w-full overflow-hidden rounded-full"
+        role="img"
+        aria-label={legend}
+      >
+        {parts.map((s) => (
+          <span
+            key={s.key}
+            className="h-full"
+            style={{
+              width: `${((bySource[s.key] ?? 0) / total) * 100}%`,
+              backgroundColor: s.color,
+            }}
+          />
+        ))}
+      </div>
+      <p className="text-muted-foreground text-xs tabular-nums">{legend}</p>
+    </div>
+  );
+}
+
+/**
+ * v1.43 — the calm note the server's upper-limit verdict earns: the level,
+ * whether it covers the supplement share only, and where it comes from.
+ */
+function UpperLimitNote({
+  row,
+  unitLabel,
+}: {
+  row: NutrientOverviewRow;
+  unitLabel: string;
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const limit = row.upperLimit;
+  if (!limit || row.latestAboveUpperLimit !== true) return null;
+  return (
+    <p
+      className="flex items-start gap-1.5 text-xs"
+      data-slot="nutrients-upper-limit-note"
+    >
+      <Info
+        aria-hidden="true"
+        className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
+      />
+      <span>
+        {t(
+          limit.scope === "supplemental"
+            ? "nutrients.micronutrients.aboveUpperLimitSupplemental"
+            : "nutrients.micronutrients.aboveUpperLimit",
+          {
+            value: formatAmount(fmt, limit.value),
+            unit: unitLabel,
+            source: limit.source,
+          },
+        )}
+      </span>
+    </p>
+  );
 }
 
 /**
@@ -105,34 +203,43 @@ export function MicronutrientsCard() {
                   row.nutrient as NutrientCode,
                   sex,
                 );
-                const unitLabel = UNIT_LABELS[row.unit] ?? row.unit;
+                const unitLabel = nutrientUnitLabel(row.unit, t);
                 return (
                   <li
                     key={row.nutrient}
                     data-slot="nutrients-micronutrient-row"
-                    className="flex items-baseline justify-between gap-3 p-2"
+                    className="space-y-2 p-2"
                   >
-                    <span className="text-sm">
-                      {t(`nutrients.names.${row.nutrient}`)}
-                    </span>
-                    <span className="flex flex-col items-end gap-0.5 text-right">
-                      <span className="text-sm font-medium tabular-nums">
-                        {formatAmount(fmt, row.latestAmount)} {unitLabel}
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm">
+                        {t(`nutrients.names.${row.nutrient}`)}
                       </span>
-                      <span className="text-muted-foreground text-xs tabular-nums">
-                        {reference
-                          ? t("nutrients.micronutrients.rowMeta", {
-                              days: row.daysWithData,
-                              window: WINDOW_DAYS,
-                              value: formatAmount(fmt, reference.value),
-                              unit: unitLabel,
-                            })
-                          : t("nutrients.micronutrients.rowMetaNoRef", {
-                              days: row.daysWithData,
-                              window: WINDOW_DAYS,
-                            })}
+                      <span className="flex flex-col items-end gap-0.5 text-right">
+                        <span className="text-sm font-medium tabular-nums">
+                          {formatAmount(fmt, row.latestAmount)} {unitLabel}
+                        </span>
+                        <span className="text-muted-foreground text-xs tabular-nums">
+                          {reference
+                            ? t("nutrients.micronutrients.rowMeta", {
+                                days: row.daysWithData,
+                                window: WINDOW_DAYS,
+                                value: formatAmount(fmt, reference.value),
+                                unit: unitLabel,
+                              })
+                            : t("nutrients.micronutrients.rowMetaNoRef", {
+                                days: row.daysWithData,
+                                window: WINDOW_DAYS,
+                              })}
+                        </span>
                       </span>
-                    </span>
+                    </div>
+                    {row.latestBySource && (
+                      <SourceSplit
+                        bySource={row.latestBySource}
+                        unitLabel={unitLabel}
+                      />
+                    )}
+                    <UpperLimitNote row={row} unitLabel={unitLabel} />
                   </li>
                 );
               })}

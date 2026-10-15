@@ -8,8 +8,11 @@
  * and never convert units themselves.
  */
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import { notImplemented } from "@/lib/http/not-implemented";
+import { apiSuccess } from "@/lib/api-response";
+import { annotate } from "@/lib/logging/context";
+import { nutrientLabel } from "@/lib/medications/ingredients/composition";
 import { requireModuleEnabled } from "@/lib/modules/gate";
+import { NUTRIENT_DEFINITIONS } from "@/lib/nutrients/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -18,5 +21,22 @@ export const GET = apiHandler(async () => {
   const gate = await requireModuleEnabled(user.id, "nutrients");
   if (!gate.enabled) return gate.response;
 
-  return notImplemented("nutrients.catalog.get");
+  const entries = NUTRIENT_DEFINITIONS.map((def) => ({
+    code: def.code,
+    unit: def.unit,
+    labelKey: def.labelKey,
+    label: nutrientLabel(def.code, user.locale ?? null),
+    syncable: def.syncable,
+    inputUnits: def.inputUnits.map((u) => ({
+      unit: u.unit,
+      factorToCanonical: u.factorToCanonical,
+    })),
+    upperLimit: def.upperLimit,
+  }));
+
+  annotate({
+    action: { name: "nutrient.catalog.read" },
+    meta: { entry_count: entries.length },
+  });
+  return apiSuccess({ entries });
 });

@@ -214,6 +214,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "step-consolidation-repair": short(
     "One account's tombstoned step rows inside the retention window.",
   ),
+  "supplement-nutrient-recompute": short(
+    "One account's taken doses of medications with a composition: a few thousand rows for years of a daily supplement.",
+  ),
   "cumulative-pr-rederive": short(
     "One account's record detection; measured at 20 seconds for 1.25 million rows.",
   ),

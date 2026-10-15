@@ -1105,6 +1105,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "medications",
     why: "One medication of the record, fetch-then-guard against the resolved user before anything is serialised.",
   },
+  "app/api/medications/[id]/ingredients/route.ts": {
+    domain: "medications",
+    why: "One medication's composition per unit (v1.43), behind the ownership check against the resolved record. The PUT is the route's only verb and is manage-level; the label read beside it stays owner-only, because provider work is never admitted inside somebody else's record.",
+  },
   "app/api/medications/[id]/cadence/route.ts": {
     domain: "medications",
     why: "One medication's cadence, behind `assertMedicationOwnership(id, user.id)` — the shared guard, resolved against the record.",
@@ -1771,6 +1775,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C4", "C7"],
     why: "Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it stays refused.",
   },
+  "app/api/medications/[id]/ingredients/route.ts": {
+    domain: "medications",
+    conditions: ["C1", "C4"],
+    why: "Replacing a supplement's composition (v1.43), which rewrites what every taken dose adds to the record's micronutrients. C1, and C4 because the replaced composition is filed as one comparable line. The recompute it queues is arithmetic, not generation.",
+  },
   "app/api/medications/[id]/schedule-revisions/route.ts": {
     domain: "medications",
     conditions: [],
@@ -2129,8 +2138,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.43 -- merging biomarkers joins the record list and the manage literal
  * (D1223). 258 -> 260.
+ *
+ * v1.43 -- a supplement's composition joins the record list and the manage
+ * literal: its PUT replaces the composition every taken dose counts with.
+ * 260 -> 262.
  */
-const FROZEN_ENTRY_COUNT = 260;
+const FROZEN_ENTRY_COUNT = 262;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2891,7 +2904,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(89);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(90);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

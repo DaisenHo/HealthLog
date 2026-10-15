@@ -172,17 +172,11 @@ describe("AI capability route inventory", () => {
  *
  *   - `reactionLines`: written by a job after a new reading arrives, never on
  *     request; the job asks `aiCapabilityForJob`.
- *   - `supplementLabel` (v1.43, #1217): its route
- *     (`medications/[id]/ingredients/extract`) is a contract stub until the
- *     supplement package fills it. The check below fails the moment the stub
- *     answers anything but 501, so the entry has to move to `AI_ROUTES` with
- *     the gate.
  */
 const CAPABILITIES_WITHOUT_ROUTE: Readonly<
   Partial<Record<(typeof AI_CAPABILITY_KEYS)[number], string>>
 > = {
   reactionLines: "job only",
-  supplementLabel: "src/app/api/medications/[id]/ingredients/extract/route.ts",
 };
 
 describe("every capability reaches a route", () => {
@@ -199,17 +193,6 @@ describe("every capability reaches a route", () => {
     );
     expect(stale, "asked by a route now: drop it from the list").toEqual([]);
   });
-
-  it("knows supplementLabel, and its route is still the stub", () => {
-    expect(AI_CAPABILITY_KEYS).toContain("supplementLabel");
-    const path = CAPABILITIES_WITHOUT_ROUTE.supplementLabel!;
-    expect(ROUTES).toContain(path);
-    const text = code(path);
-    expect(
-      /\bnotImplemented\s*\(/.test(text) && !ANY_GATE.test(text),
-      `${path} is no longer a stub: gate it with requireAiCapability("supplementLabel") and list it on AI_ROUTES`,
-    ).toBe(true);
-  });
 });
 
 /** The route that queues each kind of background run. */
@@ -219,6 +202,8 @@ const RUN_QUEUED_BY: Record<DocumentAiRunKindValue, string> = {
   DOCUMENT_SUMMARY: "src/app/api/documents/inbound/[id]/summary/route.ts",
   DOCUMENT_SUGGEST: "src/app/api/documents/inbound/[id]/suggest/route.ts",
   DOCUMENT_EXTRACT: "src/app/api/documents/inbound/[id]/extract/route.ts",
+  SUPPLEMENT_LABEL_EXTRACT:
+    "src/app/api/medications/[id]/ingredients/extract/route.ts",
 };
 
 describe("background run kinds", () => {
