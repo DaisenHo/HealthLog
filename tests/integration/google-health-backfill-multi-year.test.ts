@@ -1,0 +1,396 @@
+/**
+ * #1220 — a Google Health history backfill over three years of heart rate,
+ * driven through the admission drain slice by slice until it completes,
+ * against Postgres.
+ *
+ * What went wrong. A backfill noted its progress only once a whole collection
+ * was walked to the end. Three years of heart rate at one reading a minute is
+ * some 1 600 pages, and an attempt that did not get through all of them (its
+ * budget, a rate limit it could not wait out, one failed request among
+ * thousands) started the next attempt from the newest page again. The account
+ * never got past its first unfinished collection, every attempt failed with
+ * "marker not stamped", and none of them left a line saying where it stopped,
+ * because the drain ran the import outside any log event.
+ *
+ * What this pins, end to end:
+ *   - the backfill completes, through as many slices as the history needs,
+ *     and every slice after the first starts where the one before it stopped;
+ *   - every reading is imported exactly once: the rows match the history, the
+ *     slices' import counts add up to it, and no row was ever rewritten;
+ *   - a server error, a lost request and a rate limit Google will not lift
+ *     for an hour each cost a retry or a slice boundary, never the walk;
+ *   - the hourly sync runs between slices (and beside one, by waiting for
+ *     it) instead of being skipped for as long as the import runs;
+ *   - every slice writes a log event naming its requests and where it got to;
+ *   - the heap does not grow with the history (run it under the production
+ *     ceiling: `NODE_OPTIONS=--max-old-space-size=524`).
+ *
+ * Google is replaced at the `safeFetch` seam by a generator that builds each
+ * page on request from the filter and page token it is asked with, so the
+ * fixture never sits in memory.
+ */
+import v8 from "node:v8";
+import vm from "node:vm";
+
+import type { Job } from "pg-boss";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+import type { WideEvent } from "@/lib/logging/types";
+import { getPrismaClient, truncateAllTables } from "./setup";
+
+const USER = "gh-multi-year-owner";
+const MINUTE = 60_000;
+/** The newest reading: now, so the hourly sync's window lands on real data. */
+const NOW = Math.floor(Date.now() / MINUTE) * MINUTE;
+/** Three years of heart rate, one reading a minute. */
+const POINTS = 3 * 365 * 24 * 60;
+
+/**
+ * How much the collected heap may grow over the second half of the history:
+ * from the first sample taken inside a page request once the second slice is
+ * over, to the most any later sample reaches. Every sample is taken mid-walk,
+ * so each carries the same in-flight working set (one page, the ORM's and the
+ * driver's buffers, some 35 MB here) and only growth is compared. The first
+ * two slices are left out because the first hourly sync and the first
+ * rate-limited slice load code paths once. Measured, not chosen: the line
+ * stays within half a MB of flat. A backfill that kept what it read would
+ * grow by hundreds of MB over the same stretch.
+ */
+const GROWTH_BUDGET_BYTES = 16 * 1024 * 1024;
+
+const fake = vi.hoisted(() => ({
+  now: 0,
+  total: 0,
+  /** Heart-rate requests seen, the backfill's among them, and readings served. */
+  heartRateRequests: 0,
+  backfillRequests: 0,
+  servedPoints: 0,
+  /** Faults to inject, keyed by the backfill request number they hit. */
+  faults: new Map<number, "503" | "timeout" | "429-long">(),
+  onRequest: null as (() => void) | null,
+}));
+
+vi.mock("@/lib/safe-fetch", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/safe-fetch")>();
+  const respond = (body: unknown, status = 200, headers = {}) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "content-type": "application/json", ...headers },
+    });
+  return {
+    ...actual,
+    // A plain function, not `vi.fn`: a mock records every result, and here
+    // each result is a page of a thousand readings.
+    safeFetch: async (url: string) => {
+      const u = new URL(url);
+      if (!u.pathname.endsWith("/dataTypes/heart-rate/dataPoints")) {
+        // Every other collection is empty for this account.
+        return respond({});
+      }
+      fake.heartRateRequests += 1;
+      fake.onRequest?.();
+      // The hourly sync always asks from a lower bound; the backfill never.
+      const filter = u.searchParams.get("filter") ?? "";
+      const fromBackfill = !filter.includes(">=");
+      if (fromBackfill) fake.backfillRequests += 1;
+      const fault = fromBackfill
+        ? fake.faults.get(fake.backfillRequests)
+        : undefined;
+      if (fault) {
+        fake.faults.delete(fake.backfillRequests);
+        if (fault === "timeout") {
+          throw new actual.SafeFetchError("safeFetch aborted", "timeout");
+        }
+        if (fault === "503") {
+          return respond({ error: { code: 503, status: "UNAVAILABLE" } }, 503);
+        }
+        return respond(
+          { error: { code: 429, status: "RESOURCE_EXHAUSTED" } },
+          429,
+          { "retry-after": "3600" },
+        );
+      }
+
+      // Newest first, one reading a minute: reading `g` is `g` minutes old.
+      // The hourly sync asks from a lower bound (`>=`), a resumed backfill
+      // up to its edge (`<=`).
+      const from = /physical_time >= "([^"]+)"/.exec(filter)?.[1];
+      const upTo = /physical_time <= "([^"]+)"/.exec(filter)?.[1];
+      const newest = upTo
+        ? Math.max(0, Math.ceil((fake.now - Date.parse(upTo)) / MINUTE))
+        : 0;
+      const oldest = from
+        ? Math.min(
+            fake.total - 1,
+            Math.floor((fake.now - Date.parse(from)) / MINUTE),
+          )
+        : fake.total - 1;
+      const pageSize = Number(u.searchParams.get("pageSize") ?? 1000);
+      const page = Number(u.searchParams.get("pageToken") ?? 0);
+      const start = newest + page * pageSize;
+      const end = Math.min(oldest + 1, start + pageSize);
+      const dataPoints = [];
+      for (let g = start; g < end; g++) {
+        dataPoints.push({
+          name: `users/me/dataTypes/heart-rate/dataPoints/${7_000_000_000 + g}`,
+          dataSource: { platform: "FITBIT" },
+          heartRate: {
+            beatsPerMinute: String(52 + (g % 61)),
+            sampleTime: {
+              physicalTime: new Date(fake.now - g * MINUTE).toISOString(),
+            },
+          },
+        });
+      }
+      fake.servedPoints += dataPoints.length;
+      return respond({
+        dataPoints,
+        ...(end <= oldest ? { nextPageToken: String(page + 1) } : {}),
+      });
+    },
+  };
+});
+
+/** Jobs the backfill and the hourly sync queue, recorded. */
+const sent = vi.hoisted(() => ({
+  jobs: [] as Array<{ queue: string; data: unknown }>,
+}));
+vi.mock("@/lib/jobs/boss-instance", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/boss-instance")>()),
+  getGlobalBoss: () => ({
+    send: async (queue: string, data: unknown) => {
+      sent.jobs.push({ queue, data });
+      return `job-${sent.jobs.length}`;
+    },
+  }),
+}));
+
+/** The log events the runs write, recorded instead of printed. */
+const logged = vi.hoisted(() => ({ events: [] as WideEvent[] }));
+vi.mock("@/lib/logging/transports", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/logging/transports")>()),
+  emitIfSampled: (event: WideEvent) => {
+    logged.events.push(event);
+  },
+}));
+
+vi.mock("@/lib/db-compat", () => ({
+  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
+}));
+
+const forceGc = ((): (() => void) => {
+  v8.setFlagsFromString("--expose-gc");
+  const gc = vm.runInNewContext("gc") as () => void;
+  v8.setFlagsFromString("--no-expose-gc");
+  return gc;
+})();
+
+function liveHeapBytes(): number {
+  forceGc();
+  forceGc();
+  return process.memoryUsage().heapUsed;
+}
+
+const mb = (bytes: number): string => (bytes / 1024 / 1024).toFixed(1);
+
+function report(line: string): void {
+  process.stderr.write(`[gh-multi-year] ${line}\n`);
+}
+
+beforeAll(async () => {
+  const prisma = getPrismaClient();
+  await truncateAllTables(prisma);
+  const { encrypt } = await import("@/lib/crypto");
+  await prisma.user.create({
+    data: { id: USER, username: USER, timezone: "Europe/Berlin" },
+  });
+  await prisma.googleHealthConnection.create({
+    data: {
+      userId: USER,
+      googleUserId: `google-${USER}`,
+      accessToken: encrypt("access"),
+      refreshToken: encrypt("refresh"),
+      tokenExpiresAt: new Date(Date.now() + 7 * 86_400_000),
+    },
+  });
+  fake.now = NOW;
+  fake.total = POINTS;
+}, 120_000);
+
+afterAll(async () => {
+  await truncateAllTables(getPrismaClient());
+});
+
+type AdmissionPayload =
+  import("@/lib/jobs/integration-backfill-admission").IntegrationBackfillAdmissionPayload;
+
+function admissionJob(
+  payload: AdmissionPayload,
+  n: number,
+): Job<AdmissionPayload> {
+  return {
+    id: `admission-${n}`,
+    name: "integration-backfill-admission",
+    data: payload,
+    // The production expiry: sixteen hours.
+    expireInSeconds: 16 * 60 * 60,
+  } as unknown as Job<AdmissionPayload>;
+}
+
+function nextSlice(): AdmissionPayload | null {
+  const next = sent.jobs.find(
+    (j) => j.queue === "integration-backfill-admission",
+  );
+  return next ? (next.data as AdmissionPayload) : null;
+}
+
+describe("Google Health backfill over three years of heart rate (#1220)", () => {
+  it("completes slice by slice, imports every reading once, and keeps the hourly sync running", async () => {
+    const { drainIntegrationBackfillAdmission } =
+      await import("@/lib/jobs/integration-backfill-drain");
+    const { handleGoogleHealthSync } =
+      await import("@/lib/jobs/reminder/google-health-sync");
+    const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
+      await import("@/lib/google-health/client");
+    const { GOOGLE_HEALTH_BACKFILL_SLICE_PAGES } =
+      await import("@/lib/jobs/google-health-backfill");
+    GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
+
+    // A server error and a lost request in the first slice, and a rate limit
+    // Google will not lift for an hour in the second.
+    fake.faults.set(40, "503");
+    fake.faults.set(80, "timeout");
+    fake.faults.set(GOOGLE_HEALTH_BACKFILL_SLICE_PAGES + 120, "429-long");
+
+    // Heap samples from inside the page requests, between two pages of the
+    // work being measured, once the second slice is over (see the budget).
+    let measuring = false;
+    let anchor: number | null = null;
+    let peak = 0;
+    let samples = 0;
+    fake.onRequest = () => {
+      if (!measuring || fake.heartRateRequests % 50 !== 0) return;
+      const live = liveHeapBytes();
+      if (anchor === null) {
+        anchor = peak = live;
+        return;
+      }
+      samples++;
+      peak = Math.max(peak, live);
+    };
+
+    const prisma = getPrismaClient();
+    let payload: AdmissionPayload | null = {
+      kind: "google-health-backfill",
+      data: { userId: USER, enqueuedAt: new Date().toISOString() },
+    };
+    const slices: Array<{
+      slice: number;
+      imported: number;
+      continued: number;
+    }> = [];
+    let hourlyBeside: Promise<unknown> | null = null;
+
+    for (let n = 0; payload && n < 40; n++) {
+      sent.jobs = [];
+      logged.events = [];
+      const drained = drainIntegrationBackfillAdmission([
+        admissionJob(payload, n),
+      ]);
+      // Once, start the hourly sync while a slice is running: it waits for
+      // the slice instead of skipping the account.
+      if (n === 2) {
+        hourlyBeside = handleGoogleHealthSync([] as never);
+      }
+      const outcome = await drained;
+      expect(outcome.ok).toBe(true);
+      const did = (outcome as { did: Record<string, number> }).did;
+      slices.push({
+        slice: payload.data.slice ?? 0,
+        imported: did.imported,
+        continued: did.continued,
+      });
+
+      // The slice wrote one log event, with its requests and where it got to.
+      const runEvents = logged.events.filter(
+        (e) => e.background?.task_name === "job.integration_backfill",
+      );
+      expect(runEvents).toHaveLength(1);
+      const sliceMeta = runEvents[0]!.meta?.["googleHealth.backfill.slice"] as
+        { pages: number; stopReason: string | null; edges: object } | undefined;
+      expect(sliceMeta).toBeDefined();
+      expect(
+        runEvents[0]!.external_calls?.some((c) =>
+          c.method.startsWith("fetchHeartRate(page="),
+        ),
+      ).toBe(true);
+      report(
+        `slice ${payload.data.slice ?? 0}: pages=${sliceMeta!.pages} ` +
+          `stop=${sliceMeta!.stopReason} imported=${did.imported} ` +
+          `edges=${JSON.stringify(sliceMeta!.edges)}`,
+      );
+
+      if (n === 1) measuring = true;
+      payload = nextSlice();
+
+      // Between slices the account is free, and the hourly sync runs.
+      if (payload) {
+        const hourly = await handleGoogleHealthSync([] as never);
+        expect(hourly).toMatchObject({
+          ok: true,
+          did: { users_skipped: 0, users_failed: 0, users_parked: 0 },
+        });
+      }
+    }
+
+    expect(await hourlyBeside).toMatchObject({
+      ok: true,
+      did: { users_skipped: 0 },
+    });
+
+    // Completed, and the note of how far it got is gone with it.
+    const connection = await prisma.googleHealthConnection.findUniqueOrThrow({
+      where: { userId: USER },
+      select: { backfillCompletedAt: true, backfillProgress: true },
+    });
+    expect(connection.backfillCompletedAt).toBeInstanceOf(Date);
+    expect(connection.backfillProgress).toBeNull();
+    expect(payload).toBeNull();
+
+    // More than one slice, every one before the last continued, and the
+    // rate-limited one among them.
+    expect(slices.length).toBeGreaterThan(2);
+    expect(slices.slice(0, -1).every((s) => s.continued === 1)).toBe(true);
+    expect(fake.faults.size).toBe(0);
+    expect(slices.map((s) => s.slice)).toEqual(slices.map((_, i) => i));
+
+    // Every reading exactly once.
+    const rows = await prisma.measurement.count({
+      where: { userId: USER, type: "PULSE", source: "GOOGLE_HEALTH" },
+    });
+    expect(rows).toBe(POINTS);
+    expect(slices.reduce((sum, s) => sum + s.imported, 0)).toBe(POINTS);
+    const versions = await prisma.measurement.aggregate({
+      where: { userId: USER, type: "PULSE", source: "GOOGLE_HEALTH" },
+      _max: { syncVersion: true },
+      _min: { syncVersion: true },
+    });
+    expect(versions._max.syncVersion).toBe(versions._min.syncVersion);
+    // Each slice re-reads only the reading on its edge (plus the hourly
+    // sync's own window), not the history before it.
+    report(
+      `requests=${fake.heartRateRequests} served=${fake.servedPoints} ` +
+        `points=${POINTS} slices=${slices.length}`,
+    );
+
+    // The heap did not grow with the history.
+    const growth = peak - (anchor ?? 0);
+    report(
+      `heap growth after the second slice: ${mb(growth)} MB over ${samples} ` +
+        `samples (budget ${mb(GROWTH_BUDGET_BYTES)} MB, ceiling ` +
+        `${mb(v8.getHeapStatistics().heap_size_limit)} MB, peak ${mb(peak)} MB)`,
+    );
+    expect(samples).toBeGreaterThan(5);
+    expect(growth).toBeLessThan(GROWTH_BUDGET_BYTES);
+  }, 3_600_000);
+});
