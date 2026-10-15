@@ -29,7 +29,8 @@ function call(
   handler: () => Promise<Response>,
   headers: Record<string, string> = {},
 ) {
-  return apiHandler(handler)(
+  const route = apiHandler(async (_request: NextRequest) => handler());
+  return route(
     new NextRequest("http://localhost/api/probe", { headers }),
   );
 }
