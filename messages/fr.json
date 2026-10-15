@@ -7878,6 +7878,7 @@
         "restoreSkippedCoachAttachment": "Lien de document du Coach",
         "restoreSkippedCoachReference": "Référence du Coach",
         "restoreSkippedDocumentConditionLink": "Classement du document",
+        "restoreSkippedRelationLink": "Lien entre entrées",
         "restoreSkippedExtractedFact": "Donnée du document",
         "restoreSkippedFactCommitment": "Enregistrement de la donnée",
         "docsLink": "Documentation",

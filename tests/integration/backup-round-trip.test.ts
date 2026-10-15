@@ -291,6 +291,16 @@ const COUNT_BACK: Record<
     p.vaccinationRecord.count({ where: { userId } }),
   VaccinationDocumentLink: (p, userId) =>
     p.vaccinationDocumentLink.count({ where: { userId } }),
+  LabResultDocumentLink: (p, userId) =>
+    p.labResultDocumentLink.count({ where: { userId } }),
+  EncounterMedicationLink: (p, userId) =>
+    p.encounterMedicationLink.count({ where: { userId } }),
+  EncounterVaccinationLink: (p, userId) =>
+    p.encounterVaccinationLink.count({ where: { userId } }),
+  MedicationDocumentLink: (p, userId) =>
+    p.medicationDocumentLink.count({ where: { userId } }),
+  MedicationConditionLink: (p, userId) =>
+    p.medicationConditionLink.count({ where: { userId } }),
   CustomVaccine: (p, userId) => p.customVaccine.count({ where: { userId } }),
   MeasurementReminder: (p, userId) =>
     p.measurementReminder.count({ where: { userId } }),
@@ -1365,6 +1375,44 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
       userId: OWNER_ID,
       vaccinationId: vaccination.id,
       documentId: document.id,
+    },
+  });
+
+  // v1.43 — one row in each of the five relation link tables, joining the
+  // records seeded above.
+  await prisma.labResultDocumentLink.create({
+    data: {
+      userId: OWNER_ID,
+      labResultId: labResult.id,
+      documentId: document.id,
+    },
+  });
+  await prisma.encounterMedicationLink.create({
+    data: {
+      userId: OWNER_ID,
+      encounterId: encounter.id,
+      medicationId: medication.id,
+    },
+  });
+  await prisma.encounterVaccinationLink.create({
+    data: {
+      userId: OWNER_ID,
+      encounterId: encounter.id,
+      vaccinationId: vaccination.id,
+    },
+  });
+  await prisma.medicationDocumentLink.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: medication.id,
+      documentId: document.id,
+    },
+  });
+  await prisma.medicationConditionLink.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: medication.id,
+      episodeId: episode.id,
     },
   });
 

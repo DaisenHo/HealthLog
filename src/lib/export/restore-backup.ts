@@ -116,6 +116,7 @@ import { restoreEnvironmentData } from "@/lib/export/environment-backup";
 import { restoreEcgData } from "@/lib/export/ecg-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoreLifeEventsData } from "@/lib/export/life-events-backup";
+import { restoreRelationLinksData } from "@/lib/export/relation-links-backup";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
   encryptCategoryLabel,
@@ -181,6 +182,7 @@ export interface RestoreResponse {
     encounterLinks: number;
     vaccinations: number;
     vaccinationLinks: number;
+    relationLinks: number;
     customVaccines: number;
     measurementReminders: number;
     measurementReminderEvents: number;
@@ -2655,6 +2657,17 @@ export async function restoreBackup(
           skips,
         );
 
+        // The five relation links (v1.43), last of the record sections they
+        // join: every end is a foreign key against a lab result, document,
+        // visit, dose, medication or condition, all written above. Both ends
+        // of this section live in `src/lib/export/relation-links-backup.ts`.
+        const relationLinksCleared = await restoreRelationLinksData(
+          tx,
+          ownerId,
+          payload,
+          skips,
+        );
+
         // The Coach's threads, turns and document links. AFTER the
         // documents on purpose: an attachment carries a `documentId` that
         // is a foreign key against them, so running earlier would make
@@ -2787,6 +2800,7 @@ export async function restoreBackup(
           encounterLinks: visitsCleared.encounterLinks,
           vaccinations: vaccinationsCleared.vaccinations,
           vaccinationLinks: vaccinationsCleared.vaccinationLinks,
+          relationLinks: relationLinksCleared.relationLinks,
           customVaccines: vaccinationsCleared.customVaccines,
           measurementReminders: remindersCleared.measurementReminders,
           measurementReminderEvents: remindersCleared.measurementReminderEvents,
@@ -3066,6 +3080,7 @@ export async function restoreBackup(
         encounterLinks: summary.encounterLinks,
         vaccinations: summary.vaccinations,
         vaccinationLinks: summary.vaccinationLinks,
+        relationLinks: summary.relationLinks,
         customVaccines: summary.customVaccines,
         measurementReminders: summary.measurementReminders,
         measurementReminderEvents: summary.measurementReminderEvents,

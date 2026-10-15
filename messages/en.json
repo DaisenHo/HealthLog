@@ -7878,6 +7878,7 @@
         "restoreSkippedCoachAttachment": "Coach document link",
         "restoreSkippedCoachReference": "Coach reference",
         "restoreSkippedDocumentConditionLink": "Document filing",
+        "restoreSkippedRelationLink": "Link between records",
         "restoreSkippedExtractedFact": "Document fact",
         "restoreSkippedFactCommitment": "Fact commitment",
         "docsLink": "Documentation",

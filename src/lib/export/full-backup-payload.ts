@@ -92,6 +92,12 @@ import {
   type DocumentFilingBackupSection,
 } from "@/lib/export/document-filing-backup";
 import {
+  buildRelationLinksBackupSection,
+  countRelationLinksBackupSection,
+  type RelationLinksBackupCounts,
+  type RelationLinksBackupSection,
+} from "@/lib/export/relation-links-backup";
+import {
   buildAwardsBackupSection,
   countAwardsBackupSection,
   type AwardsBackupCounts,
@@ -155,6 +161,7 @@ export interface FullBackupCounts
     CoachMemoryBackupCounts,
     SensitiveBackupCounts,
     DocumentFilingBackupCounts,
+    RelationLinksBackupCounts,
     AwardsBackupCounts,
     EnvironmentBackupCounts,
     OnboardingBackupCounts,
@@ -736,6 +743,7 @@ export async function buildFullBackupPayload(
     ecg,
     symptoms,
     lifeEvents,
+    relationLinks,
     nutrientDays,
     accountSettings,
   ] = await Promise.all([
@@ -925,6 +933,11 @@ export async function buildFullBackupPayload(
     buildLifeEventsBackupSection(prisma, userId, {
       purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
     }),
+    // The five relation links that close the relation matrix (v1.43). Both
+    // ends live in `src/lib/export/relation-links-backup.ts`.
+    buildRelationLinksBackupSection(prisma, userId, {
+      purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
+    }),
     // Nutrient day totals were absent from every export path, which
     // contradicted the schema's own reason for denormalising the unit column
     // ("rows stay self-describing in exports even if the catalog ever drifts").
@@ -980,6 +993,7 @@ export async function buildFullBackupPayload(
   const ecgSection: EcgBackupSection = ecg;
   const symptomsSection: SymptomsBackupSection = symptoms;
   const lifeEventsSection: LifeEventsBackupSection = lifeEvents;
+  const relationLinksSection: RelationLinksBackupSection = relationLinks;
   const accountSettingsSection: AccountSettingsBackupSection = accountSettings;
 
   // The three unbounded tables, either read into arrays or left as markers
@@ -1387,6 +1401,7 @@ export async function buildFullBackupPayload(
     ...ecgSection,
     ...symptomsSection,
     ...lifeEventsSection,
+    ...relationLinksSection,
     nutrientDays: nutrientDays.map((n) => ({
       day: n.day,
       nutrient: n.nutrient,
@@ -1456,6 +1471,7 @@ export async function buildFullBackupPayload(
       ...countEcgBackupSection(ecg),
       ...countSymptomsBackupSection(symptoms),
       ...countLifeEventsBackupSection(lifeEvents),
+      ...countRelationLinksBackupSection(relationLinks),
     },
   };
 }

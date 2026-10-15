@@ -7853,6 +7853,7 @@
         "restoreSkippedCoachAttachment": "코치 문서 연결",
         "restoreSkippedCoachReference": "코치 참조",
         "restoreSkippedDocumentConditionLink": "문서 분류",
+        "restoreSkippedRelationLink": "기록 간 연결",
         "restoreSkippedExtractedFact": "문서 추출 정보",
         "restoreSkippedFactCommitment": "추출 정보 확정",
         "docsLink": "문서",
