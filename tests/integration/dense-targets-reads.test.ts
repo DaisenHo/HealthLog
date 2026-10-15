@@ -242,7 +242,14 @@ describe("targets fold equals the raw-reading fold", () => {
       );
       expect(glucose.length).toBe(expectedGlucose.length);
       for (let i = 0; i < glucose.length; i++) {
-        const { average30, ...rest } = glucose[i];
+        // The direction verdict is resolved by the route on top of the card
+        // (v1.43); the fold under comparison does not produce it.
+        const {
+          average30,
+          direction: _direction,
+          trendSentiment: _trendSentiment,
+          ...rest
+        } = glucose[i];
         const { average30: expAvg, ...expRest } = expectedGlucose[i];
         expect(rest).toEqual(expRest);
         if (expAvg === null) expect(average30).toBeNull();
@@ -275,8 +282,14 @@ describe("targets fold equals the raw-reading fold", () => {
         now,
         weightTargetOverride: null,
       }).targets.find((t) => t.type === "PULSE");
-      const pulse = res.targets.find((t) => t.type === "PULSE");
-      expect(pulse?.current).not.toBeNull();
+      const pulseTarget = res.targets.find((t) => t.type === "PULSE");
+      expect(pulseTarget?.current).not.toBeNull();
+      expect(pulseTarget?.direction).toBeDefined();
+      const {
+        direction: _direction,
+        trendSentiment: _trendSentiment,
+        ...pulse
+      } = pulseTarget!;
       expect(pulse).toEqual(expectedPulse);
     });
   }

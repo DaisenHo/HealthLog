@@ -213,7 +213,11 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
       data: { glucoseUnit: string | null; features: Record<string, unknown> };
     };
     expect(body.data.glucoseUnit).toBe("mmol/L");
-    expect(body.data.features).toEqual({ trackIntake: true });
+    // The flag set grows with each release; every flag is a plain boolean.
+    expect(body.data.features).toMatchObject({ trackIntake: true });
+    expect(
+      Object.values(body.data.features).every((v) => typeof v === "boolean"),
+    ).toBe(true);
 
     await prisma.user.update({
       where: { id: user.id },
