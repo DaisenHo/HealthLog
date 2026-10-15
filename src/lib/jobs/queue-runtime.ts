@@ -41,6 +41,7 @@ import { APPLE_HEALTH_IMPORT_SEND_OPTIONS } from "@/lib/jobs/apple-health-import
 import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-intake-import";
 import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
 import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
+import { PULSE_DAY_MEAN_SEND_OPTIONS } from "@/lib/jobs/pulse-day-mean";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
@@ -409,6 +410,23 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
       },
     },
     why: "Rebuilds every index of the largest table, one at a time.",
+  },
+  "pulse-day-mean": {
+    runtime: "long",
+    expireInSeconds: PULSE_DAY_MEAN_SEND_OPTIONS.expireInSeconds,
+    expiryVia: ["PULSE_DAY_MEAN_SEND_OPTIONS"],
+    stop: {
+      oneShot:
+        "A dry run or rebuild that stops part way is started again by the operator; the send sets retryLimit 0.",
+    },
+    exclusive: {
+      marker: "retryLimit: 0",
+      at: {
+        file: "lib/jobs/pulse-day-mean.ts",
+        fn: "PULSE_DAY_MEAN_SEND_OPTIONS",
+      },
+    },
+    why: "Walks every account's pulse history a window at a time, twice over for a dry run.",
   },
   "medication-intake-import": {
     runtime: "long",

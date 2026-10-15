@@ -256,6 +256,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "managed_profile.handover.unknown_guardian",
       "managed_profile.not_found",
     ],
+    maintenance: [
+      "maintenance.pulseDayMean.busy",
+      "maintenance.pulseDayMean.dryRunRequired",
+    ],
     measurement: [
       "measurement.batch.invalid",
       "measurement.batch.source_not_permitted",

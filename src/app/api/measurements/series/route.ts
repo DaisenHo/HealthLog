@@ -35,7 +35,9 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import {
   dayWeightedRows,
+  hourWeightSql,
   readingsMean,
+  weightedHourMeanSql,
   windowMeanSql,
   zoneDayFrame,
 } from "@/lib/measurements/day-mean";
@@ -485,8 +487,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const type = KIND_TO_TYPE[kind];
     const seriesRows = seriesRowsFrom(priorityJson, type, days);
     // A day of a type with an activity-dependent sampling rate (pulse) is the
-    // mean of its local hours' means, each hour once, so a workout hour with
-    // hundreds of times the readings does not outweigh the rest of the day (see
+    // weighted mean of its local hours' means, so a workout hour with hundreds
+    // of times the readings does not outweigh the rest of the day (see
     // `day-statistic.ts`). The hour grain is already one mean per hour.
     const hourWeighted = grain === "day" && usesHourlyMeanDay(type);
     const bucketRows = await prisma.$queryRawUnsafe<
@@ -515,6 +517,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         SELECT
           date_trunc($2, local_hour)                              AS local_day,
           AVG("value")                                            AS hour_mean,
+          COUNT(*)                                                AS n,
           MIN(COALESCE("value_min", "value"))                     AS min_value,
           MAX(COALESCE("value_max", "value"))                     AS max_value
         FROM localized
@@ -522,7 +525,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       )
       SELECT
         local_day AT TIME ZONE $3                                AS bucket_start,
-        AVG(hour_mean)::double precision                         AS mean,
+        ${weightedHourMeanSql("hour_mean", hourWeightSql("n"))}::double precision AS mean,
         MIN(min_value)::double precision                         AS min_value,
         MAX(max_value)::double precision                         AS max_value
       FROM hourly

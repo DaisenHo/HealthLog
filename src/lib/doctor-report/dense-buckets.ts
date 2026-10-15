@@ -13,7 +13,10 @@
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { isHourlyMeanTypeSql } from "@/lib/measurements/day-mean";
+import {
+  hourWeightSql,
+  isHourlyMeanTypeSql,
+} from "@/lib/measurements/day-mean";
 import type {
   GlucoseContext,
   MeasurementSource,
@@ -47,11 +50,12 @@ export interface DenseMeasurementBucket {
   clinicalHighRiskSum: number | null;
   /**
    * For an hourly-mean type (pulse, see `day-mean.ts`): the sum of the
-   * bucket's local hours' means and the number of those hours, so the day
-   * value is their ratio. `null` for every other type.
+   * bucket's local hours' means, each times its hour weight, and the sum of
+   * those weights, so the day value is their ratio. `null` for every other
+   * type.
    */
-  hourMeanSum: number | null;
-  hourCount: number | null;
+  hourWeightedSum: number | null;
+  hourWeight: number | null;
 }
 
 /**
@@ -75,6 +79,8 @@ export async function loadDenseMeasurementBuckets(params: {
   );
   // Closed code constant (the hourly-mean type list), spliced as literals.
   const hourlyMeanType = Prisma.raw(isHourlyMeanTypeSql('"type"'));
+  // Each hour's weight under the active pulse day-mean method (code-built).
+  const hourWeight = Prisma.raw(hourWeightSql("n"));
   return prisma.$queryRaw<DenseMeasurementBucket[]>`
         WITH localized AS (
           SELECT
@@ -135,8 +141,9 @@ export async function loadDenseMeasurementBuckets(params: {
             "measured_at" DESC,
             "id" DESC
         ),
-        -- The hourly-mean day (pulse): each local hour's mean, then their sum
-        -- and count per bucket. Empty for every other type.
+        -- The hourly-mean day (pulse): each local hour's mean and reading
+        -- count, then the weighted sum of the means and the sum of the hour
+        -- weights per bucket. Empty for every other type.
         hour_means AS (
           SELECT
             local_day,
@@ -144,7 +151,8 @@ export async function loadDenseMeasurementBuckets(params: {
             "source",
             "device_type",
             "glucose_context",
-            AVG("value") AS hour_mean
+            AVG("value") AS hour_mean,
+            COUNT(*) AS n
           FROM localized
           WHERE ${hourlyMeanType}
           GROUP BY
@@ -162,8 +170,8 @@ export async function loadDenseMeasurementBuckets(params: {
             "source",
             "device_type",
             "glucose_context",
-            SUM(hour_mean)::double precision AS hour_mean_sum,
-            COUNT(*)::int AS hour_count
+            SUM(hour_mean * ${hourWeight})::double precision AS hour_weighted_sum,
+            SUM(${hourWeight})::double precision AS hour_weight
           FROM hour_means
           GROUP BY
             local_day,
@@ -248,8 +256,8 @@ export async function loadDenseMeasurementBuckets(params: {
           grouped.clinical_tar2_count AS "clinicalTar2Count",
           grouped.clinical_low_risk_sum AS "clinicalLowRiskSum",
           grouped.clinical_high_risk_sum AS "clinicalHighRiskSum",
-          hour_agg.hour_mean_sum AS "hourMeanSum",
-          hour_agg.hour_count AS "hourCount"
+          hour_agg.hour_weighted_sum AS "hourWeightedSum",
+          hour_agg.hour_weight AS "hourWeight"
         FROM grouped
         INNER JOIN latest_rows
           ON latest_rows.local_day = grouped.local_day

@@ -62,8 +62,8 @@ export function summariseDenseBuckets(
       max: number;
       latestAt: Date;
       latest: number;
-      hourMeanSum: number;
-      hourCount: number;
+      hourWeightedSum: number;
+      hourWeight: number;
     }
   >();
   for (const row of canonical) {
@@ -79,15 +79,15 @@ export function summariseDenseBuckets(
         max: row.maxValue,
         latestAt: row.latestAt,
         latest: row.latestValue,
-        hourMeanSum: row.hourMeanSum ?? 0,
-        hourCount: row.hourCount ?? 0,
+        hourWeightedSum: row.hourWeightedSum ?? 0,
+        hourWeight: row.hourWeight ?? 0,
       });
       continue;
     }
     current.count += row.count;
     current.sum += row.sumValue;
-    current.hourMeanSum += row.hourMeanSum ?? 0;
-    current.hourCount += row.hourCount ?? 0;
+    current.hourWeightedSum += row.hourWeightedSum ?? 0;
+    current.hourWeight += row.hourWeight ?? 0;
     current.min = Math.min(current.min, row.minValue);
     current.max = Math.max(current.max, row.maxValue);
     if (row.latestAt > current.latestAt) {
@@ -116,16 +116,16 @@ export function summariseDenseBuckets(
     }
   };
 
-  // For an hourly-mean type (pulse, see `day-mean.ts`) a day is the mean of
-  // its local hours' means and the period average the mean of its days, so a
-  // workout hour's dense samples do not outweigh the rest of the day, nor a
-  // workout day the rest of the period. Count, min and max stay over every
+  // For an hourly-mean type (pulse, see `day-mean.ts`) a day is the weighted
+  // mean of its local hours' means and the period average the mean of its
+  // days, so a workout hour's dense samples do not outweigh the rest of the
+  // day, nor a workout day the rest of the period. Count, min and max stay over every
   // reading. Every other type keeps the mean of its readings.
   const dayMeans = new Map<string, { sum: number; days: number }>();
   for (const row of byTypeDay.values()) {
     const value =
-      usesHourlyMeanDay(row.type) && row.hourCount > 0
-        ? row.hourMeanSum / row.hourCount
+      usesHourlyMeanDay(row.type) && row.hourWeight > 0
+        ? row.hourWeightedSum / row.hourWeight
         : row.sum / row.count;
     (byType[row.type] ??= []).push({
       value,

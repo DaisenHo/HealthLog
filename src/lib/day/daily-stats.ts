@@ -23,6 +23,7 @@ import {
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
+import { combineHourCells } from "@/lib/measurements/day-mean";
 import { HOURLY_MEAN_DAY_TYPES } from "@/lib/measurements/day-statistic";
 import { dateOnlyAtNoonUtc, dateOnlyKey } from "@/lib/tz/date-only";
 import { collapseRollupRowsBySource } from "@/lib/rollups/measurement-read";
@@ -169,8 +170,9 @@ export function foldDailyCells(
         if (cumulative) {
           value = hours.reduce((s, h) => s + h.total, 0);
         } else if (hourly) {
-          value =
-            hours.reduce((s, h) => s + h.total / h.count, 0) / hours.length;
+          value = combineHourCells(
+            hours.map((h) => ({ sum: h.total, n: h.count })),
+          ) as number;
         } else {
           value = hours.reduce((s, h) => s + h.total, 0) / count;
         }

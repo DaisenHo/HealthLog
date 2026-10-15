@@ -67,7 +67,7 @@ import type {
 } from "@/generated/prisma/client";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dateOnlyKey } from "@/lib/tz/date-only";
-import { hourMeanRows } from "@/lib/measurements/day-mean";
+import { dayValueRows } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { decryptSymptomText } from "@/lib/symptoms/server";
 import {
@@ -750,11 +750,11 @@ export function buildMeasurementDailySeries(
   if (CUMULATIVE_HK_TYPES.has(type)) {
     return buildCumulativeDailySeries(type, rows, tz, priorityJson);
   }
-  // A day of pulse is the mean of its local hours' means (`day-mean.ts`):
-  // collapse each local hour to its mean first, so the daily mean below
-  // weighs every hour once. Every other type passes through unchanged.
+  // A day of pulse is the weighted mean of its local hours' means
+  // (`day-mean.ts`): collapse each local day to that value first, so the daily
+  // mean below passes it through. Every other type passes through unchanged.
   return toDailyMeans(
-    hourMeanRows(
+    dayValueRows(
       type,
       rows.map((r) => ({ value: r.value, measuredAt: r.at })),
       tz,

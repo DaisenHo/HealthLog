@@ -43,6 +43,10 @@ import {
   utcBucketEnd,
   utcBucketStart,
 } from "@/lib/rollups/measurement-read";
+import {
+  storedHourWeightSql,
+  weightedHourMeanSql,
+} from "@/lib/measurements/day-mean";
 import { HOURLY_MEAN_DAY_TYPES } from "@/lib/measurements/day-statistic";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import type {
@@ -588,16 +592,17 @@ async function runRollupAggregate(
 
 /**
  * For a type whose DAY value is the mean of its per-hour means (see
- * `day-statistic.ts`), replace the bucket's `mean`: a DAY bucket's is the mean
- * of its hours' means, a WEEK / MONTH / YEAR bucket's the mean of its days'
- * values, each day once. The coarse rows are not read for their mean (every
+ * `day-statistic.ts`), replace the bucket's `mean`: a DAY bucket's is the
+ * weighted mean of its hours' means under the stored pulse day-mean method,
+ * a WEEK / MONTH / YEAR bucket's the mean of its days' values, each day once. The coarse rows are not read for their mean (every
  * coarse read folds the DAY tier, `readCanonicalRollupBuckets`), but a stored
  * row should not contradict the tier it is folded from. Only `mean` changes:
  * `count`, `min`, `max` and the sums the regression composes from stay over
  * every reading, so the band and the windowed slope are untouched.
  *
  * Hours and days are UTC, matching the UTC day this tier buckets by; migration
- * 0372 applies the same statistic to rows stored before it.
+ * 0372 applies the same statistic to rows stored before it, and the admin
+ * apply step of the day-mean method rebuilds the PULSE rows it changes.
  */
 async function applyHourlyMeanDay(
   db: Pick<typeof prisma, "$queryRawUnsafe">,
@@ -627,6 +632,12 @@ async function applyHourlyMeanDay(
     }
   }
   const typeList = types.map((t) => `'${t}'::"measurement_type"`).join(",");
+  // The stored method, read inside the statement: a rollup outlives this
+  // process's mirror of the setting, so it follows the setting itself.
+  const dayOfHours = weightedHourMeanSql(
+    "h.hour_mean",
+    storedHourWeightSql("h.n"),
+  );
   const means = await db.$queryRawUnsafe<
     Array<{ type: string; source: string; bucket_start: Date; mean: number }>
   >(
@@ -638,11 +649,12 @@ async function applyHourlyMeanDay(
     FROM (
       SELECT h."type", h."source",
              date_trunc('day', h.hr) AS day,
-             AVG(h.hour_mean) AS day_mean
+             ${dayOfHours} AS day_mean
       FROM (
         SELECT m."type", m."source",
                date_trunc('hour', m."measured_at") AS hr,
-               AVG(m."value") AS hour_mean
+               AVG(m."value") AS hour_mean,
+               COUNT(*) AS n
         FROM measurements m
         WHERE m."user_id" = $1
           AND m."type" IN (${typeList})
