@@ -92,10 +92,11 @@ const batchEntrySchema = z
       .min(1)
       .max(120)
       .describe(
-        "Dedup key for the `(userId, type, source, externalId)` composite index. Three shapes:\n" +
+        "Dedup key for the `(userId, type, source, externalId)` composite index. Four shapes:\n" +
           "• `HKSample.uuid` — a per-sample reading. First-write-wins: a re-post returns `duplicate` and the stored row is immutable.\n" +
           "• `stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>` — a per-day cumulative total (Steps, Active Energy, Sleep Duration, Walking/Running Distance, Flights Climbed). A re-post OVERWRITES the row and returns `updated`.\n" +
           "• `stats:HKQuantityTypeIdentifierHeartRate:<bucket-start>` — v1.19.0 (iOS #34), refined to 10-minute granularity in v1.30.7, heart-rate bucket carrying the bucket's AVERAGE bpm as one PULSE row. `<bucket-start>` is the ISO-8601 UTC 10-minute boundary — zeroed seconds/millis, minutes ∈ {00,10,20,30,40,50}, trailing `Z` (e.g. `2026-06-21T14:10:00.000Z`). A re-post OVERWRITES the row and returns `updated`, so iOS uploads ~144 rows/day instead of one per raw HR sample. A row that targets this prefix with a malformed bucket-start suffix is `skipped` with reason `malformed_hr_bucket_id`.\n" +
+          "• `stats:<HKQuantityTypeIdentifier>:<YYYY-MM-DD>T<HH>` — v1.43 (ios #77), only when `GET /api/auth/me` reports `features.cumulativeHourBuckets: true`: one local hour's SUM of steps, active energy, walking and running distance or flights climbed, the date and the zero-padded hour being the local hour in the account's zone (`timezone` on `/api/auth/me`). `value` is the hour's sum in the unit of the day form, `startDate` the first instant of that local hour, `endDate` one hour later. Such a row is never a measurement and never changes the day total, which stays the day form: it feeds the intraday profile behind the same-time baseline (a day with at least four posted hours is built from them). A re-post overwrites (`updated`). Skipped with `hour_bucket_misaligned` when `startDate` is not the start of that local hour, `hour_bucket_unsupported_type` for any other identifier or a `MANUAL` / bridge entry, `hour_bucket_too_old` when the day is more than 400 days back.\n" +
           "The id MUST be stable across app restarts. An object description or memory address (`<Class: 0x…>`, `0x12ab34cd`) is a new value on every launch, so it can never match its own earlier row; such an entry is `skipped` with reason `unstable_external_id` while the rest of the batch still lands.",
       ),
     externalSourceVersion: z.string().min(1).max(120).optional(),
@@ -132,10 +133,10 @@ const batchPayloadSchema = z
     // used in attribution — sending it or omitting it produces byte-identical
     // row outcomes. Omit on any client that does not track its wake reason.
     syncTrigger: z
-      .enum(["foreground", "background", "push", "manual"])
+      .enum(["foreground", "background", "push", "manual", "backfill"])
       .optional()
       .describe(
-        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background` trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
+        'Diagnostic-only. Names what triggered this sync (foreground app open, background refresh, a push wake, or a user-initiated `manual` "Sync all" run, since v1.42). `backfill` (v1.43, ios #77; send it only when `GET /api/auth/me` reports `features.syncTriggerBackfill: true`, an older server refuses the whole batch with 422) names a history catch-up: it moves only `syncProgress` and the per-type `lastBackfillAt` in `GET /api/integrations/healthkit`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt`, `lastSyncTrigger`, `lastBackgroundSyncAt` or the sync checkpoint. Recorded on the ingest wide event and kept on the account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background` trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66 clients omit it.',
       ),
   })
   .meta({
@@ -156,7 +157,7 @@ const batchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate.",
+        "Why a row was `skipped` or a `duplicate`. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent for the row as sent.",
       ),
     convertedValue: z
       .number()

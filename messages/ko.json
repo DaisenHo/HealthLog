@@ -7159,7 +7159,8 @@
         "lastReceived": "마지막 수신 {relative}",
         "lastNewValue": "마지막 새 값 {relative}",
         "lastBackground": "마지막 백그라운드 수신 {relative}",
-        "never": "아직 수신되지 않음"
+        "never": "아직 수신되지 않음",
+        "lastBackfill": "기록 보충 {relative}"
       }
     },
     "garminInfo": {

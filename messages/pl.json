@@ -7159,7 +7159,8 @@
         "lastReceived": "Ostatnio odebrano {relative}",
         "lastNewValue": "Ostatnia nowa wartość {relative}",
         "lastBackground": "Ostatnio w tle {relative}",
-        "never": "Jeszcze nie odebrano"
+        "never": "Jeszcze nie odebrano",
+        "lastBackfill": "Historia uzupełniona {relative}"
       }
     },
     "garminInfo": {

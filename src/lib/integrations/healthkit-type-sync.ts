@@ -25,7 +25,10 @@ import {
   type MetricFreshnessEntry,
 } from "./sync-verdict";
 
-/** The `syncTrigger` values the Apple Health ingest routes accept. */
+/**
+ * The `syncTrigger` values that describe a live sync: the ones a batch can
+ * leave behind as a type's `lastTrigger`.
+ */
 export const HEALTHKIT_SYNC_TRIGGERS = [
   "foreground",
   "background",
@@ -35,7 +38,38 @@ export const HEALTHKIT_SYNC_TRIGGERS = [
 
 export type HealthKitSyncTrigger = (typeof HEALTHKIT_SYNC_TRIGGERS)[number];
 
+/**
+ * v1.43 (ios #77) — a history catch-up (the 30-day baseline backfill, a
+ * "sync everything" walk). Accepted on the two ingest routes when the server
+ * says so (`features.syncTriggerBackfill`). It is not a live sync, so it is
+ * never stored as `lastTrigger` and moves none of the live stamps; it moves
+ * only `lastBackfillAt`.
+ */
+export const BACKFILL_SYNC_TRIGGER = "backfill" as const;
+
+/** Every `syncTrigger` value the Apple Health ingest routes accept. */
+export const HEALTHKIT_REQUEST_SYNC_TRIGGERS = [
+  ...HEALTHKIT_SYNC_TRIGGERS,
+  BACKFILL_SYNC_TRIGGER,
+] as const;
+
+export type HealthKitRequestSyncTrigger =
+  (typeof HEALTHKIT_REQUEST_SYNC_TRIGGERS)[number];
+
 const TRIGGERS: ReadonlySet<string> = new Set<string>(HEALTHKIT_SYNC_TRIGGERS);
+
+/**
+ * A backfill arrival is kept as its own ledger row, keyed `backfill:<type>`,
+ * beside the live row of the same type. Its `last_received_at` is the
+ * backfill's time; it carries no trigger and no sample stamps. Keeping it in
+ * a row of its own is what lets a catch-up leave every live column of the type
+ * exactly as it was, and every live reader skips the prefix.
+ */
+export const BACKFILL_LEDGER_PREFIX = "backfill:";
+
+export function isBackfillLedgerKey(type: string): boolean {
+  return type.startsWith(BACKFILL_LEDGER_PREFIX);
+}
 
 /**
  * The ledger key for Apple Health medication doses, which are not a
@@ -72,7 +106,7 @@ export async function recordHealthKitTypeArrivals(
   input: {
     userId: string;
     counts: ReadonlyMap<HealthKitArrivalType, HealthKitTypeArrival>;
-    trigger: HealthKitSyncTrigger | null;
+    trigger: HealthKitRequestSyncTrigger | null;
     at?: Date;
   },
 ): Promise<void> {
@@ -88,6 +122,27 @@ export async function recordHealthKitTypeArrivals(
   // serialised in the process's local zone and these are zone-less UTC
   // columns (same reasoning as the access-token sunset in refresh-token.ts).
   const at = (input.at ?? new Date()).toISOString();
+  if (input.trigger === BACKFILL_SYNC_TRIGGER) {
+    // v1.43 — a catch-up moves only its own row; the live row of each type
+    // keeps its arrival, trigger and sample stamps untouched.
+    const keys = types.map((type) => `${BACKFILL_LEDGER_PREFIX}${type}`);
+    try {
+      await tx.$executeRaw`
+        INSERT INTO "healthkit_type_syncs"
+          ("user_id", "type", "last_received_at")
+        SELECT ${input.userId}, u.t, ${at}::timestamptz AT TIME ZONE 'UTC'
+        FROM unnest(${keys}::text[]) AS u(t)
+        ON CONFLICT ("user_id", "type") DO UPDATE SET
+          "last_received_at" = EXCLUDED."last_received_at"
+      `;
+    } catch (error) {
+      logCaught("healthkit.type_sync.record_failed", error, {
+        types: types.length,
+        backfill: true,
+      });
+    }
+    return;
+  }
   const background = input.trigger === "background";
   try {
     await tx.$executeRaw`
@@ -120,10 +175,13 @@ export async function recordHealthKitTypeArrivals(
 
 /** One type's arrival facts, as the Apple Health status read serves them. */
 export interface HealthKitTypeArrivalRecord {
-  lastReceivedAt: string;
+  /** Null for a type that so far arrived only through a backfill. */
+  lastReceivedAt: string | null;
   lastTrigger: HealthKitSyncTrigger | null;
   lastNewSampleAt: string | null;
   lastBackgroundAt: string | null;
+  /** v1.43 — when a `backfill` batch last carried the type; null when none has. */
+  lastBackfillAt: string | null;
 }
 
 /**
@@ -145,16 +203,30 @@ export async function getHealthKitTypeArrivals(
     },
   });
   const out = new Map<string, HealthKitTypeArrivalRecord>();
+  const empty = (): HealthKitTypeArrivalRecord => ({
+    lastReceivedAt: null,
+    lastTrigger: null,
+    lastNewSampleAt: null,
+    lastBackgroundAt: null,
+    lastBackfillAt: null,
+  });
   for (const row of rows) {
-    out.set(row.type, {
-      lastReceivedAt: row.lastReceivedAt.toISOString(),
-      lastTrigger:
-        row.lastTrigger && TRIGGERS.has(row.lastTrigger)
-          ? (row.lastTrigger as HealthKitSyncTrigger)
-          : null,
-      lastNewSampleAt: row.lastNewSampleAt?.toISOString() ?? null,
-      lastBackgroundAt: row.lastBackgroundAt?.toISOString() ?? null,
-    });
+    if (isBackfillLedgerKey(row.type)) {
+      const type = row.type.slice(BACKFILL_LEDGER_PREFIX.length);
+      const record = out.get(type) ?? empty();
+      record.lastBackfillAt = row.lastReceivedAt.toISOString();
+      out.set(type, record);
+      continue;
+    }
+    const record = out.get(row.type) ?? empty();
+    record.lastReceivedAt = row.lastReceivedAt.toISOString();
+    record.lastTrigger =
+      row.lastTrigger && TRIGGERS.has(row.lastTrigger)
+        ? (row.lastTrigger as HealthKitSyncTrigger)
+        : null;
+    record.lastNewSampleAt = row.lastNewSampleAt?.toISOString() ?? null;
+    record.lastBackgroundAt = row.lastBackgroundAt?.toISOString() ?? null;
+    out.set(row.type, record);
   }
   return out;
 }
@@ -195,6 +267,8 @@ export interface HealthKitFreshnessEntry extends MetricFreshnessEntry {
   lastNewSampleAt?: string | null;
   /** When a `background` sync last carried it; a later foreground one keeps it. */
   lastBackgroundAt?: string | null;
+  /** v1.43 — when a `backfill` batch last carried it. */
+  lastBackfillAt?: string | null;
 }
 
 /**
@@ -220,6 +294,7 @@ export function withHealthKitArrivals(
       lastTrigger: arrival?.lastTrigger ?? null,
       lastNewSampleAt: arrival?.lastNewSampleAt ?? null,
       lastBackgroundAt: arrival?.lastBackgroundAt ?? null,
+      lastBackfillAt: arrival?.lastBackfillAt ?? null,
     };
   });
 }

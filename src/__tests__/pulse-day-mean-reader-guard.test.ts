@@ -125,6 +125,10 @@ const TS_READERS: Record<string, Entry> = {
   "lib/analytics/correlations-fast-path.ts": {
     exempt: "mood mean; pulse enters as the resting series, never a day mean",
   },
+  "app/api/dashboard/summary/route.ts": {
+    exempt:
+      "places a card's seven-day sparkline mean against its band for the trend verdict; each sparkline point is already one rollup day value, so the mean weighs every day once",
+  },
   "lib/dashboard/snapshot.ts": {
     exempt: "summarises water-intake days and glucose contexts",
   },
