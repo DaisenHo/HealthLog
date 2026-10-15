@@ -493,24 +493,25 @@ async function seed() {
     );
 
     // ── Dashboard showcase layout ─────────────
-    // The demo seeds rich sleep / steps / glucose / VO2max / vorsorge data,
-    // so persist an explicit dashboard layout that surfaces those tiles plus
-    // the daily-verdict hero. The v1.20.0 defaults already turn the data
-    // tiles on, but writing the layout verbatim keeps the public demo's home
-    // page stable regardless of future default tweaks. Derived from
-    // DEFAULT_DASHBOARD_LAYOUT with the seeded-rich strip tiles forced on.
+    // One row of six tiles (weight, the two blood-pressure values, resting
+    // heart rate, HRV and mood) and the weight chart right below it, so the
+    // first screen of the public demo shows the summary, the tiles and the
+    // start of a chart together. Every other tile stays one switch away in
+    // the layout settings; its data is seeded either way. Writing the layout
+    // verbatim keeps the demo's home page stable across default tweaks.
     const SHOWCASE_TILE_IDS = new Set([
-      "sleep",
-      "steps",
-      "glucose",
-      "vo2Max",
-      "recentWorkouts",
+      "weight",
+      "bp",
+      "pulse",
+      "hrv",
+      "mood",
     ]);
     const demoDashboardLayout = serializeDashboardLayout({
       ...DEFAULT_DASHBOARD_LAYOUT,
-      widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) =>
-        SHOWCASE_TILE_IDS.has(w.id) ? { ...w, tileVisible: true } : w,
-      ),
+      widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => ({
+        ...w,
+        tileVisible: SHOWCASE_TILE_IDS.has(w.id),
+      })),
     });
     await client.query(
       `UPDATE users SET dashboard_widgets_json = $1 WHERE id = $2`,
