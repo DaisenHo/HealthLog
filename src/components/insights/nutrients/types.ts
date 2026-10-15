@@ -17,8 +17,27 @@ export interface NutrientDailySeries {
   nutrient: string;
   unit: string;
   windowDays: number;
-  days: Array<{ day: string; amount: number }>;
+  days: Array<{
+    day: string;
+    amount: number;
+    bySource?: NutrientAmountBySource;
+    aboveUpperLimit?: boolean | null;
+  }>;
   reference: ResolvedNutrientReferenceDto | null;
+  upperLimit?: NutrientUpperLimitDto | null;
+}
+
+/** v1.43 — an amount split by source; a source with nothing is absent. */
+export type NutrientAmountBySource = Partial<
+  Record<"APPLE_HEALTH" | "MANUAL" | "SUPPLEMENT", number>
+>;
+
+/** v1.43 — the tolerable upper intake level the server judged against. */
+export interface NutrientUpperLimitDto {
+  value: number;
+  unit: string;
+  scope: "total" | "supplemental";
+  source: string;
 }
 
 export interface NutrientOverviewRow {
@@ -27,6 +46,10 @@ export interface NutrientOverviewRow {
   latestDay: string;
   latestAmount: number;
   daysWithData: number;
+  /** v1.43 — absent on an older server. */
+  latestBySource?: NutrientAmountBySource;
+  upperLimit?: NutrientUpperLimitDto | null;
+  latestAboveUpperLimit?: boolean | null;
 }
 
 /**

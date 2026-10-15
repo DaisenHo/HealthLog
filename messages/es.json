@@ -157,6 +157,20 @@
       "event": {
         "notFound": "Esta entrada ya no existe."
       }
+    },
+    "medications": {
+      "notFound": "Este medicamento ya no está disponible.",
+      "ingredients": {
+        "invalid": "Revisa la composición e inténtalo de nuevo.",
+        "unitMismatch": "Esta unidad no está disponible para el nutriente.",
+        "extract": {
+          "fileType": "Sube un JPEG, PNG, WebP o PDF.",
+          "fileTooLarge": "El archivo supera los 10 MB.",
+          "rateLimited": "Demasiadas lecturas de etiquetas. Vuelve a intentarlo dentro de una hora.",
+          "budgetExceeded": "Has alcanzado tu presupuesto de IA de hoy.",
+          "failed": "No se pudo leer la etiqueta. Prueba con una foto más nítida."
+        }
+      }
     }
   },
   "doctorReport": {
@@ -2402,6 +2416,34 @@
         "invalidRange": "El último día no puede ser anterior al primero.",
         "generic": "No se ha guardado. Inténtalo de nuevo."
       }
+    },
+    "composition": {
+      "title": "Composición",
+      "empty": "Añade lo que contiene un comprimido o una cápsula para que cada dosis tomada cuente en tus micronutrientes.",
+      "perUnitNote": "Por comprimido o cápsula; cada dosis tomada se suma a los micronutrientes del día.",
+      "add": "Añadir",
+      "edit": "Editar",
+      "rowHelper": "Lo que contiene un comprimido o una cápsula, para los micronutrientes.",
+      "sheetTitle": "Lo que contiene una unidad",
+      "sheetDescription": "Introduce las cantidades por comprimido o cápsula tal como figuran en la etiqueta.",
+      "nutrientLabel": "Nutriente",
+      "amountLabel": "Cantidad",
+      "unitLabel": "Unidad",
+      "choose": "Elige un nutriente",
+      "addRow": "Añadir un nutriente",
+      "removeRow": "Quitar {name}",
+      "editorEmpty": "Aún no hay nutrientes. Añade uno por cada línea de la etiqueta.",
+      "labelPhoto": "Leer de una foto de la etiqueta",
+      "labelReading": "Leyendo la etiqueta…",
+      "labelWaiting": "El proceso en segundo plano aún no ha empezado con la etiqueta.",
+      "labelReviewNote": "Comprueba cada línea con la etiqueta antes de guardar.",
+      "lowConfidence": "Esta línea era difícil de leer; compruébala con la etiqueta.",
+      "unmatchedTitle": "Líneas sin nutriente correspondiente, para introducir a mano si hace falta:",
+      "servingNote": "La etiqueta indica: {note}. Las cantidades se muestran por unidad.",
+      "labelError": "No se pudo leer la etiqueta",
+      "saveError": "No se pudo guardar la composición",
+      "catalogError": "No se pudo cargar la lista de nutrientes",
+      "invalidRow": "Elige un nutriente e introduce una cantidad mayor que cero en cada línea."
     }
   },
   "charts": {
@@ -11398,9 +11440,20 @@
       "rowMetaNoRef": "{days} de {window} días",
       "footer": "{tracked} de {total} micronutrientes registrados tienen datos en este periodo.",
       "emptyTitle": "Aún no hay datos de micronutrientes sincronizados",
-      "loadError": "No se pudieron cargar tus datos de nutrientes"
+      "loadError": "No se pudieron cargar tus datos de nutrientes",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Por encima del nivel máximo tolerable de {value} {unit} al día ({source}).",
+      "aboveUpperLimitSupplemental": "La parte de los suplementos supera el nivel máximo tolerable de {value} {unit} al día para suplementos ({source})."
     },
-    "sparseNote": "Un valor bajo aquí suele significar un registro escaso, no una deficiencia: los totales diarios de Apple Health reflejan lo que registraron tus apps, no la ingesta dietética total."
+    "sparseNote": "Un valor bajo aquí suele significar un registro escaso, no una deficiencia: los totales diarios de Apple Health reflejan lo que registraron tus apps, no la ingesta dietética total.",
+    "units": {
+      "IU": "UI"
+    },
+    "sources": {
+      "APPLE_HEALTH": "Sincronizado",
+      "MANUAL": "Introducido",
+      "SUPPLEMENT": "Suplementos"
+    }
   },
   "daily": {
     "line": {
