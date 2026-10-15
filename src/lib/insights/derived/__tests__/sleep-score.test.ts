@@ -186,6 +186,21 @@ describe("reconstructNights", () => {
     expect(nights[0].midpoint).toBe(180);
   });
 
+  it("places the midpoint on the main session, not on a nap the same wake day", () => {
+    // Overnight 23:00 to 07:00 (480 asleep minutes, midpoint 03:00) and an
+    // afternoon nap 14:00 to 15:00 that wakes on the same day. The night's
+    // totals carry the nap; its place on the clock must not.
+    const rows = night("2026-06-02", [
+      ["CORE", 60, "00:00"],
+      ["CORE", 420, "07:00"],
+      ["CORE", 60, "15:00"],
+    ]);
+    const nights = reconstructNights(rows);
+    expect(nights).toHaveLength(1);
+    expect(nights[0].asleepMinutes).toBe(540);
+    expect(nights[0].midpoint).toBe(3 * 60);
+  });
+
   it("expresses the midpoint in the user's timezone when one is passed", () => {
     // Same 03:00Z midpoint, read in Asia/Kolkata (UTC+5:30, no DST) →
     // 08:30 local = 510 min-of-day, not 180.
@@ -282,6 +297,39 @@ describe("reconstructNights", () => {
 });
 
 describe("computeSleepScore", () => {
+  it("keeps consistency and timing on a steady sleeper who naps some afternoons", async () => {
+    // Seven nights 23:00 to 07:00, every other wake day with a 14:00 to 15:00
+    // nap. The overnight rhythm never moves, so consistency and timing are
+    // perfect; reading the midpoint off the night's latest instant put the nap
+    // days about seven hours late and scored both at 0.
+    const rows: ReturnType<typeof night> = [];
+    for (let i = 0; i < 7; i += 1) {
+      const wake = new Date(Date.UTC(2026, 4, 27 + i));
+      const day = wake.toISOString().slice(0, 10);
+      rows.push(
+        ...night(day, [
+          ["IN_BED", 480, "07:00"],
+          ["CORE", 240, "03:00"],
+          ["DEEP", 120, "05:00"],
+          ["REM", 120, "07:00"],
+        ]),
+      );
+      if (i % 2 === 0) rows.push(...night(day, [["CORE", 60, "15:00"]]));
+    }
+    findMany.mockResolvedValue(rows);
+    const result = await computeSleepScore("u1", PROFILE, {
+      now: new Date("2026-06-02T16:00:00Z"),
+    });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      const byKey = Object.fromEntries(
+        result.value.subScores.map((sub) => [sub.key, sub.value]),
+      );
+      expect(byKey.consistency).toBe(100);
+      expect(byKey.timing).toBe(100);
+    }
+  });
+
   it("returns insufficient when no sleep rows exist", async () => {
     findMany.mockResolvedValue([]);
     const result = await computeSleepScore("u1", PROFILE, { now: NOW });
