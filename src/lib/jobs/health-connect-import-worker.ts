@@ -228,7 +228,11 @@ export async function runHealthConnectImport(
       .map(([type]) => type as MeasurementType);
     if (touched.length > 0) {
       trackBackgroundTask(
-        invalidateStatusInsightsForTypes(userId, touched).catch((err) => {
+        invalidateStatusInsightsForTypes(userId, touched, {
+          // An export file the person chose to import, like the Apple Health
+          // import: narrated like a hand entry, not held to the sync gap.
+          source: "manual",
+        }).catch((err) => {
           console.warn(
             `[health-connect-import] status-insight invalidate failed for user ${userId}`,
             err,

@@ -47,20 +47,24 @@ const day = (iso: string) => new Date(iso);
 
 describe("afterMeasurementMutation", () => {
   it("recomputes one bucket per distinct (type, day) and invalidates each type once", async () => {
-    await afterMeasurementMutation("user-1", [
-      {
-        type: "WEIGHT" as MeasurementType,
-        measuredAt: day("2026-05-10T08:00:00Z"),
-      },
-      {
-        type: "WEIGHT" as MeasurementType,
-        measuredAt: day("2026-05-10T21:00:00Z"),
-      },
-      {
-        type: "PULSE" as MeasurementType,
-        measuredAt: day("2026-05-10T09:00:00Z"),
-      },
-    ]);
+    await afterMeasurementMutation(
+      "user-1",
+      [
+        {
+          type: "WEIGHT" as MeasurementType,
+          measuredAt: day("2026-05-10T08:00:00Z"),
+        },
+        {
+          type: "WEIGHT" as MeasurementType,
+          measuredAt: day("2026-05-10T21:00:00Z"),
+        },
+        {
+          type: "PULSE" as MeasurementType,
+          measuredAt: day("2026-05-10T09:00:00Z"),
+        },
+      ],
+      { source: "sync" },
+    );
 
     // Two rows on the same (WEIGHT, day) collapse into one recompute.
     expect(mocks.recompute).toHaveBeenCalledTimes(2);
@@ -76,13 +80,15 @@ describe("afterMeasurementMutation", () => {
     );
 
     expect(mocks.invalidate).toHaveBeenCalledTimes(1);
-    const [userId, types] = mocks.invalidate.mock.calls[0];
+    const [userId, types, options] = mocks.invalidate.mock.calls[0];
     expect(userId).toBe("user-1");
     expect([...types].sort()).toEqual(["PULSE", "WEIGHT"]);
+    // The caller's source reaches the invalidator, which picks the gap by it.
+    expect(options).toEqual({ source: "sync" });
   });
 
   it("is a no-op for an empty row set", async () => {
-    await afterMeasurementMutation("user-1", []);
+    await afterMeasurementMutation("user-1", [], { source: "manual" });
     expect(mocks.recompute).not.toHaveBeenCalled();
     expect(mocks.invalidate).not.toHaveBeenCalled();
   });
@@ -99,7 +105,7 @@ describe("afterMeasurementMutation", () => {
             measuredAt: day("2026-05-10T08:00:00Z"),
           },
         ],
-        "test.surface",
+        { source: "manual", label: "test.surface" },
       );
     } finally {
       warn.mockRestore();
@@ -113,12 +119,16 @@ describe("afterMeasurementMutation", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       await expect(
-        afterMeasurementMutation("user-1", [
-          {
-            type: "WEIGHT" as MeasurementType,
-            measuredAt: day("2026-05-10T08:00:00Z"),
-          },
-        ]),
+        afterMeasurementMutation(
+          "user-1",
+          [
+            {
+              type: "WEIGHT" as MeasurementType,
+              measuredAt: day("2026-05-10T08:00:00Z"),
+            },
+          ],
+          { source: "manual" },
+        ),
       ).resolves.toBeUndefined();
       // Let the fire-and-forget rejection settle inside the helper's catch.
       await new Promise((resolve) => setImmediate(resolve));

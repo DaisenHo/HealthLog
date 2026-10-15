@@ -900,6 +900,7 @@ export async function upsertFitbitMeasurements(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `fitbit: status-insight invalidate failed for ${userId}: ${err}`,

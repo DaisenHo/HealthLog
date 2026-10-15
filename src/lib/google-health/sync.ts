@@ -370,7 +370,9 @@ async function runGoogleHealthSyncCycle(
       const from = new Date(sorted[0]!);
       const to = new Date(sorted[sorted.length - 1]! + 24 * 60 * 60 * 1000);
       await recomputeUserRollups(userId, { types, from, to });
-      invalidateStatusInsightsForTypes(userId, types).catch((err) => {
+      invalidateStatusInsightsForTypes(userId, types, {
+        source: "sync",
+      }).catch((err) => {
         getEvent()?.addWarning(
           `google-health: status-insight invalidate failed for ${userId}: ${err}`,
         );

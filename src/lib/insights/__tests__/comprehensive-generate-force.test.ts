@@ -350,7 +350,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     expect(outcome).toEqual({ status: "generated", providerType: "openai" });
 
     const prompt = JSON.stringify(runRawCompletionWithFallback.mock.calls[0]);
-    expect(prompt).toContain('\\"unit\\": \\"lb\\"');
+    expect(prompt).toContain('\\"unit\\":\\"lb\\"');
     expect(prompt).toContain("179.5");
     expect(prompt).not.toContain("81.4");
 
@@ -494,4 +494,84 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     expect(outcome).toEqual({ status: "generated", providerType: "openai" });
     expect(runRawCompletionWithFallback).toHaveBeenCalledTimes(1);
   });
+});
+
+// #1217 — the frugal usage level asks for the short briefing and holds its
+// counts; the fingerprint carries the form so a level change regenerates.
+describe("generateComprehensiveInsight — usage level", () => {
+  const reply = {
+    summary: "s",
+    recommendations: ["a", "b", "c"].map((id) => ({
+      id,
+      text: `Keep walking ${id}`,
+      severity: "info",
+    })),
+    citations: [],
+    warnings: [],
+    dailyBriefing: { paragraph: "p" },
+  };
+
+  function arrange(aiUsageLevel: string | null) {
+    resolveProviderChain.mockResolvedValue([
+      { providerType: "openai", instance: {} },
+    ]);
+    findUnique.mockResolvedValue({
+      insightsPrivacyMode: "aggregated",
+      insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
+      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsExcludeMetrics: [],
+      insightsSnapshotHash: FEATURES_HASH,
+      aiUsageLevel,
+    });
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: {
+        content: JSON.stringify(reply),
+        tokensUsed: 10,
+        providerType: "openai",
+        model: "m",
+      },
+      workingProvider: { providerType: "openai" },
+      fallbackHops: [],
+    });
+  }
+
+  function storedPayload() {
+    const write = userUpdate.mock.calls.find(
+      (c) =>
+        (c[0] as { data: Record<string, unknown> }).data.insightsCachedText !==
+        undefined,
+    );
+    const data = (write![0] as { data: Record<string, unknown> }).data;
+    return {
+      payload: JSON.parse(data.insightsCachedText as string),
+      hash: data.insightsSnapshotHash,
+    };
+  }
+
+  it("asks a frugal account for the short form and keeps one recommendation", async () => {
+    arrange("FRUGAL");
+    const outcome = await generateComprehensiveInsight("u1", {
+      locale: "en",
+      force: true,
+    });
+    expect(outcome.status).toBe("generated");
+    const prompt = JSON.stringify(runRawCompletionWithFallback.mock.calls[0]);
+    expect(prompt).toContain("SHORT FORM");
+    const { payload, hash } = storedPayload();
+    expect(payload.recommendations.map((r: { id: string }) => r.id)).toEqual([
+      "a",
+    ]);
+    expect(hash).not.toBe(FEATURES_HASH);
+  });
+
+  it.each(["STANDARD", "FULL", null])(
+    "keeps the full contract on %s",
+    async (level) => {
+      arrange(level);
+      await generateComprehensiveInsight("u1", { locale: "en", force: true });
+      const prompt = JSON.stringify(runRawCompletionWithFallback.mock.calls[0]);
+      expect(prompt).not.toContain("SHORT FORM");
+      expect(storedPayload().payload.recommendations).toHaveLength(3);
+    },
+  );
 });

@@ -443,7 +443,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       // CSV pays at most ~N (type, day) recomputes, not 10 000 per-row hooks
       // — and the status re-warm for the touched types. Best-effort: a
       // populator hiccup never fails the importer.
-      await afterMeasurementMutation(userId, touchedMeasurements, "import.csv");
+      await afterMeasurementMutation(userId, touchedMeasurements, {
+        source: "manual",
+        label: "import.csv",
+      });
     }
 
     await auditLog("import.csv.upload", {

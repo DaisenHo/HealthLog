@@ -25,6 +25,8 @@ vi.mock("@/lib/db", () => ({
     },
     // v1.42 — the operator key's model check reads the admin settings.
     appSettings: { findUnique: vi.fn(async () => null) },
+    // v1.43 — accounts per effective AI usage level.
+    user: { groupBy: vi.fn(async () => []) },
   },
 }));
 
@@ -376,5 +378,45 @@ describe("GET /api/admin/provider-health — pause and model check (v1.42)", () 
     const body = await (await GET()).json();
     expect(body.data.providers[0].modelListing).toBeNull();
     expect(probeModelListing).not.toHaveBeenCalled();
+  });
+});
+
+// #1217 — the operator sees how many accounts run at each level, resolved
+// against the current bounds, so lowering the ceiling moves the counts.
+describe("usage levels", () => {
+  const userGroups = vi.mocked(prisma.user.groupBy);
+  const settingsRow = vi.mocked(prisma.appSettings.findUnique);
+
+  beforeEach(() => {
+    groupBy.mockResolvedValue([] as never);
+    usageRows.mockResolvedValue([] as never);
+  });
+
+  it("counts each account at its effective level", async () => {
+    settingsRow.mockResolvedValue({
+      aiUsageMaxLevel: "STANDARD",
+      aiUsageDefaultLevel: "STANDARD",
+      aiSyncRegenGapHours: null,
+    } as never);
+    userGroups.mockResolvedValue([
+      { aiUsageLevel: null, _count: { _all: 5 } },
+      { aiUsageLevel: "FRUGAL", _count: { _all: 2 } },
+      // Above the ceiling: capped to standard.
+      { aiUsageLevel: "FULL", _count: { _all: 3 } },
+    ] as never);
+    const res = await GET();
+    const body = await res.json();
+    expect(body.data.usageLevels).toEqual({ frugal: 2, standard: 8, full: 0 });
+  });
+
+  it("reports zero everywhere on an empty instance", async () => {
+    settingsRow.mockResolvedValue(null);
+    userGroups.mockResolvedValue([] as never);
+    const res = await GET();
+    expect((await res.json()).data.usageLevels).toEqual({
+      frugal: 0,
+      standard: 0,
+      full: 0,
+    });
   });
 });

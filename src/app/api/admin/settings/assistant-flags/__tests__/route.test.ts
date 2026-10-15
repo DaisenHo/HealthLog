@@ -48,6 +48,9 @@ const ALL_ON = {
   assistantDocumentAiEnabled: true,
   aiReasoningEnabled: true,
   aiReasoningMaxEffort: "high",
+  aiUsageMaxLevel: "STANDARD",
+  aiUsageDefaultLevel: "STANDARD",
+  aiSyncRegenGapHours: null,
 };
 
 beforeEach(() => {
@@ -206,6 +209,75 @@ describe("PUT /api/admin/settings/assistant-flags", () => {
     async (value) => {
       vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
       const res = await PUT(putReq({ aiReasoningMaxEffort: value }));
+      expect(res.status).toBe(422);
+      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+    },
+  );
+
+  // #1217 — the operator's usage bounds.
+  it("stores the usage bounds and echoes them with the gap in effect", async () => {
+    vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({
+      ...ALL_ON,
+      aiUsageMaxLevel: "FULL",
+      aiUsageDefaultLevel: "FRUGAL",
+      aiSyncRegenGapHours: 12,
+    } as never);
+    const res = await PUT(
+      putReq({
+        aiUsage: {
+          maxLevel: "full",
+          defaultLevel: "frugal",
+          syncRegenGapHours: 12,
+        },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const upsert = vi.mocked(prisma.appSettings.upsert).mock.calls[0][0];
+    expect(upsert.update).toEqual({
+      aiUsageMaxLevel: "FULL",
+      aiUsageDefaultLevel: "FRUGAL",
+      aiSyncRegenGapHours: 12,
+    });
+    const body = (await res.json()) as { data: { aiUsage: unknown } };
+    expect(body.data.aiUsage).toEqual({
+      maxLevel: "full",
+      defaultLevel: "frugal",
+      syncRegenGapHours: 12,
+      effectiveSyncRegenGapHours: 12,
+    });
+  });
+
+  it("refuses a default above the ceiling", async () => {
+    vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+    const res = await PUT(
+      putReq({
+        aiUsage: {
+          maxLevel: "standard",
+          defaultLevel: "full",
+          syncRegenGapHours: null,
+        },
+      }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { meta: { errorCode: string } };
+    expect(body.meta.errorCode).toBe("ai.usage.defaultAboveCeiling");
+    expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+  });
+
+  it.each([0, 49, 2.5])(
+    "refuses %s as the sync gap",
+    async (syncRegenGapHours) => {
+      vi.mocked(getSession).mockResolvedValue(ADMIN_OK as never);
+      const res = await PUT(
+        putReq({
+          aiUsage: {
+            maxLevel: "standard",
+            defaultLevel: "standard",
+            syncRegenGapHours,
+          },
+        }),
+      );
       expect(res.status).toBe(422);
       expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
     },

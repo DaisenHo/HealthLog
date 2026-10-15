@@ -94,6 +94,11 @@ import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { normalizeLocale } from "@/lib/insights/status-shared";
 import { hasUsableStatusProvider } from "@/lib/insights/status-provider";
 import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
+import {
+  applyBriefingShortForm,
+  briefingFormForRecord,
+  buildBriefingShortFormBlock,
+} from "@/lib/insights/briefing-short-form";
 import { featuresInReaderUnits } from "@/lib/insights/features-units";
 import { resolveUnitPreferences } from "@/lib/measurements/display-transform";
 import { enqueueForceWarm } from "@/lib/jobs/insight-pregenerate-shared";
@@ -671,7 +676,9 @@ export const POST = apiHandler((request: NextRequest) =>
     const compactFeatures = compactSections(
       features as unknown as Record<string, unknown>,
     );
-    const featuresJson = JSON.stringify(compactFeatures, null, 2);
+    // Compact on the wire: indentation is about 40% of a pretty-printed
+    // payload, and the model reads the structure without it (#1217).
+    const featuresJson = JSON.stringify(compactFeatures);
     if (payloadDowngraded) {
       annotate({
         meta: {
@@ -751,6 +758,10 @@ export const POST = apiHandler((request: NextRequest) =>
       locale,
       await resolveUserTimezone(userId),
     );
+    // v1.43 (#1217) — the short form on the `frugal` usage level; the full
+    // contract on every other level.
+    const briefingForm = await briefingFormForRecord(userId);
+    userPrompt += buildBriefingShortFormBlock(locale, briefingForm);
 
     // v1.12.7 (B5) — inject the curated SOURCES block for the metric sections
     // this briefing actually carries, so a normative claim can cite a real
@@ -1081,6 +1092,9 @@ export const POST = apiHandler((request: NextRequest) =>
         errorCode: "insights.generate.profileScopeChanged",
       });
     }
+    if (briefingForm === "short") {
+      insights = applyBriefingShortForm(insights);
+    }
     const stored = withBriefingGeneratedAt(insights, new Date());
     const committed = await prisma.user.updateMany({
       where: {
@@ -1102,6 +1116,7 @@ export const POST = apiHandler((request: NextRequest) =>
           aboutMe: aboutMe ?? null,
           comparisonBaseline: comparisonSnapshot?.baseline ?? "none",
           generationLocale: locale,
+          ...(briefingForm === "short" ? { briefingForm } : {}),
         }),
       },
     });

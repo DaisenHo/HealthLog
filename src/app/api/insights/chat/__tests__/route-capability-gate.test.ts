@@ -116,6 +116,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
 vi.mock("@/lib/ai/coach/refusal", () => ({ detectRefusal: vi.fn() }));
 vi.mock("@/lib/ai/coach/system-prompt", () => ({
   getCoachSystemPrompt: vi.fn(),
+  buildCoachTurnNotes: vi.fn(() => ""),
 }));
 vi.mock("@/lib/ai/coach/about-me", () => ({
   getSelfContextTextForUser: vi.fn(),

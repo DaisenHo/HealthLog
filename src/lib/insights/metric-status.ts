@@ -62,6 +62,7 @@ import {
   degradeStatusSnapshotToBudget,
   type GradedSeries,
 } from "@/lib/insights/graded-series";
+import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import {
   type SupportedLocale,
   normalizeLocale,
@@ -453,8 +454,9 @@ export async function generateMetricStatus(args: {
 
   const shed = degradeStatusSnapshotToBudget(
     snapshot as unknown as Record<string, unknown>,
+    { maxChars: await statusSnapshotCharsForRecord(args.userId) },
   );
-  const snapshotJson = JSON.stringify(snapshot, null, 2);
+  const snapshotJson = JSON.stringify(snapshot);
 
   annotate({
     action: { name: cacheAction },

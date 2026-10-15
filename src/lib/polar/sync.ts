@@ -404,6 +404,7 @@ export async function upsertPolarMeasurements(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `polar: status-insight invalidate failed for ${userId}: ${err}`,

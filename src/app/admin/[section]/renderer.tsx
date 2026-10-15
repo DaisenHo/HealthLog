@@ -22,6 +22,7 @@ import { AiServerKeySection } from "@/components/admin/ai-server-key-section";
 import { ProviderHealthSection } from "@/components/admin/provider-health-section";
 import { CentralCodexSection } from "@/components/admin/central-codex-section";
 import { AssistantSection } from "@/components/admin/assistant-section";
+import { AiUsageSection } from "@/components/admin/ai-usage-section";
 import { CoachFeedbackSection } from "@/components/admin/coach-feedback-section";
 import { ApiTokenOverviewSection } from "@/components/admin/api-token-overview-section";
 import { AppLogPreviewSection } from "@/components/admin/app-log-preview-section";
@@ -105,6 +106,7 @@ export function AdminSectionRenderer({
       return (
         <SectionFrame>
           <AssistantSection />
+          <AiUsageSection />
           <AiServerKeySection />
           <CentralCodexSection />
           <ProviderHealthSection />

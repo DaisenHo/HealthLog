@@ -22,6 +22,7 @@ import {
   buildGradedSeriesFromPoints,
   degradeStatusSnapshotToBudget,
 } from "@/lib/insights/graded-series";
+import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import {
   normalizeLocale,
   finalizeStatusSummary,
@@ -418,8 +419,9 @@ export async function prepareGeneralStatusForUser(
 
   const shed = degradeStatusSnapshotToBudget(
     snapshot as unknown as Record<string, unknown>,
+    { maxChars: await statusSnapshotCharsForRecord(userId) },
   );
-  const snapshotJson = JSON.stringify(snapshot, null, 2);
+  const snapshotJson = JSON.stringify(snapshot);
 
   annotate({
     action: { name: cacheAction },

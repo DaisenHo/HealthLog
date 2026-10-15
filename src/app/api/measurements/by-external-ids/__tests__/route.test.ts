@@ -118,9 +118,12 @@ describe("DELETE /api/measurements/by-external-ids", () => {
 
     // The deleted row's type is re-warmed; the zero-row case below is the
     // twin that must not reach it.
-    expect(invalidateStatusInsightsForTypes).toHaveBeenCalledWith("user-1", [
-      "WEIGHT",
-    ]);
+    // The phone's HealthKit deletions arrive with its sync: the sync gap.
+    expect(invalidateStatusInsightsForTypes).toHaveBeenCalledWith(
+      "user-1",
+      ["WEIGHT"],
+      { source: "sync" },
+    );
   });
 
   it("is a no-op for a foreign-origin externalId that collides on a non-app-minted row", async () => {

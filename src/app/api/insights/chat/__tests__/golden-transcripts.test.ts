@@ -113,6 +113,7 @@ vi.mock("@/lib/ai/coach/budget", () => ({
 }));
 vi.mock("@/lib/ai/coach/system-prompt", () => ({
   getCoachSystemPrompt: h.m.getCoachSystemPrompt,
+  buildCoachTurnNotes: vi.fn(() => ""),
 }));
 vi.mock("@/lib/ai/coach/about-me", () => ({
   getSelfContextTextForUser: h.m.getSelfContextTextForUser,
@@ -652,21 +653,34 @@ describe("coach chat golden transcripts", () => {
       expect(transcript.thrown).toBeNull();
       expect(m.runStreamingRawCompletionWithFallback).toHaveBeenCalledTimes(1);
       const { params } = m.runStreamingRawCompletionWithFallback.mock
-        .calls[0][0] as { params: { system: string } };
-      expect(params.system).toContain(CLARIFIED);
+        .calls[0][0] as {
+        params: { system: string; messages: Array<{ content: string }> };
+      };
+      // #1217 — on the user side, never in the cached system prompt.
+      const user = params.messages.map((msg) => msg.content).join("\n");
+      expect(user).toContain(CLARIFIED);
+      expect(params.system).not.toContain(CLARIFIED);
       // Server-authored: the request's choice id picks the stored value,
       // the label the model once wrote never rides along.
-      expect(params.system).not.toContain("Resting pulse");
+      const line = user
+        .split("\n")
+        .find((text) => text.startsWith("CLARIFIED:"));
+      expect(line).toContain(CLARIFIED);
+      expect(line).not.toContain("Resting pulse");
     });
 
     it("the tool-mode prompt carries the same line", async () => {
       reply("Your resting pulse averaged 62 bpm.");
       const transcript = await runTurn(post, body, {});
       expect(transcript.thrown).toBeNull();
-      const { system } = m.runCoachToolLoop.mock.calls[0][0] as {
+      const { system, messages } = m.runCoachToolLoop.mock.calls[0][0] as {
         system: string;
+        messages: Array<{ content: string }>;
       };
-      expect(system).toContain(CLARIFIED);
+      expect(messages.map((msg) => msg.content).join("\n")).toContain(
+        CLARIFIED,
+      );
+      expect(system).not.toContain(CLARIFIED);
     });
 
     it("an unanswered turn sends neither prompt the line", async () => {
@@ -680,8 +694,13 @@ describe("coach chat golden transcripts", () => {
         {},
       );
       const { params } = m.runStreamingRawCompletionWithFallback.mock
-        .calls[0][0] as { params: { system: string } };
+        .calls[0][0] as {
+        params: { system: string; messages: Array<{ content: string }> };
+      };
       expect(params.system).not.toContain("CLARIFIED:");
+      expect(
+        params.messages.map((msg) => msg.content).join("\n"),
+      ).not.toContain("CLARIFIED:");
     });
   });
 });

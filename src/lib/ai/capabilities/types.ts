@@ -15,6 +15,7 @@
  * contract, the structural guards — can depend on it without pulling a
  * database client along.
  */
+import type { AiUsageLevel, AiUsageState } from "@/lib/ai/usage-level";
 import type { ModuleKey } from "@/lib/modules/registry";
 
 /** Every AI capability, in publication order. */
@@ -29,6 +30,7 @@ export const AI_CAPABILITY_KEYS = [
   "documentAi",
   "labsOcr",
   "medicationExtract",
+  "supplementLabel",
 ] as const;
 
 export type AiCapabilityKey = (typeof AI_CAPABILITY_KEYS)[number];
@@ -49,6 +51,9 @@ export type AiCapabilityKey = (typeof AI_CAPABILITY_KEYS)[number];
  *     record's own switch or by the edge of the active grant.
  *   - `user_disabled`: the record's own AI opt-out: `disableCoach` for the
  *     Coach, the `insights` module ("AI analysis") for everything else.
+ *   - `usage_level`: the record's AI usage level (v1.43, #1217) is below the
+ *     level the capability needs (`minUsageLevel`). A choice, like the
+ *     opt-out, so it ranks right after it and before the provider layers.
  *   - `no_provider`: no configured provider can serve this capability's input.
  *   - `consent_required`: the provider chain needs a consent receipt and none
  *     is active.
@@ -59,6 +64,7 @@ export const AI_UNAVAILABLE_REASONS = [
   "not_permitted_for_record",
   "module_disabled",
   "user_disabled",
+  "usage_level",
   "no_provider",
   "consent_required",
 ] as const;
@@ -166,6 +172,11 @@ export interface AiCapabilityDefinition {
   consent: { rule: AiConsentRule; kinds: readonly AiConsentKind[] };
   modality: AiModality;
   providerOrder: AiProviderOrder;
+  /**
+   * v1.43 (#1217) — the lowest AI usage level at which the capability is
+   * offered. Absent: every level.
+   */
+  minUsageLevel?: AiUsageLevel;
 }
 
 /**
@@ -289,6 +300,18 @@ export const AI_CAPABILITIES: Readonly<
     modality: "text",
     providerOrder: "chain",
   },
+  // v1.43 — reading a supplement's label photo into its ingredients. A photo
+  // is a document, and an extra model run per label, so it is not offered on
+  // the `frugal` usage level.
+  supplementLabel: {
+    key: "supplementLabel",
+    operatorSwitch: "documentAi",
+    modules: { mode: "all", keys: ["medications", "nutrients"] },
+    consent: { rule: "document", kinds: EXTRACTION_KINDS },
+    modality: "document",
+    providerOrder: "document",
+    minUsageLevel: "standard",
+  },
 });
 
 /**
@@ -328,6 +351,11 @@ export interface AiProviderState {
 export interface AiCapabilities {
   capabilities: Record<AiCapabilityKey, AiCapabilityState>;
   provider: AiProviderState;
+  /**
+   * v1.43 (#1217) — the record's AI usage level, its bounds and the estimate.
+   * Absent on servers before v1.43 and on blocks resolved without it.
+   */
+  usage?: AiUsageState;
 }
 
 // ── Refusal codes ──────────────────────────────────────────────────────────
@@ -345,3 +373,5 @@ export const AI_RECORD_NOT_PERMITTED_ERROR_CODE = "ai.record.notPermitted";
 export const AI_PROVIDER_NONE_ERROR_CODE = "ai.provider.none";
 /** The capability's inputs could not be loaded; the answer failed closed. */
 export const AI_UNAVAILABLE_ERROR_CODE = "ai.unavailable";
+/** v1.43 — the record's AI usage level is below what the capability needs. */
+export const AI_USAGE_LEVEL_TOO_LOW_ERROR_CODE = "ai.usage.levelTooLow";

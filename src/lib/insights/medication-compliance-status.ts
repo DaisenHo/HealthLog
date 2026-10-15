@@ -28,6 +28,7 @@ import {
 } from "@/lib/insights/assessment-context";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { buildGradedSeriesFromPoints } from "@/lib/insights/graded-series";
+import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
 import { degradeStatusSnapshotToBudget } from "@/lib/insights/graded-series";
 import {
@@ -405,8 +406,9 @@ export async function prepareMedicationComplianceStatusForUser(
 
   const shed = degradeStatusSnapshotToBudget(
     snapshot as unknown as Record<string, unknown>,
+    { maxChars: await statusSnapshotCharsForRecord(userId) },
   );
-  const snapshotJson = JSON.stringify(snapshot, null, 2);
+  const snapshotJson = JSON.stringify(snapshot);
 
   annotate({
     action: { name: cacheAction },

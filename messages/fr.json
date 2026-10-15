@@ -6258,7 +6258,8 @@
         "subLabel": "Les documents sont lus et indexés par votre fournisseur d'IA configuré, sans validation document par document.",
         "honesty": "Lorsque cette option est activée, chaque document que vous téléversez est envoyé à votre fournisseur d'IA configuré pour être lu, décrit et indexé pour la recherche, sans confirmation par document. L'activation agit aussi rétroactivement : les documents que vous avez déjà téléversés et qui n'ont pas encore de résumé sont envoyés eux aussi, jusqu'à 200 à chaque activation. Cela se produit sur le serveur et le contenu du document quitte cette machine vers ce fournisseur. Si votre fournisseur configuré est une connexion par abonnement (un compte d'IA connecté plutôt qu'une clé API), ses propres paramètres de données s'appliquent : les fournisseurs par abonnement peuvent utiliser le contenu pour améliorer leurs modèles, et aucun accord de traitement des données ne le couvre. Les documents lus par un modèle local auto-hébergé ne quittent jamais votre serveur. Désactivé par défaut ; activez-le uniquement si vous acceptez ce compromis pour vos documents.",
         "confirm": "Compris, activer",
-        "cancel": "Annuler"
+        "cancel": "Annuler",
+        "restingFrugal": "En pause au niveau d'IA économe : les documents ne sont lus qu'à votre demande."
       },
       "centralCodex": {
         "title": "Utiliser l'accès IA partagé du serveur",
@@ -6316,7 +6317,32 @@
         "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique."
       },
       "providerCardDescription": "Le fournisseur que HealthLog sollicite en premier, avec sa clé et son modèle.",
-      "runtimeTitle": "Vérifier et actualiser"
+      "runtimeTitle": "Vérifier et actualiser",
+      "usage": {
+        "title": "Usage de l'IA",
+        "description": "La quantité de travail d'IA effectuée en arrière-plan pour vous, le Coach restant le même à chaque niveau.",
+        "levels": {
+          "frugal": {
+            "label": "Économe",
+            "hint": "Les cartes se mettent à jour au plus une fois par jour après une synchronisation, un bilan quotidien court, les documents ne sont lus qu'à votre demande."
+          },
+          "standard": {
+            "label": "Standard",
+            "hint": "Les cartes se mettent à jour toutes les quelques heures après une synchronisation, le bilan quotidien complet."
+          },
+          "full": {
+            "label": "Complet",
+            "hint": "Les cartes se mettent à jour jusqu'à chaque heure avec de nouvelles données, comme avant ce réglage."
+          }
+        },
+        "limited": "Limité par l'administrateur du serveur.",
+        "estimate": "environ {tokens} jetons par jour, estimation",
+        "measured": "Mesuré : {tokens} jetons par jour sur les {days} derniers jours, Coach compris. Les chiffres par niveau sont des estimations.",
+        "noEstimate": "Une estimation par niveau apparaît après trois jours d'utilisation de l'IA.",
+        "capped": "Vous avez choisi {choice}, que le serveur n'autorise pas pour le moment, donc {level} s'applique. Votre choix est conservé.",
+        "followsDefault": "Vous suivez le réglage par défaut du serveur ({level}).",
+        "useDefault": "Utiliser le réglage par défaut du serveur ({level})"
+      }
     },
     "dashboard": {
       "units": {
@@ -7353,7 +7379,8 @@
       "spendToday": "Aujourd'hui, selon le jour civil de chaque compte : {total} jetons, dont {operator} sur la clé de l'opérateur (comptes avec consommation : {accounts}).",
       "statusPaused": "En pause",
       "pausedHint": "En pause après des échecs répétés pour {count} utilisateurs jusqu’au {at}. Il sera ensuite réessayé automatiquement.",
-      "modelNotServed": "Le point d’accès ne propose plus le modèle {model}. Choisissez dans les réglages IA un modèle qu’il propose."
+      "modelNotServed": "Le point d’accès ne propose plus le modèle {model}. Choisissez dans les réglages IA un modèle qu’il propose.",
+      "usageLevels": "Comptes par niveau d'usage de l'IA : {frugal} économe, {standard} standard, {full} complet."
     },
     "aiQuality": {
       "title": "Qualité des analyses",
@@ -8140,6 +8167,15 @@
       "copied": "Copié",
       "download": "Télécharger",
       "loadError": "Le rapport d'assistance n'a pas pu être créé."
+    },
+    "aiUsage": {
+      "title": "Niveaux d'usage de l'IA",
+      "description": "Le niveau le plus élevé que les comptes peuvent choisir et le niveau de départ.",
+      "maxLabel": "Niveau le plus élevé",
+      "defaultLabel": "Niveau par défaut",
+      "defaultAboveCeiling": "Le niveau par défaut ne peut pas dépasser le niveau le plus élevé.",
+      "gapLabel": "Heures entre deux mises à jour des cartes après une synchronisation (Standard)",
+      "gapHint": "Heures entières de 1 à 48. Laissez vide pour utiliser AI_SYNC_REGEN_GAP_HOURS, sinon 6. En vigueur : {hours} h."
     }
   },
   "achievements": {

@@ -91,19 +91,25 @@ export const errorEnvelope = z
           .string()
           .optional()
           .describe(
-            "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`, `briefing`, `periodNarrative`, `statusText`, `workoutInsights`, `reactionLines`, `aboutMeQuestions`, `documentAi`, `labsOcr`, `medicationExtract`).",
+            "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`, `briefing`, `periodNarrative`, `statusText`, `workoutInsights`, `reactionLines`, `aboutMeQuestions`, `documentAi`, `labsOcr`, `medicationExtract`, `supplementLabel`).",
           ),
         reason: z
           .string()
           .optional()
           .describe(
-            "On an AI refusal: the outermost reason, one of `AiUnavailableReason`. The code maps from it: `operator_disabled` → `assistant.disabled.<switch>` (or `module.disabled` with `module` when the operator's module availability closed it), `not_permitted_for_record` → `ai.record.notPermitted`, `module_disabled` and `user_disabled` → `module.disabled` with `module`, `no_provider` → the route's own typed code where it has one, otherwise `ai.provider.none` (422), `consent_required` → `consent.ai.required`, `check_failed` → `ai.unavailable` (503).",
+            "On an AI refusal: the outermost reason, one of `AiUnavailableReason`. The code maps from it: `operator_disabled` → `assistant.disabled.<switch>` (or `module.disabled` with `module` when the operator's module availability closed it), `not_permitted_for_record` → `ai.record.notPermitted`, `module_disabled` and `user_disabled` → `module.disabled` with `module`, `no_provider` → the route's own typed code where it has one, otherwise `ai.provider.none` (422), `usage_level` → `ai.usage.levelTooLow` with `requiredLevel`, `consent_required` → `consent.ai.required`, `check_failed` → `ai.unavailable` (503).",
           ),
         module: z
           .string()
           .optional()
           .describe(
             "Beside `module.disabled`: the module that is off. On an AI refusal it is the capability's owning module.",
+          ),
+        requiredLevel: z
+          .enum(["frugal", "standard", "full"])
+          .optional()
+          .describe(
+            "Beside `ai.usage.levelTooLow` (v1.43): the lowest AI usage level at which the capability is offered.",
           ),
       })
       .optional(),

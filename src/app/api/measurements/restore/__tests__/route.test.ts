@@ -149,10 +149,12 @@ describe("POST /api/measurements/restore", () => {
     expect(recomputeBucketsForMeasurement).toHaveBeenCalledTimes(3);
     // And one status re-warm over the distinct types.
     expect(invalidateStatusInsightsForTypes).toHaveBeenCalledTimes(1);
-    expect(invalidateStatusInsightsForTypes).toHaveBeenCalledWith("user-1", [
-      "WEIGHT",
-      "PULSE",
-    ]);
+    // A restore is the person's own act: narrated like a hand entry.
+    expect(invalidateStatusInsightsForTypes).toHaveBeenCalledWith(
+      "user-1",
+      ["WEIGHT", "PULSE"],
+      { source: "manual" },
+    );
   });
 
   it("is a no-op (restored: 0) when no id is owned + tombstoned — no rollup, no invalidate", async () => {

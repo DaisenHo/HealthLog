@@ -1606,6 +1606,7 @@ export async function upsertGoogleHealthMeasurements(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `google-health: status-insight invalidate failed for ${userId}: ${err}`,

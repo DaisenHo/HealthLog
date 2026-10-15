@@ -36,6 +36,7 @@ import {
 
 import { AdminOpenAIProviderForm } from "./admin-openai-provider-form";
 import { AiConsentCard } from "./ai-consent-card";
+import { AiUsageCard } from "./ai-usage-card";
 import { AnthropicProviderForm } from "./anthropic-provider-form";
 import { AutoReadCard } from "./auto-read-card";
 import { CentralCodexSwitch } from "./central-codex-switch";
@@ -232,6 +233,10 @@ export function AiInsightsCard({
             selected={selectedProvider}
             onSelect={pickProvider}
           />
+
+          {/* v1.43 (#1217) — how much background AI work the account
+              asks for: one setting, three levels. */}
+          <AiUsageCard />
 
           {/* v1.22 (#89) — per-user response timeout (mainly for slow
               local/self-hosted backends). */}

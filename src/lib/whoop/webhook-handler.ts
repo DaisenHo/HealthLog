@@ -197,7 +197,7 @@ export async function processWhoopNotification(
           type: row.type as MeasurementType,
           measuredAt: row.measuredAt,
         })),
-        "whoop.webhook",
+        { source: "sync", label: "whoop.webhook" },
       );
       if (resource === "workout") {
         // The Workout model carries no soft-delete column, so a deleted

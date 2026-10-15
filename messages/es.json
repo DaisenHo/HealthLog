@@ -6258,7 +6258,8 @@
         "subLabel": "Los documentos son leídos e indexados por tu proveedor de IA configurado, sin confirmar cada documento.",
         "honesty": "Cuando está activado, cada documento que subes se envía a tu proveedor de IA configurado para leerlo, describirlo e indexarlo para la búsqueda, sin confirmación por documento. Activarlo también actúa de forma retroactiva: los documentos que ya has subido y que aún no tienen resumen también se envían, hasta 200 cada vez que lo activas. Esto ocurre en el servidor y el contenido del documento sale de esta máquina hacia ese proveedor. Si tu proveedor configurado es una conexión de suscripción (una cuenta de IA con sesión iniciada en lugar de una clave de API), se aplican sus propios ajustes de datos: los proveedores de suscripción pueden usar el contenido para mejorar sus modelos, y ningún acuerdo de tratamiento de datos lo cubre. Los documentos leídos por un modelo local autoalojado nunca salen de tu servidor. Desactivado de forma predeterminada; actívalo solo si aceptas este compromiso para tus documentos.",
         "confirm": "Entendido: activar",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "restingFrugal": "En pausa en el nivel de ahorro de IA: los documentos solo se leen cuando lo pides."
       },
       "centralCodex": {
         "title": "Usar el acceso de IA compartido del servidor",
@@ -6316,7 +6317,32 @@
         "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
       },
       "providerCardDescription": "El proveedor al que HealthLog pregunta primero, con su clave y su modelo.",
-      "runtimeTitle": "Comprobar y actualizar"
+      "runtimeTitle": "Comprobar y actualizar",
+      "usage": {
+        "title": "Uso de la IA",
+        "description": "Cuánto trabajo de IA se hace en segundo plano para ti, mientras el Coach sigue igual en todos los niveles.",
+        "levels": {
+          "frugal": {
+            "label": "Ahorro",
+            "hint": "Las tarjetas se actualizan como mucho una vez al día tras una sincronización, un resumen diario breve, los documentos solo se leen cuando lo pides."
+          },
+          "standard": {
+            "label": "Estándar",
+            "hint": "Las tarjetas se actualizan cada pocas horas tras una sincronización, el resumen diario completo."
+          },
+          "full": {
+            "label": "Completo",
+            "hint": "Las tarjetas se actualizan hasta cada hora con datos nuevos, como antes de existir este ajuste."
+          }
+        },
+        "limited": "Limitado por quien administra el servidor.",
+        "estimate": "unos {tokens} tokens al día, estimado",
+        "measured": "Medido: {tokens} tokens al día en los últimos {days} días, Coach incluido. Las cifras por nivel son estimaciones.",
+        "noEstimate": "La estimación por nivel aparece tras tres días de uso de la IA.",
+        "capped": "Elegiste {choice}, que el servidor no permite ahora mismo, así que se aplica {level}. Tu elección se conserva.",
+        "followsDefault": "Sigues el valor predeterminado del servidor ({level}).",
+        "useDefault": "Usar el valor predeterminado del servidor ({level})"
+      }
     },
     "dashboard": {
       "units": {
@@ -7353,7 +7379,8 @@
       "spendToday": "Hoy, en el día natural de cada cuenta: {total} tokens, {operator} de ellos en la clave del operador (cuentas con consumo: {accounts}).",
       "statusPaused": "En pausa",
       "pausedHint": "En pausa tras fallos repetidos para {count} usuarios hasta {at}. Después se vuelve a intentar automáticamente.",
-      "modelNotServed": "El endpoint ya no ofrece el modelo {model}. Elige en los ajustes de IA un modelo que ofrezca."
+      "modelNotServed": "El endpoint ya no ofrece el modelo {model}. Elige en los ajustes de IA un modelo que ofrezca.",
+      "usageLevels": "Cuentas por nivel de uso de la IA: {frugal} ahorro, {standard} estándar, {full} completo."
     },
     "aiQuality": {
       "title": "Calidad de los análisis",
@@ -8140,6 +8167,15 @@
       "copied": "Copiado",
       "download": "Descargar",
       "loadError": "No se pudo crear el informe de soporte."
+    },
+    "aiUsage": {
+      "title": "Niveles de uso de la IA",
+      "description": "El nivel más alto que pueden elegir las cuentas y el nivel con el que empiezan.",
+      "maxLabel": "Nivel más alto",
+      "defaultLabel": "Nivel predeterminado",
+      "defaultAboveCeiling": "El nivel predeterminado no puede estar por encima del nivel más alto.",
+      "gapLabel": "Horas entre actualizaciones de tarjetas tras una sincronización (Estándar)",
+      "gapHint": "Horas enteras de 1 a 48. Déjalo vacío para usar AI_SYNC_REGEN_GAP_HOURS, si no 6. Vigente ahora: {hours} h."
     }
   },
   "achievements": {

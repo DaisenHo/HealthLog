@@ -143,6 +143,10 @@
           "purpose": "Per-user hourly ceiling for the document-AI actions (read/index, extract, suggest, summarise share one bucket). Default 6, clamped to 1-1000."
         },
         {
+          "name": "AI_SYNC_REGEN_GAP_HOURS",
+          "purpose": "Minimum hours between two status-card regenerations after a sync. Default 6, whole hours 1-48; hand entries keep one hour. The admin AI setting wins."
+        },
+        {
           "name": "DOCUMENT_UPLOAD_LIMIT_PER_HOUR",
           "purpose": "Hourly upload ceiling per document-upload token (Paperless workflow, import script). Default 120, clamped to 1-1000. Web and phone uploads keep their own bucket."
         },

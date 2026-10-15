@@ -78,7 +78,7 @@ import type {
 } from "./types";
 
 /**
- * Above this pretty-printed size the section goes to the full builder, whose
+ * Above this compact size the section goes to the full builder, whose
  * budget pass may trim it (see the module comment). A 30-day section is a few
  * thousand characters; a year of blood pressure with its coarse tail is the
  * kind of section that crosses it.
@@ -240,7 +240,7 @@ export async function buildCoachSourceSnapshot(
   const sections = compactSections(snapshot);
   annotateSnapshotFreshness(sections);
 
-  const size = JSON.stringify(sections, null, 2).length;
+  const size = JSON.stringify(sections).length;
   if (size > SOURCE_SNAPSHOT_FALLBACK_CHARS) {
     annotate({
       action: { name: "coach.source_snapshot.full" },

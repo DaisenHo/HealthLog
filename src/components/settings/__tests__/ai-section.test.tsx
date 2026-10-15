@@ -54,6 +54,8 @@ vi.mock("@/hooks/use-ai-capability", () => ({
     onDeviceAllowed: true,
   }),
   useAiCapabilityMap: () => null,
+  // v1.43 — no usage level published: the setting stays out of the way.
+  useAiUsage: () => null,
   useAiProviderState: () => ({
     configured: true,
     managedBy: "user",

@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { AI_CAPABILITY_KEYS } from "@/lib/ai/capabilities/types";
 import { DOCUMENT_AI_RUN_KINDS } from "@/lib/documents/ai-runs/types";
 import type { runStatusCompletion } from "@/lib/insights/status-provider";
 
@@ -282,4 +283,30 @@ describe("the status chokepoint's capability argument", () => {
     };
     expect(withCapability.capability).toBe("statusText");
   });
+});
+
+/**
+ * v1.43 (#1217) — capabilities whose model call has not landed yet. The
+ * capability is published (clients can render its state) before the route
+ * that reads a label photo exists; until then that route must not reach a
+ * provider at all. When it does, it becomes an egress site above, re-checking
+ * its capability at the wire like every document read, and leaves this list.
+ */
+const CAPABILITY_EGRESS_PENDING: Record<string, string> = {
+  supplementLabel: "app/api/medications/[id]/ingredients/extract/route.ts",
+};
+
+describe("capabilities whose model call is still to come", () => {
+  it.each(Object.entries(CAPABILITY_EGRESS_PENDING))(
+    "%s is a published capability whose route does not call a model yet",
+    (key, rel) => {
+      expect(AI_CAPABILITY_KEYS as readonly string[]).toContain(key);
+      const text = code(rel);
+      expect(
+        EGRESS_CALL.test(text),
+        `${rel} calls a provider now: list it in EGRESS_SITES with its re-check and drop it here`,
+      ).toBe(false);
+      expect(/\bnotImplemented\s*\(/.test(text)).toBe(true);
+    },
+  );
 });

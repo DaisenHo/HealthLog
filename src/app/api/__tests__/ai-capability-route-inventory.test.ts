@@ -165,6 +165,53 @@ describe("AI capability route inventory", () => {
   });
 });
 
+/**
+ * Capabilities no route asks, each with its reason. Every other capability is
+ * asked by at least one route on `AI_ROUTES`, so a key cannot be added to the
+ * table and forgotten at the edge.
+ *
+ *   - `reactionLines`: written by a job after a new reading arrives, never on
+ *     request; the job asks `aiCapabilityForJob`.
+ *   - `supplementLabel` (v1.43, #1217): its route
+ *     (`medications/[id]/ingredients/extract`) is a contract stub until the
+ *     supplement package fills it. The check below fails the moment the stub
+ *     answers anything but 501, so the entry has to move to `AI_ROUTES` with
+ *     the gate.
+ */
+const CAPABILITIES_WITHOUT_ROUTE: Readonly<
+  Partial<Record<(typeof AI_CAPABILITY_KEYS)[number], string>>
+> = {
+  reactionLines: "job only",
+  supplementLabel: "src/app/api/medications/[id]/ingredients/extract/route.ts",
+};
+
+describe("every capability reaches a route", () => {
+  it("is asked by an AI route, or named with its reason", () => {
+    const asked = new Set(
+      Object.values(AI_ROUTES).flatMap((entry) => [...entry.capabilities]),
+    );
+    const orphaned = AI_CAPABILITY_KEYS.filter(
+      (key) => !asked.has(key) && !(key in CAPABILITIES_WITHOUT_ROUTE),
+    );
+    expect(orphaned).toEqual([]);
+    const stale = Object.keys(CAPABILITIES_WITHOUT_ROUTE).filter((key) =>
+      asked.has(key as (typeof AI_CAPABILITY_KEYS)[number]),
+    );
+    expect(stale, "asked by a route now: drop it from the list").toEqual([]);
+  });
+
+  it("knows supplementLabel, and its route is still the stub", () => {
+    expect(AI_CAPABILITY_KEYS).toContain("supplementLabel");
+    const path = CAPABILITIES_WITHOUT_ROUTE.supplementLabel!;
+    expect(ROUTES).toContain(path);
+    const text = code(path);
+    expect(
+      /\bnotImplemented\s*\(/.test(text) && !ANY_GATE.test(text),
+      `${path} is no longer a stub: gate it with requireAiCapability("supplementLabel") and list it on AI_ROUTES`,
+    ).toBe(true);
+  });
+});
+
 /** The route that queues each kind of background run. */
 const RUN_QUEUED_BY: Record<DocumentAiRunKindValue, string> = {
   DOCUMENT_INDEX: "src/app/api/documents/inbound/[id]/index/route.ts",

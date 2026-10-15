@@ -105,9 +105,22 @@ function lastParams() {
   const calls = runRawCompletionWithFallback.mock.calls;
   return calls[calls.length - 1][0].params as {
     system: string;
+    messages: Array<{ role: string; content: unknown }>;
     toolChoice?: string;
     tools?: unknown[];
   };
+}
+
+/**
+ * The final round's reason, as the model reads it: the last user-side line.
+ * #1217 — it no longer rides the system prompt, which stays the cached
+ * prefix every round of the turn shares.
+ */
+function finalRoundLine(): string {
+  const last = lastParams().messages.at(-1);
+  expect(last?.role).toBe("user");
+  expect(lastParams().system).toBe(baseArgs.system);
+  return String(last?.content);
 }
 
 beforeEach(() => {
@@ -138,9 +151,7 @@ describe("stop reasons", () => {
     // The tools stay on the final round: the history holds the calls, and
     // Anthropic refuses tool_use/tool_result blocks without `tools` (400).
     expect(lastParams().tools).toEqual(COACH_TOOL_DEFS);
-    expect(lastParams().system).toMatch(
-      /FINAL ROUND: this turn's token budget/,
-    );
+    expect(finalRoundLine()).toMatch(/FINAL ROUND: this turn's token budget/);
     expect(out.result.content).toBe("Answer from what I have.");
   });
 
@@ -209,7 +220,7 @@ describe("stop reasons", () => {
     expect(out.stop).toEqual({ reason: "no_progress", rounds: 3 });
     expect(out.forcedFinal).toBe(false);
     expectFinalRoundKeepsTools();
-    expect(lastParams().system).toMatch(/brought nothing new/);
+    expect(finalRoundLine()).toMatch(/brought nothing new/);
   });
 });
 

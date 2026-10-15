@@ -355,7 +355,7 @@ export async function logMcpMeasurement(input: {
   await afterMeasurementMutation(
     input.userId,
     [{ type: input.type, measuredAt }],
-    "mcp",
+    { source: "manual", label: "mcp" },
   );
 
   await auditLog("mcp.write.measurement", {
@@ -529,7 +529,7 @@ export async function logMcpBloodPressure(input: {
       { type: "BLOOD_PRESSURE_SYS", measuredAt },
       { type: "BLOOD_PRESSURE_DIA", measuredAt },
     ],
-    "mcp",
+    { source: "manual", label: "mcp" },
   );
 
   await auditLog("mcp.write.blood_pressure", {

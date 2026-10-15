@@ -1128,7 +1128,7 @@ async function buildCoachSnapshotImpl(
   }
 
   return {
-    snapshotJson: JSON.stringify(compactSnapshot, null, 2),
+    snapshotJson: JSON.stringify(compactSnapshot),
     // v1.20.0 (F1) — the structured, post-degrade snapshot record keyed by
     // domain block (`bloodPressure`, `glucose`, `labs`, …). The coach tool
     // executor slices a single domain block out of this so a retrieval tool
@@ -1175,10 +1175,9 @@ export function degradeToBudget(
     cluster: CoachDataCluster;
     pass: number;
   }> = [];
-  // Measure against the SAME pretty-printed form the prompt ships
-  // (`JSON.stringify(snapshot, null, 2)`), not the compact form —
-  // otherwise the cap under-counts by ~2× and the prompt overflows.
-  const size = () => JSON.stringify(snapshot, null, 2).length;
+  // Measure against the SAME compact form the prompt ships
+  // (`JSON.stringify(snapshot)`), so the cap counts what the model reads.
+  const size = () => JSON.stringify(snapshot).length;
   if (size() <= MAX_SNAPSHOT_CHARS) return degraded;
 
   // Build a degrade order: blocks grouped by cluster, lowest priority

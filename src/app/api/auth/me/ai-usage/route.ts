@@ -10,9 +10,22 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, returnAllZodIssues, safeJson } from "@/lib/api-response";
-import { notImplemented } from "@/lib/http/not-implemented";
+import {
+  apiError,
+  apiSuccess,
+  getClientIp,
+  returnAllZodIssues,
+  safeJson,
+} from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
+import { prisma } from "@/lib/db";
+import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  loadAiUsageSettings,
+  loadAiUsageState,
+} from "@/lib/ai/capabilities/usage";
+import { usageLevelRank, usageLevelToDb } from "@/lib/ai/usage-level";
 import { aiUsagePutSchema } from "@/lib/validations/ai-usage";
 
 export const dynamic = "force-dynamic";
@@ -38,5 +51,43 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  return notImplemented("auth.me.ai_usage.put");
+  const { level } = parsed.data;
+  const settings = await loadAiUsageSettings();
+  if (
+    level !== null &&
+    usageLevelRank(level) > usageLevelRank(settings.maxLevel)
+  ) {
+    annotate({
+      action: { name: "auth.me.ai_usage.put.above_ceiling" },
+      meta: { level, maxLevel: settings.maxLevel },
+    });
+    return apiError(
+      "This level is above the highest one the server allows",
+      422,
+      { errorCode: "ai.usage.aboveCeiling", maxLevel: settings.maxLevel },
+    );
+  }
+
+  const previous = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { aiUsageLevel: true },
+  });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { aiUsageLevel: level === null ? null : usageLevelToDb(level) },
+  });
+  await auditLog("user.aiUsage.update", {
+    userId: user.id,
+    ipAddress: getClientIp(request),
+    details: {
+      previous: previous?.aiUsageLevel?.toLowerCase() ?? null,
+      next: level,
+    },
+  });
+  annotate({
+    action: { name: "auth.me.ai_usage.put" },
+    meta: { level: level ?? "default" },
+  });
+
+  return apiSuccess(await loadAiUsageState(user.id, { withMeasurement: true }));
 });

@@ -149,7 +149,7 @@ describe("syncUserBody — profile weight is not ingested (v1.16.11)", () => {
     expect(afterMeasurementMutation).toHaveBeenCalledWith(
       "user1",
       [legacyRow],
-      "whoop-body",
+      { source: "sync", label: "whoop-body" },
     );
     expect(prismaMock.measurement.deleteMany).toHaveBeenCalledWith({
       where: {

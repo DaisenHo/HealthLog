@@ -265,7 +265,7 @@ describe("a reuse chip", () => {
     const run = await tap("f3");
     expect(run.status).toBe(200);
     expect(annotated("coach.followUp.reuse_unavailable")).toHaveLength(1);
-    expect(providerCalls[0].system).toContain(
+    expect(h.userSide(providerCalls[0])).toContain(
       "Call show_result with ref m1.r1 and view chart",
     );
   });
@@ -282,15 +282,16 @@ describe("a model chip", () => {
       anchor: { domain: "glucose", window: "allTime" },
     });
     expect(run.status).toBe(200);
-    const system = providerCalls[0].system;
-    expect(system).toContain(
+    const user = h.userSide(providerCalls[0]);
+    expect(user).toContain(
       "FOLLOW-UP: the person tapped the previous_period chip",
     );
-    expect(system).toContain(
+    expect(user).toContain(
       "get_metric_table metric=bp window=last30days period=previous granularity=week",
     );
-    expect(system).toContain("m1.r1");
-    expect(system).not.toContain("glucose window=allTime");
+    expect(user).toContain("m1.r1");
+    expect(user).not.toContain("glucose window=allTime");
+    expect(providerCalls[0].system).not.toContain("FOLLOW-UP:");
   });
 
   it("degrades a chip that is not on the latest reply to a plain message", async () => {
@@ -303,7 +304,7 @@ describe("a model chip", () => {
     });
     expect(run.status).toBe(200);
     expect(providerCalls).toHaveLength(1);
-    expect(providerCalls[0].system).not.toContain("FOLLOW-UP:");
+    expect(h.userSide(providerCalls[0])).not.toContain("FOLLOW-UP:");
     expect(annotated("coach.followUp.stale")).toEqual([
       expect.objectContaining({ meta: { reason: "not_latest" } }),
     ]);
@@ -313,7 +314,7 @@ describe("a model chip", () => {
     conversationWithChips();
     world.script = [{ text: "Here is what I see." }];
     await tap("f9");
-    expect(providerCalls[0].system).not.toContain("FOLLOW-UP:");
+    expect(h.userSide(providerCalls[0])).not.toContain("FOLLOW-UP:");
     expect(annotated("coach.followUp.stale")).toEqual([
       expect.objectContaining({ meta: { reason: "unknown_chip" } }),
     ]);
@@ -343,16 +344,17 @@ describe("a model chip", () => {
       { text: "Having looked further, the readings stay level." },
     ];
     await tap("f1");
-    const system = providerCalls[0].system;
-    expect(system).toContain(
+    const user = h.userSide(providerCalls[0]);
+    expect(user).toContain(
       "CONTINUE: the person asked you to keep looking. The unfinished question is their message before that request, in CONVERSATION.",
     );
-    // The question stays the person's own turn; it never reaches the
-    // system role.
-    expect(system).not.toContain("How was my blood pressure last month?");
-    expect(system).toContain(
+    expect(user).toContain(
       "Already fetched: get_metric_table(bp, last30days, week) → m1.r1",
     );
+    // The system role carries neither the line nor the question (#1217).
+    const { system } = providerCalls[0];
+    expect(system).not.toContain("CONTINUE:");
+    expect(system).not.toContain("How was my blood pressure last month?");
   });
 });
 
@@ -373,7 +375,7 @@ describe("an answered question", () => {
       clarification: { messageId: h.LAST_ASSISTANT_ID, choiceId: "c2" },
     });
     expect(run.status).toBe(200);
-    expect(providerCalls[0].system).toContain(
+    expect(h.userSide(providerCalls[0])).toContain(
       "CLARIFIED: the person answered your clarifying question by choosing metric=resting_hr.",
     );
   });
@@ -385,7 +387,7 @@ describe("an answered question", () => {
       message: "The one from my watch",
       clarification: { messageId: h.LAST_ASSISTANT_ID },
     });
-    expect(providerCalls[0].system).toContain(
+    expect(h.userSide(providerCalls[0])).toContain(
       "CLARIFIED: the person answered your clarifying question in their own words",
     );
   });
@@ -397,7 +399,7 @@ describe("an answered question", () => {
       message: "Resting heart rate",
       clarification: { messageId: "m-older", choiceId: "c2" },
     });
-    expect(providerCalls[0].system).not.toContain("CLARIFIED:");
+    expect(h.userSide(providerCalls[0])).not.toContain("CLARIFIED:");
     expect(annotated("coach.clarification.stale")).toHaveLength(1);
   });
 

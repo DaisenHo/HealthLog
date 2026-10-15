@@ -131,12 +131,17 @@ describe("upsertScoreRow", () => {
       now: new Date("2026-06-02T03:00:00Z"),
     });
 
-    expect(afterMeasurementMutation).toHaveBeenCalledWith("u1", [
-      {
-        type: "STRAIN_SCORE",
-        measuredAt: new Date("2026-06-01T12:00:00.000Z"),
-      },
-    ]);
+    expect(afterMeasurementMutation).toHaveBeenCalledWith(
+      "u1",
+      [
+        {
+          type: "STRAIN_SCORE",
+          measuredAt: new Date("2026-06-01T12:00:00.000Z"),
+        },
+      ],
+      // A computed score is not a hand entry: it waits the sync gap.
+      { source: "sync", label: "score" },
+    );
   });
 });
 

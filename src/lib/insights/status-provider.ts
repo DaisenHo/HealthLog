@@ -216,7 +216,7 @@ export async function runStatusCompletion(
   // so a refused call never reads the controls. `undefined` (the operator
   // switched reasoning off, or the job resolved off) is today's wire.
   const reasoning = args.reasoningJob
-    ? await resolveJobReasoning(args.reasoningJob, chain)
+    ? await resolveJobReasoning(args.reasoningJob, chain, userId)
     : undefined;
   const thinkingTokens =
     reasoning && reasoning.effort !== "off"

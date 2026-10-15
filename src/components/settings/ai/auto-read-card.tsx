@@ -24,7 +24,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Switch } from "@/components/ui/switch";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
-import { useAiCapability } from "@/hooks/use-ai-capability";
+import { useAiCapability, useAiUsage } from "@/hooks/use-ai-capability";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -41,6 +41,9 @@ export function AutoReadCard() {
   // already-on preference off stays possible.
   const documentAi = useAiCapability("documentAi");
   const operatorOff = documentAi.reason === "operator_disabled";
+  // v1.43 (#1217) — on the frugal AI usage level the switch rests: documents
+  // are read only on request. The choice itself is kept.
+  const restingFrugal = useAiUsage()?.level === "frugal";
 
   // Whether the honesty confirm is currently shown (user flipped the switch ON
   // but has not yet acknowledged the trade). Off→on reveals it; the write only
@@ -112,6 +115,15 @@ export function AutoReadCard() {
           className="text-muted-foreground text-xs"
         >
           {t("settings.ai.operatorOff.autoRead")}
+        </p>
+      ) : null}
+
+      {restingFrugal && enabled && !operatorOff ? (
+        <p
+          data-slot="documents-auto-read-resting"
+          className="text-muted-foreground text-xs"
+        >
+          {t("settings.ai.autoRead.restingFrugal")}
         </p>
       ) : null}
 

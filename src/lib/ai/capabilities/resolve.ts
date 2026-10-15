@@ -21,6 +21,7 @@ import {
   isExternalProvider,
   isOperatorHeldProvider,
 } from "@/lib/ai/provider-egress";
+import { usageLevelAtLeast, type AiUsageLevel } from "@/lib/ai/usage-level";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
 
@@ -88,6 +89,11 @@ export interface AiCapabilityInputs {
   /** Kinds of the record's active (non-revoked) consent receipts. */
   activeConsentKinds: ReadonlySet<string>;
   recordKind: AiRecordKind;
+  /**
+   * v1.43 (#1217) — the record's AI usage level in effect. The loader always
+   * sets it; absent (a hand-built set of inputs) means no level restriction.
+   */
+  usageLevel?: AiUsageLevel;
 }
 
 // Which tags are operator-held and which stays local: `@/lib/ai/provider-egress`,
@@ -271,6 +277,15 @@ function consentReason(
     : "consent_required";
 }
 
+/** Whether the record's usage level is below what the capability needs. */
+function usageReason(
+  def: AiCapabilityDefinition,
+  level: AiUsageLevel | undefined,
+): AiUnavailableReason | null {
+  if (def.minUsageLevel === undefined || level === undefined) return null;
+  return usageLevelAtLeast(level, def.minUsageLevel) ? null : "usage_level";
+}
+
 function stateFor(reason: AiUnavailableReason | null): AiCapabilityState {
   if (reason === null) {
     return { available: true, reason: null, onDeviceAllowed: true };
@@ -314,6 +329,7 @@ export function explainAiCapability(
     switchReason,
     inputs.providerWorkAdmitted ? null : "not_permitted_for_record",
     modules.reason,
+    usageReason(def, inputs.usageLevel),
     providerReason(def, inputs.provider),
     consentReason(def, inputs.provider, inputs.activeConsentKinds),
   ]);

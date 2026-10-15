@@ -69,9 +69,11 @@ export function ProviderHealthSection() {
   const { data, isPending, isError } = useQuery({
     queryKey: queryKeys.adminProviderHealth(),
     queryFn: () =>
-      apiGet<{ providers: ProviderHealthRow[]; spendToday: SpendToday }>(
-        "/api/admin/provider-health",
-      ),
+      apiGet<{
+        providers: ProviderHealthRow[];
+        spendToday: SpendToday;
+        usageLevels?: { frugal: number; standard: number; full: number };
+      }>("/api/admin/provider-health"),
   });
 
   const typeLabel = (type: string): string => {
@@ -97,6 +99,7 @@ export function ProviderHealthSection() {
 
   const providers = data?.providers ?? [];
   const spendToday = data?.spendToday ?? null;
+  const usageLevels = data?.usageLevels ?? null;
 
   return (
     <SettingsCard>
@@ -111,6 +114,18 @@ export function ProviderHealthSection() {
             accounts: groupDigits(spendToday.accounts),
             total: groupDigits(spendToday.totalTokens),
             operator: groupDigits(spendToday.operatorTokens),
+          })}
+        </p>
+      ) : null}
+      {usageLevels ? (
+        <p
+          className="text-muted-foreground text-sm"
+          data-slot="ai-usage-levels"
+        >
+          {t("admin.providerHealth.usageLevels", {
+            frugal: groupDigits(usageLevels.frugal),
+            standard: groupDigits(usageLevels.standard),
+            full: groupDigits(usageLevels.full),
           })}
         </p>
       ) : null}

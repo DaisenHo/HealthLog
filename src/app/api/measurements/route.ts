@@ -963,6 +963,7 @@ async function postMeasurement(request: NextRequest) {
     await afterMeasurementMutation(
       user.id,
       results.map((r) => ({ type: r.type, measuredAt: r.measuredAt })),
+      { source: "manual" },
     );
 
     return apiSuccess(shapedResults, 201);
@@ -1116,9 +1117,11 @@ async function postMeasurement(request: NextRequest) {
   // pg-boss; WEEK / MONTH / YEAR recomputes are enqueued under the
   // hood. Best-effort — a populator hiccup never fails the user's
   // write.
-  await afterMeasurementMutation(user.id, [
-    { type: measurement.type, measuredAt: measurement.measuredAt },
-  ]);
+  await afterMeasurementMutation(
+    user.id,
+    [{ type: measurement.type, measuredAt: measurement.measuredAt }],
+    { source: "manual" },
+  );
 
   return apiSuccess(shapeMeasurementNotes(measurement), 201);
 }
@@ -1259,10 +1262,11 @@ async function postNamedSleepStage(
       ).catch(() => {});
       void maybeEnqueueMorningRefresh(userId, [segment.end]).catch(() => {});
     }
-    await afterMeasurementMutation(userId, [
-      { type, measuredAt: segment.end },
-      ...(verdict.dirtyIdentities ?? []),
-    ]);
+    await afterMeasurementMutation(
+      userId,
+      [{ type, measuredAt: segment.end }, ...(verdict.dirtyIdentities ?? [])],
+      { source: "manual" },
+    );
   }
 
   return namedSleepStageResponse(verdict.row.id, status, {

@@ -162,7 +162,7 @@ export async function logTelegramMeasurement(input: {
   await afterMeasurementMutation(
     input.userId,
     [{ type: input.type, measuredAt }],
-    "telegram-measurement",
+    { source: "manual", label: "telegram-measurement" },
   );
 
   return { status: "ok" };
