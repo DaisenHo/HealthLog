@@ -56,6 +56,7 @@ import {
   handleCollectionFetchError,
   noteGoogleHealthEdgeFilterUnsupported,
   recordGoogleHealthBackfillPage,
+  recordGoogleHealthBackfillResumePoint,
   runGoogleHealthCollection,
   upsertGoogleHealthMeasurements,
   type GoogleHealthMeasurementUpsert,
@@ -312,6 +313,15 @@ async function syncMetricCollection(
                 maxSkipPages: ceiling,
                 onFilterUnsupported: () =>
                   noteGoogleHealthEdgeFilterUnsupported(resource.verb),
+                // A place past a page whose write failed would leave that
+                // page's rows behind it, like a moved edge would.
+                onResumePoint: (point) =>
+                  edgeHeld
+                    ? undefined
+                    : recordGoogleHealthBackfillResumePoint(
+                        resource.verb,
+                        point,
+                      ),
               },
             }
           : {}),

@@ -33,6 +33,7 @@ vi.mock("@/lib/logging/context", () => ({
 
 import {
   GOOGLE_HEALTH_DATA_TYPES,
+  GOOGLE_HEALTH_SKIP_MS,
   type GoogleHealthDataPoint,
   forEachDataPointPage,
   googleHealthSliceBudget,
@@ -47,7 +48,9 @@ import {
   readGoogleHealthBackfillCursors,
   readGoogleHealthBackfillEdgeFilterUnsupported,
   recordGoogleHealthBackfillPage,
+  recordGoogleHealthBackfillResumePoint,
   runWithGoogleHealthBackfillResume,
+  type GoogleHealthBackfillCursor,
 } from "../sync-core";
 
 const MINUTE = 60_000;
@@ -284,31 +287,181 @@ describe("passing over the samples beyond the edge inside a slice", () => {
     expect(outcome.truncated).toBe(true);
   });
 
-  it("does not stop on the slice's clock while it is still passing over", async () => {
+  it("stops on the slice's clock while it is still passing over, and keeps its place", async () => {
     let clock = 0;
     safeFetchMock.mockImplementation(async (url: string) => {
       clock += 10_000;
       return respond(url);
     });
-    // Each request takes ten seconds and the slice has fifteen, counted from
-    // when the collection started; passing over the first three pages takes
-    // forty.
+    // Each request takes ten seconds and the slice has fifteen; passing over
+    // the first three pages takes thirty. The slice does not run on past its
+    // clock for the skip any more: it stops and saves where it got to.
     const budget = googleHealthSliceBudget(15_000, 500, () => clock);
-    budget.deadline = 15_000;
-    const { pages } = await runWithGoogleHealthStop(
+    const onResumePoint = vi.fn();
+    const { pages, outcome } = await runWithGoogleHealthStop(
       () => false,
       () =>
         walk({
           resumable: true,
-          edge: { at: at(15), order: "desc", filter: false },
+          edge: { at: at(15), order: "desc", filter: false, onResumePoint },
         }),
       budget,
     );
-    // The crossing page and the two after it, inside the fifteen seconds the
-    // slice still had once the skip was given back.
-    expect(pages).toHaveLength(3);
-    expect(budget.deadline).toBe(55_000);
+    expect(pages).toHaveLength(0);
+    expect(budget.deadline).toBe(15_000);
     expect(budget.stopReason).toBe("time_budget");
+    expect(outcome.truncated).toBe(true);
+    expect(onResumePoint).toHaveBeenCalledWith({ token: "1", page: 1 });
+  });
+
+  it("stops passing over on its own limit inside a long slice, and keeps its place", async () => {
+    let clock = 0;
+    safeFetchMock.mockImplementation(async (url: string) => {
+      clock += 60_000;
+      return respond(url);
+    });
+    // The edge is six pages deep; each request takes a minute, and the skip
+    // may run for three of the slice's sixty.
+    const budget = googleHealthSliceBudget(3_600_000, 500, () => clock);
+    const onResumePoint = vi.fn();
+    const { pages, outcome } = await runWithGoogleHealthStop(
+      () => false,
+      () =>
+        walk({
+          resumable: true,
+          edge: { at: at(30), order: "desc", filter: false, onResumePoint },
+        }),
+      budget,
+    );
+    expect(GOOGLE_HEALTH_SKIP_MS).toBe(3 * 60_000);
+    expect(pages).toHaveLength(0);
+    expect(safeFetchMock).toHaveBeenCalledTimes(3);
+    expect(outcome.truncated).toBe(true);
+    // The slice itself is not over: other collections may still run.
+    expect(budget.stopReason).toBeNull();
+    expect(onResumePoint).toHaveBeenCalledWith({ token: "2", page: 2 });
+  });
+
+  it("goes on from the saved place, rereading only its page", async () => {
+    const filtered = await walk({
+      resumable: true,
+      edge: { at: at(30), order: "desc" },
+    });
+    server.requests = [];
+    safeFetchMock.mockClear();
+    const tokens: Array<string | null> = [];
+    safeFetchMock.mockImplementation(async (url: string) => {
+      tokens.push(new URL(url).searchParams.get("pageToken"));
+      return respond(url);
+    });
+    const { rows, outcome } = await walk({
+      resumable: true,
+      edge: {
+        at: at(30),
+        order: "desc",
+        filter: false,
+        resumeFrom: { token: "2", page: 2 },
+      },
+    });
+    expect(rows).toEqual(filtered.rows);
+    expect(tokens).toEqual(["2", "3", "4", "5", "6", "7"]);
+    expect(outcome.truncated).toBe(false);
+  });
+
+  it("saves its place on a rate limit it cannot wait out", async () => {
+    let n = 0;
+    safeFetchMock.mockImplementation(async (url: string) =>
+      ++n === 3
+        ? new Response(
+            JSON.stringify({
+              error: { code: 429, status: "RESOURCE_EXHAUSTED" },
+            }),
+            {
+              status: 429,
+              headers: {
+                "content-type": "application/json",
+                "retry-after": "3600",
+              },
+            },
+          )
+        : respond(url),
+    );
+    const budget = googleHealthSliceBudget(3_600_000, 500);
+    const onResumePoint = vi.fn();
+    const { pages, outcome } = await runWithGoogleHealthStop(
+      () => false,
+      () =>
+        walk({
+          resumable: true,
+          edge: { at: at(30), order: "desc", filter: false, onResumePoint },
+        }),
+      budget,
+    );
+    expect(pages).toHaveLength(0);
+    expect(budget.stopReason).toBe("rate_limited");
+    expect(outcome.truncated).toBe(true);
+    expect(onResumePoint).toHaveBeenCalledWith({ token: "1", page: 1 });
+  });
+
+  it("reads from the newest page when Google refuses the saved token", async () => {
+    let n = 0;
+    safeFetchMock.mockImplementation(async (url: string) =>
+      ++n === 1
+        ? json(
+            {
+              error: {
+                code: 400,
+                status: "INVALID_ARGUMENT",
+                message: "Invalid page token.",
+              },
+            },
+            400,
+          )
+        : respond(url),
+    );
+    const { rows, outcome } = await walk({
+      resumable: true,
+      edge: {
+        at: at(30),
+        order: "desc",
+        filter: false,
+        resumeFrom: { token: "2", page: 2 },
+      },
+    });
+    expect(rows).toHaveLength(TOTAL - 30);
+    expect(outcome.truncated).toBe(false);
+  });
+
+  it("reads from the newest page when the saved place no longer reaches the edge", async () => {
+    // Page 7 holds only samples older than the edge: the list moved under
+    // the token, and going on from it could step over samples nobody wrote.
+    const { rows } = await walk({
+      resumable: true,
+      edge: {
+        at: at(30),
+        order: "desc",
+        filter: false,
+        resumeFrom: { token: "7", page: 7 },
+      },
+    });
+    expect(rows.map((p) => p.heartRate)).toEqual(
+      Array.from({ length: TOTAL - 30 }, (_, i) => ({
+        beatsPerMinute: String(60 + 30 + i),
+        sampleTime: { physicalTime: at(30 + i).toISOString() },
+      })),
+    );
+  });
+
+  it("does not charge the pages it passed over against the walk's own ceiling", async () => {
+    // Three pages passed over, then a ceiling of two written pages: both are
+    // written, not one.
+    const { pages, outcome } = await walk({
+      resumable: true,
+      maxPages: 2,
+      edge: { at: at(15), order: "desc", filter: false },
+    });
+    expect(pages).toHaveLength(2);
+    expect(outcome.truncated).toBe(true);
   });
 
   it("still stops on the job's own budget", async () => {
@@ -408,6 +561,75 @@ describe("the note that a collection refuses the edge filter", () => {
       });
     });
     expect(lastProgress()).not.toHaveProperty("edgeFilterUnsupported");
+  });
+
+  it("keeps a saved place in the list, counts it as progress only when it moves forward, and hands it to the next slice", async () => {
+    server.refuseUpperBound = true;
+    const cursor = {
+      at: at(30).toISOString(),
+      order: "desc" as const,
+      pages: 4,
+    };
+    const run = (
+      cursors: Map<string, GoogleHealthBackfillCursor>,
+      point: { token: string; page: number },
+    ) =>
+      runWithGoogleHealthBackfillResume(
+        "u1",
+        new Set(),
+        () => recordGoogleHealthBackfillResumePoint("fetchHeartRate", point),
+        cursors,
+        new Set(["fetchHeartRate"]),
+      );
+
+    const first = await run(new Map([["fetchHeartRate", cursor]]), {
+      token: "4",
+      page: 4,
+    });
+    expect(first.advanced.has("fetchHeartRate")).toBe(true);
+    const saved = readGoogleHealthBackfillCursors(lastProgress());
+    expect(saved.get("fetchHeartRate")).toEqual({
+      ...cursor,
+      resume: { token: "4", page: 4, reached: 4 },
+    });
+
+    // The same place again, or one short of it, is not progress.
+    const again = await run(new Map(saved), { token: "4", page: 4 });
+    expect(again.advanced.size).toBe(0);
+    const back = await run(new Map(saved), { token: "2", page: 2 });
+    expect(back.advanced.size).toBe(0);
+    expect(
+      readGoogleHealthBackfillCursors(lastProgress()).get("fetchHeartRate")
+        ?.resume,
+    ).toEqual({ token: "2", page: 2, reached: 4 });
+
+    // A page written keeps the place; the next slice is handed it.
+    await runWithGoogleHealthBackfillResume(
+      "u1",
+      new Set(),
+      () =>
+        recordGoogleHealthBackfillPage("fetchHeartRate", {
+          first: at(30),
+          last: at(34),
+        }),
+      new Map(saved),
+      new Set(["fetchHeartRate"]),
+    );
+    const next = readGoogleHealthBackfillCursors(lastProgress());
+    expect(next.get("fetchHeartRate")?.resume).toEqual(
+      saved.get("fetchHeartRate")?.resume,
+    );
+    await runWithGoogleHealthBackfillResume(
+      "u1",
+      new Set(),
+      async () => {
+        expect(
+          googleHealthBackfillCursor("fetchHeartRate")?.edge,
+        ).toMatchObject({ filter: false, resumeFrom: { token: "4", page: 4 } });
+      },
+      next,
+      new Set(["fetchHeartRate"]),
+    );
   });
 
   it("reads only well-formed keys", () => {

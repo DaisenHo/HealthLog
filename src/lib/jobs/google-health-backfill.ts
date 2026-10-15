@@ -75,19 +75,23 @@ export const GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS = 5 * 60;
  * backfill can do rather than guessed.
  *
  * A slice is continued only when it made progress that is on disk: it
- * finished a collection, or it moved a resumable collection's edge after
- * writing at least one page. Collections finish once each, and a resumable
- * collection's pages are capped across all attempts by its page ceiling
- * (`GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING`, the sum of them). So no chain of
- * progressing slices is longer than the collections plus those pages; the two
- * extra are slack for the first slice and the one that stamps the marker. In
+ * finished a collection, it moved a resumable collection's edge after
+ * writing at least one page, or a walk without the edge bound saved a place
+ * in the list further than any before it. Collections finish once each, a
+ * resumable collection's pages are capped across all attempts by its page
+ * ceiling (`GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING`, the sum of them), and a
+ * saved place only ever moves forward, through no more pages than the ones
+ * written plus the ones passed over, which the same ceiling bounds. So no
+ * chain of progressing slices is longer than the collections plus twice
+ * those pages; the two extra are slack for the first slice and the one that
+ * stamps the marker. In
  * practice a chain is a handful of slices per year of dense history. A slice
  * past this is counting progress it does not make, and fails rather than
  * queueing another.
  */
 export const GOOGLE_HEALTH_BACKFILL_MAX_SLICE =
   GOOGLE_HEALTH_COLLECTION_KEYS.length +
-  GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING +
+  2 * GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING +
   2;
 
 /** Test seam: a slice's budget, when not the production one. */

@@ -44,6 +44,7 @@ import {
   noteGoogleHealthOutcomeFailure,
   noteGoogleHealthWritten,
   refreshAccessToken,
+  type GoogleHealthResumePoint,
   type GoogleHealthTokenSource,
 } from "./client";
 import { getUserGoogleHealthCredentials } from "./credentials";
@@ -441,6 +442,14 @@ export interface GoogleHealthBackfillCursor {
   order: "desc" | "asc";
   /** Pages this collection has read across every attempt so far. */
   pages: number;
+  /**
+   * Only for a collection read without the edge bound: where its last walk
+   * stopped in the unbounded list (see `GoogleHealthResumePoint`), and the
+   * furthest position any walk of it has saved. A saved place counts as the
+   * slice's progress only when it is further than every one before it, so a
+   * chain of slices that keep passing over the same pages ends.
+   */
+  resume?: { token: string; page: number; reached: number };
 }
 
 /** What one collection came to in one backfill attempt. */
@@ -503,13 +512,25 @@ export function readGoogleHealthBackfillCursors(
     const c = progressRecord(raw);
     const at = typeof c.at === "string" ? c.at : null;
     if (!at || Number.isNaN(Date.parse(at))) continue;
+    const r = progressRecord(c.resume);
+    const count = (v: unknown): number =>
+      typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.trunc(v) : 0;
+    const resume =
+      typeof r.token === "string" &&
+      r.token.length > 0 &&
+      r.token.length <= 4096 &&
+      count(r.page) > 0
+        ? {
+            token: r.token,
+            page: count(r.page),
+            reached: Math.max(count(r.reached), count(r.page)),
+          }
+        : undefined;
     out.set(key, {
       at: new Date(at).toISOString(),
       order: c.order === "asc" ? "asc" : "desc",
-      pages:
-        typeof c.pages === "number" && Number.isFinite(c.pages) && c.pages > 0
-          ? Math.trunc(c.pages)
-          : 0,
+      pages: count(c.pages),
+      ...(resume ? { resume } : {}),
     });
   }
   return out;
@@ -555,7 +576,12 @@ async function persistBackfillProgress(
         cursors: Object.fromEntries(
           [...next.cursors].map(([key, c]) => [
             key,
-            { at: c.at, order: c.order, pages: c.pages },
+            {
+              at: c.at,
+              order: c.order,
+              pages: c.pages,
+              ...(c.resume ? { resume: c.resume } : {}),
+            },
           ]),
         ),
         // Only once there is something to say, so a backfill that never met
@@ -626,22 +652,78 @@ export async function runWithGoogleHealthBackfillResume<T>(
  * where every walk reads its whole window.
  */
 export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
-  edge?: { at: Date; order: "desc" | "asc"; filter: boolean };
+  edge?: {
+    at: Date;
+    order: "desc" | "asc";
+    filter: boolean;
+    resumeFrom?: GoogleHealthResumePoint;
+  };
   pagesSoFar: number;
 } | null {
   const resume = backfillResumeStorage.getStore();
   if (!resume) return null;
   const cursor = resume.cursors.get(key);
+  const filter = !resume.edgeFilterUnsupported.has(key);
   return cursor
     ? {
         edge: {
           at: new Date(cursor.at),
           order: cursor.order,
-          filter: !resume.edgeFilterUnsupported.has(key),
+          filter,
+          ...(!filter && cursor.resume
+            ? {
+                resumeFrom: {
+                  token: cursor.resume.token,
+                  page: cursor.resume.page,
+                },
+              }
+            : {}),
         },
         pagesSoFar: cursor.pages,
       }
     : { pagesSoFar: 0 };
+}
+
+/**
+ * Record where a collection's walk without the edge bound stopped in the
+ * unbounded list, so the next slice goes on from there. A place further than
+ * every one saved before counts as this slice's progress (the backfill sends
+ * another slice on it), even when no page was written: a skip deeper than one
+ * slice is worked through over several. Outside a backfill, or for a
+ * collection without an edge, this does nothing.
+ */
+export async function recordGoogleHealthBackfillResumePoint(
+  key: GoogleHealthCollectionKey,
+  point: GoogleHealthResumePoint,
+): Promise<void> {
+  const resume = backfillResumeStorage.getStore();
+  if (!resume) return;
+  const current = resume.cursors.get(key);
+  if (!current) return;
+  const reached = current.resume?.reached ?? 0;
+  const further = point.page > reached;
+  const cursors = new Map(resume.cursors);
+  cursors.set(key, {
+    ...current,
+    resume: {
+      token: point.token,
+      page: point.page,
+      reached: Math.max(reached, point.page),
+    },
+  });
+  try {
+    await persistBackfillProgress(resume, { done: resume.done, cursors });
+    if (further && !resume.advanced.has(key)) {
+      resume.advanced.set(key, current.at);
+    }
+  } catch (err) {
+    getEvent()?.addWarning(
+      `google-health: backfill progress write failed for ${key}: ${err}`,
+    );
+    annotate({
+      meta: { "googleHealth.backfill.progressWriteFailed": key },
+    });
+  }
 }
 
 /**
@@ -718,6 +800,8 @@ export async function recordGoogleHealthBackfillPage(
     at: moved ? far.toISOString() : current!.at,
     order,
     pages: (current?.pages ?? 0) + 1,
+    // The saved place stays until the walk records where it stopped.
+    ...(current?.resume ? { resume: current.resume } : {}),
   };
   const cursors = new Map(resume.cursors);
   cursors.set(key, nextCursor);
