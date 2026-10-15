@@ -426,6 +426,52 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
     expect(out).toContain("Last new value 3 d ago");
   });
 
+  // v1.42.4 — opening the app to look starts a foreground sync; the earlier
+  // background arrival must stay visible beside it.
+  it("keeps the last background arrival visible after a later foreground one", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: hoursAgo(1),
+      lastTrigger: "foreground",
+      lastNewSampleAt: hoursAgo(1),
+      lastBackgroundAt: hoursAgo(5),
+    });
+    expect(out).toContain('data-trigger="foreground"');
+    expect(out).toContain("Last in background 5 h ago");
+  });
+
+  it("does not repeat the background date when the last arrival was it", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: hoursAgo(1),
+      lastTrigger: "background",
+      lastNewSampleAt: hoursAgo(1),
+      lastBackgroundAt: hoursAgo(1),
+    });
+    expect(out).not.toContain("Last in background");
+  });
+
+  it("names the medication dose row in the freshness list", () => {
+    statusPayload = {
+      lastSyncedAt: hoursAgo(1),
+      health: healthFixture(),
+      metricFreshness: [
+        {
+          type: "MEDICATION_DOSE",
+          lastSeenAt: hoursAgo(3),
+          stale: false,
+          lastReceivedAt: hoursAgo(1),
+          lastTrigger: "foreground",
+          lastNewSampleAt: hoursAgo(1),
+          lastBackgroundAt: hoursAgo(6),
+        },
+      ],
+    };
+    const out = render();
+    expect(out).toContain("Medication doses");
+    expect(out).toContain("Last in background");
+  });
+
   it("says a type has not arrived through live sync yet", () => {
     const out = html({
       ...base,
