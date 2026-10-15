@@ -56,6 +56,7 @@ import {
 } from "@/lib/medications/glp1-pk";
 import {
   findDrugIdByBrand,
+  GLP1_DRUGS,
   type Glp1DrugId,
 } from "@/lib/medications/glp1-knowledge";
 import { parseDoseMg } from "@/lib/medications/dose-string";
@@ -73,6 +74,53 @@ const HOURS_PER_DAY = 24;
  *  for a research-view chart that emphasises the sawtooth shape. */
 const WINDOW_HOURS_BEFORE = 21 * HOURS_PER_DAY;
 const WINDOW_HOURS_AFTER = 0;
+
+/** Taken intakes per request while walking back to the model's horizon. */
+const INTAKE_PAGE_SIZE = 100;
+/**
+ * Half-lives before the chart's left edge whose doses still count. After five
+ * half-lives a dose holds about 3% of its peak, below what the chart can show.
+ */
+const HORIZON_HALF_LIVES = 5;
+
+/**
+ * Every taken intake from `since` on, newest first, walked page by page. The
+ * curve is a sum over every dose still in the body, so a fixed count of
+ * recent intakes was wrong in both directions: twenty daily doses of a
+ * long-acting drug stop well short of steady state, and planned or skipped
+ * rows used up the count without being doses at all.
+ */
+export async function loadTakenIntakesSince(
+  medicationId: string,
+  since: Date,
+  fetchPage: (url: string) => Promise<{
+    events: IntakeEvent[];
+    meta: { total: number };
+  }> = (url) => apiGet(url),
+): Promise<{ events: IntakeEvent[] }> {
+  const events: IntakeEvent[] = [];
+  for (let offset = 0; ; offset += INTAKE_PAGE_SIZE) {
+    const page = await fetchPage(
+      `/api/medications/${medicationId}/intake?status=taken&sortBy=takenAt&sortDir=desc&limit=${INTAKE_PAGE_SIZE}&offset=${offset}`,
+    );
+    events.push(...page.events);
+    const oldest = page.events[page.events.length - 1];
+    const reachedHorizon =
+      !oldest?.takenAt || Date.parse(oldest.takenAt) < since.getTime();
+    if (
+      reachedHorizon ||
+      page.events.length < INTAKE_PAGE_SIZE ||
+      offset + INTAKE_PAGE_SIZE >= page.meta.total
+    ) {
+      break;
+    }
+  }
+  return {
+    events: events.filter(
+      (ev) => ev.takenAt && Date.parse(ev.takenAt) >= since.getTime(),
+    ),
+  };
+}
 
 interface IntakeEvent {
   id: string;
@@ -147,9 +195,16 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
     queryKey: queryKeys.medicationIntakeDrugLevelChart(medication.id),
     queryFn: async () => {
       try {
-        return await apiGet<{ events: IntakeEvent[] }>(
-          `/api/medications/${medication.id}/intake?limit=20&sortBy=takenAt&sortDir=desc`,
+        const halfLifeHours =
+          GLP1_DRUGS[drugId!].pharmacology.halfLifeDays * HOURS_PER_DAY;
+        const since = new Date(
+          Date.now() -
+            (WINDOW_HOURS_BEFORE + HORIZON_HALF_LIVES * halfLifeHours) *
+              60 *
+              60 *
+              1000,
         );
+        return await loadTakenIntakesSince(medication.id, since);
       } catch {
         return null;
       }
