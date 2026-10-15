@@ -361,3 +361,42 @@ For off-host encrypted backups to S3/R2/B2 see
 [`docs/ops/backup-restore.md`](../ops/backup-restore.md); for rotating the
 encryption key safely (keep the old key until zero rows remain on it) see
 [`docs/ops/encryption-key-rotation.md`](../ops/encryption-key-rotation.md).
+
+## Updates
+
+A new image can bring database migrations, and `docker-entrypoint.sh`
+applies them on the first start of that image. Most are additive, but some
+rewrite data, and going back to the previous image does not undo them. The
+only way back from a migration that went wrong is the dump you took before
+it. So take one before every pull:
+
+```bash
+# 1. Dump the database (same command as under "Backup and restore").
+docker compose exec -T db pg_dump -U healthlog healthlog \
+  | gzip > healthlog-before-update-$(date +%F).sql.gz
+
+# 2. Pull the new image and recreate the app container.
+docker compose pull app
+docker compose up -d app
+
+# 3. Confirm the running build.
+curl -s http://localhost:3000/api/version
+```
+
+Keep the dump until the new version has run for a few days, and keep your
+encryption key with it: a dump without the key cannot be read.
+
+The start log says what is about to happen before the migrations run:
+
+```text
+HealthLog: 2 database migrations pending. Back up the database before updating (pg_dump, see the Updates section of docs/self-hosting/getting-started.md); a migration is not undone by going back to the previous image.
+HealthLog: Running database migrations...
+```
+
+or `HealthLog: Database schema is up to date.` when the image brings none.
+The line is a notice and does not pause the start. If you see a count and
+have no dump yet, stop the container (`docker compose stop app`), take the
+dump, and start it again; the migrations run on that start.
+
+For the ordering on a host where you want the migration result before the
+new container takes traffic, see [`docs/ops/deploy.md`](../ops/deploy.md).

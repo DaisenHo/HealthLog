@@ -13,6 +13,12 @@ Migrations land **before** the new app container takes traffic. The
 canonical command sequence on a single-instance host:
 
 ```sh
+# 0. Dump the database first. A migration is not undone by going back to
+#    the previous image; the dump is the way back. See "Updates" in
+#    docs/self-hosting/getting-started.md.
+docker compose exec -T db pg_dump -U healthlog healthlog \
+  | gzip > healthlog-before-update-$(date +%F).sql.gz
+
 # 1. Pull the new image. If you pin a version with HEALTHLOG_IMAGE_REF,
 #    set it to the new one first.
 docker compose pull app
