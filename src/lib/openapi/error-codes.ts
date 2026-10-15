@@ -355,6 +355,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     profile_claim: [
       "profile_claim.invalid",
       "profile_claim.oidc_only_unsupported",
+      "profile_claim.sso_unavailable",
       "profile_claim.taken",
     ],
     record_write: ["record_write.rate_limited"],

@@ -43,7 +43,6 @@ import {
 } from "@/lib/validations/step-up";
 import {
   dataEnvelope,
-  notImplementedResponse,
   profileEmailRateLimitResponse,
   stdResponses,
   errorEnvelope,
@@ -768,7 +767,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Claim a managed profile through single sign-on (v1.43)",
       description:
-        "Web only. Checks the link and the username, sets a sealed `hl_claim` cookie (10 minutes, `httpOnly`) and answers where to continue: `/api/auth/oidc/login?intent=claim`. The OIDC callback binds the identity provider's subject to the profile and signs the new owner in; a subject already bound to an account, or a verified email another account holds, is refused there. Works on a single-sign-on-only instance. 404 `profile_claim.invalid` (no usable link) or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken` (username) or `auth.already_authenticated`; rate-limited per source address like the password claim.",
+        "Web only. Checks the link and the username, sets a sealed `hl_claim` cookie (10 minutes, `httpOnly`) and answers where to continue: `/api/auth/oidc/login?intent=claim`. The OIDC callback binds the identity provider's subject to the profile and signs the new owner in; a subject already bound to an account, or a verified email another account holds, is refused there. Works on a single-sign-on-only instance. When the callback refuses, the browser lands on `/auth/claim?error=<reason>` with reason `claim_expired` (the link was used, withdrawn, replaced or expired in the meantime, or the cookie is missing, expired or belongs to another start), `claim_sso_subject_bound`, `claim_email_taken`, `claim_username_taken` (taken during the round trip), `claim_signed_in`, or one of the sign-in reasons (`oidc_denied`, `oidc_state`, `oidc_failed`, `oidc_rate_limited`, `oidc_disabled`); on success it lands on `/onboarding/handover`, where the new owner decides each guardian's access. The cookie is cleared either way. 404 `profile_claim.invalid` (no usable link) or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken` (username) or `auth.already_authenticated`; rate-limited per source address like the password claim.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: claimSsoRequest } },
@@ -795,7 +794,6 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
-        ...notImplementedResponse,
       },
     },
   },
@@ -807,7 +805,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Preview a managed-profile handover link",
       description:
-        "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link whose creator lost access, all answer the same 404. Rate-limited per source address.",
+        "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link whose creator lost access, all answer the same 404. Rate-limited per source address. Since v1.43 answered on a single-sign-on-only instance too, with `methods` naming the ways in.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: claimPreviewRequest } },
@@ -820,11 +818,6 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(claimPreview, "ProfileClaimPreviewEnvelope"),
             },
           },
-        },
-        "403": {
-          description:
-            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
-          content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {
           description:
@@ -2338,6 +2331,12 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .describe(
               "Browser leg only: where to land after login. Sanitised to an in-app path; ignored entirely on the native leg.",
             ),
+          intent: z
+            .literal("claim")
+            .optional()
+            .describe(
+              "v1.43 — `claim` continues a managed-profile claim started at POST /api/auth/claim/sso; the link and username ride the sealed `hl_claim` cookie that call set, never this URL. Without a valid cookie for a still-usable link the start redirects to `/auth/claim?error=claim_expired`. Browser leg only: with `client=native` it fails with `oidc_invalid_request`. `next` is ignored.",
+            ),
           client_proto: z
             .enum(["http", "https"])
             .optional()
@@ -2356,7 +2355,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         "302": {
           description:
-            "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `oidc_failed`. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",
+            "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser; `/auth/claim?error=<reason>` with `intent=claim`, where `claim_expired` is one more reason) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `oidc_failed`. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",
         },
       },
     },

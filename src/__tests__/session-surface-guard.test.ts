@@ -100,9 +100,11 @@ describe("S1 — the direct session-resolution set is frozen", () => {
     "app/api/auth/claim/sso/route.ts":
       "refuses to start a single-sign-on claim over a live session",
     // Anonymous IdP callback. Probes for an already-valid session so a
-    // replayed callback redirects instead of minting a second identity.
+    // replayed callback redirects instead of minting a second identity, and
+    // (v1.43, #959) so a single-sign-on claim is refused over a live session,
+    // as the claim routes refuse it.
     "app/api/auth/oidc/callback/route.ts":
-      "duplicate-callback probe on an otherwise anonymous route",
+      "duplicate-callback probe and the claim's live-session refusal on an otherwise anonymous route",
     // Public liveness probe. The session read only decides whether the body
     // carries operational detail; the status code is computed without it.
     "app/api/health/route.ts": "admin-only detail on a public probe",
@@ -365,6 +367,48 @@ describe("S2 — the URL-token authentication set is frozen", () => {
 
   it("every allowlist entry carries a reason", () => {
     for (const [rel, reason] of Object.entries(URL_TOKEN_ALLOWLIST)) {
+      expect(reason.trim().length, `${rel} has no reason`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("S4 — the single-sign-on claim cookie set is frozen", () => {
+  /**
+   * v1.43 (#959). A third way to act without a session: the sealed `hl_claim`
+   * cookie carries a managed-profile claim from `POST /api/auth/claim/sso`
+   * through the OIDC round trip, and the callback turns it — together with
+   * the provider's subject — into somebody's account. It is neither a session
+   * nor a URL credential, so neither leg above sees it.
+   *
+   * The handover token itself still only travels in the claim routes' bodies
+   * and the claim page's query string (S2); the cookie names the link by id.
+   * What this freezes is who may mint the cookie and who may act on it.
+   */
+  const CLAIM_COOKIE_ALLOWLIST: Record<string, string> = {
+    "app/api/auth/claim/sso/route.ts":
+      "mints the cookie, only after checking the token and the username",
+    "app/api/auth/oidc/login/route.ts":
+      "requires the cookie for intent=claim and binds it into the OIDC state",
+    "app/api/auth/oidc/callback/route.ts":
+      "binds the provider's subject to the profile the cookie names",
+  };
+
+  const CLAIM_COOKIE_USE =
+    /\b(readClaimCookie|setClaimCookie|claimMatchesBinding|clearClaimCookie)\s*\(|\bCLAIM_COOKIE\b|["']hl_claim["']/;
+
+  it("no file under src/app touches the claim cookie unlisted", () => {
+    const users = appFilesMatching(CLAIM_COOKIE_USE);
+    expect(users.length).toBeGreaterThan(0);
+    expect(users).toEqual(Object.keys(CLAIM_COOKIE_ALLOWLIST).sort());
+  });
+
+  it("only the single-sign-on start mints it", () => {
+    const minters = appFilesMatching(/\bsetClaimCookie\s*\(/);
+    expect(minters).toEqual(["app/api/auth/claim/sso/route.ts"]);
+  });
+
+  it("every allowlist entry carries a reason", () => {
+    for (const [rel, reason] of Object.entries(CLAIM_COOKIE_ALLOWLIST)) {
       expect(reason.trim().length, `${rel} has no reason`).toBeGreaterThan(0);
     }
   });

@@ -19,6 +19,7 @@ vi.mock("@/hooks/use-auth", () => ({
 vi.mock("@/lib/queries/use-profile-claim", () => ({
   useProfileClaimPreview: () => ({ data: undefined, error: null }),
   useClaimProfile: () => ({ mutate: () => {}, isPending: false }),
+  useClaimProfileSso: () => ({ mutate: () => {}, isPending: false }),
 }));
 
 import { ClaimProfile } from "../claim-profile";

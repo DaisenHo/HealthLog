@@ -30,8 +30,8 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { buildHandoverUrl } from "@/lib/auth/handover-token";
-import { isOidcOnly } from "@/lib/auth/oidc";
 import { annotate } from "@/lib/logging/context";
+import { handoverMethods } from "@/lib/managed-profiles/claim-gate";
 import {
   createHandover,
   HandoverError,
@@ -49,16 +49,15 @@ const notFound = () =>
   });
 
 /**
- * v1.42 refuses the handover on a single-sign-on-only instance: the claim
- * sets a password, and such an instance admits none. The SSO arm of the claim
- * is a separate piece of work.
+ * A link nobody could redeem is not minted. Since v1.43 the person can claim
+ * through the identity provider, so a single-sign-on-only server hands over
+ * too; this answers only when neither a password nor single sign-on is
+ * possible, which a working configuration never produces.
  */
-const oidcOnlyRefusal = () =>
-  apiError(
-    "Handing over a profile is not available while this server allows single sign-on only",
-    403,
-    { errorCode: "profile_claim.oidc_only_unsupported" },
-  );
+const noMethodRefusal = () =>
+  apiError("Handing over a profile is not available on this server", 403, {
+    errorCode: "profile_claim.oidc_only_unsupported",
+  });
 
 /** Same ceiling as creating, editing and inviting: ten an hour per caller. */
 const CREATE_LIMIT = 10;
@@ -79,8 +78,10 @@ export const GET = apiHandler(
       action: { name: "managed_profile.handover.read" },
       meta: { profile_id: id, open: status.open !== null },
     });
+    const methods = handoverMethods();
     return apiSuccess({
-      available: !isOidcOnly(),
+      available: methods.length > 0,
+      methods,
       open: status.open
         ? {
             id: status.open.id,
@@ -107,7 +108,7 @@ export const POST = apiHandler(
     if (!rateLimit.allowed) {
       return apiError("Too many handover links, try again later", 429);
     }
-    if (isOidcOnly()) return oidcOnlyRefusal();
+    if (handoverMethods().length === 0) return noMethodRefusal();
     const { id } = await params;
 
     const { data: body, error: jsonError } = await safeJson(request, {

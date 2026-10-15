@@ -528,7 +528,7 @@
       "loading": "Sprawdzanie linku…",
       "invalid": "Ten link już nie działa",
       "invalidHint": "Jest nieznany, wygasł, został wycofany albo już użyty. Poproś osobę, która go wysłała, o nowy.",
-      "oidcOnly": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO), więc profilu nie można tu jeszcze przejąć.",
+      "oidcOnly": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO). Kontynuuj u swojego dostawcy tożsamości.",
       "signedInTitle": "Najpierw się wyloguj",
       "signedInBody": "Masz zalogowaną sesję jako {username}. Ten link tworzy logowanie dla kogoś innego, więc wyloguj się, zanim go użyjesz.",
       "signOut": "Wyloguj i kontynuuj",
@@ -545,7 +545,19 @@
       "errorTaken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
       "errorRateLimit": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
       "errorFailed": "Nie udało się. Spróbuj ponownie za chwilę.",
-      "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie."
+      "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.",
+      "ssoContinue": "Kontynuuj przez {provider}",
+      "ssoStarting": "Przekierowywanie…",
+      "ssoHint": "Od tej pory logujesz się tutaj swoim kontem {provider}.",
+      "ssoDivider": "lub",
+      "ssoFallbackName": "logowanie jednokrotne (SSO)",
+      "errorTitle": "Przejęcie się nie udało",
+      "errorSubjectBound": "To logowanie należy już do innego konta na tym serwerze. Otwórz link ponownie i użyj innego konta u swojego dostawcy tożsamości.",
+      "errorEmailTaken": "Twój dostawca tożsamości przekazał adres e-mail, którego używa już inne konto na tym serwerze. Otwórz link ponownie i użyj innego konta albo zapytaj osobę, która administruje serwerem.",
+      "errorUsernameTaken": "W międzyczasie ktoś zajął tę nazwę użytkownika. Otwórz link ponownie i wybierz inną.",
+      "errorSignedIn": "Po powrocie byłeś zalogowany. Wyloguj się i otwórz link ponownie.",
+      "errorSso": "Logowanie u dostawcy tożsamości się nie powiodło. Otwórz link ponownie, aby spróbować jeszcze raz.",
+      "signInInstead": "Zaloguj się na to konto"
     },
     "inviteInvalid": {
       "title": "Nieprawidłowe zaproszenie",
@@ -11989,9 +12001,11 @@
         "revokeFailed": "Nie udało się wycofać linku. Spróbuj ponownie.",
         "errorFailed": "Nie udało się utworzyć linku przekazania.",
         "errorRosterChanged": "W międzyczasie zmieniło się, kto opiekuje się kartą. Zamknij to i otwórz ponownie.",
-        "oidcOnly": "Przekazanie profilu nie jest możliwe, dopóki ten serwer pozwala tylko na logowanie jednokrotne (SSO).",
+        "oidcOnly": "Przekazanie profilu nie jest możliwe na tym serwerze.",
         "loadError": "Nie udało się wczytać stanu przekazania.",
-        "entryHint": "Gdy {name} chce samodzielnie prowadzić tę kartę."
+        "entryHint": "Gdy {name} chce samodzielnie prowadzić tę kartę.",
+        "methodSso": "{name} loguje się przez logowanie jednokrotne (SSO), gdy użyje linku.",
+        "methodBoth": "{name} może ustawić hasło albo zalogować się przez logowanie jednokrotne (SSO)."
       }
     },
     "toast": {

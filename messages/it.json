@@ -528,7 +528,7 @@
       "loading": "Controllo del link…",
       "invalid": "Questo link non funziona più",
       "invalidHint": "È sconosciuto, scaduto, ritirato o già usato. Chiedine uno nuovo a chi te l'ha inviato.",
-      "oidcOnly": "Questo server consente solo il single sign-on, quindi qui non è ancora possibile prendere in carico un profilo.",
+      "oidcOnly": "Questo server consente solo il single sign-on. Continua invece con il tuo provider di identità.",
       "signedInTitle": "Prima esci",
       "signedInBody": "Hai effettuato l'accesso come {username}. Questo link crea un accesso per un'altra persona, quindi esci prima di usarlo.",
       "signOut": "Esci e continua",
@@ -545,7 +545,19 @@
       "errorTaken": "Questo nome utente o indirizzo email è già in uso.",
       "errorRateLimit": "Troppi tentativi. Attendi qualche minuto e riprova.",
       "errorFailed": "Non ha funzionato. Riprova tra un momento.",
-      "errorOffline": "Il server non è stato raggiunto. Controlla la connessione e riprova."
+      "errorOffline": "Il server non è stato raggiunto. Controlla la connessione e riprova.",
+      "ssoContinue": "Continua con {provider}",
+      "ssoStarting": "Reindirizzamento…",
+      "ssoHint": "Da quel momento accedi qui con il tuo account {provider}.",
+      "ssoDivider": "oppure",
+      "ssoFallbackName": "single sign-on (SSO)",
+      "errorTitle": "La consegna non è andata a buon fine",
+      "errorSubjectBound": "Questo accesso appartiene già a un altro account su questo server. Riapri il link e usa un altro account presso il tuo provider di identità.",
+      "errorEmailTaken": "Il tuo provider di identità ha fornito un indirizzo email che qui usa già un altro account. Riapri il link e usa un altro account, oppure chiedi a chi amministra il server.",
+      "errorUsernameTaken": "Nel frattempo qualcuno ha preso quel nome utente. Riapri il link e scegline un altro.",
+      "errorSignedIn": "Al ritorno avevi già effettuato l'accesso. Esci, poi riapri il link.",
+      "errorSso": "L'accesso con il tuo provider di identità non è riuscito. Riapri il link per riprovare.",
+      "signInInstead": "Accedi a quell'account"
     },
     "inviteInvalid": {
       "title": "Invito non valido",
@@ -11989,9 +12001,11 @@
         "revokeFailed": "Impossibile ritirare il link. Riprova.",
         "errorFailed": "Impossibile creare il link di consegna.",
         "errorRosterChanged": "Nel frattempo è cambiato chi si occupa della cartella. Chiudi e riapri.",
-        "oidcOnly": "Non è possibile consegnare un profilo finché questo server consente solo il single sign-on.",
+        "oidcOnly": "Su questo server non è possibile consegnare un profilo.",
         "loadError": "Impossibile caricare lo stato della consegna.",
-        "entryHint": "Quando {name} vuole tenere questa cartella in autonomia."
+        "entryHint": "Quando {name} vuole tenere questa cartella in autonomia.",
+        "methodSso": "{name} accede con il single sign-on quando usa il link.",
+        "methodBoth": "{name} può impostare una password oppure accedere con il single sign-on."
       }
     },
     "toast": {

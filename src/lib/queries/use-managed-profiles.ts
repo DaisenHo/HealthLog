@@ -20,6 +20,7 @@
  * invalidation path (`grantDependentKeys`).
  */
 
+import type { HandoverMethod } from "@/lib/validations/claim-sso";
 import {
   useMutation,
   useQuery,
@@ -346,8 +347,13 @@ export function useRemoveManagedProfileGuardian() {
 
 /** What `GET /api/managed-profiles/{id}/handover` answers. */
 export interface ManagedProfileHandoverStatus {
-  /** False on a single-sign-on-only instance, where no link can be made. */
+  /** False only when no way to redeem a link exists on this instance. */
   available: boolean;
+  /**
+   * v1.43 — how the person can redeem the link here. Absent from an older
+   * server, which only offered the password.
+   */
+  methods?: HandoverMethod[];
   open: {
     id: string;
     createdAt: string;

@@ -6,7 +6,9 @@ import { ClaimProfile } from "@/components/auth/claim-profile";
 
 /**
  * v1.42 (#959) — `/auth/claim?token=hlp_…`, where the link a Guardian handed
- * over (`/claim/<token>`) lands after the edge redirect.
+ * over (`/claim/<token>`) lands after the edge redirect. Since v1.43 also
+ * `/auth/claim?error=<reason>`, where a refused single-sign-on claim returns;
+ * the reason is a fixed word, never a credential.
  *
  * A URL-credential surface by shape (`session-surface-guard.test.ts`, S2): the
  * page reads the one-time token off the query string and passes it to the
@@ -16,5 +18,10 @@ import { ClaimProfile } from "@/components/auth/claim-profile";
  */
 export default function ClaimProfilePage() {
   const searchParams = useSearchParams();
-  return <ClaimProfile token={searchParams.get("token")} />;
+  return (
+    <ClaimProfile
+      token={searchParams.get("token")}
+      error={searchParams.get("error")}
+    />
+  );
 }

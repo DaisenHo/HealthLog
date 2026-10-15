@@ -12,6 +12,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { apiPost } from "@/lib/api/api-fetch";
 import type { HandoverAccess } from "@/lib/managed-profiles/handover-access";
+import type { HandoverMethod } from "@/lib/validations/claim-sso";
 import { queryKeys } from "@/lib/query-keys";
 
 export interface ProfileClaimPreview {
@@ -21,6 +22,13 @@ export interface ProfileClaimPreview {
     displayName: string | null;
     proposal: HandoverAccess;
   }[];
+  /**
+   * v1.43 — the ways in this server offers. Absent from an older server,
+   * which only ever offered the password.
+   */
+  methods?: HandoverMethod[];
+  /** v1.43 — the provider's name for the button, or null. */
+  ssoProviderName?: string | null;
 }
 
 export function useProfileClaimPreview(token: string | null, enabled: boolean) {
@@ -61,6 +69,34 @@ export function useClaimProfile() {
       apiPost<{ userId: string; username: string }>(
         "/api/auth/claim",
         claimBody(input),
+      ),
+  });
+}
+
+/** Exactly the body `POST /api/auth/claim/sso` accepts (strict). */
+export interface ProfileClaimSsoInput {
+  token: string;
+  username: string;
+}
+
+export function claimSsoBody(
+  input: ProfileClaimSsoInput,
+): ProfileClaimSsoInput {
+  return { token: input.token, username: input.username };
+}
+
+/**
+ * v1.43 (#959) — start claiming through the identity provider. The answer
+ * sets the sealed claim cookie and names where the browser goes next; the
+ * caller navigates there as a full page load.
+ */
+export function useClaimProfileSso() {
+  return useMutation({
+    mutationKey: queryKeys.profileClaimSso(),
+    mutationFn: (input: ProfileClaimSsoInput) =>
+      apiPost<{ redirectTo: string }>(
+        "/api/auth/claim/sso",
+        claimSsoBody(input),
       ),
   });
 }
