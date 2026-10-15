@@ -12,6 +12,13 @@ import {
 import { decrypt } from "@/lib/crypto";
 import { isAnthropicBaseUrl } from "@/lib/ai/provider";
 import { isCanonicalOpenAIEndpoint } from "@/lib/ai/openai-capabilities";
+import { loadAiUsageSettings } from "@/lib/ai/capabilities/usage";
+import {
+  AI_USAGE_LEVELS,
+  resolveAiUsageLevel,
+  usageLevelFromDb,
+  type AiUsageLevel,
+} from "@/lib/ai/usage-level";
 
 export const dynamic = "force-dynamic";
 
@@ -186,8 +193,36 @@ export const GET = apiHandler(async () => {
       operatorTokens: spend.operator,
       accounts: spend.accounts,
     },
+    usageLevels: await countAccountsByUsageLevel(),
   });
 });
+
+/**
+ * v1.43 (#1217) — accounts per EFFECTIVE AI usage level: each stored choice
+ * (or none) resolved against the operator's current bounds, so the readout
+ * moves the moment the operator lowers the ceiling or the default. One
+ * grouped read over the users' stored choices.
+ */
+async function countAccountsByUsageLevel(): Promise<
+  Record<AiUsageLevel, number>
+> {
+  const [settings, groups] = await Promise.all([
+    loadAiUsageSettings(),
+    prisma.user.groupBy({ by: ["aiUsageLevel"], _count: { _all: true } }),
+  ]);
+  const counts = Object.fromEntries(
+    AI_USAGE_LEVELS.map((level) => [level, 0]),
+  ) as Record<AiUsageLevel, number>;
+  for (const group of groups) {
+    const { level } = resolveAiUsageLevel({
+      preference: usageLevelFromDb(group.aiUsageLevel),
+      defaultLevel: settings.defaultLevel,
+      maxLevel: settings.maxLevel,
+    });
+    counts[level] += group._count._all;
+  }
+  return counts;
+}
 
 /**
  * The model check for the operator's key. Never fails the readout: a missing

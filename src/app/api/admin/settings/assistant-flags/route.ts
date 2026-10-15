@@ -36,6 +36,16 @@
  * switching reasoning off stops no AI capability, it only stops the model
  * thinking longer before it answers.
  *
+ * v1.43 (#1217) — and the AI usage bounds, optional `aiUsage`:
+ * `{ maxLevel, defaultLevel, syncRegenGapHours }`. `maxLevel` is the highest
+ * level an account may choose, `defaultLevel` the level an account without a
+ * choice runs at (never above `maxLevel`: 422 `ai.usage.defaultAboveCeiling`),
+ * `syncRegenGapHours` the minimum gap between status-card regenerations after
+ * a sync at `standard` (1..48, `null` follows `AI_SYNC_REGEN_GAP_HOURS`, else
+ * six). Lowering `maxLevel` caps every account above it at once; their stored
+ * choice is kept. Echoed as `aiUsage` with the resolved gap beside the stored
+ * one.
+ *
  * `requireAdmin()` gates the route — non-admins get 403.
  */
 import type { NextRequest } from "next/server";
@@ -55,6 +65,13 @@ import { resolveAssistantFlags } from "@/lib/feature-flags";
 import { annotate } from "@/lib/logging/context";
 import { REASONING_MAX_EFFORTS } from "@/lib/ai/reasoning/levels";
 import { parseReasoningMaxEffort } from "@/lib/ai/reasoning/resolve";
+import { aiUsageSettingsFromRow } from "@/lib/ai/capabilities/usage";
+import {
+  usageLevelRank,
+  usageLevelToDb,
+  type AiUsageLevelDb,
+} from "@/lib/ai/usage-level";
+import { adminAiUsageSchema } from "@/lib/validations/ai-usage";
 
 const assistantFlagsSchema = z
   .object({
@@ -65,6 +82,7 @@ const assistantFlagsSchema = z
     assistantDocumentAiEnabled: z.boolean().optional(),
     aiReasoningEnabled: z.boolean().optional(),
     aiReasoningMaxEffort: z.enum(REASONING_MAX_EFFORTS).optional(),
+    aiUsage: adminAiUsageSchema.optional(),
   })
   .strict();
 
@@ -76,6 +94,9 @@ type AssistantFlagsRow = {
   assistantDocumentAiEnabled: boolean;
   aiReasoningEnabled: boolean;
   aiReasoningMaxEffort: string;
+  aiUsageMaxLevel: AiUsageLevelDb;
+  aiUsageDefaultLevel: AiUsageLevelDb;
+  aiSyncRegenGapHours: number | null;
 };
 
 const ROW_SELECT = {
@@ -86,6 +107,9 @@ const ROW_SELECT = {
   assistantDocumentAiEnabled: true,
   aiReasoningEnabled: true,
   aiReasoningMaxEffort: true,
+  aiUsageMaxLevel: true,
+  aiUsageDefaultLevel: true,
+  aiSyncRegenGapHours: true,
 } as const;
 
 function buildResponseShape(row: AssistantFlagsRow) {
@@ -109,6 +133,18 @@ function buildResponseShape(row: AssistantFlagsRow) {
       enabled: row.aiReasoningEnabled,
       maxEffort: parseReasoningMaxEffort(row.aiReasoningMaxEffort),
     },
+    aiUsage: aiUsageShape(row),
+  };
+}
+
+/** The usage bounds as the admin panel edits them, the gap in effect beside. */
+function aiUsageShape(row: AssistantFlagsRow) {
+  const settings = aiUsageSettingsFromRow(row);
+  return {
+    maxLevel: settings.maxLevel,
+    defaultLevel: settings.defaultLevel,
+    syncRegenGapHours: settings.storedSyncRegenGapHours,
+    effectiveSyncRegenGapHours: settings.syncRegenGapHours,
   };
 }
 
@@ -132,6 +168,9 @@ export const GET = apiHandler(async () => {
     assistantDocumentAiEnabled: settings?.assistantDocumentAiEnabled ?? true,
     aiReasoningEnabled: settings?.aiReasoningEnabled ?? true,
     aiReasoningMaxEffort: settings?.aiReasoningMaxEffort ?? "high",
+    aiUsageMaxLevel: settings?.aiUsageMaxLevel ?? "STANDARD",
+    aiUsageDefaultLevel: settings?.aiUsageDefaultLevel ?? "STANDARD",
+    aiSyncRegenGapHours: settings?.aiSyncRegenGapHours ?? null,
   };
 
   return apiSuccess(buildResponseShape(row));
@@ -154,13 +193,28 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   // Field by field from the parsed body; the schema is strict, so every key
   // here is one the route owns.
+  const { aiUsage, ...flags } = parsed.data;
+  if (
+    aiUsage &&
+    usageLevelRank(aiUsage.defaultLevel) > usageLevelRank(aiUsage.maxLevel)
+  ) {
+    return apiError("The default level is above the highest level", 422, {
+      errorCode: "ai.usage.defaultAboveCeiling",
+    });
+  }
   const updates: Partial<AssistantFlagsRow> = {};
-  for (const [key, value] of Object.entries(parsed.data)) {
+  for (const [key, value] of Object.entries(flags)) {
     if (value !== undefined) {
       (updates as Record<string, boolean | string>)[key] = value;
     }
   }
   const auditDetails: Record<string, unknown> = { ...updates };
+  if (aiUsage) {
+    updates.aiUsageMaxLevel = usageLevelToDb(aiUsage.maxLevel);
+    updates.aiUsageDefaultLevel = usageLevelToDb(aiUsage.defaultLevel);
+    updates.aiSyncRegenGapHours = aiUsage.syncRegenGapHours;
+    auditDetails.aiUsage = aiUsage;
+  }
 
   if (Object.keys(updates).length === 0) {
     return apiError("No valid fields", 422);
@@ -187,6 +241,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     assistantDocumentAiEnabled: settings.assistantDocumentAiEnabled,
     aiReasoningEnabled: settings.aiReasoningEnabled,
     aiReasoningMaxEffort: settings.aiReasoningMaxEffort,
+    aiUsageMaxLevel: settings.aiUsageMaxLevel,
+    aiUsageDefaultLevel: settings.aiUsageDefaultLevel,
+    aiSyncRegenGapHours: settings.aiSyncRegenGapHours,
   };
 
   return apiSuccess(buildResponseShape(row));
