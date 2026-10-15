@@ -21,6 +21,15 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
+const rateLimitMock = vi.hoisted(() => ({ allowed: true }));
+vi.mock("@/lib/rate-limit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rate-limit")>()),
+  checkRecordWriteRateLimit: vi.fn(async () => ({
+    allowed: rateLimitMock.allowed,
+    remaining: rateLimitMock.allowed ? 299 : 0,
+    resetAt: new Date(Date.now() + 60_000),
+  })),
+}));
 const tzMock = vi.hoisted(() => ({ zone: "UTC" }));
 vi.mock("@/lib/tz/resolver", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tz/resolver")>()),
@@ -62,6 +71,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -90,6 +100,7 @@ function postReq(body: unknown): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   tzMock.zone = "UTC";
+  rateLimitMock.allowed = true;
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(enqueueReminderSatisfy).mockResolvedValue(undefined as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
@@ -196,5 +207,26 @@ describe("POST /api/labs/ocr/commit dedup across the user's day", () => {
       }),
     );
     expect(prisma.labResult.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("POST /api/labs/ocr/commit write ceiling", () => {
+  it("charges the shared per-account record-write bucket", async () => {
+    const res = await POST(postReq({ rows: [numericRow(95)] }));
+    expect(res.status).toBe(200);
+    expect(checkRecordWriteRateLimit).toHaveBeenCalledWith("user-1");
+  });
+
+  it("answers 429 record_write.rate_limited and writes nothing once exhausted", async () => {
+    rateLimitMock.allowed = false;
+    const res = await POST(postReq({ rows: [numericRow(95)] }));
+    expect(res.status).toBe(429);
+    const body = (await res.json()) as {
+      error: string;
+      meta?: { errorCode?: string };
+    };
+    expect(body.meta?.errorCode).toBe("record_write.rate_limited");
+    expect(prisma.labResult.create).not.toHaveBeenCalled();
+    expect(resolveOrMintBiomarker).not.toHaveBeenCalled();
   });
 });
