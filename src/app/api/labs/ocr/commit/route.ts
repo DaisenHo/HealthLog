@@ -371,6 +371,17 @@ async function commitOcrRows(request: NextRequest) {
       parsed.data.documentId,
       linkable,
     ).catch(() => {});
+    // v1.43 — the stored relation as well: each written result points at the
+    // report it was read from (`lab_result_document_links`), so the result's
+    // and the document's `related` lists name each other. Best-effort for the
+    // same reason; the service narrows both ends to this record.
+    await linkTargets(prisma, {
+      userId: user.id,
+      sourceKind: "document",
+      sourceId: parsed.data.documentId,
+      targetKind: "labResult",
+      targetIds: linkable.map((row) => row.labResultId),
+    }).catch(() => {});
   }
 
   // The visit the review step offered, if it offered one. ONE LINK PER RESULT

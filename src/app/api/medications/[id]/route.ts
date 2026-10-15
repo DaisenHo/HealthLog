@@ -67,6 +67,7 @@ import {
 import { floorWhole } from "@/lib/medications/units-per-dose";
 import { resolveIntakeActionability } from "@/lib/medications/intake-actionable";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { buildRelated } from "@/lib/links/related";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -108,7 +109,7 @@ function reconcileScheduleWindow(
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("read", "medications");
+    const { user, grantId } = await requireRecordAuth("read", "medications");
 
     const { id } = await params;
     const medication = await prisma.medication.findUnique({
@@ -312,6 +313,13 @@ export const GET = apiHandler(
       stockDosesRemaining,
       runwayDays,
       ingredients: toIngredientDtos(ingredientRows, user.locale ?? null),
+      // v1.43 — the records this medication relates to (`src/lib/links/`).
+      related: await buildRelated(prisma, {
+        userId: user.id,
+        grantId,
+        kind: "medication",
+        id,
+      }),
     });
   },
 );

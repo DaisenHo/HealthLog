@@ -1,5 +1,6 @@
 /**
- * `POST   /api/encounters/{id}/links` — file things against a visit.
+ * `POST   /api/encounters/{id}/links` — file things against a visit: documents,
+ * lab results, conditions and, since v1.43, medications and doses.
  * `DELETE /api/encounters/{id}/links` — unfile them.
  *
  * Deliberately bare `requireAuth()` rather than a delegable declaration, and

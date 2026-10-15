@@ -726,7 +726,7 @@ describe("sendViaApns — dispatcher fan-out", () => {
     expect(note.category).toBe("MOOD_REMINDER");
   });
 
-  it("never gives a managed Guardian a tap path, even when one is set", async () => {
+  it("gives a managed Guardian the app root, even when a deeper path is set", async () => {
     vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
       { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
     ] as never);
@@ -741,7 +741,24 @@ describe("sendViaApns — dispatcher fan-out", () => {
       tap: { path: "/medications", url: null, label: "Open" },
     });
 
-    expect(sendMock.mock.calls[0][0].payload.url).toBeUndefined();
+    expect(sendMock.mock.calls[0][0].payload.url).toBe("/");
+  });
+
+  it("carries the resolved root on a discreet delivery", async () => {
+    vi.mocked(prisma.device.findMany).mockResolvedValueOnce([
+      { id: "d1", apnsToken: "tok-a", apnsEnvironment: "sandbox" },
+    ] as never);
+    sendMock.mockResolvedValueOnce({ sent: [{ device: "tok-a" }], failed: [] });
+
+    await sendViaApns("u-1", {
+      title: "t",
+      message: "m",
+      eventType: "CYCLE_PERIOD_SOON",
+      discreet: true,
+      tap: { path: "/", url: null, label: "Open" },
+    });
+
+    expect(sendMock.mock.calls[0][0].payload.url).toBe("/");
   });
 
   it("forwards reminderId on MEASUREMENT_REMINDER and strips unlisted keys", async () => {

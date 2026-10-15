@@ -102,6 +102,8 @@ import type { MedicationPayload } from "@/components/medications/wizard/wizard-p
 import type { ComplianceDisplay } from "@/lib/analytics/compliance";
 import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-taken-section";
 import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
+import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
+import type { RelatedLink } from "@/lib/links/related";
 
 // v1.15.20 — Recharts stays out of the detail page's initial bundle:
 // both chart bodies load through `next/dynamic` (client-only) with the
@@ -193,6 +195,8 @@ export interface MedicationDetailSnapshot {
   schedules: ScheduleSnapshot[];
   /** v1.43 — the composition per unit, as the server delivered it. */
   ingredients?: MedicationIngredientDto[];
+  /** v1.43 — the records this medication relates to (server-resolved). */
+  related?: RelatedLink[];
 }
 
 // Slugs are ASCII / locale-independent so the URL stays stable across
@@ -686,6 +690,12 @@ export function MedicationDetailTabs({
               ownRecord={!inSharedRecord}
             />
           )}
+
+          <MedicationRelatedSection
+            medicationId={medication.id}
+            startsOn={medication.startsOn ?? null}
+            related={medication.related}
+          />
         </TabsContent>
 
         {/* WIRKUNG — the per-medication efficacy view: the outcome metric(s)/

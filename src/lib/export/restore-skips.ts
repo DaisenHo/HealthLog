@@ -166,6 +166,12 @@
  * (`customMoodTags.<key>.labelEncrypted`): the tag or category restores, under
  * its key, without the person's own name for it.
  *
+ * `relationLink` (v1.43) is the same row kind as `documentConditionLink`, for
+ * the five link tables that close the relation matrix: a link whose lab
+ * result, document, visit, dose, medication or condition the restore did not
+ * put back. Every end is a real foreign key, so the LINK is dropped and both
+ * records it joined (whichever exist) restore.
+ *
  * The eighteenth and nineteenth, `visitCiphertext` and `vaccinationCiphertext`,
  * are the same again for the free text of the visits record (a practitioner's
  * note, address and phone; a visit's reason, outcome and body site) and of a
@@ -183,6 +189,7 @@ export type SkippedCatalogue =
   | "coachAttachment"
   | "coachReference"
   | "documentConditionLink"
+  | "relationLink"
   | "extractedFact"
   | "factCommitment"
   | "personalRecordReference"

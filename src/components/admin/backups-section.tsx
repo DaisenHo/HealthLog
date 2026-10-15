@@ -448,6 +448,9 @@ function catalogueLabel(
   if (catalogue === "documentConditionLink") {
     return t("admin.section.backups.restoreSkippedDocumentConditionLink");
   }
+  if (catalogue === "relationLink") {
+    return t("admin.section.backups.restoreSkippedRelationLink");
+  }
   if (catalogue === "extractedFact") {
     return t("admin.section.backups.restoreSkippedExtractedFact");
   }

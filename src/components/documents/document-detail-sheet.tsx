@@ -86,6 +86,8 @@ import {
 import { DocumentAiSection } from "./document-ai-section";
 import { DocumentEncounterSuggestion } from "./document-encounter-suggestion";
 import { DocumentRecordLinks } from "./document-record-links";
+import { RelatedRecordsBlock } from "@/components/links/related-records";
+import type { RelatedLink } from "@/lib/links/related";
 import { DocumentFactsSection } from "./document-facts-review";
 import { VaccinationDocumentSuggestion } from "@/components/vaccinations/vaccination-document-suggestion";
 import { DocumentSummaryBlock } from "./document-summary-block";
@@ -1201,6 +1203,14 @@ export function DocumentDetailSheet({
                 seedError={!linkSeedFresh && detail.isRefetchError}
                 onRetrySeed={() => void detail.refetch()}
                 onChange={(part) => patch.mutate(part)}
+              />
+
+              {/* v1.43 — the lab results read from this page and the
+                  medications it belongs to. Conditions, visits and doses
+                  have their own blocks above. */}
+              <RelatedRecordsBlock
+                related={(doc as { related?: RelatedLink[] }).related}
+                omitKinds={["conditionEpisode", "encounter", "vaccination"]}
               />
 
               {/* Staged-facts review + the stored-text extract recovery. The

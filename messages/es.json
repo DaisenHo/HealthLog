@@ -7949,6 +7949,7 @@
         "restoreSkippedCoachAttachment": "Enlace de documento del Coach",
         "restoreSkippedCoachReference": "Referencia del Coach",
         "restoreSkippedDocumentConditionLink": "Clasificación de documento",
+        "restoreSkippedRelationLink": "Vínculo entre registros",
         "restoreSkippedExtractedFact": "Dato del documento",
         "restoreSkippedFactCommitment": "Registro del dato",
         "docsLink": "Documentación",
@@ -12430,6 +12431,30 @@
       "period": {
         "showing": "Mostrando {period}"
       }
+    },
+    "related": {
+      "title": "Relacionado",
+      "kind": {
+        "labResult": "Resultado de laboratorio",
+        "encounter": "Consulta",
+        "document": "Documento",
+        "conditionEpisode": "Enfermedad",
+        "medication": "Medicamento",
+        "vaccination": "Vacuna"
+      },
+      "via": {
+        "encounter": "a través de una consulta",
+        "efficacyTarget": "a través del objetivo de eficacia"
+      },
+      "pick": {
+        "conditionEpisode": "Enfermedades",
+        "document": "Documentos",
+        "encounter": "Consultas",
+        "medication": "Medicamentos",
+        "vaccination": "Vacunas"
+      },
+      "nothingToOffer": "Todavía no hay nada que vincular.",
+      "saveError": "No se pudo guardar el vínculo."
     }
   },
   "bodySites": {

@@ -85,7 +85,9 @@ describe("withDeliveryLinks", () => {
       "guardian-1",
     );
     expect(out.quickActions).toBeUndefined();
-    expect(out.tap).toBeUndefined();
+    // The app root, never the managed record's own surface.
+    expect(out.tap?.path).toBe("/");
+    expect(out.tap?.url).toBe("https://health.example/");
   });
 
   it("keeps the path but drops absolute URLs and answers without a public origin", async () => {

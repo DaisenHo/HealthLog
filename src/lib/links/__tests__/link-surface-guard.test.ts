@@ -42,6 +42,12 @@ const LINK_DELEGATES = [
   "encounterLabLink",
   "encounterConditionLink",
   "vaccinationDocumentLink",
+  // v1.43 — the five tables that close the relation matrix.
+  "labResultDocumentLink",
+  "encounterMedicationLink",
+  "encounterVaccinationLink",
+  "medicationDocumentLink",
+  "medicationConditionLink",
 ] as const;
 
 /**
@@ -72,6 +78,8 @@ const RESTORE_EXEMPTIONS = [
   // above: it re-creates the link with the instant it was originally filed at,
   // which the service's filing signature has no way to express.
   "lib/export/document-filing-backup.ts",
+  // The five relation links (v1.43), same standing rule.
+  "lib/export/relation-links-backup.ts",
 ].sort();
 
 /** Every non-test, non-generated source file under `src/`, relative to `src/`. */
@@ -128,7 +136,7 @@ describe("link-surface guard — the tables have one gateway", () => {
     }
   });
 
-  it("the restore exemption set is exactly the three backup writers", () => {
+  it("the restore exemption set is exactly the four backup writers", () => {
     // Freeze the exemption list so widening it is a reviewed diff, not a quiet
     // addition. Every file must exist and must actually write a link table.
     for (const rel of RESTORE_EXEMPTIONS) {
@@ -137,6 +145,7 @@ describe("link-surface guard — the tables have one gateway", () => {
     expect(RESTORE_EXEMPTIONS).toEqual(
       [
         "lib/export/document-filing-backup.ts",
+        "lib/export/relation-links-backup.ts",
         "lib/export/vaccinations-backup.ts",
         "lib/export/visits-backup.ts",
       ].sort(),

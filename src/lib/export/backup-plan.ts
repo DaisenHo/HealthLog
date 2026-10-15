@@ -211,7 +211,8 @@ export const BACKED_UP_MODELS = [
   // composition, the Dawarich daily values, and the five relation links that
   // close the relation matrix. Each is owned data nothing recomputes; each is
   // on COVERAGE_PENDING until its section carries it (the composition does:
-  // TWO_ENDED_MODELS).
+  // TWO_ENDED_MODELS). The relation links travel since the release that
+  // introduces them (`src/lib/export/relation-links-backup.ts`).
   "BiomarkerAlias",
   "BiomarkerMerge",
   "MedicationIngredient",
@@ -295,6 +296,9 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/symptoms-backup.ts",
   // The person's life events, both ends beside each other (v1.42).
   "src/lib/export/life-events-backup.ts",
+  // The five relation links that close the relation matrix (v1.43), both
+  // ends beside each other, each through its OWN delegate.
+  "src/lib/export/relation-links-backup.ts",
   "src/lib/cycle/backup.ts",
   // The medication category is read through the one helper that normalises
   // it; the payload writer calls the helper rather than the delegate. The
@@ -319,6 +323,7 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/ecg-backup.ts",
   "src/lib/export/symptoms-backup.ts",
   "src/lib/export/life-events-backup.ts",
+  "src/lib/export/relation-links-backup.ts",
   "src/lib/cycle/backup.ts",
   // The restore writes the medication category through the same helper.
   "src/lib/medication-category.ts",
@@ -587,6 +592,14 @@ export const TWO_ENDED_MODELS = [
   // a plain 404 instead of leading to the marker it went into.
   "BiomarkerAlias",
   "BiomarkerMerge",
+  // v1.43 — the five relation links that close the relation matrix, carried
+  // from the release that introduces them. Each is two ids and the instant it
+  // was filed, so carrying them cost no more than owing them would have.
+  "LabResultDocumentLink",
+  "EncounterMedicationLink",
+  "EncounterVaccinationLink",
+  "MedicationDocumentLink",
+  "MedicationConditionLink",
 ] as const;
 
 /** One model claimed to travel both ways. */
@@ -627,16 +640,6 @@ export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
   // TWO_ENDED_MODELS when their section writer and restore branch land.
   DawarichDay:
     "The daily movement values fetched from Dawarich: distances, places visited, time away from home, travel days. Days the Dawarich instance has since pruned cannot be fetched again, so they are lost for good.",
-  LabResultDocumentLink:
-    "Which stored report a lab result was read from. Without it the result and the report stop pointing at each other, and the result loses its source.",
-  EncounterMedicationLink:
-    "Which medications a visit prescribed, changed or reviewed. Without it the visit and the medication stop pointing at each other.",
-  EncounterVaccinationLink:
-    "Which doses were given at a visit. Without it the visit and the dose stop pointing at each other.",
-  MedicationDocumentLink:
-    "Which documents belong to a medication: the prescription, the plan, the package insert. Without it they stop pointing at each other.",
-  MedicationConditionLink:
-    "Which condition a medication treats (its indication). Without it the medication and the condition stop pointing at each other.",
   WorkoutRoute:
     "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
   WorkoutSamples:

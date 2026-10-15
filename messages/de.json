@@ -7949,6 +7949,7 @@
         "restoreSkippedCoachAttachment": "Coach-Dokumentverknüpfung",
         "restoreSkippedCoachReference": "Coach-Verweis",
         "restoreSkippedDocumentConditionLink": "Dokumentzuordnung",
+        "restoreSkippedRelationLink": "Verknüpfung zwischen Einträgen",
         "restoreSkippedExtractedFact": "Dokumentbefund",
         "restoreSkippedFactCommitment": "Befundübernahme",
         "docsLink": "Dokumentation",
@@ -12430,6 +12431,30 @@
       "period": {
         "showing": "Zeitraum: {period}"
       }
+    },
+    "related": {
+      "title": "Verwandt",
+      "kind": {
+        "labResult": "Laborwert",
+        "encounter": "Besuch",
+        "document": "Dokument",
+        "conditionEpisode": "Erkrankung",
+        "medication": "Medikament",
+        "vaccination": "Impfung"
+      },
+      "via": {
+        "encounter": "über einen Besuch",
+        "efficacyTarget": "über das Wirkziel"
+      },
+      "pick": {
+        "conditionEpisode": "Erkrankungen",
+        "document": "Dokumente",
+        "encounter": "Besuche",
+        "medication": "Medikamente",
+        "vaccination": "Impfungen"
+      },
+      "nothingToOffer": "Noch nichts zum Verknüpfen.",
+      "saveError": "Die Verknüpfung konnte nicht gespeichert werden."
     }
   },
   "bodySites": {

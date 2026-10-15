@@ -37,6 +37,8 @@ import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useTranslations } from "@/lib/i18n/context";
+import { RelatedRecordsBlock } from "@/components/links/related-records";
+import type { RelatedLink } from "@/lib/links/related";
 import {
   useVaccination,
   useVaccinationMutations,
@@ -149,6 +151,16 @@ export function VaccinationSheet({
               : undefined
           }
         />
+        {/* v1.43 — the visit the dose was given at and anything else it
+            relates to; its pages have their own picker above. */}
+        {vaccination ? (
+          <RelatedRecordsBlock
+            related={
+              (detail.data as { related?: RelatedLink[] } | undefined)?.related
+            }
+            omitKinds={["document"]}
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-destructive text-sm">
             {error}

@@ -257,6 +257,20 @@ const REGISTRY: DestructiveEntry[] = [
     ],
   },
   {
+    file: "components/links/related-records.tsx",
+    destroys:
+      "a relation link between two of the person's own records (a medication and its condition, document or visit; a visit and a medication or dose)",
+    recovery: "permanent",
+    confirm: [],
+    unconfirmed: [
+      {
+        control: "remove a chip in a relation link picker",
+        reason:
+          "Removing a chip deletes one join row and nothing the person wrote: both records stay untouched, the unlink toast names what was unlinked, and the same picker re-files it with one tap. This is the shape every link picker in the app already has (the visit form, the document sheet, the dose form), and a dialog on one of them alone would make the same act cost two different amounts.",
+      },
+    ],
+  },
+  {
     file: "components/insights/coach-panel/coach-conversation.tsx",
     destroys:
       "the stored list of pending clarifying questions, and document attachments on a conversation",

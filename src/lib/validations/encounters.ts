@@ -217,6 +217,9 @@ export const encounterLinkTargetEnum = z.enum([
   "document",
   "labResult",
   "conditionEpisode",
+  // v1.43 — prescribed, changed or reviewed at the visit; a dose given there.
+  "medication",
+  "vaccination",
 ]);
 
 export const encounterLinkSchema = z

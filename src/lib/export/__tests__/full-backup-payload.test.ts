@@ -459,6 +459,11 @@ function makePrisma() {
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
     lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     // Left unmocked on purpose: `buildProfileBackupSection` runs for real
     // against these, so the assertions below exercise the builder rather than
     // a stand-in that would agree with whatever the payload happened to do.

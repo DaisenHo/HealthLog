@@ -1457,6 +1457,23 @@ const vaccinationLinkBackupSchema = z
   .passthrough();
 
 /**
+ * v1.43 — one row of a relation link table: its two ends, by the column
+ * names of the table, and the instant it was filed.
+ */
+function relationLinkBackupSchema<A extends string, B extends string>(
+  a: A,
+  b: B,
+) {
+  return z
+    .object({
+      [a]: z.string().min(1),
+      [b]: z.string().min(1),
+      createdAt: isoDateTime,
+    } as { [K in A | B]: z.ZodString } & { createdAt: typeof isoDateTime })
+    .passthrough();
+}
+
+/**
  * One Vorsorge reminder, and one row of its completion ledger (v1.37.20,
  * #223 / iOS #68).
  *
@@ -2230,6 +2247,23 @@ export const backupPayloadSchema = z
     customVaccines: z.array(customVaccineBackupSchema).default([]),
     vaccinations: z.array(vaccinationBackupSchema).default([]),
     vaccinationDocumentLinks: z.array(vaccinationLinkBackupSchema).default([]),
+    // v1.43 — the five relation links that close the relation matrix.
+    // Defaulted: a file written before v1.43 carries no key.
+    labResultDocumentLinks: z
+      .array(relationLinkBackupSchema("labResultId", "documentId"))
+      .default([]),
+    encounterMedicationLinks: z
+      .array(relationLinkBackupSchema("encounterId", "medicationId"))
+      .default([]),
+    encounterVaccinationLinks: z
+      .array(relationLinkBackupSchema("encounterId", "vaccinationId"))
+      .default([]),
+    medicationDocumentLinks: z
+      .array(relationLinkBackupSchema("medicationId", "documentId"))
+      .default([]),
+    medicationConditionLinks: z
+      .array(relationLinkBackupSchema("medicationId", "episodeId"))
+      .default([]),
     // The Vorsorge reminders and their completion ledger (v1.37.20, #223 /
     // iOS #68). Defaulted for the same reason as the sections above: a file
     // written before the reminders travelled carries no key, and an account

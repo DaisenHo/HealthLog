@@ -7949,6 +7949,7 @@
         "restoreSkippedCoachAttachment": "Collegamento documento del Coach",
         "restoreSkippedCoachReference": "Riferimento del Coach",
         "restoreSkippedDocumentConditionLink": "Classificazione del documento",
+        "restoreSkippedRelationLink": "Collegamento tra voci",
         "restoreSkippedExtractedFact": "Dato del documento",
         "restoreSkippedFactCommitment": "Registrazione del dato",
         "docsLink": "Documentazione",
@@ -12430,6 +12431,30 @@
       "period": {
         "showing": "Periodo: {period}"
       }
+    },
+    "related": {
+      "title": "Correlati",
+      "kind": {
+        "labResult": "Valore di laboratorio",
+        "encounter": "Visita",
+        "document": "Documento",
+        "conditionEpisode": "Malattia",
+        "medication": "Farmaco",
+        "vaccination": "Vaccinazione"
+      },
+      "via": {
+        "encounter": "tramite una visita",
+        "efficacyTarget": "tramite l’obiettivo di efficacia"
+      },
+      "pick": {
+        "conditionEpisode": "Malattie",
+        "document": "Documenti",
+        "encounter": "Visite",
+        "medication": "Farmaci",
+        "vaccination": "Vaccinazioni"
+      },
+      "nothingToOffer": "Ancora niente da collegare.",
+      "saveError": "Non è stato possibile salvare il collegamento."
     }
   },
   "bodySites": {

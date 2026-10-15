@@ -14,6 +14,8 @@ import Link from "next/link";
 
 import { EpisodeVisitsCard } from "@/components/illness/episode-visits-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
+import { RelatedRecordsCard } from "@/components/links/related-records";
+import type { RelatedLink } from "@/lib/links/related";
 import { EpisodeSymptomsCard } from "@/components/symptoms/episode-symptoms-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -204,6 +206,16 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
             so the reverse match would be wrong often enough to train the person
             to ignore every suggestion in the product. */}
         {episode ? <EpisodeVisitsCard episodeId={episode.id} /> : null}
+
+        {/* v1.43 — what else the condition relates to: the medications that
+            treat it and the lab results it shares a visit with. Documents and
+            visits have their own cards above. */}
+        {episode ? (
+          <RelatedRecordsCard
+            related={(episode as { related?: RelatedLink[] }).related}
+            omitKinds={["document", "encounter"]}
+          />
+        ) : null}
       </RevealWhenSettled>
 
       {episode ? (

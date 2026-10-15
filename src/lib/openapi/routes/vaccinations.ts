@@ -628,9 +628,9 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/vaccinations/{id}/links": {
     post: {
       tags: ["Records"],
-      summary: "File documents against a vaccination",
+      summary: "File documents or a visit against a vaccination",
       description:
-        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document and visit link and unlink.",
+        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document and visit link and unlink. Since v1.43 `targetKind` also takes `encounter` (the visit the dose was given at); that link shows in the dose's `related` list (`GET /api/vaccinations/{id}`), not in `documents`.",
       requestParams: idPath,
       requestBody: {
         required: true,
@@ -657,7 +657,7 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
     delete: {
       tags: ["Records"],
-      summary: "Unfile documents from a vaccination",
+      summary: "Unfile documents or a visit from a vaccination",
       description:
         "Removes links. Idempotent, and it still works for a page the account has since deleted — refusing would leave a filing nobody can clear.",
       requestParams: idPath,
