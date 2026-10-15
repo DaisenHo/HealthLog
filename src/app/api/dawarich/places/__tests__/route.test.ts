@@ -92,7 +92,6 @@ describe("GET /api/dawarich/places", () => {
     ]);
     const res = (await GET(
       new NextRequest("http://localhost/api/dawarich/places?q=o"),
-      undefined as never,
     )) as Response;
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -112,7 +111,6 @@ describe("GET /api/dawarich/places", () => {
     fetchPlacesMock.mockRejectedValue(new Error("ECONNREFUSED"));
     const res = (await GET(
       new NextRequest("http://localhost/api/dawarich/places"),
-      undefined as never,
     )) as Response;
     expect(res.status).toBe(502);
     expect((await res.json()).meta.errorCode).toBe("dawarich.unreachable");
