@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(88);
   });
 });
 
@@ -1095,6 +1095,33 @@ manageContract("PUT /api/biomarkers/[id]", {
   applied: async (row) =>
     (await getPrismaClient().biomarker.findUnique({ where: { id: row.id } }))
       ?.unit === "ng/mL",
+});
+
+manageContract("DELETE /api/biomarkers/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/biomarkers/[id]" && entry.action === "DELETE",
+  )!,
+  prepare: async (userId) =>
+    getPrismaClient().biomarker.create({
+      data: { userId, name: "Transferrin", unit: "g/L" },
+    }),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/biomarkers/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/biomarkers/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "biomarker.delete",
+  applied: async (row) =>
+    (await getPrismaClient().biomarker.findUnique({
+      where: { id: row.id },
+    })) === null,
 });
 
 manageContract("POST /api/allergies", {
@@ -2851,13 +2878,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(87);
+    expect(STRICT_DRIVER_KEYS.size).toBe(88);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(87);
+    expect(REAL_EFFECT_KEYS.size).toBe(88);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

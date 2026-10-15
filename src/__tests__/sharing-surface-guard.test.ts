@@ -853,7 +853,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/biomarkers/route.ts": {
     domain: "labs",
-    why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are refused.",
+    why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are manage-level.",
   },
   "app/api/biomarkers/[id]/route.ts": {
     domain: "labs",
@@ -1601,8 +1601,8 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
   },
   "app/api/biomarkers/[id]/route.ts": {
     domain: "labs",
-    conditions: ["C4"],
-    why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it stays refused.",
+    conditions: ["C3", "C4"],
+    why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it resolves through the same labs authority since v1.43 instead of a bare requireAuth; it hard-deletes the marker with its readings, so C3 files the name, unit and reading count it took.",
   },
   "app/api/allergies/route.ts": {
     domain: "profile",
@@ -2866,7 +2866,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(88);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

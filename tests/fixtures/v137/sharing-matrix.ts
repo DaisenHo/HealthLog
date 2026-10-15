@@ -289,6 +289,14 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "update",
   ),
   handler(
+    "app/api/biomarkers/[id]/route.ts",
+    "/api/biomarkers/[id]",
+    "DELETE",
+    "labs",
+    "manage",
+    "delete",
+  ),
+  handler(
     "app/api/allergies/route.ts",
     "/api/allergies",
     "POST",
