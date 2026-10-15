@@ -218,6 +218,11 @@ NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false pnpm build
 
 ## Troubleshooting
 
+- **Where to look.** For a bug report, copy the support report (Admin,
+  System status) and the support info (Settings, About), and note the error
+  id the failure showed. Admin, App logs finds the event behind an error id.
+  What each contains, and what it never contains, is in
+  [`support.md`](./support.md).
 - **`app` container exits with a Prisma migration error.** The
   Postgres healthcheck races the migration on slow disks. Run
   `docker compose restart app` once the database has stabilised —

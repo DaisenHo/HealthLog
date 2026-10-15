@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, Loader2, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -222,8 +222,8 @@ export function CoursesRow({
       await apiDelete(`/api/medications/${medicationId}/courses/${course.id}`);
       await invalidateMedicationReads(queryClient);
       setDeleting(null);
-    } catch {
-      toast.error(t("medications.course.error.generic"));
+    } catch (failure) {
+      showErrorToast(t("medications.course.error.generic"), { cause: failure });
     } finally {
       setDeleteBusy(false);
     }

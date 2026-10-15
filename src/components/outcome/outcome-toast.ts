@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 
@@ -25,7 +26,7 @@ export function toastWrittenOutcome(
       toast.warning(message);
       return;
     case "failed":
-      toast.error(message);
+      showErrorToast(message);
       return;
     case "empty":
       toast.info(message);

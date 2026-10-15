@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShieldAlert, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
@@ -75,8 +76,9 @@ export function CentralCodexSection() {
         intervalSeconds: json.data.intervalSeconds,
       });
     } catch (err) {
-      toast.error(
+      showErrorToast(
         err instanceof Error ? err.message : t("admin.centralCodex.error"),
+        { cause: err },
       );
       setDevicePolling(false);
     }
@@ -110,8 +112,9 @@ export function CentralCodexSection() {
         if (!cancelled) setTimeout(tick, intervalMs);
       } catch (err) {
         if (cancelled) return;
-        toast.error(
+        showErrorToast(
           err instanceof Error ? err.message : t("admin.centralCodex.error"),
+          { cause: err },
         );
         setDeviceCode(null);
         setDevicePolling(false);
@@ -142,8 +145,9 @@ export function CentralCodexSection() {
       });
       void invalidateKeys(queryClient, aiInputDependentKeys);
     } catch (err) {
-      toast.error(
+      showErrorToast(
         err instanceof Error ? err.message : t("admin.centralCodex.error"),
+        { cause: err },
       );
     } finally {
       setDisconnecting(false);

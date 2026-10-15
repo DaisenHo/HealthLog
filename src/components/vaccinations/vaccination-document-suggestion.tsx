@@ -18,7 +18,7 @@
  */
 import { useState } from "react";
 import { Check, Syringe } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -74,7 +74,10 @@ export function VaccinationDocumentSuggestion({
           setLinkedId(candidate.id);
           toastWrittenOutcome("success", t("vaccinations.suggestion.linked"));
         },
-        onError: () => toast.error(t("vaccinations.suggestion.failed")),
+        onError: (failure) =>
+          showErrorToast(t("vaccinations.suggestion.failed"), {
+            cause: failure,
+          }),
       },
     );
   };

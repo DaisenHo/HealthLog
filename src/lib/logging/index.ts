@@ -17,5 +17,7 @@ export {
   clearLogBuffer,
   getLogBufferSize,
   LOG_BUFFER_MAX,
+  PROBLEMS_BUFFER_MAX,
+  type LogRing,
   type ReadLogBufferOptions,
 } from "./in-memory-buffer";

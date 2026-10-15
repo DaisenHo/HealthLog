@@ -65,6 +65,7 @@ import { useTableSort } from "@/hooks/use-table-sort";
 import { useUrlFilterSync } from "@/hooks/use-url-filter-sync";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { formatDateOrRelative, formatDateTime } from "@/lib/format";
 import { DayLink, DayLinkAt } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -687,8 +688,8 @@ export function MeasurementList({
         await invalidateKeys(queryClient, measurementDependentKeys);
         await refetchInactiveDailyReads(queryClient);
         toast.success(t("measurements.restoredToast"));
-      } catch {
-        toast.error(t("measurements.restoreError"));
+      } catch (failure) {
+        showErrorToast(t("measurements.restoreError"), { cause: failure });
       }
     },
     [queryClient, t],
@@ -711,8 +712,8 @@ export function MeasurementList({
     // v1.16.4 — a failed row delete used to fail silently (no onError
     // handler); the edit-dialog path surfaced its own inline error but
     // the row-level confirm had no feedback at all.
-    onError: () => {
-      toast.error(t("measurements.deleteError"));
+    onError: (failure) => {
+      showErrorToast(t("measurements.deleteError"), { cause: failure });
     },
   });
 
@@ -744,8 +745,8 @@ export function MeasurementList({
         },
       );
     },
-    onError: () => {
-      toast.error(t("measurements.bulkDeleteError"));
+    onError: (failure) => {
+      showErrorToast(t("measurements.bulkDeleteError"), { cause: failure });
     },
   });
 

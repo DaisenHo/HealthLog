@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, FlaskConical, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,8 @@ export function BiomarkerManager() {
       queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
       queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
     },
-    onError: () => toast.error(t("labs.biomarker.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("labs.biomarker.deleteError"), { cause: failure }),
   });
 
   const hiddenMutation = useMutation({
@@ -75,7 +77,8 @@ export function BiomarkerManager() {
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
     },
-    onError: () => toast.error(t("labs.biomarker.hideError")),
+    onError: (failure) =>
+      showErrorToast(t("labs.biomarker.hideError"), { cause: failure }),
   });
 
   function openNew() {

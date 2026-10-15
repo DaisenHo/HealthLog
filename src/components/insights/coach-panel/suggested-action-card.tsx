@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Check, Loader2, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -53,7 +53,8 @@ export function SuggestedActionCard({
       }
       setSettled("applied");
     },
-    onError: () => toast.error(t("coach.suggestedAction.failed")),
+    onError: (failure) =>
+      showErrorToast(t("coach.suggestedAction.failed"), { cause: failure }),
   });
 
   if (settled) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { ListChecks, Loader2 } from "lucide-react";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -37,7 +37,9 @@ export function SetupCard() {
       await restart.mutateAsync();
       router.push("/onboarding/who");
     } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+        cause: err,
+      });
     }
   }
 

@@ -20,7 +20,7 @@
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -100,7 +100,7 @@ export function VaccinationSheet({
       const message =
         err instanceof Error ? err.message : t("vaccinations.saveFailed");
       setError(message);
-      toast.error(message);
+      showErrorToast(message, { cause: err });
     }
   };
 
@@ -188,8 +188,10 @@ export function VaccinationSheet({
                   onClick={() => {
                     remove.mutate(vaccination.id, {
                       onSuccess: () => onOpenChange(false),
-                      onError: () =>
-                        toast.error(t("vaccinations.deleteFailed")),
+                      onError: (failure) =>
+                        showErrorToast(t("vaccinations.deleteFailed"), {
+                          cause: failure,
+                        }),
                     });
                   }}
                 >

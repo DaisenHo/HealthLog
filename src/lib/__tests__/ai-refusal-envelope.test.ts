@@ -137,6 +137,7 @@ describe("apiHandler renders it", () => {
     expect(body.data).toBeNull();
     expect(typeof body.error).toBe("string");
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "consent.ai.required",
       capability: "coach",
       reason: "consent_required",

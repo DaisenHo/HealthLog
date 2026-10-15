@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { errorIdOf, recordErrorId, shortErrorId } from "@/lib/errors/error-id";
 import { reloadOnceForChunkError } from "@/lib/pwa/chunk-reload";
 
 /**
@@ -22,12 +23,29 @@ export default function GlobalError({
     reloadOnceForChunkError(error);
   }, [error]);
 
+  // The id the operator finds this failure by. No i18n provider exists at
+  // this level, so the line is the same static bilingual pair as the heading.
+  const errorId = errorIdOf(error, { unexpected: true });
+  useEffect(() => {
+    if (errorId) recordErrorId(errorId);
+  }, [errorId]);
+
+  async function handleCopyId() {
+    if (!errorId) return;
+    try {
+      await navigator.clipboard.writeText(errorId);
+    } catch {
+      window.prompt("Error ID", errorId);
+    }
+  }
+
   async function handleCopy() {
     // Strip query string — OAuth callback routes carry sensitive tokens.
     const loc = typeof window !== "undefined" ? window.location : null;
     const payload = {
       message: error.message,
       digest: error.digest,
+      errorId,
       name: error.name,
       stack: error.stack?.split("\n").slice(0, 10).join("\n"),
       urlPath: loc?.pathname ?? null,
@@ -91,6 +109,39 @@ export default function GlobalError({
           >
             {error.message || "Unknown error"}
           </pre>
+          {errorId && (
+            <p
+              data-slot="error-id"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 13,
+                color: "#d0d0d0",
+                marginBottom: 16,
+              }}
+            >
+              <span>Fehler-ID / Error ID</span>
+              <code style={{ color: "#f8f8f2" }}>{shortErrorId(errorId)}</code>
+              <button
+                type="button"
+                onClick={handleCopyId}
+                aria-label="Copy error ID"
+                style={{
+                  background: "transparent",
+                  color: "#f8f8f2",
+                  border: "1px solid #44475a",
+                  borderRadius: 6,
+                  minHeight: 44,
+                  padding: "6px 12px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                Copy
+              </button>
+            </p>
+          )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               onClick={reset}

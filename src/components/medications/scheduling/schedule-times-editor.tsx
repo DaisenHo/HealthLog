@@ -20,6 +20,7 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -170,8 +171,10 @@ export function ScheduleTimesEditor({
       await apiPut(`/api/medications/${medicationId}`, body);
       await invalidateKeys(queryClient, medicationDependentKeys);
       toast.success(t("medications.detail.zeitplan.saved"));
-    } catch {
-      toast.error(t("medications.detail.zeitplan.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zeitplan.failed"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }

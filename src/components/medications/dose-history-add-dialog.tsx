@@ -21,6 +21,7 @@ import { useId, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -202,8 +203,11 @@ export function LedgerAddDialog({
       await refetchInactiveDailyReads(queryClient);
       setNudgeOpen(false);
       onOpenChange(false);
-    } catch {
-      toast.error(t("medications.intakeToastFailed", { name: medicationName }));
+    } catch (failure) {
+      showErrorToast(
+        t("medications.intakeToastFailed", { name: medicationName }),
+        { cause: failure },
+      );
     } finally {
       setBusy(false);
     }

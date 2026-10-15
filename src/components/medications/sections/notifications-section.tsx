@@ -23,6 +23,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -137,9 +138,11 @@ export function NotificationsBody({
           ? t("medications.detail.notifications.enabledToast")
           : t("medications.detail.notifications.disabledToast"),
       );
-    } catch {
+    } catch (failure) {
       setLocalEnabled(previous);
-      toast.error(t("medications.detail.notifications.toggleFailed"));
+      showErrorToast(t("medications.detail.notifications.toggleFailed"), {
+        cause: failure,
+      });
     } finally {
       setSubmitting(false);
     }

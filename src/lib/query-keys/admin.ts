@@ -32,7 +32,10 @@ export const adminKeys = {
     action: string | undefined,
     level: string | undefined,
     range: string | undefined,
-  ) => ["admin", "app-logs", traceId, action, level, range] as const,
+    requestId?: string,
+  ) => ["admin", "app-logs", traceId, action, level, range, requestId] as const,
+  /** v1.43 — the redacted support report on the admin status page. */
+  adminSupportReport: () => ["admin", "support-report"] as const,
   adminAssistantFlags: () => ["admin", "settings", "assistant-flags"] as const,
   /** v1.18.0 — operator-level server-wide module availability matrix. */
   adminModuleAvailability: () =>

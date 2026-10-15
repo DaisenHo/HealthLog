@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -111,10 +112,11 @@ export function GlitchtipSection() {
       });
     },
     onError: (error) => {
-      toast.error(
+      showErrorToast(
         error instanceof Error
           ? error.message
           : t("admin.monitoringTestFailed"),
+        { cause: error },
       );
       void queryClient.invalidateQueries({
         queryKey: queryKeys.adminSettings(),

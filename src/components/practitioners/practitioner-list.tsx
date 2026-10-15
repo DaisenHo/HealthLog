@@ -13,7 +13,7 @@
  */
 import { ContactRound, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -256,7 +256,10 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
                 const id = deleting.id;
                 setDeleting(null);
                 remove.mutate(id, {
-                  onError: () => toast.error(t("practitioners.deleteFailed")),
+                  onError: (failure) =>
+                    showErrorToast(t("practitioners.deleteFailed"), {
+                      cause: failure,
+                    }),
                 });
               }}
             >

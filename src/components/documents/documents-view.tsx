@@ -33,6 +33,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 import { Button } from "@/components/ui/button";
@@ -488,7 +489,10 @@ export function DocumentsView() {
               })
             : t("documents.contentIndex.indexAllNothing"),
         ),
-      onError: () => toast.error(t("documents.contentIndex.indexAllError")),
+      onError: (failure) =>
+        showErrorToast(t("documents.contentIndex.indexAllError"), {
+          cause: failure,
+        }),
     });
   }, [reindexAll, t]);
 
@@ -665,7 +669,7 @@ export function DocumentsView() {
     (results: DocumentBulkResultDto[], successMessage: string) => {
       const failed = results.filter((r) => !r.ok).length;
       if (failed > 0) {
-        toast.error(
+        showErrorToast(
           t("documents.bulk.partialFailure", {
             failed,
             total: results.length,
@@ -700,7 +704,8 @@ export function DocumentsView() {
             );
             clearSelection();
           },
-          onError: () => toast.error(t("documents.bulk.failed")),
+          onError: (failure) =>
+            showErrorToast(t("documents.bulk.failed"), { cause: failure }),
         },
       );
     },
@@ -719,7 +724,10 @@ export function DocumentsView() {
                 count: results.filter((r) => r.ok).length,
               }),
             ),
-          onError: () => toast.error(t("documents.toast.restoreFailed")),
+          onError: (failure) =>
+            showErrorToast(t("documents.toast.restoreFailed"), {
+              cause: failure,
+            }),
         },
       );
     },
@@ -735,7 +743,7 @@ export function DocumentsView() {
             const okIds = results.filter((r) => r.ok).map((r) => r.id);
             const failed = results.length - okIds.length;
             if (failed > 0) {
-              toast.error(
+              showErrorToast(
                 t("documents.bulk.partialFailure", {
                   failed,
                   total: results.length,
@@ -756,7 +764,8 @@ export function DocumentsView() {
             }
             clearSelection();
           },
-          onError: () => toast.error(t("documents.bulk.failed")),
+          onError: (failure) =>
+            showErrorToast(t("documents.bulk.failed"), { cause: failure }),
         },
       );
     },
@@ -794,7 +803,7 @@ export function DocumentsView() {
       t("documents.card.untitled"),
     );
     if (resolved.overCap) {
-      toast.error(
+      showErrorToast(
         t("documents.bulk.shareTooMany", { max: SHARE_LINK_MAX_DOCUMENTS }),
       );
       return;

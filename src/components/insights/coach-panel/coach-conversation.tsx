@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Paperclip, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
@@ -335,8 +335,10 @@ export function CoachConversation({
     onSuccess: (next) => {
       queryClient.setQueryData(queryKeys.coachAboutMeQuestions(), next);
     },
-    onError: () => {
-      toast.error(t("insights.coach.guided.dismissError"));
+    onError: (failure) => {
+      showErrorToast(t("insights.coach.guided.dismissError"), {
+        cause: failure,
+      });
     },
   });
 
@@ -451,7 +453,7 @@ export function CoachConversation({
   }
   useEffect(() => {
     if (!invalidToastKey) return;
-    toast.error(t("insights.coach.attach.notFoundError"));
+    showErrorToast(t("insights.coach.attach.notFoundError"));
   }, [invalidToastKey, t]);
 
   // The pills row above the composer. On a fresh chat every pill is a staged id;
@@ -559,8 +561,10 @@ export function CoachConversation({
           headers: { "Idempotency-Key": randomId() },
           body: form,
         });
-      } catch {
-        toast.error(t("insights.coach.attach.uploadError"));
+      } catch (failure) {
+        showErrorToast(t("insights.coach.attach.uploadError"), {
+          cause: failure,
+        });
         continue;
       }
       const parsed = parseUploadResponse(
@@ -568,7 +572,9 @@ export function CoachConversation({
         await response.text(),
       );
       if (!parsed.ok) {
-        toast.error(t("insights.coach.attach.uploadError"));
+        showErrorToast(t("insights.coach.attach.uploadError"), {
+          cause: response,
+        });
         continue;
       }
       const doc = parsed.document;

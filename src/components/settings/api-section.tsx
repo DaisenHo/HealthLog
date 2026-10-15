@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -229,8 +230,8 @@ function IngestTokenCard({
       setTokenCopied(true);
       toast.success(t("settings.tokenCopied"));
       setTimeout(() => setTokenCopied(false), 2_000);
-    } catch {
-      toast.error(t("settings.tokenCopyFailed"));
+    } catch (failure) {
+      showErrorToast(t("settings.tokenCopyFailed"), { cause: failure });
     }
   }
 
@@ -455,12 +456,12 @@ function ApiTokensCard() {
         method: "DELETE",
       });
       if (!res.ok) {
-        toast.error(t("settings.tokenRevokeFailed"));
+        showErrorToast(t("settings.tokenRevokeFailed"), { cause: res });
         return;
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
-    } catch {
-      toast.error(t("settings.tokenRevokeFailed"));
+    } catch (failure) {
+      showErrorToast(t("settings.tokenRevokeFailed"), { cause: failure });
     }
   }
 

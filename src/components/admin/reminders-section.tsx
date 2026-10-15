@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Badge } from "@/components/ui/badge";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,7 @@ export function RemindersSection() {
     onSuccess: (data) => {
       const failures = describeChannelTestFailures(data?.results ?? [], t);
       if (failures.length > 0) {
-        toast.error(data?.message ?? t("admin.notificationTestFailed"), {
+        showErrorToast(data?.message ?? t("admin.notificationTestFailed"), {
           description: (
             <ul className="space-y-0.5">
               {failures.map((line) => (
@@ -158,10 +159,11 @@ export function RemindersSection() {
       }
     },
     onError: (error) => {
-      toast.error(
+      showErrorToast(
         error instanceof Error
           ? error.message
           : t("admin.notificationTestFailed"),
+        { cause: error },
       );
     },
   });
@@ -196,8 +198,9 @@ export function RemindersSection() {
       toast.success(data?.message ?? t("admin.reminderCheckSuccess"));
     },
     onError: (error) => {
-      toast.error(
+      showErrorToast(
         error instanceof Error ? error.message : t("admin.reminderCheckFailed"),
+        { cause: error },
       );
     },
   });

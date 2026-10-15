@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { BellRing, KeyRound, Loader2 } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -96,7 +97,7 @@ export function WebPushVapidSection() {
       }
 
       if (!res.ok) {
-        toast.error(t("admin.webPushVapidGenerateFailed"));
+        showErrorToast(t("admin.webPushVapidGenerateFailed"), { cause: res });
         return;
       }
 
@@ -113,8 +114,8 @@ export function WebPushVapidSection() {
         queryKey: queryKeys.adminSettings(),
       });
       toast.success(t("admin.webPushVapidGenerated"));
-    } catch {
-      toast.error(t("admin.webPushVapidGenerateFailed"));
+    } catch (failure) {
+      showErrorToast(t("admin.webPushVapidGenerateFailed"), { cause: failure });
     } finally {
       setGenerating(false);
     }

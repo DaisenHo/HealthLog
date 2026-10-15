@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { SlidersHorizontal, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton, ConfirmDialog } from "@/components/ui/confirm-button";
@@ -101,8 +102,9 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       toast.success(t("thresholds.saveSuccess"));
     },
     onError: (err) =>
-      toast.error(
+      showErrorToast(
         err instanceof Error ? err.message : t("thresholds.saveError"),
+        { cause: err },
       ),
   });
 
@@ -131,7 +133,8 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       void refetchInactiveDailyReads(queryClient);
       toast.success(t("thresholds.resetSuccess"));
     },
-    onError: () => toast.error(t("thresholds.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("thresholds.saveError"), { cause: failure }),
   });
 
   return (

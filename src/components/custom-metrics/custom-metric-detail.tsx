@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-query";
 import { Gauge, ListOrdered, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
@@ -162,7 +163,8 @@ export function CustomMetricDetail({
       queryClient.invalidateQueries({ queryKey: queryKeys.customMetrics() });
       router.push("/measurements");
     },
-    onError: () => toast.error(t("customMetrics.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("customMetrics.deleteError"), { cause: failure }),
   });
 
   const description = metric?.description?.trim()

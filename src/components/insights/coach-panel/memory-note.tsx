@@ -16,7 +16,7 @@
  * no line behind.
  */
 import { useState } from "react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -83,7 +83,7 @@ export function CoachMemoryNote({
   const facts = useCoachFacts({ enabled: saved && !liveFact && !undone });
   const forget = useForgetCoachFact({
     onSuccess: () => setUndone(true),
-    onError: () => toast.error(t("settings.ai.coachMemory.forgotError")),
+    onError: () => showErrorToast(t("settings.ai.coachMemory.forgotError")),
   });
   if (!saved || undone || !note.factId) return null;
   const fact =

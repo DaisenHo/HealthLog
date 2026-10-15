@@ -6,6 +6,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import {
@@ -74,7 +75,7 @@ export async function runSetMedicationListView(deps: {
       toast.message(t("common.conflictReloaded"));
       return;
     }
-    toast.error(t("medications.viewSaveFailed"));
+    showErrorToast(t("medications.viewSaveFailed"), { cause: err });
   }
 }
 
@@ -114,7 +115,7 @@ export async function runSaveMedicationListOrder(deps: {
       toast.message(t("common.conflictReloaded"));
       return false;
     }
-    toast.error(t("medications.reorderSaveFailed"));
+    showErrorToast(t("medications.reorderSaveFailed"), { cause: err });
     return false;
   }
 }

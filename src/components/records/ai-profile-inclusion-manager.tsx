@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -88,7 +88,7 @@ export function AiProfileInclusionManager() {
       if (isConflict(error)) {
         queryClient.invalidateQueries({ queryKey: queryKeys.coachAboutMe() });
       }
-      toast.error(t("records.aiInclusion.saveError"));
+      showErrorToast(t("records.aiInclusion.saveError"), { cause: error });
     },
   });
 

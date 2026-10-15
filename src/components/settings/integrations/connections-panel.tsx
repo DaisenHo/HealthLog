@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
@@ -246,7 +247,7 @@ export function ConnectionsPanel({
       const reasonKey =
         WITHINGS_OAUTH_ERROR_KEYS[withingsOauthOutcome.reason] ??
         "settings.withingsOauthError.generic";
-      toast.error(t("settings.withingsOauthFailed"), {
+      showErrorToast(t("settings.withingsOauthFailed"), {
         description: t(reasonKey),
         duration: 10_000,
       });
@@ -285,7 +286,7 @@ export function ConnectionsPanel({
     } else {
       // Known reason tags resolve to a specific message; anything else falls
       // back to the generic copy (matching the Withings handler).
-      toast.error(t(`settings.${provider}OauthFailed`), {
+      showErrorToast(t(`settings.${provider}OauthFailed`), {
         description: t(oauthReasonKey(provider, oauthOutcome.reason)),
         duration: 10_000,
       });

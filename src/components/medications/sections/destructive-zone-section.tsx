@@ -30,6 +30,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Archive, Loader2, Trash2 } from "lucide-react";
 
 import {
@@ -92,9 +93,11 @@ export function LifecycleManageBody({
           : t("medications.detail.zone.pause.resumedToast"),
       );
       onAfterAction?.();
-    } catch {
+    } catch (failure) {
       setPaused(previous);
-      toast.error(t("medications.detail.zone.pause.failed"));
+      showErrorToast(t("medications.detail.zone.pause.failed"), {
+        cause: failure,
+      });
     } finally {
       setTier1Busy(false);
     }
@@ -110,8 +113,10 @@ export function LifecycleManageBody({
       toast.success(t("medications.detail.zone.end.toast"));
       setEndDialogOpen(false);
       onAfterAction?.();
-    } catch {
-      toast.error(t("medications.detail.zone.end.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.end.failed"), {
+        cause: failure,
+      });
     } finally {
       setTier2Busy(false);
     }
@@ -246,8 +251,10 @@ export function DangerZoneBody({
       toast.success(t("medications.detail.zone.purge.toast"));
       setPurgeDialogOpen(false);
       onAfterAction?.();
-    } catch {
-      toast.error(t("medications.detail.zone.purge.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.purge.failed"), {
+        cause: failure,
+      });
     } finally {
       setTier3aBusy(false);
     }
@@ -278,8 +285,10 @@ export function DangerZoneBody({
       // analytics / compliance / inline chart). Not awaited: navigation
       // already happened and a transient refetch must not block it.
       void invalidateMedicationReads(queryClient);
-    } catch {
-      toast.error(t("medications.detail.zone.delete.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.delete.failed"), {
+        cause: failure,
+      });
       setTier3bBusy(false);
     }
   }

@@ -139,6 +139,7 @@ describe("sign-in over plain http with Secure-only cookies (real Postgres)", () 
       expect(res.status).toBe(409);
       const body = await res.json();
       expect(body.meta).toEqual({
+        requestId: expect.any(String),
         errorCode: "auth.session.insecure_transport",
         sessionCookieSecure: true,
       });

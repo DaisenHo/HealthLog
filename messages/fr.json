@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationMinutes": "{minutes} min",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} h"
+    "durationClockHours": "{time} h",
+    "errorIdLabel": "ID d'erreur",
+    "errorIdCopy": "Copier l'ID d'erreur",
+    "errorIdCopied": "ID d'erreur copié"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "Documentation",
       "credits": "Crédits et attributions de données",
       "linksHeading": "Sources et documentation",
-      "newerAvailable": "Nouvelle version : {tag}"
+      "newerAvailable": "Nouvelle version : {tag}",
+      "support": {
+        "title": "Assistance",
+        "description": "Un résumé pour un signalement de bug, sans votre nom, votre e-mail ni vos valeurs de santé.",
+        "copy": "Copier les infos d'assistance",
+        "copied": "Copié",
+        "copyFailed": "Les infos d'assistance n'ont pas pu être rassemblées."
+      }
     },
     "testConnection": {
       "test": "Tester la connexion",
@@ -7753,7 +7763,8 @@
         "eventDetails": "Détails de l'événement",
         "closeDetails": "Fermer les détails",
         "processDetail": "Le tampon est volatil et limité à 500 entrées.",
-        "cardTitle": "Événements récents"
+        "cardTitle": "Événements récents",
+        "filterErrorId": "ID d'erreur"
       },
       "backups": {
         "title": "Sauvegardes",
@@ -8120,7 +8131,16 @@
       "codes": "Pour l'administrateur : les requêtes API répondent 503 avec le code d'erreur {code}, et /api/health indique la raison {reason}."
     },
     "loginOverviewCardTitle": "Événements de connexion",
-    "userColumn": "Utilisateur"
+    "userColumn": "Utilisateur",
+    "supportReport": {
+      "title": "Rapport d'assistance",
+      "description": "Un résumé de cette instance pour un signalement de bug, sans e-mails, identifiants ni valeurs.",
+      "body": "Les comptes apparaissent comme « Account 1 », « Account 2 », etc. Lisez le rapport avant de le partager.",
+      "copy": "Copier",
+      "copied": "Copié",
+      "download": "Télécharger",
+      "loadError": "Le rapport d'assistance n'a pas pu être créé."
+    }
   },
   "achievements": {
     "title": "Réussites",

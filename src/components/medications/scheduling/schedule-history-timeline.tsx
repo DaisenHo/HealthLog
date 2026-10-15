@@ -39,6 +39,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -143,8 +144,10 @@ export function ScheduleHistoryTimeline({
         queryKey: queryKeys.medicationDetail(medicationId),
       });
     },
-    onError: () => {
-      toast.error(t("medications.detail.zeitplan.history.deleteError"));
+    onError: (failure) => {
+      showErrorToast(t("medications.detail.zeitplan.history.deleteError"), {
+        cause: failure,
+      });
     },
   });
 
@@ -468,11 +471,12 @@ function EraDialog({
       reset();
       onSaved();
     },
-    onError: () => {
-      toast.error(
+    onError: (failure) => {
+      showErrorToast(
         target
           ? t("medications.detail.zeitplan.history.updateError")
           : t("medications.detail.zeitplan.history.createError"),
+        { cause: failure },
       );
     },
   });

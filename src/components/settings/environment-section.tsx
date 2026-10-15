@@ -18,6 +18,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { CloudSun, MapPin, Plane, Trash2, Wind } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -180,7 +181,10 @@ export function EnvironmentSection() {
       setHomeResults(data.results);
       setHomeSearched(true);
     },
-    onError: () => toast.error(t("settings.sections.environment.searchError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.searchError"), {
+        cause: failure,
+      }),
   });
 
   const searchTravel = useMutation({
@@ -190,7 +194,10 @@ export function EnvironmentSection() {
       setTravelResults(data.results);
       setTravelSearched(true);
     },
-    onError: () => toast.error(t("settings.sections.environment.searchError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.searchError"), {
+        cause: failure,
+      }),
   });
 
   const setHome = useMutation({
@@ -209,7 +216,10 @@ export function EnvironmentSection() {
       invalidate();
       toast.success(t("settings.sections.environment.homeSaved"));
     },
-    onError: () => toast.error(t("settings.sections.environment.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.saveError"), {
+        cause: failure,
+      }),
   });
 
   const addTravel = useMutation({
@@ -230,7 +240,10 @@ export function EnvironmentSection() {
       invalidate();
       toast.success(t("settings.sections.environment.travelAdded"));
     },
-    onError: () => toast.error(t("settings.sections.environment.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.saveError"), {
+        cause: failure,
+      }),
   });
 
   const removeTravel = useMutation({
@@ -240,7 +253,10 @@ export function EnvironmentSection() {
       invalidate();
       toast.success(t("settings.sections.environment.travelRemoved"));
     },
-    onError: () => toast.error(t("settings.sections.environment.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.saveError"), {
+        cause: failure,
+      }),
   });
 
   const setAirQuality = useMutation({
@@ -249,8 +265,10 @@ export function EnvironmentSection() {
       apiPatch("/api/environment/preferences", { airQualityEnabled }),
     // The switch itself shows the new state; no toast on success.
     onSuccess: () => invalidate(),
-    onError: () =>
-      toast.error(t("settings.sections.environment.airQuality.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.airQuality.saveError"), {
+        cause: failure,
+      }),
   });
 
   const backfill = useMutation({
@@ -264,8 +282,10 @@ export function EnvironmentSection() {
       invalidate();
       toast.success(t("settings.sections.environment.backfillQueued"));
     },
-    onError: () =>
-      toast.error(t("settings.sections.environment.backfillError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.environment.backfillError"), {
+        cause: failure,
+      }),
   });
 
   if (!enabled) {

@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,11 +107,13 @@ export function KeyBackupCard() {
     },
     onError: async (err: Error) => {
       if (err instanceof ApiError && err.status === 409) {
-        toast.error(t("admin.keyBackup.stale"));
+        showErrorToast(t("admin.keyBackup.stale"), { cause: err });
         await invalidate();
         return;
       }
-      toast.error(err.message || t("admin.keyBackup.confirmFailed"));
+      showErrorToast(err.message || t("admin.keyBackup.confirmFailed"), {
+        cause: err,
+      });
     },
   });
 
@@ -133,7 +136,9 @@ export function KeyBackupCard() {
     },
     onError: (err: Error) => {
       setCheckResult(null);
-      toast.error(err.message || t("admin.keyBackup.checkFailed"));
+      showErrorToast(err.message || t("admin.keyBackup.checkFailed"), {
+        cause: err,
+      });
     },
   });
 

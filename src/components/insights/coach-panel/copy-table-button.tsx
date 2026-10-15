@@ -11,7 +11,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   DropdownMenu,
@@ -61,8 +61,8 @@ export function CopyTableButton({ grid, caption }: CopyTableButtonProps) {
           setCopied(false);
           timer.current = null;
         }, COPY_CONFIRM_MS);
-      } catch {
-        toast.error(t(COACH_RESULT_UI_KEYS.copyFailed));
+      } catch (failure) {
+        showErrorToast(t(COACH_RESULT_UI_KEYS.copyFailed), { cause: failure });
       }
     },
     [grid, caption, t],

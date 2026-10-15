@@ -50,6 +50,7 @@
  */
 
 import { randomId } from "@/lib/random-id";
+import { recordErrorId } from "@/lib/errors/error-id";
 import { readError } from "./read-error";
 import {
   validateResponseContext,
@@ -62,12 +63,28 @@ export class ApiError extends Error {
   readonly status: number;
   /** `meta` object of the error envelope, when the body carried one. */
   readonly meta: Record<string, unknown> | undefined;
+  /**
+   * The server's request id for this failure: `meta.requestId`, else the
+   * `x-request-id` response header, else null (a proxy answered, or an older
+   * server). Its first characters are the error id a person reads out.
+   */
+  readonly requestId: string | null;
 
-  constructor(message: string, status: number, meta?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    status: number,
+    meta?: Record<string, unknown>,
+    requestId?: string | null,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.meta = meta;
+    const fromMeta =
+      typeof meta?.requestId === "string" && meta.requestId.length > 0
+        ? meta.requestId
+        : null;
+    this.requestId = fromMeta ?? requestId ?? null;
   }
 }
 
@@ -87,7 +104,16 @@ async function throwApiError(res: Response): Promise<never> {
   } catch {
     /* non-JSON body — readError supplies the fallback message */
   }
-  throw new ApiError(await readError(res), res.status, meta);
+  const error = new ApiError(
+    await readError(res),
+    res.status,
+    meta,
+    res.headers.get("x-request-id"),
+  );
+  // A server-side failure is worth an id in the session's support info,
+  // whether or not the call site ends up showing it.
+  if (error.status >= 500 && error.requestId) recordErrorId(error.requestId);
+  throw error;
 }
 
 async function parseEnvelope<T, M>(

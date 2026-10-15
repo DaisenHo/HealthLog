@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,7 +70,9 @@ export function WelcomeScreen({ variant }: { variant: "fresh" | "again" }) {
     acknowledge.isPending || complete.isPending || restart.isPending;
 
   const fail = (err: unknown) =>
-    toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+    showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+      cause: err,
+    });
 
   async function setUp() {
     if (pending || !acknowledged) return;

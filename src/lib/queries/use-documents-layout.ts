@@ -5,7 +5,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import {
@@ -58,9 +58,9 @@ export async function runSetDocumentsLayout(deps: {
       { version: 1, ...patch },
     );
     if (saved) queryClient.setQueryData(key, saved);
-  } catch {
+  } catch (failure) {
     queryClient.setQueryData(key, previous);
-    toast.error(t("documents.layout.saveFailed"));
+    showErrorToast(t("documents.layout.saveFailed"), { cause: failure });
   }
 }
 

@@ -1,7 +1,11 @@
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { readLogBuffer, LOG_BUFFER_MAX } from "@/lib/logging/in-memory-buffer";
+import {
+  readLogBuffer,
+  LOG_BUFFER_MAX,
+  PROBLEMS_BUFFER_MAX,
+} from "@/lib/logging/in-memory-buffer";
 import { redactSecrets } from "@/lib/logging/redact";
 import type { WideEvent } from "@/lib/logging/types";
 import { NextRequest } from "next/server";
@@ -10,16 +14,30 @@ import { z } from "zod/v4";
 export const dynamic = "force-dynamic";
 
 const querySchema = z.object({
+  // The error id a person reads out is the first 8 characters of the request
+  // id; the full id (up to 64) matches as well. Same alphabet as an accepted
+  // incoming `x-request-id`.
+  requestId: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9-]{8,64}$/)
+    .optional(),
+  ring: z.enum(["all", "problems"]).default("all"),
   traceId: z.string().trim().min(1).max(200).optional(),
   level: z.enum(["debug", "info", "warn", "error"]).optional(),
   action: z.string().trim().min(1).max(200).optional(),
   since: z.string().datetime().optional(),
   until: z.string().datetime().optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  limit: z.coerce.number().int().min(1).max(PROBLEMS_BUFFER_MAX).default(200),
 });
 
 /**
  * Admin endpoint: tail of the per-process in-memory wide-event ring buffer.
+ *
+ * `ring=problems` reads the second ring, which keeps the last 1,000 `warn` and
+ * `error` events only, so a failure a person reported an hour ago is still
+ * there after the main ring has turned over. `requestId` finds the event
+ * behind an error id by prefix.
  *
  * The buffer is populated by `transports.emitEvent()` so the result mirrors
  * what would be shipped to Loki (sampler-gated). Per-process and volatile —
@@ -36,6 +54,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const { searchParams } = new URL(request.url);
   const result = querySchema.safeParse({
+    requestId: searchParams.get("requestId") ?? undefined,
+    ring: searchParams.get("ring") ?? undefined,
     traceId: searchParams.get("traceId") ?? undefined,
     level: searchParams.get("level") ?? undefined,
     action: searchParams.get("action") ?? undefined,
@@ -47,6 +67,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const parsed = result.data;
 
   const events = readLogBuffer({
+    ring: parsed.ring,
+    requestId: parsed.requestId,
     traceId: parsed.traceId,
     level: parsed.level,
     action: parsed.action,
@@ -62,6 +84,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     meta: {
       total: redacted.length,
       bufferMax: LOG_BUFFER_MAX,
+      problemsBufferMax: PROBLEMS_BUFFER_MAX,
+      ring: parsed.ring,
     },
   });
 });

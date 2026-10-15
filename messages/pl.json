@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours} godz. {minutes} min",
     "durationMinutes": "{minutes} min",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} godz."
+    "durationClockHours": "{time} godz.",
+    "errorIdLabel": "ID błędu",
+    "errorIdCopy": "Kopiuj ID błędu",
+    "errorIdCopied": "Skopiowano ID błędu"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "Dokumentacja",
       "credits": "Autorzy i źródła danych",
       "linksHeading": "Źródła i dokumentacja",
-      "newerAvailable": "Nowa wersja: {tag}"
+      "newerAvailable": "Nowa wersja: {tag}",
+      "support": {
+        "title": "Pomoc",
+        "description": "Podsumowanie do zgłoszenia błędu, bez imienia, adresu e-mail i wartości zdrowotnych.",
+        "copy": "Kopiuj informacje dla pomocy",
+        "copied": "Skopiowano",
+        "copyFailed": "Nie udało się zebrać informacji dla pomocy."
+      }
     },
     "testConnection": {
       "test": "Testuj połączenie",
@@ -7753,7 +7763,8 @@
         "eventDetails": "Szczegóły zdarzenia",
         "closeDetails": "Zamknij szczegóły",
         "processDetail": "Bufor jest ulotny i ograniczony do 500 wpisów.",
-        "cardTitle": "Ostatnie zdarzenia"
+        "cardTitle": "Ostatnie zdarzenia",
+        "filterErrorId": "ID błędu"
       },
       "backups": {
         "title": "Kopie zapasowe",
@@ -8120,7 +8131,16 @@
       "codes": "Dla administratora: żądania API odpowiadają 503 z kodem błędu {code}, a /api/health podaje powód {reason}."
     },
     "loginOverviewCardTitle": "Zdarzenia logowania",
-    "userColumn": "Użytkownik"
+    "userColumn": "Użytkownik",
+    "supportReport": {
+      "title": "Raport dla pomocy",
+      "description": "Podsumowanie tej instancji do zgłoszenia błędu, bez adresów e-mail, identyfikatorów i wartości.",
+      "body": "Konta pojawiają się jako „Account 1”, „Account 2” itd. Przeczytaj raport, zanim go udostępnisz.",
+      "copy": "Kopiuj",
+      "copied": "Skopiowano",
+      "download": "Pobierz",
+      "loadError": "Nie udało się utworzyć raportu dla pomocy."
+    }
   },
   "achievements": {
     "title": "Osiągnięcia",

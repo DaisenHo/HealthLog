@@ -86,7 +86,11 @@ describe("POST /api/settings/email/test", () => {
 
       expect(response.status).toBe(502);
       const json = await response.json();
-      expect(json.meta).toEqual({ errorCode: failureCode, smtpCode });
+      expect(json.meta).toEqual({
+        requestId: expect.any(String),
+        errorCode: failureCode,
+        smtpCode,
+      });
       expect(json.error).toContain(sentence);
     },
   );
@@ -118,7 +122,7 @@ describe("POST /api/settings/email/test", () => {
 
     expect(response.status).toBe(500);
     const json = await response.json();
-    expect(json.meta).toBeUndefined();
+    expect(json.meta).toEqual({ requestId: expect.any(String) });
   });
 
   it("answers a delivered test with 200", async () => {
