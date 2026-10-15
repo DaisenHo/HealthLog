@@ -50,6 +50,13 @@ export interface WatchdogSummary {
   incidentsOpened: number;
   incidentsClosed: number;
   notified: number;
+  /**
+   * The pass found no watch row at all: the first one after the watchdog was
+   * deployed. Incidents standing at that moment are recorded as already
+   * announced instead of paged, so a deploy does not page once for every
+   * connection that has been broken or quiet for months.
+   */
+  firstRun: boolean;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -219,6 +226,7 @@ export async function runIntegrationWatchdog(opts: {
     incidentsOpened: 0,
     incidentsClosed: 0,
     notified: 0,
+    firstRun: (await prisma.integrationWatch.count()) === 0,
   };
   const userIds = await listWatchedUserIds();
   for (const userId of userIds) {
@@ -357,7 +365,13 @@ async function watchConnection(input: {
       summary.incidentsOpened += 1;
       incidentReason = transition.reason;
       incidentOpenedAt = now;
-      await announce(transition.reason, transition.since);
+      if (summary.firstRun) {
+        // Standing since before the watchdog first looked: recorded as
+        // announced, not paged (see `WatchdogSummary.firstRun`).
+        alertedAt = now;
+      } else {
+        await announce(transition.reason, transition.since);
+      }
       break;
     case "adopt":
       // The ledger already paged about this streak; record it as announced so
@@ -405,8 +419,17 @@ async function watchConnection(input: {
       break;
   }
 
-  // Nothing to remember and nothing remembered: no row.
-  if (row === null && silentSince === null && incidentReason === null) return;
+  // Nothing to remember and nothing remembered: no row. Except on the first
+  // pass, which leaves a row for every connection it looked at, so the pass
+  // after it is not taken for a first one too.
+  if (
+    row === null &&
+    silentSince === null &&
+    incidentReason === null &&
+    !(summary.firstRun && fact.connected)
+  ) {
+    return;
+  }
 
   await prisma.integrationWatch.upsert({
     where: { userId_integration: { userId, integration: key } },

@@ -92,6 +92,11 @@ beforeEach(async () => {
     },
   });
   vi.mocked(dispatchNotification).mockClear();
+  // The watchdog has run on this instance before: its first pass after a
+  // deploy records what stands without paging (pinned on its own below).
+  await prisma().integrationWatch.create({
+    data: { userId: ADMIN, integration: "withings" },
+  });
 });
 
 describe("integration watchdog", () => {
@@ -176,7 +181,9 @@ describe("integration watchdog", () => {
     const summary = await runIntegrationWatchdog({ mode: "hourly", now: NOW });
     expect(summary.silencesFlagged).toBe(0);
     expect(dispatchNotification).not.toHaveBeenCalled();
-    expect(await prisma().integrationWatch.count()).toBe(0);
+    expect(
+      await prisma().integrationWatch.count({ where: { userId: USER } }),
+    ).toBe(0);
   });
 
   it("never alerts on silence for an on-demand source such as a scale", async () => {
@@ -242,6 +249,115 @@ describe("integration watchdog", () => {
     expect(dispatchedTitles()[1]).toBe(
       "Oura recovered for subject@example.test",
     );
+  });
+});
+
+describe("what pages and what does not", () => {
+  it("never pages for an Apple Health account whose phone app stopped delivering weeks ago", async () => {
+    // Daily data until forty days ago, then nothing: the push cadence reads
+    // stale (`no_new_data`) for good. The owner stopped using the app; there
+    // is nothing for an operator to do.
+    await prisma().user.update({
+      where: { id: USER },
+      data: {
+        ouraAccessTokenEncrypted: null,
+        healthKitLastSyncedAt: new Date(NOW.getTime() - 40 * DAY),
+      },
+    });
+    await prisma().measurement.createMany({
+      data: Array.from({ length: 30 }, (_, i) => ({
+        userId: USER,
+        type: "ACTIVITY_STEPS" as const,
+        value: 5000,
+        unit: "count",
+        source: "APPLE_HEALTH" as const,
+        measuredAt: new Date(NOW.getTime() - (40 + i) * DAY),
+      })),
+    });
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const health = await loadConnectionHealth(USER, ["apple-health"]);
+      expect(health["apple-health"]?.state).toBe("degraded");
+      expect(health["apple-health"]?.reason).toBe("no_new_data");
+      // A week of hourly and daily passes.
+      for (let day = 0; day < 7; day++) {
+        const at = new Date(NOW.getTime() + day * DAY);
+        const hourly = await runIntegrationWatchdog({
+          mode: "hourly",
+          now: at,
+        });
+        const daily = await runIntegrationWatchdog({ mode: "daily", now: at });
+        expect(hourly.incidentsOpened + daily.incidentsOpened).toBe(0);
+      }
+      expect(dispatchNotification).not.toHaveBeenCalled();
+      expect(
+        await prisma().integrationWatch.count({
+          where: { userId: USER, incidentReason: { not: null } },
+        }),
+      ).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("records what stands on its first pass after a deploy without paging, and pages normally after", async () => {
+    await prisma().integrationWatch.deleteMany();
+    // A wearable that has been silent since before the watchdog existed.
+    await seedDailyReadings(
+      USER,
+      "OURA",
+      Array.from({ length: 13 }, (_, i) => i + 3),
+      54,
+    );
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      await recordSyncSuccess(USER, "oura");
+      const first = await runIntegrationWatchdog({ mode: "hourly", now: NOW });
+      expect(first.firstRun).toBe(true);
+      expect(first.incidentsOpened).toBe(1);
+      expect(dispatchNotification).not.toHaveBeenCalled();
+      const watch = await prisma().integrationWatch.findUniqueOrThrow({
+        where: { userId_integration: { userId: USER, integration: "oura" } },
+      });
+      expect(watch.incidentReason).toBe("unexpected_silence");
+      // Marked as announced, so no later pass pages it either.
+      expect(watch.alertedAt).not.toBeNull();
+
+      const later = new Date(NOW.getTime() + HOUR);
+      const second = await runIntegrationWatchdog({
+        mode: "hourly",
+        now: later,
+      });
+      expect(second.firstRun).toBe(false);
+      expect(dispatchNotification).not.toHaveBeenCalled();
+
+      // A new incident after the first pass pages as usual.
+      for (let i = 0; i < 3; i++) {
+        await recordSyncFailure({
+          userId: USER,
+          integration: "whoop",
+          kind: "transient",
+          message: "WHOOP error: 503",
+          errorCode: "503",
+        });
+      }
+      expect(dispatchNotification).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves a row behind on a first pass that found nothing wrong, so the next pass is not a first one", async () => {
+    await prisma().integrationWatch.deleteMany();
+    await seedDailyReadings(USER, "OURA", [1, 2, 3], 2);
+    await recordSyncSuccess(USER, "oura");
+    const first = await runIntegrationWatchdog({ mode: "hourly", now: NOW });
+    expect(first.firstRun).toBe(true);
+    expect(await prisma().integrationWatch.count()).toBe(1);
+    const second = await runIntegrationWatchdog({ mode: "hourly", now: NOW });
+    expect(second.firstRun).toBe(false);
   });
 });
 

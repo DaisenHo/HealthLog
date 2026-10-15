@@ -13,10 +13,14 @@
  *      is watched for errors only.
  *
  *   2. Is there an incident the operator should hear about?
- *      Unexpected silence; or a health state of `action_required` /
- *      `degraded` that has lasted longer than `INCIDENT_AFTER_MS`; or a
- *      failure streak the sync ledger already paged about (adopted, so the
- *      operator still gets the one recovery note when it ends).
+ *      Unexpected silence; or an `action_required` state, or a `degraded`
+ *      one because the provider keeps erroring (`provider_errors`), that has
+ *      lasted longer than `INCIDENT_AFTER_MS`; or a failure streak the sync
+ *      ledger already paged about (adopted, so the operator still gets the
+ *      one recovery note when it ends). `no_new_data` and `sync_stalled` on
+ *      their own never page: they mostly mean the owner stopped using the
+ *      source (an Apple Health account whose phone app has not run for a week
+ *      reads as stale for good), which is nothing an operator can fix.
  *
  * One incident per connection at a time. It is announced once and closed once;
  * a change of reason while it is open (silence turning into a reauth) is the
@@ -162,7 +166,13 @@ export function currentIncident(input: {
   if (health === null) return null;
   const troubled =
     health.state === "action_required" || health.state === "degraded";
-  if (troubled) {
+  // What pages on its own: the owner has to act, or the provider errors. A
+  // streak the ledger already paged about is followed whatever it reads as
+  // now, so its end is still reported.
+  const pages =
+    health.state === "action_required" ||
+    (health.state === "degraded" && health.reason === "provider_errors");
+  if (troubled && (pages || input.ledgerAlerted)) {
     // A provider-side reauth flag (Google Health) can stand without a ledger
     // streak to date it; the last success is then when it last worked.
     const sinceIso = health.since ?? health.lastSuccessAt;
