@@ -5,7 +5,6 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { apiGet, apiPut } from "@/lib/api/api-fetch";

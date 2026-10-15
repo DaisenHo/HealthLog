@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Eye, Loader2, Target } from "lucide-react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Label } from "@/components/ui/label";

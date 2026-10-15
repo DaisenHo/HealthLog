@@ -8,7 +8,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Paperclip, Sparkles } from "lucide-react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { cn } from "@/lib/utils";

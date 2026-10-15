@@ -17,7 +17,6 @@ import {
 } from "react";
 import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Toaster } from "@/components/ui/sonner";
 import { applyThemeColor } from "@/lib/pwa/theme-color";

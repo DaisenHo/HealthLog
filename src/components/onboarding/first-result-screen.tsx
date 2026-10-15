@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 

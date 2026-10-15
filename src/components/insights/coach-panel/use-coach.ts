@@ -15,7 +15,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import type {

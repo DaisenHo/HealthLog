@@ -18,7 +18,6 @@
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {

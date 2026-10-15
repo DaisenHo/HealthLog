@@ -3,7 +3,6 @@
 import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 import { EyeOff, RotateCcw, X } from "lucide-react";
 import { useContext, useReducer, useState } from "react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";

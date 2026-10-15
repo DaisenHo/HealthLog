@@ -14,7 +14,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, Loader2, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {

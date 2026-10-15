@@ -13,7 +13,6 @@ import { DocumentReadingConsentPrompt } from "@/components/ai/document-reading-c
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { AlertCircle, Loader2, ScanLine, Upload } from "lucide-react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";

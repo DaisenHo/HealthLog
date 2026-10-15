@@ -6,7 +6,6 @@ import {
 } from "@/components/medications/course-fields";
 import { useEffect, useReducer, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";

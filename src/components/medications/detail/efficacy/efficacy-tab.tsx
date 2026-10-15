@@ -13,7 +13,6 @@ import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Activity, TrendingUp } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";

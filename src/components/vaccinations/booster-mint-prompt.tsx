@@ -17,7 +17,6 @@
  * already closed by the time this appears.
  */
 import { useState } from "react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";

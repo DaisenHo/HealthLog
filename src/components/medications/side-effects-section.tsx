@@ -8,7 +8,6 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 

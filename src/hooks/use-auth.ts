@@ -7,7 +7,6 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiFetchRaw, ApiError } from "@/lib/api/api-fetch";

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { BellPlus, Check, Loader2 } from "lucide-react";
 

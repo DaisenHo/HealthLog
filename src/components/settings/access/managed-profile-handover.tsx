@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";

@@ -34,7 +34,6 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { ApiError, apiPost } from "@/lib/api/api-fetch";

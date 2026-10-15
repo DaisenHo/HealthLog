@@ -16,7 +16,6 @@ import { useDocumentDate } from "@/components/documents/use-document-date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Input } from "@/components/ui/input";

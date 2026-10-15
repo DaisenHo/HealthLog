@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { ListChecks, Loader2 } from "lucide-react";
 
