@@ -309,7 +309,11 @@ export interface OuraCollection<T> {
 export interface OuraSleep {
   id: string;
   day: string;
-  /** `long` | `short` | `nap` | `rest` — disambiguates a nap from the main sleep. */
+  /**
+   * `long_sleep` | `sleep` | `late_nap` | `rest` | `deleted`. `rest` is a
+   * detected period the person rejected and `deleted` one they removed; see
+   * `isRetiredOuraSleepPeriod`.
+   */
   type?: string | null;
   bedtime_start?: string;
   bedtime_end?: string;
@@ -796,13 +800,35 @@ function mapSleepTimeline(s: OuraSleep): MappedMeasurement[] | null {
 }
 
 /**
- * Map one Oura sleep record. When the real `sleep_phase_5_min` hypnogram is
+ * Oura sleep periods that are not sleep. Oura's `type` marks a detected period
+ * the person turned down in the app's confirm prompt as `rest` ("falsely
+ * detected sleep / nap, rejected by the user") and one they deleted as
+ * `deleted`; the sleep collection still returns both. Importing them made an
+ * afternoon on the sofa a second sleep session on that day, which added its
+ * minutes to the night and pulled the night's midpoint into the afternoon.
+ * `sleep`, `long_sleep` and `late_nap` are periods Oura counts, and an unknown
+ * or missing type stays in, as before.
+ */
+const RETIRED_OURA_SLEEP_TYPES: ReadonlySet<string> = new Set([
+  "rest",
+  "deleted",
+]);
+
+/** True for an Oura sleep period the person rejected or deleted. */
+export function isRetiredOuraSleepPeriod(s: Pick<OuraSleep, "type">): boolean {
+  return typeof s.type === "string" && RETIRED_OURA_SLEEP_TYPES.has(s.type);
+}
+
+/**
+ * Map one Oura sleep record. A rejected or deleted period
+ * (`isRetiredOuraSleepPeriod`) maps to nothing. When the real `sleep_phase_5_min` hypnogram is
  * present we emit timed per-segment `SLEEP_DURATION` rows (Oura's measured
  * timeline); otherwise we fall back to the four per-stage totals stamped on the
  * sleep END. Either way we add efficiency, HRV, RHR (`lowest_heart_rate`), and
  * respiratory rate.
  */
 export function mapSleep(s: OuraSleep, tz?: string): MappedMeasurement[] {
+  if (isRetiredOuraSleepPeriod(s)) return [];
   const measuredAt = dayAnchor(s.day, tz, s.bedtime_end);
   if (!measuredAt) return [];
   const out: MappedMeasurement[] = [];

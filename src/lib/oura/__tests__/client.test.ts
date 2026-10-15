@@ -330,6 +330,24 @@ describe("mapReadiness", () => {
 });
 
 describe("mapSleep", () => {
+  it("maps a rejected (`rest`) or deleted period to nothing", () => {
+    const base: OuraSleep = {
+      id: "rec-r",
+      day: "2026-06-10",
+      bedtime_start: "2026-06-10T14:00:00.000Z",
+      bedtime_end: "2026-06-10T15:00:00.000Z",
+      sleep_phase_5_min: "222222222222",
+      lowest_heart_rate: 58,
+      average_hrv: 40,
+    };
+    expect(mapSleep({ ...base, type: "rest" })).toEqual([]);
+    expect(mapSleep({ ...base, type: "deleted" })).toEqual([]);
+    // Periods Oura counts still map, a nap included.
+    for (const type of ["long_sleep", "sleep", "late_nap", undefined]) {
+      expect(mapSleep({ ...base, type }).length).toBeGreaterThan(0);
+    }
+  });
+
   it("falls back to stage totals (no hypnogram) and record-scopes the externalId", () => {
     const s: OuraSleep = {
       id: "rec-9",
