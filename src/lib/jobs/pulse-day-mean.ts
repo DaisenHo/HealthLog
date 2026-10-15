@@ -175,7 +175,10 @@ function windows(
   const start = Math.floor(first.getTime() / DAY_MS) * DAY_MS;
   const end = (Math.floor(last.getTime() / DAY_MS) + 1) * DAY_MS;
   for (let t = start; t < end; t += days * DAY_MS) {
-    out.push({ from: new Date(t), to: new Date(Math.min(end, t + days * DAY_MS)) });
+    out.push({
+      from: new Date(t),
+      to: new Date(Math.min(end, t + days * DAY_MS)),
+    });
   }
   return out;
 }

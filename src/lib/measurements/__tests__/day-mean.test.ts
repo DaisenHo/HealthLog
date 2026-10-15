@@ -175,8 +175,9 @@ describe("pulse day-mean method", () => {
   });
 
   it("weighs hours by min(1, n / 3)", () => {
-    expect([1, 2, 3, 10].map((n) => hourWeight(n, "weighted_hour_mean_v2")))
-      .toEqual([1 / 3, 2 / 3, 1, 1]);
+    expect(
+      [1, 2, 3, 10].map((n) => hourWeight(n, "weighted_hour_mean_v2")),
+    ).toEqual([1 / 3, 2 / 3, 1, 1]);
     expect([1, 2, 3].map((n) => hourWeight(n, "hour_mean_v1"))).toEqual([
       1, 1, 1,
     ]);

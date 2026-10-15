@@ -14,7 +14,12 @@ export const pulseDayMeanActionSchema = z.strictObject({
 export type PulseDayMeanActionInput = z.infer<typeof pulseDayMeanActionSchema>;
 
 /** Where a day's change between the two methods falls, in bpm. */
-export const PULSE_DAY_MEAN_CHANGE_BUCKETS = ["0-1", "1-2", "2-5", "5+"] as const;
+export const PULSE_DAY_MEAN_CHANGE_BUCKETS = [
+  "0-1",
+  "1-2",
+  "2-5",
+  "5+",
+] as const;
 
 /**
  * What a dry run found. Accounts are numbered in the order they were created

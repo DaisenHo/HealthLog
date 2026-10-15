@@ -167,7 +167,10 @@ describe("POST dry_run", () => {
     expect(send).toHaveBeenCalledWith(
       "pulse-day-mean",
       { action: "dry_run" },
-      expect.objectContaining({ retryLimit: 0, singletonKey: "pulse-day-mean" }),
+      expect.objectContaining({
+        retryLimit: 0,
+        singletonKey: "pulse-day-mean",
+      }),
     );
     expect(prisma.appSettings.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
