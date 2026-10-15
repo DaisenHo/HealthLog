@@ -51,6 +51,8 @@ import {
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
 import { hasActivityScope } from "@/lib/withings/client";
+import { loadConnectionHealth } from "@/lib/integrations/connection-health-load";
+import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 
 export const dynamic = "force-dynamic";
 
@@ -157,6 +159,20 @@ export const GET = apiHandler(async () => {
     getPolarClientCredentials(user.id).then((c) => !!c),
     getOuraClientCredentials(user.id).then((c) => !!c),
     getStravaClientCredentials(user.id).then((c) => !!c),
+  ]);
+
+  // The unified per-connection state. Resolved by the same loader the
+  // per-provider routes and the integration watchdog use, so the envelope and
+  // every other surface say the same thing about a connection.
+  const health = await loadConnectionHealth(user.id, [
+    "withings",
+    "whoop",
+    "fitbit",
+    "google-health",
+    "polar",
+    "oura",
+    "strava",
+    "nightscout",
   ]);
 
   // F-SYNC-1 — per-metric-type last-value timestamps so the card can show that a
@@ -301,6 +317,7 @@ export const GET = apiHandler(async () => {
               parseWithingsApiPlanState(withingsConn.apiPlanState),
             )
           : [],
+        health: health["withings"],
         ...resolve("withings", withingsStatus, {
           connected: !!withingsConn,
           configured: withingsConfigured,
@@ -324,6 +341,7 @@ export const GET = apiHandler(async () => {
         backfillCompleted: whoopConnected
           ? !!whoopConn?.backfillCompletedAt
           : null,
+        health: health["whoop"],
         ...resolve("whoop", whoopStatus, {
           connected: whoopConnected,
           configured: whoopConfigured,
@@ -341,6 +359,7 @@ export const GET = apiHandler(async () => {
           ? fitbitConn.tokenExpiresAt.getTime() <= now
           : null,
         backfillCompleted: fitbitConn ? !!fitbitConn.backfillCompletedAt : null,
+        health: health["fitbit"],
         ...resolve("fitbit", fitbitStatus, {
           connected: fitbitConnected,
           configured: fitbitConfigured,
@@ -364,6 +383,7 @@ export const GET = apiHandler(async () => {
         // user-revoked grant) surfaced from the connection row; the card reads it
         // to raise a distinct "Reconnect" CTA separate from parked/disconnected.
         needsReauth: googleHealthConn ? googleHealthConn.needsReauth : false,
+        health: health["google-health"],
         ...resolve("google-health", googleHealthStatus, {
           connected: googleHealthConnected,
           configured: googleHealthConfigured,
@@ -382,6 +402,7 @@ export const GET = apiHandler(async () => {
         hasOwnCredentials:
           !!dbUser?.polarClientIdEncrypted &&
           !!dbUser?.polarClientSecretEncrypted,
+        health: health["polar"],
         ...resolve("polar", polarStatus, {
           connected: polarConnected,
           configured: polarConnected,
@@ -400,6 +421,7 @@ export const GET = apiHandler(async () => {
         scopeReconnect: ouraConnected
           ? ouraScopeReconnectList(readOuraScopeDenied(dbUser?.ouraScopeDenied))
           : [],
+        health: health["oura"],
         ...resolve("oura", ouraStatus, {
           connected: ouraConnected,
           configured: ouraConnected,
@@ -416,6 +438,7 @@ export const GET = apiHandler(async () => {
           !!dbUser?.stravaClientSecretEncrypted,
         // Strava writes Workout rows, not Measurements — its freshness list
         // carries the `WORKOUTS` pseudo-entry alone.
+        health: health["strava"],
         ...resolve("strava", stravaStatus, {
           connected: stravaConnected,
           configured: stravaConnected,
@@ -431,6 +454,7 @@ export const GET = apiHandler(async () => {
         configured: nightscoutConfigured,
         hasToken: !!dbUser?.nightscoutTokenEncrypted,
         allowPrivateHost: dbUser?.nightscoutAllowPrivateHost ?? false,
+        health: health["nightscout"],
         ...resolve("nightscout", nightscoutStatus, {
           connected: nightscoutConfigured,
           configured: nightscoutConfigured,
@@ -442,6 +466,16 @@ export const GET = apiHandler(async () => {
 
 interface IntegrationViewModel {
   integration: IntegrationKey;
+  /**
+   * The one server-resolved state per connection (ok / limited / degraded /
+   * action_required), null when the provider is not connected. Every other
+   * health-shaped field on this entry (`state`, `lastError`,
+   * `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`,
+   * `hasActivityScope`, `planUnavailable`, `scopeReconnect`) is folded into
+   * it and goes once the settings cards render `health`; no other client
+   * reads this envelope.
+   */
+  health: ConnectionHealth | null;
   state: string;
   lastSuccessAt: string | null;
   lastAttemptAt: string | null;

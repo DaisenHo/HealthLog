@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
+import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getIntegrationStatus } from "@/lib/integrations/status";
 import {
@@ -71,5 +72,9 @@ export const GET = apiHandler(async () => {
       failingSinceAt: status.failingSince,
       cadence: INTEGRATION_CADENCE["polar"],
     }),
+    // The one server-resolved state (ok / limited / degraded /
+    // action_required) every client renders. The fields above stay for
+    // clients that still read them; see `ConnectionHealth` in the API docs.
+    health: await loadOneConnectionHealth(user.id, "polar"),
   });
 });

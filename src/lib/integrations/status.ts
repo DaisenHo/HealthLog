@@ -40,6 +40,12 @@ import {
   type DispatchOutcome,
 } from "@/lib/notifications/dispatcher";
 import type { IntegrationClassification } from "@/lib/integrations/http-status-classifier";
+import {
+  RECENT_CALLS_LIMIT,
+  safeEndpointName,
+  safeErrorCode,
+  type RecentCallStatus,
+} from "@/lib/integrations/connection-health";
 
 export type IntegrationKey =
   | "withings"
@@ -194,13 +200,14 @@ export function getPersistentFailureThreshold(): number {
 }
 
 /**
- * Re-alert window: once we've paged on a streak we hold the alert for
- * 24h before paging again on the same streak (idempotency). The streak
- * is implicitly "reset" by a single success, which clears every
- * per-kind bucket and `alertedAt` — so a flapping integration that
- * succeeds once an hour will not page repeatedly.
+ * One page per failure streak. `alertedAt` is cleared by every path that ends
+ * a streak (a success entitled to clear the row, a reconnect, a resume, a
+ * disconnect), so a stamped `alertedAt` means "this streak was already
+ * announced". It used to re-page every 24 h for as long as the streak ran,
+ * which turned a week-long outage into seven identical messages; the
+ * integration watchdog (`./watchdog`) now owns the rest of the incident,
+ * including the one recovery note when it ends.
  */
-const ALERT_REPEAT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * v1.4.43 W14 — once a `persistent` failure streak has been running
@@ -474,6 +481,12 @@ export async function recordSyncSuccess(
           ...(ownedLastError ? { lastError: null } : {}),
         },
       });
+      await appendRecentCall(userId, integration, {
+        endpoint: leg,
+        status: "ok",
+        at: now,
+        errorCode: null,
+      });
       // Meta only — the enclosing wide event owns its own action name (the
       // cron task), and overwriting it here would rename the job.
       annotate({
@@ -515,6 +528,12 @@ export async function recordSyncSuccess(
       failingLegs: [],
       alertedAt: null,
     },
+  });
+  await appendRecentCall(userId, integration, {
+    endpoint: leg,
+    status: "ok",
+    at: now,
+    errorCode: null,
   });
 }
 
@@ -718,6 +737,13 @@ export async function recordSyncFailure(
     },
   });
 
+  await appendRecentCall(userId, integration, {
+    endpoint: leg,
+    status: effectiveKind,
+    at: now,
+    errorCode: errorCode ?? null,
+  });
+
   // Audit log entry — fire-and-await so an integration test can assert
   // it. The auth/audit helper is its own DB write so it's safe to call
   // serially without bloating latency in the success path (which never
@@ -771,9 +797,7 @@ export async function recordSyncFailure(
   const threshold = getPersistentFailureThreshold();
   const alertSignal = Math.max(...Object.values(buckets));
   if (alertSignal >= threshold) {
-    const previouslyAlerted =
-      row.alertedAt &&
-      now.getTime() - row.alertedAt.getTime() < ALERT_REPEAT_WINDOW_MS;
+    const previouslyAlerted = row.alertedAt != null;
     if (!previouslyAlerted) {
       const outcome = await maybeAlertAdmins({
         userId,
@@ -970,6 +994,13 @@ export async function parkIntegrationAtReauth(opts: {
     },
   });
 
+  await appendRecentCall(userId, integration, {
+    endpoint: leg,
+    status: "reauth_required",
+    at: now,
+    errorCode,
+  });
+
   if (isFreshPark) {
     await auditLog("integrations.reauth_required", {
       userId,
@@ -1022,6 +1053,13 @@ export async function markReauthRequired(
       // failure, not the detection.
       failingSinceAt: existing?.failingSinceAt ?? now,
     },
+  });
+
+  await appendRecentCall(userId, integration, {
+    endpoint: "token_refresh",
+    status: "reauth_required",
+    at: now,
+    errorCode: null,
   });
 
   await auditLog("integrations.reauth_required", {
@@ -1089,6 +1127,64 @@ export async function markReconnected(
 }
 
 // ── helpers ────────────────────────────────────────────────────────
+
+interface RecentCallWrite {
+  endpoint: string | null;
+  status: RecentCallStatus;
+  at: Date;
+  errorCode: string | null;
+}
+
+/**
+ * Prepend one attempt to the row's `recentCalls` ring and keep the newest
+ * `RECENT_CALLS_LIMIT`. One statement, no read: the ring is rebuilt inside
+ * Postgres, so a hot sync path pays one UPDATE rather than a read-modify-write.
+ *
+ * The entry is built from closed shapes only. The leg name and error code go
+ * through the same filters the reader applies (`safeEndpointName`,
+ * `safeErrorCode`), and the failure message is never part of it, so nothing a
+ * provider sent can reach the diagnostics a user copies into a bug report.
+ *
+ * Fail-soft: the ring is diagnostics. A failed append must never fail or undo
+ * the ledger write it describes, so the error becomes a wide-event warning.
+ */
+async function appendRecentCall(
+  userId: string,
+  integration: IntegrationKey,
+  call: RecentCallWrite,
+): Promise<void> {
+  const entry = JSON.stringify({
+    endpoint: safeEndpointName(call.endpoint),
+    status: call.status,
+    at: call.at.toISOString(),
+    errorCode: safeErrorCode(call.errorCode),
+  });
+  try {
+    // Parameter-bound throughout; the ring is rebuilt newest-first and cut at
+    // the limit. A row whose column is NULL or not an array starts empty.
+    await prisma.$executeRaw`
+      UPDATE "integration_statuses"
+         SET "recent_calls" = (
+           SELECT COALESCE(jsonb_agg(e ORDER BY ord), '[]'::jsonb)
+             FROM (
+               SELECT e, ord
+                 FROM jsonb_array_elements(
+                        jsonb_build_array(${entry}::jsonb) ||
+                        CASE WHEN jsonb_typeof("recent_calls") = 'array'
+                             THEN "recent_calls" ELSE '[]'::jsonb END
+                      ) WITH ORDINALITY AS t(e, ord)
+                ORDER BY ord
+                LIMIT ${RECENT_CALLS_LIMIT}
+             ) newest
+         )
+       WHERE "user_id" = ${userId} AND "integration" = ${integration}
+    `;
+  } catch (err) {
+    getEvent()?.addWarning(
+      `IntegrationStatus recent-call append failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
 
 /**
  * Encrypt with a fallback that swallows crypto-config errors so a
@@ -1247,7 +1343,36 @@ async function maybeAlertAdmins(input: AlertInput): Promise<DispatchOutcome> {
     where: { id: input.userId },
     select: { email: true },
   });
+  const payload = formatAdminAlertPayload({
+    ...input,
+    subjectLabel: subject?.email ?? input.userId,
+  });
+  return dispatchAdminSystemAlert({
+    subjectUserId: input.userId,
+    title: payload.title,
+    message: payload.message,
+    metadata: payload.metadata,
+  });
+}
 
+/**
+ * Send one `SYSTEM_ALERT` to every admin through the existing dispatcher, the
+ * operator path the sync ledger and the integration watchdog share. Each admin
+ * receives it on whatever channels they enabled (Telegram, ntfy, Web Push,
+ * APNs); nothing here adds a channel.
+ *
+ * The returned outcome aggregates the dispatcher's real per-admin outcomes, so
+ * one attempted delivery cannot be hidden by another admin having no enabled
+ * channel. A caller stamps its own "already announced" marker only when
+ * `channelsAttempted > 0`.
+ */
+export async function dispatchAdminSystemAlert(input: {
+  /** The account the alert is about; picks the tap target per admin. */
+  subjectUserId: string;
+  title: string;
+  message: string;
+  metadata: Record<string, unknown>;
+}): Promise<DispatchOutcome> {
   const admins = await prisma.user.findMany({
     where: { role: "ADMIN" },
     select: { id: true },
@@ -1261,10 +1386,7 @@ async function maybeAlertAdmins(input: AlertInput): Promise<DispatchOutcome> {
     };
   }
 
-  const payload = formatAdminAlertPayload({
-    ...input,
-    subjectLabel: subject?.email ?? input.userId,
-  });
+  const payload = input;
   const outcome: DispatchOutcome = {
     dispatched: false,
     channelsAttempted: 0,
@@ -1282,7 +1404,7 @@ async function maybeAlertAdmins(input: AlertInput): Promise<DispatchOutcome> {
         // Tap target: an admin whose own sync fails fixes it in their own
         // integration settings; anyone else's shows on the admin page.
         url:
-          admin.id === input.userId
+          admin.id === input.subjectUserId
             ? "/settings/integrations"
             : "/admin/integrations",
       },
