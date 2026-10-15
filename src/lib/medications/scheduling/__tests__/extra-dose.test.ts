@@ -10,18 +10,27 @@ import { describe, expect, it } from "vitest";
 
 import { buildSlotBands, type SlotWindowInput } from "../attribution";
 import { reconstructDoseHistory, type HistoryIntake } from "../dose-history";
-import { SAME_DOSE_TOLERANCE_MS, isAnotherDose } from "../slot-upsert";
+import { DOUBLE_ENTRY_TOLERANCE_MS, isAnotherDose } from "../slot-upsert";
 
 const MIN = 60_000;
 const t0 = new Date("2026-06-09T20:00:00Z");
 const plus = (minutes: number) => new Date(t0.getTime() + minutes * MIN);
 
 describe("isAnotherDose", () => {
+  // 22:00 in Berlin; the next local day starts two hours later.
+  const TZ = "Europe/Berlin";
+  const external = (id: string, minutes: number, namesSlot = false) => ({
+    takenAt: plus(minutes),
+    externalId: id,
+    namesSlot,
+  });
+
   it("a slot with nothing taken is never held by another dose", () => {
     expect(
       isAnotherDose(
         { takenAt: null, externalId: null },
-        { takenAt: plus(600), externalId: "hk-2" },
+        external("hk-2", 600),
+        TZ,
       ),
     ).toBe(false);
   });
@@ -30,40 +39,56 @@ describe("isAnotherDose", () => {
     expect(
       isAnotherDose(
         { takenAt: t0, externalId: "hk-1" },
-        { takenAt: plus(600), externalId: "hk-1" },
+        external("hk-1", 600),
+        TZ,
       ),
     ).toBe(false);
   });
 
-  it("two external records a day apart are two doses", () => {
-    expect(
-      isAnotherDose(
-        { takenAt: t0, externalId: "hk-1" },
-        { takenAt: plus(24 * 60 + 22), externalId: "hk-2" },
-      ),
-    ).toBe(true);
+  it("a take on another local day is another dose, whoever recorded either", () => {
+    // 22:00 and 00:30 the next morning in Berlin: an hour and a half apart,
+    // two calendar days.
+    for (const held of [
+      { takenAt: t0, externalId: "hk-1" },
+      { takenAt: t0, externalId: null },
+    ]) {
+      expect(isAnotherDose(held, external("hk-2", 150, true), TZ)).toBe(true);
+      expect(isAnotherDose(held, external("hk-2", 24 * 60 + 22), TZ)).toBe(
+        true,
+      );
+    }
   });
 
-  it("two external records within a minute are one dose entered twice", () => {
-    expect(
-      isAnotherDose(
-        { takenAt: t0, externalId: "hk-1" },
-        { takenAt: new Date(t0.getTime() + 30_000), externalId: "hk-2" },
-      ),
-    ).toBe(false);
-  });
-
-  it("a take with no external record merges within the tolerance only", () => {
+  it("a take logged in HealthLog converges with an external record of the same day", () => {
     const held = { takenAt: t0, externalId: null };
+    expect(isAnotherDose(held, external("hk-2", 20), TZ)).toBe(false);
+    expect(isAnotherDose(held, external("hk-2", -90), TZ)).toBe(false);
+  });
+
+  it("a new record that names the slot is the slot's dose recorded again (an edit in Health)", () => {
     expect(
-      isAnotherDose(held, {
-        takenAt: new Date(t0.getTime() + SAME_DOSE_TOLERANCE_MS),
-        externalId: "hk-2",
-      }),
+      isAnotherDose(
+        { takenAt: t0, externalId: "hk-1" },
+        external("hk-1-edited", 30, true),
+        TZ,
+      ),
     ).toBe(false);
-    expect(isAnotherDose(held, { takenAt: plus(30), externalId: "hk-2" })).toBe(
-      true,
-    );
+  });
+
+  it("an unscheduled record of the same day is another dose beyond a double entry", () => {
+    const held = { takenAt: t0, externalId: "hk-1" };
+    expect(isAnotherDose(held, external("hk-2", 30), TZ)).toBe(true);
+    expect(
+      isAnotherDose(
+        held,
+        {
+          takenAt: new Date(t0.getTime() + DOUBLE_ENTRY_TOLERANCE_MS),
+          externalId: "hk-2",
+          namesSlot: false,
+        },
+        TZ,
+      ),
+    ).toBe(false);
   });
 });
 

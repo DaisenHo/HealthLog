@@ -520,6 +520,8 @@ async function postBulk(request: NextRequest): Promise<Response> {
             canonicalSlot,
             takenAt: entry.takenAt as Date,
             externalId: entry.externalId,
+            scheduledFor: entry.scheduledFor ?? null,
+            userTz: user.timezone,
           }))
         ) {
           canonicalSlot = null;
