@@ -390,6 +390,116 @@ describe("the ledger and the watchdog page once between them", () => {
   });
 });
 
+describe("many accounts of one provider at once", () => {
+  async function silentOuraAccounts(n: number): Promise<string[]> {
+    const ids: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const id = `user-watchdog-many-${i}`;
+      await prisma().user.create({
+        data: {
+          id,
+          username: `wd-many-${i}`,
+          email: `many-${i}@example.test`,
+          ouraAccessTokenEncrypted: "not-a-real-token",
+        },
+      });
+      await seedDailyReadings(
+        id,
+        "OURA",
+        Array.from({ length: 13 }, (_, d) => d + 3),
+        54,
+      );
+      await recordSyncSuccess(id, "oura");
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  it("sends one provider-wide message and one recovery instead of one per account", async () => {
+    await prisma().user.update({
+      where: { id: USER },
+      data: { ouraAccessTokenEncrypted: null },
+    });
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const ids = await silentOuraAccounts(5);
+      const opened = await runIntegrationWatchdog({ mode: "hourly", now: NOW });
+      expect(opened.incidentsOpened).toBe(5);
+      expect(dispatchedTitles()).toEqual([
+        "Oura: 5 connections need attention",
+      ]);
+      const message = String(
+        (
+          vi.mocked(dispatchNotification).mock.calls[0]![0] as {
+            message: string;
+          }
+        ).message,
+      );
+      expect(message).toMatch(
+        /^5 silent although they normally deliver every day since \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\./,
+      );
+      // Every incident counts as announced: none is paged again.
+      expect(
+        await prisma().integrationWatch.count({
+          where: { integration: "oura", alertedAt: { not: null } },
+        }),
+      ).toBe(5);
+      await runIntegrationWatchdog({
+        mode: "hourly",
+        now: new Date(NOW.getTime() + HOUR),
+      });
+      expect(dispatchNotification).toHaveBeenCalledTimes(1);
+
+      // All of them deliver again: one recovery note.
+      const later = new Date(NOW.getTime() + 2 * HOUR);
+      for (const id of ids) {
+        await prisma().measurement.create({
+          data: {
+            userId: id,
+            type: "RESTING_HEART_RATE",
+            value: 61,
+            unit: "bpm",
+            source: "OURA",
+            measuredAt: new Date(later.getTime() - 10 * 60 * 1000),
+          },
+        });
+      }
+      const closed = await runIntegrationWatchdog({
+        mode: "hourly",
+        now: later,
+      });
+      expect(closed.incidentsClosed).toBe(5);
+      expect(dispatchedTitles()).toEqual([
+        "Oura: 5 connections need attention",
+        "Oura recovered for 5 connections",
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still sends one message per account up to the threshold", async () => {
+    await prisma().user.update({
+      where: { id: USER },
+      data: { ouraAccessTokenEncrypted: null },
+    });
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      await silentOuraAccounts(3);
+      await runIntegrationWatchdog({ mode: "hourly", now: NOW });
+      expect(dispatchedTitles().sort()).toEqual([
+        "Oura needs attention for many-0@example.test",
+        "Oura needs attention for many-1@example.test",
+        "Oura needs attention for many-2@example.test",
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("recent-call ring", () => {
   it("keeps the newest ten attempts, newest first, without any message text", async () => {
     for (let i = 0; i < 7; i++) {

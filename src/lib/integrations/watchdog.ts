@@ -229,10 +229,11 @@ export async function runIntegrationWatchdog(opts: {
     firstRun: (await prisma.integrationWatch.count()) === 0,
   };
   const userIds = await listWatchedUserIds();
+  const outbox: WatchdogNote[] = [];
   for (const userId of userIds) {
     summary.usersScanned += 1;
     try {
-      await watchUser(userId, opts.mode, now, summary);
+      await watchUser(userId, opts.mode, now, summary, outbox);
     } catch (err) {
       // One account's failure must not stop the pass for everyone else.
       summary.usersFailed += 1;
@@ -241,16 +242,182 @@ export async function runIntegrationWatchdog(opts: {
       );
     }
   }
+  await flushWatchdogOutbox(outbox, now, summary);
   return summary;
 }
 
-/** Watch every connection of one account. Exported for tests. */
+/** One operator message the pass has decided to send. */
+export interface WatchdogNote {
+  kind: "incident" | "recovery";
+  userId: string;
+  key: ConnectionKey;
+  subjectLabel: string;
+  reason: string;
+  since: Date | null;
+  closedBecause?: "healthy" | "disconnected" | "not_expected";
+}
+
+/**
+ * More than this many accounts of one provider opening (or closing) an
+ * incident in the same pass is one provider-wide event, not that many
+ * separate ones: a provider outage, an expired app credential, a changed API.
+ * The operator gets one message for it instead of one per account.
+ */
+export const WATCHDOG_AGGREGATE_ABOVE = 3;
+
+const AGGREGATE_REASON_COPY: Partial<Record<IncidentReason, string>> = {
+  unexpected_silence: "silent although they normally deliver every day",
+  reauth_required: "waiting to be reconnected by their owners",
+  paused_after_errors: "paused after a day of failing syncs",
+  provider_errors: "failing to sync for more than a day",
+};
+
+/** The most account emails one aggregated message names. */
+const AGGREGATE_NAMED = 10;
+
+/**
+ * Pure formatter for the provider-wide messages, exported for tests. Same
+ * rules as `formatWatchdogMessage`: plain text, a provider label, emails and
+ * server-built instants only.
+ */
+export function formatWatchdogAggregate(
+  kind: "incident" | "recovery",
+  key: ConnectionKey,
+  notes: WatchdogNote[],
+): { title: string; message: string } {
+  const label = LABELS[key];
+  const n = notes.length;
+  const named = notes.slice(0, AGGREGATE_NAMED).map((x) => x.subjectLabel);
+  const more = n > AGGREGATE_NAMED ? ` and ${n - AGGREGATE_NAMED} more` : "";
+  const accounts = `Accounts: ${named.join(", ")}${more}.`;
+  if (kind === "recovery") {
+    return {
+      title: `${label} recovered for ${n} connections`,
+      message: `${label} is fine again for ${n} connections. ${accounts}`,
+    };
+  }
+  const byReason = new Map<string, WatchdogNote[]>();
+  for (const note of notes) {
+    const list = byReason.get(note.reason) ?? [];
+    list.push(note);
+    byReason.set(note.reason, list);
+  }
+  const lines = [...byReason].map(([reason, list]) => {
+    const copy =
+      AGGREGATE_REASON_COPY[reason as IncidentReason] ?? "needing attention";
+    const earliest = list
+      .map((x) => x.since)
+      .filter((d): d is Date => d !== null)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    const since = earliest ? ` since ${formatInstant(earliest)}` : "";
+    return `${list.length} ${copy}${since}.`;
+  });
+  return {
+    title: `${label}: ${n} connections need attention`,
+    message: `${lines.join(" ")} ${accounts}`,
+  };
+}
+
+/**
+ * Send what the pass decided, per provider: one message per account, or one
+ * for the provider when more than `WATCHDOG_AGGREGATE_ABOVE` accounts share
+ * it. An incident counts as announced (its `alertedAt` stamped) once a channel
+ * took the message, whichever form it went out in. A send that fails is a
+ * warning; the incident stays unannounced and the next pass tries again.
+ */
+export async function flushWatchdogOutbox(
+  outbox: WatchdogNote[],
+  now: Date,
+  summary: WatchdogSummary,
+): Promise<void> {
+  const groups = new Map<string, WatchdogNote[]>();
+  for (const note of outbox) {
+    const id = `${note.kind}:${note.key}`;
+    const list = groups.get(id) ?? [];
+    list.push(note);
+    groups.set(id, list);
+  }
+  outbox.length = 0;
+
+  const markAnnounced = async (notes: WatchdogNote[]) => {
+    for (const note of notes) {
+      await prisma.integrationWatch.updateMany({
+        where: {
+          userId: note.userId,
+          integration: note.key,
+          incidentReason: { not: null },
+        },
+        data: { alertedAt: now },
+      });
+    }
+  };
+
+  for (const notes of groups.values()) {
+    const { kind, key } = notes[0]!;
+    try {
+      if (notes.length > WATCHDOG_AGGREGATE_ABOVE) {
+        const text = formatWatchdogAggregate(kind, key, notes);
+        const outcome = await dispatchAdminSystemAlert({
+          // About many accounts: no one owner, so every admin's tap opens the
+          // admin page.
+          subjectUserId: "",
+          title: text.title,
+          message: text.message,
+          metadata: {
+            integration: key,
+            watchdog: kind,
+            connections: notes.length,
+          },
+        });
+        if (outcome.channelsAttempted > 0) {
+          summary.notified += 1;
+          if (kind === "incident") await markAnnounced(notes);
+        }
+        continue;
+      }
+      for (const note of notes) {
+        const text = formatWatchdogMessage(note);
+        const outcome = await dispatchAdminSystemAlert({
+          subjectUserId: note.userId,
+          title: text.title,
+          message: text.message,
+          metadata: {
+            integration: key,
+            reason: note.reason,
+            watchdog: kind,
+          },
+        });
+        if (outcome.channelsAttempted > 0) {
+          summary.notified += 1;
+          if (kind === "incident") await markAnnounced([note]);
+        }
+      }
+    } catch (err) {
+      getEvent()?.addWarning(
+        `integration watchdog could not send its ${kind} message for ${key}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+}
+
+/**
+ * Watch every connection of one account. Exported for tests. Its operator
+ * messages go to `outbox` when one is passed (the pass sends them together at
+ * its end), and are sent before it returns otherwise.
+ */
 export async function watchUser(
   userId: string,
   mode: WatchdogMode,
   now: Date,
   summary: WatchdogSummary,
+  outbox?: WatchdogNote[],
 ): Promise<void> {
+  if (!outbox) {
+    const own: WatchdogNote[] = [];
+    await watchUser(userId, mode, now, summary, own);
+    await flushWatchdogOutbox(own, now, summary);
+    return;
+  }
   const [facts, rows, subject] = await Promise.all([
     loadConnectionFacts(userId, CONNECTION_KEYS, now),
     prisma.integrationWatch.findMany({ where: { userId } }),
@@ -274,6 +441,7 @@ export async function watchUser(
       now,
       subjectLabel,
       summary,
+      outbox,
     });
   }
 }
@@ -287,6 +455,7 @@ async function watchConnection(input: {
   now: Date;
   subjectLabel: string;
   summary: WatchdogSummary;
+  outbox: WatchdogNote[];
 }): Promise<void> {
   const { userId, key, fact, row, mode, now, summary } = input;
   const profile = SOURCE_PROFILES[key];
@@ -338,24 +507,17 @@ async function watchConnection(input: {
   let incidentOpenedAt = row?.incidentOpenedAt ?? null;
   let alertedAt = row?.alertedAt ?? null;
 
-  const announce = async (reason: string, since: Date | null) => {
-    const text = formatWatchdogMessage({
+  // Sent once the pass is over (`flushWatchdogOutbox`), so many accounts of
+  // one provider failing at once come as one message.
+  const announce = (reason: string, since: Date | null) => {
+    input.outbox.push({
       kind: "incident",
+      userId,
       key,
       subjectLabel: input.subjectLabel,
       reason,
       since,
     });
-    const outcome = await dispatchAdminSystemAlert({
-      subjectUserId: userId,
-      title: text.title,
-      message: text.message,
-      metadata: { integration: key, reason, watchdog: "incident" },
-    });
-    if (outcome.channelsAttempted > 0) {
-      alertedAt = now;
-      summary.notified += 1;
-    }
   };
 
   switch (transition.kind) {
@@ -370,7 +532,7 @@ async function watchConnection(input: {
         // announced, not paged (see `WatchdogSummary.firstRun`).
         alertedAt = now;
       } else {
-        await announce(transition.reason, transition.since);
+        announce(transition.reason, transition.since);
       }
       break;
     case "adopt":
@@ -387,31 +549,21 @@ async function watchConnection(input: {
         alertedAt = now;
       } else if (transition.announce && incident) {
         // Opened earlier while no admin channel accepted the alert.
-        await announce(transition.reason, incident.since);
+        announce(transition.reason, incident.since);
       }
       break;
     case "close":
       summary.incidentsClosed += 1;
       if (transition.notify) {
-        const text = formatWatchdogMessage({
+        input.outbox.push({
           kind: "recovery",
+          userId,
           key,
           subjectLabel: input.subjectLabel,
           reason: transition.previousReason,
           since: null,
           closedBecause,
         });
-        const outcome = await dispatchAdminSystemAlert({
-          subjectUserId: userId,
-          title: text.title,
-          message: text.message,
-          metadata: {
-            integration: key,
-            reason: transition.previousReason,
-            watchdog: "recovery",
-          },
-        });
-        if (outcome.channelsAttempted > 0) summary.notified += 1;
       }
       incidentReason = null;
       incidentOpenedAt = null;
