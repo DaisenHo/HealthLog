@@ -110,6 +110,18 @@ export function ManagedProfileHandover({
           name: profileName,
         })}
       </p>
+      {/* v1.43 — how the person will get in, when it is not only a password
+          they set themselves (the description already implies that one). */}
+      {status.data.available && status.data.methods?.includes("sso") ? (
+        <p className="text-sm" data-slot="managed-profile-handover-methods">
+          {t(
+            status.data.methods.includes("password")
+              ? "recordSharing.managed.handover.methodBoth"
+              : "recordSharing.managed.handover.methodSso",
+            { name: profileName },
+          )}
+        </p>
+      ) : null}
 
       {!status.data.available ? (
         <>

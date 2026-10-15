@@ -528,7 +528,7 @@
       "loading": "Vérification de votre lien…",
       "invalid": "Ce lien ne fonctionne plus",
       "invalidHint": "Il est inconnu, expiré, retiré ou déjà utilisé. Demandez-en un nouveau à la personne qui vous l'a envoyé.",
-      "oidcOnly": "Ce serveur n'autorise que l'authentification unique, un profil ne peut donc pas encore être repris ici.",
+      "oidcOnly": "Ce serveur n'autorise que l'authentification unique. Continuez plutôt avec votre fournisseur d'identité.",
       "signedInTitle": "Déconnectez-vous d'abord",
       "signedInBody": "Vous êtes connecté en tant que {username}. Ce lien crée une connexion pour quelqu'un d'autre, déconnectez-vous donc avant de l'utiliser.",
       "signOut": "Se déconnecter et continuer",
@@ -545,7 +545,19 @@
       "errorTaken": "Ce nom d'utilisateur ou cette adresse e-mail est déjà utilisé.",
       "errorRateLimit": "Trop de tentatives. Attendez quelques minutes puis réessayez.",
       "errorFailed": "Cela n'a pas fonctionné. Réessayez dans un instant.",
-      "errorOffline": "Le serveur n'a pas été atteint. Vérifiez votre connexion et réessayez."
+      "errorOffline": "Le serveur n'a pas été atteint. Vérifiez votre connexion et réessayez.",
+      "ssoContinue": "Continuer avec {provider}",
+      "ssoStarting": "Redirection…",
+      "ssoHint": "Ensuite, vous vous connectez ici avec votre compte {provider}.",
+      "ssoDivider": "ou",
+      "ssoFallbackName": "l'authentification unique",
+      "errorTitle": "La transmission n'a pas abouti",
+      "errorSubjectBound": "Cette connexion appartient déjà à un autre compte sur ce serveur. Rouvrez le lien et utilisez un autre compte chez votre fournisseur d'identité.",
+      "errorEmailTaken": "Votre fournisseur d'identité a transmis une adresse e-mail déjà utilisée par un autre compte ici. Rouvrez le lien et utilisez un autre compte, ou contactez la personne qui administre le serveur.",
+      "errorUsernameTaken": "Quelqu'un a pris ce nom d'utilisateur entre-temps. Rouvrez le lien et choisissez-en un autre.",
+      "errorSignedIn": "Vous étiez connecté à votre retour. Déconnectez-vous, puis rouvrez le lien.",
+      "errorSso": "La connexion avec votre fournisseur d'identité n'a pas fonctionné. Rouvrez le lien pour réessayer.",
+      "signInInstead": "Se connecter à ce compte"
     },
     "inviteInvalid": {
       "title": "Invitation invalide",
@@ -11900,9 +11912,11 @@
         "revokeFailed": "Le lien n'a pas pu être retiré. Réessayez.",
         "errorFailed": "Le lien de transmission n'a pas pu être créé.",
         "errorRosterChanged": "Entre-temps, les personnes qui s'occupent du dossier ont changé. Fermez ceci et rouvrez-le.",
-        "oidcOnly": "Transmettre un profil n'est pas possible tant que ce serveur n'autorise que l'authentification unique.",
+        "oidcOnly": "Transmettre un profil n'est pas possible sur ce serveur.",
         "loadError": "L'état de la transmission n'a pas pu être chargé.",
-        "entryHint": "Quand {name} souhaite tenir ce dossier de façon autonome."
+        "entryHint": "Quand {name} souhaite tenir ce dossier de façon autonome.",
+        "methodSso": "{name} se connecte par authentification unique en utilisant le lien.",
+        "methodBoth": "{name} peut définir un mot de passe ou se connecter par authentification unique."
       }
     },
     "toast": {

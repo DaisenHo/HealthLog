@@ -528,7 +528,7 @@
       "loading": "Dein Link wird geprüft…",
       "invalid": "Dieser Link funktioniert nicht mehr",
       "invalidHint": "Er ist unbekannt, abgelaufen, zurückgezogen oder schon benutzt. Bitte die Person, die ihn dir gegeben hat, um einen neuen.",
-      "oidcOnly": "Dieser Server erlaubt nur Single Sign-on, deshalb lässt sich ein Profil hier noch nicht übernehmen.",
+      "oidcOnly": "Dieser Server erlaubt nur Single Sign-on. Fahre stattdessen mit deinem Identitätsanbieter fort.",
       "signedInTitle": "Melde dich zuerst ab",
       "signedInBody": "Du bist als {username} angemeldet. Dieser Link richtet eine Anmeldung für jemand anderen ein, melde dich also ab, bevor du ihn benutzt.",
       "signOut": "Abmelden und weiter",
@@ -545,7 +545,19 @@
       "errorTaken": "Dieser Benutzername oder diese E-Mail-Adresse ist schon vergeben.",
       "errorRateLimit": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
       "errorFailed": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
-      "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut."
+      "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut.",
+      "ssoContinue": "Weiter mit {provider}",
+      "ssoStarting": "Weiterleitung…",
+      "ssoHint": "Ab dann meldest du dich hier mit deinem Konto bei {provider} an.",
+      "ssoDivider": "oder",
+      "ssoFallbackName": "Single Sign-on",
+      "errorTitle": "Die Übernahme hat nicht geklappt",
+      "errorSubjectBound": "Diese Anmeldung gehört schon zu einem anderen Konto auf diesem Server. Öffne den Link noch einmal und nimm ein anderes Konto bei deinem Identitätsanbieter.",
+      "errorEmailTaken": "Dein Identitätsanbieter hat eine E-Mail-Adresse geliefert, die hier schon ein anderes Konto nutzt. Öffne den Link noch einmal und nimm ein anderes Konto, oder frag die Person, die den Server betreibt.",
+      "errorUsernameTaken": "Jemand hat diesen Benutzernamen inzwischen vergeben. Öffne den Link noch einmal und wähle einen anderen.",
+      "errorSignedIn": "Bei der Rückkehr warst du angemeldet. Melde dich ab und öffne den Link noch einmal.",
+      "errorSso": "Die Anmeldung bei deinem Identitätsanbieter hat nicht funktioniert. Öffne den Link noch einmal, um es erneut zu versuchen.",
+      "signInInstead": "Bei diesem Konto anmelden"
     },
     "inviteInvalid": {
       "title": "Einladung ungültig",
@@ -11900,9 +11912,11 @@
         "revokeFailed": "Der Link ließ sich nicht zurückziehen. Versuche es erneut.",
         "errorFailed": "Der Übergabelink ließ sich nicht erstellen.",
         "errorRosterChanged": "Inzwischen hat sich geändert, wer die Akte betreut. Schließe das hier und öffne es erneut.",
-        "oidcOnly": "Ein Profil zu übergeben ist nicht möglich, solange dieser Server nur Single Sign-on erlaubt.",
+        "oidcOnly": "Ein Profil zu übergeben ist auf diesem Server nicht möglich.",
         "loadError": "Der Stand der Übergabe ließ sich nicht laden.",
-        "entryHint": "Wenn {name} die Akte selbst führen möchte."
+        "entryHint": "Wenn {name} die Akte selbst führen möchte.",
+        "methodSso": "{name} meldet sich beim Einlösen des Links über Single Sign-on an.",
+        "methodBoth": "{name} kann ein Passwort festlegen oder sich über Single Sign-on anmelden."
       }
     },
     "toast": {

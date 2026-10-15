@@ -528,7 +528,7 @@
       "loading": "Checking your link…",
       "invalid": "This link no longer works",
       "invalidHint": "It is unknown, expired, withdrawn or already used. Ask the person who sent it for a new one.",
-      "oidcOnly": "This server only allows single sign-on, so a profile cannot be taken over here yet.",
+      "oidcOnly": "This server only allows single sign-on. Continue with your identity provider instead.",
       "signedInTitle": "Sign out first",
       "signedInBody": "You are signed in as {username}. This link sets up a sign-in for someone else, so sign out before you use it.",
       "signOut": "Sign out and continue",
@@ -545,7 +545,19 @@
       "errorTaken": "That username or email address is already in use.",
       "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
       "errorFailed": "That did not work. Try again in a moment.",
-      "errorOffline": "That did not reach the server. Check your connection and try again."
+      "errorOffline": "That did not reach the server. Check your connection and try again.",
+      "ssoContinue": "Continue with {provider}",
+      "ssoStarting": "Redirecting…",
+      "ssoHint": "From then on you sign in here with your {provider} account.",
+      "ssoDivider": "or",
+      "ssoFallbackName": "single sign-on",
+      "errorTitle": "The handover did not go through",
+      "errorSubjectBound": "This sign-in already belongs to another account on this server. Open the link again and use a different account at your identity provider.",
+      "errorEmailTaken": "Your identity provider gave an email address that another account here already uses. Open the link again and use a different account, or ask the server's administrator.",
+      "errorUsernameTaken": "Someone took that username in the meantime. Open the link again and choose another one.",
+      "errorSignedIn": "You were signed in when you came back. Sign out, then open the link again.",
+      "errorSso": "Signing in with your identity provider did not work. Open the link again to try once more.",
+      "signInInstead": "Sign in to that account"
     },
     "inviteInvalid": {
       "title": "Invitation invalid",
@@ -11900,9 +11912,11 @@
         "revokeFailed": "The link could not be withdrawn. Try again.",
         "errorFailed": "The handover link could not be created.",
         "errorRosterChanged": "The list of guardians changed in the meantime. Close this and open it again.",
-        "oidcOnly": "Handing over a profile is not available while this server allows single sign-on only.",
+        "oidcOnly": "Handing over a profile is not available on this server.",
         "loadError": "The handover status could not be loaded.",
-        "entryHint": "When {name} is ready to look after this record themselves."
+        "entryHint": "When {name} is ready to look after this record themselves.",
+        "methodSso": "{name} signs in through single sign-on when they use the link.",
+        "methodBoth": "{name} can set a password or sign in through single sign-on."
       }
     },
     "toast": {

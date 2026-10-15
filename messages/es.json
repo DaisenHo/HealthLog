@@ -528,7 +528,7 @@
       "loading": "Comprobando tu enlace…",
       "invalid": "Este enlace ya no funciona",
       "invalidHint": "Es desconocido, ha caducado, se ha retirado o ya se ha usado. Pide uno nuevo a quien te lo envió.",
-      "oidcOnly": "Este servidor solo permite el inicio de sesión único, así que aquí todavía no se puede asumir un perfil.",
+      "oidcOnly": "Este servidor solo permite el inicio de sesión único. Continúa con tu proveedor de identidad.",
       "signedInTitle": "Cierra la sesión primero",
       "signedInBody": "Has iniciado sesión como {username}. Este enlace crea un acceso para otra persona, así que cierra la sesión antes de usarlo.",
       "signOut": "Cerrar sesión y continuar",
@@ -545,7 +545,19 @@
       "errorTaken": "Ese nombre de usuario o correo electrónico ya está en uso.",
       "errorRateLimit": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
       "errorFailed": "No ha funcionado. Vuelve a intentarlo en un momento.",
-      "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo."
+      "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo.",
+      "ssoContinue": "Continuar con {provider}",
+      "ssoStarting": "Redirigiendo…",
+      "ssoHint": "A partir de entonces inicias sesión aquí con tu cuenta de {provider}.",
+      "ssoDivider": "o",
+      "ssoFallbackName": "inicio de sesión único",
+      "errorTitle": "La entrega no se ha completado",
+      "errorSubjectBound": "Este inicio de sesión ya pertenece a otra cuenta de este servidor. Vuelve a abrir el enlace y usa otra cuenta en tu proveedor de identidad.",
+      "errorEmailTaken": "Tu proveedor de identidad ha enviado una dirección de correo que ya usa otra cuenta aquí. Vuelve a abrir el enlace y usa otra cuenta, o pregunta a quien administra el servidor.",
+      "errorUsernameTaken": "Alguien ha cogido ese nombre de usuario mientras tanto. Vuelve a abrir el enlace y elige otro.",
+      "errorSignedIn": "Tenías una sesión iniciada al volver. Cierra la sesión y vuelve a abrir el enlace.",
+      "errorSso": "No se ha podido iniciar sesión con tu proveedor de identidad. Vuelve a abrir el enlace para intentarlo otra vez.",
+      "signInInstead": "Iniciar sesión en esa cuenta"
     },
     "inviteInvalid": {
       "title": "Invitación no válida",
@@ -11900,9 +11912,11 @@
         "revokeFailed": "No se pudo retirar el enlace. Vuelve a intentarlo.",
         "errorFailed": "No se pudo crear el enlace de entrega.",
         "errorRosterChanged": "Mientras tanto ha cambiado quién se ocupa del historial. Cierra esto y vuelve a abrirlo.",
-        "oidcOnly": "No se puede entregar un perfil mientras este servidor solo permita el inicio de sesión único.",
+        "oidcOnly": "En este servidor no se puede entregar un perfil.",
         "loadError": "No se pudo cargar el estado de la entrega.",
-        "entryHint": "Cuando {name} quiera llevar este historial por su cuenta."
+        "entryHint": "Cuando {name} quiera llevar este historial por su cuenta.",
+        "methodSso": "{name} inicia sesión con el inicio de sesión único cuando usa el enlace.",
+        "methodBoth": "{name} puede elegir una contraseña o iniciar sesión con el inicio de sesión único."
       }
     },
     "toast": {
