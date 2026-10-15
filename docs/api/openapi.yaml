@@ -10417,8 +10417,9 @@ paths:
                         - FORMER
                         - CURRENT
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10438,8 +10439,9 @@ paths:
                         - WEEKLY
                         - MOST_DAYS
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10458,8 +10460,9 @@ paths:
                         - FIXED_SHIFT
                         - ROTATING
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10518,8 +10521,9 @@ paths:
                         - secondhandSmoke
                       additionalProperties: false
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10563,8 +10567,9 @@ paths:
                         - sittingHoursWorkday
                       additionalProperties: false
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10622,8 +10627,9 @@ paths:
                         - exposures
                       additionalProperties: false
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10653,8 +10659,9 @@ paths:
                         - days
                       additionalProperties: false
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10738,8 +10745,9 @@ paths:
                         - latestCaffeine
                       additionalProperties: false
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10777,8 +10785,9 @@ paths:
                         - goals
                       additionalProperties: false
                     validFrom:
-                      description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                        an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
                       type: string
                       format: date
                       pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
@@ -10833,8 +10842,9 @@ paths:
                         type: string
                       additionalProperties: {}
                 validFrom:
-                  description: The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today;
-                    an earlier day than the end of the previous answer of the same kind starts at that end instead.
+                  description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                    from now. Never later than today; an earlier day than the end of the previous answer of the same
+                    kind starts at that end instead.
                   type: string
                   format: date
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
