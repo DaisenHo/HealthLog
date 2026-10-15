@@ -392,13 +392,17 @@ export function reconstructNights(
         : n.asleepMinutes > 0 && awakeMinutes > 0
           ? n.asleepMinutes + awakeMinutes
           : null;
-    // Midpoint = centre of the asleep span. The canonical night's `measuredAt`
-    // is the wake instant (latest stage END); the asleep span is
-    // `asleepMinutes` long ending there, so its centre is wake − asleep/2.
+    // Midpoint = centre of the MAIN session's asleep span: its wake instant
+    // minus half its own asleep minutes. Not the whole night's: a nap on the
+    // same wake day moves the night's latest instant to the end of the nap and
+    // adds its minutes, which put the midpoint of a 23:00 to 07:00 night with a
+    // 14:00 nap at about 11:00 and read every such day as a ~7-hour shift in
+    // consistency and timing.
+    const main = n.mainSession;
     const midpoint =
-      n.asleepMinutes > 0
+      main && main.asleepMinutes > 0
         ? minutesOfDay(
-            new Date(n.measuredAt.getTime() - (n.asleepMinutes / 2) * 60_000),
+            new Date(main.end.getTime() - (main.asleepMinutes / 2) * 60_000),
             tz,
           )
         : null;

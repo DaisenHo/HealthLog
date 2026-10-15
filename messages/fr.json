@@ -4569,7 +4569,7 @@
       "description": "À quel point votre corps a récupéré : les signaux de récupération, de charge et d'effort que votre wearable enregistre la nuit.",
       "scoreCrossLink": "Voir le score de récupération composite",
       "emptyTitle": "Pas encore de données de récupération",
-      "empty": "Pas encore de données de récupération. Connectez un compte WHOOP, Polar ou Oura et ces scores se rempliront dès que votre appareil se synchronise.",
+      "empty": "Rien à afficher ici pour l'instant. Cette page montre les mesures de recharge, d'effort et de charge qu'enregistrent WHOOP et Polar, ainsi que le niveau de résilience d'Oura. La disponibilité (readiness) d'Oura apparaît comme votre score de récupération, en lien ci-dessus.",
       "block": {
         "ansChargeExplainer": "À quel point votre système nerveux autonome est rechargé pour la journée : une mesure de recharge issue de vos signaux nocturnes de cœur et de respiration.",
         "dayStrainExplainer": "La charge cardiovasculaire de la journée sur l'échelle d'effort de votre appareil. Lisez-la au regard de votre récupération, pas comme un objectif en soi.",

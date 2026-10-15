@@ -4569,7 +4569,7 @@
       "description": "How well your body has bounced back: the recovery, strain and load signals your wearable records overnight.",
       "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
-      "empty": "No recovery data yet. Connect a WHOOP, Polar or Oura account and these scores fill in once your device syncs.",
+      "empty": "Nothing to chart here yet. This page shows the recharge, strain and load readings that WHOOP and Polar record, and Oura's resilience level. Oura's readiness appears as your recovery score, linked above.",
       "block": {
         "ansChargeExplainer": "How charged your autonomic nervous system is for the day ahead, a recharge reading drawn from your overnight heart and breathing signals.",
         "dayStrainExplainer": "The day's whole-body cardiovascular load on your device's strain scale. Read it against your recovery, not as a goal on its own.",

@@ -206,6 +206,12 @@ describe("<RecoverySection> data-gating", () => {
     // old hand-rolled div — the empty title comes from the unified primitive.
     expect(html).toContain("border-dashed");
     expect(html).not.toContain('data-slot="recovery-block-DAY_STRAIN"');
+    // An Oura account sees this note too: it must say where Oura's readiness
+    // lives rather than tell a connected user to connect Oura.
+    expect(html).not.toContain("Connect a WHOOP, Polar or Oura account");
+    expect(html).toContain(
+      "Oura&#x27;s readiness appears as your recovery score",
+    );
   });
 
   it("renders a canonical chart block for the present signal", () => {

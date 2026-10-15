@@ -4569,7 +4569,7 @@
       "description": "Jak dobrze Twój organizm się zregenerował: sygnały regeneracji, obciążenia i load, które Twoje urządzenie rejestruje w nocy.",
       "scoreCrossLink": "Zobacz łączny wynik regeneracji",
       "emptyTitle": "Brak danych o regeneracji",
-      "empty": "Brak danych o regeneracji. Połącz konto WHOOP, Polar lub Oura, a te wyniki uzupełnią się po synchronizacji urządzenia.",
+      "empty": "Na razie nie ma tu nic do pokazania. Ta strona pokazuje odczyty ładowania, wysiłku i obciążenia, które rejestrują WHOOP i Polar, oraz poziom odporności z Oura. Gotowość (readiness) z Oura pojawia się jako wynik regeneracji, link powyżej.",
       "block": {
         "ansChargeExplainer": "Jak naładowany jest Twój autonomiczny układ nerwowy na dany dzień: odczyt regeneracji oparty na nocnych sygnałach serca i oddechu.",
         "dayStrainExplainer": "Dzienne obciążenie sercowo-naczyniowe na skali wysiłku Twojego urządzenia. Odczytuj je w odniesieniu do regeneracji, nie jako cel sam w sobie.",

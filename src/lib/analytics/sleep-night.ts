@@ -316,6 +316,15 @@ export interface SleepNight {
    * "sources disagree" hint.
    */
   sourceDiscrepancy: SleepSourceDiscrepancy | null;
+  /**
+   * The night's MAIN session alone: the same-wake-day session with the most
+   * asleep minutes (the one `sourceDiscrepancy` reads), its wake instant and
+   * its own asleep minutes. A nap on the same wake day is in the night's
+   * totals but not here, so a reader that places the night on the clock (the
+   * sleep midpoint) is not dragged into the afternoon by it. Null when no
+   * session carries asleep minutes.
+   */
+  mainSession: { end: Date; asleepMinutes: number } | null;
 }
 
 /** Sentinel for rows that carry no source — collapses to one bucket. */
@@ -738,6 +747,13 @@ export function reconstructSleepNights(
       sourceDiscrepancy: mainSessionRows
         ? sessionSourceDiscrepancy(mainSessionRows)
         : null,
+      mainSession:
+        mainSessionRows && mainSessionAsleep > 0
+          ? {
+              end: new Date(mainSessionEnd),
+              asleepMinutes: mainSessionAsleep,
+            }
+          : null,
     });
   }
   return nights.sort((a, b) => (a.night < b.night ? -1 : 1));
