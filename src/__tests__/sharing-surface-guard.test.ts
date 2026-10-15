@@ -859,6 +859,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "labs",
     why: "One biomarker of the record, fetch-then-guard against the resolved user.",
   },
+  "app/api/biomarkers/[id]/merge/route.ts": {
+    domain: "labs",
+    why: "Merging markers of the record into one (v1.43): every read and write is narrowed to the resolved user, and the sources must be that record's markers.",
+  },
   "app/api/allergies/route.ts": {
     domain: "profile",
     why: "The record's allergy list — the single most useful thing a caregiver can read, and a plain list of the owner's own rows. The POST beside it is NOT delegable and is deliberately absent from the write literal below: the only surface that posts to it lives under `/settings`, which a switch closes, so admitting the write would freeze a permission ahead of any caller for it. The route comment carries the argument.",
@@ -1612,6 +1616,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C3", "C4"],
     why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it resolves through the same labs authority since v1.43 instead of a bare requireAuth; it hard-deletes the marker with its readings, so C3 files the name, unit and reading count it took.",
   },
+  "app/api/biomarkers/[id]/merge/route.ts": {
+    domain: "labs",
+    conditions: ["C3"],
+    why: "Merging markers moves their readings into one and deletes the sources, with no undo, so it sits at the same level as the delete beside it. C3: each deleted source files its id and how many readings went with it; the name stays in the merge ledger. The shared record-write ceiling is charged to the actor, like every record write.",
+  },
   "app/api/allergies/route.ts": {
     domain: "profile",
     conditions: [],
@@ -2117,8 +2126,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * facts (`profile`) and the nutrient catalogue beside the nutrient reads
  * (`measurements`). The biomarker DELETE joins the manage literal on a module
  * that was already there. 256 -> 258.
+ *
+ * v1.43 -- merging biomarkers joins the record list and the manage literal
+ * (D1223). 258 -> 260.
  */
-const FROZEN_ENTRY_COUNT = 258;
+const FROZEN_ENTRY_COUNT = 260;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2879,7 +2891,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(88);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(89);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>
