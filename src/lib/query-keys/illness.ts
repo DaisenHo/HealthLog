@@ -15,10 +15,14 @@ export const illnessKeys = {
   illness: () => ["illness"] as const,
   illnessEpisodes: (includeResolved: boolean) =>
     ["illness", "episodes", includeResolved] as const,
-  // The visit form's episode picker, with its own page size (the illness
-  // pages read the route's default); a shared key would serve one to the other.
-  illnessEpisodesPicker: (limit: number) =>
-    ["illness", "episodes-picker", limit] as const,
+  // The visit form's episode picker: one paged direction from the visit's
+  // date or a search, with its own page shape; a shared key would serve one
+  // read to the other.
+  illnessEpisodesPicker: (
+    direction: string,
+    pivot: string | null,
+    term: string,
+  ) => ["illness", "episodes-picker", direction, pivot ?? "", term] as const,
   illnessEpisode: (id: string) => ["illness", "episode", id] as const,
   illnessDayLog: (episodeId: string, date: string) =>
     ["illness", "day-log", episodeId, date] as const,

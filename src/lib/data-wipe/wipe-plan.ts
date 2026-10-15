@@ -231,6 +231,7 @@ export const WIPE_MODELS = [
   "GoogleHealthOAuthState",
   "McpOAuthConnection",
   "IntegrationStatus",
+  "IntegrationWatch",
 
   // ── Notification transports ─────────────────────────────────────────────
   "NotificationChannel",

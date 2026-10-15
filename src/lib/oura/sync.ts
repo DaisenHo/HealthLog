@@ -52,6 +52,7 @@ import {
   type InsertedMeasurementArrivalRow,
 } from "@/lib/arrivals/measurement-emit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
@@ -72,6 +73,7 @@ import {
   fetchResilience,
   fetchSleep,
   fetchVo2Max,
+  isRetiredOuraSleepPeriod,
   mapCardiovascularAge,
   mapDailyActivity,
   mapDailySleep,
@@ -246,6 +248,12 @@ export interface OuraFetchResult {
    */
   sleepSweeps: SleepSegmentSweep[];
   /**
+   * The `sleep:<record-id>:` prefix of every fetched sleep period Oura marks as
+   * rejected or deleted (`isRetiredOuraSleepPeriod`). Such a period maps to no
+   * rows, and whatever an earlier sync imported for it is retired.
+   */
+  sleepRetirements: string[];
+  /**
    * Collections refused with 401 while a sibling succeeded with the same
    * token: the token is fine, the grant does not cover them. Not failures; the
    * card asks for one reconnect instead. `null` when the run never proved the
@@ -335,6 +343,7 @@ async function fetchAll(
   // upsert. A collection that throws pushes nothing (the fetch is its first
   // await), so a 401-retry cannot double-enter a record.
   const sleepSweeps: SleepSegmentSweep[] = [];
+  const sleepRetirements: string[] = [];
 
   const collections: OuraCollectionSpec[] = [
     {
@@ -354,6 +363,10 @@ async function fetchAll(
         const records = await fetchSleep(t, query);
         const ups: OuraMeasurementUpsert[] = [];
         for (const s of records) {
+          if (isRetiredOuraSleepPeriod(s)) {
+            if (s.id) sleepRetirements.push(`sleep:${s.id}:`);
+            continue;
+          }
           const rows = toUpsert(
             mapSleep(s, tz),
             "sleep",
@@ -480,6 +493,7 @@ async function fetchAll(
       readings: first.readings,
       ...splitScopeDenied(first.failures, first.succeeded > 0),
       sleepSweeps,
+      sleepRetirements,
     };
   }
 
@@ -492,6 +506,7 @@ async function fetchAll(
       readings: first.readings,
       failures: first.failures,
       sleepSweeps,
+      sleepRetirements,
       scopeDenied: null,
     };
 
@@ -510,6 +525,7 @@ async function fetchAll(
       readings: first.readings,
       failures: first.failures,
       sleepSweeps,
+      sleepRetirements,
       scopeDenied: null,
     };
 
@@ -520,7 +536,53 @@ async function fetchAll(
     // proves the grant as much as one that succeeded after it.
     ...splitScopeDenied(retry.failures, first.succeeded + retry.succeeded > 0),
     sleepSweeps,
+    sleepRetirements,
   };
+}
+
+/**
+ * Retire what earlier syncs imported for sleep periods Oura now reports as
+ * rejected or deleted: every live OURA row keyed under the period's
+ * `sleep:<record-id>:` prefix, whatever its type, because the period's stage
+ * rows and its nightly scalars (lowest heart rate, HRV, breathing rate,
+ * efficiency) all came from a period that was not sleep. Soft delete, then the
+ * shared write tail refolds the touched days and re-warms the touched types.
+ * Best-effort like the segment sweep: a failure never fails the sync, and the
+ * record stays inside the lookback window, so the next run retries it.
+ */
+export async function retireOuraSleepRecords(
+  userId: string,
+  prefixes: readonly string[],
+): Promise<number> {
+  // A bare `sleep::` (no record id) would match nothing useful and must never
+  // widen to the whole source.
+  const bounded = prefixes.filter((p) => /^sleep:[^:]+:$/.test(p));
+  if (bounded.length === 0) return 0;
+  try {
+    const rows = await prisma.measurement.findMany({
+      where: {
+        userId,
+        source: "OURA",
+        deletedAt: null,
+        OR: bounded.map((prefix) => ({ externalId: { startsWith: prefix } })),
+      },
+      select: { id: true, type: true, measuredAt: true },
+    });
+    if (rows.length === 0) return 0;
+    const res = await prisma.measurement.updateMany({
+      where: { userId, id: { in: rows.map((r) => r.id) }, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    await afterMeasurementMutation(userId, rows, "oura");
+    invalidateUserMeasurements(userId);
+    annotate({ meta: { oura_sleep_retired_rows: res.count } });
+    return res.count;
+  } catch (err) {
+    getEvent()?.addWarning(
+      `oura: retiring rejected sleep periods failed for ${userId}: ${err}`,
+    );
+    return 0;
+  }
 }
 
 /**
@@ -589,6 +651,7 @@ export async function syncUserOura(
   // sync; the record stays inside the lookback window, so the next tick
   // retries it.
   await sweepStaleSleepSegments(userId, "OURA", result.sleepSweeps);
+  await retireOuraSleepRecords(userId, result.sleepRetirements);
 
   // Import everything the healthy collections returned regardless of whether a
   // sibling collection failed — one bad collection must not blank the source.

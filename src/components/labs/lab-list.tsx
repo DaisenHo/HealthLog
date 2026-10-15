@@ -26,57 +26,44 @@ import { useLabDate, useLabNumber } from "./use-lab-format";
 import { LabReferenceRangeBar } from "./lab-reference-range-bar";
 import { ReferenceRangeBadge } from "./reference-range-badge";
 import { SourceRangeNote } from "./source-range-note";
-import type { LabResultDto, LabResultListResponse } from "./types";
+import type {
+  LabOverviewMarkerDto,
+  LabOverviewResponse,
+  LabResultDto,
+} from "./types";
 
 interface MarkerGroup {
-  /** Stable group key: the biomarker id, or `analyte:<lower>` for legacy rows. */
+  /** Stable group key: `bm:<biomarkerId>`, or `analyte:<lower>` for legacy rows. */
   key: string;
   /** Link target when the group is catalog-linked; null for legacy rows. */
   biomarkerId: string | null;
   analyte: string;
   panel: string | null;
   unit: string;
-  readings: LabResultDto[];
+  /** Every live reading of the marker, counted by the server. */
+  count: number;
+  /** Values of the newest readings, oldest first, for the sparkline. */
+  trend: (number | null)[];
   latest: LabResultDto;
 }
 
 /**
- * Group readings by their linked biomarker (or, for legacy un-linked rows,
- * case-insensitively by analyte). A catalog-linked group deep-links to its
- * detail chart; legacy groups render inert until the backfill links them.
+ * One group per marker, as the server resolved it over the whole history. A
+ * catalog-linked group deep-links to its detail chart; legacy groups render
+ * inert until the backfill links them. The server already orders by the
+ * newest reading.
  */
-function groupReadings(results: LabResultDto[]): MarkerGroup[] {
-  const byKey = new Map<string, LabResultDto[]>();
-  for (const r of results) {
-    const key = r.biomarkerId
-      ? `bm:${r.biomarkerId}`
-      : `analyte:${r.analyte.toLowerCase()}`;
-    const bucket = byKey.get(key);
-    if (bucket) bucket.push(r);
-    else byKey.set(key, [r]);
-  }
-
-  const groups: MarkerGroup[] = [];
-  for (const [key, readings] of byKey.entries()) {
-    const ordered = [...readings].sort(
-      (a, b) => new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime(),
-    );
-    const latest = ordered[ordered.length - 1];
-    groups.push({
-      key,
-      biomarkerId: latest.biomarkerId,
-      analyte: latest.analyte,
-      panel: latest.panel,
-      unit: latest.unit,
-      readings: ordered,
-      latest,
-    });
-  }
-  return groups.sort(
-    (a, b) =>
-      new Date(b.latest.takenAt).getTime() -
-      new Date(a.latest.takenAt).getTime(),
-  );
+function toGroups(markers: LabOverviewMarkerDto[]): MarkerGroup[] {
+  return markers.map((marker) => ({
+    key: marker.key,
+    biomarkerId: marker.latest.biomarkerId,
+    analyte: marker.latest.analyte,
+    panel: marker.latest.panel,
+    unit: marker.latest.unit,
+    count: marker.count,
+    trend: marker.trend,
+    latest: marker.latest,
+  }));
 }
 
 /**
@@ -157,26 +144,17 @@ export function LabList({
   // (no catalog match) carry no subtitle rather than a fabricated one.
   // v1.24 — the per-marker description moved to the biomarker detail page
   // (beneath the heading); the overview rows no longer carry it.
-  const listKey = queryKeys.labResultsList({
-    biomarkerId: undefined,
-    analyte: undefined,
-    panel: undefined,
-    from: undefined,
-    to: undefined,
-    page: 0,
-    sortDir: "desc",
-  });
-
+  // One entry per biomarker over the whole history, grouped server-side: a
+  // capped page of raw rows dropped every marker measured only long ago.
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: listKey,
-    queryFn: () =>
-      apiGet<LabResultListResponse>("/api/labs?limit=500&sortDir=desc"),
+    queryKey: queryKeys.labResultsOverview(),
+    queryFn: () => apiGet<LabOverviewResponse>("/api/labs/overview"),
   });
 
   const groups = useMemo(() => {
-    const base = groupReadings(data?.results ?? []);
-    // v1.18.6 (MOD-04) — honour the user's Labs sort choice. `groupReadings`
-    // already returns most-recent-first; `recentAsc` reverses, the alpha
+    const base = toGroups(data?.markers ?? []);
+    // v1.18.6 (MOD-04) — honour the user's Labs sort choice. The server
+    // order is most-recent-first; `recentAsc` reverses, the alpha
     // options sort by analyte name (#43), and `manual` applies the persisted
     // biomarker order (legacy un-linked groups, which carry no biomarkerId,
     // sort after the ordered block).
@@ -195,14 +173,7 @@ export function LabList({
       return applyOrder(base, prefs.order, (g) => g.biomarkerId ?? g.key);
     }
     return base;
-  }, [data?.results, prefs.sortDir, prefs.order]);
-
-  // The list caps at 500 rows server-side (the `limit` ceiling). Surface a
-  // calm "showing latest N of M" hint when the cap truncates so the count is
-  // never silently wrong — proper cursor paging is a later iteration.
-  const total = data?.meta?.total ?? 0;
-  const shown = data?.results?.length ?? 0;
-  const truncated = total > shown;
+  }, [data?.markers, prefs.sortDir, prefs.order]);
 
   const listEmpty = !isLoading && !isError && groups.length === 0;
   useEffect(() => {
@@ -266,11 +237,6 @@ export function LabList({
       // branch above carries `lab-list-loading` instead, so the marker
       // cannot stand for a silhouette.
       <div data-slot="lab-list" className="space-y-3">
-        {truncated ? (
-          <p className="text-muted-foreground text-xs">
-            {t("labs.showingLatestOf", { shown, total })}
-          </p>
-        ) : null}
         {/* `@container` makes the columns follow the width the list has, not the
             window's: below `@5xl` (64rem of card) the row is the `lg` table it
             always was (the two tiers exclude each other, so the result does not
@@ -319,7 +285,7 @@ export function LabList({
                   <LabRangeBarSlot reading={group.latest} />
                   <div className={cn("w-[72px]", MOBILE_CELL.trend)}>
                     <LabTrendSparkline
-                      values={group.readings.map((reading) => reading.value)}
+                      values={group.trend}
                       referenceLow={group.latest.referenceLow}
                       referenceHigh={group.latest.referenceHigh}
                     />
@@ -343,7 +309,7 @@ export function LabList({
                   <LabRangeBarSlot reading={group.latest} />
                   <div className={cn("w-[72px]", MOBILE_CELL.trend)}>
                     <LabTrendSparkline
-                      values={group.readings.map((reading) => reading.value)}
+                      values={group.trend}
                       referenceLow={group.latest.referenceLow}
                       referenceHigh={group.latest.referenceHigh}
                     />
@@ -380,13 +346,6 @@ export function LabList({
         groups.length > 1 && "sm:grid-cols-2",
       )}
     >
-      {truncated ? (
-        <li className="sm:col-span-2">
-          <p className="text-muted-foreground text-xs">
-            {t("labs.showingLatestOf", { shown, total })}
-          </p>
-        </li>
-      ) : null}
       {groups.map((group) => {
         return (
           <li key={group.key} className="contents">
@@ -432,10 +391,10 @@ export function LabList({
                       {labDate(group.latest.takenAt)}
                     </span>
                     <LabConvertedNote reading={group.latest} />
-                    {group.readings.length > 1 ? (
+                    {group.count > 1 ? (
                       <span className="text-xs">
                         {t("labs.readingsCount", {
-                          count: group.readings.length,
+                          count: group.count,
                         })}
                       </span>
                     ) : null}
@@ -447,7 +406,7 @@ export function LabList({
                     />
                   </div>
                   <LabTrendSparkline
-                    values={group.readings.map((reading) => reading.value)}
+                    values={group.trend}
                     referenceLow={group.latest.referenceLow}
                     referenceHigh={group.latest.referenceHigh}
                   />

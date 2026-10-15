@@ -29,6 +29,7 @@ import type {
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import type { IntegrationKey } from "./status";
 import {
+  MEDICATION_DOSE_FRESHNESS_TYPE,
   WORKOUT_FRESHNESS_TYPE,
   type MetricFreshnessSample,
 } from "./sync-verdict";
@@ -183,6 +184,34 @@ export async function getSourceFreshness(
     });
   }
   return sortByType(entries);
+}
+
+/**
+ * The newest Apple Health medication dose, as the `MEDICATION_DOSE` sample of
+ * the Apple Health freshness list (v1.42.4). A dose row carries an
+ * `externalId` only when it came from Apple Health (the intake bulk route
+ * accepts one solely with `source: "APPLE_HEALTH"`, and a slot write that
+ * converges onto an existing row keeps the id), so that column, not
+ * `source`, is what identifies them. A taken dose is dated by when it was
+ * taken, a skipped one by its slot. Null when there is no live Apple Health
+ * dose, so the entry is absent rather than invented.
+ */
+export async function getAppleHealthDoseFreshness(
+  userId: string,
+): Promise<MetricFreshnessSample | null> {
+  const rows = await prisma.$queryRaw<Array<{ last_seen: Date | null }>>`
+    SELECT max(COALESCE(e."taken_at", e."scheduled_for")) AS "last_seen"
+    FROM "medication_intake_events" e
+    WHERE e."user_id" = ${userId}
+      AND e."external_id" IS NOT NULL
+      AND e."deleted_at" IS NULL
+  `;
+  const lastSeen = rows[0]?.last_seen;
+  if (!lastSeen) return null;
+  return {
+    type: MEDICATION_DOSE_FRESHNESS_TYPE,
+    lastSeenAt: new Date(lastSeen).toISOString(),
+  };
 }
 
 /**

@@ -415,6 +415,75 @@ describe("syncUserOura", () => {
     );
   });
 
+  it("imports nothing for a rejected or deleted sleep period and retires what an earlier sync stored for it", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchSleepMock.mockResolvedValue([
+      {
+        id: "rec-rest",
+        type: "rest",
+        day: "2026-06-10",
+        bedtime_start: "2026-06-10T14:00:00.000Z",
+        bedtime_end: "2026-06-10T15:00:00.000Z",
+        sleep_phase_5_min: "222222222222",
+        lowest_heart_rate: 58,
+      },
+      {
+        id: "rec-del",
+        type: "deleted",
+        day: "2026-06-09",
+        bedtime_end: "2026-06-09T16:00:00.000Z",
+        light_sleep_duration: 1800,
+      },
+    ]);
+    const stored = [
+      {
+        id: "m1",
+        type: "SLEEP_DURATION",
+        measuredAt: new Date("2026-06-10T15:00:00.000Z"),
+      },
+      {
+        id: "m2",
+        type: "RESTING_HEART_RATE",
+        measuredAt: new Date("2026-06-10T15:00:00.000Z"),
+      },
+    ];
+    findManyMock.mockResolvedValue(stored);
+    updateManyMock.mockResolvedValue({ count: 2 });
+
+    await syncUserOura("u1");
+
+    // Nothing of either period reaches the write path.
+    expect(
+      createdRows().filter((r) => String(r.externalId).startsWith("sleep:")),
+    ).toEqual([]);
+    // The rows of both periods are looked up by their record prefix, any type.
+    const lookup = findManyMock.mock.calls
+      .map((c) => c[0] as { where: Record<string, unknown> })
+      .find((a) => Array.isArray(a.where.OR));
+    expect(lookup).toBeDefined();
+    expect(lookup!.where).toMatchObject({
+      userId: "u1",
+      source: "OURA",
+      deletedAt: null,
+    });
+    expect(lookup!.where.type).toBeUndefined();
+    expect(lookup!.where.OR).toEqual([
+      { externalId: { startsWith: "sleep:rec-rest:" } },
+      { externalId: { startsWith: "sleep:rec-del:" } },
+    ]);
+    // ...and soft-deleted by id, then their rollup days recomputed.
+    const retire = updateManyMock.mock.calls
+      .map((c) => c[0] as { where: { id?: { in: string[] } }; data: unknown })
+      .find((a) => a.where.id);
+    expect(retire?.where.id?.in).toEqual(["m1", "m2"]);
+    expect(retire?.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(recomputeMock).toHaveBeenCalledWith(
+      "u1",
+      "RESTING_HEART_RATE",
+      stored[1]!.measuredAt,
+    );
+  });
+
   it("never sweeps when the sleep collection returns no records", async () => {
     getConnMock.mockResolvedValue(CONN);
     fetchReadinessMock.mockResolvedValue([

@@ -63,6 +63,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     practitionerId: params.get("practitionerId") ?? undefined,
     episodeId: params.get("episodeId") ?? undefined,
     limit: params.get("limit") ?? undefined,
+    offset: params.get("offset") ?? undefined,
   });
   if (!parsed.success) {
     return returnAllZodIssues(parsed.error, 422, {
@@ -72,6 +73,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const query = parsed.data;
   const take = query.limit ?? 100;
+  const skip = query.offset ?? 0;
   const now = new Date();
 
   const where = {
@@ -112,8 +114,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // `gt` and `gte` are different keys, so the caller's lower bound and this
       // arm's floor both survive the spread; only the `lte` pair collided.
       where: { ...where, occurredAt: { ...where.occurredAt, gt: now } },
-      orderBy: { occurredAt: "asc" },
+      orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
       take,
+      skip,
       include: ENCOUNTER_INCLUDE,
     }),
     prisma.encounter.findMany({
@@ -121,8 +124,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
         ...where,
         occurredAt: { ...where.occurredAt, lte: pastCeiling },
       },
-      orderBy: { occurredAt: "desc" },
+      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
       take,
+      skip,
       include: ENCOUNTER_INCLUDE,
     }),
   ]);

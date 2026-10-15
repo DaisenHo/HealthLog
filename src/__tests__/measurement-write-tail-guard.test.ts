@@ -51,6 +51,8 @@ const WRITE_SITES: Record<string, string> = {
   "lib/measurements/create-from-telegram.ts": TAIL,
   "lib/whoop/sync-body.ts": TAIL,
   "lib/whoop/webhook-handler.ts": TAIL,
+  // Retiring the rows of Oura sleep periods the person rejected or deleted.
+  "lib/oura/sync.ts": TAIL,
   // Integration syncs: each collects the (type, day) pairs it touched and
   // runs both legs itself at the end of the sync.
   "lib/fitbit/sync-core.ts":

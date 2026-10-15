@@ -31,6 +31,12 @@
  * come from `src/lib/validations/*` so the wire contract stays single-source.
  */
 import { z } from "zod/v4";
+import {
+  CONNECTION_HEALTH_ACTIONS,
+  CONNECTION_HEALTH_REASONS,
+  CONNECTION_HEALTH_STATES,
+  RECENT_CALL_STATUSES,
+} from "@/lib/integrations/connection-health";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { fitbitCredentialsSchema } from "@/lib/validations/fitbit";
 import { googleHealthCredentialsSchema } from "@/lib/validations/google-health";
@@ -97,12 +103,107 @@ const syncHealth = z
       "Server-resolved sync-health verdict. The single source of liveness truth — `lastSyncedAt` alone cannot express 'this pipe stopped delivering'.",
   });
 
+// Mirrors `ConnectionHealth` in `src/lib/integrations/connection-health.ts`:
+// the one server-resolved state per connection every client renders.
+export const connectionHealth = z
+  .object({
+    state: z
+      .enum(CONNECTION_HEALTH_STATES)
+      .describe(
+        "`ok` data is arriving (or the first sync is still due). `limited` it works, but the types in `unavailable` cannot be delivered (provider plan or missing permission). `degraded` temporary provider trouble or unexpected silence; the server keeps retrying, `since` dates it. `action_required` the user has to do the one thing in `action`.",
+      ),
+    reason: z
+      .enum(CONNECTION_HEALTH_REASONS)
+      .describe(
+        "Why the state is what it is. ok: `data_arriving`, `first_sync_pending`. limited: `plan_limited`, `permission_limited`. degraded: `provider_errors`, `sync_stalled`, `no_new_data`, `unexpected_silence` (the integration watchdog saw a source that normally delivers daily go quiet). action_required: `reauth_required`, `paused_after_errors`. Pick the sentence from this code alone.",
+      ),
+    since: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe(
+        "When the current degraded / action_required condition started. Null for ok and limited.",
+      ),
+    action: z
+      .enum(CONNECTION_HEALTH_ACTIONS)
+      .nullable()
+      .describe(
+        "The one action that resolves the state: `reconnect` (run the provider's connect flow again) or `resume` (POST the provider's resume route). Also `reconnect` on a `limited` connection whose gap is a missing permission. Null when nothing the user can do helps.",
+      ),
+    unavailable: z
+      .array(
+        z.object({
+          item: z
+            .string()
+            .describe(
+              "Provider data-type key, e.g. `spo2`, `vo2Max`, `activity`.",
+            ),
+          cause: z.enum(["plan", "permission"]),
+        }),
+      )
+      .describe(
+        "Data types this connection cannot deliver. Present in every state, empty when nothing is withheld.",
+      ),
+    lastSuccessAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe(
+        "Last successful sync. For Apple Health, the last accepted batch.",
+      ),
+    lastDataAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe(
+        "Newest data this source delivered: for polled providers when the newest reading or workout was taken, for Apple Health when a sync last brought a new sample. Null when nothing has arrived.",
+      ),
+    diagnostics: z
+      .object({
+        ledgerState: z
+          .string()
+          .nullable()
+          .describe("The stored sync-ledger state. Null for Apple Health."),
+        failingLegs: z.array(z.string()),
+        failingSince: z.iso.datetime({ offset: true }).nullable(),
+        lastAttemptAt: z.iso.datetime({ offset: true }).nullable(),
+        verdict: z
+          .string()
+          .describe("The `SyncHealth` verdict the state was derived from."),
+        recentCalls: z
+          .array(
+            z.object({
+              endpoint: z
+                .string()
+                .describe(
+                  "Sync leg name (`sleep`, `measures`, `sync`, `token_refresh`), or `batch:<TYPE>` for Apple Health. Never a URL.",
+                ),
+              status: z.enum(RECENT_CALL_STATUSES),
+              at: z.iso.datetime({ offset: true }),
+              errorCode: z
+                .string()
+                .nullable()
+                .describe(
+                  "Short error code (`401`, `invalid_grant`, `scope_missing`); anything not shaped like one is dropped.",
+                ),
+            }),
+          )
+          .max(10)
+          .describe("The last ten sync attempts, newest first."),
+      })
+      .describe(
+        "Redacted diagnostics for a bug report. Carries no token, no error message, no health value and no account identifier, so a client may offer it for copying as is.",
+      ),
+  })
+  .meta({
+    id: "ConnectionHealth",
+    description:
+      "The one server-resolved health state of a connection (v1.42.4). It folds the ledger state, the liveness verdict, plan and permission gaps, provider reauth flags and the integration watchdog's silence flag into four states. Clients render it and never recompute it. The older health-shaped fields beside it stay for one release after the clients read `health`, then go.",
+  });
+
 const metricFreshnessEntry = z
   .object({
     type: z
       .string()
       .describe(
-        "The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.",
+        "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
       ),
     lastSeenAt: z.iso
       .datetime({ offset: true })
@@ -144,11 +245,18 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .describe(
         "When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only. Null when none has. Same omission rules as `lastReceivedAt`.",
       ),
+    lastBackgroundAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .optional()
+      .describe(
+        'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so opening the app does not hide an earlier background arrival. Null when the type has never arrived in the background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose latest arrival then was a background one starts with that date and every other type starts null. Same omission rules as `lastReceivedAt`.',
+      ),
   })
   .meta({
     id: "AppleHealthMetricFreshnessEntry",
     description:
-      "Per-type Apple Health freshness: the newest sample's timestamp and staleness flag, plus the per-type arrival facts recorded by `POST /api/measurements/batch` (v1.42).",
+      'Per-type Apple Health freshness: the newest sample\'s timestamp and staleness flag, plus the per-type arrival facts recorded by `POST /api/measurements/batch` (v1.42). Since v1.42.4 the list can also hold a `MEDICATION_DOSE` entry: `lastSeenAt` is the newest live dose imported from Apple Health (its `takenAt`, or its slot for a skipped dose), and the arrival facts come from `POST /api/medications/intake/bulk` entries sent with `source: "APPLE_HEALTH"`. A dose recorded in the app does not move them. Doses are never flagged `stale`.',
   });
 
 // Issue #778 — the two backfill-progress figures the server genuinely holds.
@@ -211,6 +319,12 @@ const healthKitConfigResponse = z
       .optional()
       .describe(
         "Backfill/sync progress summary. Present on the GET read (null when the progress read failed); omitted from the PATCH echo.",
+      ),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified Apple Health connection state. Null when the phone has never delivered anything (or the read failed). Present on the GET read; omitted from the PATCH echo.",
       ),
   })
   .meta({
@@ -405,6 +519,12 @@ const nightscoutStatusResponse = z
         "Last recorded failure message, decrypted from the ledger. Null when the last attempt succeeded or none has run.",
       ),
     syncHealth: syncHealth.optional(),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified connection state. Present whenever the connection exists; null in the rare case it resolved to none. Absent on the not-connected body.",
+      ),
   })
   .meta({
     id: "NightscoutStatusResponse",
@@ -483,6 +603,12 @@ const whoopStatusResponse = z
       .describe(
         "Space-separated OAuth scope string granted by WHOOP. Null on a legacy connection that predates scope tracking.",
       ),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified connection state. Present whenever the connection exists; null in the rare case it resolved to none. Absent on the not-connected body.",
+      ),
   })
   .meta({
     id: "WhoopStatusResponse",
@@ -528,6 +654,12 @@ const withingsStatusResponse = z
       .optional()
       .describe(
         "Pre-computed convenience flag the reconnect banner reads. A null `scope` counts as missing activity.",
+      ),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified connection state. Present whenever the connection exists; null in the rare case it resolved to none. Absent on the not-connected body.",
       ),
   })
   .meta({
@@ -810,6 +942,12 @@ function connectionStatusShape() {
       .describe(
         "OAuth scope string granted at authorisation. Null on a legacy connection that predates scope tracking.",
       ),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified connection state. Present whenever the connection exists; null in the rare case it resolved to none. Absent on the not-connected body.",
+      ),
   };
 }
 
@@ -863,6 +1001,12 @@ const oauthProviderStatusResponse = z
     lastAttemptAt: z.iso.datetime({ offset: true }).nullable().optional(),
     lastError: z.string().nullable().optional(),
     syncHealth: syncHealth.optional(),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified connection state. Present whenever the connection exists; null in the rare case it resolved to none. Absent on the not-connected body.",
+      ),
   })
   .meta({
     id: "OAuthProviderStatusResponse",
@@ -947,6 +1091,11 @@ const integrationEnvelopeEntry = z
       ),
     hasToken: z.boolean().optional().describe("Nightscout only."),
     allowPrivateHost: z.boolean().optional().describe("Nightscout only."),
+    health: connectionHealth
+      .nullable()
+      .describe(
+        "The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry, which go once the settings surface renders `health` (no other client reads this envelope).",
+      ),
   })
   .meta({
     id: "IntegrationStatusEntry",

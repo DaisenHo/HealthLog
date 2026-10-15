@@ -23,18 +23,31 @@
  * reach the doses (`vaccinationLinks: null`) shows no dose block rather than
  * an empty one that would claim the page records none.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Syringe } from "lucide-react";
 
-import { EntityLinkPicker } from "@/components/links/entity-link-picker";
+import {
+  EntityLinkPicker,
+  serverPagingFrom,
+} from "@/components/links/entity-link-picker";
 import type { EntityLinkOption } from "@/components/links/entity-link-picker";
 import { isNearAnchor } from "@/components/links/vault-document-options";
+import { encounterPickerUrl } from "@/components/links/picker-requests";
+import {
+  PICKER_PAGE_SIZE,
+  pickerPivot,
+  useLinkPickerPages,
+  type PickerPage,
+  type PickerPageRequest,
+} from "@/components/links/use-link-picker-pages";
 import { encounterKindText } from "@/components/encounters/encounter-labels";
 import { useVaccinations } from "@/components/vaccinations/use-vaccinations";
-import { useEncounters } from "@/hooks/use-encounters";
 import { useAuth } from "@/hooks/use-auth";
+import { apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
+import type { EncounterDTO, EncounterListDTO } from "@/lib/encounters/dto";
 import type { EncounterKind } from "@/generated/prisma/client";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 
@@ -73,6 +86,25 @@ export function recordOptions(
     }
   }
   return [...near, ...rest];
+}
+
+/**
+ * One picker page of visits. The route answers in two arms, each paged by the
+ * same offset; another page exists while either arm came back full.
+ */
+export async function fetchEncounterPage(
+  request: PickerPageRequest,
+): Promise<PickerPage<EncounterDTO>> {
+  const list = await apiGet<EncounterListDTO>(encounterPickerUrl(request));
+  const full =
+    list.upcoming.length >= PICKER_PAGE_SIZE ||
+    list.past.length >= PICKER_PAGE_SIZE;
+  return {
+    items: [...list.upcoming, ...list.past],
+    next: full
+      ? String(Number(request.cursor ?? "0") + PICKER_PAGE_SIZE)
+      : null,
+  };
 }
 
 /** Where a visit opens: its sheet on the checkups page. */
@@ -132,7 +164,16 @@ export function DocumentRecordLinks({
   const vaccinationsOn = user?.modules?.vaccinations !== false;
   const anchor = doc.documentDate ?? doc.reportDate;
 
-  const encounters = useEncounters(canManage);
+  // The visits around the document's date, paged older and newer from
+  // there. The visit route has no text search (its free text is ciphertext
+  // at rest), so the term filters what is loaded.
+  const encounters = useLinkPickerPages<EncounterDTO>({
+    enabled: canManage,
+    pivot: pickerPivot(anchor),
+    queryKey: queryKeys.encounterPicker,
+    fetchPage: fetchEncounterPage,
+    serverSearch: false,
+  });
   const vaccinations = useVaccinations(
     null,
     canManage && vaccinationsOn && doc.vaccinationLinks !== null,
@@ -150,16 +191,16 @@ export function DocumentRecordLinks({
   };
 
   const visitOptions = recordOptions(
-    [
-      ...(encounters.data?.upcoming ?? []),
-      ...(encounters.data?.past ?? []),
-    ].map((visit) => ({
-      id: visit.id,
-      label: encounterKindText(t, visit.kind as EncounterKind),
-      meta: visit.practitioner?.name ?? null,
-      occurredAt: visit.occurredAt,
-      href: visitHref(visit.id),
-    })),
+    [...encounters.items]
+      // Two arms per page arrive in two orders; the list reads newest first.
+      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+      .map((visit) => ({
+        id: visit.id,
+        label: encounterKindText(t, visit.kind as EncounterKind),
+        meta: visit.practitioner?.name ?? null,
+        occurredAt: visit.occurredAt,
+        href: visitHref(visit.id),
+      })),
     anchor,
     labels,
   );
@@ -176,6 +217,19 @@ export function DocumentRecordLinks({
 
   const showDoses = vaccinationsOn && doc.vaccinationLinks !== null;
 
+  // The visits the document is filed against, as its own read names them,
+  // so their chips show whatever page of visits is loaded.
+  const knownVisits = useMemo(
+    () =>
+      doc.encounterLinks.map((link) => ({
+        id: link.encounterId,
+        label: encounterKindText(t, link.kind as EncounterKind),
+        dateLabel: link.occurredAt ? format.date(link.occurredAt) : null,
+        href: visitHref(link.encounterId),
+      })),
+    [doc.encounterLinks, t, format],
+  );
+
   return (
     <>
       {canManage ? (
@@ -183,11 +237,11 @@ export function DocumentRecordLinks({
           icon={CalendarDays}
           title={t("documents.detail.visitsLabel")}
           slot="document-visit-links"
-          pending={encounters.isPending || !seedFresh}
-          error={encounters.isError || seedError}
+          pending={encounters.pending || !seedFresh}
+          error={encounters.error || seedError}
           errorLabel={t("links.picker.loadError")}
           onRetry={() => {
-            if (encounters.isError) void encounters.refetch();
+            if (encounters.error) encounters.retry();
             if (seedError) onRetrySeed?.();
           }}
           selected={visitIds ?? doc.encounterLinks.map((l) => l.encounterId)}
@@ -196,6 +250,8 @@ export function DocumentRecordLinks({
             onChange({ encounterIds: ids });
           }}
           options={visitOptions}
+          server={serverPagingFrom(encounters)}
+          knownOptions={knownVisits}
           searchPlaceholder={t("links.picker.searchPlaceholder")}
           emptyLabel={t("documents.detail.noVisitsToLink")}
         />

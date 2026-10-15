@@ -388,6 +388,21 @@ function resolveMeasuredAt(
 }
 
 /**
+ * The sample instant of a spot-reading `DataPoint` (`sample` data types), or
+ * null for any other shape or a point without a parseable time. A backfill
+ * reads it to record how far a walk has got.
+ */
+export function googleHealthSampleInstant(
+  point: GoogleHealthDataPoint,
+  dataType: GoogleHealthDataType,
+  tz?: string,
+): Date | null {
+  if (dataType.timeField !== "sample") return null;
+  const t = readPath(point, `${dataType.key}.sampleTime.physicalTime`);
+  return typeof t === "string" ? parseLocalInstant(t, tz) : null;
+}
+
+/**
  * Stable anchor for a `DataPoint`'s externalId. A spot reading anchors on its
  * sample time; a daily summary on its civil date. Combined with a type-specific
  * field-tag this makes the upsert key idempotent across re-fetches.

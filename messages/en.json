@@ -1386,6 +1386,7 @@
       "emptyState": "No side effects logged yet. Tracking can help your doctor and surface patterns over time.",
       "recentTitle": "Last 30 days",
       "loading": "Loading…",
+      "loadMore": "Load more",
       "deleteCta": "Delete",
       "deleteError": "Could not delete the entry",
       "errorSeverity": "Severity must be between 1 and 5",
@@ -4569,7 +4570,7 @@
       "description": "How well your body has bounced back: the recovery, strain and load signals your wearable records overnight.",
       "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
-      "empty": "No recovery data yet. Connect a WHOOP, Polar or Oura account and these scores fill in once your device syncs.",
+      "empty": "Nothing to chart here yet. This page shows the recharge, strain and load readings that WHOOP and Polar record, and Oura's resilience level. Oura's readiness appears as your recovery score, linked above.",
       "block": {
         "ansChargeExplainer": "How charged your autonomic nervous system is for the day ahead, a recharge reading drawn from your overnight heart and breathing signals.",
         "dayStrainExplainer": "The day's whole-body cardiovascular load on your device's strain scale. Read it against your recovery, not as a goal on its own.",
@@ -5315,7 +5316,8 @@
       "unavailableTitle": "Unavailable in this shared record",
       "unavailableDescription": "This Settings area is intentionally unavailable while viewing another person's record.",
       "integrationStatusDescription": "Connection status for this managed record.",
-      "integrationStatusDetail": "Connection controls are unavailable."
+      "integrationStatusDetail": "A managed profile shows its connected services as a status only. Connecting, reconnecting, syncing and disconnecting are not available to guardians.",
+      "integrationStatusDocs": "How sharing works"
     },
     "sections": {
       "account": {
@@ -6391,7 +6393,6 @@
     "whoopDisconnectDescription": "The connection to WHOOP will be disconnected. Previously synced data will be preserved.",
     "whoopConnect": "Connect with WHOOP",
     "whoopNoCredentials": "Please enter your API credentials above to connect WHOOP.",
-    "whoopBackfillInProgress": "Importing your WHOOP history in the background…",
     "whoopOauthConnected": "WHOOP connected. The first sync starts in the background.",
     "whoopOauthFailed": "WHOOP connection failed",
     "whoopOauthError": {
@@ -6427,7 +6428,6 @@
     "fitbitDisconnectDescription": "The connection to Fitbit will be disconnected. Previously synced data will be preserved.",
     "fitbitConnect": "Connect with Fitbit",
     "fitbitNoCredentials": "Please enter your API credentials above to connect Fitbit.",
-    "fitbitBackfillInProgress": "Importing your Fitbit history in the background…",
     "fitbitOauthConnected": "Fitbit connected. The first sync starts in the background.",
     "fitbitOauthFailed": "Fitbit connection failed",
     "googleHealth": "Google Health",
@@ -6472,9 +6472,6 @@
     "googleHealthDisconnectDescription": "The connection to Google Health will be disconnected. Previously synced data will be preserved.",
     "googleHealthConnect": "Connect with Google",
     "googleHealthNoCredentials": "Please enter your API credentials above to connect Google Health.",
-    "googleHealthBackfillInProgress": "Importing your Google Health history in the background…",
-    "googleHealthReauthBanner": "Google has expired the connection. This happens periodically while your OAuth app stays in Testing mode. Reconnect to resume syncing.",
-    "googleHealthReconnect": "Reconnect",
     "googleHealthOauthConnected": "Google Health connected. The first sync starts in the background.",
     "googleHealthOauthFailed": "Google Health connection failed",
     "googleHealthOauthError": {
@@ -6499,16 +6496,7 @@
     },
     "integrations": {
       "withings": {
-        "reconnect": {
-          "banner": {
-            "title": "Activity sync available",
-            "body": "Your Withings connection was authorised before activity sync was added. Reconnect once to enable steps, active energy, walking + running distance, and floors-climbed ingest from your Withings devices.",
-            "action": "Reconnect Withings"
-          }
-        },
         "plan": {
-          "title": "Some readings need Withings' paid API plan",
-          "body": "Withings now offers {list} only in its paid API plan, and your Withings developer app is on the free plan. Weight, blood pressure, body composition, heart rate and sleep keep syncing.",
           "link": "About the Withings API plans",
           "items": {
             "spo2": "SpO2",
@@ -6538,10 +6526,7 @@
       },
       "oura": {
         "scope": {
-          "body": "Reconnect Oura once to allow {list}. Everything else keeps syncing.",
-          "action": "Reconnect Oura",
           "items": {
-            "spo2": "SpO2",
             "vo2max": "VO2 max",
             "cardio_age": "cardiovascular age",
             "resilience": "resilience"
@@ -6560,7 +6545,6 @@
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
-      "resumeCta": "Reconnect",
       "resumeSuccess": "Integration resumed",
       "resumeError": "Reconnect failed",
       "stale": "Connected, no recent data",
@@ -6571,12 +6555,11 @@
       "title": "Data received",
       "summary": "{count} data types, newest {relative}",
       "quiet": "{count} quiet",
-      "workouts": "Workouts"
+      "workouts": "Workouts",
+      "medicationDoses": "Medication doses"
     },
     "integrationFallback": {
-      "description": "Configured on this account without a settings card of its own.",
-      "lastAttempt": "Last attempt {relative}",
-      "noAttempt": "No sync attempt recorded"
+      "description": "Configured on this account without a settings card of its own."
     },
     "withingsViewData": "View your measurements",
     "whoopViewData": "View your recovery",
@@ -7124,7 +7107,6 @@
       "backgroundStep": "Keep Background App Refresh enabled. The app syncs new data automatically in the foreground and when iOS grants background time.",
       "importNote": "Need older history or cannot use the iOS app? The Apple Health XML/ZIP upload is a one-shot fallback and does not enable live sync.",
       "importAction": "Open one-shot import",
-      "staleNote": "No Apple Health data has arrived for over a week. Open the HealthLog app on your iPhone and check the Apple Health permissions.",
       "progress": {
         "title": "Sync progress",
         "receivedLabel": "Records received",
@@ -7150,6 +7132,7 @@
         "title": "By data type",
         "lastReceived": "Last received {relative}",
         "lastNewValue": "Last new value {relative}",
+        "lastBackground": "Last in background {relative}",
         "never": "Not received yet"
       }
     },
@@ -7217,6 +7200,73 @@
     "displayCard": {
       "title": "Display",
       "description": "Language, units and formats, saved as soon as you change them."
+    },
+    "integrationCard": {
+      "state": {
+        "ok": "Working",
+        "limited": "Limited",
+        "degraded": "Delayed",
+        "actionRequired": "Action needed"
+      },
+      "reason": {
+        "dataArriving": "Data is arriving.",
+        "dataArrivingHistory": "Data is arriving. Older history is loading in the background.",
+        "firstSyncPending": "Connected. The first sync runs shortly.",
+        "planLimited": "Data is arriving. Your {provider} plan does not include {list}.",
+        "permissionLimited": "Data is arriving. Permission is missing for {list}.",
+        "providerErrors": "{provider} has not answered reliably since {since}. HealthLog keeps trying; nothing to do on your side.",
+        "providerErrorsNoSince": "{provider} is not answering reliably right now. HealthLog keeps trying; nothing to do on your side.",
+        "syncStalled": "HealthLog has not synced since {since}. That is on the server, not your device.",
+        "syncStalledNoSince": "HealthLog is not syncing right now. That is on the server, not your device.",
+        "noNewData": "No new data since {since}.",
+        "noNewDataNoSince": "No new data for a while.",
+        "noNewDataApple": "No new data since {since}. Open HealthLog on your iPhone once.",
+        "noNewDataAppleNoSince": "No new data for a while. Open HealthLog on your iPhone once.",
+        "unexpectedSilence": "Nothing has arrived since {since}, although {provider} usually delivers daily.",
+        "unexpectedSilenceNoSince": "Nothing is arriving, although {provider} usually delivers daily.",
+        "reauthRequired": "The {provider} connection has expired. Reconnect to keep data coming.",
+        "pausedAfterErrors": "{provider} is paused after failing since {since}.",
+        "pausedAfterErrorsNoSince": "{provider} is paused after repeated failures."
+      },
+      "when": {
+        "today": "today, {time}",
+        "yesterday": "yesterday, {time}",
+        "date": "{date}, {time}"
+      },
+      "items": {
+        "activity": "activity",
+        "sleep": "sleep"
+      },
+      "moreValuesOne": "{count} more",
+      "moreValuesFew": "{count} more",
+      "moreValuesOther": "{count} more",
+      "notConnected": "Not connected.",
+      "lastData": "Last data: {when}",
+      "lastDataNone": "Last data: none yet",
+      "reconnect": "Reconnect",
+      "resume": "Resume",
+      "menuLabel": "More actions for {provider}",
+      "menu": {
+        "credentials": "Change credentials",
+        "address": "Change address and token"
+      },
+      "syncing": "Syncing…",
+      "details": {
+        "title": "Details for a bug report",
+        "none": "none",
+        "state": "State",
+        "since": "since",
+        "lastSync": "Last sync",
+        "lastData": "Last data",
+        "failingParts": "failing parts",
+        "recentCalls": "Recent calls",
+        "unavailable": "Not available",
+        "unavailableList": "Not available: {list}",
+        "causePlan": "plan",
+        "causePermission": "permission",
+        "failureStreak": "Failure streak: {count} of {threshold}",
+        "copyFailed": "Could not copy. Select the text and copy it by hand."
+      }
     }
   },
   "admin": {
@@ -12174,7 +12224,10 @@
       "suggested": "Around this date",
       "loadError": "The list could not be loaded.",
       "removeNamed": "Remove {name}",
-      "removed": "Unlinked {name}"
+      "removed": "Unlinked {name}",
+      "linked": "Linked",
+      "loadNewer": "Load newer",
+      "loadOlder": "Load older"
     }
   },
   "bodySites": {

@@ -70,6 +70,15 @@ import {
   type IntegrationBackfillAdmissionPayload,
 } from "@/lib/jobs/integration-backfill-admission";
 import { drainIntegrationBackfillAdmission } from "@/lib/jobs/integration-backfill-drain";
+import {
+  INTEGRATION_WATCHDOG_DAILY_CRON,
+  INTEGRATION_WATCHDOG_DAILY_QUEUE,
+  INTEGRATION_WATCHDOG_HOURLY_CRON,
+  INTEGRATION_WATCHDOG_HOURLY_QUEUE,
+  handleIntegrationWatchdogDaily,
+  handleIntegrationWatchdogHourly,
+  type IntegrationWatchdogPayload,
+} from "@/lib/jobs/integration-watchdog";
 import { workerLog } from "./shared";
 import { jobDone } from "@/lib/jobs/job-outcome";
 import {
@@ -320,6 +329,10 @@ const allQueues = [
   STRAVA_BACKFILL_QUEUE,
   // v1.30.x — daily sweep for the native OIDC handoff ledger.
   OIDC_NATIVE_HANDOFF_CLEANUP_QUEUE,
+  // v1.42.4 — the integration watchdog: an hourly cheap pass and a daily
+  // pass that re-reads the history behind standing silence flags.
+  INTEGRATION_WATCHDOG_HOURLY_QUEUE,
+  INTEGRATION_WATCHDOG_DAILY_QUEUE,
 ];
 
 const schedules: ScheduleEntry[] = [
@@ -377,6 +390,18 @@ const schedules: ScheduleEntry[] = [
   [OURA_SYNC_QUEUE, OURA_SYNC_CRON],
   // v1.28.x — hourly Strava (:17) OAuth poll.
   [STRAVA_SYNC_QUEUE, STRAVA_SYNC_CRON],
+  // v1.42.4 — integration watchdog, hourly at :47 and daily at 04:52. The
+  // next tick is the retry: a missed pass only delays a flag by an hour.
+  [
+    INTEGRATION_WATCHDOG_HOURLY_QUEUE,
+    INTEGRATION_WATCHDOG_HOURLY_CRON,
+    cronIsTheRetry,
+  ],
+  [
+    INTEGRATION_WATCHDOG_DAILY_QUEUE,
+    INTEGRATION_WATCHDOG_DAILY_CRON,
+    cronIsTheRetry,
+  ],
   // v1.30.x — daily 03:28 Europe/Berlin prune for expired native OIDC handoffs.
   [
     OIDC_NATIVE_HANDOFF_CLEANUP_QUEUE,
@@ -724,6 +749,21 @@ export async function registerIntegrationSyncQueues(
     STRAVA_SYNC_QUEUE,
     { localConcurrency: 1 },
     handleStravaSync,
+  );
+  // v1.42.4 — integration watchdog. Single-flight per process; both queues
+  // also share one advisory lock, so the daily and hourly passes never run
+  // side by side on any replica.
+  await createAndWork<IntegrationWatchdogPayload>(
+    boss,
+    INTEGRATION_WATCHDOG_HOURLY_QUEUE,
+    { localConcurrency: 1 },
+    handleIntegrationWatchdogHourly,
+  );
+  await createAndWork<IntegrationWatchdogPayload>(
+    boss,
+    INTEGRATION_WATCHDOG_DAILY_QUEUE,
+    { localConcurrency: 1 },
+    handleIntegrationWatchdogDaily,
   );
   // v1.28.x — self-converging Strava backfill. This source queue retains the
   // per-connection singleton and forwards admitted work to the shared drain.

@@ -804,6 +804,7 @@ model User {
   idempotencyKeys                           IdempotencyKey[]
   devices                                   Device[]
   integrationStatuses                       IntegrationStatus[]
+  integrationWatches                        IntegrationWatch[]
   coachConversations                        CoachConversation[]
   coachFacts                                CoachFact[]
   coachPlans                                CoachPlan[]
@@ -4004,16 +4005,25 @@ model ManagedProfileHandover {
 /// batch route; read by the Apple Health card's per-type freshness list.
 /// Diagnostic state: rebuilt by the next sync, so it is not backed up.
 model HealthKitTypeSync {
-  userId          String          @map("user_id")
-  type            MeasurementType
+  userId           String    @map("user_id")
+  /// A `MeasurementType` name for rows the measurement batch writes, or
+  /// `MEDICATION_DOSE` for Apple Health doses the intake bulk route
+  /// receives. Text, not the enum, since v1.42.4 (migration 0401) because a
+  /// dose is not a measurement type.
+  type             String
   /// Last batch that carried this type.
-  lastReceivedAt  DateTime        @map("last_received_at")
+  lastReceivedAt   DateTime  @map("last_received_at")
   /// `syncTrigger` of that batch
   /// (`foreground` / `background` / `push` / `manual`), NULL when absent.
-  lastTrigger     String?         @map("last_trigger")
+  lastTrigger      String?   @map("last_trigger")
   /// Last batch that inserted or updated a sample of
   /// this type (as opposed to sending only duplicates).
-  lastNewSampleAt DateTime?       @map("last_new_sample_at")
+  lastNewSampleAt  DateTime? @map("last_new_sample_at")
+  /// Last batch with `syncTrigger = background` that carried this type. A
+  /// later foreground, push or manual arrival leaves it standing; NULL when
+  /// none has (or only before v1.42.4, except a row whose latest arrival was
+  /// a background one, which migration 0401 seeded).
+  lastBackgroundAt DateTime? @map("last_background_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -4410,8 +4420,10 @@ model GoogleHealthConnection {
   /// pre-fix externalId (a re-scored night minted parallel copies). Null =
   /// repair pending (or the connection predates the fix).
   sleepRepairedAt     DateTime? @map("sleep_repaired_at")
-  /// The collections the in-flight history backfill has already walked to
-  /// the end (`{ done: string[] }`), so a retry resumes with the rest
+  /// How far the in-flight history backfill has got
+  /// (`{ done: string[], cursors: { [collection]: { at, order, pages } } }`):
+  /// the collections it walked to the end, and for each collection read page
+  /// by page the edge it has written up to, so the next slice resumes there
   /// instead of starting over. Null once the backfill completes, and reset
   /// on every reconnect.
   backfillProgress    Json?     @map("backfill_progress")
@@ -5047,6 +5059,15 @@ model IntegrationStatus {
   // a failure recorded without a leg), under which any success clears the row.
   failingLegs                Json?     @map("failing_legs")
   alertedAt                  DateTime? @map("alerted_at") // last time admin Telegram alert fired (idempotency guard)
+  // The last ten sync attempts, newest first, as a JSON array of
+  // `{ endpoint, status, at, errorCode }`. `endpoint` is the sync leg name the
+  // code passes (never a URL), `status` is `ok` or the failure kind, and
+  // `errorCode` is a short closed-shape code ("401", "invalid_grant") or null.
+  // No message, no token, no value: this is what the redacted diagnostics on
+  // the connection health read publish, so it is shaped to be safe to copy
+  // into a bug report. Written by `appendRecentCall` in
+  // `src/lib/integrations/status.ts`, read by `resolveConnectionHealth`.
+  recentCalls                Json?     @map("recent_calls")
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 
@@ -5056,6 +5077,43 @@ model IntegrationStatus {
   @@index([userId])
   @@index([state])
   @@map("integration_statuses")
+}
+
+// What the integration watchdog (`src/lib/integrations/watchdog.ts`) knows
+// about one connection: whether a source that normally delivers has gone
+// silent, and whether an operator incident is open for it. One row per
+// (user, connection) the watchdog has looked at. `integration` carries the
+// connection key, which is the IntegrationStatus key set plus "apple-health",
+// so it is a separate table rather than more columns on IntegrationStatus,
+// whose readers assume every row is a polled provider.
+//
+// Operational, like IntegrationStatus: it records what this host observed, so
+// it is excluded from backups and removed with the account's data.
+model IntegrationWatch {
+  id               String    @id @default(cuid())
+  userId           String    @map("user_id")
+  integration      String
+  /// Set while the source is unexpectedly silent: the newest data instant at
+  /// the moment the watchdog flagged it. Null when the source is not flagged.
+  /// The connection health read surfaces it as `degraded` /
+  /// `unexpected_silence` until data arrives again.
+  silentSince      DateTime? @map("silent_since")
+  /// Reason code of the operator incident currently open for this connection,
+  /// null when none is. One incident at a time per connection.
+  incidentReason   String?   @map("incident_reason")
+  incidentOpenedAt DateTime? @map("incident_opened_at")
+  /// When the operator was told about the open incident, or when the watchdog
+  /// adopted an alert the sync ledger had already sent for the same streak.
+  /// Null while an incident is open but not yet announced.
+  alertedAt        DateTime? @map("alerted_at")
+  checkedAt        DateTime  @default(now()) @map("checked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, integration])
+  @@map("integration_watches")
 }
 
 // ─── App Settings ─────────────────────────────────────────

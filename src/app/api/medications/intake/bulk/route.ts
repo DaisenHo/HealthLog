@@ -29,6 +29,10 @@
  *                              per Apple dose)
  *   }
  *
+ * Top level also takes `syncTrigger?` (foreground | background | push |
+ * manual, v1.42.4), diagnostic only: it dates the `MEDICATION_DOSE` entry of
+ * the Apple Health per-type arrival record and changes no row.
+ *
  * Response (always 200): processed / inserted / duplicates / skipped /
  * entries[] mirroring the measurements + workouts batch envelope.
  *
@@ -39,7 +43,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, isScopedCredential, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -53,6 +57,11 @@ import {
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { markSyncCheckpoint } from "@/lib/sync/checkpoint";
+import {
+  HEALTHKIT_SYNC_TRIGGERS,
+  MEDICATION_DOSE_ARRIVAL_TYPE,
+  recordHealthKitTypeArrivals,
+} from "@/lib/integrations/healthkit-type-sync";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   recomputeMedicationComplianceForDay,
@@ -65,6 +74,7 @@ import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
   resolveSlotInstantForWrite,
+  slotHeldByAnotherDose,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
 import {
@@ -163,6 +173,10 @@ const bulkEntrySchema = z
 
 const bulkPayloadSchema = z.object({
   entries: z.array(bulkEntrySchema).min(1).max(MAX_ENTRIES_PER_BATCH),
+  // v1.42.4 — what woke the phone for this sync, the same diagnostic-only
+  // field `POST /api/measurements/batch` takes. It changes no row; it only
+  // feeds the `MEDICATION_DOSE` arrival record below.
+  syncTrigger: z.enum(HEALTHKIT_SYNC_TRIGGERS).optional(),
 });
 
 // v1.8.2 — `updated` joins the per-entry status vocabulary: a write that
@@ -181,7 +195,13 @@ interface EntryResult {
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
 
 async function postBulk(request: NextRequest): Promise<Response> {
-  const { user } = await requireAuth();
+  const auth = await requireAuth();
+  const { user } = auth;
+  // A narrow, single-purpose credential (a bridge, an ingest token) is no
+  // Apple Health sync, so it never writes the dose arrival record below. The
+  // bare `requireAuth()` refuses such a credential today; the check keeps the
+  // record honest should this route ever declare a scope.
+  const scoped = isScopedCredential(auth);
 
   const rl = await checkRateLimit(
     `medications:intake:bulk:${user.id}`,
@@ -242,7 +262,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     });
   }
 
-  const { entries } = parsed.data;
+  const { entries, syncTrigger } = parsed.data;
 
   // Up-front ownership check — the user can only POST intake events
   // against medications they own. One read covers every medicationId
@@ -338,6 +358,9 @@ async function postBulk(request: NextRequest): Promise<Response> {
   let inserted = 0;
   let updated = 0;
   let duplicates = 0;
+  // External dose records kept as their own unscheduled dose because their
+  // band slot already carried a different one.
+  let extraDosesUnscheduled = 0;
   const skipped: Array<{ index: number; reason: string }> = [];
   const unstableShapes: UnstableExternalIdShape[] = [];
   // v1.4.39 W-MED — collect distinct `(medicationId, dayKey)` pairs
@@ -443,6 +466,9 @@ async function postBulk(request: NextRequest): Promise<Response> {
       // a band decision. Pending echoes / skips carry no decision
       // (undefined → the upsert leaves an existing USER_PIN untouched).
       let attributionSource: "AUTO" | "USER_PIN" | undefined;
+      // Set when the band slot is held by a different dose and this take is
+      // recorded unscheduled; it must not converge onto any slot row below.
+      let heldByAnotherDose = false;
       if (isExplicitTaken && entry.forceSlotInstant !== undefined) {
         canonicalSlot = await resolveForcedSlotForWrite({
           userId: user.id,
@@ -486,6 +512,28 @@ async function postBulk(request: NextRequest): Promise<Response> {
         });
         canonicalSlot = attribution.slotInstant;
         attributionSource = "AUTO";
+        // An external dose record (a HealthKit dose event) whose band slot
+        // already carries a different recorded dose is an extra dose, not a
+        // correction of that one. Converging would overwrite the slot's
+        // take last-write-wins and the extra dose would exist nowhere; it is
+        // recorded as its own unscheduled dose instead.
+        if (
+          canonicalSlot !== null &&
+          entry.externalId !== undefined &&
+          (await slotHeldByAnotherDose({
+            userId: user.id,
+            medicationId: entry.medicationId,
+            canonicalSlot,
+            takenAt: entry.takenAt as Date,
+            externalId: entry.externalId,
+            scheduledFor: entry.scheduledFor ?? null,
+            userTz: user.timezone,
+          }))
+        ) {
+          canonicalSlot = null;
+          heldByAnotherDose = true;
+          extraDosesUnscheduled += 1;
+        }
       } else if (isExplicitSkip && entry.scheduledFor === undefined) {
         // v1.16.9 — a slot-less deliberate skip resolves by band
         // membership on the skip moment, exactly like a take does. The
@@ -666,6 +714,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
         // late-morning dose consuming the evening slot). It records
         // standalone (ad-hoc) instead.
         const existingSlotRow =
+          !heldByAnotherDose &&
           entry.scheduledFor !== undefined &&
           mayConvergeOntoSuppliedSlot({
             skipped: entry.skipped,
@@ -878,6 +927,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
       updated,
       duplicates,
       skipped: skipped.length,
+      extra_doses_unscheduled: extraDosesUnscheduled,
       ...(unstableShapes.length > 0
         ? unstableExternalIdMeta("medication.intake.bulk", unstableShapes)
         : {}),
@@ -961,6 +1011,28 @@ async function postBulk(request: NextRequest): Promise<Response> {
         badgeCount,
       });
     })();
+  }
+
+  // v1.42.4 — Apple Health doses get the per-type arrival record the
+  // measurement batch keeps for its types: when they last arrived, under which
+  // trigger, when a sync last brought a new or changed dose, and when a
+  // background sync last carried them. Entries sent with `source:
+  // "APPLE_HEALTH"` only; a dose taken in the app is not an Apple Health
+  // arrival. A replay answered `duplicate` still counts as an arrival, the
+  // same rule as the batch route.
+  const doseArrival = { accepted: 0, newSamples: 0 };
+  for (const result of results) {
+    if (entries[result.index]?.source !== "APPLE_HEALTH") continue;
+    if (result.status === "skipped") continue;
+    doseArrival.accepted += 1;
+    if (result.status !== "duplicate") doseArrival.newSamples += 1;
+  }
+  if (doseArrival.accepted > 0 && !scoped) {
+    await recordHealthKitTypeArrivals(prisma, {
+      userId: user.id,
+      counts: new Map([[MEDICATION_DOSE_ARRIVAL_TYPE, doseArrival]]),
+      trigger: syncTrigger ?? null,
+    });
   }
 
   // The SyncMode checkpoint belongs to the push that moved the data, not to

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.42.3
+  version: 1.42.4
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -14834,6 +14834,12 @@ paths:
             minLength: 1
             maxLength: 120
         - in: query
+          name: q
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+        - in: query
           name: from
           schema:
             type: string
@@ -14918,6 +14924,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a12
+  /api/labs/overview:
+    get:
+      tags:
+        - Labs
+      summary: Per-marker overview of the caller's lab history
+      description: "One entry per biomarker over every live lab result, newest reading first: the newest reading, the reading
+        count and a short trend. Unlike `GET /api/labs` it is not paged, so a marker measured only long ago is never cut
+        off by a page size."
+      parameters: []
+      responses:
+        "200":
+          description: Lab overview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabOverviewEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
   /api/labs/{id}:
     get:
       tags:
@@ -15372,6 +15398,12 @@ paths:
             type: integer
             minimum: 1
             maximum: 200
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
       responses:
         "200":
           description: The caller's visits.
@@ -16315,6 +16347,37 @@ paths:
                 const: "true"
               - type: string
                 const: "false"
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        - in: query
+          name: sortDir
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+        - in: query
+          name: q
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
       responses:
         "200":
           description: The caller's illness episodes.
@@ -21989,10 +22052,11 @@ paths:
       tags:
         - Account sharing
       summary: Read the managed record's integration connection states
-      description: "Disclosure only: whether each of the record's integrations is connected and when it last succeeded. There
-        is deliberately no control arm and no credential projection anywhere under this path — a Guardian cannot
-        connect, disconnect, probe or resume a managed record's provider, because an OAuth flow cannot safely carry a
-        record selector. Cookie session or Bearer, while acting on a managed record the caller guards."
+      description: "Disclosure only: whether each of the record's integrations is connected, when it last succeeded, and its
+        server-resolved health. There is deliberately no control arm and no credential projection anywhere under this
+        path — a Guardian cannot connect, disconnect, probe or resume a managed record's provider, because an OAuth flow
+        cannot safely carry a record selector. Cookie session or Bearer, while acting on a managed record the caller
+        guards."
       responses:
         "200":
           description: Connection state per provider.
@@ -25528,8 +25592,9 @@ components:
             account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both
             readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the
             batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on
-            each `metricFreshness` entry of that read. It does not affect dedup, attribution, or how any sample is
-            stored. Optional and backward-compatible: pre-#66 clients omit it.'
+            each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background`
+            trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and
+            backward-compatible: pre-#66 clients omit it.'
           type: string
           enum:
             - foreground
@@ -26117,6 +26182,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BulkMedicationIntakeEntry"
+        syncTrigger:
+          description: 'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client
+            for this sync. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated`
+            or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET
+            /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`.
+            It changes no dose row. Optional; omitted records a null trigger.'
+          type: string
+          enum:
+            - foreground
+            - background
+            - push
+            - manual
       required:
         - entries
       description: iOS SyncMode bulk intake backfill. 1–500 entries per call; idempotent via `Idempotency-Key` and per-entry
@@ -61166,9 +61243,26 @@ components:
             additionalProperties: false
           description: "Newest first, capped at `limit`. A heterogeneous union: which optional keys are present depends on `kind`,
             and no entry carries all of them."
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+            required:
+              - id
+              - name
+            additionalProperties: false
+          description: "Every medication classified GLP-1 in the record, whatever `limit` cut from `entries`. Read this, not the
+            entry names, to know which medications are GLP-1: a medication whose events are all older than the newest
+            `limit` entries has none in `entries`. Empty when `hasGlp1` is false."
       required:
         - hasGlp1
         - entries
+        - medications
       additionalProperties: false
       description: "A chronological merge of the GLP-1-relevant events the record holds: titration steps, injections with
         their sites, legacy stock-ledger movements, and side-effect-tagged mood days from the trailing 90 days.
@@ -67541,6 +67635,60 @@ components:
         - data
         - error
       additionalProperties: false
+    LabOverviewEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LabOverviewResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LabOverviewResponse:
+      type: object
+      properties:
+        markers:
+          type: array
+          items:
+            $ref: "#/components/schemas/LabOverviewMarker"
+      required:
+        - markers
+      additionalProperties: false
+    LabOverviewMarker:
+      type: object
+      properties:
+        key:
+          type: string
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        trend:
+          type: array
+          items:
+            anyOf:
+              - type: number
+              - type: "null"
+        latest:
+          $ref: "#/components/schemas/LabResult"
+      required:
+        - key
+        - count
+        - trend
+        - latest
+      additionalProperties: false
+      description: One biomarker in the caller's lab history. `key` is `bm:<biomarkerId>` for a catalog-linked marker or
+        `analyte:<lower-cased name>` for a legacy unlinked one. `count` is every live reading of the marker. `trend`
+        holds the values of its newest readings (at most 50), oldest first, null for a qualitative reading. `latest` is
+        the newest reading, serialised exactly like a `GET /api/labs` row.
     GetLabResultResponse:
       type: object
       properties:
@@ -73461,6 +73609,12 @@ components:
           anyOf:
             - $ref: "#/components/schemas/AppleHealthSyncProgress"
             - type: "null"
+        health:
+          description: The unified Apple Health connection state. Null when the phone has never delivered anything (or the read
+            failed). Present on the GET read; omitted from the PATCH echo.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
       required:
         - entries
         - lastSyncedAt
@@ -73527,7 +73681,9 @@ components:
       properties:
         type:
           type: string
-          description: The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.
+          description: The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only,
+            since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or
+            skip a type they do not know rather than fail.
         lastSeenAt:
           type: string
           format: date-time
@@ -73568,13 +73724,28 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
+        lastBackgroundAt:
+          description: 'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later
+            `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so
+            opening the app does not hide an earlier background arrival. Null when the type has never arrived in the
+            background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose
+            latest arrival then was a background one starts with that date and every other type starts null. Same
+            omission rules as `lastReceivedAt`.'
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
       required:
         - type
         - lastSeenAt
         - stale
       additionalProperties: false
       description: "Per-type Apple Health freshness: the newest sample's timestamp and staleness flag, plus the per-type
-        arrival facts recorded by `POST /api/measurements/batch` (v1.42)."
+        arrival facts recorded by `POST /api/measurements/batch` (v1.42). Since v1.42.4 the list can also hold a
+        `MEDICATION_DOSE` entry: `lastSeenAt` is the newest live dose imported from Apple Health (its `takenAt`, or its
+        slot for a skipped dose), and the arrival facts come from `POST /api/medications/intake/bulk` entries sent with
+        `source: \"APPLE_HEALTH\"`. A dose recorded in the app does not move them. Doses are never flagged `stale`."
     AppleHealthSyncProgress:
       type: object
       properties:
@@ -73598,6 +73769,171 @@ components:
       additionalProperties: false
       description: "Server-side Apple Health backfill progress: how many rows have been accepted and how far back in time they
         reach. Only what the server actually knows — no ETA, no device-side queue state."
+    ConnectionHealth:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+            - ok
+            - limited
+            - degraded
+            - action_required
+          description: "`ok` data is arriving (or the first sync is still due). `limited` it works, but the types in `unavailable`
+            cannot be delivered (provider plan or missing permission). `degraded` temporary provider trouble or
+            unexpected silence; the server keeps retrying, `since` dates it. `action_required` the user has to do the
+            one thing in `action`."
+        reason:
+          type: string
+          enum:
+            - data_arriving
+            - first_sync_pending
+            - plan_limited
+            - permission_limited
+            - provider_errors
+            - sync_stalled
+            - no_new_data
+            - unexpected_silence
+            - reauth_required
+            - paused_after_errors
+          description: "Why the state is what it is. ok: `data_arriving`, `first_sync_pending`. limited: `plan_limited`,
+            `permission_limited`. degraded: `provider_errors`, `sync_stalled`, `no_new_data`, `unexpected_silence` (the
+            integration watchdog saw a source that normally delivers daily go quiet). action_required:
+            `reauth_required`, `paused_after_errors`. Pick the sentence from this code alone."
+        since:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: When the current degraded / action_required condition started. Null for ok and limited.
+        action:
+          anyOf:
+            - type: string
+              enum:
+                - reconnect
+                - resume
+            - type: "null"
+          description: "The one action that resolves the state: `reconnect` (run the provider's connect flow again) or `resume`
+            (POST the provider's resume route). Also `reconnect` on a `limited` connection whose gap is a missing
+            permission. Null when nothing the user can do helps."
+        unavailable:
+          type: array
+          items:
+            type: object
+            properties:
+              item:
+                type: string
+                description: Provider data-type key, e.g. `spo2`, `vo2Max`, `activity`.
+              cause:
+                type: string
+                enum:
+                  - plan
+                  - permission
+            required:
+              - item
+              - cause
+            additionalProperties: false
+          description: Data types this connection cannot deliver. Present in every state, empty when nothing is withheld.
+        lastSuccessAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: Last successful sync. For Apple Health, the last accepted batch.
+        lastDataAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "Newest data this source delivered: for polled providers when the newest reading or workout was taken, for
+            Apple Health when a sync last brought a new sample. Null when nothing has arrived."
+        diagnostics:
+          type: object
+          properties:
+            ledgerState:
+              anyOf:
+                - type: string
+                - type: "null"
+              description: The stored sync-ledger state. Null for Apple Health.
+            failingLegs:
+              type: array
+              items:
+                type: string
+            failingSince:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            lastAttemptAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            verdict:
+              type: string
+              description: The `SyncHealth` verdict the state was derived from.
+            recentCalls:
+              maxItems: 10
+              type: array
+              items:
+                type: object
+                properties:
+                  endpoint:
+                    type: string
+                    description: Sync leg name (`sleep`, `measures`, `sync`, `token_refresh`), or `batch:<TYPE>` for Apple Health. Never a
+                      URL.
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                      - transient
+                      - persistent
+                      - reauth_required
+                  at:
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  errorCode:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                    description: Short error code (`401`, `invalid_grant`, `scope_missing`); anything not shaped like one is dropped.
+                required:
+                  - endpoint
+                  - status
+                  - at
+                  - errorCode
+                additionalProperties: false
+              description: The last ten sync attempts, newest first.
+          required:
+            - ledgerState
+            - failingLegs
+            - failingSince
+            - lastAttemptAt
+            - verdict
+            - recentCalls
+          additionalProperties: false
+          description: Redacted diagnostics for a bug report. Carries no token, no error message, no health value and no account
+            identifier, so a client may offer it for copying as is.
+      required:
+        - state
+        - reason
+        - since
+        - action
+        - unavailable
+        - lastSuccessAt
+        - lastDataAt
+        - diagnostics
+      additionalProperties: false
+      description: The one server-resolved health state of a connection (v1.42.4). It folds the ledger state, the liveness
+        verdict, plan and permission gaps, provider reauth flags and the integration watchdog's silence flag into four
+        states. Clients render it and never recompute it. The older health-shaped fields beside it stay for one release
+        after the clients read `health`, then go.
     HealthKitConfigPatchEnvelope:
       type: object
       properties:
@@ -73933,6 +74269,12 @@ components:
             - type: "null"
         syncHealth:
           $ref: "#/components/schemas/SyncHealth"
+        health:
+          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
+            none. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
       required:
         - connected
         - configured
@@ -74129,6 +74471,12 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        health:
+          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
+            none. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
       required:
         - connected
         - configured
@@ -74217,6 +74565,12 @@ components:
         hasActivityScope:
           description: Pre-computed convenience flag the reconnect banner reads. A null `scope` counts as missing activity.
           type: boolean
+        health:
+          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
+            none. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
       required:
         - connected
         - configured
@@ -74531,6 +74885,12 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        health:
+          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
+            none. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
       required:
         - connected
         - configured
@@ -74693,6 +75053,12 @@ components:
           description: OAuth scope string granted at authorisation. Null on a legacy connection that predates scope tracking.
           anyOf:
             - type: string
+            - type: "null"
+        health:
+          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
+            none. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
             - type: "null"
         needsReauth:
           description: "The stored refresh token was rejected with `invalid_grant` — Google expires it after 7 days while the
@@ -74929,6 +75295,12 @@ components:
             - type: "null"
         syncHealth:
           $ref: "#/components/schemas/SyncHealth"
+        health:
+          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
+            none. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
       required:
         - connected
         - configured
@@ -75468,6 +75840,14 @@ components:
         allowPrivateHost:
           description: Nightscout only.
           type: boolean
+        health:
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
+          description: The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`,
+            `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`,
+            `planUnavailable` and `scopeReconnect` on this entry, which go once the settings surface renders `health`
+            (no other client reads this envelope).
       required:
         - integration
         - state
@@ -75479,6 +75859,7 @@ components:
         - metricFreshness
         - connected
         - configured
+        - health
       additionalProperties: false
       description: "One provider's entry in the consolidated envelope: the ledger core and the liveness verdict, which every
         entry carries, plus the extras that provider has. The optional fields are not optional per request — each is
@@ -75489,7 +75870,9 @@ components:
       properties:
         type:
           type: string
-          description: The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.
+          description: The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only,
+            since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or
+            skip a type they do not know rather than fail.
         lastSeenAt:
           type: string
           format: date-time
@@ -79237,11 +79620,18 @@ components:
                     format: date-time
                     pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                   - type: "null"
+              health:
+                anyOf:
+                  - $ref: "#/components/schemas/ConnectionHealth"
+                  - type: "null"
+                description: The same server-resolved connection state the owner's own envelope carries, null while the provider is not
+                  connected. The web renders this; `state` stays for one transition release.
             required:
               - integration
               - state
               - lastSuccessAt
               - lastAttemptAt
+              - health
             additionalProperties: false
           description: All eight providers, always, in the fixed order withings, whoop, fitbit, nightscout, polar, oura,
             google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.
@@ -79249,11 +79639,11 @@ components:
         - recordId
         - integrations
       additionalProperties: false
-      description: Whether the managed record's integrations are connected, and nothing else. Deliberately no control and no
-        credential projection — OAuth and provider state cannot safely carry a record selector, so a Guardian can see
-        that a pipe exists but cannot connect, disconnect, probe or resume it from here. A provider with no real
-        credential reads `disconnected` even when its ledger row says otherwise, because a synthesised healthy ledger is
-        not proof of a connection.
+      description: Whether the managed record's integrations are connected and how each is doing (`health`), and nothing else.
+        Deliberately no control and no credential projection — OAuth and provider state cannot safely carry a record
+        selector, so a Guardian can see that a pipe exists but cannot connect, disconnect, probe or resume it from here.
+        A provider with no real credential reads `disconnected` even when its ledger row says otherwise, because a
+        synthesised healthy ledger is not proof of a connection.
     GetRecordSettingsFamilyEnvelope:
       type: object
       properties:

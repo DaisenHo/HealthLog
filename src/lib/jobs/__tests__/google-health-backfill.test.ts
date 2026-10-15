@@ -31,7 +31,13 @@ const {
   bossSend: vi.fn(),
   // Collections the mocked walk "finishes" in this attempt, added to the
   // resume set the way `runGoogleHealthCollection` adds them.
-  resumeState: { finishes: [] as string[], doneBefore: [] as string[] },
+  resumeState: {
+    finishes: [] as string[],
+    doneBefore: [] as string[],
+    /** Collections whose resume edge the mocked walk moves. */
+    advances: [] as string[],
+    collections: [] as Array<{ key: string; status: string }>,
+  },
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
@@ -54,6 +60,8 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
 vi.mock("@/lib/google-health/sync-core", () => ({
   GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
   readGoogleHealthBackfillDone: () => new Set<string>(resumeState.doneBefore),
+  readGoogleHealthBackfillCursors: () => new Map(),
+  readGoogleHealthBackfillEdgeFilterUnsupported: () => new Set<string>(),
   runWithGoogleHealthBackfillResume: async (
     _userId: string,
     done: Set<string>,
@@ -61,7 +69,12 @@ vi.mock("@/lib/google-health/sync-core", () => ({
   ) => {
     const result = await fn();
     for (const key of resumeState.finishes) done.add(key);
-    return { result, skipped: [] };
+    return {
+      result,
+      skipped: [],
+      advanced: new Map(resumeState.advances.map((key) => [key, null])),
+      collections: resumeState.collections,
+    };
   },
 }));
 vi.mock("@/lib/google-health/sync", () => ({
@@ -71,8 +84,11 @@ vi.mock("@/lib/google-health/sync", () => ({
 
 import {
   GOOGLE_HEALTH_BACKFILL_MAX_SLICE,
+  GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS,
   runGoogleHealthBackfillForUser,
 } from "../google-health-backfill";
+import { GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING } from "@/lib/google-health/sync-metrics";
+import { INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS } from "@/lib/jobs/integration-backfill-admission";
 import {
   GOOGLE_HEALTH_DATA_TYPES,
   forEachDataPointPage,
@@ -87,6 +103,8 @@ beforeEach(() => {
   bossSend.mockResolvedValue("job-next");
   resumeState.finishes = [];
   resumeState.doneBefore = [];
+  resumeState.advances = [];
+  resumeState.collections = [];
 });
 
 describe("runGoogleHealthBackfillForUser — verdict-gated marker", () => {
@@ -261,8 +279,73 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
     expect(bossSend).not.toHaveBeenCalled();
   });
 
-  it("caps the chain at the number of collections plus two", () => {
-    expect(GOOGLE_HEALTH_BACKFILL_MAX_SLICE).toBe(17 + 2);
+  it("derives the chain's ceiling from the work a backfill can do", () => {
+    // Every collection once, plus every page the resumable collections may
+    // ever write (heart rate's 10 000 and four others' 1 000) and as many
+    // again for a saved place in the list moving forward, plus slack.
+    expect(GOOGLE_HEALTH_BACKFILL_MAX_SLICE).toBe(
+      17 + 2 * GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING + 2,
+    );
+    expect(GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING).toBe(10_000 + 4 * 1000);
+  });
+
+  it("continues a slice that only moved a collection's edge", async () => {
+    resumeState.advances = ["fetchHeartRate"];
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 900, failed: true });
+
+    await expect(
+      runGoogleHealthBackfillForUser("u1", undefined, 7),
+    ).resolves.toEqual({ imported: 900, continued: true });
+    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend.mock.calls[0]![1]).toMatchObject({
+      data: { userId: "u1", slice: 8 },
+    });
+    expect(bossSend.mock.calls[0]![2]).toMatchObject({
+      startAfter: INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
+    });
+  });
+
+  it("waits longer before the next slice when this one ended on a rate limit", async () => {
+    resumeState.advances = ["fetchHeartRate"];
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 10, failed: true });
+    // The slice ended the way a resumable walk ends it when Google keeps
+    // answering 429 past every wait.
+    const client = await import("@/lib/google-health/client");
+    const spy = vi
+      .spyOn(client, "googleHealthSliceBudget")
+      .mockImplementation(() => ({
+        ms: 300_000,
+        deadline: null,
+        maxPages: 500,
+        pages: 3,
+        skippedPages: 0,
+        stopReason: "rate_limited",
+        now: Date.now,
+      }));
+    try {
+      await runGoogleHealthBackfillForUser("u1");
+    } finally {
+      spy.mockRestore();
+    }
+    expect(bossSend.mock.calls[0]![2]).toMatchObject({
+      startAfter: GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS,
+    });
+  });
+
+  it("names where it is stuck when a slice moved nothing", async () => {
+    resumeState.collections = [
+      { key: "fetchWeight", status: "done" },
+      { key: "fetchHeartRate", status: "failed" },
+      { key: "fetchBloodGlucose", status: "deferred" },
+    ];
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 0, failed: true });
+
+    await expect(
+      runGoogleHealthBackfillForUser("u1", undefined, 3),
+    ).rejects.toThrow(
+      /marker not stamped \(no progress in slice 3; fetchHeartRate:failed,fetchBloodGlucose:deferred\)/,
+    );
+    expect(bossSend).not.toHaveBeenCalled();
   });
 
   it("stamps the marker on the slice that finishes the history", async () => {

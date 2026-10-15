@@ -5,6 +5,9 @@ vi.mock("@/lib/api-handler", () => ({
   requireAuth: vi.fn(async () => ({ user: { id: "u1" } })),
 }));
 
+vi.mock("@/lib/integrations/connection-health-load", () => ({
+  loadConnectionHealth: vi.fn().mockResolvedValue({}),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
@@ -442,5 +445,42 @@ describe("/api/integrations/status — what a provider withholds by contract", (
     expect(
       entries.find((e) => e.integration === "oura")!.scopeReconnect,
     ).toEqual([]);
+  });
+});
+
+describe("/api/integrations/status — the unified connection health", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    for (const key of Object.keys(perIntegrationLedger)) {
+      delete perIntegrationLedger[key];
+    }
+  });
+
+  it("puts each provider's resolved health on its own entry, null where not connected", async () => {
+    const { loadConnectionHealth } =
+      await import("@/lib/integrations/connection-health-load");
+    const ouraHealth = { state: "limited", reason: "permission_limited" };
+    vi.mocked(loadConnectionHealth).mockResolvedValueOnce({
+      withings: null,
+      whoop: null,
+      fitbit: null,
+      "google-health": null,
+      polar: null,
+      oura: ouraHealth,
+      strava: null,
+      nightscout: null,
+      "apple-health": null,
+    } as never);
+    userFind.mockResolvedValue({ ouraAccessTokenEncrypted: "tok" });
+
+    const entries = (await fetchEntries()) as Array<
+      Entry & { health?: unknown }
+    >;
+    expect(entries.find((e) => e.integration === "oura")?.health).toEqual(
+      ouraHealth,
+    );
+    for (const entry of entries.filter((e) => e.integration !== "oura")) {
+      expect(entry.health).toBeNull();
+    }
   });
 });

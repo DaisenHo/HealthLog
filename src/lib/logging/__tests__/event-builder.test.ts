@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { WideEventBuilder } from "../event-builder";
+import {
+  EXTERNAL_CALLS_MAX,
+  EXTERNAL_CALLS_PLAIN_MAX,
+  WideEventBuilder,
+} from "../event-builder";
 
 describe("WideEventBuilder.setHttp", () => {
   it("stores plain http metadata as-is", () => {
@@ -138,5 +142,48 @@ describe("WideEventBuilder.capStatusLevel", () => {
     evt.capStatusLevel("warn");
     evt.finish(422);
     expect(evt.toJSON().level).toBe("warn");
+  });
+});
+
+describe("WideEventBuilder — bounded external calls", () => {
+  it("lists failures beyond the share of plain successes, and counts the rest", () => {
+    const evt = new WideEventBuilder("background");
+    for (let i = 0; i < 500; i++) {
+      evt.addExternalCall({
+        service: "google-health",
+        method: `page=${i}`,
+        duration_ms: 1,
+        status: 200,
+      });
+    }
+    evt.addExternalCall({
+      service: "google-health",
+      method: "page=500",
+      duration_ms: 1,
+      status: 503,
+      error: "transient HTTP 503",
+    });
+    const event = evt.toJSON();
+    expect(event.external_calls).toHaveLength(EXTERNAL_CALLS_PLAIN_MAX + 1);
+    expect(event.external_calls!.at(-1)).toMatchObject({ status: 503 });
+    expect(event.external_calls_omitted).toBe(500 - EXTERNAL_CALLS_PLAIN_MAX);
+
+    for (let i = 0; i < 1000; i++) {
+      evt.addExternalCall({
+        service: "google-health",
+        method: `retry=${i}`,
+        duration_ms: 1,
+        status: 429,
+        note: "rate_limited_retrying_in_ms=2000",
+      });
+    }
+    const after = evt.toJSON();
+    expect(after.external_calls).toHaveLength(EXTERNAL_CALLS_MAX);
+    expect(after.external_calls_omitted).toBe(
+      500 -
+        EXTERNAL_CALLS_PLAIN_MAX +
+        1000 -
+        (EXTERNAL_CALLS_MAX - EXTERNAL_CALLS_PLAIN_MAX - 1),
+    );
   });
 });

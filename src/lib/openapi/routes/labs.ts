@@ -12,6 +12,7 @@ import { z } from "zod/v4";
 
 import {
   createLabResultSchema,
+  labOverviewQuerySchema,
   listLabResultsSchema,
   updateLabResultSchema,
 } from "@/lib/validations/labs";
@@ -116,6 +117,29 @@ const listResponse = z
   })
   .meta({ id: "ListLabResultsResponse" });
 
+const labOverviewQuery = labOverviewQuerySchema.meta({
+  id: "LabOverviewQuery",
+  description:
+    "The overview takes no query parameters; it always covers the whole live history. An unknown parameter is refused with 422.",
+});
+
+const labOverviewMarker = z
+  .object({
+    key: z.string(),
+    count: z.number().int(),
+    trend: z.array(z.number().nullable()),
+    latest: labResultRow,
+  })
+  .meta({
+    id: "LabOverviewMarker",
+    description:
+      "One biomarker in the caller's lab history. `key` is `bm:<biomarkerId>` for a catalog-linked marker or `analyte:<lower-cased name>` for a legacy unlinked one. `count` is every live reading of the marker. `trend` holds the values of its newest readings (at most 50), oldest first, null for a qualitative reading. `latest` is the newest reading, serialised exactly like a `GET /api/labs` row.",
+  });
+
+const labOverviewResponse = z
+  .object({ markers: z.array(labOverviewMarker) })
+  .meta({ id: "LabOverviewResponse" });
+
 const notFound = {
   "404": {
     description: "Lab result not found (or owned by another user).",
@@ -172,6 +196,27 @@ export const labsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...recordWriteRateLimitResponse,
+      },
+    },
+  },
+  "/api/labs/overview": {
+    get: {
+      tags: ["Labs"],
+      summary: "Per-marker overview of the caller's lab history",
+      description:
+        "One entry per biomarker over every live lab result, newest reading first: the newest reading, the reading count and a short trend. Unlike `GET /api/labs` it is not paged, so a marker measured only long ago is never cut off by a page size.",
+      requestParams: { query: labOverviewQuery },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "Lab overview.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(labOverviewResponse, "LabOverviewEnvelope"),
+            },
+          },
+        },
+        ...stdResponses,
       },
     },
   },

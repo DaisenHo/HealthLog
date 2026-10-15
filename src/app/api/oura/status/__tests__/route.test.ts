@@ -5,6 +5,9 @@ vi.mock("@/lib/api-handler", () => ({
   requireAuth: vi.fn(async () => ({ user: { id: "u1" } })),
 }));
 
+vi.mock("@/lib/integrations/connection-health-load", () => ({
+  loadOneConnectionHealth: vi.fn().mockResolvedValue(null),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: { user: { findUnique: vi.fn() } },
 }));

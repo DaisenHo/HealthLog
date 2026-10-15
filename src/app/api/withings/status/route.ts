@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
+import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getUserWithingsCredentials } from "@/lib/withings/credentials";
 import { hasActivityScope, refreshAccessToken } from "@/lib/withings/client";
@@ -118,5 +119,9 @@ export const GET = apiHandler(async () => {
     // never re-authed since v1.4.25 — it counts as "missing activity".
     scope: connection.scope,
     hasActivityScope: hasActivityScope(connection.scope),
+    // The one server-resolved state (ok / limited / degraded /
+    // action_required) every client renders. The fields above stay for
+    // clients that still read them; see `ConnectionHealth` in the API docs.
+    health: await loadOneConnectionHealth(user.id, "withings"),
   });
 });

@@ -1380,9 +1380,11 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
   });
 
   it("stamps the externalId onto the pending slot row when the Apple dose converges by band", async () => {
-    // Dedup pre-check first (empty), then the canonical-slot find returns
-    // the worker-minted pending REMINDER row for the 19:00 slot.
+    // Dedup pre-check first (empty), then the held-dose probe (no take on
+    // the slot yet), then the canonical-slot find returns the worker-minted
+    // pending REMINDER row for the 19:00 slot.
     vi.mocked(prisma.medicationIntakeEvent.findMany)
+      .mockResolvedValueOnce([] as never)
       .mockResolvedValueOnce([] as never)
       .mockResolvedValueOnce([
         {

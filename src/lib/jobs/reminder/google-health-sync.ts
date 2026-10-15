@@ -15,6 +15,8 @@ import {
   isGoogleHealthParked,
   syncUserGoogleHealth,
 } from "@/lib/google-health/sync";
+import { GOOGLE_HEALTH_POLL_LOCK_WAIT_MS } from "@/lib/google-health/sync-lock";
+import { jobBudget, jobDeadline } from "@/lib/jobs/job-budget";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { cleanupExpiredGoogleHealthOAuthStates } from "@/lib/jobs/google-health-oauth-state-cleanup";
 import {
@@ -57,6 +59,18 @@ export async function handleGoogleHealthSync(
         });
       }
 
+      // The job's own expiry bounds the pass (`jobBudget`). An account that
+      // waited for its backfill slice gets what is left of it, not a fresh
+      // hour: the lock wait is capped at the time remaining, the sync stops
+      // its walks once the budget is spent and leaves the rest of its window
+      // to the next hour (the cycle is not stamped), and an account reached
+      // only after the budget is gone is left for the next hour untouched.
+      // Before, a tick could run on past its expiry, and pg-boss then marked
+      // it failed and retried it beside the run still going.
+      const shouldStop = jobBudget(jobs);
+      const deadline = Math.min(
+        ...jobs.map((job) => jobDeadline(job) ?? Number.POSITIVE_INFINITY),
+      );
       // Fan the cohort out with bounded concurrency + per-user error isolation:
       // one slow Google response can't stall the whole cohort, and a single
       // user's failure is warned without aborting the pass.
@@ -64,15 +78,43 @@ export async function handleGoogleHealthSync(
       const verdicts = await Promise.all(
         targets.map(({ userId }) =>
           limit(async (): Promise<IntegrationUserVerdict> => {
+            if (shouldStop()) return { status: "skipped", imported: 0 };
             if (await isGoogleHealthParked(userId)) {
               return { status: "parked", imported: 0 };
             }
 
             try {
-              const result = await syncUserGoogleHealth(userId);
+              // A backfill holds the account for one slice at a time, so
+              // the tick waits for the slice to end rather than skipping the
+              // account for as long as the whole import runs.
+              const result = await syncUserGoogleHealth(userId, {
+                waitForLockMs: Math.max(
+                  0,
+                  Math.min(
+                    GOOGLE_HEALTH_POLL_LOCK_WAIT_MS,
+                    deadline - Date.now(),
+                  ),
+                ),
+                shouldStop,
+              });
               // Another run of this account (its backfill, a manual sync)
-              // holds the account; this tick leaves it to that run.
+              // still held the account after the wait; this tick leaves it
+              // to that run.
               if (result.busy) return { status: "skipped", imported: 0 };
+              // Stopped on the job's budget: the rest of the window is the
+              // next hour's, which is not a failure to retry.
+              if (result.failed && shouldStop()) {
+                if (result.imported > 0) {
+                  fireAndForget(enqueueReminderSatisfy(userId), {
+                    action: "reminder.satisfy.enqueue",
+                  });
+                }
+                return {
+                  status: result.imported > 0 ? "partial" : "skipped",
+                  imported: result.imported,
+                  retryable: false,
+                };
+              }
               const parked =
                 result.failed &&
                 result.imported === 0 &&

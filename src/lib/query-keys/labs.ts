@@ -29,6 +29,11 @@ export const labKeys = {
       params.sortDir,
     ] as const,
 
+  // The Labs list: one entry per biomarker over the whole history
+  // (`GET /api/labs/overview`). The `lab-results` prefix lets every result
+  // mutation's `labResults()` invalidation evict it.
+  labResultsOverview: () => ["lab-results", "overview"] as const,
+
   // `/labs?analyte=<name>` (MCP deep links): the newest reading stored under
   // that exact analyte name, one row, to find its marker's page. Its own key
   // because the page size differs from every list read; the `lab-results`
@@ -36,11 +41,12 @@ export const labKeys = {
   labAnalyteLink: (analyte: string) =>
     ["lab-results", "analyte-link", analyte] as const,
 
-  // The visit form's lab picker: newest results, its own page size. Its own
-  // key because the Labs list reads a different page size, and a shared key
-  // would serve one read's page to the other.
-  labResultsPicker: (limit: number) =>
-    ["lab-results", "picker", limit] as const,
+  // The visit form's lab picker: one paged direction from the visit's date
+  // (`older` / `newer`) or a search across the whole history. Its own key
+  // because the Labs list reads other pages, and a shared key would serve
+  // one read's page to the other.
+  labResultsPicker: (direction: string, pivot: string | null, term: string) =>
+    ["lab-results", "picker", direction, pivot ?? "", term] as const,
 
   // v1.25 — paginated (offset) reading feed for the biomarker detail page.
   // Distinct from `labResultsList` (single-page key) so the infinite-query

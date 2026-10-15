@@ -113,6 +113,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "fetches",
   "finalised",
   "finalized",
+  // v1.42.4 — integration watchdog: the pass found no watch row (first run).
+  "first_run",
   "forced",
   "generated",
   "geo_backfill_carrier_resolved",
@@ -125,6 +127,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "hourly_rows_upserted",
   "import_staging_swept",
   "imported",
+  // v1.42.4 — integration watchdog: operator incidents opened / closed.
+  "incidents_closed",
+  "incidents_opened",
   "in_slot",
   "in_window",
   "insufficient",
@@ -242,6 +247,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "sent",
   "served",
   "side_effects_migrated",
+  // v1.42.4 — integration watchdog: sources newly flagged as silent.
+  "silences_flagged",
   "single_user",
   "skipped",
   "skipped_already_dispatched",

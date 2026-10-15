@@ -284,6 +284,11 @@ export const listLabResultsSchema = z.object({
   biomarkerId: z.string().trim().min(1).max(64).optional(),
   analyte: z.string().trim().min(1).max(120).optional(),
   panel: z.string().trim().min(1).max(120).optional(),
+  /**
+   * Case-insensitive substring over the analyte and the panel name, so a
+   * picker can find one result in a long history without paging to it.
+   */
+  q: z.string().trim().min(1).max(120).optional(),
   from: z
     .string()
     .datetime()
@@ -300,6 +305,13 @@ export const listLabResultsSchema = z.object({
 });
 
 export type ListLabResultsInput = z.infer<typeof listLabResultsSchema>;
+
+/**
+ * The per-marker overview takes no parameters: it always covers the whole
+ * live history. Strict, so a stray `limit` is refused rather than silently
+ * ignored by a caller expecting it to cap something.
+ */
+export const labOverviewQuerySchema = z.object({}).strict();
 
 /**
  * Reference-range classification lives in `@/lib/labs/reference-range` so the

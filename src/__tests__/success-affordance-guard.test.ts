@@ -369,19 +369,25 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/integrations/connections-panel.tsx": {
     "toast.success": 2,
   },
-  "src/components/settings/integrations/fitbit-card.tsx": { "text-success": 2 },
-  "src/components/settings/integrations/google-health-card.tsx": {
+  // The saved-credentials confirmation line.
+  "src/components/settings/integrations/credentials-form.tsx": {
+    "text-success": 1,
+  },
+  // "Test connection" from the menu: the same ok line the button shows.
+  "src/components/settings/integrations/integration-actions.tsx": {
+    CheckCircle2: 2,
+    "text-success": 1,
+  },
+  // The "Working" badge tone, and "Copied" beside the diagnostics copy button.
+  "src/components/settings/integrations/integration-card.tsx": {
     "text-success": 2,
   },
   "src/components/settings/integrations/nightscout-card.tsx": {
     "text-success": 1,
   },
-  "src/components/settings/integrations/oauth-provider-card.tsx": {
+  // A paused connection resumed.
+  "src/components/settings/integrations/oauth-integration-card.tsx": {
     "text-success": 1,
-  },
-  "src/components/settings/integrations/whoop-card.tsx": { "text-success": 2 },
-  "src/components/settings/integrations/withings-card.tsx": {
-    "text-success": 2,
   },
   "src/components/settings/mcp-section.tsx": {
     "text-success": 4,
@@ -466,34 +472,16 @@ const RESULT_SURFACES: ReadonlyArray<{
     through: /IntakeImportSkipGroups/,
     forbidsMarkers: true,
   },
-  // The seven surfaces that were still gated on the transport.
+  // The provider sync surfaces that were still gated on the transport. Every
+  // integration card reports a sync through the shared action lines; Google
+  // Health keeps its own because a run can outlive its request.
   {
-    path: "src/components/settings/integrations/fitbit-card.tsx",
+    path: "src/components/settings/integrations/integration-actions.tsx",
     through: /WrittenOutcomeLine/,
     forbidsMarkers: false,
   },
   {
     path: "src/components/settings/integrations/google-health-card.tsx",
-    through: /WrittenOutcomeLine/,
-    forbidsMarkers: false,
-  },
-  {
-    path: "src/components/settings/integrations/nightscout-card.tsx",
-    through: /WrittenOutcomeLine/,
-    forbidsMarkers: false,
-  },
-  {
-    path: "src/components/settings/integrations/whoop-card.tsx",
-    through: /WrittenOutcomeLine/,
-    forbidsMarkers: false,
-  },
-  {
-    path: "src/components/settings/integrations/withings-card.tsx",
-    through: /WrittenOutcomeLine/,
-    forbidsMarkers: false,
-  },
-  {
-    path: "src/components/settings/integrations/oauth-provider-card.tsx",
     through: /WrittenOutcomeLine/,
     forbidsMarkers: false,
   },

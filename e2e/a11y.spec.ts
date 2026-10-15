@@ -605,6 +605,35 @@ async function installA11yMocks(page: Page) {
       pdfSupported: true,
     }),
   );
+  // The lab list reads one row per marker from the overview route.
+  await page.route("**/api/labs/overview", (route) =>
+    fulfilJson(route, {
+      markers: [
+        {
+          key: "analyte:a11y ldl",
+          count: 1,
+          trend: [2.4],
+          latest: {
+            id: "a11y-lab",
+            biomarkerId: null,
+            panel: "A11y panel",
+            analyte: "A11y LDL",
+            value: 2.4,
+            valueText: null,
+            unit: "mmol/L",
+            referenceLow: 0,
+            referenceHigh: 3,
+            takenAt: "2026-07-19T12:00:00.000Z",
+            source: "MANUAL",
+            hasNote: false,
+            rangeStatus: "inRange",
+            createdAt: "2026-07-19T12:00:00.000Z",
+            updatedAt: "2026-07-19T12:00:00.000Z",
+          },
+        },
+      ],
+    }),
+  );
   await page.route("**/api/labs?*", (route) =>
     fulfilJson(route, {
       results: [

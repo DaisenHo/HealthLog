@@ -76,6 +76,19 @@ beforeEach(() => {
   } as never);
 });
 
+/**
+ * The route issues two raw reads: the newest-sample probe per measurement type
+ * and (v1.42.4) the newest Apple Health dose. Answer each by its SQL.
+ */
+function mockProbes(rows: unknown, doseLastSeen: Date | null = null): void {
+  vi.mocked(prisma.$queryRaw).mockImplementation((async (
+    strings: TemplateStringsArray,
+  ) =>
+    strings.join("?").includes("medication_intake_events")
+      ? [{ last_seen: doseLastSeen }]
+      : rows) as never);
+}
+
 const callGet = GET as unknown as (req: NextRequest) => Promise<Response>;
 function makeGetReq(): NextRequest {
   return new NextRequest("http://localhost/api/integrations/healthkit");
@@ -313,9 +326,7 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       healthKitLastSyncedAt: null,
     } as never);
     vi.mocked(listLiveMeasurementTypes).mockResolvedValue(["PULSE"]);
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([
-      { type: "PULSE", last_seen: ago(DAY) },
-    ] as never);
+    mockProbes([{ type: "PULSE", last_seen: ago(DAY) }] as never);
     const body = await read();
     expect(body.syncHealth.verdict).toBe("fresh");
     expect(body.metricFreshness.map((e) => e.stale)).toEqual([false]);
@@ -330,7 +341,7 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       "RESPIRATORY_RATE",
       "PULSE",
     ]);
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+    mockProbes([
       { type: "RESPIRATORY_RATE", last_seen: ago(30 * DAY) },
       { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
     ] as never);
@@ -441,7 +452,7 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       "RESPIRATORY_RATE",
       "PULSE",
     ]);
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+    mockProbes([
       { type: "RESPIRATORY_RATE", last_seen: ago(2 * DAY) },
       { type: "PULSE", last_seen: ago(60 * 60 * 1000) },
     ] as never);
@@ -476,15 +487,74 @@ describe("GET /api/integrations/healthkit — sync health", () => {
     expect(byType.WORKOUTS).not.toHaveProperty("lastReceivedAt");
   });
 
+  // v1.42.4 — Apple Health doses join the list with their own arrival facts,
+  // and every entry carries the last background arrival beside the last one.
+  it("serves a MEDICATION_DOSE entry and the last background arrival", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: ago(60 * 60 * 1000),
+    } as never);
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue(["PULSE"]);
+    const doseAt = ago(40 * DAY);
+    mockProbes([{ type: "PULSE", last_seen: ago(60 * 60 * 1000) }], doseAt);
+    const receivedAt = ago(60 * 60 * 1000);
+    const backgroundAt = ago(5 * 60 * 60 * 1000);
+    vi.mocked(prisma.healthKitTypeSync.findMany).mockResolvedValue([
+      {
+        type: "MEDICATION_DOSE",
+        lastReceivedAt: receivedAt,
+        lastTrigger: "foreground",
+        lastNewSampleAt: null,
+        lastBackgroundAt: backgroundAt,
+      },
+      {
+        type: "PULSE",
+        lastReceivedAt: receivedAt,
+        lastTrigger: "background",
+        lastNewSampleAt: receivedAt,
+        lastBackgroundAt: null,
+      },
+    ] as never);
+
+    const body = await read();
+    expect(body.metricFreshness.map((e) => e.type)).toEqual([
+      "MEDICATION_DOSE",
+      "PULSE",
+    ]);
+    const byType = Object.fromEntries(
+      body.metricFreshness.map((entry) => [entry.type, entry]),
+    );
+    expect(byType.MEDICATION_DOSE).toEqual({
+      type: "MEDICATION_DOSE",
+      lastSeenAt: doseAt.toISOString(),
+      // Forty days without a dose is not a dead pipe: as-needed medications.
+      stale: false,
+      lastReceivedAt: receivedAt.toISOString(),
+      lastTrigger: "foreground",
+      lastNewSampleAt: null,
+      lastBackgroundAt: backgroundAt.toISOString(),
+    });
+    expect(byType.PULSE).toMatchObject({ lastBackgroundAt: null });
+  });
+
+  it("leaves the dose entry out when there is no Apple Health dose", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      healthKitConfigJson: null,
+      healthKitLastSyncedAt: ago(DAY),
+    } as never);
+    vi.mocked(listLiveMeasurementTypes).mockResolvedValue(["PULSE"]);
+    mockProbes([{ type: "PULSE", last_seen: ago(DAY) }], null);
+    const body = await read();
+    expect(body.metricFreshness.map((e) => e.type)).toEqual(["PULSE"]);
+  });
+
   it("leaves the arrival facts off when the ledger read fails", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       healthKitConfigJson: null,
       healthKitLastSyncedAt: ago(DAY),
     } as never);
     vi.mocked(listLiveMeasurementTypes).mockResolvedValue(["PULSE"]);
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([
-      { type: "PULSE", last_seen: ago(DAY) },
-    ] as never);
+    mockProbes([{ type: "PULSE", last_seen: ago(DAY) }] as never);
     vi.mocked(prisma.healthKitTypeSync.findMany).mockRejectedValue(
       new Error("ledger hiccup"),
     );

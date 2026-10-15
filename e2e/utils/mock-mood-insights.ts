@@ -23,13 +23,21 @@ function correlation(r: number, strength: string, n: number) {
   };
 }
 
+/**
+ * A calendar day this many days back, so the heatmap cells stay inside its
+ * 90-day window whenever the suite runs.
+ */
+function dayKeyDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+
 const MOOD_INSIGHTS_PAYLOAD = {
   summary: { totalEntries: 269, inTargetPct: 62 },
   heatmap: {
     windowDays: 90,
     cells: [
-      { date: "2026-07-01", score: 4, samples: 2 },
-      { date: "2026-07-02", score: 3, samples: 1 },
+      { date: dayKeyDaysAgo(14), score: 4, samples: 2 },
+      { date: dayKeyDaysAgo(13), score: 3, samples: 1 },
     ],
   },
   distribution: [],

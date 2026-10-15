@@ -1386,6 +1386,7 @@
       "emptyState": "아직 기록한 부작용이 없어요. 기록해 두면 진료에 도움이 되고 패턴도 드러나요.",
       "recentTitle": "최근 30일",
       "loading": "불러오는 중…",
+      "loadMore": "더 불러오기",
       "deleteCta": "삭제",
       "deleteError": "기록을 삭제하지 못했어요",
       "errorSeverity": "심각도는 1에서 5 사이여야 해요",
@@ -4569,7 +4570,7 @@
       "description": "몸이 얼마나 회복했는지: 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
-      "empty": "아직 회복 데이터가 없어요. WHOOP, Polar, Oura 계정을 연결하면 기기가 동기화될 때 점수가 채워져요.",
+      "empty": "아직 여기에 표시할 내용이 없어요. 이 페이지는 WHOOP과 Polar가 기록하는 충전, 부하, 운동량 값과 Oura의 회복 탄력성 단계를 보여줘요. Oura의 준비도(Readiness)는 위에 연결된 회복 점수에 표시돼요.",
       "block": {
         "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요. 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",
         "dayStrainExplainer": "기기의 부하 척도로 본 하루 전체의 심혈관 부하예요. 그 자체를 목표로 삼지 말고 회복과 견줘 보세요.",
@@ -5315,7 +5316,8 @@
       "unavailableTitle": "이 공유 기록에서는 사용할 수 없어요",
       "unavailableDescription": "다른 사람의 기록을 보는 동안에는 이 설정 영역을 사용할 수 없어요.",
       "integrationStatusDescription": "이 관리 기록의 연결 상태예요.",
-      "integrationStatusDetail": "연결 설정은 사용할 수 없어요."
+      "integrationStatusDetail": "관리 프로필은 연결된 서비스를 상태로만 보여 줘요. 보호자는 연결, 다시 연결, 동기화, 연결 해제를 할 수 없어요.",
+      "integrationStatusDocs": "공유 방식 알아보기"
     },
     "sections": {
       "account": {
@@ -6391,7 +6393,6 @@
     "whoopDisconnectDescription": "WHOOP 연결이 해제돼요. 이미 동기화한 데이터는 그대로 남아요.",
     "whoopConnect": "WHOOP으로 연결",
     "whoopNoCredentials": "WHOOP을 연결하려면 위에 API 자격 증명을 입력해 주세요.",
-    "whoopBackfillInProgress": "WHOOP 기록을 백그라운드에서 가져오는 중이에요…",
     "whoopOauthConnected": "WHOOP을 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "whoopOauthFailed": "WHOOP 연결에 실패했어요",
     "whoopOauthError": {
@@ -6427,7 +6428,6 @@
     "fitbitDisconnectDescription": "Fitbit 연결이 해제돼요. 이미 동기화한 데이터는 그대로 남아요.",
     "fitbitConnect": "Fitbit으로 연결",
     "fitbitNoCredentials": "Fitbit을 연결하려면 위에 API 자격 증명을 입력해 주세요.",
-    "fitbitBackfillInProgress": "Fitbit 기록을 백그라운드에서 가져오는 중이에요…",
     "fitbitOauthConnected": "Fitbit을 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "fitbitOauthFailed": "Fitbit 연결에 실패했어요",
     "googleHealth": "Google Health",
@@ -6472,9 +6472,6 @@
     "googleHealthDisconnectDescription": "Google Health 연결이 해제돼요. 이미 동기화한 데이터는 그대로 남아요.",
     "googleHealthConnect": "Google로 연결",
     "googleHealthNoCredentials": "Google Health를 연결하려면 위에 API 자격 증명을 입력해 주세요.",
-    "googleHealthBackfillInProgress": "Google Health 기록을 백그라운드에서 가져오는 중이에요…",
-    "googleHealthReauthBanner": "Google이 연결을 만료시켰어요. OAuth 앱이 테스트 모드로 있는 동안 주기적으로 생기는 일이에요. 다시 연결하면 동기화가 이어져요.",
-    "googleHealthReconnect": "다시 연결",
     "googleHealthOauthConnected": "Google Health를 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
     "googleHealthOauthFailed": "Google Health 연결에 실패했어요",
     "googleHealthOauthError": {
@@ -6499,16 +6496,7 @@
     },
     "integrations": {
       "withings": {
-        "reconnect": {
-          "banner": {
-            "title": "활동 동기화를 쓸 수 있어요",
-            "body": "활동 동기화가 추가되기 전에 Withings 연결을 승인했어요. 한 번만 다시 연결하면 Withings 기기에서 걸음 수, 활동 에너지, 걷기·달리기 거리, 오른 층수를 가져올 수 있어요.",
-            "action": "Withings 다시 연결"
-          }
-        },
         "plan": {
-          "title": "일부 측정값은 Withings 유료 API 요금제가 필요해요",
-          "body": "Withings는 이제 {list} 데이터를 유료 API 요금제에서만 제공하고, 사용 중인 Withings 개발자 앱은 무료 요금제예요. 체중, 혈압, 체성분, 심박수, 수면은 계속 동기화돼요.",
           "link": "Withings API 요금제 알아보기",
           "items": {
             "spo2": "SpO2",
@@ -6538,10 +6526,7 @@
       },
       "oura": {
         "scope": {
-          "body": "{list} 데이터를 허용하려면 Oura를 한 번 다시 연결하세요. 나머지는 계속 동기화돼요.",
-          "action": "Oura 다시 연결",
           "items": {
-            "spo2": "SpO2",
             "vo2max": "VO2 max",
             "cardio_age": "심혈관 나이",
             "resilience": "회복탄력성"
@@ -6560,7 +6545,6 @@
       "minutesAgo": "{count}분 전",
       "hoursAgo": "{count}시간 전",
       "daysAgo": "{count}일 전",
-      "resumeCta": "다시 연결",
       "resumeSuccess": "연동을 다시 시작했어요",
       "resumeError": "다시 연결하지 못했어요",
       "stale": "연결됨, 최근 데이터 없음",
@@ -6571,12 +6555,11 @@
       "title": "받은 데이터",
       "summary": "데이터 유형 {count}개, 최신 {relative}",
       "quiet": "{count}개 잠잠",
-      "workouts": "운동"
+      "workouts": "운동",
+      "medicationDoses": "약 복용"
     },
     "integrationFallback": {
-      "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요.",
-      "lastAttempt": "마지막 시도 {relative}",
-      "noAttempt": "동기화 시도 기록이 없어요"
+      "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요."
     },
     "withingsViewData": "측정값 보기",
     "whoopViewData": "회복도 보기",
@@ -7124,7 +7107,6 @@
       "backgroundStep": "백그라운드 앱 새로고침을 켠 채로 두세요. 앱은 화면에 떠 있을 때와 iOS가 백그라운드 시간을 줄 때 새 데이터를 자동으로 동기화해요.",
       "importNote": "예전 기록이 필요하거나 iOS 앱을 쓸 수 없나요? Apple Health XML/ZIP 업로드는 한 번만 쓰는 대안이라 실시간 동기화는 켜지지 않아요.",
       "importAction": "일회성 불러오기 열기",
-      "staleNote": "일주일 넘게 Apple Health 데이터가 들어오지 않았어요. iPhone에서 HealthLog 앱을 열고 Apple Health 권한을 확인해 주세요.",
       "progress": {
         "title": "동기화 진행 상황",
         "receivedLabel": "받은 기록 수",
@@ -7150,6 +7132,7 @@
         "title": "데이터 유형별",
         "lastReceived": "마지막 수신 {relative}",
         "lastNewValue": "마지막 새 값 {relative}",
+        "lastBackground": "마지막 백그라운드 수신 {relative}",
         "never": "아직 수신되지 않음"
       }
     },
@@ -7217,6 +7200,73 @@
     "displayCard": {
       "title": "표시",
       "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요."
+    },
+    "integrationCard": {
+      "state": {
+        "ok": "작동 중",
+        "limited": "제한됨",
+        "degraded": "지연됨",
+        "actionRequired": "조치 필요"
+      },
+      "reason": {
+        "dataArriving": "데이터가 들어오고 있어요.",
+        "dataArrivingHistory": "데이터가 들어오고 있어요. 이전 기록은 백그라운드에서 불러오는 중이에요.",
+        "firstSyncPending": "연결됐어요. 첫 동기화가 곧 시작돼요.",
+        "planLimited": "데이터가 들어오고 있어요. {provider} 요금제에는 {list} 항목이 포함되지 않아요.",
+        "permissionLimited": "데이터가 들어오고 있어요. {list} 항목에 대한 권한이 없어요.",
+        "providerErrors": "{since}부터 {provider}의 응답이 불안정해요. HealthLog가 계속 다시 시도하니 따로 하실 일은 없어요.",
+        "providerErrorsNoSince": "지금 {provider}의 응답이 불안정해요. HealthLog가 계속 다시 시도하니 따로 하실 일은 없어요.",
+        "syncStalled": "{since}부터 HealthLog가 동기화하지 못했어요. 기기가 아니라 서버 쪽 문제예요.",
+        "syncStalledNoSince": "지금 HealthLog가 동기화하지 못하고 있어요. 기기가 아니라 서버 쪽 문제예요.",
+        "noNewData": "{since}부터 새 데이터가 들어오지 않았어요.",
+        "noNewDataNoSince": "한동안 새 데이터가 들어오지 않았어요.",
+        "noNewDataApple": "{since}부터 새 데이터가 들어오지 않았어요. iPhone에서 HealthLog를 한 번 열어 주세요.",
+        "noNewDataAppleNoSince": "한동안 새 데이터가 들어오지 않았어요. iPhone에서 HealthLog를 한 번 열어 주세요.",
+        "unexpectedSilence": "{provider}는 보통 매일 데이터를 보내는데 {since}부터 아무것도 들어오지 않았어요.",
+        "unexpectedSilenceNoSince": "{provider}는 보통 매일 데이터를 보내는데 지금은 아무것도 들어오지 않아요.",
+        "reauthRequired": "{provider} 연결이 만료됐어요. 데이터를 계속 받으려면 다시 연결해 주세요.",
+        "pausedAfterErrors": "{since}부터 오류만 발생해서 {provider}를 일시 중지했어요.",
+        "pausedAfterErrorsNoSince": "최근 오류만 발생해서 {provider}를 일시 중지했어요."
+      },
+      "when": {
+        "today": "오늘 {time}",
+        "yesterday": "어제 {time}",
+        "date": "{date} {time}"
+      },
+      "items": {
+        "activity": "활동",
+        "sleep": "수면"
+      },
+      "moreValuesOne": "그 외 {count}개",
+      "moreValuesFew": "그 외 {count}개",
+      "moreValuesOther": "그 외 {count}개",
+      "notConnected": "연결되지 않음.",
+      "lastData": "마지막 데이터: {when}",
+      "lastDataNone": "마지막 데이터: 아직 없음",
+      "reconnect": "다시 연결",
+      "resume": "재개",
+      "menuLabel": "{provider} 추가 작업",
+      "menu": {
+        "credentials": "인증 정보 변경",
+        "address": "주소와 토큰 변경"
+      },
+      "syncing": "동기화 중…",
+      "details": {
+        "title": "오류 신고용 세부 정보",
+        "none": "없음",
+        "state": "상태",
+        "since": "시작",
+        "lastSync": "마지막 동기화",
+        "lastData": "마지막 데이터",
+        "failingParts": "실패한 부분",
+        "recentCalls": "최근 호출",
+        "unavailable": "사용 불가",
+        "unavailableList": "사용 불가: {list}",
+        "causePlan": "요금제",
+        "causePermission": "권한",
+        "failureStreak": "연속 실패: {threshold}회 중 {count}회",
+        "copyFailed": "복사하지 못했어요. 텍스트를 선택해서 직접 복사해 주세요."
+      }
     }
   },
   "admin": {
@@ -12174,7 +12224,10 @@
       "suggested": "이 날짜 전후",
       "loadError": "목록을 불러오지 못했습니다.",
       "removeNamed": "{name} 제거",
-      "removed": "{name} 연결 해제됨"
+      "removed": "{name} 연결 해제됨",
+      "linked": "연결됨",
+      "loadNewer": "최근 항목 더 보기",
+      "loadOlder": "이전 항목 더 보기"
     }
   },
   "bodySites": {

@@ -1,28 +1,17 @@
 /**
- * v1.4.19 Phase A5 — Settings → Integrations status consolidation.
+ * Settings → Integrations: one status display per card.
  *
- * The maintainer's verbatim concern (paraphrased):
- *   - Withings card had 3 status displays — top-right "connected"
- *     badge, mid-card "connected / last successful / last attempt"
- *     trio container, and the badge inside that container.
- *   - Mood Log card had 4 — same as Withings PLUS a "letzter Sync"
- *     line at the very bottom.
+ * v1.4.19 consolidated three and four status surfaces per card into one pill.
+ * v1.42.4 replaces the pill with the shared card's badge, rendered from the
+ * server's `health`, and removes what had grown back around it: the raw
+ * provider error line, the failure counter, the per-provider banners.
  *
- * After A5: each card has EXACTLY ONE status display (the pill, top
- * right). Error context (the failure message itself, when actionable)
- * is allowed to surface below the pill since it carries information
- * the pill can't fit. Timestamp repetition is gone.
- *
- * The tests pin:
- *   1. Healthy Withings + Mood Log: ONE pill per card, no banner.
- *   2. Withings transient error: ONE pill per card + error message,
- *      NO redundant "{n}/{threshold} consecutive failures" badge,
- *      NO "Last successful sync / Last attempt" trio.
- *   3. Withings reauth: pill carries the "Error — reconnect" label.
- *   4. Mood Log disconnected: pill says "Not connected", no other
- *      status display surfaces.
- *   5. no card paints a divider under its header
- *      — consistency the maintainer explicitly called out.
+ * The tests pin, on the whole section:
+ *   1. one badge per connected card, and nothing else that states a status;
+ *   2. the stored provider error text never reaches the page;
+ *   3. a paused connection offers exactly one Resume;
+ *   4. no card paints a divider under its header;
+ *   5. every not-connected card links its setup guide.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -104,227 +93,162 @@ function count(html: string, needle: string): number {
   return n;
 }
 
-describe("IntegrationsSection — single-status-display contract (A5)", () => {
+const PROVIDERS = [
+  "withings",
+  "whoop",
+  "fitbit",
+  "google-health",
+  "polar",
+  "oura",
+  "strava",
+  "nightscout",
+] as const;
+
+function health(overrides: Record<string, unknown> = {}) {
+  return {
+    state: "ok",
+    reason: "data_arriving",
+    since: null,
+    action: null,
+    unavailable: [],
+    lastSuccessAt: "2026-05-09T18:00:00.000Z",
+    lastDataAt: "2026-05-09T17:00:00.000Z",
+    diagnostics: {
+      ledgerState: "connected",
+      failingLegs: [],
+      failingSince: null,
+      lastAttemptAt: "2026-05-09T18:00:00.000Z",
+      verdict: "fresh",
+      recentCalls: [],
+    },
+    ...overrides,
+  };
+}
+
+function disconnected(integration: string) {
+  return {
+    integration,
+    lastError: null,
+    connected: false,
+    configured: false,
+    available: false,
+    health: null,
+  };
+}
+
+/** The Withings card's markup, up to the next card. */
+function withingsCard(html: string): string {
+  const start = html.indexOf('data-testid="withings-card"');
+  const next = html.indexOf('data-slot="integration-card"', start + 1);
+  return html.slice(start, next === -1 ? undefined : next);
+}
+
+/** Withings as given, every other provider present and not connected. */
+function envelopeWith(withings: Record<string, unknown>) {
+  return {
+    threshold: 3,
+    integrations: [
+      {
+        integration: "withings",
+        lastError: null,
+        connected: true,
+        configured: true,
+        ...withings,
+      },
+      ...PROVIDERS.filter((p) => p !== "withings").map(disconnected),
+    ],
+  };
+}
+
+describe("IntegrationsSection — one status display per card", () => {
   beforeEach(() => {
     integrationStatusPayload = null;
   });
 
-  it("renders exactly ONE status pill per card when both integrations are healthy", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "connected",
-          lastSuccessAt: "2026-05-09T18:00:00.000Z",
-          lastAttemptAt: "2026-05-09T18:00:00.000Z",
-          lastError: null,
-          connected: true,
-          configured: true,
-          legacyLastSyncedAt: "2026-05-09T18:00:00.000Z",
-          hasActivityScope: true,
-          syncHealth: { verdict: "fresh", since: null },
-        },
-      ],
-    });
+  it("renders exactly one badge for the connected card and no other status surface", () => {
+    setIntegrationStatus(envelopeWith({ health: health() }));
 
     const html = render();
-    // Exactly one pill per card → 8 (Withings, WHOOP, Fitbit, Google Health,
-    // Polar, Oura, Strava, Nightscout). The Garmin info note carries no pill;
-    // the Apple Health card's pill keeps its own testid.
-    expect(count(html, 'data-testid="integration-status-pill"')).toBe(8);
-    // The redundant banner from v1.4.15 is gone.
+    expect(count(html, 'data-slot="integration-health-badge"')).toBe(1);
+    expect(html).not.toContain('data-testid="integration-status-pill"');
     expect(html).not.toContain('data-testid="integration-status-banner"');
-    // Card-body "letzter Sync" repetition is gone — no
-    // "Last sync:" label outside the pill.
-    expect(html).not.toContain("Last sync:");
-    // No "Last successful sync" / "Last attempt" trio.
     expect(html).not.toContain("Last successful sync");
     expect(html).not.toContain("Last attempt");
+    // The seven other providers and Apple Health are not connected and say so
+    // once each.
+    expect(count(html, ">Not connected.<")).toBe(8);
   });
 
-  it("Withings transient error keeps the pill + error text but drops the {n}/{threshold} duplicate badge", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "error_transient",
-          lastSuccessAt: "2026-05-09T08:00:00.000Z",
-          lastAttemptAt: "2026-05-09T18:00:00.000Z",
-          lastError: "Withings refresh error: 503 - upstream",
-          connected: true,
-          configured: true,
-          legacyLastSyncedAt: "2026-05-09T08:00:00.000Z",
-          hasActivityScope: true,
-          syncHealth: { verdict: "failing", since: "2026-05-09T08:00:00.000Z" },
+  it("never shows the stored provider error or a failure counter", () => {
+    setIntegrationStatus(
+      envelopeWith({
+        lastError: "Withings refresh error: 503 - upstream",
+        consecutiveFailuresByKind: {
+          transient: 2,
+          reauth_required: 0,
+          persistent: 0,
         },
-      ],
-    });
+        health: health({
+          state: "degraded",
+          reason: "provider_errors",
+          since: "2026-05-09T08:00:00.000Z",
+        }),
+      }),
+    );
 
     const html = render();
-    // A 503 is not the user's to fix, so the pill carries the warning tone —
-    // red is reserved for "reconnect actually helps".
-    expect(html).toContain('data-state="warning"');
-    expect(html).not.toContain('data-state="error"');
-    // Actionable error message still surfaces (we kept it because
-    // the pill can't fit "Withings refresh error: 503 - upstream").
-    expect(html).toContain("Withings refresh error: 503 - upstream");
-    // …but the consecutive-failure badge that doubled the pill's
-    // signal is gone.
+    expect(html).toMatch(
+      /data-slot="integration-health-badge"[^>]*data-state="degraded"/,
+    );
+    expect(html).not.toContain("Withings refresh error");
     expect(html).not.toContain("2/3 consecutive failures");
-    expect(html).not.toContain("Last successful sync");
-    expect(html).not.toContain("Last attempt");
+    // Not the user's to fix: the Withings card offers no button.
+    expect(withingsCard(html)).toContain('data-testid="withings-menu"');
+    expect(withingsCard(html)).not.toContain(
+      'data-slot="integration-primary-action"',
+    );
   });
 
-  it("Withings reauth state surfaces 'Error — reconnect' on the pill (the maintainer's wording)", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "error_reauth",
-          lastSuccessAt: "2026-05-08T12:00:00.000Z",
-          lastAttemptAt: "2026-05-09T18:00:00.000Z",
-          lastError: "Withings refresh error: 100 - invalid_grant",
-          connected: true,
-          configured: true,
-          legacyLastSyncedAt: "2026-05-08T12:00:00.000Z",
-          tokenExpired: true,
-          hasActivityScope: true,
-          syncHealth: {
-            verdict: "reauth_required",
-            since: "2026-05-09T18:00:00.000Z",
-          },
-        },
-      ],
-    });
+  it("a paused connection offers exactly one Resume", () => {
+    setIntegrationStatus(
+      envelopeWith({
+        lastError: "Withings activity error: 293",
+        health: health({
+          state: "action_required",
+          reason: "paused_after_errors",
+          since: "2026-05-09T18:00:00.000Z",
+          action: "resume",
+        }),
+      }),
+    );
 
     const html = render();
-    expect(html).toContain('data-state="error"');
-    // Old "Reconnect required" banner is gone — the pill is now
-    // the canonical surface.
-    expect(html).not.toContain('data-testid="integration-status-banner"');
-  });
-
-  it("disconnected state shows 'Not connected' on the pill, no extra status surfaces", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "disconnected",
-          lastSuccessAt: "2026-05-08T10:00:00.000Z",
-          lastAttemptAt: "2026-05-08T10:00:00.000Z",
-          lastError: null,
-          syncHealth: { verdict: "disconnected", since: null },
-        },
-      ],
-    });
-
-    const html = render();
-    expect(html).toContain("Not connected");
-    expect(html).not.toContain('data-testid="integration-status-banner"');
-    // No trailing "letzter Sync" line outside the pill.
-    expect(html).not.toContain("Last sync:");
-  });
-
-  // v1.4.43 W14 — parked-state surface check.
-  // The pill flips to `data-state="parked"` and the resume banner
-  // renders with the reconnect CTA. The legacy `error` reconnect text
-  // (red) must NOT appear because the user-facing copy is the lighter
-  // "Paused: reconnect" string, not "Error — reconnect".
-  it("Withings parked state surfaces the parked pill + resume CTA", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "parked",
-          lastSuccessAt: "2026-05-08T12:00:00.000Z",
-          lastAttemptAt: "2026-05-09T18:00:00.000Z",
-          lastError: "Withings activity error: 293",
-          connected: true,
-          configured: true,
-          legacyLastSyncedAt: "2026-05-08T12:00:00.000Z",
-          hasActivityScope: true,
-          syncHealth: { verdict: "parked", since: "2026-05-09T18:00:00.000Z" },
-        },
-      ],
-    });
-
-    const html = render();
-    expect(html).toContain('data-state="parked"');
-    expect(html).toContain("Paused");
-    expect(html).toContain("Paused: reconnect");
-    expect(html).toContain('data-testid="withings-parked-banner"');
+    expect(html).toMatch(
+      /data-slot="integration-health-badge"[^>]*data-state="action_required"/,
+    );
     expect(html).toContain('data-testid="withings-resume-button"');
-    // The lastError is surfaced under the pill so the operator sees
-    // the contract-mismatch reason without opening Audit Log.
-    expect(html).toContain("Withings activity error: 293");
+    expect(count(html, 'data-action="resume"')).toBe(1);
+    expect(html).not.toContain('data-testid="withings-parked-banner"');
+    expect(html).not.toContain("Withings activity error: 293");
   });
 
   it("no integration card paints a divider under its header", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "connected",
-          lastSuccessAt: "2026-05-09T18:00:00.000Z",
-          lastAttemptAt: "2026-05-09T18:00:00.000Z",
-          lastError: null,
-          connected: true,
-          configured: true,
-          legacyLastSyncedAt: "2026-05-09T18:00:00.000Z",
-          hasActivityScope: true,
-          syncHealth: { verdict: "fresh", since: null },
-        },
-      ],
-    });
-
-    const html = render();
-    // The `<hr>` under the header existed only in `integrations/` — nine
-    // cards carrying a rule no other Settings card has. The card's own gap
-    // does the separating now, identically here and everywhere else.
-    expect(count(html, 'data-testid="integration-card-divider"')).toBe(0);
+    setIntegrationStatus(envelopeWith({ health: health() }));
+    expect(count(render(), 'data-testid="integration-card-divider"')).toBe(0);
   });
 
-  // v1.17.1 — every integration card carries the same discreet "Setup guide"
-  // doc-link pointing at its runbook under the single shared docs base. The
-  // affordance is one family across all six providers.
-  it("every integration card carries the shared Setup-guide doc-link", () => {
+  // Every card that is not connected yet carries the same discreet "Setup
+  // guide" link to its runbook under the single shared docs base. Once
+  // connected, the link moves into the card's menu.
+  it("every not-connected integration card carries the shared Setup-guide link", () => {
     setIntegrationStatus({
       threshold: 3,
-      integrations: [
-        {
-          integration: "withings",
-          state: "connected",
-          lastSuccessAt: "2026-05-09T18:00:00.000Z",
-          lastAttemptAt: "2026-05-09T18:00:00.000Z",
-          lastError: null,
-          connected: true,
-          configured: true,
-          legacyLastSyncedAt: "2026-05-09T18:00:00.000Z",
-          hasActivityScope: true,
-        },
-      ],
+      integrations: PROVIDERS.map(disconnected),
     });
 
     const html = render();
-    // One setup-guide link per card → eight providers (the Garmin info note is
-    // not an OAuth card and carries its own docs link, not a setup-guide).
     expect(count(html, 'data-slot="integration-setup-guide"')).toBe(8);
-    for (const provider of [
-      "withings",
-      "whoop",
-      "fitbit",
-      "google-health",
-      "polar",
-      "oura",
-      "strava",
-      "nightscout",
-    ]) {
+    for (const provider of PROVIDERS) {
       expect(html).toContain(`data-testid="${provider}-setup-guide"`);
       expect(html).toContain(
         `href="https://docs.healthlog.dev/integrations/${provider}"`,

@@ -271,14 +271,25 @@ export const SPARSE_METRIC_TYPES: ReadonlySet<string> = new Set([
   "AUDIO_EXPOSURE_EVENT",
   // People train irregularly; a quiet training week is not a broken pipe.
   "WORKOUTS",
+  // As-needed and paused medications leave weeks without a dose by design.
+  "MEDICATION_DOSE",
 ]);
 
 /** The pseudo-type carrying a source's newest workout, next to its metrics. */
 export const WORKOUT_FRESHNESS_TYPE = "WORKOUTS";
 
+/**
+ * The pseudo-type carrying Apple Health medication doses on the Apple Health
+ * freshness list (v1.42.4), and their key in the per-type arrival ledger.
+ */
+export const MEDICATION_DOSE_FRESHNESS_TYPE = "MEDICATION_DOSE";
+
 /** Newest recorded reading for one `(source, type)` pair, as queried. */
 export interface MetricFreshnessSample {
-  /** The `MeasurementType` (e.g. "RESPIRATORY_RATE"), or `WORKOUTS`. */
+  /**
+   * The `MeasurementType` (e.g. "RESPIRATORY_RATE"), `WORKOUTS`, or
+   * `MEDICATION_DOSE` on the Apple Health list.
+   */
   type: string;
   /** ISO timestamp of the newest (non-deleted) reading for this metric. */
   lastSeenAt: string;
