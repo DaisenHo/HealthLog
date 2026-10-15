@@ -5,10 +5,11 @@
  * transcribed from. The shared {@link EntityLinkPicker} — an inline summary
  * (removable chips + an add button) over a searchable, month-grouped sheet.
  *
- * The whole vault is offered, not only the pages dated near the dose: one
+ * The whole vault is reachable, not only the pages dated near the dose: one
  * childhood record commonly covers a dozen doses given years apart, and it
- * belongs on every one of them. The pages dated within the upload
- * suggestion's window of this dose sit on top as suggestions.
+ * belongs on every one of them. The picker opens on the pages around the
+ * dose's date, the ones within the upload suggestion's window on top as
+ * suggestions, and pages older and newer or searches the vault from there.
  *
  * **The gate blanks the block, it does not post-filter it.** When the
  * `inboundDocuments` module is off, this renders nothing — no heading, no empty
@@ -23,11 +24,15 @@
  * than showing an empty set, which would both hide the links and offer to
  * save their removal.
  */
+import { useMemo } from "react";
 import { FolderOpen } from "lucide-react";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { EntityLinkPicker } from "@/components/links/entity-link-picker";
-import { useVaultDocumentOptions } from "@/components/links/vault-document-options";
+import {
+  linkedDocumentOption,
+  useVaultDocumentOptions,
+} from "@/components/links/vault-document-options";
 import { ImportFromSourceButton } from "@/components/documents/sources/import-from-source-button";
 import { mergeIds } from "@/components/documents/sources/merge-ids";
 
@@ -35,6 +40,7 @@ export function VaccinationDocumentPicker({
   enabled,
   anchor,
   documentIds,
+  linkedDocuments,
   seedPending = false,
   seedError = false,
   onRetrySeed,
@@ -45,6 +51,15 @@ export function VaccinationDocumentPicker({
   /** The dose's own date (ISO), for the suggestions on top. */
   anchor: string | null;
   documentIds: string[];
+  /**
+   * The pages the dose is filed against, as its own read names them, so their
+   * chips show whatever part of the vault is loaded.
+   */
+  linkedDocuments?: ReadonlyArray<{
+    id: string;
+    label: string | null;
+    date: string | null;
+  }>;
   /** The dose's own links are still loading. */
   seedPending?: boolean;
   /** Reading the dose's own links failed. */
@@ -53,7 +68,15 @@ export function VaccinationDocumentPicker({
   onChange: (documentIds: string[]) => void;
 }) {
   const { t } = useTranslations();
+  const format = useFormatters();
   const vault = useVaultDocumentOptions({ enabled, anchor });
+  const known = useMemo(
+    () =>
+      (linkedDocuments ?? [])
+        .map((link) => linkedDocumentOption(link, (iso) => format.date(iso)))
+        .filter((option) => option !== null),
+    [linkedDocuments, format],
+  );
 
   if (!enabled) return null;
 
@@ -73,6 +96,8 @@ export function VaccinationDocumentPicker({
         selected={documentIds}
         onChange={onChange}
         options={vault.options}
+        server={vault.server}
+        knownOptions={known}
         searchPlaceholder={t("links.picker.searchPlaceholder")}
         emptyLabel={t("vaccinations.form.linkNothingToOffer")}
         extraAction={

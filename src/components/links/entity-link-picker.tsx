@@ -30,10 +30,18 @@
  * sheet where its button cannot be pressed while the sheet is open. The chip
  * carries the option's date, so two doses of one vaccine read as two
  * different records.
+ *
+ * **A long list pages on the server.** A caller over a list that can outgrow
+ * one page passes `server`: the search box then asks the list route instead
+ * of filtering what is loaded, and "Load newer" / "Load older" page through
+ * the windows around the record's date (see `useLinkPickerPages`). A record
+ * that is linked always shows as a chip, whether or not the page that holds
+ * it is loaded: the caller passes what it knows about the existing links as
+ * `knownOptions`, and every option picked in this session is remembered.
  */
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, Plus, Search, X } from "lucide-react";
+import { Check, Loader2, Plus, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +88,74 @@ export function filterOptions(
   const needle = term.trim().toLowerCase();
   if (!needle) return options;
   return options.filter((option) => haystack(option).includes(needle));
+}
+
+/**
+ * Server-side search and paging for a list that can outgrow one page. The
+ * caller owns the term (it is part of the list route's query) and the pages.
+ */
+export interface EntityLinkServerPaging {
+  term: string;
+  onTermChange: (term: string) => void;
+  /** The typed term has not been answered yet. */
+  searchPending: boolean;
+  hasOlder: boolean;
+  hasNewer: boolean;
+  loadingOlder: boolean;
+  loadingNewer: boolean;
+  onOlder: () => void;
+  onNewer: () => void;
+  /**
+   * The list route has no text search: the term filters the loaded options
+   * here instead of being sent.
+   */
+  filterLocally?: boolean;
+}
+
+/**
+ * The paging props from a `useLinkPickerPages` result, so every caller
+ * wires the same fields the same way.
+ */
+export function serverPagingFrom(pages: {
+  term: string;
+  setTerm: (term: string) => void;
+  searchPending: boolean;
+  hasOlder: boolean;
+  hasNewer: boolean;
+  loadingOlder: boolean;
+  loadingNewer: boolean;
+  loadOlder: () => void;
+  loadNewer: () => void;
+  filterLocally: boolean;
+}): EntityLinkServerPaging {
+  return {
+    term: pages.term,
+    onTermChange: pages.setTerm,
+    searchPending: pages.searchPending,
+    hasOlder: pages.hasOlder,
+    hasNewer: pages.hasNewer,
+    loadingOlder: pages.loadingOlder,
+    loadingNewer: pages.loadingNewer,
+    onOlder: pages.loadOlder,
+    onNewer: pages.loadNewer,
+    filterLocally: pages.filterLocally,
+  };
+}
+
+/**
+ * The options a chip can be resolved from: what is loaded, what the caller
+ * knows about the existing links, and what was picked in this session. The
+ * loaded option wins, then the known one, then the picked one.
+ */
+export function resolvableOptions(
+  options: readonly EntityLinkOption[],
+  knownOptions: readonly EntityLinkOption[],
+  picked: ReadonlyMap<string, EntityLinkOption>,
+): Map<string, EntityLinkOption> {
+  const map = new Map<string, EntityLinkOption>(picked);
+  for (const option of knownOptions) map.set(option.id, option);
+  for (const option of options) map.set(option.id, option);
+  return map;
 }
 
 export interface EntityLinkGroup {
@@ -165,6 +241,8 @@ export function EntityLinkPicker({
   errorLabel,
   onRetry,
   extraAction,
+  server,
+  knownOptions,
 }: {
   icon: LucideIcon;
   title: string;
@@ -191,27 +269,68 @@ export function EntityLinkPicker({
    * the way forward. The element renders nothing when it has nothing to offer.
    */
   extraAction?: ReactNode;
+  /** Server-side search and paging; omit for a list that fits one read. */
+  server?: EntityLinkServerPaging;
+  /**
+   * What the caller knows about records already linked (label and date from
+   * the record's own read), so their chips show even when no loaded page
+   * holds them.
+   */
+  knownOptions?: EntityLinkOption[];
 }) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
-  const [term, setTerm] = useState("");
+  const [localTerm, setLocalTerm] = useState("");
+  const term = server ? server.term : localTerm;
+  const setTerm = server ? server.onTermChange : setLocalTerm;
 
-  const optionById = useMemo(() => {
-    const map = new Map<string, EntityLinkOption>();
-    for (const option of options) map.set(option.id, option);
-    return map;
-  }, [options]);
-
-  const groups = useMemo(
-    () => groupOptions(filterOptions(options, term)),
-    [options, term],
+  // Every option picked in this session, so its chip survives a search or a
+  // page change that takes it out of the loaded list. Written from the event
+  // handlers, never during render.
+  const [picked, setPicked] = useState<ReadonlyMap<string, EntityLinkOption>>(
+    () => new Map(),
   );
+  const remember = (more: readonly EntityLinkOption[]) => {
+    if (more.length === 0) return;
+    setPicked((prev) => {
+      const next = new Map(prev);
+      for (const option of more) next.set(option.id, option);
+      return next;
+    });
+  };
+
+  const optionById = useMemo(
+    () => resolvableOptions(options, knownOptions ?? [], picked),
+    [options, knownOptions, picked],
+  );
+
+  // A server-paged list is already the answer to the term; filtering it
+  // again here would drop a match on a field the option does not render.
+  const groups = useMemo(() => {
+    const visible =
+      server && !server.filterLocally ? options : filterOptions(options, term);
+    // Linked records the loaded pages do not hold stay reachable in the
+    // sheet, on top, so they can be unticked where they are listed.
+    const loaded = new Set(options.map((option) => option.id));
+    const linkedElsewhere = term.trim()
+      ? []
+      : selected
+          .filter((id) => !loaded.has(id))
+          .map((id) => optionById.get(id))
+          .filter((option): option is EntityLinkOption => option != null)
+          .map((option) => ({
+            ...option,
+            group: { key: "__linked__", label: t("links.picker.linked") },
+          }));
+    return groupOptions([...linkedElsewhere, ...visible]);
+  }, [options, term, server, selected, optionById, t]);
 
   // The link the last X removed, offered back until the next change.
   const [lastRemoved, setLastRemoved] = useState<EntityLinkOption | null>(null);
 
-  const change = (ids: string[]) => {
+  const change = (ids: string[], touched: readonly EntityLinkOption[] = []) => {
     setLastRemoved(null);
+    remember(touched);
     onChange(ids);
   };
 
@@ -245,7 +364,9 @@ export function EntityLinkPicker({
           onRetry={onRetry}
           slot={`${slot}-error`}
         />
-      ) : options.length === 0 ? (
+      ) : options.length === 0 &&
+        selected.length === 0 &&
+        !(server && (server.hasOlder || server.hasNewer)) ? (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">{emptyLabel}</p>
           {extraAction}
@@ -315,7 +436,9 @@ export function EntityLinkPicker({
               <button
                 type="button"
                 data-slot={`${slot}-undo-button`}
-                onClick={() => change(restoreLink(selected, lastRemoved.id))}
+                onClick={() =>
+                  change(restoreLink(selected, lastRemoved.id), [lastRemoved])
+                }
                 className="text-foreground focus-visible:ring-ring/50 min-h-8 rounded-sm font-medium underline underline-offset-2 focus-visible:ring-[3px] focus-visible:outline-none"
               >
                 {t("common.undo")}
@@ -363,12 +486,31 @@ export function EntityLinkPicker({
             />
           </div>
 
-          {groups.length === 0 ? (
+          {server?.searchPending && groups.length === 0 ? (
+            <div
+              className="flex justify-center py-6"
+              data-slot={`${slot}-searching`}
+            >
+              <Loader2
+                className="text-muted-foreground size-4 animate-spin motion-reduce:animate-none"
+                aria-hidden
+              />
+            </div>
+          ) : groups.length === 0 &&
+            !(server && (server.hasOlder || server.hasNewer)) ? (
             <p className="text-muted-foreground px-1 py-6 text-center text-sm">
               {t("links.picker.searchNoMatch")}
             </p>
           ) : (
             <div className="max-h-[50vh] space-y-4 overflow-y-auto overscroll-contain">
+              {server?.hasNewer ? (
+                <PageButton
+                  slot={`${slot}-load-newer`}
+                  loading={server.loadingNewer}
+                  onClick={server.onNewer}
+                  label={t("links.picker.loadNewer")}
+                />
+              ) : null}
               {groups.map((group) => {
                 const groupIds = group.options.map((option) => option.id);
                 return (
@@ -384,7 +526,9 @@ export function EntityLinkPicker({
                         <button
                           type="button"
                           data-slot={`${slot}-group-select`}
-                          onClick={() => change(toggleAll(selected, groupIds))}
+                          onClick={() =>
+                            change(toggleAll(selected, groupIds), group.options)
+                          }
                           className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
                         >
                           {t("links.picker.selectAll")}
@@ -401,7 +545,7 @@ export function EntityLinkPicker({
                               aria-pressed={on}
                               data-slot={`${slot}-option`}
                               onClick={() =>
-                                change(toggleOne(selected, option.id))
+                                change(toggleOne(selected, option.id), [option])
                               }
                               className={cn(
                                 "border-border hover:bg-muted/50 focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md border px-3 text-left focus-visible:ring-[3px] focus-visible:outline-none",
@@ -438,6 +582,14 @@ export function EntityLinkPicker({
                   </div>
                 );
               })}
+              {server?.hasOlder ? (
+                <PageButton
+                  slot={`${slot}-load-older`}
+                  loading={server.loadingOlder}
+                  onClick={server.onOlder}
+                  label={t("links.picker.loadOlder")}
+                />
+              ) : null}
             </div>
           )}
 
@@ -449,5 +601,39 @@ export function EntityLinkPicker({
         </div>
       </ResponsiveSheet>
     </div>
+  );
+}
+
+/** "Load newer" / "Load older": a full-width row inside the scrolling list. */
+function PageButton({
+  slot,
+  loading,
+  onClick,
+  label,
+}: {
+  slot: string;
+  loading: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="min-h-11 w-full"
+      data-slot={slot}
+      disabled={loading}
+      aria-busy={loading}
+      onClick={onClick}
+    >
+      {loading ? (
+        <Loader2
+          className="size-4 animate-spin motion-reduce:animate-none"
+          aria-hidden
+        />
+      ) : null}
+      {label}
+    </Button>
   );
 }

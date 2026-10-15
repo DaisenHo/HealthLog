@@ -12174,7 +12174,10 @@
       "suggested": "Autour de cette date",
       "loadError": "Impossible de charger la liste.",
       "removeNamed": "Retirer {name}",
-      "removed": "{name} dissocié"
+      "removed": "{name} dissocié",
+      "linked": "Liés",
+      "loadNewer": "Charger les plus récents",
+      "loadOlder": "Charger les plus anciens"
     }
   },
   "bodySites": {

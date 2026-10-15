@@ -45,6 +45,13 @@ export const encounterKeys = {
       status ?? null,
       episodeId ?? null,
     ] as const,
+  /**
+   * The document sheet's visit picker: one paged direction from the
+   * document's date. Its own key because its page shape (offset steps inside
+   * a window) is not the list's.
+   */
+  encounterPicker: (direction: string, pivot: string | null, term: string) =>
+    ["encounters", "picker", direction, pivot ?? "", term] as const,
   encounter: (id: string) => ["encounters", "detail", id] as const,
   /**
    * The procedure history for one filter. Under the `["encounters"]` root, so

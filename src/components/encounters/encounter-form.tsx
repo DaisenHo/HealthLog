@@ -33,6 +33,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import type { Encounter, EncounterWriteBody } from "@/hooks/use-encounters";
 import type { Practitioner } from "@/hooks/use-practitioners";
+import type { EncounterLinksDTO } from "@/lib/encounters/dto";
 import {
   ENCOUNTER_KINDS,
   ENCOUNTER_STATUSES,
@@ -57,6 +58,12 @@ export interface EncounterDraft {
   documentIds: string[];
   labResultIds: string[];
   episodeIds: string[];
+  /**
+   * The links the visit carried when the sheet opened, as its read names
+   * them, so their chips show whatever page the pickers have loaded. Display
+   * only; the id arrays above are what a save writes.
+   */
+  links: EncounterLinksDTO | null;
 }
 
 function localValue(instant: Date): string {
@@ -91,6 +98,7 @@ export function emptyDraft(
     documentIds: [],
     labResultIds: [],
     episodeIds: [],
+    links: null,
     ...overrides,
   };
 }
@@ -108,6 +116,7 @@ export function draftFromEncounter(row: Encounter): EncounterDraft {
     documentIds: row.links?.documents.map((link) => link.id) ?? [],
     labResultIds: row.links?.labResults.map((link) => link.id) ?? [],
     episodeIds: row.links?.conditions.map((link) => link.id) ?? [],
+    links: row.links ?? null,
   };
 }
 
@@ -303,6 +312,7 @@ export function EncounterForm({
       <EncounterLinkPickers
         modules={user?.modules}
         anchor={draft.occurredAt || null}
+        links={draft.links}
         documentIds={draft.documentIds}
         labResultIds={draft.labResultIds}
         episodeIds={draft.episodeIds}

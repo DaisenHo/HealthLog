@@ -136,6 +136,17 @@ export type IllnessEpisodeResolve = z.infer<typeof illnessEpisodeResolveSchema>;
 export const illnessEpisodeListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   includeResolved: z.union([z.literal("true"), z.literal("false")]).optional(),
+  /**
+   * Paging and a date window over the onset, for a picker that opens on the
+   * episodes around a visit and pages older or newer from there.
+   */
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
+  from: z.iso.datetime({ offset: true }).optional(),
+  to: z.iso.datetime({ offset: true }).optional(),
+  /** Onset order; newest first by default. */
+  sortDir: z.enum(["asc", "desc"]).optional(),
+  /** Case-insensitive substring over the episode's label. */
+  q: z.string().trim().min(1).max(120).optional(),
 });
 
 /* ── day-log capture (one row per day of an episode) ─────────────── */

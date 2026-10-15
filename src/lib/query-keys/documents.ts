@@ -61,12 +61,24 @@ export const documentKeys = {
   inboundDocumentPicker: (q: string) =>
     ["documents", "inbound", "picker", q] as const,
   /**
-   * The whole vault as a link-picker option list (every page, walked at the
-   * list route's ceiling), shared by the visit and vaccination forms. Own
-   * segment because the shape is a flat document array, not a page.
+   * The vault as a link-picker option list, shared by the visit and
+   * vaccination forms: one paged direction from the record's date or a
+   * search. Own segment because the page shape is the picker's, not the
+   * library's.
    */
-  inboundDocumentVaultPicker: () =>
-    ["documents", "inbound", "vault-picker"] as const,
+  inboundDocumentVaultPicker: (
+    direction: string,
+    pivot: string | null,
+    term: string,
+  ) =>
+    [
+      "documents",
+      "inbound",
+      "vault-picker",
+      direction,
+      pivot ?? "",
+      term,
+    ] as const,
   /**
    * Storage usage + effective limits (`GET /api/documents/inbound/usage`).
    * Invalidated through the `["documents"]` prefix after every upload /

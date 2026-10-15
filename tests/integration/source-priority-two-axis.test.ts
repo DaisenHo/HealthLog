@@ -34,6 +34,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
+/**
+ * The night the fixtures sleep, ten days back from whenever the suite runs.
+ * The analytics route summarises a window that ends now; a fixed date slides
+ * out of it as the calendar moves on.
+ */
+const SLEEP_DAY = new Date(Date.now() - 10 * 86_400_000)
+  .toISOString()
+  .slice(0, 10);
+
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
   return {
@@ -130,7 +139,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 420,
         unit: "minutes",
         source: "WITHINGS",
-        measuredAt: new Date("2026-05-12T07:00:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T07:00:00.000Z`),
       },
     });
 
@@ -162,7 +171,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 480,
         unit: "minutes",
         source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-12T06:00:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T06:00:00.000Z`),
         externalId: "ah-sleep-1",
       },
     });
@@ -174,7 +183,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 410,
         unit: "minutes",
         source: "WITHINGS",
-        measuredAt: new Date("2026-05-12T07:00:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T07:00:00.000Z`),
       },
     });
 
@@ -200,7 +209,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 380,
         unit: "minutes",
         source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-12T06:00:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T06:00:00.000Z`),
         externalId: "ah-sleep-watch",
         deviceType: "watch",
       },
@@ -212,7 +221,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 480,
         unit: "minutes",
         source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-12T06:30:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T06:30:00.000Z`),
         externalId: "ah-sleep-phone",
         deviceType: "phone",
       },
@@ -240,7 +249,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 480,
         unit: "minutes",
         source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-12T06:00:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T06:00:00.000Z`),
         externalId: "ah-sleep-watch",
         deviceType: "watch",
       },
@@ -252,7 +261,7 @@ describe("GET /api/analytics — two-axis canonical source resolution (W8c)", ()
         value: 380,
         unit: "minutes",
         source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-12T06:30:00.000Z"),
+        measuredAt: new Date(`${SLEEP_DAY}T06:30:00.000Z`),
         externalId: "ah-sleep-phone",
         deviceType: "phone",
       },

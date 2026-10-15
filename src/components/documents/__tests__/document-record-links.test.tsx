@@ -4,12 +4,26 @@ import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: { modules: { vaccinations: true } } }),
 }));
-vi.mock("@/hooks/use-encounters", () => ({
-  useEncounters: () => ({
-    data: { upcoming: [], past: [] },
-    isPending: false,
-    isError: false,
-    refetch: vi.fn(),
+vi.mock("@/components/links/use-link-picker-pages", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/components/links/use-link-picker-pages")
+  >()),
+  // The visit picker's pages: none loaded, nothing more to page.
+  useLinkPickerPages: () => ({
+    items: [],
+    pending: false,
+    error: false,
+    retry: vi.fn(),
+    term: "",
+    setTerm: vi.fn(),
+    searchPending: false,
+    filterLocally: true,
+    hasOlder: false,
+    hasNewer: false,
+    loadingOlder: false,
+    loadingNewer: false,
+    loadOlder: vi.fn(),
+    loadNewer: vi.fn(),
   }),
 }));
 vi.mock("@/components/vaccinations/use-vaccinations", () => ({

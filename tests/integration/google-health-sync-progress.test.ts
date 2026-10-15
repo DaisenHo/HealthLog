@@ -42,7 +42,9 @@ async function seedConnection(userId: string): Promise<void> {
       googleUserId: `google-${userId}`,
       accessToken: "encrypted-access",
       refreshToken: "encrypted-refresh",
-      tokenExpiresAt: new Date("2027-01-01T00:00:00.000Z"),
+      // Valid for a year from whenever the suite runs: a fixed date would
+      // expire and send the sync down the refresh path.
+      tokenExpiresAt: new Date(Date.now() + 365 * 86_400_000),
     },
   });
 }

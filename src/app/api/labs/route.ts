@@ -85,7 +85,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  const { biomarkerId, analyte, panel, from, to, limit, offset, sortDir } =
+  const { biomarkerId, analyte, panel, q, from, to, limit, offset, sortDir } =
     parsed.data;
 
   const where = {
@@ -94,6 +94,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
     ...(biomarkerId && { biomarkerId }),
     ...(analyte && { analyte }),
     ...(panel && { panel }),
+    ...(q && {
+      OR: [
+        { analyte: { contains: q, mode: "insensitive" as const } },
+        { panel: { contains: q, mode: "insensitive" as const } },
+      ],
+    }),
     ...(from || to
       ? {
           takenAt: {
