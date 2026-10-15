@@ -295,6 +295,12 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "geo-backfill": short("At most 500 audit rows per pass."),
   "geolite2-fetch": short("One database download."),
   "tls-pin-monitor": short("One TLS handshake."),
+  "integration-watchdog-hourly": short(
+    "A few indexed reads per account with a connection and no provider call; a 14-day history count only for a silent source.",
+  ),
+  "integration-watchdog-daily": short(
+    "The hourly pass plus one 14-day history count per standing silence flag.",
+  ),
   "mood-reminder-cleanup": short("One retention DELETE."),
   "push-attempt-cleanup": short("One retention DELETE."),
   "arrival-reaction-cleanup": short("One retention DELETE."),

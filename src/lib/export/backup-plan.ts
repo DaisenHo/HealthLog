@@ -670,6 +670,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "A person's API token for their Paperless-ngx or Papra instance. A backup file is not a credential store, same reasoning as ApiToken; and restored on another host it would point at an address that host's operator never allowed in DOCUMENT_SOURCE_ORIGINS. The documents imported through it are carried with the vault; reconnecting takes one form.",
   IntegrationStatus:
     "A ledger of what this deployment's syncs did. Restoring it onto another host would assert a sync history that host never had.",
+  IntegrationWatch:
+    "What this host's integration watchdog observed and which operator incidents it announced. Restored elsewhere it would assert silences and alerts that host never saw.",
 
   // Credentials and device identity.
   ApiToken:

@@ -27,6 +27,7 @@ import {
   withHealthKitArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
 import { getSourceFreshness } from "@/lib/integrations/metric-freshness";
+import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
 import {
   classifyMetricFreshness,
   PUSH_CADENCE,
@@ -173,10 +174,14 @@ export const GET = apiHandler(async () => {
   // progress; the phone's queue and throttle state stay on the phone and are
   // not guessed at. Fail-soft for the same reason the freshness read is —
   // a progress line is never worth 500-ing the config the iOS client needs.
-  const [samples, arrivals, syncProgress] = await Promise.all([
+  // `health` is the unified connection state; fail-soft to null for the same
+  // reason as the reads beside it, so the config the phone needs never 500s
+  // over a diagnostic.
+  const [samples, arrivals, syncProgress, health] = await Promise.all([
     getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
     getHealthKitTypeArrivals(user.id).catch(() => null),
     getAppleHealthSyncProgress(user.id).catch(() => null),
+    loadOneConnectionHealth(user.id, "apple-health").catch(() => null),
   ]);
   // No `connected` hint: Apple Health has nothing to connect or disconnect, so
   // "never delivered" resolves to `pending_first_sync`, not `disconnected`.
@@ -202,6 +207,7 @@ export const GET = apiHandler(async () => {
       arrivals,
     ),
     syncProgress,
+    health,
   });
 });
 

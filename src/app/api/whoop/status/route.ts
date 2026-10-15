@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
+import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
 
 /**
  * Get WHOOP connection status for the current user (v1.11.0).
@@ -54,5 +55,9 @@ export const GET = apiHandler(async () => {
     tokenExpiresAt: connection.tokenExpiresAt,
     backfillCompleted: !!connection.backfillCompletedAt,
     scope: connection.scope,
+    // The one server-resolved state (ok / limited / degraded /
+    // action_required) every client renders. The fields above stay for
+    // clients that still read them; see `ConnectionHealth` in the API docs.
+    health: await loadOneConnectionHealth(user.id, "whoop"),
   });
 });
