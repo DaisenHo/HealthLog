@@ -12227,7 +12227,10 @@
       "removed": "{name} dissocié",
       "linked": "Liés",
       "loadNewer": "Charger les plus récents",
-      "loadOlder": "Charger les plus anciens"
+      "loadOlder": "Charger les plus anciens",
+      "period": {
+        "showing": "Période : {period}"
+      }
     }
   },
   "bodySites": {

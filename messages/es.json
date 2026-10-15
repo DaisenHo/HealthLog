@@ -12227,7 +12227,10 @@
       "removed": "Se desvinculó {name}",
       "linked": "Vinculados",
       "loadNewer": "Cargar más recientes",
-      "loadOlder": "Cargar anteriores"
+      "loadOlder": "Cargar anteriores",
+      "period": {
+        "showing": "Mostrando {period}"
+      }
     }
   },
   "bodySites": {

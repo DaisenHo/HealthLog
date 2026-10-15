@@ -12227,7 +12227,10 @@
       "removed": "Verknüpfung mit {name} gelöst",
       "linked": "Verknüpft",
       "loadNewer": "Neuere laden",
-      "loadOlder": "Ältere laden"
+      "loadOlder": "Ältere laden",
+      "period": {
+        "showing": "Zeitraum: {period}"
+      }
     }
   },
   "bodySites": {

@@ -11,7 +11,28 @@
  * `search` the term across the whole history. The cursor is the family's own:
  * an offset for the routes that page by offset, the last row's id for the
  * document route's keyset.
+ *
+ * A search term that names a year or a month ("2019", "03.2019", "März 2019",
+ * see {@link parsePeriodQuery}) is not sent as `q`: it becomes the route's
+ * own `from` / `to` window over that period, newest first, so the answer is
+ * every record dated in it rather than the records whose name contains the
+ * digits. The visit route, which has no text search at all, gets the same
+ * window.
+ *
+ * The period is a calendar period as the person reads it. The routes over an
+ * instant (lab draw, condition onset, visit) get the first instant of the
+ * period's first day and the last instant of its last day in the person's
+ * timezone, the zone every date in the picker is rendered in, so a visit at
+ * 00:30 on 1 March is in March for the person who sees it dated 1 March. A
+ * date-only lab reading is stored at noon UTC, which reads as its own date in
+ * every zone from UTC-11 to UTC+11. The document route's window is already
+ * day-granular and inclusive over a stored calendar date, so it gets the two
+ * day keys as they are.
  */
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
+import { shiftDateKey } from "@/lib/tz/format";
+
+import { parsePeriodQuery, type PeriodQuery } from "./period-query";
 import {
   PICKER_PAGE_SIZE,
   afterPivot,
@@ -22,6 +43,44 @@ function withParams(path: string, params: URLSearchParams): string {
   return `${path}?${params.toString()}`;
 }
 
+/** The period a search request names, or null outside a period search. */
+export function requestPeriod(request: PickerPageRequest): PeriodQuery | null {
+  if (request.direction !== "search") return null;
+  return parsePeriodQuery(request.term, request.locale);
+}
+
+/**
+ * The instant window of a period in `timeZone`: from the first instant of its
+ * first day to the last millisecond before the day after its last, both
+ * inclusive as the instant routes read them.
+ */
+export function periodInstants(
+  period: PeriodQuery,
+  timeZone: string,
+): { from: string; to: string } {
+  const from = startOfLocalDayKey(period.fromDay, timeZone);
+  const next = startOfLocalDayKey(shiftDateKey(period.toDay, 1), timeZone);
+  return {
+    from: from.toISOString(),
+    to: new Date(next.getTime() - 1).toISOString(),
+  };
+}
+
+/** `q`, or the period's instant window, for a search on an instant route. */
+function setInstantSearch(
+  params: URLSearchParams,
+  request: PickerPageRequest,
+): void {
+  const period = requestPeriod(request);
+  if (period) {
+    const window = periodInstants(period, request.timeZone);
+    params.set("from", window.from);
+    params.set("to", window.to);
+  } else {
+    params.set("q", request.term);
+  }
+}
+
 /** `GET /api/labs` — offset paging, `from` / `to` on the draw instant. */
 export function labPickerUrl(request: PickerPageRequest): string {
   const params = new URLSearchParams({
@@ -29,7 +88,7 @@ export function labPickerUrl(request: PickerPageRequest): string {
     offset: request.cursor ?? "0",
     sortDir: request.direction === "newer" ? "asc" : "desc",
   });
-  if (request.direction === "search") params.set("q", request.term);
+  if (request.direction === "search") setInstantSearch(params, request);
   else if (request.pivot !== null) {
     if (request.direction === "older") params.set("to", request.pivot);
     else params.set("from", afterPivot(request.pivot));
@@ -45,7 +104,7 @@ export function episodePickerUrl(request: PickerPageRequest): string {
     offset: request.cursor ?? "0",
     sortDir: request.direction === "newer" ? "asc" : "desc",
   });
-  if (request.direction === "search") params.set("q", request.term);
+  if (request.direction === "search") setInstantSearch(params, request);
   else if (request.pivot !== null) {
     if (request.direction === "older") params.set("to", request.pivot);
     else params.set("from", afterPivot(request.pivot));
@@ -65,7 +124,11 @@ export function documentPickerUrl(request: PickerPageRequest): string {
     limit: String(PICKER_PAGE_SIZE),
   });
   if (request.cursor) params.set("cursor", request.cursor);
-  if (request.direction === "search") params.set("q", request.term);
+  const period = requestPeriod(request);
+  if (period) {
+    params.set("from", period.fromDay);
+    params.set("to", period.toDay);
+  } else if (request.direction === "search") params.set("q", request.term);
   else if (request.pivot !== null) {
     if (request.direction === "older") {
       params.set("to", request.pivot.slice(0, 10));
@@ -80,15 +143,20 @@ export function documentPickerUrl(request: PickerPageRequest): string {
  * `GET /api/encounters` — offset paging inside a window on the visit instant.
  * The route answers in two arms (upcoming soonest first, past newest first),
  * each paged by the same offset; the picker merges and orders them itself.
- * The visit route has no text search, so `search` reads the whole history
- * and the picker filters what it has loaded.
+ * The visit route has no text search, so a plain term never reaches it (the
+ * picker filters what it has loaded); a period search reads that period.
  */
 export function encounterPickerUrl(request: PickerPageRequest): string {
   const params = new URLSearchParams({
     limit: String(PICKER_PAGE_SIZE),
     offset: request.cursor ?? "0",
   });
-  if (request.direction !== "search" && request.pivot !== null) {
+  const period = requestPeriod(request);
+  if (period) {
+    const window = periodInstants(period, request.timeZone);
+    params.set("from", window.from);
+    params.set("to", window.to);
+  } else if (request.direction !== "search" && request.pivot !== null) {
     if (request.direction === "older") params.set("to", request.pivot);
     else params.set("from", afterPivot(request.pivot));
   }

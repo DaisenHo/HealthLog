@@ -12227,7 +12227,10 @@
       "removed": "Unlinked {name}",
       "linked": "Linked",
       "loadNewer": "Load newer",
-      "loadOlder": "Load older"
+      "loadOlder": "Load older",
+      "period": {
+        "showing": "Showing {period}"
+      }
     }
   },
   "bodySites": {

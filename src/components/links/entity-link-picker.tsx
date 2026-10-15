@@ -53,6 +53,8 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
+import { formatPeriod, type PeriodQuery } from "./period-query";
+
 export interface EntityLinkOption {
   id: string;
   label: string;
@@ -110,6 +112,8 @@ export interface EntityLinkServerPaging {
    * here instead of being sent.
    */
   filterLocally?: boolean;
+  /** The term names a year or a month, and the list is that period. */
+  period?: PeriodQuery | null;
 }
 
 /**
@@ -127,6 +131,7 @@ export function serverPagingFrom(pages: {
   loadOlder: () => void;
   loadNewer: () => void;
   filterLocally: boolean;
+  period: PeriodQuery | null;
 }): EntityLinkServerPaging {
   return {
     term: pages.term,
@@ -139,6 +144,7 @@ export function serverPagingFrom(pages: {
     onOlder: pages.loadOlder,
     onNewer: pages.loadNewer,
     filterLocally: pages.filterLocally,
+    period: pages.period,
   };
 }
 
@@ -278,7 +284,7 @@ export function EntityLinkPicker({
    */
   knownOptions?: EntityLinkOption[];
 }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const [open, setOpen] = useState(false);
   const [localTerm, setLocalTerm] = useState("");
   const term = server ? server.term : localTerm;
@@ -308,7 +314,10 @@ export function EntityLinkPicker({
   // again here would drop a match on a field the option does not render.
   const groups = useMemo(() => {
     const visible =
-      server && !server.filterLocally ? options : filterOptions(options, term);
+      // A period is answered by the route's date window, never by the digits.
+      server && (!server.filterLocally || server.period)
+        ? options
+        : filterOptions(options, term);
     // Linked records the loaded pages do not hold stay reachable in the
     // sheet, on top, so they can be unticked where they are listed.
     const loaded = new Set(options.map((option) => option.id));
@@ -485,6 +494,17 @@ export function EntityLinkPicker({
               data-slot={`${slot}-search`}
             />
           </div>
+
+          {server?.period ? (
+            <p
+              className="text-muted-foreground px-1 text-xs"
+              data-slot={`${slot}-period`}
+            >
+              {t("links.picker.period.showing", {
+                period: formatPeriod(server.period, locale),
+              })}
+            </p>
+          ) : null}
 
           {server?.searchPending && groups.length === 0 ? (
             <div

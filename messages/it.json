@@ -12227,7 +12227,10 @@
       "removed": "Collegamento a {name} rimosso",
       "linked": "Collegati",
       "loadNewer": "Carica più recenti",
-      "loadOlder": "Carica meno recenti"
+      "loadOlder": "Carica meno recenti",
+      "period": {
+        "showing": "Periodo: {period}"
+      }
     }
   },
   "bodySites": {

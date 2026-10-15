@@ -12227,7 +12227,10 @@
       "removed": "Odłączono: {name}",
       "linked": "Połączone",
       "loadNewer": "Wczytaj nowsze",
-      "loadOlder": "Wczytaj starsze"
+      "loadOlder": "Wczytaj starsze",
+      "period": {
+        "showing": "Okres: {period}"
+      }
     }
   },
   "bodySites": {
