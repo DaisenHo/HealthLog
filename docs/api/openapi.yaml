@@ -25592,8 +25592,9 @@ components:
             account as `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both
             readable from `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the
             batch carried (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on
-            each `metricFreshness` entry of that read. It does not affect dedup, attribution, or how any sample is
-            stored. Optional and backward-compatible: pre-#66 clients omit it.'
+            each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background`
+            trigger. It does not affect dedup, attribution, or how any sample is stored. Optional and
+            backward-compatible: pre-#66 clients omit it.'
           type: string
           enum:
             - foreground
@@ -26181,6 +26182,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BulkMedicationIntakeEntry"
+        syncTrigger:
+          description: 'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client
+            for this sync. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated`
+            or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET
+            /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`.
+            It changes no dose row. Optional; omitted records a null trigger.'
+          type: string
+          enum:
+            - foreground
+            - background
+            - push
+            - manual
       required:
         - entries
       description: iOS SyncMode bulk intake backfill. 1–500 entries per call; idempotent via `Idempotency-Key` and per-entry
@@ -73668,7 +73681,9 @@ components:
       properties:
         type:
           type: string
-          description: The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.
+          description: The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only,
+            since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or
+            skip a type they do not know rather than fail.
         lastSeenAt:
           type: string
           format: date-time
@@ -73709,13 +73724,28 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
+        lastBackgroundAt:
+          description: 'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later
+            `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so
+            opening the app does not hide an earlier background arrival. Null when the type has never arrived in the
+            background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose
+            latest arrival then was a background one starts with that date and every other type starts null. Same
+            omission rules as `lastReceivedAt`.'
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
       required:
         - type
         - lastSeenAt
         - stale
       additionalProperties: false
       description: "Per-type Apple Health freshness: the newest sample's timestamp and staleness flag, plus the per-type
-        arrival facts recorded by `POST /api/measurements/batch` (v1.42)."
+        arrival facts recorded by `POST /api/measurements/batch` (v1.42). Since v1.42.4 the list can also hold a
+        `MEDICATION_DOSE` entry: `lastSeenAt` is the newest live dose imported from Apple Health (its `takenAt`, or its
+        slot for a skipped dose), and the arrival facts come from `POST /api/medications/intake/bulk` entries sent with
+        `source: \"APPLE_HEALTH\"`. A dose recorded in the app does not move them. Doses are never flagged `stale`."
     AppleHealthSyncProgress:
       type: object
       properties:
@@ -75840,7 +75870,9 @@ components:
       properties:
         type:
           type: string
-          description: The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.
+          description: The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only,
+            since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or
+            skip a type they do not know rather than fail.
         lastSeenAt:
           type: string
           format: date-time

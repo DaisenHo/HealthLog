@@ -133,7 +133,8 @@ function DeliveryDiagnostic({
  * under which trigger, and when one last brought a new value. The newest
  * sample's time on the right of the row says when the reading was TAKEN; this
  * says when the server RECEIVED it, which is what tells a type that only
- * arrives on "Sync all" from one the phone delivers by itself (#1173). Nothing
+ * arrives on "Sync all" from one the phone delivers by itself (#1173), plus
+ * the last background arrival when a later one came another way. Nothing
  * renders when the server sent no arrival facts (the workouts row, or a failed
  * ledger read), so absence is never painted as "not received".
  */
@@ -173,6 +174,18 @@ export function ArrivalDetail({
     parts.push(
       t("settings.appleHealth.freshness.lastNewValue", {
         relative: relative(entry.lastNewSampleAt),
+      }),
+    );
+  }
+  // The last background arrival, when a later one came another way: opening
+  // the app to look would otherwise hide that the phone delivers by itself.
+  if (
+    entry.lastBackgroundAt &&
+    entry.lastBackgroundAt !== entry.lastReceivedAt
+  ) {
+    parts.push(
+      t("settings.appleHealth.freshness.lastBackground", {
+        relative: relative(entry.lastBackgroundAt),
       }),
     );
   }

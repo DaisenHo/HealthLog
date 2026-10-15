@@ -6555,7 +6555,8 @@
       "title": "Data received",
       "summary": "{count} data types, newest {relative}",
       "quiet": "{count} quiet",
-      "workouts": "Workouts"
+      "workouts": "Workouts",
+      "medicationDoses": "Medication doses"
     },
     "integrationFallback": {
       "description": "Configured on this account without a settings card of its own."
@@ -7131,6 +7132,7 @@
         "title": "By data type",
         "lastReceived": "Last received {relative}",
         "lastNewValue": "Last new value {relative}",
+        "lastBackground": "Last in background {relative}",
         "never": "Not received yet"
       }
     },

@@ -26,7 +26,10 @@ import {
   newestAppleHealthDataAt,
   withHealthKitArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
-import { getSourceFreshness } from "@/lib/integrations/metric-freshness";
+import {
+  getAppleHealthDoseFreshness,
+  getSourceFreshness,
+} from "@/lib/integrations/metric-freshness";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
 import {
   classifyMetricFreshness,
@@ -177,12 +180,22 @@ export const GET = apiHandler(async () => {
   // `health` is the unified connection state; fail-soft to null for the same
   // reason as the reads beside it, so the config the phone needs never 500s
   // over a diagnostic.
-  const [samples, arrivals, syncProgress, health] = await Promise.all([
-    getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
-    getHealthKitTypeArrivals(user.id).catch(() => null),
-    getAppleHealthSyncProgress(user.id).catch(() => null),
-    loadOneConnectionHealth(user.id, "apple-health").catch(() => null),
-  ]);
+  // v1.42.4 — Apple Health doses join the list as `MEDICATION_DOSE`, so the
+  // phone can read when doses last arrived from the same entries as every
+  // other type. Fail-soft on its own: a failed dose read drops that one entry.
+  const [measurementSamples, doseSample, arrivals, syncProgress, health] =
+    await Promise.all([
+      getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
+      getAppleHealthDoseFreshness(user.id).catch(() => null),
+      getHealthKitTypeArrivals(user.id).catch(() => null),
+      getAppleHealthSyncProgress(user.id).catch(() => null),
+      loadOneConnectionHealth(user.id, "apple-health").catch(() => null),
+    ]);
+  const samples = doseSample
+    ? [...measurementSamples, doseSample].sort((a, b) =>
+        a.type.localeCompare(b.type),
+      )
+    : measurementSamples;
   // No `connected` hint: Apple Health has nothing to connect or disconnect, so
   // "never delivered" resolves to `pending_first_sync`, not `disconnected`.
   // "Delivered" is read off the data, not only off the user column: that

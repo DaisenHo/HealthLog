@@ -4005,16 +4005,25 @@ model ManagedProfileHandover {
 /// batch route; read by the Apple Health card's per-type freshness list.
 /// Diagnostic state: rebuilt by the next sync, so it is not backed up.
 model HealthKitTypeSync {
-  userId          String          @map("user_id")
-  type            MeasurementType
+  userId           String    @map("user_id")
+  /// A `MeasurementType` name for rows the measurement batch writes, or
+  /// `MEDICATION_DOSE` for Apple Health doses the intake bulk route
+  /// receives. Text, not the enum, since v1.42.4 (migration 0401) because a
+  /// dose is not a measurement type.
+  type             String
   /// Last batch that carried this type.
-  lastReceivedAt  DateTime        @map("last_received_at")
+  lastReceivedAt   DateTime  @map("last_received_at")
   /// `syncTrigger` of that batch
   /// (`foreground` / `background` / `push` / `manual`), NULL when absent.
-  lastTrigger     String?         @map("last_trigger")
+  lastTrigger      String?   @map("last_trigger")
   /// Last batch that inserted or updated a sample of
   /// this type (as opposed to sending only duplicates).
-  lastNewSampleAt DateTime?       @map("last_new_sample_at")
+  lastNewSampleAt  DateTime? @map("last_new_sample_at")
+  /// Last batch with `syncTrigger = background` that carried this type. A
+  /// later foreground, push or manual arrival leaves it standing; NULL when
+  /// none has (or only before v1.42.4, except a row whose latest arrival was
+  /// a background one, which migration 0401 seeded).
+  lastBackgroundAt DateTime? @map("last_background_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

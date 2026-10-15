@@ -73,6 +73,7 @@ import {
   findFoldedWindowDuplicates,
 } from "@/lib/measurements/folded-window";
 import {
+  HEALTHKIT_SYNC_TRIGGERS,
   recordHealthKitTypeArrivals,
   type HealthKitTypeArrival,
 } from "@/lib/integrations/healthkit-type-sync";
@@ -198,7 +199,7 @@ const batchEntrySchema = z.object({
 // pre-#66 caller stays byte-for-byte unchanged.
 // v1.42 (#1173) — `manual` names a user-initiated "Sync all" run, as opposed to
 // the app simply being open (`foreground`).
-const syncTriggerEnum = z.enum(["foreground", "background", "push", "manual"]);
+const syncTriggerEnum = z.enum(HEALTHKIT_SYNC_TRIGGERS);
 
 const batchPayloadSchema = z.object({
   entries: z.array(batchEntrySchema).min(1),

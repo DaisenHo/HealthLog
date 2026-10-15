@@ -203,7 +203,7 @@ const metricFreshnessEntry = z
     type: z
       .string()
       .describe(
-        "The measurement type (e.g. `RESPIRATORY_RATE`), or `WORKOUTS` for the workout leg.",
+        "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
       ),
     lastSeenAt: z.iso
       .datetime({ offset: true })
@@ -245,11 +245,18 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .describe(
         "When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only. Null when none has. Same omission rules as `lastReceivedAt`.",
       ),
+    lastBackgroundAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .optional()
+      .describe(
+        'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so opening the app does not hide an earlier background arrival. Null when the type has never arrived in the background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose latest arrival then was a background one starts with that date and every other type starts null. Same omission rules as `lastReceivedAt`.',
+      ),
   })
   .meta({
     id: "AppleHealthMetricFreshnessEntry",
     description:
-      "Per-type Apple Health freshness: the newest sample's timestamp and staleness flag, plus the per-type arrival facts recorded by `POST /api/measurements/batch` (v1.42).",
+      'Per-type Apple Health freshness: the newest sample\'s timestamp and staleness flag, plus the per-type arrival facts recorded by `POST /api/measurements/batch` (v1.42). Since v1.42.4 the list can also hold a `MEDICATION_DOSE` entry: `lastSeenAt` is the newest live dose imported from Apple Health (its `takenAt`, or its slot for a skipped dose), and the arrival facts come from `POST /api/medications/intake/bulk` entries sent with `source: "APPLE_HEALTH"`. A dose recorded in the app does not move them. Doses are never flagged `stale`.',
   });
 
 // Issue #778 — the two backfill-progress figures the server genuinely holds.
