@@ -43,7 +43,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, isScopedCredential, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -195,7 +195,13 @@ interface EntryResult {
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
 
 async function postBulk(request: NextRequest): Promise<Response> {
-  const { user } = await requireAuth();
+  const auth = await requireAuth();
+  const { user } = auth;
+  // A narrow, single-purpose credential (a bridge, an ingest token) is no
+  // Apple Health sync, so it never writes the dose arrival record below. The
+  // bare `requireAuth()` refuses such a credential today; the check keeps the
+  // record honest should this route ever declare a scope.
+  const scoped = isScopedCredential(auth);
 
   const rl = await checkRateLimit(
     `medications:intake:bulk:${user.id}`,
@@ -1021,7 +1027,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     doseArrival.accepted += 1;
     if (result.status !== "duplicate") doseArrival.newSamples += 1;
   }
-  if (doseArrival.accepted > 0) {
+  if (doseArrival.accepted > 0 && !scoped) {
     await recordHealthKitTypeArrivals(prisma, {
       userId: user.id,
       counts: new Map([[MEDICATION_DOSE_ARRIVAL_TYPE, doseArrival]]),
