@@ -71,15 +71,24 @@ export function isSafeAppPath(value: unknown): value is string {
 }
 
 /**
+ * The app root: where a delivery that may not name its event leads.
+ */
+export const NEUTRAL_TAP_PATH = "/";
+
+/**
  * The path a delivery opens, or `null` when it carries none.
  *
- * - A Guardian receiving a managed-record notification gets no deep link:
- *   their session opens on their own record, and a path into the managed
- *   record's surfaces would land them on the wrong person. The app root is
- *   where the record switcher lives.
- * - Discreet mode (cycle privacy) carries no path either, because the path
- *   names the surface (`/cycle`) and discreet mode promises that nothing on
- *   the wire names the event.
+ * Every visible delivery carries one (v1.43); only a silent background push
+ * (`null` in {@link NOTIFICATION_TAP_PATHS}) does not. Two deliveries get the
+ * app root instead of their event's path:
+ *
+ * - A Guardian receiving a managed-record notification: their session opens
+ *   on their own record, and a path into the managed record's surfaces would
+ *   land them on the wrong person. The app root is where the record switcher
+ *   lives.
+ * - Discreet mode (cycle privacy): the event's path names the surface
+ *   (`/cycle`), and discreet mode promises that nothing on the wire names the
+ *   event. The root names nothing.
  */
 export function resolveTapPath(
   payload: Pick<
@@ -89,8 +98,8 @@ export function resolveTapPath(
 ): string | null {
   const fallback = NOTIFICATION_TAP_PATHS[payload.eventType];
   if (fallback === null || fallback === undefined) return null;
-  if (isManagedGuardianDelivery(payload)) return null;
-  if (payload.discreet) return null;
+  if (isManagedGuardianDelivery(payload)) return NEUTRAL_TAP_PATH;
+  if (payload.discreet) return NEUTRAL_TAP_PATH;
   const override = payload.metadata?.url;
   return isSafeAppPath(override) ? override : fallback;
 }

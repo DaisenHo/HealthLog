@@ -33,6 +33,7 @@ import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-at
 import { plainPushText } from "@/lib/notifications/strip-emoji";
 import { stripHtml } from "@/lib/notifications/strip-html";
 import { isManagedGuardianDelivery } from "@/lib/notifications/managed-delivery";
+import { NEUTRAL_TAP_PATH } from "@/lib/notifications/tap-target";
 import type { NotificationTap } from "@/lib/notifications/types";
 
 export interface ApnsPayload {
@@ -755,10 +756,13 @@ export async function sendViaApns(
             ),
             // The resolved tap target (`tap-target.ts`): a same-origin path
             // the app opens on tap. Overrides a producer's `metadata.url`,
-            // which the resolver already took into account. Never on a
-            // managed delivery or a discreet one (the resolver returns null).
-            ...(!managedDelivery && payload.tap?.path
-              ? { url: payload.tap.path }
+            // which the resolver already took into account. A managed
+            // delivery and a discreet one carry the app root (the resolver
+            // answers `/`); the managed arm is pinned here as well, so a
+            // payload that bypassed the resolver still cannot deep-link a
+            // Guardian into the record they are only notified about.
+            ...(payload.tap?.path
+              ? { url: managedDelivery ? NEUTRAL_TAP_PATH : payload.tap.path }
               : {}),
           },
           threadId: routingEvent,
