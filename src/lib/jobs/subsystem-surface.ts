@@ -43,6 +43,8 @@ const subsystemSurface = {
   "polar-sync": { audience: "account" },
   "oura-sync": { audience: "account" },
   "strava-sync": { audience: "account" },
+  "integration-watchdog-hourly": { audience: "system" },
+  "integration-watchdog-daily": { audience: "system" },
   "strava-backfill": { audience: "system" },
   "oidc-native-handoff-cleanup": { audience: "system" },
 
