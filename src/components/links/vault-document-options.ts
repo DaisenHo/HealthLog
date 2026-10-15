@@ -7,37 +7,40 @@
  * The visit and vaccination forms used to fetch their document options with a
  * page size the list route refuses (`limit=200` against a ceiling of 100). The
  * 422 read as an empty list, so the picker said "No documents yet." to a
- * person with a full vault, and the only way a scan ever got attached was the
- * ±7-day suggestion offered at upload. A childhood record covering eight doses
- * from one sheet of paper could therefore be filed against exactly one of
- * them.
+ * person with a full vault. The next version walked the whole vault, ten
+ * pages deep, and anything past the thousandth document was out of reach.
  *
- * Now the whole vault is offered, paged through at the route's own ceiling,
- * and a read failure says so instead of pretending the vault is empty. The
- * documents dated within the same ±{@link ENCOUNTER_SUGGEST_WINDOW_DAYS}-day
- * window the upload suggestion uses stay on top under their own heading, so
- * the common case is still one tap; everything else follows, grouped by month
- * and searchable.
+ * Now the picker opens on the documents filed around the record's date and
+ * pages older and newer from there, and the search box asks the list route
+ * itself, so a document is reachable wherever it sits in a vault of any size
+ * (`useLinkPickerPages`). A read failure says so instead of pretending the
+ * vault is empty. The documents dated within the same
+ * ±{@link ENCOUNTER_SUGGEST_WINDOW_DAYS}-day window the upload suggestion uses
+ * stay on top under their own heading, so the common case is still one tap;
+ * everything else follows, grouped by month.
+ *
+ * A document whose filing date was cleared falls outside every date window;
+ * the search still finds it by title, file name or content.
  */
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 
-import type { EntityLinkOption } from "@/components/links/entity-link-picker";
+import {
+  serverPagingFrom,
+  type EntityLinkOption,
+} from "@/components/links/entity-link-picker";
+import { documentPickerUrl } from "@/components/links/picker-requests";
+import {
+  pickerPivot,
+  useLinkPickerPages,
+  type PickerPage,
+  type PickerPageRequest,
+} from "@/components/links/use-link-picker-pages";
 import { apiGet } from "@/lib/api/api-fetch";
 import { ENCOUNTER_SUGGEST_WINDOW_DAYS } from "@/lib/encounters/suggest-window";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import {
-  DOCUMENT_LIST_MAX_LIMIT,
-  type InboundDocumentDto,
-} from "@/lib/validations/inbound-documents";
+import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import { daysBetweenDateKeys } from "@/lib/tz/format";
-
-/**
- * How many pages the picker walks. At the route's ceiling of 100 that is a
- * thousand documents, past which the vault's own search is the better tool.
- */
-const VAULT_PICKER_MAX_PAGES = 10;
 
 /** The fields the option list reads off a document. */
 export type VaultDocument = Pick<
@@ -50,25 +53,12 @@ interface ListPage {
   nextCursor: string | null;
 }
 
-/** Walk the vault newest filing date first, at the route's own page ceiling. */
-export async function fetchWholeVault(): Promise<VaultDocument[]> {
-  const documents: VaultDocument[] = [];
-  let cursor: string | null = null;
-  for (let page = 0; page < VAULT_PICKER_MAX_PAGES; page++) {
-    const params = new URLSearchParams({
-      sort: "documentDate",
-      order: "desc",
-      limit: String(DOCUMENT_LIST_MAX_LIMIT),
-    });
-    if (cursor) params.set("cursor", cursor);
-    const result: ListPage = await apiGet<ListPage>(
-      `/api/documents/inbound?${params.toString()}`,
-    );
-    documents.push(...result.documents);
-    cursor = result.nextCursor;
-    if (!cursor) break;
-  }
-  return documents;
+/** One picker page of the vault. */
+export async function fetchVaultPage(
+  request: PickerPageRequest,
+): Promise<PickerPage<VaultDocument>> {
+  const result = await apiGet<ListPage>(documentPickerUrl(request));
+  return { items: result.documents, next: result.nextCursor };
 }
 
 /**
@@ -135,8 +125,9 @@ export function documentOptionsWithSuggestions(
 }
 
 /**
- * The picker's data: the whole vault as options, the suggestion group on top
- * when the record has a date, and the query state an error row needs.
+ * The picker's data: the vault around the record's date as options, the
+ * suggestion group on top when the record has a date, the paging the sheet
+ * offers, and the query state an error row needs.
  */
 export function useVaultDocumentOptions({
   enabled,
@@ -148,26 +139,42 @@ export function useVaultDocumentOptions({
 }) {
   const { t } = useTranslations();
   const format = useFormatters();
-  const query = useQuery({
-    queryKey: queryKeys.inboundDocumentVaultPicker(),
+  const pages = useLinkPickerPages<VaultDocument>({
     enabled,
-    queryFn: fetchWholeVault,
+    pivot: pickerPivot(anchor),
+    queryKey: queryKeys.inboundDocumentVaultPicker,
+    fetchPage: fetchVaultPage,
   });
 
   const options = useMemo(
     () =>
-      documentOptionsWithSuggestions(query.data ?? [], anchor, {
+      documentOptionsWithSuggestions(pages.items, anchor, {
         suggested: t("links.picker.suggested"),
         month: (iso) => `${format.monthShort(iso)} ${iso.slice(0, 4)}`,
         date: (iso) => format.date(iso),
       }),
-    [query.data, anchor, t, format],
+    [pages.items, anchor, t, format],
   );
 
   return {
     options,
-    pending: query.isPending,
-    error: query.isError,
-    retry: () => void query.refetch(),
+    pending: pages.pending,
+    error: pages.error,
+    retry: pages.retry,
+    server: serverPagingFrom(pages),
+  };
+}
+
+/** A linked document as the record's own read names it, for its chip. */
+export function linkedDocumentOption(
+  link: { id: string; label: string | null; date: string | null },
+  date: (iso: string) => string,
+): EntityLinkOption | null {
+  if (link.label === null) return null;
+  return {
+    id: link.id,
+    label: link.label,
+    dateLabel: link.date ? date(link.date) : null,
+    href: `/documents?doc=${encodeURIComponent(link.id)}`,
   };
 }

@@ -43,6 +43,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const parsed = illnessEpisodeListQuerySchema.safeParse({
     limit: params.get("limit") ?? undefined,
     includeResolved: params.get("includeResolved") ?? undefined,
+    offset: params.get("offset") ?? undefined,
+    from: params.get("from") ?? undefined,
+    to: params.get("to") ?? undefined,
+    sortDir: params.get("sortDir") ?? undefined,
+    q: params.get("q") ?? undefined,
   });
   if (!parsed.success) {
     return returnAllZodIssues(parsed.error, 422, {
@@ -50,15 +55,28 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
   }
 
+  const { from, to, q, offset, sortDir } = parsed.data;
   const limit = parsed.data.limit ?? 50;
+  const order = sortDir ?? "desc";
   const rows = await prisma.illnessEpisode.findMany({
     where: {
       userId: user.id,
       deletedAt: null,
       ...(parsed.data.includeResolved === "false" ? { resolvedAt: null } : {}),
+      ...(from || to
+        ? {
+            onsetAt: {
+              ...(from ? { gte: new Date(from) } : {}),
+              ...(to ? { lte: new Date(to) } : {}),
+            },
+          }
+        : {}),
+      ...(q ? { label: { contains: q, mode: "insensitive" as const } } : {}),
     },
-    orderBy: { onsetAt: "desc" },
+    // `id` breaks ties so offset paging never repeats or drops a row.
+    orderBy: [{ onsetAt: order }, { id: order }],
     take: limit,
+    skip: offset ?? 0,
   });
 
   annotate({

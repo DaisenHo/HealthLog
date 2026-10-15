@@ -91,37 +91,36 @@ describe("documentOptionsWithSuggestions", () => {
   });
 });
 
-describe("fetchWholeVault", () => {
-  it("asks only for pages the list route accepts, and walks every cursor", async () => {
+describe("fetchVaultPage", () => {
+  it("asks for one page the list route accepts and hands back its cursor", async () => {
     const { documentListQuerySchema } =
       await import("@/lib/validations/inbound-documents");
     const apiFetch = await import("@/lib/api/api-fetch");
     const urls: string[] = [];
-    const pages = [
-      { documents: [doc("a", "2026-05-01")], nextCursor: "a" },
-      { documents: [doc("b", "1991-03-01")], nextCursor: null },
-    ];
     const spy = vi
       .spyOn(apiFetch, "apiGet")
       .mockImplementation(async (url: string) => {
         urls.push(url);
-        return pages.shift() as never;
+        return {
+          documents: [doc("a", "2026-05-01")],
+          nextCursor: "a",
+        } as never;
       });
     try {
-      const { fetchWholeVault } = await import("../vault-document-options");
-      const documents = await fetchWholeVault();
-      expect(documents.map((d) => d.id)).toEqual(["a", "b"]);
-      expect(urls).toHaveLength(2);
-      for (const url of urls) {
-        // The route parses its query with this schema and answers a 422 to
-        // anything it refuses; the picker used to read that 422 as an empty
-        // vault.
-        const params = Object.fromEntries(
-          new URL(url, "http://local").searchParams,
-        );
-        expect(documentListQuerySchema.safeParse(params).success).toBe(true);
-      }
-      expect(urls[1]).toContain("cursor=a");
+      const { fetchVaultPage } = await import("../vault-document-options");
+      const page = await fetchVaultPage({
+        direction: "older",
+        pivot: "2026-05-17T23:59:59.999Z",
+        term: "",
+        cursor: "z",
+      });
+      expect(page.items.map((d) => d.id)).toEqual(["a"]);
+      expect(page.next).toBe("a");
+      const params = Object.fromEntries(
+        new URL(urls[0]!, "http://local").searchParams,
+      );
+      expect(documentListQuerySchema.safeParse(params).success).toBe(true);
+      expect(params).toMatchObject({ cursor: "z", to: "2026-05-17" });
     } finally {
       spy.mockRestore();
     }

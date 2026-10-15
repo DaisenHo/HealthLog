@@ -12174,7 +12174,10 @@
       "suggested": "Um dieses Datum",
       "loadError": "Die Liste konnte nicht geladen werden.",
       "removeNamed": "{name} entfernen",
-      "removed": "Verknüpfung mit {name} gelöst"
+      "removed": "Verknüpfung mit {name} gelöst",
+      "linked": "Verknüpft",
+      "loadNewer": "Neuere laden",
+      "loadOlder": "Ältere laden"
     }
   },
   "bodySites": {

@@ -191,6 +191,12 @@ export function VaccinationForm({
    */
   savedDocuments?: {
     ids: string[] | null;
+    /** The same links with the label and date the detail read carries. */
+    links?: ReadonlyArray<{
+      id: string;
+      label: string | null;
+      date: string | null;
+    }>;
     pending: boolean;
     error: boolean;
     retry: () => void;
@@ -376,6 +382,7 @@ export function VaccinationForm({
         enabled={user?.modules?.inboundDocuments === true}
         anchor={anchor}
         documentIds={draft.documentIds ?? savedDocuments?.ids ?? []}
+        linkedDocuments={savedDocuments?.links}
         seedPending={
           draft.documentIds === null && (savedDocuments?.pending ?? false)
         }

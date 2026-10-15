@@ -12174,7 +12174,10 @@
       "suggested": "Around this date",
       "loadError": "The list could not be loaded.",
       "removeNamed": "Remove {name}",
-      "removed": "Unlinked {name}"
+      "removed": "Unlinked {name}",
+      "linked": "Linked",
+      "loadNewer": "Load newer",
+      "loadOlder": "Load older"
     }
   },
   "bodySites": {

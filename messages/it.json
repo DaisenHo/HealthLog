@@ -12174,7 +12174,10 @@
       "suggested": "Intorno a questa data",
       "loadError": "Impossibile caricare l’elenco.",
       "removeNamed": "Rimuovi {name}",
-      "removed": "Collegamento a {name} rimosso"
+      "removed": "Collegamento a {name} rimosso",
+      "linked": "Collegati",
+      "loadNewer": "Carica più recenti",
+      "loadOlder": "Carica meno recenti"
     }
   },
   "bodySites": {

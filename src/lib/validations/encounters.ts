@@ -164,6 +164,11 @@ export const encounterListQuerySchema = z
      */
     episodeId: id.optional(),
     limit: z.coerce.number().int().min(1).max(200).optional(),
+    /**
+     * Rows to skip in each arm, for a picker that pages a long history in
+     * `limit`-sized steps inside a date window.
+     */
+    offset: z.coerce.number().int().min(0).max(100_000).optional(),
   })
   .strict()
   .refine((q) => !(q.from && q.to) || q.from <= q.to, {

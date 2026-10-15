@@ -141,6 +141,7 @@ export function VaccinationSheet({
                   ids:
                     detail.data?.documents?.map((document) => document.id) ??
                     null,
+                  links: detail.data?.documents,
                   pending: detail.isPending,
                   error: detail.isError,
                   retry: () => void detail.refetch(),

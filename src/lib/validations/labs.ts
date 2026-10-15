@@ -284,6 +284,11 @@ export const listLabResultsSchema = z.object({
   biomarkerId: z.string().trim().min(1).max(64).optional(),
   analyte: z.string().trim().min(1).max(120).optional(),
   panel: z.string().trim().min(1).max(120).optional(),
+  /**
+   * Case-insensitive substring over the analyte and the panel name, so a
+   * picker can find one result in a long history without paging to it.
+   */
+  q: z.string().trim().min(1).max(120).optional(),
   from: z
     .string()
     .datetime()

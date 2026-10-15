@@ -12174,7 +12174,10 @@
       "suggested": "Wokół tej daty",
       "loadError": "Nie udało się wczytać listy.",
       "removeNamed": "Usuń {name}",
-      "removed": "Odłączono: {name}"
+      "removed": "Odłączono: {name}",
+      "linked": "Połączone",
+      "loadNewer": "Wczytaj nowsze",
+      "loadOlder": "Wczytaj starsze"
     }
   },
   "bodySites": {
