@@ -38,6 +38,7 @@ import {
   buildGradedSeriesFromPoints,
   degradeStatusSnapshotToBudget,
 } from "@/lib/insights/graded-series";
+import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
 import {
   type SupportedLocale,
@@ -664,6 +665,7 @@ export async function prepareMoodStatusForUser(
 
   const shed = degradeStatusSnapshotToBudget(
     snapshot as unknown as Record<string, unknown>,
+    { maxChars: await statusSnapshotCharsForRecord(userId) },
   );
   const snapshotJson = JSON.stringify(snapshot);
 

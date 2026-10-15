@@ -698,9 +698,9 @@ export function convertGradedSeries(
 export const MAX_SNAPSHOT_CHARS = 14_000;
 
 /**
- * Walk an arbitrary snapshot object and, while it exceeds
- * `MAX_SNAPSHOT_CHARS` (measured against the compact form the prompt
- * ships), shed the lowest-signal slices in order:
+ * Walk an arbitrary snapshot object and, while it exceeds the cap
+ * (`options.maxChars`, else `MAX_SNAPSHOT_CHARS`; measured against the
+ * compact form the prompt ships), shed the lowest-signal slices in order:
  *   1. drop every graded `yearly` array,
  *   2. drop every graded `weekly` array,
  *   3. truncate any other array to its tail `arrayTailCap` entries
@@ -714,11 +714,21 @@ export const MAX_SNAPSHOT_CHARS = 14_000;
  */
 export function degradeStatusSnapshotToBudget(
   snapshot: Record<string, unknown>,
-  arrayTailCap = 30,
+  options: {
+    /**
+     * v1.43 (#1217) — the cap for this record's AI usage level
+     * (`statusSnapshotChars`, `@/lib/ai/usage-level`). Defaults to
+     * `MAX_SNAPSHOT_CHARS`.
+     */
+    maxChars?: number;
+    arrayTailCap?: number;
+  } = {},
 ): string[] {
+  const maxChars = options.maxChars ?? MAX_SNAPSHOT_CHARS;
+  const arrayTailCap = options.arrayTailCap ?? 30;
   const shed: string[] = [];
   const size = () => JSON.stringify(snapshot).length;
-  if (size() <= MAX_SNAPSHOT_CHARS) return shed;
+  if (size() <= maxChars) return shed;
 
   const walk = (
     node: unknown,
@@ -746,14 +756,14 @@ export function degradeStatusSnapshotToBudget(
   };
 
   dropField("yearly");
-  if (size() <= MAX_SNAPSHOT_CHARS) {
+  if (size() <= maxChars) {
     shed.push("yearly");
     return shed;
   }
   shed.push("yearly");
 
   dropField("weekly");
-  if (size() <= MAX_SNAPSHOT_CHARS) {
+  if (size() <= maxChars) {
     shed.push("weekly");
     return shed;
   }
@@ -769,7 +779,7 @@ export function degradeStatusSnapshotToBudget(
       parent[key] = value.slice(-arrayTailCap);
     }
   });
-  if (size() <= MAX_SNAPSHOT_CHARS) {
+  if (size() <= maxChars) {
     shed.push("array-tails");
     return shed;
   }

@@ -104,6 +104,11 @@ import {
   stripJsonFences,
   type SupportedLocale,
 } from "@/lib/insights/status-shared";
+import {
+  applyBriefingShortForm,
+  briefingFormForRecord,
+  buildBriefingShortFormBlock,
+} from "@/lib/insights/briefing-short-form";
 import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
@@ -1008,11 +1013,16 @@ export async function generateComprehensiveInsight(
   const planProgressLines = await buildPlanProgressLines(userId).catch(
     () => [] as string[],
   );
+  // v1.43 (#1217) — the short form on the `frugal` usage level. It joins the
+  // fingerprint only when it applies, so every other account keeps its stored
+  // hash, and a level change regenerates the briefing once.
+  const briefingForm = await briefingFormForRecord(userId);
   const snapshotHash = hashInsightSnapshot({
     features: compactFeatures,
     aboutMe: aboutMe ?? null,
     comparisonBaseline,
     generationLocale: locale,
+    ...(briefingForm === "short" ? { briefingForm } : {}),
     // Absent without an active plan, so an account without one keeps its
     // stored fingerprint; with one, a plan that moves regenerates the
     // briefing the way moved data does.
@@ -1076,6 +1086,7 @@ export async function generateComprehensiveInsight(
     locale,
     await resolveUserTimezone(userId),
   );
+  userPrompt += buildBriefingShortFormBlock(locale, briefingForm);
   const systemPrompt = buildSystemPromptWithReferences(
     locale,
     referenceMetrics,
@@ -1587,6 +1598,11 @@ export async function generateComprehensiveInsight(
     // generation is a real "no fresh briefing tonight" outcome, and the read
     // path needs the marker to render an honest state instead of silence.
     return failBeforeProvider(userId, locale, "aborted");
+  }
+
+  // v1.43 (#1217) — the short form holds its counts whatever the model wrote.
+  if (briefingForm === "short") {
+    insights = applyBriefingShortForm(insights);
   }
 
   // The payload was built under the privacy and profile scope captured before

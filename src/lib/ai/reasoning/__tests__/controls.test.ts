@@ -5,8 +5,9 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { row } = vi.hoisted(() => ({
+const { row, user } = vi.hoisted(() => ({
   row: { current: null as unknown, fail: false },
+  user: { level: null as string | null },
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -16,6 +17,9 @@ vi.mock("@/lib/db", () => ({
         if (row.fail) throw new Error("db down");
         return row.current;
       }),
+    },
+    user: {
+      findUnique: vi.fn(async () => ({ aiUsageLevel: user.level })),
     },
   },
 }));
@@ -27,11 +31,13 @@ vi.mock("@/lib/logging/context", () => ({
 import {
   loadReasoningControls,
   resolveCoachTurnReasoningLevel,
+  resolveJobReasoning,
 } from "../controls";
 
 beforeEach(() => {
   row.current = null;
   row.fail = false;
+  user.level = null;
 });
 
 describe("loadReasoningControls", () => {
@@ -86,5 +92,43 @@ describe("resolveCoachTurnReasoningLevel", () => {
     expect(await resolveCoachTurnReasoningLevel({ reasoning: "high" })).toBe(
       "off",
     );
+  });
+});
+
+// #1217 — background reasoning per AI usage level.
+describe("resolveJobReasoning by usage level", () => {
+  const chain = [{ providerType: "openai" as const }];
+
+  it("asks for nothing on frugal", async () => {
+    user.level = "FRUGAL";
+    row.current = { aiUsageMaxLevel: "FULL", aiUsageDefaultLevel: "STANDARD" };
+    expect(
+      await resolveJobReasoning("daily_briefing", chain, "u1"),
+    ).toBeUndefined();
+  });
+
+  it.each(["STANDARD", "FULL"])(
+    "keeps the job's level on %s",
+    async (level) => {
+      user.level = level;
+      row.current = {
+        aiUsageMaxLevel: "FULL",
+        aiUsageDefaultLevel: "STANDARD",
+      };
+      expect(await resolveJobReasoning("daily_briefing", chain, "u1")).toEqual({
+        effort: "medium",
+        summaries: false,
+      });
+    },
+  );
+
+  it("follows a frugal instance default for an account without a choice", async () => {
+    row.current = {
+      aiUsageMaxLevel: "STANDARD",
+      aiUsageDefaultLevel: "FRUGAL",
+    };
+    expect(
+      await resolveJobReasoning("daily_briefing", chain, "u1"),
+    ).toBeUndefined();
   });
 });

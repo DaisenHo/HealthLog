@@ -452,7 +452,6 @@ describe("regeneration gap by ingest source", () => {
       source: "manual",
     });
     expect(probedGapHours(before)).toBe(1);
-    expect(appSettingsFindUnique).not.toHaveBeenCalled();
   });
 
   it("takes the sync gap from AI_SYNC_REGEN_GAP_HOURS when the operator set no value", async () => {
@@ -486,6 +485,70 @@ describe("regeneration gap by ingest source", () => {
   it("falls back to the environment when the settings row cannot be read", async () => {
     process.env.AI_SYNC_REGEN_GAP_HOURS = "24";
     appSettingsFindUnique.mockRejectedValue(new Error("db down"));
+    const before = Date.now();
+    await invalidateStatusInsightsForTypes("u1", ["ACTIVITY_STEPS"], {
+      source: "sync",
+    });
+    expect(probedGapHours(before)).toBe(24);
+  });
+});
+
+// #1217 — the gap per AI usage level: frugal holds a sync to a day and a hand
+// entry to six hours, standard uses the operator's sync gap and the hour,
+// full keeps the hour for both (the behaviour before v1.43).
+describe("regeneration gap by usage level", () => {
+  const cases: Array<
+    [level: string | null, source: "sync" | "manual", hours: number]
+  > = [
+    ["FRUGAL", "sync", 24],
+    ["FRUGAL", "manual", 6],
+    ["STANDARD", "sync", 6],
+    ["STANDARD", "manual", 1],
+    ["FULL", "sync", 1],
+    ["FULL", "manual", 1],
+    // No choice: the instance default (standard).
+    [null, "sync", 6],
+    [null, "manual", 1],
+  ];
+
+  it.each(cases)(
+    "%s after a %s ingest waits %i h",
+    async (level, source, hours) => {
+      userFindUnique.mockResolvedValue({ locale: "de", aiUsageLevel: level });
+      appSettingsFindUnique.mockResolvedValue({
+        aiUsageMaxLevel: "FULL",
+        aiUsageDefaultLevel: "STANDARD",
+        aiSyncRegenGapHours: null,
+      });
+      const before = Date.now();
+      await invalidateStatusInsightsForTypes("u1", ["ACTIVITY_STEPS"], {
+        source,
+      });
+      expect(probedGapHours(before)).toBe(hours);
+    },
+  );
+
+  it("caps a stored full choice at the operator's ceiling", async () => {
+    userFindUnique.mockResolvedValue({ locale: "de", aiUsageLevel: "FULL" });
+    appSettingsFindUnique.mockResolvedValue({
+      aiUsageMaxLevel: "STANDARD",
+      aiUsageDefaultLevel: "STANDARD",
+      aiSyncRegenGapHours: 8,
+    });
+    const before = Date.now();
+    await invalidateStatusInsightsForTypes("u1", ["ACTIVITY_STEPS"], {
+      source: "sync",
+    });
+    expect(probedGapHours(before)).toBe(8);
+  });
+
+  it("follows a frugal instance default for an account without a choice", async () => {
+    userFindUnique.mockResolvedValue({ locale: "de", aiUsageLevel: null });
+    appSettingsFindUnique.mockResolvedValue({
+      aiUsageMaxLevel: "STANDARD",
+      aiUsageDefaultLevel: "FRUGAL",
+      aiSyncRegenGapHours: null,
+    });
     const before = Date.now();
     await invalidateStatusInsightsForTypes("u1", ["ACTIVITY_STEPS"], {
       source: "sync",

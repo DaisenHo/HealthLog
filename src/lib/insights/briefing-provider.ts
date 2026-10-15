@@ -127,7 +127,7 @@ export async function runBriefingCompletion(
   // v1.41 — one resolution per call: the operator's switch and cap, the payer
   // from the chain's primary. `undefined` is today's wire.
   const reasoning = args.reasoningJob
-    ? await resolveJobReasoning(args.reasoningJob, args.chain)
+    ? await resolveJobReasoning(args.reasoningJob, args.chain, args.userId)
     : undefined;
   const thinkingTokens =
     reasoning && reasoning.effort !== "off"
