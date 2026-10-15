@@ -51,6 +51,7 @@ vi.mock("@/lib/db-compat", () => ({
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 let counter = 0;
 
@@ -771,7 +772,9 @@ describe("the switch endpoint", () => {
     const ungranting = await switchTo(stranger.id);
 
     expect(unknown.status).toBe(ungranting.status);
-    expect(await unknown.text()).toBe(await ungranting.text());
+    expect(await bodyWithoutRequestId(unknown)).toBe(
+      await bodyWithoutRequestId(ungranting),
+    );
   });
 
   it("refuses over Bearer, where the carrier is the header", async () => {

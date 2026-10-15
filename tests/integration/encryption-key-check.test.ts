@@ -157,7 +157,10 @@ describe("boot encryption key check (real Postgres)", () => {
     );
     expect(refused.status).toBe(503);
     const body = await refused.json();
-    expect(body.meta).toEqual({ errorCode: "encryption.key_mismatch" });
+    expect(body.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "encryption.key_mismatch",
+    });
 
     const { GET: healthGet } = await import("@/app/api/health/route");
     const health = await asRoute(healthGet)(
@@ -625,6 +628,7 @@ describe("routes outside apiHandler refuse while the key does not match", () => 
     );
     expect(res.status).toBe(503);
     expect((await res.json()).meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "encryption.key_mismatch",
     });
   });

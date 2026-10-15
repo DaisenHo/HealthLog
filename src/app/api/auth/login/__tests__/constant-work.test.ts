@@ -80,6 +80,7 @@ vi.mock("next/headers", () => ({
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { verifyPasswordOrDummy } from "@/lib/auth/password";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 function makeRequest(): NextRequest {
   return new NextRequest("http://localhost/api/auth/login", {
@@ -159,7 +160,7 @@ describe("POST /api/auth/login — constant work across the refusals", () => {
       vi.mocked(prisma.user.findFirst).mockResolvedValue(account as never);
       const res = await POST(makeRequest());
       statuses.push(res.status);
-      bodies.push(await res.text());
+      bodies.push(await bodyWithoutRequestId(res));
     }
     expect(new Set(statuses)).toEqual(new Set([401]));
     expect(new Set(bodies).size).toBe(1);

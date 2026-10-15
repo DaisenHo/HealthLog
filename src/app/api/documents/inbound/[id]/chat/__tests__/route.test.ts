@@ -421,6 +421,7 @@ describe("POST — consent / budget gating", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "consent.ai.required",
       capability: "documentAi",
       reason: "consent_required",

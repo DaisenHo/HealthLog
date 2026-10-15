@@ -130,6 +130,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { emitIfSampled } from "@/lib/logging/transports";
 import { prisma } from "@/lib/db";
 import type { WideEvent } from "@/lib/logging/types";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 const OWNER = "owner-1";
 const DELEGATE = "delegate-1";
@@ -604,7 +605,7 @@ describe("refusals do not enumerate", () => {
     const missing = await route(() =>
       requireRecordAuth("read", "measurements"),
     )();
-    const missingBody = await missing.text();
+    const missingBody = await bodyWithoutRequestId(missing);
 
     vi.clearAllMocks();
     headerJar.clear();
@@ -616,7 +617,7 @@ describe("refusals do not enumerate", () => {
     const present = await route(() =>
       requireRecordAuth("read", "measurements"),
     )();
-    const presentBody = await present.text();
+    const presentBody = await bodyWithoutRequestId(present);
 
     expect(missing.status).toBe(present.status);
     // Bytes, not statuses. A difference of one word here is an account
@@ -631,7 +632,7 @@ describe("refusals do not enumerate", () => {
     const revoked = await route(() =>
       requireRecordAuth("read", "measurements"),
     )();
-    const revokedBody = await revoked.text();
+    const revokedBody = await bodyWithoutRequestId(revoked);
 
     vi.clearAllMocks();
     headerJar.clear();
@@ -642,7 +643,7 @@ describe("refusals do not enumerate", () => {
       requireRecordAuth("read", "measurements"),
     )();
 
-    expect(revokedBody).toBe(await never.text());
+    expect(revokedBody).toBe(await bodyWithoutRequestId(never));
   });
 
   it("keeps the reason off the wire and on the audit row", async () => {
@@ -790,7 +791,7 @@ describe("a scoped grant reaches only the sections it names", () => {
     const outOfScope = await route(() =>
       requireRecordAuth("read", "measurements"),
     )();
-    const outOfScopeBody = await outOfScope.text();
+    const outOfScopeBody = await bodyWithoutRequestId(outOfScope);
 
     grantRows.length = 0;
     liveGrant({ access: "READ" });
@@ -799,7 +800,7 @@ describe("a scoped grant reaches only the sections it names", () => {
     )();
 
     expect(outOfScope.status).toBe(insufficient.status);
-    expect(outOfScopeBody).toBe(await insufficient.text());
+    expect(outOfScopeBody).toBe(await bodyWithoutRequestId(insufficient));
     expect(outOfScopeBody).not.toContain("scope");
     expect(outOfScopeBody).not.toContain("section");
   });
@@ -954,7 +955,7 @@ describe("the guardian resolver gates on the marker, not the grant", () => {
     userRows.set(OWNER, user(OWNER, "USER", null));
     liveGrant({ access: "MANAGE" });
     const fenced = await route(() => requireGuardianAuth())();
-    const fencedBody = await fenced.text();
+    const fencedBody = await bodyWithoutRequestId(fenced);
 
     // Compared against the oldest refusal in the feature: no grant at all. The
     // two are as far apart in meaning as this feature gets — "you were never
@@ -966,7 +967,7 @@ describe("the guardian resolver gates on the marker, not the grant", () => {
     )();
 
     expect(fenced.status).toBe(insufficient.status);
-    expect(fencedBody).toBe(await insufficient.text());
+    expect(fencedBody).toBe(await bodyWithoutRequestId(insufficient));
     expect(fencedBody).not.toContain("guardian");
     expect(fencedBody).not.toContain("managed");
   });

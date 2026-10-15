@@ -140,7 +140,10 @@ describe("PUT /api/settings/webhook — private targets", () => {
     expect(response.status).toBe(422);
     const json = await response.json();
     expect(json.data).toBeNull();
-    expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
+    expect(json.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "private_origin_not_approved",
+    });
     expect(json.error).toContain("NOTIFICATION_PRIVATE_ORIGINS");
     expect(prisma.notificationChannel.upsert).not.toHaveBeenCalled();
   });
@@ -155,7 +158,10 @@ describe("PUT /api/settings/webhook — private targets", () => {
 
     expect(response.status).toBe(422);
     const json = await response.json();
-    expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
+    expect(json.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "private_origin_not_approved",
+    });
     expect(prisma.notificationChannel.upsert).not.toHaveBeenCalled();
   });
 
@@ -181,7 +187,7 @@ describe("PUT /api/settings/webhook — private targets", () => {
     expect(response.status).toBe(422);
     const json = await response.json();
     expect(json.error).toBe("Invalid data");
-    expect(json.meta).toBeUndefined();
+    expect(json.meta).toEqual({ requestId: expect.any(String) });
   });
 
   it("saves a listed loopback target and refuses an unlisted one with the listable code", async () => {
@@ -223,7 +229,10 @@ describe("PUT /api/settings/webhook — private targets", () => {
       const response = await put("webhook", { url, enabled: true });
       expect(response.status).toBe(422);
       const json = await response.json();
-      expect(json.meta).toEqual({ errorCode: "private_origin_not_grantable" });
+      expect(json.meta).toEqual({
+        requestId: expect.any(String),
+        errorCode: "private_origin_not_grantable",
+      });
       expect(json.error).toMatch(/no operator grant can open/);
       expect(json.error).not.toContain("NOTIFICATION_PRIVATE_ORIGINS");
       expect(json.details.issues.length).toBeGreaterThan(0);
@@ -262,7 +271,10 @@ describe("PUT /api/settings/ntfy — private servers", () => {
 
     expect(response.status).toBe(422);
     const json = await response.json();
-    expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
+    expect(json.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "private_origin_not_approved",
+    });
     expect(json.error).toContain("NOTIFICATION_PRIVATE_ORIGINS");
     expect(prisma.notificationChannel.upsert).not.toHaveBeenCalled();
   });
@@ -291,7 +303,10 @@ describe("PUT /api/settings/ntfy — private servers", () => {
 
     expect(response.status).toBe(422);
     const json = await response.json();
-    expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
+    expect(json.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "private_origin_not_approved",
+    });
   });
 });
 
@@ -325,7 +340,10 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
 
       expect(response.status).toBe(422);
       const json = await response.json();
-      expect(json.meta).toEqual({ errorCode: "private_origin_not_approved" });
+      expect(json.meta).toEqual({
+        requestId: expect.any(String),
+        errorCode: "private_origin_not_approved",
+      });
       expect(json.error).toContain("NOTIFICATION_PRIVATE_ORIGINS");
     },
   );
@@ -347,7 +365,10 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
 
       expect(response.status).toBe(422);
       const json = await response.json();
-      expect(json.meta).toEqual({ errorCode: "private_origin_not_grantable" });
+      expect(json.meta).toEqual({
+        requestId: expect.any(String),
+        errorCode: "private_origin_not_grantable",
+      });
       expect(json.error).toMatch(/no operator grant can open/);
       expect(json.error).not.toContain("NOTIFICATION_PRIVATE_ORIGINS");
     },
@@ -372,6 +393,7 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
       expect(response.status).toBe(502);
       const json = await response.json();
       expect(json.meta).toEqual({
+        requestId: expect.any(String),
         errorCode: "upstream_rejected",
         upstreamStatus: 400,
         upstreamBody: '{"error":"Bad Request","errorCode":400}',
@@ -408,7 +430,11 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
 
       expect(response.status).toBe(502);
       const json = await response.json();
-      expect(json.meta).toEqual({ errorCode: code, upstreamStatus: status });
+      expect(json.meta).toEqual({
+        requestId: expect.any(String),
+        errorCode: code,
+        upstreamStatus: status,
+      });
     },
   );
 
@@ -450,7 +476,7 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
 
       expect(response.status).toBe(500);
       const json = await response.json();
-      expect(json.meta).toBeUndefined();
+      expect(json.meta).toEqual({ requestId: expect.any(String) });
       expect(emitIfSampledMock).toHaveBeenCalledWith(
         expect.objectContaining({ level: "error" }),
       );

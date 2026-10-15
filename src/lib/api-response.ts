@@ -301,6 +301,69 @@ export function apiError(message: string, status = 400, meta?: ErrorMeta) {
   return buildJsonErrorResponse({ data: null, error: message }, status, meta);
 }
 
+/** An error body larger than this is not an envelope worth re-reading. */
+const ERROR_ENVELOPE_MAX_BYTES = 64 * 1024;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Put the request id into `meta.requestId` of an error envelope.
+ *
+ * Every 4xx and 5xx a route answers with the `{ data: null, error, meta? }`
+ * envelope carries the full request id beside the `x-request-id` header, so a
+ * client behind a proxy that strips headers can still show the id a person
+ * reads out to the operator, who finds the event in the admin log with it.
+ *
+ * Applied once, by `apiHandler`, to whatever the handler answered, so a route
+ * that builds its error with `apiError`, with `NextResponse.json` by hand or by
+ * throwing cannot be the one that forgets it. Anything that is not a JSON
+ * envelope (a redirect, a stream, a FHIR `OperationOutcome`, a body that does
+ * not parse) is returned untouched, and an id the handler already set wins.
+ */
+export async function withErrorRequestId(
+  response: Response,
+  requestId: string,
+): Promise<Response> {
+  if (response.status < 400) return response;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) return response;
+  const declared = Number(response.headers.get("content-length") ?? "0");
+  if (declared > ERROR_ENVELOPE_MAX_BYTES) return response;
+
+  let body: unknown;
+  try {
+    const text = await response.clone().text();
+    if (text.length === 0 || text.length > ERROR_ENVELOPE_MAX_BYTES) {
+      return response;
+    }
+    body = JSON.parse(text);
+  } catch {
+    return response;
+  }
+  // The envelope and nothing else: a JSON-RPC error (`/mcp`) or an RFC-shaped
+  // OAuth body has no `data: null` beside its `error`, and a member added to
+  // either would be one its own clients do not expect.
+  if (
+    !isPlainObject(body) ||
+    body.data !== null ||
+    typeof body.error !== "string"
+  ) {
+    return response;
+  }
+  const meta = body.meta;
+  if (meta !== undefined && !isPlainObject(meta)) return response;
+  if (meta && typeof meta.requestId === "string") return response;
+
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  return new NextResponse(
+    JSON.stringify({ ...body, meta: { ...(meta ?? {}), requestId } }),
+    { status: response.status, statusText: response.statusText, headers },
+  );
+}
+
 /**
  * Read a request body as text, counting BYTES as they arrive and stopping at
  * `maxBytes`. A body that declares a larger `Content-Length` is refused before
