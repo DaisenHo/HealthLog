@@ -242,6 +242,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/workouts/batch/route.ts",
   "src/app/api/labs/route.ts",
   "src/app/api/labs/[id]/route.ts",
+  // The Labs list's per-marker overview reads the same row store.
+  "src/app/api/labs/overview/route.ts",
   // v1.18.1 — the lab-result delete-Undo restore endpoint and the
   // user-scoped Biomarker catalog CRUD share the LabResult data-layer
   // reasoning: the labs module gates the SURFACES (the Labs page), not the

@@ -1386,6 +1386,7 @@
       "emptyState": "Aucun effet secondaire consigné. Le suivi peut aider votre médecin et révéler des tendances dans le temps.",
       "recentTitle": "30 derniers jours",
       "loading": "Chargement…",
+      "loadMore": "Charger plus",
       "deleteCta": "Supprimer",
       "deleteError": "Impossible de supprimer l'entrée",
       "errorSeverity": "La sévérité doit être entre 1 et 5",

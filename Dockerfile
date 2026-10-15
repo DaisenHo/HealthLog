@@ -202,14 +202,20 @@ COPY --from=builder /app/src/generated ./src/generated
 # `@node-rs/argon2` from the traced runtime tree. Scripts that import the
 # application graph (`@/…`, the generated Prisma client) run from a source
 # checkout instead. `src/__tests__/container-scripts-ship-guard.test.ts` holds
-# the runbooks and this list in step. Root-owned on purpose: the app user can
-# run them but not rewrite them.
+# the runbooks and the entrypoint against this list. `pending-migrations.mjs`
+# is the entrypoint's own: it logs the pending migration count before
+# `migrate deploy`. Root-owned on purpose: the app user can run them but not
+# rewrite them.
 COPY --from=builder /app/scripts/reset-password.mjs ./scripts/reset-password.mjs
+COPY --from=builder /app/scripts/pending-migrations.mjs ./scripts/pending-migrations.mjs
 COPY --from=builder /app/src/lib/auth/argon2-params.mjs ./src/lib/auth/argon2-params.mjs
 COPY --from=builder /app/scripts/repair-intake-anomalies.ts ./scripts/repair-intake-anomalies.ts
 # Prove the reset CLI's imports resolve in this tree: with every import found
 # it stops at its own usage line; a missing module throws before reaching it.
 RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"
+# The boot notice parses, and the `pg` it loads on a real boot resolves here.
+RUN env -u DATABASE_URL node scripts/pending-migrations.mjs && \
+    node --input-type=module -e "await import('pg')"
 
 # Install the migration CLI, its config dependency, and a pinned launcher for
 # the maintenance scripts already shipped in the standalone tree. The Prisma

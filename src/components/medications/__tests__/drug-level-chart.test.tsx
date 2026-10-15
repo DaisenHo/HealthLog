@@ -81,6 +81,7 @@ vi.mock("@/lib/medications/glp1-pk", async () => {
 
 import {
   DrugLevelChart,
+  loadTakenIntakesSince,
   parseDoseMg,
   resolveDoseMg,
 } from "../drug-level-chart";
@@ -360,5 +361,56 @@ describe("parseDoseMg / resolveDoseMg helpers", () => {
 
   it("returns the fallback when takenAt is unparseable", () => {
     expect(resolveDoseMg("not-an-iso", [], 42)).toBe(42);
+  });
+});
+
+describe("loadTakenIntakesSince", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  // 400 daily taken doses, newest first, the newest one a day ago.
+  const now = Date.parse("2026-06-01T08:00:00.000Z");
+  const all = Array.from({ length: 400 }, (_, i) => ({
+    id: `i-${i}`,
+    takenAt: new Date(now - (i + 1) * DAY).toISOString(),
+    skipped: false,
+    scheduledFor: new Date(now - (i + 1) * DAY).toISOString(),
+  }));
+
+  function pager() {
+    const urls: string[] = [];
+    const fetchPage = async (url: string) => {
+      urls.push(url);
+      const params = new URL(url, "http://localhost").searchParams;
+      const limit = Number(params.get("limit"));
+      const offset = Number(params.get("offset"));
+      return {
+        events: all.slice(offset, offset + limit),
+        meta: { total: all.length },
+      };
+    };
+    return { urls, fetchPage };
+  }
+
+  it("walks back past a single page to the horizon, and no further", async () => {
+    const { urls, fetchPage } = pager();
+    // 21-day window + 5 half-lives of 7 days = 56 days, then 150 to cross a page.
+    const since = new Date(now - 150.5 * DAY);
+    const { events } = await loadTakenIntakesSince("med-1", since, fetchPage);
+    expect(events).toHaveLength(150);
+    expect(urls).toHaveLength(2);
+    for (const url of urls) {
+      expect(url).toContain("status=taken");
+      expect(url).toContain("sortBy=takenAt");
+    }
+  });
+
+  it("stops at the end of the history", async () => {
+    const { urls, fetchPage } = pager();
+    const { events } = await loadTakenIntakesSince(
+      "med-1",
+      new Date(now - 10_000 * DAY),
+      fetchPage,
+    );
+    expect(events).toHaveLength(400);
+    expect(urls).toHaveLength(4);
   });
 });

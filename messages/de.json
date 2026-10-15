@@ -1386,6 +1386,7 @@
       "emptyState": "Noch keine Nebenwirkungen erfasst. Tracking hilft dir und deiner Ärztin, Muster über die Zeit zu erkennen.",
       "recentTitle": "Letzte 30 Tage",
       "loading": "Wird geladen…",
+      "loadMore": "Weitere laden",
       "deleteCta": "Löschen",
       "deleteError": "Eintrag konnte nicht gelöscht werden",
       "errorSeverity": "Schweregrad muss zwischen 1 und 5 liegen",

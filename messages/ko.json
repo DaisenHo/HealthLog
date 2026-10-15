@@ -1386,6 +1386,7 @@
       "emptyState": "아직 기록한 부작용이 없어요. 기록해 두면 진료에 도움이 되고 패턴도 드러나요.",
       "recentTitle": "최근 30일",
       "loading": "불러오는 중…",
+      "loadMore": "더 불러오기",
       "deleteCta": "삭제",
       "deleteError": "기록을 삭제하지 못했어요",
       "errorSeverity": "심각도는 1에서 5 사이여야 해요",

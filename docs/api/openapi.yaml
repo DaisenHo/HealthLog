@@ -14924,6 +14924,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a12
+  /api/labs/overview:
+    get:
+      tags:
+        - Labs
+      summary: Per-marker overview of the caller's lab history
+      description: "One entry per biomarker over every live lab result, newest reading first: the newest reading, the reading
+        count and a short trend. Unlike `GET /api/labs` it is not paged, so a marker measured only long ago is never cut
+        off by a page size."
+      parameters: []
+      responses:
+        "200":
+          description: Lab overview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabOverviewEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
   /api/labs/{id}:
     get:
       tags:
@@ -61210,9 +61230,26 @@ components:
             additionalProperties: false
           description: "Newest first, capped at `limit`. A heterogeneous union: which optional keys are present depends on `kind`,
             and no entry carries all of them."
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+            required:
+              - id
+              - name
+            additionalProperties: false
+          description: "Every medication classified GLP-1 in the record, whatever `limit` cut from `entries`. Read this, not the
+            entry names, to know which medications are GLP-1: a medication whose events are all older than the newest
+            `limit` entries has none in `entries`. Empty when `hasGlp1` is false."
       required:
         - hasGlp1
         - entries
+        - medications
       additionalProperties: false
       description: "A chronological merge of the GLP-1-relevant events the record holds: titration steps, injections with
         their sites, legacy stock-ledger movements, and side-effect-tagged mood days from the trailing 90 days.
@@ -67585,6 +67622,60 @@ components:
         - data
         - error
       additionalProperties: false
+    LabOverviewEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LabOverviewResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LabOverviewResponse:
+      type: object
+      properties:
+        markers:
+          type: array
+          items:
+            $ref: "#/components/schemas/LabOverviewMarker"
+      required:
+        - markers
+      additionalProperties: false
+    LabOverviewMarker:
+      type: object
+      properties:
+        key:
+          type: string
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        trend:
+          type: array
+          items:
+            anyOf:
+              - type: number
+              - type: "null"
+        latest:
+          $ref: "#/components/schemas/LabResult"
+      required:
+        - key
+        - count
+        - trend
+        - latest
+      additionalProperties: false
+      description: One biomarker in the caller's lab history. `key` is `bm:<biomarkerId>` for a catalog-linked marker or
+        `analyte:<lower-cased name>` for a legacy unlinked one. `count` is every live reading of the marker. `trend`
+        holds the values of its newest readings (at most 50), oldest first, null for a qualitative reading. `latest` is
+        the newest reading, serialised exactly like a `GET /api/labs` row.
     GetLabResultResponse:
       type: object
       properties:

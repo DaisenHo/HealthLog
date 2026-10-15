@@ -847,6 +847,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "labs",
     why: "One lab result of the record, fetched by id then guarded against the resolved user before anything is serialised.",
   },
+  "app/api/labs/overview/route.ts": {
+    domain: "labs",
+    why: "The Labs list's per-marker overview of the record: the newest reading of each biomarker, its count and a short trend. The same rows and the same biomarker include as `GET /api/labs`, grouped server-side; read only.",
+  },
   "app/api/biomarkers/route.ts": {
     domain: "labs",
     why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are refused.",
@@ -2097,8 +2101,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.42 — the score-history read joins the record list and the manage
  * literal (a score's daily course, MANAGE like the derived score itself).
  * 252 -> 254.
+ *
+ * v1.42.4 -- the Labs list's per-marker overview joins the record list
+ * beside `GET /api/labs`, the rows it groups. 255 -> 256.
  */
-const FROZEN_ENTRY_COUNT = 255;
+const FROZEN_ENTRY_COUNT = 256;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

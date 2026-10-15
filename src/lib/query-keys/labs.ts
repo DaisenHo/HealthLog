@@ -29,6 +29,11 @@ export const labKeys = {
       params.sortDir,
     ] as const,
 
+  // The Labs list: one entry per biomarker over the whole history
+  // (`GET /api/labs/overview`). The `lab-results` prefix lets every result
+  // mutation's `labResults()` invalidation evict it.
+  labResultsOverview: () => ["lab-results", "overview"] as const,
+
   // `/labs?analyte=<name>` (MCP deep links): the newest reading stored under
   // that exact analyte name, one row, to find its marker's page. Its own key
   // because the page size differs from every list read; the `lab-results`

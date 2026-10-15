@@ -55,9 +55,55 @@ export function useSymptomDefinitions(includeHidden = false, enabled = true) {
   });
 }
 
+/** Occurrences per request while walking a window. */
+const SYMPTOM_EVENTS_PAGE_SIZE = 500;
+
+/**
+ * Every occurrence inside `[from, to]` (ISO instants), newest first, read page
+ * by page. The route answers at most one page and says `hasMore`; each
+ * further page asks up to the oldest instant already read (`to` is
+ * inclusive, so the boundary instant comes back and is dropped by id). A
+ * chronic episode can hold more than one page, and a single capped read
+ * showed only its newest part.
+ */
+export async function loadSymptomEvents(
+  from: string,
+  to: string,
+  episodeId: string | null,
+  fetchPage: (url: string) => Promise<SymptomEventList> = (url) =>
+    apiGet<SymptomEventList>(url),
+): Promise<SymptomEventList> {
+  const seen = new Set<string>();
+  const events: SymptomEventDTO[] = [];
+  let upTo = to;
+  for (;;) {
+    const params = new URLSearchParams({
+      from,
+      to: upTo,
+      limit: String(SYMPTOM_EVENTS_PAGE_SIZE),
+    });
+    if (episodeId) params.set("episodeId", episodeId);
+    const page = await fetchPage(`/api/symptoms/events?${params}`);
+    let added = 0;
+    for (const event of page.events) {
+      if (seen.has(event.id)) continue;
+      seen.add(event.id);
+      events.push(event);
+      added += 1;
+    }
+    const oldest = page.events[page.events.length - 1];
+    // A page that adds nothing (a full page of one instant) cannot move the
+    // bound, so it ends the walk rather than repeating forever.
+    if (!page.hasMore || !oldest || added === 0) {
+      return { events, limit: SYMPTOM_EVENTS_PAGE_SIZE, hasMore: false };
+    }
+    upTo = oldest.occurredAt;
+  }
+}
+
 /**
  * Occurrences inside `[from, to]` (ISO instants), optionally only those filed
- * against one episode. At most 500, newest first.
+ * against one episode. Every one of them, newest first.
  */
 export function useSymptomEvents(
   from: string,
@@ -68,11 +114,7 @@ export function useSymptomEvents(
   return useQuery({
     queryKey: queryKeys.symptomEvents(from, to, episodeId),
     enabled: options.enabled ?? true,
-    queryFn: () => {
-      const params = new URLSearchParams({ from, to, limit: "500" });
-      if (episodeId) params.set("episodeId", episodeId);
-      return apiGet<SymptomEventList>(`/api/symptoms/events?${params}`);
-    },
+    queryFn: () => loadSymptomEvents(from, to, episodeId),
   });
 }
 

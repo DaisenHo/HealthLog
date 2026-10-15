@@ -87,8 +87,14 @@ function seedSideEffects(
   }>,
 ) {
   client.setQueryData(queryKeys.medicationSideEffects(medId), {
-    items: rows,
-    meta: { total: rows.length },
+    pages: [
+      {
+        items: rows,
+        meta: { total: rows.length },
+        from: "2026-01-01T00:00:00.000Z",
+      },
+    ],
+    pageParams: [null],
   });
 }
 
@@ -131,13 +137,24 @@ async function executeSideEffectsQuery(
   medicationId: string,
 ): Promise<void> {
   const queryKey = queryKeys.medicationSideEffects(medicationId);
-  const queryFn = client.getQueryCache().find({ queryKey, exact: true })
-    ?.options.queryFn;
-  if (typeof queryFn !== "function") {
+  const options = client.getQueryCache().find({ queryKey, exact: true })
+    ?.options as
+    | {
+        queryFn?: unknown;
+        initialPageParam?: unknown;
+        getNextPageParam?: unknown;
+      }
+    | undefined;
+  if (typeof options?.queryFn !== "function") {
     throw new Error("Side-effects query function was not registered");
   }
   try {
-    await client.fetchQuery({ queryKey, queryFn });
+    await client.fetchInfiniteQuery({
+      queryKey,
+      queryFn: options.queryFn as never,
+      initialPageParam: options.initialPageParam as never,
+      getNextPageParam: options.getNextPageParam as never,
+    });
   } catch {
     // The settled error is the state under test.
   }
@@ -418,5 +435,90 @@ describe("<SideEffectsSection> — timeline rows", () => {
     expect(html).toContain("Injektionsstelle");
     expect(html).toContain("Rötung Einstichstelle");
     expect(html).toContain("Mittel");
+  });
+});
+
+describe("<SideEffectsSection> — paging", () => {
+  function sideEffectsResponse(
+    items: Array<{ id: string; occurredAt: string }>,
+  ): Response {
+    return new Response(
+      JSON.stringify({
+        data: {
+          items: items.map((row) => ({
+            ...row,
+            category: "GI",
+            entry: "NAUSEA",
+            severity: 2,
+            notes: null,
+          })),
+          meta: { total: items.length },
+        },
+        error: null,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  it("offers a next page after a full one and asks for the entries before it", async () => {
+    const base = Date.parse("2026-05-20T12:00:00.000Z");
+    const firstPage = Array.from({ length: 50 }, (_, i) => ({
+      id: `se-${i}`,
+      occurredAt: new Date(base - i * 60_000).toISOString(),
+    }));
+    const oldest = firstPage[firstPage.length - 1];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(sideEffectsResponse(firstPage))
+      // The boundary entry comes back once more and is shown once.
+      .mockResolvedValueOnce(
+        sideEffectsResponse([
+          oldest,
+          { id: "se-older", occurredAt: "2026-05-01T08:00:00.000Z" },
+        ]),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = makeClient();
+    render(<SideEffectsSection medicationId="med-paged" />, client);
+    await executeSideEffectsQuery(client, "med-paged");
+    await waitForQueryStatus(client, "med-paged", "success");
+
+    const firstHtml = render(
+      <SideEffectsSection medicationId="med-paged" />,
+      client,
+    );
+    expect(firstHtml).toContain(en.medications.sideEffects.loadMore);
+
+    await client
+      .getQueryCache()
+      .find({
+        queryKey: queryKeys.medicationSideEffects("med-paged"),
+        exact: true,
+      })
+      ?.fetch(undefined, { meta: { fetchMore: { direction: "forward" } } });
+
+    const secondUrl = new URL(
+      String(fetchMock.mock.calls[1]?.[0]),
+      "http://localhost",
+    );
+    expect(secondUrl.searchParams.get("to")).toBe(
+      new Date(Date.parse(oldest.occurredAt) + 1).toISOString(),
+    );
+    const firstUrl = new URL(
+      String(fetchMock.mock.calls[0]?.[0]),
+      "http://localhost",
+    );
+    expect(secondUrl.searchParams.get("from")).toBe(
+      firstUrl.searchParams.get("from"),
+    );
+
+    const secondHtml = render(
+      <SideEffectsSection medicationId="med-paged" />,
+      client,
+    );
+    // 50 + 1 new, the repeated boundary entry dropped; a short page ends it.
+    expect(secondHtml).toContain("(51)");
+    expect(secondHtml).not.toContain(en.medications.sideEffects.loadMore);
   });
 });

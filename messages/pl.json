@@ -1386,6 +1386,7 @@
       "emptyState": "Nie zarejestrowano jeszcze skutków ubocznych. Śledzenie może pomóc lekarzowi i ujawnić wzorce w czasie.",
       "recentTitle": "Ostatnie 30 dni",
       "loading": "Ładowanie…",
+      "loadMore": "Załaduj więcej",
       "deleteCta": "Usuń",
       "deleteError": "Nie udało się usunąć wpisu",
       "errorSeverity": "Nasilenie musi mieścić się w zakresie 1–5",

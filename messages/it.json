@@ -1386,6 +1386,7 @@
       "emptyState": "Nessun effetto collaterale registrato. Tracciarli può aiutare il medico e far emergere schemi nel tempo.",
       "recentTitle": "Ultimi 30 giorni",
       "loading": "Caricamento…",
+      "loadMore": "Carica altri",
       "deleteCta": "Elimina",
       "deleteError": "Impossibile eliminare la voce",
       "errorSeverity": "La gravità deve essere tra 1 e 5",

@@ -1386,6 +1386,7 @@
       "emptyState": "No side effects logged yet. Tracking can help your doctor and surface patterns over time.",
       "recentTitle": "Last 30 days",
       "loading": "Loading…",
+      "loadMore": "Load more",
       "deleteCta": "Delete",
       "deleteError": "Could not delete the entry",
       "errorSeverity": "Severity must be between 1 and 5",

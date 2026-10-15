@@ -65,6 +65,21 @@ export interface LabResultListResponse {
   meta: { total: number; limit: number; offset: number };
 }
 
+/** One biomarker in `GET /api/labs/overview`. */
+export interface LabOverviewMarkerDto {
+  /** `bm:<biomarkerId>`, or `analyte:<lower-cased name>` for a legacy row. */
+  key: string;
+  /** Every live reading of the marker. */
+  count: number;
+  /** Values of the newest readings, oldest first; null for a qualitative one. */
+  trend: (number | null)[];
+  latest: LabResultDto;
+}
+
+export interface LabOverviewResponse {
+  markers: LabOverviewMarkerDto[];
+}
+
 /** A user-scoped Biomarker catalog entry as the API serialises it. */
 export interface BiomarkerDto {
   id: string;

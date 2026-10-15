@@ -69,6 +69,18 @@ function documentedContainerScripts(): string[] {
   return [...found].sort();
 }
 
+/** Scripts `docker-entrypoint.sh` runs with `node scripts/…` on every boot. */
+function entrypointScripts(): string[] {
+  const entrypoint = readFileSync(join(ROOT, "docker-entrypoint.sh"), "utf8");
+  return [
+    ...new Set(
+      [...entrypoint.matchAll(/^\s*node\s+(scripts\/[\w.-]+)/gm)].map(
+        (m) => m[1],
+      ),
+    ),
+  ].sort();
+}
+
 /** Relative import specifiers of a script, resolved against its location. */
 function localImports(script: string): string[] {
   const src = readFileSync(join(ROOT, script), "utf8");
@@ -107,5 +119,23 @@ describe("scripts the runbooks run inside the container ship in the image", () =
       .flatMap((script) => localImports(script))
       .filter((path) => !copiedIntoRunner(path));
     expect(missing).toEqual([]);
+  });
+});
+
+describe("scripts the entrypoint runs ship in the image", () => {
+  it("finds the boot scripts it is meant to check", () => {
+    // An empty match would agree with any Dockerfile.
+    expect(entrypointScripts()).toContain("scripts/pending-migrations.mjs");
+  });
+
+  it("copies every boot script and its local imports into the runner stage", () => {
+    const missing = entrypointScripts()
+      .flatMap((script) => [script, ...localImports(script)])
+      .filter((path) => !copiedIntoRunner(path));
+    expect(
+      missing,
+      "docker-entrypoint.sh runs these on every boot, but the Dockerfile " +
+        "runner stage does not COPY them; the container would fail to start.",
+    ).toEqual([]);
   });
 });
