@@ -50,6 +50,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { refreshSupplementNutrientsForDose } from "@/lib/medications/ingredients/recompute";
 import { annotate } from "@/lib/logging/context";
 import { DEFAULT_TIMEZONE, isValidTimezone, userDayKey } from "@/lib/tz/format";
 import { localDayWindow, startOfLocalDayKey } from "@/lib/tz/local-day";
@@ -203,6 +204,21 @@ export async function recomputeMedicationComplianceForDay(
           AND "scheduled_for" <  ${windowEnd}
       )
   `;
+
+  // v1.43 — the day's other derived row: the micronutrients its taken
+  // supplement doses add (`source = SUPPLEMENT`). Every dose write path
+  // already funnels through this recompute, so this is the one place the
+  // hook needs to live. Only on the base client: a caller inside its own
+  // transaction (the dose import) has not committed the doses yet and
+  // queues the account's full recompute once it has.
+  if (client === prisma) {
+    await refreshSupplementNutrientsForDose({
+      userId,
+      medicationId,
+      dayKey,
+      timezone: safeTz,
+    });
+  }
 }
 
 /**

@@ -48,9 +48,9 @@ const moduleDisabled = {
  * OpenAPI file is the one authoritative home of the code ↔ HK ↔ unit
  * contract (µg is `ug` on the wire; water is mL; never IU).
  */
-const catalogTable = NUTRIENT_DEFINITIONS.map(
-  (d) => `| ${d.code} | ${d.hkIdentifier} | ${d.unit} |`,
-).join("\n");
+const catalogTable = NUTRIENT_DEFINITIONS.filter((d) => d.syncable)
+  .map((d) => `| ${d.code} | ${d.hkIdentifier} | ${d.unit} |`)
+  .join("\n");
 
 const nutrientCatalogEntry = z
   .object({

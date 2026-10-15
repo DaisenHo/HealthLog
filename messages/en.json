@@ -11364,7 +11364,9 @@
       "molybdenum": "Molybdenum",
       "iodine": "Iodine",
       "water": "Water",
-      "caffeine": "Caffeine"
+      "caffeine": "Caffeine",
+      "dha": "DHA (omega-3)",
+      "epa": "EPA (omega-3)"
     },
     "page": {
       "title": "Nutrient intake",

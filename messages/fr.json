@@ -11364,7 +11364,9 @@
       "molybdenum": "Molybdène",
       "iodine": "Iode",
       "water": "Eau",
-      "caffeine": "Caféine"
+      "caffeine": "Caféine",
+      "dha": "DHA (oméga-3)",
+      "epa": "EPA (oméga-3)"
     },
     "page": {
       "title": "Apports en nutriments",

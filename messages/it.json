@@ -11364,7 +11364,9 @@
       "molybdenum": "Molibdeno",
       "iodine": "Iodio",
       "water": "Acqua",
-      "caffeine": "Caffeina"
+      "caffeine": "Caffeina",
+      "dha": "DHA (omega-3)",
+      "epa": "EPA (omega-3)"
     },
     "page": {
       "title": "Apporto di nutrienti",

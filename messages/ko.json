@@ -11364,7 +11364,9 @@
       "molybdenum": "몰리브덴",
       "iodine": "요오드",
       "water": "수분",
-      "caffeine": "카페인"
+      "caffeine": "카페인",
+      "dha": "DHA (오메가-3)",
+      "epa": "EPA (오메가-3)"
     },
     "page": {
       "title": "영양소 섭취",

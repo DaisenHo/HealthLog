@@ -82,6 +82,7 @@ const subsystemSurface = {
   "step-consolidation": { audience: "system" },
   "step-consolidation-repair": { audience: "system" },
   "cumulative-pr-rederive": { audience: "system" },
+  "supplement-nutrient-recompute": { audience: "system" },
   "mean-consolidation": { audience: "system" },
   "dense-intraday-retention": { audience: "system" },
   "dense-intraday-hourly-rebuild": { audience: "system" },

@@ -401,6 +401,15 @@ function plainNutrientText(
       ref.direction === "upperGuidance" ? "guidance ceiling" : "target";
     parts.push(`EFSA ${verb} ${round1(ref.value)}${unit}`);
   }
+  // v1.43 — the upper-limit verdict is the server's, read off the day.
+  const limit = result.upperLimit;
+  if (limit && latestDay?.aboveUpperLimit) {
+    const share =
+      limit.scope === "supplemental" ? " for the supplement share" : "";
+    parts.push(
+      `that day is above the EFSA upper intake level of ${round1(limit.value)}${unit}${share}`,
+    );
+  }
   return parts.length > 0
     ? `${label}: ${parts.join(", ")}.`
     : `${label}: data is on file for the recent window.`;

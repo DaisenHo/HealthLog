@@ -9,14 +9,28 @@
  */
 import { z } from "zod/v4";
 
-import { NUTRIENT_CATALOG, NUTRIENT_CODES } from "@/lib/nutrients/catalog";
+import {
+  NUTRIENT_CATALOG,
+  NUTRIENT_CODES,
+  SYNCABLE_NUTRIENT_CODES,
+} from "@/lib/nutrients/catalog";
 
 export const MAX_NUTRIENT_ENTRIES_PER_BATCH = 500;
 
 export const nutrientCodeEnum = z.enum(NUTRIENT_CODES).meta({
   id: "NutrientCode",
   description:
-    "Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine. Energy, macros and sodium/potassium are out of scope.",
+    "Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and sodium/potassium are out of scope. Decode unknown values leniently.",
+});
+
+/**
+ * v1.43 — the codes the batch accepts: the catalogue without the
+ * supplement-only codes, so the HealthKit sync contract stays unchanged.
+ */
+export const syncableNutrientCodeEnum = z.enum(SYNCABLE_NUTRIENT_CODES).meta({
+  id: "SyncableNutrientCode",
+  description:
+    "A nutrient code HealthKit may send: the 24 Dietary vitamin/mineral types plus water and caffeine. Never `dha` or `epa`.",
 });
 
 /**
@@ -30,7 +44,7 @@ export const nutrientCodeEnum = z.enum(NUTRIENT_CODES).meta({
 export const nutrientEntrySchema = z
   .object({
     day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    nutrient: nutrientCodeEnum,
+    nutrient: syncableNutrientCodeEnum,
     unit: z.string().min(1).max(10),
     amount: z.number().finite().min(0),
     externalSourceVersion: z.string().min(1).max(120).optional(),
