@@ -217,6 +217,23 @@ export const BIOMARKER_CATALOG: readonly BiomarkerSeed[] = [
     lowerBound: null,
     upperBound: 55,
   },
+  // v1.43 (D1223) — the two markers a report most often prints in shorthand
+  // ("Alk.P", "T.Bili"). Adult reference windows per MedlinePlus: ALP 44-147
+  // IU/L, total bilirubin 0.1-1.2 mg/dL. Editable defaults like every seed.
+  {
+    slug: "alkaline-phosphatase",
+    panel: "liver",
+    unit: "U/L",
+    lowerBound: 44,
+    upperBound: 147,
+  },
+  {
+    slug: "bilirubin-total",
+    panel: "liver",
+    unit: "mg/dL",
+    lowerBound: 0.1,
+    upperBound: 1.2,
+  },
   // Electrolytes
   {
     slug: "sodium",
@@ -294,8 +311,8 @@ export const BIOMARKER_PANELS = [
  * Names are compared folded (lower case, no accents, hyphens and slashes as
  * spaces), so "Harnsäure" is written "harnsaure" here and "Nüchtern-Glukose"
  * needs no entry of its own. The registry-only keys (urea, blood urea
- * nitrogen, uric acid, total calcium, total bilirubin) have no seed, so their
- * names live only here.
+ * nitrogen, uric acid, total calcium) have no seed, so their names live only
+ * here; total bilirubin has had a seed since v1.43.
  */
 export interface AnalyteAliases {
   /** The analyte key: a catalog slug, or a registry-only key. */
@@ -336,6 +353,24 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "glycosylated hemoglobin",
       "glykohamoglobin",
       "hamoglobin a1c",
+      // v1.43 (D1223) — MedlinePlus, Lab Tests Online (es, it, pl), Medics
+      // Labor, CHU de Lille, IUCPQ / CHUM, Asan Medical Center.
+      "hba1c",
+      "glycohemoglobin",
+      "glykohamoglobin a1c",
+      "hemoglobina glicada",
+      "hemoglobina glicosilada",
+      "glicohemoglobina",
+      "hemoglobine glyquee",
+      "hb glyque",
+      "glycohemoglobine",
+      "hemoglobine glycosylee",
+      "emoglobina a1c",
+      "glicoemoglobina",
+      "emoglobina glicosilata",
+      "hemoglobina glikowana",
+      "glikohemoglobina",
+      "당화혈색소",
     ],
   },
   {
@@ -351,8 +386,33 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "cholesterol calkowity",
     ],
   },
-  { key: "ldl", names: ["ldl", "ldl c", "ldl chol", "ldl cholesterin"] },
-  { key: "hdl", names: ["hdl", "hdl c", "hdl chol", "hdl cholesterin"] },
+  {
+    key: "ldl",
+    names: [
+      "ldl",
+      "ldl c",
+      "ldl chol",
+      "ldl cholesterin",
+      // v1.43 — Labor Limbach, Medics Labor, gesundheit.gv.at, CHU de Lille,
+      // the Korean national screening form.
+      "ldl direkt",
+      "ldlch",
+      "cholesterol ldl",
+      "저밀도 콜레스테롤",
+    ],
+  },
+  {
+    key: "hdl",
+    names: [
+      "hdl",
+      "hdl c",
+      "hdl chol",
+      "hdl cholesterin",
+      "hdlch",
+      "cholesterol hdl",
+      "고밀도 콜레스테롤",
+    ],
+  },
   {
     key: "creatinine",
     names: [
@@ -360,6 +420,18 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "serumkreatinin",
       "kreatinin im serum",
       "creatinine serique",
+      // v1.43 — Labor Limbach ("Krea/S", serum only: the urine "Krea/U" is a
+      // different measurement and is not here), Medics Labor, Lab Tests
+      // Online (es, it, pl), CHU de Lille, CHUM, the Korean screening form.
+      "krea s",
+      "krea",
+      "crea",
+      "creatinin",
+      "kreatinin",
+      "creatininemie",
+      "creat",
+      "creatinina sierica",
+      "혈청 크레아티닌",
     ],
   },
   {
@@ -371,6 +443,22 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "25 oh d",
       "calcidiol",
       "vitamin d 25 oh",
+      // v1.43 — 25-OH only; calcitriol (1,25-(OH)2 D) is a different test and
+      // stays out. MedlinePlus, Medics Labor, gesundheit.gv.at, Lab Tests
+      // Online (es, it, pl), CHU de Lille, IUCPQ.
+      "25(oh)d",
+      "25 (oh)d",
+      "calcifediol",
+      "25 hydroxycholecalciferol",
+      "vd25",
+      "25 hidroxivitamina d",
+      "25 (oh) vitamine d",
+      "25 oh, vitamine d3",
+      "25 oh vitamina d",
+      "25 idrossi vitamina d",
+      "25 hydroksy witamina d3",
+      "kalcydiol",
+      "25 hydroksykolekalciferol",
     ],
   },
   { key: "urea", names: ["urea", "harnstoff", "uree", "urea serum"] },
@@ -422,6 +510,417 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "bilirrubina",
       "bilirubine",
       "bilirubina",
+      // v1.43 (D1223) — "Alk.P" / "T.Bili" are how the reports in the
+      // discussion print them; the rest are MedlinePlus, testing.com, Labor
+      // Limbach, Medics Labor, Lab Tests Online (es, it), Dimedic (pl) and
+      // Asan Medical Center. The bare "BIL" is left out: lower case it is the
+      // urine dipstick field in German code lists.
+      "t.bili",
+      "t. bili",
+      "tbil",
+      "total serum bilirubin",
+      "tsb",
+      "bili",
+      "totales bilirubin",
+      "bilirrubina total",
+      "bilirubina totale",
+      "bilirubina całkowita",
+      "총 빌리루빈",
+    ],
+  },
+];
+
+/**
+ * v1.43 (D1223) — other names for analytes, for recognising that two
+ * spellings on two reports are one marker. Same shape and fold as
+ * `ANALYTE_ALIASES`, and read together with it by `catalogNameIndex`, but
+ * with no conversion attached: an analyte here may have no entry in the
+ * unit-conversion registry ("GPT" is "ALT" whatever the unit), and the key may
+ * be a catalog slug or a name-only key for an analyte with no seed (`ldh`,
+ * `mcv`). Nothing here changes which unit conversion a marker gets.
+ *
+ * Every name is written folded (`foldForMatch`); a dot in shorthand is kept
+ * ("alk.p") and also matched without it. Each name was checked against a
+ * laboratory or clinical reference; a shorthand that names two analytes in
+ * different places ("PCR", "AP" outside German reports, "Cr") is left out,
+ * because a wrong automatic match moves a reading into the wrong history.
+ */
+export const LAB_NAME_ALIASES: readonly AnalyteAliases[] = [
+  {
+    key: "alkaline-phosphatase",
+    names: [
+      "alp",
+      "alkp",
+      "alk phos",
+      "alk.p",
+      "ap",
+      "alk. phosphatase",
+      "alkalische phosphatase",
+      "fosfatasa alcalina",
+      "pal",
+      "phosphatases alcalines",
+      "fosfatasi alcalina",
+      "fosfataza alkaliczna",
+      "fosfataza zasadowa",
+      "알칼리인산분해효소",
+    ],
+  },
+  {
+    key: "alt",
+    names: [
+      "alt",
+      "sgpt",
+      "gpt",
+      "alanine transaminase",
+      "alanine aminotransferase",
+      "alat",
+      "glutamat pyruvat transaminase",
+      "alanina aminotransferasa",
+      "transaminasa glutamico piruvico",
+      "tgp",
+      "alanina aminotransferasi",
+      "aminotransferaza alaninowa",
+      "alt(sgpt)",
+      "혈청gpt",
+      "알라닌아미노전달효소",
+      "알라닌아미노전이효소",
+    ],
+  },
+  {
+    key: "ast",
+    names: [
+      "ast",
+      "sgot",
+      "got",
+      "aspartate transaminase",
+      "aspartate aminotransferase",
+      "asat",
+      "glutamat oxalacetat transaminase",
+      "aspartato aminotransferasa",
+      "transaminasa glutamico oxalacetico",
+      "tgo",
+      "aspartato transaminasi",
+      "aspat",
+      "aminotransferaza asparaginianowa",
+      "ast(sgot)",
+      "혈청got",
+      "아스파테이트아미노전달효소",
+      "아스파테이트아미노전이효소",
+    ],
+  },
+  {
+    key: "ggt",
+    names: [
+      "ggt",
+      "ggtp",
+      "gtp",
+      "gamma gt",
+      "γ gt",
+      "γgt",
+      "gamma glutamyltransferase",
+      "gammaglutamyltransferase",
+      "gamma glutamil transferasa",
+      "gamma glutamylotranspeptydaza",
+      "감마지티피(γgtp)",
+      "γgtp",
+      "감마지티피",
+      "감마지티",
+      "r gtp",
+      "감마 gtp",
+      "감마글루타밀전이효소",
+    ],
+  },
+  {
+    key: "ldh",
+    names: [
+      "ldh",
+      "ld",
+      "lactate dehydrogenase",
+      "lactic dehydrogenase",
+      "lactatdehydrogenase",
+      "laktatdehydrogenase",
+      "lactato deshidrogenasa",
+      "lactate deshydrogenase",
+      "lattico deidrogenasi",
+      "lattato deidrogenasi",
+      "dehydrogenaza mleczanowa",
+      "젖산탈수효소",
+    ],
+  },
+  {
+    // The standard assay. "PCR" is left out: it is CRP on Spanish and
+    // Italian reports and polymerase chain reaction everywhere else.
+    key: "crp",
+    names: [
+      "crp",
+      "c reactive protein",
+      "c reaktives protein",
+      "proteina c reactiva",
+      "proteine c reactive",
+      "proteina c reattiva",
+      "białko c reaktywne",
+      "c 반응성 단백",
+    ],
+  },
+  {
+    // The high-sensitivity assay, kept apart from the standard one: the two
+    // are read against different ranges, and a merge is the person's call.
+    key: "hs-crp",
+    names: [
+      "hs crp",
+      "hscrp",
+      "high sensitivity crp",
+      "cardiac crp",
+      "crp hochsensitiv",
+      "pcr ultrasensible",
+      "pcr us",
+      "proteina c reactiva ultrasensible",
+      "crp ultrasensible",
+      "crp hs",
+      "hs pcr",
+      "pcr ultrasensibile",
+      "proteina c reattiva ultrasensibile",
+      "crp wysoko czułe",
+      "crp ultra czułe",
+      "wysoko czułe białko c reaktywne",
+    ],
+  },
+  {
+    key: "tsh",
+    names: [
+      "tsh",
+      "thyrotropin",
+      "thyroid stimulating hormone",
+      "thyreotropin",
+      "tsh basal",
+      "tirotropina",
+      "hormona estimulante del tiroides",
+      "hormona tiroestimulante",
+      "tsh us",
+      "tsh ultra sensible",
+      "thyrotropine",
+      "tireotropina",
+      "ormone tireotropo",
+      "tyreotropina",
+      "hormon tyreotropowy",
+      "갑상선자극호르몬",
+    ],
+  },
+  {
+    // Free T3 only: a bare "T3" is the total hormone.
+    key: "ft3",
+    names: [
+      "ft3",
+      "free t3",
+      "free triiodothyronine",
+      "t3 frei",
+      "freies t3",
+      "trijodthyronin frei",
+      "t3 libre",
+      "t3l",
+      "triiodotironina libera",
+      "wolna t3",
+    ],
+  },
+  {
+    // Free T4 only: a bare "T4" is the total hormone.
+    key: "ft4",
+    names: [
+      "ft4",
+      "free t4",
+      "free thyroxine",
+      "t4 frei",
+      "freies t4",
+      "thyroxin frei",
+      "t4l",
+      "t4 libre",
+      "tiroxina libre",
+      "thyroxine libre",
+      "tiroxina libera",
+      "wolna t4",
+      "유리 싸이록신",
+    ],
+  },
+  {
+    // Estimates only: a bare "GFR" may be a measured rate, and a
+    // Cockcroft-Gault clearance is a different quantity.
+    key: "egfr",
+    names: [
+      "egfr",
+      "estimated gfr",
+      "cgfr",
+      "egfr nach ckd epi formel",
+      "ckdepi",
+      "egfr nach mdrd formel",
+      "tefg",
+      "tfg calculada",
+      "tasa estimada de filtrado glomerular",
+      "fge",
+      "dfg",
+      "dfge",
+      "szacowana filtracja kłebuszkowa",
+      "신사구체여과율 (e gfr)",
+      "e gfr",
+      "신사구체여과율",
+    ],
+  },
+  {
+    key: "hemoglobin",
+    names: ["hb", "hgb", "hemogl", "hemoglobine", "혈색소"],
+  },
+  {
+    key: "hematocrit",
+    names: [
+      "hct",
+      "pcv",
+      "crit",
+      "packed cell volume",
+      "hkt",
+      "hto",
+      "ht",
+      "적혈구용적률",
+    ],
+  },
+  {
+    key: "mcv",
+    names: [
+      "mcv",
+      "mittleres zellvolumen",
+      "vcm",
+      "volumen corpuscular medio",
+      "vgm",
+      "volume globulaire moyen",
+      "평균적혈구용적",
+    ],
+  },
+  {
+    // "Hb/E" is Labor Limbach's code for MCH, not haemoglobin.
+    key: "mch",
+    names: ["mch", "hb e", "hcm", "tcmh", "tgmh", "평균적혈구혈색소량"],
+  },
+  {
+    key: "mchc",
+    names: [
+      "mchc",
+      "chcm",
+      "ccmh",
+      "cgmh",
+      "평균적혈구 헤모글로빈농도",
+      "평균 적혈구혈색소 농도",
+    ],
+  },
+  {
+    key: "rbc",
+    names: [
+      "rbc",
+      "rbc count",
+      "erythrocyte count",
+      "red count",
+      "ery",
+      "erythrozyten",
+      "recuento de hematies",
+      "recuento eritrocitario",
+      "erythrocytes",
+      "hematies",
+      "liczba erytrocytow",
+      "적혈구",
+    ],
+  },
+  {
+    key: "wbc",
+    names: [
+      "wbc",
+      "leukocyte count",
+      "white cell count",
+      "leuko",
+      "leukozyten",
+      "leuc",
+      "leucocitos",
+      "leucocytes",
+      "liczba leukocytow",
+      "백혈구",
+    ],
+  },
+  {
+    key: "platelets",
+    names: [
+      "plt",
+      "plt count",
+      "thrombocyte count",
+      "thromb",
+      "thr",
+      "thrombozyten",
+      "plaq",
+      "plaquetas",
+      "plaquettes",
+      "conta piastrinica",
+      "liczba płytek krwi",
+      "liczba trombocytow",
+      "platelet",
+      "혈소판",
+    ],
+  },
+  {
+    // "TG" is left out: written "Tg" it is thyroglobulin, and the match
+    // ignores case.
+    key: "triglycerides",
+    names: [
+      "trig",
+      "tgl",
+      "trg",
+      "triglyceride",
+      "triglycerides",
+      "trigliceridos",
+      "trigliceridi",
+      "triglicerydy",
+      "중성지방",
+    ],
+  },
+  {
+    key: "ferritin",
+    names: [
+      "ferritin",
+      "serum ferritin",
+      "ferr",
+      "ferritina",
+      "ferritine",
+      "ferritina sierica",
+      "ferrytyna",
+    ],
+  },
+  {
+    key: "vitamin-b12",
+    names: [
+      "vitamin b12",
+      "b12",
+      "cobalamin",
+      "cobalamina",
+      "vitamine b12",
+      "cyanocobalamine",
+      "vb12",
+      "vitamina b12",
+      "witamina b12",
+      "kobalamina",
+    ],
+  },
+  {
+    key: "sodium",
+    names: ["na", "na+", "natrium", "sodium", "sodio", "natremie", "소디움"],
+  },
+  {
+    // A bare "K" only ever reaches a potassium marker whose unit the reading
+    // fits (`resolveInIndex`), never vitamin K.
+    key: "potassium",
+    names: [
+      "k",
+      "k+",
+      "kalium",
+      "potassium",
+      "potasio",
+      "potassio",
+      "potas",
+      "kaliemie",
+      "포타슘",
     ],
   },
 ];
