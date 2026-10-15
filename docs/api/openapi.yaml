@@ -22032,10 +22032,11 @@ paths:
       tags:
         - Account sharing
       summary: Read the managed record's integration connection states
-      description: "Disclosure only: whether each of the record's integrations is connected and when it last succeeded. There
-        is deliberately no control arm and no credential projection anywhere under this path — a Guardian cannot
-        connect, disconnect, probe or resume a managed record's provider, because an OAuth flow cannot safely carry a
-        record selector. Cookie session or Bearer, while acting on a managed record the caller guards."
+      description: "Disclosure only: whether each of the record's integrations is connected, when it last succeeded, and its
+        server-resolved health. There is deliberately no control arm and no credential projection anywhere under this
+        path — a Guardian cannot connect, disconnect, probe or resume a managed record's provider, because an OAuth flow
+        cannot safely carry a record selector. Cookie session or Bearer, while acting on a managed record the caller
+        guards."
       responses:
         "200":
           description: Connection state per provider.
@@ -79496,11 +79497,18 @@ components:
                     format: date-time
                     pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                   - type: "null"
+              health:
+                anyOf:
+                  - $ref: "#/components/schemas/ConnectionHealth"
+                  - type: "null"
+                description: The same server-resolved connection state the owner's own envelope carries, null while the provider is not
+                  connected. The web renders this; `state` stays for one transition release.
             required:
               - integration
               - state
               - lastSuccessAt
               - lastAttemptAt
+              - health
             additionalProperties: false
           description: All eight providers, always, in the fixed order withings, whoop, fitbit, nightscout, polar, oura,
             google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.
@@ -79508,11 +79516,11 @@ components:
         - recordId
         - integrations
       additionalProperties: false
-      description: Whether the managed record's integrations are connected, and nothing else. Deliberately no control and no
-        credential projection — OAuth and provider state cannot safely carry a record selector, so a Guardian can see
-        that a pipe exists but cannot connect, disconnect, probe or resume it from here. A provider with no real
-        credential reads `disconnected` even when its ledger row says otherwise, because a synthesised healthy ledger is
-        not proof of a connection.
+      description: Whether the managed record's integrations are connected and how each is doing (`health`), and nothing else.
+        Deliberately no control and no credential projection — OAuth and provider state cannot safely carry a record
+        selector, so a Guardian can see that a pipe exists but cannot connect, disconnect, probe or resume it from here.
+        A provider with no real credential reads `disconnected` even when its ledger row says otherwise, because a
+        synthesised healthy ledger is not proof of a connection.
     GetRecordSettingsFamilyEnvelope:
       type: object
       properties:
