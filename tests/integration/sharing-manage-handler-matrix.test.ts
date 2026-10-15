@@ -2213,6 +2213,7 @@ proveManageRoute("POST /api/medications/[id]/glp1", {
 
 proveManageRoute("PUT /api/medications/[id]/ingredients", {
   route: "/api/medications/[id]/ingredients",
+  action: "PUT",
   prepare: async (ownerId) => {
     // The composition lives behind the opt-in nutrients module.
     await getPrismaClient().user.update({
