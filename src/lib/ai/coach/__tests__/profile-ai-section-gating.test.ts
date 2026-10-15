@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   allergyFindMany: vi.fn(),
   familyFindMany: vi.fn(),
   factFindMany: vi.fn(),
+  auditFindFirst: vi.fn(),
   decrypt: vi.fn(),
 }));
 
@@ -16,6 +17,7 @@ vi.mock("@/lib/db", () => ({
     allergy: { findMany: mocks.allergyFindMany },
     familyHistoryEntry: { findMany: mocks.familyFindMany },
     healthProfileFactRevision: { findMany: mocks.factFindMany },
+    mentalHealthAssessment: { findFirst: mocks.auditFindFirst },
   },
 }));
 
@@ -44,6 +46,7 @@ beforeEach(() => {
   mocks.allergyFindMany.mockResolvedValue([]);
   mocks.familyFindMany.mockResolvedValue([]);
   mocks.factFindMany.mockResolvedValue([]);
+  mocks.auditFindFirst.mockResolvedValue(null);
   mocks.decrypt.mockImplementation((bytes: Uint8Array) => {
     if (bytes[0] === 1) return secret;
     if (bytes[0] === 2) return "Asthma";

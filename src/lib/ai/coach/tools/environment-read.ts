@@ -40,6 +40,7 @@ import {
 import type { CoachScopeWindow } from "@/lib/ai/coach/types";
 import { shiftDateKey } from "@/lib/tz/format";
 import { decryptLifeFactValue } from "@/lib/profile/health-facts";
+import { getEvent } from "@/lib/logging/context";
 import type { WorkContextValue } from "@/lib/validations/life-circumstances";
 
 /** Days listed one by one; the summary covers the whole window. */
@@ -172,6 +173,22 @@ const RELEVANT_EXPOSURES = ["heat", "dust", "fumes_solvents"] as const;
  * honours), and only when it says something the environment can weigh.
  */
 async function loadWorkContextForEnvironment(
+  userId: string,
+): Promise<EnvironmentToolData["workContext"] | null> {
+  try {
+    return await readWorkContext(userId);
+  } catch (error) {
+    // Context, not data: a failed read leaves the note out, never the days.
+    getEvent()?.addWarning(
+      `environment work context read failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return null;
+  }
+}
+
+async function readWorkContext(
   userId: string,
 ): Promise<EnvironmentToolData["workContext"] | null> {
   const profile = await prisma.userHealthProfile.findUnique({

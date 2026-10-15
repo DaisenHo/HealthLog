@@ -7034,7 +7034,7 @@ model UserHealthProfile {
   emergencyContactsEncrypted Bytes?                   @map("emergency_contacts_encrypted")
   emergencyImplantsEncrypted Bytes?                   @map("emergency_implants_encrypted")
   emergencyNoteEncrypted     Bytes?                   @map("emergency_note_encrypted")
-  /// @pending-consumer(#v143-B6) v1.43 (#614) — "still true" confirmations of the life
+  /// v1.43 (#614) — "still true" confirmations of the life
   /// circumstance sections: `{ "<section key>": "<ISO instant>" }`. Written by
   /// `POST /api/anamnesis/life-circumstances/confirm`, read as
   /// `lastConfirmedAt` / `reviewDue` by the life-circumstances read route.
@@ -7130,7 +7130,11 @@ enum HealthProfileFactKind {
   /// v1.43 (#614) — life-circumstance facts. The value is a sealed JSON object
   /// with `schema: 1`, one Zod schema per kind. `GET /api/anamnesis/facts`
   /// never returns these (a closed decoder in older app builds); they are read
-  /// through `GET /api/anamnesis/life-circumstances`.
+  /// through `GET /api/anamnesis/life-circumstances`. Readers: the coach
+  /// self-context (all six, per released AI section), the doctor report and
+  /// FHIR (tobacco, activity, work), the chronotype (free weekdays), the
+  /// environment read (work). `HABITS` and `HEALTH_GOALS` are coach-only by
+  /// design: diet and goals are context for a conversation, not findings.
   TOBACCO_DETAIL
   ACTIVITY_HABIT
   WORK_CONTEXT

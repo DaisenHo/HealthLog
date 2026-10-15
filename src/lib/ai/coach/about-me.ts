@@ -48,6 +48,7 @@ import { LIFE_KIND_AI_SECTION } from "@/lib/profile/life-derived";
 import { auditCCutoff } from "@/lib/mental-health/audit-c";
 import {
   LIFE_FACT_KINDS,
+  isLifeFactKind,
   type ActivityHabitValue,
   type FreeWeekdaysValue,
   type HabitsValue,
@@ -631,65 +632,36 @@ export function composeLifeCircumstancesText(
 }
 
 /**
- * Load the life-circumstance context a prompt may see. Only the kinds whose
- * AI section is switched on are read, so a section left out is never
- * decrypted for a prompt; AUDIT-C rides the alcohol switch and needs no
- * decryption (the sum is stored in the clear, like the screeners').
+ * The newest AUDIT-C entry for a prompt: only when the alcohol section is
+ * released, and without decrypting anything (the sum is stored in the clear,
+ * like the screeners'). The profile sex for the cut-off is read only when
+ * there is an entry to judge.
  */
-async function loadLifeContextForPrompt(
+async function loadAuditCForPrompt(
   userId: string,
   included: ReadonlySet<string>,
-): Promise<{ facts: LifeFactForPrompt[]; auditC: AuditCForPrompt | null }> {
-  const kinds = LIFE_FACT_KINDS.filter((kind) =>
-    included.has(LIFE_KIND_AI_SECTION[kind]),
-  );
-  const [rows, audit, user] = await Promise.all([
-    kinds.length > 0
-      ? prisma.healthProfileFactRevision.findMany({
-          where: {
-            userId,
-            kind: { in: kinds },
-            validUntil: null,
-            supersededByRevisionId: null,
-          },
-          orderBy: { kind: "asc" },
-          select: { kind: true, valueEncrypted: true, validFrom: true },
-        })
-      : Promise.resolve([]),
-    included.has("ALCOHOL_PATTERN")
-      ? prisma.mentalHealthAssessment.findFirst({
-          where: { userId, instrument: "AUDIT_C", deletedAt: null },
-          orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-          select: { totalScore: true, takenAt: true, locale: true },
-        })
-      : Promise.resolve(null),
-    included.has("ALCOHOL_PATTERN")
-      ? prisma.user.findUnique({
-          where: { id: userId },
-          select: { gender: true, locale: true },
-        })
-      : Promise.resolve(null),
-  ]);
-  const facts = rows.flatMap((row) => {
-    const kind = row.kind as LifeFactKind;
-    const opened = decryptLifeFactValue(kind, row.valueEncrypted);
-    return opened.value
-      ? [{ kind, value: opened.value, validFrom: row.validFrom }]
-      : [];
+): Promise<AuditCForPrompt | null> {
+  if (!included.has("ALCOHOL_PATTERN")) return null;
+  const audit = await prisma.mentalHealthAssessment.findFirst({
+    where: { userId, instrument: "AUDIT_C", deletedAt: null },
+    orderBy: [{ takenAt: "desc" }, { id: "desc" }],
+    select: { totalScore: true, takenAt: true, locale: true },
   });
-  const cutoff = audit
-    ? auditCCutoff(audit.locale, user?.gender ?? null, user?.locale ?? "en")
-    : null;
+  if (!audit) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { gender: true, locale: true },
+  });
+  const cutoff = auditCCutoff(
+    audit.locale,
+    user?.gender ?? null,
+    user?.locale ?? "en",
+  );
   return {
-    facts,
-    auditC: audit
-      ? {
-          totalScore: audit.totalScore,
-          takenAt: audit.takenAt,
-          cutoff: cutoff?.value ?? null,
-          aboveCutoff: cutoff ? audit.totalScore >= cutoff.value : null,
-        }
-      : null,
+    totalScore: audit.totalScore,
+    takenAt: audit.takenAt,
+    cutoff: cutoff?.value ?? null,
+    aboveCutoff: cutoff ? audit.totalScore >= cutoff.value : null,
   };
 }
 
@@ -785,11 +757,19 @@ export async function getSelfContextTextForUser(
     const includedStored: ReadonlySet<string> = new Set<string>(
       controlRow?.aiIncludedSections ?? DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
     );
-    const includedFactKinds = (
-      ["SMOKING_STATUS", "ALCOHOL_PATTERN", "SHIFT_SCHEDULE"] as const
-    ).filter((kind) => included.has(kind));
+    // One read for every fact kind a released section covers: the three
+    // closed kinds and the life-circumstance kinds (v1.43). A kind whose
+    // section is not released is never read, so it is never decrypted.
+    const includedFactKinds = [
+      ...(["SMOKING_STATUS", "ALCOHOL_PATTERN", "SHIFT_SCHEDULE"] as const),
+      ...LIFE_FACT_KINDS,
+    ].filter((kind) =>
+      includedStored.has(
+        isLifeFactKind(kind) ? LIFE_KIND_AI_SECTION[kind] : kind,
+      ),
+    );
 
-    const [ctx, user, allergyRows, familyRows, factRows, life] =
+    const [ctx, user, allergyRows, familyRows, factRows, auditC] =
       await Promise.all([
         getSelfContextForUser(userId, prisma, included),
         included.has("ABOUT_ME")
@@ -827,10 +807,10 @@ export async function getSelfContextTextForUser(
                 supersededByRevisionId: null,
               },
               orderBy: { kind: "asc" },
-              select: { kind: true, valueEncrypted: true },
+              select: { kind: true, valueEncrypted: true, validFrom: true },
             })
           : Promise.resolve([]),
-        loadLifeContextForPrompt(userId, includedStored),
+        loadAuditCForPrompt(userId, includedStored),
       ]);
 
     const selfText = composeSelfContextText(
@@ -853,27 +833,32 @@ export async function getSelfContextTextForUser(
       locale,
     );
     const factsText = composeStructuredHealthFactsText(
-      factRows.flatMap((row) => {
-        const decrypted = decryptHealthProfileFactValue(
-          row.kind as HealthProfileFactKind,
-          row.valueEncrypted,
-        );
-        return decrypted.value
-          ? [
-              {
-                kind: row.kind as HealthProfileFactKind,
-                value: decrypted.value,
-              },
-            ]
-          : [];
-      }),
+      factRows
+        .filter((row) => !isLifeFactKind(row.kind))
+        .flatMap((row) => {
+          const decrypted = decryptHealthProfileFactValue(
+            row.kind as HealthProfileFactKind,
+            row.valueEncrypted,
+          );
+          return decrypted.value
+            ? [
+                {
+                  kind: row.kind as HealthProfileFactKind,
+                  value: decrypted.value,
+                },
+              ]
+            : [];
+        }),
       locale,
     );
-    const lifeText = composeLifeCircumstancesText(
-      life.facts,
-      life.auditC,
-      locale,
-    );
+    const lifeFacts = factRows.flatMap((row) => {
+      if (!isLifeFactKind(row.kind)) return [];
+      const opened = decryptLifeFactValue(row.kind, row.valueEncrypted);
+      return opened.value
+        ? [{ kind: row.kind, value: opened.value, validFrom: row.validFrom }]
+        : [];
+    });
+    const lifeText = composeLifeCircumstancesText(lifeFacts, auditC, locale);
     if (!selfText && !recordsText && !factsText && !lifeText) return null;
     return [selfText, recordsText, factsText, lifeText]
       .filter(Boolean)

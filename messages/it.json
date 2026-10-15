@@ -12429,7 +12429,9 @@
       "lifeEventUpdate": "{name} ha modificato un evento della vita",
       "lifeEventDelete": "{name} ha rimosso un evento della vita",
       "biomarkerMerge": "{name} ha unito dei biomarcatori",
-      "medicationIngredientsUpdate": "{name} ha modificato la composizione di un integratore"
+      "medicationIngredientsUpdate": "{name} ha modificato la composizione di un integratore",
+      "auditCCreate": "{name} ha compilato il questionario AUDIT-C",
+      "auditCDelete": "{name} ha eliminato una voce AUDIT-C"
     },
     "section": {
       "measurements": {

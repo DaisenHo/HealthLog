@@ -106,6 +106,8 @@ describe("anamnesis facts API", () => {
       "user-1",
       "SMOKING_STATUS",
       "FORMER",
+      expect.any(Date),
+      undefined,
     );
     expect(mocks.audit).toHaveBeenCalledOnce();
   });
@@ -135,7 +137,13 @@ describe("anamnesis facts API", () => {
         where: expect.objectContaining({ id: "fact-1", userId: "user-1" }),
       }),
     );
-    expect(mocks.correct).toHaveBeenCalledWith("user-1", "fact-1", "NEVER");
+    expect(mocks.correct).toHaveBeenCalledWith(
+      "user-1",
+      "fact-1",
+      "NEVER",
+      expect.any(Date),
+      undefined,
+    );
     expect(mocks.audit).toHaveBeenCalledOnce();
   });
 

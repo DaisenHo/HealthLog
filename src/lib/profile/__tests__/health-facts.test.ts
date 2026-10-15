@@ -28,6 +28,7 @@ vi.mock("@/lib/ai/coach/bytes-codec", () => ({
 }));
 vi.mock("@/lib/cache/invalidate", () => ({
   invalidateUserInsights: mocks.invalidateInsights,
+  invalidateUserDashboardSnapshot: vi.fn(),
 }));
 vi.mock("@/lib/logging/context", () => ({ getEvent: vi.fn(() => null) }));
 

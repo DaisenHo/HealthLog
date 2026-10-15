@@ -12429,7 +12429,9 @@
       "lifeEventUpdate": "{name} 님이 삶의 사건을 수정했어요",
       "lifeEventDelete": "{name} 님이 삶의 사건을 삭제했어요",
       "biomarkerMerge": "{name} 님이 바이오마커를 합쳤어요",
-      "medicationIngredientsUpdate": "{name} 님이 보충제 성분을 수정했어요"
+      "medicationIngredientsUpdate": "{name} 님이 보충제 성분을 수정했어요",
+      "auditCCreate": "{name} 님이 AUDIT-C 문항에 답했어요",
+      "auditCDelete": "{name} 님이 AUDIT-C 기록을 삭제했어요"
     },
     "section": {
       "measurements": {

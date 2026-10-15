@@ -10,8 +10,9 @@ import { NextRequest } from "next/server";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
+import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { removeAuditC } from "@/lib/profile/life-circumstances";
+import { invalidateHealthProfileFactConsumers } from "@/lib/profile/health-facts";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -20,12 +21,20 @@ export const DELETE = apiHandler(
     const { user } = await requireRecordAuth("manage", "profile");
     const { id } = await params;
 
-    const removed = await removeAuditC(user.id, id);
-    if (!removed) {
+    // Soft delete, scoped to a live AUDIT-C entry of the record: a foreign
+    // id, a screener's id or an entry already removed is the same 404.
+    const now = new Date();
+    const result = await prisma.mentalHealthAssessment.updateMany({
+      where: { id, userId: user.id, instrument: "AUDIT_C", deletedAt: null },
+      data: { deletedAt: now, syncVersion: { increment: 1 } },
+    });
+    if (result.count !== 1) {
       return apiError("AUDIT-C entry not found", 404, {
         errorCode: "anamnesis.auditC.notFound",
       });
     }
+    await invalidateHealthProfileFactConsumers(user.id, prisma);
+    const removed = { id, removedAt: now.toISOString() };
 
     await auditLog("anamnesis.audit_c.delete", {
       userId: user.id,

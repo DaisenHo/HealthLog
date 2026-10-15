@@ -28,6 +28,7 @@ import {
 } from "@/lib/mental-health/audit-c";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import {
+  decryptHealthProfileFactValue,
   decryptLifeFactValue,
   invalidateHealthProfileFactConsumers,
   toLifeFactRevisionDto,
@@ -55,6 +56,7 @@ import {
   type ActivityHabitValue,
   type FreeWeekdaysValue,
   type LifeAiSection,
+  type LifeFactKind,
   type LifeSectionKey,
   type TobaccoDetailValue,
   type WorkContextValue,
@@ -203,28 +205,42 @@ export function toAuditCResult(
   };
 }
 
-/** The dated free-weekday answers of a record, oldest first, for the night-by-night day type. */
+/**
+ * The dated free-weekday answers of a record, oldest first, for the
+ * night-by-night day type. Fail-soft: the answers refine a chronotype the
+ * weekend default already produces, so a failed read falls back to that
+ * default with a warning instead of taking the sleep surfaces down with it.
+ */
 export async function loadFreeWeekdaySpans(
   userId: string,
 ): Promise<FreeWeekdaysSpan[]> {
-  const rows = await prisma.healthProfileFactRevision.findMany({
-    where: { userId, kind: "FREE_WEEKDAYS" },
-    orderBy: { validFrom: "asc" },
-    select: { validFrom: true, validUntil: true, valueEncrypted: true },
-  });
-  return rows.flatMap((row) => {
-    const opened = decryptLifeFactValue("FREE_WEEKDAYS", row.valueEncrypted);
-    const value = opened.value as FreeWeekdaysValue | null;
-    return value
-      ? [
-          {
-            validFrom: row.validFrom,
-            validUntil: row.validUntil,
-            days: value.days,
-          },
-        ]
-      : [];
-  });
+  try {
+    const rows = await prisma.healthProfileFactRevision.findMany({
+      where: { userId, kind: "FREE_WEEKDAYS" },
+      orderBy: { validFrom: "asc" },
+      select: { validFrom: true, validUntil: true, valueEncrypted: true },
+    });
+    return rows.flatMap((row) => {
+      const opened = decryptLifeFactValue("FREE_WEEKDAYS", row.valueEncrypted);
+      const value = opened.value as FreeWeekdaysValue | null;
+      return value
+        ? [
+            {
+              validFrom: row.validFrom,
+              validUntil: row.validUntil,
+              days: value.days,
+            },
+          ]
+        : [];
+    });
+  } catch (error) {
+    getEvent()?.addWarning(
+      `free weekdays read failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return [];
+  }
 }
 
 /** Assemble the whole read model for one record. */
@@ -480,17 +496,17 @@ export async function confirmLifeSection(
       where: { userId },
       select: { lifeConfirmedJson: true },
     });
-    const next: Record<string, string> = {};
+    const confirmedAt: Record<string, string> = {};
     for (const [key, at] of confirmations(row?.lifeConfirmedJson)) {
       if ((LIFE_SECTION_KEYS as readonly string[]).includes(key)) {
-        next[key] = at.toISOString();
+        confirmedAt[key] = at.toISOString();
       }
     }
-    next[section] = stamp;
+    confirmedAt[section] = stamp;
     await tx.userHealthProfile.upsert({
       where: { userId },
-      create: { userId, lifeConfirmedJson: next },
-      update: { lifeConfirmedJson: next },
+      create: { userId, lifeConfirmedJson: confirmedAt },
+      update: { lifeConfirmedJson: confirmedAt },
     });
   });
   return stamp;
@@ -603,21 +619,6 @@ export async function createAuditC(
   }
 }
 
-/** Soft-delete one entry of the record; null when there is no live one with that id. */
-export async function removeAuditC(
-  userId: string,
-  id: string,
-  now: Date = new Date(),
-): Promise<{ id: string; removedAt: string } | null> {
-  const removed = await prisma.mentalHealthAssessment.updateMany({
-    where: { id, userId, instrument: "AUDIT_C", deletedAt: null },
-    data: { deletedAt: now, syncVersion: { increment: 1 } },
-  });
-  if (removed.count !== 1) return null;
-  await invalidateHealthProfileFactConsumers(userId, prisma);
-  return { id, removedAt: now.toISOString() };
-}
-
 // ── Clinical summary (doctor report, FHIR) ───────────────────────────────────
 
 export async function loadLifeClinicalSummary(
@@ -643,14 +644,7 @@ export async function loadLifeClinicalSummary(
         validUntil: null,
         supersededByRevisionId: null,
       },
-      select: {
-        id: true,
-        kind: true,
-        valueEncrypted: true,
-        validFrom: true,
-        provenance: true,
-        createdAt: true,
-      },
+      select: { kind: true, valueEncrypted: true },
     }),
     prisma.mentalHealthAssessment.findFirst({
       where: { userId, instrument: "AUDIT_C", deletedAt: null },
@@ -658,9 +652,15 @@ export async function loadLifeClinicalSummary(
       select: { id: true, takenAt: true, totalScore: true, locale: true },
     }),
   ]);
-  const facts = rows.map(toLifeFactRevisionDto);
-  const value = <T>(kind: string): T | null =>
-    (facts.find((fact) => fact.kind === kind)?.value as T | undefined) ?? null;
+  const value = <T>(kind: string): T | null => {
+    const row = rows.find((candidate) => candidate.kind === kind);
+    if (!row) return null;
+    const opened =
+      kind === "SMOKING_STATUS"
+        ? decryptHealthProfileFactValue("SMOKING_STATUS", row.valueEncrypted)
+        : decryptLifeFactValue(kind as LifeFactKind, row.valueEncrypted);
+    return (opened.value as T | null) ?? null;
+  };
   const packYears = computePackYears(
     value<string>("SMOKING_STATUS"),
     value<TobaccoDetailValue>("TOBACCO_DETAIL"),

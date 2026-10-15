@@ -12429,7 +12429,9 @@
       "lifeEventUpdate": "{name} changed a life event",
       "lifeEventDelete": "{name} removed a life event",
       "biomarkerMerge": "{name} merged biomarkers",
-      "medicationIngredientsUpdate": "{name} changed what a supplement contains"
+      "medicationIngredientsUpdate": "{name} changed what a supplement contains",
+      "auditCCreate": "{name} answered the AUDIT-C questions",
+      "auditCDelete": "{name} removed an AUDIT-C entry"
     },
     "section": {
       "measurements": {
