@@ -18,7 +18,8 @@
  *   - the races that matter: two claims, a claim against a new link, a claim
  *     against the profile's deletion;
  *   - the anonymous surface: uniform 404, live-session 409, rate limit, and
- *     the refusal on a single-sign-on-only instance;
+ *     the password claim's refusal on a single-sign-on-only instance (the
+ *     single-sign-on claim has its own file);
  *   - the new owner's decision afterwards, including a restored MANAGE and a
  *     row that moved since the claim and is left alone.
  */
@@ -862,7 +863,7 @@ describe("claiming the profile", () => {
     }
   });
 
-  it("refuses over a live session and on a single-sign-on-only instance", async () => {
+  it("refuses over a live session, and the password claim on a single-sign-on-only instance", async () => {
     const { creator, profile } = await household();
     signIn(creator);
     const token = await mintToken(profile.id);
@@ -877,7 +878,9 @@ describe("claiming the profile", () => {
     process.env.OIDC_CLIENT_ID = "client";
     process.env.OIDC_CLIENT_SECRET = "secret";
     process.env.OIDC_ONLY = "true";
-    expect((await mint(profile.id)).status).toBe(403);
+    // v1.43 (#959): the handover itself works there, through the identity
+    // provider (tests/integration/managed-profile-handover-sso.test.ts); only
+    // the password claim stays closed.
     const status = await (
       await (
         await import("@/app/api/managed-profiles/[id]/handover/route")
@@ -888,14 +891,17 @@ describe("claiming the profile", () => {
         { params: Promise.resolve({ id: profile.id }) },
       )
     ).json();
-    expect(status.data.available).toBe(false);
+    expect(status.data.available).toBe(true);
+    expect(status.data.methods).toEqual(["sso"]);
     signOut();
-    for (const response of [await preview(token), await claim(token)]) {
-      expect(response.status).toBe(403);
-      expect((await response.json()).meta.errorCode).toBe(
-        "profile_claim.oidc_only_unsupported",
-      );
-    }
+    const shown = await preview(token);
+    expect(shown.status).toBe(200);
+    expect((await shown.json()).data.methods).toEqual(["sso"]);
+    const refused = await claim(token);
+    expect(refused.status).toBe(403);
+    expect((await refused.json()).meta.errorCode).toBe(
+      "profile_claim.oidc_only_unsupported",
+    );
     // The profile is still managed: nothing was taken over.
     const account = await getPrismaClient().user.findUniqueOrThrow({
       where: { id: profile.id },
