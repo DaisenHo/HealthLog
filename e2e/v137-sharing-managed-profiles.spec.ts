@@ -16,7 +16,7 @@ import {
 const DOMAIN_READS = {
   measurements: "/api/measurements",
   medications: "/api/medications",
-  labs: "/api/labs",
+  labs: "/api/labs/overview",
   profile: "/api/profile/summary",
   illness: "/api/illness/episodes",
   mind: "/api/mood-entries",

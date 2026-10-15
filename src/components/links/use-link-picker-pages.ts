@@ -198,10 +198,6 @@ export function useLinkPickerPages<T extends { id: string }>({
   };
 }
 
-export type LinkPickerPages<T extends { id: string }> = ReturnType<
-  typeof useLinkPickerPages<T>
->;
-
 /**
  * Where a record's date splits the list: the end of the UTC day
  * {@link ENCOUNTER_SUGGEST_WINDOW_DAYS} days after it, so everything the
