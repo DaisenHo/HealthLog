@@ -133,11 +133,12 @@ function scoreUserPrompt(
   /** v1.30.3 (QA F5) — the user's own IANA tz; was hardcoded "Europe/Berlin". */
   tz: string,
 ): string {
-  const snapshot = JSON.stringify(
-    { promptVersion: PROMPT_VERSION, generatedForDay: todayKey, band, signal },
-    null,
-    2,
-  );
+  const snapshot = JSON.stringify({
+    promptVersion: PROMPT_VERSION,
+    generatedForDay: todayKey,
+    band,
+    signal,
+  });
   if (instructionLocale(locale) === "en") {
     return `Date: ${todayKey} (${tz})
 OPENER HINT: ${openerHint}

@@ -965,7 +965,9 @@ export async function generateComprehensiveInsight(
   const compactFeatures = compactSections(
     features as unknown as Record<string, unknown>,
   );
-  const featuresJson = JSON.stringify(compactFeatures, null, 2);
+  // Compact on the wire: indentation is about 40% of a pretty-printed
+  // payload, and the model reads the structure without it (#1217).
+  const featuresJson = JSON.stringify(compactFeatures);
 
   // v1.16.8 — content-hash gate. When the compacted feature snapshot is
   // byte-equivalent (modulo clock-relative offsets, see snapshot-hash.ts)

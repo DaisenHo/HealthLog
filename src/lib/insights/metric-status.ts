@@ -454,7 +454,7 @@ export async function generateMetricStatus(args: {
   const shed = degradeStatusSnapshotToBudget(
     snapshot as unknown as Record<string, unknown>,
   );
-  const snapshotJson = JSON.stringify(snapshot, null, 2);
+  const snapshotJson = JSON.stringify(snapshot);
 
   annotate({
     action: { name: cacheAction },

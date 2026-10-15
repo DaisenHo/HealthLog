@@ -682,17 +682,25 @@ export function convertGradedSeries(
 }
 
 /**
- * Assembled-snapshot soft char cap, mirroring the Coach's
- * `MAX_SNAPSHOT_CHARS` (~24 000 chars ≈ ~6 000 tokens against the
- * pretty-printed form). The status snapshots had no cap at all; a
- * many-metric `general-status` could balloon past 100 K tokens.
+ * Assembled-snapshot soft char cap, measured against the COMPACT JSON the
+ * prompt ships (`JSON.stringify(snapshot)`). The status snapshots had no cap
+ * at all once; a many-metric `general-status` could balloon past 100 K
+ * tokens.
+ *
+ * Until v1.43 the cap was 24 000 characters of pretty-printed JSON. The
+ * prompt is compact now, and a graded series loses about 58% of its
+ * characters to indentation (compact is ~0.42 of pretty across one to sixteen
+ * metrics and thirty to a thousand days), so 24 000 pretty characters are
+ * ~10 100 compact ones. 14 000 keeps every snapshot that fitted before
+ * fitting now, with room for the string-heavier blocks whose ratio is higher:
+ * the model sees at least the same data for fewer tokens, never less.
  */
-export const MAX_SNAPSHOT_CHARS = 24_000;
+export const MAX_SNAPSHOT_CHARS = 14_000;
 
 /**
  * Walk an arbitrary snapshot object and, while it exceeds
- * `MAX_SNAPSHOT_CHARS` (measured against the pretty-printed form the
- * prompt ships), shed the lowest-signal slices in order:
+ * `MAX_SNAPSHOT_CHARS` (measured against the compact form the prompt
+ * ships), shed the lowest-signal slices in order:
  *   1. drop every graded `yearly` array,
  *   2. drop every graded `weekly` array,
  *   3. truncate any other array to its tail `arrayTailCap` entries
@@ -709,7 +717,7 @@ export function degradeStatusSnapshotToBudget(
   arrayTailCap = 30,
 ): string[] {
   const shed: string[] = [];
-  const size = () => JSON.stringify(snapshot, null, 2).length;
+  const size = () => JSON.stringify(snapshot).length;
   if (size() <= MAX_SNAPSHOT_CHARS) return shed;
 
   const walk = (

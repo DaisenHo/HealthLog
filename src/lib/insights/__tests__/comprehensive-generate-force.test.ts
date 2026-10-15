@@ -350,7 +350,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     expect(outcome).toEqual({ status: "generated", providerType: "openai" });
 
     const prompt = JSON.stringify(runRawCompletionWithFallback.mock.calls[0]);
-    expect(prompt).toContain('\\"unit\\": \\"lb\\"');
+    expect(prompt).toContain('\\"unit\\":\\"lb\\"');
     expect(prompt).toContain("179.5");
     expect(prompt).not.toContain("81.4");
 

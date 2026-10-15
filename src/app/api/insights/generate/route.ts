@@ -671,7 +671,9 @@ export const POST = apiHandler((request: NextRequest) =>
     const compactFeatures = compactSections(
       features as unknown as Record<string, unknown>,
     );
-    const featuresJson = JSON.stringify(compactFeatures, null, 2);
+    // Compact on the wire: indentation is about 40% of a pretty-printed
+    // payload, and the model reads the structure without it (#1217).
+    const featuresJson = JSON.stringify(compactFeatures);
     if (payloadDowngraded) {
       annotate({
         meta: {

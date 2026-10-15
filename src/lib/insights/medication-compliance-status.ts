@@ -406,7 +406,7 @@ export async function prepareMedicationComplianceStatusForUser(
   const shed = degradeStatusSnapshotToBudget(
     snapshot as unknown as Record<string, unknown>,
   );
-  const snapshotJson = JSON.stringify(snapshot, null, 2);
+  const snapshotJson = JSON.stringify(snapshot);
 
   annotate({
     action: { name: cacheAction },
