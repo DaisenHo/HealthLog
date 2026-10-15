@@ -193,9 +193,11 @@ describe("MoodList — level A on the edit path (v1.37)", () => {
 
 describe("MoodList — delete failure toast (v1.11.5)", () => {
   it("surfaces a toast on a rejected delete instead of failing silently", () => {
-    expect(listSrc).toContain('import { toast } from "sonner"');
+    expect(listSrc).toContain(
+      'import { showErrorToast } from "@/lib/errors/error-toast"',
+    );
     expect(listSrc).toMatch(
-      /deleteMutation = useMutation\(\{[\s\S]*onError: \(\) => \{[\s\S]*toast\.error\(t\("mood\.deleteError"\)\)/,
+      /deleteMutation = useMutation\(\{[\s\S]*onError: \((\w+)\) => \{[\s\S]*showErrorToast\(t\("mood\.deleteError"\), \{ cause: \1 \}\)/,
     );
   });
 });

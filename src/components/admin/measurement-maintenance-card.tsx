@@ -14,6 +14,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Database, Loader2, Wrench } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { StatTile } from "@/components/admin/_stat-tile";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -92,7 +93,10 @@ export function MeasurementMaintenanceCard() {
       });
     },
     onError: (err: Error) => {
-      toast.error(err.message || t("admin.section.maintenance.startFailed"));
+      showErrorToast(
+        err.message || t("admin.section.maintenance.startFailed"),
+        { cause: err },
+      );
     },
   });
 

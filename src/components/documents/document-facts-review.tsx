@@ -28,6 +28,7 @@ import { useCalendarDate } from "@/hooks/use-calendar-date";
 import { useState } from "react";
 import { FlaskConical, Loader2, ScanSearch } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
@@ -635,7 +636,8 @@ export function DocumentFactsSection({
                       toast.info(t("documents.review.extractEmpty"));
                     }
                   },
-                  onError: (error) => toast.error(aiErrorText(error)),
+                  onError: (error) =>
+                    showErrorToast(aiErrorText(error), { cause: error }),
                 },
               )
             }

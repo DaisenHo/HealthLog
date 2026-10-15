@@ -24,6 +24,7 @@ import { useId, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -195,7 +196,7 @@ export function LogIntakeDialog({
     if (slot !== NO_SLOT) {
       const iso = slotInstantIso(takenAt, slot);
       if (!iso) {
-        toast.error(t("medications.logIntake.slotError"));
+        showErrorToast(t("medications.logIntake.slotError"));
         return;
       }
       scheduledFor = iso;

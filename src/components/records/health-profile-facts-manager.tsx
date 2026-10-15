@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -177,7 +178,7 @@ export function HealthProfileFactsManager() {
       if (failed.length === 0) {
         toastWrittenOutcome("success", t("records.profileFacts.savedToast"));
       } else {
-        toast.error(
+        showErrorToast(
           t("records.profileFacts.savePartialError", {
             kinds: failed.map((r) => t(KIND_LABEL[r.kind])).join(", "),
           }),
@@ -228,10 +229,11 @@ export function HealthProfileFactsManager() {
           queryKey: queryKeys.healthProfileFacts(),
         });
       }
-      toast.error(
+      showErrorToast(
         t("records.profileFacts.removeError", {
           kind: t(KIND_LABEL[current.kind]),
         }),
+        { cause: error },
       );
     },
   });

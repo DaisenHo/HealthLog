@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   Activity,
   Brain,
@@ -110,7 +111,9 @@ export function QuestionScreen({
       const written = await answer.mutateAsync(input);
       router.push(screenHref(nextScreen(written, step) ?? "confirm"));
     } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+        cause: err,
+      });
     }
   }
 

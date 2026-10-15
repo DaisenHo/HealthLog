@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   Popover,
@@ -724,7 +725,7 @@ function InsightsTabStripImpl({
       const decision = regenerateToastKind(regenerateOutcome);
       if (decision) {
         if (decision.kind === "error") {
-          toast.error(t(decision.messageKey));
+          showErrorToast(t(decision.messageKey));
         } else {
           toast.success(t(decision.messageKey));
         }

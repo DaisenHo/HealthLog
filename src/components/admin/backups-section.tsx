@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -864,10 +865,11 @@ export function BackupsSection() {
       }, 2000);
     },
     onError: (err) => {
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.section.backups.runFailed"),
+        { cause: err },
       );
     },
   });
@@ -923,10 +925,11 @@ export function BackupsSection() {
     },
     onError: (err) => {
       if (err instanceof ReproofCancelledError) return;
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.section.backups.uploadFailed"),
+        { cause: err },
       );
     },
     onSettled: () => {
@@ -983,7 +986,7 @@ export function BackupsSection() {
         void queryClient.invalidateQueries();
       } else if (job.status === "failed") {
         setRefusedSections(missingSectionsOf(job.failure));
-        toast.error(t("admin.section.backups.restoreFailed"));
+        showErrorToast(t("admin.section.backups.restoreFailed"));
       }
     }
   }
@@ -1061,17 +1064,20 @@ export function BackupsSection() {
         err instanceof ApiError &&
         err.meta?.errorCode === "backup.restore.active"
       ) {
-        toast.error(t("admin.section.backups.restoreActive"));
+        showErrorToast(t("admin.section.backups.restoreActive"), {
+          cause: err,
+        });
         void queryClient.invalidateQueries({
           queryKey: queryKeys.adminBackupRestores(),
         });
         return;
       }
       setRefusedSections([]);
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.section.backups.restoreFailed"),
+        { cause: err },
       );
     },
   });
@@ -1109,10 +1115,11 @@ export function BackupsSection() {
       toast.success(t("admin.section.backups.downloadStarted"));
     } catch (err) {
       if (err instanceof ReproofCancelledError) return;
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.section.backups.downloadFailed"),
+        { cause: err },
       );
     } finally {
       setDownloadingId(null);

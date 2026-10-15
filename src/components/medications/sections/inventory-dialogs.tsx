@@ -18,6 +18,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -145,8 +146,10 @@ export function AddInventoryDialog({
       await invalidateSupplyQueries(queryClient, medicationId);
       toast.success(t("medications.detail.bestand.addSuccess"));
       onClose();
-    } catch {
-      toast.error(t("medications.detail.bestand.addFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.bestand.addFailed"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }
@@ -399,8 +402,10 @@ export function AdjustInventoryDialog({
       await invalidateSupplyQueries(queryClient, medicationId);
       toast.success(t("medications.detail.bestand.adjustSuccess"));
       onClose();
-    } catch {
-      toast.error(t("medications.detail.bestand.adjustFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.bestand.adjustFailed"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }
@@ -573,8 +578,10 @@ export function PackagingDialog({
       ]);
       toast.success(t("medications.detail.bestand.packagingSuccess"));
       onClose();
-    } catch {
-      toast.error(t("medications.detail.bestand.packagingFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.bestand.packagingFailed"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }

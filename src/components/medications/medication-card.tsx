@@ -7,6 +7,7 @@ import {
 import { useState, useEffect, useReducer } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
@@ -243,7 +244,9 @@ export function MedicationCard({
         injectionSite: site,
       });
     } catch (err) {
-      toast.error(t("medications.logInjectionSiteSaveFailed"));
+      showErrorToast(t("medications.logInjectionSiteSaveFailed"), {
+        cause: err,
+      });
       throw err;
     }
     await invalidateKeys(queryClient, medicationDependentKeys);

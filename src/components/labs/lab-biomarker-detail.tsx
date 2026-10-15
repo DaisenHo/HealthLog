@@ -19,6 +19,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { useAuth } from "@/hooks/use-auth";
 import { DeleteButton } from "@/components/data-list";
@@ -283,7 +284,8 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
       router.push("/labs");
     },
-    onError: () => toast.error(t("labs.biomarker.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("labs.biomarker.deleteError"), { cause: failure }),
   });
 
   // v1.25.1 — the per-marker description leads the page, mirroring the metric

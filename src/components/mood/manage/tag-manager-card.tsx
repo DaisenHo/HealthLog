@@ -33,6 +33,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,7 +167,10 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
         toast.message(t("common.conflictReloaded"));
         return false;
       }
-      toast.error(err instanceof ApiError ? err.message : t("common.error"));
+      showErrorToast(
+        err instanceof ApiError ? err.message : t("common.error"),
+        { cause: err },
+      );
       return false;
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -238,7 +242,10 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
       }
     } catch (err) {
       rollback();
-      toast.error(err instanceof ApiError ? err.message : t("common.error"));
+      showErrorToast(
+        err instanceof ApiError ? err.message : t("common.error"),
+        { cause: err },
+      );
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }
@@ -275,7 +282,10 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
         toast.message(t("common.conflictReloaded"));
         return;
       }
-      toast.error(err instanceof ApiError ? err.message : t("common.error"));
+      showErrorToast(
+        err instanceof ApiError ? err.message : t("common.error"),
+        { cause: err },
+      );
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }

@@ -23,6 +23,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -125,7 +126,10 @@ export function EncryptionSection() {
       });
     },
     onError: (err: Error) => {
-      toast.error(err.message || t("admin.section.encryption.rotateFailed"));
+      showErrorToast(
+        err.message || t("admin.section.encryption.rotateFailed"),
+        { cause: err },
+      );
     },
   });
 

@@ -57,7 +57,8 @@ async function signIn(userId: string) {
 }
 
 function call() {
-  return GET(new NextRequest("http://localhost/api/admin/support-report"));
+  const route = GET as unknown as (request: NextRequest) => Promise<Response>;
+  return route(new NextRequest("http://localhost/api/admin/support-report"));
 }
 
 describe("GET /api/admin/support-report (integration)", () => {

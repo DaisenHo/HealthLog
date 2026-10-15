@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationMinutes": "{minutes} min",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} h"
+    "durationClockHours": "{time} h",
+    "errorIdLabel": "ID errore",
+    "errorIdCopy": "Copia ID errore",
+    "errorIdCopied": "ID errore copiato"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "Documentazione",
       "credits": "Crediti e attribuzioni dei dati",
       "linksHeading": "Fonti e documentazione",
-      "newerAvailable": "Nuova versione: {tag}"
+      "newerAvailable": "Nuova versione: {tag}",
+      "support": {
+        "title": "Assistenza",
+        "description": "Un riepilogo per una segnalazione di errore, senza nome, email o valori di salute.",
+        "copy": "Copia le info di assistenza",
+        "copied": "Copiato",
+        "copyFailed": "Non è stato possibile raccogliere le info di assistenza."
+      }
     },
     "testConnection": {
       "test": "Prova connessione",
@@ -7753,7 +7763,8 @@
         "eventDetails": "Dettagli dell'evento",
         "closeDetails": "Chiudi dettagli",
         "processDetail": "Il buffer è volatile e limitato a 500 voci.",
-        "cardTitle": "Eventi recenti"
+        "cardTitle": "Eventi recenti",
+        "filterErrorId": "ID errore"
       },
       "backups": {
         "title": "Backup",
@@ -8120,7 +8131,16 @@
       "codes": "Per chi gestisce il server: le richieste API rispondono 503 con il codice di errore {code}, e /api/health indica il motivo {reason}."
     },
     "loginOverviewCardTitle": "Eventi di accesso",
-    "userColumn": "Utente"
+    "userColumn": "Utente",
+    "supportReport": {
+      "title": "Rapporto di assistenza",
+      "description": "Un riepilogo di questa istanza per una segnalazione di errore, senza email, ID o valori.",
+      "body": "Gli account compaiono come “Account 1”, “Account 2” e così via. Leggi il rapporto prima di condividerlo.",
+      "copy": "Copia",
+      "copied": "Copiato",
+      "download": "Scarica",
+      "loadError": "Non è stato possibile creare il rapporto di assistenza."
+    }
   },
   "achievements": {
     "title": "Obiettivi",

@@ -12,6 +12,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   ApiError,
@@ -233,7 +234,8 @@ export function useDeleteCustomSymptom() {
     onSuccess: () => invalidateKeys(qc, cycleDependentKeys),
     // v1.16.4 — a failed delete used to fail silently (the sheet clears the
     // chip optimistically), so surface the rejection.
-    onError: () => toast.error(t("cycle.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.deleteError"), { cause: failure }),
   });
 }
 
@@ -355,7 +357,8 @@ export function useStartPeriod() {
     },
     // v1.16.4 — period boundaries had no failure signal at all (the sheet
     // simply stayed open); a toast names the rejection.
-    onError: () => toast.error(t("cycle.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.saveError"), { cause: failure }),
   });
 }
 
@@ -375,7 +378,8 @@ export function useEndPeriod() {
       void invalidateKeys(qc, cycleDependentKeys);
       toastWrittenOutcome("success", t("cycle.periodEndSaved"));
     },
-    onError: () => toast.error(t("cycle.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.saveError"), { cause: failure }),
   });
 }
 
@@ -391,7 +395,8 @@ export function useDeleteDayLog() {
       void invalidateKeys(qc, cycleDependentKeys);
       toastWrittenOutcome("success", t("cycle.deleteSuccess"));
     },
-    onError: () => toast.error(t("cycle.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.deleteError"), { cause: failure }),
   });
 }
 

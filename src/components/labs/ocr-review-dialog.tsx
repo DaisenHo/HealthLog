@@ -14,6 +14,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { AlertCircle, Loader2, ScanLine, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
@@ -233,21 +234,22 @@ export function OcrReviewDialog({
       onSuccess: (data) => {
         const seeded = seedReviewRows(data.rows, data.reportDate);
         if (seeded.length === 0) {
-          toast.error(t("labs.ocr.noRows"));
+          showErrorToast(t("labs.ocr.noRows"));
           return;
         }
         setRows(seeded);
         setPageCoverage(data.pageCoverage ?? null);
         setStage("review");
       },
-      onError: (err) => toast.error(extractErrorMessage(err, t)),
+      onError: (err) =>
+        showErrorToast(extractErrorMessage(err, t), { cause: err }),
     });
   }
 
   function onSave() {
     const plan = planSave(rows);
     if (plan.kind === "nothing-selected") {
-      toast.error(t("labs.ocr.nothingToSave"));
+      showErrorToast(t("labs.ocr.nothingToSave"));
       return;
     }
     if (plan.kind === "blocked") {
@@ -296,7 +298,8 @@ export function OcrReviewDialog({
           onCommitted();
           handleClose(false);
         },
-        onError: () => toast.error(t("labs.ocr.saveFailed")),
+        onError: (failure) =>
+          showErrorToast(t("labs.ocr.saveFailed"), { cause: failure }),
       },
     );
   }

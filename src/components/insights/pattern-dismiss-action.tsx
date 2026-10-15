@@ -4,6 +4,7 @@ import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 import { EyeOff, RotateCcw, X } from "lucide-react";
 import { useContext, useReducer, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { apiPatch } from "@/lib/api/api-fetch";
@@ -138,8 +139,8 @@ export function PatternDismissButton({
         { dismissed: true },
       );
       await applyPatternDecisionSuccess(queryClient, onDismissed, onSettled);
-    } catch {
-      toast.error(t("insights.pattern.dismissError"));
+    } catch (failure) {
+      showErrorToast(t("insights.pattern.dismissError"), { cause: failure });
     } finally {
       setPending(false);
     }
@@ -184,8 +185,8 @@ export function PatternDismissedNotice({
         { dismissed: false },
       );
       await applyPatternDecisionSuccess(queryClient, onRestored, onSettled);
-    } catch {
-      toast.error(t("insights.pattern.restoreError"));
+    } catch (failure) {
+      showErrorToast(t("insights.pattern.restoreError"), { cause: failure });
     } finally {
       setPending(false);
     }

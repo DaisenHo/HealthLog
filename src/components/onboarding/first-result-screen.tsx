@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
 import { MeasurementForm } from "@/components/measurements/measurement-form";
@@ -109,7 +110,9 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
       });
       setCompleted(true);
     } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+        cause: err,
+      });
     }
   }
 
@@ -118,7 +121,9 @@ export function FirstResultScreen({ state }: { state: OnboardingStateDto }) {
       await answer.mutateAsync({ step: "first-result", status: "skipped" });
       router.push(screenHref("done"));
     } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+        cause: err,
+      });
     }
   }
 

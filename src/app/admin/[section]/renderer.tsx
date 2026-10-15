@@ -36,6 +36,7 @@ import { ModuleAvailabilitySection } from "@/components/admin/module-availabilit
 import { RemindersSection } from "@/components/admin/reminders-section";
 import { ServicesSection } from "@/components/admin/services-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
+import { SupportReportCard } from "@/components/admin/support-report-card";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementMaintenanceCard } from "@/components/admin/measurement-maintenance-card";
@@ -69,6 +70,8 @@ export function AdminSectionRenderer({
         >
           <SectionFrame>
             <SystemStatusSection />
+            {/* v1.43 — the redacted report for a bug report. */}
+            <SupportReportCard />
             {/* v1.42 — the table maintenance after the tombstone purge. */}
             <MeasurementMaintenanceCard />
           </SectionFrame>

@@ -14,6 +14,7 @@
  */
 import { useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field-group";
@@ -107,7 +108,7 @@ export function PractitionerSheet({
       const message =
         err instanceof Error ? err.message : t("practitioners.saveFailed");
       setError(message);
-      toast.error(message);
+      showErrorToast(message, { cause: err });
     }
   };
 

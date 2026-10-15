@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
@@ -55,9 +56,11 @@ export function IntakeTrackingBody({
           ? t("medications.trackIntake.enabledToast")
           : t("medications.trackIntake.disabledToast"),
       );
-    } catch {
+    } catch (failure) {
       setLocalTracked(previous);
-      toast.error(t("medications.trackIntake.toggleFailed"));
+      showErrorToast(t("medications.trackIntake.toggleFailed"), {
+        cause: failure,
+      });
     } finally {
       setSubmitting(false);
     }

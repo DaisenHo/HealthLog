@@ -56,6 +56,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { apiDelete } from "@/lib/api/api-fetch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -123,7 +124,7 @@ function FactRow({
   const edit = useEditCoachFact({
     // The edited words in place are the confirmation.
     onSuccess: () => setEditing(false),
-    onError: () => toast.error(t("admin.settingsSaveError")),
+    onError: () => showErrorToast(t("admin.settingsSaveError")),
   });
   const sourceKey = factSourceKey(fact);
   const trimmed = draft.trim();
@@ -262,7 +263,7 @@ export function CoachMemorySection({
 
   const forgetOne = useForgetCoachFact({
     onSuccess: () => toast.success(t("settings.ai.coachMemory.forgotToast")),
-    onError: () => toast.error(t("settings.ai.coachMemory.forgotError")),
+    onError: () => showErrorToast(t("settings.ai.coachMemory.forgotError")),
   });
 
   const forgetAll = useMutation({
@@ -279,8 +280,10 @@ export function CoachMemorySection({
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.coachFacts() });
     },
-    onError: () => {
-      toast.error(t("settings.ai.coachMemory.clearError"));
+    onError: (failure) => {
+      showErrorToast(t("settings.ai.coachMemory.clearError"), {
+        cause: failure,
+      });
     },
   });
 

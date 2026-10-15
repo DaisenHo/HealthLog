@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -89,8 +90,9 @@ export function AiServerKeySection() {
       toast.success(t("admin.aiServerKey.saved"));
     },
     onError: (error: unknown) => {
-      toast.error(
+      showErrorToast(
         error instanceof Error ? error.message : t("admin.aiServerKey.error"),
+        { cause: error },
       );
     },
   });

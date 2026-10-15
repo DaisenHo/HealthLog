@@ -19,6 +19,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { ChevronDown, ChevronUp, Copy, KeyRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -142,8 +143,10 @@ export function ApiTokensRow({
     try {
       await navigator.clipboard.writeText(text);
       toast.success(label);
-    } catch {
-      toast.error(t("medications.detail.api.copyFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.api.copyFailed"), {
+        cause: failure,
+      });
     }
   }
 
@@ -178,10 +181,11 @@ export function ApiTokensRow({
             : (status?.activeTokenCount ?? 0) + 1,
       });
     } catch (err) {
-      toast.error(
+      showErrorToast(
         err instanceof ApiError && err.message
           ? err.message
           : t("medications.detail.api.mintFailed"),
+        { cause: err },
       );
     } finally {
       setBusy(false);

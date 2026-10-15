@@ -19,6 +19,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -152,7 +153,7 @@ export function CustomVaccineSheet({
           ? t("vaccinations.custom.nameTaken")
           : t("vaccinations.custom.saveFailed");
       setError(message);
-      toast.error(message);
+      showErrorToast(message, { cause: err });
     }
   };
 
@@ -315,8 +316,10 @@ export function CustomVaccineSheet({
                         );
                         onOpenChange(false);
                       },
-                      onError: () =>
-                        toast.error(t("vaccinations.custom.saveFailed")),
+                      onError: (failure) =>
+                        showErrorToast(t("vaccinations.custom.saveFailed"), {
+                          cause: failure,
+                        }),
                     });
                   }}
                 >

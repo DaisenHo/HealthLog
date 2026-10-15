@@ -48,6 +48,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2, PackageOpen, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -129,8 +130,10 @@ export function InventorySection({
       await apiDelete(`/api/medications/${medicationId}/inventory/${item.id}`);
       await invalidateSupplyQueries(queryClient, medicationId);
       toast.success(t("medications.detail.bestand.deleteSuccess"));
-    } catch {
-      toast.error(t("medications.detail.bestand.deleteFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.bestand.deleteFailed"), {
+        cause: failure,
+      });
     }
   }
 

@@ -35,6 +35,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
 import {
@@ -223,10 +224,11 @@ export function useAccountSwitch() {
       return landOnRecord(destination);
     },
     onError: (error: unknown) => {
-      toast.error(
+      showErrorToast(
         isSharingAccessDenied(error)
           ? t("recordSharing.switch.noLongerAvailable")
           : t("recordSharing.switch.failed"),
+        { cause: error },
       );
     },
   });

@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationMinutes": "{minutes} min",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} h"
+    "durationClockHours": "{time} h",
+    "errorIdLabel": "ID de error",
+    "errorIdCopy": "Copiar ID de error",
+    "errorIdCopied": "ID de error copiado"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "Documentación",
       "credits": "Créditos y atribuciones de datos",
       "linksHeading": "Fuentes y documentación",
-      "newerAvailable": "Nueva versión: {tag}"
+      "newerAvailable": "Nueva versión: {tag}",
+      "support": {
+        "title": "Soporte",
+        "description": "Un resumen para un informe de error, sin tu nombre, correo ni valores de salud.",
+        "copy": "Copiar información de soporte",
+        "copied": "Copiado",
+        "copyFailed": "No se pudo reunir la información de soporte."
+      }
     },
     "testConnection": {
       "test": "Probar conexión",
@@ -7753,7 +7763,8 @@
         "eventDetails": "Detalles del evento",
         "closeDetails": "Cerrar detalles",
         "processDetail": "El búfer es volátil y está limitado a 500 entradas.",
-        "cardTitle": "Eventos recientes"
+        "cardTitle": "Eventos recientes",
+        "filterErrorId": "ID de error"
       },
       "backups": {
         "title": "Copias de seguridad",
@@ -8120,7 +8131,16 @@
       "codes": "Para el administrador: las peticiones a la API responden 503 con el código de error {code}, y /api/health indica el motivo {reason}."
     },
     "loginOverviewCardTitle": "Eventos de inicio de sesión",
-    "userColumn": "Usuario"
+    "userColumn": "Usuario",
+    "supportReport": {
+      "title": "Informe de soporte",
+      "description": "Un resumen de esta instancia para un informe de error, sin correos, ID ni valores.",
+      "body": "Las cuentas aparecen como «Account 1», «Account 2», etc. Lee el informe antes de compartirlo.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "download": "Descargar",
+      "loadError": "No se pudo crear el informe de soporte."
+    }
   },
   "achievements": {
     "title": "Logros",

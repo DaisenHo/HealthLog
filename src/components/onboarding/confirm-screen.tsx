@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { BaselineForm } from "@/components/onboarding/baseline-form";
 import { StepHeading } from "@/components/onboarding/step-heading";
@@ -189,7 +190,9 @@ export function ConfirmScreen({
   /** The managed arm's two buttons: nothing above them reports a failure. */
   function finishReporting(managedRecordId?: string) {
     void finish(managedRecordId).catch((err) => {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+        cause: err,
+      });
     });
   }
 

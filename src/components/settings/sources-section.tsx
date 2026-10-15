@@ -31,6 +31,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   ArrowDown,
   ArrowUp,
@@ -193,7 +194,10 @@ export function SourcesSection() {
       setDraft(null);
       toast.success(t("settings.sections.sources.saveSuccess"));
     },
-    onError: () => toast.error(t("settings.sections.sources.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.sources.saveError"), {
+        cause: failure,
+      }),
   });
 
   const resetMutation = useMutation({

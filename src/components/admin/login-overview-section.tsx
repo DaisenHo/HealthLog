@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   Check,
   CheckCircle2,
@@ -112,8 +113,8 @@ export function LoginOverviewSection() {
       window.setTimeout(() => {
         setCopiedIp((current) => (current === id ? null : current));
       }, 2_000);
-    } catch {
-      toast.error(t("admin.copyFailed"));
+    } catch (failure) {
+      showErrorToast(t("admin.copyFailed"), { cause: failure });
     }
   }
 

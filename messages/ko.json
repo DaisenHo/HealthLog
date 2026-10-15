@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours}시간 {minutes}분",
     "durationMinutes": "{minutes}분",
     "durationClockMinutes": "{time}분",
-    "durationClockHours": "{time}시간"
+    "durationClockHours": "{time}시간",
+    "errorIdLabel": "오류 ID",
+    "errorIdCopy": "오류 ID 복사",
+    "errorIdCopied": "오류 ID 복사됨"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "문서",
       "credits": "크레딧 및 데이터 출처",
       "linksHeading": "출처 및 문서",
-      "newerAvailable": "새 버전: {tag}"
+      "newerAvailable": "새 버전: {tag}",
+      "support": {
+        "title": "지원",
+        "description": "버그 신고용 요약이며, 이름, 이메일, 건강 수치는 포함되지 않습니다.",
+        "copy": "지원 정보 복사",
+        "copied": "복사됨",
+        "copyFailed": "지원 정보를 만들 수 없습니다."
+      }
     },
     "testConnection": {
       "test": "연결 테스트",
@@ -7729,7 +7739,8 @@
         "eventDetails": "이벤트 상세",
         "closeDetails": "상세 닫기",
         "processDetail": "버퍼는 휘발성이고 최대 500개까지만 담아요.",
-        "cardTitle": "최근 이벤트"
+        "cardTitle": "최근 이벤트",
+        "filterErrorId": "오류 ID"
       },
       "backups": {
         "title": "백업",
@@ -8120,7 +8131,16 @@
       "codes": "운영자용: API 요청은 오류 코드 {code}와 함께 503으로 응답하고, /api/health는 원인 {reason}을 알려 줍니다."
     },
     "loginOverviewCardTitle": "로그인 이벤트",
-    "userColumn": "사용자"
+    "userColumn": "사용자",
+    "supportReport": {
+      "title": "지원 보고서",
+      "description": "버그 신고용 이 인스턴스의 요약이며, 이메일, ID, 수치는 포함되지 않습니다.",
+      "body": "계정은 “Account 1”, “Account 2”처럼 표시됩니다. 공유하기 전에 보고서를 확인하세요.",
+      "copy": "복사",
+      "copied": "복사됨",
+      "download": "다운로드",
+      "loadError": "지원 보고서를 만들 수 없습니다."
+    }
   },
   "achievements": {
     "title": "업적",

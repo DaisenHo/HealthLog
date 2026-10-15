@@ -47,6 +47,7 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { apiPost } from "@/lib/api/api-fetch";
 import { intakeToastOptions } from "@/components/medications/use-medication-intake";
@@ -286,9 +287,9 @@ export async function runTakeAllDue(deps: {
       toast.success(message);
     }
   } else if (taken > 0) {
-    toast.error(t("medications.takeAllDue.partialToast", { taken, failed }));
+    showErrorToast(t("medications.takeAllDue.partialToast", { taken, failed }));
   } else {
-    toast.error(t("medications.takeAllDue.failedToast"));
+    showErrorToast(t("medications.takeAllDue.failedToast"));
   }
 
   return { taken, failed };

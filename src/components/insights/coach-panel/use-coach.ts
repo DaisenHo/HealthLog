@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import type {
   CoachActivity,
@@ -521,7 +522,7 @@ export function useDeleteCoachConversationWithUndo() {
     const failedMessage = t("insights.coach.historyDeleteFailed");
     commitRef.current = (id) =>
       commitCoachConversationDelete(queryClient, id, owner, () =>
-        toast.error(failedMessage),
+        showErrorToast(failedMessage),
       );
   });
 
@@ -596,7 +597,7 @@ export function useRenameCoachConversation() {
       }),
     onError: (_error, _input, snapshot) => {
       if (snapshot) restoreCoachConversationRename(queryClient, snapshot);
-      toast.error(t("insights.coach.rename.error"));
+      showErrorToast(t("insights.coach.rename.error"), { cause: _error });
     },
     onSettled: (_data, _error, input) => {
       void invalidateCoachConversationRename(queryClient, input.id);

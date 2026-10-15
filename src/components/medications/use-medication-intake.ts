@@ -4,6 +4,7 @@ import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { useState } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
@@ -203,8 +204,11 @@ export async function runRecordIntake(deps: {
     );
     await invalidateMedicationReads(queryClient);
     onRecorded?.(eventId, skipped);
-  } catch {
-    toast.error(t("medications.intakeToastFailed", { name: medication.name }));
+  } catch (failure) {
+    showErrorToast(
+      t("medications.intakeToastFailed", { name: medication.name }),
+      { cause: failure },
+    );
   } finally {
     setIntakeLoading(null);
   }
@@ -300,8 +304,11 @@ export async function runLogIntake(deps: {
       toast.success(message);
     }
     return true;
-  } catch {
-    toast.error(t("medications.intakeToastFailed", { name: medication.name }));
+  } catch (failure) {
+    showErrorToast(
+      t("medications.intakeToastFailed", { name: medication.name }),
+      { cause: failure },
+    );
     return false;
   }
 }
@@ -321,8 +328,8 @@ export async function runUndoIntake(deps: {
     await apiDelete(`/api/medications/${medication.id}/intake/${eventId}`);
     await invalidateMedicationReads(queryClient);
     toast.success(t("medications.intakeUndone"));
-  } catch {
-    toast.error(t("medications.intakeUndoFailed"));
+  } catch (failure) {
+    showErrorToast(t("medications.intakeUndoFailed"), { cause: failure });
   }
 }
 

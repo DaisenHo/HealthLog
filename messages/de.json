@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours} Std. {minutes} Min.",
     "durationMinutes": "{minutes} Min.",
     "durationClockMinutes": "{time} Min.",
-    "durationClockHours": "{time} Std."
+    "durationClockHours": "{time} Std.",
+    "errorIdLabel": "Fehler-ID",
+    "errorIdCopy": "Fehler-ID kopieren",
+    "errorIdCopied": "Fehler-ID kopiert"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "Dokumentation",
       "credits": "Credits & Datenquellen",
       "linksHeading": "Quellen & Dokumentation",
-      "newerAvailable": "Neue Version: {tag}"
+      "newerAvailable": "Neue Version: {tag}",
+      "support": {
+        "title": "Support",
+        "description": "Eine Zusammenfassung für eine Fehlermeldung, ohne Namen, E-Mail oder Gesundheitswerte.",
+        "copy": "Support-Info kopieren",
+        "copied": "Kopiert",
+        "copyFailed": "Die Support-Info konnte nicht zusammengestellt werden."
+      }
     },
     "testConnection": {
       "test": "Verbindung testen",
@@ -7753,7 +7763,8 @@
         "eventDetails": "Event-Details",
         "closeDetails": "Details schließen",
         "processDetail": "Der Puffer ist flüchtig und auf 500 Einträge begrenzt.",
-        "cardTitle": "Letzte Ereignisse"
+        "cardTitle": "Letzte Ereignisse",
+        "filterErrorId": "Fehler-ID"
       },
       "backups": {
         "title": "Backups",
@@ -8120,7 +8131,16 @@
       "codes": "Für den Betrieb: API-Anfragen antworten mit 503 und dem Fehlercode {code}, /api/health meldet den Grund {reason}."
     },
     "loginOverviewCardTitle": "Anmeldeereignisse",
-    "userColumn": "Nutzer"
+    "userColumn": "Nutzer",
+    "supportReport": {
+      "title": "Support-Bericht",
+      "description": "Eine Zusammenfassung dieser Instanz für eine Fehlermeldung, ohne E-Mails, IDs oder Werte.",
+      "body": "Konten erscheinen als „Account 1“, „Account 2“ und so weiter. Lies den Bericht, bevor du ihn teilst.",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "download": "Herunterladen",
+      "loadError": "Der Support-Bericht konnte nicht erstellt werden."
+    }
   },
   "achievements": {
     "title": "Erfolge",

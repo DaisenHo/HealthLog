@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton, SortableHead } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
@@ -156,8 +157,8 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       await apiPost("/api/labs/restore", { ids: [id] });
       invalidate();
       toast.success(t("labs.restoredToast"));
-    } catch {
-      toast.error(t("labs.restoreError"));
+    } catch (failure) {
+      showErrorToast(t("labs.restoreError"), { cause: failure });
     }
   }
 
@@ -172,7 +173,8 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         },
       });
     },
-    onError: () => toast.error(t("labs.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("labs.deleteError"), { cause: failure }),
   });
 
   const updateMutation = useMutation({

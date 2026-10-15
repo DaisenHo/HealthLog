@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { stepUpErrorKey } from "@/components/settings/access/grant-action-error";
@@ -406,8 +407,10 @@ function HandoverLink({
         t("recordSharing.managed.handover.copied"),
       );
       window.setTimeout(() => setCopied(false), 2_000);
-    } catch {
-      toast.error(t("recordSharing.managed.handover.copyError"));
+    } catch (failure) {
+      showErrorToast(t("recordSharing.managed.handover.copyError"), {
+        cause: failure,
+      });
     }
   }
 

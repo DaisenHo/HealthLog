@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Eye, EyeOff, GripVertical, ListOrdered, Loader2 } from "lucide-react";
 import {
   DndContext,
@@ -187,7 +188,7 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
         toast.message(t("common.conflictReloaded"));
         return;
       }
-      toast.error(t("insights.pillOrder.saveError"));
+      showErrorToast(t("insights.pillOrder.saveError"), { cause: err });
     },
   });
 

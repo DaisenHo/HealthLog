@@ -405,3 +405,51 @@ describe("verb helpers", () => {
     );
   });
 });
+
+describe("ApiError.requestId", () => {
+  it("takes meta.requestId, else the x-request-id header", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        { data: null, error: "boom", meta: { requestId: "meta-id-0001" } },
+        500,
+      ),
+    );
+    const fromMeta = await apiGet("/api/x").catch((e: unknown) => e);
+    expect(fromMeta).toBeInstanceOf(ApiError);
+    expect((fromMeta as ApiError).requestId).toBe("meta-id-0001");
+
+    fetchMock.mockResolvedValueOnce(
+      new Response("Bad gateway", {
+        status: 502,
+        headers: { "x-request-id": "header-id-0001" },
+      }),
+    );
+    const fromHeader = await apiGet("/api/x").catch((e: unknown) => e);
+    expect((fromHeader as ApiError).requestId).toBe("header-id-0001");
+
+    fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
+    const none = await apiGet("/api/x").catch((e: unknown) => e);
+    expect((none as ApiError).requestId).toBeNull();
+  });
+
+  it("records a server failure's id for the session's support info", async () => {
+    const { recentErrorIds, _resetRecentErrorIdsForTests } =
+      await import("@/lib/errors/error-id");
+    _resetRecentErrorIdsForTests();
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        { data: null, error: "boom", meta: { requestId: "srv-fail-0001" } },
+        503,
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        { data: null, error: "no", meta: { requestId: "client-0001" } },
+        404,
+      ),
+    );
+    await apiGet("/api/x").catch(() => {});
+    await apiGet("/api/x").catch(() => {});
+    expect(recentErrorIds()).toEqual(["srv-fail-0001"]);
+  });
+});

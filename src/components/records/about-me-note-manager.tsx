@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircleQuestion, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -116,7 +117,7 @@ export function AboutMeNoteManager() {
         toast.message(t("common.conflictReloaded"));
         return;
       }
-      toast.error(t("settings.ai.aboutMe.saveError"));
+      showErrorToast(t("settings.ai.aboutMe.saveError"), { cause: err });
     },
   });
 

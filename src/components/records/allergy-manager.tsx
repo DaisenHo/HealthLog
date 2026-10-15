@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton } from "@/components/data-list";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +54,8 @@ export function AllergyManager({
       toast.success(t("records.allergies.deletedToast"));
       queryClient.invalidateQueries({ queryKey: queryKeys.allergies() });
     },
-    onError: () => toast.error(t("records.allergies.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("records.allergies.deleteError"), { cause: failure }),
   });
 
   function openNew() {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   Eye,
   EyeOff,
@@ -195,7 +196,7 @@ export function InsightsEditMode({
         toast.message(t("common.conflictReloaded"));
         return;
       }
-      toast.error(t("insights.editMode.saveError"));
+      showErrorToast(t("insights.editMode.saveError"), { cause: err });
     },
   });
 
@@ -212,7 +213,8 @@ export function InsightsEditMode({
       setDraftState(seedArrangeDraft(saved.sections));
       toast.success(t("insights.editMode.resetSuccess"));
     },
-    onError: () => toast.error(t("insights.editMode.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("insights.editMode.saveError"), { cause: failure }),
   });
 
   const busy = saveMutation.isPending || resetMutation.isPending;

@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours}h {minutes}m",
     "durationMinutes": "{minutes}m",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} h"
+    "durationClockHours": "{time} h",
+    "errorIdLabel": "Error ID",
+    "errorIdCopy": "Copy error ID",
+    "errorIdCopied": "Error ID copied"
   },
   "apiErrors": {
     "measurement": {
@@ -6646,7 +6649,14 @@
       "docs": "Documentation",
       "credits": "Credits & data attributions",
       "linksHeading": "Sources & docs",
-      "newerAvailable": "Newer version: {tag}"
+      "newerAvailable": "Newer version: {tag}",
+      "support": {
+        "title": "Support",
+        "description": "A summary for a bug report, without your name, email or health values.",
+        "copy": "Copy support info",
+        "copied": "Copied",
+        "copyFailed": "The support info could not be put together."
+      }
     },
     "testConnection": {
       "test": "Test connection",
@@ -7753,7 +7763,8 @@
         "eventDetails": "Event details",
         "closeDetails": "Close details",
         "processDetail": "Buffer is volatile and capped at 500 entries.",
-        "cardTitle": "Recent events"
+        "cardTitle": "Recent events",
+        "filterErrorId": "Error ID"
       },
       "backups": {
         "title": "Backups",
@@ -8120,7 +8131,16 @@
       "codes": "For the operator: API requests answer 503 with error code {code}, and /api/health reports reason {reason}."
     },
     "loginOverviewCardTitle": "Sign-in events",
-    "userColumn": "User"
+    "userColumn": "User",
+    "supportReport": {
+      "title": "Support report",
+      "description": "A summary of this instance for a bug report, without emails, IDs or values.",
+      "body": "Accounts appear as “Account 1”, “Account 2” and so on. Read the report before you share it.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download",
+      "loadError": "The support report could not be created."
+    }
   },
   "achievements": {
     "title": "Achievements",

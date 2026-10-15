@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Badge } from "@/components/ui/badge";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
@@ -99,10 +100,11 @@ export function UserManagementSection() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.settingsSaveError"),
+        { cause: err },
       );
     },
   });
@@ -144,10 +146,11 @@ export function UserManagementSection() {
       setLogoutTarget(null);
     },
     onError: (err) => {
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.section.users.forceLogoutFailed"),
+        { cause: err },
       );
     },
   });

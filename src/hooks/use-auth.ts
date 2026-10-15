@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiFetchRaw, ApiError } from "@/lib/api/api-fetch";
 import { adoptRecordFenceState } from "@/lib/api/record-fence";
@@ -646,6 +647,7 @@ export function useLogout() {
     },
     // v1.16.4 — a network-failed logout used to do nothing at all (the
     // menu closed, the session stayed); a toast names the failure.
-    onError: () => toast.error(t("common.networkError")),
+    onError: (failure) =>
+      showErrorToast(t("common.networkError"), { cause: failure }),
   });
 }

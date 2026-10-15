@@ -17,6 +17,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Input } from "@/components/ui/input";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -92,10 +93,11 @@ export function DocumentLinkPicker({
       ),
     onSuccess: (data) => {
       if (data.results.some((r) => !r.ok)) {
-        toast.error(t("documents.bulk.failed"));
+        showErrorToast(t("documents.bulk.failed"));
       }
     },
-    onError: () => toast.error(t("documents.bulk.failed")),
+    onError: (failure) =>
+      showErrorToast(t("documents.bulk.failed"), { cause: failure }),
     onSettled: () => {
       void invalidateKeys(queryClient, [queryKeys.documents()]);
     },

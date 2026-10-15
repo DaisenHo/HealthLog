@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { ChoiceChip } from "@/components/onboarding/choice-chip";
 import { StepActions } from "@/components/onboarding/step-actions";
@@ -68,7 +69,9 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
       const written = await answer.mutateAsync(input);
       router.push(screenHref(nextScreen(written, "units") ?? "confirm"));
     } catch (err) {
-      toast.error(localizedApiError(err, t, "onboarding.errorGeneric"));
+      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+        cause: err,
+      });
     }
   }
 

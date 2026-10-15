@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   LayoutDashboard,
   RotateCcw,
@@ -335,7 +336,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
         toast.message(t("dashboard.layoutConflictReloaded"));
         return;
       }
-      toast.error(t("dashboard.layoutSaveError"));
+      showErrorToast(t("dashboard.layoutSaveError"), { cause: err });
     },
   });
 

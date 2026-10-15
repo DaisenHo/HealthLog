@@ -34,6 +34,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -130,7 +131,7 @@ export function EncounterSheet({
       const message =
         err instanceof Error ? err.message : t("encounters.saveFailed");
       setError(message);
-      toast.error(message);
+      showErrorToast(message, { cause: err });
     }
   };
 
@@ -205,7 +206,10 @@ export function EncounterSheet({
                   onClick={() => {
                     remove.mutate(encounter.id, {
                       onSuccess: () => onOpenChange(false),
-                      onError: () => toast.error(t("encounters.deleteFailed")),
+                      onError: (failure) =>
+                        showErrorToast(t("encounters.deleteFailed"), {
+                          cause: failure,
+                        }),
                     });
                   }}
                 >

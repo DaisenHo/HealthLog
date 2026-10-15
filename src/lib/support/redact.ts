@@ -121,7 +121,8 @@ export const SUPPORT_REDACTION_STEPS: readonly SupportRedactionStep[] = [
     name: "ip-addresses",
     apply: (text) =>
       text
-        .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[ip]")
+        // Not after a slash or a dot: `Chrome/128.0.0.0` is a version.
+        .replace(/(?<![/\w.])(?:\d{1,3}\.){3}\d{1,3}\b/g, "[ip]")
         // Four groups or more, so a clock time (`10:00:00`) is not one.
         .replace(/\b(?:[0-9a-f]{1,4}:){3,7}[0-9a-f]{1,4}\b/gi, "[ip]")
         .replace(/(?:\b[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:?)+/gi, "[ip]"),

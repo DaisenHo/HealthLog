@@ -30,6 +30,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, Check, Copy, Loader2, Plus, Ticket, Users } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -221,8 +222,8 @@ export function InviteTokensSection() {
       toast.success(t("admin.invites.createdToast"));
       queryClient.invalidateQueries({ queryKey: queryKeys.adminInvites() });
     },
-    onError: () => {
-      toast.error(t("admin.invites.createError"));
+    onError: (failure) => {
+      showErrorToast(t("admin.invites.createError"), { cause: failure });
     },
   });
 
@@ -234,8 +235,8 @@ export function InviteTokensSection() {
       toast.success(t("admin.invites.revokedToast"));
       queryClient.invalidateQueries({ queryKey: queryKeys.adminInvites() });
     },
-    onError: () => {
-      toast.error(t("admin.invites.revokeError"));
+    onError: (failure) => {
+      showErrorToast(t("admin.invites.revokeError"), { cause: failure });
     },
   });
 
@@ -245,8 +246,8 @@ export function InviteTokensSection() {
       setCopied(true);
       toast.success(t("admin.invites.copiedToast"));
       window.setTimeout(() => setCopied(false), 2_000);
-    } catch {
-      toast.error(t("admin.invites.copyError"));
+    } catch (failure) {
+      showErrorToast(t("admin.invites.copyError"), { cause: failure });
     }
   }
 

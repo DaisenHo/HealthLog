@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { SupportInfoCard } from "@/components/settings/support-info-card";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -259,6 +260,9 @@ export function AboutSection() {
           </dl>
         )}
       </SettingsCard>
+
+      {/* v1.43 — the text a bug report needs, put together in the browser. */}
+      <SupportInfoCard />
 
       {/* Sources & docs — every link card was untitled in the v1.4.2
           About surface, so the buttons floated alone with no heading

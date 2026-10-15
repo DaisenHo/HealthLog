@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { RotateCcw } from "lucide-react";
 
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -257,8 +258,9 @@ function TargetEditSheetBody({
       onOpenChange(false);
     },
     onError: (err) =>
-      toast.error(
+      showErrorToast(
         err instanceof Error ? err.message : t("targets.edit.saveError"),
+        { cause: err },
       ),
   });
 
@@ -284,7 +286,8 @@ function TargetEditSheetBody({
       toast.success(t("targets.edit.resetSuccess"));
       onOpenChange(false);
     },
-    onError: () => toast.error(t("targets.edit.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("targets.edit.saveError"), { cause: failure }),
   });
 
   const busy = updateMutation.isPending || resetMutation.isPending;

@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,9 +142,12 @@ export function TagEditorSheet({
       void invalidateMoodTagCaches(queryClient);
     } catch (err) {
       if (err instanceof ApiError && err.status === 422) {
-        toast.error(t("mood.manage.tagLimitReached"));
+        showErrorToast(t("mood.manage.tagLimitReached"), { cause: err });
       } else {
-        toast.error(err instanceof ApiError ? err.message : t("common.error"));
+        showErrorToast(
+          err instanceof ApiError ? err.message : t("common.error"),
+          { cause: err },
+        );
       }
     } finally {
       setSaving(false);

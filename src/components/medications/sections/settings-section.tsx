@@ -21,6 +21,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,8 +125,10 @@ export function GraceRow({
       await apiPut(`/api/medications/${medicationId}`, body);
       await invalidateKeys(queryClient, medicationDependentKeys);
       toast.success(t("medications.detail.settings.grace.saved"));
-    } catch {
-      toast.error(t("medications.detail.settings.grace.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.settings.grace.failed"), {
+        cause: failure,
+      });
     } finally {
       setGraceBusy(false);
     }
@@ -207,8 +210,10 @@ export function DrugCodingRow({
       });
       await invalidateKeys(queryClient, medicationDependentKeys);
       toast.success(t("medications.detail.settings.codes.saved"));
-    } catch {
-      toast.error(t("medications.detail.settings.codes.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.settings.codes.failed"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }
