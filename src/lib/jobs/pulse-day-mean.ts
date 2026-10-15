@@ -63,9 +63,6 @@ export interface PulseDayMeanPayload {
   action: "dry_run" | "rebuild";
 }
 
-/** How old a finished dry run may be for the apply step to accept it. */
-export const DRY_RUN_FRESH_MS = 7 * 24 * 60 * 60 * 1000;
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Days of one account's pulse a dry-run statement covers. */
 const DRY_RUN_WINDOW_DAYS = 90;
@@ -129,17 +126,6 @@ export async function readPulseDayMeanStatus(): Promise<PulseDayMeanStatus> {
     appliedAt: row?.pulseDayMeanAppliedAt?.toISOString() ?? null,
     lastDryRun,
   };
-}
-
-/** A finished dry run from the last seven days, the apply step's condition. */
-export function hasFreshDryRun(
-  status: PulseDayMeanStatus,
-  now: Date = new Date(),
-): boolean {
-  const run = status.lastDryRun;
-  if (!run || run.status !== "done" || run.finishedAt === null) return false;
-  const finished = Date.parse(run.finishedAt);
-  return Number.isFinite(finished) && now.getTime() - finished <= DRY_RUN_FRESH_MS;
 }
 
 /** The only write a dry run makes. */

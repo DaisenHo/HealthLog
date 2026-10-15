@@ -8126,6 +8126,48 @@
         "started": "Maintenance lancée.",
         "alreadyQueued": "Une maintenance est déjà en file d'attente ou en cours.",
         "startFailed": "Impossible de lancer la maintenance."
+      },
+      "pulseDayMean": {
+        "title": "Moyenne journalière du pouls",
+        "description": "Comment les heures avec peu de mesures comptent dans le pouls d'une journée.",
+        "body": "Jusqu'ici, chaque heure avec une mesure compte autant, si bien qu'une seule mesure isolée peut déplacer toute une journée. La méthode pondérée fait compter une heure pleinement à partir de trois mesures, et une mesure isolée pour un tiers. Lancez d'abord la simulation pour voir combien de jours changeraient. L'application recalcule en arrière-plan les journées de pouls enregistrées.",
+        "method": {
+          "hourly": "Toutes les heures à égalité",
+          "weighted": "Heures clairsemées pondérées"
+        },
+        "loading": "Vérification de la moyenne journalière du pouls…",
+        "loadError": "Impossible de lire l'état de la moyenne journalière du pouls.",
+        "state": {
+          "idle": "Aucune simulation pour l'instant.",
+          "queued": "La simulation attend le processus d'arrière-plan.",
+          "running": "La simulation est en cours.",
+          "done": "Simulation terminée le {at}.",
+          "failed": "La simulation s'est arrêtée. Le journal de l'application en indique la cause ; relancez-la."
+        },
+        "result": {
+          "days": "Jours comparés",
+          "changed": "Jours qui bougent de plus de 1 bpm",
+          "max": "Plus grand écart",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Compte {account}",
+          "accountDays": "{changed} jours sur {days} changent"
+        },
+        "appliedAt": "Méthode pondérée appliquée le {at}.",
+        "dryRun": "Simulation",
+        "apply": "Appliquer",
+        "confirmTitle": "Appliquer la moyenne journalière pondérée du pouls ?",
+        "confirmBody": "Les journées de pouls de tous les comptes sont alors calculées avec les heures clairsemées pondérées. Les journées enregistrées sont recalculées en arrière-plan, ce qui peut prendre un moment sur une grande instance.",
+        "confirm": "Appliquer",
+        "cancel": "Annuler",
+        "dryRunStarted": "Simulation lancée.",
+        "applied": "Méthode pondérée appliquée. Les journées de pouls sont en cours de recalcul.",
+        "appliedNoRebuild": "Méthode pondérée appliquée. Une autre exécution est encore en cours ; appliquez de nouveau une fois terminée pour recalculer les journées de pouls.",
+        "error": {
+          "busy": "Une simulation ou un recalcul est encore en cours. Réessayez une fois terminé.",
+          "dryRunRequired": "Lancez d'abord une simulation. L'application en exige une terminée au cours des sept derniers jours.",
+          "generic": "La requête n'a pas abouti."
+        }
       }
     },
     "carrier": "Opérateur",

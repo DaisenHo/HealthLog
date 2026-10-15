@@ -41,6 +41,7 @@ import { SupportReportCard } from "@/components/admin/support-report-card";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementMaintenanceCard } from "@/components/admin/measurement-maintenance-card";
+import { PulseDayMeanCard } from "@/components/admin/pulse-day-mean-card";
 import { InviteTokensSection } from "@/components/admin/invite-tokens-section";
 import { UserManagementSection } from "@/components/admin/user-management-section";
 import type { AdminSectionSlug } from "@/components/admin/section-slugs";
@@ -75,6 +76,8 @@ export function AdminSectionRenderer({
             <SupportReportCard />
             {/* v1.42 — the table maintenance after the tombstone purge. */}
             <MeasurementMaintenanceCard />
+            {/* v1.43 — the pulse day-mean method, dry run before apply. */}
+            <PulseDayMeanCard />
           </SectionFrame>
         </RevealWhenSettled>
       );

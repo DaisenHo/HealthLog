@@ -8126,6 +8126,48 @@
         "started": "Mantenimiento iniciado.",
         "alreadyQueued": "Ya hay un mantenimiento en cola o en marcha.",
         "startFailed": "No se pudo iniciar el mantenimiento."
+      },
+      "pulseDayMean": {
+        "title": "Media diaria del pulso",
+        "description": "Cómo cuentan las horas con pocas lecturas en el pulso de un día.",
+        "body": "Hasta ahora, cada hora con una lectura cuenta lo mismo, así que una sola lectura suelta puede mover un día entero. El método ponderado hace que una hora cuente por completo a partir de tres lecturas, y una lectura aislada un tercio. Ejecuta primero la prueba para ver cuántos días cambiarían. Al aplicarlo, los días de pulso guardados se recalculan en segundo plano.",
+        "method": {
+          "hourly": "Todas las horas igual",
+          "weighted": "Horas escasas ponderadas"
+        },
+        "loading": "Comprobando la media diaria del pulso…",
+        "loadError": "No se pudo leer el estado de la media diaria del pulso.",
+        "state": {
+          "idle": "Aún no hay ninguna prueba.",
+          "queued": "La prueba está esperando al proceso en segundo plano.",
+          "running": "La prueba está en curso.",
+          "done": "Prueba terminada el {at}.",
+          "failed": "La prueba se detuvo. El registro de la app indica la causa; vuelve a iniciarla."
+        },
+        "result": {
+          "days": "Días comparados",
+          "changed": "Días que cambian más de 1 bpm",
+          "max": "Mayor cambio",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Cuenta {account}",
+          "accountDays": "Cambian {changed} de {days} días"
+        },
+        "appliedAt": "Método ponderado aplicado el {at}.",
+        "dryRun": "Prueba",
+        "apply": "Aplicar",
+        "confirmTitle": "¿Aplicar la media diaria del pulso ponderada?",
+        "confirmBody": "A partir de entonces, los días de pulso de todas las cuentas se calculan con las horas escasas ponderadas. Los días de pulso guardados se recalculan en segundo plano, lo que puede tardar en una instancia grande.",
+        "confirm": "Aplicar",
+        "cancel": "Cancelar",
+        "dryRunStarted": "Prueba iniciada.",
+        "applied": "Método ponderado aplicado. Los días de pulso se están recalculando.",
+        "appliedNoRebuild": "Método ponderado aplicado. Otro proceso sigue en marcha; vuelve a aplicarlo cuando termine para recalcular los días de pulso.",
+        "error": {
+          "busy": "Todavía hay una prueba o un recálculo en marcha. Inténtalo de nuevo cuando termine.",
+          "dryRunRequired": "Ejecuta primero una prueba. Para aplicar hace falta una terminada en los últimos siete días.",
+          "generic": "La solicitud no se completó."
+        }
       }
     },
     "carrier": "Operador",

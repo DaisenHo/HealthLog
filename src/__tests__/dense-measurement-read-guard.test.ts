@@ -127,6 +127,8 @@ const ALLOWED_SQL: Record<string, string> = {
     "Canonical-source blood pressure and weight over 90 days: sparse types, a few rows a day.",
   "lib/measurements/reconcile-external-measurement.ts::1":
     "Row locks (`FOR UPDATE`) on an id list the caller already read; returns those ids only.",
+  "lib/jobs/pulse-day-mean.ts::1":
+    "Selects one row per account; `measurements` is read only inside the MIN / MAX scalar subqueries of each row.",
   "lib/jobs/pr-detection.ts::1":
     "Selects account ids; `measurements` is read inside `EXISTS`, one row per account at most.",
   "lib/rollups/measurement-coverage.ts::1":

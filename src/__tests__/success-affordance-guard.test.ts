@@ -107,6 +107,11 @@ const PINNED_AFFORDANCES: Record<
   "src/components/admin/measurement-maintenance-card.tsx": {
     "toast.success": 1,
   },
+  // Fires only on a 202: the dry run was queued, or the method was applied.
+  // The dry run's outcome itself is the status line.
+  "src/components/admin/pulse-day-mean-card.tsx": {
+    "toast.success": 2,
+  },
   "src/components/admin/invite-tokens-section.tsx": {
     "text-success": 2,
     "toast.success": 3,

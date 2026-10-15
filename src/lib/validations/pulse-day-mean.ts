@@ -56,3 +56,22 @@ export interface PulseDayMeanStatus {
   appliedAt: string | null;
   lastDryRun: PulseDayMeanDryRun | null;
 }
+
+/** How old a finished dry run may be for the apply step to accept it. */
+const DRY_RUN_FRESH_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * A finished dry run from the last seven days: the apply step's condition,
+ * enforced by the route and mirrored by the admin card's button.
+ */
+export function hasFreshDryRun(
+  status: Pick<PulseDayMeanStatus, "lastDryRun">,
+  now: Date = new Date(),
+): boolean {
+  const run = status.lastDryRun;
+  if (!run || run.status !== "done" || run.finishedAt === null) return false;
+  const finished = Date.parse(run.finishedAt);
+  return (
+    Number.isFinite(finished) && now.getTime() - finished <= DRY_RUN_FRESH_MS
+  );
+}

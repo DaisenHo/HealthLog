@@ -8126,6 +8126,48 @@
         "started": "Maintenance started.",
         "alreadyQueued": "A maintenance run is already queued or running.",
         "startFailed": "Could not start the maintenance."
+      },
+      "pulseDayMean": {
+        "title": "Pulse day mean",
+        "description": "How hours with only a few readings count toward a day's pulse.",
+        "body": "Up to now every hour with a reading counts the same, so a single stray reading can move a whole day. The weighted method lets an hour count fully from three readings on, and a lone reading a third. Run the dry run first to see how many days would change. Applying recalculates the stored pulse days in the background.",
+        "method": {
+          "hourly": "Every hour equal",
+          "weighted": "Sparse hours weighted"
+        },
+        "loading": "Checking the pulse day mean…",
+        "loadError": "Could not read the pulse day-mean status.",
+        "state": {
+          "idle": "No dry run yet.",
+          "queued": "The dry run is waiting for the background worker.",
+          "running": "The dry run is in progress.",
+          "done": "Dry run finished on {at}.",
+          "failed": "The dry run stopped. The app log names the cause; start it again."
+        },
+        "result": {
+          "days": "Days compared",
+          "changed": "Days moving more than 1 bpm",
+          "max": "Largest change",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Account {account}",
+          "accountDays": "{changed} of {days} days move"
+        },
+        "appliedAt": "Weighted method applied on {at}.",
+        "dryRun": "Dry run",
+        "apply": "Apply",
+        "confirmTitle": "Apply the weighted pulse day mean?",
+        "confirmBody": "Every account's pulse days are then computed with sparse hours weighted. The stored pulse days are recalculated in the background, which can take a while on a large instance.",
+        "confirm": "Apply",
+        "cancel": "Cancel",
+        "dryRunStarted": "Dry run started.",
+        "applied": "Weighted method applied. The pulse days are being recalculated.",
+        "appliedNoRebuild": "Weighted method applied. Another run is still working, so apply again once it has finished to recalculate the pulse days.",
+        "error": {
+          "busy": "A dry run or recalculation is still running. Try again once it has finished.",
+          "dryRunRequired": "Run a dry run first. Applying needs one that finished in the last seven days.",
+          "generic": "The request did not go through."
+        }
       }
     },
     "carrier": "Carrier",
