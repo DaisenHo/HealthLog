@@ -139,3 +139,77 @@ describe("insights unit-literal guard", () => {
     expect(missing).toEqual([]);
   });
 });
+
+/**
+ * v1.43 — no nutrient unit spelled outside the nutrient catalogue.
+ *
+ * A supplement's composition converts an entered amount to the catalogue's
+ * canonical unit, and the nutrient reads judge a day against an upper limit
+ * in that unit. A µg/mg slip is a 1000× error, and the way it gets in is a
+ * second place that spells a unit or a factor: a converter that knows "IU"
+ * itself, a read that compares against "mg". So the rule is that the code
+ * under `src/lib/nutrients/` and `src/lib/medications/ingredients/` names no
+ * unit as a string literal; units and factors come from
+ * `src/lib/nutrients/catalog.ts` (`NUTRIENT_UNIT`, `inputUnits`,
+ * `toCanonicalNutrientAmount`, `parseNutrientInputUnit`), the one file allowed
+ * to spell them.
+ */
+const NUTRIENT_UNIT_DIRS = [
+  join(process.cwd(), "src/lib/nutrients"),
+  join(process.cwd(), "src/lib/medications/ingredients"),
+];
+const NUTRIENT_CATALOG_FILE = join(
+  process.cwd(),
+  "src/lib/nutrients/catalog.ts",
+);
+
+/** A string literal that is nothing but a nutrient unit. */
+const UNIT_LITERAL =
+  /(["'`])(mg|ug|µg|μg|mcg|g|kg|ml|mL|l|L|IU|IE|UI|iu|ie|ui)\1/g;
+
+function sourceFilesUnder(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      if (entry === "__tests__") continue;
+      out.push(...sourceFilesUnder(full));
+    } else if (/\.tsx?$/.test(entry) && !/\.test\.tsx?$/.test(entry)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+describe("nutrient unit-literal guard", () => {
+  const files = NUTRIENT_UNIT_DIRS.flatMap(sourceFilesUnder);
+
+  it("scans the nutrient and composition code", () => {
+    expect(files.length).toBeGreaterThanOrEqual(6);
+    expect(files).toContain(NUTRIENT_CATALOG_FILE);
+  });
+
+  it("the matcher sees the catalogue's own spellings", () => {
+    // The catalogue is where units live, so a matcher that finds nothing
+    // there would make the next assertion vacuously true.
+    const catalog = readFileSync(NUTRIENT_CATALOG_FILE, "utf8");
+    const seen = new Set([...catalog.matchAll(UNIT_LITERAL)].map((m) => m[2]));
+    for (const unit of ["mg", "ug", "IU", "ml"]) {
+      expect(seen.has(unit), `expected to see "${unit}" in the catalogue`).toBe(
+        true,
+      );
+    }
+  });
+
+  it("names no unit outside the catalogue", () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      if (file === NUTRIENT_CATALOG_FILE) continue;
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(UNIT_LITERAL)) {
+        offenders.push(`${file.slice(file.indexOf("src/"))}: ${match[0]}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

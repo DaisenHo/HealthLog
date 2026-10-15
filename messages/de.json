@@ -12030,7 +12030,8 @@
       "customVaccineDelete": "{name} hat einen eigenen Impfstoff entfernt",
       "lifeEventCreate": "{name} hat ein Lebensereignis hinzugefügt",
       "lifeEventUpdate": "{name} hat ein Lebensereignis geändert",
-      "lifeEventDelete": "{name} hat ein Lebensereignis entfernt"
+      "lifeEventDelete": "{name} hat ein Lebensereignis entfernt",
+      "medicationIngredientsUpdate": "{name} hat die Zusammensetzung eines Präparats geändert"
     },
     "section": {
       "measurements": {

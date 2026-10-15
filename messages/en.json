@@ -12030,7 +12030,8 @@
       "customVaccineDelete": "{name} removed an own vaccine",
       "lifeEventCreate": "{name} added a life event",
       "lifeEventUpdate": "{name} changed a life event",
-      "lifeEventDelete": "{name} removed a life event"
+      "lifeEventDelete": "{name} removed a life event",
+      "medicationIngredientsUpdate": "{name} changed what a supplement contains"
     },
     "section": {
       "measurements": {

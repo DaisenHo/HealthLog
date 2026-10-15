@@ -83,5 +83,5 @@ export async function medicationHasComposition(
     where: { userId, medicationId },
     select: { id: true },
   });
-  return row !== null;
+  return Boolean(row);
 }

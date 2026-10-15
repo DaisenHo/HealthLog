@@ -45,6 +45,9 @@ export const PROXY_BYPASS_ROUTES: readonly string[] = [
   "/api/medications/intake/dose-history-import",
   // Lab scan upload, 12 MB.
   "/api/labs/ocr/extract",
+  // Supplement label photo, 10 MB (v1.43). The one entry with a dynamic
+  // segment: `[id]` stands for any one path segment.
+  "/api/medications/[id]/ingredients/extract",
   // Avatar image, 2 MB.
   "/api/user/avatar",
   // Native-client batches: measurements 4 MB, workouts 5 MB, the rest 2 MB.
@@ -56,10 +59,26 @@ export const PROXY_BYPASS_ROUTES: readonly string[] = [
   "/api/cycle/day-logs/bulk",
 ];
 
+/** An entry with a `[segment]` matches any one path segment there. */
+const DYNAMIC_BYPASS_PATTERNS: readonly RegExp[] = PROXY_BYPASS_ROUTES.filter(
+  (route) => route.includes("["),
+).map(
+  (route) =>
+    new RegExp(
+      `^${route
+        .split("/")
+        .map((part) => (/^\[[^\]/]+\]$/.test(part) ? "[^/]+" : part))
+        .join("/")}$`,
+    ),
+);
+
 export function isProxyBypassRoute(pathname: string): boolean {
   const normalised =
     pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return PROXY_BYPASS_ROUTES.includes(normalised);
+  return (
+    PROXY_BYPASS_ROUTES.includes(normalised) ||
+    DYNAMIC_BYPASS_PATTERNS.some((pattern) => pattern.test(normalised))
+  );
 }
 
 /**

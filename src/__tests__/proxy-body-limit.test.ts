@@ -74,7 +74,9 @@ describe("proxy matcher", () => {
     const routes = apiRoutePaths();
     expect(routes.length).toBeGreaterThan(300);
 
-    for (const path of PROXY_BYPASS_ROUTES) {
+    for (const route of PROXY_BYPASS_ROUTES) {
+      // A dynamic segment is filled the way `apiRoutePaths` fills it.
+      const path = route.replace(/\[[^\]]+\]/g, "x");
       expect(routes, `${path} is not a route`).toContain(path);
       expect(re.test(path), `${path} still passes the proxy`).toBe(false);
       expect(re.test(`${path}/`), `${path}/ still passes the proxy`).toBe(
@@ -98,6 +100,8 @@ describe("proxy matcher", () => {
       "/api/user/avatar/abc",
       "/api/documents/inbound/abc/extract",
       "/api/import/csv/preview",
+      // The composition PUT beside the label upload stays behind the proxy.
+      "/api/medications/abc/ingredients",
     ]) {
       expect(re.test(path), path).toBe(true);
     }

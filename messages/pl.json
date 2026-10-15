@@ -11365,8 +11365,8 @@
       "iodine": "Jod",
       "water": "Woda",
       "caffeine": "Kofeina",
-      "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "dha": "DHA (kwas omega-3)",
+      "epa": "EPA (kwas omega-3)"
     },
     "page": {
       "title": "Spożycie składników odżywczych",
@@ -12030,7 +12030,8 @@
       "customVaccineDelete": "{name} usunął własną szczepionkę",
       "lifeEventCreate": "{name} dodał wydarzenie życiowe",
       "lifeEventUpdate": "{name} zmienił wydarzenie życiowe",
-      "lifeEventDelete": "{name} usunął wydarzenie życiowe"
+      "lifeEventDelete": "{name} usunął wydarzenie życiowe",
+      "medicationIngredientsUpdate": "{name} zmienił skład suplementu"
     },
     "section": {
       "measurements": {

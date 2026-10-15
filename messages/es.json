@@ -11365,8 +11365,8 @@
       "iodine": "Yodo",
       "water": "Agua",
       "caffeine": "Cafeína",
-      "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "dha": "DHA (ácido graso omega-3)",
+      "epa": "EPA (ácido graso omega-3)"
     },
     "page": {
       "title": "Ingesta de nutrientes",
@@ -12030,7 +12030,8 @@
       "customVaccineDelete": "{name} quitó una vacuna propia",
       "lifeEventCreate": "{name} añadió un acontecimiento vital",
       "lifeEventUpdate": "{name} cambió un acontecimiento vital",
-      "lifeEventDelete": "{name} eliminó un acontecimiento vital"
+      "lifeEventDelete": "{name} eliminó un acontecimiento vital",
+      "medicationIngredientsUpdate": "{name} cambió la composición de un suplemento"
     },
     "section": {
       "measurements": {

@@ -11365,8 +11365,8 @@
       "iodine": "Iodio",
       "water": "Acqua",
       "caffeine": "Caffeina",
-      "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "dha": "DHA (acido grasso omega-3)",
+      "epa": "EPA (acido grasso omega-3)"
     },
     "page": {
       "title": "Apporto di nutrienti",
@@ -12030,7 +12030,8 @@
       "customVaccineDelete": "{name} ha rimosso un vaccino personale",
       "lifeEventCreate": "{name} ha aggiunto un evento della vita",
       "lifeEventUpdate": "{name} ha modificato un evento della vita",
-      "lifeEventDelete": "{name} ha rimosso un evento della vita"
+      "lifeEventDelete": "{name} ha rimosso un evento della vita",
+      "medicationIngredientsUpdate": "{name} ha modificato la composizione di un integratore"
     },
     "section": {
       "measurements": {
