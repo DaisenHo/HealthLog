@@ -17,7 +17,7 @@ import {
   createLifeFact,
   readHealthProfileFacts,
 } from "@/lib/profile/health-facts";
-import { dayStartUtc } from "@/lib/profile/life-derived";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import { factWriteSchema } from "@/lib/validations/life-circumstances";
 
 /**
@@ -51,7 +51,7 @@ async function postFact(request: NextRequest): Promise<Response> {
 
   const now = new Date();
   const validFrom = parsed.data.validFrom
-    ? dayStartUtc(parsed.data.validFrom)
+    ? dateOnlyAtNoonUtc(parsed.data.validFrom)
     : undefined;
   try {
     const input = parsed.data;

@@ -27,6 +27,7 @@
  * Server-only — reads `@/lib/db`.
  */
 import { prisma } from "@/lib/db";
+import { userDayKey } from "@/lib/tz/format";
 import { getEvent } from "@/lib/logging/context";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -508,6 +509,8 @@ export interface LifeFactForPrompt {
 export interface AuditCForPrompt {
   totalScore: number;
   takenAt: Date;
+  /** The zone the entry was taken in, for its calendar day. */
+  tz: string;
   cutoff: number | null;
   aboveCutoff: boolean | null;
 }
@@ -624,7 +627,7 @@ export function composeLifeCircumstancesText(
     lines.push(
       `${L.auditC}: ${fill(L.auditCValue, {
         score: auditC.totalScore,
-        date: auditC.takenAt.toISOString().slice(0, 10),
+        date: userDayKey(auditC.takenAt, auditC.tz),
       })}${verdict}`,
     );
   }
@@ -645,12 +648,12 @@ async function loadAuditCForPrompt(
   const audit = await prisma.mentalHealthAssessment.findFirst({
     where: { userId, instrument: "AUDIT_C", deletedAt: null },
     orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-    select: { totalScore: true, takenAt: true, locale: true },
+    select: { totalScore: true, takenAt: true, locale: true, tz: true },
   });
   if (!audit) return null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { gender: true, locale: true },
+    select: { gender: true, locale: true, timezone: true },
   });
   const cutoff = auditCCutoff(
     audit.locale,
@@ -660,6 +663,7 @@ async function loadAuditCForPrompt(
   return {
     totalScore: audit.totalScore,
     takenAt: audit.takenAt,
+    tz: audit.tz ?? user?.timezone ?? "UTC",
     cutoff: cutoff?.value ?? null,
     aboveCutoff: cutoff ? audit.totalScore >= cutoff.value : null,
   };

@@ -249,7 +249,7 @@ const validFromDay = z.iso
   .date()
   .optional()
   .describe(
-    "The calendar day the answer holds from (UTC midnight). Omitted, it holds from now. Never later than today; an earlier day than the end of the previous answer of the same kind starts at that end instead.",
+    "The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds from now. Never later than today; an earlier day than the end of the previous answer of the same kind starts at that end instead.",
   );
 
 /**

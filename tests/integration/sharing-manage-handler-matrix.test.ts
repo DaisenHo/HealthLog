@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(89);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(92);
   });
 });
 
@@ -1167,6 +1167,59 @@ manageContract("POST /api/biomarkers/[id]/merge", {
     (await getPrismaClient().labResult.count({
       where: { biomarkerId: row.id },
     })) === 1,
+});
+
+manageContract("POST /api/anamnesis/audit-c", {
+  contract: admittedContract("/api/anamnesis/audit-c", "POST"),
+  prepare: async (ownerId) => ({ ownerId }),
+  act: async () => {
+    const { POST } = await import("@/app/api/anamnesis/audit-c/route");
+    return call(POST as Handler, "POST", "/api/anamnesis/audit-c", {
+      items: [1, 1, 0],
+      source: "WEB",
+    });
+  },
+  ok: 201,
+  auditAction: "anamnesis.audit_c.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().mentalHealthAssessment.count({
+      where: { userId: ownerId, instrument: "AUDIT_C", deletedAt: null },
+    })) === 1,
+});
+
+manageContract("DELETE /api/anamnesis/audit-c/[id]", {
+  contract: admittedContract("/api/anamnesis/audit-c/[id]", "DELETE"),
+  prepare: async (ownerId) =>
+    getPrismaClient().mentalHealthAssessment.create({
+      data: {
+        userId: ownerId,
+        instrument: "AUDIT_C",
+        locale: "en",
+        responsesEncrypted: Buffer.from("sealed"),
+        totalScore: 2,
+        severityBand: "unbanded",
+        takenAt: new Date("2026-09-01T08:00:00.000Z"),
+      },
+      select: { id: true },
+    }),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/anamnesis/audit-c/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/anamnesis/audit-c/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "anamnesis.audit_c.delete",
+  applied: async (row) =>
+    (
+      await getPrismaClient().mentalHealthAssessment.findUnique({
+        where: { id: row.id },
+      })
+    )?.deletedAt != null,
 });
 
 manageContract("POST /api/allergies", {
@@ -2953,13 +3006,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(89);
+    expect(STRICT_DRIVER_KEYS.size).toBe(92);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(89);
+    expect(REAL_EFFECT_KEYS.size).toBe(92);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

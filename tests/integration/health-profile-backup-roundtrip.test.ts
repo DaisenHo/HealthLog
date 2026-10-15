@@ -8,6 +8,7 @@ process.env.ENCRYPTION_KEY =
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { restoreProfileData } from "@/lib/export/profile-backup";
+import { restoreSensitiveData } from "@/lib/export/sensitive-backup";
 import { parseBackupPayload } from "@/lib/validations/backup";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -171,5 +172,131 @@ describe("health profile disaster-recovery round trip", () => {
     expect(
       await prisma.userHealthProfile.count({ where: { userId: user.id } }),
     ).toBe(0);
+  });
+
+  it("carries the life circumstances both ways: new kinds, new AI sections, AUDIT-C (v1.43)", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: {
+        username: "life-roundtrip",
+        email: "life-roundtrip@example.test",
+        role: "USER",
+      },
+    });
+    await prisma.userHealthProfile.create({
+      data: {
+        userId: user.id,
+        aiIncludedSections: ["ABOUT_ME", "HABITS", "GOALS"],
+        lifeConfirmedJson: { work: "2026-09-01T10:00:00.000Z" },
+      },
+    });
+    const goals = { schema: 1, goals: ["sleep", "fitness"] };
+    const tobacco = {
+      schema: 1,
+      products: ["cigarettes"],
+      cigarettesPerDay: 10,
+      startYear: 2001,
+      quitMonth: null,
+      secondhandSmoke: null,
+    };
+    await prisma.healthProfileFactRevision.createMany({
+      data: [
+        {
+          id: "goals-current",
+          userId: user.id,
+          kind: "HEALTH_GOALS",
+          valueEncrypted: encryptToBytes(JSON.stringify(goals)),
+          validFrom: new Date("2026-08-01T00:00:00.000Z"),
+        },
+        {
+          id: "tobacco-current",
+          userId: user.id,
+          kind: "TOBACCO_DETAIL",
+          valueEncrypted: encryptToBytes(JSON.stringify(tobacco)),
+          validFrom: new Date("2026-08-01T00:00:00.000Z"),
+        },
+      ],
+    });
+    await prisma.mentalHealthAssessment.create({
+      data: {
+        id: "audit-c-entry",
+        userId: user.id,
+        instrument: "AUDIT_C",
+        locale: "de",
+        responsesEncrypted: encryptToBytes(
+          JSON.stringify({ schema: 1, items: [2, 1, 1] }),
+        ),
+        totalScore: 4,
+        severityBand: "unbanded",
+        takenAt: new Date("2026-09-15T08:00:00.000Z"),
+      },
+    });
+
+    // Disaster recovery: everything, the AUDIT-C entry included.
+    const dr = parseBackupPayload(
+      JSON.parse(
+        JSON.stringify(
+          (
+            await buildFullBackupPayload(prisma, user.id, {
+              purpose: "disaster-recovery",
+            })
+          ).payload,
+        ),
+      ),
+    );
+    expect(dr.healthProfile?.aiIncludedSections).toEqual([
+      "ABOUT_ME",
+      "HABITS",
+      "GOALS",
+    ]);
+    expect(dr.healthProfileFacts.map((f) => f.kind).sort()).toEqual([
+      "HEALTH_GOALS",
+      "TOBACCO_DETAIL",
+    ]);
+    expect(dr.mentalHealthAssessments.map((a) => a.instrument)).toEqual([
+      "AUDIT_C",
+    ]);
+
+    await prisma.$transaction(async (tx) => {
+      await restoreProfileData(tx, user.id, dr);
+      await restoreSensitiveData(tx, user.id, dr);
+    });
+    const restored = await prisma.userHealthProfile.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect(restored.aiIncludedSections).toEqual([
+      "ABOUT_ME",
+      "HABITS",
+      "GOALS",
+    ]);
+    expect(restored.lifeConfirmedJson).toEqual({
+      work: "2026-09-01T10:00:00.000Z",
+    });
+    const audit = await prisma.mentalHealthAssessment.findUniqueOrThrow({
+      where: { id: "audit-c-entry" },
+    });
+    expect(audit.instrument).toBe("AUDIT_C");
+    expect(audit.totalScore).toBe(4);
+
+    // Portable: the values travel readable and come back sealed and valid.
+    const portable = parseBackupPayload(
+      JSON.parse(
+        JSON.stringify((await buildFullBackupPayload(prisma, user.id)).payload),
+      ),
+    );
+    const goalsEntry = portable.healthProfileFacts.find(
+      (f) => f.kind === "HEALTH_GOALS",
+    );
+    expect(JSON.parse(goalsEntry!.value!)).toEqual(goals);
+    await prisma.$transaction((tx) =>
+      restoreProfileData(tx, user.id, portable),
+    );
+    const { decryptLifeFactValue } = await import("@/lib/profile/health-facts");
+    const row = await prisma.healthProfileFactRevision.findFirstOrThrow({
+      where: { userId: user.id, kind: "TOBACCO_DETAIL" },
+    });
+    expect(
+      decryptLifeFactValue("TOBACCO_DETAIL", row.valueEncrypted).value,
+    ).toEqual(tobacco);
   });
 });

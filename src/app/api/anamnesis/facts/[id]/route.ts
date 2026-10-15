@@ -16,7 +16,7 @@ import {
   correctLifeFact,
   removeHealthProfileFact,
 } from "@/lib/profile/health-facts";
-import { dayStartUtc } from "@/lib/profile/life-derived";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import {
   validateCorrectedFactValue,
   type HealthProfileFactKind,
@@ -63,7 +63,7 @@ export const PATCH = apiHandler(
     // circumstances (v1.43, #614).
     const now = new Date();
     const validFrom = parsed.data.validFrom
-      ? dayStartUtc(parsed.data.validFrom)
+      ? dateOnlyAtNoonUtc(parsed.data.validFrom)
       : undefined;
     let corrected: { id: string; kind: string } | null;
     if (isLifeFactKind(current.kind)) {

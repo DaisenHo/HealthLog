@@ -62,11 +62,6 @@ export const LIFE_KIND_AI_SECTION: Readonly<
 export const REVIEW_AFTER_DAYS = 365;
 const MS_PER_DAY = 86_400_000;
 
-/** UTC midnight of a `YYYY-MM-DD` calendar day. */
-export function dayStartUtc(day: string): Date {
-  return new Date(`${day}T00:00:00.000Z`);
-}
-
 /** Whether an instant is at least `REVIEW_AFTER_DAYS` before `now`. */
 export function isReviewDue(at: Date | null, now: Date): boolean {
   return (
