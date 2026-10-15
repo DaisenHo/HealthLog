@@ -15,6 +15,7 @@ import {
   isGoogleHealthParked,
   syncUserGoogleHealth,
 } from "@/lib/google-health/sync";
+import { GOOGLE_HEALTH_POLL_LOCK_WAIT_MS } from "@/lib/google-health/sync-lock";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { cleanupExpiredGoogleHealthOAuthStates } from "@/lib/jobs/google-health-oauth-state-cleanup";
 import {
@@ -69,9 +70,15 @@ export async function handleGoogleHealthSync(
             }
 
             try {
-              const result = await syncUserGoogleHealth(userId);
+              // A backfill holds the account for one slice at a time, so
+              // the tick waits for the slice to end rather than skipping the
+              // account for as long as the whole import runs.
+              const result = await syncUserGoogleHealth(userId, {
+                waitForLockMs: GOOGLE_HEALTH_POLL_LOCK_WAIT_MS,
+              });
               // Another run of this account (its backfill, a manual sync)
-              // holds the account; this tick leaves it to that run.
+              // still held the account after the wait; this tick leaves it
+              // to that run.
               if (result.busy) return { status: "skipped", imported: 0 };
               const parked =
                 result.failed &&

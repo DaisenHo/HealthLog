@@ -32,6 +32,10 @@ vi.mock("../sync-core", () => ({
     (_userId: string, info: { accessToken: string }) => async () =>
       info.accessToken,
   runGoogleHealthCollection: (_key: string, fn: () => Promise<number>) => fn(),
+  // Outside a backfill: no resume edge, nothing to record.
+  googleHealthBackfillCursor: () => null,
+  googleHealthHardFailureCount: () => 0,
+  recordGoogleHealthBackfillPage: vi.fn(async () => {}),
 }));
 
 vi.mock("@/lib/db", () => ({

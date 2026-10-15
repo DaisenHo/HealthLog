@@ -36,7 +36,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash, randomBytes } from "node:crypto";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { safeFetch } from "@/lib/safe-fetch";
+import { SafeFetchError, safeFetch } from "@/lib/safe-fetch";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   GoogleHealthApiError,
@@ -134,18 +134,140 @@ export async function runWithGoogleHealthClientOutcome<T>(
  * reaching the page ceiling: the resource is incomplete, the cycle is not
  * stamped, and the reason shown is that only part of the history was
  * processed. Outside such a scope the walks never stop early.
+ *
+ * A backfill slice adds a second, tighter limit (`GoogleHealthSliceBudget`):
+ * minutes and pages rather than the job's hours. Only a walk that keeps its
+ * place across attempts (`resumable`) honours it, because only such a walk
+ * loses nothing by stopping; a walk that would start over from its first page
+ * runs on to the end under the job's limit alone.
  */
-const stopStorage = new AsyncLocalStorage<() => boolean>();
+interface GoogleHealthWalkLimits {
+  shouldStop: () => boolean;
+  slice?: GoogleHealthSliceBudget;
+}
 
-function stopRequested(): boolean {
-  return stopStorage.getStore()?.() === true;
+/** Why a backfill slice stopped walking. */
+export type GoogleHealthSliceStopReason =
+  "time_budget" | "page_budget" | "rate_limited" | "job_budget";
+
+/**
+ * One backfill slice's share of the work: a span of wall-clock time and a
+ * page count, both well inside the job's own expiry. The clock starts the
+ * first time a walk asks, which is after the slice has the account's lock: a
+ * slice that waited for an hourly sync to finish does not start out with its
+ * time already spent. `pages` counts every page the slice's walks have read;
+ * `stopReason` is set the first time a limit is reached and stays set, so
+ * every walk after it stops too.
+ */
+export interface GoogleHealthSliceBudget {
+  ms: number;
+  /** When the slice's time is up; null until the first walk asks. */
+  deadline: number | null;
+  maxPages: number;
+  pages: number;
+  stopReason: GoogleHealthSliceStopReason | null;
+  now: () => number;
+}
+
+/** A fresh slice budget of `ms` milliseconds and `maxPages` pages. */
+export function googleHealthSliceBudget(
+  ms: number,
+  maxPages: number,
+  now: () => number = Date.now,
+): GoogleHealthSliceBudget {
+  return {
+    ms,
+    deadline: null,
+    maxPages,
+    pages: 0,
+    stopReason: null,
+    now,
+  };
+}
+
+const stopStorage = new AsyncLocalStorage<GoogleHealthWalkLimits>();
+
+/** Whether the slice in scope has used its budget (and why, once it has). */
+function sliceExhausted(slice: GoogleHealthSliceBudget): boolean {
+  if (slice.stopReason) return true;
+  slice.deadline ??= slice.now() + slice.ms;
+  if (slice.now() >= slice.deadline) slice.stopReason = "time_budget";
+  else if (slice.pages >= slice.maxPages) slice.stopReason = "page_budget";
+  return slice.stopReason !== null;
+}
+
+/**
+ * Whether a walk should stop before its next request. Every walk stops on the
+ * job's limit; a resumable one also stops on the slice's.
+ */
+function stopRequested(resumable = false): boolean {
+  const limits = stopStorage.getStore();
+  if (!limits) return false;
+  if (limits.shouldStop()) {
+    if (limits.slice && !limits.slice.stopReason) {
+      limits.slice.stopReason = "job_budget";
+    }
+    return true;
+  }
+  return (
+    resumable && limits.slice !== undefined && sliceExhausted(limits.slice)
+  );
+}
+
+/**
+ * Whether the backfill slice in scope has used its budget. A collection that
+ * has not started yet waits for the next slice rather than starting now.
+ * False outside a slice.
+ */
+export function googleHealthSliceExhausted(): boolean {
+  const limits = stopStorage.getStore();
+  if (!limits) return false;
+  if (limits.shouldStop()) {
+    if (limits.slice && !limits.slice.stopReason) {
+      limits.slice.stopReason = "job_budget";
+    }
+    return true;
+  }
+  return limits.slice !== undefined && sliceExhausted(limits.slice);
+}
+
+/** Pages the slice in scope has read so far (0 outside a slice). */
+export function googleHealthSlicePagesRead(): number {
+  return stopStorage.getStore()?.slice?.pages ?? 0;
+}
+
+/** Count one page read against the slice in scope, if any. */
+function noteSlicePage(): void {
+  const slice = stopStorage.getStore()?.slice;
+  if (slice) slice.pages += 1;
+}
+
+/** End the slice in scope for `reason` (no-op outside a slice). */
+function endSlice(reason: GoogleHealthSliceStopReason): void {
+  const slice = stopStorage.getStore()?.slice;
+  if (slice && !slice.stopReason) slice.stopReason = reason;
+}
+
+/** Whether a resumable walk can stop and keep its place here. */
+function inSlice(): boolean {
+  return stopStorage.getStore()?.slice !== undefined;
 }
 
 export async function runWithGoogleHealthStop<T>(
   shouldStop: () => boolean,
   fn: () => Promise<T>,
+  slice?: GoogleHealthSliceBudget,
 ): Promise<T> {
-  return stopStorage.run(shouldStop, fn);
+  return stopStorage.run({ shouldStop, slice }, fn);
+}
+
+/**
+ * Mark the resource in scope truncated without a walk: a collection a slice
+ * left for the next one. The cycle then reports itself incomplete, so the
+ * backfill does not mistake a skipped collection for an empty one.
+ */
+export function noteGoogleHealthDeferred(): void {
+  notePagination(0, 0, true);
 }
 
 export const GOOGLE_HEALTH_API_BASE = "https://health.googleapis.com/v4";
@@ -527,6 +649,7 @@ export function resolveGoogleHealthUserId(
 //     camelCase nested objects (`sampleTime.physicalTime`,
 //     `interval.startTime`, `civilStartTime.date`).
 //
+
 // proto3 int64 fields arrive as JSON **strings** (`"12345"`) — every numeric
 // extractor coerces numeric strings before the finite check.
 
@@ -553,6 +676,9 @@ export const GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE = 25;
  */
 export const GOOGLE_HEALTH_DENSE_MAX_PAGES = 10_000;
 
+/** Page ceiling for every other list walk. */
+export const GOOGLE_HEALTH_DEFAULT_MAX_PAGES = 1000;
+
 /** `dataPoints.list` envelope: `{ dataPoints, nextPageToken }`. */
 interface GoogleHealthDataPointPage {
   dataPoints?: GoogleHealthDataPoint[];
@@ -578,6 +704,20 @@ interface DataPointQuery {
    * surfaces it so a live account reports which grammar Google accepted.
    */
   onDateFilterStyle?: (style: GoogleHealthDateFilterStyle) => void;
+  /**
+   * The walk keeps its place across attempts (a backfill's resume cursor), so
+   * it may stop on the backfill slice's budget and on a rate limit it cannot
+   * wait out, and report itself truncated instead of failing: the next slice
+   * picks up from the edge it recorded.
+   */
+  resumable?: boolean;
+  /**
+   * Where an earlier attempt of this walk got to: the oldest sample it wrote
+   * when the walk ran newest first (`desc`), the newest when it ran oldest
+   * first (`asc`). The walk asks only for the samples at or beyond it; the
+   * one sample on the edge itself is read again and overwrites in place.
+   */
+  edge?: { at: Date; order: "desc" | "asc" };
 }
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
@@ -797,6 +937,21 @@ export function googleHealthRetryDelayMs(
   return undefined;
 }
 
+/**
+ * How a data request rides out a server that did not answer properly: a
+ * 500, 502, 503 or 504, a timeout, or a broken connection. A short history
+ * reads a handful of pages and rarely meets one; a full-history heart-rate
+ * walk reads thousands, and a single one used to end the walk and throw away
+ * everything it had read. Three tries more, 2, 4 and 8 s apart (or the
+ * `Retry-After` a 503 names, up to a minute), before the request fails.
+ */
+export const GOOGLE_HEALTH_TRANSIENT_RETRY = {
+  maxRetries: 3,
+  baseDelayMs: 2_000,
+};
+
+const GOOGLE_HEALTH_TRANSIENT_STATUSES = new Set([500, 502, 503, 504]);
+
 function waitMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -811,10 +966,12 @@ interface GoogleHealthDataResponse<T> {
 /**
  * Send one data request and answer with the response it finally got.
  *
- * Two answers are handled here rather than handed back:
+ * Three answers are handled here rather than handed back:
  *   - 429: the request waits (see `GOOGLE_HEALTH_RATE_LIMIT`) and is sent
  *     again, up to `maxRetries` times, unless the caller's stop condition
  *     says to end the walk.
+ *   - a server error or no answer at all (see
+ *     `GOOGLE_HEALTH_TRANSIENT_RETRY`): the same, with its own count.
  *   - 401 with a token source: the token expired or was revoked between
  *     the source's last check and this request. The source is asked once for
  *     a fresh token and the request is repeated. A second 401, or a 401 on a
@@ -830,6 +987,7 @@ async function googleHealthDataRequest<T>(
   isExpectedFallback: (status: number) => boolean = () => false,
 ): Promise<GoogleHealthDataResponse<T>> {
   let rateLimited = 0;
+  let transient = 0;
   let refreshed = false;
   let forceRefresh = false;
   for (;;) {
@@ -837,7 +995,33 @@ async function googleHealthDataRequest<T>(
       typeof token === "string" ? token : await token({ forceRefresh });
     forceRefresh = false;
     const started = performance.now();
-    const res = await send(accessToken);
+    let res: Response;
+    try {
+      res = await send(accessToken);
+    } catch (err) {
+      // No answer at all: the request timed out or the connection broke.
+      // On a walk of a thousand pages one of those is a matter of time, and
+      // it cost the whole walk.
+      const retry =
+        err instanceof SafeFetchError &&
+        (err.kind === "timeout" || err.kind === "network") &&
+        transient < GOOGLE_HEALTH_TRANSIENT_RETRY.maxRetries &&
+        !stopRequested();
+      const delayMs =
+        GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs * 2 ** transient;
+      getEvent()?.addExternalCall({
+        service: "google-health",
+        method: label,
+        duration_ms: Math.round(performance.now() - started),
+        ...(retry
+          ? { note: `no_response_retrying_in_ms=${delayMs}` }
+          : { error: err instanceof Error ? err.message : String(err) }),
+      });
+      if (!retry) throw err;
+      transient += 1;
+      await waitMs(delayMs);
+      continue;
+    }
     const json = (await res.json().catch(() => null)) as T | null;
     const verdict = classifyGoogleHealthResponse(res.status);
     const apiErrorDetail =
@@ -859,6 +1043,17 @@ async function googleHealthDataRequest<T>(
       !stopRequested();
     const willRefresh =
       res.status === 401 && typeof token !== "string" && !refreshed;
+    const transientDelayMs = GOOGLE_HEALTH_TRANSIENT_STATUSES.has(res.status)
+      ? Math.min(
+          googleHealthRetryDelayMs(res, json) ??
+            GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs * 2 ** transient,
+          GOOGLE_HEALTH_RATE_LIMIT.maxDelayMs,
+        )
+      : 0;
+    const willRetryTransient =
+      GOOGLE_HEALTH_TRANSIENT_STATUSES.has(res.status) &&
+      transient < GOOGLE_HEALTH_TRANSIENT_RETRY.maxRetries &&
+      !stopRequested();
 
     getEvent()?.addExternalCall({
       service: "google-health",
@@ -871,19 +1066,26 @@ async function googleHealthDataRequest<T>(
           ? { note: `rate_limited_retrying_in_ms=${backoffMs}` }
           : willRefresh
             ? { note: "token_rejected_retrying_with_fresh_token" }
-            : {
-                error:
-                  verdict.classification === "success"
-                    ? undefined
-                    : apiErrorDetail
-                      ? `${verdict.reason} ${apiErrorDetail}`
-                      : verdict.reason,
-              }),
+            : willRetryTransient
+              ? { note: `server_error_retrying_in_ms=${transientDelayMs}` }
+              : {
+                  error:
+                    verdict.classification === "success"
+                      ? undefined
+                      : apiErrorDetail
+                        ? `${verdict.reason} ${apiErrorDetail}`
+                        : verdict.reason,
+                }),
     });
 
     if (willWait) {
       rateLimited += 1;
       await waitMs(backoffMs);
+      continue;
+    }
+    if (willRetryTransient) {
+      transient += 1;
+      await waitMs(transientDelayMs);
       continue;
     }
     if (willRefresh) {
@@ -947,8 +1149,9 @@ export async function forEachDataPointPage(
   query: DataPointQuery,
   onPage: (points: GoogleHealthDataPoint[]) => void | Promise<void>,
 ): Promise<void> {
-  const maxPages = query.maxPages ?? 1000;
+  const maxPages = query.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES;
   const pageSize = query.pageSize ?? GOOGLE_HEALTH_PAGE_SIZE;
+  const resumable = query.resumable === true;
 
   let requestCount = 0;
 
@@ -961,11 +1164,12 @@ export async function forEachDataPointPage(
     let stopped = false;
 
     do {
-      if (stopRequested()) {
+      if (stopRequested(resumable)) {
         stopped = true;
         break;
       }
       const params = new URLSearchParams({ pageSize: String(pageSize) });
+      const filters: string[] = [];
       if (query.start) {
         const { field, bound } = incrementalFilter(
           dataType,
@@ -973,8 +1177,20 @@ export async function forEachDataPointPage(
           query.tz,
           dateStyle,
         );
-        params.set("filter", `${field} >= "${bound}"`);
+        filters.push(`${field} >= "${bound}"`);
       }
+      if (query.edge) {
+        const { field, bound } = incrementalFilter(
+          dataType,
+          query.edge.at,
+          query.tz,
+          dateStyle,
+        );
+        filters.push(
+          `${field} ${query.edge.order === "desc" ? "<=" : ">="} "${bound}"`,
+        );
+      }
+      if (filters.length > 0) params.set("filter", filters.join(" AND "));
       if (pageToken) params.set("pageToken", pageToken);
 
       requestCount += 1;
@@ -985,7 +1201,7 @@ export async function forEachDataPointPage(
       // an error next to the 200 that followed it. It is recorded as a note
       // now; any other 400 still carries its error.
       const firstRequest = requestCount === 1;
-      const { json, verdict, apiErrorDetail } =
+      const { status, json, verdict, apiErrorDetail } =
         await googleHealthDataRequest<GoogleHealthDataPointPage>(
           accessToken,
           `${verb}(page=${pageCount})`,
@@ -1003,6 +1219,15 @@ export async function forEachDataPointPage(
             firstRequest &&
             status === 400,
         );
+      // A rate limit the request could not wait out ends a resumable walk
+      // inside a backfill slice where it is: the pages before it are written
+      // and their edge recorded, so this is a pause, not a failure. The slice
+      // ends with it, since every other walk would meet the same quota.
+      if (status === 429 && resumable && inSlice()) {
+        endSlice("rate_limited");
+        stopped = true;
+        break;
+      }
       if (verdict.classification !== "success") {
         throw new GoogleHealthApiError({
           verb,
@@ -1017,6 +1242,7 @@ export async function forEachDataPointPage(
       pageToken = json?.nextPageToken ?? null;
       pageCount += 1;
       fetched += page.length;
+      noteSlicePage();
       await onPage(page);
     } while (pageToken && pageCount < maxPages);
 
@@ -1245,7 +1471,7 @@ export async function fetchDailyRollUp(
     let totalPages = 0;
     let truncated = false;
     for (const chunk of chunkCivilRange(startCivil, endCivil, maxDays)) {
-      if (stopRequested()) {
+      if (stopRequested(false)) {
         truncated = true;
         break;
       }
@@ -1295,6 +1521,7 @@ export async function fetchDailyRollUp(
         for (const p of json?.rollupDataPoints ?? []) points.push(p);
         pageToken = json?.nextPageToken ?? null;
         pageCount += 1;
+        noteSlicePage();
       } while (pageToken && pageCount < 100);
       totalPages += pageCount;
       truncated ||= Boolean(pageToken);

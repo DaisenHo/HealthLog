@@ -208,7 +208,8 @@ describe("fetchDailyRollUp — chunk walk + conservative fallback", () => {
   });
 
   it("propagates a non-400 first-request failure without a fallback walk", async () => {
-    safeFetchMock.mockResolvedValueOnce(jsonResponse(500, {}));
+    // A 403 is neither the fallback's 400 nor a server error worth repeating.
+    safeFetchMock.mockResolvedValueOnce(jsonResponse(403, {}));
     await expect(
       fetchDailyRollUp(GOOGLE_HEALTH_DATA_TYPES.steps, "token", "fetchSteps", {
         start: new Date("2026-06-01T00:00:00Z"),
