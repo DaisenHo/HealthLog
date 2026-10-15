@@ -9235,7 +9235,9 @@
     "periodStartSaved": "Periodenbeginn gespeichert",
     "periodEndSaved": "Periodenende gespeichert",
     "startedPeriodOnDate": "Periode hat an diesem Tag begonnen",
-    "endedPeriodOnDate": "Periode an diesem Tag beendet"
+    "endedPeriodOnDate": "Periode an diesem Tag beendet",
+    "startAbsorbed": "Periodenbeginn gespeichert. Dein Beginn am {absorbed} wurde mit dem {date} zusammengeführt.",
+    "startRestored": "Gespeichert. Der Beginn am {dates} ist wieder da."
   },
   "cycleReminders": {
     "periodSoonTitle": "Periode steht wahrscheinlich bevor",

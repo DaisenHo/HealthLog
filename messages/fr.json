@@ -9235,7 +9235,9 @@
     "periodStartSaved": "Début des règles enregistré",
     "periodEndSaved": "Fin des règles enregistrée",
     "startedPeriodOnDate": "Mes règles ont commencé ce jour-là",
-    "endedPeriodOnDate": "Mes règles se sont terminées ce jour-là"
+    "endedPeriodOnDate": "Mes règles se sont terminées ce jour-là",
+    "startAbsorbed": "Début des règles enregistré. Votre début du {absorbed} a été fusionné avec celui du {date}.",
+    "startRestored": "Enregistré. Le début du {dates} est de retour."
   },
   "cycleReminders": {
     "periodSoonTitle": "Règles probablement bientôt",

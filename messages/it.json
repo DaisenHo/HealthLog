@@ -9235,7 +9235,9 @@
     "periodStartSaved": "Inizio delle mestruazioni salvato",
     "periodEndSaved": "Fine delle mestruazioni salvata",
     "startedPeriodOnDate": "Le mestruazioni sono iniziate questo giorno",
-    "endedPeriodOnDate": "Le mestruazioni sono finite questo giorno"
+    "endedPeriodOnDate": "Le mestruazioni sono finite questo giorno",
+    "startAbsorbed": "Inizio delle mestruazioni salvato. Il tuo inizio del {absorbed} è stato unito a quello del {date}.",
+    "startRestored": "Salvato. L’inizio del {dates} è di nuovo presente."
   },
   "cycleReminders": {
     "periodSoonTitle": "Ciclo probabilmente in arrivo",

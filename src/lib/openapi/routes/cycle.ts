@@ -333,6 +333,30 @@ const cycleDeleteOutcomeEnvelope = dataEnvelope(
   "CycleDeleteOutcomeEnvelope",
 );
 
+/** `Prefer: return=representation` on the two deletes that can remove a start. */
+const preferReturnRepresentationParameter = {
+  name: "Prefer",
+  in: "header" as const,
+  required: false,
+  schema: { type: "string" as const, example: "return=representation" },
+  description:
+    "v1.43 — send `return=representation` (RFC 7240) to get 200 with what the delete changed (`CycleDeleteOutcome`) and a `Preference-Applied: return=representation` header. Without it the route answers 204 with no body, as before.",
+};
+
+/** The 200 a delete answers with when the request preferred a representation. */
+const cycleDeleteOutcomeResponse = {
+  description:
+    "v1.43 — with `Prefer: return=representation`: the removed cycle (null when the delete removed none, e.g. a day that opened no cycle or a repeated delete) and the starts the removal gave back.",
+  content: {
+    "application/json": { schema: cycleDeleteOutcomeEnvelope },
+  },
+  headers: z.object({
+    "Preference-Applied": z.literal("return=representation").meta({
+      description: "The route honoured `Prefer: return=representation`.",
+    }),
+  }),
+};
+
 const cyclePeriodResponse = z.object({
   cycle: menstrualCycleDto.nullable(),
   dayLog: cycleDayLogDto.nullable(),
@@ -340,7 +364,7 @@ const cyclePeriodResponse = z.object({
     .nullable()
     .optional()
     .describe(
-      'v1.43 — on `action: "start"`: a later start within the period length folded into this one, or null.',
+      'v1.43 — a later start within the period length that this start folded in (it stops being a start of its own), or null. Present on every `action: "start"` answer; null on `end`.',
     ),
 });
 
@@ -787,7 +811,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
                       .array(cycleRestoredStart)
                       .optional()
                       .describe(
-                        "v1.43 — starts given back because this edit cleared the flow on a start day.",
+                        "v1.43 — starts given back because this edit cleared the flow on a start day; empty when it gave back none. Absent on older servers.",
                       ),
                   }),
                 ),
@@ -808,16 +832,11 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Soft-delete a cycle day-log (v1.15.0)",
       description:
-        "Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. 204. Idempotent.",
+        "Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. A day that opened a cycle takes that cycle with it, which gives back any start that cycle had folded in. 204, or 200 with `CycleDeleteOutcome` under `Prefer: return=representation`. Idempotent.",
       requestParams: { path: z.object({ id: z.string() }) },
+      parameters: [preferReturnRepresentationParameter],
       responses: {
-        "200": {
-          description:
-            "v1.43 — with `Prefer: return=representation`: what the delete changed.",
-          content: {
-            "application/json": { schema: cycleDeleteOutcomeEnvelope },
-          },
-        },
+        "200": cycleDeleteOutcomeResponse,
         "204": { description: "Soft-deleted (no body)." },
         "404": {
           description: "Day-log not found / not owned.",
@@ -970,16 +989,11 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Soft-delete a menstrual cycle (v1.15.0)",
       description:
-        "Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. 204. Idempotent.",
+        "Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. Any start this cycle had folded in stands again. 204, or 200 with `CycleDeleteOutcome` under `Prefer: return=representation`. Idempotent.",
       requestParams: { path: z.object({ id: z.string() }) },
+      parameters: [preferReturnRepresentationParameter],
       responses: {
-        "200": {
-          description:
-            "v1.43 — with `Prefer: return=representation`: what the delete changed.",
-          content: {
-            "application/json": { schema: cycleDeleteOutcomeEnvelope },
-          },
-        },
+        "200": cycleDeleteOutcomeResponse,
         "204": { description: "Soft-deleted (no body)." },
         "404": {
           description: "Cycle not found / not owned.",

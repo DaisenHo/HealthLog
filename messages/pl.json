@@ -9235,7 +9235,9 @@
     "periodStartSaved": "Początek miesiączki zapisany",
     "periodEndSaved": "Koniec miesiączki zapisany",
     "startedPeriodOnDate": "Miesiączka zaczęła się tego dnia",
-    "endedPeriodOnDate": "Miesiączka skończyła się tego dnia"
+    "endedPeriodOnDate": "Miesiączka skończyła się tego dnia",
+    "startAbsorbed": "Początek miesiączki zapisany. Twój początek z {absorbed} został połączony z {date}.",
+    "startRestored": "Zapisano. Początek z {dates} jest z powrotem."
   },
   "cycleReminders": {
     "periodSoonTitle": "Miesiączka prawdopodobnie wkrótce",

@@ -2,6 +2,9 @@
  * `DELETE /api/cycle/cycles/{id}` — soft-delete a cycle
  * (ios-contract §2.F): set `deletedAt` + bump `syncVersion`, emit a
  * tombstone on the next sync page. 204. Idempotent. Owner-scoped + gated.
+ * With `Prefer: return=representation` (v1.43, RFC 7240) the answer is 200
+ * with what the delete changed — the removed cycle and the starts it gave
+ * back — so a client can say "the start on 17 Sep is back".
  *
  * The delete also hands the span back to the preceding cycle. Opening a cycle
  * closes the one before it, so removing it without re-deriving that boundary
@@ -18,6 +21,7 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
 import { apiError, getClientIp } from "@/lib/api-response";
+import { cycleDeleteOutcome } from "@/lib/cycle/delete-outcome";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { removeCycleStartedOn } from "@/lib/cycle/cycle-boundaries";
 
@@ -44,7 +48,7 @@ export const DELETE = apiHandler(
     }
     // Already a tombstone: the delete is done, and nothing is left to move.
     if (existing.deletedAt !== null) {
-      return new Response(null, { status: 204 });
+      return cycleDeleteOutcome(request, null, []);
     }
 
     // Tombstone + re-anchor as one unit: a neighbour re-derived against a
@@ -99,6 +103,10 @@ export const DELETE = apiHandler(
       meta: { reanchored_prior: reanchored !== null },
     });
 
-    return new Response(null, { status: 204 });
+    return cycleDeleteOutcome(
+      request,
+      removed?.cycleId ?? null,
+      removed?.restored ?? [],
+    );
   },
 );

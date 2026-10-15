@@ -9235,7 +9235,9 @@
     "periodStartSaved": "Period start saved",
     "periodEndSaved": "End of period saved",
     "startedPeriodOnDate": "My period started this day",
-    "endedPeriodOnDate": "My period ended this day"
+    "endedPeriodOnDate": "My period ended this day",
+    "startAbsorbed": "Period start saved. Your start on {absorbed} was merged into {date}.",
+    "startRestored": "Saved. The start on {dates} is back."
   },
   "cycleReminders": {
     "periodSoonTitle": "Period likely soon",

@@ -9235,7 +9235,9 @@
     "periodStartSaved": "생리 시작을 저장했어요",
     "periodEndSaved": "생리 종료를 저장했어요",
     "startedPeriodOnDate": "이 날 생리를 시작했어요",
-    "endedPeriodOnDate": "이 날 생리가 끝났어요"
+    "endedPeriodOnDate": "이 날 생리가 끝났어요",
+    "startAbsorbed": "생리 시작을 저장했어요. {absorbed}의 시작은 {date}로 합쳐졌어요.",
+    "startRestored": "저장했어요. {dates}의 시작이 다시 표시돼요."
   },
   "cycleReminders": {
     "periodSoonTitle": "생리가 곧 시작될 것 같아요",

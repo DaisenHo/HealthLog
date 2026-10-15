@@ -9235,7 +9235,9 @@
     "periodStartSaved": "Inicio del periodo guardado",
     "periodEndSaved": "Fin del periodo guardado",
     "startedPeriodOnDate": "Mi periodo empezó este día",
-    "endedPeriodOnDate": "Mi periodo terminó este día"
+    "endedPeriodOnDate": "Mi periodo terminó este día",
+    "startAbsorbed": "Inicio del periodo guardado. Tu inicio del {absorbed} se ha unido al del {date}.",
+    "startRestored": "Guardado. El inicio del {dates} vuelve a estar."
   },
   "cycleReminders": {
     "periodSoonTitle": "El periodo llegará pronto",
