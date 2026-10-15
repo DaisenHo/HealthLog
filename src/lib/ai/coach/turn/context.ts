@@ -13,7 +13,10 @@ import type { CoachScope } from "@/lib/ai/coach/types";
 import { enqueueCoachMemoryRefresh } from "@/lib/ai/coach/coach-memory-shared";
 import { instructionLocale } from "@/lib/ai/prompts/output-language";
 import { storeDeterministicFacts } from "@/lib/ai/coach/facts";
-import { getCoachSystemPrompt } from "@/lib/ai/coach/system-prompt";
+import {
+  buildCoachTurnNotes,
+  getCoachSystemPrompt,
+} from "@/lib/ai/coach/system-prompt";
 import {
   openerArchetypeHint,
   shouldUseNameForTurn,
@@ -69,6 +72,11 @@ export interface TurnContext {
   workoutEvidence: Record<string, unknown> | null;
   systemPrompt: string;
   userPrompt: string;
+  /**
+   * v1.43 (#1217) — the lines that change every turn (opener hint, name
+   * clause), for the user message. Empty when none apply.
+   */
+  turnNotes: string;
 }
 
 export async function assembleTurnContext(args: {
@@ -150,12 +158,11 @@ export async function assembleTurnContext(args: {
       firstName != null && shouldUseNameForTurn(`${userId}:${turnIndex}`),
     openerHint: openerArchetypeHint(`${userId}:${turnIndex}`, locale),
   };
-  const baseSystemPrompt = getCoachSystemPrompt(
-    locale,
-    coachPrefs,
-    aboutMe,
-    coachPersonalization,
-  );
+  // v1.43 (#1217) — the system prompt is stable per person; the per-turn
+  // personalization travels in the user message (`turnNotes`), so the
+  // provider's cached prefix survives from one turn to the next.
+  const baseSystemPrompt = getCoachSystemPrompt(locale, coachPrefs, aboutMe);
+  const turnNotes = buildCoachTurnNotes(locale, coachPersonalization);
   const turnContext = buildCoachTurnContext({
     priorTurns,
     priorSummary,
@@ -240,5 +247,6 @@ export async function assembleTurnContext(args: {
     workoutEvidence,
     systemPrompt,
     userPrompt,
+    turnNotes,
   };
 }

@@ -31,3 +31,16 @@ export function buildDialogAddenda(
     .filter((block) => block.length > 0)
     .join("\n\n");
 }
+
+/**
+ * v1.43 (#1217) — the table rules alone (how a table was fetched, how to
+ * follow up on one). They apply once the conversation holds a table, which can
+ * change mid-turn, so they travel as a user-side note rather than switching the
+ * system prompt: a switched system prompt rewrites the provider's cached
+ * prefix on the costliest round of the turn.
+ */
+export function buildTableRulesAddendum(locale: Locale): string {
+  return [methodAddendum(locale), followUpsAddendum(locale)]
+    .filter((block) => block.length > 0)
+    .join("\n\n");
+}
