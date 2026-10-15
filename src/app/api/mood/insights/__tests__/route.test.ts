@@ -41,6 +41,22 @@ const AGGREGATE = {
   tags: [],
   stability: year,
   stabilityByWindow: { 30: month, 90: null, 180: year, 365: year },
+  patternsByWindow: {
+    30: [],
+    90: [],
+    180: [],
+    365: [
+      {
+        id: "weekend",
+        kind: "weekend",
+        strength: "strong",
+        direction: "higher",
+        values: { subject: 4.2, comparison: 3.1, delta: 1.1 },
+        sampleSize: { subject: 100, comparison: 250 },
+        qValue: 0.001,
+      },
+    ],
+  },
 };
 
 const call = (query = "") =>
@@ -76,6 +92,23 @@ describe("GET /api/mood/insights — stability per period", () => {
     const body = await (await call("?days=90")).json();
     expect(body.data.stability).toBeNull();
     expect(body.data.stabilityWindowDays).toBe(90);
+  });
+
+  it("serves the patterns of the same window, without the cache's internals", async () => {
+    const year = await (await call()).json();
+    expect(year.data.patterns).toEqual([
+      {
+        id: "weekend",
+        kind: "weekend",
+        strength: "strong",
+        direction: "higher",
+        values: { subject: 4.2, comparison: 3.1, delta: 1.1 },
+        sampleSize: { subject: 100, comparison: 250 },
+      },
+    ]);
+    expect(year.data).not.toHaveProperty("patternsByWindow");
+    const month = await (await call("?days=30")).json();
+    expect(month.data.patterns).toEqual([]);
   });
 
   it("refuses a window it does not offer", async () => {

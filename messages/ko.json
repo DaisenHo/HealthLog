@@ -4224,6 +4224,21 @@
         "learning": "학습 중이에요: {threshold}일 중 {entries}일 기록했어요. 충분히 모이면 비교가 나타나요.",
         "noPattern": "지금까지 기록한 {entries}일 중에는 하루를 견줄 만큼 일정한 패턴이 없어요. 하루의 맥락까지 함께 남기면 비교할 수 있는 게 늘어나요.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "기분 패턴",
+        "basedOn": "{subject}일과 {comparison}일 기준. 원인이 아닌 패턴이에요.",
+        "previousDayHigher": "평소보다 낮은 날 다음 날은 대체로 더 나아요 (평소보다 높은 날 다음의 {comparison} 대비 {subject}).",
+        "previousDayLower": "평소보다 낮은 날은 다음 날까지 이어지는 경향이 있어요 (평소보다 높은 날 다음의 {comparison} 대비 {subject}).",
+        "weekendHigher": "주말에는 기분이 대체로 더 좋아요 (평일 {comparison} 대비 {subject}).",
+        "weekendLower": "주말에는 기분이 대체로 더 낮아요 (평일 {comparison} 대비 {subject}).",
+        "bestWeekday": "{weekday}이 대체로 가장 좋은 날이에요 (다른 날 {comparison} 대비 {subject}).",
+        "notesHigher": "메모를 남긴 날에는 기분이 대체로 더 좋아요 (메모 없는 날 {comparison} 대비 {subject}).",
+        "notesLower": "메모를 남긴 날에는 기분이 대체로 더 낮아요 (메모 없는 날 {comparison} 대비 {subject}).",
+        "delayedTagHigher": "'{tag}' 다음 날에는 기분이 대체로 더 좋아요 (그 외 {comparison} 대비 {subject}).",
+        "delayedTagLower": "'{tag}' 다음 날에는 기분이 대체로 더 낮아요 (그 외 {comparison} 대비 {subject}).",
+        "multipleEntriesHigher": "하루에 여러 번 기록한 날에는 기분이 대체로 더 좋아요 (한 번 기록한 날 {comparison} 대비 {subject}).",
+        "multipleEntriesLower": "하루에 여러 번 기록한 날에는 기분이 대체로 더 낮아요 (한 번 기록한 날 {comparison} 대비 {subject})."
       }
     },
     "derived": {
@@ -12840,5 +12855,13 @@
     "lastUpdated": "마지막 업데이트: {date}",
     "project": "프로젝트",
     "credits": "크레딧"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "내 목표 상한",
+      "targetLower": "내 목표 하한",
+      "clinicalUpper": "임상 기준 상한",
+      "clinicalLower": "임상 기준 하한"
+    }
   }
 }

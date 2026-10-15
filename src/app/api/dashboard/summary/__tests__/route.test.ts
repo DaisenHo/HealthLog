@@ -367,6 +367,18 @@ describe("GET /api/dashboard/summary", () => {
     expect(bp?.allTimeCount).toBe(28);
     expect(bp?.lastSeenAt).toBe(sixtyDaysAgo.toISOString());
     expect(bp?.sparkline).toEqual([130, 132]);
+    // v1.43 (ios #116 item 3) — a 40-year-old's age band is 120–129: the
+    // sparkline's mean sits above it, so the rise is a setback.
+    const judged = bp as unknown as {
+      direction: unknown;
+      trendSentiment: string;
+    };
+    expect(judged.direction).toEqual({
+      direction: "up-bad",
+      targetPosition: "above",
+      basis: "profile_default",
+    });
+    expect(judged.trendSentiment).toBe("negative");
   });
 
   it("does NOT emit the BP tile when the account has zero readings ever (REG-11)", async () => {

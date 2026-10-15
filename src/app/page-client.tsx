@@ -169,6 +169,7 @@ import {
   resolveWeightTrend,
   weightTrendReferenceKg,
 } from "@/lib/targets/weight-trend";
+import type { TrendDirectionSentiment } from "@/lib/insights/trend-sentiment";
 import { toProfileSex } from "@/lib/profile/sex";
 import { apiGet } from "@/lib/api/api-fetch";
 
@@ -785,6 +786,15 @@ export default function DashboardPageClient({
       clientBandProfile.weightTargetOverride,
       weightTrendReferenceKg(w),
     );
+  // v1.43 — every other tile's direction comes resolved from the server
+  // (`tiles.directions`, against the record's own targets and profile). The
+  // snapshot-disabled path has no resolved answer and renders neutral rather
+  // than guessing a polarity.
+  const tileDirections = snapshotEnabled
+    ? snapshotQuery.data?.tiles.directions
+    : undefined;
+  const directionOf = (key: string): TrendDirectionSentiment =>
+    tileDirections?.[key]?.direction ?? "neutral";
   const bpTargets = bands.bpTargets;
   const weightRange = bands.weightRange;
   // The range hint tooltip prints its band bounds in the display unit, so scale
@@ -1093,7 +1103,7 @@ export default function DashboardPageClient({
                 slope30={sys?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(sys)}
                 icon={Heart}
-                directionSentiment="up-bad"
+                directionSentiment={directionOf("BLOOD_PRESSURE_SYS")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(sys)}
                 staleDays={tileStaleDays("BLOOD_PRESSURE_SYS")}
@@ -1135,7 +1145,7 @@ export default function DashboardPageClient({
                 slope30={dia?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(dia)}
                 icon={Heart}
-                directionSentiment="up-bad"
+                directionSentiment={directionOf("BLOOD_PRESSURE_DIA")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(dia)}
                 staleDays={tileStaleDays("BLOOD_PRESSURE_DIA")}
@@ -1177,6 +1187,9 @@ export default function DashboardPageClient({
                 slope30={pulseTileSummary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(pulseTileSummary)}
                 icon={TrendingUp}
+                directionSentiment={directionOf(
+                  hasRestingHr ? "RESTING_HEART_RATE" : "PULSE",
+                )}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(pulseTileSummary)}
                 staleDays={tileStaleDays(
@@ -1201,7 +1214,7 @@ export default function DashboardPageClient({
                 slope30={bf?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(bf)}
                 icon={Percent}
-                directionSentiment="up-bad"
+                directionSentiment={directionOf("BODY_FAT")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(bf)}
                 staleDays={tileStaleDays("BODY_FAT")}
@@ -1224,7 +1237,7 @@ export default function DashboardPageClient({
                 slope30={moodSummary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(moodSummary)}
                 icon={Smile}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("MOOD")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(moodSummary)}
               />
@@ -1246,7 +1259,7 @@ export default function DashboardPageClient({
                 slope30={sleepSummaryHours?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(sleepSummaryHours)}
                 icon={Moon}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("SLEEP_DURATION")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(sleepSummaryHours)}
                 staleDays={tileStaleDays("SLEEP_DURATION")}
@@ -1282,7 +1295,7 @@ export default function DashboardPageClient({
                 slope30={stepsSummary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(stepsSummary)}
                 icon={Footprints}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("ACTIVITY_STEPS")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(stepsSummary)}
                 staleDays={tileStaleDays("ACTIVITY_STEPS")}
@@ -1312,7 +1325,7 @@ export default function DashboardPageClient({
                 slope30={vo2Summary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(vo2Summary)}
                 icon={Gauge}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("VO2_MAX")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(vo2Summary)}
                 staleDays={tileStaleDays("VO2_MAX")}
@@ -1354,7 +1367,7 @@ export default function DashboardPageClient({
                 slope30={hrvSummary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(hrvSummary)}
                 icon={HeartPulse}
-                directionSentiment="up-good"
+                directionSentiment={directionOf(hrvType)}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(hrvSummary)}
                 // The type that actually backs the tile — reading freshness
@@ -1380,7 +1393,7 @@ export default function DashboardPageClient({
                 slope30={spo2Summary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(spo2Summary)}
                 icon={Droplets}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("OXYGEN_SATURATION")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(spo2Summary)}
                 staleDays={tileStaleDays("OXYGEN_SATURATION")}
@@ -1403,7 +1416,7 @@ export default function DashboardPageClient({
                 slope30={respRateSummary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(respRateSummary)}
                 icon={Wind}
-                directionSentiment="neutral"
+                directionSentiment={directionOf("RESPIRATORY_RATE")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(respRateSummary)}
                 staleDays={tileStaleDays("RESPIRATORY_RATE")}
@@ -1429,7 +1442,7 @@ export default function DashboardPageClient({
                   summaryToTrend7Delta(wristTempSummary),
                 )}
                 icon={Thermometer}
-                directionSentiment="neutral"
+                directionSentiment={directionOf("WRIST_TEMPERATURE")}
                 compareBaseline={compareBaseline}
                 compareDelta={tdd(
                   "WRIST_TEMPERATURE",
@@ -1461,7 +1474,7 @@ export default function DashboardPageClient({
                   summaryToTrend7Delta(muscleMassSummary),
                 )}
                 icon={Dumbbell}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("MUSCLE_MASS")}
                 compareBaseline={compareBaseline}
                 compareDelta={tdd(
                   "MUSCLE_MASS",
@@ -1490,7 +1503,7 @@ export default function DashboardPageClient({
                   summaryToTrend7Delta(bodyWaterSummary),
                 )}
                 icon={Droplet}
-                directionSentiment="neutral"
+                directionSentiment={directionOf("TOTAL_BODY_WATER")}
                 compareBaseline={compareBaseline}
                 compareDelta={tdd(
                   "TOTAL_BODY_WATER",
@@ -1519,7 +1532,7 @@ export default function DashboardPageClient({
                   summaryToTrend7Delta(boneMassSummary),
                 )}
                 icon={Bone}
-                directionSentiment="neutral"
+                directionSentiment={directionOf("BONE_MASS")}
                 compareBaseline={compareBaseline}
                 compareDelta={tdd(
                   "BONE_MASS",
@@ -1548,7 +1561,7 @@ export default function DashboardPageClient({
                 slope30={waterIntakeSummary?.slope30 ?? null}
                 trend7Delta={summaryToTrend7Delta(waterIntakeSummary)}
                 icon={GlassWater}
-                directionSentiment="neutral"
+                directionSentiment={directionOf("NUTRIENT_WATER")}
                 compareBaseline={compareBaseline}
                 compareDelta={tileCompareDelta(waterIntakeSummary)}
                 staleDays={tileStaleDays("NUTRIENT_WATER")}
@@ -1639,7 +1652,7 @@ export default function DashboardPageClient({
                 slope30={null}
                 trend7Delta={bpSufficient ? bpTrendDelta : null}
                 icon={Target}
-                directionSentiment="up-good"
+                directionSentiment={directionOf("BLOOD_PRESSURE_IN_TARGET")}
                 compareBaseline={compareBaseline}
                 compareDelta={bpSufficient ? bpCompareDelta : null}
               />

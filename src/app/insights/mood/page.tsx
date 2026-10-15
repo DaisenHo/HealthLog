@@ -4,6 +4,8 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { buildMoodDailySeries } from "@/lib/analytics/mood-series";
 import {
@@ -91,10 +93,17 @@ export default async function InsightsMoodPage() {
           ),
         ]);
         const queryClient = new QueryClient();
+        const translator = getServerTranslator(
+          await resolveJobLocale(user.locale),
+        );
         if (aggregates) {
           queryClient.setQueryData(
             queryKeys.moodInsights(),
-            JSON.parse(JSON.stringify(moodInsightsWire(aggregates, 365))),
+            JSON.parse(
+              JSON.stringify(
+                moodInsightsWire(aggregates, 365, (key) => translator.t(key)),
+              ),
+            ),
           );
         }
         if (series) {

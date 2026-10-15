@@ -4224,6 +4224,21 @@
         "learning": "Fase di apprendimento: {entries} giornate su {threshold} registrate. Il confronto compare quando ce ne sono abbastanza.",
         "noPattern": "Nelle {entries} giornate registrate finora non c'è nulla di abbastanza costante per confrontare una giornata. Quando registri anche il contesto della giornata, ne rendi confrontabile una parte maggiore.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Schemi nel tuo umore",
+        "basedOn": "Basato su {subject} e {comparison} giorni. Uno schema, non una causa.",
+        "previousDayHigher": "Dopo un giorno sotto la tua media, il giorno seguente tende a essere migliore ({subject} contro {comparison} dopo un giorno sopra).",
+        "previousDayLower": "Un giorno sotto la tua media tende a trascinarsi in quello seguente ({subject} contro {comparison} dopo un giorno sopra).",
+        "weekendHigher": "Il tuo umore tende a essere migliore nel fine settimana ({subject} contro {comparison} nei giorni feriali).",
+        "weekendLower": "Il tuo umore tende a essere peggiore nel fine settimana ({subject} contro {comparison} nei giorni feriali).",
+        "bestWeekday": "{weekday} tende a essere il tuo giorno migliore ({subject} contro {comparison} negli altri giorni).",
+        "notesHigher": "Nei giorni con una nota il tuo umore tende a essere migliore ({subject} contro {comparison} senza).",
+        "notesLower": "Nei giorni con una nota il tuo umore tende a essere peggiore ({subject} contro {comparison} senza).",
+        "delayedTagHigher": "Il giorno dopo «{tag}», il tuo umore tende a essere migliore ({subject} contro {comparison} negli altri casi).",
+        "delayedTagLower": "Il giorno dopo «{tag}», il tuo umore tende a essere peggiore ({subject} contro {comparison} negli altri casi).",
+        "multipleEntriesHigher": "Nei giorni in cui registri più volte, il tuo umore tende a essere migliore ({subject} contro {comparison} con una sola voce).",
+        "multipleEntriesLower": "Nei giorni in cui registri più volte, il tuo umore tende a essere peggiore ({subject} contro {comparison} con una sola voce)."
       }
     },
     "derived": {
@@ -12840,5 +12855,13 @@
     "lastUpdated": "Ultimo aggiornamento: {date}",
     "project": "Progetto",
     "credits": "Riconoscimenti"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Il tuo obiettivo, limite superiore",
+      "targetLower": "Il tuo obiettivo, limite inferiore",
+      "clinicalUpper": "Limite clinico superiore",
+      "clinicalLower": "Limite clinico inferiore"
+    }
   }
 }

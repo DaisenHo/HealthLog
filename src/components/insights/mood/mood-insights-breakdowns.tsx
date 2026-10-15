@@ -30,6 +30,7 @@ import {
   Gauge,
   Grid3x3,
   Link2,
+  Repeat,
   Tag,
   Tags,
   TrendingUp,
@@ -110,6 +111,7 @@ import { MoodStabilityTile } from "./mood-stability-tile";
 import { MoodTagInfluence } from "./mood-tag-influence";
 import { MoodTagMetricCrosstab } from "./mood-tag-metric-crosstab";
 import { MoodFactorMetricCrosstab } from "./mood-factor-metric-crosstab";
+import { MoodPatterns } from "./mood-patterns";
 
 export function MoodInsightsBreakdowns({
   data,
@@ -151,6 +153,7 @@ export function MoodInsightsBreakdowns({
   const factorCrosstabRows = data.factorCrosstab ?? [];
   const hasFactorCrosstab = factorCrosstabRows.length > 0;
   const dimensionSummaries = data.dimensions ?? [];
+  const patterns = data.patterns ?? [];
   const hasDimensions = dimensionSummaries.some((d) => d.present);
 
   return (
@@ -183,6 +186,14 @@ export function MoodInsightsBreakdowns({
           (was two separate cards). Self-fetches the discovery surface and
           renders nothing when both halves are empty. */}
       <MoodWhatStandsOut narratives={narratives} />
+
+      {/* v1.43 — the patterns the server found and gated; the card stays
+          away when none passed. */}
+      {patterns.length > 0 && (
+        <SectionCard title={t("insights.mood.patterns.title")} icon={Repeat}>
+          <MoodPatterns patterns={patterns} />
+        </SectionCard>
+      )}
 
       {/* v1.37 — the five level-A dimensions. Renders only once at least one
           of them carries a value; an account that has never opened the detail

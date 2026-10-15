@@ -4224,6 +4224,21 @@
         "learning": "Lernphase: {entries} von {threshold} Tagen erfasst. Ein Vergleich erscheint, sobald genug davon zusammengekommen sind.",
         "noPattern": "In den bisher erfassten {entries} Tagen ist noch nichts gleichmäßig genug, um einen Tag damit zu vergleichen. Wenn du auch den Kontext eines Tages festhältst, wird mehr davon vergleichbar.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Muster in deiner Stimmung",
+        "basedOn": "Grundlage: {subject} und {comparison} Tage. Ein Muster, keine Ursache.",
+        "previousDayHigher": "Nach einem Tag unter deinem Üblichen ist der nächste Tag meist besser ({subject} gegenüber {comparison} nach einem Tag darüber).",
+        "previousDayLower": "Ein Tag unter deinem Üblichen wirkt meist in den nächsten Tag hinein ({subject} gegenüber {comparison} nach einem Tag darüber).",
+        "weekendHigher": "Am Wochenende ist deine Stimmung meist besser ({subject} gegenüber {comparison} unter der Woche).",
+        "weekendLower": "Am Wochenende ist deine Stimmung meist schlechter ({subject} gegenüber {comparison} unter der Woche).",
+        "bestWeekday": "{weekday} ist meist dein bester Tag ({subject} gegenüber {comparison} an den übrigen Tagen).",
+        "notesHigher": "An Tagen mit Notiz ist deine Stimmung meist besser ({subject} gegenüber {comparison} ohne).",
+        "notesLower": "An Tagen mit Notiz ist deine Stimmung meist schlechter ({subject} gegenüber {comparison} ohne).",
+        "delayedTagHigher": "Am Tag nach „{tag}“ ist deine Stimmung meist besser ({subject} gegenüber {comparison} sonst).",
+        "delayedTagLower": "Am Tag nach „{tag}“ ist deine Stimmung meist schlechter ({subject} gegenüber {comparison} sonst).",
+        "multipleEntriesHigher": "An Tagen mit mehreren Einträgen ist deine Stimmung meist besser ({subject} gegenüber {comparison} an Tagen mit einem).",
+        "multipleEntriesLower": "An Tagen mit mehreren Einträgen ist deine Stimmung meist schlechter ({subject} gegenüber {comparison} an Tagen mit einem)."
       }
     },
     "derived": {
@@ -12840,5 +12855,13 @@
     "lastUpdated": "Zuletzt aktualisiert: {date}",
     "project": "Projekt",
     "credits": "Danksagungen"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Dein Ziel, Obergrenze",
+      "targetLower": "Dein Ziel, Untergrenze",
+      "clinicalUpper": "Klinische Obergrenze",
+      "clinicalLower": "Klinische Untergrenze"
+    }
   }
 }
