@@ -307,6 +307,13 @@ export const listLabResultsSchema = z.object({
 export type ListLabResultsInput = z.infer<typeof listLabResultsSchema>;
 
 /**
+ * The per-marker overview takes no parameters: it always covers the whole
+ * live history. Strict, so a stray `limit` is refused rather than silently
+ * ignored by a caller expecting it to cap something.
+ */
+export const labOverviewQuerySchema = z.object({}).strict();
+
+/**
  * Reference-range classification lives in `@/lib/labs/reference-range` so the
  * API response, the doctor-report PDF, and the lab list card all share one
  * implementation. Re-exported here for the existing import sites.

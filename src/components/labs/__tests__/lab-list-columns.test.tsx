@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import type { LabResultDto, LabResultListResponse } from "../types";
+import type { LabOverviewResponse, LabResultDto } from "../types";
 
 /**
  * Every row of the compact list is five grid cells from `lg` up. The range
@@ -55,22 +55,29 @@ function renderList(results: LabResultDto[]) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  const data: LabResultListResponse = {
-    results,
-    meta: { total: results.length, limit: 500, offset: 0 },
-  };
-  queryClient.setQueryData(
-    queryKeys.labResultsList({
-      biomarkerId: undefined,
-      analyte: undefined,
-      panel: undefined,
-      from: undefined,
-      to: undefined,
-      page: 0,
-      sortDir: "desc",
+  // The overview the server would send for these readings: one marker per
+  // biomarker (or lower-cased analyte), newest reading as `latest`.
+  const byKey = new Map<string, LabResultDto[]>();
+  for (const r of results) {
+    const key = r.biomarkerId
+      ? `bm:${r.biomarkerId}`
+      : `analyte:${r.analyte.toLowerCase()}`;
+    byKey.set(key, [...(byKey.get(key) ?? []), r]);
+  }
+  const data: LabOverviewResponse = {
+    markers: [...byKey.entries()].map(([key, readings]) => {
+      const ordered = [...readings].sort(
+        (a, b) => Date.parse(a.takenAt) - Date.parse(b.takenAt),
+      );
+      return {
+        key,
+        count: ordered.length,
+        trend: ordered.map((r) => r.value),
+        latest: ordered[ordered.length - 1],
+      };
     }),
-    data,
-  );
+  };
+  queryClient.setQueryData(queryKeys.labResultsOverview(), data);
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">
