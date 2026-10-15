@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 
 /** The pseudo-type carrying a source's newest workout. */
 const WORKOUT_TYPE = "WORKOUTS";
+/** The pseudo-type carrying Apple Health medication doses. */
+const MEDICATION_DOSE_TYPE = "MEDICATION_DOSE";
 
 /**
  * Turn an unmapped enum name into something readable. `MEASUREMENT_TYPE_LABEL_KEYS`
@@ -68,6 +70,8 @@ export function MetricFreshnessList<
   const label = (type: string): string => {
     if (type === WORKOUT_TYPE)
       return t("settings.integrationFreshness.workouts");
+    if (type === MEDICATION_DOSE_TYPE)
+      return t("settings.integrationFreshness.medicationDoses");
     const key = MEASUREMENT_TYPE_LABEL_KEYS[type];
     return key ? t(key) : humanise(type);
   };

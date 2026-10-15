@@ -6555,7 +6555,8 @@
       "title": "Données reçues",
       "summary": "{count} types de données, plus récent {relative}",
       "quiet": "{count} silencieux",
-      "workouts": "Séances"
+      "workouts": "Séances",
+      "medicationDoses": "Prises de médicaments"
     },
     "integrationFallback": {
       "description": "Configuré sur ce compte sans carte de réglages dédiée."
@@ -7131,6 +7132,7 @@
         "title": "Par type de donnée",
         "lastReceived": "Dernière réception {relative}",
         "lastNewValue": "Dernière nouvelle valeur {relative}",
+        "lastBackground": "Dernière fois en arrière-plan {relative}",
         "never": "Pas encore reçu"
       }
     },

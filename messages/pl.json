@@ -6555,7 +6555,8 @@
       "title": "Odebrane dane",
       "summary": "{count} typów danych, najnowsze {relative}",
       "quiet": "{count} bez danych",
-      "workouts": "Treningi"
+      "workouts": "Treningi",
+      "medicationDoses": "Dawki leków"
     },
     "integrationFallback": {
       "description": "Skonfigurowane na tym koncie, ale bez własnej karty ustawień."
@@ -7131,6 +7132,7 @@
         "title": "Według typu danych",
         "lastReceived": "Ostatnio odebrano {relative}",
         "lastNewValue": "Ostatnia nowa wartość {relative}",
+        "lastBackground": "Ostatnio w tle {relative}",
         "never": "Jeszcze nie odebrano"
       }
     },

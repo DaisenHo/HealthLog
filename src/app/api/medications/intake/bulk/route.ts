@@ -29,6 +29,10 @@
  *                              per Apple dose)
  *   }
  *
+ * Top level also takes `syncTrigger?` (foreground | background | push |
+ * manual, v1.42.4), diagnostic only: it dates the `MEDICATION_DOSE` entry of
+ * the Apple Health per-type arrival record and changes no row.
+ *
  * Response (always 200): processed / inserted / duplicates / skipped /
  * entries[] mirroring the measurements + workouts batch envelope.
  *
@@ -53,6 +57,11 @@ import {
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { markSyncCheckpoint } from "@/lib/sync/checkpoint";
+import {
+  HEALTHKIT_SYNC_TRIGGERS,
+  MEDICATION_DOSE_ARRIVAL_TYPE,
+  recordHealthKitTypeArrivals,
+} from "@/lib/integrations/healthkit-type-sync";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   recomputeMedicationComplianceForDay,
@@ -164,6 +173,10 @@ const bulkEntrySchema = z
 
 const bulkPayloadSchema = z.object({
   entries: z.array(bulkEntrySchema).min(1).max(MAX_ENTRIES_PER_BATCH),
+  // v1.42.4 — what woke the phone for this sync, the same diagnostic-only
+  // field `POST /api/measurements/batch` takes. It changes no row; it only
+  // feeds the `MEDICATION_DOSE` arrival record below.
+  syncTrigger: z.enum(HEALTHKIT_SYNC_TRIGGERS).optional(),
 });
 
 // v1.8.2 — `updated` joins the per-entry status vocabulary: a write that
@@ -243,7 +256,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     });
   }
 
-  const { entries } = parsed.data;
+  const { entries, syncTrigger } = parsed.data;
 
   // Up-front ownership check — the user can only POST intake events
   // against medications they own. One read covers every medicationId
@@ -990,6 +1003,28 @@ async function postBulk(request: NextRequest): Promise<Response> {
         badgeCount,
       });
     })();
+  }
+
+  // v1.42.4 — Apple Health doses get the per-type arrival record the
+  // measurement batch keeps for its types: when they last arrived, under which
+  // trigger, when a sync last brought a new or changed dose, and when a
+  // background sync last carried them. Entries sent with `source:
+  // "APPLE_HEALTH"` only; a dose taken in the app is not an Apple Health
+  // arrival. A replay answered `duplicate` still counts as an arrival, the
+  // same rule as the batch route.
+  const doseArrival = { accepted: 0, newSamples: 0 };
+  for (const result of results) {
+    if (entries[result.index]?.source !== "APPLE_HEALTH") continue;
+    if (result.status === "skipped") continue;
+    doseArrival.accepted += 1;
+    if (result.status !== "duplicate") doseArrival.newSamples += 1;
+  }
+  if (doseArrival.accepted > 0) {
+    await recordHealthKitTypeArrivals(prisma, {
+      userId: user.id,
+      counts: new Map([[MEDICATION_DOSE_ARRIVAL_TYPE, doseArrival]]),
+      trigger: syncTrigger ?? null,
+    });
   }
 
   // The SyncMode checkpoint belongs to the push that moved the data, not to

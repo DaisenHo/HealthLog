@@ -198,6 +198,12 @@ const bulkIntakeEntry = z
 const bulkIntakePayload = z
   .object({
     entries: z.array(bulkIntakeEntry).min(1).max(500),
+    syncTrigger: z
+      .enum(["foreground", "background", "push", "manual"])
+      .optional()
+      .describe(
+        'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client for this sync. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated` or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`. It changes no dose row. Optional; omitted records a null trigger.',
+      ),
   })
   .meta({
     id: "BulkMedicationIntakeRequest",

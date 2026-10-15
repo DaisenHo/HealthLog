@@ -6555,7 +6555,8 @@
       "title": "Empfangene Daten",
       "summary": "{count} Datentypen, neuestes {relative}",
       "quiet": "{count} still",
-      "workouts": "Workouts"
+      "workouts": "Workouts",
+      "medicationDoses": "Medikamenteneinnahmen"
     },
     "integrationFallback": {
       "description": "Für dieses Konto eingerichtet, hat aber keine eigene Einstellungskarte."
@@ -7131,6 +7132,7 @@
         "title": "Nach Datentyp",
         "lastReceived": "Zuletzt empfangen {relative}",
         "lastNewValue": "Letzter neuer Wert {relative}",
+        "lastBackground": "Zuletzt im Hintergrund {relative}",
         "never": "Noch nicht empfangen"
       }
     },
