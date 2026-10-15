@@ -273,8 +273,33 @@ export function reconstructDoseHistory(
     }
   }
 
-  for (const i of taken) {
+  // The best fit claims a slot first, whatever order the caller read the rows
+  // in. A take the write path stored ON the slot it attributes to goes before
+  // one stored on its own instant (an extra dose recorded unscheduled), then
+  // on-time before late, then the nearer take. Processing in the caller's
+  // order (newest `scheduledFor` first on the history route) let an extra dose
+  // logged half an hour after the slot claim it and pushed the slot's own
+  // dose out as the off-schedule one.
+  const ranked = taken.map((i) => {
     const matched = attributeIntakeToSlot(i.takenAt as Date, bands);
+    if (!matched) return { i, matched, key: [2, 0, 0] as const };
+    const storedOnSlot =
+      Math.abs(i.scheduledFor.getTime() - matched.band.at.getTime()) <=
+      ANCHOR_EPSILON_MS;
+    return {
+      i,
+      matched,
+      key: [
+        storedOnSlot ? 0 : 1,
+        matched.status === "on_time" ? 0 : 1,
+        Math.abs((i.takenAt as Date).getTime() - matched.band.at.getTime()),
+      ] as const,
+    };
+  });
+  ranked.sort(
+    (a, b) => a.key[0] - b.key[0] || a.key[1] - b.key[1] || a.key[2] - b.key[2],
+  );
+  for (const { i, matched } of ranked) {
     if (matched && !claim.has(matched.band)) {
       claim.set(matched.band, {
         intake: i,

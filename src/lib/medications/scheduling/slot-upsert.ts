@@ -746,6 +746,79 @@ export async function findPinConflict(input: {
   });
 }
 
+/**
+ * How far apart two recorded takes of one slot may sit and still be the same
+ * dose logged twice (a tap in HealthLog and an entry in another app a few
+ * minutes later). Further apart, they are two doses.
+ */
+export const SAME_DOSE_TOLERANCE_MS = 15 * 60_000;
+
+/**
+ * Is `held` (the take a slot already carries) a different dose from the
+ * incoming external dose record?
+ *
+ * Band attribution maps a take to the slot whose band contains it, and a
+ * weekly schedule's band reaches a day either side of the slot. Without this
+ * check an extra dose logged the day after a Tuesday dose landed on the
+ * Tuesday slot and overwrote it last-write-wins: the Tuesday time was
+ * replaced and the extra dose existed nowhere.
+ *
+ *   - Nothing taken on the slot yet (pending, skipped): not another dose, the
+ *     incoming take is the slot's dose.
+ *   - The same external record: the same dose.
+ *   - Two different external records: different doses, unless they sit within
+ *     a minute of each other, which is a double entry rather than two doses.
+ *   - Otherwise (the held take has no external record): the same dose within
+ *     {@link SAME_DOSE_TOLERANCE_MS}, a different one beyond it.
+ */
+export function isAnotherDose(
+  held: { takenAt: Date | null; externalId: string | null },
+  incoming: { takenAt: Date; externalId: string | null },
+): boolean {
+  if (held.takenAt === null) return false;
+  if (held.externalId !== null && held.externalId === incoming.externalId) {
+    return false;
+  }
+  const gap = Math.abs(held.takenAt.getTime() - incoming.takenAt.getTime());
+  if (held.externalId !== null && incoming.externalId !== null) {
+    return gap > 60_000;
+  }
+  return gap > SAME_DOSE_TOLERANCE_MS;
+}
+
+/**
+ * Does the slot at `canonicalSlot` already carry a recorded take that is a
+ * different dose from the incoming one (see {@link isAnotherDose})? The
+ * caller records the incoming take as its own unscheduled dose instead of
+ * converging onto the slot.
+ */
+export async function slotHeldByAnotherDose(input: {
+  userId: string;
+  medicationId: string;
+  canonicalSlot: Date;
+  takenAt: Date;
+  externalId: string | null;
+  client?: Pick<PrismaClient, "medicationIntakeEvent">;
+}): Promise<boolean> {
+  const client = input.client ?? defaultPrisma;
+  const rows = await client.medicationIntakeEvent.findMany({
+    where: {
+      userId: input.userId,
+      medicationId: input.medicationId,
+      scheduledFor: input.canonicalSlot,
+      deletedAt: null,
+      takenAt: { not: null },
+    },
+    select: { takenAt: true, externalId: true },
+  });
+  return rows.some((row) =>
+    isAnotherDose(row, {
+      takenAt: input.takenAt,
+      externalId: input.externalId,
+    }),
+  );
+}
+
 export interface ResolveForcedSlotInput {
   userId: string;
   medicationId: string;

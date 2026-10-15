@@ -65,6 +65,7 @@ import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
   resolveSlotInstantForWrite,
+  slotHeldByAnotherDose,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
 import {
@@ -338,6 +339,9 @@ async function postBulk(request: NextRequest): Promise<Response> {
   let inserted = 0;
   let updated = 0;
   let duplicates = 0;
+  // External dose records kept as their own unscheduled dose because their
+  // band slot already carried a different one.
+  let extraDosesUnscheduled = 0;
   const skipped: Array<{ index: number; reason: string }> = [];
   const unstableShapes: UnstableExternalIdShape[] = [];
   // v1.4.39 W-MED — collect distinct `(medicationId, dayKey)` pairs
@@ -443,6 +447,9 @@ async function postBulk(request: NextRequest): Promise<Response> {
       // a band decision. Pending echoes / skips carry no decision
       // (undefined → the upsert leaves an existing USER_PIN untouched).
       let attributionSource: "AUTO" | "USER_PIN" | undefined;
+      // Set when the band slot is held by a different dose and this take is
+      // recorded unscheduled; it must not converge onto any slot row below.
+      let heldByAnotherDose = false;
       if (isExplicitTaken && entry.forceSlotInstant !== undefined) {
         canonicalSlot = await resolveForcedSlotForWrite({
           userId: user.id,
@@ -486,6 +493,26 @@ async function postBulk(request: NextRequest): Promise<Response> {
         });
         canonicalSlot = attribution.slotInstant;
         attributionSource = "AUTO";
+        // An external dose record (a HealthKit dose event) whose band slot
+        // already carries a different recorded dose is an extra dose, not a
+        // correction of that one. Converging would overwrite the slot's
+        // take last-write-wins and the extra dose would exist nowhere; it is
+        // recorded as its own unscheduled dose instead.
+        if (
+          canonicalSlot !== null &&
+          entry.externalId !== undefined &&
+          (await slotHeldByAnotherDose({
+            userId: user.id,
+            medicationId: entry.medicationId,
+            canonicalSlot,
+            takenAt: entry.takenAt as Date,
+            externalId: entry.externalId,
+          }))
+        ) {
+          canonicalSlot = null;
+          heldByAnotherDose = true;
+          extraDosesUnscheduled += 1;
+        }
       } else if (isExplicitSkip && entry.scheduledFor === undefined) {
         // v1.16.9 — a slot-less deliberate skip resolves by band
         // membership on the skip moment, exactly like a take does. The
@@ -666,6 +693,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
         // late-morning dose consuming the evening slot). It records
         // standalone (ad-hoc) instead.
         const existingSlotRow =
+          !heldByAnotherDose &&
           entry.scheduledFor !== undefined &&
           mayConvergeOntoSuppliedSlot({
             skipped: entry.skipped,
@@ -878,6 +906,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
       updated,
       duplicates,
       skipped: skipped.length,
+      extra_doses_unscheduled: extraDosesUnscheduled,
       ...(unstableShapes.length > 0
         ? unstableExternalIdMeta("medication.intake.bulk", unstableShapes)
         : {}),
