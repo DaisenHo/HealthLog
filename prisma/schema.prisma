@@ -622,7 +622,7 @@ model User {
   // `useAuth()` hook.
   disableCoach Boolean @default(false) @map("disable_coach")
 
-  /// @pending-consumer(#v143-B1) The account's own AI usage level (#1217).
+  /// The account's own AI usage level (#1217).
   /// NULL follows the instance default (`AppSettings.aiUsageDefaultLevel`);
   /// a stored level above `AppSettings.aiUsageMaxLevel` is kept but capped
   /// at read time. Written by `PUT /api/auth/me/ai-usage`, resolved in
@@ -5268,11 +5268,13 @@ model AppSettings {
   // `aiSyncRegenGapHours` the minimum gap between status-card regenerations
   // after a sync at `standard` (NULL = env `AI_SYNC_REGEN_GAP_HOURS`, else 6).
   // Edited through `PUT /api/admin/settings/assistant-flags` (`aiUsage`).
-  /// @pending-consumer(#v143-B1) Instance ceiling for the per-account AI usage level.
+  /// Instance ceiling for the per-account AI usage level (resolved in
+  /// `src/lib/ai/capabilities/usage.ts`).
   aiUsageMaxLevel     AiUsageLevel @default(STANDARD) @map("ai_usage_max_level")
-  /// @pending-consumer(#v143-B1) Level for accounts without their own choice.
+  /// Level for accounts without their own choice.
   aiUsageDefaultLevel AiUsageLevel @default(STANDARD) @map("ai_usage_default_level")
-  /// @pending-consumer(#v143-B1) Sync regeneration gap in hours (1..48); NULL = env or 6.
+  /// Sync regeneration gap in hours (1..48); NULL = env or 6. Read by the
+  /// status invalidator at the `standard` level.
   aiSyncRegenGapHours Int?         @map("ai_sync_regen_gap_hours")
 
   // v1.41 — the operator's reasoning controls. `aiReasoningEnabled` switches

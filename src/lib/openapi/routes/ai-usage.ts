@@ -11,12 +11,7 @@ import { z } from "zod/v4";
 
 import { AI_USAGE_LEVELS, aiUsagePutSchema } from "@/lib/validations/ai-usage";
 
-import {
-  dataEnvelope,
-  errorEnvelope,
-  notImplementedResponse,
-  stdResponses,
-} from "./shared";
+import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 export const aiUsageLevel = z.enum(AI_USAGE_LEVELS).meta({
   id: "AiUsageLevel",
@@ -111,7 +106,6 @@ export const aiUsagePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "`ai.usage.invalid` (body) or `ai.usage.aboveCeiling` (`meta.maxLevel` names the ceiling).",
           content: { "application/json": { schema: errorEnvelope } },
         },
-        ...notImplementedResponse,
       },
     },
   },

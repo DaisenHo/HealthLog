@@ -58,6 +58,7 @@ function baseline(): AiCapabilityInputs {
     },
     activeConsentKinds: new Set(),
     recordKind: "self",
+    usageLevel: "full",
   };
 }
 
@@ -101,6 +102,11 @@ const PERTURB: Record<Exclude<AiUnavailableReason, "check_failed">, Perturb> = {
       if (access[moduleKey] === "enabled") access[moduleKey] = "disabled";
     }
     inputs.moduleAccess = access;
+    return true;
+  },
+  usage_level: (inputs, key) => {
+    if (AI_CAPABILITIES[key].minUsageLevel === undefined) return false;
+    inputs.usageLevel = "frugal";
     return true;
   },
   no_provider: (inputs) => {
@@ -429,16 +435,18 @@ describe("on-device permission", () => {
       not_permitted_for_record: false,
       module_disabled: false,
       user_disabled: false,
+      usage_level: false,
       no_provider: true,
       consent_required: true,
     };
     for (const reason of PERTURBABLE) {
       const inputs = baseline();
-      PERTURB[reason](inputs, "briefing");
-      expect(
-        resolveAiCapability("briefing", inputs).onDeviceAllowed,
-        reason,
-      ).toBe(expected[reason]);
+      // `usage_level` only applies to a capability with a minimum level.
+      const key = reason === "usage_level" ? "supplementLabel" : "briefing";
+      PERTURB[reason](inputs, key);
+      expect(resolveAiCapability(key, inputs).onDeviceAllowed, reason).toBe(
+        expected[reason],
+      );
     }
     expect(resolveAiCapability("briefing", null).onDeviceAllowed).toBe(
       expected.check_failed,
@@ -484,5 +492,45 @@ describe("the provider block", () => {
       canConfigure: false,
       responseTimeoutMs: 60_000,
     });
+  });
+});
+
+describe("the AI usage level (#1217)", () => {
+  it("closes only the capabilities that need a higher level", () => {
+    const inputs = baseline();
+    inputs.usageLevel = "frugal";
+    const resolved = resolveAiCapabilities(inputs);
+    for (const key of AI_CAPABILITY_KEYS) {
+      const needsMore = AI_CAPABILITIES[key].minUsageLevel !== undefined;
+      expect(resolved[key].reason, key).toBe(needsMore ? "usage_level" : null);
+    }
+  });
+
+  it("offers the label photo from standard up", () => {
+    for (const [level, available] of [
+      ["frugal", false],
+      ["standard", true],
+      ["full", true],
+    ] as const) {
+      const inputs = baseline();
+      inputs.usageLevel = level;
+      expect(
+        resolveAiCapability("supplementLabel", inputs).available,
+        level,
+      ).toBe(available);
+    }
+  });
+
+  it("ranks after the person's opt-out and before the provider", () => {
+    const inputs = baseline();
+    inputs.usageLevel = "frugal";
+    inputs.provider = { ...inputs.provider, entries: [], managedBy: null };
+    expect(resolveAiCapability("supplementLabel", inputs).reason).toBe(
+      "usage_level",
+    );
+    inputs.moduleAccess = { ...inputs.moduleAccess, nutrients: "disabled" };
+    expect(resolveAiCapability("supplementLabel", inputs).reason).toBe(
+      "module_disabled",
+    );
   });
 });
