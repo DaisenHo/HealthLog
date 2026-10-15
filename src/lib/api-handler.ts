@@ -54,6 +54,7 @@ import {
   attachRecordContextEcho,
 } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
+import { acceptIncomingRequestId } from "./http/request-id";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -229,11 +230,10 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
 
     const evt = new WideEventBuilder("http");
 
-    // Propagate x-request-id if present
-    const incomingRequestId = safeRequestProp(
-      request,
-      (r) => r.headers.get("x-request-id"),
-      null,
+    // Propagate x-request-id when it is a well-formed token. A malformed one
+    // never reaches the log or the response; the event keeps its fresh id.
+    const incomingRequestId = acceptIncomingRequestId(
+      safeRequestProp(request, (r) => r.headers.get("x-request-id"), null),
     );
     if (incomingRequestId) evt.setRequestId(incomingRequestId);
 
