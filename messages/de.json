@@ -2669,7 +2669,8 @@
     "assessmentPreparing": "Einschätzung wird vorbereitet…",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Persönlicher Rekord: {value} {unit} am {date}"
+      "tooltip": "Persönlicher Rekord: {value} {unit} am {date}",
+      "benchmark": "Typisch in dem Alter: {low} bis {high} {unit} ({source})"
     },
     "loadError": "Auswertungen konnten nicht geladen werden",
     "heroPersonalBaseline": "Basierend auf deinen letzten 90 Tagen",

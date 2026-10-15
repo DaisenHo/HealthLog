@@ -2669,7 +2669,8 @@
     "bmiEmptyAction": "Otwórz ustawienia konta",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}"
+      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}",
+      "benchmark": "Typowo w tym wieku: od {low} do {high} {unit} ({source})"
     },
     "loadError": "Nie udało się załadować analiz",
     "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",

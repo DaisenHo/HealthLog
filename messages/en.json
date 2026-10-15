@@ -2669,7 +2669,8 @@
     "bmiEmptyAction": "Open account settings",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Personal record: {value} {unit} on {date}"
+      "tooltip": "Personal record: {value} {unit} on {date}",
+      "benchmark": "Typical at that age: {low} to {high} {unit} ({source})"
     },
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",

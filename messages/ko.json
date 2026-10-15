@@ -2669,7 +2669,8 @@
     "bmiEmptyAction": "계정 설정 열기",
     "personalRecord": {
       "badge": "신기록",
-      "tooltip": "개인 최고 기록: {date} {value}{unit}"
+      "tooltip": "개인 최고 기록: {date} {value}{unit}",
+      "benchmark": "그 나이의 일반적인 범위: {low}~{high} {unit} ({source})"
     },
     "loadError": "인사이트를 불러오지 못했어요",
     "heroPersonalBaseline": "최근 90일 기준",

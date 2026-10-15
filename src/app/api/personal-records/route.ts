@@ -21,6 +21,11 @@
  *
  * Response envelope (matches the project-wide `apiSuccess` contract):
  *   { data: PersonalRecord[], error: null }
+ *
+ * v1.43 (ios #116 item 5) — the route projects each row instead of passing the
+ * Prisma result through. Every stored field stays on the wire, and each row
+ * gains `benchmark`: the cited age- and sex-aware band for the age the record
+ * was set at (`resolveRecordBenchmark`), or null.
  */
 import { prisma } from "@/lib/db";
 import type { NextRequest } from "next/server";
@@ -28,6 +33,11 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { listPersonalRecordsSchema } from "@/lib/validations/measurement";
+import {
+  mayCarryBenchmark,
+  resolveRecordBenchmark,
+} from "@/lib/personal-records/record-benchmark";
+import { toProfileSex } from "@/lib/profile/sex";
 
 export const dynamic = "force-dynamic";
 
@@ -61,5 +71,44 @@ export const GET = apiHandler(async (request: NextRequest) => {
     take: limit,
   });
 
-  return apiSuccess(records);
+  const wantsBand = records.some((r) => mayCarryBenchmark(r.metricType));
+  const profile = wantsBand
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { dateOfBirth: true, gender: true, heightCm: true },
+      })
+    : null;
+  // Only the six-minute-walk equation needs a weight.
+  const weight =
+    profile && records.some((r) => r.metricType === "SIX_MINUTE_WALK_DISTANCE")
+      ? await prisma.measurement.findFirst({
+          where: { userId: user.id, type: "WEIGHT", deletedAt: null },
+          orderBy: { measuredAt: "desc" },
+          select: { value: true },
+        })
+      : null;
+  const benchmarkProfile = {
+    dateOfBirth: profile?.dateOfBirth ?? null,
+    sex: toProfileSex(profile?.gender) ?? undefined,
+    heightCm: profile?.heightCm ?? null,
+    weightKg: weight?.value ?? null,
+  };
+
+  return apiSuccess(
+    records.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      metricType: r.metricType,
+      metricSlot: r.metricSlot,
+      direction: r.direction,
+      value: r.value,
+      unit: r.unit,
+      achievedAt: r.achievedAt,
+      sourceMeasurementId: r.sourceMeasurementId,
+      source: r.source,
+      externalId: r.externalId,
+      createdAt: r.createdAt,
+      benchmark: profile ? resolveRecordBenchmark(r, benchmarkProfile) : null,
+    })),
+  );
 });

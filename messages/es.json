@@ -2669,7 +2669,8 @@
     "bmiEmptyAction": "Abrir ajustes de cuenta",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Récord personal: {value} {unit} el {date}"
+      "tooltip": "Récord personal: {value} {unit} el {date}",
+      "benchmark": "Lo típico a esa edad: de {low} a {high} {unit} ({source})"
     },
     "loadError": "No se han podido cargar los análisis",
     "heroPersonalBaseline": "Basado en tus últimos 90 días",
