@@ -638,6 +638,7 @@ export async function syncUserSleep(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `withings sleep: status-insight invalidate failed for ${userId}: ${err}`,

@@ -478,7 +478,7 @@ describe("MCP writes — post-write tail", () => {
     expect(afterMeasurementMutation).toHaveBeenCalledWith(
       "u-1",
       [expect.objectContaining({ type: "WEIGHT" })],
-      "mcp",
+      { source: "manual", label: "mcp" },
     );
   });
 
@@ -495,7 +495,7 @@ describe("MCP writes — post-write tail", () => {
         expect.objectContaining({ type: "BLOOD_PRESSURE_SYS" }),
         expect.objectContaining({ type: "BLOOD_PRESSURE_DIA" }),
       ],
-      "mcp",
+      { source: "manual", label: "mcp" },
     );
   });
 });

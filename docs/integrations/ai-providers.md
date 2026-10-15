@@ -431,6 +431,14 @@ many documents against a generous provider budget; lower it on a
 tight one. The 429 names the actual wait (the window is an hour) and
 carries the reset instant in `X-RateLimit-Reset`.
 
+`AI_SYNC_REGEN_GAP_HOURS` (default `6`, whole hours from 1 to 48) is
+the minimum time between two regenerations of a status card after a sync.
+A watch or an integration delivers readings all day, and each delivery
+moves today's figures, so without a gap every touched card regenerated
+about once an hour. A reading entered by hand keeps a one-hour gap, so it
+is still narrated the same day. The value set under Admin > AI wins over
+the environment.
+
 `LABS_OCR_LIMIT_PER_HOUR` (default `6`, clamped to 1–1000) does the
 same for lab-report scans. The photo or PDF scan and the browser-OCR
 text scan share one bucket per user, and a scan that fails before the

@@ -374,12 +374,16 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   // route it through the shared post-mutation tail so the (type, day)
   // rollup bucket and the cached status assessment converge without
   // waiting for a nightly discovery pass.
-  await afterMeasurementMutation(user.id, [
-    {
-      type: INSTRUMENT_MEASUREMENT_TYPE[id] as MeasurementType,
-      measuredAt: when,
-    },
-  ]);
+  await afterMeasurementMutation(
+    user.id,
+    [
+      {
+        type: INSTRUMENT_MEASUREMENT_TYPE[id] as MeasurementType,
+        measuredAt: when,
+      },
+    ],
+    { source: "manual" },
+  );
 
   // v1.27.6 — a screening can be planned as a Vorsorge reminder keyed on
   // PHQ9_SCORE / GAD7_SCORE. Kick the eventful satisfy worker so completing

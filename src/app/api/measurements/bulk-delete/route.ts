@@ -123,7 +123,7 @@ async function postBulkDelete(request: NextRequest): Promise<Response> {
         type: row.type as MeasurementType,
         measuredAt: row.measuredAt,
       })),
-      "measurements bulk-delete",
+      { source: "manual", label: "measurements bulk-delete" },
     );
   }
 

@@ -169,7 +169,7 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
 
     // v1.37.19 (C2-F1) — shared post-mutation tail (identities collected
     // BEFORE the destructive statement, while readable).
-    await afterMeasurementMutation(user.id, affectedRows);
+    await afterMeasurementMutation(user.id, affectedRows, { source: "sync" });
   }
 
   return apiSuccess({ deletedCount: result.count });

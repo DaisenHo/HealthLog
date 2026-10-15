@@ -22,16 +22,28 @@ import {
   collapseToTypeDayKeys,
   recomputeBucketsForMeasurement,
 } from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
+import {
+  invalidateStatusInsightsForTypes,
+  type StatusIngestSource,
+} from "@/lib/insights/status-invalidation";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 export async function afterMeasurementMutation(
   userId: string,
   rows: Array<{ type: MeasurementType; measuredAt: Date }>,
-  /** Log prefix identifying the calling surface in the warn lines. */
-  label = "measurements",
+  options: {
+    /**
+     * Where the rows came from: a hand entry (`manual`) or a device or
+     * integration (`sync`). Decides how soon the status cards they dirty may
+     * regenerate (`StatusIngestSource`).
+     */
+    source: StatusIngestSource;
+    /** Log prefix identifying the calling surface in the warn lines. */
+    label?: string;
+  },
 ): Promise<void> {
+  const label = options.label ?? "measurements";
   if (rows.length === 0) return;
 
   // Collapse to the distinct `(type, day)` set BEFORE recomputing so a
@@ -53,7 +65,9 @@ export async function afterMeasurementMutation(
     // write on a detached handle, and one that lands while a vitest worker is
     // closing its RPC channel fails the whole run. No-op outside test.
     trackBackgroundTask(
-      invalidateStatusInsightsForTypes(userId, types).catch((err) => {
+      invalidateStatusInsightsForTypes(userId, types, {
+        source: options.source,
+      }).catch((err) => {
         console.warn(`[${label}] status-insight invalidate failed`, err);
       }),
     );

@@ -483,7 +483,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // (type, day) the import touched (collapsed, so a 10 000-row restore pays
   // at most ~N recomputes) and re-warm the touched types' status
   // assessments. Best-effort: a populator hiccup never fails the importer.
-  await afterMeasurementMutation(userId, touchedMeasurements, "import");
+  await afterMeasurementMutation(userId, touchedMeasurements, {
+    // A file the person chose to import: a deliberate act, narrated like a
+    // hand entry rather than held to the sync gap.
+    source: "manual",
+    label: "import",
+  });
 
   annotate({
     meta: {

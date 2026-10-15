@@ -550,6 +550,7 @@ export async function syncUserActivity(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `withings activity: status-insight invalidate failed for ${userId}: ${err}`,

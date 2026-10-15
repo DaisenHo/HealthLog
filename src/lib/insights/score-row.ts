@@ -105,9 +105,11 @@ export async function upsertScoreRow(
   // it through the shared post-mutation tail so the (type, day) rollup
   // bucket and the cached status assessment converge on the same tick that
   // wrote the score, instead of waiting for a discovery pass.
-  await afterMeasurementMutation(args.userId, [
-    { type: args.type, measuredAt },
-  ]);
+  await afterMeasurementMutation(
+    args.userId,
+    [{ type: args.type, measuredAt }],
+    { source: "sync", label: "score" },
+  );
 }
 
 /** The tally every score pass returns. */

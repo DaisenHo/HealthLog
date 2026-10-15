@@ -78,7 +78,10 @@ export async function syncUserBody(
     });
     if (legacy.length > 0) {
       await prisma.measurement.deleteMany({ where: legacyWhere });
-      await afterMeasurementMutation(userId, legacy, "whoop-body");
+      await afterMeasurementMutation(userId, legacy, {
+        source: "sync",
+        label: "whoop-body",
+      });
     }
   } catch (err) {
     getEvent()?.addWarning(

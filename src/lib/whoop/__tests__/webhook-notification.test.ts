@@ -144,7 +144,7 @@ describe("processWhoopNotification — fetch-by-id enqueue", () => {
     expect(afterMutation).toHaveBeenCalledWith(
       "user-1",
       [{ type: "SLEEP_DURATION", measuredAt }],
-      "whoop.webhook",
+      { source: "sync", label: "whoop.webhook" },
     );
   });
 });

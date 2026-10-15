@@ -1209,7 +1209,12 @@ async function postBatch(request: NextRequest): Promise<Response> {
     // v1.37.19 (C2-F1) — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as
     // inserts, so this deliberately retains the prepared-row scope.
-    await afterMeasurementMutation(user.id, writtenIdentities);
+    // A batch is the phone's sync, held to the sync gap, unless it wrote one
+    // of the person's own hand-entered readings, which is narrated like any
+    // other hand entry.
+    await afterMeasurementMutation(user.id, writtenIdentities, {
+      source: wroteManualRow ? "manual" : "sync",
+    });
 
     // S4 — Apple-Health sleep is the third sleep transport. If any SLEEP_DURATION
     // row for last night just landed, kick the debounced morning refresh so the

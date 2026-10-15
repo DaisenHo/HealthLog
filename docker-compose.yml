@@ -332,6 +332,11 @@ x-healthlog-env: &healthlog_env
   # (the `environment:` block is a whitelist). See
   # docs/integrations/ai-providers.md.
   DOCUMENT_AI_LIMIT_PER_HOUR: "${DOCUMENT_AI_LIMIT_PER_HOUR:-}"
+  # Minimum hours between two status-card regenerations after a sync
+  # (optional; default 6, whole hours 1-48; hand entries keep one hour). The
+  # value under Admin > AI wins. Listed here so an operator value in .env
+  # reaches the container. See docs/integrations/ai-providers.md.
+  AI_SYNC_REGEN_GAP_HOURS: "${AI_SYNC_REGEN_GAP_HOURS:-}"
   # Hourly upload ceiling for each narrow document-upload token (a Paperless
   # workflow, the import script; optional; default 120, clamped 1-1000).
   # Uploads from the web app and the phone keep their own bucket. Listed here

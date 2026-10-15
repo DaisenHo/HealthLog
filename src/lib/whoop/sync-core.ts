@@ -421,13 +421,13 @@ export async function upsertWhoopMeasurements(
   const invalidateTouchedTypes = (): void => {
     if (touchedTypes.size === 0) return;
 
-    void invalidateStatusInsightsForTypes(userId, [...touchedTypes]).catch(
-      (err) => {
-        getEvent()?.addWarning(
-          `whoop: status-insight invalidate failed for ${userId}: ${err}`,
-        );
-      },
-    );
+    void invalidateStatusInsightsForTypes(userId, [...touchedTypes], {
+      source: "sync",
+    }).catch((err) => {
+      getEvent()?.addWarning(
+        `whoop: status-insight invalidate failed for ${userId}: ${err}`,
+      );
+    });
   };
 
   for (
