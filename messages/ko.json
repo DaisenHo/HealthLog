@@ -12061,7 +12061,8 @@
       "customVaccineDelete": "{name} 님이 직접 추가한 백신을 삭제했어요",
       "lifeEventCreate": "{name} 님이 삶의 사건을 추가했어요",
       "lifeEventUpdate": "{name} 님이 삶의 사건을 수정했어요",
-      "lifeEventDelete": "{name} 님이 삶의 사건을 삭제했어요"
+      "lifeEventDelete": "{name} 님이 삶의 사건을 삭제했어요",
+      "biomarkerMerge": "{name} 님이 바이오마커를 합쳤어요"
     },
     "section": {
       "measurements": {

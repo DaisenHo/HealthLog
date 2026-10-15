@@ -12061,7 +12061,8 @@
       "customVaccineDelete": "{name} ha rimosso un vaccino personale",
       "lifeEventCreate": "{name} ha aggiunto un evento della vita",
       "lifeEventUpdate": "{name} ha modificato un evento della vita",
-      "lifeEventDelete": "{name} ha rimosso un evento della vita"
+      "lifeEventDelete": "{name} ha rimosso un evento della vita",
+      "biomarkerMerge": "{name} ha unito dei biomarcatori"
     },
     "section": {
       "measurements": {

@@ -97,10 +97,9 @@ async function merge(
   body: { sourceIds: string[]; dryRun?: boolean },
 ) {
   const { POST } = await import("@/app/api/biomarkers/[id]/merge/route");
-  return POST(
-    json(body, `http://localhost/api/biomarkers/${targetId}/merge`),
-    { params: Promise.resolve({ id: targetId }) },
-  );
+  return POST(json(body, `http://localhost/api/biomarkers/${targetId}/merge`), {
+    params: Promise.resolve({ id: targetId }),
+  });
 }
 
 async function tableCounts() {
@@ -172,9 +171,8 @@ describe("POST /api/biomarkers/{id}/merge", () => {
     expect(detail.data.meta.total).toBe(42);
 
     // The doctor report: one line, counted 42, under the marker's name.
-    const { loadLabResults } = await import(
-      "@/lib/doctor-report/clinical-records"
-    );
+    const { loadLabResults } =
+      await import("@/lib/doctor-report/clinical-records");
     const report = await loadLabResults(USER_ID, daysAgo(1000), new Date());
     expect(report).toHaveLength(1);
     expect(report![0]).toMatchObject({
@@ -206,14 +204,18 @@ describe("POST /api/biomarkers/{id}/merge", () => {
         if (!page.nextCursor) break;
         offset += page.readings!.length;
       }
-      expect(total.reduce((a, b) => a + b, 0), analyte).toBe(42);
+      expect(
+        total.reduce((a, b) => a + b, 0),
+        analyte,
+      ).toBe(42);
     }
 
     // The source is gone, its old id leads to the target, and the reading's
     // printed name survived.
     const prisma = getPrismaClient();
-    expect(await prisma.biomarker.findUnique({ where: { id: source.id } }))
-      .toBeNull();
+    expect(
+      await prisma.biomarker.findUnique({ where: { id: source.id } }),
+    ).toBeNull();
     const { GET: getMarker } = await import("@/app/api/biomarkers/[id]/route");
     const stale = await getMarker(
       new NextRequest(`http://localhost/api/biomarkers/${source.id}`),
@@ -442,9 +444,11 @@ describe("POST /api/biomarkers/{id}/merge", () => {
       "Ferr",
       "Ferritin (Serum)",
     ]);
-    expect(await getPrismaClient().labResult.count({
-      where: { biomarkerId: c.id },
-    })).toBe(3);
+    expect(
+      await getPrismaClient().labResult.count({
+        where: { biomarkerId: c.id },
+      }),
+    ).toBe(3);
   });
 });
 
@@ -469,7 +473,9 @@ describe("aliases on the marker", () => {
       },
     });
 
-    const res = await put(alp.id, { aliases: ["Alk.P", "AP", "alkaline phosphatase"] });
+    const res = await put(alp.id, {
+      aliases: ["Alk.P", "AP", "alkaline phosphatase"],
+    });
     expect(res.status).toBe(200);
     expect((await res.json()).data.aliases).toEqual(["Alk.P", "AP"]);
     const rows = await prisma.biomarkerAlias.findMany({
@@ -712,9 +718,9 @@ describe("a spelling resolves on its own once chosen", () => {
       where: { id: ref.recordId },
     });
     expect(reading.biomarkerId).toBe(alp.id);
-    expect(
-      (await prisma.biomarkerAlias.findFirstOrThrow({})).name,
-    ).toBe("Alk. Phosph.");
+    expect((await prisma.biomarkerAlias.findFirstOrThrow({})).name).toBe(
+      "Alk. Phosph.",
+    );
 
     const again = serialiseFact(fact, await loadMarkerIndex(prisma, USER_ID));
     expect(again).toMatchObject({ biomarkerId: alp.id, matchKind: "alias" });

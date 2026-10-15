@@ -77,6 +77,8 @@ vi.mock("@/lib/db", () => ({
     // builder now also reads (`buildRecordsBackupSection`).
     labResult: { findMany: vi.fn().mockResolvedValue([]) },
     biomarker: { findMany: vi.fn().mockResolvedValue([]) },
+    biomarkerAlias: { findMany: vi.fn().mockResolvedValue([]) },
+    biomarkerMerge: { findMany: vi.fn().mockResolvedValue([]) },
     illnessEpisode: { findMany: vi.fn().mockResolvedValue([]) },
     allergy: { findMany: vi.fn().mockResolvedValue([]) },
     familyHistoryEntry: { findMany: vi.fn().mockResolvedValue([]) },

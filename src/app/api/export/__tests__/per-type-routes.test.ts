@@ -86,6 +86,8 @@ vi.mock("@/lib/db", () => ({
     // helper now also reads (`buildRecordsBackupSection`).
     labResult: { findMany: vi.fn() },
     biomarker: { findMany: vi.fn() },
+    biomarkerAlias: { findMany: vi.fn() },
+    biomarkerMerge: { findMany: vi.fn() },
     illnessEpisode: { findMany: vi.fn() },
     allergy: { findMany: vi.fn() },
     familyHistoryEntry: { findMany: vi.fn() },
@@ -135,6 +137,8 @@ beforeEach(() => {
   // `resetAllMocks` clears the inline defaults, and the full-backup payload
   // builder reads these unconditionally.
   vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerMerge.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medicationCategoryLabel.findMany).mockResolvedValue(
     [] as never,
   );

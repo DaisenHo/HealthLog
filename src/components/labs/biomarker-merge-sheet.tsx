@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -71,7 +72,8 @@ export function BiomarkerMergeSheet({
         setPreview(result);
         return;
       }
-      toast.success(
+      toastWrittenOutcome(
+        "success",
         tCount("labs.merge.doneToast", result.movedReadings, {
           name: result.target.name,
         }),
