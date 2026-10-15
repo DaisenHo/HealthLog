@@ -798,7 +798,33 @@ export async function recordSyncFailure(
   const alertSignal = Math.max(...Object.values(buckets));
   if (alertSignal >= threshold) {
     const previouslyAlerted = row.alertedAt != null;
-    if (!previouslyAlerted) {
+    // The watchdog may have announced this connection already (it pages a
+    // day-long provider error streak, a reauth or a silence on its own). Its
+    // open incident covers this streak too, and its recovery note ends it;
+    // a second page about the same trouble would only repeat it.
+    const watchdogAnnounced =
+      !previouslyAlerted &&
+      !!(await prisma.integrationWatch.findFirst({
+        where: {
+          userId,
+          integration,
+          incidentReason: { not: null },
+          alertedAt: { not: null },
+        },
+        select: { id: true },
+      }));
+    if (watchdogAnnounced) {
+      await prisma.integrationStatus.update({
+        where: { userId_integration: { userId, integration } },
+        data: { alertedAt: now },
+      });
+      annotate({
+        action: {
+          name: "integrations.alert.covered_by_watchdog",
+          details: { integration },
+        },
+      });
+    } else if (!previouslyAlerted) {
       const outcome = await maybeAlertAdmins({
         userId,
         integration,

@@ -361,6 +361,35 @@ describe("what pages and what does not", () => {
   });
 });
 
+describe("the ledger and the watchdog page once between them", () => {
+  it("does not page a failure streak the watchdog already announced for the connection", async () => {
+    await prisma().integrationWatch.create({
+      data: {
+        userId: USER,
+        integration: "oura",
+        silentSince: new Date(NOW.getTime() - 3 * DAY),
+        incidentReason: "unexpected_silence",
+        incidentOpenedAt: new Date(NOW.getTime() - DAY),
+        alertedAt: new Date(NOW.getTime() - DAY),
+      },
+    });
+    for (let i = 0; i < 3; i++) {
+      await recordSyncFailure({
+        userId: USER,
+        integration: "oura",
+        kind: "transient",
+        message: "Oura error: 503",
+        errorCode: "503",
+      });
+    }
+    expect(dispatchNotification).not.toHaveBeenCalled();
+    const ledger = await prisma().integrationStatus.findUniqueOrThrow({
+      where: { userId_integration: { userId: USER, integration: "oura" } },
+    });
+    expect(ledger.alertedAt).not.toBeNull();
+  });
+});
+
 describe("recent-call ring", () => {
   it("keeps the newest ten attempts, newest first, without any message text", async () => {
     for (let i = 0; i < 7; i++) {

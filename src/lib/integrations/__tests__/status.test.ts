@@ -30,6 +30,9 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
     },
+    integrationWatch: {
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -161,6 +164,50 @@ describe("recordSyncFailure — under threshold", () => {
 });
 
 describe("recordSyncFailure — at threshold", () => {
+  it("does not page a streak the watchdog already announced for the same connection", async () => {
+    vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
+      consecutiveFailuresByKind: {
+        transient: 2,
+        reauth_required: 0,
+        persistent: 0,
+      },
+      persistentFailureStartedAt: null,
+      alertedAt: null,
+    } as never);
+    vi.mocked(prisma.integrationStatus.upsert).mockResolvedValueOnce({
+      alertedAt: null,
+    } as never);
+    vi.mocked(prisma.integrationWatch.findFirst).mockResolvedValueOnce({
+      id: "watch-1",
+    } as never);
+
+    await recordSyncFailure({
+      userId: "u1",
+      integration: "withings",
+      kind: "transient",
+      message: "Withings refresh error: 503",
+      errorCode: "503",
+    });
+
+    expect(prisma.integrationWatch.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "u1",
+          integration: "withings",
+          incidentReason: { not: null },
+          alertedAt: { not: null },
+        }),
+      }),
+    );
+    expect(dispatchNotification).not.toHaveBeenCalled();
+    // Stamped as announced, so later failures of the streak do not ask again.
+    expect(prisma.integrationStatus.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { alertedAt: expect.any(Date) },
+      }),
+    );
+  });
+
   it("dispatches an admin Telegram alert when failure count reaches default threshold (3)", async () => {
     // v1.4.47 W1 — the alert ladder reads Math.max(...buckets) so the
     // existing row must seed the bucket at N-1 before the in-memory
