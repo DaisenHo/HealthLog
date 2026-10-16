@@ -113,6 +113,8 @@ export interface BackupSummary {
   environmentContexts: number;
   /** Declared stretches spent away from home. */
   environmentTravelLocations: number;
+  /** Local days of Dawarich movement values. */
+  dawarichDays: number;
   /** ECG strips, with their rhythm verdict and their trace. */
   ecgRecordings: number;
 }
@@ -209,6 +211,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     userAchievements: payload.userAchievements.length,
     environmentContexts: payload.environmentContexts.length,
     environmentTravelLocations: payload.environmentTravelLocations.length,
+    dawarichDays: payload.dawarichDays.length,
     ecgRecordings: payload.ecgRecordings.length,
   };
 }

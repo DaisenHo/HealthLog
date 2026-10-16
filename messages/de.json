@@ -5894,7 +5894,10 @@
           "remove": "Ortszeitraum entfernen",
           "removeConfirmTitle": "Diese Reise entfernen?",
           "removeConfirmBody": "Messwerte aus diesem Zeitraum bleiben erhalten; nur der Reise-Eintrag verschwindet.",
-          "range": "{start} bis {end}"
+          "range": "{start} bis {end}",
+          "suggestionsIntro": "Dawarich hat Tage im Ausland gefunden, die noch zu keinem Zeitraum gehören.",
+          "suggestionUse": "Übernehmen",
+          "suggestionDismiss": "Vorschlag verwerfen"
         },
         "backfill": {
           "title": "Vergangene Tage nacherfassen",
@@ -7374,6 +7377,46 @@
         "failureStreak": "Fehlerserie: {count} von {threshold}",
         "copyFailed": "Kopieren hat nicht geklappt. Markiere den Text und kopiere ihn von Hand."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Bewegung",
+    "dawarichDescription": "Verbinde deine Dawarich-Instanz, um Tagesstrecke, Zeit außer Haus und Reisetage zu übernehmen.",
+    "dawarichUrl": "Dawarich-Adresse",
+    "dawarichApiKey": "API-Schlüssel",
+    "dawarichApiKeyHelp": "Du findest ihn in Dawarich unter Konto. HealthLog liest damit nur Tageswerte, nie Koordinaten oder Ortsnamen.",
+    "dawarichConnect": "Verbinden",
+    "dawarichUpdate": "Änderungen speichern",
+    "dawarichConnected": "Dawarich verbunden. Die letzten 30 Tage werden gerade geladen.",
+    "dawarichSync": "Jetzt abrufen",
+    "dawarichSyncQueued": "Die letzten sieben Tage werden gleich abgerufen.",
+    "dawarichSyncAlreadyQueued": "Ein Abruf läuft bereits.",
+    "dawarichDisconnect": "Trennen",
+    "dawarichDisconnectTitle": "Dawarich trennen?",
+    "dawarichDisconnectDescription": "Künftige Abrufe stoppen. Bereits gespeicherte Tage bleiben erhalten.",
+    "dawarichDisconnectDelete": "Trennen und Tage löschen",
+    "dawarichDisconnectDeleteTitle": "Trennen und alle Tage löschen?",
+    "dawarichDisconnectDeleteDescription": "Die Verbindung und alle gespeicherten Bewegungstage werden entfernt. Das lässt sich nicht rückgängig machen.",
+    "dawarichHomePlaceSet": "Zuhause ist festgelegt.",
+    "dawarichHomePlaceMissing": "Lege dein Zuhause fest, damit die Zeit außer Haus gemessen werden kann.",
+    "dawarichHomeCountryIs": "Heimatland: {country}.",
+    "dawarichHomeCountryMissing": "Noch kein Heimatland, daher keine Reisetage.",
+    "dawarichDaysStored": "Gespeicherte Tage: {count}",
+    "dawarichHomePlace": "Zuhause",
+    "dawarichHomePlaceChoose": "Ort aus Dawarich wählen",
+    "dawarichHomePlaceChange": "Zuhause wählen",
+    "dawarichHomeCountry": "Heimatland",
+    "dawarichHomeCountryHelp": "Zweistelliger Ländercode, etwa DE. Leer gelassen gilt das Land, in dem du im letzten Jahr am häufigsten warst.",
+    "dawarichHomeSave": "Speichern",
+    "dawarichHomeSaved": "Gespeichert.",
+    "dawarichErrors": {
+      "invalid": "Diese Adresse funktioniert nicht. Nutze die Adresse der Instanz ohne Zugangsdaten.",
+      "privateOrigin": "Diese Instanz liegt in einem privaten Netz. Bitte den Betreiber des Servers, sie freizugeben.",
+      "credentials": "Dawarich hat den API-Schlüssel nicht angenommen.",
+      "unreachable": "Dawarich ist nicht erreichbar. Prüfe die Adresse und ob die Instanz läuft.",
+      "rateLimited": "Zu viele Versuche. Warte kurz und versuche es dann erneut.",
+      "homePlaceUnknown": "Diesen Ort kennt die Dawarich-Instanz nicht mehr.",
+      "notConnected": "Dawarich ist nicht verbunden.",
+      "generic": "Das hat nicht geklappt. Versuche es erneut."
     }
   },
   "admin": {
@@ -11099,6 +11142,10 @@
       "mugwort": "Beifuß",
       "olive": "Olive",
       "ragweed": "Ambrosia"
+    },
+    "movement": {
+      "awayFromHome": "Zeit außer Haus",
+      "distance": "Zurückgelegte Strecke"
     }
   },
   "documents": {
@@ -12638,7 +12685,8 @@
       "scores": "Scores",
       "running": "Laufend an diesem Tag",
       "values": "Werte",
-      "happened": "Was war"
+      "happened": "Was war",
+      "movement": "Unterwegs"
     },
     "notable": {
       "extremeHigh": "Höchster Tageswert seit {since}",
@@ -12694,7 +12742,18 @@
     "today": "Heute",
     "hasEntries": "mit Einträgen",
     "dayNSince": "Tag {n}, seit {date}",
-    "sinceDate": "Seit {date}"
+    "sinceDate": "Seit {date}",
+    "movement": {
+      "total": "Strecke",
+      "driving": "Mit dem Auto",
+      "train": "Mit der Bahn",
+      "places": "Besuchte Orte",
+      "away": "Außer Haus",
+      "travel": "Reisetag",
+      "travelYes": "Ja",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Zeitleiste",

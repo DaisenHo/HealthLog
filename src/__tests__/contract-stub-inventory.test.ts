@@ -33,23 +33,10 @@ const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
     "anamnesis.life_circumstances.confirm",
   ],
   "anamnesis/life-circumstances/route.ts": ["anamnesis.life_circumstances.get"],
-  "dawarich/connect/route.ts": ["dawarich.connect"],
-  "dawarich/disconnect/route.ts": ["dawarich.disconnect"],
-  "dawarich/places/route.ts": ["dawarich.places.get"],
-  "dawarich/settings/route.ts": ["dawarich.settings.patch"],
-  "dawarich/status/route.ts": ["dawarich.status.get"],
-  "dawarich/sync/route.ts": ["dawarich.sync"],
-  "dawarich/test/route.ts": ["dawarich.test"],
-  "environment/travel/suggestions/[id]/dismiss/route.ts": [
-    "environment.travel_suggestion.dismiss",
-  ],
-  "environment/travel/suggestions/route.ts": [
-    "environment.travel_suggestions.get",
-  ],
 };
 
 /** The size of the register when it was written; see the header. */
-const REGISTER_SIZE = 14;
+const REGISTER_SIZE = 5;
 
 function routeFiles(): string[] {
   return walkSourceFiles(API_ROOT, { floor: 400, extensions: [".ts"] })

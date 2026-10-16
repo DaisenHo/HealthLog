@@ -56,6 +56,8 @@ import { SUMMARY_TYPE_MODULE } from "@/lib/dashboard/widget-modules";
 import { ENVIRONMENT_FIELDS } from "@/lib/environment/fields";
 import {
   DISCOVERY_BEHAVIOURS,
+  MOVEMENT_AWAY_CHANNEL_KEY,
+  MOVEMENT_DISTANCE_CHANNEL_KEY,
   DISCOVERY_OUTCOMES,
   FACTOR_CHANNEL_PREFIX,
 } from "@/lib/insights/correlation-discovery";
@@ -179,11 +181,13 @@ describe("every surface id names a surface that exists", () => {
     }
   });
 
-  it("correlation: a discovery channel, a weather field or the lab pass", () => {
+  it("correlation: a discovery channel, a weather field, a movement channel or the lab pass", () => {
     const channels = new Set<string>([
       ...DISCOVERY_BEHAVIOURS,
       ...DISCOVERY_OUTCOMES,
       ...ENVIRONMENT_FIELDS.map((f) => f.key),
+      MOVEMENT_AWAY_CHANNEL_KEY,
+      MOVEMENT_DISTANCE_CHANNEL_KEY,
       "LAB_DRAWS",
     ]);
     for (const id of localIds("correlation")) {

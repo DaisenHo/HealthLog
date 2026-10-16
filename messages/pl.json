@@ -5894,7 +5894,10 @@
           "remove": "Usuń okres lokalizacji",
           "removeConfirmTitle": "Usunąć tę podróż?",
           "removeConfirmBody": "Pomiary z tego okresu pozostają w historii; znika tylko wpis podróży.",
-          "range": "Od {start} do {end}"
+          "range": "Od {start} do {end}",
+          "suggestionsIntro": "Dawarich znalazł dni za granicą, których nie obejmuje jeszcze żaden okres.",
+          "suggestionUse": "Użyj",
+          "suggestionDismiss": "Odrzuć sugestię"
         },
         "backfill": {
           "title": "Uzupełnij minione dni",
@@ -7374,6 +7377,46 @@
         "failureStreak": "Seria błędów: {count} z {threshold}",
         "copyFailed": "Nie udało się skopiować. Zaznacz tekst i skopiuj go ręcznie."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Ruch",
+    "dawarichDescription": "Połącz swoją instancję Dawarich, aby pobierać dzienny dystans, czas poza domem i dni podróży.",
+    "dawarichUrl": "Adres Dawarich",
+    "dawarichApiKey": "Klucz API",
+    "dawarichApiKeyHelp": "Znajdziesz go w Dawarich w sekcji Konto. HealthLog odczytuje nim tylko wartości dzienne, nigdy współrzędne ani nazwy miejsc.",
+    "dawarichConnect": "Połącz",
+    "dawarichUpdate": "Zapisz zmiany",
+    "dawarichConnected": "Dawarich połączony. Trwa wczytywanie ostatnich 30 dni.",
+    "dawarichSync": "Pobierz teraz",
+    "dawarichSyncQueued": "Ostatnie siedem dni zostanie zaraz pobrane.",
+    "dawarichSyncAlreadyQueued": "Pobieranie już trwa.",
+    "dawarichDisconnect": "Rozłącz",
+    "dawarichDisconnectTitle": "Rozłączyć Dawarich?",
+    "dawarichDisconnectDescription": "Kolejne pobierania zostaną zatrzymane. Zapisane dni pozostaną.",
+    "dawarichDisconnectDelete": "Rozłącz i usuń dni",
+    "dawarichDisconnectDeleteTitle": "Rozłączyć i usunąć wszystkie dni?",
+    "dawarichDisconnectDeleteDescription": "Połączenie i wszystkie zapisane dni ruchu zostaną usunięte. Tego nie można cofnąć.",
+    "dawarichHomePlaceSet": "Dom jest ustawiony.",
+    "dawarichHomePlaceMissing": "Ustaw dom, aby można było mierzyć czas poza domem.",
+    "dawarichHomeCountryIs": "Kraj zamieszkania: {country}.",
+    "dawarichHomeCountryMissing": "Brak kraju zamieszkania, więc brak dni podróży.",
+    "dawarichDaysStored": "Zapisane dni: {count}",
+    "dawarichHomePlace": "Dom",
+    "dawarichHomePlaceChoose": "Wybierz miejsce z Dawarich",
+    "dawarichHomePlaceChange": "Wybierz dom",
+    "dawarichHomeCountry": "Kraj zamieszkania",
+    "dawarichHomeCountryHelp": "Dwuliterowy kod kraju, na przykład DE. Jeśli zostawisz puste, liczy się kraj, w którym spędziłeś najwięcej dni w ostatnim roku.",
+    "dawarichHomeSave": "Zapisz",
+    "dawarichHomeSaved": "Zapisano.",
+    "dawarichErrors": {
+      "invalid": "Ten adres nie działa. Użyj adresu instancji bez danych logowania.",
+      "privateOrigin": "Ta instancja jest w sieci prywatnej. Poproś operatora serwera o jej dopuszczenie.",
+      "credentials": "Dawarich nie zaakceptował klucza API.",
+      "unreachable": "Dawarich jest nieosiągalny. Sprawdź adres i czy instancja działa.",
+      "rateLimited": "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
+      "homePlaceUnknown": "Instancja Dawarich nie zna już tego miejsca.",
+      "notConnected": "Dawarich nie jest połączony.",
+      "generic": "Nie udało się. Spróbuj ponownie."
     }
   },
   "admin": {
@@ -11099,6 +11142,10 @@
       "mugwort": "bylica",
       "olive": "oliwka",
       "ragweed": "ambrozja"
+    },
+    "movement": {
+      "awayFromHome": "Czas poza domem",
+      "distance": "Przebyty dystans"
     }
   },
   "documents": {
@@ -12638,7 +12685,8 @@
       "scores": "Wyniki",
       "running": "W toku tego dnia",
       "values": "Wartości",
-      "happened": "Co się działo"
+      "happened": "Co się działo",
+      "movement": "W drodze"
     },
     "notable": {
       "extremeHigh": "Najwyższa wartość dzienna od {since}",
@@ -12694,7 +12742,18 @@
     "today": "Dzisiaj",
     "hasEntries": "z wpisami",
     "dayNSince": "Dzień {n}, od {date}",
-    "sinceDate": "Od {date}"
+    "sinceDate": "Od {date}",
+    "movement": {
+      "total": "Dystans",
+      "driving": "Samochodem",
+      "train": "Pociągiem",
+      "places": "Odwiedzone miejsca",
+      "away": "Poza domem",
+      "travel": "Dzień podróży",
+      "travelYes": "Tak",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Oś czasu",

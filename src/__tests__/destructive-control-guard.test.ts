@@ -650,6 +650,14 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmDialog"],
   },
   {
+    file: "components/settings/integrations/dawarich-card.tsx",
+    destroys:
+      "the stored Dawarich address, key and home settings, and with the second entry every stored movement day — reconnecting means typing them again; deleted days come back only as far as the instance still holds them",
+    triggers: ["components/settings/integrations/integration-card.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmDialog"],
+  },
+  {
     file: "components/settings/integrations/document-sources-card.tsx",
     destroys:
       "the stored Paperless-ngx or Papra address and API token; documents already imported stay in the vault — reconnecting means typing the token again",

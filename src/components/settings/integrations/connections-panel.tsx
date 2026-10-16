@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
+import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
 import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
 import { IntegrationFallbackRow } from "@/components/settings/integrations/integration-fallback-row";
@@ -193,6 +194,7 @@ const CARD_BACKED_INTEGRATIONS: ReadonlySet<IntegrationKey> = new Set([
   "oura",
   "strava",
   "nightscout",
+  "dawarich",
 ]);
 
 export function ConnectionsPanel({
@@ -207,7 +209,9 @@ export function ConnectionsPanel({
   callbackUrls: IntegrationCallbackUrls;
 }) {
   const { t } = useTranslations();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  // Dawarich is part of the environment module, which is opt-in.
+  const environmentOn = user?.modules?.environment === true;
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -296,7 +300,12 @@ export function ConnectionsPanel({
   const unclaimedIntegrations = (integrationStatus?.integrations ?? [])
     .filter(
       (entry) =>
-        !CARD_BACKED_INTEGRATIONS.has(entry.integration) &&
+        // With the environment module off the Dawarich card is not shown, so
+        // a connection still stored falls through to the read-only row.
+        !(
+          CARD_BACKED_INTEGRATIONS.has(entry.integration) &&
+          (entry.integration !== "dawarich" || environmentOn)
+        ) &&
         (entry.configured || entry.connected),
     )
     .map((entry) => ({
@@ -376,6 +385,11 @@ export function ConnectionsPanel({
           viewModel={pickStatus(integrationStatus, "nightscout")}
         />
       </div>
+      {environmentOn ? (
+        <div id="dawarich" className="scroll-mt-28">
+          <DawarichCard viewModel={pickStatus(integrationStatus, "dawarich")} />
+        </div>
+      ) : null}
       {/* Every configured envelope entry no card above claims. Normally this
           renders nothing; on an account carrying a dropped-but-still-running
           integration it renders the honest status that provider otherwise has

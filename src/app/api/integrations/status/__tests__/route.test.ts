@@ -338,7 +338,7 @@ describe("/api/integrations/status — the freshness read failed", () => {
     expect(envelope.metricFreshnessDegraded).toBe(true);
     // Still fail-soft: the rest of the envelope survives, all eight entries
     // present, because a freshness hiccup is never worth the settings surface.
-    expect(envelope.integrations).toHaveLength(8);
+    expect(envelope.integrations).toHaveLength(9);
     for (const entry of envelope.integrations) {
       expect(entry.metricFreshness).toEqual([]);
     }
@@ -469,6 +469,7 @@ describe("/api/integrations/status — the unified connection health", () => {
       oura: ouraHealth,
       strava: null,
       nightscout: null,
+      dawarich: null,
       "apple-health": null,
     } as never);
     userFind.mockResolvedValue({ ouraAccessTokenEncrypted: "tok" });

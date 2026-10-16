@@ -5,14 +5,17 @@
  * Part of the `environment` module; own account only.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { notImplemented } from "@/lib/http/not-implemented";
+import { apiSuccess } from "@/lib/api-response";
+import { loadDawarichStatus } from "@/lib/dawarich/status";
+import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
+  annotate({ action: { name: "dawarich.status" } });
   const gate = await requireModuleEnabled(user.id, "environment");
   if (!gate.enabled) return gate.response;
-  return notImplemented("dawarich.status.get");
+  return apiSuccess(await loadDawarichStatus(user.id));
 });

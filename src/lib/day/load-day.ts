@@ -16,6 +16,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/enums";
 
+import { readDayMovement } from "@/lib/dawarich/movement";
 import type { DayEvent, DayResponse, DayRunningItem } from "@/lib/day/contract";
 import { loadNotableRange } from "@/lib/day/notable";
 import {
@@ -101,7 +102,9 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
   const recordSections = [...access.readable].filter(
     (section) => RECORD_SECTION_READERS[section] !== undefined,
   );
-  const [readings, parts, scores] = await Promise.all([
+  // The movement context rides the environment section: owner-only, and
+  // gone with the module.
+  const [readings, parts, scores, movement] = await Promise.all([
     valuesReadable || sleepReadable
       ? resolveDayReadings(
           recordId,
@@ -131,6 +134,9 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
           floor: args.floor ?? null,
         })
       : Promise.resolve([]),
+    access.readable.has("environment")
+      ? readDayMovement(recordId, day)
+      : Promise.resolve(undefined),
   ]);
 
   const presentTypes = [...readings.rowsByType.keys()];
@@ -179,5 +185,6 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
     notable: notable.map(({ kind, type, params }) => ({ kind, type, params })),
     scores,
     sections,
+    ...(movement === undefined ? {} : { movement }),
   };
 }

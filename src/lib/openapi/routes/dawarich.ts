@@ -22,7 +22,6 @@ import {
   dataEnvelope,
   errorEnvelope,
   moduleDisabledResponse,
-  notImplementedResponse,
   stdResponses,
 } from "./shared";
 
@@ -76,7 +75,6 @@ const responses = (
   ...moduleDisabledResponse,
   ...extra,
   ...stdResponses,
-  ...notImplementedResponse,
 });
 
 const errorOnly = (description: string) => ({
@@ -165,27 +163,33 @@ export const dawarichPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Dawarich home place and country (v1.43)",
       description:
-        "422 `dawarich.invalid`; 422 `dawarich.home_place_unknown` for a place id the instance does not have.",
+        "422 `dawarich.invalid`; 422 `dawarich.home_place_unknown` for a place id the instance does not have; 409 `dawarich.not_connected`; 502 `dawarich.unreachable` when the place cannot be checked. A new home country re-judges the stored travel days at once; a new home place fetches the stored days again in the background (up to a year).",
       requestBody: {
         required: true,
         content: { "application/json": { schema: dawarichSettings } },
       },
-      responses: responses({
-        "200": {
-          description: "The settings after the change.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                z.object({
-                  homePlaceId: z.number().int().nullable(),
-                  homeCountry: z.string().nullable(),
-                }),
-                "DawarichSettingsEnvelope",
-              ),
+      responses: responses(
+        {
+          "200": {
+            description: "The settings after the change.",
+            content: {
+              "application/json": {
+                schema: dataEnvelope(
+                  z.object({
+                    homePlaceId: z.number().int().nullable(),
+                    homeCountry: z.string().nullable(),
+                  }),
+                  "DawarichSettingsEnvelope",
+                ),
+              },
             },
           },
         },
-      }),
+        {
+          "409": errorOnly("`dawarich.not_connected`."),
+          "502": errorOnly("`dawarich.unreachable`."),
+        },
+      ),
     },
   },
   "/api/dawarich/test": {
@@ -193,24 +197,29 @@ export const dawarichPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Probe the Dawarich connection (v1.43)",
       description:
-        "Answers the shared integration probe shape; a failed probe is an error status. The probe classes are those of the other `/test` routes.",
-      responses: responses({
-        "200": {
-          description: "The probe reached the instance.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                z.object({
-                  ok: z.literal(true),
-                  lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
-                  latencyMs: z.number().int(),
-                }),
-                "DawarichProbeEnvelope",
-              ),
+        "Answers the shared integration probe shape. A failed probe is a 502 whose `errorCode` is one of the shared probe classes (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `url_not_public`, `connection_failed`); 422 `not_configured` without a connection; 429 `rate_limited_self` past five probes a minute.",
+      responses: responses(
+        {
+          "200": {
+            description: "The probe reached the instance.",
+            content: {
+              "application/json": {
+                schema: dataEnvelope(
+                  z.object({
+                    ok: z.literal(true),
+                    lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
+                    latencyMs: z.number().int(),
+                  }),
+                  "DawarichProbeEnvelope",
+                ),
+              },
             },
           },
         },
-      }),
+        {
+          "502": errorOnly("A probe class; see the description."),
+        },
+      ),
     },
   },
   "/api/dawarich/sync": {
@@ -218,7 +227,7 @@ export const dawarichPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Fetch Dawarich daily values again (v1.43)",
       description:
-        "From `fromDate` (at most 365 days back). 409 `dawarich.not_connected`; 422 `dawarich.invalid`.",
+        "From `fromDate` (inside the 365 days ending yesterday; without it the nightly window of seven days). `enqueued` is false when a run for this account is already queued or no worker is bound. 409 `dawarich.not_connected`; 422 `dawarich.invalid`.",
       requestBody: {
         required: false,
         content: { "application/json": { schema: dawarichSyncSchema } },
@@ -246,7 +255,7 @@ export const dawarichPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Disconnect Dawarich (v1.43)",
       description:
-        "Forgets the connection; with `deleteData: true` the stored days go too.",
+        "Forgets the connection; with `deleteData: true` the stored days go too. No body is `{ deleteData: false }`. Disconnecting twice is harmless.",
       requestBody: {
         required: false,
         content: { "application/json": { schema: dawarichDisconnectSchema } },
@@ -273,6 +282,8 @@ export const dawarichPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     get: {
       tags: ["Environment"],
       summary: "Suggested trips from Dawarich travel days (v1.43)",
+      description:
+        "Runs of at least two consecutive travel days in one country, inside the last year, that no stored trip overlaps and the person has not dismissed; newest first. Empty without a Dawarich connection.",
       responses: responses({
         "200": {
           description: "The suggestions.",

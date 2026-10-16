@@ -1046,6 +1046,7 @@ const integrationEnvelopeEntry = z
         "oura",
         "strava",
         "nightscout",
+        "dawarich",
       ])
       .describe("Which provider this entry describes."),
     state: integrationLedgerState,
@@ -1121,18 +1122,18 @@ const integrationStatusEnvelope = z
     metricFreshnessDegraded: z
       .boolean()
       .describe(
-        "The per-metric freshness query failed, so EVERY entry's `metricFreshness` is an empty array regardless of what the record actually holds. One flag rather than one per entry, because it is a single query for all eight providers: it fails for all of them or for none. When true, render the freshness section as unavailable rather than as 'no metric has gone quiet' — the two used to be indistinguishable on the wire, which turned the honesty signal into the thing it was built to prevent. The rest of the envelope is unaffected and still complete.",
+        "The per-metric freshness query failed, so EVERY entry's `metricFreshness` is an empty array regardless of what the record actually holds. One flag rather than one per entry, because it is a single query for every provider: it fails for all of them or for none. When true, render the freshness section as unavailable rather than as 'no metric has gone quiet' — the two used to be indistinguishable on the wire, which turned the honesty signal into the thing it was built to prevent. The rest of the envelope is unaffected and still complete.",
       ),
     integrations: z
       .array(integrationEnvelopeEntry)
       .describe(
-        "All eight providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout. A provider the user has never touched still appears, with `connected: false` and a synthesised `connected` ledger state — absence from this list never means anything, because nothing is ever absent from it.",
+        "All nine providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout, dawarich. A provider the user has never touched still appears, with `connected: false` and a synthesised `connected` ledger state — absence from this list never means anything, because nothing is ever absent from it.",
       ),
   })
   .meta({
     id: "IntegrationStatusEnvelope",
     description:
-      "The one read behind the integrations settings surface. It carries every field the per-provider status routes carry, so a client has the choice of eight round-trips or this one; the per-provider routes remain for callers that want a single provider.",
+      "The one read behind the integrations settings surface. It carries every field the per-provider status routes carry, so a client has the choice of nine round-trips or this one; the per-provider routes remain for callers that want a single provider.",
   });
 
 export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -2551,10 +2552,10 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Read every integration's status in one call",
       description:
-        "The consolidated envelope behind the integrations settings surface: all eight providers, always, in a fixed order, each with the ledger core, the server-resolved liveness verdict and its own extras. Prefer this over eight per-provider round-trips. Pure read. Auth via cookie or Bearer.",
+        "The consolidated envelope behind the integrations settings surface: all nine providers, always, in a fixed order, each with the ledger core, the server-resolved liveness verdict and its own extras. Prefer this over nine per-provider round-trips. Pure read. Auth via cookie or Bearer.",
       responses: {
         "200": {
-          description: "All eight provider entries plus the alert threshold.",
+          description: "All nine provider entries plus the alert threshold.",
           content: {
             "application/json": {
               schema: dataEnvelope(

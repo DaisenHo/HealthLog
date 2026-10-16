@@ -208,6 +208,12 @@ import {
   type EnvironmentFetchPayload,
 } from "@/lib/jobs/environment-fetch";
 import {
+  DAWARICH_SYNC_CRON,
+  DAWARICH_SYNC_QUEUE,
+  handleDawarichSync,
+  type DawarichSyncPayload,
+} from "@/lib/jobs/dawarich-sync";
+import {
   ENVIRONMENT_AQ_HISTORY_CRON,
   ENVIRONMENT_AQ_HISTORY_QUEUE,
   enqueueBootTimeAirQualityHistory,
@@ -440,6 +446,9 @@ const allQueues = [
   // v1.42 — the air-quality history backfill: per account, from boot and
   // nightly discovery, the home being set and air quality switched on.
   ENVIRONMENT_AQ_HISTORY_QUEUE,
+  // v1.43 — the Dawarich movement context: nightly discovery, per-account
+  // runs, and the connect / settings backfills.
+  DAWARICH_SYNC_QUEUE,
   DATA_BACKUP_QUEUE,
   RATE_LIMIT_CLEANUP_QUEUE,
   IDEMPOTENCY_CLEANUP_QUEUE,
@@ -630,6 +639,9 @@ const schedules: ScheduleEntry[] = [
   // v1.42 — daily 02:40 discovery for the air-quality history backfill, after
   // the night's environment fetch has taken its share of the budget.
   [ENVIRONMENT_AQ_HISTORY_QUEUE, ENVIRONMENT_AQ_HISTORY_CRON],
+  // v1.43 — daily 03:20 discovery for the Dawarich movement context. A
+  // failed run is an outage at the instance; the default retries apply.
+  [DAWARICH_SYNC_QUEUE, DAWARICH_SYNC_CRON],
   // The send options are the point of this tuple: without them the weekly
   // snapshot inherits pg-boss's 15-minute expiration and is killed mid-run on
   // any sizeable record. See `data-backup-policy.ts` for why the window rides
@@ -1868,6 +1880,15 @@ export async function registerMaintenanceQueues(
       }
       return failure ?? jobDone({ jobs: jobs.length });
     },
+  );
+
+  // v1.43 — Dawarich movement context. Serial: one account at a time, so a
+  // slow instance never crowds the request pool.
+  await createAndWork<DawarichSyncPayload>(
+    boss,
+    DAWARICH_SYNC_QUEUE,
+    { localConcurrency: 1 },
+    (jobs) => handleDawarichSync(boss, jobs),
   );
 
   return allQueues;

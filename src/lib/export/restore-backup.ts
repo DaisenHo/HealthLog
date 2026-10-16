@@ -198,6 +198,7 @@ export interface RestoreResponse {
     userAchievements: number;
     environmentContexts: number;
     environmentTravelLocations: number;
+    dawarichDays: number;
     ecgRecordings: number;
     symptomDefinitions: number;
     lifeEvents: number;
@@ -2833,6 +2834,7 @@ export async function restoreBackup(
           environmentContexts: environmentCleared.environmentContexts,
           environmentTravelLocations:
             environmentCleared.environmentTravelLocations,
+          dawarichDays: environmentCleared.dawarichDays,
           ecgRecordings: ecgCleared.ecgRecordings,
           symptomDefinitions: symptomsCleared.symptomDefinitions,
           lifeEvents: lifeEventsCleared.lifeEvents,

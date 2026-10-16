@@ -5894,7 +5894,10 @@
           "remove": "Supprimer la période de localisation",
           "removeConfirmTitle": "Retirer ce voyage ?",
           "removeConfirmBody": "Les mesures de cette période restent dans ton dossier ; seule l'entrée du voyage disparaît.",
-          "range": "Du {start} au {end}"
+          "range": "Du {start} au {end}",
+          "suggestionsIntro": "Dawarich a trouvé des jours à l’étranger qu’aucune période ne couvre encore.",
+          "suggestionUse": "Utiliser",
+          "suggestionDismiss": "Ignorer la suggestion"
         },
         "backfill": {
           "title": "Récupérer les jours passés",
@@ -7374,6 +7377,46 @@
         "failureStreak": "Série d’échecs : {count} sur {threshold}",
         "copyFailed": "La copie a échoué. Sélectionnez le texte et copiez-le à la main."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Déplacements",
+    "dawarichDescription": "Connecte ton instance Dawarich pour récupérer la distance du jour, le temps hors de chez toi et les jours de voyage.",
+    "dawarichUrl": "Adresse Dawarich",
+    "dawarichApiKey": "Clé d’API",
+    "dawarichApiKeyHelp": "Tu la trouves dans Dawarich sous Compte. HealthLog ne lit que des valeurs journalières, jamais de coordonnées ni de noms de lieux.",
+    "dawarichConnect": "Connecter",
+    "dawarichUpdate": "Enregistrer les modifications",
+    "dawarichConnected": "Dawarich connecté. Les 30 derniers jours sont en cours de chargement.",
+    "dawarichSync": "Récupérer maintenant",
+    "dawarichSyncQueued": "Les sept derniers jours seront récupérés sous peu.",
+    "dawarichSyncAlreadyQueued": "Une récupération est déjà en cours.",
+    "dawarichDisconnect": "Déconnecter",
+    "dawarichDisconnectTitle": "Déconnecter Dawarich ?",
+    "dawarichDisconnectDescription": "Les prochaines récupérations s’arrêtent. Les jours déjà enregistrés restent.",
+    "dawarichDisconnectDelete": "Déconnecter et supprimer les jours",
+    "dawarichDisconnectDeleteTitle": "Déconnecter et supprimer tous les jours ?",
+    "dawarichDisconnectDeleteDescription": "La connexion et tous les jours de déplacement enregistrés sont supprimés. C’est irréversible.",
+    "dawarichHomePlaceSet": "Le domicile est défini.",
+    "dawarichHomePlaceMissing": "Définis ton domicile pour que le temps hors de chez toi puisse être mesuré.",
+    "dawarichHomeCountryIs": "Pays de résidence : {country}.",
+    "dawarichHomeCountryMissing": "Pas encore de pays de résidence, donc pas de jours de voyage.",
+    "dawarichDaysStored": "Jours enregistrés : {count}",
+    "dawarichHomePlace": "Domicile",
+    "dawarichHomePlaceChoose": "Choisis un lieu dans Dawarich",
+    "dawarichHomePlaceChange": "Choisir le domicile",
+    "dawarichHomeCountry": "Pays de résidence",
+    "dawarichHomeCountryHelp": "Code pays à deux lettres, par exemple DE. Laissé vide, c’est le pays où tu as passé le plus de jours l’an dernier qui compte.",
+    "dawarichHomeSave": "Enregistrer",
+    "dawarichHomeSaved": "Enregistré.",
+    "dawarichErrors": {
+      "invalid": "Cette adresse ne fonctionne pas. Utilise l’adresse de l’instance sans identifiants.",
+      "privateOrigin": "Cette instance est sur un réseau privé. Demande à l’opérateur du serveur de l’autoriser.",
+      "credentials": "Dawarich n’a pas accepté la clé d’API.",
+      "unreachable": "Dawarich est injoignable. Vérifie l’adresse et que l’instance fonctionne.",
+      "rateLimited": "Trop de tentatives. Patiente un instant, puis réessaie.",
+      "homePlaceUnknown": "L’instance Dawarich ne connaît plus ce lieu.",
+      "notConnected": "Dawarich n’est pas connecté.",
+      "generic": "Ça n’a pas marché. Réessaie."
     }
   },
   "admin": {
@@ -11099,6 +11142,10 @@
       "mugwort": "armoise",
       "olive": "olivier",
       "ragweed": "ambroisie"
+    },
+    "movement": {
+      "awayFromHome": "Temps hors de chez soi",
+      "distance": "Distance parcourue"
     }
   },
   "documents": {
@@ -12638,7 +12685,8 @@
       "scores": "Scores",
       "running": "En cours ce jour-là",
       "values": "Valeurs",
-      "happened": "Ce qui s’est passé"
+      "happened": "Ce qui s’est passé",
+      "movement": "En déplacement"
     },
     "notable": {
       "extremeHigh": "Valeur journalière la plus haute depuis {since}",
@@ -12694,7 +12742,18 @@
     "today": "Aujourd’hui",
     "hasEntries": "avec des entrées",
     "dayNSince": "Jour {n}, depuis le {date}",
-    "sinceDate": "Depuis le {date}"
+    "sinceDate": "Depuis le {date}",
+    "movement": {
+      "total": "Distance",
+      "driving": "En voiture",
+      "train": "En train",
+      "places": "Lieux visités",
+      "away": "Hors de chez toi",
+      "travel": "Jour de voyage",
+      "travelYes": "Oui",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Chronologie",

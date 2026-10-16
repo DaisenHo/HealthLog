@@ -16,6 +16,8 @@
  *     own, separately fenced reads where a feature needs them;
  *   - names a switched-off module's section as `module_disabled`, so a model
  *     says "that module is off" instead of "nothing happened";
+ *   - drops the country of a travel day from the movement block: a model
+ *     reads that it was a travel day, not where the person was;
  *   - leaves out what the caller excludes (`exclude`): the Coach passes the
  *     person's Coach exclusions as sections, measurement types and scores,
  *     so a metric left out of every other Coach read is left out of the day
@@ -78,6 +80,21 @@ export interface ModelDay {
     max: number;
     band: { lo: number; hi: number; n: number } | null;
   }>;
+  /**
+   * The day's movement context (Dawarich), without the travel country. Absent
+   * when the day has none to give or the environment section is excluded.
+   */
+  movement?: {
+    distance: {
+      unit: "km" | "mi";
+      total: number | null;
+      driving: number | null;
+      train: number | null;
+    };
+    placesVisited: number | null;
+    awayFromHomeMinutes: number | null;
+    travel: { isTravelDay: boolean } | null;
+  } | null;
   /** Sections the reader does not get, and why. Never a model-excluded one. */
   unavailable: Array<{
     section: DaySectionKey;
@@ -189,6 +206,18 @@ export function projectDayForModel(
             band: s.band,
           }))
       : [],
+    ...(day.movement !== undefined && visible("environment")
+      ? {
+          movement: day.movement && {
+            distance: day.movement.distance,
+            placesVisited: day.movement.placesVisited,
+            awayFromHomeMinutes: day.movement.awayFromHomeMinutes,
+            travel: day.movement.travel && {
+              isTravelDay: day.movement.travel.isTravelDay,
+            },
+          },
+        }
+      : {}),
     unavailable,
   };
 }
