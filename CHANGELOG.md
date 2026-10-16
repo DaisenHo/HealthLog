@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.43.2] — 2026-10-16
+
+### Fixed
+
+- **AI consent is only ever given by the person.** Opening the AI settings in
+  the web app, and the iOS app's launch sync, minted an `ai_full` consent
+  receipt without anyone agreeing, so background AI work could reach the
+  operator's shared key without consent. `POST /api/consent/ai` and
+  `POST /api/consent/ai/web` now write a receipt only with
+  `"confirm": true` and answer 400 `consent.ai.confirmRequired` otherwise.
+  Where AI is blocked only by missing consent, the web shows a consent card
+  that names the service and the data, with an explicit Agree button.
+  Existing receipts stay valid; the AI settings show since when consent is
+  given and how to withdraw it. `/api/auth/me` publishes `ai.consent`
+  (`status`, `since`, `recipients`).
+
 ## [1.43.1] — 2026-10-16
 
 ### Fixed
