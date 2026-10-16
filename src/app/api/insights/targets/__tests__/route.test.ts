@@ -39,6 +39,11 @@ vi.mock("@/lib/targets/glucose-read", async (importOriginal) => ({
 vi.mock("@/lib/analytics/resting-pulse-read", () => ({
   readRestingPulseProxy: vi.fn(),
 }));
+// The verdict's basis: the dashboard's summary slice. Empty here, so every
+// item is placed with its own value (`targetVerdictReference`).
+vi.mock("@/lib/analytics/summaries-slice", () => ({
+  computeSummariesSlice: vi.fn(async () => ({ summaries: {} })),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -596,12 +601,15 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
               color: "var(--warning)",
             },
             source: "CDC/NCHS",
+            // Below a default band nobody chose, a resting pulse holds: its
+            // lower edge is a convention, not a goal to climb back to, so a
+            // steady reading is the good news and no move is a setback.
             direction: {
-              direction: "up-good",
+              direction: "hold",
               targetPosition: "below",
               basis: "profile_default",
             },
-            trendSentiment: "neutral",
+            trendSentiment: "positive",
             daysInRange7d: 0,
             daysLogged7d: 4,
             daysInRange30d: 0,
