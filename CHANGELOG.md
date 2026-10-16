@@ -31,7 +31,8 @@ single sign-on handover and an error id on every failure.
 - **AI usage levels** (migration 0402). Frugal, standard and full; admin
   ceiling and default, user choice within (`ai.usage` on `/api/auth/me`, `PUT
 /api/auth/me/ai-usage`). Sync gap by source, compact JSON in prompts, a
-  stable Coach prompt prefix.
+  stable Coach prompt prefix. `AI_SYNC_REGEN_GAP_HOURS` sets the instance's
+  hours between card refreshes after a sync.
 - **Marker merge and aliases** (migration 0403). `POST
 /api/biomarkers/{id}/merge` with a mandatory dry run, alias editing, alias
   choice on scan review, catalogue shorthands; link pickers search a year or
@@ -43,7 +44,8 @@ single sign-on handover and an error id on every failure.
 - **Managed profile handover through single sign-on**
   (`POST /api/auth/claim/sso`), also under `OIDC_ONLY`.
 - **Supportability.** `meta.requestId` on every error envelope and an error id
-  with copy button in the web; a separate problems ring in
+  with copy button in the web; "Copy support info" under Settings, About; a
+  separate problems ring in
   `/api/admin/app-logs`; an admin support report with accounts anonymised.
 - **Server-resolved fields for clients.** Direction verdicts and trend
   sentiment on the snapshot, summary, targets and series; chart reference
