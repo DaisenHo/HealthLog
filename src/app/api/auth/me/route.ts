@@ -90,7 +90,7 @@ const SERVER_FEATURES = {
   cumulativeHourBuckets: true,
   syncTriggerBackfill: true,
   biomarkerMerge: true,
-  lifeCircumstances: false,
+  lifeCircumstances: true,
 } as const;
 
 export const GET = apiHandler(async () => {
