@@ -47,6 +47,7 @@ import {
   computePackYears,
   DEFAULT_FREE_WEEKDAYS,
   isReviewDue,
+  LIFE_KIND_AI_SECTION,
   screeningHints,
   type FreeWeekdaysSpan,
   type PackYears,
@@ -212,6 +213,42 @@ export async function loadFreeWeekdaySpans(
     );
     return [];
   }
+}
+
+/**
+ * The free-weekday answers for a prompt: only when the section they belong
+ * to (`WORK`) is released to the AI. Otherwise the answers are never read or
+ * decrypted for a prompt, and the night-by-night day type falls back to the
+ * weekend default, exactly as for a record that never answered. The data
+ * surfaces (the sleep page, the dashboard) read `loadFreeWeekdaySpans`
+ * directly: they show the person their own answer, no model sees it.
+ */
+export async function loadFreeWeekdaySpansForPrompt(
+  userId: string,
+): Promise<FreeWeekdaysSpan[]> {
+  // Fail-soft and fail-closed, like the read below: a failed switch read
+  // gives the weekend default and never the answers.
+  try {
+    const profile = await prisma.userHealthProfile.findUnique({
+      where: { userId },
+      select: { aiIncludedSections: true },
+    });
+    if (
+      !storedSections(profile?.aiIncludedSections).has(
+        LIFE_KIND_AI_SECTION.FREE_WEEKDAYS,
+      )
+    ) {
+      return [];
+    }
+  } catch (error) {
+    getEvent()?.addWarning(
+      `free weekdays switch read failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return [];
+  }
+  return loadFreeWeekdaySpans(userId);
 }
 
 /** Assemble the whole read model for one record. */

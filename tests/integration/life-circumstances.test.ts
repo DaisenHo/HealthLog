@@ -297,6 +297,34 @@ describe("life-circumstance facts", () => {
   });
 });
 
+describe("free weekdays in a prompt", () => {
+  it("are read for a prompt only while the work section is released", async () => {
+    const user = await makeUser();
+    await signIn(user.id);
+    await data(
+      await postFact({ kind: "FREE_WEEKDAYS", value: VALUES.FREE_WEEKDAYS }),
+      201,
+    );
+    const { loadFreeWeekdaySpans, loadFreeWeekdaySpansForPrompt } =
+      await import("@/lib/profile/life-circumstances");
+
+    await getPrismaClient().userHealthProfile.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, aiIncludedSections: ["WORK"] },
+      update: { aiIncludedSections: ["WORK"] },
+    });
+    expect(await loadFreeWeekdaySpansForPrompt(user.id)).toHaveLength(1);
+
+    await getPrismaClient().userHealthProfile.update({
+      where: { userId: user.id },
+      data: { aiIncludedSections: ["ABOUT_ME"] },
+    });
+    expect(await loadFreeWeekdaySpansForPrompt(user.id)).toEqual([]);
+    // The data surfaces still show the person their own answer.
+    expect(await loadFreeWeekdaySpans(user.id)).toHaveLength(1);
+  });
+});
+
 describe("AUDIT-C", () => {
   async function postAuditC(body: unknown): Promise<Response> {
     const { POST } = await import("@/app/api/anamnesis/audit-c/route");
