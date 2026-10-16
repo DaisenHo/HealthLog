@@ -46,8 +46,57 @@ const HOME_COUNTRY_WINDOW_DAYS = 365;
 /** How far before the range the visits request reaches. */
 const VISIT_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Days per timeline request, inside Dawarich's 31-day limit. */
-const TIMELINE_CHUNK_DAYS = TIMELINE_MAX_DAYS - 1;
+/**
+ * Days kept per timeline request. Each request reaches one whole day past
+ * both ends of its chunk (see `timelineChunks`), so it spans the chunk plus
+ * two days, and a fall-back day is 25 hours long: chunk + 2 must stay under
+ * Dawarich's 31-day limit by more than an hour.
+ */
+const TIMELINE_CHUNK_DAYS = TIMELINE_MAX_DAYS - 3;
+
+/**
+ * The timeline requests for `days`, each with the dates it is allowed to
+ * fill.
+ *
+ * Dawarich groups a timeline by the day in ITS user's zone (the timezone
+ * setting of the Dawarich account, `TIME_ZONE` by default), not by the zone
+ * the request names, and it only sums what lies inside the requested window.
+ * A window cut at the account's local midnight therefore answers the edge day
+ * in the instance's zone with a fragment of it whenever the two zones differ.
+ * Two rules keep a fragment out of the stored values:
+ *
+ *   - each request reaches a whole day before and after its chunk, so every
+ *     date of the chunk is covered end to end in any zone within a day of the
+ *     account's;
+ *   - only the chunk's own dates are kept from the answer, so the padded edge
+ *     days (the fragments) are thrown away and no chunk can overwrite a date
+ *     another chunk owns.
+ *
+ * The API offers no zone parameter and no per-track detail to regroup by, so
+ * the stored value for a date is the instance's day of that date. When the
+ * two zones agree, as on a typical self-host, that is exactly the account's
+ * local day.
+ */
+function timelineChunks(
+  days: readonly string[],
+  tz: string,
+): Array<{ startAt: Date; endAt: Date; dates: Set<string> }> {
+  const out: Array<{ startAt: Date; endAt: Date; dates: Set<string> }> = [];
+  for (let i = 0; i < days.length; i += TIMELINE_CHUNK_DAYS) {
+    const chunk = days.slice(i, i + TIMELINE_CHUNK_DAYS);
+    const { dayStart } = localDayWindow(shiftDateKey(chunk[0], -1), tz);
+    const { dayEnd } = localDayWindow(
+      shiftDateKey(chunk[chunk.length - 1], 1),
+      tz,
+    );
+    out.push({
+      startAt: dayStart,
+      endAt: new Date(dayEnd.getTime() - 1000),
+      dates: new Set(chunk),
+    });
+  }
+  return out;
+}
 
 export interface DawarichSyncResult {
   /** Days written this run (new or refreshed). */
@@ -137,16 +186,14 @@ export async function syncDawarichRange(
   let visits: Awaited<ReturnType<typeof fetchVisits>> = [];
   let countries: DailyCountries | null = null;
   try {
-    for (let i = 0; i < days.length; i += TIMELINE_CHUNK_DAYS) {
-      const chunk = days.slice(i, i + TIMELINE_CHUNK_DAYS);
-      const { dayStart } = localDayWindow(chunk[0], tz);
-      const { dayEnd } = localDayWindow(chunk[chunk.length - 1], tz);
+    for (const chunk of timelineChunks(days, tz)) {
+      const answered = await fetchTimeline(
+        connection,
+        chunk.startAt,
+        chunk.endAt,
+      );
       timeline = timeline.concat(
-        await fetchTimeline(
-          connection,
-          dayStart,
-          new Date(dayEnd.getTime() - 1000),
-        ),
+        answered.filter((day) => chunk.dates.has(day.date)),
       );
     }
     const rangeStart = localDayWindow(fromDate, tz).dayStart;
