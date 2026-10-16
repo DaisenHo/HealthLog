@@ -6427,7 +6427,8 @@
         "noEstimate": "Une estimation par niveau apparaît après trois jours d'utilisation de l'IA.",
         "capped": "Vous avez choisi {choice}, que le serveur n'autorise pas pour le moment, donc {level} s'applique. Votre choix est conservé.",
         "followsDefault": "Vous suivez le réglage par défaut du serveur ({level}).",
-        "useDefault": "Utiliser le réglage par défaut du serveur ({level})"
+        "useDefault": "Utiliser le réglage par défaut du serveur ({level})",
+        "saveError": "Le niveau n'a pas pu être enregistré. Réessaie."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value} paquets-années",
         "packYearsMissing": "Pour les paquets-années, il manque les cigarettes par jour ou l'année de début.",
-        "activityMinutes": "{value} minutes par semaine",
+        "activityMinutes": "{value} minutes par semaine.",
         "meetsWho": "Cela atteint la recommandation de l'OMS de 150 minutes par semaine.",
         "belowWho": "C'est en dessous de la recommandation de l'OMS de 150 minutes par semaine.",
         "measuredSteps": "Vos pas mesurés passent en premier ; cette réponse apporte du contexte.",

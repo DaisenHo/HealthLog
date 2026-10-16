@@ -319,7 +319,7 @@ function DawarichHome() {
         </div>
       ) : null}
       <div className="space-y-1.5">
-        <Label htmlFor="dawarich-home-country">
+        <Label htmlFor="dawarich-home-country" className="flex">
           {t("settings.dawarichHomeCountry")}
         </Label>
         <Input

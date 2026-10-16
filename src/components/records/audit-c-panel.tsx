@@ -163,7 +163,7 @@ export function AuditCPanel({
                   })}
                 </span>
                 <ConfirmButton
-                  label={t("records.life.auditC.remove")}
+                  label=""
                   ariaLabel={t("records.life.auditC.remove")}
                   title={t("records.life.auditC.removeConfirmTitle")}
                   body={t("records.life.auditC.removeConfirmBody")}
@@ -173,7 +173,7 @@ export function AuditCPanel({
                   disabled={remove.isPending}
                   variant="ghost"
                   size="icon"
-                  className="text-destructive min-h-11 sm:min-h-9"
+                  className="text-destructive size-11 shrink-0 sm:size-9"
                   icon={<Trash2 className="size-4" aria-hidden />}
                   slot={`audit-c-remove-${entry.id}`}
                 />
@@ -188,7 +188,7 @@ export function AuditCPanel({
           className="flex items-start justify-between gap-2"
           data-slot="audit-c-legacy-pattern"
         >
-          <div className="space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm">
               {t("records.life.auditC.legacyLabel", {
                 value: t(
@@ -201,7 +201,7 @@ export function AuditCPanel({
             </p>
           </div>
           <ConfirmButton
-            label={t("records.life.auditC.legacyRemove")}
+            label=""
             ariaLabel={t("records.life.auditC.legacyRemove")}
             title={t("records.life.auditC.legacyRemoveConfirmTitle")}
             body={t("records.life.auditC.legacyRemoveConfirmBody")}
@@ -211,7 +211,7 @@ export function AuditCPanel({
             disabled={removeLegacy.isPending}
             variant="ghost"
             size="icon"
-            className="text-destructive min-h-11 sm:min-h-9"
+            className="text-destructive size-11 shrink-0 sm:size-9"
             icon={<Trash2 className="size-4" aria-hidden />}
             slot="audit-c-legacy-remove"
           />

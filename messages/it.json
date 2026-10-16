@@ -6427,7 +6427,8 @@
         "noEstimate": "La stima per livello compare dopo tre giorni di uso dell'IA.",
         "capped": "Hai scelto {choice}, che il server al momento non consente, quindi vale {level}. La tua scelta resta salvata.",
         "followsDefault": "Segui l'impostazione predefinita del server ({level}).",
-        "useDefault": "Usa l'impostazione predefinita del server ({level})"
+        "useDefault": "Usa l'impostazione predefinita del server ({level})",
+        "saveError": "Non è stato possibile salvare il livello. Riprova."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value} pacchetti-anno",
         "packYearsMissing": "Per i pacchetti-anno mancano le sigarette al giorno o l'anno di inizio.",
-        "activityMinutes": "{value} minuti a settimana",
+        "activityMinutes": "{value} minuti a settimana.",
         "meetsWho": "Raggiunge la raccomandazione dell'OMS di 150 minuti a settimana.",
         "belowWho": "È sotto la raccomandazione dell'OMS di 150 minuti a settimana.",
         "measuredSteps": "I tuoi passi misurati hanno la precedenza; questa risposta aggiunge contesto.",

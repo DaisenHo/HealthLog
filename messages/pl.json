@@ -6427,7 +6427,8 @@
         "noEstimate": "Szacunek dla każdego poziomu pojawi się po trzech dniach korzystania z AI.",
         "capped": "Wybrano poziom {choice}, na który serwer obecnie nie pozwala, więc obowiązuje {level}. Twój wybór zostaje zapisany.",
         "followsDefault": "Korzystasz z ustawienia domyślnego serwera ({level}).",
-        "useDefault": "Użyj ustawienia domyślnego serwera ({level})"
+        "useDefault": "Użyj ustawienia domyślnego serwera ({level})",
+        "saveError": "Nie udało się zapisać poziomu. Spróbuj ponownie."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value} paczkolat",
         "packYearsMissing": "Do paczkolat brakuje liczby papierosów dziennie albo roku rozpoczęcia.",
-        "activityMinutes": "{value} minut w tygodniu",
+        "activityMinutes": "{value} minut w tygodniu.",
         "meetsWho": "To spełnia zalecenie WHO 150 minut tygodniowo.",
         "belowWho": "To poniżej zalecenia WHO 150 minut tygodniowo.",
         "measuredSteps": "Zmierzone kroki mają pierwszeństwo, ta odpowiedź dodaje kontekst.",

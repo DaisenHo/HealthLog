@@ -64,7 +64,13 @@ function formatAmount(
   value: number,
 ): string {
   // Up to three decimals: 0.025 mg of a trace element must not read as 0.
-  return fmt.number(Math.round(value * 1000) / 1000, 3);
+  // Only as many as the value has, so 100 µg never reads "100.000" (which a
+  // German reader takes for a hundred thousand).
+  const rounded = Math.round(value * 1000) / 1000;
+  const digits = [0, 1, 2, 3].find(
+    (d) => Math.abs(rounded * 10 ** d - Math.round(rounded * 10 ** d)) < 1e-9,
+  );
+  return fmt.number(rounded, digits ?? 3);
 }
 
 /** One composition line: "25 µg (1,000 IU)". */
@@ -343,10 +349,10 @@ function CompositionEditor({
             return (
               <li
                 key={row.key}
-                className="grid grid-cols-[1fr_auto] items-end gap-x-3 gap-y-2 sm:grid-cols-[2fr_1fr_1fr_auto]"
+                className="grid grid-cols-[1fr_auto_auto] items-end gap-x-3 gap-y-2 sm:grid-cols-[2fr_1fr_1fr_auto]"
                 data-slot="medication-composition-row"
               >
-                <div className="col-span-2 space-y-2 sm:col-span-1">
+                <div className="col-span-3 space-y-2 sm:col-span-1">
                   <Label htmlFor={`${formId}-nutrient-${row.key}`}>
                     {t("medications.composition.nutrientLabel")}
                   </Label>
