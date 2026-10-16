@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
@@ -32,6 +33,24 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
+// The gate loads its two record-scoped sections on demand. A static render
+// cannot wait for a lazy chunk, so the stand-in resolves each loader once,
+// before the first test, and renders the resolved component synchronously.
+const lazyLoads = vi.hoisted(() => [] as Promise<void>[]);
+vi.mock("next/dynamic", () => ({
+  default: (load: () => Promise<ComponentType>) => {
+    let Loaded: ComponentType | null = null;
+    lazyLoads.push(
+      load().then((component) => {
+        Loaded = component;
+      }),
+    );
+    return function DynamicStandIn() {
+      return Loaded ? <Loaded /> : null;
+    };
+  },
+}));
+
 vi.mock("../managed-record-settings-section", () => ({
   ManagedRecordSettingsSection: () => <div data-slot="managed-settings" />,
 }));
@@ -55,6 +74,10 @@ function render(section: "modules" | "integrations" | "anamnesis" | "score") {
 }
 
 describe("RecordSettingsSectionGate", () => {
+  beforeAll(async () => {
+    await Promise.all(lazyLoads);
+  });
+
   it("does not mount an actor Settings component while auth is unresolved", () => {
     authRef.isLoading = true;
     authRef.active = null;

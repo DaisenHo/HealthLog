@@ -8,6 +8,8 @@
  */
 import { z } from "zod/v4";
 
+import { COACH_SCOPE_SOURCES } from "./scope-sources";
+
 import type { AiUnavailableReason } from "@/lib/ai/capabilities/types";
 import type { CoachSuggestedAction } from "./suggest-action";
 import type { CoachToolName } from "./tools/definitions";
@@ -53,59 +55,7 @@ export const coachScopeWindowSchema = z.enum([
   "allTime",
 ]);
 
-export const coachScopeSourceSchema = z.enum([
-  "bp",
-  "weight",
-  "pulse",
-  "mood",
-  "compliance",
-  // ── v1.4.23 Apple Health additive ──
-  // Optional scope toggles for the new HealthKit metrics. Web-only
-  // accounts never carry data for these — `buildCoachSnapshot()` only
-  // emits the matching block when Apple-Health rows exist.
-  "hrv",
-  "sleep",
-  "resting_hr",
-  "steps",
-  "active_energy",
-  "flights",
-  "distance",
-  "vo2_max",
-  "body_temp",
-  // ── v1.7.0 clustered sources ──
-  // Cardiovascular composition / vascular metrics.
-  "walking_hr",
-  "respiratory_rate",
-  "spo2",
-  "pulse_wave_velocity",
-  "vascular_age",
-  // Body composition (mass + ratio metrics beyond plain weight).
-  "body_fat",
-  "fat_mass",
-  "fat_free_mass",
-  "muscle_mass",
-  "lean_body_mass",
-  "bone_mass",
-  "total_body_water",
-  "bmi",
-  "visceral_fat",
-  // Metabolic.
-  "glucose",
-  // Mobility & gait.
-  "walking_steadiness",
-  "walking_asymmetry",
-  "walking_double_support",
-  "walking_step_length",
-  "walking_speed",
-  // Environment / exposure.
-  "audio_env",
-  "audio_headphone",
-  "audio_event",
-  "daylight",
-  "skin_temp",
-  // Workout model (read from the `Workout` table, not `Measurement`).
-  "workouts",
-]);
+export const coachScopeSourceSchema = z.enum(COACH_SCOPE_SOURCES);
 
 export const coachScopeSchema = z.object({
   /**

@@ -8,7 +8,7 @@
  * keeps a bare URL. Kept out of the client component so the round trip stays
  * trivially unit-testable without a render harness.
  */
-import { measurementSourceEnum } from "@/lib/validations/measurement";
+import { MEASUREMENT_SOURCES } from "@/lib/measurements/sources";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "./measurement-list-meta";
 
 export interface MeasurementListFilters {
@@ -24,7 +24,7 @@ export interface MeasurementListFilters {
   valueMax?: string;
 }
 
-const SOURCE_SET = new Set<string>(measurementSourceEnum.options);
+const SOURCE_SET = new Set<string>(MEASUREMENT_SOURCES);
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function dayOrUndefined(value: string | null): string | undefined {

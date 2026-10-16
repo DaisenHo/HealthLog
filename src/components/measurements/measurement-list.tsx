@@ -72,7 +72,7 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
 import { rawDisplayFractionDigits } from "@/lib/measurements/display-transform";
-import { getUnitForType } from "@/lib/validations/measurement";
+import { getUnitForType } from "@/lib/measurements/unit-map";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   convertGlucose,
@@ -85,10 +85,8 @@ import {
   queryKeys,
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
-import {
-  MEASUREMENT_NOTES_MAX_LENGTH,
-  measurementSourceEnum,
-} from "@/lib/validations/measurement";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
+import { MEASUREMENT_SOURCES } from "@/lib/measurements/sources";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -255,7 +253,7 @@ function formatMeasurementSource(
  * management-list source filter. Derived from the shared Zod enum so a
  * future source addition surfaces here automatically.
  */
-const MEASUREMENT_SOURCE_OPTIONS = measurementSourceEnum.options;
+const MEASUREMENT_SOURCE_OPTIONS = MEASUREMENT_SOURCES;
 
 /**
  * v1.15.13 — convert a `<input type="date">` value (YYYY-MM-DD) into the

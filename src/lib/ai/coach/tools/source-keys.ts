@@ -17,10 +17,8 @@
  * either resolves here or is explicitly one of the dedicated-tool sources, so a
  * future source addition cannot silently fall through to a fabricated answer.
  */
-import {
-  coachScopeSourceSchema,
-  type CoachScopeSource,
-} from "@/lib/ai/coach/types";
+import { COACH_SCOPE_SOURCES } from "@/lib/ai/coach/scope-sources";
+import type { CoachScopeSource } from "@/lib/ai/coach/types";
 
 /** Sources that `get_metric_series` does NOT serve (they have own tools). */
 export const METRIC_SERIES_EXCLUDED_SOURCES: ReadonlySet<CoachScopeSource> =
@@ -150,4 +148,4 @@ export const METRIC_SERIES_INVENTORY_SOURCES: ReadonlyArray<CoachScopeSource> =
  * matching source has rows, so probing the full set is presence-only.
  */
 export const FULL_INVENTORY_SOURCE_SET: ReadonlyArray<CoachScopeSource> =
-  coachScopeSourceSchema.options;
+  COACH_SCOPE_SOURCES;

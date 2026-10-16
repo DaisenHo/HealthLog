@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import { queryKeys } from "@/lib/query-keys";
-import { assertRecordSettingsResponseForRecord } from "@/lib/record-settings";
+import { assertRecordSettingsResponseForRecord } from "@/lib/record-settings/response";
 
 type ManagedIntegrationKey = keyof typeof INTEGRATION_DISPLAY_NAMES;
 

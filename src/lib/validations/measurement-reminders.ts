@@ -83,27 +83,6 @@ export type MeasurementReminderType = z.infer<
 >;
 
 /**
- * v1.27.6 — the reminder types that are SCREENINGS, not numeric readings.
- * Every surface with a per-reminder primary action branches on this: a
- * screening routes to the check-in page (`/mental-wellbeing`) instead of
- * opening the numeric MeasurementForm — a score is never typed in, it
- * falls out of a completed test (which then auto-satisfies the reminder).
- */
-export const SCREENING_REMINDER_TYPES: ReadonlySet<string> = new Set([
-  "PHQ9_SCORE",
-  "GAD7_SCORE",
-  "WHO5_SCORE",
-  "SCI_SCORE",
-]);
-
-/** Whether a reminder's `measurementType` targets a screening check-in. */
-export function isScreeningReminderType(
-  type: string | null | undefined,
-): boolean {
-  return type != null && SCREENING_REMINDER_TYPES.has(type);
-}
-
-/**
  * RFC-5545 RRULE guard. The recurrence engine parses it; here we only
  * bound the length and require the `FREQ=` token so a typo doesn't reach
  * the engine. Full validation is the engine's job (it tolerates a
