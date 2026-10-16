@@ -5545,7 +5545,7 @@
         "subtitle": "Lege fest, welche Quelle gewinnt, wenn zwei dieselbe Messgröße liefern.",
         "nutrients": {
           "title": "Synchronisierte Nährstoffzufuhr",
-          "description": "Tagessummen der letzten {days} Tage: was Apple Health synchronisiert hat, plus die eingenommenen Nahrungsergänzungsmittel.",
+          "description": "Tagessummen der letzten {days} Tage aus Apple Health und den eingenommenen Supplementen.",
           "empty": "Noch keine Nährstoffdaten synchronisiert.",
           "latest": "{amount} {unit} am {date}",
           "daysWithData": "{count} von {days} Tagen",
