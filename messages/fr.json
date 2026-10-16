@@ -5545,7 +5545,7 @@
         "subtitle": "Choisissez la source prioritaire en cas de doublon de mesure.",
         "nutrients": {
           "title": "Apports en nutriments synchronisés",
-          "description": "Totaux quotidiens synchronisés depuis Apple Health sur les {days} derniers jours.",
+          "description": "Totaux quotidiens sur les {days} derniers jours : ce qu’Apple Health a synchronisé, plus les compléments que vous avez pris.",
           "empty": "Aucune donnée de nutriments synchronisée pour l'instant.",
           "latest": "{amount} {unit} le {date}",
           "daysWithData": "{count} jours sur {days}",

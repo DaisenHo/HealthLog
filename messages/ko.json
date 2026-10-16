@@ -5545,7 +5545,7 @@
         "subtitle": "같은 지표를 두 소스가 보낼 때 어느 쪽을 쓸지 정해요.",
         "nutrients": {
           "title": "동기화된 영양 섭취",
-          "description": "최근 {days}일간 Apple Health에서 동기화한 하루 합계예요.",
+          "description": "최근 {days}일간의 하루 합계예요. Apple Health에서 동기화한 값에 복용한 보충제가 더해져요.",
           "empty": "아직 동기화된 영양 데이터가 없어요.",
           "latest": "{date}에 {amount} {unit}",
           "daysWithData": "{days}일 중 {count}일",

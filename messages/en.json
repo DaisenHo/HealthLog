@@ -5545,7 +5545,7 @@
         "subtitle": "Decide which source wins when two report the same metric.",
         "nutrients": {
           "title": "Synced nutrient intake",
-          "description": "Daily totals synced from Apple Health over the last {days} days.",
+          "description": "Daily totals over the last {days} days: what Apple Health synced plus the supplements you took.",
           "empty": "No nutrient data has been synced yet.",
           "latest": "{amount} {unit} on {date}",
           "daysWithData": "{count} of {days} days",

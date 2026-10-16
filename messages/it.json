@@ -5545,7 +5545,7 @@
         "subtitle": "Decidi quale fonte prevale quando due riportano la stessa metrica.",
         "nutrients": {
           "title": "Assunzione di nutrienti sincronizzata",
-          "description": "Totali giornalieri sincronizzati da Apple Health negli ultimi {days} giorni.",
+          "description": "Totali giornalieri degli ultimi {days} giorni: quanto sincronizzato da Apple Health più gli integratori che hai assunto.",
           "empty": "Nessun dato sui nutrienti ancora sincronizzato.",
           "latest": "{amount} {unit} il {date}",
           "daysWithData": "{count} giorni su {days}",

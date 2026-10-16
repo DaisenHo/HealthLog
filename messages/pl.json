@@ -5545,7 +5545,7 @@
         "subtitle": "Zdecyduj, które źródło wygrywa, gdy dwa podają tę samą metrykę.",
         "nutrients": {
           "title": "Zsynchronizowane spożycie składników",
-          "description": "Dzienne sumy z Apple Health z ostatnich {days} dni.",
+          "description": "Dzienne sumy z ostatnich {days} dni: dane zsynchronizowane z Apple Health oraz przyjęte suplementy.",
           "empty": "Nie zsynchronizowano jeszcze danych o składnikach odżywczych.",
           "latest": "{amount} {unit} dnia {date}",
           "daysWithData": "{count} z {days} dni",
