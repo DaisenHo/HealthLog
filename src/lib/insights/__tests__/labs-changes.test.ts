@@ -26,10 +26,12 @@ function row(
     sourceLow?: number | null;
     sourceHigh?: number | null;
     sourceText?: string | null;
+    biomarkerId?: string | null;
   } = {},
 ): LabChangeRow {
   return {
     analyte,
+    biomarkerId: opts.biomarkerId ?? null,
     unit: opts.unit ?? "mg/dL",
     value,
     referenceLow: opts.low ?? null,
@@ -142,5 +144,49 @@ describe("summariseLabChanges", () => {
       NOW,
     );
     expect(s.present).toBe(true);
+  });
+
+  it("pairs two printed names of one marker by the marker", () => {
+    const out = summariseLabChanges(
+      [
+        row("HbA1c", 5.9, "2026-06-01", { unit: "%", biomarkerId: "bm-1" }),
+        row("Glykiertes Hämoglobin", 5.6, "2026-03-01", {
+          unit: "%",
+          biomarkerId: "bm-1",
+        }),
+      ],
+      NOW,
+    );
+    expect(out.present).toBe(true);
+    expect(out.changes).toEqual([
+      expect.objectContaining({
+        analyte: "HbA1c",
+        latest: 5.9,
+        previous: 5.6,
+        delta: 0.3,
+      }),
+    ]);
+  });
+
+  it("keeps two markers apart even when the printed name matches", () => {
+    const out = summariseLabChanges(
+      [
+        row("Glucose", 95, "2026-06-01", { biomarkerId: "fasting" }),
+        row("Glucose", 140, "2026-03-01", { biomarkerId: "postprandial" }),
+      ],
+      NOW,
+    );
+    expect(out.present).toBe(false);
+  });
+
+  it("reports no delta across two units", () => {
+    const out = summariseLabChanges(
+      [
+        row("Glucose", 5.3, "2026-06-01", { unit: "mmol/L", biomarkerId: "g" }),
+        row("Glucose", 95, "2026-03-01", { unit: "mg/dL", biomarkerId: "g" }),
+      ],
+      NOW,
+    );
+    expect(out.present).toBe(false);
   });
 });
