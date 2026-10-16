@@ -6,6 +6,7 @@ import { redactSecrets } from "@/lib/logging/redact";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * v1.4.16 phase B4: parse the union of legacy + new query params. Legacy
@@ -27,8 +28,8 @@ const querySchema = z.object({
   actor: z.string().trim().min(1).max(200).optional(),
   action: z.string().trim().min(1).max(200).optional(),
   target: z.string().trim().min(1).max(200).optional(),
-  since: z.string().datetime().optional(),
-  until: z.string().datetime().optional(),
+  since: isoDateTime({ offset: false }).optional(),
+  until: isoDateTime({ offset: false }).optional(),
 });
 
 export const dynamic = "force-dynamic";

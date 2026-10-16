@@ -32,6 +32,7 @@ import {
   TIMELINE_RANGE_MAX_DAYS,
   TIMELINE_ZOOMS,
 } from "./contract";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /* ─── Shared pieces ───────────────────────────────────────────────────────── */
 
@@ -40,7 +41,7 @@ export const dateKeySchema = z
   .refine(isCalendarDateKey, { message: "Expected a YYYY-MM-DD calendar date" })
   .describe("A local calendar date, `YYYY-MM-DD`.");
 
-const instant = z.iso.datetime({ offset: true });
+const instant = isoDateTime();
 
 const messageParams = z
   .record(z.string(), z.union([z.string(), z.number()]))
@@ -212,7 +213,7 @@ export const dayMovementSchema = z
         countryCode: z.string().nullable(),
       })
       .nullable(),
-    fetchedAt: z.iso.datetime({ offset: true }),
+    fetchedAt: isoDateTime(),
   })
   .meta({
     id: "DayMovement",

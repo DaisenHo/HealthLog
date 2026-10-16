@@ -10,6 +10,7 @@ import { redactSecrets } from "@/lib/logging/redact";
 import type { WideEvent } from "@/lib/logging/types";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,8 @@ const querySchema = z.object({
   traceId: z.string().trim().min(1).max(200).optional(),
   level: z.enum(["debug", "info", "warn", "error"]).optional(),
   action: z.string().trim().min(1).max(200).optional(),
-  since: z.string().datetime().optional(),
-  until: z.string().datetime().optional(),
+  since: isoDateTime({ offset: false }).optional(),
+  until: isoDateTime({ offset: false }).optional(),
   limit: z.coerce.number().int().min(1).max(PROBLEMS_BUFFER_MAX).default(200),
 });
 

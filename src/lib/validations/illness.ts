@@ -16,17 +16,19 @@
 import { z } from "zod/v4";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
 import { lateralityEnum } from "@/lib/validations/encounters";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Plausible-instant bound shared with the measurement / mood / cycle
  * paths: no future instant beyond the 5-min skew, no instant before 1900.
  * Stays a string on the wire (iOS reads it back verbatim).
  */
-const boundedInstant = z.iso
-  .datetime({ offset: true })
-  .refine((s) => isPlausibleEntryInstant(new Date(s)), {
+const boundedInstant = isoDateTime().refine(
+  (s) => isPlausibleEntryInstant(new Date(s)),
+  {
     message: "must be a plausible instant (not future, not pre-1900)",
-  });
+  },
+);
 
 const dateString = z
   .string()
@@ -141,8 +143,8 @@ export const illnessEpisodeListQuerySchema = z.object({
    * episodes around a visit and pages older or newer from there.
    */
   offset: z.coerce.number().int().min(0).max(100_000).optional(),
-  from: z.iso.datetime({ offset: true }).optional(),
-  to: z.iso.datetime({ offset: true }).optional(),
+  from: isoDateTime().optional(),
+  to: isoDateTime().optional(),
   /** Onset order; newest first by default. */
   sortDir: z.enum(["asc", "desc"]).optional(),
   /** Case-insensitive substring over the episode's label. */

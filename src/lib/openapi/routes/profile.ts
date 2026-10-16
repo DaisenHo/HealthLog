@@ -60,6 +60,7 @@ import {
   updatedAtTokenField,
   validationIssue,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.18.0 — module enable/disable. The PATCH request is the REAL runtime
 // validator (`modulePrefsPatchSchema` — strict over the toggleable key
@@ -412,8 +413,7 @@ const healthScoreConfigResponse = z
       .describe(
         "Per-user recipe version, monotonic and incremented on every accepted write. 0 while no selection has been written. A score record names the version that produced it, so a comparison can see the recipe move.",
       ),
-    changedAt: z.iso
-      .datetime({ offset: true })
+    changedAt: isoDateTime()
       .nullable()
       .describe("When the recipe last changed; null while it never has."),
     updatedAt: updatedAtTokenField,
@@ -542,7 +542,7 @@ const profileResponse = z
     username: z.string(),
     displayName: z.string().nullable().optional(),
     email: z.string().nullable(),
-    dateOfBirth: z.iso.datetime({ offset: true }).nullable(),
+    dateOfBirth: isoDateTime().nullable(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     heightCm: z.number().nullable(),
     locale: z.string().nullable(),
@@ -590,7 +590,7 @@ const profileUpdateResponse = z
     username: z.string(),
     displayName: z.string().nullable().optional(),
     email: z.string().nullable(),
-    dateOfBirth: z.iso.datetime({ offset: true }).nullable(),
+    dateOfBirth: isoDateTime().nullable(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     heightCm: z.number().nullable(),
     locale: z.string().nullable(),
@@ -905,8 +905,8 @@ const deviceInfo = z
       .describe(
         "Which push transports this device row can currently be reached on. Derived from which token columns are populated, not from a stored list.",
       ),
-    lastSeenAt: z.iso.datetime({ offset: true }),
-    createdAt: z.iso.datetime({ offset: true }),
+    lastSeenAt: isoDateTime(),
+    createdAt: isoDateTime(),
     isCurrent: z
       .boolean()
       .describe(
@@ -1526,7 +1526,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     "image/png",
                     "image/webp",
                   ]),
-                  updatedAt: z.iso.datetime({ offset: true }),
+                  updatedAt: isoDateTime(),
                 }),
                 "UploadAvatarResponse",
               ),

@@ -104,6 +104,7 @@ import {
 import type { McpAuthContext } from "./auth";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Tool annotations (MCP 2025-11-25). The cloud connectors REQUIRE these on every
@@ -897,8 +898,8 @@ const coachReadOutput: z.ZodRawShape = {
  */
 const dateRangeShape = z
   .object({
-    from: z.iso.datetime({ offset: true }),
-    to: z.iso.datetime({ offset: true }),
+    from: isoDateTime(),
+    to: isoDateTime(),
   })
   .describe(
     "An explicit inclusive date range. Use INSTEAD OF `window` for an arbitrary span (e.g. before vs after a date). Both bounds are ISO-8601 instants.",

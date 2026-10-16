@@ -112,6 +112,7 @@ import {
   type MeasurementSource,
   type MeasurementType,
 } from "@/generated/prisma/client";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.4.25 W16c — historical-backfill threshold for PR push
 // suppression. A batch larger than this fires the detection job with
@@ -156,8 +157,8 @@ const batchEntrySchema = z.object({
   hkIdentifier: z.string().min(1).max(120),
   value: z.number().finite(),
   unit: z.string().min(1).max(60),
-  startDate: z.iso.datetime({ offset: true }),
-  endDate: z.iso.datetime({ offset: true }),
+  startDate: isoDateTime(),
+  endDate: isoDateTime(),
   sleepStage: z.number().int().min(0).max(20).optional(),
   // v1.10.0 — categorical events (WX-B). The integer `HKCategoryValue`
   // codepoint for an EVENT-class category sample (irregular-rhythm,

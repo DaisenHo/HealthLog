@@ -14,17 +14,19 @@
  */
 import { z } from "zod/v4";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Plausible-instant bound shared with the measurement / illness paths: no
  * future instant beyond the 5-min skew, no instant before 1900. Stays a
  * string on the wire (iOS reads it back verbatim).
  */
-const boundedInstant = z.iso
-  .datetime({ offset: true })
-  .refine((s) => isPlausibleEntryInstant(new Date(s)), {
+const boundedInstant = isoDateTime().refine(
+  (s) => isPlausibleEntryInstant(new Date(s)),
+  {
     message: "must be a plausible instant (not future, not pre-1900)",
-  });
+  },
+);
 
 /* ── enums (mirror the Prisma enums) ─────────────────────────────── */
 

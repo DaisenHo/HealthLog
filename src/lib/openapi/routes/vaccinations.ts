@@ -44,6 +44,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
 // annotating in place, so each annotated schema is bound to a const and the
@@ -164,8 +165,8 @@ const customVaccine = z
       ),
     typicalSeriesDoses: z.number().int().nullable(),
     boosterIntervalMonths: z.number().int().nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "CustomVaccine",

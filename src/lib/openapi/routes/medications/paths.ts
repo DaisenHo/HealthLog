@@ -44,6 +44,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "../shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
 // annotating in place, so each annotated schema is bound to a const and the
@@ -145,12 +146,10 @@ const bulkDeleteIntakeRequest = bulkDeleteIntakeEventsSchema.meta({
 const bulkIntakeEntry = z
   .object({
     medicationId: z.string().min(1),
-    scheduledFor: z.iso
-      .datetime({ offset: true })
+    scheduledFor: isoDateTime()
       .optional()
       .describe("ISO instant; defaults to `takenAt` then now() when omitted."),
-    takenAt: z.iso
-      .datetime({ offset: true })
+    takenAt: isoDateTime()
       .optional()
       .describe("ISO instant of the take; omit + `skipped:false` = pending."),
     skipped: z.boolean().optional().describe("Default false."),
@@ -160,8 +159,7 @@ const bulkIntakeEntry = z
       .describe(
         "Per-entry injection site; a disallowed site marks THIS entry skipped without failing the batch.",
       ),
-    forceSlotInstant: z.iso
-      .datetime({ offset: true })
+    forceSlotInstant: isoDateTime()
       .optional()
       .describe(
         "Pin a taken entry onto a named real scheduled slot; ignored on non-taken entries.",

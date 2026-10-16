@@ -47,6 +47,7 @@ import {
   recordRefusal,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const kindEnum = z.enum(INBOUND_DOCUMENT_KINDS);
 
@@ -755,7 +756,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     linkedProcedures: z.array(
                       z.object({
                         encounterId: z.string(),
-                        occurredAt: z.iso.datetime({ offset: true }),
+                        occurredAt: isoDateTime(),
                         reason: z.string().nullable(),
                         bodySite: z.string().nullable(),
                         laterality: z

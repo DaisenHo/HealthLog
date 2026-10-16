@@ -29,6 +29,7 @@ import {
   ANTIGEN_SLUGS,
   VACCINE_CATALOG_SLUGS,
 } from "@/lib/vaccinations/vaccine-catalog";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const KNOWN_SLUGS: ReadonlySet<string> = new Set(VACCINE_CATALOG_SLUGS);
 
@@ -43,7 +44,7 @@ const KNOWN_SLUGS: ReadonlySet<string> = new Set(VACCINE_CATALOG_SLUGS);
  */
 const DAY_SKEW_MS = 24 * 60 * 60 * 1000;
 
-const doseInstant = z.iso.datetime({ offset: true }).refine(
+const doseInstant = isoDateTime().refine(
   (value) => {
     const at = new Date(value).getTime();
     if (Number.isNaN(at)) return false;
@@ -191,8 +192,8 @@ export type VaccinationUpdate = z.infer<typeof vaccinationUpdateSchema>;
 export const vaccinationListQuerySchema = z
   .object({
     antigenSlug: z.string().min(1).max(64).optional(),
-    from: z.iso.datetime({ offset: true }).optional(),
-    to: z.iso.datetime({ offset: true }).optional(),
+    from: isoDateTime().optional(),
+    to: isoDateTime().optional(),
     limit: z.coerce.number().int().min(1).max(500).optional(),
   })
   .strict()
@@ -299,7 +300,7 @@ export type VaccinationBoosterInput = z.infer<typeof vaccinationBoosterSchema>;
  */
 export const vaccinationSuggestQuerySchema = z
   .object({
-    anchor: z.iso.datetime({ offset: true }),
+    anchor: isoDateTime(),
   })
   .strict();
 

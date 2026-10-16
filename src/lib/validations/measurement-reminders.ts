@@ -13,6 +13,7 @@
  * recomputes).
  */
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * The auto-resolve target types. Kept as an explicit allow-list rather
@@ -147,10 +148,7 @@ const cadenceRefinement = (
  * The first-due date: a calendar date (`YYYY-MM-DD`, read as that day in the
  * user's zone) or a date-time (the instant it names).
  */
-const anchorDateField = z.union([
-  z.iso.date(),
-  z.iso.datetime({ offset: true }),
-]);
+const anchorDateField = z.union([z.iso.date(), isoDateTime()]);
 
 export const createMeasurementReminderSchema = z
   .object({
@@ -212,19 +210,19 @@ export const measurementReminderDto = z
     measurementType: measurementReminderTypeEnum.nullable(),
     intervalDays: z.number().int().nullable(),
     rrule: z.string().nullable(),
-    anchorDate: z.iso.datetime({ offset: true }).nullable(),
-    endsOn: z.iso.datetime({ offset: true }).nullable(),
+    anchorDate: isoDateTime().nullable(),
+    endsOn: isoDateTime().nullable(),
     origin: z.enum(["VORSORGE", "COACH"]),
     notifyHour: z.number().int(),
     location: z.string().nullable(),
-    nextDueAt: z.iso.datetime({ offset: true }).nullable(),
-    lastSatisfiedAt: z.iso.datetime({ offset: true }).nullable(),
-    snoozedUntil: z.iso.datetime({ offset: true }).nullable(),
-    lastSkippedAt: z.iso.datetime({ offset: true }).nullable(),
+    nextDueAt: isoDateTime().nullable(),
+    lastSatisfiedAt: isoDateTime().nullable(),
+    snoozedUntil: isoDateTime().nullable(),
+    lastSkippedAt: isoDateTime().nullable(),
     skipCount: z.number().int(),
     enabled: z.boolean(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "MeasurementReminderDTO",
@@ -310,7 +308,7 @@ export const measurementReminderEventDto = z
   .object({
     id: z.string(),
     kind: z.enum(["SATISFIED", "SKIPPED"]),
-    occurredAt: z.iso.datetime({ offset: true }),
+    occurredAt: isoDateTime(),
     onTime: z.boolean(),
     source: z.enum([
       "manual",
@@ -321,7 +319,7 @@ export const measurementReminderEventDto = z
       "encounter",
       "skip",
     ]),
-    createdAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
   })
   .meta({
     id: "MeasurementReminderEvent",

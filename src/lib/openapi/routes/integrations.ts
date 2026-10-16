@@ -49,6 +49,7 @@ import { whoopCredentialsSchema } from "@/lib/validations/whoop";
 import { nightscoutConnectSchema } from "@/lib/validations/nightscout";
 import { withingsCredentialsSchema } from "@/lib/validations/withings";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // Mirror the route's `directionEnum` — per-metric sync direction.
 const healthKitDirectionEnum = z
@@ -74,6 +75,18 @@ const healthKitEntry = z
       "One resolved HealthKit metric mapping (defaults merged with the user's stored overrides).",
   });
 
+// The health-shaped fields that predate `health` (v1.42.4). They stay on the
+// wire through v1.43 so App 1.2.0 keeps decoding, are marked deprecated in the
+// document, and go in v1.44.
+const LEGACY_HEALTH_FIELD = "Deprecated: removed in v1.44, read `health`.";
+
+function legacy(text?: string): { deprecated: true; description: string } {
+  return {
+    deprecated: true,
+    description: text ? `${LEGACY_HEALTH_FIELD} ${text}` : LEGACY_HEALTH_FIELD,
+  };
+}
+
 // Mirrors `src/lib/integrations/sync-verdict.ts` — the server-resolved liveness
 // verdict. Apple Health is push-based, so only the data-age arms apply.
 const syncHealth = z
@@ -92,8 +105,7 @@ const syncHealth = z
       .describe(
         "Liveness verdict. For Apple Health: `fresh` when data arrived within the last 7 days, `stale` when it did not, `pending_first_sync` when none ever arrived.",
       ),
-    since: z.iso
-      .datetime({ offset: true })
+    since: isoDateTime()
       .nullable()
       .describe("The instant that triggered the verdict; null when none did."),
   })
@@ -117,8 +129,7 @@ export const connectionHealth = z
       .describe(
         "Why the state is what it is. ok: `data_arriving`, `first_sync_pending`. limited: `plan_limited`, `permission_limited`. degraded: `provider_errors`, `sync_stalled`, `no_new_data`, `unexpected_silence` (the integration watchdog saw a source that normally delivers daily go quiet). action_required: `reauth_required`, `paused_after_errors`. Pick the sentence from this code alone.",
       ),
-    since: z.iso
-      .datetime({ offset: true })
+    since: isoDateTime()
       .nullable()
       .describe(
         "When the current degraded / action_required condition started. Null for ok and limited.",
@@ -143,14 +154,12 @@ export const connectionHealth = z
       .describe(
         "Data types this connection cannot deliver. Present in every state, empty when nothing is withheld.",
       ),
-    lastSuccessAt: z.iso
-      .datetime({ offset: true })
+    lastSuccessAt: isoDateTime()
       .nullable()
       .describe(
         "Last successful sync. For Apple Health, the last accepted batch.",
       ),
-    lastDataAt: z.iso
-      .datetime({ offset: true })
+    lastDataAt: isoDateTime()
       .nullable()
       .describe(
         "Newest data this source delivered: for polled providers when the newest reading or workout was taken, for Apple Health when a sync last brought a new sample. Null when nothing has arrived.",
@@ -162,8 +171,8 @@ export const connectionHealth = z
           .nullable()
           .describe("The stored sync-ledger state. Null for Apple Health."),
         failingLegs: z.array(z.string()),
-        failingSince: z.iso.datetime({ offset: true }).nullable(),
-        lastAttemptAt: z.iso.datetime({ offset: true }).nullable(),
+        failingSince: isoDateTime().nullable(),
+        lastAttemptAt: isoDateTime().nullable(),
         verdict: z
           .string()
           .describe("The `SyncHealth` verdict the state was derived from."),
@@ -176,7 +185,7 @@ export const connectionHealth = z
                   "Sync leg name (`sleep`, `measures`, `sync`, `token_refresh`), or `batch:<TYPE>` for Apple Health. Never a URL.",
                 ),
               status: z.enum(RECENT_CALL_STATUSES),
-              at: z.iso.datetime({ offset: true }),
+              at: isoDateTime(),
               errorCode: z
                 .string()
                 .nullable()
@@ -205,9 +214,9 @@ const metricFreshnessEntry = z
       .describe(
         "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
       ),
-    lastSeenAt: z.iso
-      .datetime({ offset: true })
-      .describe("Newest recorded reading for this type from this source."),
+    lastSeenAt: isoDateTime().describe(
+      "Newest recorded reading for this type from this source.",
+    ),
     stale: z
       .boolean()
       .describe(
@@ -225,8 +234,7 @@ const metricFreshnessEntry = z
 // `HealthKitFreshnessEntry` in `src/lib/integrations/healthkit-type-sync.ts`.
 const appleHealthMetricFreshnessEntry = metricFreshnessEntry
   .extend({
-    lastReceivedAt: z.iso
-      .datetime({ offset: true })
+    lastReceivedAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
@@ -238,22 +246,19 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .describe(
         "The `syncTrigger` of that batch. Null when the client reported none. A type whose trigger is only ever `manual` reaches the server only through a user-started full sync. Same omission rules as `lastReceivedAt`.",
       ),
-    lastNewSampleAt: z.iso
-      .datetime({ offset: true })
+    lastNewSampleAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
         "When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only. Null when none has. Same omission rules as `lastReceivedAt`.",
       ),
-    lastBackgroundAt: z.iso
-      .datetime({ offset: true })
+    lastBackgroundAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
         'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so opening the app does not hide an earlier background arrival. Null when the type has never arrived in the background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose latest arrival then was a background one starts with that date and every other type starts null. Same omission rules as `lastReceivedAt`.',
       ),
-    lastBackfillAt: z.iso
-      .datetime({ offset: true })
+    lastBackfillAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
@@ -277,8 +282,7 @@ const appleHealthSyncProgress = z
       .describe(
         "Measurement + workout rows carrying the `APPLE_HEALTH` source (live batch ingest and the one-shot export import both write it). Soft-deleted measurement rows are excluded.",
       ),
-    oldestMeasuredAt: z.iso
-      .datetime({ offset: true })
+    oldestMeasuredAt: isoDateTime()
       .nullable()
       .describe(
         "Earliest instant reached across those rows (`measuredAt` for measurements, `startedAt` for workouts); null when nothing has arrived. During a first-run backfill this walks backwards as history lands.",
@@ -293,8 +297,7 @@ const appleHealthSyncProgress = z
 const healthKitConfigResponse = z
   .object({
     entries: z.array(healthKitEntry),
-    lastSyncedAt: z.iso
-      .datetime({ offset: true })
+    lastSyncedAt: isoDateTime()
       .nullable()
       .describe(
         "When HealthKit last synced for this user; null when never (and always null on the PATCH echo).",
@@ -305,8 +308,7 @@ const healthKitConfigResponse = z
       .describe(
         "What the client declared triggered the most recent accepted batch. Null when the client sent no trigger — an older build, or a batch that predates the field. Present on the GET read; omitted from the PATCH echo.",
       ),
-    lastBackgroundSyncAt: z.iso
-      .datetime({ offset: true })
+    lastBackgroundSyncAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
@@ -314,7 +316,7 @@ const healthKitConfigResponse = z
       ),
     syncHealth: syncHealth
       .optional()
-      .describe("Present on the GET read; omitted from the PATCH echo."),
+      .meta(legacy("Present on the GET read; omitted from the PATCH echo.")),
     metricFreshness: z
       .array(appleHealthMetricFreshnessEntry)
       .optional()
@@ -515,17 +517,19 @@ const nightscoutStatusResponse = z
       .describe(
         "The operator has approved this user's private-origin (RFC 1918 / loopback / link-local) Nightscout instance. False for every public instance.",
       ),
-    state: integrationLedgerState.optional(),
-    lastSuccessAt: z.iso.datetime({ offset: true }).nullable().optional(),
-    lastAttemptAt: z.iso.datetime({ offset: true }).nullable().optional(),
+    state: integrationLedgerState.optional().meta(legacy()),
+    lastSuccessAt: isoDateTime().nullable().optional(),
+    lastAttemptAt: isoDateTime().nullable().optional(),
     lastError: z
       .string()
       .nullable()
       .optional()
-      .describe(
-        "Last recorded failure message, decrypted from the ledger. Null when the last attempt succeeded or none has run.",
+      .meta(
+        legacy(
+          "Last recorded failure message, decrypted from the ledger. Null when the last attempt succeeded or none has run.",
+        ),
       ),
-    syncHealth: syncHealth.optional(),
+    syncHealth: syncHealth.optional().meta(legacy()),
     health: connectionHealth
       .nullable()
       .optional()
@@ -581,22 +585,22 @@ const whoopStatusResponse = z
     configured: z
       .boolean()
       .describe("Per-user BYO-key client id AND secret are both stored."),
-    lastSyncedAt: z.iso
-      .datetime({ offset: true })
+    lastSyncedAt: isoDateTime()
       .nullable()
       .optional()
       .describe("Null when no sync has completed yet."),
-    connectedAt: z.iso
-      .datetime({ offset: true })
+    connectedAt: isoDateTime()
       .optional()
       .describe("When the connection row was created."),
     tokenExpired: z
       .boolean()
       .optional()
-      .describe(
-        "The stored access token's expiry is in the past. Read straight off the row — unlike the Withings status read, this endpoint does not refresh; the sync path refreshes lazily instead.",
+      .meta(
+        legacy(
+          "The stored access token's expiry is in the past. Read straight off the row — unlike the Withings status read, this endpoint does not refresh; the sync path refreshes lazily instead.",
+        ),
       ),
-    tokenExpiresAt: z.iso.datetime({ offset: true }).optional(),
+    tokenExpiresAt: isoDateTime().optional(),
     backfillCompleted: z
       .boolean()
       .optional()
@@ -629,13 +633,15 @@ const withingsStatusResponse = z
     configured: z
       .boolean()
       .describe("Per-user client id AND secret are both stored."),
-    lastSyncedAt: z.iso.datetime({ offset: true }).nullable().optional(),
-    connectedAt: z.iso.datetime({ offset: true }).optional(),
+    lastSyncedAt: isoDateTime().nullable().optional(),
+    connectedAt: isoDateTime().optional(),
     tokenExpired: z
       .boolean()
       .optional()
-      .describe(
-        "True after a refresh attempt that did not produce a live token.",
+      .meta(
+        legacy(
+          "True after a refresh attempt that did not produce a live token.",
+        ),
       ),
     tokenRefreshFailed: z
       .boolean()
@@ -643,8 +649,7 @@ const withingsStatusResponse = z
       .describe(
         "The read tried to refresh an expired token and could not — either the per-user credentials are gone or Withings refused. A permanently revoked grant additionally parks the ledger at `error_reauth` as a side effect of this read.",
       ),
-    tokenExpiresAt: z.iso
-      .datetime({ offset: true })
+    tokenExpiresAt: isoDateTime()
       .optional()
       .describe(
         "Post-refresh expiry when the read refreshed, the stored expiry otherwise.",
@@ -659,8 +664,10 @@ const withingsStatusResponse = z
     hasActivityScope: z
       .boolean()
       .optional()
-      .describe(
-        "Pre-computed convenience flag the reconnect banner reads. A null `scope` counts as missing activity.",
+      .meta(
+        legacy(
+          "Pre-computed convenience flag the reconnect banner reads. A null `scope` counts as missing activity.",
+        ),
       ),
     health: connectionHealth
       .nullable()
@@ -785,8 +792,7 @@ const providerProbeResponse = z
 const integrationProbeResponse = z
   .object({
     ok: z.literal(true),
-    lastSyncedAt: z.iso
-      .datetime({ offset: true })
+    lastSyncedAt: isoDateTime()
       .nullable()
       .describe(
         "The connection row's last successful sync; null when it has never synced. Present here and absent from the `/api/<provider>/test` family — the one shape difference between the two probe families.",
@@ -929,15 +935,17 @@ function connectionStatusShape() {
     configured: z
       .boolean()
       .describe("Per-user BYO-key client id AND secret are both stored."),
-    lastSyncedAt: z.iso.datetime({ offset: true }).nullable().optional(),
-    connectedAt: z.iso.datetime({ offset: true }).optional(),
+    lastSyncedAt: isoDateTime().nullable().optional(),
+    connectedAt: isoDateTime().optional(),
     tokenExpired: z
       .boolean()
       .optional()
-      .describe(
-        "Read straight off the row — this endpoint does not refresh; the sync path refreshes lazily.",
+      .meta(
+        legacy(
+          "Read straight off the row — this endpoint does not refresh; the sync path refreshes lazily.",
+        ),
       ),
-    tokenExpiresAt: z.iso.datetime({ offset: true }).optional(),
+    tokenExpiresAt: isoDateTime().optional(),
     backfillCompleted: z
       .boolean()
       .optional()
@@ -970,8 +978,10 @@ const googleHealthStatusResponse = z
     needsReauth: z
       .boolean()
       .optional()
-      .describe(
-        "The stored refresh token was rejected with `invalid_grant` — Google expires it after 7 days while the OAuth client is in Testing publishing mode, and a user-revoked grant lands here too. Distinct from `parked` and from `disconnected`: the connection still exists, it just cannot mint a token until the user reconnects. Only Google Health has this field.",
+      .meta(
+        legacy(
+          "The stored refresh token was rejected with `invalid_grant` — Google expires it after 7 days while the OAuth client is in Testing publishing mode, and a user-revoked grant lands here too. Distinct from `parked` and from `disconnected`: the connection still exists, it just cannot mint a token until the user reconnects. Only Google Health has this field.",
+        ),
       ),
   })
   .meta({
@@ -1003,11 +1013,11 @@ const oauthProviderStatusResponse = z
     hasOwnCredentials: z
       .boolean()
       .describe("The user has stored their own BYO client id and secret."),
-    state: integrationLedgerState.optional(),
-    lastSuccessAt: z.iso.datetime({ offset: true }).nullable().optional(),
-    lastAttemptAt: z.iso.datetime({ offset: true }).nullable().optional(),
-    lastError: z.string().nullable().optional(),
-    syncHealth: syncHealth.optional(),
+    state: integrationLedgerState.optional().meta(legacy()),
+    lastSuccessAt: isoDateTime().nullable().optional(),
+    lastAttemptAt: isoDateTime().nullable().optional(),
+    lastError: z.string().nullable().optional().meta(legacy()),
+    syncHealth: syncHealth.optional().meta(legacy()),
     health: connectionHealth
       .nullable()
       .optional()
@@ -1030,8 +1040,10 @@ const consecutiveFailuresByKind = z
     persistent: z.number().int(),
   })
   .nullable()
-  .describe(
-    "Per-kind consecutive-failure counters, or null when the row has never written a bucket payload. Compare against the top-level `threshold` to know how close the provider is to the operator alert.",
+  .meta(
+    legacy(
+      "Per-kind consecutive-failure counters, or null when the row has never written a bucket payload. Compare against the top-level `threshold` to know how close the provider is to the operator alert.",
+    ),
   );
 
 const integrationEnvelopeEntry = z
@@ -1049,12 +1061,12 @@ const integrationEnvelopeEntry = z
         "dawarich",
       ])
       .describe("Which provider this entry describes."),
-    state: integrationLedgerState,
-    lastSuccessAt: z.iso.datetime({ offset: true }).nullable(),
-    lastAttemptAt: z.iso.datetime({ offset: true }).nullable(),
-    lastError: z.string().nullable(),
+    state: integrationLedgerState.meta(legacy()),
+    lastSuccessAt: isoDateTime().nullable(),
+    lastAttemptAt: isoDateTime().nullable(),
+    lastError: z.string().nullable().meta(legacy()),
     consecutiveFailuresByKind,
-    syncHealth,
+    syncHealth: syncHealth.meta(legacy()),
     metricFreshness: z
       .array(metricFreshnessEntry)
       .describe(
@@ -1062,30 +1074,31 @@ const integrationEnvelopeEntry = z
       ),
     connected: z.boolean(),
     configured: z.boolean(),
-    connectedAt: z.iso.datetime({ offset: true }).nullable().optional(),
-    legacyLastSyncedAt: z.iso
-      .datetime({ offset: true })
+    connectedAt: isoDateTime().nullable().optional(),
+    legacyLastSyncedAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
         "The connection row's own last-sync instant, for legacy connections established before the ledger existed. Not present on the three user-row OAuth providers or on Nightscout.",
       ),
-    tokenExpiresAt: z.iso.datetime({ offset: true }).nullable().optional(),
+    tokenExpiresAt: isoDateTime().nullable().optional(),
     tokenExpired: z
       .boolean()
       .nullable()
       .optional()
-      .describe("Null — not false — when there is no connection to judge."),
+      .meta(legacy("Null — not false — when there is no connection to judge.")),
     backfillCompleted: z.boolean().nullable().optional(),
     scope: z.string().nullable().optional().describe("Withings only."),
-    hasActivityScope: z.boolean().optional().describe("Withings only."),
+    hasActivityScope: z.boolean().optional().meta(legacy("Withings only.")),
     planUnavailable: z
       .array(z.enum(WITHINGS_PLAN_FEATURES))
       .optional()
-      .describe(
-        "Withings only. The readings this connection's Withings API plan withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when the plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when the weekly re-probe asks again.",
+      .meta(
+        legacy(
+          "Withings only. The readings this connection's Withings API plan withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when the plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when the weekly re-probe asks again.",
+        ),
       ),
-    needsReauth: z.boolean().optional().describe("Google Health only."),
+    needsReauth: z.boolean().optional().meta(legacy("Google Health only.")),
     available: z.boolean().optional().describe("Oura / Polar / Strava only."),
     hasOwnCredentials: z
       .boolean()
@@ -1094,15 +1107,17 @@ const integrationEnvelopeEntry = z
     scopeReconnect: z
       .array(z.enum(OURA_SCOPE_GATED_COLLECTIONS))
       .optional()
-      .describe(
-        "Oura only. Collections the stored grant does not cover: they answered 401 while sibling collections succeeded with the same token. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
+      .meta(
+        legacy(
+          "Oura only. Collections the stored grant does not cover: they answered 401 while sibling collections succeeded with the same token. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
+        ),
       ),
     hasToken: z.boolean().optional().describe("Nightscout only."),
     allowPrivateHost: z.boolean().optional().describe("Nightscout only."),
     health: connectionHealth
       .nullable()
       .describe(
-        "The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry, which go once the settings surface renders `health` (no other client reads this envelope).",
+        "The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and removed in v1.44.",
       ),
   })
   .meta({
@@ -1127,7 +1142,7 @@ const integrationStatusEnvelope = z
     integrations: z
       .array(integrationEnvelopeEntry)
       .describe(
-        "All nine providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout, dawarich. A provider the user has never touched still appears, with `connected: false` and a synthesised `connected` ledger state — absence from this list never means anything, because nothing is ever absent from it.",
+        "All nine providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout, dawarich. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
       ),
   })
   .meta({
@@ -2672,7 +2687,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                   z
                     .object({
                       probe: z.literal("structure"),
-                      probedAt: z.iso.datetime({ offset: true }),
+                      probedAt: isoDateTime(),
                       types: z
                         .record(z.string(), z.unknown())
                         .describe(
