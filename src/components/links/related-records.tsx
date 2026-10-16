@@ -111,6 +111,13 @@ function rowLabel(t: Translate, row: RelatedLink): string {
   ) {
     return encounterKindText(t, row.label as EncounterKind);
   }
+  // A dose without a written name arrives as its catalogue slug ("tetanus"),
+  // named here from the reader's bundle the way the dose picker names it.
+  if (row.kind === "vaccination" && /^[a-z0-9_-]+$/.test(row.label)) {
+    const key = `vaccinations.catalog.${row.label}`;
+    const name = t(key);
+    if (name !== key) return name;
+  }
   return row.label;
 }
 
