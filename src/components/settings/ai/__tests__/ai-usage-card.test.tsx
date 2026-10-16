@@ -100,6 +100,39 @@ describe("AiUsageCard", () => {
     expect(html).not.toContain('data-slot="ai-usage-use-default"');
   });
 
+  it("follows the server's estimates, not a day threshold of its own", () => {
+    // Two measured days, but the server already published estimates: the
+    // card shows the measured line because the server said it may.
+    const ready = render({ ...CAPPED, measuredDays: 2 });
+    expect(ready).toContain(
+      "Measured: 100,000 tokens a day over the last 2 days",
+    );
+    // Seven days, but the server withheld every estimate: no measured line.
+    const withheld = render({
+      ...CAPPED,
+      options: CAPPED.options.map((o) => ({
+        ...o,
+        estimatedTokensPerDay: null,
+      })),
+    });
+    expect(withheld).toContain(
+      "An estimate per level appears after three days",
+    );
+  });
+
+  it("stacks the estimate under the level on a narrow screen", () => {
+    const html = render(CAPPED);
+    expect(html).toMatch(
+      /class="[^"]*flex-col[^"]*sm:flex-row[^"]*"[^>]*>\s*<span class="min-w-0 flex-1">/,
+    );
+    expect(html).toMatch(
+      /data-slot="ai-usage-estimate" class="[^"]*sm:shrink-0/,
+    );
+    expect(html).not.toMatch(
+      /data-slot="ai-usage-estimate" class="(?:(?!sm:)[^"])*\bshrink-0/,
+    );
+  });
+
   it("offers the way back to the default when a choice is stored", () => {
     const html = render({
       ...CAPPED,

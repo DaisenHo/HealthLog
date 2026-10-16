@@ -70,6 +70,12 @@ export function AiUsageCard() {
   const editable = provider.canConfigure && !save.isPending;
   const tokens = (value: number) => new Intl.NumberFormat(locale).format(value);
   const levelName = (level: AiUsageLevel) => t(LEVEL_KEYS[level].label);
+  // Whether the history suffices for an estimate is the server's call: it
+  // publishes the per-level estimates only once it does. The card reads that
+  // decision instead of repeating its day threshold.
+  const estimatesReady = usage.options.some(
+    (option) => option.estimatedTokensPerDay !== null,
+  );
   const allowedLevels = usage.options
     .filter((option) => option.allowed)
     .map((option) => option.level);
@@ -144,31 +150,35 @@ export function AiUsageCard() {
                   <span className="bg-primary size-2 rounded-full" />
                 ) : null}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">
-                  {levelName(option.level)}
-                </span>
-                <span className="text-muted-foreground block text-xs">
-                  {t(LEVEL_KEYS[option.level].hint)}
-                </span>
-                {!option.allowed ? (
-                  <span
-                    data-slot="ai-usage-limited"
-                    className="text-muted-foreground block text-xs"
-                  >
-                    {t("settings.ai.usage.limited")}
+              {/* Stacked under 640 px so the estimate never squeezes the
+                  level's name and hint into a sliver; side by side above. */}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-start sm:gap-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">
+                    {levelName(option.level)}
                   </span>
-                ) : null}
-              </span>
-              <span
-                data-slot="ai-usage-estimate"
-                className="text-muted-foreground shrink-0 text-right text-xs tabular-nums"
-              >
-                {option.estimatedTokensPerDay === null
-                  ? null
-                  : t("settings.ai.usage.estimate", {
-                      tokens: tokens(option.estimatedTokensPerDay),
-                    })}
+                  <span className="text-muted-foreground block text-xs">
+                    {t(LEVEL_KEYS[option.level].hint)}
+                  </span>
+                  {!option.allowed ? (
+                    <span
+                      data-slot="ai-usage-limited"
+                      className="text-muted-foreground block text-xs"
+                    >
+                      {t("settings.ai.usage.limited")}
+                    </span>
+                  ) : null}
+                </span>
+                <span
+                  data-slot="ai-usage-estimate"
+                  className="text-muted-foreground text-xs tabular-nums sm:max-w-[45%] sm:shrink-0 sm:text-right"
+                >
+                  {option.estimatedTokensPerDay === null
+                    ? null
+                    : t("settings.ai.usage.estimate", {
+                        tokens: tokens(option.estimatedTokensPerDay),
+                      })}
+                </span>
               </span>
             </button>
           );
@@ -179,7 +189,7 @@ export function AiUsageCard() {
         data-slot="ai-usage-measured"
         className="text-muted-foreground text-xs"
       >
-        {usage.measuredTokensPerDay === null || usage.measuredDays < 3
+        {usage.measuredTokensPerDay === null || !estimatesReady
           ? t("settings.ai.usage.noEstimate")
           : t("settings.ai.usage.measured", {
               tokens: tokens(usage.measuredTokensPerDay),
