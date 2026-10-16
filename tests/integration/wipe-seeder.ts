@@ -133,6 +133,27 @@ export async function seedEveryTable(
     if (!enums.has(row.typname)) enums.set(row.typname, row.enumlabel);
   }
 
+  // A column fenced by a single-column `CHECK (col IN (...))` takes the first
+  // value the fence admits; a synthesised tag would be refused before the wipe
+  // ever ran. Postgres stores the IN list as `col = ANY (ARRAY['a'::text, ...])`.
+  const checkRows = await prisma.$queryRaw<
+    Array<{ table_name: string; column_name: string; def: string }>
+  >`
+    SELECT con.conrelid::regclass::text AS table_name,
+           att.attname                  AS column_name,
+           pg_get_constraintdef(con.oid) AS def
+    FROM pg_constraint con
+    JOIN pg_attribute att
+      ON att.attrelid = con.conrelid AND att.attnum = con.conkey[1]
+    WHERE con.contype = 'c'
+      AND con.connamespace = 'public'::regnamespace
+      AND cardinality(con.conkey) = 1`;
+  const admitted = new Map<string, string>();
+  for (const row of checkRows) {
+    const first = /=\s*ANY\s*\(\s*\(?ARRAY\['((?:[^']|'')*)'/.exec(row.def);
+    if (first) admitted.set(`${row.table_name}.${row.column_name}`, first[1]);
+  }
+
   const byTable = new Map<string, ColumnRow[]>();
   for (const column of columns) {
     if (SEED_SKIP.has(column.table_name)) continue;
@@ -206,7 +227,12 @@ export async function seedEveryTable(
         continue;
       }
       names.push(column.column_name);
-      values.push(synthesise(column.udt_name, enums, `seed-${tag++}`));
+      const fenced = admitted.get(`${table}.${column.column_name}`);
+      values.push(
+        fenced !== undefined
+          ? `'${fenced}'`
+          : synthesise(column.udt_name, enums, `seed-${tag++}`),
+      );
     }
 
     const sql =

@@ -261,8 +261,10 @@ describe("air-quality history backfill", () => {
       source: "TRAVEL",
       pm25Mean: 12,
       tempMax: 5,
-      lat: null,
     });
+    // The place lives only in the sealed copy; migration 0409 dropped the
+    // readable columns.
+    expect(byDate.get("2020-03-01")).not.toHaveProperty("lat");
     expect(
       openLocation(byDate.get("2020-03-01")!.locationEncrypted!),
     ).toMatchObject({ lat: 51.5, lon: 7.0 });

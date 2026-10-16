@@ -22,6 +22,7 @@ import { cookieJar, headerJar, queuedSessionIds } from "./mock-next-headers";
 import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 import { createManagedProfile } from "@/lib/managed-profiles/create";
 import { acceptGrant, inviteGrant } from "@/lib/sharing/grants";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 process.env.API_TOKEN_HMAC_KEY ??=
   "test-hmac-key-managed-profile-surface-32-bytes-min-1234509876";
@@ -294,9 +295,18 @@ describe("who looks after a managed profile (real Postgres)", () => {
     const stranger = await person("stranger");
     signIn(stranger);
 
-    const refused = await (await listGuardians(profile.id)).json();
-    const unknown = await (await listGuardians("does-not-exist")).json();
-    expect(unknown).toEqual(refused);
+    // `meta.requestId` is a fresh id per request and says nothing about the
+    // profile; every other byte has to match.
+    const refusedRes = await listGuardians(profile.id);
+    const unknownRes = await listGuardians("does-not-exist");
+    expect(unknownRes.status).toBe(refusedRes.status);
+    const refused = await refusedRes.clone().json();
+    const unknown = await unknownRes.clone().json();
+    expect(typeof refused.meta?.requestId).toBe("string");
+    expect(typeof unknown.meta?.requestId).toBe("string");
+    expect(await bodyWithoutRequestId(unknownRes)).toBe(
+      await bodyWithoutRequestId(refusedRes),
+    );
   });
 
   it.each(["READ", "WRITE", "MANAGE"] as const)(
