@@ -14,6 +14,7 @@ import {
   NUTRIENT_CODES,
   SYNCABLE_NUTRIENT_CODES,
 } from "@/lib/nutrients/catalog";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const MAX_NUTRIENT_ENTRIES_PER_BATCH = 500;
 
@@ -160,7 +161,7 @@ export const nutrientOverviewSchema = z
     ),
     lastAttempt: z
       .object({
-        at: z.iso.datetime({ offset: true }),
+        at: isoDateTime(),
         topReason: z.string(),
       })
       .nullable()

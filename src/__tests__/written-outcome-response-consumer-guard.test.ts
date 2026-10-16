@@ -535,6 +535,10 @@ function zodObjectShape(path: string, schemaName: string): ZodObjectShape {
     let current = expression;
     while (ts.isCallExpression(current)) {
       const callee = current.expression;
+      // The shared instant helper (`@/lib/validations/datetime`) is a leaf.
+      if (ts.isIdentifier(callee) && callee.text === "isoDateTime") {
+        return [prefix];
+      }
       expect(
         ts.isPropertyAccessExpression(callee),
         `${prefix || schemaName} contains an unsupported Zod call: ${current.getText(file)}`,

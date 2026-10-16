@@ -26,6 +26,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 
 import { createMcpTokenSchema } from "@/lib/validations/mcp";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * The operator kill switch. `isApiGloballyEnabled()` gates every route in this
@@ -51,9 +52,8 @@ const mcpConnection = z
     scope: z
       .string()
       .describe("Space-separated scope string granted to this connection."),
-    createdAt: z.iso.datetime({ offset: true }),
-    lastUsedAt: z.iso
-      .datetime({ offset: true })
+    createdAt: isoDateTime(),
+    lastUsedAt: isoDateTime()
       .nullable()
       .describe("Null when the connection has never been exercised."),
   })
@@ -72,9 +72,9 @@ const mcpConnectorToken = z
       .describe(
         'The granted scopes — `["health:read"]` or `["health:read", "health:write"]`. A `health:write` token is audience-bound to `/mcp`: the resource-server guard refuses it on every REST write, so it only admits the confirmed in-process write tools.',
       ),
-    lastUsedAt: z.iso.datetime({ offset: true }).nullable(),
-    expiresAt: z.iso.datetime({ offset: true }).nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
+    lastUsedAt: isoDateTime().nullable(),
+    expiresAt: isoDateTime().nullable(),
+    createdAt: isoDateTime(),
     revoked: z
       .boolean()
       .describe(
@@ -101,7 +101,7 @@ const createMcpTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash, so there is no way to retrieve it later; a client that does not capture it here has to mint a replacement. Treat it as a secret in logs, crash reports and analytics.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateMcpTokenResponse",

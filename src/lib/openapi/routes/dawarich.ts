@@ -24,6 +24,7 @@ import {
   moduleDisabledResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const dawarichConnectRequest = dawarichConnectSchema.meta({
   id: "DawarichConnectRequest",
@@ -207,7 +208,7 @@ export const dawarichPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 schema: dataEnvelope(
                   z.object({
                     ok: z.literal(true),
-                    lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
+                    lastSyncedAt: isoDateTime().nullable(),
                     latencyMs: z.number().int(),
                   }),
                   "DawarichProbeEnvelope",

@@ -12,6 +12,7 @@
  */
 
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** Terminal / running status of the module tour. */
 export const TOUR_PROGRESS_STATUSES = [
@@ -33,7 +34,7 @@ export const tourProgressSchema = z.object({
   lastStopId: z.string().min(1).max(64).nullable(),
   completedStopIds: z.array(z.string().min(1).max(64)).max(64).default([]),
   status: z.enum(TOUR_PROGRESS_STATUSES),
-  updatedAt: z.iso.datetime(),
+  updatedAt: isoDateTime({ offset: false }),
 });
 
 export type TourProgress = z.infer<typeof tourProgressSchema>;

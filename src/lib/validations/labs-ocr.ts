@@ -22,6 +22,7 @@ import { z } from "zod/v4";
 import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** Max rows a single scan / commit may carry — a dense panel is ~30 analytes. */
 export const OCR_MAX_ROWS = 100;
@@ -34,10 +35,10 @@ const LAB_TAKEN_AT_MAX_AGE_MS = 50 * 365.25 * 24 * 60 * 60 * 1000;
 
 /** Shared committed-row `takenAt`: ISO string → Date, plausibility-bounded. */
 const takenAtField = validateEntryInstant(
-  z
-    .string()
-    .datetime({ message: "takenAt must be an ISO 8601 datetime" })
-    .transform((s) => new Date(s)),
+  isoDateTime({
+    offset: false,
+    message: "takenAt must be an ISO 8601 datetime",
+  }).transform((s) => new Date(s)),
   {
     maxAgeMs: LAB_TAKEN_AT_MAX_AGE_MS,
     pastMessage: "Sample date is too far in the past",

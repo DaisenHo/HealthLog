@@ -12,6 +12,7 @@
 import { z } from "zod/v4";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
 import { assertStableExternalId } from "@/lib/validations/external-id";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * v1.17 W1b — `loggedAt` instant on the cycle wire stays a string (the iOS
@@ -21,11 +22,12 @@ import { assertStableExternalId } from "@/lib/validations/external-id";
  * the measurement / mood / medication-intake paths use: no future instant
  * beyond the 5-min skew, no instant before 1900.
  */
-const boundedLoggedAt = z.iso
-  .datetime({ offset: true })
-  .refine((s) => isPlausibleEntryInstant(new Date(s)), {
+const boundedLoggedAt = isoDateTime().refine(
+  (s) => isPlausibleEntryInstant(new Date(s)),
+  {
     message: "loggedAt must be a plausible instant (not future, not pre-1900)",
-  });
+  },
+);
 
 /* ── enums (mirror the Prisma enums) ─────────────────────────────── */
 

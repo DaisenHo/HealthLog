@@ -16,6 +16,7 @@
 import { z } from "zod/v4";
 
 import { COACH_PLAN_STATUSES } from "@/lib/ai/coach/plans";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Optional `?scope=` filter on the list endpoint — a named status group so
@@ -48,7 +49,7 @@ export const coachPlansListQuerySchema = z
 export const coachPlanPatchSchema = z
   .object({
     status: z.enum(COACH_PLAN_STATUSES).optional(),
-    reviewDate: z.iso.datetime({ offset: true }).nullable().optional(),
+    reviewDate: isoDateTime().nullable().optional(),
   })
   .strict()
   .refine(

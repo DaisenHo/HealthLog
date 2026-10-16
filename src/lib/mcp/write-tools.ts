@@ -60,6 +60,7 @@ import {
   checkMcpBloodPressure,
   resolveMcpMeasurementUnit,
 } from "./writes";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Write-tool annotations (MCP 2025-11-25). NOT read-only and NOT destructive
@@ -187,8 +188,7 @@ const WRITE_TOOL_DEFINITIONS: McpToolDefinition[] = [
         .describe(
           "Optional unit hint. Omit to use the type's canonical unit. A recognised alias (lb/lbs/pound(s), in/inch(es), °F, mmol/L) is converted to canonical; any other unit is refused with unsupported_unit — the value is never stored in a non-canonical unit.",
         ),
-      measuredAt: z.iso
-        .datetime({ offset: true })
+      measuredAt: isoDateTime()
         .optional()
         .describe(
           "Optional ISO-8601 instant the reading was taken; defaults to now.",
@@ -379,8 +379,7 @@ const WRITE_TOOL_DEFINITIONS: McpToolDefinition[] = [
     inputShape: {
       systolic: z.number().describe("Systolic (the higher number), in mmHg."),
       diastolic: z.number().describe("Diastolic (the lower number), in mmHg."),
-      measuredAt: z.iso
-        .datetime({ offset: true })
+      measuredAt: isoDateTime()
         .optional()
         .describe(
           "Optional ISO-8601 instant the reading was taken; defaults to now.",

@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 
 import { boundedTakenAtSchema, injectionSiteEnum } from "./base";
 import { assertStableIdempotencyKey } from "@/lib/validations/external-id";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const intakeSchema = z
   .object({
@@ -11,8 +12,7 @@ export const intakeSchema = z
       .describe(
         "Server-narrowed from the URL path. The route layer overwrites whatever the body supplies before Zod parsing so a caller cannot log an intake against another medication.",
       ),
-    scheduledFor: z.iso
-      .datetime({ offset: true })
+    scheduledFor: isoDateTime()
       .transform((s) => new Date(s))
       .optional()
       .describe(
@@ -60,8 +60,7 @@ export const intakeSchema = z
      * server validates it against the band anchors); an arbitrary instant is
      * rejected with 422. Absent → default band attribution.
      */
-    forceSlotInstant: z.iso
-      .datetime({ offset: true })
+    forceSlotInstant: isoDateTime()
       .transform((s) => new Date(s))
       .optional()
       .describe(
@@ -149,8 +148,7 @@ export const updateIntakeEventSchema = z
   .object({
     takenAt: boundedTakenAtSchema.nullable().optional(),
     skipped: z.boolean().optional(),
-    scheduledFor: z.iso
-      .datetime({ offset: true })
+    scheduledFor: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     /**
@@ -165,8 +163,7 @@ export const updateIntakeEventSchema = z
      * resets to AUTO — the "Zuordnung lösen" path. A pin / unpin no longer
      * requires `takenAt` or `skipped` to change in the same request.
      */
-    forceSlotInstant: z.iso
-      .datetime({ offset: true })
+    forceSlotInstant: isoDateTime()
       .transform((s) => new Date(s))
       .nullable()
       .optional()
@@ -242,15 +239,13 @@ export const intakeStatusUpdateSchema = z.object({
     .describe(
       "`snoozed` writes the deferral onto the MEDICATION row rather than the event, so it defers every pending dose of that medication and not just this one.",
     ),
-  takenAt: z.iso
-    .datetime({ offset: true })
+  takenAt: isoDateTime()
     .transform((s) => new Date(s))
     .optional()
     .describe(
       "When the dose was taken. Defaults to now. Ignored unless the status is `taken`.",
     ),
-  snoozedUntil: z.iso
-    .datetime({ offset: true })
+  snoozedUntil: isoDateTime()
     .transform((s) => new Date(s))
     .optional()
     .describe(
@@ -261,8 +256,7 @@ export const intakeStatusUpdateSchema = z.object({
     .describe(
       "Site recorded alongside a `taken` toggle, validated server-side against the medication's effective allowed set. Dropped for a non-injection medication, for one with site tracking off, and for a skip or snooze.",
     ),
-  forceSlotInstant: z.iso
-    .datetime({ offset: true })
+  forceSlotInstant: isoDateTime()
     .transform((s) => new Date(s))
     .optional()
     .describe(

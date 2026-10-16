@@ -25,6 +25,7 @@ import {
   reEnableChannelSchema,
 } from "@/lib/validations/notifications";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const channelTypeEnum = z
   .enum(CHANNEL_TYPES)
@@ -108,11 +109,10 @@ const channelDeliveryStatus = z
         "Why the dispatcher auto-disabled the channel; null when it did not. This is the field that separates `auto_disabled` from `manually_disabled`.",
       ),
     consecutiveFailures: z.number().int(),
-    lastSuccessAt: z.iso.datetime({ offset: true }).nullable(),
-    lastFailureAt: z.iso.datetime({ offset: true }).nullable(),
+    lastSuccessAt: isoDateTime().nullable(),
+    lastFailureAt: isoDateTime().nullable(),
     lastFailureReason: z.string().nullable(),
-    nextRetryAt: z.iso
-      .datetime({ offset: true })
+    nextRetryAt: isoDateTime()
       .nullable()
       .describe("End of the current cooldown; null when not paused."),
   })
@@ -124,8 +124,7 @@ const channelDeliveryStatus = z
 
 const eventDeliveryStatus = z
   .object({
-    lastDeliveredAt: z.iso
-      .datetime({ offset: true })
+    lastDeliveredAt: isoDateTime()
       .nullable()
       .describe("Null when this category has never been delivered."),
   })

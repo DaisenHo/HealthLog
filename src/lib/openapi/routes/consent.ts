@@ -32,6 +32,7 @@ import {
   webConsentGrantBody as webConsentGrantBodyBase,
 } from "@/lib/validations/consent";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // `.meta()` CLONES in Zod 4 rather than annotating in place, so the returned
 // schema has to be captured and referenced. A bare `schema.meta({...})`
@@ -88,9 +89,9 @@ const serialisedReceipt = z
     id: z.string(),
     userId: z.string(),
     kind: consentKindEnum,
-    signedAt: z.iso.datetime({ offset: true }),
-    revokedAt: z.iso.datetime({ offset: true }).nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
+    signedAt: isoDateTime(),
+    revokedAt: isoDateTime().nullable(),
+    createdAt: isoDateTime(),
   })
   .meta({
     id: "SerialisedConsentReceipt",

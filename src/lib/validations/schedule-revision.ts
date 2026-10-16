@@ -14,6 +14,7 @@
  * minter reads it exactly like a write-path archive.
  */
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** HH:mm wall-clock literal — mirrors `validations/medication.ts`. */
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -21,20 +22,18 @@ const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export const scheduleRevisionCreateSchema = z
   .object({
     /** Inclusive start instant of the manual era. */
-    validFrom: z.iso
-      .datetime({ offset: true })
-      .describe("Inclusive start instant of the manual era (ISO 8601)."),
+    validFrom: isoDateTime().describe(
+      "Inclusive start instant of the manual era (ISO 8601).",
+    ),
     /**
      * Exclusive end instant — the moment the next plan took over. Must
      * lie after `validFrom` and at or before the start of the live
      * schedule era (the newest archived revision's `validUntil`, or
      * "now" when no revision exists yet).
      */
-    validUntil: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "Exclusive end instant of the manual era (ISO 8601). Must precede the current plan.",
-      ),
+    validUntil: isoDateTime().describe(
+      "Exclusive end instant of the manual era (ISO 8601). Must precede the current plan.",
+    ),
     /**
      * Daily dose times the era ran at. Same cap as live schedules.
      * Duplicates collapse and the result sorts ascending — "07:00,

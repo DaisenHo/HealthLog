@@ -13,6 +13,7 @@
 import { z } from "zod/v4";
 
 import { isValidTimezone } from "@/lib/tz/format";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * The record's sex, as `User.gender` already stores it.
@@ -84,6 +85,6 @@ export const updateManagedProfileSchema = z
 export const inviteManagedProfileGuardianSchema = z
   .object({
     identifier: z.string().trim().min(1).max(255),
-    expiresAt: z.iso.datetime({ offset: true }).nullable().optional(),
+    expiresAt: isoDateTime().nullable().optional(),
   })
   .strict();

@@ -55,6 +55,7 @@ import {
   claimSchema,
 } from "@/lib/validations/managed-profile-handover";
 import { HANDOVER_ACCESS_LEVELS } from "@/lib/managed-profiles/handover-access";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
 
@@ -109,14 +110,14 @@ const accessRefreshBundle = z
       .describe(
         "Access token (`hlk_<64hex>`); only present for native-policy callers. A browser caller gets the session cookie instead.",
       ),
-    tokenExpiresAt: z.iso.datetime({ offset: true }).optional(),
+    tokenExpiresAt: isoDateTime().optional(),
     refreshToken: z
       .string()
       .optional()
       .describe(
         "Refresh token (`hlr_<64hex>`); only present for native-policy callers.",
       ),
-    refreshTokenExpiresAt: z.iso.datetime({ offset: true }).optional(),
+    refreshTokenExpiresAt: isoDateTime().optional(),
   })
   .meta({
     id: "AccessRefreshBundle",
@@ -195,8 +196,8 @@ const sessionListResponse = z
           .string()
           .nullable()
           .describe("Resolved coarse location, when available."),
-        lastActiveAt: z.iso.datetime({ offset: true }).nullable(),
-        createdAt: z.iso.datetime({ offset: true }),
+        lastActiveAt: isoDateTime().nullable(),
+        createdAt: isoDateTime(),
         isCurrent: z
           .boolean()
           .describe("True for the session making this request."),
@@ -214,9 +215,9 @@ const trustedDeviceListResponse = z
           .string()
           .nullable()
           .describe("Coarse, IP-free device label (e.g. 'Firefox on macOS')."),
-        createdAt: z.iso.datetime({ offset: true }),
-        lastUsedAt: z.iso.datetime({ offset: true }),
-        expiresAt: z.iso.datetime({ offset: true }),
+        createdAt: isoDateTime(),
+        lastUsedAt: isoDateTime(),
+        expiresAt: isoDateTime(),
         isCurrent: z
           .boolean()
           .describe("True for the device making this request."),
@@ -280,7 +281,7 @@ const securityActivityResponse = z
         action: z
           .string()
           .describe("Audit action name, e.g. auth.login.password."),
-        createdAt: z.iso.datetime({ offset: true }),
+        createdAt: isoDateTime(),
         location: z.string().nullable(),
         ipMasked: z.string().nullable().describe("Host-masked IP."),
         carrier: z.string().nullable(),
@@ -295,8 +296,8 @@ const webauthnCredentialInfo = z
   .object({
     id: z.string(),
     name: z.string(),
-    createdAt: z.iso.datetime({ offset: true }),
-    lastUsedAt: z.iso.datetime({ offset: true }).nullable(),
+    createdAt: isoDateTime(),
+    lastUsedAt: isoDateTime().nullable(),
   })
   .meta({ id: "WebauthnMfaCredentialInfo" });
 
@@ -320,9 +321,8 @@ const passkeyInfo = z
       .describe(
         "Whether the authenticator reported the credential as backed up (synced to the platform keychain) at registration time. Not re-read afterwards.",
       ),
-    createdAt: z.iso.datetime({ offset: true }).describe("Registered at."),
-    lastUsedAt: z.iso
-      .datetime({ offset: true })
+    createdAt: isoDateTime().describe("Registered at."),
+    lastUsedAt: isoDateTime()
       .nullable()
       .describe(
         "When this passkey last completed a verified assertion; null when it has never been used to sign in. Stamped on every successful login, so a client can render a real 'last used' rather than assuming never.",
@@ -392,7 +392,7 @@ const stepUpMintResponse = z
       .describe(
         "Opaque single-use elevation (`hle_<64hex>`). Present it in the `X-Step-Up` header on ONE second-factor-management call. Returned exactly once; store it in memory only.",
       ),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
     expiresInSeconds: z.number().int(),
     method: z
       .enum(["password", "totp", "webauthn", "passkey"])
@@ -473,12 +473,11 @@ const apiTokenInfo = z
       .describe(
         'The token\'s scope list. `["*"]` is cookie-equivalent (what a native login mints); anything else is narrow and reaches only the routes that name it. Admin endpoints are cookie-only and are reachable by no token at any scope.',
       ),
-    lastUsedAt: z.iso
-      .datetime({ offset: true })
+    lastUsedAt: isoDateTime()
       .nullable()
       .describe("Stamped fire-and-forget on use; null for an unused token."),
-    expiresAt: z.iso.datetime({ offset: true }).nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime().nullable(),
+    createdAt: isoDateTime(),
     revoked: z
       .boolean()
       .describe(
@@ -505,7 +504,7 @@ const createMeasurementTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash, so there is no way to retrieve it later; a client that does not capture it here has to mint a replacement. Treat it as a secret in logs, crash reports and analytics.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateMeasurementTokenResponse",
@@ -527,7 +526,7 @@ const createWorkoutTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be retrieved later. Treat it as a secret.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateWorkoutTokenResponse",
@@ -549,7 +548,7 @@ const createDocumentTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be retrieved later. Treat it as a secret.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateDocumentTokenResponse",
@@ -715,7 +714,7 @@ const claimPreview = z
       .string()
       .nullable()
       .describe("The profile's name, as its guardians set it."),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
     guardians: z
       .array(
         z.object({
@@ -1116,7 +1115,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 z
                   .object({
                     method: z.enum(["password", "totp", "webauthn", "passkey"]),
-                    verifiedAt: z.string().datetime(),
+                    verifiedAt: isoDateTime({ offset: false }),
                   })
                   .meta({ id: "ReproofResponse" }),
                 "ReproofEnvelope",

@@ -13,6 +13,7 @@ import {
 } from "@/lib/mental-health/instruments";
 import { assertStableExternalId } from "@/lib/validations/external-id";
 import { isValidTimezone } from "@/lib/tz/format";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const assessmentInstrumentEnum = z.enum(["PHQ9", "GAD7", "WHO5", "SCI"]);
 
@@ -53,7 +54,7 @@ export const createAssessmentSchema = z
     /** Optional functional-impairment follow-up (not scored into the total). */
     functionalDifficulty: z.number().int().min(0).max(3).optional(),
     /** ISO instant the screener was taken; defaults to now server-side. */
-    takenAt: z.string().datetime().optional(),
+    takenAt: isoDateTime({ offset: false }).optional(),
     tz: z
       .string()
       .max(64)

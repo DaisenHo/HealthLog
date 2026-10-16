@@ -37,6 +37,7 @@ import {
   onboardingRestartSchema,
 } from "@/lib/validations/onboarding-needs";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /* ── v1.39 (C1): the needs-based flow ─────────────────────────────────────── */
 
@@ -97,8 +98,7 @@ const onboardingFirstResultResource = z
       .describe(
         "What the task is about — a source key for a connection, an area key for a reading. Null for the medication task.",
       ),
-    completedAt: z.iso
-      .datetime({ offset: true })
+    completedAt: isoDateTime()
       .nullable()
       .describe("When the offered task produced its result, or null."),
   })
@@ -112,8 +112,7 @@ export const onboardingStateResource = z
   .object({
     steps: z.array(onboardingStepResource),
     needs: onboardingNeedsResource,
-    completedAt: z.iso
-      .datetime({ offset: true })
+    completedAt: isoDateTime()
       .nullable()
       .describe(
         "When the needs flow was completed. Distinct from the account payload's `onboardingCompletedAt`, which stays the first-run redirect's gate: `POST /api/onboarding/restart` clears this one and leaves that one alone.",
