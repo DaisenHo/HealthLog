@@ -31,6 +31,7 @@ import {
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
+import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { buildGlucoseTargets } from "./glucose-builder";
 import { readGlucoseTargetSummaries } from "./glucose-read";
 import { buildMedicationTarget } from "./medication-builder";
@@ -112,6 +113,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
     latestMoodEntry,
     glucoseSummaries,
     restingPulseProxy,
+    dashboardSummaries,
   ] = await Promise.all([
     limit(() =>
       prisma.user.findUnique({
@@ -247,6 +249,11 @@ export async function buildTargetsResponse(user: AuthedUser) {
         timeZone: timezone,
       }),
     ),
+    // The verdict is placed with the value the dashboard tile places it
+    // with (the seven-day mean, else the latest reading), read from the same
+    // summary slice, so a target and its tile never disagree on which way a
+    // change counts.
+    limit(() => computeSummariesSlice(userId)),
   ]);
 
   // Rollup coverage fallback stays an explicit repository read here rather
@@ -369,14 +376,18 @@ export async function buildTargetsResponse(user: AuthedUser) {
 
   // v1.43 (ios #116 item 3) — every item carries which way its change
   // counts, judged with the same rule the dashboard tiles use.
-  const verdictTargets = withTargetVerdicts(targets, {
-    profile: {
-      heightCm,
-      dateOfBirth: dbUser?.dateOfBirth ?? null,
-      gender: dbUser?.gender ?? null,
+  const verdictTargets = withTargetVerdicts(
+    targets,
+    {
+      profile: {
+        heightCm,
+        dateOfBirth: dbUser?.dateOfBirth ?? null,
+        gender: dbUser?.gender ?? null,
+      },
+      thresholdsJson: dbUser?.thresholdsJson ?? null,
     },
-    thresholdsJson: dbUser?.thresholdsJson ?? null,
-  });
+    dashboardSummaries.summaries,
+  );
   targets.splice(0, targets.length, ...verdictTargets);
 
   const pageSummary = buildTargetPageSummary(targets);
@@ -412,28 +423,70 @@ export async function buildTargetsResponse(user: AuthedUser) {
 }
 
 /**
- * Lay the verdict over each target item. The reference is the item's latest
- * value, else its thirty-day average, in the unit the item is served in:
- * sleep is served in hours and judged in minutes, and BMI is judged by the
- * weight it is derived from.
+ * The dashboard summary each target item's verdict is placed with: the key
+ * its dashboard tile reads its direction under. Blood pressure is judged by
+ * its systolic side, BMI by the weight it is derived from, and the resting
+ * pulse by the resting heart rate where the account records one (the tile
+ * shows that series then).
+ */
+function summaryKeysFor(type: string): string[] {
+  switch (type) {
+    case "BLOOD_PRESSURE":
+      return ["BLOOD_PRESSURE_SYS"];
+    case "BMI":
+      return ["WEIGHT"];
+    case "PULSE":
+      return ["RESTING_HEART_RATE", "PULSE"];
+    default:
+      return [type];
+  }
+}
+
+type VerdictSummaries = Readonly<
+  Record<string, { avg7: number | null; latest: number | null } | undefined>
+>;
+
+/**
+ * The value a target's verdict is placed with, in the stored unit: the same
+ * basis as the dashboard tile (`resolveSummaryVerdicts`), the seven-day mean
+ * else the latest reading. Only when the account has no summary for the type
+ * does the item's own value stand in (latest, else thirty-day average; sleep
+ * is served in hours and stored in minutes).
+ */
+export function targetVerdictReference(
+  item: Pick<TargetItem, "type" | "current" | "average30">,
+  summaries: VerdictSummaries,
+  weightItem: Pick<TargetItem, "current" | "average30"> | undefined,
+): number | null {
+  for (const key of summaryKeysFor(item.type)) {
+    const summary = summaries[key];
+    const value = summary ? (summary.avg7 ?? summary.latest) : null;
+    if (value !== null && value !== undefined) return value;
+  }
+  const own =
+    item.type === "BMI"
+      ? weightItem
+        ? (weightItem.current ?? weightItem.average30)
+        : null
+      : (item.current ?? item.average30);
+  if (own === null) return null;
+  return item.type === "SLEEP_DURATION" ? own * 60 : own;
+}
+
+/**
+ * Lay the verdict over each target item, placed with the dashboard's basis
+ * (`targetVerdictReference`).
  */
 export function withTargetVerdicts(
   targets: readonly TargetItem[],
   ctx: Omit<TrendVerdictContext, "referenceValue">,
+  summaries: VerdictSummaries,
 ): TargetItem[] {
   const weight = targets.find((item) => item.type === "WEIGHT");
-  const weightReference = weight ? (weight.current ?? weight.average30) : null;
   return targets.map((item) => {
-    const own = item.current ?? item.average30;
-    const reference =
-      item.type === "BMI"
-        ? weightReference
-        : own !== null && item.type === "SLEEP_DURATION"
-          ? own * 60
-          : own;
     const direction = resolveTrendVerdict(item.type, {
       ...ctx,
-      referenceValue: reference,
+      referenceValue: targetVerdictReference(item, summaries, weight),
     });
     return {
       ...item,
