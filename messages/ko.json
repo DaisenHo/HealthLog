@@ -6427,7 +6427,8 @@
         "noEstimate": "AI를 3일 사용하면 단계별 추정치가 표시돼요.",
         "capped": "{choice} 단계를 선택했지만 지금은 서버에서 허용하지 않아 {level} 단계가 적용돼요. 선택은 그대로 저장돼요.",
         "followsDefault": "서버 기본값({level})을 따르고 있어요.",
-        "useDefault": "서버 기본값 사용({level})"
+        "useDefault": "서버 기본값 사용({level})",
+        "saveError": "단계를 저장하지 못했어요. 다시 시도해 주세요."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value}갑년",
         "packYearsMissing": "갑년을 계산하려면 하루 개비 수와 흡연 시작 연도가 필요해요.",
-        "activityMinutes": "주당 {value}분",
+        "activityMinutes": "주당 {value}분.",
         "meetsWho": "WHO 권장량인 주당 150분을 채워요.",
         "belowWho": "WHO 권장량인 주당 150분보다 적어요.",
         "measuredSteps": "측정된 걸음 수가 우선이고, 이 응답은 맥락을 더해요.",

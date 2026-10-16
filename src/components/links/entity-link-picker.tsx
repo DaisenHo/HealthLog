@@ -423,7 +423,7 @@ export function EntityLinkPicker({
                         name: chipName(option),
                       })}
                       onClick={() => unlink(option)}
-                      className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring/50 mr-0.5 flex size-7 shrink-0 items-center justify-center rounded-full focus-visible:ring-[3px] focus-visible:outline-none"
+                      className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring/50 relative mr-0.5 flex size-7 shrink-0 items-center justify-center rounded-full after:absolute after:-inset-2 after:content-[''] focus-visible:ring-[3px] focus-visible:outline-none"
                     >
                       <X className="size-3.5" aria-hidden />
                     </button>

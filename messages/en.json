@@ -6427,7 +6427,8 @@
         "noEstimate": "An estimate per level appears after three days of AI use.",
         "capped": "You chose {choice}, which the server does not allow at the moment, so {level} applies. Your choice is kept.",
         "followsDefault": "You follow the server default ({level}).",
-        "useDefault": "Use the server default ({level})"
+        "useDefault": "Use the server default ({level})",
+        "saveError": "The level could not be saved. Please try again."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value} pack-years",
         "packYearsMissing": "Pack-years need cigarettes per day and the year you started.",
-        "activityMinutes": "{value} minutes a week",
+        "activityMinutes": "{value} minutes a week.",
         "meetsWho": "That meets the WHO recommendation of 150 minutes a week.",
         "belowWho": "That is below the WHO recommendation of 150 minutes a week.",
         "measuredSteps": "Your measured steps come first; this answer adds context.",

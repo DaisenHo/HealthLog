@@ -188,7 +188,7 @@ function AiUsageForm({ bounds }: { bounds: AiUsageBounds }) {
           </p>
         ) : null}
         <div className="space-y-1.5">
-          <Label htmlFor="admin-ai-usage-gap">
+          <Label htmlFor="admin-ai-usage-gap" className="block leading-snug">
             {t("admin.aiUsage.gapLabel")}
           </Label>
           <Input

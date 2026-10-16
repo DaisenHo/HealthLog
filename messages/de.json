@@ -6427,7 +6427,8 @@
         "noEstimate": "Eine Schätzung je Stufe erscheint nach drei Tagen KI-Nutzung.",
         "capped": "Du hast {choice} gewählt, das der Server gerade nicht erlaubt, deshalb gilt {level}. Deine Wahl bleibt gespeichert.",
         "followsDefault": "Du folgst dem Standard des Servers ({level}).",
-        "useDefault": "Standard des Servers verwenden ({level})"
+        "useDefault": "Standard des Servers verwenden ({level})",
+        "saveError": "Die Stufe konnte nicht gespeichert werden. Bitte versuche es erneut."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value} Packungsjahre",
         "packYearsMissing": "Für Packungsjahre fehlen Zigaretten pro Tag oder das Jahr des Rauchbeginns.",
-        "activityMinutes": "{value} Minuten pro Woche",
+        "activityMinutes": "{value} Minuten pro Woche.",
         "meetsWho": "Damit erreichst du die WHO-Empfehlung von 150 Minuten pro Woche.",
         "belowWho": "Das liegt unter der WHO-Empfehlung von 150 Minuten pro Woche.",
         "measuredSteps": "Deine gemessenen Schritte haben Vorrang, diese Angabe ergänzt sie.",

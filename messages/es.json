@@ -6427,7 +6427,8 @@
         "noEstimate": "La estimación por nivel aparece tras tres días de uso de la IA.",
         "capped": "Elegiste {choice}, que el servidor no permite ahora mismo, así que se aplica {level}. Tu elección se conserva.",
         "followsDefault": "Sigues el valor predeterminado del servidor ({level}).",
-        "useDefault": "Usar el valor predeterminado del servidor ({level})"
+        "useDefault": "Usar el valor predeterminado del servidor ({level})",
+        "saveError": "No se pudo guardar el nivel. Inténtalo de nuevo."
       }
     },
     "dashboard": {
@@ -11261,7 +11262,7 @@
       "derived": {
         "packYears": "{value} paquetes-año",
         "packYearsMissing": "Para los paquetes-año faltan los cigarrillos al día o el año en que empezaste.",
-        "activityMinutes": "{value} minutos a la semana",
+        "activityMinutes": "{value} minutos a la semana.",
         "meetsWho": "Cumple la recomendación de la OMS de 150 minutos semanales.",
         "belowWho": "Está por debajo de la recomendación de la OMS de 150 minutos semanales.",
         "measuredSteps": "Tus pasos medidos tienen prioridad; esta respuesta aporta contexto.",

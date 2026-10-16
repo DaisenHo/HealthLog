@@ -26,6 +26,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useAiProviderState, useAiUsage } from "@/hooks/use-ai-capability";
 import { apiPut } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import type { AiUsageLevel, AiUsageState } from "@/lib/ai/usage-level";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
@@ -59,6 +60,9 @@ export function AiUsageCard() {
     onSuccess: () => {
       void invalidateKeys(queryClient, aiInputDependentKeys);
     },
+    // The toast carries the error id a 5xx needs for a support report.
+    onError: (error) =>
+      showErrorToast(t("settings.ai.usage.saveError"), { cause: error }),
   });
 
   // An older server publishes no level: there is nothing to set.
@@ -212,12 +216,6 @@ export function AiUsageCard() {
           {t("settings.ai.usage.followsDefault", {
             level: levelName(usage.defaultLevel),
           })}
-        </p>
-      ) : null}
-
-      {save.isError ? (
-        <p role="alert" className="text-destructive text-xs">
-          {t("settings.ai.errorGeneric")}
         </p>
       ) : null}
 

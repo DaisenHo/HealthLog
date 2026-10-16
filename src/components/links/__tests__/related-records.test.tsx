@@ -53,6 +53,35 @@ describe("<RelatedRecordsList>", () => {
     expect(html).not.toContain(">SPECIALIST<");
   });
 
+  it("names a dose labelled by its catalogue slug from the reader's bundle", () => {
+    const html = render(
+      <RelatedRecordsList
+        related={[
+          {
+            kind: "vaccination",
+            id: "v1",
+            label: "tetanus",
+            date: "2025-12-20T09:00:00.000Z",
+            href: "/vaccinations?dose=v1",
+            via: "direct",
+          },
+          {
+            kind: "vaccination",
+            id: "v2",
+            label: "as-written-on-the-card",
+            date: "2025-11-20T09:00:00.000Z",
+            href: "/vaccinations?dose=v2",
+            via: "direct",
+          },
+        ]}
+      />,
+    );
+    expect(html).toContain(">Tetanus<");
+    expect(html).not.toContain(">tetanus<");
+    // A written name that is no catalogue slug stays as written.
+    expect(html).toContain("as-written-on-the-card");
+  });
+
   it("says how a derived relation runs", () => {
     const html = render(<RelatedRecordsList related={RELATED} />);
     expect(html).toContain("through the efficacy target");

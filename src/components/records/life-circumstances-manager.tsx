@@ -185,7 +185,11 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      {/* Block, so the colon follows a label that wraps instead of standing
+          alone at the far edge as a flex item. */}
+      <Label htmlFor={id} className="block leading-snug">
+        {label}
+      </Label>
       {children}
     </div>
   );
@@ -324,16 +328,17 @@ function MultiField<T extends string>({
     <fieldset className="space-y-2" data-slot={id}>
       <legend className="text-sm font-medium">{label}</legend>
       {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-      <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
         {options.map((option) => {
           const checked = value.includes(option.value);
           const full = max !== undefined && value.length >= max && !checked;
           return (
             <label
               key={option.value}
-              className="flex min-h-11 items-center gap-2 text-sm sm:min-h-9"
+              className="flex min-h-11 min-w-0 items-center gap-2 text-sm sm:min-h-9"
             >
               <Checkbox
+                className="shrink-0"
                 checked={checked}
                 disabled={disabled || full}
                 onCheckedChange={(next) =>
