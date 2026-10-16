@@ -578,6 +578,53 @@ describe("AI switches and confirmations", () => {
     ]);
   });
 
+  it("never turns a section on again that a concurrent switch turned off", async () => {
+    const user = await makeUser({
+      modulePreferencesJson: { mentalHealth: true, coach: true },
+    });
+    await signIn(user.id);
+    const prisma = getPrismaClient();
+    await prisma.userHealthProfile.create({
+      data: { userId: user.id, aiIncludedSections: ["ABOUT_ME", "HABITS"] },
+    });
+    const { lockAiSections } = await import("@/lib/profile/life-circumstances");
+    const aboutMe = await import("@/app/api/coach/about-me/route");
+
+    // The switch-off holds its transaction open while the PUT starts.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((resolve) => (locked = resolve));
+    const switchOff = prisma.$transaction(async (tx) => {
+      await lockAiSections(tx, user.id);
+      await tx.userHealthProfile.update({
+        where: { userId: user.id },
+        data: { aiIncludedSections: ["ABOUT_ME"] },
+      });
+      locked();
+      await held;
+    });
+    await isLocked;
+    const put = (aboutMe.PUT as unknown as Handler)(
+      request("PUT", "/api/coach/about-me", {
+        aiIncludedSections: ["ABOUT_ME", "CONDITIONS"],
+      }),
+    );
+    // Long enough for an unlocked PUT to have read the old array.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    release();
+    await switchOff;
+    await data(await put);
+
+    const stored = await prisma.userHealthProfile.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect([...stored.aiIncludedSections].sort()).toEqual([
+      "ABOUT_ME",
+      "CONDITIONS",
+    ]);
+  });
+
   it("answers a stale token with about_me_conflict", async () => {
     const user = await makeUser();
     await signIn(user.id);

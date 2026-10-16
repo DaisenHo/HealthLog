@@ -446,6 +446,25 @@ function lifeSwitches(
 }
 
 /**
+ * Serialise every read-modify-write of a profile's AI switches. Two routes
+ * write the one array: this module's switch route and the about-me PUT, which
+ * replaces its eight sections and carries the life switches over as stored.
+ * Without a lock, a PUT that read the array before a concurrent switch-off
+ * committed wrote the old value back and turned the section on again. A
+ * transaction-scoped advisory lock covers the first write too, when there is
+ * no row yet to lock.
+ */
+export async function lockAiSections(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  await tx.$queryRaw`
+    SELECT 1 AS locked
+    FROM pg_advisory_xact_lock(hashtextextended(${`ai-sections:${userId}`}, 0))
+  `;
+}
+
+/**
  * Switch life-circumstance sections in or out of the AI inclusion list. Only
  * the named sections change; the other stored values, the five about-me
  * sections among them, stay as they are. `base` is the about-me token
@@ -459,6 +478,7 @@ export async function updateLifeAiSections(
   base?: Date,
 ): Promise<LifeAiSectionsOutcome> {
   return prisma.$transaction(async (tx) => {
+    await lockAiSections(tx, userId);
     const row = await tx.userHealthProfile.findUnique({
       where: { userId },
       select: { aiIncludedSections: true, updatedAt: true },

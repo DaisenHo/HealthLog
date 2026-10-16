@@ -42,6 +42,7 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserInsights } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
+import { lockAiSections } from "@/lib/profile/life-circumstances";
 import { takeBaseToken, invalidBaseTokenError } from "@/lib/optimistic-lock";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -246,6 +247,9 @@ export const PUT = apiHandler(async (req: Request) => {
     // A PUT here replaces the eight sections it lists and leaves the
     // life-circumstance switches (v1.43) exactly as stored.
     if (parsed.data.aiIncludedSections !== undefined) {
+      // Taken before the read, so a switch changed concurrently is read
+      // after it commits and carried over as it now stands.
+      await lockAiSections(tx, user.id);
       const stored = await tx.userHealthProfile.findUnique({
         where: { userId: user.id },
         select: { aiIncludedSections: true },

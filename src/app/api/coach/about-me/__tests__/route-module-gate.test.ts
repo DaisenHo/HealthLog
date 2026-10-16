@@ -44,6 +44,7 @@ const {
   const profileUpsert = vi.fn(async () => ({ updatedAt: new Date(0) }));
   const userUpdate = vi.fn(async () => ({}));
   const tx = {
+    $queryRaw: vi.fn(async () => []),
     userHealthProfile: {
       findUnique: profileFindUnique,
       upsert: profileUpsert,
@@ -246,6 +247,7 @@ describe("about-me module gate", () => {
     transaction.mockImplementationOnce(
       async (callback: (client: unknown) => unknown) => {
         const result = await callback({
+          $queryRaw: vi.fn(async () => []),
           userHealthProfile: {
             findUnique: profileFindUnique,
             upsert: txProfileUpsert,
