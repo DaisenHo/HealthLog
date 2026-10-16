@@ -31,7 +31,11 @@ import {
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
-import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { readSevenDayMeans } from "@/lib/analytics/summaries-slice";
+import {
+  summarizeSleepNights,
+  type SleepStageRow,
+} from "@/lib/analytics/sleep-night";
 import { buildGlucoseTargets } from "./glucose-builder";
 import { readGlucoseTargetSummaries } from "./glucose-read";
 import { buildMedicationTarget } from "./medication-builder";
@@ -113,7 +117,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
     latestMoodEntry,
     glucoseSummaries,
     restingPulseProxy,
-    dashboardSummaries,
+    sevenDayMeans,
   ] = await Promise.all([
     limit(() =>
       prisma.user.findUnique({
@@ -250,10 +254,9 @@ export async function buildTargetsResponse(user: AuthedUser) {
       }),
     ),
     // The verdict is placed with the value the dashboard tile places it
-    // with (the seven-day mean, else the latest reading), read from the same
-    // summary slice, so a target and its tile never disagree on which way a
-    // change counts.
-    limit(() => computeSummariesSlice(userId)),
+    // with: the seven-day mean, computed by the summary slice's own query,
+    // so a target and its tile never disagree on which way a change counts.
+    limit(() => readSevenDayMeans(userId)),
   ]);
 
   // Rollup coverage fallback stays an explicit repository read here rather
@@ -386,7 +389,15 @@ export async function buildTargetsResponse(user: AuthedUser) {
       },
       thresholdsJson: dbUser?.thresholdsJson ?? null,
     },
-    dashboardSummaries.summaries,
+    verdictSummaries(sevenDayMeans, latestByType, {
+      // Sleep the way the dashboard summarises it: per night, from the
+      // same stage rows and source ladder.
+      SLEEP_DURATION: summarizeSleepNights(
+        sleepStageRows as SleepStageRow[],
+        timezone,
+        dbUser?.sourcePriorityJson ?? null,
+      ).summary,
+    }),
   );
   targets.splice(0, targets.length, ...verdictTargets);
 
@@ -445,6 +456,32 @@ function summaryKeysFor(type: string): string[] {
 type VerdictSummaries = Readonly<
   Record<string, { avg7: number | null; latest: number | null } | undefined>
 >;
+
+/**
+ * The dashboard's `{ avg7, latest }` per type: the slice's seven-day mean,
+ * and the newest reading where there is none in the last seven days.
+ */
+function verdictSummaries(
+  sevenDayMeans: Readonly<Record<string, number | null>>,
+  latestByType: TargetValueByType,
+  folded: Readonly<
+    Record<string, { avg7: number | null; latest: number | null }>
+  >,
+): VerdictSummaries {
+  const out: Record<string, { avg7: number | null; latest: number | null }> =
+    {};
+  const types = new Set([
+    ...Object.keys(sevenDayMeans),
+    ...Object.keys(latestByType),
+  ]);
+  for (const type of types) {
+    out[type] = {
+      avg7: sevenDayMeans[type] ?? null,
+      latest: latestByType[type as keyof TargetValueByType] ?? null,
+    };
+  }
+  return { ...out, ...folded };
+}
 
 /**
  * The value a target's verdict is placed with, in the stored unit: the same

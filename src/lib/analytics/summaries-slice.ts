@@ -501,6 +501,47 @@ async function withSleepNightTotals(
 }
 
 /**
+ * The seven-day mean per type, exactly as the slice computes `avg7` (the same
+ * canonical-source CTE, the same day weighting, the same rounding), without
+ * the rest of the slice. Sleep is absent: the slice summarises it per night. For a reader that needs only the dashboard's basis,
+ * such as the target verdicts: one aggregate query, no reading ever leaves
+ * the database as a row.
+ */
+export async function readSevenDayMeans(
+  userId: string,
+): Promise<Record<string, number | null>> {
+  const priorityJson = await loadUserSourcePriority(userId);
+  const rankUnqualified = buildSourceRankCase(
+    priorityJson,
+    '"type"',
+    '"source"',
+  );
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{ type: string; avg7: number | null }>
+  >(
+    `
+      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, "90 days")}
+      )
+      SELECT
+        m."type"::text                    AS type,
+        ${AVG7_SQL}::double precision     AS avg7
+      FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
+      GROUP BY m."type"
+    `,
+    userId,
+  );
+  const out: Record<string, number | null> = {};
+  for (const row of rows) {
+    // Stored per stage, summarised per night by `withSleepNightTotals`: a
+    // mean over stage rows is not the slice's sleep figure, so it is left
+    // out rather than served wrong. Callers fold the nights themselves.
+    if (row.type === "SLEEP_DURATION") continue;
+    out[row.type] = round2(row.avg7);
+  }
+  return out;
+}
+
+/**
  * Happy path — DAY buckets carry `count / min / max / mean`; a narrow
  * `$queryRaw` carries only the windowed avgs + regression columns the
  * buckets cannot reconstruct.

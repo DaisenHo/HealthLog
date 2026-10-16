@@ -39,10 +39,10 @@ vi.mock("@/lib/targets/glucose-read", async (importOriginal) => ({
 vi.mock("@/lib/analytics/resting-pulse-read", () => ({
   readRestingPulseProxy: vi.fn(),
 }));
-// The verdict's basis: the dashboard's summary slice. Empty here, so every
-// item is placed with its own value (`targetVerdictReference`).
+// The verdict's basis: the dashboard's seven-day means. Empty here, so every
+// item is placed with its newest reading, else its own value.
 vi.mock("@/lib/analytics/summaries-slice", () => ({
-  computeSummariesSlice: vi.fn(async () => ({ summaries: {} })),
+  readSevenDayMeans: vi.fn(async () => ({})),
 }));
 
 vi.mock("@/lib/db", () => ({

@@ -13,6 +13,10 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { deriveRestingProxyFromPulse } from "@/lib/analytics/resting-pulse";
+import {
+  computeSummariesSlice,
+  readSevenDayMeans,
+} from "@/lib/analytics/summaries-slice";
 import { buildTargetsResponse } from "@/lib/targets/build-response";
 import { buildGlucoseTargets } from "@/lib/targets/glucose-builder";
 import {
@@ -291,6 +295,25 @@ describe("targets fold equals the raw-reading fold", () => {
         ...pulse
       } = pulseTarget!;
       expect(pulse).toEqual(expectedPulse);
+    });
+  }
+});
+
+// The target verdict is placed with the dashboard tile's basis. Proven on
+// the database, not assumed: the seven-day means the targets read equal the
+// `avg7` the dashboard slice serves, type for type, on both accounts.
+describe("target verdict basis equals the dashboard's", () => {
+  for (const userId of [SPARSE, DENSE]) {
+    it(`reads the slice's seven-day mean (${userId})`, async () => {
+      const [means, slice] = await Promise.all([
+        readSevenDayMeans(userId),
+        computeSummariesSlice(userId),
+      ]);
+      const withData = Object.keys(means);
+      expect(withData.length).toBeGreaterThan(0);
+      for (const type of withData) {
+        expect(means[type], type).toBe(slice.summaries[type]?.avg7 ?? null);
+      }
     });
   }
 });
