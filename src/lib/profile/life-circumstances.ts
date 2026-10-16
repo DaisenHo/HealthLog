@@ -13,7 +13,7 @@
  * Server-only.
  */
 import { Prisma } from "@/generated/prisma/client";
-import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { deriveAgeYears } from "@/lib/ai/coach/about-me";
 import {
   AUDIT_C_HISTORY_LIMIT,

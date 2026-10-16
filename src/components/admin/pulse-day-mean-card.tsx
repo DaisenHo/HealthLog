@@ -106,10 +106,12 @@ export function PulseDayMeanCard() {
             ? t("admin.section.pulseDayMean.applied")
             : t("admin.section.pulseDayMean.appliedNoRebuild"),
         );
-      } else if (action === "rebuild") {
-        toast.success(t("admin.section.pulseDayMean.rebuildStarted"));
       } else {
-        toast.success(t("admin.section.pulseDayMean.dryRunStarted"));
+        toast.success(
+          action === "rebuild"
+            ? t("admin.section.pulseDayMean.rebuildStarted")
+            : t("admin.section.pulseDayMean.dryRunStarted"),
+        );
       }
       void queryClient.invalidateQueries({
         queryKey: queryKeys.adminPulseDayMean(),
