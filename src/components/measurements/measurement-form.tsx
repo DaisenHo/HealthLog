@@ -43,7 +43,7 @@ import {
 } from "@/lib/query-keys";
 import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/validations/measurement";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
 import {
   getLastUsedMeasurementType,
   setLastUsedMeasurementType,
