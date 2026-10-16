@@ -23,6 +23,7 @@
 import { createHash } from "node:crypto";
 
 import type { MeasurementType } from "@/generated/prisma/client";
+import { readBodyCapped } from "@/lib/http/read-capped";
 import { safeFetch } from "@/lib/safe-fetch";
 import {
   configuredNightscoutPrivateOrigins,
@@ -33,6 +34,7 @@ import { SafeFetchError } from "@/lib/safe-fetch";
 
 /** Default per-request timeout for a Nightscout fetch. */
 const NIGHTSCOUT_TIMEOUT_MS = 15_000;
+const NIGHTSCOUT_MAX_BODY_BYTES = 8 * 1024 * 1024;
 
 /** Canonical glucose storage unit. Nightscout SGV is always mg/dL on the wire. */
 export const NIGHTSCOUT_GLUCOSE_UNIT = "mg/dL" as const;
@@ -259,9 +261,15 @@ export async function fetchSgvEntries(
     );
   }
 
+  // Bounded while reading: `count` entries are a few hundred bytes each, so
+  // the cap is far above any honest answer and stops one that never ends.
+  const read = await readBodyCapped(res, NIGHTSCOUT_MAX_BODY_BYTES);
+  if (!read.ok) {
+    throw new NightscoutApiError("Nightscout returned an oversized body", null);
+  }
   let body: unknown;
   try {
-    body = await res.json();
+    body = JSON.parse(read.text) as unknown;
   } catch {
     throw new NightscoutApiError("Nightscout returned a non-JSON body", null);
   }
