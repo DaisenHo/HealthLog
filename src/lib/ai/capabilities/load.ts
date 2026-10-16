@@ -9,7 +9,8 @@
  *     memoised reads the account payload and every module gate use;
  *   - provider presence: the record's credential row and the operator's
  *     provider columns (`probeProviderChain`), presence only;
- *   - consent: the kinds of the record's active receipts, one indexed read;
+ *   - consent: the kinds of the record's active receipts and when the
+ *     `ai_full` one was signed, one indexed read;
  *   - the record's AI usage level (v1.43): the operator's bounds (memoised)
  *     and one point read of the record's choice.
  *
@@ -57,16 +58,24 @@ export interface AiCapabilityScope {
   recordKind: AiRecordKind;
 }
 
-/** The kinds of the record's active consent receipts. */
-function loadActiveConsentKinds(recordId: string): Promise<Set<string>> {
+/**
+ * The kinds of the record's active consent receipts, and when the active
+ * `ai_full` one was signed (the date the consent card shows).
+ */
+function loadActiveConsents(
+  recordId: string,
+): Promise<{ kinds: Set<string>; fullSince: Date | null }> {
   return memoizePerRequest(
     `ai-consent-kinds:${recordId}`,
     async () => {
       const rows = await prisma.consentReceipt.findMany({
         where: { userId: recordId, revokedAt: null },
-        select: { kind: true },
+        select: { kind: true, signedAt: true },
       });
-      return new Set(rows.map((row) => row.kind));
+      return {
+        kinds: new Set(rows.map((row) => row.kind)),
+        fullSince: rows.find((row) => row.kind === "ai_full")?.signedAt ?? null,
+      };
     },
     { freshInBackground: true },
   );
@@ -97,14 +106,14 @@ export function loadAiCapabilityInputs(
           modules,
           availability,
           provider,
-          activeConsentKinds,
+          consents,
           usageLevel,
         ] = await Promise.all([
           loadAssistantSwitches(),
           resolveModuleMap(scope.recordId),
           getOperatorModuleAvailability(),
           probeProviderChain(scope.recordId, scope.authority),
-          loadActiveConsentKinds(scope.recordId),
+          loadActiveConsents(scope.recordId),
           loadRecordUsageLevel(scope.recordId),
         ]);
         if (switches === null) return null;
@@ -118,7 +127,8 @@ export function loadAiCapabilityInputs(
           moduleAccess,
           providerWorkAdmitted: mayEnqueueProviderWork(scope.authority),
           provider,
-          activeConsentKinds,
+          activeConsentKinds: consents.kinds,
+          fullConsentSince: consents.fullSince,
           recordKind: scope.recordKind,
           usageLevel,
         };

@@ -49,10 +49,10 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: async () => {} }),
 }));
 
-const apiFetchRaw = vi.hoisted(() => vi.fn());
+const apiPost = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  apiFetchRaw,
+  apiPost,
 }));
 
 const toastError = vi.hoisted(() => vi.fn());
@@ -355,10 +355,10 @@ describe("<DoneScreen> shared-provider offer", () => {
     },
   );
 
-  it("grants through the affirmative web intent — the only path that may lift a revocation", async () => {
+  it("grants only with the explicit confirmation the server requires", async () => {
     mutations.length = 0;
-    apiFetchRaw.mockReset();
-    apiFetchRaw.mockResolvedValue({ ok: true });
+    apiPost.mockReset();
+    apiPost.mockResolvedValue({ minted: true, kind: "ai_full" });
     aiProviderState.data = {
       managedBy: "server",
       serverProviderHealth: "healthy",
@@ -369,19 +369,15 @@ describe("<DoneScreen> shared-provider offer", () => {
     const grant = grantMutation();
     expect(grant).toBeDefined();
     await grant!.mutationFn!();
-    expect(apiFetchRaw).toHaveBeenCalledWith(
-      "/api/consent/ai/web",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ intent: "affirmative" }),
-      }),
-    );
+    expect(apiPost).toHaveBeenCalledWith("/api/consent/ai/web", {
+      confirm: true,
+    });
   });
 
   it("a refused grant throws rather than reporting a consent nobody recorded", async () => {
     mutations.length = 0;
-    apiFetchRaw.mockReset();
-    apiFetchRaw.mockResolvedValue({ ok: false, status: 429 });
+    apiPost.mockReset();
+    apiPost.mockRejectedValue(new Error("429"));
     aiProviderState.data = {
       managedBy: "server",
       serverProviderHealth: "healthy",

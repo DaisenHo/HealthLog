@@ -1065,8 +1065,11 @@ export default function PrivacyPage() {
               </h3>
               <p>
                 For server-managed AI, the server keeps an account-bound consent
-                receipt with its kind, signed time, and artefact. The current
-                state is available through{" "}
+                receipt with its kind, signed time, and artefact. A receipt is
+                created only when the account holder confirms it on a consent
+                screen that names the receiving service and the data; opening a
+                page or starting an app never creates one. The current state is
+                available through{" "}
                 <code className="bg-muted rounded px-1 py-0.5 text-xs">
                   GET /api/consent/ai/latest
                 </code>

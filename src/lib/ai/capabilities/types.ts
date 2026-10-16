@@ -347,10 +347,48 @@ export interface AiProviderState {
   responseTimeoutMs: number;
 }
 
+/**
+ * Whose credential an operator-held provider sends through: the operator's
+ * API key (`admin-openai`) or the operator's shared ChatGPT account
+ * (`admin-codex`).
+ */
+export type AiConsentRecipientVia = "operator_key" | "operator_chatgpt";
+
+/** One service a record's data would go to on the operator's credential. */
+export interface AiConsentRecipient {
+  via: AiConsentRecipientVia;
+  /**
+   * The service, named for a person: "OpenAI" or "Anthropic" for their own
+   * endpoints, otherwise the host name of the endpoint the operator set.
+   */
+  name: string;
+}
+
+/**
+ * The standing AI consent for the record, as a client renders it.
+ *
+ *   - `given`: an `ai_full` receipt is active (`since` says when).
+ *   - `needed`: the provider chain runs through a credential the operator
+ *     holds, and at least one capability is closed by nothing but the missing
+ *     receipt. Ask, naming `recipients`.
+ *   - `not_needed`: neither. Nothing to ask and nothing to withdraw.
+ */
+export type AiConsentStatus = "given" | "needed" | "not_needed";
+
+export interface AiConsentState {
+  status: AiConsentStatus;
+  /** When the active `ai_full` consent was given, ISO-8601; `null` otherwise. */
+  since: string | null;
+  /** The operator-held services in the chain, in chain order. */
+  recipients: AiConsentRecipient[];
+}
+
 /** The `ai` block the account payload publishes. */
 export interface AiCapabilities {
   capabilities: Record<AiCapabilityKey, AiCapabilityState>;
   provider: AiProviderState;
+  /** v1.43.2 — the standing AI consent and who it would cover. */
+  consent: AiConsentState;
   /**
    * v1.43 (#1217) — the record's AI usage level, its bounds and the estimate.
    * Absent on servers before v1.43 and on blocks resolved without it.

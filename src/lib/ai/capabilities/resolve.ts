@@ -35,6 +35,8 @@ import {
   type AiCapabilityDefinition,
   type AiCapabilityKey,
   type AiCapabilityState,
+  type AiConsentRecipient,
+  type AiConsentState,
   type AiOperatorSwitchSet,
   type AiProviderManagedBy,
   type AiProviderState,
@@ -73,6 +75,12 @@ export interface ProviderPresence {
    * beside the provider and this row is already in hand. Absent → unset.
    */
   responseTimeoutSeconds?: number | null;
+  /**
+   * The base URL behind the operator's key (`admin-openai`), which names the
+   * service the consent card asks about. Absent reads as OpenAI's own
+   * endpoint, the column's default.
+   */
+  operatorKeyBaseUrl?: string | null;
 }
 
 /** Whose record this is, as far as configuring a provider for it goes. */
@@ -94,6 +102,11 @@ export interface AiCapabilityInputs {
    * sets it; absent (a hand-built set of inputs) means no level restriction.
    */
   usageLevel?: AiUsageLevel;
+  /**
+   * When the record's active `ai_full` receipt was signed. Absent or `null`
+   * with `ai_full` among the active kinds publishes the consent without a date.
+   */
+  fullConsentSince?: Date | null;
 }
 
 // Which tags are operator-held and which stays local: `@/lib/ai/provider-egress`,
@@ -382,12 +395,84 @@ export function resolveAiProviderState(
   };
 }
 
+const OPERATOR_KEY_DEFAULT_HOST = "api.openai.com";
+
+/** The service behind the operator's key, named for a person. */
+function operatorKeyServiceName(baseUrl: string | null | undefined): string {
+  let host = OPERATOR_KEY_DEFAULT_HOST;
+  if (baseUrl) {
+    try {
+      host = new URL(baseUrl).hostname.toLowerCase();
+    } catch {
+      host = baseUrl;
+    }
+  }
+  if (host === "openai.com" || host.endsWith(".openai.com")) return "OpenAI";
+  if (host === "anthropic.com" || host.endsWith(".anthropic.com")) {
+    return "Anthropic";
+  }
+  return host;
+}
+
+function consentRecipients(provider: ProviderPresence): AiConsentRecipient[] {
+  const out: AiConsentRecipient[] = [];
+  for (const entry of provider.entries) {
+    if (!isOperatorHeldProvider(entry.providerType)) continue;
+    const recipient: AiConsentRecipient =
+      entry.providerType === "admin-codex"
+        ? { via: "operator_chatgpt", name: "ChatGPT (OpenAI)" }
+        : {
+            via: "operator_key",
+            name: operatorKeyServiceName(provider.operatorKeyBaseUrl),
+          };
+    if (!out.some((seen) => seen.via === recipient.via)) out.push(recipient);
+  }
+  return out;
+}
+
+/**
+ * The standing consent. `needed` only where asking would open something: the
+ * chain runs through an operator-held credential and a capability under that
+ * rule is closed by the missing receipt alone (its outermost reason is
+ * `consent_required`). A capability the operator or the person switched off
+ * reports that layer instead, so a record with nothing to open is not asked.
+ */
+function resolveAiConsentState(
+  inputs: AiCapabilityInputs | null,
+  capabilities: Readonly<Record<AiCapabilityKey, AiCapabilityState>>,
+): AiConsentState {
+  if (inputs === null) {
+    return { status: "not_needed", since: null, recipients: [] };
+  }
+  const recipients = consentRecipients(inputs.provider);
+  if (inputs.activeConsentKinds.has("ai_full")) {
+    return {
+      status: "given",
+      since: inputs.fullConsentSince?.toISOString() ?? null,
+      recipients,
+    };
+  }
+  const blockedByConsentAlone = AI_CAPABILITY_KEYS.some(
+    (key) =>
+      AI_CAPABILITIES[key].consent.rule === "self-snapshot" &&
+      capabilities[key].reason === "consent_required",
+  );
+  return {
+    status:
+      recipients.length > 0 && blockedByConsentAlone ? "needed" : "not_needed",
+    since: null,
+    recipients,
+  };
+}
+
 /** The whole `ai` block. */
 export function resolveAiBlock(
   inputs: AiCapabilityInputs | null,
 ): AiCapabilities {
+  const capabilities = resolveAiCapabilities(inputs);
   return {
-    capabilities: resolveAiCapabilities(inputs),
+    capabilities,
     provider: resolveAiProviderState(inputs),
+    consent: resolveAiConsentState(inputs, capabilities),
   };
 }

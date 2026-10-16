@@ -56,6 +56,12 @@ vi.mock("@/hooks/use-ai-capability", () => ({
   useAiCapabilityMap: () => null,
   // v1.43 — no usage level published: the setting stays out of the way.
   useAiUsage: () => null,
+  // v1.43.2 — nothing to ask: the provider is the person's own.
+  useAiConsent: () => ({
+    status: "not_needed",
+    since: null,
+    recipients: [],
+  }),
   useAiProviderState: () => ({
     configured: true,
     managedBy: "user",

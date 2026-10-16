@@ -6357,18 +6357,25 @@
       "consent": {
         "title": "KI-Einwilligung",
         "activeSince": "Erteilt am {date}: Deine Gesundheitsdaten dürfen für die KI-Funktionen an den eingestellten Anbieter gehen.",
-        "withdrawn": "Widerrufen. Sofern keine andere Einwilligung sie abdeckt, nutzen Coach und Insights den KI-Zugang dieses Servers nicht mehr, und kein Online-Modell liest deine Dokumente. Mit deinem eigenen Schlüssel oder einem lokalen Modell laufen Coach und Insights weiter.",
         "withdraw": "Einwilligung widerrufen",
         "confirmBody": "Sofern keine andere Einwilligung sie noch abdeckt, endet sofort: der Coach und die Insights, wo sie den KI-Zugang dieses Servers nutzen, und das Lesen von Dokumenten mit einem Online-Modell. Mit deinem eigenen Schlüssel oder einem lokalen Modell laufen Coach und Insights weiter. Sofern keine andere Einwilligung die Insights noch abdeckt, werden die Notizen gelöscht, die ein Modell für dich geschrieben hat: Statusnotizen, das tägliche Briefing, von einem Modell geschriebene Zeitraum-Zusammenfassungen, Ankunftszeilen und Trainingsnotizen. Deine Coach-Gespräche, was sich der Coach gemerkt hat, deine Pläne und deine Dokument-Zusammenfassungen bleiben, und du kannst sie selbst lesen oder löschen.",
         "confirmWithdraw": "Widerrufen",
-        "regrantHint": "Mit einer neuen Einwilligung dürfen die KI-Funktionen deine Gesundheitsdaten wieder an den eingestellten Anbieter senden.",
-        "grant": "Einwilligung erteilen",
         "grantError": "Die Einwilligung konnte nicht gespeichert werden. Bitte versuche es erneut.",
         "error": "Der Widerruf konnte nicht gespeichert werden. Bitte versuche es erneut.",
         "documentReading": {
           "title": "Einwilligung zum Lesen von Dokumenten",
           "activeSince": "Erteilt am {date}: Dokumente, Laborscans und Medikamententexte dürfen zum Lesen an deinen KI-Dienst gehen.",
           "confirmBody": "Dokumente, gescannte Laborbefunde und Medikamentenbeschreibungen werden nicht mehr zum Lesen gesendet. Nichts, was du bereits hast, wird gelöscht."
+        },
+        "activeSinceNamed": "Erteilt am {date}: Deine Gesundheitsdaten dürfen für die KI-Funktionen an {providers} gehen.",
+        "activeUndated": "Erteilt: Deine Gesundheitsdaten dürfen für die KI-Funktionen an den eingestellten Anbieter gehen.",
+        "request": {
+          "title": "Deine Zustimmung, bevor die KI loslegt",
+          "body": "Die KI auf diesem Server läuft über einen Dienst, den der Betreiber bereitstellt: {providers}. Bevor du zustimmst, geht nichts aus deinen Daten dorthin.",
+          "data": "Wenn du zustimmst, schickt HealthLog diesem Dienst, was die KI-Funktionen brauchen: Messwerte wie Gewicht, Blutdruck, Puls, Schlaf und Aktivität, deine Medikamente, Stimmung, Laborwerte und Zykluseinträge, falls du sie führst, was du in dein Profil und an den Coach schreibst, und Dokumente, die du lesen lässt. Der Dienst schreibt daraus dein Tagesbriefing, die Einschätzungen zu deinen Werten und die Antworten des Coaches.",
+          "withdrawHint": "Du kannst deine Zustimmung jederzeit unter Einstellungen, KI zurückziehen. Ab dann wird nichts mehr gesendet.",
+          "agree": "Zustimmen",
+          "dismiss": "Nicht jetzt"
         }
       },
       "operatorOff": {

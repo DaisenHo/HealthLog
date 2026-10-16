@@ -22,9 +22,10 @@ vi.mock("next/headers", () => ({
 }));
 
 // The mint logic + its TOCTOU close are covered by web-grant.test.ts; the
-// route test stubs it to focus on auth + rate-limit + intent + serialisation.
+// route test stubs it to focus on auth + rate-limit + the explicit
+// confirmation + serialisation.
 vi.mock("@/lib/consent/web-grant", () => ({
-  ensureWebAiConsentReceipt: vi.fn(),
+  grantWebAiConsent: vi.fn(),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -35,7 +36,7 @@ vi.mock("@/lib/rate-limit", () => ({
 import { POST } from "../route";
 import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
-import { ensureWebAiConsentReceipt } from "@/lib/consent/web-grant";
+import { grantWebAiConsent } from "@/lib/consent/web-grant";
 import { checkConsentRateLimit } from "@/lib/rate-limit";
 
 const SESSION_OK = {
@@ -50,15 +51,15 @@ const RL_OK = {
   resetAt: Date.now() + 60_000,
 };
 
-/** The mount heal posts no body and no content-type. */
+/** What the pre-v1.43.2 mount heal sent: no body, no content-type. */
 function mkHeal(): Request {
   return new Request("http://localhost/api/consent/ai/web", {
     method: "POST",
   });
 }
 
-/** The explicit grant control posts a JSON intent. */
-function mkIntent(body: unknown): Request {
+/** A JSON body, as the agree control (or anything else) sends one. */
+function mkJson(body: unknown): Request {
   return new Request("http://localhost/api/consent/ai/web", {
     method: "POST",
     body: JSON.stringify(body),
@@ -77,7 +78,7 @@ describe("POST /api/consent/ai/web", () => {
     vi.mocked(getSession).mockResolvedValue(null);
     const res = await POST(mkHeal());
     expect(res.status).toBe(401);
-    expect(ensureWebAiConsentReceipt).not.toHaveBeenCalled();
+    expect(grantWebAiConsent).not.toHaveBeenCalled();
   });
 
   it("returns 429 when the per-user consent bucket is exhausted", async () => {
@@ -91,33 +92,41 @@ describe("POST /api/consent/ai/web", () => {
     const res = await POST(mkHeal());
     expect(res.status).toBe(429);
     // The throttle fires before the mint runs.
-    expect(ensureWebAiConsentReceipt).not.toHaveBeenCalled();
+    expect(grantWebAiConsent).not.toHaveBeenCalled();
   });
 
-  it("mints a receipt and reports minted:true", async () => {
+  it("mints a receipt on the explicit confirmation and reports minted:true", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(ensureWebAiConsentReceipt).mockResolvedValue({
+    vi.mocked(grantWebAiConsent).mockResolvedValue({
       minted: true,
       receipt: { id: "rcpt-web-1" } as never,
     });
 
-    const res = await POST(mkHeal());
+    const res = await POST(mkJson({ confirm: true }));
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       data: { minted: boolean; kind: string };
     };
     expect(body.data.minted).toBe(true);
     expect(body.data.kind).toBe("ai_full");
+    expect(grantWebAiConsent).toHaveBeenCalledWith("user-1");
+    expect(auditLog).toHaveBeenCalledWith(
+      "consent.ai.grant",
+      expect.objectContaining({
+        userId: "user-1",
+        details: expect.objectContaining({ source: "web", confirmed: true }),
+      }),
+    );
   });
 
   it("is a no-op when an active receipt already exists (minted:false)", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(ensureWebAiConsentReceipt).mockResolvedValue({
+    vi.mocked(grantWebAiConsent).mockResolvedValue({
       minted: false,
       reason: "already_active",
     });
 
-    const res = await POST(mkHeal());
+    const res = await POST(mkJson({ confirm: true }));
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: { minted: boolean } };
     expect(body.data.minted).toBe(false);
@@ -125,49 +134,34 @@ describe("POST /api/consent/ai/web", () => {
     expect(auditLog).not.toHaveBeenCalled();
   });
 
-  it("passes a bodyless call to the mint as a heal", async () => {
+  // Every shape that is not the person's own confirmation: the bodyless
+  // mount heal the settings page sent until v1.43.2, an empty object, the
+  // retired `{ intent }` bodies, and an explicit `false`.
+  it.each([
+    ["no body (the old mount heal)", () => mkHeal()],
+    ["an empty object", () => mkJson({})],
+    ['the retired intent "heal"', () => mkJson({ intent: "heal" })],
+    [
+      'the retired intent "affirmative"',
+      () => mkJson({ intent: "affirmative" }),
+    ],
+    ["confirm: false", () => mkJson({ confirm: false })],
+  ])("refuses %s with 400 and never reaches the mint", async (_label, mk) => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(ensureWebAiConsentReceipt).mockResolvedValue({
-      minted: false,
-      reason: "previously_revoked",
-    });
 
-    const res = await POST(mkHeal());
-    expect(res.status).toBe(200);
-    expect(ensureWebAiConsentReceipt).toHaveBeenCalledWith("user-1", "heal");
+    const res = await POST(mk());
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("consent.ai.confirmRequired");
+    expect(grantWebAiConsent).not.toHaveBeenCalled();
+    expect(auditLog).not.toHaveBeenCalled();
   });
 
-  it("passes an explicit affirmative body to the mint as the consent act", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(ensureWebAiConsentReceipt).mockResolvedValue({
-      minted: true,
-      receipt: { id: "rcpt-web-2" } as never,
-    });
-
-    const res = await POST(mkIntent({ intent: "affirmative" }));
-    expect(res.status).toBe(200);
-    expect(ensureWebAiConsentReceipt).toHaveBeenCalledWith(
-      "user-1",
-      "affirmative",
-    );
-    // The audit row records that this was the user's own grant, not a heal.
-    expect(auditLog).toHaveBeenCalledWith(
-      "consent.ai.grant",
-      expect.objectContaining({
-        userId: "user-1",
-        details: expect.objectContaining({
-          source: "web",
-          intent: "affirmative",
-        }),
-      }),
-    );
-  });
-
-  it("rejects an unknown intent with 422 and never reaches the mint", async () => {
+  it("rejects a malformed confirmation with 422 and never reaches the mint", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
 
-    const res = await POST(mkIntent({ intent: "resurrect" }));
+    const res = await POST(mkJson({ confirm: "yes" }));
     expect(res.status).toBe(422);
-    expect(ensureWebAiConsentReceipt).not.toHaveBeenCalled();
+    expect(grantWebAiConsent).not.toHaveBeenCalled();
   });
 });

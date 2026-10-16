@@ -6357,18 +6357,25 @@
       "consent": {
         "title": "Zgoda na AI",
         "activeSince": "Udzielona {date}: Twoje dane zdrowotne mogą trafiać do skonfigurowanego dostawcy na potrzeby funkcji AI.",
-        "withdrawn": "Wycofana. Jeśli żadna inna zgoda tego nie obejmuje, Coach i Insights nie korzystają już z dostępu AI zapewnianego przez ten serwer, a żaden model online nie czyta Twoich dokumentów. Na własnym kluczu lub lokalnym modelu Coach i Insights działają dalej.",
         "withdraw": "Wycofaj zgodę",
         "confirmBody": "Jeśli żadna inna Twoja zgoda ich nie obejmuje, od razu przestają działać: Coach i Insights tam, gdzie korzystają z dostępu AI zapewnianego przez ten serwer, oraz czytanie dokumentów przez model online. Na własnym kluczu lub lokalnym modelu Coach i Insights działają dalej. Jeśli żadna inna zgoda nie obejmuje już Insights, notatki napisane dla Ciebie przez model zostają usunięte: notatki o stanie, codzienne podsumowanie, podsumowania okresu napisane przez model, linie po nowym pomiarze i notatki o treningach. Twoje rozmowy z Coachem, to, co zapamiętał Coach, Twoje plany i podsumowania dokumentów zostają, a Ty możesz je sam przeczytać lub usunąć.",
         "confirmWithdraw": "Wycofaj",
-        "regrantHint": "Po ponownym udzieleniu zgody funkcje AI znów będą mogły wysyłać Twoje dane zdrowotne do skonfigurowanego dostawcy.",
-        "grant": "Udziel zgody",
         "grantError": "Nie udało się zapisać zgody. Spróbuj ponownie.",
         "error": "Nie udało się zapisać wycofania. Spróbuj ponownie.",
         "documentReading": {
           "title": "Zgoda na odczyt dokumentów",
           "activeSince": "Udzielona {date}: dokumenty, skany badań i opisy leków mogą trafiać do Twojej usługi AI do odczytu.",
           "confirmBody": "Dokumenty, zeskanowane wyniki badań i opisy leków nie są już wysyłane do odczytu. Nic, co już masz, nie zostaje usunięte."
+        },
+        "activeSinceNamed": "Udzielona {date}: Twoje dane zdrowotne mogą trafiać do {providers} na potrzeby funkcji AI.",
+        "activeUndated": "Udzielona: Twoje dane zdrowotne mogą trafiać do skonfigurowanego dostawcy na potrzeby funkcji AI.",
+        "request": {
+          "title": "Twoja zgoda, zanim AI zacznie działać",
+          "body": "AI na tym serwerze korzysta z usługi zapewnianej przez operatora: {providers}. Dopóki się nie zgodzisz, nic z Twoich danych tam nie trafia.",
+          "data": "Gdy się zgodzisz, HealthLog wysyła tej usłudze to, czego potrzebują funkcje AI: pomiary takie jak waga, ciśnienie, tętno, sen i aktywność, Twoje leki, nastrój, wyniki badań i wpisy cyklu, jeśli je prowadzisz, to, co piszesz w profilu i do Coacha, oraz dokumenty, które zdecydujesz się dać do odczytu. Usługa pisze z tego Twoje dzienne podsumowanie, uwagi do pomiarów i odpowiedzi Coacha.",
+          "withdrawHint": "Zgodę możesz wycofać w każdej chwili w Ustawieniach, AI. Od tej chwili nic więcej nie jest wysyłane.",
+          "agree": "Zgadzam się",
+          "dismiss": "Nie teraz"
         }
       },
       "operatorOff": {

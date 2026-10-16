@@ -534,3 +534,104 @@ describe("the AI usage level (#1217)", () => {
     );
   });
 });
+
+describe("the standing consent (v1.43.2)", () => {
+  function operatorOnly(baseUrl?: string | null): AiCapabilityInputs {
+    const inputs = baseline();
+    inputs.provider = {
+      entries: [{ providerType: "admin-openai", vision: true }],
+      localOcrEnabled: false,
+      managedBy: "server",
+      operatorKeyBaseUrl: baseUrl,
+    };
+    return inputs;
+  }
+
+  it("asks, naming the service, while the operator's key waits on it alone", () => {
+    const consent = resolveAiBlock(operatorOnly()).consent;
+    expect(consent).toEqual({
+      status: "needed",
+      since: null,
+      recipients: [{ via: "operator_key", name: "OpenAI" }],
+    });
+  });
+
+  it("names the service behind the operator's endpoint, not a guess", () => {
+    const named = (url: string) =>
+      resolveAiBlock(operatorOnly(url)).consent.recipients[0]?.name;
+    expect(named("https://api.openai.com/v1")).toBe("OpenAI");
+    expect(named("https://api.anthropic.com/v1")).toBe("Anthropic");
+    expect(named("https://openrouter.ai/api/v1")).toBe("openrouter.ai");
+  });
+
+  it("names the operator's shared ChatGPT account", () => {
+    const inputs = baseline();
+    inputs.provider = {
+      entries: [
+        { providerType: "openai", vision: true },
+        { providerType: "admin-codex", vision: true },
+      ],
+      localOcrEnabled: false,
+      managedBy: "user",
+    };
+    expect(resolveAiBlock(inputs).consent).toEqual({
+      status: "needed",
+      since: null,
+      recipients: [{ via: "operator_chatgpt", name: "ChatGPT (OpenAI)" }],
+    });
+  });
+
+  it("reports a given consent with its date and the service it covers", () => {
+    const inputs = operatorOnly();
+    inputs.activeConsentKinds = new Set(["ai_full"]);
+    inputs.fullConsentSince = new Date("2026-07-01T08:00:00.000Z");
+    expect(resolveAiBlock(inputs).consent).toEqual({
+      status: "given",
+      since: "2026-07-01T08:00:00.000Z",
+      recipients: [{ via: "operator_key", name: "OpenAI" }],
+    });
+  });
+
+  it("asks nothing of a person on their own key or a local model", () => {
+    expect(resolveAiBlock(baseline()).consent).toEqual({
+      status: "not_needed",
+      since: null,
+      recipients: [],
+    });
+    const own = baseline();
+    own.provider = {
+      entries: [{ providerType: "anthropic", vision: true }],
+      localOcrEnabled: false,
+      managedBy: "user",
+    };
+    // A document read on an own key still needs its narrower receipt, asked
+    // where the document is read; that is not this question.
+    expect(resolveAiBlock(own).consent.status).toBe("not_needed");
+  });
+
+  it("asks nothing when agreeing would open nothing", () => {
+    // The operator switched AI off: the switch is the outermost reason, so no
+    // capability is closed by the missing consent alone.
+    const off = operatorOnly();
+    off.switches = { ...off.switches, enabled: false };
+    expect(resolveAiBlock(off).consent.status).toBe("not_needed");
+    // A delegate inside somebody else's record.
+    const delegate = operatorOnly();
+    delegate.providerWorkAdmitted = false;
+    expect(resolveAiBlock(delegate).consent.status).toBe("not_needed");
+  });
+
+  it("keeps asking while a narrower receipt leaves the Coach closed", () => {
+    const inputs = operatorOnly();
+    inputs.activeConsentKinds = new Set(["ai_insights_only"]);
+    expect(resolveAiBlock(inputs).consent.status).toBe("needed");
+  });
+
+  it("asks nothing when the inputs could not be read", () => {
+    expect(resolveAiBlock(null).consent).toEqual({
+      status: "not_needed",
+      since: null,
+      recipients: [],
+    });
+  });
+});

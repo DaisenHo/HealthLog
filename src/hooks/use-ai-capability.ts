@@ -5,6 +5,7 @@ import { useQueryClientMounted } from "@/hooks/_internal/use-query-client-safe";
 import type {
   AiCapabilityKey,
   AiCapabilityState,
+  AiConsentState,
   AiProviderState,
 } from "@/lib/ai/capabilities/types";
 import { PROVIDER_DEFAULT_TIMEOUT_MS } from "@/lib/ai/effective-timeout";
@@ -103,6 +104,25 @@ export function useAiUsage(): AiUsageState | null {
 function useAiUsageInner(): AiUsageState | null {
   const { user } = useAuth();
   return user?.ai?.usage ?? null;
+}
+
+/**
+ * v1.43.2 — the standing AI consent (`ai.consent` on `GET /api/auth/me`):
+ * given (and since when), needed (and for which services), or not needed.
+ * `null` while it is not known; a consent surface then says nothing rather
+ * than misreport the person's decision. Render from it; never decide here
+ * whether consent is needed.
+ */
+export function useAiConsent(): AiConsentState | null {
+  const hasClient = useQueryClientMounted();
+  if (!hasClient) return null;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useAiConsentInner();
+}
+
+function useAiConsentInner(): AiConsentState | null {
+  const { user } = useAuth();
+  return user?.ai?.consent ?? null;
 }
 
 /**

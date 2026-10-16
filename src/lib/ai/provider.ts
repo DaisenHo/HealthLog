@@ -910,6 +910,7 @@ const PRESENCE_USER_SELECT = {
 const PRESENCE_SETTINGS_SELECT = {
   adminAiKeyEncrypted: true,
   adminAiModel: true,
+  adminAiBaseUrl: true,
   adminCodexConnectionStatus: true,
   adminCodexAccessTokenEncrypted: true,
   adminCodexRefreshTokenEncrypted: true,
@@ -996,6 +997,7 @@ export function probeProviderChain(
       if (policy === "operator-default") {
         return {
           entries: adminKey ? [vision("admin-openai")] : [],
+          operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
           // A guardian's in-browser OCR is not the record's opt-in to use.
           localOcrEnabled: false,
           managedBy: adminKey ? "server" : null,
@@ -1065,6 +1067,7 @@ export function probeProviderChain(
         managedBy: entries.length > 0 ? managedBy : null,
         availableTypes,
         responseTimeoutSeconds: row.aiResponseTimeoutSeconds,
+        operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
       };
     },
     { freshInBackground: true },

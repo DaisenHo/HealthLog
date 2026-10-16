@@ -44,8 +44,23 @@ export type ConsentKind = z.infer<typeof consentKindEnum>;
  */
 const ARTEFACT_MAX_BYTES = 64 * 1024;
 
+/**
+ * The explicit-confirmation flag every grant must carry. A receipt records a
+ * person's own consent act, so the server mints one only for a request that
+ * says it is that act: the tap on an "Agree" control sends `confirm: true`.
+ * A request without it (an app that synced a receipt on launch, a page that
+ * healed one on mount) is refused with {@link CONSENT_CONFIRM_REQUIRED_ERROR_CODE}
+ * and mints nothing. Optional in the schema so the route can answer that
+ * code rather than a generic validation error.
+ */
+const confirmFlag = z.boolean().optional();
+
+/** The refusal code for a grant request without `confirm: true`. */
+export const CONSENT_CONFIRM_REQUIRED_ERROR_CODE = "consent.ai.confirmRequired";
+
 export const consentPostBody = z.object({
   kind: consentKindEnum,
+  confirm: confirmFlag,
   artefact: z
     .string()
     .min(1, "artefact must not be empty")
@@ -58,20 +73,13 @@ export const consentPostBody = z.object({
 export type ConsentPostBody = z.infer<typeof consentPostBody>;
 
 /**
- * Optional body for `POST /api/consent/ai/web`. The AI-settings mount posts
- * no body at all (a heal: mints only for an account with no consent history);
- * the explicit re-grant control on the same surface posts
- * `{ intent: "affirmative" }`, the user's own consent act, which may
- * supersede an earlier revocation the way any first grant would. The enum
- * must stay in lockstep with `WebConsentGrantIntent` in
- * `src/lib/consent/web-grant.ts`; the route narrows the parsed value to that
- * type, so a drift fails the typecheck.
+ * Body for `POST /api/consent/ai/web`: `{ "confirm": true }`, sent only by the
+ * "Agree" control. There is no implicit form any more; a request without the
+ * flag mints nothing.
  */
 export const webConsentGrantBody = z.object({
-  intent: z.enum(["heal", "affirmative"]).default("heal"),
+  confirm: confirmFlag,
 });
-
-export type WebConsentGrantBodyInput = z.input<typeof webConsentGrantBody>;
 
 /**
  * Query schema for both `/api/consent/ai/latest` GET and DELETE.

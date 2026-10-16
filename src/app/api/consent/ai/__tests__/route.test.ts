@@ -188,6 +188,7 @@ describe("POST /api/consent/ai", () => {
         kind: "ai_full",
         artefact: "PDF",
         signedAt: signedAt.toISOString(),
+        confirm: true,
       }),
     );
     expect(res.status).toBe(200);
@@ -222,6 +223,31 @@ describe("POST /api/consent/ai", () => {
         signedAt,
       },
     });
+  });
+
+  // v1.43.2 — native builds before it posted this body once per launch to
+  // sync a receipt the account did not hold, which re-granted a consent the
+  // person had withdrawn elsewhere. Only an explicit confirmation mints.
+  it.each([
+    ["without confirm (a launch-time sync)", {}],
+    ["with confirm: false", { confirm: false }],
+  ])("refuses a well-formed grant %s and writes nothing", async (_l, extra) => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await POST(
+      req({
+        kind: "ai_full",
+        artefact: '{"source":"ios.AIConsentSheet","scope":"ai_full"}',
+        signedAt: "2026-05-18T10:00:00.000Z",
+        ...extra,
+      }),
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("consent.ai.confirmRequired");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.consentReceipt.create).not.toHaveBeenCalled();
+    expect(prisma.consentReceipt.updateMany).not.toHaveBeenCalled();
+    expect(auditLog).not.toHaveBeenCalled();
   });
 
   describe("v1.4.43 W6 — multi-issue 400 envelope (consent uses 400)", () => {

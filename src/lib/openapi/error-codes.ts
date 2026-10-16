@@ -112,7 +112,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "coach-prefs.body.invalid_json",
       "coach-prefs.body.invalid_shape",
     ],
-    consent: ["consent.ai.required"],
+    consent: ["consent.ai.confirmRequired", "consent.ai.required"],
     cycle: [
       "cycle.bulk.invalid",
       "cycle.bulk.too_large",

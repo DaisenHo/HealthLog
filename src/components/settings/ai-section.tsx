@@ -18,6 +18,7 @@
  * provider-configuration screen.
  */
 
+import { AiConsentRequest } from "@/components/ai/ai-consent-request";
 import { AiInsightsCard } from "@/components/settings/ai/ai-insights-card";
 import { OperatorOffNotice } from "@/components/settings/ai/operator-off-notice";
 import { StoredCoachMemory } from "@/components/settings/coach-memory-section";
@@ -43,7 +44,8 @@ export function AiSection() {
   //
   // v1.39 — above the provider card: what the operator has switched off (so
   // nothing below reads as broken), and the one calm setup hint while no
-  // provider is configured. Below it: what the Coach stored, while Settings →
+  // provider is configured, or the consent question while the operator's
+  // provider waits on it. Below it: what the Coach stored, while Settings →
   // Coach is not reachable, so it can always be read and deleted.
   const coachSettingsReachable = isSurfaceVisible(
     "settings:coach",
@@ -53,6 +55,9 @@ export function AiSection() {
     <div className="space-y-6">
       <OperatorOffNotice />
       <AiSetupHint surface="settings" />
+      {/* v1.43.2 — the consent question, above the provider card, while the
+          operator's provider is closed by nothing but the missing consent. */}
+      <AiConsentRequest surface="settings" />
       <AiInsightsCard isAuthenticated={authed} />
       {authed && !coachSettingsReachable ? (
         <StoredCoachMemory isAuthenticated={authed} />

@@ -199,10 +199,49 @@ export const aiProviderState = z
     description: "The account-level companion to the capability map.",
   });
 
+export const aiConsentState = z
+  .object({
+    status: z
+      .enum(["given", "needed", "not_needed"])
+      .describe(
+        "`given` — an `ai_full` consent receipt is active (`since` says when); show it with a withdraw control. `needed` — the provider chain runs through a credential the operator holds and at least one capability is closed by the missing receipt alone (its reason is `consent_required`); ask, naming `recipients`, and grant only from the person's tap. `not_needed` — nothing to ask and nothing to withdraw.",
+      ),
+    since: z
+      .string()
+      .nullable()
+      .describe(
+        "When the active `ai_full` consent was given, ISO-8601. `null` unless `status` is `given`.",
+      ),
+    recipients: z
+      .array(
+        z.object({
+          via: z
+            .enum(["operator_key", "operator_chatgpt"])
+            .describe(
+              "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account.",
+            ),
+          name: z
+            .string()
+            .describe(
+              "The service, named for a person: `OpenAI`, `Anthropic`, `ChatGPT (OpenAI)`, or the host name of the endpoint the operator set.",
+            ),
+        }),
+      )
+      .describe(
+        "The operator-held services in the record's provider chain, in chain order. Empty when the chain holds none.",
+      ),
+  })
+  .meta({
+    id: "AiConsentState",
+    description:
+      "v1.43.2 — the standing AI consent for the record. Consent is asked only when data would go through a credential the operator holds; a person's own key, ChatGPT account or local model needs none. Render from it; a client never mints a receipt on its own (launch, sync or mount): POST /api/consent/ai and /api/consent/ai/web require `confirm: true`.",
+  });
+
 export const aiAccountBlock = z
   .object({
     capabilities: aiCapabilities,
     provider: aiProviderState,
+    consent: aiConsentState,
     usage: aiUsageState
       .optional()
       .describe(

@@ -2,8 +2,16 @@
  * v1.4.40 SB-10 — AI consent receipts.
  *
  *   POST /api/consent/ai
- *     Body: { kind, artefact, signedAt }
+ *     Body: { kind, artefact, signedAt, confirm: true }
  *     Persists a fresh consent receipt. Returns the inserted row.
+ *
+ *     v1.43.2 — `confirm: true` is required. A receipt records a person's
+ *     own consent act, and native builds before it also posted here once per
+ *     launch to sync a receipt the account no longer held (re-granting, for
+ *     example, a consent the person had withdrawn on the web). Without the
+ *     flag nothing is written and the route answers 400
+ *     `consent.ai.confirmRequired`; the client reads the standing state from
+ *     `ai.consent` on `GET /api/auth/me` instead.
  *
  * Reader + revoke handlers live in `./latest/route.ts`.
  */
@@ -19,7 +27,10 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkConsentRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { consentPostBody } from "@/lib/validations/consent";
+import {
+  CONSENT_CONFIRM_REQUIRED_ERROR_CODE,
+  consentPostBody,
+} from "@/lib/validations/consent";
 import { createReceipt } from "@/lib/consent/receipts";
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -50,7 +61,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 400);
   }
 
-  const { kind, artefact, signedAt } = parsed.data;
+  const { kind, artefact, signedAt, confirm } = parsed.data;
+  if (confirm !== true) {
+    // A launch-time sync from an older app build lands here. It is not the
+    // person agreeing to anything, so it writes nothing.
+    annotate({
+      action: { name: "consent.ai.grant.unconfirmed" },
+      meta: { kind },
+    });
+    return apiError(
+      "Consent is recorded only from an explicit confirmation",
+      400,
+      { errorCode: CONSENT_CONFIRM_REQUIRED_ERROR_CODE },
+    );
+  }
   const receipt = await createReceipt(user.id, kind, artefact, signedAt);
 
   // Audit trail — separate from the row itself so the legal team can

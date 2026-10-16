@@ -4,7 +4,7 @@ import { useAiProviderState } from "@/hooks/use-ai-capability";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   CheckCircle2,
@@ -25,12 +25,9 @@ import { useOnboardingAnswer } from "@/components/onboarding/use-onboarding-flow
 import { useAuth } from "@/hooks/use-auth";
 import { useAccountSwitch } from "@/hooks/use-account-switch";
 import { setTourReferrer } from "@/components/onboarding/tour-launcher";
-import {
-  aiInputDependentKeys,
-  invalidateKeys,
-  queryKeys,
-} from "@/lib/query-keys";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { queryKeys } from "@/lib/query-keys";
+import { apiGet } from "@/lib/api/api-fetch";
+import { useGrantAiConsent } from "@/hooks/use-grant-ai-consent";
 import { useTranslations } from "@/lib/i18n/context";
 import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
@@ -150,33 +147,19 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
   // The tap's own outcome, held locally so the line changes the moment the
   // receipt is minted rather than a refetch later.
   const [justGranted, setJustGranted] = useState(false);
-  const queryClient = useQueryClient();
-  const grantConsent = useMutation({
-    mutationKey: queryKeys.aiConsentReceipt("ai_full"),
-    mutationFn: async () => {
-      // `intent: "affirmative"` marks this as the user's own consent act —
-      // the only web path allowed to supersede an earlier withdrawal. The
-      // silent mount heal posts no body and deliberately cannot.
-      const res = await apiFetchRaw("/api/consent/ai/web", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intent: "affirmative" }),
-      });
-      if (!res.ok) throw new Error("consent grant failed");
-    },
-    onSuccess: async () => {
-      setJustGranted(true);
-      await invalidateKeys(queryClient, aiInputDependentKeys);
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.aiConsentReceipt("ai_full"),
-      });
-    },
-    onError: (failure) => {
-      // The button stays. A failed grant is a failed grant; the screen must
-      // not read as though consent were on file.
-      showErrorToast(t("onboarding.ai.offer.error"), { cause: failure });
-    },
-  });
+  // The tap on the offer is the consent act; the hook sends the explicit
+  // confirmation the server requires before it records one.
+  const grantConsent = useGrantAiConsent();
+  function agreeToSharedProvider() {
+    grantConsent.mutate(undefined, {
+      onSuccess: () => setJustGranted(true),
+      onError: (failure) => {
+        // The button stays. A failed grant is a failed grant; the screen
+        // must not read as though consent were on file.
+        showErrorToast(t("onboarding.ai.offer.error"), { cause: failure });
+      },
+    });
+  }
 
   const operatorProvides = aiProvider?.managedBy === "server";
   const sharedHealth = aiProvider?.serverProviderHealth;
@@ -327,7 +310,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
                 className="min-h-9 w-full"
                 data-slot="onboarding-ai-offer-grant"
                 disabled={grantConsent.isPending}
-                onClick={() => grantConsent.mutate()}
+                onClick={agreeToSharedProvider}
               >
                 {t("onboarding.ai.offer.cta")}
               </Button>
