@@ -571,6 +571,22 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "delete",
   ),
   handler(
+    "app/api/anamnesis/audit-c/route.ts",
+    "/api/anamnesis/audit-c",
+    "POST",
+    "profile",
+    "manage",
+    "create",
+  ),
+  handler(
+    "app/api/anamnesis/audit-c/[id]/route.ts",
+    "/api/anamnesis/audit-c/[id]",
+    "DELETE",
+    "profile",
+    "manage",
+    "delete",
+  ),
+  handler(
     "app/api/medications/[id]/ingredients/route.ts",
     "/api/medications/[id]/ingredients",
     "PUT",

@@ -508,7 +508,17 @@ const RESULT_SURFACES: ReadonlyArray<{
     forbidsMarkers: true,
   },
   {
-    path: "src/components/records/health-profile-facts-manager.tsx",
+    path: "src/components/records/life-circumstances-manager.tsx",
+    through: /toastWrittenOutcome/,
+    forbidsMarkers: true,
+  },
+  {
+    path: "src/components/records/audit-c-panel.tsx",
+    through: /toastWrittenOutcome/,
+    forbidsMarkers: true,
+  },
+  {
+    path: "src/components/records/free-text-take-over.tsx",
     through: /toastWrittenOutcome/,
     forbidsMarkers: true,
   },

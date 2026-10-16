@@ -9,11 +9,24 @@
  * read it under the `profile` grant, like the facts.
  */
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import { notImplemented } from "@/lib/http/not-implemented";
+import { apiSuccess } from "@/lib/api-response";
+import { annotate } from "@/lib/logging/context";
+import { buildLifeCircumstances } from "@/lib/profile/life-circumstances";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  await requireRecordAuth("read", "profile");
-  return notImplemented("anamnesis.life_circumstances.get");
+  const { user } = await requireRecordAuth("read", "profile");
+  const payload = await buildLifeCircumstances(user.id);
+  annotate({
+    action: { name: "anamnesis.life_circumstances.get" },
+    meta: {
+      fact_count: payload.sections.reduce(
+        (sum, section) => sum + section.facts.length,
+        0,
+      ),
+      audit_c_count: payload.auditC.history.length,
+    },
+  });
+  return apiSuccess(payload);
 });

@@ -384,7 +384,20 @@
       "notes": "Dodatkowe uwagi"
     },
     "courseRange": "Kuracja od {start} do {end}",
-    "courseSince": "Kuracja od {start}"
+    "courseSince": "Kuracja od {start}",
+    "lifePackYears": "Paczkolata",
+    "lifeAuditC": "AUDIT-C (badanie przesiewowe)",
+    "lifeAuditCScore": "{score} z 12 dnia {date}.",
+    "lifeAuditCAbove": "Na lub powyżej progu {cutoff} ({source}).",
+    "lifeAuditCBelow": "Poniżej progu {cutoff} ({source}).",
+    "lifeAuditCNoCutoff": "Bez progu zależnego od płci.",
+    "lifeActivity": "Aktywność fizyczna",
+    "lifeActivityValue": "{minutes} minut w tygodniu, według deklaracji",
+    "lifeSitting": "Siedzenie w dzień roboczy",
+    "lifeSittingValue": "{hours} godz., według deklaracji",
+    "lifeWork": "Praca",
+    "lifeNightWork": "praca w nocy",
+    "lifeExposures": "narażenia: {list}"
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -10911,25 +10924,11 @@
     },
     "profileFacts": {
       "cardTitle": "Kontekst stylu życia",
-      "cardDescription": "Zapisz aktualne informacje, które zmieniają interpretację pomiarów zdrowotnych.",
       "smokingLabel": "Palenie tytoniu",
       "alcoholLabel": "Wzorzec spożycia alkoholu",
       "shiftLabel": "Harmonogram pracy",
       "notRecorded": "Brak danych",
-      "unreadable": "Nie udało się odczytać zapisanej wartości",
-      "save": "Zapisz",
-      "savedToast": "Zapisano kontekst stylu życia",
-      "savePartialError": "Nie udało się zapisać {kinds}. Spróbuj ponownie.",
-      "saveKindError": "Nie zapisano",
-      "loadError": "Nie udało się wczytać kontekstu stylu życia",
       "remove": "Usuń: {kind}",
-      "removeShort": "Usuń",
-      "removeConfirmTitle": "Usunąć: {kind}?",
-      "removeConfirmDescription": "Bieżąca wartość zmieni się na brak danych. Historia z datami zostanie zachowana.",
-      "removedToast": "Usunięto {kind} z bieżącego kontekstu stylu życia",
-      "removeError": "Nie udało się usunąć: {kind}",
-      "historyTitle": "Poprzednie wartości",
-      "to": "do",
       "values": {
         "SMOKING_STATUS": {
           "NEVER": "Nigdy nie pali",
@@ -11109,6 +11108,228 @@
       "savedToast": "Informacje na wypadek nagły zapisane",
       "saveError": "Nie udało się zapisać informacji na wypadek nagły.",
       "loadError": "Nie udało się wczytać informacji na wypadek nagły."
+    },
+    "life": {
+      "cardTitle": "Warunki życia",
+      "cardDescription": "Palenie, alkohol, aktywność, praca, nawyki i cele, z datą i zawsze dobrowolnie.",
+      "loadError": "Nie udało się wczytać warunków życia.",
+      "noAnswer": "Brak odpowiedzi",
+      "yes": "Tak",
+      "no": "Nie",
+      "validSince": "Obowiązuje od",
+      "month": "Miesiąc",
+      "year": "Rok",
+      "lastConfirmed": "Ostatnio potwierdzono {date}",
+      "notAnswered": "Jeszcze bez odpowiedzi",
+      "unreadable": "Tej odpowiedzi nie da się odczytać na tym serwerze.",
+      "save": "Zapisz sekcję",
+      "savedToast": "Sekcja zapisana",
+      "saveError": "Nie udało się zapisać sekcji.",
+      "review": {
+        "question": "Czy to nadal aktualne? Twoja ostatnia odpowiedź ma ponad rok.",
+        "confirm": "Nadal aktualne",
+        "confirmedToast": "Dziękujemy, oznaczono jako aktualne",
+        "confirmError": "Nie udało się zapisać potwierdzenia."
+      },
+      "ai": {
+        "label": "Udostępnij tę sekcję AI",
+        "shiftLabel": "Udostępnij pracę zmianową AI",
+        "hint": "Po wyłączeniu Coach i podsumowania nigdy nie widzą tych odpowiedzi.",
+        "savedToast": "Udostępnianie AI zaktualizowane",
+        "saveError": "Nie udało się zapisać ustawienia AI."
+      },
+      "sections": {
+        "tobacco": {
+          "title": "Palenie i nikotyna"
+        },
+        "alcohol": {
+          "title": "Alkohol"
+        },
+        "activity": {
+          "title": "Aktywność i siedzenie"
+        },
+        "work": {
+          "title": "Praca i rytm dnia"
+        },
+        "habits": {
+          "title": "Sen, odżywianie i kofeina"
+        },
+        "goals": {
+          "title": "Cele"
+        }
+      },
+      "fields": {
+        "smokingStatus": "Palenie tytoniu",
+        "products": "Używane produkty",
+        "cigarettesPerDay": "Papierosy dziennie",
+        "startYear": "Rok rozpoczęcia",
+        "quitMonth": "Kiedy rzucono",
+        "secondhandSmoke": "Regularne bierne palenie",
+        "moderateDaysPerWeek": "Dni w tygodniu z umiarkowaną lub intensywną aktywnością, np. szybkim marszem",
+        "moderateMinutesPerDay": "Minuty w te dni, średnio",
+        "sittingHoursWorkday": "Godziny siedzenia w dzień roboczy",
+        "shiftSchedule": "Praca zmianowa",
+        "situation": "Sytuacja zawodowa",
+        "physicalNature": "Rodzaj pracy",
+        "nightWork": "Praca w nocy",
+        "exposures": "Narażenia w pracy",
+        "freeWeekdays": "Wolne dni tygodnia",
+        "napRegularly": "Regularna drzemka",
+        "snoringReported": "Inni mówią, że chrapiesz",
+        "dietPattern": "Sposób odżywiania",
+        "dietSpecifics": "Szczegóły",
+        "lateMealsPerWeek": "Posiłki po 21:00 w tygodniu",
+        "fruitVegPortionsPerDay": "Porcje owoców i warzyw dziennie",
+        "caffeineDrinksPerDay": "Napoje z kofeiną dziennie",
+        "latestCaffeine": "Najpóźniejsza kofeina w ciągu dnia",
+        "goals": "Nad czym chcesz pracować",
+        "goalsHint": "Najwyżej trzy."
+      },
+      "values": {
+        "products": {
+          "cigarettes": "Papierosy",
+          "cigars_pipe": "Cygara lub fajka",
+          "e_cigarette": "E-papieros",
+          "heated_tobacco": "Podgrzewany tytoń",
+          "snus_pouches": "Snus lub saszetki nikotynowe"
+        },
+        "situation": {
+          "none": "Bez pracy zarobkowej",
+          "indoor": "Głównie w pomieszczeniach",
+          "outdoor": "Głównie na zewnątrz",
+          "mixed": "W środku i na zewnątrz"
+        },
+        "physicalNature": {
+          "mostly_sitting": "Głównie siedząca",
+          "standing_walking": "Stojąca lub w ruchu",
+          "heavy_physical": "Ciężka praca fizyczna"
+        },
+        "exposures": {
+          "heat": "Upał",
+          "cold": "Zimno",
+          "dust": "Pył",
+          "fumes_solvents": "Opary lub rozpuszczalniki",
+          "noise": "Hałas"
+        },
+        "dietPattern": {
+          "mixed": "Dieta mieszana",
+          "vegetarian": "Wegetariańska",
+          "vegan": "Wegańska",
+          "pescetarian": "Peskatariańska",
+          "other": "Inna"
+        },
+        "dietSpecifics": {
+          "intermittent_fasting": "Post przerywany",
+          "low_carb": "Niskowęglowodanowa",
+          "prescribed_diet": "Dieta zalecona przez lekarza"
+        },
+        "latestCaffeine": {
+          "before_12": "Przed 12:00",
+          "12_15": "12:00 do 15:00",
+          "15_18": "15:00 do 18:00",
+          "after_18": "Po 18:00"
+        },
+        "goals": {
+          "weight": "Waga",
+          "blood_pressure": "Ciśnienie krwi",
+          "blood_sugar": "Cukier we krwi",
+          "sleep": "Sen",
+          "fitness": "Kondycja",
+          "stress_recovery": "Stres i regeneracja",
+          "medication_routine": "Regularne przyjmowanie leków",
+          "quit_smoking": "Rzucenie palenia",
+          "less_alcohol": "Mniej alkoholu"
+        },
+        "weekdays": {
+          "1": "pon.",
+          "2": "wt.",
+          "3": "śr.",
+          "4": "czw.",
+          "5": "pt.",
+          "6": "sob.",
+          "7": "niedz."
+        }
+      },
+      "derived": {
+        "packYears": "{value} paczkolat",
+        "packYearsMissing": "Do paczkolat brakuje liczby papierosów dziennie albo roku rozpoczęcia.",
+        "activityMinutes": "{value} minut w tygodniu",
+        "meetsWho": "To spełnia zalecenie WHO 150 minut tygodniowo.",
+        "belowWho": "To poniżej zalecenia WHO 150 minut tygodniowo.",
+        "measuredSteps": "Zmierzone kroki mają pierwszeństwo, ta odpowiedź dodaje kontekst.",
+        "freeDaysDefault": "Bez odpowiedzi sobota i niedziela liczą się jako dni wolne."
+      },
+      "auditC": {
+        "intro": "Trzy pytania o alkohol z testu AUDIT WHO. Badanie przesiewowe, nie diagnoza.",
+        "start": "Odpowiedz na pytania",
+        "again": "Odpowiedz ponownie",
+        "offerDue": "Wystarczy zajrzeć raz w roku.",
+        "submit": "Zapisz odpowiedzi",
+        "notValidated": "Dla Twojego języka nie ma jeszcze zwalidowanego tłumaczenia, dlatego pytania są po angielsku.",
+        "savedToast": "Odpowiedzi zapisane",
+        "saveError": "Nie udało się zapisać odpowiedzi.",
+        "result": "{score} z 12 punktów",
+        "above": "Na lub powyżej progu przesiewowego {cutoff}.",
+        "below": "Poniżej progu przesiewowego {cutoff}.",
+        "noCutoff": "Bez płci w profilu pokazujemy tylko sumę.",
+        "source": "Źródło: {source}",
+        "history": "Wcześniejsze wpisy",
+        "remove": "Usuń wpis",
+        "removeConfirmTitle": "Usunąć ten wpis?",
+        "removeConfirmBody": "Wpis zniknie z historii. Tutaj nie da się tego cofnąć.",
+        "removedToast": "Wpis usunięty",
+        "removeError": "Nie udało się usunąć wpisu.",
+        "historyEntry": "{date}: {score} z 12"
+      },
+      "takeOver": {
+        "conditionsButton": "Przenieś do dziennika stanów",
+        "allergiesButton": "Przenieś do alergii",
+        "conditionsTitle": "Dodaj chorobę przewlekłą",
+        "allergiesTitle": "Dodaj alergię",
+        "description": "Twój tekst pozostaje bez zmian, dopóki sam go nie wyczyścisz.",
+        "freeTextLabel": "Twój tekst",
+        "conditionLabel": "Choroba",
+        "onset": "Od",
+        "save": "Dodaj",
+        "savedToast": "Wpis dodany",
+        "saveError": "Nie udało się dodać wpisu.",
+        "clearQuestion": "Wpis zapisany. Wyczyścić teraz tekst?",
+        "clear": "Wyczyść tekst",
+        "keep": "Zostaw",
+        "clearedToast": "Tekst wyczyszczony",
+        "clearError": "Nie udało się wyczyścić tekstu."
+      },
+      "screening": {
+        "cardTitle": "Wskazówki dotyczące badań przesiewowych",
+        "cardDescription": "Na podstawie warunków życia, z regułą i krajem, z którego pochodzi.",
+        "noReminder": "To tylko wskazówka; przypomnienie ustaw sam, jeśli chcesz.",
+        "source": "Źródło: {source}",
+        "titles": {
+          "lung_ldct": "Niskodawkowa TK w kierunku raka płuca",
+          "aaa_ultrasound": "USG aorty brzusznej"
+        },
+        "status": {
+          "suggested": "Może Cię dotyczyć",
+          "not_eligible": "Nie dotyczy Cię",
+          "unknown": "Za mało informacji"
+        },
+        "reasons": {
+          "never_smoked": "Nigdy nie paliłeś.",
+          "missing_birth_date": "Brakuje daty urodzenia.",
+          "age_out_of_range": "Wiek poza zakresem.",
+          "missing_smoking_status": "Brakuje informacji o paleniu.",
+          "no_cigarettes": "Reguła liczy tylko papierosy.",
+          "missing_smoking_history": "Brakuje liczby papierosów dziennie lub roku rozpoczęcia.",
+          "pack_years_below_15": "Mniej niż 15 paczkolat.",
+          "pack_years_below_20": "Mniej niż 20 paczkolat.",
+          "smoked_years_below_25": "Mniej niż 25 lat palenia.",
+          "missing_quit_date": "Brakuje daty rzucenia.",
+          "quit_over_10_years": "Rzucenie ponad 10 lat temu.",
+          "quit_over_15_years": "Rzucenie ponad 15 lat temu.",
+          "missing_sex": "W profilu brakuje płci.",
+          "sex_not_male": "Reguła dotyczy mężczyzn."
+        }
+      }
     }
   },
   "environment": {
@@ -12297,7 +12518,9 @@
       "lifeEventUpdate": "{name} zmienił wydarzenie życiowe",
       "lifeEventDelete": "{name} usunął wydarzenie życiowe",
       "biomarkerMerge": "{name} scalił biomarkery",
-      "medicationIngredientsUpdate": "{name} zmienił skład suplementu"
+      "medicationIngredientsUpdate": "{name} zmienił skład suplementu",
+      "auditCCreate": "{name} wypełnił kwestionariusz AUDIT-C",
+      "auditCDelete": "{name} usunął wpis AUDIT-C"
     },
     "section": {
       "measurements": {

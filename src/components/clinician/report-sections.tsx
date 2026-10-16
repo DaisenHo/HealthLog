@@ -13,6 +13,7 @@
  * A pure server component: no client hooks, no session, no markdown — every
  * value renders as escaped React text.
  */
+import { lifeReportRows } from "@/lib/profile/life-report-rows";
 import { Fragment } from "react";
 
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
@@ -473,10 +474,14 @@ export function AnamnesisSection({
   t,
   report,
   scope,
+  fmtNum,
+  fmtDate,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
+  fmtNum: (n: number) => string;
+  fmtDate: (iso: string) => string;
 }) {
   const anamnesis = report.anamnesis ?? null;
 
@@ -518,6 +523,11 @@ export function AnamnesisSection({
         label={t("doctorReport.anamnesisShiftSchedule")}
         value={factValue("SHIFT_SCHEDULE", anamnesis?.shiftSchedule ?? null)}
       />
+      {lifeReportRows(anamnesis?.life, t, fmtNum, fmtDate).map(
+        ([label, value]) => (
+          <StatRow key={label} label={label} value={value} />
+        ),
+      )}
     </LeafSection>
   );
 }

@@ -36,6 +36,7 @@ import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
+  SCREENER_INSTRUMENTS,
   createAssessmentSchema,
   listAssessmentsSchema,
 } from "@/lib/validations/mental-health";
@@ -121,7 +122,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     where: {
       userId: user.id,
       deletedAt: null,
-      ...(instrument ? { instrument } : {}),
+      // Screeners only: the table also stores AUDIT-C (v1.43), which older
+      // app builds cannot decode in this list.
+      instrument: instrument ?? { in: [...SCREENER_INSTRUMENTS] },
     },
     // Unique tiebreaker — `takenAt` is day-resolution and two instruments
     // taken in one sitting tie.
@@ -245,7 +248,11 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   // per user, not globally.
   if (externalId) {
     const existing = await prisma.mentalHealthAssessment.findFirst({
-      where: { userId: user.id, externalId },
+      where: {
+        userId: user.id,
+        externalId,
+        instrument: { in: [...SCREENER_INSTRUMENTS] },
+      },
       select: {
         id: true,
         instrument: true,
@@ -332,7 +339,11 @@ async function postAssessment(request: NextRequest): Promise<Response> {
       (err as { code?: unknown }).code === "P2002"
     ) {
       const winner = await prisma.mentalHealthAssessment.findFirst({
-        where: { userId: user.id, externalId },
+        where: {
+          userId: user.id,
+          externalId,
+          instrument: { in: [...SCREENER_INSTRUMENTS] },
+        },
         select: assessmentSelect,
       });
       if (winner) {

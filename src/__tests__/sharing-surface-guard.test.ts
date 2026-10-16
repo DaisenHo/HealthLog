@@ -893,7 +893,15 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/anamnesis/life-circumstances/route.ts": {
     domain: "profile",
-    why: "The record's life circumstances (v1.43), the structured sibling of the facts above and under the same `profile` grant. Read-only: the section switches, confirmations and AUDIT-C are written through their own routes, none of them delegable.",
+    why: "The record's life circumstances (v1.43), the structured sibling of the facts above and under the same `profile` grant. Read-only: the section switches and confirmations are written through their own owner-only routes; AUDIT-C through the manage-level pair below.",
+  },
+  "app/api/anamnesis/audit-c/route.ts": {
+    domain: "profile",
+    why: "Recording an AUDIT-C (v1.43) into the record, the alcohol section of the life circumstances. Reached only through its MANAGE arm, the level allergies and family history are written at; the entry is scored on the server against the record's profile.",
+  },
+  "app/api/anamnesis/audit-c/[id]/route.ts": {
+    domain: "profile",
+    why: "Removing one AUDIT-C entry of the record, scoped `userId: user.id` and `instrument: AUDIT_C` in the guarded update, so a foreign id or a screener id is a 404. Reached only through its MANAGE arm.",
   },
   "app/api/profile/summary/route.ts": {
     domain: "profile",
@@ -1630,6 +1638,16 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: [],
     why: "Recording an allergy. Reachable through the record's settings on a managed profile, dormant on an invited one, and argued as such.",
   },
+  "app/api/anamnesis/audit-c/route.ts": {
+    domain: "profile",
+    conditions: ["C1"],
+    why: "Recording an AUDIT-C (v1.43) in the record a manager runs, like an allergy. C1: the 30-an-hour bucket keys on the actor. Arithmetic on three answers, no generation; the trail files the entry id and instrument, never the answers.",
+  },
+  "app/api/anamnesis/audit-c/[id]/route.ts": {
+    domain: "profile",
+    conditions: [],
+    why: "Removing an AUDIT-C entry is a soft delete (`deletedAt`), so the row stays to reconstruct and the delete needs no C3; it is the counterpart of the create beside it.",
+  },
   "app/api/allergies/[id]/route.ts": {
     domain: "profile",
     conditions: ["C3", "C4"],
@@ -2142,8 +2160,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.43 -- a supplement's composition joins the record list and the manage
  * literal: its PUT replaces the composition every taken dose counts with.
  * 260 -> 262.
+ *
+ * v1.43 -- AUDIT-C's create and soft delete join the record list and the
+ * manage literal under `profile`, the level allergies are written at.
+ * 262 -> 266.
  */
-const FROZEN_ENTRY_COUNT = 262;
+const FROZEN_ENTRY_COUNT = 266;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2904,7 +2926,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(90);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(92);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Label } from "@/components/ui/label";
+import { FreeTextTakeOver } from "@/components/records/free-text-take-over";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -142,6 +143,8 @@ export function AllergyFreeTextNote({
       ) : (
         <SettingsCardActions>
           {leadingAction}
+          {/* v1.43 (#614) — move the free text into a structured entry by hand. */}
+          <FreeTextTakeOver field="allergies" />
           <Button
             type="button"
             size="sm"

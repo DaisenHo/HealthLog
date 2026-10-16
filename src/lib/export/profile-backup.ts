@@ -29,10 +29,12 @@ import { encryptNote } from "@/lib/crypto/note-cipher";
 import { getEvent } from "@/lib/logging/context";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
-  isHealthProfileFactValue,
-  type HealthProfileAiSection,
-  type HealthProfileFactKind,
+  type StoredHealthProfileAiSection,
 } from "@/lib/validations/health-profile-facts";
+import {
+  isStoredFactPlaintext,
+  type StoredFactKind,
+} from "@/lib/validations/life-circumstances";
 import type {
   AdvanceDirectiveStatusValue,
   EmergencyBloodTypeValue,
@@ -77,7 +79,7 @@ export interface HealthProfileBackupEntry {
   conditionsEncrypted?: string | null;
   allergiesEncrypted?: string | null;
   coachFocusEncrypted?: string | null;
-  aiIncludedSections: HealthProfileAiSection[];
+  aiIncludedSections: StoredHealthProfileAiSection[];
   /**
    * Emergency ("Notfalldaten") profile. The three enums are plaintext closed
    * sets, carried by value in both purposes exactly like `aiIncludedSections`.
@@ -116,7 +118,7 @@ export interface HealthProfileBackupEntry {
 
 export interface HealthProfileFactBackupEntry {
   id: string;
-  kind: HealthProfileFactKind;
+  kind: StoredFactKind;
   /** Portable exports carry readable plaintext; DR payloads leave this null. */
   value: string | null;
   /** Base64 encrypted envelope, present only in disaster-recovery payloads. */
@@ -345,7 +347,7 @@ export async function buildProfileBackupSection(
           allergies: null,
           coachFocus: null,
           aiIncludedSections: (profileRow.aiIncludedSections as
-            HealthProfileAiSection[] | undefined) ?? [
+            StoredHealthProfileAiSection[] | undefined) ?? [
             ...DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
           ],
           lifeConfirmedJson: lifeConfirmed(profileRow.lifeConfirmedJson),
@@ -394,7 +396,7 @@ export async function buildProfileBackupSection(
             decryptFailures,
           ),
           aiIncludedSections: (profileRow.aiIncludedSections as
-            HealthProfileAiSection[] | undefined) ?? [
+            StoredHealthProfileAiSection[] | undefined) ?? [
             ...DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
           ],
           lifeConfirmedJson: lifeConfirmed(profileRow.lifeConfirmedJson),
@@ -424,7 +426,7 @@ export async function buildProfileBackupSection(
     for (const fact of factRows) {
       healthProfileFacts.push({
         id: fact.id,
-        kind: fact.kind as HealthProfileFactKind,
+        kind: fact.kind as StoredFactKind,
         value: null,
         valueEncrypted: toBase64(fact.valueEncrypted)!,
         validFrom: fact.validFrom.toISOString(),
@@ -443,10 +445,10 @@ export async function buildProfileBackupSection(
         `fact.${fact.kind}`,
         decryptFailures,
       );
-      const kind = fact.kind as HealthProfileFactKind;
+      const kind = fact.kind as StoredFactKind;
       if (
         value === null ||
-        !isHealthProfileFactValue(kind, value) ||
+        !isStoredFactPlaintext(kind, value) ||
         (fact.validUntil !== null && fact.validUntil <= fact.validFrom)
       ) {
         continue;
@@ -658,10 +660,7 @@ function resolveFactValue(
   if (entry.valueEncrypted !== undefined) {
     return decodeEncryptedField(entry.valueEncrypted, `fact.${entry.kind}`);
   }
-  if (
-    entry.value === null ||
-    !isHealthProfileFactValue(entry.kind, entry.value)
-  ) {
+  if (entry.value === null || !isStoredFactPlaintext(entry.kind, entry.value)) {
     throw new Error(
       `Health profile fact '${entry.kind}' has no valid readable value`,
     );
@@ -755,7 +754,7 @@ export async function restoreProfileData(
   });
   const liveSections = (
     (liveProfileScope?.aiIncludedSections as
-      HealthProfileAiSection[] | undefined) ??
+      StoredHealthProfileAiSection[] | undefined) ??
     DEFAULT_HEALTH_PROFILE_AI_SECTIONS
   )
     .slice()

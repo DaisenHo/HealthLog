@@ -39,6 +39,9 @@ import {
 } from "@/lib/ai/coach/history-reach";
 import type { CoachScopeWindow } from "@/lib/ai/coach/types";
 import { shiftDateKey } from "@/lib/tz/format";
+import { decryptLifeFactValue } from "@/lib/profile/health-facts";
+import { getEvent } from "@/lib/logging/context";
+import type { WorkContextValue } from "@/lib/validations/life-circumstances";
 
 /** Days listed one by one; the summary covers the whole window. */
 export const ENVIRONMENT_DAILY_LIMIT = 31;
@@ -103,6 +106,17 @@ export interface EnvironmentToolData {
     pollenPeak?: number | null;
   };
   airQuality: EnvironmentAirQualityState;
+  /**
+   * v1.43 (#614) — present only when the person released the work section
+   * to the AI and said they work outdoors (or partly) or with heat, dust or
+   * fumes: hot and poor-air days then weigh more for them. A self-report,
+   * never a measured exposure.
+   */
+  workContext?: {
+    outdoorWork: boolean;
+    exposures: string[];
+    note: string;
+  };
   provenance: {
     weather: string;
     airQuality: string;
@@ -149,6 +163,63 @@ function round1(value: number | null): number | null {
 function dayKey(date: Date): string {
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: the environment module keys its stored days and window bounds on UTC day keys (see service.ts); a window edge a day either way does not change the read
   return date.toISOString().slice(0, 10);
+}
+
+const RELEVANT_EXPOSURES = ["heat", "dust", "fumes_solvents"] as const;
+
+/**
+ * The person's work context as far as it bears on weather and air: only with
+ * the work section released to the AI (the same switch the self-context block
+ * honours), and only when it says something the environment can weigh.
+ */
+async function loadWorkContextForEnvironment(
+  userId: string,
+): Promise<EnvironmentToolData["workContext"] | null> {
+  try {
+    return await readWorkContext(userId);
+  } catch (error) {
+    // Context, not data: a failed read leaves the note out, never the days.
+    getEvent()?.addWarning(
+      `environment work context read failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return null;
+  }
+}
+
+async function readWorkContext(
+  userId: string,
+): Promise<EnvironmentToolData["workContext"] | null> {
+  const profile = await prisma.userHealthProfile.findUnique({
+    where: { userId },
+    select: { aiIncludedSections: true },
+  });
+  if (!profile?.aiIncludedSections.includes("WORK")) return null;
+  const row = await prisma.healthProfileFactRevision.findFirst({
+    where: {
+      userId,
+      kind: "WORK_CONTEXT",
+      validUntil: null,
+      supersededByRevisionId: null,
+    },
+    select: { valueEncrypted: true },
+  });
+  if (!row) return null;
+  const work = decryptLifeFactValue("WORK_CONTEXT", row.valueEncrypted)
+    .value as WorkContextValue | null;
+  if (!work) return null;
+  const outdoorWork =
+    work.situation === "outdoor" || work.situation === "mixed";
+  const exposures = work.exposures.filter((exposure) =>
+    (RELEVANT_EXPOSURES as readonly string[]).includes(exposure),
+  );
+  if (!outdoorWork && exposures.length === 0) return null;
+  return {
+    outdoorWork,
+    exposures,
+    note: "Self-reported work context: hot nights, heat and very poor air days weigh more for this person than for someone working indoors. Context, never a measured exposure.",
+  };
 }
 
 /**
@@ -314,6 +385,7 @@ export async function readEnvironmentForTool(args: {
 
   const firstDate = rows[0].date;
   const lastDate = rows[rows.length - 1].date;
+  const workContext = await loadWorkContextForEnvironment(userId);
   return {
     present: true,
     data: {
@@ -331,6 +403,7 @@ export async function readEnvironmentForTool(args: {
         ...(airActive ? { veryPoorAirDays, highPollenDays, pollenPeak } : {}),
       },
       airQuality: airState,
+      ...(workContext ? { workContext } : {}),
       provenance: PROVENANCE,
       attributions: environmentAttributionLines({
         airQuality: airActive,

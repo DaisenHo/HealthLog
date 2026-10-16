@@ -25,6 +25,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import { measurementTypesOwnedBy } from "./measurement-scope";
 import type { OwnedModuleKey } from "./registry";
+import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 
 /** The delegates this file reads. Narrow so a worker's client fits too. */
 type DomainDataClient = Pick<
@@ -183,7 +184,12 @@ const MODULE_DOMAIN_PROBES: Record<OwnedModuleKey, DomainProbe> = {
   mentalHealth: (client, recordId) =>
     anyRow(
       client.mentalHealthAssessment.findFirst({
-        where: { userId: recordId, deletedAt: null },
+        // AUDIT-C (v1.43) belongs to the life circumstances, not this module.
+        where: {
+          userId: recordId,
+          deletedAt: null,
+          instrument: { in: [...SCREENER_INSTRUMENTS] },
+        },
         select: { id: true },
       }),
     ),

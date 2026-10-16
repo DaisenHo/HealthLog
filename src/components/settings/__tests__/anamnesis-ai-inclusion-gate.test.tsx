@@ -18,8 +18,8 @@ vi.mock("@/components/records/ai-profile-inclusion-manager", () => ({
 vi.mock("@/components/records/conditions-manager", () => ({
   ConditionsManager: () => <div data-slot="conditions" />,
 }));
-vi.mock("@/components/records/health-profile-facts-manager", () => ({
-  HealthProfileFactsManager: () => null,
+vi.mock("@/components/records/life-circumstances-manager", () => ({
+  LifeCircumstancesManager: () => null,
 }));
 vi.mock("@/components/records/allergy-manager", () => ({
   AllergyManager: () => null,

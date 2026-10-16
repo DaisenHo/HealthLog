@@ -13,6 +13,7 @@
  * read plus the shared accumulators, so the emitted shape and ordering
  * are unchanged.
  */
+import type { FreeWeekdaysSpan } from "@/lib/profile/life-derived";
 import {
   reconstructSleepNights,
   type SleepStageRow,
@@ -158,6 +159,8 @@ interface SleepRhythmBlockContext {
   sourcePriorityJson: unknown;
   userTz: string;
   ageYears: number | null;
+  /** v1.43 — the record's dated free-weekday answers for the day type. */
+  freeWeekdaySpans: readonly FreeWeekdaysSpan[];
   snapshot: Record<string, unknown>;
   metrics: Set<CoachProvenanceMetric>;
   registerBlock: (key: string, source: CoachScopeSource) => void;
@@ -192,6 +195,7 @@ export function buildSleepRhythmBlock(
     sourcePriorityJson,
     userTz,
     ageYears,
+    freeWeekdaySpans,
     snapshot,
     metrics,
     registerBlock,
@@ -199,6 +203,8 @@ export function buildSleepRhythmBlock(
   const rhythm: SleepRhythmDto = computeSleepRhythmFromNights(
     reconstructNights(sleepRhythmRows, userTz, sourcePriorityJson),
     sleepNeedMinutes(ageYears),
+    "COMPUTED",
+    freeWeekdaySpans,
   );
   const chronotypeReady = rhythm.chronotype.state === "ready";
   snapshot.sleepRhythm = {

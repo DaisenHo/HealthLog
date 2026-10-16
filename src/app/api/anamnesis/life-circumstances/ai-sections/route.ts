@@ -6,17 +6,26 @@
  * key, over `SMOKING_STATUS`, `ALCOHOL_PATTERN`, `SHIFT_SCHEDULE`, `ACTIVITY`,
  * `WORK`, `HABITS`, `GOALS`. Sections not named keep their state. A stale
  * `baseUpdatedAt` is 409 `about_me_conflict`, the token `about-me` uses.
- * Own account only.
+ * Own account only: which of a person's answers a model may read is that
+ * person's decision.
  */
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { returnAllZodIssues, safeJson } from "@/lib/api-response";
-import { notImplemented } from "@/lib/http/not-implemented";
+import {
+  apiError,
+  apiSuccess,
+  getClientIp,
+  returnAllZodIssues,
+  safeJson,
+} from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
+import { annotate } from "@/lib/logging/context";
+import { updateLifeAiSections } from "@/lib/profile/life-circumstances";
 import { lifeAiSectionsPatchSchema } from "@/lib/validations/life-circumstances";
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
-  await requireAuth();
+  const { user } = await requireAuth();
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 4 * 1024,
@@ -29,5 +38,30 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  return notImplemented("anamnesis.life_circumstances.ai_sections.patch");
+  const outcome = await updateLifeAiSections(
+    user.id,
+    parsed.data.sections,
+    parsed.data.baseUpdatedAt ? new Date(parsed.data.baseUpdatedAt) : undefined,
+  );
+  if (outcome.conflict) {
+    annotate({ action: { name: "anamnesis.life_sections.conflict" } });
+    return apiError("Self-context changed since it was loaded", 409, {
+      errorCode: "about_me_conflict",
+    });
+  }
+
+  // Section names and switch states only; nothing about the answers.
+  await auditLog("anamnesis.life_sections.update", {
+    userId: user.id,
+    ipAddress: getClientIp(request),
+    details: { sections: parsed.data.sections },
+  });
+  annotate({
+    action: { name: "anamnesis.life_sections.update" },
+    meta: { changed: Object.keys(parsed.data.sections).length },
+  });
+  return apiSuccess({
+    aiSections: outcome.aiSections,
+    updatedAt: outcome.updatedAt,
+  });
 });

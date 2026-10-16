@@ -384,7 +384,20 @@
       "notes": "Weitere Hinweise"
     },
     "courseRange": "Einnahmephase {start} bis {end}",
-    "courseSince": "Einnahmephase seit {start}"
+    "courseSince": "Einnahmephase seit {start}",
+    "lifePackYears": "Packungsjahre",
+    "lifeAuditC": "AUDIT-C (Screening)",
+    "lifeAuditCScore": "{score} von 12 am {date}.",
+    "lifeAuditCAbove": "Grenzwert {cutoff} erreicht oder überschritten ({source}).",
+    "lifeAuditCBelow": "Unter dem Grenzwert {cutoff} ({source}).",
+    "lifeAuditCNoCutoff": "Kein geschlechtsbezogener Grenzwert angewandt.",
+    "lifeActivity": "Körperliche Aktivität",
+    "lifeActivityValue": "{minutes} Minuten pro Woche, Selbstauskunft",
+    "lifeSitting": "Sitzen am Werktag",
+    "lifeSittingValue": "{hours} Stunden, Selbstauskunft",
+    "lifeWork": "Arbeit",
+    "lifeNightWork": "Nachtarbeit",
+    "lifeExposures": "Belastungen: {list}"
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",
@@ -10911,25 +10924,11 @@
     },
     "profileFacts": {
       "cardTitle": "Lebensstil-Kontext",
-      "cardDescription": "Erfasse aktuelle Angaben, die die Einordnung deiner Gesundheitswerte verändern.",
       "smokingLabel": "Rauchstatus",
       "alcoholLabel": "Alkoholkonsummuster",
       "shiftLabel": "Arbeitszeitmodell",
       "notRecorded": "Nicht erfasst",
-      "unreadable": "Gespeicherter Wert konnte nicht gelesen werden",
-      "save": "Speichern",
-      "savedToast": "Lebensstil-Kontext gespeichert",
-      "savePartialError": "{kinds} konnte nicht gespeichert werden. Bitte erneut versuchen.",
-      "saveKindError": "Nicht gespeichert",
-      "loadError": "Lebensstil-Kontext konnte nicht geladen werden",
       "remove": "{kind} entfernen",
-      "removeShort": "Entfernen",
-      "removeConfirmTitle": "{kind} entfernen?",
-      "removeConfirmDescription": "Der aktuelle Wert gilt danach als nicht erfasst. Der datierte Verlauf bleibt erhalten.",
-      "removedToast": "{kind} aus dem aktuellen Lebensstil-Kontext entfernt",
-      "removeError": "{kind} konnte nicht entfernt werden",
-      "historyTitle": "Frühere Werte",
-      "to": "bis",
       "values": {
         "SMOKING_STATUS": {
           "NEVER": "Nie geraucht",
@@ -11109,6 +11108,228 @@
       "savedToast": "Notfalldaten gespeichert",
       "saveError": "Notfalldaten konnten nicht gespeichert werden.",
       "loadError": "Notfalldaten konnten nicht geladen werden."
+    },
+    "life": {
+      "cardTitle": "Lebensumstände",
+      "cardDescription": "Rauchen, Alkohol, Bewegung, Arbeit, Gewohnheiten und Ziele, datiert und jeweils freiwillig.",
+      "loadError": "Deine Lebensumstände konnten nicht geladen werden.",
+      "noAnswer": "Keine Angabe",
+      "yes": "Ja",
+      "no": "Nein",
+      "validSince": "Gilt seit",
+      "month": "Monat",
+      "year": "Jahr",
+      "lastConfirmed": "Zuletzt bestätigt am {date}",
+      "notAnswered": "Noch nicht beantwortet",
+      "unreadable": "Diese Antwort kann auf diesem Server nicht gelesen werden.",
+      "save": "Abschnitt speichern",
+      "savedToast": "Abschnitt gespeichert",
+      "saveError": "Der Abschnitt konnte nicht gespeichert werden.",
+      "review": {
+        "question": "Stimmt das noch? Deine letzte Angabe ist über ein Jahr alt.",
+        "confirm": "Stimmt noch",
+        "confirmedToast": "Danke, als weiterhin gültig vermerkt",
+        "confirmError": "Die Bestätigung konnte nicht gespeichert werden."
+      },
+      "ai": {
+        "label": "Diesen Abschnitt für die KI freigeben",
+        "shiftLabel": "Schichtarbeit für die KI freigeben",
+        "hint": "Aus heißt: Coach und Briefings sehen diese Angaben nie.",
+        "savedToast": "KI-Freigabe geändert",
+        "saveError": "Die KI-Freigabe konnte nicht gespeichert werden."
+      },
+      "sections": {
+        "tobacco": {
+          "title": "Rauchen und Nikotin"
+        },
+        "alcohol": {
+          "title": "Alkohol"
+        },
+        "activity": {
+          "title": "Bewegung und Sitzen"
+        },
+        "work": {
+          "title": "Arbeit und Rhythmus"
+        },
+        "habits": {
+          "title": "Schlaf, Ernährung und Koffein"
+        },
+        "goals": {
+          "title": "Ziele"
+        }
+      },
+      "fields": {
+        "smokingStatus": "Rauchstatus",
+        "products": "Genutzte Produkte",
+        "cigarettesPerDay": "Zigaretten pro Tag",
+        "startYear": "Jahr des Rauchbeginns",
+        "quitMonth": "Rauchstopp",
+        "secondhandSmoke": "Regelmäßig Passivrauch",
+        "moderateDaysPerWeek": "Tage pro Woche mit mäßiger bis anstrengender Bewegung, etwa zügigem Gehen",
+        "moderateMinutesPerDay": "Minuten an diesen Tagen, im Schnitt",
+        "sittingHoursWorkday": "Stunden im Sitzen an einem Werktag",
+        "shiftSchedule": "Schichtarbeit",
+        "situation": "Arbeitssituation",
+        "physicalNature": "Art der Arbeit",
+        "nightWork": "Nachtarbeit",
+        "exposures": "Belastungen bei der Arbeit",
+        "freeWeekdays": "Freie Wochentage",
+        "napRegularly": "Regelmäßiger Mittagsschlaf",
+        "snoringReported": "Andere sagen, du schnarchst",
+        "dietPattern": "Ernährungsweise",
+        "dietSpecifics": "Besonderheiten",
+        "lateMealsPerWeek": "Mahlzeiten nach 21 Uhr pro Woche",
+        "fruitVegPortionsPerDay": "Portionen Obst und Gemüse pro Tag",
+        "caffeineDrinksPerDay": "Koffeinhaltige Getränke pro Tag",
+        "latestCaffeine": "Spätestes Koffein am Tag",
+        "goals": "Woran du arbeiten möchtest",
+        "goalsHint": "Höchstens drei."
+      },
+      "values": {
+        "products": {
+          "cigarettes": "Zigaretten",
+          "cigars_pipe": "Zigarre oder Pfeife",
+          "e_cigarette": "E-Zigarette",
+          "heated_tobacco": "Tabakerhitzer",
+          "snus_pouches": "Snus oder Nikotinbeutel"
+        },
+        "situation": {
+          "none": "Keine Erwerbsarbeit",
+          "indoor": "Überwiegend drinnen",
+          "outdoor": "Überwiegend draußen",
+          "mixed": "Drinnen und draußen"
+        },
+        "physicalNature": {
+          "mostly_sitting": "Überwiegend sitzend",
+          "standing_walking": "Stehend oder gehend",
+          "heavy_physical": "Schwere körperliche Arbeit"
+        },
+        "exposures": {
+          "heat": "Hitze",
+          "cold": "Kälte",
+          "dust": "Staub",
+          "fumes_solvents": "Dämpfe oder Lösungsmittel",
+          "noise": "Lärm"
+        },
+        "dietPattern": {
+          "mixed": "Mischkost",
+          "vegetarian": "Vegetarisch",
+          "vegan": "Vegan",
+          "pescetarian": "Pescetarisch",
+          "other": "Andere"
+        },
+        "dietSpecifics": {
+          "intermittent_fasting": "Intervallfasten",
+          "low_carb": "Kohlenhydratarm",
+          "prescribed_diet": "Ärztlich verordnete Diät"
+        },
+        "latestCaffeine": {
+          "before_12": "Vor 12 Uhr",
+          "12_15": "12 bis 15 Uhr",
+          "15_18": "15 bis 18 Uhr",
+          "after_18": "Nach 18 Uhr"
+        },
+        "goals": {
+          "weight": "Gewicht",
+          "blood_pressure": "Blutdruck",
+          "blood_sugar": "Blutzucker",
+          "sleep": "Schlaf",
+          "fitness": "Fitness",
+          "stress_recovery": "Stress und Erholung",
+          "medication_routine": "Medikamente regelmäßig nehmen",
+          "quit_smoking": "Rauchstopp",
+          "less_alcohol": "Weniger Alkohol"
+        },
+        "weekdays": {
+          "1": "Mo",
+          "2": "Di",
+          "3": "Mi",
+          "4": "Do",
+          "5": "Fr",
+          "6": "Sa",
+          "7": "So"
+        }
+      },
+      "derived": {
+        "packYears": "{value} Packungsjahre",
+        "packYearsMissing": "Für Packungsjahre fehlen Zigaretten pro Tag oder das Jahr des Rauchbeginns.",
+        "activityMinutes": "{value} Minuten pro Woche",
+        "meetsWho": "Damit erreichst du die WHO-Empfehlung von 150 Minuten pro Woche.",
+        "belowWho": "Das liegt unter der WHO-Empfehlung von 150 Minuten pro Woche.",
+        "measuredSteps": "Deine gemessenen Schritte haben Vorrang, diese Angabe ergänzt sie.",
+        "freeDaysDefault": "Ohne Angabe gelten Samstag und Sonntag als frei."
+      },
+      "auditC": {
+        "intro": "Drei Fragen zu Alkohol aus dem WHO-AUDIT. Ein Screening, keine Diagnose.",
+        "start": "Fragen beantworten",
+        "again": "Erneut beantworten",
+        "offerDue": "Ein kurzer Blick einmal im Jahr genügt.",
+        "notValidated": "Für deine Sprache gibt es noch keine geprüfte Übersetzung, deshalb stehen die Fragen auf Englisch.",
+        "submit": "Antworten speichern",
+        "savedToast": "Antworten gespeichert",
+        "saveError": "Die Antworten konnten nicht gespeichert werden.",
+        "result": "{score} von 12 Punkten",
+        "above": "Am oder über dem Screening-Grenzwert von {cutoff}.",
+        "below": "Unter dem Screening-Grenzwert von {cutoff}.",
+        "noCutoff": "Ohne Angabe zum Geschlecht im Profil zeigen wir nur die Summe.",
+        "source": "Quelle: {source}",
+        "history": "Frühere Einträge",
+        "remove": "Eintrag entfernen",
+        "removeConfirmTitle": "Diesen Eintrag entfernen?",
+        "removeConfirmBody": "Der Eintrag verschwindet aus deinem Verlauf. Das lässt sich hier nicht rückgängig machen.",
+        "removedToast": "Eintrag entfernt",
+        "removeError": "Der Eintrag konnte nicht entfernt werden.",
+        "historyEntry": "{date}: {score} von 12"
+      },
+      "takeOver": {
+        "conditionsButton": "In Zustandstagebuch übernehmen",
+        "allergiesButton": "In Allergien übernehmen",
+        "conditionsTitle": "Chronische Erkrankung anlegen",
+        "allergiesTitle": "Allergie anlegen",
+        "description": "Dein Freitext bleibt, bis du ihn selbst leerst.",
+        "freeTextLabel": "Dein Freitext",
+        "conditionLabel": "Erkrankung",
+        "onset": "Seit",
+        "save": "Anlegen",
+        "savedToast": "Eintrag angelegt",
+        "saveError": "Der Eintrag konnte nicht angelegt werden.",
+        "clearQuestion": "Der Eintrag ist gespeichert. Freitext jetzt leeren?",
+        "clear": "Freitext leeren",
+        "keep": "Behalten",
+        "clearedToast": "Freitext geleert",
+        "clearError": "Der Freitext konnte nicht geleert werden."
+      },
+      "screening": {
+        "cardTitle": "Hinweise zur Früherkennung",
+        "cardDescription": "Aus deinen Lebensumständen, mit Regel und Land, aus dem sie stammt.",
+        "noReminder": "Nur ein Hinweis; eine Erinnerung legst du bei Bedarf selbst an.",
+        "source": "Quelle: {source}",
+        "titles": {
+          "lung_ldct": "Niedrigdosis-CT zur Lungenkrebs-Früherkennung",
+          "aaa_ultrasound": "Ultraschall der Bauchschlagader"
+        },
+        "status": {
+          "suggested": "Könnte für dich gelten",
+          "not_eligible": "Gilt nicht für dich",
+          "unknown": "Zu wenige Angaben"
+        },
+        "reasons": {
+          "never_smoked": "Du hast nie geraucht.",
+          "missing_birth_date": "Dein Geburtsdatum fehlt.",
+          "age_out_of_range": "Dein Alter liegt außerhalb des Bereichs.",
+          "missing_smoking_status": "Dein Rauchstatus fehlt.",
+          "no_cigarettes": "Die Regel zählt nur Zigaretten.",
+          "missing_smoking_history": "Zigaretten pro Tag oder das Jahr des Rauchbeginns fehlen.",
+          "pack_years_below_15": "Weniger als 15 Packungsjahre.",
+          "pack_years_below_20": "Weniger als 20 Packungsjahre.",
+          "smoked_years_below_25": "Weniger als 25 Jahre geraucht.",
+          "missing_quit_date": "Das Datum des Rauchstopps fehlt.",
+          "quit_over_10_years": "Der Rauchstopp liegt über 10 Jahre zurück.",
+          "quit_over_15_years": "Der Rauchstopp liegt über 15 Jahre zurück.",
+          "missing_sex": "Im Profil fehlt das Geschlecht.",
+          "sex_not_male": "Die Regel gilt für Männer."
+        }
+      }
     }
   },
   "environment": {
@@ -12297,7 +12518,9 @@
       "lifeEventUpdate": "{name} hat ein Lebensereignis geändert",
       "lifeEventDelete": "{name} hat ein Lebensereignis entfernt",
       "biomarkerMerge": "{name} hat Biomarker zusammengeführt",
-      "medicationIngredientsUpdate": "{name} hat die Zusammensetzung eines Präparats geändert"
+      "medicationIngredientsUpdate": "{name} hat die Zusammensetzung eines Präparats geändert",
+      "auditCCreate": "{name} hat den AUDIT-C-Fragebogen ausgefüllt",
+      "auditCDelete": "{name} hat einen AUDIT-C-Eintrag gelöscht"
     },
     "section": {
       "measurements": {

@@ -403,8 +403,23 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["DeleteButton"],
   },
   {
-    file: "components/records/health-profile-facts-manager.tsx",
-    destroys: "the current value of one effective-dated health-profile fact",
+    file: "components/records/life-circumstances-manager.tsx",
+    destroys:
+      "the current answer of one life-circumstance fact, when a section is saved with it set back to no answer",
+    recovery: "tombstoned-no-restore",
+    confirm: [],
+    unconfirmed: [
+      {
+        control:
+          "Save section with a field set back to no answer — life-circumstances-manager.tsx",
+        reason:
+          "Setting a question back to no answer and pressing Save is the deliberate act itself, made field by field inside a form the person is editing, with the old answer visible until they change it. The delete closes the answer's interval rather than erasing it, so the dated history keeps it, and answering again takes one select. A second dialog on top of an explicit form edit would make correcting an answer dearer than giving it.",
+      },
+    ],
+  },
+  {
+    file: "components/records/audit-c-panel.tsx",
+    destroys: "one AUDIT-C entry from the alcohol history",
     recovery: "tombstoned-no-restore",
     confirm: ["ConfirmButton"],
   },

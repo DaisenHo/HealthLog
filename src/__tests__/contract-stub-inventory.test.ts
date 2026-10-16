@@ -3,8 +3,8 @@
  *
  * v1.43 fixed its API contract before the features behind it were built: the
  * routes exist, authenticate, gate and validate as documented, and answer
- * `501 not_implemented` (`src/lib/http/not-implemented.ts`) until their
- * feature lands. That is safe only while nothing reaches them, and nothing
+ * `501 not_implemented` until their feature lands (the helper was removed
+ * with the last stub; bring it back from history with the next one). That is safe only while nothing reaches them, and nothing
  * should: every client path sits behind a `features` flag that stays `false`.
  *
  * This list is the debt register. A feature that lands removes its route here
@@ -23,20 +23,10 @@ import { walkSourceFiles } from "./helpers/source-files";
 const API_ROOT = join(process.cwd(), "src", "app", "api");
 
 /** Route file (under `src/app/api`) to the operations it still stubs. */
-const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {
-  "anamnesis/audit-c/[id]/route.ts": ["anamnesis.audit_c.delete"],
-  "anamnesis/audit-c/route.ts": ["anamnesis.audit_c.create"],
-  "anamnesis/life-circumstances/ai-sections/route.ts": [
-    "anamnesis.life_circumstances.ai_sections.patch",
-  ],
-  "anamnesis/life-circumstances/confirm/route.ts": [
-    "anamnesis.life_circumstances.confirm",
-  ],
-  "anamnesis/life-circumstances/route.ts": ["anamnesis.life_circumstances.get"],
-};
+const CONTRACT_STUBS: Readonly<Record<string, readonly string[]>> = {};
 
 /** The size of the register when it was written; see the header. */
-const REGISTER_SIZE = 5;
+const REGISTER_SIZE = 0;
 
 function routeFiles(): string[] {
   return walkSourceFiles(API_ROOT, { floor: 400, extensions: [".ts"] })

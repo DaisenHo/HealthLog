@@ -29,6 +29,7 @@ import { readLocalDaysWithReadings } from "@/lib/day/daily-stats";
 import { loadNotableRange } from "@/lib/day/notable";
 import { measurementTypeVisible, type DayAccess } from "@/lib/day/sections";
 import { prisma } from "@/lib/db";
+import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
@@ -341,6 +342,8 @@ const INDEX_READERS: Partial<
       where: {
         userId: frame.userId,
         deletedAt: null,
+        // AUDIT-C (v1.43) is not a screener and marks no day.
+        instrument: { in: [...SCREENER_INSTRUMENTS] },
         takenAt: {
           gte: new Date(frame.start.getTime() - 14 * 3_600_000),
           lt: new Date(frame.end.getTime() + 14 * 3_600_000),

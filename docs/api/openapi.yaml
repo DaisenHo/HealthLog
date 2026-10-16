@@ -10374,8 +10374,9 @@ paths:
         - Insights
       summary: Read effective-dated anamnesis facts
       description: "Returns the current value and immutable revision history for the caller's smoking status, alcohol pattern
-        and shift schedule. Values are decrypted server-side; unreadable ciphertext returns `value: null` with
-        `unreadable: true`."
+        and shift schedule, and only those three kinds: the life-circumstance kinds are read through `GET
+        /api/anamnesis/life-circumstances`. Values are decrypted server-side; unreadable ciphertext returns `value:
+        null` with `unreadable: true`."
       responses:
         "200":
           description: Current facts and their revision history.
@@ -10391,8 +10392,11 @@ paths:
       tags:
         - Insights
       summary: Create an anamnesis fact
-      description: Creates the first current revision for one closed fact kind. The answer is encrypted before persistence. A
-        second current value for the same kind returns 409; corrections use the revision endpoint.
+      description: "Creates the first current revision for one fact kind. The answer is encrypted before persistence. The
+        three closed kinds take their string value and answer the closed revision shape; the six life-circumstance kinds
+        (v1.43, send only when `features.lifeCircumstances` is true) take an object with `schema: 1` and answer a
+        `LifeFactRevision`. Optional `validFrom` (a calendar day) dates the answer back. A second current value for the
+        same kind returns 409; corrections use the revision endpoint."
       parameters:
         - *a6
       requestBody:
@@ -10412,6 +10416,13 @@ paths:
                         - NEVER
                         - FORMER
                         - CURRENT
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
                   required:
                     - kind
                     - value
@@ -10427,6 +10438,13 @@ paths:
                         - OCCASIONAL
                         - WEEKLY
                         - MOST_DAYS
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
                   required:
                     - kind
                     - value
@@ -10441,6 +10459,338 @@ paths:
                         - NONE
                         - FIXED_SHIFT
                         - ROTATING
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - kind
+                    - value
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      const: TOBACCO_DETAIL
+                    value:
+                      type: object
+                      properties:
+                        schema:
+                          type: number
+                          const: 1
+                        products:
+                          maxItems: 5
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - cigarettes
+                              - cigars_pipe
+                              - e_cigarette
+                              - heated_tobacco
+                              - snus_pouches
+                        cigarettesPerDay:
+                          anyOf:
+                            - type: integer
+                              minimum: 1
+                              maximum: 100
+                            - type: "null"
+                        startYear:
+                          anyOf:
+                            - type: integer
+                              minimum: 1900
+                              maximum: 9007199254740991
+                            - type: "null"
+                        quitMonth:
+                          anyOf:
+                            - type: string
+                              pattern: ^\d{4}-(0[1-9]|1[0-2])$
+                            - type: "null"
+                        secondhandSmoke:
+                          anyOf:
+                            - type: boolean
+                            - type: "null"
+                      required:
+                        - schema
+                        - products
+                        - cigarettesPerDay
+                        - startYear
+                        - quitMonth
+                        - secondhandSmoke
+                      additionalProperties: false
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - kind
+                    - value
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      const: ACTIVITY_HABIT
+                    value:
+                      type: object
+                      properties:
+                        schema:
+                          type: number
+                          const: 1
+                        moderateDaysPerWeek:
+                          anyOf:
+                            - type: integer
+                              minimum: 0
+                              maximum: 7
+                            - type: "null"
+                        moderateMinutesPerDay:
+                          anyOf:
+                            - type: integer
+                              minimum: 0
+                              maximum: 600
+                            - type: "null"
+                        sittingHoursWorkday:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                              maximum: 24
+                              multipleOf: 0.5
+                            - type: "null"
+                      required:
+                        - schema
+                        - moderateDaysPerWeek
+                        - moderateMinutesPerDay
+                        - sittingHoursWorkday
+                      additionalProperties: false
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - kind
+                    - value
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      const: WORK_CONTEXT
+                    value:
+                      type: object
+                      properties:
+                        schema:
+                          type: number
+                          const: 1
+                        situation:
+                          anyOf:
+                            - type: string
+                              enum:
+                                - none
+                                - indoor
+                                - outdoor
+                                - mixed
+                            - type: "null"
+                        physicalNature:
+                          anyOf:
+                            - type: string
+                              enum:
+                                - mostly_sitting
+                                - standing_walking
+                                - heavy_physical
+                            - type: "null"
+                        nightWork:
+                          anyOf:
+                            - type: boolean
+                            - type: "null"
+                        exposures:
+                          maxItems: 5
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - heat
+                              - cold
+                              - dust
+                              - fumes_solvents
+                              - noise
+                      required:
+                        - schema
+                        - situation
+                        - physicalNature
+                        - nightWork
+                        - exposures
+                      additionalProperties: false
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - kind
+                    - value
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      const: FREE_WEEKDAYS
+                    value:
+                      type: object
+                      properties:
+                        schema:
+                          type: number
+                          const: 1
+                        days:
+                          maxItems: 7
+                          type: array
+                          items:
+                            type: integer
+                            minimum: 1
+                            maximum: 7
+                      required:
+                        - schema
+                        - days
+                      additionalProperties: false
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - kind
+                    - value
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      const: HABITS
+                    value:
+                      type: object
+                      properties:
+                        schema:
+                          type: number
+                          const: 1
+                        napRegularly:
+                          anyOf:
+                            - type: boolean
+                            - type: "null"
+                        snoringReported:
+                          anyOf:
+                            - type: boolean
+                            - type: "null"
+                        dietPattern:
+                          anyOf:
+                            - type: string
+                              enum:
+                                - mixed
+                                - vegetarian
+                                - vegan
+                                - pescetarian
+                                - other
+                            - type: "null"
+                        dietSpecifics:
+                          maxItems: 3
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - intermittent_fasting
+                              - low_carb
+                              - prescribed_diet
+                        lateMealsPerWeek:
+                          anyOf:
+                            - type: integer
+                              minimum: 0
+                              maximum: 7
+                            - type: "null"
+                        fruitVegPortionsPerDay:
+                          anyOf:
+                            - type: integer
+                              minimum: 0
+                              maximum: 15
+                            - type: "null"
+                        caffeineDrinksPerDay:
+                          anyOf:
+                            - type: integer
+                              minimum: 0
+                              maximum: 20
+                            - type: "null"
+                        latestCaffeine:
+                          anyOf:
+                            - type: string
+                              enum:
+                                - before_12
+                                - 12_15
+                                - 15_18
+                                - after_18
+                            - type: "null"
+                      required:
+                        - schema
+                        - napRegularly
+                        - snoringReported
+                        - dietPattern
+                        - dietSpecifics
+                        - lateMealsPerWeek
+                        - fruitVegPortionsPerDay
+                        - caffeineDrinksPerDay
+                        - latestCaffeine
+                      additionalProperties: false
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - kind
+                    - value
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      const: HEALTH_GOALS
+                    value:
+                      type: object
+                      properties:
+                        schema:
+                          type: number
+                          const: 1
+                        goals:
+                          maxItems: 3
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - weight
+                              - blood_pressure
+                              - blood_sugar
+                              - sleep
+                              - fitness
+                              - stress_recovery
+                              - medication_routine
+                              - quit_smoking
+                              - less_alcohol
+                      required:
+                        - schema
+                        - goals
+                      additionalProperties: false
+                    validFrom:
+                      description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                        from now. Never later than today; an earlier day than the end of the previous answer of the same
+                        kind starts at that end instead.
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
                   required:
                     - kind
                     - value
@@ -10466,8 +10816,10 @@ paths:
       tags:
         - Insights
       summary: Correct a current anamnesis fact
-      description: Closes the current revision at the correction instant and creates a successor. Prior ciphertext and its
-        half-open validity interval remain in history.
+      description: "Closes the current revision at the correction instant (or at the optional `validFrom` day, never earlier
+        than the revision it replaces) and creates a successor. The value takes the stored kind's form: a string for the
+        closed kinds, an object with `schema: 1` for the life-circumstance kinds; any other is 422
+        `anamnesis.fact.invalidValue`. Prior ciphertext and its half-open validity interval remain in history."
       parameters:
         - name: id
           in: path
@@ -10482,8 +10834,20 @@ paths:
               type: object
               properties:
                 value:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                    - type: object
+                      propertyNames:
+                        type: string
+                      additionalProperties: {}
+                validFrom:
+                  description: The calendar day the answer holds from, stored at noon UTC like every date-only value. Omitted, it holds
+                    from now. Never later than today; an earlier day than the end of the previous answer of the same
+                    kind starts at that end instead.
                   type: string
-                  minLength: 1
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
               required:
                 - value
       responses:
@@ -24209,15 +24573,6 @@ paths:
         "403": *a11
         "422": *a4
         "429": *a5
-        "501": &a69
-          description: "Not implemented on this server yet: the contract is published, the effect is not. `meta.errorCode` =
-            `not_implemented`, `meta.operation` names the operation. Authentication, module gates and request validation
-            already answer as documented. A client reaches this only by ignoring the server feature flag that guards the
-            operation."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
   /api/anamnesis/life-circumstances/ai-sections:
     patch:
       tags:
@@ -24247,7 +24602,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/anamnesis/life-circumstances/confirm:
     post:
       tags:
@@ -24271,7 +24625,6 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/anamnesis/audit-c:
     post:
       tags:
@@ -24301,10 +24654,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuditCCreatedEnvelope"
         "401": *a1
+        "403": *a11
         "409": *a7
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/anamnesis/audit-c/{id}:
     delete:
       tags:
@@ -24325,6 +24678,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuditCRemovedEnvelope"
         "401": *a1
+        "403": *a11
         "404":
           description: "`anamnesis.auditC.notFound`."
           content:
@@ -24333,7 +24687,6 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "501": *a69
   /api/dawarich/connect:
     post:
       tags:
@@ -35715,27 +36068,27 @@ components:
                 ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
                 — ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
                 aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
-                anamnesis.auditC.invalid, anamnesis.auditC.rateLimited, anamnesis.fact.conflict,
-                anamnesis.fact.currentExists, anamnesis.fact.invalidValue, anamnesis.lifeConfirm.invalid,
-                anamnesis.lifeSections.invalid; auth — auth.admin.required, auth.already_authenticated,
-                auth.mfa.code_invalid, auth.missing, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
-                auth.reproof.failed, auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient,
-                auth.session.insecure_transport, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
-                backup.foreign_reference, backup.key.missing, backup.payload.undecryptable, backup.restore.active,
-                backup.section.missing, backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site —
-                body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
-                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
-                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
-                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
-                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.required; cycle —
-                cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range,
-                cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
-                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
-                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
-                dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid,
-                dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo —
-                demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
-                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
+                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
+                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.admin.required,
+                auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
+                auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
+                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport, auth.stepup.required,
+                auth.token.expired, auth.token.invalid; backup — backup.foreign_reference, backup.key.missing,
+                backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
+                biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
+                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
+                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
+                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
+                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
+                consent — consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
+                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
+                disable-coach.body.invalid_json; dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown,
+                dawarich.invalid, dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day —
+                day.invalid; demo — demo.readOnly; documents — documents.chat.conversationNotFound,
+                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
                 documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
                 documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
                 documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
@@ -35832,10 +36185,9 @@ components:
                 — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
-                modules_conflict, mood_tag_layout_conflict, not_configured, not_implemented,
-                notification_prefs_conflict, oidc_only, private_origin_not_approved, private_origin_not_grantable,
-                rate_limited_self, sync_in_progress, too_many_rows, unreadable_json, upstream_invalid_json,
-                vapid_not_configured"
+                modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
+                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, sync_in_progress,
+                too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -41205,6 +41557,10 @@ components:
                       - SMOKING_STATUS
                       - ALCOHOL_PATTERN
                       - SHIFT_SCHEDULE
+                      - ACTIVITY
+                      - WORK
+                      - HABITS
+                      - GOALS
                 lifeConfirmedJson:
                   anyOf:
                     - type: object
@@ -41338,6 +41694,12 @@ components:
                   - SMOKING_STATUS
                   - ALCOHOL_PATTERN
                   - SHIFT_SCHEDULE
+                  - TOBACCO_DETAIL
+                  - ACTIVITY_HABIT
+                  - WORK_CONTEXT
+                  - FREE_WEEKDAYS
+                  - HABITS
+                  - HEALTH_GOALS
               value:
                 default: null
                 anyOf:
@@ -58742,56 +59104,103 @@ components:
       type: object
       properties:
         data:
-          type: object
-          properties:
-            id:
-              type: string
-            kind:
-              type: string
-              enum:
-                - SMOKING_STATUS
-                - ALCOHOL_PATTERN
-                - SHIFT_SCHEDULE
-            value:
-              anyOf:
-                - type: string
-                - type: "null"
-            unreadable:
-              type: boolean
-            validFrom:
-              type: string
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            validUntil:
-              anyOf:
-                - type: string
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                    - SMOKING_STATUS
+                    - ALCOHOL_PATTERN
+                    - SHIFT_SCHEDULE
+                value:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                unreadable:
+                  type: boolean
+                validFrom:
+                  type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                - type: "null"
-            provenance:
-              type: string
-              enum:
-                - USER_REPORTED
-                - USER_CORRECTION
-            supersededByRevisionId:
-              anyOf:
-                - type: string
-                - type: "null"
-            createdAt:
-              type: string
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          required:
-            - id
-            - kind
-            - value
-            - unreadable
-            - validFrom
-            - validUntil
-            - provenance
-            - supersededByRevisionId
-            - createdAt
-          additionalProperties: false
+                validUntil:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    - type: "null"
+                provenance:
+                  type: string
+                  enum:
+                    - USER_REPORTED
+                    - USER_CORRECTION
+                supersededByRevisionId:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                createdAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - id
+                - kind
+                - value
+                - unreadable
+                - validFrom
+                - validUntil
+                - provenance
+                - supersededByRevisionId
+                - createdAt
+              additionalProperties: false
+            - type: object
+              properties:
+                id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                    - SMOKING_STATUS
+                    - SHIFT_SCHEDULE
+                    - TOBACCO_DETAIL
+                    - ACTIVITY_HABIT
+                    - WORK_CONTEXT
+                    - FREE_WEEKDAYS
+                    - HABITS
+                    - HEALTH_GOALS
+                value:
+                  description: "`SMOKING_STATUS` and `SHIFT_SCHEDULE` carry their string value; every other kind an object with `schema:
+                    1` whose shape is fixed per kind (see the life-circumstances contract). `null` when `unreadable`."
+                unreadable:
+                  type: boolean
+                  description: The sealed value could not be opened on this host.
+                validFrom:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                validUntil:
+                  type: "null"
+                provenance:
+                  type: string
+                  enum:
+                    - USER_REPORTED
+                    - USER_CORRECTION
+                createdAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - id
+                - kind
+                - value
+                - unreadable
+                - validFrom
+                - validUntil
+                - provenance
+                - createdAt
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -58808,56 +59217,103 @@ components:
       type: object
       properties:
         data:
-          type: object
-          properties:
-            id:
-              type: string
-            kind:
-              type: string
-              enum:
-                - SMOKING_STATUS
-                - ALCOHOL_PATTERN
-                - SHIFT_SCHEDULE
-            value:
-              anyOf:
-                - type: string
-                - type: "null"
-            unreadable:
-              type: boolean
-            validFrom:
-              type: string
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            validUntil:
-              anyOf:
-                - type: string
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                    - SMOKING_STATUS
+                    - ALCOHOL_PATTERN
+                    - SHIFT_SCHEDULE
+                value:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                unreadable:
+                  type: boolean
+                validFrom:
+                  type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-                - type: "null"
-            provenance:
-              type: string
-              enum:
-                - USER_REPORTED
-                - USER_CORRECTION
-            supersededByRevisionId:
-              anyOf:
-                - type: string
-                - type: "null"
-            createdAt:
-              type: string
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          required:
-            - id
-            - kind
-            - value
-            - unreadable
-            - validFrom
-            - validUntil
-            - provenance
-            - supersededByRevisionId
-            - createdAt
-          additionalProperties: false
+                validUntil:
+                  anyOf:
+                    - type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    - type: "null"
+                provenance:
+                  type: string
+                  enum:
+                    - USER_REPORTED
+                    - USER_CORRECTION
+                supersededByRevisionId:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                createdAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - id
+                - kind
+                - value
+                - unreadable
+                - validFrom
+                - validUntil
+                - provenance
+                - supersededByRevisionId
+                - createdAt
+              additionalProperties: false
+            - type: object
+              properties:
+                id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                    - SMOKING_STATUS
+                    - SHIFT_SCHEDULE
+                    - TOBACCO_DETAIL
+                    - ACTIVITY_HABIT
+                    - WORK_CONTEXT
+                    - FREE_WEEKDAYS
+                    - HABITS
+                    - HEALTH_GOALS
+                value:
+                  description: "`SMOKING_STATUS` and `SHIFT_SCHEDULE` carry their string value; every other kind an object with `schema:
+                    1` whose shape is fixed per kind (see the life-circumstances contract). `null` when `unreadable`."
+                unreadable:
+                  type: boolean
+                  description: The sealed value could not be opened on this host.
+                validFrom:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                validUntil:
+                  type: "null"
+                provenance:
+                  type: string
+                  enum:
+                    - USER_REPORTED
+                    - USER_CORRECTION
+                createdAt:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - id
+                - kind
+                - value
+                - unreadable
+                - validFrom
+                - validUntil
+                - provenance
+                - createdAt
+              additionalProperties: false
         error:
           type: "null"
         meta:
@@ -58884,6 +59340,12 @@ components:
                 - SMOKING_STATUS
                 - ALCOHOL_PATTERN
                 - SHIFT_SCHEDULE
+                - TOBACCO_DETAIL
+                - ACTIVITY_HABIT
+                - WORK_CONTEXT
+                - FREE_WEEKDAYS
+                - HABITS
+                - HEALTH_GOALS
             removedAt:
               type: string
               format: date-time

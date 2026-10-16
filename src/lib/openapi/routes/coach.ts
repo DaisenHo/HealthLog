@@ -13,12 +13,15 @@ import {
 } from "@/lib/validations/about-me";
 import {
   healthProfileAiSectionSchema,
-  healthProfileFactCorrectionSchema,
   healthProfileFactDtoSchema,
   healthProfileFactsResponseSchema,
-  healthProfileFactWriteSchema,
-  removedHealthProfileFactSchema,
 } from "@/lib/validations/health-profile-facts";
+import {
+  factCorrectionSchema,
+  factWriteSchema,
+  lifeFactRevisionSchema,
+  removedFactSchema,
+} from "@/lib/validations/life-circumstances";
 import {
   emergencyProfileDtoSchema,
   emergencyProfileUpdateSchema,
@@ -1526,7 +1529,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Read effective-dated anamnesis facts",
       description:
-        "Returns the current value and immutable revision history for the caller's smoking status, alcohol pattern and shift schedule. Values are decrypted server-side; unreadable ciphertext returns `value: null` with `unreadable: true`.",
+        "Returns the current value and immutable revision history for the caller's smoking status, alcohol pattern and shift schedule, and only those three kinds: the life-circumstance kinds are read through `GET /api/anamnesis/life-circumstances`. Values are decrypted server-side; unreadable ciphertext returns `value: null` with `unreadable: true`.",
       responses: {
         ...recordRefusal(),
         "200": {
@@ -1547,12 +1550,12 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Create an anamnesis fact",
       description:
-        "Creates the first current revision for one closed fact kind. The answer is encrypted before persistence. A second current value for the same kind returns 409; corrections use the revision endpoint.",
+        "Creates the first current revision for one fact kind. The answer is encrypted before persistence. The three closed kinds take their string value and answer the closed revision shape; the six life-circumstance kinds (v1.43, send only when `features.lifeCircumstances` is true) take an object with `schema: 1` and answer a `LifeFactRevision`. Optional `validFrom` (a calendar day) dates the answer back. A second current value for the same kind returns 409; corrections use the revision endpoint.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,
         content: {
-          "application/json": { schema: healthProfileFactWriteSchema },
+          "application/json": { schema: factWriteSchema },
         },
       },
       responses: {
@@ -1562,7 +1565,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                healthProfileFactDtoSchema,
+                z.union([healthProfileFactDtoSchema, lifeFactRevisionSchema]),
                 "CreateAnamnesisFactResponse",
               ),
             },
@@ -1578,7 +1581,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Correct a current anamnesis fact",
       description:
-        "Closes the current revision at the correction instant and creates a successor. Prior ciphertext and its half-open validity interval remain in history.",
+        "Closes the current revision at the correction instant (or at the optional `validFrom` day, never earlier than the revision it replaces) and creates a successor. The value takes the stored kind's form: a string for the closed kinds, an object with `schema: 1` for the life-circumstance kinds; any other is 422 `anamnesis.fact.invalidValue`. Prior ciphertext and its half-open validity interval remain in history.",
       parameters: [
         {
           name: "id",
@@ -1590,7 +1593,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestBody: {
         required: true,
         content: {
-          "application/json": { schema: healthProfileFactCorrectionSchema },
+          "application/json": { schema: factCorrectionSchema },
         },
       },
       responses: {
@@ -1599,7 +1602,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                healthProfileFactDtoSchema,
+                z.union([healthProfileFactDtoSchema, lifeFactRevisionSchema]),
                 "CorrectAnamnesisFactResponse",
               ),
             },
@@ -1629,7 +1632,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                removedHealthProfileFactSchema,
+                removedFactSchema,
                 "RemoveAnamnesisFactResponse",
               ),
             },

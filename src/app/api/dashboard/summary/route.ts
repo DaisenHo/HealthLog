@@ -53,6 +53,7 @@
  * map the shared snapshot builder uses (`disabledSummaryTypes`); the filter
  * runs OUTSIDE the cache because a module toggle does not evict it.
  */
+import { loadFreeWeekdaySpans } from "@/lib/profile/life-circumstances";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -717,6 +718,8 @@ async function buildDashboardSummary(
       sleepPriorityJson,
     ),
     sleepNeedMinutes(sleepProfile.ageYears),
+    "COMPUTED",
+    await loadFreeWeekdaySpans(userId),
   );
 
   const metrics: MetricCard[] = [];

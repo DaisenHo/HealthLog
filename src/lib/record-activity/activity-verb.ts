@@ -70,6 +70,10 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.allergyCreate", { name });
     case "family-history.create":
       return t("recordSharing.activityVerb.familyHistoryCreate", { name });
+    case "anamnesis.audit_c.create":
+      return t("recordSharing.activityVerb.auditCCreate", { name });
+    case "anamnesis.audit_c.delete":
+      return t("recordSharing.activityVerb.auditCDelete", { name });
     case "illness.episode.create":
       return t("recordSharing.activityVerb.illnessEpisodeCreate", { name });
     case "symptoms.event.create":
