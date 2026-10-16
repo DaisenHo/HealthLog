@@ -11279,7 +11279,14 @@
         "removeConfirmBody": "The entry leaves your history. This cannot be undone here.",
         "removedToast": "Entry removed",
         "removeError": "The entry could not be removed.",
-        "historyEntry": "{date}: {score} of 12"
+        "historyEntry": "{date}: {score} of 12",
+        "legacyLabel": "Earlier answer: {value}",
+        "legacyHint": "From the short alcohol question asked before this questionnaire. Once a questionnaire result is on file, the Coach no longer reads it.",
+        "legacyRemove": "Remove earlier answer",
+        "legacyRemoveConfirmTitle": "Remove the earlier answer?",
+        "legacyRemoveConfirmBody": "The earlier answer leaves your record. Questionnaire results stay.",
+        "legacyRemovedToast": "Earlier answer removed",
+        "legacyRemoveError": "The earlier answer could not be removed."
       },
       "takeOver": {
         "conditionsButton": "Add to condition journal",

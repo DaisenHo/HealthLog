@@ -11279,7 +11279,14 @@
         "removeConfirmBody": "La voce esce dalla tua cronologia. Qui non si può annullare.",
         "removedToast": "Voce rimossa",
         "removeError": "Impossibile rimuovere la voce.",
-        "historyEntry": "{date}: {score} su 12"
+        "historyEntry": "{date}: {score} su 12",
+        "legacyLabel": "Risposta precedente: {value}",
+        "legacyHint": "Dalla breve domanda sull’alcol posta prima di questo questionario. Quando c’è un risultato del questionario, il Coach non la legge più.",
+        "legacyRemove": "Rimuovi risposta precedente",
+        "legacyRemoveConfirmTitle": "Rimuovere la risposta precedente?",
+        "legacyRemoveConfirmBody": "La risposta precedente esce dai tuoi dati. I risultati del questionario restano.",
+        "legacyRemovedToast": "Risposta precedente rimossa",
+        "legacyRemoveError": "Non è stato possibile rimuovere la risposta precedente."
       },
       "takeOver": {
         "conditionsButton": "Riporta nel diario delle condizioni",

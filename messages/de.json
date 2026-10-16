@@ -11279,7 +11279,14 @@
         "removeConfirmBody": "Der Eintrag verschwindet aus deinem Verlauf. Das lässt sich hier nicht rückgängig machen.",
         "removedToast": "Eintrag entfernt",
         "removeError": "Der Eintrag konnte nicht entfernt werden.",
-        "historyEntry": "{date}: {score} von 12"
+        "historyEntry": "{date}: {score} von 12",
+        "legacyLabel": "Frühere Angabe: {value}",
+        "legacyHint": "Aus der kurzen Alkoholfrage vor diesem Fragebogen. Sobald ein Fragebogen-Ergebnis vorliegt, liest der Coach sie nicht mehr.",
+        "legacyRemove": "Frühere Angabe entfernen",
+        "legacyRemoveConfirmTitle": "Frühere Angabe entfernen?",
+        "legacyRemoveConfirmBody": "Die frühere Angabe verschwindet aus deinen Daten. Fragebogen-Ergebnisse bleiben.",
+        "legacyRemovedToast": "Frühere Angabe entfernt",
+        "legacyRemoveError": "Die frühere Angabe konnte nicht entfernt werden."
       },
       "takeOver": {
         "conditionsButton": "In Zustandstagebuch übernehmen",

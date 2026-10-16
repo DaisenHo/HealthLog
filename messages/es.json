@@ -11279,7 +11279,14 @@
         "removeConfirmBody": "La entrada sale de tu historial. Aquí no se puede deshacer.",
         "removedToast": "Entrada eliminada",
         "removeError": "No se pudo eliminar la entrada.",
-        "historyEntry": "{date}: {score} de 12"
+        "historyEntry": "{date}: {score} de 12",
+        "legacyLabel": "Respuesta anterior: {value}",
+        "legacyHint": "De la pregunta breve sobre alcohol anterior a este cuestionario. En cuanto hay un resultado del cuestionario, el Coach deja de leerla.",
+        "legacyRemove": "Eliminar respuesta anterior",
+        "legacyRemoveConfirmTitle": "¿Eliminar la respuesta anterior?",
+        "legacyRemoveConfirmBody": "La respuesta anterior sale de tu registro. Los resultados del cuestionario se mantienen.",
+        "legacyRemovedToast": "Respuesta anterior eliminada",
+        "legacyRemoveError": "No se pudo eliminar la respuesta anterior."
       },
       "takeOver": {
         "conditionsButton": "Pasar al diario de afecciones",

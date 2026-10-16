@@ -11279,7 +11279,14 @@
         "removeConfirmBody": "L'entrée quitte votre historique. Impossible d'annuler ici.",
         "removedToast": "Entrée supprimée",
         "removeError": "Impossible de supprimer l'entrée.",
-        "historyEntry": "{date} : {score} sur 12"
+        "historyEntry": "{date} : {score} sur 12",
+        "legacyLabel": "Réponse précédente : {value}",
+        "legacyHint": "Issue de la courte question sur l’alcool posée avant ce questionnaire. Dès qu’un résultat du questionnaire existe, le Coach ne la lit plus.",
+        "legacyRemove": "Supprimer la réponse précédente",
+        "legacyRemoveConfirmTitle": "Supprimer la réponse précédente ?",
+        "legacyRemoveConfirmBody": "La réponse précédente quitte votre dossier. Les résultats du questionnaire restent.",
+        "legacyRemovedToast": "Réponse précédente supprimée",
+        "legacyRemoveError": "La réponse précédente n’a pas pu être supprimée."
       },
       "takeOver": {
         "conditionsButton": "Reprendre dans le journal des affections",

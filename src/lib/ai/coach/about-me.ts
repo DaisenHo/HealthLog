@@ -47,6 +47,7 @@ import {
 } from "@/lib/profile/health-facts";
 import { LIFE_KIND_AI_SECTION } from "@/lib/profile/life-derived";
 import { auditCCutoff } from "@/lib/mental-health/audit-c";
+import { loadNewestReadableAuditC } from "@/lib/profile/audit-c-entries";
 import {
   LIFE_FACT_KINDS,
   isLifeFactKind,
@@ -636,20 +637,16 @@ export function composeLifeCircumstancesText(
 
 /**
  * The newest AUDIT-C entry for a prompt: only when the alcohol section is
- * released, and without decrypting anything (the sum is stored in the clear,
- * like the screeners'). The profile sex for the cut-off is read only when
- * there is an entry to judge.
+ * released. "Newest" is the newest entry whose answers open, the same entry
+ * the read route shows as the result (`audit-c-entries.ts`). The profile sex
+ * for the cut-off is read only when there is an entry to judge.
  */
 async function loadAuditCForPrompt(
   userId: string,
   included: ReadonlySet<string>,
 ): Promise<AuditCForPrompt | null> {
   if (!included.has("ALCOHOL_PATTERN")) return null;
-  const audit = await prisma.mentalHealthAssessment.findFirst({
-    where: { userId, instrument: "AUDIT_C", deletedAt: null },
-    orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-    select: { totalScore: true, takenAt: true, locale: true, tz: true },
-  });
+  const audit = await loadNewestReadableAuditC(userId);
   if (!audit) return null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -839,6 +836,10 @@ export async function getSelfContextTextForUser(
     const factsText = composeStructuredHealthFactsText(
       factRows
         .filter((row) => !isLifeFactKind(row.kind))
+        // The old one-word alcohol pattern gives way to an AUDIT-C entry:
+        // the questionnaire is the measured answer to the same question, and
+        // the two side by side would let a years-old guess argue with it.
+        .filter((row) => !(auditC && row.kind === "ALCOHOL_PATTERN"))
         .flatMap((row) => {
           const decrypted = decryptHealthProfileFactValue(
             row.kind as HealthProfileFactKind,

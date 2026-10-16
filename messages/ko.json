@@ -11279,7 +11279,14 @@
         "removeConfirmBody": "기록이 내역에서 사라져요. 여기서는 되돌릴 수 없어요.",
         "removedToast": "기록을 삭제했어요",
         "removeError": "기록을 삭제하지 못했어요.",
-        "historyEntry": "{date}: 12점 중 {score}점"
+        "historyEntry": "{date}: 12점 중 {score}점",
+        "legacyLabel": "이전 답변: {value}",
+        "legacyHint": "이 설문 전에 묻던 짧은 음주 질문의 답변입니다. 설문 결과가 있으면 코치는 더 이상 이 답변을 읽지 않습니다.",
+        "legacyRemove": "이전 답변 삭제",
+        "legacyRemoveConfirmTitle": "이전 답변을 삭제할까요?",
+        "legacyRemoveConfirmBody": "이전 답변이 기록에서 삭제됩니다. 설문 결과는 그대로 남습니다.",
+        "legacyRemovedToast": "이전 답변을 삭제했습니다",
+        "legacyRemoveError": "이전 답변을 삭제하지 못했습니다."
       },
       "takeOver": {
         "conditionsButton": "상태 일지로 옮기기",

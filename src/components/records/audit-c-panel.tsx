@@ -10,7 +10,7 @@
  * and its source are the server's too; nothing is scored here.
  */
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2 } from "lucide-react";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -18,9 +18,10 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { apiDelete, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { HealthProfileFactsPayload } from "@/lib/profile/health-facts";
 import type { LifeCircumstancesDto } from "@/lib/profile/life-circumstances";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -75,6 +76,34 @@ export function AuditCPanel({
   });
 
   const complete = answers.every((answer) => answer !== null);
+
+  // The one-word alcohol pattern asked before AUDIT-C. It still lives in the
+  // record, so it is shown here, where alcohol now lives, with a way out.
+  // The Coach stops reading it once an AUDIT-C entry exists.
+  const queryClient = useQueryClient();
+  const facts = useQuery({
+    queryKey: queryKeys.healthProfileFacts(),
+    queryFn: () => apiGet<HealthProfileFactsPayload>("/api/anamnesis/facts"),
+  });
+  const legacy = facts.data?.current.ALCOHOL_PATTERN ?? null;
+  const removeLegacy = useMutation({
+    mutationKey: queryKeys.healthProfileFacts(),
+    mutationFn: (id: string) => apiDelete(`/api/anamnesis/facts/${id}`),
+    onSuccess: () => {
+      toastWrittenOutcome(
+        "success",
+        t("records.life.auditC.legacyRemovedToast"),
+      );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.healthProfileFacts(),
+      });
+      onChanged();
+    },
+    onError: (error) =>
+      showErrorToast(t("records.life.auditC.legacyRemoveError"), {
+        cause: error,
+      }),
+  });
 
   return (
     <div className="space-y-4" data-slot="audit-c-panel">
@@ -151,6 +180,41 @@ export function AuditCPanel({
               </li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {legacy?.value ? (
+        <div
+          className="flex items-start justify-between gap-2"
+          data-slot="audit-c-legacy-pattern"
+        >
+          <div className="space-y-1">
+            <p className="text-sm">
+              {t("records.life.auditC.legacyLabel", {
+                value: t(
+                  `records.profileFacts.values.ALCOHOL_PATTERN.${legacy.value}`,
+                ),
+              })}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("records.life.auditC.legacyHint")}
+            </p>
+          </div>
+          <ConfirmButton
+            label={t("records.life.auditC.legacyRemove")}
+            ariaLabel={t("records.life.auditC.legacyRemove")}
+            title={t("records.life.auditC.legacyRemoveConfirmTitle")}
+            body={t("records.life.auditC.legacyRemoveConfirmBody")}
+            confirmLabel={t("records.life.auditC.legacyRemove")}
+            onConfirm={() => removeLegacy.mutate(legacy.id)}
+            pending={removeLegacy.isPending}
+            disabled={removeLegacy.isPending}
+            variant="ghost"
+            size="icon"
+            className="text-destructive min-h-11 sm:min-h-9"
+            icon={<Trash2 className="size-4" aria-hidden />}
+            slot="audit-c-legacy-remove"
+          />
         </div>
       ) : null}
 
