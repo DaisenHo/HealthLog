@@ -311,6 +311,17 @@
       ]
     },
     {
+      "name": "Dawarich on a private network",
+      "description": "Operator grant for Dawarich instances on the operator's own network, read by the movement context of the Environment module. Unset, a Dawarich URL that resolves to a private address is refused at connect time with private_origin_not_approved. Optional; a public instance never needs it.",
+      "required": false,
+      "variables": [
+        {
+          "name": "DAWARICH_PRIVATE_ORIGINS",
+          "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"http://dawarich.lan:3000\". Link-local, metadata and unspecified addresses stay refused even when listed; a malformed entry makes the connect form name it."
+        }
+      ]
+    },
+    {
       "name": "Document picker",
       "description": "Operator grant for the document picker, which lets a person search their own Paperless-ngx or Papra instance and import picked documents. Unset, the picker is off. Optional.",
       "required": false,

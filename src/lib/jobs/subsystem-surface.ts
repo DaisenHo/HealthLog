@@ -98,6 +98,7 @@ const subsystemSurface = {
   // register-maintenance.ts
   "environment-fetch": { audience: "account" },
   "environment-aq-history": { audience: "system" },
+  "dawarich-sync": { audience: "account" },
   "data-backup": { audience: "system" },
   "rate-limit-cleanup": { audience: "system" },
   "idempotency-cleanup": { audience: "system" },

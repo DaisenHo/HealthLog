@@ -86,6 +86,7 @@ vi.mock("@/lib/db", () => ({
     medicationConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     onboardingRecord: { findUnique: vi.fn().mockResolvedValue(null) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     personalRecord: { findMany: vi.fn().mockResolvedValue([]) },
     coachReminder: { findMany: vi.fn().mockResolvedValue([]) },

@@ -217,6 +217,9 @@ const STATIC_SURFACE_MODULE = {
   "correlation:SYMPTOM_SEVERITY": "illness",
   // The labs ↔ outcome pass over lab draws.
   "correlation:LAB_DRAWS": "labs",
+  // v1.43 — the Dawarich movement channels ride the environment module.
+  "correlation:MOVEMENT_AWAY": "environment",
+  "correlation:MOVEMENT_DISTANCE": "environment",
 
   // ── Day view sections (v1.42) ──
   // The readings carry no owner here: each value follows its own type's

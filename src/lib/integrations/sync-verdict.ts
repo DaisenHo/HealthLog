@@ -102,9 +102,19 @@ export const PUSH_CADENCE: SyncCadence = {
 };
 
 /**
- * Every `IntegrationKey` is polled by an hourly cron registered in
- * `src/lib/jobs/reminder/register-integration-sync.ts`. Apple Health is not an
- * `IntegrationKey` — it takes `PUSH_CADENCE` directly.
+ * Dawarich runs once a night (`dawarich-sync`, 03:20). A run is overdue after
+ * two days, and a successful run is the freshness: a phone that recorded
+ * nothing is not a failing connection.
+ */
+const NIGHTLY_CADENCE: SyncCadence = {
+  attemptStaleAfterMs: 2 * ATTEMPT_STALE_AFTER_MS,
+  dataStaleAfterMs: DATA_STALE_AFTER_MS,
+};
+
+/**
+ * Every `IntegrationKey` but Dawarich is polled by an hourly cron registered
+ * in `src/lib/jobs/reminder/register-integration-sync.ts`; Dawarich nightly.
+ * Apple Health is not an `IntegrationKey` — it takes `PUSH_CADENCE` directly.
  */
 export const INTEGRATION_CADENCE: Record<IntegrationKey, SyncCadence> = {
   withings: POLLED_CADENCE,
@@ -115,6 +125,7 @@ export const INTEGRATION_CADENCE: Record<IntegrationKey, SyncCadence> = {
   oura: POLLED_CADENCE,
   "google-health": POLLED_CADENCE,
   strava: POLLED_CADENCE,
+  dawarich: NIGHTLY_CADENCE,
 };
 
 export interface SyncVerdictInput {

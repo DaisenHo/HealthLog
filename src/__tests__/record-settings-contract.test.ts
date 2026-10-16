@@ -157,6 +157,7 @@ describe("record settings contract", () => {
       oura: false,
       "google-health": false,
       strava: false,
+      dawarich: false,
     } as const;
 
     expect(
@@ -187,6 +188,7 @@ describe("record settings contract", () => {
       oura: false,
       "google-health": false,
       strava: false,
+      dawarich: false,
     } as const;
 
     expect(

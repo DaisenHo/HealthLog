@@ -1057,6 +1057,21 @@ const getDayOutput: z.ZodRawShape = {
             .nullable(),
         }),
       ),
+      // v1.43 — the movement context (Dawarich), without a travel country.
+      movement: z
+        .object({
+          distance: z.object({
+            unit: z.enum(["km", "mi"]),
+            total: z.number().nullable(),
+            driving: z.number().nullable(),
+            train: z.number().nullable(),
+          }),
+          placesVisited: z.number().nullable(),
+          awayFromHomeMinutes: z.number().nullable(),
+          travel: z.object({ isTravelDay: z.boolean() }).nullable(),
+        })
+        .nullable()
+        .optional(),
       unavailable: z.array(
         z.object({
           section: modelDaySection,

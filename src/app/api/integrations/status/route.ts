@@ -69,6 +69,7 @@ export const GET = apiHandler(async () => {
     ouraStatus,
     stravaStatus,
     nightscoutStatus,
+    dawarichStatus,
     dbUser,
     withingsConn,
     whoopConn,
@@ -89,6 +90,7 @@ export const GET = apiHandler(async () => {
     getIntegrationStatus(user.id, "oura"),
     getIntegrationStatus(user.id, "strava"),
     getIntegrationStatus(user.id, "nightscout"),
+    getIntegrationStatus(user.id, "dawarich"),
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -115,6 +117,7 @@ export const GET = apiHandler(async () => {
         nightscoutUrlEncrypted: true,
         nightscoutTokenEncrypted: true,
         nightscoutAllowPrivateHost: true,
+        dawarichUrlEncrypted: true,
       },
     }),
     prisma.withingsConnection.findUnique({
@@ -173,6 +176,7 @@ export const GET = apiHandler(async () => {
     "oura",
     "strava",
     "nightscout",
+    "dawarich",
   ]);
 
   // F-SYNC-1 — per-metric-type last-value timestamps so the card can show that a
@@ -283,6 +287,7 @@ export const GET = apiHandler(async () => {
   const ouraConnected = !!dbUser?.ouraAccessTokenEncrypted;
   const stravaConnected = !!dbUser?.stravaAccessTokenEncrypted;
   const nightscoutConfigured = !!dbUser?.nightscoutUrlEncrypted;
+  const dawarichConfigured = !!dbUser?.dawarichUrlEncrypted;
 
   if (metricFreshnessDegraded) {
     annotate({ meta: { integrations_metric_freshness_degraded: true } });
@@ -460,6 +465,18 @@ export const GET = apiHandler(async () => {
           configured: nightscoutConfigured,
         }),
       } satisfies IntegrationViewModel & NightscoutExtras,
+      {
+        ...publish(dawarichStatus),
+        // v1.43 — Dawarich, read by the card through `health`. The ledger core
+        // rides along like on every entry, and goes with the rest in v1.44.
+        connected: dawarichConfigured,
+        configured: dawarichConfigured,
+        health: health["dawarich"],
+        ...resolve("dawarich", dawarichStatus, {
+          connected: dawarichConfigured,
+          configured: dawarichConfigured,
+        }),
+      } satisfies IntegrationViewModel & DawarichExtras,
     ],
   });
 });
@@ -559,4 +576,11 @@ interface NightscoutExtras {
   configured: boolean;
   hasToken: boolean;
   allowPrivateHost: boolean;
+}
+
+// v1.43 — Dawarich: the connect marker only; the card reads `health` and its
+// own status route.
+interface DawarichExtras {
+  connected: boolean;
+  configured: boolean;
 }

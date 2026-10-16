@@ -222,3 +222,36 @@ describe("scores", () => {
     expect(JSON.stringify(projected.scores)).not.toContain("COMPUTED");
   });
 });
+
+describe("the movement block (v1.43)", () => {
+  const withMovement: DayResponse = {
+    ...day,
+    movement: {
+      source: "dawarich",
+      distance: { unit: "km", total: 48.3, driving: 12, train: 30.5 },
+      placesVisited: 4,
+      awayFromHomeMinutes: 600,
+      travel: { isTravelDay: true, countryCode: "ES" },
+      fetchedAt: "2026-03-30T01:20:00.000Z",
+    },
+  };
+
+  it("reaches a model without the country of the travel day", () => {
+    const model = projectDayForModel(withMovement, []);
+    expect(model.movement).toEqual({
+      distance: { unit: "km", total: 48.3, driving: 12, train: 30.5 },
+      placesVisited: 4,
+      awayFromHomeMinutes: 600,
+      travel: { isTravelDay: true },
+    });
+    expect(JSON.stringify(model)).not.toContain("ES");
+  });
+
+  it("stays out when the caller excludes the environment section", () => {
+    const model = projectDayForModel(withMovement, [], undefined, {
+      sections: new Set(["environment"]),
+      types: new Set(),
+    });
+    expect(model).not.toHaveProperty("movement");
+  });
+});

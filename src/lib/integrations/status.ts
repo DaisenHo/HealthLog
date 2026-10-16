@@ -60,7 +60,9 @@ export type IntegrationKey =
   // `fitbit` transport, which sunsets Sept 2026.
   | "google-health"
   // v1.28.x — Strava OAuth workout source.
-  | "strava";
+  | "strava"
+  // v1.43 — Dawarich movement context (daily values, nightly).
+  | "dawarich";
 
 /**
  * Failure kinds carried into `recordSyncFailure`.
@@ -1280,6 +1282,7 @@ const INTEGRATION_LABELS: Record<IntegrationKey, string> = {
   oura: "Oura",
   "google-health": "Google Health",
   strava: "Strava",
+  dawarich: "Dawarich",
 };
 
 const FAILURE_KIND_COPY: Record<

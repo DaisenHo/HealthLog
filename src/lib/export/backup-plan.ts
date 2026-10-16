@@ -531,6 +531,10 @@ export const TWO_ENDED_MODELS = [
   // fortnight at home, days after a restore that reported success.
   "EnvironmentContext",
   "EnvironmentTravelLocation",
+  // v1.43 — the Dawarich movement days ride the same environment section
+  // (`src/lib/export/environment-backup.ts`): owned values a pruned instance
+  // can no longer hand back.
+  "DawarichDay",
   // How a schedule got to where it is. The register said a restored
   // medication keeps today's schedule and loses the record of when the dose or
   // the timing moved. Measured, it costs more than a record: the era minter
@@ -638,8 +642,6 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
   // v1.43 — the new tables are declared here with the schema and move to
   // TWO_ENDED_MODELS when their section writer and restore branch land.
-  DawarichDay:
-    "The daily movement values fetched from Dawarich: distances, places visited, time away from home, travel days. Days the Dawarich instance has since pruned cannot be fetched again, so they are lost for good.",
   WorkoutRoute:
     "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
   WorkoutSamples:

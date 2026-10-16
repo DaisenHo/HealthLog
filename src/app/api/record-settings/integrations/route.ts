@@ -70,6 +70,9 @@ export const GET = apiHandler(async () => {
     polar: context.user.polarAccessTokenEncrypted !== null,
     oura: context.user.ouraAccessTokenEncrypted !== null,
     strava: context.user.stravaAccessTokenEncrypted !== null,
+    // Not offered on a managed profile (no managed integrations before
+    // v1.44); listed so the map stays total.
+    dawarich: false,
   };
   // The one server-resolved state per connection, from the same loader the
   // owner's own envelope uses, so a guardian reads the record's connections in
