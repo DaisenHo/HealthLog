@@ -6357,18 +6357,25 @@
       "consent": {
         "title": "Consentement IA",
         "activeSince": "Donné le {date} : vos données de santé peuvent être transmises au fournisseur configuré pour les fonctions IA.",
-        "withdrawn": "Retiré. Sauf si un autre consentement le couvre, le Coach et Insights n'utilisent plus l'accès IA fourni par ce serveur, et aucun modèle en ligne ne lit vos documents. Avec votre propre clé ou un modèle local, le Coach et Insights continuent de fonctionner.",
         "withdraw": "Retirer le consentement",
         "confirmBody": "Sauf si un autre consentement les couvre encore, ceci s'arrête immédiatement : le Coach et Insights lorsqu'ils utilisent l'accès IA fourni par ce serveur, et la lecture de documents par un modèle en ligne. Avec votre propre clé ou un modèle local, le Coach et Insights continuent de fonctionner. Sauf si un autre consentement couvre encore Insights, les notes qu'un modèle a écrites pour vous sont supprimées : notes d'état, briefing quotidien, résumés de période écrits par un modèle, lignes d'arrivée et notes d'entraînement. Vos conversations avec le Coach, ce que le Coach a retenu, vos plans et les résumés de vos documents sont conservés, et vous pouvez les lire ou les supprimer vous-même.",
         "confirmWithdraw": "Retirer",
-        "regrantHint": "En le redonnant, les fonctions IA pourront à nouveau transmettre tes données de santé au fournisseur configuré.",
-        "grant": "Donner le consentement",
         "grantError": "Le consentement n'a pas pu être enregistré. Réessaie.",
         "error": "Le retrait n'a pas pu être enregistré. Réessaie.",
         "documentReading": {
           "title": "Consentement à la lecture de documents",
           "activeSince": "Donné le {date} : documents, analyses numérisées et textes de médicaments peuvent être lus par votre service d'IA.",
           "confirmBody": "Les documents, les comptes rendus d'analyses numérisés et les descriptions de médicaments ne sont plus envoyés pour lecture. Rien de ce que vous avez déjà n'est supprimé."
+        },
+        "activeSinceNamed": "Donné le {date} : vos données de santé peuvent être transmises à {providers} pour les fonctions IA.",
+        "activeUndated": "Donné : vos données de santé peuvent être transmises au fournisseur configuré pour les fonctions IA.",
+        "request": {
+          "title": "Votre accord avant que l'IA ne démarre",
+          "body": "L'IA de ce serveur passe par un service fourni par l'opérateur : {providers}. Rien de vos données n'y part tant que vous n'avez pas donné votre accord.",
+          "data": "Une fois votre accord donné, HealthLog envoie à ce service ce dont les fonctions IA ont besoin : mesures comme le poids, la tension, le pouls, le sommeil et l'activité, vos médicaments, votre humeur, vos résultats d'analyses et votre cycle si vous les suivez, ce que vous écrivez dans votre profil et au Coach, et les documents que vous choisissez de faire lire. Le service s'en sert pour rédiger votre briefing du jour, les notes sur vos mesures et les réponses du Coach.",
+          "withdrawHint": "Vous pouvez retirer votre accord à tout moment dans Réglages, IA. Plus rien n'est envoyé à partir de là.",
+          "agree": "J'accepte",
+          "dismiss": "Pas maintenant"
         }
       },
       "operatorOff": {

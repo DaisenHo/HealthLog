@@ -6357,18 +6357,25 @@
       "consent": {
         "title": "Consenso IA",
         "activeSince": "Concesso il {date}: i tuoi dati sanitari possono essere inviati al provider configurato per le funzioni IA.",
-        "withdrawn": "Revocato. Salvo che un altro consenso lo copra, il Coach e Insights non usano più l'accesso IA fornito da questo server e nessun modello online legge i tuoi documenti. Con la tua chiave o un modello locale, il Coach e Insights continuano a funzionare.",
         "withdraw": "Revoca il consenso",
         "confirmBody": "Salvo che un altro consenso li copra ancora, si fermano subito: il Coach e Insights quando usano l'accesso IA fornito da questo server, e la lettura dei documenti con un modello online. Con la tua chiave o un modello locale, il Coach e Insights continuano a funzionare. Salvo che un altro consenso copra ancora Insights, le note che un modello ha scritto per te vengono eliminate: note di stato, il riepilogo giornaliero, i riepiloghi di periodo scritti da un modello, le righe di arrivo e le note sugli allenamenti. Le tue conversazioni con il Coach, ciò che il Coach ricordava, i tuoi piani e i riepiloghi dei tuoi documenti restano, e puoi leggerli o eliminarli tu stesso.",
         "confirmWithdraw": "Revoca",
-        "regrantHint": "Concedendolo di nuovo, le funzioni IA potranno inviare ancora i tuoi dati sanitari al provider configurato.",
-        "grant": "Concedi il consenso",
         "grantError": "Non è stato possibile salvare il consenso. Riprova.",
         "error": "Non è stato possibile salvare la revoca. Riprova.",
         "documentReading": {
           "title": "Consenso alla lettura dei documenti",
           "activeSince": "Dato il {date}: documenti, referti scansionati e testi dei farmaci possono andare al tuo servizio di IA per la lettura.",
           "confirmBody": "Documenti, referti di laboratorio scansionati e descrizioni di farmaci non vengono più inviati per la lettura. Nulla di ciò che hai già viene eliminato."
+        },
+        "activeSinceNamed": "Concesso il {date}: i tuoi dati sanitari possono essere inviati a {providers} per le funzioni IA.",
+        "activeUndated": "Concesso: i tuoi dati sanitari possono essere inviati al provider configurato per le funzioni IA.",
+        "request": {
+          "title": "Il tuo consenso prima che parta l'IA",
+          "body": "L'IA su questo server usa un servizio fornito dal gestore: {providers}. Finché non accetti, nulla dei tuoi dati arriva lì.",
+          "data": "Quando accetti, HealthLog invia a quel servizio ciò che serve alle funzioni IA: misurazioni come peso, pressione, polso, sonno e attività, i tuoi farmaci, l'umore, i valori di laboratorio e il ciclo se li registri, ciò che scrivi nel profilo e al Coach, e i documenti che scegli di far leggere. Il servizio li usa per scrivere il tuo riepilogo del giorno, le note sulle tue misurazioni e le risposte del Coach.",
+          "withdrawHint": "Puoi ritirare il consenso in qualsiasi momento in Impostazioni, IA. Da quel momento non viene inviato più nulla.",
+          "agree": "Accetto",
+          "dismiss": "Non ora"
         }
       },
       "operatorOff": {

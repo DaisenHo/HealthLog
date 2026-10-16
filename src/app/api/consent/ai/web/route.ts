@@ -1,25 +1,20 @@
 /**
- * v1.16.13 — web AI-consent grant.
+ * Web AI-consent grant.
  *
- *   POST /api/consent/ai/web
- *     Mints an `ai_full` consent receipt for the calling web user.
- *     Idempotent — a user with an active `ai_full` receipt is a no-op.
- *     The body decides what a missing receipt means:
+ *   POST /api/consent/ai/web   body `{ "confirm": true }`
+ *     Records the person's explicit `ai_full` consent: they pressed "Agree"
+ *     on a card that named the provider and the data. Idempotent: an active
+ *     `ai_full` receipt makes it a no-op. As the person's own consent act it
+ *     may follow an earlier withdrawal.
  *
- *     no body (heal)            The AI-settings surface calls this on mount
- *                               (the web equivalent of the iOS shell-mount
- *                               heal) so an account that predates the consent
- *                               gate gains a receipt without a re-consent
- *                               step. A past revocation stands; the heal
- *                               never resurrects a withdrawn consent.
- *     `{ intent: "affirmative" }`  The explicit grant control on the same
- *                               surface. This IS the user's consent act, so
- *                               it may supersede an earlier revocation
- *                               exactly as the first grant would.
+ *     Without `confirm: true` (no body, `{}`, the pre-v1.43.2 mount heal or
+ *     its `{ intent }` body) it mints nothing and answers 400
+ *     `consent.ai.confirmRequired`. The settings page used to call this on
+ *     every mount and mint a receipt nobody had agreed to; a request that is
+ *     not the consent act must never create one.
  *
  * Revocation stays on `DELETE /api/consent/ai/latest`; this route only
- * grants. The full CRUD (explicit grant with a signed artefact, reader,
- * revoke) lives in `../route.ts` + `../latest/route.ts`.
+ * grants.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
@@ -31,16 +26,16 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkConsentRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { ensureWebAiConsentReceipt } from "@/lib/consent/web-grant";
-import type { WebConsentGrantIntent } from "@/lib/consent/web-grant";
-import { webConsentGrantBody } from "@/lib/validations/consent";
+import { grantWebAiConsent } from "@/lib/consent/web-grant";
+import {
+  CONSENT_CONFIRM_REQUIRED_ERROR_CODE,
+  webConsentGrantBody,
+} from "@/lib/validations/consent";
 
 export const POST = apiHandler(async (req: Request) => {
   const { user } = await requireAuth();
 
-  // The web AI-settings surface calls this on every mount; the bucket is
-  // generous enough that the heal path is never throttled in normal use,
-  // tight enough to cap a scripted loop.
+  // Caps a scripted loop; a person tapping Agree never comes near it.
   const rl = await checkConsentRateLimit(user.id);
   if (!rl.allowed) {
     annotate({
@@ -52,10 +47,9 @@ export const POST = apiHandler(async (req: Request) => {
     });
   }
 
-  // The mount heal posts no body; only the explicit grant control sends one.
-  // Absence of a JSON body therefore reads as a heal, and a present body is
-  // Zod-validated so a malformed intent is a 422, never a silent heal.
-  let intent: WebConsentGrantIntent = "heal";
+  // Only the explicit grant sends a JSON body. Anything else (no body, an
+  // empty object, the retired `{ intent }` shape) is not the consent act.
+  let confirmed = false;
   const contentType = req.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     const { data: body, error: jsonError } = await safeJson(req, {
@@ -67,22 +61,28 @@ export const POST = apiHandler(async (req: Request) => {
       annotate({ action: { name: "consent.ai.web-grant.invalid_shape" } });
       return returnAllZodIssues(parsed.error, 422);
     }
-    intent = parsed.data.intent;
+    confirmed = parsed.data.confirm === true;
+  }
+  if (!confirmed) {
+    annotate({ action: { name: "consent.ai.web-grant.unconfirmed" } });
+    return apiError(
+      "Consent is recorded only from an explicit confirmation",
+      400,
+      { errorCode: CONSENT_CONFIRM_REQUIRED_ERROR_CODE },
+    );
   }
 
-  const result = await ensureWebAiConsentReceipt(user.id, intent);
+  const result = await grantWebAiConsent(user.id);
 
   if (result.minted) {
-    // Audit trail parity with the iOS-driven POST /api/consent/ai grant so
-    // the legal team can reconstruct web-originated consent; `intent`
-    // separates a migration heal from the user's own re-grant click.
-    // Fire-and-forget.
+    // Audit trail parity with the native POST /api/consent/ai grant so the
+    // web-originated consent can be reconstructed. Fire-and-forget.
     auditLog("consent.ai.grant", {
       userId: user.id,
       details: {
         kind: "ai_full",
         source: "web",
-        intent,
+        confirmed: true,
         receiptId: result.receipt.id,
       },
     }).catch(() => {});
@@ -92,7 +92,6 @@ export const POST = apiHandler(async (req: Request) => {
     action: { name: "consent.ai.web-grant" },
     meta: {
       minted: result.minted,
-      intent,
       ...(result.minted ? { receiptId: result.receipt.id } : {}),
     },
   });

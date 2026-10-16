@@ -32,6 +32,9 @@ export function useGrantDocumentReadingConsent() {
       const signedAt = new Date().toISOString();
       return apiPost("/api/consent/ai", {
         kind: "ai_extraction",
+        // The tap on the prompt is the consent act; the server records a
+        // receipt only for a request that says so.
+        confirm: true,
         signedAt,
         artefact: JSON.stringify({
           source: "web",

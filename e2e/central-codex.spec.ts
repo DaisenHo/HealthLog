@@ -89,14 +89,6 @@ test.describe("central codex opt-in switch (mocked)", () => {
       }),
     );
 
-    await page.route("**/api/consent/ai/web", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ data: { ok: true }, error: null }),
-      }),
-    );
-
     // The opt-in write — flips the mocked state so a re-read reflects it.
     await page.route("**/api/auth/me/use-central-codex", (route) => {
       useCentralCodex = true;

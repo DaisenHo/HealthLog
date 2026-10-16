@@ -6357,18 +6357,25 @@
       "consent": {
         "title": "AI consent",
         "activeSince": "Given on {date}: your health data may be sent to the configured provider for the AI features.",
-        "withdrawn": "Withdrawn. Unless another consent covers them, the Coach and Insights no longer use the AI access this server provides, and no online model reads your documents. On your own key or a local model, the Coach and Insights keep working.",
         "withdraw": "Withdraw consent",
         "confirmBody": "Unless another consent you gave still covers them, these stop straight away: the Coach and Insights where they use the AI access this server provides, and reading documents with an online model. On your own key or a local model, the Coach and Insights keep working. Unless another consent still covers Insights, the notes a model wrote for you are deleted: status notes, the daily briefing, model-written period summaries, arrival lines and workout notes. Your Coach conversations, what the Coach remembered, your plans and your document summaries stay, and you can read or delete them yourself.",
         "confirmWithdraw": "Withdraw",
-        "regrantHint": "Granting again lets the AI features send your health data to the configured provider.",
-        "grant": "Grant consent",
         "grantError": "The consent could not be saved. Please try again.",
         "error": "The withdrawal could not be saved. Please try again.",
         "documentReading": {
           "title": "Consent to reading documents",
           "activeSince": "Given on {date}: documents, lab scans and medication text may go to your AI service for reading.",
           "confirmBody": "Documents, lab report scans and medication descriptions are no longer sent for reading. Nothing you already have is deleted."
+        },
+        "activeSinceNamed": "Given on {date}: your health data may go to {providers} for the AI features.",
+        "activeUndated": "Given: your health data may be sent to the configured provider for the AI features.",
+        "request": {
+          "title": "Your agreement before AI starts",
+          "body": "AI on this server runs on a service the operator provides: {providers}. Nothing from your records goes there until you agree.",
+          "data": "Once you agree, HealthLog sends that service what the AI features need: readings such as weight, blood pressure, pulse, sleep and activity, your medications, mood, lab values and cycle entries if you keep them, what you write in your profile and to the Coach, and documents you choose to have read. The service uses it to write your daily briefing, the notes on your readings and the Coach's answers.",
+          "withdrawHint": "You can withdraw your agreement at any time in Settings, AI. Nothing more is sent from that moment on.",
+          "agree": "Agree",
+          "dismiss": "Not now"
         }
       },
       "operatorOff": {

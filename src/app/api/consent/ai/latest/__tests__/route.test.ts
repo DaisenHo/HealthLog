@@ -456,6 +456,7 @@ describe("append-only invariant", () => {
           kind: "ai_full",
           artefact: "PDF-v1",
           signedAt: signedAt1.toISOString(),
+          confirm: true,
         }),
       }),
     );
@@ -510,6 +511,7 @@ describe("append-only invariant", () => {
           kind: "ai_full",
           artefact: "PDF-v2",
           signedAt: signedAt2.toISOString(),
+          confirm: true,
         }),
       }),
     );

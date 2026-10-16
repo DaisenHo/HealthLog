@@ -14473,8 +14473,16 @@ paths:
       tags:
         - Consent
       summary: Grant AI consent (signed artefact)
-      description: Persist a fresh AI-consent receipt. Required before server-managed AI egress (the operator's global LLM
-        key); BYOK / local / ChatGPT-OAuth chains are the user's own egress and are not gated. Append-only audit trail.
+      description: >-
+        Persist a fresh AI-consent receipt. Required before server-managed AI egress (the operator's global LLM key or
+        shared ChatGPT account); BYOK / local / ChatGPT-OAuth chains are the user's own egress and are not gated.
+        Append-only audit trail.
+
+
+        v1.43.2: the body must carry `confirm: true`, sent only when the person taps an agree control that named the
+        service and the data. A request without it (a launch-time sync from an older app build) writes nothing and
+        answers 400 with `meta.errorCode: consent.ai.confirmRequired`; such a client reads the standing consent from
+        `ai.consent` on GET /api/auth/me instead of re-minting it.
       requestBody:
         required: true
         content:
@@ -14489,7 +14497,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ConsentReceiptResponseEnvelope"
         "400":
-          description: Request validation failed (consent routes use 400).
+          description: "Request validation failed (consent routes use 400), or `confirm` was not `true` (`meta.errorCode:
+            consent.ai.confirmRequired`, nothing written)."
           content:
             application/json:
               schema:
@@ -14501,14 +14510,14 @@ paths:
     post:
       tags:
         - Consent
-      summary: Grant web AI consent (idempotent ai_full)
-      description: "Mint an `ai_full` consent receipt for the calling web user if none is active; a no-op when one already
-        exists. Mirrors the iOS master grant. Without a body (the mount heal) it grants only to an account with no
-        consent history, so a revocation stands until the user grants again; with `intent: \"affirmative\"` (the
-        explicit grant control) it records the user's own consent act, which may supersede an earlier revocation.
-        Revocation flows through DELETE /api/consent/ai/latest."
+      summary: Grant web AI consent (explicit ai_full)
+      description: "Record the calling web user's explicit `ai_full` consent: they pressed the agree control on a card that
+        named the service and the data. Mints a receipt if none is active; a no-op when one already exists. As the
+        person's own consent act it may follow an earlier withdrawal. The body must be `{ \"confirm\": true }`; anything
+        else mints nothing and answers 400 `consent.ai.confirmRequired`. Revocation flows through DELETE
+        /api/consent/ai/latest."
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -14520,6 +14529,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebConsentGrantResponseEnvelope"
+        "400":
+          description: "`confirm` was not `true` (`meta.errorCode: consent.ai.confirmRequired`). Nothing was written."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
         "422": *a4
         "429": *a5
@@ -31265,6 +31280,8 @@ components:
             - ai_insights_only
             - ai_coach
             - ai_extraction
+        confirm:
+          type: boolean
         artefact:
           type: string
           minLength: 1
@@ -31276,21 +31293,19 @@ components:
         - kind
         - artefact
         - signedAt
-      description: Explicit AI-consent grant. `artefact` is an opaque signed receipt (base64 PDF or JWT, ≤ 64 KB UTF-8 bytes);
-        `signedAt` is an ISO-8601 instant. Always appends a fresh row — re-granting after a revoke mints a new receipt.
+      description: "Explicit AI-consent grant. `artefact` is an opaque signed receipt (base64 PDF or JWT, ≤ 64 KB UTF-8
+        bytes); `signedAt` is an ISO-8601 instant. `confirm` must be `true` (v1.43.2): send this body only from the
+        person's own tap on an agree control, never from a launch or sync path. Without it nothing is written and the
+        route answers 400 `consent.ai.confirmRequired`. Always appends a fresh row — re-granting after a revoke mints a
+        new receipt."
     WebConsentGrantBody:
       type: object
       properties:
-        intent:
-          default: heal
-          type: string
-          enum:
-            - heal
-            - affirmative
-      description: "Optional. Omitting the body (or sending `intent: \"heal\"`) is the AI-settings mount heal: it mints only
-        for an account with no `ai_full` consent history at all, so a standing revocation is never resurrected. `intent:
-        \"affirmative\"` is the user's own grant action and may supersede an earlier revocation, exactly as a first
-        grant would."
+        confirm:
+          type: boolean
+      description: "`confirm` must be `true`: the person pressed the agree control. Any other body, or none, mints nothing and
+        answers 400 `consent.ai.confirmRequired` (v1.43.2; before, an empty body was a silent heal sent on every
+        AI-settings visit)."
     JsonImportRequest:
       type: object
       properties:
@@ -36088,26 +36103,27 @@ components:
                 coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
                 coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
                 coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
-                consent — consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
-                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
-                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
-                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
-                disable-coach.body.invalid_json; dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown,
-                dawarich.invalid, dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day —
-                day.invalid; demo — demo.readOnly; documents — documents.chat.conversationNotFound,
-                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
-                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
-                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
-                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
-                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
-                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
-                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
-                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
-                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
-                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
-                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
-                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                consent — consent.ai.confirmRequired, consent.ai.required; cycle — cycle.bulk.invalid,
+                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
+                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
+                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
+                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; dawarich —
+                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
+                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
+                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
+                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
+                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
+                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
+                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
+                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
+                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
+                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
+                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
+                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
+                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
+                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
+                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
+                documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -68816,7 +68832,8 @@ components:
       properties:
         minted:
           type: boolean
-          description: True when a new `ai_full` receipt was minted; false when an active one already existed (idempotent no-op).
+          description: True when a new `ai_full` receipt was minted; false when an active one already existed (a double tap is a
+            no-op).
         kind:
           type: string
           const: ai_full
@@ -68824,7 +68841,7 @@ components:
         - minted
         - kind
       additionalProperties: false
-      description: Outcome of the idempotent web `ai_full` grant. Safe to call on every AI-settings mount.
+      description: Outcome of the explicit web `ai_full` grant.
     ConsentLatestForKindEnvelope:
       type: object
       properties:
@@ -80860,12 +80877,15 @@ components:
           $ref: "#/components/schemas/AiCapabilities"
         provider:
           $ref: "#/components/schemas/AiProviderState"
+        consent:
+          $ref: "#/components/schemas/AiConsentState"
         usage:
           description: v1.43 — the account's AI usage level. Absent on older servers; hide the setting then.
           $ref: "#/components/schemas/AiUsageState"
       required:
         - capabilities
         - provider
+        - consent
       additionalProperties: false
       description: Which AI capabilities the record this session is inside has, and why not when it has none. Resolved on the
         server for the ACTIVE RECORD and masked to the sections the active grant opens, exactly like `modules` and
@@ -80964,6 +80984,53 @@ components:
         - responseTimeoutMs
       additionalProperties: false
       description: The account-level companion to the capability map.
+    AiConsentState:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - given
+            - needed
+            - not_needed
+          description: "`given` — an `ai_full` consent receipt is active (`since` says when); show it with a withdraw control.
+            `needed` — the provider chain runs through a credential the operator holds and at least one capability is
+            closed by the missing receipt alone (its reason is `consent_required`); ask, naming `recipients`, and grant
+            only from the person's tap. `not_needed` — nothing to ask and nothing to withdraw."
+        since:
+          description: When the active `ai_full` consent was given, ISO-8601. `null` unless `status` is `given`.
+          type:
+            - string
+            - "null"
+        recipients:
+          type: array
+          items:
+            type: object
+            properties:
+              via:
+                type: string
+                enum:
+                  - operator_key
+                  - operator_chatgpt
+                description: "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account."
+              name:
+                type: string
+                description: "The service, named for a person: `OpenAI`, `Anthropic`, `ChatGPT (OpenAI)`, or the host name of the
+                  endpoint the operator set."
+            required:
+              - via
+              - name
+            additionalProperties: false
+          description: The operator-held services in the record's provider chain, in chain order. Empty when the chain holds none.
+      required:
+        - status
+        - since
+        - recipients
+      additionalProperties: false
+      description: "v1.43.2 — the standing AI consent for the record. Consent is asked only when data would go through a
+        credential the operator holds; a person's own key, ChatGPT account or local model needs none. Render from it; a
+        client never mints a receipt on its own (launch, sync or mount): POST /api/consent/ai and /api/consent/ai/web
+        require `confirm: true`."
     AiUsageState:
       type: object
       properties:

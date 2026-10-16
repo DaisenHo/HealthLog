@@ -2,129 +2,111 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import type { AiConsentState } from "@/lib/ai/capabilities/types";
 import { I18nProvider } from "@/lib/i18n/context";
-import { AiConsentCard } from "../ai-consent-card";
 
 /**
- * The web withdrawal affordance. Before this card the revoke endpoint was
- * reachable only from the native client, so a web-only account could give
- * AI consent and never take it back.
- *
- * These render the card against a pre-seeded query cache (server-side
- * markup, so the mutation path is not exercised here — the endpoint it
- * calls has its own route tests). What they pin is that the card reports
- * the standing decision correctly and offers the withdrawal only when
- * there is something to withdraw.
+ * The standing AI consent in Settings → AI, rendered from `ai.consent` on
+ * `/api/auth/me`. What these pin: the card says since when and to which
+ * service consent was given and offers the withdrawal only then; it never
+ * offers a grant of its own (the question lives in `AiConsentRequest`, at
+ * the top of the page, and only there); and it never misreports a decision it
+ * has not been told.
  */
 
-const receiptKey = ["consent", "ai", "latest", "ai_full"];
+const consentState = vi.hoisted(() => ({
+  value: null as AiConsentState | null,
+  authLoading: false,
+}));
 
-function renderWith(receipt: unknown) {
+vi.mock("@/hooks/use-ai-capability", () => ({
+  useAiConsent: () => consentState.value,
+}));
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: () => ({ isLoading: consentState.authLoading }),
+}));
+
+import { AiConsentCard } from "../ai-consent-card";
+
+function render(isAuthenticated = true) {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry: false, enabled: false } },
   });
-  client.setQueryData(receiptKey, receipt);
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <I18nProvider initialLocale="en">
-        <AiConsentCard isAuthenticated />
+        <AiConsentCard isAuthenticated={isAuthenticated} />
       </I18nProvider>
     </QueryClientProvider>,
   );
 }
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  consentState.value = null;
+  consentState.authLoading = false;
 });
 
 describe("AiConsentCard", () => {
-  it("offers the withdrawal while consent stands", () => {
-    const html = renderWith({
-      id: "rcpt-1",
-      kind: "ai_full",
-      signedAt: "2026-07-01T08:00:00.000Z",
-      revokedAt: null,
-    });
+  it("says since when and to which service consent was given, with the withdrawal", () => {
+    consentState.value = {
+      status: "given",
+      since: "2026-07-01T08:00:00.000Z",
+      recipients: [{ via: "operator_key", name: "OpenAI" }],
+    };
+    const html = render();
 
     expect(html).toContain('data-slot="ai-consent-withdraw"');
     expect(html).toContain("Withdraw consent");
+    expect(html).toContain("Given on");
+    expect(html).toContain("OpenAI");
   });
 
-  it("reports a withdrawal, stops offering it again, and offers the grant", () => {
-    const html = renderWith({
-      id: "rcpt-1",
-      kind: "ai_full",
-      signedAt: "2026-07-01T08:00:00.000Z",
-      revokedAt: "2026-07-10T08:00:00.000Z",
-    });
+  it("falls back to the configured provider when no operator service is in the chain", () => {
+    consentState.value = {
+      status: "given",
+      since: "2026-07-01T08:00:00.000Z",
+      recipients: [],
+    };
+    const html = render();
+    expect(html).toContain("the configured provider");
+    expect(html).toContain('data-slot="ai-consent-withdraw"');
+  });
 
-    expect(html).toContain("Withdrawn.");
+  it.each(["needed", "not_needed"] as const)(
+    "offers no withdrawal and no grant of its own while consent is %s",
+    (status) => {
+      consentState.value = {
+        status,
+        since: null,
+        recipients: [{ via: "operator_key", name: "OpenAI" }],
+      };
+      const html = render();
+      expect(html).not.toContain('data-slot="ai-consent-withdraw"');
+      expect(html).not.toContain("Agree");
+      expect(html).not.toContain('data-slot="ai-consent"');
+    },
+  );
+
+  it("holds its space while the account payload is loading, claiming nothing", () => {
+    consentState.authLoading = true;
+    const html = render();
+    expect(html).toContain('data-slot="ai-consent"');
     expect(html).not.toContain('data-slot="ai-consent-withdraw"');
-    // Withdrawal must be as reversible as it was easy: the same surface
-    // carries the explicit grant control, and its hint says what granting
-    // lets the app do.
-    expect(html).toContain('data-slot="ai-consent-grant"');
-    expect(html).toContain("Grant consent");
+    expect(html).not.toContain("Given on");
   });
 
-  it("treats no receipt at all as consent not given", () => {
-    const html = renderWith(null);
-
-    expect(html).toContain("Withdrawn.");
+  it("says nothing when the payload carries no consent state", () => {
+    const html = render();
+    expect(html).not.toContain('data-slot="ai-consent"');
     expect(html).not.toContain('data-slot="ai-consent-withdraw"');
-    expect(html).toContain('data-slot="ai-consent-grant"');
-  });
-
-  it("never reports a failed read as a withdrawal", () => {
-    // A refused or failed read (the consent bucket's rate limit, a network
-    // drop) says nothing about the decision. Reporting it as "Withdrawn" and
-    // offering a grant would misstate the person's own choice.
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false, retryOnMount: false } },
-    });
-    client
-      .getQueryCache()
-      .build(client, { queryKey: receiptKey })
-      .setState({
-        status: "error",
-        error: new Error("read failed"),
-        data: undefined,
-        fetchStatus: "idle",
-      });
-    const html = renderToStaticMarkup(
-      <QueryClientProvider client={client}>
-        <I18nProvider initialLocale="en">
-          <AiConsentCard isAuthenticated />
-        </I18nProvider>
-      </QueryClientProvider>,
-    );
-    expect(html).not.toContain("Withdrawn.");
-    expect(html).not.toContain('data-slot="ai-consent-grant"');
-    expect(html).not.toContain('data-slot="ai-consent-withdraw"');
-    expect(html).toContain('data-slot="ai-consent-load-error"');
-  });
-
-  it("never shows the grant control while consent stands", () => {
-    const html = renderWith({
-      id: "rcpt-1",
-      kind: "ai_full",
-      signedAt: "2026-07-01T08:00:00.000Z",
-      revokedAt: null,
-    });
-
-    expect(html).not.toContain('data-slot="ai-consent-grant"');
   });
 
   it("renders nothing for a signed-out visitor", () => {
-    const client = new QueryClient();
-    const html = renderToStaticMarkup(
-      <QueryClientProvider client={client}>
-        <I18nProvider initialLocale="en">
-          <AiConsentCard isAuthenticated={false} />
-        </I18nProvider>
-      </QueryClientProvider>,
-    );
-
-    expect(html).toBe("");
+    consentState.value = {
+      status: "given",
+      since: "2026-07-01T08:00:00.000Z",
+      recipients: [],
+    };
+    expect(render(false)).toBe("");
   });
 });

@@ -14,11 +14,11 @@
  * text; minted by the document auto-read switch).
  *
  * - POST /api/consent/ai      — explicit grant with a signed artefact (iOS).
+ *                               Requires `confirm: true` (v1.43.2).
  * - POST /api/consent/ai/web  — idempotent `ai_full` grant for the web
- *                               client. Without a body it is the AI-settings
- *                               mount heal (never lifts a revocation); with
- *                               `intent: "affirmative"` it is the explicit
- *                               grant control on the same surface.
+ *                               client, `{ confirm: true }` only (v1.43.2).
+ *                               Neither route mints on a request that is not
+ *                               the person's own consent act.
  * - GET  /api/consent/ai/latest — latest active receipt(s).
  * - DELETE /api/consent/ai/latest — revoke the latest receipt (all kinds
  *                               when `kind` is omitted — the master OFF).
@@ -42,13 +42,13 @@ import { isoDateTime } from "@/lib/validations/datetime";
 const consentPostBody = consentPostBodyBase.meta({
   id: "ConsentPostBody",
   description:
-    "Explicit AI-consent grant. `artefact` is an opaque signed receipt (base64 PDF or JWT, ≤ 64 KB UTF-8 bytes); `signedAt` is an ISO-8601 instant. Always appends a fresh row — re-granting after a revoke mints a new receipt.",
+    "Explicit AI-consent grant. `artefact` is an opaque signed receipt (base64 PDF or JWT, ≤ 64 KB UTF-8 bytes); `signedAt` is an ISO-8601 instant. `confirm` must be `true` (v1.43.2): send this body only from the person's own tap on an agree control, never from a launch or sync path. Without it nothing is written and the route answers 400 `consent.ai.confirmRequired`. Always appends a fresh row — re-granting after a revoke mints a new receipt.",
 });
 
 const webConsentGrantBody = webConsentGrantBodyBase.meta({
   id: "WebConsentGrantBody",
   description:
-    'Optional. Omitting the body (or sending `intent: "heal"`) is the AI-settings mount heal: it mints only for an account with no `ai_full` consent history at all, so a standing revocation is never resurrected. `intent: "affirmative"` is the user\'s own grant action and may supersede an earlier revocation, exactly as a first grant would.',
+    "`confirm` must be `true`: the person pressed the agree control. Any other body, or none, mints nothing and answers 400 `consent.ai.confirmRequired` (v1.43.2; before, an empty body was a silent heal sent on every AI-settings visit).",
 });
 
 const consentReceiptResponse = z
@@ -74,14 +74,13 @@ const webConsentGrantResponse = z
     minted: z
       .boolean()
       .describe(
-        "True when a new `ai_full` receipt was minted; false when an active one already existed (idempotent no-op).",
+        "True when a new `ai_full` receipt was minted; false when an active one already existed (a double tap is a no-op).",
       ),
     kind: z.literal("ai_full"),
   })
   .meta({
     id: "WebConsentGrantResponse",
-    description:
-      "Outcome of the idempotent web `ai_full` grant. Safe to call on every AI-settings mount.",
+    description: "Outcome of the explicit web `ai_full` grant.",
   });
 
 const serialisedReceipt = z
@@ -152,7 +151,9 @@ export const consentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Consent"],
       summary: "Grant AI consent (signed artefact)",
       description:
-        "Persist a fresh AI-consent receipt. Required before server-managed AI egress (the operator's global LLM key); BYOK / local / ChatGPT-OAuth chains are the user's own egress and are not gated. Append-only audit trail.",
+        "Persist a fresh AI-consent receipt. Required before server-managed AI egress (the operator's global LLM key or shared ChatGPT account); BYOK / local / ChatGPT-OAuth chains are the user's own egress and are not gated. Append-only audit trail.\n" +
+        "\n" +
+        "v1.43.2: the body must carry `confirm: true`, sent only when the person taps an agree control that named the service and the data. A request without it (a launch-time sync from an older app build) writes nothing and answers 400 with `meta.errorCode: consent.ai.confirmRequired`; such a client reads the standing consent from `ai.consent` on GET /api/auth/me instead of re-minting it.",
       requestBody: {
         required: true,
         content: {
@@ -173,7 +174,8 @@ export const consentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...stdResponses,
         "400": {
-          description: "Request validation failed (consent routes use 400).",
+          description:
+            "Request validation failed (consent routes use 400), or `confirm` was not `true` (`meta.errorCode: consent.ai.confirmRequired`, nothing written).",
           content: {
             "application/json": {
               schema: dataEnvelope(z.null(), "ConsentValidationErrorEnvelope"),
@@ -186,11 +188,11 @@ export const consentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/consent/ai/web": {
     post: {
       tags: ["Consent"],
-      summary: "Grant web AI consent (idempotent ai_full)",
+      summary: "Grant web AI consent (explicit ai_full)",
       description:
-        'Mint an `ai_full` consent receipt for the calling web user if none is active; a no-op when one already exists. Mirrors the iOS master grant. Without a body (the mount heal) it grants only to an account with no consent history, so a revocation stands until the user grants again; with `intent: "affirmative"` (the explicit grant control) it records the user\'s own consent act, which may supersede an earlier revocation. Revocation flows through DELETE /api/consent/ai/latest.',
+        "Record the calling web user's explicit `ai_full` consent: they pressed the agree control on a card that named the service and the data. Mints a receipt if none is active; a no-op when one already exists. As the person's own consent act it may follow an earlier withdrawal. The body must be `{ \"confirm\": true }`; anything else mints nothing and answers 400 `consent.ai.confirmRequired`. Revocation flows through DELETE /api/consent/ai/latest.",
       requestBody: {
-        required: false,
+        required: true,
         content: {
           "application/json": { schema: webConsentGrantBody },
         },
@@ -208,6 +210,11 @@ export const consentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        "400": {
+          description:
+            "`confirm` was not `true` (`meta.errorCode: consent.ai.confirmRequired`). Nothing was written.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

@@ -455,10 +455,7 @@ describe("AI consent withdrawal copy matches what withdrawing does", () => {
   for (const locale of LOCALES) {
     it(`${locale} says what keeps working and when the notes stay`, () => {
       const b = bundle(locale);
-      for (const path of [
-        "settings.ai.consent.confirmBody",
-        "settings.ai.consent.withdrawn",
-      ]) {
+      for (const path of ["settings.ai.consent.confirmBody"]) {
         const copy = resolve(b, path).toLowerCase();
         for (const phrase of OWN_PROVIDER[locale]) {
           expect(copy, `${locale} ${path}`).toContain(phrase);

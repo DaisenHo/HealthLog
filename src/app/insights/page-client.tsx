@@ -29,6 +29,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { HeroStrip } from "@/components/insights/hero-strip";
+import { AiConsentRequest } from "@/components/ai/ai-consent-request";
 import { AiSetupHint } from "@/components/insights/ai-setup-hint";
 import { DeferUntilNear } from "@/components/insights/defer-until-near";
 import { OverviewSectionBoundary } from "@/components/insights/overview-section-boundary";
@@ -610,6 +611,11 @@ export default function InsightsPageClient() {
       {/* The one place the overview mentions AI setup: only while no
           provider is configured and this person could set one up. */}
       <AiSetupHint />
+
+      {/* The operator's provider is configured but nothing goes to it until
+          the person agrees: the consent question, naming the service and the
+          data, only while AI is closed by that alone (`ai.consent`). */}
+      <AiConsentRequest surface="insights" />
 
       {/* v1.15.18 — the inline "Anpassen" toggle was removed. Customising the
           overview (section show/hide + order) and sorting the nav pills now

@@ -13,7 +13,7 @@
  * they were editing.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
@@ -28,11 +28,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
-import {
-  aiInputDependentKeys,
-  invalidateKeys,
-  queryKeys,
-} from "@/lib/query-keys";
+import { queryKeys } from "@/lib/query-keys";
 
 import { AdminOpenAIProviderForm } from "./admin-openai-provider-form";
 import { AiConsentCard } from "./ai-consent-card";
@@ -132,29 +128,10 @@ export function AiInsightsCard({
     void refetchChain();
   }
 
-  // v1.16.13 — heal the web AI-consent receipt on mount. The server-side
-  // consent gate (admin-openai egress) requires an active `ai_full`
-  // receipt; the web client never minted one, so existing web users on a
-  // shared-key deployment saw the no-key fallback. This mirrors the iOS
-  // shell-mount heal: idempotent server-side mint (a user with an active
-  // receipt is a no-op), fire-and-forget so a failure never blocks the
-  // settings UI. Runs once per mount of the AI-settings surface.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    // A heal that minted a receipt changed an input of the account's AI
-    // capability answer, so `/me` re-resolves; a no-op heal leaves it alone.
-    void apiFetchRaw("/api/consent/ai/web", { method: "POST" })
-      .then(async (res) => {
-        if (!res.ok) return;
-        const body = (await res.json()) as { data?: { minted?: boolean } };
-        if (body.data?.minted) {
-          void invalidateKeys(queryClient, aiInputDependentKeys);
-        }
-      })
-      .catch(() => {
-        /* best-effort heal — the explicit grant path stays available */
-      });
-  }, [isAuthenticated, queryClient]);
+  // No consent is granted from here. Until v1.43.2 this card posted to
+  // `/api/consent/ai/web` on every mount and minted a receipt nobody had
+  // agreed to; the question is now asked by `AiConsentRequest` inside the
+  // consent card below, and only its "Agree" button grants.
 
   // The Select is URL-driven so the SSR test can pick the branch and
   // a deep link works. Default = `?provider=…` query param when the

@@ -9,13 +9,17 @@
  * withdrawal on the same footing as the grant, so it belongs on the same
  * surface, not behind a support request.
  *
- * The card shows the standing decision in plain words and offers the one
- * move that changes it: withdraw while consent stands, grant while it does
- * not. Withdrawing takes effect immediately: the consent gate fails closed
+ * The card renders the standing decision from `ai.consent` on `/api/auth/me`
+ * and offers the one move that changes it. While consent stands it says
+ * since when and to which service, with the withdraw control. While it does
+ * not and the operator's provider needs it, the consent question at the top
+ * of the page (`AiConsentRequest`) asks it: the provider, the data, and an
+ * "Agree" button that is the consent act. Nothing here grants on mount;
+ * until v1.43.2 the page minted a receipt on every visit, which is exactly
+ * what this replaced.
+ * Withdrawing takes effect immediately: the consent gate fails closed
  * without an active receipt, so every AI surface falls back to its
- * no-consent state on the next call. Granting posts an affirmative intent,
- * which is the consent act itself and therefore may supersede an earlier
- * revocation; the silent mount heal never does.
+ * no-consent state on the next call.
  *
  * v1.39 — a withdrawal also deletes what the app can write again: the notes
  * a model wrote from the person's data (status notes, the daily briefing,
@@ -31,14 +35,15 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShieldCheck, ShieldOff } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { useAiConsent } from "@/hooks/use-ai-capability";
+import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
@@ -63,19 +68,11 @@ export function AiConsentCard({
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
-
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: queryKeys.aiConsentReceipt("ai_full"),
-    queryFn: async () => {
-      const res = await apiFetchRaw("/api/consent/ai/latest?kind=ai_full");
-      // A failed read is not a withdrawal: throw so the card says it could
-      // not load instead of reporting the person's decision wrongly.
-      if (!res.ok) throw new Error("consent read failed");
-      const json = await res.json();
-      return (json.data?.receipt ?? null) as ConsentReceiptWire;
-    },
-    enabled: isAuthenticated,
-  });
+  // The standing decision comes off the account payload, resolved on the
+  // server with the capabilities it governs, so this card and every AI
+  // surface agree on it. `null` until `/me` has answered.
+  const consent = useAiConsent();
+  const { isLoading: authLoading } = useAuth();
 
   const revoke = useMutation({
     mutationKey: queryKeys.aiConsentReceipt("ai_full"),
@@ -89,28 +86,8 @@ export function AiConsentCard({
       setConfirming(false);
       // The receipt gates every AI surface, so anything that reads consent
       // state has to re-resolve — not just this card. `/me` carries the
-      // resolved capabilities every AI surface renders from.
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.aiConsentReceipt("ai_full"),
-      });
-      await invalidateKeys(queryClient, aiInputDependentKeys);
-    },
-  });
-
-  const grant = useMutation({
-    mutationKey: queryKeys.aiConsentReceipt("ai_full"),
-    mutationFn: async () => {
-      // The affirmative intent marks this as the user's own consent act,
-      // the only web path that may lift a standing revocation. The silent
-      // mount heal posts no body and cannot.
-      const res = await apiFetchRaw("/api/consent/ai/web", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intent: "affirmative" }),
-      });
-      if (!res.ok) throw new Error("grant failed");
-    },
-    onSuccess: async () => {
+      // resolved capabilities and the consent state every AI surface
+      // renders from.
       await queryClient.invalidateQueries({
         queryKey: queryKeys.aiConsentReceipt("ai_full"),
       });
@@ -120,12 +97,11 @@ export function AiConsentCard({
 
   if (!isAuthenticated) return null;
 
-  // Say nothing until the state is known: a card that flashes "withdrawn"
-  // before the receipt arrives would misreport the user's own decision.
-  // But hold the block's space with a skeleton mirroring the final shape —
-  // returning null here made the section pop in and shift everything
-  // below it once the receipt arrived.
-  if (isLoading) {
+  // Say nothing until the state is known: a card that flashes the question
+  // before the payload arrives would misreport the person's own decision.
+  // But hold the block's space with a skeleton mirroring the final shape, so
+  // nothing below moves once it lands.
+  if (consent === null && authLoading) {
     return (
       <SettingsCard as="section" data-slot="ai-consent">
         <SettingsCardHeader
@@ -139,48 +115,40 @@ export function AiConsentCard({
     );
   }
 
-  if (isError) {
-    return (
-      <SettingsCard as="section" data-slot="ai-consent">
-        <SettingsCardHeader
-          icon={ShieldCheck}
-          title={t("settings.ai.consent.title")}
-        />
-        <QueryErrorRow
-          slot="ai-consent-load-error"
-          onRetry={() => void refetch()}
-        />
-      </SettingsCard>
-    );
+  // Not given: nothing to withdraw. Where agreeing would open something (the
+  // operator's provider) the question sits at the top of this page
+  // (`AiConsentRequest`); a person on their own key or a local model has
+  // nothing to agree to, and reading documents asks its own narrower question
+  // where a document is read.
+  if (consent === null || consent.status !== "given") {
+    return <DocumentReadingConsentRow isAuthenticated={isAuthenticated} />;
   }
 
-  // Narrow to the receipt itself rather than a boolean, so the branches
-  // below can read its fields without an assertion.
-  const activeReceipt = data && data.revokedAt === null ? data : null;
+  const providers = consent.recipients.map((r) => r.name).join(", ");
+  const description = consent.since
+    ? providers
+      ? t("settings.ai.consent.activeSinceNamed", {
+          date: formatDateTime(consent.since),
+          providers,
+        })
+      : t("settings.ai.consent.activeSince", {
+          date: formatDateTime(consent.since),
+        })
+    : t("settings.ai.consent.activeUndated");
 
   return (
     <>
       <SettingsCard as="section" data-slot="ai-consent">
         <SettingsCardHeader
-          icon={activeReceipt ? ShieldCheck : ShieldOff}
+          anchor="ai-consent"
+          icon={ShieldCheck}
           title={t("settings.ai.consent.title")}
-          description={
-            activeReceipt
-              ? t("settings.ai.consent.activeSince", {
-                  date: formatDateTime(activeReceipt.signedAt),
-                })
-              : t("settings.ai.consent.withdrawn")
-          }
+          description={description}
         />
 
-        {activeReceipt && confirming ? (
-          <p className="text-muted-foreground text-xs">
+        {confirming ? (
+          <p className="text-foreground text-sm">
             {t("settings.ai.consent.confirmBody")}
-          </p>
-        ) : null}
-        {!activeReceipt ? (
-          <p className="text-muted-foreground text-xs">
-            {t("settings.ai.consent.regrantHint")}
           </p>
         ) : null}
 
@@ -190,68 +158,46 @@ export function AiConsentCard({
           </p>
         ) : null}
 
-        {grant.isError ? (
-          <p className="text-destructive text-xs" role="alert">
-            {t("settings.ai.consent.grantError")}
-          </p>
-        ) : null}
-
         {/* One action row, last in the card; while confirming, Cancel sits
             before the destructive confirm (design standards §12). */}
         <SettingsCardActions>
-          {activeReceipt ? (
-            confirming ? (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 sm:min-h-9"
-                  onClick={() => setConfirming(false)}
-                  disabled={revoke.isPending}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="min-h-11 sm:min-h-9"
-                  data-slot="ai-consent-withdraw-confirm"
-                  onClick={() => revoke.mutate()}
-                  disabled={revoke.isPending}
-                >
-                  {revoke.isPending ? (
-                    <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-                  ) : null}
-                  {t("settings.ai.consent.confirmWithdraw")}
-                </Button>
-              </>
-            ) : (
+          {confirming ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="min-h-11 sm:min-h-9"
-                data-slot="ai-consent-withdraw"
-                onClick={() => setConfirming(true)}
+                onClick={() => setConfirming(false)}
+                disabled={revoke.isPending}
               >
-                {t("settings.ai.consent.withdraw")}
+                {t("common.cancel")}
               </Button>
-            )
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                data-slot="ai-consent-withdraw-confirm"
+                onClick={() => revoke.mutate()}
+                disabled={revoke.isPending}
+              >
+                {revoke.isPending ? (
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+                ) : null}
+                {t("settings.ai.consent.confirmWithdraw")}
+              </Button>
+            </>
           ) : (
             <Button
               type="button"
+              variant="outline"
               size="sm"
               className="min-h-11 sm:min-h-9"
-              data-slot="ai-consent-grant"
-              onClick={() => grant.mutate()}
-              disabled={grant.isPending}
+              data-slot="ai-consent-withdraw"
+              onClick={() => setConfirming(true)}
             >
-              {grant.isPending ? (
-                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-              ) : null}
-              {t("settings.ai.consent.grant")}
+              {t("settings.ai.consent.withdraw")}
             </Button>
           )}
         </SettingsCardActions>

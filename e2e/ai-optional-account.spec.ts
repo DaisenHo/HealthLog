@@ -74,7 +74,11 @@ test("J5: withdrawing AI consent deletes the notes written under it", async ({
   );
   await page.locator('[data-slot="ai-consent-withdraw-confirm"]').click();
   expect((await withdrawn).status()).toBe(200);
-  await expect(page.locator('[data-slot="ai-consent-grant"]')).toBeVisible();
+  // On a local model nothing needs the consent, so once withdrawn there is
+  // nothing to withdraw and nothing to ask.
+  await expect(page.locator('[data-slot="ai-consent-withdraw"]')).toHaveCount(
+    0,
+  );
 
   await openOverview(page);
   await expect(page.getByText(marker)).toHaveCount(0);
