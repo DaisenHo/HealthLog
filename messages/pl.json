@@ -8223,7 +8223,15 @@
           "busy": "Próba lub przeliczanie wciąż trwa. Spróbuj ponownie, gdy się zakończy.",
           "dryRunRequired": "Najpierw uruchom próbę. Do zastosowania potrzebna jest próba zakończona w ciągu ostatnich siedmiu dni.",
           "generic": "Żądanie nie zostało zrealizowane."
-        }
+        },
+        "rebuild": {
+          "queued": "Ponowne przeliczenie czeka na proces w tle.",
+          "running": "Dni pulsu są przeliczane.",
+          "done": "Dni pulsu przeliczone {at} dla kont: {accounts}.",
+          "failed": "Przeliczanie zostało przerwane. Przyczynę podaje log aplikacji; uruchom je ponownie."
+        },
+        "rebuildAgain": "Przelicz ponownie",
+        "rebuildStarted": "Przeliczanie rozpoczęte."
       }
     },
     "carrier": "Operator",
@@ -11279,7 +11287,14 @@
         "removeConfirmBody": "Wpis zniknie z historii. Tutaj nie da się tego cofnąć.",
         "removedToast": "Wpis usunięty",
         "removeError": "Nie udało się usunąć wpisu.",
-        "historyEntry": "{date}: {score} z 12"
+        "historyEntry": "{date}: {score} z 12",
+        "legacyLabel": "Wcześniejsza odpowiedź: {value}",
+        "legacyHint": "Z krótkiego pytania o alkohol sprzed tego kwestionariusza. Gdy jest wynik kwestionariusza, Coach przestaje ją czytać.",
+        "legacyRemove": "Usuń wcześniejszą odpowiedź",
+        "legacyRemoveConfirmTitle": "Usunąć wcześniejszą odpowiedź?",
+        "legacyRemoveConfirmBody": "Wcześniejsza odpowiedź zniknie z Twoich danych. Wyniki kwestionariusza zostają.",
+        "legacyRemovedToast": "Wcześniejsza odpowiedź usunięta",
+        "legacyRemoveError": "Nie udało się usunąć wcześniejszej odpowiedzi."
       },
       "takeOver": {
         "conditionsButton": "Przenieś do dziennika stanów",

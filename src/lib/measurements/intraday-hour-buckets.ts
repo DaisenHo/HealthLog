@@ -177,6 +177,59 @@ export interface HourBucketWrite {
   value: number;
 }
 
+/** One hour as the batch reads it, with the instant it starts at. */
+export interface HourBucketEntry extends HourBucketWrite {
+  /** `startDate` of the entry, in epoch milliseconds. */
+  startMs: number;
+}
+
+/**
+ * A batch's hours reduced to one write per slot.
+ *
+ * A slot is one local hour of one day. On the autumn day the clock falls
+ * back, one local hour happens twice, and the phone hands over both under
+ * the same key (`…T02`), each with its own `startDate`: they are two hours of
+ * activity and are summed into the slot rather than the second replacing the
+ * first. Entries that repeat the same start are the same hour posted twice,
+ * and the last one counts, as for every other slot.
+ *
+ * `contributors` are the entries whose values the write carries (they take
+ * its status); `superseded` are the earlier repeats of one start.
+ *
+ * The slot holds one number, so the sum is only as complete as the batch
+ * that carries it: both occurrences have to arrive together. The phone posts
+ * a day's hours in one batch, and a later batch that carries only one of
+ * them replaces the slot with that one, as a re-post of any slot does.
+ */
+export function combineHourWrites(entries: readonly HourBucketEntry[]): {
+  writes: Array<{ write: HourBucketWrite; contributors: number[] }>;
+  superseded: number[];
+} {
+  const slots = new Map<string, Map<number, HourBucketEntry>>();
+  const superseded: number[] = [];
+  for (const entry of entries) {
+    const key = `${entry.type}::${entry.dateKey}::${entry.hour}`;
+    const byStart = slots.get(key) ?? new Map<number, HourBucketEntry>();
+    const earlier = byStart.get(entry.startMs);
+    if (earlier) superseded.push(earlier.index);
+    byStart.set(entry.startMs, entry);
+    slots.set(key, byStart);
+  }
+  const writes = [...slots.values()].map((byStart) => {
+    const occurrences = [...byStart.values()];
+    const last = occurrences.reduce((a, b) => (b.index > a.index ? b : a));
+    const { startMs: _start, ...base } = last;
+    return {
+      write: {
+        ...base,
+        value: occurrences.reduce((sum, entry) => sum + entry.value, 0),
+      },
+      contributors: occurrences.map((entry) => entry.index),
+    };
+  });
+  return { writes, superseded };
+}
+
 /**
  * Store a batch's hours, one transaction per (type, day). Returns the
  * per-entry status: `inserted` for the first value of a slot, `updated` when

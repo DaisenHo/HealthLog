@@ -8198,7 +8198,15 @@
           "busy": "시험 실행이나 재계산이 아직 진행 중입니다. 끝난 뒤 다시 시도하세요.",
           "dryRunRequired": "먼저 시험 실행을 하세요. 적용하려면 최근 7일 안에 끝난 시험 실행이 필요합니다.",
           "generic": "요청이 처리되지 않았습니다."
-        }
+        },
+        "rebuild": {
+          "queued": "재계산이 백그라운드 작업을 기다리고 있습니다.",
+          "running": "맥박 일별 값을 재계산하고 있습니다.",
+          "done": "{at}에 계정 {accounts}개의 맥박 일별 값을 재계산했습니다.",
+          "failed": "재계산이 중단되었습니다. 앱 로그에 원인이 있습니다. 다시 실행하세요."
+        },
+        "rebuildAgain": "다시 계산",
+        "rebuildStarted": "재계산을 시작했습니다."
       }
     },
     "carrier": "통신사",
@@ -11279,7 +11287,14 @@
         "removeConfirmBody": "기록이 내역에서 사라져요. 여기서는 되돌릴 수 없어요.",
         "removedToast": "기록을 삭제했어요",
         "removeError": "기록을 삭제하지 못했어요.",
-        "historyEntry": "{date}: 12점 중 {score}점"
+        "historyEntry": "{date}: 12점 중 {score}점",
+        "legacyLabel": "이전 답변: {value}",
+        "legacyHint": "이 설문 전에 묻던 짧은 음주 질문의 답변입니다. 설문 결과가 있으면 코치는 더 이상 이 답변을 읽지 않습니다.",
+        "legacyRemove": "이전 답변 삭제",
+        "legacyRemoveConfirmTitle": "이전 답변을 삭제할까요?",
+        "legacyRemoveConfirmBody": "이전 답변이 기록에서 삭제됩니다. 설문 결과는 그대로 남습니다.",
+        "legacyRemovedToast": "이전 답변을 삭제했습니다",
+        "legacyRemoveError": "이전 답변을 삭제하지 못했습니다."
       },
       "takeOver": {
         "conditionsButton": "상태 일지로 옮기기",

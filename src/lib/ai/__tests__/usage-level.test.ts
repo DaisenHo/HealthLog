@@ -61,6 +61,9 @@ describe("resolveAiUsageLevel — every choice x default x ceiling", () => {
 describe("what each level does", () => {
   it("regenerates status cards after a sync: a day, the operator's gap, the hour", () => {
     expect(statusRegenGapHours("frugal", "sync", 6)).toBe(24);
+    // Never more often than standard: an operator gap above a day wins.
+    expect(statusRegenGapHours("frugal", "sync", 48)).toBe(48);
+    expect(statusRegenGapHours("standard", "sync", 48)).toBe(48);
     expect(statusRegenGapHours("standard", "sync", 6)).toBe(6);
     expect(statusRegenGapHours("standard", "sync", 12)).toBe(12);
     expect(statusRegenGapHours("full", "sync", 12)).toBe(1);

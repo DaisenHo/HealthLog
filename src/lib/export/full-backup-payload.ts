@@ -1094,7 +1094,9 @@ export async function buildFullBackupPayload(
             externalId: m.externalId,
             updatedAt: m.updatedAt.toISOString(),
           }
-        : {}),
+        : // No id: a portable restore mints a fresh one. The relation links
+          // still name this drug, so the file says which row they mean.
+          { ref: m.id }),
       name: m.name,
       dose: m.dose,
       active: m.active,

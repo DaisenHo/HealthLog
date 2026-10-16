@@ -63,7 +63,8 @@ export type StatusIngestSource = IngestSource;
  * day. Since v1.43 (#1217) the gap is chosen by source and by the record's AI
  * usage level (`statusRegenGapHours` in `@/lib/ai/usage-level`): a hand entry
  * keeps the hour (six on `frugal`), a sync waits the operator's sync gap on
- * `standard` (default six hours), a day on `frugal`, the hour on `full`.
+ * `standard` (default six hours), a day on `frugal` (or the operator's gap
+ * when it is longer), the hour on `full`.
  */
 async function ingestRegenGapMs(
   userId: string,

@@ -38,7 +38,7 @@ import { readLiveBuckets } from "@/lib/measurements/daily-series-read";
 import { readCanonicalRollupBuckets } from "@/lib/rollups/measurement-read";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
-import { pulseDayMeanDryRunSchema } from "@/lib/validations/pulse-day-mean";
+import { pulseDayMeanStoredRunsSchema } from "@/lib/validations/pulse-day-mean";
 import type { Job } from "pg-boss";
 
 const prisma = getPrismaClient();
@@ -276,7 +276,9 @@ describe("the dry run", () => {
     const stored = await prisma.appSettings.findUniqueOrThrow({
       where: { id: "singleton" },
     });
-    const run = pulseDayMeanDryRunSchema.parse(stored.pulseDayMeanDryRunJson);
+    const run = pulseDayMeanStoredRunsSchema.parse(
+      stored.pulseDayMeanDryRunJson,
+    );
     expect(run.status).toBe("done");
     expect(run.finishedAt).not.toBeNull();
     expect(run.result).toEqual({
@@ -324,6 +326,13 @@ describe("the rebuild after apply", () => {
     });
     const outcome = await handlePulseDayMean(job("rebuild"));
     expect(outcome.ok).toBe(true);
+    // The rebuild is on the record beside the dry run, with what it did.
+    const { readPulseDayMeanStatus } =
+      await import("@/lib/jobs/pulse-day-mean");
+    const status = await readPulseDayMeanStatus();
+    expect(status.lastRebuild).toMatchObject({ status: "done" });
+    expect(status.lastRebuild?.accounts).toBeGreaterThan(0);
+    expect(status.lastDryRun?.status).toBe("done");
 
     expect(await dayMean(A, D1)).toBeCloseTo(V2, 6);
     expect(await dayMean(A, D2)).toBeCloseTo(70, 6);

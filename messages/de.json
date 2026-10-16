@@ -8223,7 +8223,15 @@
           "busy": "Ein Probelauf oder eine Neuberechnung läuft noch. Versuche es erneut, sobald er fertig ist.",
           "dryRunRequired": "Starte zuerst einen Probelauf. Zum Anwenden braucht es einen, der in den letzten sieben Tagen abgeschlossen wurde.",
           "generic": "Die Anfrage ist nicht durchgegangen."
-        }
+        },
+        "rebuild": {
+          "queued": "Die Neuberechnung wartet auf den Hintergrunddienst.",
+          "running": "Die Pulstage werden neu berechnet.",
+          "done": "Pulstage am {at} für {accounts} Konten neu berechnet.",
+          "failed": "Die Neuberechnung ist abgebrochen. Das App-Log nennt die Ursache; starte sie erneut."
+        },
+        "rebuildAgain": "Erneut berechnen",
+        "rebuildStarted": "Neuberechnung gestartet."
       }
     },
     "carrier": "Netzbetreiber",
@@ -11279,7 +11287,14 @@
         "removeConfirmBody": "Der Eintrag verschwindet aus deinem Verlauf. Das lässt sich hier nicht rückgängig machen.",
         "removedToast": "Eintrag entfernt",
         "removeError": "Der Eintrag konnte nicht entfernt werden.",
-        "historyEntry": "{date}: {score} von 12"
+        "historyEntry": "{date}: {score} von 12",
+        "legacyLabel": "Frühere Angabe: {value}",
+        "legacyHint": "Aus der kurzen Alkoholfrage vor diesem Fragebogen. Sobald ein Fragebogen-Ergebnis vorliegt, liest der Coach sie nicht mehr.",
+        "legacyRemove": "Frühere Angabe entfernen",
+        "legacyRemoveConfirmTitle": "Frühere Angabe entfernen?",
+        "legacyRemoveConfirmBody": "Die frühere Angabe verschwindet aus deinen Daten. Fragebogen-Ergebnisse bleiben.",
+        "legacyRemovedToast": "Frühere Angabe entfernt",
+        "legacyRemoveError": "Die frühere Angabe konnte nicht entfernt werden."
       },
       "takeOver": {
         "conditionsButton": "In Zustandstagebuch übernehmen",

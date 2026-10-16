@@ -15,7 +15,7 @@
  * values with weekday labels and aggregates the older window into
  * weekly buckets so the prompt budget stays tight.
  */
-import { loadFreeWeekdaySpans } from "@/lib/profile/life-circumstances";
+import { loadFreeWeekdaySpansForPrompt } from "@/lib/profile/life-circumstances";
 import { prisma } from "@/lib/db";
 import { extractFeatures } from "@/lib/insights/features";
 import type { CoachDataCluster } from "@/lib/validations/coach-prefs";
@@ -807,7 +807,7 @@ async function buildCoachSnapshotImpl(
       sourcePriorityJson: prefsRow?.sourcePriorityJson ?? null,
       userTz,
       ageYears: derivedProfile.ageYears,
-      freeWeekdaySpans: await loadFreeWeekdaySpans(userId),
+      freeWeekdaySpans: await loadFreeWeekdaySpansForPrompt(userId),
       snapshot,
       metrics,
       registerBlock,

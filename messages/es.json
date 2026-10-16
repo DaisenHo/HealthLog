@@ -8223,7 +8223,15 @@
           "busy": "Todavía hay una prueba o un recálculo en marcha. Inténtalo de nuevo cuando termine.",
           "dryRunRequired": "Ejecuta primero una prueba. Para aplicar hace falta una terminada en los últimos siete días.",
           "generic": "La solicitud no se completó."
-        }
+        },
+        "rebuild": {
+          "queued": "El recálculo espera al proceso en segundo plano.",
+          "running": "Se están recalculando los días de pulso.",
+          "done": "Días de pulso recalculados el {at} para {accounts} cuentas.",
+          "failed": "El recálculo se detuvo. El registro de la app indica la causa; vuelve a ejecutarlo."
+        },
+        "rebuildAgain": "Recalcular de nuevo",
+        "rebuildStarted": "Recálculo iniciado."
       }
     },
     "carrier": "Operador",
@@ -11279,7 +11287,14 @@
         "removeConfirmBody": "La entrada sale de tu historial. Aquí no se puede deshacer.",
         "removedToast": "Entrada eliminada",
         "removeError": "No se pudo eliminar la entrada.",
-        "historyEntry": "{date}: {score} de 12"
+        "historyEntry": "{date}: {score} de 12",
+        "legacyLabel": "Respuesta anterior: {value}",
+        "legacyHint": "De la pregunta breve sobre alcohol anterior a este cuestionario. En cuanto hay un resultado del cuestionario, el Coach deja de leerla.",
+        "legacyRemove": "Eliminar respuesta anterior",
+        "legacyRemoveConfirmTitle": "¿Eliminar la respuesta anterior?",
+        "legacyRemoveConfirmBody": "La respuesta anterior sale de tu registro. Los resultados del cuestionario se mantienen.",
+        "legacyRemovedToast": "Respuesta anterior eliminada",
+        "legacyRemoveError": "No se pudo eliminar la respuesta anterior."
       },
       "takeOver": {
         "conditionsButton": "Pasar al diario de afecciones",

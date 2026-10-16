@@ -119,7 +119,11 @@ const lifeCircumstances = z
       screeningHints: z.array(screeningHint),
     }),
     auditC: z.object({
-      latest: auditCResult.nullable(),
+      latest: auditCResult
+        .nullable()
+        .describe(
+          "The newest entry whose answers this host can open; an entry it cannot open is listed in `history` only.",
+        ),
       history: z
         .array(
           z.object({
@@ -129,7 +133,11 @@ const lifeCircumstances = z
           }),
         )
         .describe("Newest first, at most 20."),
-      offerDue: z.boolean(),
+      offerDue: z
+        .boolean()
+        .describe(
+          "No readable entry, or the newest one whose answers open (the one in `latest`) is 365 days old or older.",
+        ),
       instrument: z.object({
         items: z
           .array(
@@ -268,7 +276,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Anamnesis"],
       summary: "Record an AUDIT-C (v1.43)",
       description:
-        "Scores the three items on the server. A replay with the same `externalId` answers 200 with the stored result. 422 `anamnesis.auditC.invalid`; 429 `anamnesis.auditC.rateLimited` after 30 in an hour.",
+        "Scores the three items on the server. The entry is stored in the language of the wording the read route offers this account (`auditC.instrument.locale`), and the cut-off follows that wording; `locale`, when sent, must name that same wording. A replay with the same `externalId` answers 200 with the stored result. 422 `anamnesis.auditC.invalid` (also for another wording than the one offered, and for a `takenAt` more than five minutes ahead of the server clock); 429 `anamnesis.auditC.rateLimited` after 30 in an hour.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,

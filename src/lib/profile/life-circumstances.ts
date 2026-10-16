@@ -13,8 +13,15 @@
  * Server-only.
  */
 import { Prisma } from "@/generated/prisma/client";
-import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { deriveAgeYears } from "@/lib/ai/coach/about-me";
+import {
+  AUDIT_C_HISTORY_LIMIT,
+  loadNewestReadableAuditC,
+  newestReadableAuditC,
+  openAuditCResponses,
+  type AuditCResponses,
+} from "@/lib/profile/audit-c-entries";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import {
@@ -40,6 +47,7 @@ import {
   computePackYears,
   DEFAULT_FREE_WEEKDAYS,
   isReviewDue,
+  LIFE_KIND_AI_SECTION,
   screeningHints,
   type FreeWeekdaysSpan,
   type PackYears,
@@ -63,21 +71,10 @@ import {
 } from "@/lib/validations/life-circumstances";
 
 const MS_PER_DAY = 86_400_000;
-/** History entries the read route lists, newest first. */
-const AUDIT_C_HISTORY_LIMIT = 20;
 /** AUDIT-C is offered again once the newest entry is this old. */
 const AUDIT_C_OFFER_AFTER_DAYS = 365;
 /** A step count this recent means activity is measured, not only reported. */
 const MEASURED_STEPS_DAYS = 30;
-
-/**
- * The sealed answers of one AUDIT-C entry. `schema` versions the blob the same
- * way the screener responses are versioned.
- */
-interface AuditCResponses {
-  schema: 1;
-  items: [number, number, number];
-}
 
 export interface AuditCResult {
   id: string;
@@ -160,31 +157,6 @@ function latest(...dates: Array<Date | null | undefined>): Date | null {
   return best;
 }
 
-/** Open the sealed AUDIT-C answers; null when this host cannot read them. */
-function openAuditCResponses(payload: Uint8Array): AuditCResponses | null {
-  try {
-    const parsed = JSON.parse(
-      decryptFromBytes(payload),
-    ) as Partial<AuditCResponses>;
-    const items = parsed.items;
-    if (
-      Array.isArray(items) &&
-      items.length === 3 &&
-      items.every((item) => Number.isInteger(item) && item >= 0 && item <= 4)
-    ) {
-      return { schema: 1, items: items as [number, number, number] };
-    }
-    getEvent()?.addWarning("audit-c responses shape drifted");
-  } catch (error) {
-    getEvent()?.addWarning(
-      `audit-c responses decrypt failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
-  }
-  return null;
-}
-
 /** One stored entry scored for a profile sex; the source line follows `labelLocale`. */
 export function toAuditCResult(
   row: { id: string; takenAt: Date; totalScore: number; locale: string },
@@ -241,6 +213,42 @@ export async function loadFreeWeekdaySpans(
     );
     return [];
   }
+}
+
+/**
+ * The free-weekday answers for a prompt: only when the section they belong
+ * to (`WORK`) is released to the AI. Otherwise the answers are never read or
+ * decrypted for a prompt, and the night-by-night day type falls back to the
+ * weekend default, exactly as for a record that never answered. The data
+ * surfaces (the sleep page, the dashboard) read `loadFreeWeekdaySpans`
+ * directly: they show the person their own answer, no model sees it.
+ */
+export async function loadFreeWeekdaySpansForPrompt(
+  userId: string,
+): Promise<FreeWeekdaysSpan[]> {
+  // Fail-soft and fail-closed, like the read below: a failed switch read
+  // gives the weekend default and never the answers.
+  try {
+    const profile = await prisma.userHealthProfile.findUnique({
+      where: { userId },
+      select: { aiIncludedSections: true },
+    });
+    if (
+      !storedSections(profile?.aiIncludedSections).has(
+        LIFE_KIND_AI_SECTION.FREE_WEEKDAYS,
+      )
+    ) {
+      return [];
+    }
+  } catch (error) {
+    getEvent()?.addWarning(
+      `free weekdays switch read failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return [];
+  }
+  return loadFreeWeekdaySpans(userId);
 }
 
 /** Assemble the whole read model for one record. */
@@ -327,17 +335,16 @@ export async function buildLifeCircumstances(
   const factOf = <T>(kind: string): T | null =>
     (facts.find((fact) => fact.kind === kind)?.value as T | undefined) ?? null;
 
-  // AUDIT-C: the newest entry whose answers this host can open is the one
-  // shown in full; the history lists totals, which need no decryption.
-  let latestAuditC: AuditCResult | null = null;
-  for (const row of auditRows) {
-    const opened = openAuditCResponses(row.responsesEncrypted);
-    if (opened) {
-      latestAuditC = toAuditCResult(row, opened.items, sex, locale);
-      break;
-    }
-  }
+  // AUDIT-C: the newest entry whose answers this host can open is the
+  // result, and the offer is timed from it, as every other reader times it
+  // (`audit-c-entries.ts`). The history lists totals, which need no
+  // decryption, so an unreadable entry can still be removed.
+  const readable = newestReadableAuditC(auditRows);
+  const latestAuditC: AuditCResult | null = readable
+    ? toAuditCResult(readable.row, readable.items, sex, locale)
+    : null;
   const newestAuditC = auditRows[0]?.takenAt ?? null;
+  const newestReadableAt = readable?.row.takenAt ?? null;
 
   const sections = LIFE_SECTIONS.map((section) => {
     const sectionFacts = facts.filter((fact) =>
@@ -398,8 +405,8 @@ export async function buildLifeCircumstances(
         totalScore: row.totalScore,
       })),
       offerDue:
-        newestAuditC === null ||
-        now.getTime() - newestAuditC.getTime() >=
+        newestReadableAt === null ||
+        now.getTime() - newestReadableAt.getTime() >=
           AUDIT_C_OFFER_AFTER_DAYS * MS_PER_DAY,
       instrument: auditCInstrument(locale),
     },
@@ -439,6 +446,25 @@ function lifeSwitches(
 }
 
 /**
+ * Serialise every read-modify-write of a profile's AI switches. Two routes
+ * write the one array: this module's switch route and the about-me PUT, which
+ * replaces its eight sections and carries the life switches over as stored.
+ * Without a lock, a PUT that read the array before a concurrent switch-off
+ * committed wrote the old value back and turned the section on again. A
+ * transaction-scoped advisory lock covers the first write too, when there is
+ * no row yet to lock.
+ */
+export async function lockAiSections(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  await tx.$queryRaw`
+    SELECT 1 AS locked
+    FROM pg_advisory_xact_lock(hashtextextended(${`ai-sections:${userId}`}, 0))
+  `;
+}
+
+/**
  * Switch life-circumstance sections in or out of the AI inclusion list. Only
  * the named sections change; the other stored values, the five about-me
  * sections among them, stay as they are. `base` is the about-me token
@@ -452,6 +478,7 @@ export async function updateLifeAiSections(
   base?: Date,
 ): Promise<LifeAiSectionsOutcome> {
   return prisma.$transaction(async (tx) => {
+    await lockAiSections(tx, userId);
     const row = await tx.userHealthProfile.findUnique({
       where: { userId },
       select: { aiIncludedSections: true, updatedAt: true },
@@ -646,11 +673,7 @@ export async function loadLifeClinicalSummary(
       },
       select: { kind: true, valueEncrypted: true },
     }),
-    prisma.mentalHealthAssessment.findFirst({
-      where: { userId, instrument: "AUDIT_C", deletedAt: null },
-      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-      select: { id: true, takenAt: true, totalScore: true, locale: true },
-    }),
+    loadNewestReadableAuditC(userId),
   ]);
   const value = <T>(kind: string): T | null => {
     const row = rows.find((candidate) => candidate.kind === kind);

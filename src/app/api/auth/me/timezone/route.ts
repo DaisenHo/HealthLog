@@ -29,6 +29,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserTimezone, isValidTimezone } from "@/lib/tz/resolver";
+import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
 import { enqueueUserMedicationComplianceBackfill } from "@/lib/rollups/medication-compliance-rollups";
 
 export const PUT = apiHandler(async (request: NextRequest) => {
@@ -69,6 +70,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // job; best-effort, the singleton key collapses rapid re-picks.
   if ((before?.timezone ?? null) !== tz) {
     const refold = await enqueueUserMedicationComplianceBackfill(user.id);
+    // The supplement nutrient rows are keyed by the same local day.
+    await enqueueSupplementNutrientRecompute(user.id);
     annotate({
       meta: {
         timezone_compliance_refold_enqueued: refold.enqueued,

@@ -134,6 +134,10 @@ function residency(year: number) {
   };
 }
 
+/** A timeline that answers from the window, set by the test that needs it. */
+let timelineAnswer: ((url: URL) => { status: number; body: unknown }) | null =
+  null;
+
 function answer(req: IncomingMessage): { status: number; body: unknown } {
   const url = new URL(req.url ?? "/", "http://stub");
   requests.push(url.pathname);
@@ -144,6 +148,7 @@ function answer(req: IncomingMessage): { status: number; body: unknown } {
     case "/api/v1/users/me":
       return { status: 200, body: { email: "someone@example.test" } };
     case "/api/v1/timeline":
+      if (timelineAnswer) return timelineAnswer(url);
       return { status: 200, body: { days: TIMELINE_DAYS } };
     case "/api/v1/visits":
       return { status: 200, body: VISITS };
@@ -188,6 +193,7 @@ beforeEach(async () => {
   await truncateAllTables(prisma);
   cookieJar.clear();
   requests.length = 0;
+  timelineAnswer = null;
   process.env.DAWARICH_PRIVATE_ORIGINS = origin;
   await prisma.user.create({
     data: {
@@ -514,5 +520,75 @@ describe("Disconnect", () => {
     ).json();
     expect(gone.data).toEqual({ disconnected: true, deletedDays: 4 });
     expect(await storedDays()).toHaveLength(0);
+  });
+});
+
+describe("Timeline days across a request boundary", () => {
+  /**
+   * The instance as Dawarich builds a timeline (`Timeline::DayAssembler`):
+   * days in the Dawarich account's own zone, here New York while the
+   * HealthLog account is in Berlin, and only what lies inside the requested
+   * window is summed, so a window cut at Berlin midnight answers the New
+   * York day it cuts with a fragment. Every New York day holds a 1 km trip
+   * at 02:00 and a 10 km trip at 20:00 (02:00 the next morning in Berlin),
+   * so a complete day is 11 km and a fragment 1 or 10. A window longer than
+   * 31 days is refused as the instance refuses it.
+   */
+  const INSTANCE_TZ = "America/New_York";
+  const nyDate = (ms: number) =>
+    new Date(ms).toLocaleDateString("en-CA", { timeZone: INSTANCE_TZ });
+  const nyInstant = (date: string, hour: number) => {
+    // New York is UTC-4 for the whole summer range this test reads.
+    return Date.parse(`${date}T${String(hour).padStart(2, "0")}:00:00-04:00`);
+  };
+  function instanceTimeline(url: URL) {
+    const startMs = Date.parse(url.searchParams.get("start_at") ?? "");
+    const endMs = Date.parse(url.searchParams.get("end_at") ?? "");
+    if (endMs - startMs > 31 * 24 * 3_600_000) {
+      return { status: 400, body: { error: "range too large" } };
+    }
+    const totals = new Map<string, number>();
+    const from = new Date(startMs - 2 * 86_400_000);
+    for (let d = from.getTime(); d <= endMs + 86_400_000; d += 86_400_000) {
+      const date = nyDate(d);
+      for (const [hour, km] of [
+        [2, 1],
+        [20, 10],
+      ] as const) {
+        const at = nyInstant(date, hour);
+        if (at < startMs || at > endMs) continue;
+        totals.set(date, (totals.get(date) ?? 0) + km);
+      }
+    }
+    return {
+      status: 200,
+      body: {
+        days: [...totals].map(([date, km]) => ({
+          date,
+          summary: {
+            total_distance: km,
+            places_visited: 0,
+            mode_distances: {},
+          },
+        })),
+      },
+    };
+  }
+
+  it("never lets a boundary fragment overwrite a complete day", async () => {
+    timelineAnswer = instanceTimeline;
+    expect((await connect()).status).toBe(200);
+    await getPrismaClient().dawarichDay.deleteMany({});
+
+    const { syncDawarichRange } = await import("@/lib/dawarich/sync");
+    // Sixty days: three timeline requests, two boundaries between them.
+    await syncDawarichRange(USER_ID, "2026-06-01", "2026-07-30");
+
+    const days = await storedDays();
+    expect(days).toHaveLength(60);
+    const wrong = days
+      .filter((d) => d.totalDistanceM !== 11_000)
+      .map((d) => `${d.date}=${d.totalDistanceM}`);
+    expect(wrong).toEqual([]);
   });
 });

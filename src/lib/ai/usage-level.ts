@@ -44,9 +44,12 @@ export interface AiUsageLevelEffect {
    * Minimum hours between two status-card regenerations of one scope after a
    * sync (a watch, an integration). `"instance"` reads the operator's sync
    * gap (`AppSettings.aiSyncRegenGapHours`, else `AI_SYNC_REGEN_GAP_HOURS`,
-   * else six).
+   * else six). `{ instanceAtLeast }` reads the same gap but never goes
+   * below the floor, so a level meant to regenerate less often than
+   * `standard` cannot end up regenerating more often on an instance whose
+   * operator set a gap above the floor.
    */
-  syncRegenGapHours: number | "instance";
+  syncRegenGapHours: number | "instance" | { instanceAtLeast: number };
   /** The same gap after a hand entry. */
   manualRegenGapHours: number;
   /**
@@ -89,7 +92,7 @@ export const AI_USAGE_LEVEL_EFFECTS: Readonly<
   Record<AiUsageLevel, Readonly<AiUsageLevelEffect>>
 > = Object.freeze({
   frugal: {
-    syncRegenGapHours: 24,
+    syncRegenGapHours: { instanceAtLeast: 24 },
     manualRegenGapHours: 6,
     statusSnapshotChars: 10_000,
     backgroundReasoning: false,
@@ -235,9 +238,10 @@ export function statusRegenGapHours(
 ): number {
   const effect = AI_USAGE_LEVEL_EFFECTS[level];
   if (source === "manual") return effect.manualRegenGapHours;
-  return effect.syncRegenGapHours === "instance"
-    ? instanceSyncGapHours
-    : effect.syncRegenGapHours;
+  const gap = effect.syncRegenGapHours;
+  if (gap === "instance") return instanceSyncGapHours;
+  if (typeof gap === "number") return gap;
+  return Math.max(gap.instanceAtLeast, instanceSyncGapHours);
 }
 
 // ── Estimate ────────────────────────────────────────────────────────────────

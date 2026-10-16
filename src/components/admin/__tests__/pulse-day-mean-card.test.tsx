@@ -37,7 +37,12 @@ const RESULT = {
 const status = (
   lastDryRun: PulseDayMeanStatus["lastDryRun"],
   method: PulseDayMeanStatus["method"] = "hour_mean_v1",
-): PulseDayMeanStatus => ({ method, appliedAt: null, lastDryRun });
+): PulseDayMeanStatus => ({
+  method,
+  appliedAt: null,
+  lastDryRun,
+  lastRebuild: null,
+});
 
 const done = (finishedAt: string) => ({
   status: "done" as const,
@@ -112,5 +117,34 @@ describe("PulseDayMeanCard", () => {
     const de = render(status(null, "weighted_hour_mean_v2"), "de");
     expect(de).toContain("Dünne Stunden gewichtet");
     expect(de).toContain("Probelauf");
+  });
+
+  it("shows a stopped recalculation and offers it again without a dry run", () => {
+    const failed: PulseDayMeanStatus = {
+      ...status(done("2026-10-01T10:00:00Z"), "weighted_hour_mean_v2"),
+      appliedAt: "2026-10-01T11:00:00Z",
+      lastRebuild: {
+        status: "failed",
+        startedAt: "2026-10-01T11:00:00Z",
+        finishedAt: "2026-10-01T11:05:00Z",
+        accounts: null,
+        rows: null,
+      },
+    };
+    const html = render(failed);
+    expect(html).toContain('data-state="failed"');
+    expect(html).toContain('data-testid="admin-pulse-day-mean-rebuild"');
+
+    const finished = render({
+      ...failed,
+      lastRebuild: {
+        ...failed.lastRebuild!,
+        status: "done",
+        accounts: 3,
+        rows: 900,
+      },
+    });
+    expect(finished).not.toContain("admin-pulse-day-mean-rebuild");
+    expect(finished).toContain('data-slot="pulse-day-mean-rebuild"');
   });
 });

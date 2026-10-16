@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   classifyHourBucket,
+  combineHourWrites,
   cumulativeFromIncrements,
   HOUR_NOT_POSTED,
   isStartOfLocalHour,
@@ -156,5 +157,40 @@ describe("cumulativeFromIncrements", () => {
     expect(cumulative[11]).toBe(100);
     expect(cumulative[23]).toBe(150);
     expect(postedHours(increments)).toBe(3);
+  });
+});
+
+describe("combineHourWrites", () => {
+  const entry = (index: number, startIso: string, value: number) => ({
+    index,
+    type: "ACTIVITY_STEPS" as const,
+    hkIdentifier: "HKQuantityTypeIdentifierStepCount",
+    dateKey: "2026-10-25",
+    hour: 2,
+    value,
+    startMs: Date.parse(startIso),
+  });
+
+  it("sums the two starts of the hour a fall-back day repeats", () => {
+    // Berlin, 2026-10-25: 02:00 CEST is 00:00Z, 02:00 CET is 01:00Z.
+    const { writes, superseded } = combineHourWrites([
+      entry(0, "2026-10-25T00:00:00Z", 300),
+      entry(1, "2026-10-25T01:00:00Z", 120),
+    ]);
+    expect(superseded).toEqual([]);
+    expect(writes).toHaveLength(1);
+    expect(writes[0].write.value).toBe(420);
+    expect(writes[0].contributors.sort()).toEqual([0, 1]);
+  });
+
+  it("lets the last entry of one start win, and marks the earlier one", () => {
+    const { writes, superseded } = combineHourWrites([
+      entry(0, "2026-10-25T00:00:00Z", 300),
+      entry(1, "2026-10-25T00:00:00Z", 310),
+      entry(2, "2026-10-25T01:00:00Z", 120),
+    ]);
+    expect(superseded).toEqual([0]);
+    expect(writes[0].write.value).toBe(430);
+    expect(writes[0].write.index).toBe(2);
   });
 });

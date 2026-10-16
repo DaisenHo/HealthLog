@@ -392,6 +392,10 @@ const customMedicationCategorySchema = z
 const medicationSchema = z
   .object({
     id: z.string().min(1).optional(),
+    // The source row's id in a portable file, which carries no `id`: the
+    // relation links name the medication by it, and the restore re-points
+    // them at the row it writes (`relation-links-backup.ts`).
+    ref: z.string().min(1).optional(),
     name: z.string().min(1),
     dose: z.string(),
     treatmentClass: z.enum(MedicationCategory).optional(),
@@ -1126,6 +1130,8 @@ const appSettingsBackupSchema = z
 const labResultBackupSchema = z
   .object({
     id: z.string().min(1).optional(),
+    // The source row's id in a portable file, as on a medication.
+    ref: z.string().min(1).optional(),
     panel: z.string().nullable().optional(),
     analyte: z.string().min(1),
     value: z.number().nullable().optional(),

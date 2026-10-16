@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   allergyFindMany: vi.fn(),
   familyFindMany: vi.fn(),
   factFindMany: vi.fn(),
-  auditFindFirst: vi.fn(),
+  auditFindMany: vi.fn(),
   decrypt: vi.fn(),
 }));
 
@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
     allergy: { findMany: mocks.allergyFindMany },
     familyHistoryEntry: { findMany: mocks.familyFindMany },
     healthProfileFactRevision: { findMany: mocks.factFindMany },
-    mentalHealthAssessment: { findFirst: mocks.auditFindFirst },
+    mentalHealthAssessment: { findMany: mocks.auditFindMany },
   },
 }));
 
@@ -46,13 +46,15 @@ beforeEach(() => {
   mocks.allergyFindMany.mockResolvedValue([]);
   mocks.familyFindMany.mockResolvedValue([]);
   mocks.factFindMany.mockResolvedValue([]);
-  mocks.auditFindFirst.mockResolvedValue(null);
+  mocks.auditFindMany.mockResolvedValue([]);
   mocks.decrypt.mockImplementation((bytes: Uint8Array) => {
     if (bytes[0] === 1) return secret;
     if (bytes[0] === 2) return "Asthma";
     if (bytes[0] === 3) return "FORMER";
     if (bytes[0] === 4) return "OCCASIONAL";
     if (bytes[0] === 5) return "ROTATING";
+    if (bytes[0] === 6) return JSON.stringify({ schema: 1, items: [2, 2, 1] });
+    if (bytes[0] === 7) throw new Error("unknown key id");
     return "unknown";
   });
 });
@@ -204,6 +206,11 @@ describe("profile section access in AI prompt paths", () => {
         if (bytes[0] === 21) {
           return JSON.stringify({ schema: 1, goals: ["sleep"] });
         }
+        if (bytes[0] === 4) return "OCCASIONAL";
+        if (bytes[0] === 6) {
+          return JSON.stringify({ schema: 1, items: [2, 2, 1] });
+        }
+        if (bytes[0] === 7) throw new Error("unknown key id");
         return "unknown";
       });
     });
@@ -235,11 +242,16 @@ describe("profile section access in AI prompt paths", () => {
     });
 
     it("gives AUDIT-C as a sum with its screening verdict under the alcohol switch only", async () => {
-      mocks.auditFindFirst.mockResolvedValue({
-        totalScore: 5,
-        takenAt: new Date("2026-10-01T09:00:00.000Z"),
-        locale: "de",
-      });
+      mocks.auditFindMany.mockResolvedValue([
+        {
+          id: "audit-1",
+          totalScore: 5,
+          takenAt: new Date("2026-10-01T09:00:00.000Z"),
+          locale: "de",
+          tz: null,
+          responsesEncrypted: new Uint8Array([6]),
+        },
+      ]);
       mocks.userFindUnique.mockResolvedValue({ gender: "MALE", locale: "de" });
 
       mockIncluded(["ALCOHOL_PATTERN"]);
@@ -248,10 +260,59 @@ describe("profile section access in AI prompt paths", () => {
         "AUDIT-C (Screening, keine Diagnose): 5 von 12 am 2026-10-01, Screening-Grenzwert 5 erreicht",
       );
 
-      mocks.auditFindFirst.mockClear();
+      mocks.auditFindMany.mockClear();
       mockIncluded(["GOALS"]);
       await getSelfContextTextForUser("user-1", "de");
-      expect(mocks.auditFindFirst).not.toHaveBeenCalled();
+      expect(mocks.auditFindMany).not.toHaveBeenCalled();
+    });
+
+    it("drops the old alcohol pattern once an AUDIT-C entry exists", async () => {
+      mockIncluded(["ALCOHOL_PATTERN"]);
+      mocks.factFindMany.mockResolvedValue([
+        { kind: "ALCOHOL_PATTERN", valueEncrypted: new Uint8Array([4]) },
+      ]);
+      const alone = await getSelfContextTextForUser("user-1", "en");
+      expect(alone).toContain("Alcohol pattern: Occasional");
+
+      mocks.auditFindMany.mockResolvedValue([
+        {
+          id: "audit-1",
+          totalScore: 5,
+          takenAt: new Date("2026-10-01T09:00:00.000Z"),
+          locale: "en",
+          tz: null,
+          responsesEncrypted: new Uint8Array([6]),
+        },
+      ]);
+      const text = await getSelfContextTextForUser("user-1", "en");
+      expect(text).toContain("AUDIT-C");
+      expect(text).not.toContain("Alcohol pattern");
+    });
+
+    it("reads the newest entry whose answers open, as the read route does", async () => {
+      mocks.userFindUnique.mockResolvedValue({ gender: null, locale: "en" });
+      mocks.auditFindMany.mockResolvedValue([
+        {
+          id: "audit-sealed",
+          totalScore: 11,
+          takenAt: new Date("2026-10-05T09:00:00.000Z"),
+          locale: "en",
+          tz: null,
+          responsesEncrypted: new Uint8Array([7]),
+        },
+        {
+          id: "audit-open",
+          totalScore: 5,
+          takenAt: new Date("2026-10-01T09:00:00.000Z"),
+          locale: "en",
+          tz: null,
+          responsesEncrypted: new Uint8Array([6]),
+        },
+      ]);
+      mockIncluded(["ALCOHOL_PATTERN"]);
+      const text = await getSelfContextTextForUser("user-1", "en");
+      expect(text).toContain("5 of 12");
+      expect(text).not.toContain("11 of 12");
     });
   });
 });

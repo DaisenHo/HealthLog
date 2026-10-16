@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
+const appSettings = vi.hoisted(() => ({
+  findUnique: vi.fn(async () => ({ defaultUserTimezone: "America/New_York" })),
+}));
+vi.mock("@/lib/db", () => ({ prisma: { appSettings } }));
+
 import {
   bucketRowsByDay,
   iterateDayBuckets,
@@ -302,5 +307,30 @@ describe("runConsolidation — streamed walk", () => {
     expect(writeDay).toHaveBeenCalledTimes(3);
     expect(result.stoppedEarly).toBe(true);
     expect(findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("cuts days in the zone the server publishes for the account", async () => {
+    // A stored zone the server sets aside reads as the instance default, as
+    // it does for `/api/auth/me` and the hour-bucket writer; never as the
+    // drain's own fallback.
+    const findMany = buildPagingFindMany(hourlyRows(1));
+    const base = params(findMany, async () => ({
+      kind: "written" as const,
+      sourceRowsRemoved: 0,
+    }));
+    const zones: string[] = [];
+    await runConsolidation({
+      ...base,
+      prismaClient: {
+        user: {
+          findMany: vi
+            .fn()
+            .mockResolvedValue([{ id: "user-2", timezone: null }]),
+        },
+        measurement: { findMany },
+      } as unknown as PrismaClient,
+      onUserStart: ({ tz }) => zones.push(tz),
+    });
+    expect(zones).toEqual(["America/New_York"]);
   });
 });

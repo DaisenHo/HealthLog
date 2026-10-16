@@ -297,6 +297,34 @@ describe("life-circumstance facts", () => {
   });
 });
 
+describe("free weekdays in a prompt", () => {
+  it("are read for a prompt only while the work section is released", async () => {
+    const user = await makeUser();
+    await signIn(user.id);
+    await data(
+      await postFact({ kind: "FREE_WEEKDAYS", value: VALUES.FREE_WEEKDAYS }),
+      201,
+    );
+    const { loadFreeWeekdaySpans, loadFreeWeekdaySpansForPrompt } =
+      await import("@/lib/profile/life-circumstances");
+
+    await getPrismaClient().userHealthProfile.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, aiIncludedSections: ["WORK"] },
+      update: { aiIncludedSections: ["WORK"] },
+    });
+    expect(await loadFreeWeekdaySpansForPrompt(user.id)).toHaveLength(1);
+
+    await getPrismaClient().userHealthProfile.update({
+      where: { userId: user.id },
+      data: { aiIncludedSections: ["ABOUT_ME"] },
+    });
+    expect(await loadFreeWeekdaySpansForPrompt(user.id)).toEqual([]);
+    // The data surfaces still show the person their own answer.
+    expect(await loadFreeWeekdaySpans(user.id)).toHaveLength(1);
+  });
+});
+
 describe("AUDIT-C", () => {
   async function postAuditC(body: unknown): Promise<Response> {
     const { POST } = await import("@/app/api/anamnesis/audit-c/route");
@@ -396,6 +424,79 @@ describe("AUDIT-C", () => {
     });
   });
 
+  it("scores against the wording offered and refuses another one or a future date", async () => {
+    // An English account is shown the English wording; a German cut-off for
+    // it would be the stricter S3 table applied to questions never asked.
+    const man = await makeUser({ locale: "en", gender: "MALE" });
+    await signIn(man.id);
+    const wrong = await postAuditC({
+      items: [2, 1, 1],
+      locale: "de",
+      source: "IOS",
+    });
+    expect(wrong.status).toBe(422);
+    const { result } = await data<{
+      result: { locale: string; cutoff: { source: string } | null };
+    }>(await postAuditC({ items: [2, 1, 1], source: "IOS" }), 201);
+    expect(result.locale).toBe("en");
+    expect(result.cutoff?.source).toBe("BRADLEY_2007");
+
+    // French has no validated wording, so the English one is offered and
+    // stored, whatever the account language says.
+    const french = await makeUser({ locale: "fr", gender: "MALE" });
+    await signIn(french.id);
+    const fr = await data<{ result: { locale: string } }>(
+      await postAuditC({ items: [0, 0, 1], locale: "fr", source: "WEB" }),
+      201,
+    );
+    expect(fr.result.locale).toBe("en");
+
+    const future = await postAuditC({
+      items: [0, 0, 0],
+      source: "WEB",
+      takenAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    });
+    expect(future.status).toBe(422);
+    const skew = await postAuditC({
+      items: [0, 0, 0],
+      source: "WEB",
+      takenAt: new Date(Date.now() + 60 * 1000).toISOString(),
+    });
+    expect(skew.status).toBe(201);
+  });
+
+  it("reads latest and the offer from the newest entry whose answers open", async () => {
+    const user = await makeUser();
+    await signIn(user.id);
+    const older = await data<{ result: { id: string } }>(
+      await postAuditC({
+        items: [1, 0, 0],
+        source: "WEB",
+        takenAt: "2025-01-10T09:00:00.000Z",
+      }),
+      201,
+    );
+    // A newer entry this host cannot open (its key is gone).
+    const sealed = await getPrismaClient().mentalHealthAssessment.create({
+      data: {
+        userId: user.id,
+        instrument: "AUDIT_C",
+        locale: "en",
+        responsesEncrypted: new Uint8Array([9, 9, 9, 9]),
+        totalScore: 11,
+        severityBand: "unbanded",
+        takenAt: new Date(),
+        source: "WEB",
+      },
+    });
+    const life = await readLife();
+    expect(life.auditC.latest?.id).toBe(older.result.id);
+    // Timed from the result shown, not from the entry nobody can read.
+    expect(life.auditC.offerDue).toBe(true);
+    // Still listed, so it can be removed.
+    expect(life.auditC.history.map((h) => h.id)).toContain(sealed.id);
+  });
+
   it("soft-deletes an entry once, and only an AUDIT-C entry of the record", async () => {
     const user = await makeUser();
     await signIn(user.id);
@@ -474,6 +575,53 @@ describe("AI switches and confirmations", () => {
     expect([...stored.aiIncludedSections].sort()).toEqual([
       "ABOUT_ME",
       "HABITS",
+    ]);
+  });
+
+  it("never turns a section on again that a concurrent switch turned off", async () => {
+    const user = await makeUser({
+      modulePreferencesJson: { mentalHealth: true, coach: true },
+    });
+    await signIn(user.id);
+    const prisma = getPrismaClient();
+    await prisma.userHealthProfile.create({
+      data: { userId: user.id, aiIncludedSections: ["ABOUT_ME", "HABITS"] },
+    });
+    const { lockAiSections } = await import("@/lib/profile/life-circumstances");
+    const aboutMe = await import("@/app/api/coach/about-me/route");
+
+    // The switch-off holds its transaction open while the PUT starts.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((resolve) => (locked = resolve));
+    const switchOff = prisma.$transaction(async (tx) => {
+      await lockAiSections(tx, user.id);
+      await tx.userHealthProfile.update({
+        where: { userId: user.id },
+        data: { aiIncludedSections: ["ABOUT_ME"] },
+      });
+      locked();
+      await held;
+    });
+    await isLocked;
+    const put = (aboutMe.PUT as unknown as Handler)(
+      request("PUT", "/api/coach/about-me", {
+        aiIncludedSections: ["ABOUT_ME", "CONDITIONS"],
+      }),
+    );
+    // Long enough for an unlocked PUT to have read the old array.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    release();
+    await switchOff;
+    await data(await put);
+
+    const stored = await prisma.userHealthProfile.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect([...stored.aiIncludedSections].sort()).toEqual([
+      "ABOUT_ME",
+      "CONDITIONS",
     ]);
   });
 

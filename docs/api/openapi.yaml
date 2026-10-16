@@ -24630,8 +24630,11 @@ paths:
       tags:
         - Anamnesis
       summary: Record an AUDIT-C (v1.43)
-      description: Scores the three items on the server. A replay with the same `externalId` answers 200 with the stored
-        result. 422 `anamnesis.auditC.invalid`; 429 `anamnesis.auditC.rateLimited` after 30 in an hour.
+      description: Scores the three items on the server. The entry is stored in the language of the wording the read route
+        offers this account (`auditC.instrument.locale`), and the cut-off follows that wording; `locale`, when sent,
+        must name that same wording. A replay with the same `externalId` answers 200 with the stored result. 422
+        `anamnesis.auditC.invalid` (also for another wording than the one offered, and for a `takenAt` more than five
+        minutes ahead of the server clock); 429 `anamnesis.auditC.rateLimited` after 30 in an hour.
       parameters:
         - *a6
       requestBody:
@@ -38945,6 +38948,9 @@ components:
               id:
                 type: string
                 minLength: 1
+              ref:
+                type: string
+                minLength: 1
               name:
                 type: string
                 minLength: 1
@@ -40522,6 +40528,9 @@ components:
             type: object
             properties:
               id:
+                type: string
+                minLength: 1
+              ref:
                 type: string
                 minLength: 1
               panel:
@@ -81038,11 +81047,12 @@ components:
         - standard
         - full
       description: "How much background AI work an account asks for, in ceiling order. `frugal`: status cards regenerate at
-        most every 24 h after a sync and every 6 h after a hand entry, a smaller snapshot, no background reasoning, a
-        short daily briefing (`recommendations` holds at most one entry, every field stays present), no automatic
-        document reading, no supplement label reading. `standard`: the operator's sync gap (default 6 h), 1 h after a
-        hand entry, background reasoning at the job default. `full`: 1 h after any ingest (the behaviour before v1.43).
-        The interactive Coach is the same at every level."
+        most every 24 h after a sync (or the operator's sync gap when that is longer, so never more often than
+        `standard`) and every 6 h after a hand entry, a smaller snapshot, no background reasoning, a short daily
+        briefing (`recommendations` holds at most one entry, every field stays present), no automatic document reading,
+        no supplement label reading. `standard`: the operator's sync gap (default 6 h), 1 h after a hand entry,
+        background reasoning at the job default. `full`: 1 h after any ingest (the behaviour before v1.43). The
+        interactive Coach is the same at every level."
     CoachReasoningState:
       type: object
       properties:
@@ -86447,6 +86457,7 @@ components:
               anyOf:
                 - $ref: "#/components/schemas/AuditCResult"
                 - type: "null"
+              description: The newest entry whose answers this host can open; an entry it cannot open is listed in `history` only.
             history:
               type: array
               items:
@@ -86470,6 +86481,7 @@ components:
               description: Newest first, at most 20.
             offerDue:
               type: boolean
+              description: No readable entry, or the newest one whose answers open (the one in `latest`) is 365 days old or older.
             instrument:
               type: object
               properties:

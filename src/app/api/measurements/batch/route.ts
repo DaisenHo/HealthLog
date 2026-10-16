@@ -81,8 +81,10 @@ import {
 import {
   classifyHourBucket,
   HOUR_BUCKET_SKIP_REASONS,
+  combineHourWrites,
   parseHourBucketId,
   writeHourBuckets,
+  type HourBucketEntry,
   type HourBucketWrite,
 } from "@/lib/measurements/intraday-hour-buckets";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
@@ -394,7 +396,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const unstableShapes: UnstableExternalIdShape[] = [];
   // v1.43 — hourly sums for the intraday profile, and the zone they are cut in
   // (the account's, the one `/api/auth/me` publishes as `timezone`).
-  const hourWrites: HourBucketWrite[] = [];
+  const hourWrites: HourBucketEntry[] = [];
   let accountTz: string | undefined;
   const batchNow = new Date();
 
@@ -484,6 +486,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
         dateKey: hourId.dateKey,
         hour: hourId.hour,
         value: hourMapped.value,
+        startMs: startDate.getTime(),
       });
       continue;
     }
@@ -984,28 +987,24 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }
   }
 
-  // v1.43 — the hours, after the measurements. The last entry for one slot
-  // wins, as for the day rows; an earlier one in the same batch is a
-  // superseded duplicate.
+  // v1.43 — the hours, after the measurements. One write per slot: the last
+  // entry for one start wins (an earlier one in the same batch is a
+  // superseded duplicate), and the two starts of the hour a fall-back day
+  // repeats are summed (`combineHourWrites`).
   let hourInsertedCount = 0;
   let hourUpdatedCount = 0;
   const hourLanded: HourBucketWrite[] = [];
   if (hourWrites.length > 0 && accountTz) {
-    const lastBySlot = new Map<string, HourBucketWrite>();
-    for (const w of hourWrites) {
-      lastBySlot.set(`${w.type}::${w.dateKey}::${w.hour}`, w);
+    const { writes, superseded } = combineHourWrites(hourWrites);
+    for (const index of superseded) {
+      results[index] = {
+        index,
+        status: "duplicate",
+        reason: "superseded_in_batch",
+      };
+      duplicateCount++;
     }
-    for (const w of hourWrites) {
-      if (lastBySlot.get(`${w.type}::${w.dateKey}::${w.hour}`) !== w) {
-        results[w.index] = {
-          index: w.index,
-          status: "duplicate",
-          reason: "superseded_in_batch",
-        };
-        duplicateCount++;
-      }
-    }
-    const toWrite = [...lastBySlot.values()];
+    const toWrite = writes.map(({ write }) => write);
     try {
       const statuses = await writeHourBuckets(
         prisma,
@@ -1013,21 +1012,25 @@ async function postBatch(request: NextRequest): Promise<Response> {
         accountTz,
         toWrite,
       );
-      for (const w of toWrite) {
-        const status = statuses.get(w.index) ?? "inserted";
-        results[w.index] = { index: w.index, status };
-        if (status === "inserted") hourInsertedCount++;
-        else hourUpdatedCount++;
-        hourLanded.push(w);
+      for (const { write, contributors } of writes) {
+        const status = statuses.get(write.index) ?? "inserted";
+        for (const index of contributors) {
+          results[index] = { index, status };
+          if (status === "inserted") hourInsertedCount++;
+          else hourUpdatedCount++;
+        }
+        hourLanded.push(write);
       }
     } catch (err) {
-      for (const w of toWrite) {
-        results[w.index] = {
-          index: w.index,
-          status: "failed",
-          reason: "write_failed",
-        };
-        failedCount++;
+      for (const { contributors } of writes) {
+        for (const index of contributors) {
+          results[index] = {
+            index,
+            status: "failed",
+            reason: "write_failed",
+          };
+          failedCount++;
+        }
       }
       annotate({
         action: { name: "measurement.batch.hour-bucket.failed" },

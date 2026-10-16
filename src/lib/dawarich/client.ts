@@ -5,7 +5,9 @@
  * reads four endpoints, all with `Authorization: Bearer <api key>`:
  *
  *   GET /api/v1/timeline?start_at&end_at&distance_unit=km
- *       one entry per local day (the instance's own zone) with a `summary`:
+ *       one entry per day in the Dawarich account's own zone (its timezone
+ *       setting, the instance's `TIME_ZONE` by default; the request cannot
+ *       name one), summing only what lies inside the window, with a `summary`:
  *       `total_distance`, `places_visited`, `mode_distances.{driving,train}`
  *       in km to one decimal. At most 31 days per request.
  *   GET /api/v1/visits?start_at&end_at
@@ -26,6 +28,7 @@
  * `DAWARICH_PRIVATE_ORIGINS`. The policy is re-read on every call, so taking
  * an origin off the list stops the next request.
  */
+import { readBodyCapped } from "@/lib/http/read-capped";
 import { SafeFetchError, safeFetch } from "@/lib/safe-fetch";
 
 import {
@@ -34,6 +37,14 @@ import {
 } from "./origin";
 
 const DEFAULT_TIMEOUT_MS = 20_000;
+
+/**
+ * The most any one answer may hold. A month of timeline with its entries and
+ * a year of residency stay far below it; the cap is what keeps an instance
+ * that streams without end from holding the worker's memory until the
+ * timeout.
+ */
+const MAX_BODY_BYTES = 16 * 1024 * 1024;
 
 /** Dawarich refuses a timeline window longer than 31 days. */
 export const TIMELINE_MAX_DAYS = 31;
@@ -118,8 +129,12 @@ async function dawarichGet(
   if (res.status < 200 || res.status >= 300) {
     throw new DawarichApiError(`Dawarich responded ${res.status}`, res.status);
   }
+  const read = await readBodyCapped(res, MAX_BODY_BYTES);
+  if (!read.ok) {
+    throw new DawarichApiError("Dawarich returned an oversized body", null);
+  }
   try {
-    return await res.json();
+    return JSON.parse(read.text) as unknown;
   } catch {
     throw new DawarichApiError("Dawarich returned a non-JSON body", null);
   }

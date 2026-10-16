@@ -253,6 +253,23 @@ describe("buildAuthorizationUrl", () => {
     expect(url.searchParams.get("code_challenge")).toBe("challenge-1");
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
     expect(url.searchParams.get("scope")).toBe(config.scopes);
+    expect(url.searchParams.has("prompt")).toBe(false);
+  });
+
+  it("asks for a fresh sign-in only when told to", () => {
+    configureEnv();
+    const url = new URL(
+      buildAuthorizationUrl({
+        metadata: METADATA_DOC,
+        config: getOidcConfig()!,
+        state: "state-1",
+        nonce: "nonce-1",
+        codeChallenge: "challenge-1",
+        redirectUri: "https://healthlog.example.com/api/auth/oidc/callback",
+        forceLogin: true,
+      }),
+    );
+    expect(url.searchParams.get("prompt")).toBe("login");
   });
 });
 

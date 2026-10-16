@@ -245,6 +245,19 @@ function placeable<T>(
 }
 
 /**
+ * The id each medication and lab result had in the file, to the id the
+ * restore gave it. A portable file carries neither row's id (a restore there
+ * mints fresh ones), only a `ref` naming the source row, so a link that names
+ * the source id is re-pointed through this map. An id the map does not hold is
+ * used as it is: a disaster-recovery file keeps its ids, and a hand-edited one
+ * falls through to the placement check below.
+ */
+export interface RelationLinkSourceIds {
+  medications: ReadonlyMap<string, string>;
+  labResults: ReadonlyMap<string, string>;
+}
+
+/**
  * Re-create the five link tables.
  *
  * Delete-then-recreate inside the caller's transaction, matching every other
@@ -261,7 +274,13 @@ export async function restoreRelationLinksData(
   ownerId: string,
   payload: RelationLinksBackupSection,
   skips: RestoreSkipLog,
+  sourceIds: RelationLinkSourceIds = {
+    medications: new Map(),
+    labResults: new Map(),
+  },
 ): Promise<RelationLinksRestoreCleared> {
+  const medication = (id: string) => sourceIds.medications.get(id) ?? id;
+  const labResult = (id: string) => sourceIds.labResults.get(id) ?? id;
   const owned = { where: { userId: ownerId } };
   const [c1, c2, c3, c4, c5] = await Promise.all([
     tx.labResultDocumentLink.deleteMany(owned),
@@ -278,7 +297,10 @@ export async function restoreRelationLinksData(
   });
 
   const labDocs = placeable(
-    payload.labResultDocumentLinks,
+    payload.labResultDocumentLinks.map((r) => ({
+      ...r,
+      labResultId: labResult(r.labResultId),
+    })),
     [
       [(r) => r.labResultId, written.labResults],
       [(r) => r.documentId, written.documents],
@@ -297,7 +319,10 @@ export async function restoreRelationLinksData(
   }
 
   const encounterMeds = placeable(
-    payload.encounterMedicationLinks,
+    payload.encounterMedicationLinks.map((r) => ({
+      ...r,
+      medicationId: medication(r.medicationId),
+    })),
     [
       [(r) => r.encounterId, written.encounters],
       [(r) => r.medicationId, written.medications],
@@ -335,7 +360,10 @@ export async function restoreRelationLinksData(
   }
 
   const medDocs = placeable(
-    payload.medicationDocumentLinks,
+    payload.medicationDocumentLinks.map((r) => ({
+      ...r,
+      medicationId: medication(r.medicationId),
+    })),
     [
       [(r) => r.medicationId, written.medications],
       [(r) => r.documentId, written.documents],
@@ -354,7 +382,10 @@ export async function restoreRelationLinksData(
   }
 
   const medConditions = placeable(
-    payload.medicationConditionLinks,
+    payload.medicationConditionLinks.map((r) => ({
+      ...r,
+      medicationId: medication(r.medicationId),
+    })),
     [
       [(r) => r.medicationId, written.medications],
       [(r) => r.episodeId, written.episodes],

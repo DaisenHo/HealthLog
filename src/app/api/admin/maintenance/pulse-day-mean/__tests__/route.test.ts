@@ -66,10 +66,14 @@ const post = (body: unknown) =>
 const NOW = new Date("2026-10-16T12:00:00Z");
 const send = vi.fn();
 
-function settings(dryRun: unknown, method = "hour_mean_v1") {
+function settings(
+  dryRun: unknown,
+  method = "hour_mean_v1",
+  appliedAt: Date | null = null,
+) {
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
     pulseDayMeanMethod: method,
-    pulseDayMeanAppliedAt: null,
+    pulseDayMeanAppliedAt: appliedAt,
     pulseDayMeanDryRunJson: dryRun,
   } as never);
 }
@@ -136,6 +140,7 @@ describe("GET", () => {
       method: "hour_mean_v1",
       appliedAt: null,
       lastDryRun: doneAt("2026-10-15T08:00:00.000Z"),
+      lastRebuild: null,
     });
   });
 
@@ -199,7 +204,9 @@ describe("POST dry_run", () => {
     const res = await post({ action: "dry_run" });
     expect(res.status).toBe(409);
     expect(vi.mocked(prisma.appSettings.upsert).mock.lastCall?.[0]).toEqual(
-      expect.objectContaining({ update: { pulseDayMeanDryRunJson: previous } }),
+      expect.objectContaining({
+        update: { pulseDayMeanDryRunJson: { ...previous, rebuild: null } },
+      }),
     );
   });
 });
@@ -264,10 +271,71 @@ describe("POST apply", () => {
   });
 });
 
+describe("POST rebuild", () => {
+  const failedRebuild = {
+    status: "failed",
+    startedAt: "2026-10-15T09:00:00.000Z",
+    finishedAt: "2026-10-15T09:05:00.000Z",
+    accounts: null,
+    rows: null,
+  };
+
+  it("is refused before any apply", async () => {
+    settings(doneAt("2026-10-15T08:00:00.000Z"));
+    const res = await post({ action: "rebuild" });
+    expect(res.status).toBe(409);
+    expect((await res.json()).meta.errorCode).toBe(
+      "maintenance.pulseDayMean.dryRunRequired",
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("runs the recalculation again after a stopped one, without a new dry run", async () => {
+    // The dry run is three weeks old: apply would refuse it, a rebuild does not.
+    settings(
+      { ...doneAt("2026-09-20T08:00:00.000Z"), rebuild: failedRebuild },
+      "weighted_hour_mean_v2",
+      new Date("2026-09-20T09:00:00.000Z"),
+    );
+    const res = await post({ action: "rebuild" });
+    expect(res.status).toBe(202);
+    expect(send).toHaveBeenCalledWith(
+      "pulse-day-mean",
+      { action: "rebuild" },
+      expect.anything(),
+    );
+    expect(
+      vi.mocked(prisma.appSettings.upsert).mock.lastCall?.[0],
+    ).toMatchObject({
+      update: {
+        pulseDayMeanDryRunJson: { rebuild: { status: "queued" } },
+      },
+    });
+    expect(auditLog).toHaveBeenCalledWith(
+      "admin.pulseDayMean.rebuild",
+      expect.anything(),
+    );
+  });
+
+  it("shows a rebuild left queued with no job behind it as failed", async () => {
+    settings(
+      {
+        ...doneAt("2026-10-15T08:00:00.000Z"),
+        rebuild: { ...failedRebuild, status: "running", finishedAt: null },
+      },
+      "weighted_hour_mean_v2",
+      new Date("2026-10-15T09:00:00.000Z"),
+    );
+    const body = await (await get()).json();
+    expect(body.data.lastRebuild.status).toBe("failed");
+    expect(body.data.lastDryRun.status).toBe("done");
+  });
+});
+
 describe("POST body", () => {
   it("is strict", async () => {
     expect((await post({ action: "apply", force: true })).status).toBe(422);
-    expect((await post({ action: "rebuild" })).status).toBe(422);
+    expect((await post({ action: "purge" })).status).toBe(422);
     expect(send).not.toHaveBeenCalled();
   });
 
