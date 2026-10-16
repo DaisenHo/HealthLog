@@ -10,6 +10,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import { inviteCreateSchema } from "@/lib/validations/invite";
 import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.4.48 H-APNs-1 — admin diagnostic endpoint for the notification
 // subsystem. Mirrors the runtime types in
@@ -27,7 +28,7 @@ const adminDiagnosticDevice = z
     apnsTokenPrefix: z.string().nullable(),
     apnsTokenSuffix: z.string().nullable(),
     apnsEnvironment: z.string().nullable(),
-    lastSeenAt: z.iso.datetime({ offset: true }),
+    lastSeenAt: isoDateTime(),
   })
   .meta({
     id: "AdminDiagnosticDevice",
@@ -53,7 +54,7 @@ const adminDiagnosticPushAttempt = z
     channel: z.string(),
     result: z.string(),
     reason: z.string().nullable(),
-    at: z.iso.datetime({ offset: true }),
+    at: isoDateTime(),
   })
   .meta({
     id: "AdminDiagnosticPushAttempt",
@@ -89,10 +90,10 @@ export const adminInvitePaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 z.array(
                   z.object({
                     id: z.string(),
-                    createdAt: z.iso.datetime({ offset: true }),
-                    expiresAt: z.iso.datetime({ offset: true }),
-                    usedAt: z.iso.datetime({ offset: true }).nullable(),
-                    revokedAt: z.iso.datetime({ offset: true }).nullable(),
+                    createdAt: isoDateTime(),
+                    expiresAt: isoDateTime(),
+                    usedAt: isoDateTime().nullable(),
+                    revokedAt: isoDateTime().nullable(),
                     uses: z.number().int(),
                     maxUses: z.number().int(),
                     creator: z
@@ -104,7 +105,7 @@ export const adminInvitePaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     redemptions: z.array(
                       z.object({
                         id: z.string(),
-                        redeemedAt: z.iso.datetime({ offset: true }),
+                        redeemedAt: isoDateTime(),
                         user: z
                           .object({
                             id: z.string(),
@@ -141,8 +142,8 @@ export const adminInvitePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({
                   id: z.string(),
-                  createdAt: z.iso.datetime({ offset: true }),
-                  expiresAt: z.iso.datetime({ offset: true }),
+                  createdAt: isoDateTime(),
+                  expiresAt: isoDateTime(),
                   uses: z.number().int(),
                   maxUses: z.number().int(),
                   token: z
@@ -226,7 +227,7 @@ const adminReminderMedication = z
 
 const adminReminderCheckResult = z
   .object({
-    timestamp: z.iso.datetime({ offset: true }),
+    timestamp: isoDateTime(),
     missedThresholdMinutes: z.number().int(),
     scoped: z
       .boolean()
@@ -285,9 +286,9 @@ const adminMeasurementMaintenanceStatus = z
     run: z
       .object({
         state: z.enum(["queued", "running", "completed", "failed"]),
-        requestedAt: z.iso.datetime(),
-        startedAt: z.iso.datetime().nullable(),
-        finishedAt: z.iso.datetime().nullable(),
+        requestedAt: isoDateTime({ offset: false }),
+        startedAt: isoDateTime({ offset: false }).nullable(),
+        finishedAt: isoDateTime({ offset: false }).nullable(),
         outcome: z
           .enum(["completed", "refused_purge_running", "already_running"])
           .nullable()

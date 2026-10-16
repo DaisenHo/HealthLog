@@ -16,6 +16,7 @@ import { z } from "zod/v4";
 
 import { SOURCE_REFERENCE_TEXT_MAX } from "@/lib/labs/parse-reference-range";
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Far-past floor for a lab sample. A self-hoster legitimately backdates an
@@ -26,10 +27,10 @@ const LAB_TAKEN_AT_MAX_AGE_MS = 50 * 365.25 * 24 * 60 * 60 * 1000;
 
 /** Shared `takenAt` field: ISO string → Date, plausibility-bounded. */
 const takenAtField = validateEntryInstant(
-  z
-    .string()
-    .datetime({ message: "takenAt must be an ISO 8601 datetime" })
-    .transform((s) => new Date(s)),
+  isoDateTime({
+    offset: false,
+    message: "takenAt must be an ISO 8601 datetime",
+  }).transform((s) => new Date(s)),
   {
     maxAgeMs: LAB_TAKEN_AT_MAX_AGE_MS,
     pastMessage: "Sample date is too far in the past",
@@ -289,14 +290,10 @@ export const listLabResultsSchema = z.object({
    * picker can find one result in a long history without paging to it.
    */
   q: z.string().trim().min(1).max(120).optional(),
-  from: z
-    .string()
-    .datetime()
+  from: isoDateTime({ offset: false })
     .transform((s) => new Date(s))
     .optional(),
-  to: z
-    .string()
-    .datetime()
+  to: isoDateTime({ offset: false })
     .transform((s) => new Date(s))
     .optional(),
   limit: z.coerce.number().int().min(1).max(500).default(100),

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * v1.4.25 W19b — inventory (pen / vial) CRUD validators.
@@ -47,13 +48,11 @@ export const createInventoryItemSchema = z
       .describe(
         "Kind of physical container (PEN / AMPOULE / BLISTER / INHALER / BOTTLE / OTHER). Defaults to OTHER. PEN and AMPOULE are the sealed reservoirs the first dose breaches, so they carry a 30-day post-opening window; every other kind expires only on its printed date.",
       ),
-    printedExpiry: z.iso
-      .datetime({ offset: true })
+    printedExpiry: isoDateTime()
       .transform((s) => new Date(s))
       .nullable()
       .optional(),
-    purchasedAt: z.iso
-      .datetime({ offset: true })
+    purchasedAt: isoDateTime()
       .transform((s) => new Date(s))
       .nullable()
       .optional(),
@@ -85,8 +84,7 @@ export const createInventoryItemSchema = z
 
 export const updateInventoryItemSchema = z
   .object({
-    markAsFirstUseAt: z.iso
-      .datetime({ offset: true })
+    markAsFirstUseAt: isoDateTime()
       .transform((s) => new Date(s))
       .nullable()
       .optional()
@@ -99,8 +97,7 @@ export const updateInventoryItemSchema = z
       .describe(
         "Terminal override: zero the remaining units and mark the container USED_UP (physically discarded).",
       ),
-    printedExpiry: z.iso
-      .datetime({ offset: true })
+    printedExpiry: isoDateTime()
       .transform((s) => new Date(s))
       .nullable()
       .optional(),
@@ -183,8 +180,7 @@ const MIN_EFFECTIVE_FROM = new Date("2020-01-01T00:00:00Z");
 const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 
 export const glp1DoseChangePostSchema = z.object({
-  effectiveFrom: z.iso
-    .datetime({ offset: true })
+  effectiveFrom: isoDateTime()
     .transform((s) => new Date(s))
     .refine((d) => d.getTime() >= MIN_EFFECTIVE_FROM.getTime(), {
       message: "effectiveFrom must be on or after 2020-01-01",

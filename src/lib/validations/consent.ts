@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * v1.4.40 SB-10 — AI consent receipts (App-Store Guideline 5.1.2(i) +
@@ -51,7 +52,7 @@ export const consentPostBody = z.object({
     .refine((value) => Buffer.byteLength(value, "utf8") <= ARTEFACT_MAX_BYTES, {
       message: "artefact exceeds 64 KB cap (UTF-8 byte length)",
     }),
-  signedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+  signedAt: isoDateTime().transform((s) => new Date(s)),
 });
 
 export type ConsentPostBody = z.infer<typeof consentPostBody>;

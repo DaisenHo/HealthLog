@@ -19,6 +19,7 @@ import {
   MedicationSideEffectCategory,
   MedicationSideEffectEntry,
 } from "@/generated/prisma/client";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * v1.4.25 W21 Fix-N (simp-M1) — these arrays used to restate the
@@ -54,20 +55,17 @@ const SIDE_EFFECT_NOTES_MAX = 280;
 export const createSideEffectSchema = z.object({
   entry: z.nativeEnum(MedicationSideEffectEntry),
   severity: z.number().int().min(1).max(5),
-  occurredAt: z.iso
-    .datetime({ offset: true })
+  occurredAt: isoDateTime()
     .transform((s) => new Date(s))
     .optional(),
   notes: z.string().max(SIDE_EFFECT_NOTES_MAX).nullable().optional(),
 });
 
 export const listSideEffectsSchema = z.object({
-  from: z.iso
-    .datetime({ offset: true })
+  from: isoDateTime()
     .transform((s) => new Date(s))
     .optional(),
-  to: z.iso
-    .datetime({ offset: true })
+  to: isoDateTime()
     .transform((s) => new Date(s))
     .optional(),
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),

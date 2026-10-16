@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { validateEntryInstant } from "./entry-instant";
 import { isCalendarDateKey } from "@/lib/tz/date-only";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const measurementTypeEnum = z.enum([
   "WEIGHT",
@@ -551,7 +552,7 @@ export const createMeasurementSchema = z
     // 1900. Closes the data-portability gap where a hand-rolled POST could
     // backdate or forward-date a reading arbitrarily.
     measuredAt: validateEntryInstant(
-      z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+      isoDateTime().transform((s) => new Date(s)),
     ),
     notes: z.string().max(MEASUREMENT_NOTES_MAX_LENGTH).optional(),
     // v1.10.0 QA — validate against the client-writable subset, not the full
@@ -611,7 +612,7 @@ export const updateMeasurementSchema = z.object({
   // v1.17 W1b — same plausibility bound on the edit path; an edit cannot
   // forward-date a reading into the future nor before 1900.
   measuredAt: validateEntryInstant(
-    z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+    isoDateTime().transform((s) => new Date(s)),
   ).optional(),
   notes: z
     .string()
@@ -645,12 +646,10 @@ export const listPersonalRecordsSchema = z.object({
 export const listMeasurementsSchema = z
   .object({
     type: measurementTypeEnum.optional(),
-    from: z.iso
-      .datetime({ offset: true })
+    from: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
-    to: z.iso
-      .datetime({ offset: true })
+    to: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the

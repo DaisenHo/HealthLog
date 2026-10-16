@@ -18,6 +18,7 @@ import {
   SMOKING_STATUS_VALUES,
   isHealthProfileFactValue,
 } from "@/lib/validations/health-profile-facts";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Fact kinds and their values ──────────────────────────────────────────────
 
@@ -189,7 +190,7 @@ export type LifeAiSection = (typeof LIFE_AI_SECTIONS)[number];
 export const lifeAiSectionsPatchSchema = z
   .strictObject({
     sections: z.partialRecord(z.enum(LIFE_AI_SECTIONS), z.boolean()),
-    baseUpdatedAt: z.iso.datetime({ offset: true }).optional(),
+    baseUpdatedAt: isoDateTime().optional(),
   })
   .refine((value) => Object.keys(value.sections).length > 0, {
     path: ["sections"],
@@ -212,7 +213,7 @@ const auditCItem = z.number().int().min(0).max(4);
 export const auditCRequestSchema = z
   .strictObject({
     items: z.tuple([auditCItem, auditCItem, auditCItem]),
-    takenAt: z.iso.datetime({ offset: true }).optional(),
+    takenAt: isoDateTime().optional(),
     tz: z.string().min(1).max(64).optional(),
     locale: z.string().min(2).max(16).optional(),
     source: z.enum(["WEB", "IOS"]),
@@ -343,7 +344,7 @@ export type LifeFactValue =
 export const removedFactSchema = z.object({
   id: z.string(),
   kind: z.enum(STORED_FACT_KINDS),
-  removedAt: z.iso.datetime({ offset: true }),
+  removedAt: isoDateTime(),
 });
 
 /**
@@ -362,10 +363,10 @@ export const lifeFactRevisionSchema = z.object({
   unreadable: z
     .boolean()
     .describe("The sealed value could not be opened on this host."),
-  validFrom: z.iso.datetime({ offset: true }),
+  validFrom: isoDateTime(),
   validUntil: z.null(),
   provenance: z.enum(["USER_REPORTED", "USER_CORRECTION"]),
-  createdAt: z.iso.datetime({ offset: true }),
+  createdAt: isoDateTime(),
 });
 
 /**

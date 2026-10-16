@@ -39,6 +39,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Cycle tracking (v1.15.0) ─────────────────────────────────────────
 // The `/api/cycle/*` capture / calendar / history / settings surface +
@@ -139,8 +140,8 @@ export const cycleDayLogDto = z
     source: z.string(),
     externalId: z.string().nullable(),
     syncVersion: z.number().int(),
-    updatedAt: z.iso.datetime({ offset: true }),
-    deletedAt: z.iso.datetime({ offset: true }).nullable(),
+    updatedAt: isoDateTime(),
+    deletedAt: isoDateTime().nullable(),
   })
   .meta({
     id: "CycleDayLogDTO",
@@ -159,7 +160,7 @@ export const menstrualCycleDto = z
     ovulationConfirmed: z.boolean(),
     isPredicted: z.boolean(),
     syncVersion: z.number().int(),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "MenstrualCycleDTO",
@@ -289,7 +290,7 @@ const cycleProfileDto = z
     typicalCycleLength: z.number().int().nullable(),
     typicalPeriodLength: z.number().int().nullable(),
     lutealPhaseLength: z.number().int().nullable(),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "CycleProfileDTO",
@@ -315,7 +316,7 @@ const cycleCalendarResponse = z.object({
   // Additive + back-compatible.
   stillLearning: z.boolean(),
   days: z.array(cycleCalendarDayDto),
-  meta: z.object({ generatedAt: z.iso.datetime({ offset: true }) }),
+  meta: z.object({ generatedAt: isoDateTime() }),
 });
 
 const cycleHistoryResponse = z.object({

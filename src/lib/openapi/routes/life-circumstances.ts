@@ -29,6 +29,7 @@ import {
   recordRefusal,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const lifeFactRevision = lifeFactRevisionSchema.meta({
   id: "LifeFactRevision",
@@ -46,7 +47,7 @@ const auditCCutoff = z.object({
 const auditCResult = z
   .object({
     id: z.string(),
-    takenAt: z.iso.datetime({ offset: true }),
+    takenAt: isoDateTime(),
     items: z.tuple([z.number().int(), z.number().int(), z.number().int()]),
     totalScore: z.number().int().min(0).max(12),
     locale: z.string(),
@@ -92,7 +93,7 @@ const lifeCircumstances = z
             "GOALS",
           ]),
           aiIncluded: z.boolean(),
-          lastConfirmedAt: z.iso.datetime({ offset: true }).nullable(),
+          lastConfirmedAt: isoDateTime().nullable(),
           reviewDue: z
             .boolean()
             .describe("Older than 365 days; show the quiet yearly check."),
@@ -123,7 +124,7 @@ const lifeCircumstances = z
         .array(
           z.object({
             id: z.string(),
-            takenAt: z.iso.datetime({ offset: true }),
+            takenAt: isoDateTime(),
             totalScore: z.number().int(),
           }),
         )
@@ -218,7 +219,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     z.enum(LIFE_AI_SECTIONS),
                     z.boolean(),
                   ),
-                  updatedAt: z.iso.datetime({ offset: true }),
+                  updatedAt: isoDateTime(),
                 }),
                 "LifeAiSectionsEnvelope",
               ),
@@ -251,7 +252,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({
                   section: z.enum(LIFE_SECTION_KEYS),
-                  lastConfirmedAt: z.iso.datetime({ offset: true }),
+                  lastConfirmedAt: isoDateTime(),
                 }),
                 "LifeConfirmEnvelope",
               ),
@@ -317,7 +318,7 @@ export const lifeCircumstancesPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({
                   id: z.string(),
-                  removedAt: z.iso.datetime({ offset: true }),
+                  removedAt: isoDateTime(),
                 }),
                 "AuditCRemovedEnvelope",
               ),

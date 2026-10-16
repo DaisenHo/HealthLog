@@ -30,6 +30,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const batchEntrySchema = z
   .object({
@@ -67,8 +68,8 @@ const batchEntrySchema = z
       .describe(
         "Apple's `HKUnit` string for `value`, captured for audit: the server records it and never validates `value` against it. `value` is read in Apple's own `HKUnit` for the identifier — `m` for a length, `kg` for body mass, `kcal` for energy, `degC` for temperature, a `fraction` for the percent-shaped ones (oxygen saturation, body fat) — and HealthLog applies its storage scaling after that. A waist circumference sent as `0.86` in `m` is stored as `86` `cm`; an oxygen saturation sent as `0.98` in `fraction` is stored as `98` `%`. Send the sample in Apple's unit, not in HealthLog's.",
       ),
-    startDate: z.iso.datetime({ offset: true }),
-    endDate: z.iso.datetime({ offset: true }),
+    startDate: isoDateTime(),
+    endDate: isoDateTime(),
     sleepStage: z
       .number()
       .int()
@@ -260,7 +261,7 @@ export const measurementResource = z
     type: measurementTypeEnum,
     value: z.number(),
     unit: z.string(),
-    measuredAt: z.iso.datetime({ offset: true }),
+    measuredAt: isoDateTime(),
     source: measurementSourceEnum,
     notes: z.string().nullable().optional(),
     // The list / detail reads hand back the whole stored row minus the
@@ -318,13 +319,12 @@ export const measurementResource = z
       .describe(
         "Bumped on every server-side mutation; the last-writer-wins input for cross-device reconciliation.",
       ),
-    deletedAt: z.iso
-      .datetime({ offset: true })
+    deletedAt: isoDateTime()
       .nullable()
       .optional()
       .describe("Soft-delete tombstone; null on a live row."),
-    createdAt: z.iso.datetime({ offset: true }).optional(),
-    updatedAt: z.iso.datetime({ offset: true }).optional(),
+    createdAt: isoDateTime().optional(),
+    updatedAt: isoDateTime().optional(),
     // Synthesised-row extras — present only on the collapsed day-sum mode.
     dayKey: z.string().optional(),
     sampleCount: z.number().int().optional(),
@@ -364,7 +364,7 @@ const aggregatedMeasurementBucket = z
   .object({
     type: measurementTypeEnum,
     value: z.number().describe("The bucket's aggregated value."),
-    measuredAt: z.iso.datetime({ offset: true }).describe("Bucket start."),
+    measuredAt: isoDateTime().describe("Bucket start."),
     count: z.number().int().nonnegative().optional(),
     unit: z.string().optional(),
   })
@@ -400,8 +400,7 @@ const listMeasurementsMeta = z
       .describe(
         "Rows discarded by the cross-source canonical picker on the day-collapse mode.",
       ),
-    windowFrom: z.iso
-      .datetime({ offset: true })
+    windowFrom: isoDateTime()
       .optional()
       .describe(
         "Set on the per-night SLEEP_DURATION mode when the requested window was longer than 365 days: the instant the read started from. The window is a year ending at `to` (or now); page further back by moving `to`.",
@@ -422,16 +421,16 @@ const sleepStageEnum = z.enum([
 
 const sleepSegmentResource = z.object({
   stage: sleepStageEnum.nullable(),
-  start: z.iso.datetime({ offset: true }),
-  end: z.iso.datetime({ offset: true }),
+  start: isoDateTime(),
+  end: isoDateTime(),
   minutes: z.number().int().nonnegative(),
 });
 
 const sleepSessionResource = z.object({
   night: z.string().describe("Wake-day key (YYYY-MM-DD)."),
   source: measurementSourceEnum.nullable(),
-  start: z.iso.datetime({ offset: true }),
-  end: z.iso.datetime({ offset: true }),
+  start: isoDateTime(),
+  end: isoDateTime(),
   asleepMinutes: z.number().int().nonnegative(),
   inBedMinutes: z.number().int().nonnegative().nullable(),
   awakeMinutes: z.number().int().nonnegative().nullable(),
@@ -643,7 +642,7 @@ const seriesPointSchema = z.object({
     .describe(
       "Measurement row id; `sleep:<wake-day>` for a sleep night; `day:<local-day>` for a day bucket (`pulse`, `glucose`, `heartRateVariability`, `oxygenSaturation` beyond 90 days); `hour:<ISO start>` for an hour bucket (the same kinds within 90 days when the window holds more than 10 000 readings).",
     ),
-  at: z.iso.datetime({ offset: true }).describe("Point timestamp (ISO-8601)."),
+  at: isoDateTime().describe("Point timestamp (ISO-8601)."),
   value: z.number().describe("Primary value in the top-level `unit`."),
   secondary: z
     .number()
@@ -724,11 +723,9 @@ const seriesBatchRowSchema = z.object({
     .describe(
       "The day's mean (spot metrics) or total (cumulative). A row of a coarser tier (a window longer than the daily cap) carries the average day of its bucket, the same quantity: a spot metric's mean of its daily means, a cumulative metric's total over the days of the bucket that hold a reading.",
     ),
-  measuredAt: z.iso
-    .datetime({ offset: true })
-    .describe(
-      "Day-bucket start (ISO-8601): the user's local midnight. A window longer than the daily cap is served from a coarser tier (a UTC day, week or month); its rows are stamped at noon UTC of the bucket's first day, which falls inside the bucket's own week or month in every zone.",
-    ),
+  measuredAt: isoDateTime().describe(
+    "Day-bucket start (ISO-8601): the user's local midnight. A window longer than the daily cap is served from a coarser tier (a UTC day, week or month); its rows are stamped at noon UTC of the bucket's first day, which falls inside the bucket's own week or month in every zone.",
+  ),
   count: z
     .number()
     .int()

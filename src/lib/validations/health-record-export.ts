@@ -22,14 +22,15 @@ import { z } from "zod/v4";
 
 import { locales } from "@/lib/i18n/config";
 import { reportSelectionSchema } from "@/lib/report-selection/selection";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const exportSelectionSchema = z
   .object({
     format: z.enum(["pdf", "fhir", "package"]),
     range: z
       .object({
-        startDate: z.iso.datetime({ offset: true }).optional(),
-        endDate: z.iso.datetime({ offset: true }).optional(),
+        startDate: isoDateTime().optional(),
+        endDate: isoDateTime().optional(),
         days: z.number().int().min(1).max(365).optional(),
       })
       .strict()

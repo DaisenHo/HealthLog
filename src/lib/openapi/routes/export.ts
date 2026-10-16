@@ -25,6 +25,7 @@ import {
   SHARING_NOT_PERMITTED_DESCRIPTION,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const exportQuery = z
   .object({
@@ -43,15 +44,13 @@ const exportQuery = z
   })
   .meta({ id: "ExportQuery" });
 
-const forgivingSince = z.iso
-  .datetime({ offset: true })
+const forgivingSince = isoDateTime()
   .optional()
   .describe(
     "Inclusive lower bound. Parsed with the plain Date constructor, so an ISO date (`2026-07-14`) works as well as a full instant — and an UNPARSEABLE value is silently DROPPED from the filter rather than refused, which widens the export instead of erroring. Validate on your side.",
   );
 
-const forgivingUntil = z.iso
-  .datetime({ offset: true })
+const forgivingUntil = isoDateTime()
   .optional()
   .describe("Inclusive upper bound, with the same forgiving parse as `since`.");
 

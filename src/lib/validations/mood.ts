@@ -23,6 +23,7 @@ import {
   LEISURE_CATEGORY_KEYS,
   WORK_STATUS_KEYS,
 } from "@/lib/mood/context-vocabulary";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // --- CRUD schemas for mood entries ---
 
@@ -192,9 +193,7 @@ export const moodContextSchema = z.object({
     .optional(),
   // The same plausibility bound the entry's own instant carries: no future
   // instants beyond the clock-skew tolerance, nothing before 1900.
-  eventAt: validateEntryInstant(
-    z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
-  )
+  eventAt: validateEntryInstant(isoDateTime().transform((s) => new Date(s)))
     .nullable()
     .optional(),
   // Capped like the entry note beside it. One note for the whole context.
@@ -242,7 +241,7 @@ export const createMoodEntrySchema = z
     // future instants beyond a 5-min clock-skew tolerance, no instant before
     // 1900. Mirrors the measurement + medication-intake bound.
     moodLoggedAt: validateEntryInstant(
-      z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+      isoDateTime().transform((s) => new Date(s)),
     ),
     source: moodSourceEnum.optional().default("MANUAL"),
     // v1.12.1 — optional source-stable id (e.g. an iOS SwiftData row UUID).
@@ -285,7 +284,7 @@ export const updateMoodEntrySchema = z.object({
   context: moodContextSchema.nullable().optional(),
   // v1.17 W1b — same plausibility bound on the edit path.
   moodLoggedAt: validateEntryInstant(
-    z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+    isoDateTime().transform((s) => new Date(s)),
   ).optional(),
 });
 

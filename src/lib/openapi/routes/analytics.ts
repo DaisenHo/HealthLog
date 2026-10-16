@@ -29,6 +29,7 @@ import {
   healthScoreBasis,
 } from "./insights/schemas";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── The per-type summary the tile strip renders ──────────────────────
 
@@ -97,7 +98,7 @@ const lastSeenByType = z
     z.string(),
     z
       .object({
-        lastSeenAt: z.iso.datetime({ offset: true }),
+        lastSeenAt: isoDateTime(),
         daysAgo: z
           .number()
           .int()
@@ -250,7 +251,7 @@ const pillarValue = z.object({
       .describe(
         "The complete display value, paired or panel values included, written in the reader's units (fasting glucose in the account's glucose unit).",
       ),
-    asOf: z.iso.datetime({ offset: true }),
+    asOf: isoDateTime(),
     sources: z.array(z.string()),
   }),
   reference: z.object({
@@ -343,7 +344,7 @@ const weightGoalValue = z.object({
     .number()
     .nullable()
     .describe("Positive means the distance to the personal band narrowed."),
-  asOf: z.iso.datetime({ offset: true }),
+  asOf: isoDateTime(),
   source: z.string(),
 });
 
@@ -428,7 +429,7 @@ const healthScoreReport = z
     restMode: z
       .object({
         active: z.literal(true),
-        since: z.iso.datetime({ offset: true }).nullable(),
+        since: isoDateTime().nullable(),
         episodeCount: z.number().int(),
       })
       .nullable()
