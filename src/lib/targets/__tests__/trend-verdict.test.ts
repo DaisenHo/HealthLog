@@ -36,6 +36,9 @@ describe("resolveTrendVerdict against the person's own target", () => {
     expect(trendSentimentOf(4, v)).toBe("negative");
   });
 
+  // A target the person set themselves is a goal in both directions: below
+  // it, climbing back up is what they asked for. This stays `up-good` even
+  // for the load measures, unlike the profile-default case further down.
   it("calls the same rise below the target progress", () => {
     const v = verdict("BLOOD_PRESSURE_SYS", 108, OWN_BP);
     expect(v).toEqual({
@@ -112,10 +115,55 @@ describe("resolveTrendVerdict against a profile default", () => {
     expect(verdict("BODY_FAT", 30).basis).toBe("metric_default");
   });
 
+  // A default band's lower edge is a population convention, not a goal. A
+  // low blood pressure, resting pulse or body fat against a band nobody chose
+  // holds: its fall is never painted as a setback.
+  it("holds below a default band for the load measures", () => {
+    expect(verdict("BLOOD_PRESSURE_SYS", 108, null, MAN_41)).toEqual({
+      direction: "hold",
+      targetPosition: "below",
+      basis: "profile_default",
+    });
+    expect(verdict("BLOOD_PRESSURE_DIA", 62, null, MAN_41).direction).toBe(
+      "hold",
+    );
+    for (const key of ["PULSE", "RESTING_HEART_RATE"]) {
+      const v = verdict(key, 45, null, MAN_41);
+      expect(v).toMatchObject({ direction: "hold", targetPosition: "below" });
+      expect(trendSentimentOf(-3, v)).toBe("neutral");
+    }
+    expect(
+      verdict("BODY_FAT", 5, null, { ...MAN_41, gender: "MALE" }),
+    ).toMatchObject({ direction: "hold", targetPosition: "below" });
+  });
+
   it("prefers the person's own target over the profile default", () => {
     expect(verdict("BLOOD_PRESSURE_SYS", 125, OWN_BP, MAN_41).basis).toBe(
       "personal_target",
     );
+  });
+});
+
+describe("one-sided measures", () => {
+  it("never calls steps above the own target a setback", () => {
+    const own = { ACTIVITY_STEPS: { min: 8000, max: 12_000 } };
+    const v = verdict("ACTIVITY_STEPS", 15_000, own);
+    expect(v).toEqual({
+      direction: "hold",
+      targetPosition: "above",
+      basis: "personal_target",
+    });
+    expect(trendSentimentOf(2000, v)).not.toBe("negative");
+    expect(trendSentimentOf(-2000, v)).not.toBe("negative");
+    expect(verdict("ACTIVITY_STEPS", 5000, own).direction).toBe("up-good");
+  });
+
+  it("never calls oxygen saturation above the own target a setback", () => {
+    const own = { OXYGEN_SATURATION: { min: 92, max: 96 } };
+    expect(verdict("OXYGEN_SATURATION", 98, own)).toMatchObject({
+      direction: "hold",
+      targetPosition: "above",
+    });
   });
 });
 

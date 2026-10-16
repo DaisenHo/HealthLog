@@ -17,6 +17,17 @@
  *       below the band  → a rise is progress   (`up-good`)
  *       above the band  → a fall is progress   (`up-bad`)
  *       inside the band → holding is progress  (`hold`)
+ *   - two exceptions to "below / above":
+ *       a low reading of a load measure (blood pressure, resting pulse, body
+ *       fat) against a band nobody chose is `hold`, not `up-good`. A
+ *       default band's lower edge is a population convention, not a goal:
+ *       a well-trained resting pulse of 48 or a systolic of 108 is not
+ *       something to climb out of, and painting its fall orange would tell
+ *       the person to raise it. Only a target the person set themselves
+ *       turns "below" into "a rise is progress".
+ *       a one-sided measure (steps, oxygen saturation) above its band is
+ *       `hold`, never `up-bad`: more steps than the target, or a saturation
+ *       above it, is never a setback.
  *   - no band, or no value to place: the metric's own default direction.
  *
  * Weight keeps its own rule (`weight-trend.ts`): only a target the person set
@@ -200,6 +211,39 @@ export function placeAgainstBand(
   return "inside";
 }
 
+/**
+ * Load measures whose default band's lower edge is no goal (see the module
+ * comment): below a profile-default band they hold rather than climb.
+ */
+const LOW_IS_NOT_A_SETBACK: ReadonlySet<ThresholdMetric> = new Set([
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "BODY_FAT",
+]);
+
+/** Measures where more is never worse: above the band they hold. */
+const ONE_SIDED_UPWARD: ReadonlySet<ThresholdMetric> = new Set([
+  "ACTIVITY_STEPS",
+  "OXYGEN_SATURATION",
+]);
+
+function directionFor(
+  metric: ThresholdMetric,
+  position: TrendTargetPosition,
+  basis: Exclude<TrendVerdictBasis, "metric_default">,
+): TrendDirectionSentiment {
+  if (
+    position === "below" &&
+    basis === "profile_default" &&
+    LOW_IS_NOT_A_SETBACK.has(metric)
+  ) {
+    return "hold";
+  }
+  if (position === "above" && ONE_SIDED_UPWARD.has(metric)) return "hold";
+  return DIRECTION_BY_POSITION[position];
+}
+
 const DIRECTION_BY_POSITION: Record<
   TrendTargetPosition,
   TrendDirectionSentiment
@@ -246,7 +290,7 @@ export function resolveTrendVerdict(
     toUnit ? toUnit(reference) : reference,
   );
   return {
-    direction: DIRECTION_BY_POSITION[position],
+    direction: directionFor(metric, position, personal.basis),
     targetPosition: position,
     basis: personal.basis,
   };

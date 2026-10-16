@@ -13,7 +13,7 @@ export const trendVerdict = z
     direction: z
       .enum(["up-good", "up-bad", "neutral", "hold"])
       .describe(
-        "How a change counts: `up-good` a rise is progress, `up-bad` a fall is progress, `hold` the value is inside its band so staying is progress, `neutral` no judgement.",
+        "How a change counts: `up-good` a rise is progress, `up-bad` a fall is progress, `hold` staying is progress and a move either way is no setback, `neutral` no judgement. `hold` covers a value inside its band, a blood pressure, resting pulse or body fat below a profile-default band (a default's lower edge is no goal; below the person's own target a rise stays `up-good`), and steps or oxygen saturation above their band (more is never worse).",
       ),
     targetPosition: z
       .enum(["below", "inside", "above"])
