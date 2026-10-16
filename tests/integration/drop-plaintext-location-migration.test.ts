@@ -13,7 +13,7 @@
  *   - Without readable values it drops the nine columns and the three
  *     indexes, and the sealed copies are untouched.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -177,6 +177,19 @@ describe("migration 0409 (drop the readable location columns)", () => {
       expect(error?.message).toMatch(
         /1 home location\(s\), 0 location period\(s\) and 0 daily location\(s\)/,
       );
+      // The operator reads this line in the container log; it points at the
+      // recovery steps, which exist.
+      expect(error?.message).toMatch(
+        /docs\/ops\/migration-0409-plaintext-location\.md/,
+      );
+      expect(
+        existsSync(
+          resolve(
+            process.cwd(),
+            "docs/ops/migration-0409-plaintext-location.md",
+          ),
+        ),
+      ).toBe(true);
 
       // Nothing was dropped and the value is where it was.
       expect(await columnCount(tx)).toBe(9);

@@ -11,6 +11,7 @@ import { measurementResource } from "./measurements";
 import { moodContextWire } from "./mood";
 import { cycleDayLogDto, menstrualCycleDto } from "./cycle";
 import { dataEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Sync (v1.7.0 offline / server-optional) ─────────────────────────
 
@@ -18,20 +19,20 @@ const syncStateResponse = z
   .object({
     userId: z.string(),
     timezone: z.string(),
-    lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
-    serverNow: z.iso.datetime({ offset: true }),
+    lastSyncedAt: isoDateTime().nullable(),
+    serverNow: isoDateTime(),
     measurements: z.object({
-      lastUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+      lastUpdatedAt: isoDateTime().nullable(),
       liveCount: z.number().int().nonnegative(),
       tombstonedCount: z.number().int().nonnegative(),
     }),
     mood: z.object({
-      lastUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+      lastUpdatedAt: isoDateTime().nullable(),
       liveCount: z.number().int().nonnegative(),
       tombstonedCount: z.number().int().nonnegative(),
     }),
     intakes: z.object({
-      lastUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+      lastUpdatedAt: isoDateTime().nullable(),
       liveCount: z.number().int().nonnegative(),
       tombstonedCount: z.number().int().nonnegative(),
     }),
@@ -73,7 +74,7 @@ const syncMeasurementUpsert = measurementResource
       .describe(
         "LWW reconciliation counter; echo to keep the mirror monotonic.",
       ),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({ id: "SyncMeasurementUpsert" });
 
@@ -85,8 +86,8 @@ const syncMeasurementTombstone = z
       .nullable()
       .describe("The identity key the client dedups on for measurements."),
     syncVersion: z.number().int().positive(),
-    deletedAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    deletedAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "SyncMeasurementTombstone",
@@ -124,14 +125,14 @@ const syncMoodUpsert = z
       ),
     tags: z.string().nullable().describe("JSON array of tag keys, or null."),
     note: z.string().nullable(),
-    moodLoggedAt: z.iso.datetime({ offset: true }),
+    moodLoggedAt: isoDateTime(),
     source: z.string(),
     syncVersion: z
       .number()
       .int()
       .nonnegative()
       .describe("LWW reconciliation counter; mood is last-writer-wins by it."),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({ id: "SyncMoodUpsert" });
 
@@ -141,8 +142,8 @@ const syncMoodTombstone = z
       .string()
       .describe("Server id — the identity key the client dedups on for mood."),
     syncVersion: z.number().int().nonnegative(),
-    deletedAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    deletedAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "SyncMoodTombstone",
@@ -154,8 +155,8 @@ const syncIntakeUpsert = z
   .object({
     id: z.string(),
     medicationId: z.string(),
-    scheduledFor: z.iso.datetime({ offset: true }),
-    takenAt: z.iso.datetime({ offset: true }).nullable(),
+    scheduledFor: isoDateTime(),
+    takenAt: isoDateTime().nullable(),
     skipped: z.boolean(),
     source: z.string(),
     autoRecorded: z
@@ -170,7 +171,7 @@ const syncIntakeUpsert = z
       .describe(
         "Reconciliation counter. An intake is immutable; a correction is a tombstone + re-insert.",
       ),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({ id: "SyncIntakeUpsert" });
 
@@ -182,8 +183,8 @@ const syncIntakeTombstone = z
         "Server id — the identity key the client dedups on for intakes.",
       ),
     syncVersion: z.number().int().nonnegative(),
-    deletedAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    deletedAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "SyncIntakeTombstone",
@@ -199,8 +200,8 @@ const syncCycleDayTombstone = z
       .nullable()
       .describe("The client's own key for the day log, when it set one."),
     syncVersion: z.number().int().nonnegative(),
-    deletedAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    deletedAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "SyncCycleDayTombstone",
@@ -212,8 +213,8 @@ const syncCycleTombstone = z
   .object({
     id: z.string(),
     syncVersion: z.number().int().nonnegative(),
-    deletedAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    deletedAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "SyncCycleTombstone",
@@ -251,7 +252,7 @@ const syncChangesQuery = z
  */
 export const syncChangesResponse = z
   .object({
-    serverNow: z.iso.datetime({ offset: true }),
+    serverNow: isoDateTime(),
     cursor: z
       .string()
       .nullable()

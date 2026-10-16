@@ -403,5 +403,9 @@ The line is a notice and does not pause the start: the migrations run right
 after it. So the dump belongs before step 2, not after you see the line; by
 then the database is already being migrated.
 
+If an update to v1.43 stops at migration `0409_drop_plaintext_location`,
+nothing was changed; the recovery is in
+[`docs/ops/migration-0409-plaintext-location.md`](../ops/migration-0409-plaintext-location.md).
+
 For the ordering on a host where you want the migration result before the
 new container takes traffic, see [`docs/ops/deploy.md`](../ops/deploy.md).

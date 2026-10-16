@@ -18,6 +18,7 @@
  */
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const healthStatusEnum = z.enum(["ok", "degraded"]).meta({
   id: "HealthStatus",
@@ -43,9 +44,9 @@ const healthAdminResponse = z
   .object({
     status: healthStatusEnum,
     reason: healthReason,
-    timestamp: z.iso
-      .datetime({ offset: true })
-      .describe("When the probe ran. UTC (`Z`) — no user context is loaded."),
+    timestamp: isoDateTime().describe(
+      "When the probe ran. UTC (`Z`) — no user context is loaded.",
+    ),
     database: z
       .enum(["connected", "disconnected"])
       .describe("Result of a `SELECT 1` round-trip."),
@@ -54,8 +55,7 @@ const healthAdminResponse = z
       .describe(
         "The in-process pg-boss worker loop. Reported for every process, including one that does not run the worker role — a web-only process reads `stopped` here and can still be `ok`.",
       ),
-    workerLastHeartbeat: z.iso
-      .datetime({ offset: true })
+    workerLastHeartbeat: isoDateTime()
       .optional()
       .describe(
         "Last worker heartbeat. Absent when the worker has never beaten in this process.",

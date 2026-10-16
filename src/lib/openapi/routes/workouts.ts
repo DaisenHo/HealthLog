@@ -20,6 +20,7 @@ import {
   stdResponses,
 } from "./shared";
 import { aiCapabilityState } from "./profile";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.4.25 W16b — typed workout batch ingest response envelope. Mirrors
 // the measurements batch shape but reports the `workouts` count rather
@@ -94,8 +95,8 @@ const workoutListEntry = z
     // session can arrive without a sport type or timing. Declaring them
     // non-null was a strict-decoder bomb for the Swift client.
     sportType: z.string().nullable(),
-    startedAt: z.iso.datetime({ offset: true }).nullable(),
-    endedAt: z.iso.datetime({ offset: true }).nullable(),
+    startedAt: isoDateTime().nullable(),
+    endedAt: isoDateTime().nullable(),
     durationSec: z.number().int().nonnegative().nullable(),
     distanceM: z.number().nullable(),
     activeEnergyKcal: z.number().nullable(),
@@ -198,7 +199,7 @@ const workoutActivityInsight = z
   .object({
     /** Plain text. No markup of any kind — clients render it as text. */
     paragraph: z.string(),
-    generatedAt: z.iso.datetime({ offset: true }),
+    generatedAt: isoDateTime(),
   })
   .meta({ id: "WorkoutActivityInsight" });
 
@@ -206,8 +207,8 @@ const workoutDetailResponse = z
   .object({
     id: z.string(),
     sportType: z.string(),
-    startedAt: z.iso.datetime({ offset: true }),
-    endedAt: z.iso.datetime({ offset: true }),
+    startedAt: isoDateTime(),
+    endedAt: isoDateTime(),
     /**
      * The local calendar day the session belongs to, `YYYY-MM-DD`, resolved
      * server-side from `startedAt` in the user's timezone. Clients address
@@ -280,8 +281,8 @@ export const workoutPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         query: z.object({
           limit: z.coerce.number().int().min(1).max(200).optional(),
           offset: z.coerce.number().int().min(0).optional(),
-          since: z.iso.datetime({ offset: true }).optional(),
-          until: z.iso.datetime({ offset: true }).optional(),
+          since: isoDateTime().optional(),
+          until: isoDateTime().optional(),
           sportType: z.string().optional(),
         }),
       },

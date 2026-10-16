@@ -18,6 +18,7 @@
  * park a row a century out.
  */
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** Ten years out. Long enough for any real appointment, short enough that a
  *  mistyped year lands as a 422 rather than as a row nobody sees again. */
@@ -30,7 +31,7 @@ const MAX_FUTURE_MS = 10 * 365 * 24 * 60 * 60 * 1000;
  * five-minute clock skew. That bound is right for a measurement, which can only
  * describe something that already happened, and wrong here.
  */
-const visitInstant = z.iso.datetime({ offset: true }).refine(
+const visitInstant = isoDateTime().refine(
   (value) => {
     const at = new Date(value).getTime();
     if (Number.isNaN(at)) return false;
@@ -150,8 +151,8 @@ export type EncounterUpdate = z.infer<typeof encounterUpdateSchema>;
  */
 export const encounterListQuerySchema = z
   .object({
-    from: z.iso.datetime({ offset: true }).optional(),
-    to: z.iso.datetime({ offset: true }).optional(),
+    from: isoDateTime().optional(),
+    to: isoDateTime().optional(),
     status: encounterStatusEnum.optional(),
     practitionerId: id.optional(),
     /**

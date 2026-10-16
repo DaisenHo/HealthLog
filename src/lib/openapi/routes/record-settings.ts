@@ -32,6 +32,7 @@ import {
   recordRefusal,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const thresholdMetricEnum = z
   .enum(Object.keys(METRIC_BOUNDS) as [string, ...string[]])
@@ -95,8 +96,8 @@ const recordSettingsIntegrationsResponse = z
             "disconnected",
             "parked",
           ]),
-          lastSuccessAt: z.iso.datetime({ offset: true }).nullable(),
-          lastAttemptAt: z.iso.datetime({ offset: true }).nullable(),
+          lastSuccessAt: isoDateTime().nullable(),
+          lastAttemptAt: isoDateTime().nullable(),
           health: connectionHealth
             .nullable()
             .describe(

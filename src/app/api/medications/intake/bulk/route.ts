@@ -101,6 +101,7 @@ import {
   INTAKE_NOT_TRACKED_REASON,
   isRecordOnly,
 } from "@/lib/medications/intake-tracking";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -109,8 +110,7 @@ const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const bulkEntrySchema = z
   .object({
     medicationId: z.string().min(1),
-    scheduledFor: z.iso
-      .datetime({ offset: true })
+    scheduledFor: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     // v1.16.9 — shared plausibility bounds (no future beyond clock skew,
@@ -135,8 +135,7 @@ const bulkEntrySchema = z
     // entry skipped (`force_slot_invalid`) per the bulk per-entry contract.
     // Ignored on non-taken entries (a pending echo / skip carries no take
     // to attribute).
-    forceSlotInstant: z.iso
-      .datetime({ offset: true })
+    forceSlotInstant: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     // v1.16.4 — per-entry dose override, mirroring the single intake

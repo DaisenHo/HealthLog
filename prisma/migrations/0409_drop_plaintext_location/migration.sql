@@ -10,7 +10,8 @@
 -- It refuses to run while any row still holds a plaintext location: such a
 -- row has not been sealed yet, and dropping the column would lose it. Start
 -- the previous release, let the backfill finish (the three counts below must
--- all be 0), then upgrade again.
+-- all be 0), then upgrade again. The operator steps, including clearing the
+-- failed attempt, are in docs/ops/migration-0409-plaintext-location.md.
 DO $$
 DECLARE
     home_rows   BIGINT;
@@ -21,7 +22,7 @@ BEGIN
     SELECT count(*) INTO travel_rows FROM "environment_travel_locations" WHERE "lat" IS NOT NULL;
     SELECT count(*) INTO day_rows FROM "environment_contexts" WHERE "lat" IS NOT NULL;
     IF home_rows > 0 OR travel_rows > 0 OR day_rows > 0 THEN
-        RAISE EXCEPTION 'HealthLog migration 0409 stopped: % home location(s), % location period(s) and % daily location(s) are still stored in plaintext. Run the previous release until its free-text encryption backfill reports zero remaining rows, then upgrade again. Nothing was changed.', home_rows, travel_rows, day_rows;
+        RAISE EXCEPTION 'HealthLog migration 0409 stopped: % home location(s), % location period(s) and % daily location(s) are still stored in plaintext. Run the previous release until its free-text encryption backfill reports zero remaining rows, then upgrade again. Nothing was changed. Recovery steps: docs/ops/migration-0409-plaintext-location.md', home_rows, travel_rows, day_rows;
     END IF;
 END
 $$;

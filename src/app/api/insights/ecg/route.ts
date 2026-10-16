@@ -46,6 +46,7 @@ import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { persistEcgRecording } from "@/lib/ecg/persist-recording";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +97,7 @@ const ingestSourceEnum = z.enum(["APPLE_HEALTH"]);
 const ecgIngestSchema = z
   .object({
     externalRecordingId: z.string().min(1).max(120),
-    recordedAt: z.iso.datetime({ offset: true }),
+    recordedAt: isoDateTime(),
     // HealthKit hands both of these over as doubles. A watch reports its
     // average heart rate with a fraction (64.7) often enough that requiring
     // an integer refused most new recordings while the old ones, synced when

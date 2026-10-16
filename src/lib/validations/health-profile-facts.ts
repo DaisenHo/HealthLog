@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const HEALTH_PROFILE_AI_SECTIONS = [
   "ABOUT_ME",
@@ -116,11 +117,11 @@ export const healthProfileFactDtoSchema = z.object({
   kind: healthProfileFactKindSchema,
   value: z.string().nullable(),
   unreadable: z.boolean(),
-  validFrom: z.iso.datetime({ offset: true }),
-  validUntil: z.iso.datetime({ offset: true }).nullable(),
+  validFrom: isoDateTime(),
+  validUntil: isoDateTime().nullable(),
   provenance: z.enum(["USER_REPORTED", "USER_CORRECTION"]),
   supersededByRevisionId: z.string().nullable(),
-  createdAt: z.iso.datetime({ offset: true }),
+  createdAt: isoDateTime(),
 });
 
 export const healthProfileFactsResponseSchema = z.object({

@@ -23,6 +23,7 @@ import {
   validateMeasurementRange,
   writableMeasurementSourceEnum,
 } from "./measurement";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** The stage names the `SleepStage` column stores, as a caller writes them. */
 export const SLEEP_STAGE_NAMES = [
@@ -40,9 +41,7 @@ export type SleepStageName = (typeof SLEEP_STAGE_NAMES)[number];
 const VALUE_TOLERANCE_MINUTES = 1;
 
 const instant = () =>
-  validateEntryInstant(
-    z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
-  );
+  validateEntryInstant(isoDateTime().transform((s) => new Date(s)));
 
 export const sleepStageEntrySchema = z
   .object({

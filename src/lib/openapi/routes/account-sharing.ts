@@ -45,6 +45,7 @@ import {
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * The four request bodies this table publishes, and the one thing to know about
@@ -619,7 +620,7 @@ const managedProfileHandover = z
         "The one-time `hlp_` token. Returned only in this response and never again; only its hash is stored.",
       ),
     url: z.string().describe("The link to hand over: `<app>/claim/<token>`."),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({ id: "ManagedProfileHandover" });
 
@@ -639,8 +640,8 @@ const managedProfileHandoverStatus = z
     open: z
       .object({
         id: z.string(),
-        createdAt: z.iso.datetime({ offset: true }),
-        expiresAt: z.iso.datetime({ offset: true }),
+        createdAt: isoDateTime(),
+        expiresAt: isoDateTime(),
         createdByYou: z.boolean(),
       })
       .nullable()
@@ -660,7 +661,7 @@ const pendingHandoverDecision = z
   .object({
     pending: z
       .object({
-        claimedAt: z.iso.datetime({ offset: true }),
+        claimedAt: isoDateTime(),
         guardians: z.array(
           z.object({
             grantId: z

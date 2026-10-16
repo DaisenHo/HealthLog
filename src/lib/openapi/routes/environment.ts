@@ -32,6 +32,7 @@ import {
   moduleDisabledResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const homeLocationRequest = homeLocationSchema.meta({
   id: "EnvironmentHomeRequest",
@@ -68,8 +69,7 @@ const environmentHome = z
       .describe(
         "The home's IANA zone. Falls back to the account's display timezone when the home was stored without one.",
       ),
-    since: z.iso
-      .datetime({ offset: true })
+    since: isoDateTime()
       .nullable()
       .describe(
         "Effective-from instant. Every set/update re-stamps it: a home resolves days from the moment it was set, and days before it stay un-attributed unless a travel override covers them.",
@@ -112,13 +112,13 @@ const environmentOverview = z
         .string()
         .nullable()
         .describe("Day key of the newest stored observation."),
-      latestFetchedAt: z.iso.datetime({ offset: true }).nullable(),
+      latestFetchedAt: isoDateTime().nullable(),
     }),
     lastFetchFailure: z
       .object({
-        lastFailedAt: z.iso
-          .datetime({ offset: true })
-          .describe("When the newest exhausted-retry failure gave up."),
+        lastFailedAt: isoDateTime().describe(
+          "When the newest exhausted-retry failure gave up.",
+        ),
         failures: z
           .number()
           .int()

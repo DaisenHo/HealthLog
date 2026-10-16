@@ -47,6 +47,7 @@ import {
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -60,12 +61,10 @@ const RATE_WINDOW_MS = 60_000;
 
 const querySchema = z
   .object({
-    from: z.iso
-      .datetime({ offset: true })
+    from: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
-    to: z.iso
-      .datetime({ offset: true })
+    to: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
   })

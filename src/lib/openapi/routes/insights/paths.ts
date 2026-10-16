@@ -70,6 +70,7 @@ import {
   scoreHistoryResponse,
 } from "./schemas";
 import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommendation-feedback";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const insightsFeedbackRequest = recommendationFeedbackRequestSchema.meta({
   id: "InsightsFeedbackRequest",
@@ -355,7 +356,7 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({
                   id: z.string(),
-                  createdAt: z.iso.datetime({ offset: true }),
+                  createdAt: isoDateTime(),
                 }),
                 "InsightsFeedbackCreatedEnvelope",
               ),

@@ -416,7 +416,15 @@ describe("MCP tool outputs against their advertised schemas", () => {
         .filter((name) => !(name in CASES));
       expect(uncovered, "add every new tool to CASES").toEqual([]);
 
-      const ajv = new Ajv2020({ strict: true, allErrors: true });
+      // `allowUnionTypes`: zod 4.6 writes a nullable or primitive union as a
+      // `type` array (`["string", "null"]`), which is plain 2020-12. Strict
+      // mode otherwise refuses that spelling as an authoring style, not as an
+      // invalid schema; every other strict rule stays on.
+      const ajv = new Ajv2020({
+        strict: true,
+        allowUnionTypes: true,
+        allErrors: true,
+      });
       const failures: string[] = [];
       let validated = 0;
       // Tools that answered with data, not only a miss: a run where every
