@@ -1158,6 +1158,12 @@ export async function restoreBackup(
 
         const medByName = new Map<string, string>();
         const restoredMedicationIds = new Set<string>();
+        // The id each medication had in the source account, to the id it got
+        // here. A disaster-recovery file keeps the id, so this is the
+        // identity there; a portable file names the source row only through
+        // `ref`, and the relation links (written last) are re-pointed through
+        // this map instead of being dropped as "end is gone".
+        const medicationIdBySourceId = new Map<string, string>();
         // The efficacy targets cannot ride inside the medication create
         // beside the schedules and the packs: `biomarkerId` is a foreign key
         // into a catalogue this transaction has not restored yet. They are
@@ -1454,6 +1460,10 @@ export async function restoreBackup(
             },
           });
           restoredMedicationIds.add(created.id);
+          const medicationSourceId = m.id ?? m.ref;
+          if (medicationSourceId) {
+            medicationIdBySourceId.set(medicationSourceId, created.id);
+          }
           if (!medByName.has(m.name)) medByName.set(m.name, created.id);
           // v1.39.4 — the clinical category lives in its own table keyed on the
           // medication id, so it is written after the row exists and inside the
@@ -2172,6 +2182,8 @@ export async function restoreBackup(
         // `committedRecordId` names the lab result it was committed to, and
         // that reference is resolved against the rows this loop writes.
         const restoredLabResultIds = new Set<string>();
+        // Same arrangement as `medicationIdBySourceId`, for the lab results.
+        const labResultIdBySourceId = new Map<string, string>();
         // What each drug was supposed to move, written now that both ends
         // exist. The drugs came back several hundred lines up and the
         // analytes only just now, and one of those two had to move for a
@@ -2280,6 +2292,9 @@ export async function restoreBackup(
             },
           });
           restoredLabResultIds.add(createdLab.id);
+          const labSourceId = lab.id ?? lab.ref;
+          if (labSourceId)
+            labResultIdBySourceId.set(labSourceId, createdLab.id);
         }
 
         reportSection("illness");
@@ -2683,6 +2698,10 @@ export async function restoreBackup(
           ownerId,
           payload,
           skips,
+          {
+            medications: medicationIdBySourceId,
+            labResults: labResultIdBySourceId,
+          },
         );
 
         // The Coach's threads, turns and document links. AFTER the

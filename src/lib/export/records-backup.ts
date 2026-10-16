@@ -83,6 +83,8 @@ function readForExport(
 export interface LabResultBackupEntry {
   /** Present in canonical DR payloads so rows keep a stable identity. */
   id?: string;
+  /** The source row's id in a portable payload, for the relation links. */
+  ref?: string;
   panel: string | null;
   analyte: string;
   value: number | null;
@@ -455,6 +457,9 @@ export async function buildRecordsBackupSection(
           note: null,
         }
       : {
+          // No id: a portable restore mints a fresh one. The relation links
+          // still name this row, so the file says which row they mean.
+          ref: r.id,
           note: readForExport(
             r.noteEncrypted,
             "lab note",
