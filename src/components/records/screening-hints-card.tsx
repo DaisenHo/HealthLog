@@ -7,8 +7,10 @@
  * source and country. A hint, never a reminder: nothing is scheduled here,
  * and the card says so. Resolved on the server; rendered as delivered.
  *
- * The card stays away until the person has said something about smoking,
- * because every hint would otherwise read "not enough information".
+ * The card stays away until it has something to say: the person has said
+ * something about smoking, or a hint already applies without it (the German
+ * abdominal-aorta ultrasound is offered to every man from 65, smoker or not).
+ * Before either, every hint would read "not enough information".
  */
 import { useQuery } from "@tanstack/react-query";
 import { Stethoscope } from "lucide-react";
@@ -29,7 +31,12 @@ export function ScreeningHintsCard() {
   });
   const data = query.data;
   const tobacco = data?.sections.find((section) => section.key === "tobacco");
-  if (!data || !tobacco || tobacco.facts.length === 0) return null;
+  if (!data) return null;
+  const answeredTobacco = (tobacco?.facts.length ?? 0) > 0;
+  const anySuggested = data.derived.screeningHints.some(
+    (hint) => hint.status === "suggested",
+  );
+  if (!answeredTobacco && !anySuggested) return null;
 
   return (
     <SettingsCard data-slot="screening-hints-card">

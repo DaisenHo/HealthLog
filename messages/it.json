@@ -11873,8 +11873,14 @@
       "emptyTitle": "Nessun dato sui micronutrienti ancora sincronizzato",
       "loadError": "Non è stato possibile caricare i tuoi dati sui nutrienti",
       "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Sopra il livello massimo tollerabile di {value} {unit} al giorno ({source}).",
-      "aboveUpperLimitSupplemental": "La quota degli integratori supera il livello massimo tollerabile di {value} {unit} al giorno per gli integratori ({source})."
+      "aboveUpperLimit": "Sopra il livello massimo tollerabile per gli adulti di {value} {unit} al giorno ({source}).",
+      "aboveUpperLimitSupplemental": "La quota degli integratori supera il livello massimo tollerabile per gli adulti di {value} {unit} al giorno per gli integratori ({source}).",
+      "upperLimitForm": {
+        "retinol": "Il livello vale solo per la vitamina A preformata (retinolo): se la quantità proviene dal beta-carotene, non si applica.",
+        "folic_acid": "Il livello vale per l'acido folico da integratori e alimenti arricchiti, non per i folati del cibo comune.",
+        "magnesium_salts": "Il livello vale per i sali di magnesio facilmente dissociabili negli integratori, non per il magnesio degli alimenti.",
+        "alpha_tocopherol": "Il livello è fissato per l'alfa-tocoferolo."
+      }
     },
     "sparseNote": "Un valore basso qui di solito indica una registrazione poco frequente, non una carenza: i totali giornalieri di Apple Health riflettono ciò che le tue app hanno registrato, non l'apporto alimentare totale.",
     "units": {

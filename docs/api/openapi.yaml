@@ -46823,8 +46823,11 @@ components:
             - up-bad
             - neutral
             - hold
-          description: "How a change counts: `up-good` a rise is progress, `up-bad` a fall is progress, `hold` the value is inside
-            its band so staying is progress, `neutral` no judgement."
+          description: "How a change counts: `up-good` a rise is progress, `up-bad` a fall is progress, `hold` staying is progress
+            and a move either way is no setback, `neutral` no judgement. `hold` covers a value inside its band, a blood
+            pressure, resting pulse or body fat below a profile-default band (a default's lower edge is no goal; below
+            the person's own target a rise stays `up-good`), and steps or oxygen saturation above their band (more is
+            never worse)."
         targetPosition:
           anyOf:
             - type: string
@@ -75953,12 +75956,27 @@ components:
           enum:
             - total
             - supplemental
+        form:
+          anyOf:
+            - type: string
+              enum:
+                - retinol
+                - folic_acid
+                - magnesium_salts
+                - alpha_tocopherol
+            - type: "null"
+          description: "v1.43 — the chemical form the level is set for, where narrower than the nutrient: `retinol` (vitamin A:
+            preformed retinol only, beta-carotene does not count), `folic_acid`, `magnesium_salts` (readily dissociable
+            salts in supplements), `alpha_tocopherol`. `null` where the level covers the nutrient as such. Phrase it in
+            the reader's language; skip an unknown value."
         source:
           type: string
+          description: The bare citation (EFSA overview and the opinion it rests on), not prose. Every level here is the adult one.
       required:
         - value
         - unit
         - scope
+        - form
         - source
       additionalProperties: false
       description: The tolerable upper intake level, with the unit, whether it applies to the total intake or to the

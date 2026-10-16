@@ -11873,8 +11873,14 @@
       "emptyTitle": "Aucune donnée de micronutriments synchronisée pour l'instant",
       "loadError": "Tes données de nutriments n'ont pas pu être chargées",
       "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Au-dessus de la limite supérieure de sécurité de {value} {unit} par jour ({source}).",
-      "aboveUpperLimitSupplemental": "La part des compléments dépasse la limite supérieure de sécurité de {value} {unit} par jour pour les compléments ({source})."
+      "aboveUpperLimit": "Au-dessus de la limite supérieure de sécurité pour les adultes de {value} {unit} par jour ({source}).",
+      "aboveUpperLimitSupplemental": "La part des compléments dépasse la limite supérieure de sécurité pour les adultes de {value} {unit} par jour pour les compléments ({source}).",
+      "upperLimitForm": {
+        "retinol": "La limite ne concerne que la vitamine A préformée (rétinol) : si la quantité provient du bêta-carotène, elle ne s'applique pas.",
+        "folic_acid": "La limite concerne l'acide folique des compléments et des aliments enrichis, pas les folates de l'alimentation courante.",
+        "magnesium_salts": "La limite concerne les sels de magnésium facilement dissociables des compléments, pas le magnésium des aliments.",
+        "alpha_tocopherol": "La limite est fixée pour l'alpha-tocophérol."
+      }
     },
     "sparseNote": "Une valeur basse ici signifie généralement un suivi partiel, pas une carence : les totaux journaliers Apple Health reflètent ce que vos applis ont enregistré, pas l'apport alimentaire total.",
     "units": {

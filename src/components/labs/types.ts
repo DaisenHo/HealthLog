@@ -1,3 +1,5 @@
+import type { RelatedLink } from "@/lib/links/related";
+
 import type {
   ReferenceRangeOrigin,
   ReferenceRangeStatus,
@@ -58,6 +60,8 @@ export interface LabResultDto {
 /** The single-resource detail DTO — carries the decrypted note. */
 export interface LabResultDetailDto extends Omit<LabResultDto, "hasNote"> {
   note: string | null;
+  /** v1.43 — the records this reading relates to, resolved on the server. */
+  related?: RelatedLink[];
 }
 
 export interface LabResultListResponse {

@@ -292,11 +292,19 @@ describe("resolved-field consumer guard", () => {
 
 /**
  * v1.43 (ios #116 items 3, 4, 5, 6, 9; #77) — the fields the server resolves
- * for the native client reach the web as well, so the two clients render the
- * same answer. Each field names the web module that reads it, by a pattern
- * over that module's code. A field the web has no screen for names the web
- * twin it is resolved alongside (the same resolver, published where the web
- * reads it) and why; the twin's reader is checked the same way.
+ * for the native client either reach the web, or say why they do not.
+ *
+ * The inventory is not hand-kept: every response property in the OpenAPI
+ * route modules typed by one of the resolved-verdict schemas
+ * (`src/lib/openapi/routes/trend-verdict.ts`) is discovered, and each must be
+ * claimed by exactly one entry below. An entry either names the web module
+ * that reads the field, by a pattern that names the field itself, or names
+ * the field iOS-only with the reason, and where the reason is "the web reads
+ * the same answer elsewhere", the server modules that must share the
+ * resolver for that to stay true. A new resolved field with neither fails.
+ *
+ * Entries without a discovered property (`VITALS_BASELINE` sits in an open
+ * record, `lastBackfillAt` is a plain timestamp) carry a web reader by hand.
  *
  * The rebuild side of the same rule (a client deciding a polarity or drawing
  * a threshold of its own) is `client-threshold-literal-guard.test.ts`.
@@ -306,16 +314,39 @@ interface WebReader {
   pattern: RegExp;
 }
 
-interface ResolvedFieldReader {
+interface ResolvedFieldEntry {
   field: string;
-  readers: WebReader[];
-  /** Set when the web reads a twin rather than this route's field. */
-  twin?: string;
+  /** Discovered properties this entry claims: `<route module>#<property>`. */
+  props: string[];
+  /** The web modules that read the field. */
+  readers?: WebReader[];
+  /** Why the web has no reader; required when `readers` is absent. */
+  iosOnly?: {
+    reason: string;
+    /**
+     * When the reason is that the web reads the same answer from another
+     * route: every file here must call the resolver both answers come from.
+     */
+    sameResolver?: { pattern: RegExp; files: string[] };
+  };
 }
 
-const V143_FIELDS: ResolvedFieldReader[] = [
+const ROUTES_DIR = "src/lib/openapi/routes";
+const RESOLVED_SCHEMAS = [
+  "trendVerdict",
+  "trendSentiment",
+  "seriesChange",
+  "seriesReferenceLine",
+  "recordBenchmark",
+  "moodPattern",
+  "cycleRestoredStart",
+];
+const VERDICT_RESOLVER = /\bresolve(?:TrendVerdict|SummaryVerdicts)\(/;
+
+const V143_FIELDS: ResolvedFieldEntry[] = [
   {
     field: "GET /api/dashboard/snapshot tiles.directions",
+    props: ["insights/schemas.ts#directions"],
     readers: [
       { file: "src/app/page-client.tsx", pattern: /tiles\.directions/ },
     ],
@@ -323,18 +354,40 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   {
     field:
       "GET /api/dashboard/summary DashboardMetricCard.direction / trendSentiment",
-    twin: "the summary route is the native client's dashboard; the web dashboard reads the same `resolveTrendVerdict` answer from the snapshot's `tiles.directions`",
-    readers: [{ file: "src/app/page-client.tsx", pattern: /directionOf\(/ }],
+    props: ["dashboard.ts#direction", "dashboard.ts#trendSentiment"],
+    iosOnly: {
+      reason:
+        "the summary route is the native client's dashboard; the web dashboard colours its tiles from the snapshot's `tiles.directions`, resolved by the same verdict resolver",
+      sameResolver: {
+        pattern: VERDICT_RESOLVER,
+        files: [
+          "src/app/api/dashboard/summary/route.ts",
+          "src/lib/dashboard/snapshot.ts",
+        ],
+      },
+    },
   },
   {
     field: "GET /api/insights/targets TargetItem.direction / trendSentiment",
-    twin: "the web target panels show the band, not a change; the change they would colour is the dashboard tile's, read from `tiles.directions`",
-    readers: [
-      { file: "src/app/page-client.tsx", pattern: /tileDirections\?\.\[key\]/ },
+    props: [
+      "insights/schemas.ts#direction",
+      "insights/schemas.ts#trendSentiment",
     ],
+    iosOnly: {
+      reason:
+        "the web target panels show the band and where the value sits, never a change, so there is nothing to colour; the native targets page colours the change, placed on the dashboard's seven-day basis",
+      sameResolver: {
+        pattern: VERDICT_RESOLVER,
+        files: [
+          "src/lib/targets/build-response.ts",
+          "src/lib/dashboard/snapshot.ts",
+        ],
+      },
+    },
   },
   {
     field: "GET /api/insights/derived VITALS_BASELINE value.direction",
+    props: [],
     readers: [
       {
         file: "src/components/insights/derived/vitals-dashboard.tsx",
@@ -344,11 +397,27 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   },
   {
     field: "GET /api/measurements/series direction / change / referenceLines",
-    twin: "the web charts read the series-batch and draw the person's bands from the snapshot's `targetBands`; the series read is the native chart source",
-    readers: [{ file: "src/app/page-client.tsx", pattern: /targetBands/ }],
+    props: [
+      "measurements.ts#direction",
+      "measurements.ts#change",
+      "measurements.ts#referenceLines",
+      "trend-verdict.ts#sentiment",
+    ],
+    iosOnly: {
+      reason:
+        "the web charts are fed by `/api/measurements/series-batch`, which carries no verdict, change or reference line; the web colours a chart's change from the tile verdict in `tiles.directions` and draws the person's bands from the snapshot's `targetBands`. The single-series read is the native chart source.",
+      sameResolver: {
+        pattern: VERDICT_RESOLVER,
+        files: [
+          "src/app/api/measurements/series/route.ts",
+          "src/lib/dashboard/snapshot.ts",
+        ],
+      },
+    },
   },
   {
     field: "GET /api/personal-records benchmark",
+    props: ["awards.ts#benchmark"],
     readers: [
       {
         file: "src/components/insights/personal-record-badge.tsx",
@@ -358,6 +427,7 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   },
   {
     field: "GET /api/mood/insights patterns",
+    props: ["mood.ts#patterns"],
     readers: [
       {
         file: "src/components/insights/mood/mood-insights-breakdowns.tsx",
@@ -371,6 +441,7 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   },
   {
     field: "POST /api/cycle/period absorbed",
+    props: ["cycle.ts#absorbed"],
     readers: [
       {
         file: "src/components/cycle/use-cycle.ts",
@@ -380,6 +451,7 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   },
   {
     field: "DELETE /api/cycle/day-logs/{id} (Prefer) and PATCH restored",
+    props: ["cycle.ts#restored", "trend-verdict.ts#restored"],
     readers: [
       {
         file: "src/components/cycle/use-cycle.ts",
@@ -393,6 +465,7 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   },
   {
     field: "GET /api/integrations/healthkit metricFreshness[].lastBackfillAt",
+    props: [],
     readers: [
       {
         file: "src/components/settings/integrations/apple-health-card.tsx",
@@ -402,20 +475,108 @@ const V143_FIELDS: ResolvedFieldReader[] = [
   },
 ];
 
-describe("v1.43 resolved fields reach the web", () => {
+/**
+ * Every response property typed by a resolved-verdict schema, as
+ * `<route module>#<property>`: `name: schema`, `name: z.array(schema)` and
+ * `name: z.record(z.string(), schema)`, across line breaks. The schema
+ * definitions themselves count too (`seriesChange.sentiment`,
+ * `cycleDeleteOutcome.restored`), since they reach the wire nested.
+ */
+function discoverResolvedProps(
+  sources: ReadonlyArray<{ rel: string; code: string }>,
+): string[] {
+  const names = RESOLVED_SCHEMAS.join("|");
+  const prop = new RegExp(
+    String.raw`(\w+)\s*:\s*(?:z\s*\.\s*(?:array|record)\(\s*(?:z\s*\.\s*string\(\)\s*,\s*)?)?(?:${names})\b`,
+    "g",
+  );
+  const out: string[] = [];
+  for (const { rel, code } of sources) {
+    for (const match of code.matchAll(prop)) out.push(`${rel}#${match[1]}`);
+  }
+  return out;
+}
+
+function routeSources(): Array<{ rel: string; code: string }> {
+  return walkSourceFiles(join(ROOT, ROUTES_DIR), { floor: 20 })
+    .filter((file) => !/__tests__|\.test\.ts$/.test(file))
+    .map((file) => ({
+      rel: file,
+      code: stripComments(readFileSync(join(ROOT, ROUTES_DIR, file), "utf8")),
+    }));
+}
+
+function unescaped(pattern: RegExp): string {
+  return pattern.source.replace(/\\/g, "");
+}
+
+describe("v1.43 resolved fields reach the web, or say why not", () => {
+  const discovered = discoverResolvedProps(routeSources());
+
+  it("discovers the resolved fields from the route modules", () => {
+    // A matcher that stopped matching would let every field go unclaimed
+    // without anyone noticing; the inventory has twelve today.
+    expect(discovered.length).toBeGreaterThanOrEqual(12);
+    expect(
+      discoverResolvedProps([
+        {
+          rel: "x.ts",
+          code: "a: trendVerdict.nullable(), b: z\n  .array(moodPattern), c: z.record(z.string(), trendVerdict)",
+        },
+      ]),
+    ).toEqual(["x.ts#a", "x.ts#b", "x.ts#c"]);
+  });
+
+  it("claims every discovered field exactly once, and nothing else", () => {
+    const claimed = V143_FIELDS.flatMap((entry) => entry.props);
+    const unclaimed = discovered.filter((key) => !claimed.includes(key));
+    expect(
+      unclaimed,
+      "a resolved field has no web reader and no iOS-only reason: add an entry",
+    ).toEqual([]);
+    const stale = claimed.filter((key) => !discovered.includes(key));
+    expect(stale, "an entry claims a field the routes no longer serve").toEqual(
+      [],
+    );
+    expect(new Set(claimed).size).toBe(claimed.length);
+  });
+
   for (const entry of V143_FIELDS) {
-    it(`${entry.field} has a web reader${entry.twin ? " through its twin" : ""}`, () => {
-      expect(entry.readers.length).toBeGreaterThan(0);
-      if (entry.twin !== undefined)
-        expect(entry.twin.length).toBeGreaterThan(40);
-      for (const reader of entry.readers) {
-        const code = stripComments(
-          readFileSync(join(ROOT, reader.file), "utf8"),
-        );
-        expect(
-          reader.pattern.test(code),
-          `${reader.file} no longer reads ${entry.field} (${reader.pattern})`,
-        ).toBe(true);
+    it(`${entry.field} ${entry.readers ? "has a web reader" : "is iOS-only for a stated reason"}`, () => {
+      expect(
+        (entry.readers ? 1 : 0) + (entry.iosOnly ? 1 : 0),
+        "an entry has a web reader or an iOS-only reason, not both or neither",
+      ).toBe(1);
+      if (entry.readers) {
+        expect(entry.readers.length).toBeGreaterThan(0);
+        // The reader must read the field itself, not something beside it.
+        for (const key of entry.props) {
+          const name = key.split("#")[1]!;
+          expect(
+            entry.readers.some((reader) =>
+              unescaped(reader.pattern).includes(name),
+            ),
+            `no reader pattern names \`${name}\``,
+          ).toBe(true);
+        }
+        for (const reader of entry.readers) {
+          const code = stripComments(
+            readFileSync(join(ROOT, reader.file), "utf8"),
+          );
+          expect(
+            reader.pattern.test(code),
+            `${reader.file} no longer reads ${entry.field} (${reader.pattern})`,
+          ).toBe(true);
+        }
+      } else {
+        expect(entry.iosOnly!.reason.length).toBeGreaterThan(60);
+        for (const file of entry.iosOnly!.sameResolver?.files ?? []) {
+          const code = stripComments(readFileSync(join(ROOT, file), "utf8"));
+          expect(
+            entry.iosOnly!.sameResolver!.pattern.test(code),
+            `${file} no longer resolves ${entry.field} with the shared resolver`,
+          ).toBe(true);
+        }
       }
     });
   }

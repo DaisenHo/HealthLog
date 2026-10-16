@@ -11873,8 +11873,14 @@
       "emptyTitle": "No micronutrient data synced yet",
       "loadError": "Your nutrient data could not be loaded",
       "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Above the tolerable upper intake level of {value} {unit} a day ({source}).",
-      "aboveUpperLimitSupplemental": "The supplement share is above the tolerable upper intake level of {value} {unit} a day for supplements ({source})."
+      "aboveUpperLimit": "Above the tolerable upper intake level for adults of {value} {unit} a day ({source}).",
+      "aboveUpperLimitSupplemental": "The supplement share is above the tolerable upper intake level for adults of {value} {unit} a day for supplements ({source}).",
+      "upperLimitForm": {
+        "retinol": "The level covers preformed vitamin A (retinol) only: if the amount comes from beta-carotene, it does not apply.",
+        "folic_acid": "The level covers folic acid from supplements and fortified foods, not the folate in ordinary food.",
+        "magnesium_salts": "The level covers readily dissociable magnesium salts in supplements, not the magnesium in food.",
+        "alpha_tocopherol": "The level is set for alpha-tocopherol."
+      }
     },
     "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake.",
     "units": {

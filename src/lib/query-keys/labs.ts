@@ -34,6 +34,11 @@ export const labKeys = {
   // mutation's `labResults()` invalidation evict it.
   labResultsOverview: () => ["lab-results", "overview"] as const,
 
+  // One reading's detail (`GET /api/labs/{id}`): the decrypted note and the
+  // records it relates to. Under the `lab-results` prefix so every result
+  // mutation evicts it.
+  labResult: (id: string) => ["lab-results", "detail", id] as const,
+
   // `/labs?analyte=<name>` (MCP deep links): the newest reading stored under
   // that exact analyte name, one row, to find its marker's page. Its own key
   // because the page size differs from every list read; the `lab-results`

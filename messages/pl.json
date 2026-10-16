@@ -11873,8 +11873,14 @@
       "emptyTitle": "Brak jeszcze zsynchronizowanych danych o mikroskładnikach",
       "loadError": "Nie udało się wczytać danych o składnikach odżywczych",
       "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Powyżej tolerowanego górnego poziomu spożycia {value} {unit} dziennie ({source}).",
-      "aboveUpperLimitSupplemental": "Część z suplementów przekracza tolerowany górny poziom {value} {unit} dziennie dla suplementów ({source})."
+      "aboveUpperLimit": "Powyżej tolerowanego górnego poziomu spożycia dla dorosłych {value} {unit} dziennie ({source}).",
+      "aboveUpperLimitSupplemental": "Część z suplementów przekracza tolerowany górny poziom dla dorosłych {value} {unit} dziennie dla suplementów ({source}).",
+      "upperLimitForm": {
+        "retinol": "Poziom dotyczy tylko gotowej witaminy A (retinolu): jeśli ilość pochodzi z beta-karotenu, nie ma zastosowania.",
+        "folic_acid": "Poziom dotyczy kwasu foliowego z suplementów i żywności wzbogacanej, nie folianów ze zwykłego jedzenia.",
+        "magnesium_salts": "Poziom dotyczy łatwo dysocjujących soli magnezu w suplementach, nie magnezu z jedzenia.",
+        "alpha_tocopherol": "Poziom ustalono dla alfa-tokoferolu."
+      }
     },
     "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy z Apple Health odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie.",
     "units": {

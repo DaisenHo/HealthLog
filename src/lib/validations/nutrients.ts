@@ -112,7 +112,17 @@ export const nutrientUpperLimitSchema = z
     value: z.number(),
     unit: z.string(),
     scope: z.enum(["total", "supplemental"]),
-    source: z.string(),
+    form: z
+      .enum(["retinol", "folic_acid", "magnesium_salts", "alpha_tocopherol"])
+      .nullable()
+      .describe(
+        "v1.43 — the chemical form the level is set for, where narrower than the nutrient: `retinol` (vitamin A: preformed retinol only, beta-carotene does not count), `folic_acid`, `magnesium_salts` (readily dissociable salts in supplements), `alpha_tocopherol`. `null` where the level covers the nutrient as such. Phrase it in the reader's language; skip an unknown value.",
+      ),
+    source: z
+      .string()
+      .describe(
+        "The bare citation (EFSA overview and the opinion it rests on), not prose. Every level here is the adult one.",
+      ),
   })
   .meta({
     id: "NutrientUpperLimit",

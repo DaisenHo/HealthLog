@@ -130,8 +130,21 @@ export interface NutrientUpperLimit {
   value: number;
   unit: NutrientUnit;
   scope: "total" | "supplemental";
+  /**
+   * The chemical form the level is set for, where it is narrower than the
+   * nutrient: vitamin A's level covers preformed retinol only (beta-carotene
+   * does not count), folate's the folic acid, magnesium's the dissociable
+   * salts in supplements, vitamin E's alpha-tocopherol. `null` where the
+   * level covers the nutrient as such. Clients phrase it in the reader's
+   * language; `source` stays the bare citation.
+   */
+  form: NutrientUpperLimitForm | null;
+  /** The citation (EFSA overview and the opinion it rests on), verbatim. */
   source: string;
 }
+
+export type NutrientUpperLimitForm =
+  "retinol" | "folic_acid" | "magnesium_salts" | "alpha_tocopherol";
 
 export interface NutrientReference {
   /** EFSA value type, named in Coach prose later (Slice B). */
@@ -222,76 +235,85 @@ const UPPER_LIMITS: Partial<Record<NutrientCode, NutrientUpperLimit>> = {
     value: 3000,
     unit: "ug",
     scope: "total",
-    source:
-      "EFSA UL overview 2024 (SCF 2002): preformed vitamin A (retinol), adults",
+    form: "retinol",
+    source: "EFSA UL overview 2024 (SCF 2002)",
   },
   vitamin_b6: {
     value: 12,
     unit: "mg",
     scope: "total",
-    source: "EFSA UL overview 2024 (NDA Panel 2023): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
   },
   folate: {
     value: 1000,
     unit: "ug",
     scope: "supplemental",
-    source:
-      "EFSA UL overview 2024 (NDA Panel 2023): folic acid from supplements and fortified foods, adults",
+    form: "folic_acid",
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
   },
   vitamin_d: {
     value: 100,
     unit: "ug",
     scope: "total",
-    source: "EFSA UL overview 2024 (NDA Panel 2023): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
   },
   vitamin_e: {
     value: 300,
     unit: "mg",
     scope: "total",
-    source: "EFSA UL overview 2024 (NDA Panel 2024): alpha-tocopherol, adults",
+    form: "alpha_tocopherol",
+    source: "EFSA UL overview 2024 (NDA Panel 2024)",
   },
   calcium: {
     value: 2500,
     unit: "mg",
     scope: "total",
-    source: "EFSA UL overview 2024 (NDA Panel 2012): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2012)",
   },
   magnesium: {
     value: 250,
     unit: "mg",
     scope: "supplemental",
-    source:
-      "EFSA UL overview 2024 (SCF 2001): readily dissociable magnesium salts in supplements, adults",
+    form: "magnesium_salts",
+    source: "EFSA UL overview 2024 (SCF 2001)",
   },
   zinc: {
     value: 25,
     unit: "mg",
     scope: "total",
-    source: "EFSA UL overview 2024 (SCF 2003): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2003)",
   },
   copper: {
     value: 5,
     unit: "mg",
     scope: "total",
-    source: "EFSA UL overview 2024 (SCF 2003): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2003)",
   },
   selenium: {
     value: 255,
     unit: "ug",
     scope: "total",
-    source: "EFSA UL overview 2024 (NDA Panel 2023): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
   },
   molybdenum: {
     value: 600,
     unit: "ug",
     scope: "total",
-    source: "EFSA UL overview 2024 (SCF 2000): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2000)",
   },
   iodine: {
     value: 600,
     unit: "ug",
     scope: "total",
-    source: "EFSA UL overview 2024 (SCF 2002): adults",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2002)",
   },
 };
 
