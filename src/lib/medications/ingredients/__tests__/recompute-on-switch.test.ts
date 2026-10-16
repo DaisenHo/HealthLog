@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const send = vi.hoisted(() => vi.fn(async () => "job-1"));
+const send = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => "job-1"));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: () => ({ send }),
 }));

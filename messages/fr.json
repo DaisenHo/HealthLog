@@ -8223,7 +8223,15 @@
           "busy": "Une simulation ou un recalcul est encore en cours. Réessayez une fois terminé.",
           "dryRunRequired": "Lancez d'abord une simulation. L'application en exige une terminée au cours des sept derniers jours.",
           "generic": "La requête n'a pas abouti."
-        }
+        },
+        "rebuild": {
+          "queued": "Le recalcul attend le processus en arrière-plan.",
+          "running": "Les jours de pouls sont en cours de recalcul.",
+          "done": "Jours de pouls recalculés le {at} pour {accounts} comptes.",
+          "failed": "Le recalcul s’est arrêté. Le journal de l’app en indique la cause ; relancez-le."
+        },
+        "rebuildAgain": "Recalculer à nouveau",
+        "rebuildStarted": "Recalcul lancé."
       }
     },
     "carrier": "Opérateur",

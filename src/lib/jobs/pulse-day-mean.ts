@@ -41,10 +41,12 @@ import {
 } from "@/lib/rollups/measurement-rollups";
 import {
   PULSE_DAY_MEAN_CHANGE_BUCKETS,
-  pulseDayMeanDryRunSchema,
+  pulseDayMeanStoredRunsSchema,
   type PulseDayMeanDryRun,
   type PulseDayMeanDryRunResult,
+  type PulseDayMeanRebuild,
   type PulseDayMeanStatus,
+  type PulseDayMeanStoredRuns,
 } from "@/lib/validations/pulse-day-mean";
 
 export const PULSE_DAY_MEAN_QUEUE = "pulse-day-mean";
@@ -92,15 +94,26 @@ export async function isPulseDayMeanRunActive(): Promise<boolean> {
   }
 }
 
-function parseDryRun(value: unknown): PulseDayMeanDryRun | null {
-  const parsed = pulseDayMeanDryRunSchema.safeParse(value);
+function parseStoredRuns(value: unknown): PulseDayMeanStoredRuns | null {
+  const parsed = pulseDayMeanStoredRunsSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
 
+/** A run still marked queued or running with no live job behind it failed. */
+function settle<T extends { status: PulseDayMeanDryRun["status"] }>(
+  run: T | null,
+  active: boolean,
+): T | null {
+  if (run && (run.status === "queued" || run.status === "running") && !active) {
+    return { ...run, status: "failed" };
+  }
+  return run;
+}
+
 /**
- * The stored method, when it was applied, and the last dry run. A dry run
- * still marked queued or running with no live job behind it (the worker went
- * away mid-run) reads as failed.
+ * The stored method, when it was applied, the last dry run and the last
+ * rebuild. A run still marked queued or running with no live job behind it
+ * (the worker went away mid-run) reads as failed.
  */
 export async function readPulseDayMeanStatus(): Promise<PulseDayMeanStatus> {
   const row = await prisma.appSettings.findUnique({
@@ -111,30 +124,57 @@ export async function readPulseDayMeanStatus(): Promise<PulseDayMeanStatus> {
       pulseDayMeanDryRunJson: true,
     },
   });
-  let lastDryRun = parseDryRun(row?.pulseDayMeanDryRunJson ?? null);
-  if (
-    lastDryRun &&
-    (lastDryRun.status === "queued" || lastDryRun.status === "running") &&
-    !(await isPulseDayMeanRunActive())
-  ) {
-    lastDryRun = { ...lastDryRun, status: "failed" };
-  }
+  const stored = parseStoredRuns(row?.pulseDayMeanDryRunJson ?? null);
+  const pending =
+    stored !== null &&
+    [stored.status, stored.rebuild?.status].some(
+      (status) => status === "queued" || status === "running",
+    );
+  const active = pending ? await isPulseDayMeanRunActive() : false;
+  const { rebuild, ...dryRun } = stored ?? { rebuild: null };
   return {
     method: isPulseDayMeanMethod(row?.pulseDayMeanMethod)
       ? row.pulseDayMeanMethod
       : DEFAULT_PULSE_DAY_MEAN_METHOD,
     appliedAt: row?.pulseDayMeanAppliedAt?.toISOString() ?? null,
-    lastDryRun,
+    lastDryRun: stored ? settle(dryRun as PulseDayMeanDryRun, active) : null,
+    lastRebuild: settle(rebuild ?? null, active),
   };
 }
 
-/** The only write a dry run makes. */
-export async function writeDryRun(run: PulseDayMeanDryRun): Promise<void> {
+async function readStoredRuns(): Promise<PulseDayMeanStoredRuns | null> {
+  const row = await prisma.appSettings.findUnique({
+    where: { id: "singleton" },
+    select: { pulseDayMeanDryRunJson: true },
+  });
+  return parseStoredRuns(row?.pulseDayMeanDryRunJson ?? null);
+}
+
+async function writeStoredRuns(runs: PulseDayMeanStoredRuns): Promise<void> {
   await prisma.appSettings.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", pulseDayMeanDryRunJson: run },
-    update: { pulseDayMeanDryRunJson: run },
+    create: { id: "singleton", pulseDayMeanDryRunJson: runs },
+    update: { pulseDayMeanDryRunJson: runs },
   });
+}
+
+/** The only write a dry run makes. The last rebuild stays as it was. */
+export async function writeDryRun(run: PulseDayMeanDryRun): Promise<void> {
+  const stored = await readStoredRuns();
+  await writeStoredRuns({ ...run, rebuild: stored?.rebuild ?? null });
+}
+
+/**
+ * Record the rebuild's state beside the dry run it followed. A rebuild only
+ * runs after an apply, and an apply needs a dry run, so there is always one
+ * to sit beside; without it there is nothing to record against.
+ */
+export async function writeRebuild(
+  rebuild: PulseDayMeanRebuild | null,
+): Promise<void> {
+  const stored = await readStoredRuns();
+  if (!stored) return;
+  await writeStoredRuns({ ...stored, rebuild });
 }
 
 // ─── Accounts ─────────────────────────────────────────────
@@ -354,6 +394,38 @@ export async function rebuildPulseRollups(): Promise<{
 
 // ─── Job ──────────────────────────────────────────────────
 
+async function runRebuild(): Promise<{ accounts: number; rows: number }> {
+  const startedAt = new Date().toISOString();
+  await writeRebuild({
+    status: "running",
+    startedAt,
+    finishedAt: null,
+    accounts: null,
+    rows: null,
+  });
+  try {
+    const done = await rebuildPulseRollups();
+    await writeRebuild({
+      status: "done",
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      ...done,
+    });
+    return done;
+  } catch (err) {
+    await writeRebuild({
+      status: "failed",
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      accounts: null,
+      rows: null,
+    }).catch((writeErr) =>
+      logCaught("pulse_day_mean.rebuild.status_write_failed", writeErr),
+    );
+    throw err;
+  }
+}
+
 async function runDryRun(): Promise<PulseDayMeanDryRunResult> {
   const startedAt = new Date().toISOString();
   await writeDryRun({
@@ -394,7 +466,7 @@ export async function handlePulseDayMean(
     try {
       const guarded = await withJobLock(PULSE_DAY_MEAN_QUEUE, async () =>
         action === "rebuild"
-          ? { kind: "rebuild" as const, ...(await rebuildPulseRollups()) }
+          ? { kind: "rebuild" as const, ...(await runRebuild()) }
           : { kind: "dry_run" as const, result: await runDryRun() },
       );
       if (!guarded.ran) {

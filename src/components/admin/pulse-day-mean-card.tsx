@@ -57,8 +57,13 @@ export function PulseDayMeanCard() {
     queryFn: () =>
       apiGet<PulseDayMeanStatus>(ENDPOINT, { credentials: "include" }),
     refetchInterval: (query) => {
-      const state = query.state.data?.lastDryRun?.status;
-      return state === "queued" || state === "running" ? POLL_MS : false;
+      const states = [
+        query.state.data?.lastDryRun?.status,
+        query.state.data?.lastRebuild?.status,
+      ];
+      return states.some((state) => state === "queued" || state === "running")
+        ? POLL_MS
+        : false;
     },
   });
 
@@ -101,6 +106,8 @@ export function PulseDayMeanCard() {
             ? t("admin.section.pulseDayMean.applied")
             : t("admin.section.pulseDayMean.appliedNoRebuild"),
         );
+      } else if (action === "rebuild") {
+        toast.success(t("admin.section.pulseDayMean.rebuildStarted"));
       } else {
         toast.success(t("admin.section.pulseDayMean.dryRunStarted"));
       }
@@ -125,9 +132,16 @@ export function PulseDayMeanCard() {
   const s = status.data;
   const dryRun = s?.lastDryRun ?? null;
   const result = dryRun?.status === "done" ? dryRun.result : null;
-  const active = dryRun?.status === "queued" || dryRun?.status === "running";
+  const rebuild = s?.lastRebuild ?? null;
+  const rebuilding =
+    rebuild?.status === "queued" || rebuild?.status === "running";
+  const active =
+    dryRun?.status === "queued" || dryRun?.status === "running" || rebuilding;
   const weighted = s?.method === "weighted_hour_mean_v2";
   const canApply = !!s && !active && hasFreshDryRun(s);
+  // A stopped recalculation is run again from here; the method is already
+  // switched, so it needs no new dry run.
+  const canRebuild = !!s?.appliedAt && rebuild?.status === "failed";
 
   return (
     <SettingsCard data-testid="admin-pulse-day-mean">
@@ -252,6 +266,25 @@ export function PulseDayMeanCard() {
         </p>
       ) : null}
 
+      {rebuild ? (
+        <p
+          className={
+            rebuild.status === "failed"
+              ? "text-destructive text-sm"
+              : "text-muted-foreground text-xs"
+          }
+          data-slot="pulse-day-mean-rebuild"
+          data-state={rebuild.status}
+        >
+          {rebuild.status === "done"
+            ? t("admin.section.pulseDayMean.rebuild.done", {
+                at: fmt.dateTime(rebuild.finishedAt ?? rebuild.startedAt),
+                accounts: fmt.number(rebuild.accounts ?? 0),
+              })
+            : t(`admin.section.pulseDayMean.rebuild.${rebuild.status}`)}
+        </p>
+      ) : null}
+
       <SettingsCardActions>
         <Button
           size="sm"
@@ -264,6 +297,18 @@ export function PulseDayMeanCard() {
           <FlaskConical className="size-3.5" aria-hidden />
           {t("admin.section.pulseDayMean.dryRun")}
         </Button>
+        {canRebuild ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="min-h-11 sm:min-h-9"
+            disabled={run.isPending}
+            onClick={() => run.mutate("rebuild")}
+            data-testid="admin-pulse-day-mean-rebuild"
+          >
+            {t("admin.section.pulseDayMean.rebuildAgain")}
+          </Button>
+        ) : null}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button

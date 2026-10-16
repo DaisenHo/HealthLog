@@ -8223,7 +8223,15 @@
           "busy": "Una prova o un ricalcolo è ancora in corso. Riprova quando è terminato.",
           "dryRunRequired": "Avvia prima una prova. Per applicare ne serve una terminata negli ultimi sette giorni.",
           "generic": "La richiesta non è andata a buon fine."
-        }
+        },
+        "rebuild": {
+          "queued": "Il ricalcolo attende il processo in background.",
+          "running": "I giorni del polso sono in fase di ricalcolo.",
+          "done": "Giorni del polso ricalcolati il {at} per {accounts} account.",
+          "failed": "Il ricalcolo si è interrotto. Il log dell’app indica la causa; avvialo di nuovo."
+        },
+        "rebuildAgain": "Ricalcola di nuovo",
+        "rebuildStarted": "Ricalcolo avviato."
       }
     },
     "carrier": "Operatore",

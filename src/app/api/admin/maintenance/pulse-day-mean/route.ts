@@ -4,7 +4,7 @@
  *
  * GET answers the active method, when it was applied and the last dry run
  * (status and result: per-account ordinal labels only, never an id). POST
- * `{ action: "dry_run" | "apply" }` answers 202 `{ enqueued }`: a dry run
+ * `{ action: "dry_run" | "apply" | "rebuild" }` answers 202 `{ enqueued }`: a dry run
  * computes both methods for every account and day and writes nothing but its
  * result; `apply` needs a successful dry run from the last seven days (409
  * `maintenance.pulseDayMean.dryRunRequired`), switches the method and
@@ -31,6 +31,7 @@ import {
   PULSE_DAY_MEAN_SEND_OPTIONS,
   readPulseDayMeanStatus,
   writeDryRun,
+  writeRebuild,
   type PulseDayMeanPayload,
 } from "@/lib/jobs/pulse-day-mean";
 import { annotate } from "@/lib/logging/context";
@@ -41,6 +42,7 @@ import {
 import {
   hasFreshDryRun,
   pulseDayMeanActionSchema,
+  type PulseDayMeanStatus,
 } from "@/lib/validations/pulse-day-mean";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +54,33 @@ function busy() {
   return apiError("A pulse day-mean run is already queued or running", 409, {
     errorCode: "maintenance.pulseDayMean.busy",
   });
+}
+
+/**
+ * Queue the rebuild and record it as queued, so the card shows it from the
+ * moment it is asked for and a rebuild that never starts reads as failed.
+ * When another run holds the singleton, the previous rebuild state is put
+ * back and the answer is false.
+ */
+async function sendRebuild(
+  boss: NonNullable<ReturnType<typeof getGlobalBoss>>,
+  previous: PulseDayMeanStatus["lastRebuild"],
+): Promise<boolean> {
+  await writeRebuild({
+    status: "queued",
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    accounts: null,
+    rows: null,
+  });
+  const payload: PulseDayMeanPayload = { action: "rebuild" };
+  const jobId = await boss.send(
+    PULSE_DAY_MEAN_QUEUE,
+    payload,
+    PULSE_DAY_MEAN_SEND_OPTIONS,
+  );
+  if (jobId === null) await writeRebuild(previous);
+  return jobId !== null;
 }
 
 export const GET = apiHandler(async () => {
@@ -110,6 +139,28 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiSuccess({ enqueued: true }, 202);
   }
 
+  if (action === "rebuild") {
+    // The recalculation again, after an apply whose rebuild stopped. The
+    // method is already switched; the dry run that justified it stands.
+    const status = await readPulseDayMeanStatus();
+    if (status.appliedAt === null) {
+      return apiError(
+        "Nothing applied yet; run a dry run and apply first",
+        409,
+        { errorCode: "maintenance.pulseDayMean.dryRunRequired" },
+      );
+    }
+    const enqueued = await sendRebuild(boss, status.lastRebuild);
+    if (!enqueued) return busy();
+    await auditLog("admin.pulseDayMean.rebuild", {
+      userId: user.id,
+      ipAddress: getClientIp(request),
+      details: { method: status.method },
+    });
+    annotate({ meta: { pulse_day_mean_enqueued: true } });
+    return apiSuccess({ enqueued: true }, 202);
+  }
+
   if (!hasFreshDryRun(await readPulseDayMeanStatus())) {
     return apiError(
       "Run a dry run first; apply needs one finished in the last seven days",
@@ -135,13 +186,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
   setActivePulseDayMeanMethod(APPLIED_METHOD);
-  const payload: PulseDayMeanPayload = { action: "rebuild" };
-  const jobId = await boss.send(
-    PULSE_DAY_MEAN_QUEUE,
-    payload,
-    PULSE_DAY_MEAN_SEND_OPTIONS,
+  const enqueued = await sendRebuild(
+    boss,
+    (await readPulseDayMeanStatus()).lastRebuild,
   );
-  const enqueued = jobId !== null;
 
   await auditLog("admin.pulseDayMean.apply", {
     userId: user.id,

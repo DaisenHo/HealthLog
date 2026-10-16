@@ -8223,7 +8223,15 @@
           "busy": "Ein Probelauf oder eine Neuberechnung läuft noch. Versuche es erneut, sobald er fertig ist.",
           "dryRunRequired": "Starte zuerst einen Probelauf. Zum Anwenden braucht es einen, der in den letzten sieben Tagen abgeschlossen wurde.",
           "generic": "Die Anfrage ist nicht durchgegangen."
-        }
+        },
+        "rebuild": {
+          "queued": "Die Neuberechnung wartet auf den Hintergrunddienst.",
+          "running": "Die Pulstage werden neu berechnet.",
+          "done": "Pulstage am {at} für {accounts} Konten neu berechnet.",
+          "failed": "Die Neuberechnung ist abgebrochen. Das App-Log nennt die Ursache; starte sie erneut."
+        },
+        "rebuildAgain": "Erneut berechnen",
+        "rebuildStarted": "Neuberechnung gestartet."
       }
     },
     "carrier": "Netzbetreiber",
