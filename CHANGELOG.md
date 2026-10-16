@@ -33,9 +33,9 @@ single sign-on handover and an error id on every failure.
 /api/auth/me/ai-usage`). Sync gap by source, compact JSON in prompts, a
   stable Coach prompt prefix. `AI_SYNC_REGEN_GAP_HOURS` sets the instance's
   hours between card refreshes after a sync.
-- **Marker merge and aliases** (migration 0403). `POST
-/api/biomarkers/{id}/merge` with a mandatory dry run, alias editing, alias
-  choice on scan review, catalogue shorthands; link pickers search a year or
+- **Marker merge and aliases** (migration 0403).
+  `POST /api/biomarkers/{id}/merge` with a `dryRun` preview (the web always
+  shows it first), alias editing, alias choice on scan review, catalogue shorthands; link pickers search a year or
   a month.
 - **Dawarich** (migration 0406). Daily distance, car and train km, places
   count, time away from home and travel days; no places or coordinates
