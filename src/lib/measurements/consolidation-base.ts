@@ -44,6 +44,7 @@ import {
   type PerSampleRow,
 } from "./consolidation-tz";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 
 // Re-export the shared grace constant so the established
 // `consolidation-base` import surface stays unchanged for callers.
@@ -454,7 +455,12 @@ export async function runConsolidation<TType extends MeasurementType>(
   const users = await loadConsolidationUsers(prismaClient, options.userId);
 
   walk: for (const user of users) {
-    const tz = resolveUserTimezone(user.timezone);
+    // The zone the server publishes for the account (`/api/auth/me`), which
+    // is the zone the phone cuts its `stats:` days and hour buckets in and
+    // the one the hour-bucket writer stores them under. A stored value the
+    // server sets aside falls back to the instance default here as it does
+    // there, never to a second fallback of the drain's own.
+    const tz = await resolveStoredTimezone(user.timezone);
     // Aligned to the account's local day: a day is folded whole or not at
     // all, never in two runs (see `foldBoundary`).
     const cutoffAt =
