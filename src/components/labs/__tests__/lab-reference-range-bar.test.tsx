@@ -53,8 +53,8 @@ describe("<LabReferenceRangeBar>", () => {
       "de",
     );
     expect(html).toContain('aria-label="0,4–4,05 mIU/L"');
-    // Lab precision: at most two decimals, then the locale's separator.
-    expect(html).toContain("1,83 mIU/L");
+    // Lab precision: every recorded digit, in the locale's separator.
+    expect(html).toContain("1,8333 mIU/L");
     expect(html).not.toMatch(/\d\.\d+ mIU\/L/);
   });
 });

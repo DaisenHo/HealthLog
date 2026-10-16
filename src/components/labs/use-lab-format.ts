@@ -8,13 +8,15 @@ import { formatLabValue, type LabNumberFormat } from "@/lib/labs/format-value";
 import { isNoonUtcAnchor } from "@/lib/tz/date-only";
 
 /**
- * A lab value in the reader's number format, trimmed the way every lab
- * surface trims it (whole numbers bare, at most two decimals).
+ * A lab value in the reader's number format, with every digit the reading
+ * holds (see `formatLabValue`). Pass the reading's `sourceValue` as `printed`
+ * for a converted reading so it keeps the precision its report printed.
  */
 export function useLabNumber(): LabNumberFormat {
   const fmt = useFormatters();
   return useCallback(
-    (value: number) => formatLabValue(value, (n) => fmt.number(n)),
+    (value: number, printed?: number | null) =>
+      formatLabValue(value, fmt.number, printed),
     [fmt],
   );
 }

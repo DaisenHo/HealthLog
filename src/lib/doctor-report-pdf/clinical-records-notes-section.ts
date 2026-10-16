@@ -10,6 +10,7 @@ import {
   classifyReferenceRange,
   formatReferenceRange,
 } from "../labs/reference-range";
+import { formatLabValue } from "../labs/format-value";
 import {
   pdfCursorState,
   type DoctorReportPdfCursorState,
@@ -46,8 +47,19 @@ export function buildClinicalRecordsNotesSection(
     doc.text(t("doctorReport.labsTitle"), margin, y);
     y += 6;
 
-    const rangeText = (low: number | null, high: number | null): string =>
-      formatReferenceRange(low, high, num, { emptyText: "—" });
+    // Lab figures print with the precision they were recorded at, never the
+    // report's one-decimal default: a PSA of 0.034 is not "0.0". A window
+    // converted with its reading keeps the precision of what was printed.
+    const labNum = (value: number, printed?: number | null): string =>
+      formatLabValue(value, num, printed);
+    const rangeText = (
+      low: number | null,
+      high: number | null,
+      printed?: number | null,
+    ): string =>
+      formatReferenceRange(low, high, (n) => labNum(n, printed), {
+        emptyText: "—",
+      });
     // Quiet, non-colour status glyph. In-range reads as a neutral dash so
     // the table is not a field of warning marks; out-of-range reads as a
     // direction arrow the clinician can scan, with no alarm tint.
@@ -77,7 +89,11 @@ export function buildClinicalRecordsNotesSection(
       const printed =
         lr.referenceOrigin === "source" && lr.sourceReferenceText
           ? lr.sourceReferenceText
-          : rangeText(lr.referenceLow, lr.referenceHigh);
+          : rangeText(
+              lr.referenceLow,
+              lr.referenceHigh,
+              lr.referenceOrigin === "source" ? lr.sourceValue : null,
+            );
       return lr.referenceDivergesFromCatalog ? `${printed} *` : printed;
     };
 
@@ -93,7 +109,7 @@ export function buildClinicalRecordsNotesSection(
         lr.panel ? `${lr.analyte} (${lr.panel})` : lr.analyte,
         isQualitative
           ? (lr.valueText ?? "")
-          : `${num(lr.value as number)} ${lr.unit}`.trim(),
+          : `${labNum(lr.value as number, lr.sourceValue)} ${lr.unit}`.trim(),
         isQualitative ? "—" : referenceCell(lr),
         isQualitative
           ? ""

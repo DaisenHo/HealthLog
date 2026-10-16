@@ -281,6 +281,15 @@ describe("a printed reference range, end to end", () => {
     );
     expect(labs?.[0].sourceReferenceText).toBeNull();
     expect(labs?.[0].referenceLow).toBeCloseTo(3.9 * 18.0182, 6);
+    // ...but it carries the printed figure, so the converted value prints
+    // with the precision the report gave it rather than a float's tail.
+    expect(labs?.[0].sourceValue).toBe(5.6);
+    const { formatLabValue } = await import("@/lib/labs/format-value");
+    const { makeFormatters } = await import("@/lib/format-locale");
+    const en = makeFormatters("en", "UTC", "AUTO", "AUTO").number;
+    expect(
+      formatLabValue(labs![0].value as number, en, labs![0].sourceValue),
+    ).toBe("101");
 
     // FHIR: the text, when present, must agree with low and high. Here it is
     // left out, and the bounds carry the marker's unit like the value.
@@ -361,6 +370,8 @@ describe("a printed reference range, end to end", () => {
       new Date("2026-12-31T23:59:59.000Z"),
     );
     expect(labs?.[0].sourceReferenceText).toBeNull();
+    // An edited value is no longer a conversion, and prints as typed.
+    expect(labs?.[0].sourceValue).toBeNull();
 
     const { labObservations } = await import("@/lib/fhir/resources/labs");
     let seq = 0;

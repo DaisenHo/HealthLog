@@ -18,6 +18,8 @@
  * it.
  */
 import { convertGlucose, type GlucoseUnit } from "@/lib/glucose";
+import { recordedPrecision } from "@/lib/format/recorded-number";
+import { getReadingTransform } from "@/lib/measurements/display-transform";
 import { getUnitForType } from "@/lib/validations/measurement";
 
 /**
@@ -76,4 +78,50 @@ export function reportStatValue(
   if (type === "SLEEP_DURATION") return value / 60;
   if (type === "BLOOD_GLUCOSE") return convertGlucose(value, glucoseUnit);
   return value;
+}
+
+/** Significant digits a statistic keeps before it is cut to decimals. */
+const STAT_SIGNIFICANT_DIGITS = 3;
+
+/** Decimals a statistic row never goes below, and never above. */
+const STAT_MIN_FRACTION_DIGITS = 1;
+const STAT_MAX_FRACTION_DIGITS = 3;
+
+/**
+ * Decimals for one statistic row of `type` (latest, average and range alike,
+ * so a row reads in one precision), for the number {@link reportStatValue}
+ * returns.
+ *
+ * A fixed single decimal printed a waist-to-height ratio of 0.52 as "0.5" and
+ * a temperature deviation of 0.25 as "0.3": a measurement below or near 1
+ * lost the digits that carry it. Each reading now keeps up to
+ * {@link STAT_SIGNIFICANT_DIGITS} significant digits, but never more decimals
+ * than it was recorded with, so a weight of 79.5 stays "79.5" and a device
+ * figure of 45.123456 ms reads "45.1" rather than six decimals of sensor
+ * noise. Glucose follows its unit's own precision (whole mg/dL, one decimal
+ * mmol/L) and sleep, a quotient of minutes, keeps one decimal of hours.
+ */
+export function reportStatFractionDigits(
+  type: string,
+  stat: { latest: number; min: number; max: number },
+  glucoseUnit: GlucoseUnit,
+): number {
+  if (type === "BLOOD_GLUCOSE") {
+    // The report stays SI for everything but glucose, so only its unit counts.
+    return getReadingTransform(type, { system: "metric", glucoseUnit })
+      .decimals;
+  }
+  if (type === "SLEEP_DURATION") return 1;
+  const needed = [stat.latest, stat.min, stat.max].map((raw) => {
+    const value = reportStatValue(type, raw, glucoseUnit);
+    if (value === 0 || !Number.isFinite(value)) return 0;
+    const recorded = recordedPrecision(value).fractionDigits;
+    const magnitude = Math.floor(Math.log10(Math.abs(value)));
+    const significant = Math.max(0, STAT_SIGNIFICANT_DIGITS - 1 - magnitude);
+    return Math.min(recorded, significant);
+  });
+  return Math.min(
+    STAT_MAX_FRACTION_DIGITS,
+    Math.max(STAT_MIN_FRACTION_DIGITS, ...needed),
+  );
 }

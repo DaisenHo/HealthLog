@@ -208,6 +208,7 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
           value: 42,
           valueText: null,
           unit: "ng/mL",
+          sourceValue: null,
           referenceLow: 30,
           referenceHigh: 400,
           catalogReferenceLow: 30,

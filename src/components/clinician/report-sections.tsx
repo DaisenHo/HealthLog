@@ -20,9 +20,11 @@ import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import type { MeasurementType } from "@/generated/prisma/client";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import {
+  reportStatFractionDigits,
   reportStatUnit,
   reportStatValue,
 } from "@/lib/doctor-report/stat-display";
+import type { FractionDigitsFormat } from "@/lib/format/recorded-number";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import {
@@ -203,12 +205,13 @@ export function MeasurementGroups({
   t,
   report,
   scope,
-  fmtNum,
+  fmtDigits,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
-  fmtNum: (n: number) => string;
+  /** A locale number with exactly the given decimals. */
+  fmtDigits: FractionDigitsFormat;
 }) {
   const groups = REPORT_GROUPS.map((group) => ({
     labelKey: group.labelKey,
@@ -225,8 +228,9 @@ export function MeasurementGroups({
   // mass, length and temperature, the owner's unit for glucose, hours for
   // sleep. A clinician must never read a figure without knowing its unit.
   const glucoseUnit = resolveGlucoseUnit(report.glucoseUnit ?? null);
-  const show = (type: string, value: number) =>
-    fmtNum(reportStatValue(type, value, glucoseUnit));
+  // ...and in the same precision: one per row, the one its readings carry.
+  const show = (type: string, value: number, digits: number) =>
+    fmtDigits(reportStatValue(type, value, glucoseUnit), digits);
 
   return (
     <>
@@ -236,18 +240,21 @@ export function MeasurementGroups({
           title={t(group.labelKey)}
           leaves={group.rows.map((row) => row.type)}
         >
-          {group.rows.map(({ type, stat }) => (
-            <StatRow
-              key={type}
-              label={t(MEASUREMENT_TYPE_LABEL_KEYS[type])}
-              value={statSummary(t, reportStatUnit(type, glucoseUnit, t), {
-                latest: show(type, stat!.latest),
-                avg: show(type, stat!.avg),
-                min: show(type, stat!.min),
-                max: show(type, stat!.max),
-              })}
-            />
-          ))}
+          {group.rows.map(({ type, stat }) => {
+            const digits = reportStatFractionDigits(type, stat!, glucoseUnit);
+            return (
+              <StatRow
+                key={type}
+                label={t(MEASUREMENT_TYPE_LABEL_KEYS[type])}
+                value={statSummary(t, reportStatUnit(type, glucoseUnit, t), {
+                  latest: show(type, stat!.latest, digits),
+                  avg: show(type, stat!.avg, digits),
+                  min: show(type, stat!.min, digits),
+                  max: show(type, stat!.max, digits),
+                })}
+              />
+            );
+          })}
         </Section>
       ))}
     </>
@@ -278,19 +285,22 @@ export function GlucoseSection({
   t,
   report,
   scope,
-  fmtNum,
+  fmtDigits,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
-  fmtNum: (n: number) => string;
+  /** A locale number with exactly the given decimals. */
+  fmtDigits: FractionDigitsFormat;
 }) {
   const entries = Object.entries(report.glucoseStats).filter(
     ([, s]) => s.count > 0,
   );
   // Stored in mg/dL; shown in the record owner's unit, as the PDF shows it.
   const glucoseUnit = resolveGlucoseUnit(report.glucoseUnit ?? null);
-  const show = (value: number) => fmtNum(convertGlucose(value, glucoseUnit));
+  // The unit's own precision, the one the PDF's glucose rows print with.
+  const show = (value: number, digits: number) =>
+    fmtDigits(convertGlucose(value, glucoseUnit), digits);
   return (
     <LeafSection
       t={t}
@@ -299,18 +309,25 @@ export function GlucoseSection({
       title={t("reportSelection.groupGlucose")}
       empty={entries.length === 0}
     >
-      {entries.map(([ctx, s]) => (
-        <StatRow
-          key={ctx}
-          label={t(`clinicianView.glucose.${ctx}`)}
-          value={statSummary(t, glucoseUnit, {
-            latest: show(s.latest),
-            avg: show(s.avg),
-            min: show(s.min),
-            max: show(s.max),
-          })}
-        />
-      ))}
+      {entries.map(([ctx, s]) => {
+        const digits = reportStatFractionDigits(
+          "BLOOD_GLUCOSE",
+          s,
+          glucoseUnit,
+        );
+        return (
+          <StatRow
+            key={ctx}
+            label={t(`clinicianView.glucose.${ctx}`)}
+            value={statSummary(t, glucoseUnit, {
+              latest: show(s.latest, digits),
+              avg: show(s.avg, digits),
+              min: show(s.min, digits),
+              max: show(s.max, digits),
+            })}
+          />
+        );
+      })}
     </LeafSection>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { formatLabValue } from "@/lib/labs/format-value";
 
 import { useLabNumber } from "./use-lab-format";
 
@@ -36,7 +35,7 @@ export function LabConvertedNote({
       className={className ?? "text-muted-foreground text-xs"}
     >
       {t("labs.convertedFrom", {
-        value: formatLabValue(reading.sourceValue, labNumber),
+        value: labNumber(reading.sourceValue),
         unit: reading.sourceUnit,
       })}
     </span>

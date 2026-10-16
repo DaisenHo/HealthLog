@@ -176,6 +176,7 @@ describe("<ClinicianView>", () => {
             value: 5.2,
             valueText: null,
             unit: "mmol/L",
+            sourceValue: null,
             referenceLow: 3.9,
             referenceHigh: 5.4,
             catalogReferenceLow: 3.5,
@@ -192,6 +193,55 @@ describe("<ClinicianView>", () => {
     expect(html).toContain("Potassium");
     expect(html).toContain("Reference 3.9–5.4");
     expect(html).toContain("saved range 3.5–5");
+  });
+
+  it("prints a lab value and its range with every digit it was recorded with", () => {
+    // Two decimals at most read a PSA of 0.034 as "0.03" and a TSH window of
+    // 0.275 as "0.28": the share page dropped what the lab reported.
+    const html = render(
+      makeReport({
+        labResults: [
+          {
+            panel: null,
+            analyte: "PSA",
+            value: 0.034,
+            valueText: null,
+            unit: "ng/mL",
+            sourceValue: null,
+            referenceLow: 0.275,
+            referenceHigh: 4.2,
+            catalogReferenceLow: 0.275,
+            catalogReferenceHigh: 4.2,
+            sourceReferenceText: null,
+            referenceOrigin: "catalog",
+            referenceDivergesFromCatalog: false,
+            takenAt: "2026-01-20T09:00:00.000Z",
+            count: 1,
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("0.034 ng/mL");
+    expect(html).toContain("Reference 0.275–4.2");
+  });
+
+  it("keeps the digits of a measurement read below one", () => {
+    const html = render(
+      makeReport({
+        stats: {
+          WAIST_TO_HEIGHT: {
+            avg: 0.5,
+            min: 0.495,
+            max: 0.505,
+            count: 2,
+            latest: 0.505,
+          },
+        },
+      }),
+      { selection: selectionFromLeaves(["WAIST_TO_HEIGHT"]) },
+    );
+    expect(html).toContain("0.505");
+    expect(html).toContain("0.495");
   });
 
   it("renders the fenced wellness card with the descriptive disclaimer", () => {
@@ -241,8 +291,9 @@ describe("<ClinicianView>", () => {
         },
       }),
     );
-    expect(html).toContain("latest 79 kg (avg 80 kg, range 78–82 kg)");
-    expect(html).toContain("latest 7.5 h (avg 7.5 h, range 7–8 h)");
+    // One precision per row, the one the PDF prints the row with.
+    expect(html).toContain("latest 79.0 kg (avg 80.0 kg, range 78.0–82.0 kg)");
+    expect(html).toContain("latest 7.5 h (avg 7.5 h, range 7.0–8.0 h)");
   });
 
   it("shows glucose in the record owner's unit, never raw mg/dL", () => {
@@ -259,10 +310,10 @@ describe("<ClinicianView>", () => {
     );
     // 99 mg/dL = 5.5 mmol/L, 108 = 6.0, 90 = 5.0, 126 = 7.0, 95 = 5.3.
     expect(html).toContain(
-      "latest 5.5 mmol/L (avg 6 mmol/L, range 5–7 mmol/L)",
+      "latest 5.5 mmol/L (avg 6.0 mmol/L, range 5.0–7.0 mmol/L)",
     );
     expect(html).toContain(
-      "latest 5.3 mmol/L (avg 5.5 mmol/L, range 5–6 mmol/L)",
+      "latest 5.3 mmol/L (avg 5.5 mmol/L, range 5.0–6.0 mmol/L)",
     );
     expect(html).not.toContain("mg/dL");
     expect(html).not.toContain("latest 99");

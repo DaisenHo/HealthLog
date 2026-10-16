@@ -29,6 +29,7 @@ import type {
   DaySectionKey,
 } from "@/lib/day/contract";
 import { prisma } from "@/lib/db";
+import { formatRecordedNumber } from "@/lib/format/recorded-number";
 import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 import { listTargetsBySource } from "@/lib/links/link-service";
 import { getEvent } from "@/lib/logging/context";
@@ -686,6 +687,7 @@ async function labsPart(frame: DayFrame): Promise<SectionPart> {
       value: true,
       valueText: true,
       unit: true,
+      sourceValue: true,
       takenAt: true,
       biomarkerId: true,
       noteEncrypted: true,
@@ -703,7 +705,9 @@ async function labsPart(frame: DayFrame): Promise<SectionPart> {
         title: row.analyte,
         meta:
           row.value !== null
-            ? `${row.value} ${row.unit}`.trim()
+            ? // Every recorded digit, without the float noise a converted
+              // reading carries (the labs page prints the same figure).
+              `${formatRecordedNumber(row.value, (v, digits) => v.toFixed(digits), row.sourceValue)} ${row.unit}`.trim()
             : (row.valueText ?? null),
         note: openText(row.noteEncrypted, "lab note"),
         href: row.biomarkerId ? `/labs/${row.biomarkerId}` : "/labs",

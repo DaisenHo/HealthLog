@@ -75,6 +75,8 @@ interface ChartPoint {
   referenceHigh: number | null;
   referenceOrigin: LabResultDto["referenceOrigin"];
   sourceReferenceText: string | null;
+  /** What the report printed, for a converted reading; sets its precision. */
+  sourceValue: number | null;
 }
 
 /** The source window drawn as the second band, resolved from the readings in view. */
@@ -153,6 +155,7 @@ export function LabBiomarkerChart({
       referenceHigh: r.referenceHigh,
       referenceOrigin: r.referenceOrigin,
       sourceReferenceText: r.sourceReferenceText,
+      sourceValue: r.sourceValue,
     }));
   }, [readings, range, nowMs]);
 
@@ -221,7 +224,7 @@ export function LabBiomarkerChart({
       const before = at > 0 ? ordered[at - 1] : undefined;
       return {
         label: readings[0]?.analyte ?? "",
-        value: labNumber(point.value),
+        value: labNumber(point.value, point.sourceValue),
         unit,
         compare:
           before && before.value !== null
@@ -229,7 +232,8 @@ export function LabBiomarkerChart({
                 label: t("day.previousReading", {
                   date: labShortDate(before.takenAt),
                 }),
-                value: `${labNumber(before.value)} ${unit}`.trim(),
+                value:
+                  `${labNumber(before.value, before.sourceValue)} ${unit}`.trim(),
               }
             : undefined,
       };
@@ -381,7 +385,7 @@ export function LabBiomarkerChart({
                     const rows: RichTooltipRow[] = [
                       {
                         name: t("labs.chart.valueLabel"),
-                        value: `${labNumber(point.value)} ${unit}`,
+                        value: `${labNumber(point.value, point.sourceValue)} ${unit}`,
                         color: primary,
                       },
                     ];

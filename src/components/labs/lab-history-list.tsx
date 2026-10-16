@@ -102,7 +102,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       value:
         reading.value === null
           ? (reading.valueText ?? "")
-          : labNumber(reading.value),
+          : labNumber(reading.value, reading.sourceValue),
       unit: reading.value === null ? undefined : reading.unit,
       compare: before
         ? {

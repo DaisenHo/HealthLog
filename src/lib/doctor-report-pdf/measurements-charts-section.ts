@@ -6,7 +6,10 @@ import {
   glucoseBandParams,
   resolveGlucoseUnit,
 } from "../glucose";
-import { reportStatValue } from "../doctor-report/stat-display";
+import {
+  reportStatFractionDigits,
+  reportStatValue,
+} from "../doctor-report/stat-display";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "../measurements/type-label-keys";
 import {
@@ -223,13 +226,14 @@ export function buildMeasurementsChartsSection(
   for (const ctx of GLUCOSE_CONTEXTS) {
     const s = data.glucoseStats?.[ctx];
     if (!s) continue;
-    const conv = (v: number) => convertGlucose(v, glucoseUnit);
+    const digits = reportStatFractionDigits("BLOOD_GLUCOSE", s, glucoseUnit);
+    const show = (v: number) => num(convertGlucose(v, glucoseUnit), digits);
     glucoseContextRows.push([
       t(GLUCOSE_LABEL_KEYS[ctx]),
-      `${num(conv(s.latest))} ${glucoseUnit}`.trim(),
-      `${num(conv(s.avg))} ${glucoseUnit}`.trim(),
-      num(conv(s.min)),
-      num(conv(s.max)),
+      `${show(s.latest)} ${glucoseUnit}`.trim(),
+      `${show(s.avg)} ${glucoseUnit}`.trim(),
+      show(s.min),
+      show(s.max),
       String(s.count),
     ]);
   }
@@ -242,13 +246,17 @@ export function buildMeasurementsChartsSection(
       const unit = unitFor(type);
       // Sleep minutes print as hours and glucose in the owner's unit; the
       // clinician view reads the same helper, so the two cannot drift.
-      const conv = (v: number) => reportStatValue(type, v, glucoseUnit);
+      // One precision per row, the one the readings carry (see
+      // `reportStatFractionDigits`); the share page prints the same.
+      const digits = reportStatFractionDigits(type, s, glucoseUnit);
+      const show = (v: number) =>
+        num(reportStatValue(type, v, glucoseUnit), digits);
       groupRows.push([
         t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType] ?? ""),
-        `${num(conv(s.latest))} ${unit}`.trim(),
-        `${num(conv(s.avg))} ${unit}`.trim(),
-        num(conv(s.min)),
-        num(conv(s.max)),
+        `${show(s.latest)} ${unit}`.trim(),
+        `${show(s.avg)} ${unit}`.trim(),
+        show(s.min),
+        show(s.max),
         String(s.count),
       ]);
     }

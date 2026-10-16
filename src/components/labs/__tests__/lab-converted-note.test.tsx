@@ -33,10 +33,10 @@ describe("<LabConvertedNote>", () => {
     ).toContain("umgerechnet aus 5,6 mmol/L");
   });
 
-  it("trims a long fraction the way the reading itself is trimmed", () => {
+  it("prints the figure the report printed, with every digit", () => {
     expect(
       render({ converted: true, sourceValue: 5.6123456, sourceUnit: "mmol/L" }),
-    ).toContain("converted from 5.61 mmol/L");
+    ).toContain("converted from 5.6123456 mmol/L");
   });
 
   it.each([
