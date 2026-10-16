@@ -16,7 +16,7 @@ import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 export const aiUsageLevel = z.enum(AI_USAGE_LEVELS).meta({
   id: "AiUsageLevel",
   description:
-    "How much background AI work an account asks for, in ceiling order. `frugal`: status cards regenerate at most every 24 h after a sync and every 6 h after a hand entry, a smaller snapshot, no background reasoning, a short daily briefing (`recommendations` holds at most one entry, every field stays present), no automatic document reading, no supplement label reading. `standard`: the operator's sync gap (default 6 h), 1 h after a hand entry, background reasoning at the job default. `full`: 1 h after any ingest (the behaviour before v1.43). The interactive Coach is the same at every level.",
+    "How much background AI work an account asks for, in ceiling order. `frugal`: status cards regenerate at most every 24 h after a sync (or the operator's sync gap when that is longer, so never more often than `standard`) and every 6 h after a hand entry, a smaller snapshot, no background reasoning, a short daily briefing (`recommendations` holds at most one entry, every field stays present), no automatic document reading, no supplement label reading. `standard`: the operator's sync gap (default 6 h), 1 h after a hand entry, background reasoning at the job default. `full`: 1 h after any ingest (the behaviour before v1.43). The interactive Coach is the same at every level.",
 });
 
 export const aiUsageState = z
