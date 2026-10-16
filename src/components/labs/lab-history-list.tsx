@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiDelete, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { formatLabReading } from "@/lib/labs/format-value";
 import { LabConvertedNote } from "./lab-converted-note";
@@ -40,7 +40,11 @@ import { queryKeys } from "@/lib/query-keys";
 import { ReferenceRangeBadge } from "./reference-range-badge";
 import { LabReferenceRangeBar } from "./lab-reference-range-bar";
 import { SourceRangeNote } from "./source-range-note";
-import type { LabResultDetailDto, LabResultDto } from "./types";
+import {
+  fetchLabResultDetail,
+  LabResultRelatedLinks,
+} from "./lab-result-related-links";
+import type { LabResultDto } from "./types";
 import { useLabDate, useLabNumber } from "./use-lab-format";
 
 const NOTE_MAX_LENGTH = 2000;
@@ -242,9 +246,11 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
     // Load the decrypted note (list rows withhold it).
     setEditLoading(true);
     try {
-      const detail = await apiGet<LabResultDetailDto>(
-        `/api/labs/${reading.id}`,
-      );
+      // Through the cache: the related section below reads the same detail.
+      const detail = await queryClient.fetchQuery({
+        queryKey: queryKeys.labResult(reading.id),
+        queryFn: () => fetchLabResultDetail(reading.id),
+      });
       setEditNote(detail.note ?? "");
       setEditSeed({ ...seed, note: detail.note ?? "" });
     } catch {
@@ -313,6 +319,9 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       }),
     });
   }
+
+  const editingTakenAt =
+    readings.find((reading) => reading.id === editingId)?.takenAt ?? null;
 
   const ordered = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -593,6 +602,12 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
             </Button>
           </div>
         </form>
+        {editingId ? (
+          <LabResultRelatedLinks
+            labResultId={editingId}
+            takenAt={editingTakenAt}
+          />
+        ) : null}
       </ResponsiveSheet>
       <SeededFormDiscardDialog
         open={editDismissal.discardDialogOpen}
