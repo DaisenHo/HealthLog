@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 
+import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
 import {
   apiHandler,
   requireGuardianAuth,
@@ -239,6 +240,8 @@ export const PATCH = apiHandler(
           }
           if (patch.timezone !== undefined) {
             invalidateUserMedications(access.recordId, { evict: true });
+            // The supplement nutrient rows are keyed by the local day.
+            await enqueueSupplementNutrientRecompute(access.recordId);
           }
           settings = {
             ...record,

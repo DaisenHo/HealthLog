@@ -44,6 +44,7 @@ import {
 } from "@/lib/optimistic-lock";
 import { resolveModuleMap, normalisePrefs } from "@/lib/modules/gate";
 import { modulePrefsPatchSchema } from "@/lib/validations/modules";
+import { recomputeSupplementsIfNutrientsTurnedOn } from "@/lib/medications/ingredients/recompute-job";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +140,12 @@ export const PATCH = apiHandler(async (req: Request) => {
     },
   });
   if ("conflict" in guarded) return guarded.conflict;
+
+  await recomputeSupplementsIfNutrientsTurnedOn(
+    user.id,
+    existing?.modulePreferencesJson,
+    merged,
+  );
 
   // A module toggle can add or remove a Health Score pillar, so the
   // cached composite was computed from a composition that no longer

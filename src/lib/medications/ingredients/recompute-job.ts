@@ -17,6 +17,8 @@
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
+import { normalisePrefs } from "@/lib/modules/gate";
+import { isOptInModule } from "@/lib/modules/registry";
 
 import { recomputeSupplementNutrientsForUser } from "./recompute";
 
@@ -65,6 +67,28 @@ export async function enqueueSupplementNutrientRecompute(
   }
   await recomputeSupplementNutrientsForUser(userId);
   return { queued: false };
+}
+
+/** The account's own `nutrients` switch in a stored preference blob. */
+function nutrientsSwitchOn(prefs: unknown): boolean {
+  const value = normalisePrefs(prefs).nutrients;
+  return isOptInModule("nutrients") ? value === true : value !== false;
+}
+
+/**
+ * Queue the full recompute when a preference write turned the account's
+ * `nutrients` switch back on. While the module is off nothing is written
+ * (`recompute.ts`), so a dose removed, a composition changed or a zone moved
+ * in the meantime left the stored rows as they were; the first pass after
+ * the switch puts them right instead of the next unrelated change.
+ */
+export async function recomputeSupplementsIfNutrientsTurnedOn(
+  userId: string,
+  before: unknown,
+  after: unknown,
+): Promise<void> {
+  if (nutrientsSwitchOn(before) || !nutrientsSwitchOn(after)) return;
+  await enqueueSupplementNutrientRecompute(userId);
 }
 
 /** The pg-boss handler body for one job. */
