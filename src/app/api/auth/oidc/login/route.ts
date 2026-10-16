@@ -156,6 +156,8 @@ export const GET = apiHandler(async (req: NextRequest) => {
     nonce,
     codeChallenge,
     redirectUri,
+    // A claim only; an ordinary sign-in keeps single sign-on.
+    forceLogin: claimBinding !== null,
   });
 
   const response = NextResponse.redirect(authorizationUrl);

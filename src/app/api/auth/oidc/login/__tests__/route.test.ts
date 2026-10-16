@@ -40,9 +40,25 @@ vi.mock("@/lib/auth/oidc", async () => {
   };
 });
 
+vi.mock("@/lib/managed-profiles/claim-cookie", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/managed-profiles/claim-cookie")
+  >()),
+  readClaimCookie: vi.fn(),
+}));
+vi.mock("@/lib/managed-profiles/handover", () => ({
+  isHandoverUsable: vi.fn(),
+}));
+
 import { GET } from "../route";
+import { readClaimCookie } from "@/lib/managed-profiles/claim-cookie";
+import { isHandoverUsable } from "@/lib/managed-profiles/handover";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
-import { getOidcConfig, discoverOidcMetadata } from "@/lib/auth/oidc";
+import {
+  buildAuthorizationUrl,
+  discoverOidcMetadata,
+  getOidcConfig,
+} from "@/lib/auth/oidc";
 
 function makeRequest(path = "/api/auth/oidc/login"): NextRequest {
   return new NextRequest(`http://localhost${path}`);
@@ -246,6 +262,34 @@ describe("GET /api/auth/oidc/login?intent=claim (v1.43, #959)", () => {
     );
     expect(discoverOidcMetadata).not.toHaveBeenCalled();
     expect(res.cookies.get("oidc_auth_state")).toBeUndefined();
+  });
+
+  it("asks the provider for a fresh sign-in on a claim, and only there", async () => {
+    vi.mocked(discoverOidcMetadata).mockResolvedValue({
+      issuer: "https://idp.example.com",
+      authorization_endpoint: "https://idp.example.com/authorize",
+      token_endpoint: "https://idp.example.com/token",
+      jwks_uri: "https://idp.example.com/jwks",
+    });
+    vi.mocked(buildAuthorizationUrl).mockReturnValue(
+      "https://idp.example.com/authorize?x=1",
+    );
+    vi.mocked(readClaimCookie).mockReturnValue({
+      handoverId: "handover-1",
+      binding: "binding-1",
+    } as never);
+    vi.mocked(isHandoverUsable).mockResolvedValue(true);
+
+    await GET(makeRequest("/api/auth/oidc/login?intent=claim"));
+    expect(vi.mocked(buildAuthorizationUrl).mock.calls[0]?.[0]).toMatchObject({
+      forceLogin: true,
+    });
+
+    vi.mocked(buildAuthorizationUrl).mockClear();
+    await GET(makeRequest("/api/auth/oidc/login"));
+    expect(vi.mocked(buildAuthorizationUrl).mock.calls[0]?.[0]).toMatchObject({
+      forceLogin: false,
+    });
   });
 
   it("routes the claim's other failures to the claim page too", async () => {

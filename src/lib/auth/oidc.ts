@@ -237,6 +237,13 @@ export function buildAuthorizationUrl(params: {
   nonce: string;
   codeChallenge: string;
   redirectUri: string;
+  /**
+   * Ask the provider to authenticate afresh (`prompt=login`, OpenID Connect
+   * Core 3.1.2.1) instead of reusing the browser's provider session. A claim
+   * hands a profile to whoever signs in, so it must be the person at the
+   * keyboard now, not a session someone else left open in this browser.
+   */
+  forceLogin?: boolean;
 }): string {
   const url = new URL(params.metadata.authorization_endpoint);
   url.search = new URLSearchParams({
@@ -248,6 +255,7 @@ export function buildAuthorizationUrl(params: {
     nonce: params.nonce,
     code_challenge: params.codeChallenge,
     code_challenge_method: "S256",
+    ...(params.forceLogin ? { prompt: "login" } : {}),
   }).toString();
   return url.toString();
 }
