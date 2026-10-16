@@ -1,5 +1,89 @@
 # Changelog
 
+## [1.43.0] — 2026-10-16
+
+Records that link to each other, supplement composition as a nutrient source,
+life circumstances with AUDIT-C, AI usage levels, marker merging, Dawarich,
+single sign-on handover and an error id on every failure.
+
+### Added
+
+- **Relation links.** Five link tables (migration 0410): lab result and
+  document, visit and medication, visit and vaccination, medication and
+  document, medication and condition. `POST/DELETE /api/medications/{id}/links`
+  and `/api/labs/{id}/links`; visit and vaccination link routes take the new
+  target kinds. Six detail responses carry `related[]`, filtered by module and
+  sharing scope; a scan committed from a document links its lab results.
+  Backed up both ways, portable restores included.
+- **Supplement composition** (migration 0404). `PUT
+/api/medications/{id}/ingredients` (MANAGE-delegable), `POST
+.../ingredients/extract` (label photo through the document AI, owner only,
+  proposal only), `GET /api/nutrients/catalog` with input units and EFSA upper
+  limits (with the form each covers). Taken doses write `SUPPLEMENT` nutrient
+  rows per local day; `/api/nutrients` and `/daily` split by source and judge
+  the upper limit. DHA and EPA join the catalogue.
+- **Life circumstances** (migration 0405). Six sections with a valid-since
+  date and per-section AI release (`/api/anamnesis/life-circumstances`,
+  `ai-sections`, `confirm`); AUDIT-C (`/api/anamnesis/audit-c`) in validated
+  en/de/ko/pl wording with per-locale cut-offs and sources, English with
+  `validatedLocale: false` for es/fr/it. Read by the Coach (released sections
+  only), the doctor report and FHIR. Screening hints by account language.
+- **AI usage levels** (migration 0402). Frugal, standard and full; admin
+  ceiling and default, user choice within (`ai.usage` on `/api/auth/me`, `PUT
+/api/auth/me/ai-usage`). Sync gap by source, compact JSON in prompts, a
+  stable Coach prompt prefix. `AI_SYNC_REGEN_GAP_HOURS` sets the instance's
+  hours between card refreshes after a sync.
+- **Marker merge and aliases** (migration 0403).
+  `POST /api/biomarkers/{id}/merge` with a `dryRun` preview (the web always
+  shows it first), alias editing, alias choice on scan review, catalogue shorthands; link pickers search a year or
+  a month.
+- **Dawarich** (migration 0406). Daily distance, car and train km, places
+  count, time away from home and travel days; no places or coordinates
+  stored. Private hosts only through `DAWARICH_PRIVATE_ORIGINS`. Movement
+  block in the day view, two correlation channels, travel suggestions.
+- **Managed profile handover through single sign-on**
+  (`POST /api/auth/claim/sso`), also under `OIDC_ONLY`.
+- **Supportability.** `meta.requestId` on every error envelope and an error id
+  with copy button in the web; "Copy support info" under Settings, About; a
+  separate problems ring in
+  `/api/admin/app-logs`; an admin support report with accounts anonymised.
+- **Server-resolved fields for clients.** Direction verdicts and trend
+  sentiment on the snapshot, summary, targets and series; chart reference
+  lines; personal-record benchmarks; mood patterns; cycle `absorbed` /
+  `restored`; hourly `stats:` rows for summed types and `syncTrigger:
+"backfill"` with `lastBackfillAt` (migration 0408).
+- **Pulse day mean v2** (migration 0407). Sparse hours weigh `min(1, n/3)`;
+  admin dry run, apply and rebuild.
+
+### Changed
+
+- zod 4.6.7. Request instants must carry seconds (`isoDateTime()`); a refusal
+  says so and is counted as `validation.datetime.no_seconds`. OpenAPI writes
+  nullable fields as type arrays.
+- The legacy integration status fields are deprecated and go in v1.44; read
+  `health`.
+- Below a default band, blood pressure, resting pulse and body fat read as
+  `hold`; steps and SpO2 above their band never read as `up-bad`. Targets
+  judge the seven-day mean, like the dashboard.
+- Migration 0409 drops the plaintext location columns once the v1.42
+  backfill has sealed every row; recovery steps in
+  `docs/ops/migration-0409-plaintext-location.md`.
+- Push notifications to guardians and in discreet mode open the app root.
+- Zod left the first load of `/`, `/measurements`, `/insights/mood` and
+  `/settings/[section]`.
+
+### Fixed
+
+- A backup with a qualitative lab value (empty unit) restores.
+- Free weekdays reach a prompt only with the work section released; a
+  concurrent about-me save no longer re-enables a released section.
+- Hour buckets and the nightly drain cut days in the same timezone; both
+  starts of the repeated fall-back hour count.
+- Dawarich and Nightscout responses are read with a size bound; a Dawarich
+  window edge no longer overwrites a complete day.
+- Supplement nutrient rows are recomputed when the nutrients module returns
+  or the timezone changes.
+
 ## [1.42.4] — 2026-10-16
 
 Reliability: one integration health model with a watchdog and a shared

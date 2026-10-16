@@ -37,7 +37,7 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementForm } from "@/components/measurements/measurement-form";
-import { isScreeningReminderType } from "@/lib/validations/measurement-reminders";
+import { isScreeningReminderType } from "@/lib/measurement-reminders/screening";
 import { relativeDueKey } from "@/lib/measurement-reminders/due-day";
 import {
   useMeasurementReminders,

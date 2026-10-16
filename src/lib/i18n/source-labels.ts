@@ -13,10 +13,9 @@
  * type error, and `measurement-source-label-coverage.test.ts` proves the
  * keys resolve in the message bundle.
  */
-import { measurementSourceEnum } from "@/lib/validations/measurement";
+import { MEASUREMENT_SOURCES } from "@/lib/measurements/sources";
 
-export type MeasurementSourceValue =
-  (typeof measurementSourceEnum.options)[number];
+export type MeasurementSourceValue = (typeof MEASUREMENT_SOURCES)[number];
 
 /**
  * Settings → Sources ("Source priority by metric") and the sleep

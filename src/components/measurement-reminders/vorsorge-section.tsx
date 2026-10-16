@@ -92,7 +92,7 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MedicationCardHeader } from "@/components/medications/medication-card-header";
-import { isScreeningReminderType } from "@/lib/validations/measurement-reminders";
+import { isScreeningReminderType } from "@/lib/measurement-reminders/screening";
 import {
   useMeasurementReminders,
   useMeasurementReminderMutations,

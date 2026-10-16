@@ -12,7 +12,7 @@ live when you pick your home and is not saved.
 
 ## What is read
 
-Once a night (03:20, server time) HealthLog fetches the last seven days, ending
+Once a night (03:20 Europe/Berlin) HealthLog fetches the last seven days, ending
 yesterday. Connecting fetches the last 30 days. Each request carries your API
 key as `Authorization: Bearer <key>`.
 
