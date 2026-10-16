@@ -14,8 +14,8 @@
  * the environmental readings mean anything", and the second line is the one
  * that decides the design.
  *
- * A reading carries the coarse location it was fetched for (`lat`, `lon`,
- * `locationLabel`) and the precedence rule that chose it (`source`). A
+ * A reading carries the coarse location it was fetched for (sealed; `lat`,
+ * `lon`, `locationLabel` in a portable file) and the precedence rule that chose it (`source`). A
  * `TRAVEL` reading exists because an explicit dated location period covered
  * that day. `resolveLocationForDay` in `src/lib/environment/service.ts` reads
  * those periods live, every time; nothing else can produce a `TRAVEL`
@@ -60,25 +60,36 @@
  *   - a portable export opens the sealed location and writes the readable
  *     `lat` / `lon` / label, and no `locationEncrypted` at all, so the file
  *     reads anywhere;
- *   - a disaster-recovery file carries `locationEncrypted` verbatim (base64)
- *     beside whatever readable columns the row still holds, for a host with
- *     the same keys.
+ *   - a disaster-recovery file carries `locationEncrypted` verbatim (base64),
+ *     for a host with the same keys; its readable fields are null.
  *
  * The restore takes either: a sealed value is written as it came, a readable
- * one is sealed under this host's key, and the readable columns are written
- * empty in both cases. A row that holds neither restores without a location;
- * it is never invented.
+ * one (a portable file, or a disaster-recovery file written before v1.43) is
+ * sealed under this host's key. A row that holds neither restores without a
+ * location; it is never invented.
  *
  * The air-quality columns (v1.42) are plain values and ride both purposes
  * alike. Every one is optional on the way in: a file written before them
  * says nothing about air quality, and the restored day then reads as never
  * fetched (`aqFetchedAt` absent), so the nightly gap fill asks for it.
+ *
+ * ## The Dawarich days (v1.43)
+ *
+ * The movement context belongs to the same module and rides the same section
+ * (`dawarichDays`): distances, places visited, minutes away from home, the
+ * travel-day verdict, and the day's country. The country is the one sealed
+ * column and follows the two purposes like a location: readable
+ * `countryCode` in a portable file, `countryCodeEncrypted` (base64) in a
+ * disaster-recovery file. A file written before v1.43 carries no key and
+ * restores none. The connection itself (URL, key, preferences) is a
+ * credential and never travels.
  */
 import { Buffer } from "node:buffer";
 
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { EnvironmentLocationSource } from "@/generated/prisma/client";
 import type { AirQualityDay } from "@/lib/environment/air-quality-contract";
+import { openDayCountry, sealDayCountry } from "@/lib/dawarich/connection";
 import {
   openLocation,
   readLocation,
@@ -129,8 +140,8 @@ export interface EnvironmentContextBackupEntry extends AirQualityBackupColumns {
   /** `YYYY-MM-DD`, anchored to the resolved location's timezone. */
   date: string;
   /**
-   * Plaintext coarse location. Nullable since v1.42 (migration 0382): the
-   * sealed copy replaces it once the encryption backfill has run.
+   * Readable coarse location: set in a portable file, null in a
+   * disaster-recovery file (which carries `locationEncrypted`).
    */
   lat: number | null;
   lon: number | null;
@@ -169,7 +180,7 @@ export interface EnvironmentTravelLocationBackupEntry {
   /** Inclusive `YYYY-MM-DD` bounds. Strings end to end; see the file header. */
   startDate: string;
   endDate: string;
-  /** Plaintext coarse location; nullable since v1.42 (migration 0382). */
+  /** Readable coarse location; set in a portable file, null otherwise. */
   lat: number | null;
   lon: number | null;
   label: string | null;
@@ -179,14 +190,36 @@ export interface EnvironmentTravelLocationBackupEntry {
   updatedAt: string;
 }
 
+/** One local day of Dawarich movement values. */
+export interface DawarichDayBackupEntry {
+  /** `YYYY-MM-DD` in the account's zone. A string end to end. */
+  date: string;
+  totalDistanceM: number | null;
+  drivingDistanceM: number | null;
+  trainDistanceM: number | null;
+  placesVisited: number | null;
+  awayFromHomeMinutes: number | null;
+  /** Readable ISO 3166-1 alpha-2; portable files only. */
+  countryCode: string | null;
+  /** The sealed country, base64; disaster-recovery files only. */
+  countryCodeEncrypted?: string | null;
+  isTravelDay: boolean | null;
+  /** When the day was last fetched from Dawarich. Verbatim. */
+  fetchedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EnvironmentBackupSection {
   environmentContexts: EnvironmentContextBackupEntry[];
   environmentTravelLocations: EnvironmentTravelLocationBackupEntry[];
+  dawarichDays: DawarichDayBackupEntry[];
 }
 
 export interface EnvironmentBackupCounts {
   environmentContexts: number;
   environmentTravelLocations: number;
+  dawarichDays: number;
 }
 
 /**
@@ -198,9 +231,6 @@ export interface EnvironmentBackupCounts {
  */
 const ENVIRONMENT_CONTEXT_BACKUP_SELECT = {
   date: true,
-  lat: true,
-  lon: true,
-  locationLabel: true,
   locationEncrypted: true,
   source: true,
   tempMin: true,
@@ -245,13 +275,24 @@ const ENVIRONMENT_CONTEXT_BACKUP_SELECT = {
 const ENVIRONMENT_TRAVEL_LOCATION_BACKUP_SELECT = {
   startDate: true,
   endDate: true,
-  lat: true,
-  lon: true,
-  label: true,
   locationEncrypted: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.EnvironmentTravelLocationSelect;
+
+const DAWARICH_DAY_BACKUP_SELECT = {
+  date: true,
+  totalDistanceM: true,
+  drivingDistanceM: true,
+  trainDistanceM: true,
+  placesVisited: true,
+  awayFromHomeMinutes: true,
+  countryCodeEncrypted: true,
+  isTravelDay: true,
+  fetchedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.DawarichDaySelect;
 
 /** A sealed column as it rides a disaster-recovery file. */
 function toBase64(bytes: Uint8Array | null): string | null {
@@ -261,16 +302,12 @@ function toBase64(bytes: Uint8Array | null): string | null {
 }
 
 /**
- * The location columns of one entry: opened and readable for a portable
- * file, as stored plus the sealed value for a disaster-recovery file.
+ * The location fields of one entry: opened and readable for a portable file;
+ * the sealed value for a disaster-recovery file, whose readable fields stay
+ * null (the database holds no readable copy since v1.43).
  */
 function locationFields(
-  row: {
-    lat: number | null;
-    lon: number | null;
-    label: string | null;
-    locationEncrypted: Uint8Array | null;
-  },
+  sealed: Uint8Array | null,
   disasterRecovery: boolean,
 ): {
   lat: number | null;
@@ -280,19 +317,13 @@ function locationFields(
 } {
   if (disasterRecovery) {
     return {
-      lat: row.lat,
-      lon: row.lon,
-      label: row.label,
-      locationEncrypted: toBase64(row.locationEncrypted),
+      lat: null,
+      lon: null,
+      label: null,
+      locationEncrypted: toBase64(sealed),
     };
   }
-  const location = readLocation({
-    sealed: row.locationEncrypted,
-    lat: row.lat,
-    lon: row.lon,
-    label: row.label,
-  });
-  return location ?? { lat: null, lon: null, label: null };
+  return readLocation(sealed) ?? { lat: null, lon: null, label: null };
 }
 
 /**
@@ -304,13 +335,13 @@ function locationFields(
 export async function buildEnvironmentBackupSection(
   prisma: Pick<
     PrismaClient,
-    "environmentContext" | "environmentTravelLocation"
+    "environmentContext" | "environmentTravelLocation" | "dawarichDay"
   >,
   userId: string,
   options: EnvironmentBackupOptions = {},
 ): Promise<EnvironmentBackupSection> {
   const disasterRecovery = options.purpose === "disaster-recovery";
-  const [contextRows, travelRows] = await Promise.all([
+  const [contextRows, travelRows, dawarichRows] = await Promise.all([
     prisma.environmentContext.findMany({
       where: { userId },
       orderBy: { date: "asc" },
@@ -321,17 +352,17 @@ export async function buildEnvironmentBackupSection(
       orderBy: { startDate: "asc" },
       select: ENVIRONMENT_TRAVEL_LOCATION_BACKUP_SELECT,
     }),
+    prisma.dawarichDay.findMany({
+      where: { userId },
+      orderBy: { date: "asc" },
+      select: DAWARICH_DAY_BACKUP_SELECT,
+    }),
   ]);
 
   return {
     environmentContexts: contextRows.map((row) => {
       const { label, ...location } = locationFields(
-        {
-          lat: row.lat,
-          lon: row.lon,
-          label: row.locationLabel,
-          locationEncrypted: row.locationEncrypted,
-        },
+        row.locationEncrypted,
         disasterRecovery,
       );
       return {
@@ -381,7 +412,25 @@ export async function buildEnvironmentBackupSection(
     environmentTravelLocations: travelRows.map((row) => ({
       startDate: row.startDate,
       endDate: row.endDate,
-      ...locationFields(row, disasterRecovery),
+      ...locationFields(row.locationEncrypted, disasterRecovery),
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    })),
+    dawarichDays: dawarichRows.map((row) => ({
+      date: row.date,
+      totalDistanceM: row.totalDistanceM,
+      drivingDistanceM: row.drivingDistanceM,
+      trainDistanceM: row.trainDistanceM,
+      placesVisited: row.placesVisited,
+      awayFromHomeMinutes: row.awayFromHomeMinutes,
+      ...(disasterRecovery
+        ? {
+            countryCode: null,
+            countryCodeEncrypted: toBase64(row.countryCodeEncrypted),
+          }
+        : { countryCode: openDayCountry(row.countryCodeEncrypted) }),
+      isTravelDay: row.isTravelDay,
+      fetchedAt: row.fetchedAt.toISOString(),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     })),
@@ -395,6 +444,7 @@ export function countEnvironmentBackupSection(
   return {
     environmentContexts: section.environmentContexts.length,
     environmentTravelLocations: section.environmentTravelLocations.length,
+    dawarichDays: section.dawarichDays.length,
   };
 }
 
@@ -402,6 +452,7 @@ export function countEnvironmentBackupSection(
 export interface EnvironmentRestoreCleared {
   environmentContexts: number;
   environmentTravelLocations: number;
+  dawarichDays: number;
 }
 
 /**
@@ -496,9 +547,40 @@ function restoredLocation(
   return sealLocation({ lat: entry.lat, lon: entry.lon, label: entry.label });
 }
 
+export type RestoredDawarichDay = Pick<DawarichDayBackupEntry, "date"> &
+  OptionalNullable<Omit<DawarichDayBackupEntry, "date">>;
+
+/**
+ * The sealed country a restored day is written with: the file's sealed value
+ * as it came (named in `unopened` when this host cannot open it), or the
+ * readable code sealed under this host's key; null with neither.
+ */
+function restoredCountry(
+  entry: RestoredDawarichDay,
+  unopened: string[],
+): Uint8Array<ArrayBuffer> | null {
+  if (typeof entry.countryCodeEncrypted === "string") {
+    const buffer = Buffer.from(entry.countryCodeEncrypted, "base64");
+    if (buffer.byteLength > 0) {
+      const bytes = new Uint8Array(new ArrayBuffer(buffer.byteLength));
+      bytes.set(buffer);
+      if (openDayCountry(bytes) === null) {
+        unopened.push(`dawarichDays.${entry.date}`);
+      }
+      return bytes;
+    }
+  }
+  return typeof entry.countryCode === "string" &&
+    /^[A-Z]{2}$/.test(entry.countryCode)
+    ? sealDayCountry(entry.countryCode)
+    : null;
+}
+
 export interface EnvironmentRestoreInput {
   environmentContexts: RestoredEnvironmentContext[];
   environmentTravelLocations: RestoredEnvironmentTravelLocation[];
+  /** Absent in a file written before v1.43; nothing to restore then. */
+  dawarichDays?: RestoredDawarichDay[];
 }
 
 /**
@@ -524,9 +606,10 @@ export async function restoreEnvironmentData(
 ): Promise<EnvironmentRestoreCleared> {
   // Sealed locations this host's keys do not open, by file path.
   const unopened: string[] = [];
-  const [clearedTravel, clearedContexts] = await Promise.all([
+  const [clearedTravel, clearedContexts, clearedDawarich] = await Promise.all([
     tx.environmentTravelLocation.deleteMany({ where: { userId: ownerId } }),
     tx.environmentContext.deleteMany({ where: { userId: ownerId } }),
+    tx.dawarichDay.deleteMany({ where: { userId: ownerId } }),
   ]);
 
   if (payload.environmentTravelLocations.length > 0) {
@@ -543,9 +626,6 @@ export async function restoreEnvironmentData(
           `environmentTravelLocations.${entry.startDate}..${entry.endDate}`,
           unopened,
         ),
-        lat: null,
-        lon: null,
-        label: null,
         ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
         ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
       })),
@@ -567,9 +647,6 @@ export async function restoreEnvironmentData(
           `environmentContexts.${entry.date}`,
           unopened,
         ),
-        lat: null,
-        lon: null,
-        locationLabel: null,
         source: entry.source,
         tempMin: entry.tempMin ?? null,
         tempMax: entry.tempMax ?? null,
@@ -598,6 +675,28 @@ export async function restoreEnvironmentData(
     });
   }
 
+  const dawarichDays = payload.dawarichDays ?? [];
+  if (dawarichDays.length > 0) {
+    await tx.dawarichDay.createMany({
+      data: dawarichDays.map((entry) => ({
+        userId: ownerId,
+        date: entry.date,
+        totalDistanceM: entry.totalDistanceM ?? null,
+        drivingDistanceM: entry.drivingDistanceM ?? null,
+        trainDistanceM: entry.trainDistanceM ?? null,
+        placesVisited: entry.placesVisited ?? null,
+        awayFromHomeMinutes: entry.awayFromHomeMinutes ?? null,
+        countryCodeEncrypted: restoredCountry(entry, unopened),
+        isTravelDay: entry.isTravelDay ?? null,
+        // Verbatim, like the weather rows: when Dawarich was read, not when
+        // the row came back. A file without it reads as fetched now.
+        fetchedAt: entry.fetchedAt ? new Date(entry.fetchedAt) : new Date(),
+        ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
+        ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
+      })),
+    });
+  }
+
   if (skips) {
     recordUnknownKeys(
       skips,
@@ -610,5 +709,6 @@ export async function restoreEnvironmentData(
   return {
     environmentContexts: clearedContexts.count,
     environmentTravelLocations: clearedTravel.count,
+    dawarichDays: clearedDawarich.count,
   };
 }

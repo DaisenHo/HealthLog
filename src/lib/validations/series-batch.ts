@@ -7,6 +7,7 @@
  */
 import { z } from "zod/v4";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** Upper bound on the types per batch — the dashboard never asks for more. */
 export const SERIES_BATCH_MAX_TYPES = 16;
@@ -28,12 +29,10 @@ export const seriesBatchQuerySchema = z
           `${SERIES_BATCH_MAX_TYPES}). Each is read as a daily series through ` +
           "the rollup tier.",
       ),
-    from: z.iso
-      .datetime({ offset: true })
+    from: isoDateTime()
       .transform((s) => new Date(s))
       .describe("Window start (ISO-8601 instant)."),
-    to: z.iso
-      .datetime({ offset: true })
+    to: isoDateTime()
       .transform((s) => new Date(s))
       .describe("Window end (ISO-8601 instant)."),
   })

@@ -57,9 +57,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       startDate: entry.startDate,
       endDate: entry.endDate,
       locationEncrypted: sealLocation(location),
-      lat: null,
-      lon: null,
-      label: null,
     },
     select: { id: true, startDate: true, endDate: true },
   });

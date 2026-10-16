@@ -34,6 +34,7 @@ import { getPrismaClient, truncateAllTables, switchSessionTo } from "./setup";
 
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
 import type { ShareDomain } from "@/lib/sharing/scope";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -417,7 +418,7 @@ describe("the refusal does not distinguish itself", () => {
     const delegate = await makeUser("delegate");
     await switchInto(owner.id, delegate.id, ["medications"]);
     const outOfScope = await PROBES.labs.call();
-    const outOfScopeBody = await outOfScope.text();
+    const outOfScopeBody = await bodyWithoutRequestId(outOfScope);
 
     // A stranger naming the same record. Different story, same answer.
     const stranger = await makeUser("stranger");
@@ -427,7 +428,7 @@ describe("the refusal does not distinguish itself", () => {
     const noGrant = await PROBES.labs.call();
 
     expect(outOfScope.status).toBe(noGrant.status);
-    expect(outOfScopeBody).toBe(await noGrant.text());
+    expect(outOfScopeBody).toBe(await bodyWithoutRequestId(noGrant));
     expect(outOfScopeBody).not.toContain("scope");
 
     // …and the operator's trail tells them apart, which is the half that has

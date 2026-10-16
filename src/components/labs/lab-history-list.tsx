@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton, SortableHead } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiDelete, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { formatLabReading } from "@/lib/labs/format-value";
 import { LabConvertedNote } from "./lab-converted-note";
@@ -39,7 +40,11 @@ import { queryKeys } from "@/lib/query-keys";
 import { ReferenceRangeBadge } from "./reference-range-badge";
 import { LabReferenceRangeBar } from "./lab-reference-range-bar";
 import { SourceRangeNote } from "./source-range-note";
-import type { LabResultDetailDto, LabResultDto } from "./types";
+import {
+  fetchLabResultDetail,
+  LabResultRelatedLinks,
+} from "./lab-result-related-links";
+import type { LabResultDto } from "./types";
 import { useLabDate, useLabNumber } from "./use-lab-format";
 
 const NOTE_MAX_LENGTH = 2000;
@@ -156,8 +161,8 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       await apiPost("/api/labs/restore", { ids: [id] });
       invalidate();
       toast.success(t("labs.restoredToast"));
-    } catch {
-      toast.error(t("labs.restoreError"));
+    } catch (failure) {
+      showErrorToast(t("labs.restoreError"), { cause: failure });
     }
   }
 
@@ -172,7 +177,8 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         },
       });
     },
-    onError: () => toast.error(t("labs.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("labs.deleteError"), { cause: failure }),
   });
 
   const updateMutation = useMutation({
@@ -240,9 +246,11 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
     // Load the decrypted note (list rows withhold it).
     setEditLoading(true);
     try {
-      const detail = await apiGet<LabResultDetailDto>(
-        `/api/labs/${reading.id}`,
-      );
+      // Through the cache: the related section below reads the same detail.
+      const detail = await queryClient.fetchQuery({
+        queryKey: queryKeys.labResult(reading.id),
+        queryFn: () => fetchLabResultDetail(reading.id),
+      });
       setEditNote(detail.note ?? "");
       setEditSeed({ ...seed, note: detail.note ?? "" });
     } catch {
@@ -311,6 +319,9 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       }),
     });
   }
+
+  const editingTakenAt =
+    readings.find((reading) => reading.id === editingId)?.takenAt ?? null;
 
   const ordered = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -591,6 +602,12 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
             </Button>
           </div>
         </form>
+        {editingId ? (
+          <LabResultRelatedLinks
+            labResultId={editingId}
+            takenAt={editingTakenAt}
+          />
+        ) : null}
       </ResponsiveSheet>
       <SeededFormDiscardDialog
         open={editDismissal.discardDialogOpen}

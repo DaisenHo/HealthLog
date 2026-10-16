@@ -53,6 +53,7 @@ process.env.ENCRYPTION_KEY ??=
 import type { PrismaClient } from "@/generated/prisma/client";
 import { decrypt, decryptBytes, encrypt, encryptBytes } from "@/lib/crypto";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { sealDayCountry } from "@/lib/dawarich/connection";
 import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import { readNote } from "@/lib/crypto/note-cipher";
 import {
@@ -235,6 +236,8 @@ const COUNT_BACK: Record<
     p.medicationCategoryAssignment.count({ where: { medication: { userId } } }),
   MedicationCategoryLabel: (p, userId) =>
     p.medicationCategoryLabel.count({ where: { userId } }),
+  MedicationIngredient: (p, userId) =>
+    p.medicationIngredient.count({ where: { userId } }),
   MedicationCourse: (p, userId) =>
     p.medicationCourse.count({ where: { userId } }),
   MoodEntry: (p, userId) => p.moodEntry.count({ where: { userId } }),
@@ -244,6 +247,8 @@ const COUNT_BACK: Record<
   MoodTag: (p, userId) => p.moodTag.count({ where: { userId } }),
   LabResult: (p, userId) => p.labResult.count({ where: { userId } }),
   Biomarker: (p, userId) => p.biomarker.count({ where: { userId } }),
+  BiomarkerAlias: (p, userId) => p.biomarkerAlias.count({ where: { userId } }),
+  BiomarkerMerge: (p, userId) => p.biomarkerMerge.count({ where: { userId } }),
   Allergy: (p, userId) => p.allergy.count({ where: { userId } }),
   FamilyHistoryEntry: (p, userId) =>
     p.familyHistoryEntry.count({ where: { userId } }),
@@ -289,6 +294,16 @@ const COUNT_BACK: Record<
     p.vaccinationRecord.count({ where: { userId } }),
   VaccinationDocumentLink: (p, userId) =>
     p.vaccinationDocumentLink.count({ where: { userId } }),
+  LabResultDocumentLink: (p, userId) =>
+    p.labResultDocumentLink.count({ where: { userId } }),
+  EncounterMedicationLink: (p, userId) =>
+    p.encounterMedicationLink.count({ where: { userId } }),
+  EncounterVaccinationLink: (p, userId) =>
+    p.encounterVaccinationLink.count({ where: { userId } }),
+  MedicationDocumentLink: (p, userId) =>
+    p.medicationDocumentLink.count({ where: { userId } }),
+  MedicationConditionLink: (p, userId) =>
+    p.medicationConditionLink.count({ where: { userId } }),
   CustomVaccine: (p, userId) => p.customVaccine.count({ where: { userId } }),
   MeasurementReminder: (p, userId) =>
     p.measurementReminder.count({ where: { userId } }),
@@ -328,6 +343,7 @@ const COUNT_BACK: Record<
     p.environmentContext.count({ where: { userId } }),
   EnvironmentTravelLocation: (p, userId) =>
     p.environmentTravelLocation.count({ where: { userId } }),
+  DawarichDay: (p, userId) => p.dawarichDay.count({ where: { userId } }),
   EcgRecording: (p, userId) => p.ecgRecording.count({ where: { userId } }),
   // No own `userId` column — reached through the drug, like the schedules.
   MedicationEfficacyTarget: (p, userId) =>
@@ -661,6 +677,21 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
     },
   });
 
+  // v1.43 — a composition entered in a non-canonical unit, so the entered
+  // amount and unit are set too.
+  await prisma.medicationIngredient.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: medication.id,
+      nutrient: "vitamin_d",
+      amountPerUnit: 25,
+      unit: "ug",
+      enteredAmount: 1000,
+      enteredUnit: "IU",
+      source: "LABEL_AI",
+    },
+  });
+
   await prisma.medicationPauseEra.createMany({
     data: [
       {
@@ -737,6 +768,26 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
 
   const biomarker = await prisma.biomarker.create({
     data: { userId: OWNER_ID, name: "Ferritin", unit: "ng/mL" },
+  });
+  // Another spelling of the marker, and the ledger row of a marker that was
+  // merged into it: both ride the marker (D1223).
+  await prisma.biomarkerAlias.create({
+    data: {
+      userId: OWNER_ID,
+      biomarkerId: biomarker.id,
+      name: "Ferr.",
+      nameFolded: "ferr.",
+      source: "IMPORT_CHOICE",
+    },
+  });
+  await prisma.biomarkerMerge.create({
+    data: {
+      userId: OWNER_ID,
+      targetBiomarkerId: biomarker.id,
+      sourceBiomarkerId: "merged-away-marker",
+      sourceName: "Ferritin (Serum)",
+      readingCount: 3,
+    },
   });
   const labResult = await prisma.labResult.create({
     data: {
@@ -1346,6 +1397,44 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
     },
   });
 
+  // v1.43 — one row in each of the five relation link tables, joining the
+  // records seeded above.
+  await prisma.labResultDocumentLink.create({
+    data: {
+      userId: OWNER_ID,
+      labResultId: labResult.id,
+      documentId: document.id,
+    },
+  });
+  await prisma.encounterMedicationLink.create({
+    data: {
+      userId: OWNER_ID,
+      encounterId: encounter.id,
+      medicationId: medication.id,
+    },
+  });
+  await prisma.encounterVaccinationLink.create({
+    data: {
+      userId: OWNER_ID,
+      encounterId: encounter.id,
+      vaccinationId: vaccination.id,
+    },
+  });
+  await prisma.medicationDocumentLink.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: medication.id,
+      documentId: document.id,
+    },
+  });
+  await prisma.medicationConditionLink.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: medication.id,
+      episodeId: episode.id,
+    },
+  });
+
   // Three bests, chosen for what a count cannot see.
   //
   // The first points at the measurement it was found in. That column is a
@@ -1426,7 +1515,22 @@ async function seedEveryTwoEndedModel(prisma: PrismaClient): Promise<void> {
   // coordinates are at 1 decimal, the precision the app stores since v1.39.4;
   // a restore rounds anything finer, so finer values would not round-trip.
   // Since v1.42 the location is stored sealed (`locationEncrypted`), the way
-  // the writers store it; the readable columns stay empty.
+  // the writers store it; it is the only copy since v1.43.
+  // v1.43 — one Dawarich day abroad, with its sealed country.
+  await prisma.dawarichDay.create({
+    data: {
+      userId: OWNER_ID,
+      date: "2026-06-15",
+      totalDistanceM: 48_300,
+      drivingDistanceM: 12_000,
+      trainDistanceM: 30_500,
+      placesVisited: 4,
+      awayFromHomeMinutes: 1440,
+      countryCodeEncrypted: sealDayCountry("ES"),
+      isTravelDay: true,
+      fetchedAt: new Date("2026-06-16T03:20:00.000Z"),
+    },
+  });
   await prisma.environmentTravelLocation.create({
     data: {
       userId: OWNER_ID,
@@ -3602,22 +3706,6 @@ const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
     "insert stamp of a symptom link; no reader, the day log's own timestamps travel",
   "IllnessSymptomLink.createdAt":
     "insert stamp of a symptom link; no reader, the illness day log's own timestamps travel",
-  // v1.42 (#615) — the readable copies of the sealed environment locations.
-  // The restore seals whatever location a file carries into
-  // `locationEncrypted` and writes these empty; the location itself is
-  // compared through the sealed column. They drop in v1.43.
-  "EnvironmentContext.lat":
-    "readable copy of the sealed day location; the restore seals it and writes this empty",
-  "EnvironmentContext.lon":
-    "readable copy of the sealed day location; the restore seals it and writes this empty",
-  "EnvironmentContext.locationLabel":
-    "readable copy of the sealed day location; the restore seals it and writes this empty",
-  "EnvironmentTravelLocation.lat":
-    "readable copy of the sealed period location; the restore seals it and writes this empty",
-  "EnvironmentTravelLocation.lon":
-    "readable copy of the sealed period location; the restore seals it and writes this empty",
-  "EnvironmentTravelLocation.label":
-    "readable copy of the sealed period location; the restore seals it and writes this empty",
 };
 
 /**
@@ -3665,6 +3753,14 @@ const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "MoodEntry.tags": JSON.stringify(["round-trip-tag"]),
   "CorrelationPattern.qValue": 0.04,
   "CorrelationPattern.dismissedEvidenceHash": "ab".repeat(32),
+  // CHECK in migration 0408: the profile is built from samples or from hour buckets.
+  "IntradayCumulativeProfile.basis": "HOUR_BUCKETS",
+  // The posted hours are a whole day of slots (-1 for an hour not posted);
+  // the restore refuses any other length, as it does for the curve.
+  "IntradayCumulativeProfile.hourlyIncrements": Array.from(
+    { length: 24 },
+    (_, hour) => (hour < 6 ? -1 : 350),
+  ),
 };
 
 /**
@@ -4156,17 +4252,6 @@ const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
 };
 
 /**
- * v1.42 (#615) — readable setting columns the restore seals into another
- * column and writes empty. The value they held is compared through the sealed
- * column (`homeLocationEncrypted`).
- */
-const SEALED_ON_RESTORE: Readonly<Record<string, string>> = {
-  homeLat: "sealed into homeLocationEncrypted",
-  homeLon: "sealed into homeLocationEncrypted",
-  homeLabel: "sealed into homeLocationEncrypted",
-};
-
-/**
  * Columns of the account row the restore writes for reasons of its own, so
  * "unchanged on the target" does not apply to them.
  */
@@ -4302,15 +4387,8 @@ describe("the account's own settings survive a real restore", () => {
     })) as unknown as Record<string, unknown>;
 
     const lost = [...settings].filter(
-      (name) =>
-        !Object.hasOwn(SEALED_ON_RESTORE, name) &&
-        opened(after[name]) !== opened(source[name]),
+      (name) => opened(after[name]) !== opened(source[name]),
     );
-    // The readable home columns come back empty by design; the home itself
-    // came back sealed, compared above through `homeLocationEncrypted`.
-    for (const name of Object.keys(SEALED_ON_RESTORE)) {
-      expect(after[name], name).toBeNull();
-    }
     expect(
       lost,
       "these settings left with a value and came back without it",

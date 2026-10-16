@@ -75,6 +75,7 @@ import {
 import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";
 import { acceptGrant, inviteGrant, revokeGrant } from "@/lib/sharing/grants";
+import { bodyWithoutRequestId } from "@/__tests__/helpers/error-envelope";
 
 let counter = 0;
 
@@ -379,11 +380,11 @@ describe("acting-account resolver — refusals do not enumerate", () => {
 
     headerJar.set(ACCOUNT_SELECTOR_HEADER, "cmnosuchaccount000000000x");
     const missing = await call();
-    const missingBody = await missing.text();
+    const missingBody = await bodyWithoutRequestId(missing);
 
     headerJar.set(ACCOUNT_SELECTOR_HEADER, stranger.id);
     const present = await call();
-    const presentBody = await present.text();
+    const presentBody = await bodyWithoutRequestId(present);
 
     expect(missing.status).toBe(403);
     expect(present.status).toBe(403);

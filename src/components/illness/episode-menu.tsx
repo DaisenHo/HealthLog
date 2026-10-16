@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { MoreVertical, Pencil, CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -69,7 +70,8 @@ export function EpisodeMenu({
           label: t("common.undo"),
           onClick: () => {
             restore.mutate(episode.id, {
-              onError: () => toast.error(t("illness.restoreError")),
+              onError: (failure) =>
+                showErrorToast(t("illness.restoreError"), { cause: failure }),
             });
           },
         },

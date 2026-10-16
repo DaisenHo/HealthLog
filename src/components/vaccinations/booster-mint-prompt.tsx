@@ -17,7 +17,7 @@
  * already closed by the time this appears.
  */
 import { useState } from "react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
@@ -105,8 +105,9 @@ export function BoosterMintPrompt({
       });
       toastWrittenOutcome("success", t("vaccinations.booster.planned"));
     } catch (err) {
-      toast.error(
+      showErrorToast(
         err instanceof Error ? err.message : t("vaccinations.booster.failed"),
+        { cause: err },
       );
     } finally {
       onClose();

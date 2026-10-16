@@ -15,8 +15,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
+import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
 import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
 import { IntegrationFallbackRow } from "@/components/settings/integrations/integration-fallback-row";
@@ -192,6 +194,7 @@ const CARD_BACKED_INTEGRATIONS: ReadonlySet<IntegrationKey> = new Set([
   "oura",
   "strava",
   "nightscout",
+  "dawarich",
 ]);
 
 export function ConnectionsPanel({
@@ -206,7 +209,9 @@ export function ConnectionsPanel({
   callbackUrls: IntegrationCallbackUrls;
 }) {
   const { t } = useTranslations();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  // Dawarich is part of the environment module, which is opt-in.
+  const environmentOn = user?.modules?.environment === true;
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -246,7 +251,7 @@ export function ConnectionsPanel({
       const reasonKey =
         WITHINGS_OAUTH_ERROR_KEYS[withingsOauthOutcome.reason] ??
         "settings.withingsOauthError.generic";
-      toast.error(t("settings.withingsOauthFailed"), {
+      showErrorToast(t("settings.withingsOauthFailed"), {
         description: t(reasonKey),
         duration: 10_000,
       });
@@ -285,7 +290,7 @@ export function ConnectionsPanel({
     } else {
       // Known reason tags resolve to a specific message; anything else falls
       // back to the generic copy (matching the Withings handler).
-      toast.error(t(`settings.${provider}OauthFailed`), {
+      showErrorToast(t(`settings.${provider}OauthFailed`), {
         description: t(oauthReasonKey(provider, oauthOutcome.reason)),
         duration: 10_000,
       });
@@ -295,7 +300,12 @@ export function ConnectionsPanel({
   const unclaimedIntegrations = (integrationStatus?.integrations ?? [])
     .filter(
       (entry) =>
-        !CARD_BACKED_INTEGRATIONS.has(entry.integration) &&
+        // With the environment module off the Dawarich card is not shown, so
+        // a connection still stored falls through to the read-only row.
+        !(
+          CARD_BACKED_INTEGRATIONS.has(entry.integration) &&
+          (entry.integration !== "dawarich" || environmentOn)
+        ) &&
         (entry.configured || entry.connected),
     )
     .map((entry) => ({
@@ -375,6 +385,11 @@ export function ConnectionsPanel({
           viewModel={pickStatus(integrationStatus, "nightscout")}
         />
       </div>
+      {environmentOn ? (
+        <div id="dawarich" className="scroll-mt-28">
+          <DawarichCard viewModel={pickStatus(integrationStatus, "dawarich")} />
+        </div>
+      ) : null}
       {/* Every configured envelope entry no card above claims. Normally this
           renders nothing; on an account carrying a dropped-but-still-running
           integration it renders the honest status that provider otherwise has

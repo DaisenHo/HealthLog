@@ -22,6 +22,7 @@
 import { z } from "zod/v4";
 
 import { reportSelectionSchema } from "@/lib/report-selection/selection";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * The one leaf a share link may never carry. The share view has never
@@ -56,8 +57,8 @@ export const SHARE_LINK_MAX_DOCUMENTS = 50;
 export const createShareLinkSchema = z
   .object({
     label: z.string().trim().min(1).max(120),
-    rangeStart: z.iso.datetime({ offset: true }),
-    rangeEnd: z.iso.datetime({ offset: true }).nullable().optional(),
+    rangeStart: isoDateTime(),
+    rangeEnd: isoDateTime().nullable().optional(),
     selection: reportSelectionSchema.optional(),
     documentIds: z
       .array(z.string().trim().min(1).max(64))
@@ -72,8 +73,7 @@ export const createShareLinkSchema = z
      * server-side so a document link can never widen into a record.
      */
     documentOnly: z.boolean().optional(),
-    expiresAt: z.iso
-      .datetime({ offset: true })
+    expiresAt: isoDateTime()
       .refine((v) => new Date(v).getTime() > Date.now(), {
         message: "expiresAt must be in the future",
       })

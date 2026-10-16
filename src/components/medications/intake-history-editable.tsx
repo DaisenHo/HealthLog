@@ -22,6 +22,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -102,8 +103,10 @@ export function IntakeHistoryEditable({
       toast.success(t("medications.detail.intake.bulkDelete.toast"));
       setBulkConfirmOpen(false);
       clearSelection();
-    } catch {
-      toast.error(t("medications.detail.intake.bulkDelete.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.intake.bulkDelete.failed"), {
+        cause: failure,
+      });
     } finally {
       setBulkBusy(false);
     }
@@ -126,8 +129,10 @@ export function IntakeHistoryEditable({
         next.delete(id);
         return next;
       });
-    } catch {
-      toast.error(t("medications.detail.intake.deleteRow.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.intake.deleteRow.failed"), {
+        cause: failure,
+      });
     } finally {
       setRowDeleteBusy(false);
     }

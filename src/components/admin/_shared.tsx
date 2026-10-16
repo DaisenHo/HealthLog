@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { StatTile } from "@/components/admin/_stat-tile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -297,10 +298,11 @@ export function useUpdateSettings() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.settingsSaveError"),
+        { cause: err },
       );
     },
   });

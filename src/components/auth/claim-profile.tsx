@@ -4,9 +4,10 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { KeyRound, Loader2, LogOut } from "lucide-react";
+import { KeyRound, Loader2, LogIn, LogOut } from "lucide-react";
 
 import { accessLabel } from "@/components/settings/access/managed-profile-handover";
+import { useClientTransport } from "@/components/auth/insecure-transport-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +16,10 @@ import { PasswordStrength } from "@/components/ui/password-strength";
 import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
 import { ApiError, apiFetchRaw } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { loadDocument } from "@/lib/navigation/load-document";
 import {
   useClaimProfile,
+  useClaimProfileSso,
   useProfileClaimPreview,
 } from "@/lib/queries/use-profile-claim";
 import { queryKeys } from "@/lib/query-keys";
@@ -33,8 +36,22 @@ import { queryKeys } from "@/lib/query-keys";
  * record's name, who keeps which access for now, and until when the link
  * holds. No health data. The decision about each Guardian comes right after
  * the first sign-in, on the screen the claim lands on.
+ *
+ * v1.43 — the ways in follow the preview's `methods`: the password form, a
+ * "Continue with <provider>" button that claims through single sign-on, or
+ * both. The single-sign-on leg leaves the page for the identity provider and
+ * comes back to `/onboarding/handover`, or to this page with `?error=` when
+ * the callback refused; the link is not in that URL, so the error card asks
+ * the person to open the link again.
  */
-export function ClaimProfile({ token }: { token: string | null }) {
+export function ClaimProfile({
+  token,
+  error = null,
+}: {
+  token: string | null;
+  /** The single-sign-on callback's refusal, from `?error=`. */
+  error?: string | null;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { t } = useTranslations();
@@ -44,6 +61,8 @@ export function ClaimProfile({ token }: { token: string | null }) {
   const { user } = useAuth();
   const preview = useProfileClaimPreview(token, !user);
   const claim = useClaimProfile();
+  const claimSso = useClaimProfileSso();
+  const clientTransport = useClientTransport();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -71,6 +90,25 @@ export function ClaimProfile({ token }: { token: string | null }) {
     } finally {
       setSigningOut(false);
     }
+  }
+
+  function continueWithSso() {
+    if (!token || claimSso.isPending || usernameReserved) return;
+    claimSso.mutate(
+      { token, username },
+      {
+        onSuccess: ({ redirectTo }) => {
+          // Only the path and query of the server's answer, so a response
+          // could never send the browser off this origin.
+          const next = new URL(redirectTo, window.location.origin);
+          if (clientTransport) {
+            next.searchParams.set("client_proto", clientTransport.protocol);
+            next.searchParams.set("client_host", clientTransport.host);
+          }
+          loadDocument(`${next.pathname}${next.search}`);
+        },
+      },
+    );
   }
 
   function submit(event: React.FormEvent) {
@@ -113,6 +151,35 @@ export function ClaimProfile({ token }: { token: string | null }) {
             <LogOut className="size-4" />
           )}
           {t("auth.claim.signOut")}
+        </Button>
+      </ClaimCard>
+    );
+  }
+
+  if (!token && error) {
+    const bound = error === "claim_sso_subject_bound";
+    return (
+      <ClaimCard testId="claim-sso-error">
+        <Header
+          title={
+            error === "claim_expired"
+              ? t("auth.claim.invalid")
+              : t("auth.claim.errorTitle")
+          }
+          description={t(claimSsoErrorKey(error))}
+        />
+        {/* The way on: the sign-in page (for a sign-in that already belongs
+            to an account, that account's). The link itself is not here. */}
+        <Button
+          asChild
+          variant="outline"
+          size="lg"
+          className="mt-8 min-h-11 w-full"
+          data-slot="claim-to-login"
+        >
+          <Link href="/auth/login">
+            {bound ? t("auth.claim.signInInstead") : t("auth.login")}
+          </Link>
         </Button>
       </ClaimCard>
     );
@@ -192,12 +259,18 @@ export function ClaimProfile({ token }: { token: string | null }) {
   }
 
   const data = preview.data;
-  const errorKey = claim.isError ? claimErrorKey(claim.error) : null;
+  // An older server sends no `methods`: it only ever offered the password.
+  const methods = data.methods ?? ["password"];
+  const offersPassword = methods.includes("password");
+  const offersSso = methods.includes("sso");
+  const providerName = data.ssoProviderName ?? t("auth.claim.ssoFallbackName");
+  const failed = claimSso.isError ? claimSso : claim;
+  const errorKey = failed.isError ? claimErrorKey(failed.error) : null;
   const errorText =
-    claim.error instanceof ApiError &&
-    claim.error.status === 422 &&
-    claim.error.message
-      ? claim.error.message
+    failed.error instanceof ApiError &&
+    failed.error.status === 422 &&
+    failed.error.message
+      ? failed.error.message
       : errorKey
         ? t(errorKey)
         : null;
@@ -241,7 +314,19 @@ export function ClaimProfile({ token }: { token: string | null }) {
         </p>
       </section>
 
-      <form onSubmit={submit} className="mt-6 space-y-4" data-slot="claim-form">
+      <form
+        onSubmit={
+          offersPassword
+            ? submit
+            : (event) => {
+                // Enter in the username field on an SSO-only server.
+                event.preventDefault();
+                continueWithSso();
+              }
+        }
+        className="mt-6 space-y-4"
+        data-slot="claim-form"
+      >
         <div className="space-y-2">
           <Label htmlFor="claim-username">{t("auth.username")}</Label>
           <Input
@@ -270,36 +355,43 @@ export function ClaimProfile({ token }: { token: string | null }) {
               : t("auth.claim.usernameHint")}
           </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="claim-email">{t("auth.email")}</Label>
-          <Input
-            id="claim-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            autoCapitalize="none"
-            spellCheck={false}
-            aria-describedby={`${errorId}-email`}
-          />
-          <p id={`${errorId}-email`} className="text-muted-foreground text-xs">
-            {t("auth.claim.emailHint")}
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="claim-password">{t("auth.password")}</Label>
-          <Input
-            id="claim-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="new-password"
-            placeholder={t("auth.passwordMinLength")}
-          />
-          <PasswordStrength password={password} />
-        </div>
+        {offersPassword && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="claim-email">{t("auth.email")}</Label>
+              <Input
+                id="claim-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby={`${errorId}-email`}
+              />
+              <p
+                id={`${errorId}-email`}
+                className="text-muted-foreground text-xs"
+              >
+                {t("auth.claim.emailHint")}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="claim-password">{t("auth.password")}</Label>
+              <Input
+                id="claim-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                placeholder={t("auth.passwordMinLength")}
+              />
+              <PasswordStrength password={password} />
+            </div>
+          </>
+        )}
 
         <p className="text-sm">{t("auth.claim.consentNote")}</p>
         <p className="text-muted-foreground text-xs">
@@ -320,22 +412,63 @@ export function ClaimProfile({ token }: { token: string | null }) {
           </div>
         )}
 
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 w-full"
-          disabled={claim.isPending || usernameReserved}
-          data-slot="claim-submit"
-        >
-          {claim.isPending ? (
-            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <KeyRound className="size-4" />
-          )}
-          {claim.isPending
-            ? t("auth.claim.submitting")
-            : t("auth.claim.submit")}
-        </Button>
+        {offersPassword && (
+          <Button
+            type="submit"
+            size="lg"
+            className="min-h-11 w-full"
+            disabled={claim.isPending || usernameReserved}
+            data-slot="claim-submit"
+          >
+            {claim.isPending ? (
+              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+            ) : (
+              <KeyRound className="size-4" />
+            )}
+            {claim.isPending
+              ? t("auth.claim.submitting")
+              : t("auth.claim.submit")}
+          </Button>
+        )}
+
+        {offersPassword && offersSso && (
+          <div
+            className="text-muted-foreground flex items-center gap-3 text-xs"
+            aria-hidden="true"
+          >
+            <span className="bg-border h-px flex-1" />
+            {t("auth.claim.ssoDivider")}
+            <span className="bg-border h-px flex-1" />
+          </div>
+        )}
+
+        {offersSso && (
+          <div className="space-y-2" data-slot="claim-sso">
+            <Button
+              type="button"
+              size="lg"
+              variant={offersPassword ? "outline" : "default"}
+              className="min-h-11 w-full"
+              disabled={
+                claimSso.isPending || usernameReserved || username.length < 3
+              }
+              onClick={continueWithSso}
+              data-slot="claim-sso-continue"
+            >
+              {claimSso.isPending ? (
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <LogIn className="size-4" />
+              )}
+              {claimSso.isPending
+                ? t("auth.claim.ssoStarting")
+                : t("auth.claim.ssoContinue", { provider: providerName })}
+            </Button>
+            <p className="text-muted-foreground text-xs">
+              {t("auth.claim.ssoHint", { provider: providerName })}
+            </p>
+          </div>
+        )}
       </form>
     </ClaimCard>
   );
@@ -376,6 +509,28 @@ function Header({
       <p className="text-muted-foreground text-sm">{description}</p>
     </div>
   );
+}
+
+/**
+ * v1.43 — the message for the single-sign-on callback's refusal, from the
+ * claim page's `?error=`. Exported and pure so it can be pinned. A reason this
+ * build does not know reads as the generic failure.
+ */
+export function claimSsoErrorKey(reason: string): string {
+  switch (reason) {
+    case "claim_expired":
+      return "auth.claim.invalidHint";
+    case "claim_sso_subject_bound":
+      return "auth.claim.errorSubjectBound";
+    case "claim_email_taken":
+      return "auth.claim.errorEmailTaken";
+    case "claim_username_taken":
+      return "auth.claim.errorUsernameTaken";
+    case "claim_signed_in":
+      return "auth.claim.errorSignedIn";
+    default:
+      return "auth.claim.errorSso";
+  }
 }
 
 /** The message for a refused claim. Exported and pure so it can be pinned. */

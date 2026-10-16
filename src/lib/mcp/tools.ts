@@ -20,6 +20,7 @@
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
+import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { annotate } from "@/lib/logging/context";
 import { getDayArgsSchema } from "@/lib/ai/coach/tools/definitions";
 import { readDayForTool } from "@/lib/ai/coach/tools/day-read";
@@ -61,7 +62,10 @@ import {
   NUTRIENT_LABELS,
   type NutrientsDailyResult,
 } from "@/lib/mcp/nutrients-read";
-import { NUTRIENT_CODES } from "@/lib/nutrients/catalog";
+import {
+  NUTRIENT_CODES,
+  type NutrientUpperLimit,
+} from "@/lib/nutrients/catalog";
 import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { encodeOffsetCursor, decodeOffsetCursor } from "@/lib/mcp/pagination";
@@ -100,6 +104,7 @@ import {
 import type { McpAuthContext } from "./auth";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Tool annotations (MCP 2025-11-25). The cloud connectors REQUIRE these on every
@@ -370,6 +375,18 @@ function plainClinicalText(
   return `${head}${band}`.trim();
 }
 
+/** What the EFSA level covers where it is narrower than the nutrient. */
+const UPPER_LIMIT_FORM_NOTE: Record<
+  NonNullable<NutrientUpperLimit["form"]>,
+  string
+> = {
+  retinol:
+    " (preformed vitamin A, retinol, only; beta-carotene does not count toward it)",
+  folic_acid: " (folic acid from supplements and fortified foods)",
+  magnesium_salts: " (readily dissociable magnesium salts in supplements)",
+  alpha_tocopherol: " (alpha-tocopherol)",
+};
+
 /**
  * Render a `fetch` result for a nutrient code as a plain-text citation
  * sentence: the most recent non-zero day's total plus the resolved EFSA
@@ -400,6 +417,16 @@ function plainNutrientText(
     const verb =
       ref.direction === "upperGuidance" ? "guidance ceiling" : "target";
     parts.push(`EFSA ${verb} ${round1(ref.value)}${unit}`);
+  }
+  // v1.43 — the upper-limit verdict is the server's, read off the day.
+  const limit = result.upperLimit;
+  if (limit && latestDay?.aboveUpperLimit) {
+    const share =
+      limit.scope === "supplemental" ? " for the supplement share" : "";
+    const form = limit.form ? UPPER_LIMIT_FORM_NOTE[limit.form] : "";
+    parts.push(
+      `that day is above the EFSA upper intake level of ${round1(limit.value)}${unit}${share}${form}`,
+    );
   }
   return parts.length > 0
     ? `${label}: ${parts.join(", ")}.`
@@ -871,8 +898,8 @@ const coachReadOutput: z.ZodRawShape = {
  */
 const dateRangeShape = z
   .object({
-    from: z.iso.datetime({ offset: true }),
-    to: z.iso.datetime({ offset: true }),
+    from: isoDateTime(),
+    to: isoDateTime(),
   })
   .describe(
     "An explicit inclusive date range. Use INSTEAD OF `window` for an arbitrary span (e.g. before vs after a date). Both bounds are ISO-8601 instants.",
@@ -1047,6 +1074,21 @@ const getDayOutput: z.ZodRawShape = {
             .nullable(),
         }),
       ),
+      // v1.43 — the movement context (Dawarich), without a travel country.
+      movement: z
+        .object({
+          distance: z.object({
+            unit: z.enum(["km", "mi"]),
+            total: z.number().nullable(),
+            driving: z.number().nullable(),
+            train: z.number().nullable(),
+          }),
+          placesVisited: z.number().nullable(),
+          awayFromHomeMinutes: z.number().nullable(),
+          travel: z.object({ isTravelDay: z.boolean() }).nullable(),
+        })
+        .nullable()
+        .optional(),
       unavailable: z.array(
         z.object({
           section: modelDaySection,
@@ -1510,10 +1552,18 @@ function readLabs(
       limit: LAB_HISTORY_MAX_LIMIT,
     });
   }
-  // Default: latest reading per biomarker via the Coach labs read.
-  return runCoachTool(ctx, "get_labs", {
-    ...(typeof args.analyte === "string" ? { analyte: args.analyte } : {}),
-  });
+  // Default: latest reading per biomarker via the Coach labs read. A name that
+  // resolves to one of the user's markers (an alias or a catalog abbreviation
+  // such as "GPT" for "ALT") is read as that marker's own name (v1.43).
+  return (async () => {
+    const asked = typeof args.analyte === "string" ? args.analyte : null;
+    const marker = asked?.trim()
+      ? await resolveMarkerForRead(ctx.userId, asked)
+      : null;
+    return runCoachTool(ctx, "get_labs", {
+      ...(asked !== null ? { analyte: marker?.name ?? asked } : {}),
+    });
+  })();
 }
 
 export const MCP_TOOLS: McpToolDefinition[] = [

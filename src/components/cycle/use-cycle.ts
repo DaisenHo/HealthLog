@@ -11,7 +11,7 @@
  */
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   ApiError,
@@ -23,6 +23,7 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { randomId } from "@/lib/random-id";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { useCalendarDate } from "@/hooks/use-calendar-date";
 
 import {
   cycleDependentKeys,
@@ -233,7 +234,8 @@ export function useDeleteCustomSymptom() {
     onSuccess: () => invalidateKeys(qc, cycleDependentKeys),
     // v1.16.4 — a failed delete used to fail silently (the sheet clears the
     // chip optimistically), so surface the rejection.
-    onError: () => toast.error(t("cycle.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.deleteError"), { cause: failure }),
   });
 }
 
@@ -317,10 +319,33 @@ export interface CycleDayLogPatch {
   note?: string | null;
 }
 
+/**
+ * A period start the server folded in or gave back (v1.43). The server names
+ * it; the toast only says it, so the person learns which date moved without
+ * comparing the calendar before and after.
+ */
+export interface CycleStartRef {
+  cycleId: string;
+  startDate: string;
+}
+
+/** The toast after a write that may have given starts back. */
+function useRestoredStartsMessage() {
+  const { t } = useTranslations();
+  const formatDay = useCalendarDate();
+  return (fallback: string, restored: readonly CycleStartRef[] | undefined) =>
+    restored && restored.length > 0
+      ? t("cycle.startRestored", {
+          dates: restored.map((r) => formatDay(r.startDate)).join(", "),
+        })
+      : fallback;
+}
+
 /** Edit an existing day-log by id (PATCH — accepts explicit null to clear). */
 export function usePatchDayLog() {
   const qc = useQueryClient();
   const { t } = useTranslations();
+  const restoredMessage = useRestoredStartsMessage();
   return useMutation({
     mutationFn: async ({
       id,
@@ -329,11 +354,17 @@ export function usePatchDayLog() {
       id: string;
       patch: CycleDayLogPatch;
     }) => {
-      return apiPatch<CycleDayLogDTO>(`/api/cycle/day-logs/${id}`, patch);
+      return apiPatch<CycleDayLogDTO & { restored?: CycleStartRef[] }>(
+        `/api/cycle/day-logs/${id}`,
+        patch,
+      );
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       void invalidateKeys(qc, cycleDependentKeys);
-      toastWrittenOutcome("success", t("cycle.saveSuccess"));
+      toastWrittenOutcome(
+        "success",
+        restoredMessage(t("cycle.saveSuccess"), data?.restored),
+      );
     },
   });
 }
@@ -341,21 +372,31 @@ export function usePatchDayLog() {
 export function useStartPeriod() {
   const qc = useQueryClient();
   const { t } = useTranslations();
+  const formatDay = useCalendarDate();
   return useMutation({
     mutationFn: async (date: string) => {
-      return apiPost<unknown>("/api/cycle/period", {
+      return apiPost<{ absorbed?: CycleStartRef | null }>("/api/cycle/period", {
         action: "start",
         date,
         loggedAt: new Date().toISOString(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data, date) => {
       void invalidateKeys(qc, cycleDependentKeys);
-      toastWrittenOutcome("success", t("cycle.periodStartSaved"));
+      toastWrittenOutcome(
+        "success",
+        data?.absorbed
+          ? t("cycle.startAbsorbed", {
+              absorbed: formatDay(data.absorbed.startDate),
+              date: formatDay(date),
+            })
+          : t("cycle.periodStartSaved"),
+      );
     },
     // v1.16.4 — period boundaries had no failure signal at all (the sheet
     // simply stayed open); a toast names the rejection.
-    onError: () => toast.error(t("cycle.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.saveError"), { cause: failure }),
   });
 }
 
@@ -375,7 +416,8 @@ export function useEndPeriod() {
       void invalidateKeys(qc, cycleDependentKeys);
       toastWrittenOutcome("success", t("cycle.periodEndSaved"));
     },
-    onError: () => toast.error(t("cycle.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.saveError"), { cause: failure }),
   });
 }
 
@@ -383,15 +425,27 @@ export function useEndPeriod() {
 export function useDeleteDayLog() {
   const qc = useQueryClient();
   const { t } = useTranslations();
+  const restoredMessage = useRestoredStartsMessage();
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiDelete(`/api/cycle/day-logs/${id}`);
+      // Ask for what the delete changed: removing a start day can give back a
+      // start it had folded in, and the toast names it. A server that does
+      // not know the preference answers 204, read as nothing given back.
+      return apiDelete<{ restored?: CycleStartRef[] } | null>(
+        `/api/cycle/day-logs/${id}`,
+        undefined,
+        { headers: { Prefer: "return=representation" } },
+      );
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       void invalidateKeys(qc, cycleDependentKeys);
-      toastWrittenOutcome("success", t("cycle.deleteSuccess"));
+      toastWrittenOutcome(
+        "success",
+        restoredMessage(t("cycle.deleteSuccess"), data?.restored),
+      );
     },
-    onError: () => toast.error(t("cycle.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("cycle.deleteError"), { cause: failure }),
   });
 }
 

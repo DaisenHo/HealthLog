@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { BellPlus, Check, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -60,8 +60,8 @@ export function ReminderSuggestionCard({
             : "dismissed",
       );
     },
-    onError: () => {
-      toast.error(t("coach.reminderSuggestion.failed"));
+    onError: (failure) => {
+      showErrorToast(t("coach.reminderSuggestion.failed"), { cause: failure });
     },
   });
 

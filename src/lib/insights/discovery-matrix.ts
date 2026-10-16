@@ -40,6 +40,7 @@ import {
   DISCOVERY_OUTCOMES,
   discoveryMeasurementTypes,
   MEDICATION_COMPLIANCE_CHANNEL_KEY,
+  MOVEMENT_AWAY_CHANNEL_KEY,
   SYMPTOM_SEVERITY_CHANNEL_KEY,
   type DailySeriesPoint,
   type NamedSeries,
@@ -50,6 +51,7 @@ import {
   fetchCustomMetricBehaviourSeries,
   fetchSymptomEventSeries,
   fetchEnvironmentSeries,
+  fetchMovementSeries,
   fetchMeasurementDailySeriesTiered,
   fetchMeasurementWindowSeries,
   fetchMoodFactorWindowSeries,
@@ -152,6 +154,8 @@ export interface DiscoveryMatrixDiagnostics {
   symptomDays: number;
   /** Stored daily points summed across the environmental-exposure channels. */
   environmentDays: number;
+  /** Stored daily points summed across the two movement channels. */
+  movementDays: number;
   customMetricChannels: number;
   customMetricDays: number;
   /** `FACTOR:*` channels admitted (0 unless `includeMoodFactors`). */
@@ -299,6 +303,7 @@ export async function assembleDiscoveryMatrix(
     environmentSeries,
     customMetricSeries,
     symptomEventSeries,
+    movementSeries,
   ] = await Promise.all([
     readMeasurementDaily(userId, tz, since, measurementTypes, fetchMode),
     readMood(userId, tz, since, opts.includeMoodFactors === true),
@@ -316,6 +321,14 @@ export async function assembleDiscoveryMatrix(
       : Promise.resolve([] as NamedSeries[]),
     fetchCustomMetricBehaviourSeries(userId, tz, since),
     fetchSymptomEventSeries(userId, tz, since),
+    // v1.43 — the Dawarich movement channels, skipped like the weather when
+    // the environment module is off.
+    isSurfaceVisible(
+      correlationChannelSurfaceId(MOVEMENT_AWAY_CHANNEL_KEY),
+      opts.modules,
+    )
+      ? fetchMovementSeries(userId, tz, since)
+      : Promise.resolve([] as NamedSeries[]),
   ]);
 
   const { factorSeries } = mood;
@@ -347,7 +360,7 @@ export async function assembleDiscoveryMatrix(
   // exposure already averaged across D−1 and D (see `fetchEnvironmentSeries`).
   // Both run under the same n ≥ 20 / FDR / effect-size gates, so a thin
   // weather or custom series degrades to absent.
-  series.push(...environmentSeries, ...customMetricSeries);
+  series.push(...environmentSeries, ...movementSeries, ...customMetricSeries);
   // The person's own symptoms are OUTCOMES: "short sleep, then an aura the
   // next day" is the question they log them to answer. Each is its own
   // channel and its own family, capped at eight; the illness module owns them
@@ -387,6 +400,7 @@ export async function assembleDiscoveryMatrix(
         (sum, s) => sum + s.points.length,
         0,
       ),
+      movementDays: movementSeries.reduce((sum, s) => sum + s.points.length, 0),
       customMetricChannels: customMetricSeries.length,
       customMetricDays: customMetricSeries.reduce(
         (sum, s) => sum + s.points.length,

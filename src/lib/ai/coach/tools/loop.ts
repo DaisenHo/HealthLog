@@ -194,10 +194,13 @@ export async function runCoachToolLoop(args: {
   providers: ProviderChainResolved[];
   system: string;
   /**
-   * v1.39.4 — the system prompt for the rounds after a call produced a
-   * table, when it differs (the table rules ride it).
+   * v1.39.4 — the table rules, for the rounds after a call produced a table.
+   * v1.43 (#1217) — they join the conversation as a user-side note after
+   * that round's tool results instead of switching the system prompt, so the
+   * cached prefix (tools plus system) survives the switch. Absent when the
+   * turn already carries them.
    */
-  systemOnceTableShown?: string;
+  tableRulesOnceShown?: string;
   /** The conversation messages (history + the new user turn). */
   messages: AiMessage[];
   tools: AiToolDef[];
@@ -284,7 +287,12 @@ export async function runCoachToolLoop(args: {
   const cacheKey = coachPromptCacheKey(turn?.conversationId);
 
   const messages: AiMessage[] = [...args.messages];
-  let system = args.system;
+  // v1.43 (#1217) — the system prompt never changes inside a turn: what used
+  // to be swapped or appended into it (the table rules, the final-round line)
+  // goes on the user side, so every round reads the same cached prefix.
+  const system = args.system;
+  let tableRulesPending = args.tableRulesOnceShown;
+  let tableShownThisRound = false;
   let totalTokens = 0;
   let cachedTokens = 0;
   let rounds = 0;
@@ -352,10 +360,15 @@ export async function runCoachToolLoop(args: {
       surface: "coach",
       ledger,
       params: {
-        system: stopReason
-          ? `${system}\n\n${FINAL_ROUND_LINE[stopReason]}`
-          : system,
-        messages,
+        system,
+        // The final round says why it is final as the last user-side line,
+        // after everything the earlier rounds cached.
+        messages: stopReason
+          ? [
+              ...messages,
+              { role: "user", content: FINAL_ROUND_LINE[stopReason] },
+            ]
+          : messages,
         temperature,
         maxTokens,
         signal,
@@ -522,9 +535,7 @@ export async function runCoachToolLoop(args: {
         // prose against that same summary.
         notify(() => onCallSettled?.(call, toolResult, index, round));
         const { table, ...forModel } = toolResult;
-        if (table && args.systemOnceTableShown) {
-          system = args.systemOnceTableShown;
-        }
+        if (table) tableShownThisRound = true;
         const validArgs =
           call.name === COMPARE_SERIES_TOOL_NAME
             ? compareArgs(call.arguments)
@@ -551,6 +562,14 @@ export async function runCoachToolLoop(args: {
       budget.addInput(textTokens(serialised));
       messages.push({ role: "tool", toolCallId: call.id, content: serialised });
     }
+    // The first table of the turn brings the table rules along, once, right
+    // after the results that produced it.
+    if (tableShownThisRound && tableRulesPending) {
+      messages.push({ role: "user", content: tableRulesPending });
+      budget.addInput(textTokens(tableRulesPending));
+      tableRulesPending = undefined;
+    }
+    tableShownThisRound = false;
     budget.addInput(textTokens(result.content ?? ""));
     notify(() => onRoundSettled?.(round));
 

@@ -9,6 +9,7 @@
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.10.2 — live capability / discovery response. Every list is sourced
 // server-side from the canonical registry it documents, so the wire shape
@@ -221,8 +222,7 @@ const versionResponse = z
       .describe(
         "Short Git SHA baked at image build time. Null for a local dev run, which is how a client tells a released image from one.",
       ),
-    builtAt: z.iso
-      .datetime({ offset: true })
+    builtAt: isoDateTime()
       .nullable()
       .describe("ISO-8601 build timestamp. Null for a local dev run."),
     license: z.string(),
@@ -297,13 +297,11 @@ const updateCheckResponse = z
       .nullable()
       .optional()
       .describe("Release page to deep-link to. Only on `newer_available`."),
-    published_at: z.iso
-      .datetime({ offset: true })
+    published_at: isoDateTime()
       .nullable()
       .optional()
       .describe("When that release was published. Only on `newer_available`."),
-    checked_at: z.iso
-      .datetime({ offset: true })
+    checked_at: isoDateTime()
       .optional()
       .describe("When the check ran. Absent when `unknown`."),
     reason: z

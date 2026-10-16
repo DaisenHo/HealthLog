@@ -17,6 +17,7 @@ import {
 import { loginPasswordSchema as loginPasswordSchemaBase } from "@/lib/validations/auth";
 import { coachPrefsSchema as coachPrefsSchemaBase } from "@/lib/validations/coach-prefs";
 import { createBatchWorkoutSchema as createBatchWorkoutSchemaBase } from "@/lib/validations/workout";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Common envelopes — every HealthLog API response wraps payload in
@@ -91,19 +92,25 @@ export const errorEnvelope = z
           .string()
           .optional()
           .describe(
-            "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`, `briefing`, `periodNarrative`, `statusText`, `workoutInsights`, `reactionLines`, `aboutMeQuestions`, `documentAi`, `labsOcr`, `medicationExtract`).",
+            "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`, `briefing`, `periodNarrative`, `statusText`, `workoutInsights`, `reactionLines`, `aboutMeQuestions`, `documentAi`, `labsOcr`, `medicationExtract`, `supplementLabel`).",
           ),
         reason: z
           .string()
           .optional()
           .describe(
-            "On an AI refusal: the outermost reason, one of `AiUnavailableReason`. The code maps from it: `operator_disabled` → `assistant.disabled.<switch>` (or `module.disabled` with `module` when the operator's module availability closed it), `not_permitted_for_record` → `ai.record.notPermitted`, `module_disabled` and `user_disabled` → `module.disabled` with `module`, `no_provider` → the route's own typed code where it has one, otherwise `ai.provider.none` (422), `consent_required` → `consent.ai.required`, `check_failed` → `ai.unavailable` (503).",
+            "On an AI refusal: the outermost reason, one of `AiUnavailableReason`. The code maps from it: `operator_disabled` → `assistant.disabled.<switch>` (or `module.disabled` with `module` when the operator's module availability closed it), `not_permitted_for_record` → `ai.record.notPermitted`, `module_disabled` and `user_disabled` → `module.disabled` with `module`, `no_provider` → the route's own typed code where it has one, otherwise `ai.provider.none` (422), `usage_level` → `ai.usage.levelTooLow` with `requiredLevel`, `consent_required` → `consent.ai.required`, `check_failed` → `ai.unavailable` (503).",
           ),
         module: z
           .string()
           .optional()
           .describe(
             "Beside `module.disabled`: the module that is off. On an AI refusal it is the capability's owning module.",
+          ),
+        requiredLevel: z
+          .enum(["frugal", "standard", "full"])
+          .optional()
+          .describe(
+            "Beside `ai.usage.levelTooLow` (v1.43): the lowest AI usage level at which the capability is offered.",
           ),
       })
       .optional(),
@@ -191,8 +198,7 @@ export const createBatchWorkoutSchema = createBatchWorkoutSchemaBase.meta({
  * OpenAPI layer: the runtime strips it pre-Zod (`takeBaseToken`), so the
  * runtime schema alone would under-document the wire.
  */
-export const baseUpdatedAtField = z.iso
-  .datetime({ offset: true })
+export const baseUpdatedAtField = isoDateTime()
   .optional()
   .describe(
     "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored row still carrying this exact value — a stale token fails with 409 and changes nothing. A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it.",
@@ -203,8 +209,7 @@ export const baseUpdatedAtField = z.iso
  * Every guarded GET / write response carries the stored row's `updatedAt`; the
  * client echoes it back as `baseUpdatedAt` on the next write.
  */
-export const updatedAtTokenField = z.iso
-  .datetime({ offset: true })
+export const updatedAtTokenField = isoDateTime()
   .optional()
   .describe(
     "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or synthesise it.",

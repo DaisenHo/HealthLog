@@ -50,6 +50,7 @@ const { profile, userUpdate, transaction } = vi.hoisted(() => {
   };
   const userUpdate = vi.fn(async () => ({}));
   const tx = {
+    $queryRaw: vi.fn(async () => []),
     userHealthProfile: profile,
     user: { update: userUpdate },
   };

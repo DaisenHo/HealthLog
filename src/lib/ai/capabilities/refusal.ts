@@ -8,12 +8,14 @@
  */
 import { MODULE_DISABLED_ERROR_CODE } from "@/lib/modules/gate";
 import type { ModuleKey } from "@/lib/modules/registry";
+import type { AiUsageLevel } from "@/lib/ai/usage-level";
 
 import {
   AI_CAPABILITIES,
   AI_PROVIDER_NONE_ERROR_CODE,
   AI_RECORD_NOT_PERMITTED_ERROR_CODE,
   AI_UNAVAILABLE_ERROR_CODE,
+  AI_USAGE_LEVEL_TOO_LOW_ERROR_CODE,
   type AiCapabilityKey,
   type AiUnavailableReason,
 } from "./types";
@@ -33,6 +35,8 @@ export interface AiRefusalMeta {
   capability: AiCapabilityKey;
   reason: AiUnavailableReason;
   module?: ModuleKey;
+  /** Beside `ai.usage.levelTooLow`: the lowest level the capability needs. */
+  requiredLevel?: AiUsageLevel;
 }
 
 /** The HTTP shape of one refusal. Pure; exported for the envelope test. */
@@ -72,6 +76,17 @@ export function aiRefusal(
           ...(module === null ? {} : { module }),
         },
       };
+    case "usage_level":
+      return {
+        status: 403,
+        meta: {
+          ...base,
+          errorCode: AI_USAGE_LEVEL_TOO_LOW_ERROR_CODE,
+          ...(AI_CAPABILITIES[capability].minUsageLevel
+            ? { requiredLevel: AI_CAPABILITIES[capability].minUsageLevel }
+            : {}),
+        },
+      };
     case "no_provider":
       return {
         status: noProvider?.status ?? 422,
@@ -99,6 +114,7 @@ const REFUSAL_MESSAGE: Record<AiUnavailableReason, string> = {
   not_permitted_for_record: "AI work is not available for this record",
   module_disabled: "This AI feature's module is turned off for this record",
   user_disabled: "This AI feature is turned off in your settings",
+  usage_level: "This AI feature is not available at the current AI usage level",
   no_provider: "No AI provider is set up for this feature",
   consent_required: "AI consent is required for this feature",
 };

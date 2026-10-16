@@ -364,7 +364,7 @@ export async function applyAppleHealthDistanceRepair(
         type: REPAIRED_TYPE,
         measuredAt: row.measuredAt,
       })),
-      "repair-apple-health-distance",
+      { source: "sync", label: "repair-apple-health-distance" },
     );
     await client.auditLog.update({
       where: { id: auditId },

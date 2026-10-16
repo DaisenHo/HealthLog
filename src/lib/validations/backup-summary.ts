@@ -85,6 +85,8 @@ export interface BackupSummary {
   vaccinations: number;
   /** v1.37.19 (A6-8) — vaccination↔document links. */
   vaccinationLinks: number;
+  /** v1.43 — the five relation link tables, summed. */
+  relationLinks: number;
   /** v1.42 (#1005) — the person's own vaccine definitions. */
   customVaccines: number;
   /** v1.37.20 (#223 / iOS #68) — Vorsorge reminder cadences. */
@@ -111,6 +113,8 @@ export interface BackupSummary {
   environmentContexts: number;
   /** Declared stretches spent away from home. */
   environmentTravelLocations: number;
+  /** Local days of Dawarich movement values. */
+  dawarichDays: number;
   /** ECG strips, with their rhythm verdict and their trace. */
   ecgRecordings: number;
 }
@@ -178,6 +182,12 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
       payload.encounterConditionLinks.length,
     vaccinations: payload.vaccinations.length,
     vaccinationLinks: payload.vaccinationDocumentLinks.length,
+    relationLinks:
+      payload.labResultDocumentLinks.length +
+      payload.encounterMedicationLinks.length +
+      payload.encounterVaccinationLinks.length +
+      payload.medicationDocumentLinks.length +
+      payload.medicationConditionLinks.length,
     customVaccines: payload.customVaccines.length,
     // v1.37.20 (#223 / iOS #68) — counted from the release that carries them,
     // so the admin's "what did I just restore" answer never under-counts a
@@ -201,6 +211,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     userAchievements: payload.userAchievements.length,
     environmentContexts: payload.environmentContexts.length,
     environmentTravelLocations: payload.environmentTravelLocations.length,
+    dawarichDays: payload.dawarichDays.length,
     ecgRecordings: payload.ecgRecordings.length,
   };
 }

@@ -180,6 +180,9 @@ const fakeDb = vi.hoisted(() => {
     encounter: { findMany: none },
     // The AI capability loader's consent read: no receipts.
     consentReceipt: { findMany: none },
+    // v1.43 — the loader's usage-level read: no stored choice, so the
+    // instance default applies.
+    user: { findUnique: async () => ({ aiUsageLevel: null }) },
   };
 });
 

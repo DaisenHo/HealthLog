@@ -53,6 +53,7 @@
  * map the shared snapshot builder uses (`disabledSummaryTypes`); the filter
  * runs OUTSIDE the cache because a module toggle does not evict it.
  */
+import { loadFreeWeekdaySpans } from "@/lib/profile/life-circumstances";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -61,6 +62,13 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import {
+  resolveTrendVerdict,
+  trendSentimentOfTrend,
+  type TrendSentiment,
+  type TrendVerdict,
+  type TrendVerdictContext,
+} from "@/lib/targets/trend-verdict";
 import { type Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { userDayKey, DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -185,6 +193,69 @@ interface MetricCard {
    * at all.
    */
   lastSeenAt: string | null;
+  /**
+   * v1.43 (ios #116 item 3) — which way a change of this metric counts for
+   * the person, against their own target or a profile default
+   * (`src/lib/targets/trend-verdict.ts`).
+   */
+  direction?: TrendVerdict | null;
+  /** v1.43 — `direction` applied to this card's `trend`. */
+  trendSentiment?: TrendSentiment;
+}
+
+/**
+ * The verdict key behind each card: the measurement type it reads, or the
+ * derived key for the two cards that are not one.
+ */
+const VERDICT_KEY: Record<MetricKind, string> = {
+  weight: "WEIGHT",
+  bloodPressure: "BLOOD_PRESSURE_SYS",
+  pulse: "PULSE",
+  bodyFat: "BODY_FAT",
+  glucose: "BLOOD_GLUCOSE",
+  sleep: "SLEEP_DURATION",
+  steps: "ACTIVITY_STEPS",
+  totalBodyWater: "TOTAL_BODY_WATER",
+  boneMass: "BONE_MASS",
+  oxygenSaturation: "OXYGEN_SATURATION",
+  mood: "MOOD",
+  bmi: "BMI",
+};
+
+/**
+ * Lay the verdict over each card. The reference placed against the band is
+ * the mean of the card's own seven-day sparkline, else its latest value, the
+ * seven-day average the web tiles place. Sleep cards are in hours and the
+ * verdict reads minutes.
+ */
+function withVerdicts(
+  cards: MetricCard[],
+  ctx: Omit<TrendVerdictContext, "referenceValue">,
+): MetricCard[] {
+  const referenceOf = (card: MetricCard | undefined): number | null => {
+    if (!card) return null;
+    const spark = card.sparkline.filter((v) => Number.isFinite(v));
+    return spark.length > 0
+      ? spark.reduce((sum, v) => sum + v, 0) / spark.length
+      : card.latestValue;
+  };
+  // BMI is judged by the weight it is derived from (the target is a weight).
+  const weightReference = referenceOf(cards.find((c) => c.kind === "weight"));
+  return cards.map((card) => {
+    const reference = card.kind === "bmi" ? weightReference : referenceOf(card);
+    const direction = resolveTrendVerdict(VERDICT_KEY[card.kind], {
+      ...ctx,
+      referenceValue:
+        reference !== null && card.kind === "sleep"
+          ? reference * 60
+          : reference,
+    });
+    return {
+      ...card,
+      direction,
+      trendSentiment: trendSentimentOfTrend(card.trend, direction),
+    };
+  });
 }
 
 /**
@@ -647,6 +718,8 @@ async function buildDashboardSummary(
       sleepPriorityJson,
     ),
     sleepNeedMinutes(sleepProfile.ageYears),
+    "COMPUTED",
+    await loadFreeWeekdaySpans(userId),
   );
 
   const metrics: MetricCard[] = [];
@@ -945,6 +1018,17 @@ async function buildDashboardSummary(
 
   const t = getServerTranslator(ctx.locale).t;
 
+  // v1.43 — the record's profile and own targets, for the card verdicts.
+  const verdictProfile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      dateOfBirth: true,
+      gender: true,
+      heightCm: true,
+      thresholdsJson: true,
+    },
+  });
+
   annotate({ meta: timings });
 
   return {
@@ -962,7 +1046,14 @@ async function buildDashboardSummary(
       takenToday,
     },
     highlightInsight: null,
-    metrics,
+    metrics: withVerdicts(metrics, {
+      profile: {
+        dateOfBirth: verdictProfile?.dateOfBirth ?? null,
+        gender: verdictProfile?.gender ?? null,
+        heightCm: verdictProfile?.heightCm ?? null,
+      },
+      thresholdsJson: verdictProfile?.thresholdsJson ?? null,
+    }),
     // v1.17.0 — sleep-debt + chronotype, server-authoritative. Same values
     // the Sleep page's `/api/sleep/rhythm` read returns.
     sleepRhythm,

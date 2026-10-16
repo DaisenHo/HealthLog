@@ -1249,8 +1249,12 @@ const LOCALE_REPLY_FOOTER_FALLBACK: Record<
 
 /**
  * v1.22 (W6) — per-turn personalization passed by the chat route. All fields
- * are optional and the addendum is omitted when none apply, so the prompt is
- * byte-identical to the pre-feature one for the coverage test + unnamed users.
+ * are optional and the notes are empty when none apply.
+ *
+ * v1.43 (#1217) — these lines change every turn, so they no longer ride the
+ * system prompt: a system prompt that changed per turn rewrote the provider's
+ * cached prefix (tools plus system, 14 to 19 K tokens) on every turn. They
+ * are composed by {@link buildCoachTurnNotes} and travel in the user message.
  */
 export interface CoachPersonalization {
   /** The user's first name; null when no display name is set. */
@@ -1261,11 +1265,17 @@ export interface CoachPersonalization {
   openerHint?: string | null;
 }
 
+/**
+ * The Coach system prompt. Stable for one person across every turn and every
+ * round of a turn: it depends on the locale, the Coach preferences and the
+ * about-me text only, so the provider's prompt cache holds. Anything that
+ * changes per turn (the opener hint, the name clause, a resolved follow-up)
+ * goes into the user message instead.
+ */
 export function getCoachSystemPrompt(
   locale: Locale,
   prefs: CoachPrefs = DEFAULT_COACH_PREFS,
   aboutMe: string | null = null,
-  personalization: CoachPersonalization = {},
 ): string {
   let base: string;
   if (locale === "de") {
@@ -1313,11 +1323,11 @@ export function getCoachSystemPrompt(
   // may only link a slug it lists, so a fabricated /learn URL is impossible.
   const withLearn = `${withPrefix}\n\n${learnCatalogPromptBlock()}`;
   // v1.22 (W6) — the narrative-quality addendum: the context-layer rule, the
-  // single-chart-token exception, the BP usual-range verbatim clause, plus the
-  // per-turn opener hint and sparse first-name personalization. Composed after
-  // the shared contracts so the chart-token exception can carve out the one
-  // place a `metric:<TYPE>` token is permitted.
-  const withV122 = `${withLearn}\n\n${buildCoachV122Addendum(locale, personalization)}`;
+  // single-chart-token exception, the BP usual-range verbatim clause. Composed
+  // after the shared contracts so the chart-token exception can carve out the
+  // one place a `metric:<TYPE>` token is permitted. The per-turn opener hint
+  // and name clause are in `buildCoachTurnNotes`.
+  const withV122 = `${withLearn}\n\n${buildCoachV122Addendum(locale)}`;
   // v1.15.20 — the user-authored "about me" self-description rides the
   // system prompt as a delimited, user-provided block (Settings → AI).
   const suffix = aboutMe ? buildAboutMeBlock(locale, aboutMe) : "";
@@ -1338,14 +1348,11 @@ export function getCoachSystemPrompt(
  *  - BP USUAL RANGE — when the snapshot's blood-pressure block carries a
  *    `usualRange`, quote THOSE bounds verbatim; never invent a band from window
  *    means (kills the fabricated "153–150" range).
- *  - OPENER HINT — vary the turn's opening so a multi-turn session does not open
- *    identically every time.
- *  - NAME — sparse, anti-formulaic first-name address on the gated turns only.
+ *
+ * The per-turn opener hint and first-name clause that used to close this
+ * addendum are {@link buildCoachTurnNotes} now.
  */
-function buildCoachV122Addendum(
-  locale: Locale,
-  personalization: CoachPersonalization,
-): string {
+function buildCoachV122Addendum(locale: Locale): string {
   const isDe = instructionLocale(locale) === "de";
   const parts: string[] = [];
   parts.push(isDe ? "COACH-ZUSATZ (v1.22)" : "COACH ADDENDUM (v1.22)");
@@ -1392,6 +1399,21 @@ function buildCoachV122Addendum(
       : `EXPERIMENT REVIEW — when the snapshot carries an "experimentOutcomes" block, read the result back in the user's own numbers, association-only ("looks worth keeping" / "associated with", NEVER "proven" / "it worked" / "caused"). Report a null result honestly ("no measurable change — your call"). If a vital WORSENED during the experiment, do NOT cheerlead it — raise it plainly and route to the doctor / the acute-redflag path. Only ever propose BEHAVIORAL experiments (sleep timing, steps, screen time, meal timing); never a medication / dose / supplement trial — refuse those and defer to the prescriber.`,
   );
 
+  return parts.join("\n\n");
+}
+
+/**
+ * v1.43 (#1217) — the lines that change every Coach turn: the hash-seeded
+ * opener hint and, on the gated turns, the first-name clause. They travel in
+ * the user message so the system prompt stays byte-stable across turns and
+ * the provider's prompt cache holds. Empty when neither applies.
+ */
+export function buildCoachTurnNotes(
+  locale: Locale,
+  personalization: CoachPersonalization,
+): string {
+  const isDe = instructionLocale(locale) === "de";
+  const parts: string[] = [];
   if (personalization.openerHint) {
     parts.push(
       isDe
@@ -1409,7 +1431,8 @@ function buildCoachV122Addendum(
     );
   }
 
-  return parts.join("\n\n");
+  if (parts.length === 0) return "";
+  return [isDe ? "FÜR DIESEN TURN" : "FOR THIS TURN", ...parts].join("\n\n");
 }
 
 /**

@@ -15,7 +15,7 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
 import { toMeasurementReminderDto } from "@/lib/measurement-reminders/dto";
-import { isScreeningReminderType } from "@/lib/validations/measurement-reminders";
+import { isScreeningReminderType } from "@/lib/measurement-reminders/screening";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 type RouteParams = { params: Promise<{ id: string }> };

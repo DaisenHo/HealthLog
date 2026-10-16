@@ -80,7 +80,7 @@ import {
   type PriorResultTurn,
 } from "@/lib/ai/coach/results/refs";
 
-import { buildDialogAddenda } from "./addenda";
+import { buildDialogAddenda, buildTableRulesAddendum } from "./addenda";
 import type { TurnLedger } from "./budget";
 import type { TurnReasoning } from "./reasoning";
 import type { TurnChain } from "./chain";
@@ -228,7 +228,7 @@ export function buildTurnResults(
   }
 }
 
-/** v1.39.4 — server-authored lines appended to the system prompt. */
+/** v1.39.4 — server-authored lines appended to a prompt block. */
 function appendBlocks(base: string, blocks: string[]): string {
   const extra = blocks.filter((block) => block.length > 0);
   return extra.length > 0 ? [base, ...extra].join("\n\n") : base;
@@ -374,28 +374,35 @@ export async function runTurnModel(args: {
         reach: ctx.reach,
         prior: args.priorResults ?? [],
       });
-      const requestWith = (tableRules: boolean) =>
-        buildCoachToolRequest({
-          systemPrompt: ctx.systemPrompt,
-          toolModeAddendum: appendBlocks(buildToolModeAddendum(locale), [
-            buildDialogAddenda(locale, { tableRules }),
-            ...args.turnHints,
-          ]),
-          focusHint: renderFocusHint(effectiveScope?.sources),
-          workoutEvidence,
-          dataInventory: renderDataInventory(inventory),
-          priorResults: renderPriorResultRefs(priorResults),
-          guidedBlock: turnContext.guidedBlock,
-          transcript: turnContext.transcript,
-          languageName: LANGUAGE_NAMES[locale],
-          ...(memory ? { memoryBlock: memory.text } : {}),
-        });
-      // The recheck and follow-up rules are about tables: they ride the
-      // prompt once the conversation holds one, or from the round after this
-      // turn produced its first.
-      const withTables = requestWith(true);
-      const toolRequest =
-        priorResults.length > 0 ? withTables : requestWith(false);
+      // The recheck and follow-up rules are about tables: they ride the turn
+      // once the conversation holds one, or from the round after this turn
+      // produced its first. v1.43 (#1217) — like every other line that can
+      // change from one turn or round to the next (the opener hint, the name
+      // clause, a resolved follow-up), they travel on the user side, so the
+      // system prompt and the tools stay one cached prefix for the whole
+      // conversation.
+      const tableRules = buildTableRulesAddendum(locale);
+      const toolRequest = buildCoachToolRequest({
+        systemPrompt: ctx.systemPrompt,
+        toolModeAddendum: appendBlocks(buildToolModeAddendum(locale), [
+          buildDialogAddenda(locale, { tableRules: false }),
+        ]),
+        focusHint: renderFocusHint(effectiveScope?.sources),
+        workoutEvidence,
+        dataInventory: renderDataInventory(inventory),
+        priorResults: renderPriorResultRefs(priorResults),
+        guidedBlock: turnContext.guidedBlock,
+        transcript: turnContext.transcript,
+        languageName: LANGUAGE_NAMES[locale],
+        turnNotes: [
+          ...(priorResults.length > 0 ? [tableRules] : []),
+          ctx.turnNotes,
+          ...args.turnHints,
+        ]
+          .filter((block) => block.length > 0)
+          .join("\n\n"),
+        ...(memory ? { memoryBlock: memory.text } : {}),
+      });
       // v1.39.4 — every call this turn settled, by its turn-wide index, for
       // the result tables. Only this turn's own calls ever reach them.
       const settled: SettledToolCall[] = [];
@@ -420,7 +427,7 @@ export async function runTurnModel(args: {
         userId,
         providers: chain,
         system: toolRequest.system,
-        systemOnceTableShown: withTables.system,
+        ...(priorResults.length > 0 ? {} : { tableRulesOnceShown: tableRules }),
         messages: toolRequest.messages,
         tools: COACH_TURN_TOOL_DEFS,
         temperature: AI_BUDGETS.coach.temperature,
@@ -631,10 +638,18 @@ export async function runTurnModel(args: {
     });
     const summaries: string[] = [];
     // v1.41 — the memory block rides the user turn here too, ahead of the
-    // snapshot, fenced like the rest of the person's own context.
-    const user = memory
-      ? `${memory.text}\n\n${ctx.userPrompt}`
-      : ctx.userPrompt;
+    // snapshot, fenced like the rest of the person's own context. v1.43
+    // (#1217) — so do this turn's own lines (opener hint, name clause, a
+    // resolved follow-up), which used to ride the system prompt and rewrote
+    // its cached prefix on every turn.
+    const user = [
+      memory?.text,
+      ctx.turnNotes,
+      ...args.turnHints,
+      ctx.userPrompt,
+    ]
+      .filter((block): block is string => Boolean(block))
+      .join("\n\n");
     const fallback = await runStreamingRawCompletionWithFallback({
       surface: "coach",
       userId,
@@ -644,7 +659,7 @@ export async function runTurnModel(args: {
       },
       params: {
         ...singleUserTurn({
-          system: appendBlocks(ctx.systemPrompt, args.turnHints),
+          system: ctx.systemPrompt,
           user,
           temperature: AI_BUDGETS.coach.temperature,
           maxTokens: AI_BUDGETS.coach.maxTokens,

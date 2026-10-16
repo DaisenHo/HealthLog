@@ -2,8 +2,10 @@
  * Nutrient catalog — the closed code set for the micronutrient-intake
  * sync (v1.28).
  *
- * 26 codes: the 24 HealthKit `Dietary*` vitamin/mineral quantity types
- * plus DietaryWater and DietaryCaffeine. Energy, carbohydrates,
+ * 26 syncable codes: the 24 HealthKit `Dietary*` vitamin/mineral quantity
+ * types plus DietaryWater and DietaryCaffeine. v1.43 adds two codes no
+ * HealthKit type carries (`dha`, `epa`), which only a supplement's
+ * composition produces; they appear in responses and never in the batch. Energy, carbohydrates,
  * protein, fat, sugar, fiber AND sodium/potassium are deliberately NOT
  * here — the anti-goal against diet-app territory stands, and
  * sodium/potassium are food-composition signals, not "substances
@@ -38,7 +40,12 @@
 
 import type { BinaryReferenceSex } from "@/lib/profile/sex";
 
-export const NUTRIENT_CODES = [
+/**
+ * The codes HealthKit may send in the nutrient batch. `NUTRIENT_CODES` adds
+ * the supplement-only codes below them; the batch validates against this
+ * tuple, so its contract stays the 26 codes it always was.
+ */
+export const SYNCABLE_NUTRIENT_CODES = [
   // 13 vitamins
   "vitamin_a",
   "thiamin",
@@ -70,10 +77,74 @@ export const NUTRIENT_CODES = [
   "caffeine",
 ] as const;
 
+/**
+ * v1.43 — codes that come only from a supplement's composition. No HealthKit
+ * quantity type carries them, so the batch never accepts them and they appear
+ * in responses only.
+ */
+export const SUPPLEMENT_ONLY_NUTRIENT_CODES = ["dha", "epa"] as const;
+
+export const NUTRIENT_CODES = [
+  ...SYNCABLE_NUTRIENT_CODES,
+  ...SUPPLEMENT_ONLY_NUTRIENT_CODES,
+] as const;
+
 export type NutrientCode = (typeof NUTRIENT_CODES)[number];
+export type SyncableNutrientCode = (typeof SYNCABLE_NUTRIENT_CODES)[number];
 
 /** Canonical storage units. `ug` is µg on the wire — ASCII on purpose. */
 export type NutrientUnit = "mg" | "ug" | "ml";
+
+/**
+ * v1.43 — every unit an amount may be ENTERED in. The canonical units plus
+ * gram, litre and the international unit. IU exists only where one IU maps to
+ * one fixed mass (vitamin D, preformed vitamin A); vitamin E has none, because
+ * its IU depends on whether the form is natural or synthetic.
+ */
+export type NutrientInputUnitCode = NutrientUnit | "g" | "l" | "IU";
+
+/** The unit vocabulary, spelled once. Every other file reads it from here. */
+export const NUTRIENT_UNIT = {
+  mg: "mg",
+  ug: "ug",
+  ml: "ml",
+  g: "g",
+  l: "l",
+  IU: "IU",
+} as const satisfies Record<NutrientInputUnitCode, NutrientInputUnitCode>;
+
+export interface NutrientInputUnit {
+  unit: NutrientInputUnitCode;
+  /** Multiply an entered amount by this to get the canonical amount. */
+  factorToCanonical: number;
+}
+
+/**
+ * v1.43 — a tolerable upper intake level (UL): the highest daily intake not
+ * expected to cause harm. `scope: "total"` applies to everything taken in a
+ * day; `scope: "supplemental"` applies to the part from supplements only
+ * (magnesium salts, folic acid), which the server reads as the SUPPLEMENT
+ * source. `null` on a code where no UL is established.
+ */
+export interface NutrientUpperLimit {
+  value: number;
+  unit: NutrientUnit;
+  scope: "total" | "supplemental";
+  /**
+   * The chemical form the level is set for, where it is narrower than the
+   * nutrient: vitamin A's level covers preformed retinol only (beta-carotene
+   * does not count), folate's the folic acid, magnesium's the dissociable
+   * salts in supplements, vitamin E's alpha-tocopherol. `null` where the
+   * level covers the nutrient as such. Clients phrase it in the reader's
+   * language; `source` stays the bare citation.
+   */
+  form: NutrientUpperLimitForm | null;
+  /** The citation (EFSA overview and the opinion it rests on), verbatim. */
+  source: string;
+}
+
+export type NutrientUpperLimitForm =
+  "retinol" | "folic_acid" | "magnesium_salts" | "alpha_tocopherol";
 
 export interface NutrientReference {
   /** EFSA value type, named in Coach prose later (Slice B). */
@@ -91,8 +162,13 @@ export interface NutrientReference {
 
 export interface NutrientDefinition {
   code: NutrientCode;
-  /** HealthKit quantity type identifier iOS reads this code from. */
-  hkIdentifier: string;
+  /**
+   * HealthKit quantity type identifier iOS reads this code from. `null` for a
+   * supplement-only code (`dha`, `epa`).
+   */
+  hkIdentifier: string | null;
+  /** Whether HealthKit may send this code in the nutrient batch. */
+  syncable: boolean;
   /** Canonical storage unit AND the pinned HK query unit. */
   unit: NutrientUnit;
   /** i18n key for the display name (settings card + exports). */
@@ -103,7 +179,155 @@ export interface NutrientDefinition {
    * supplement reality so only unit confusion / corruption trips it.
    */
   plausibleDailyMax: number;
-  reference: NutrientReference;
+  /** The reference intake, or `null` where none is set per code. */
+  reference: NutrientReference | null;
+  /** v1.43 — the units an amount may be entered in, canonical first. */
+  inputUnits: ReadonlyArray<NutrientInputUnit>;
+  /** v1.43 — the tolerable upper intake level, or `null`. */
+  upperLimit: NutrientUpperLimit | null;
+}
+
+/**
+ * The input units each canonical unit offers by default: the unit itself and
+ * its neighbours in the metric ladder. A code adds IU on top where one exists.
+ */
+const METRIC_INPUT_UNITS: Readonly<
+  Record<NutrientUnit, ReadonlyArray<NutrientInputUnit>>
+> = {
+  mg: [
+    { unit: NUTRIENT_UNIT.mg, factorToCanonical: 1 },
+    { unit: NUTRIENT_UNIT.ug, factorToCanonical: 0.001 },
+    { unit: NUTRIENT_UNIT.g, factorToCanonical: 1000 },
+  ],
+  ug: [
+    { unit: NUTRIENT_UNIT.ug, factorToCanonical: 1 },
+    { unit: NUTRIENT_UNIT.mg, factorToCanonical: 1000 },
+  ],
+  ml: [
+    { unit: NUTRIENT_UNIT.ml, factorToCanonical: 1 },
+    { unit: NUTRIENT_UNIT.l, factorToCanonical: 1000 },
+  ],
+};
+
+/**
+ * The international unit where one IU is one fixed mass of the canonical unit.
+ * Vitamin D: 1 IU = 0.025 µg cholecalciferol. Vitamin A: 1 IU = 0.3 µg
+ * retinol (preformed vitamin A, the form supplements state in IU).
+ */
+const IU_FACTOR: Partial<Record<NutrientCode, number>> = {
+  vitamin_d: 0.025,
+  vitamin_a: 0.3,
+};
+
+/**
+ * The tolerable upper intake levels for adults, from EFSA's overview of the
+ * tolerable upper intake levels (2024 edition), each citing the opinion it
+ * rests on. A code that is absent has no established UL: EFSA set none
+ * (vitamin C, K, B1, B2, B5, B12, biotin, phosphorus, chromium), set a safe
+ * level of intake instead of a UL (iron 2024, manganese 2023), or set one that
+ * depends on a chemical form the composition cannot say (niacin: nicotinic
+ * acid 10 mg, nicotinamide 900 mg). EPA and DHA have none: EFSA (2012) found
+ * supplemental intakes up to 5 g a day of both combined raise no concern, which
+ * is a statement about the pair, not a per-nutrient limit.
+ */
+const UPPER_LIMITS: Partial<Record<NutrientCode, NutrientUpperLimit>> = {
+  vitamin_a: {
+    value: 3000,
+    unit: "ug",
+    scope: "total",
+    form: "retinol",
+    source: "EFSA UL overview 2024 (SCF 2002)",
+  },
+  vitamin_b6: {
+    value: 12,
+    unit: "mg",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
+  },
+  folate: {
+    value: 1000,
+    unit: "ug",
+    scope: "supplemental",
+    form: "folic_acid",
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
+  },
+  vitamin_d: {
+    value: 100,
+    unit: "ug",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
+  },
+  vitamin_e: {
+    value: 300,
+    unit: "mg",
+    scope: "total",
+    form: "alpha_tocopherol",
+    source: "EFSA UL overview 2024 (NDA Panel 2024)",
+  },
+  calcium: {
+    value: 2500,
+    unit: "mg",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2012)",
+  },
+  magnesium: {
+    value: 250,
+    unit: "mg",
+    scope: "supplemental",
+    form: "magnesium_salts",
+    source: "EFSA UL overview 2024 (SCF 2001)",
+  },
+  zinc: {
+    value: 25,
+    unit: "mg",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2003)",
+  },
+  copper: {
+    value: 5,
+    unit: "mg",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2003)",
+  },
+  selenium: {
+    value: 255,
+    unit: "ug",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (NDA Panel 2023)",
+  },
+  molybdenum: {
+    value: 600,
+    unit: "ug",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2000)",
+  },
+  iodine: {
+    value: 600,
+    unit: "ug",
+    scope: "total",
+    form: null,
+    source: "EFSA UL overview 2024 (SCF 2002)",
+  },
+};
+
+function inputUnitsFor(
+  code: NutrientCode,
+  unit: NutrientUnit,
+): ReadonlyArray<NutrientInputUnit> {
+  const iu = IU_FACTOR[code];
+  return iu === undefined
+    ? METRIC_INPUT_UNITS[unit]
+    : [
+        ...METRIC_INPUT_UNITS[unit],
+        { unit: NUTRIENT_UNIT.IU, factorToCanonical: iu },
+      ];
 }
 
 function def(
@@ -116,10 +340,34 @@ function def(
   return {
     code,
     hkIdentifier: `HKQuantityTypeIdentifierDietary${hkSuffix}`,
+    syncable: true,
     unit,
     labelKey: `nutrients.names.${code}`,
     plausibleDailyMax,
     reference,
+    inputUnits: inputUnitsFor(code, unit),
+    upperLimit: UPPER_LIMITS[code] ?? null,
+  };
+}
+
+/** A code that only a supplement's composition produces (v1.43). */
+function supplementOnly(
+  code: NutrientCode,
+  unit: NutrientUnit,
+  plausibleDailyMax: number,
+): NutrientDefinition {
+  return {
+    code,
+    hkIdentifier: null,
+    syncable: false,
+    unit,
+    labelKey: `nutrients.names.${code}`,
+    plausibleDailyMax,
+    // EFSA's adequate intake for these (250 mg a day) is set for EPA and DHA
+    // combined, so neither code carries a reference of its own.
+    reference: null,
+    inputUnits: inputUnitsFor(code, unit),
+    upperLimit: UPPER_LIMITS[code] ?? null,
   };
 }
 
@@ -300,6 +548,11 @@ export const NUTRIENT_CATALOG: Readonly<
     adult: 400,
     source: "EFSA 2015 scientific opinion on the safety of caffeine (adults)",
   }),
+  // ── Supplement-only (v1.43) ──────────────────────────────────────
+  // Omega-3 fatty acids from fish or algae oil capsules. The cap sits well
+  // above the 5 g a day EFSA reviewed, so only a unit slip trips it.
+  dha: supplementOnly("dha", "mg", 20000),
+  epa: supplementOnly("epa", "mg", 20000),
 });
 
 /** Catalog rows in canonical display order (the tuple order above). */
@@ -311,6 +564,104 @@ const NUTRIENT_CODE_SET: ReadonlySet<string> = new Set(NUTRIENT_CODES);
 /** True when `code` is a known catalog code. */
 export function isNutrientCode(code: string): code is NutrientCode {
   return NUTRIENT_CODE_SET.has(code);
+}
+
+const SYNCABLE_CODE_SET: ReadonlySet<string> = new Set(SYNCABLE_NUTRIENT_CODES);
+
+/** True when HealthKit may send `code` in the nutrient batch. */
+export function isSyncableNutrientCode(
+  code: string,
+): code is SyncableNutrientCode {
+  return SYNCABLE_CODE_SET.has(code);
+}
+
+/**
+ * A code's catalogue entry with its position in display order, or `null` for
+ * a code the catalogue does not know.
+ */
+export function catalogEntryFor(
+  code: string,
+): (NutrientDefinition & { order: number }) | null {
+  if (!isNutrientCode(code)) return null;
+  return { ...NUTRIENT_CATALOG[code], order: NUTRIENT_CODES.indexOf(code) };
+}
+
+/** Round away binary noise from a unit factor (1000 IU × 0.025 = 25 µg). */
+function roundAmount(value: number): number {
+  return Math.round(value * 1e6) / 1e6;
+}
+
+/**
+ * v1.43 — convert an entered amount to the code's canonical unit. `null` when
+ * `unit` is not one of the code's input units: the caller refuses, it never
+ * guesses. This is the only unit conversion for nutrient amounts.
+ */
+export function toCanonicalNutrientAmount(
+  code: NutrientCode,
+  amount: number,
+  unit: string,
+): number | null {
+  const input = NUTRIENT_CATALOG[code].inputUnits.find((u) => u.unit === unit);
+  if (!input) return null;
+  return roundAmount(amount * input.factorToCanonical);
+}
+
+/**
+ * How labels print the input units, folded to lower case without dots or
+ * spaces. A label says "mcg", "µg" or "μg" for microgram and "IE" (German),
+ * "UI" (French, Spanish, Italian) or "j.m." (Polish) for the international
+ * unit.
+ */
+const INPUT_UNIT_SPELLINGS: Readonly<Record<string, NutrientInputUnitCode>> = {
+  mg: NUTRIENT_UNIT.mg,
+  ug: NUTRIENT_UNIT.ug,
+  µg: NUTRIENT_UNIT.ug,
+  μg: NUTRIENT_UNIT.ug,
+  mcg: NUTRIENT_UNIT.ug,
+  g: NUTRIENT_UNIT.g,
+  ml: NUTRIENT_UNIT.ml,
+  l: NUTRIENT_UNIT.l,
+  iu: NUTRIENT_UNIT.IU,
+  ie: NUTRIENT_UNIT.IU,
+  ui: NUTRIENT_UNIT.IU,
+  jm: NUTRIENT_UNIT.IU,
+};
+
+/**
+ * v1.43 — read a unit as a label prints it into the catalogue's input-unit
+ * code, or `null` when it is not one. Whether the code accepts it is a second
+ * question ({@link toCanonicalNutrientAmount}).
+ */
+export function parseNutrientInputUnit(
+  raw: string,
+): NutrientInputUnitCode | null {
+  const folded = raw.trim().toLowerCase().replace(/[\s.]/g, "");
+  return INPUT_UNIT_SPELLINGS[folded] ?? null;
+}
+
+/** Whether `unit` is the code's canonical unit (nothing to convert). */
+export function isCanonicalNutrientUnit(
+  code: NutrientCode,
+  unit: string,
+): boolean {
+  return NUTRIENT_CATALOG[code].unit === unit;
+}
+
+/**
+ * v1.43 — whether a day is above the code's upper limit. `total` is the day's
+ * sum across sources; `supplemental` the part from taken supplement doses.
+ * `null` when the code has no upper limit, so "not above" and "no limit to be
+ * above" stay two different answers.
+ */
+export function isAboveUpperLimit(
+  code: NutrientCode,
+  amounts: { total: number; supplemental: number },
+): boolean | null {
+  const limit = NUTRIENT_CATALOG[code].upperLimit;
+  if (!limit) return null;
+  const compared =
+    limit.scope === "supplemental" ? amounts.supplemental : amounts.total;
+  return compared > limit.value;
 }
 
 /** A catalog reference resolved to one concrete number for a profile. */
@@ -336,6 +687,7 @@ export function resolveNutrientReference(
   sex: BinaryReferenceSex | null,
 ): ResolvedNutrientReference | null {
   const ref = NUTRIENT_CATALOG[code].reference;
+  if (!ref) return null;
   const value =
     ref.adult ??
     (sex === "MALE" ? ref.male : sex === "FEMALE" ? ref.female : undefined);

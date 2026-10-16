@@ -257,6 +257,20 @@ const REGISTRY: DestructiveEntry[] = [
     ],
   },
   {
+    file: "components/links/related-records.tsx",
+    destroys:
+      "a relation link between two of the person's own records (a medication and its condition, document or visit; a visit and a medication or dose)",
+    recovery: "permanent",
+    confirm: [],
+    unconfirmed: [
+      {
+        control: "remove a chip in a relation link picker",
+        reason:
+          "Removing a chip deletes one join row and nothing the person wrote: both records stay untouched, the unlink toast names what was unlinked, and the same picker re-files it with one tap. This is the shape every link picker in the app already has (the visit form, the document sheet, the dose form), and a dialog on one of them alone would make the same act cost two different amounts.",
+      },
+    ],
+  },
+  {
     file: "components/insights/coach-panel/coach-conversation.tsx",
     destroys:
       "the stored list of pending clarifying questions, and document attachments on a conversation",
@@ -389,8 +403,23 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["DeleteButton"],
   },
   {
-    file: "components/records/health-profile-facts-manager.tsx",
-    destroys: "the current value of one effective-dated health-profile fact",
+    file: "components/records/life-circumstances-manager.tsx",
+    destroys:
+      "the current answer of one life-circumstance fact, when a section is saved with it set back to no answer",
+    recovery: "tombstoned-no-restore",
+    confirm: [],
+    unconfirmed: [
+      {
+        control:
+          "Save section with a field set back to no answer — life-circumstances-manager.tsx",
+        reason:
+          "Setting a question back to no answer and pressing Save is the deliberate act itself, made field by field inside a form the person is editing, with the old answer visible until they change it. The delete closes the answer's interval rather than erasing it, so the dated history keeps it, and answering again takes one select. A second dialog on top of an explicit form edit would make correcting an answer dearer than giving it.",
+      },
+    ],
+  },
+  {
+    file: "components/records/audit-c-panel.tsx",
+    destroys: "one AUDIT-C entry from the alcohol history",
     recovery: "tombstoned-no-restore",
     confirm: ["ConfirmButton"],
   },
@@ -631,6 +660,14 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/integrations/nightscout-card.tsx",
     destroys:
       "the stored Nightscout address and token — reconnecting means typing them again",
+    triggers: ["components/settings/integrations/integration-card.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmDialog"],
+  },
+  {
+    file: "components/settings/integrations/dawarich-card.tsx",
+    destroys:
+      "the stored Dawarich address, key and home settings, and with the second entry every stored movement day — reconnecting means typing them again; deleted days come back only as far as the instance still holds them",
     triggers: ["components/settings/integrations/integration-card.tsx"],
     recovery: "permanent",
     confirm: ["ConfirmDialog"],

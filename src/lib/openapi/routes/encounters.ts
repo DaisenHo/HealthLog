@@ -14,6 +14,7 @@
  * reaches no response, because every preventive-care read excludes it. The
  * published contract stays at two members deliberately.
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -465,7 +466,10 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The visit.",
           content: {
             "application/json": {
-              schema: dataEnvelope(encounter, "GetEncounterEnvelope"),
+              schema: dataEnvelope(
+                withRelated(encounter),
+                "GetEncounterEnvelope",
+              ),
             },
           },
         },
@@ -548,7 +552,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "File targets against a visit",
       description:
-        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document link and unlink.",
+        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document link and unlink. Since v1.43 `targetKind` also takes `medication` and `vaccination`; those links show in the visit's `related` list (`GET /api/encounters/{id}`), not in `links`.",
       requestParams: idPath,
       requestBody: {
         required: true,

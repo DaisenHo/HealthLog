@@ -20,6 +20,7 @@ import {
 } from "@/lib/labs/serialise";
 import { decryptNoteFromBytes, encryptNoteToBytes } from "@/lib/labs/store";
 import { annotate } from "@/lib/logging/context";
+import { withRelated } from "@/lib/links/related";
 import {
   effectiveBound,
   isInvertedRange,
@@ -66,7 +67,7 @@ function toResolved(
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("read", "labs");
+    const { user, grantId } = await requireRecordAuth("read", "labs");
     const { id } = await params;
 
     const row = await prisma.labResult.findFirst({
@@ -80,10 +81,14 @@ export const GET = apiHandler(
     annotate({ action: { name: "labs.get" }, meta: { labResultId: id } });
 
     return apiSuccess(
-      serialiseLabResultDetail(
-        row,
-        toResolved(row.biomarker),
-        row.noteEncrypted ? decryptNoteFromBytes(row.noteEncrypted) : null,
+      await withRelated(
+        prisma,
+        serialiseLabResultDetail(
+          row,
+          toResolved(row.biomarker),
+          row.noteEncrypted ? decryptNoteFromBytes(row.noteEncrypted) : null,
+        ),
+        { userId: user.id, grantId, kind: "labResult", id },
       ),
     );
   },

@@ -444,17 +444,19 @@ export interface HandoverPreview {
 }
 
 /**
- * What a link would hand over, or null for every kind of unusable link.
- *
- * Deliberately minimal: the profile's name, the expiry, and who keeps which
- * access. No health data, no date of birth, no usernames and no grant ids —
- * the person holding the link has not proved anything yet beyond holding it.
+ * The open link behind a stored row, or null when it can no longer be
+ * claimed: used, withdrawn, expired, a state this code cannot read, a profile
+ * no longer managed, or a creator who lost access. The one definition of
+ * "usable" the preview, the single-sign-on start and the callback share.
  */
-export async function previewHandover(
-  rawToken: string,
-  now: Date = new Date(),
-): Promise<HandoverPreview | null> {
-  const row = await findHandoverByToken(prisma, rawToken);
+async function usableHandover(
+  row: Awaited<ReturnType<typeof findHandoverByToken>>,
+  now: Date,
+): Promise<{
+  row: NonNullable<Awaited<ReturnType<typeof findHandoverByToken>>>;
+  state: HandoverState;
+  displayName: string | null;
+} | null> {
   if (!row || !isOpen(row, now)) return null;
   const state = parseHandoverState(row.proposalsJson);
   if (!state) return null;
@@ -467,6 +469,26 @@ export async function previewHandover(
   if (!(await isActiveGuardian(prisma, row.profileId, row.createdById, now))) {
     return null;
   }
+  return { row, state, displayName: profile.displayName };
+}
+
+/**
+ * What a link would hand over, or null for every kind of unusable link.
+ *
+ * Deliberately minimal: the profile's name, the expiry, and who keeps which
+ * access. No health data, no date of birth, no usernames and no grant ids —
+ * the person holding the link has not proved anything yet beyond holding it.
+ */
+export async function previewHandover(
+  rawToken: string,
+  now: Date = new Date(),
+): Promise<HandoverPreview | null> {
+  const usable = await usableHandover(
+    await findHandoverByToken(prisma, rawToken),
+    now,
+  );
+  if (!usable) return null;
+  const { row, state } = usable;
 
   const guardians = await prisma.accountGrant.findMany({
     where: { grantorId: row.profileId, ...activeGuardianWhere(now) },
@@ -477,13 +499,46 @@ export async function previewHandover(
     orderBy: { createdAt: "asc" },
   });
   return {
-    displayName: profile.displayName,
+    displayName: usable.displayName,
     expiresAt: row.expiresAt,
     guardians: guardians.map((g) => ({
       displayName: g.grantee.displayName?.trim() || null,
       proposal: proposalFor(state, g.id),
     })),
   };
+}
+
+/**
+ * v1.43 (#959) — the usable link behind a raw token, or null. The
+ * single-sign-on start seals its id, never the token, into the claim cookie.
+ */
+export async function usableHandoverForToken(
+  rawToken: string,
+  now: Date = new Date(),
+): Promise<{ handoverId: string; profileId: string } | null> {
+  const usable = await usableHandover(
+    await findHandoverByToken(prisma, rawToken),
+    now,
+  );
+  return usable
+    ? { handoverId: usable.row.id, profileId: usable.row.profileId }
+    : null;
+}
+
+/**
+ * v1.43 (#959) — whether the link with this id can still be claimed. The
+ * single-sign-on legs re-ask on every step, so a link withdrawn or replaced
+ * while the person is at the identity provider is refused before any account
+ * changes. The claim re-checks under the lock; this decides nothing alone.
+ */
+export async function isHandoverUsable(
+  handoverId: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const row = await prisma.managedProfileHandover.findUnique({
+    where: { id: handoverId },
+  });
+  return (await usableHandover(row, now)) !== null;
 }
 
 export interface ClaimedProfile {
@@ -502,15 +557,33 @@ export interface ClaimedProfile {
  * strength: none of that work belongs inside the lock.
  */
 export async function claimManagedProfile(input: {
-  rawToken: string;
+  /**
+   * The link: the raw token from the password form, or (v1.43) the id the
+   * single-sign-on start sealed into the claim cookie after checking the
+   * token itself.
+   */
+  link: { rawToken: string } | { handoverId: string };
   username: string;
-  email: string;
-  passwordHash: string;
+  /** Null on a single-sign-on claim whose provider vouched for no address. */
+  email: string | null;
+  /** Null on a single-sign-on claim: the account signs in at the provider. */
+  passwordHash: string | null;
+  /**
+   * v1.43 (#959) — the identity provider's subject, bound to the profile in
+   * the same transaction. The `(issuer, sub)` unique index refuses a subject
+   * that another account holds, as `taken`.
+   */
+  oidc?: { issuer: string; sub: string };
   ipAddress?: string | null;
   now?: Date;
 }): Promise<ClaimedProfile> {
   const now = input.now ?? new Date();
-  const found = await findHandoverByToken(prisma, input.rawToken);
+  const found =
+    "rawToken" in input.link
+      ? await findHandoverByToken(prisma, input.link.rawToken)
+      : await prisma.managedProfileHandover.findUnique({
+          where: { id: input.link.handoverId },
+        });
   if (!found) throw new HandoverError("invalid");
 
   try {
@@ -551,6 +624,9 @@ export async function claimManagedProfile(input: {
             username: input.username,
             email: input.email,
             passwordHash: input.passwordHash,
+            ...(input.oidc
+              ? { oidcIssuer: input.oidc.issuer, oidcSub: input.oidc.sub }
+              : {}),
             disclaimerAcknowledgedAt: null,
             disclaimerAcknowledgedVersion: null,
             onboardingCompletedAt: null,
@@ -636,6 +712,7 @@ export async function claimManagedProfile(input: {
             })),
             withdrawnInvitations,
             consentsWithdrawn: consent.revoked.length,
+            method: input.oidc ? "sso" : "password",
           },
           client: tx,
         });

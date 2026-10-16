@@ -1,5 +1,6 @@
 /**
- * `POST   /api/vaccinations/{id}/links` — file a scanned page against a dose.
+ * `POST   /api/vaccinations/{id}/links` — file a scanned page, or since v1.43
+ * the visit it was given at, against a dose.
  * `DELETE /api/vaccinations/{id}/links` — unfile it.
  *
  * Deliberately bare `requireAuth()` rather than a delegable declaration, and

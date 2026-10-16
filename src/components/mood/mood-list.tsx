@@ -69,6 +69,7 @@ import {
 // reads newest-first by default; every other column opens ascending.
 const MOOD_DESC_COLUMNS: ReadonlySet<string> = new Set(["moodLoggedAt"]);
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { formatDateTime } from "@/lib/format";
 import { DayLink } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -384,8 +385,8 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
         await invalidateKeys(queryClient, moodDependentKeys);
         await refetchInactiveDailyReads(queryClient);
         toast.success(t("mood.restoredToast"));
-      } catch {
-        toast.error(t("mood.restoreError"));
+      } catch (failure) {
+        showErrorToast(t("mood.restoreError"), { cause: failure });
       }
     },
     [queryClient, t],
@@ -409,8 +410,8 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
     // leaving the row in place with no signal that the request was rejected.
     // Surface the failure so the user knows to retry. Mirrors the v1.11.3
     // medication-card silent-failure fix.
-    onError: () => {
-      toast.error(t("mood.deleteError"));
+    onError: (failure) => {
+      showErrorToast(t("mood.deleteError"), { cause: failure });
     },
   });
 
@@ -439,8 +440,8 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
         },
       );
     },
-    onError: () => {
-      toast.error(t("mood.bulkDeleteError"));
+    onError: (failure) => {
+      showErrorToast(t("mood.bulkDeleteError"), { cause: failure });
     },
   });
 

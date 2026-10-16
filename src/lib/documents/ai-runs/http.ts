@@ -4,6 +4,7 @@
  * response the synchronous route has always given.
  */
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { hasPreference } from "@/lib/http/prefer";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 
 import type { AiRunFailure } from "./store";
@@ -20,14 +21,7 @@ import {
  * is what a client that has not adopted runs relies on.
  */
 export function prefersRespondAsync(request: Request): boolean {
-  const header = request.headers.get("prefer");
-  if (!header) return false;
-  return header
-    .split(",")
-    .some(
-      (preference) =>
-        preference.split(";")[0]?.trim().toLowerCase() === "respond-async",
-    );
+  return hasPreference(request, "respond-async");
 }
 
 /** The 202 for a queued run, with the poll address and the applied preference. */

@@ -17,6 +17,7 @@
 import { z } from "zod/v4";
 
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** Trimmed, bounded free-text field with a min-length guard. */
 const requiredText = (max: number) => z.string().trim().min(1).max(max);
@@ -98,10 +99,10 @@ const ENTRY_MAX_AGE_MS = 50 * 365.25 * 24 * 60 * 60 * 1000;
 
 /** Shared `measuredAt` field: ISO string → Date, plausibility-bounded. */
 const measuredAtField = validateEntryInstant(
-  z
-    .string()
-    .datetime({ message: "measuredAt must be an ISO 8601 datetime" })
-    .transform((s) => new Date(s)),
+  isoDateTime({
+    offset: false,
+    message: "measuredAt must be an ISO 8601 datetime",
+  }).transform((s) => new Date(s)),
   {
     maxAgeMs: ENTRY_MAX_AGE_MS,
     pastMessage: "Measurement date is too far in the past",

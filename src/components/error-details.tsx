@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Copy, CheckCircle2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorIdLine } from "@/components/errors/error-id-line";
+import { errorIdOf } from "@/lib/errors/error-id";
 import { useTranslations } from "@/lib/i18n/context";
 
 export interface ErrorDetailsProps {
@@ -29,6 +31,9 @@ export function ErrorDetails({
 }: ErrorDetailsProps) {
   const { t, locale } = useTranslations();
   const [copied, setCopied] = useState(false);
+  // The id the operator finds this failure by: the request id of an API
+  // failure that reached the boundary, else the server render's digest.
+  const errorId = requestId ?? errorIdOf(error, { unexpected: true });
 
   async function handleCopy() {
     // Only capture the pathname — some flows carry OAuth codes / state tokens
@@ -47,7 +52,7 @@ export function ErrorDetails({
       digest: error.digest,
       name: error.name,
       stack: error.stack?.split("\n").slice(0, 10).join("\n"),
-      requestId: requestId ?? null,
+      requestId: errorId,
       urlPath,
       searchParamCount,
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
@@ -81,6 +86,7 @@ export function ErrorDetails({
       <div className="bg-muted/50 text-muted-foreground rounded-md border p-3 font-mono text-xs break-all">
         {error.message || t("common.unknownError")}
       </div>
+      {errorId && <ErrorIdLine id={errorId} />}
       <div className="flex flex-wrap items-center gap-2">
         {reset && (
           <Button onClick={reset} variant="outline">

@@ -36,6 +36,7 @@ import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
+  SCREENER_INSTRUMENTS,
   createAssessmentSchema,
   listAssessmentsSchema,
 } from "@/lib/validations/mental-health";
@@ -121,7 +122,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     where: {
       userId: user.id,
       deletedAt: null,
-      ...(instrument ? { instrument } : {}),
+      // Screeners only: the table also stores AUDIT-C (v1.43), which older
+      // app builds cannot decode in this list.
+      instrument: instrument ?? { in: [...SCREENER_INSTRUMENTS] },
     },
     // Unique tiebreaker — `takenAt` is day-resolution and two instruments
     // taken in one sitting tie.
@@ -245,7 +248,11 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   // per user, not globally.
   if (externalId) {
     const existing = await prisma.mentalHealthAssessment.findFirst({
-      where: { userId: user.id, externalId },
+      where: {
+        userId: user.id,
+        externalId,
+        instrument: { in: [...SCREENER_INSTRUMENTS] },
+      },
       select: {
         id: true,
         instrument: true,
@@ -332,7 +339,11 @@ async function postAssessment(request: NextRequest): Promise<Response> {
       (err as { code?: unknown }).code === "P2002"
     ) {
       const winner = await prisma.mentalHealthAssessment.findFirst({
-        where: { userId: user.id, externalId },
+        where: {
+          userId: user.id,
+          externalId,
+          instrument: { in: [...SCREENER_INSTRUMENTS] },
+        },
         select: assessmentSelect,
       });
       if (winner) {
@@ -374,12 +385,16 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   // route it through the shared post-mutation tail so the (type, day)
   // rollup bucket and the cached status assessment converge without
   // waiting for a nightly discovery pass.
-  await afterMeasurementMutation(user.id, [
-    {
-      type: INSTRUMENT_MEASUREMENT_TYPE[id] as MeasurementType,
-      measuredAt: when,
-    },
-  ]);
+  await afterMeasurementMutation(
+    user.id,
+    [
+      {
+        type: INSTRUMENT_MEASUREMENT_TYPE[id] as MeasurementType,
+        measuredAt: when,
+      },
+    ],
+    { source: "manual" },
+  );
 
   // v1.27.6 — a screening can be planned as a Vorsorge reminder keyed on
   // PHQ9_SCORE / GAD7_SCORE. Kick the eventful satisfy worker so completing

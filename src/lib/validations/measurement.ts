@@ -2,6 +2,9 @@ import { z } from "zod/v4";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { validateEntryInstant } from "./entry-instant";
 import { isCalendarDateKey } from "@/lib/tz/date-only";
+import { isoDateTime } from "@/lib/validations/datetime";
+import { MEASUREMENT_SOURCES } from "@/lib/measurements/sources";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
 
 export const measurementTypeEnum = z.enum([
   "WEIGHT",
@@ -166,81 +169,7 @@ export const glucoseContextEnum = z.enum([
   "BEDTIME",
 ]);
 
-export const measurementSourceEnum = z.enum([
-  "MANUAL",
-  "WITHINGS",
-  "IMPORT",
-  "APPLE_HEALTH",
-  // v1.10.0 — computed scores (WX-C). Server-owned / read-only: a `COMPUTED`
-  // row is minted by a nightly engine, never written by a client. It is part
-  // of this enum so the read/response shapes (and the iOS decoder) can decode
-  // the rows it surfaces; the client-facing write surfaces reject it — see
-  // `WRITABLE_MEASUREMENT_SOURCES` and the batch route's `batchSourceEnum`.
-  "COMPUTED",
-  // v1.11.0 — WHOOP integration. Native WHOOP scores ingest server-side (no
-  // client write path). Part of this enum so the read/response shapes (and
-  // the iOS decoder) can decode the rows it surfaces.
-  "WHOOP",
-  // v1.12.0 — Fitbit/Pixel integration via the Google Health API. Server-owned
-  // (no client write path), exactly like WHOOP. Part of this enum so the
-  // read/response shapes (and the iOS decoder) can decode the rows it surfaces.
-  "FITBIT",
-  // v1.17.0 — Nightscout glucose integration (F1). Server-owned (no client
-  // write path), exactly like WHOOP/FITBIT. Part of this enum so the
-  // read/response shapes (and the iOS decoder) can decode the rows it surfaces.
-  "NIGHTSCOUT",
-  // v1.17.0 — Polar OAuth integration (F4). Server-owned (no client write
-  // path), exactly like WHOOP/FITBIT. Part of this enum so the read/response
-  // shapes (and the iOS decoder) can decode the rows it surfaces.
-  "POLAR",
-  // v1.17.0 — Oura OAuth integration (F4). Server-owned (no client write
-  // path), exactly like WHOOP/FITBIT. Part of this enum so the read/response
-  // shapes (and the iOS decoder) can decode the rows it surfaces.
-  "OURA",
-  // v1.19.2 — Telegram numeric-reply capture. A reply to a measurement
-  // reminder is written server-side from the chat-bound webhook (not the
-  // cookie/Bearer client write path), so it carries its own source label.
-  // Part of this enum so the read/response shapes (and the iOS decoder) can
-  // decode the rows it surfaces; the client-facing write surfaces still
-  // reject it (see `WRITABLE_MEASUREMENT_SOURCES` + the batch allowlist).
-  "TELEGRAM",
-  // v1.22.0 — measurements logged through the confirmed remote MCP write
-  // surface under a `health:write`-scoped token. Server-resolved (the row is
-  // written in-process over `/mcp`, never through the cookie/Bearer client
-  // write path), so it is excluded from `WRITABLE_MEASUREMENT_SOURCES`; part
-  // of this enum so the read/response shapes (and the iOS decoder) can decode
-  // the rows it surfaces.
-  "MCP",
-  // v1.26.0 — Fitbit/Pixel + Wear OS via the Google Health API. Server-owned
-  // (no client write path), exactly like WHOOP/FITBIT. Part of this enum so the
-  // read/response shapes (and the iOS decoder) can decode the rows it surfaces;
-  // deliberately absent from `WRITABLE_MEASUREMENT_SOURCES` + the batch
-  // allowlist so a client can never forge a GOOGLE_HEALTH-attributed row.
-  "GOOGLE_HEALTH",
-  // v1.28.x — Strava OAuth integration. Native Strava activities ingest
-  // server-side as `source = STRAVA` Workout rows (no client write path),
-  // exactly like WHOOP/FITBIT. Part of this enum so the read/response shapes
-  // (and the iOS decoder) can decode the rows it surfaces; deliberately absent
-  // from `WRITABLE_MEASUREMENT_SOURCES` + the batch allowlist so a client can
-  // never forge a STRAVA-attributed row.
-  "STRAVA",
-  // v1.38.x — measurements pushed in under a `measurements:write` Bearer
-  // token (a home-automation bridge, a scale's own uploader). Server-resolved
-  // from the credential rather than named by the caller, so it is deliberately
-  // absent from `WRITABLE_MEASUREMENT_SOURCES` and the batch allowlist — a
-  // source a client could assert would prove nothing about where the reading
-  // came from. Part of this enum so the read/response shapes (and the iOS
-  // decoder) can decode the rows it surfaces. Unlike the server-owned sources
-  // above these rows stay value-editable; see
-  // `USER_CORRECTABLE_MEASUREMENT_SOURCES`.
-  "EXTERNAL",
-  // v1.42 — rows imported from an Android Health Connect export (#972).
-  // Server-owned: only the Health Connect import worker writes them, so the
-  // value is deliberately absent from `WRITABLE_MEASUREMENT_SOURCES` and the
-  // batch allowlist, like IMPORT. Part of this enum so the read/response
-  // shapes (and the iOS decoder) can decode the rows it surfaces.
-  "HEALTH_CONNECT",
-]);
+export const measurementSourceEnum = z.enum(MEASUREMENT_SOURCES);
 
 /**
  * v1.10.0 — computed scores (WX-C). The subset of `MeasurementSource` a
@@ -534,14 +463,6 @@ export function validateMeasurementRange(
   return null;
 }
 
-/**
- * v1.6.0 — notes cap raised from 25 to 200. A 25-char limit could not
- * hold a meaningful clinical note ("took after large meal, felt dizzy
- * standing up"). The DB column is unbounded `String?`; this is the
- * single source of truth the client char-counters import.
- */
-export const MEASUREMENT_NOTES_MAX_LENGTH = 200;
-
 export const createMeasurementSchema = z
   .object({
     type: measurementTypeEnum,
@@ -551,7 +472,7 @@ export const createMeasurementSchema = z
     // 1900. Closes the data-portability gap where a hand-rolled POST could
     // backdate or forward-date a reading arbitrarily.
     measuredAt: validateEntryInstant(
-      z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+      isoDateTime().transform((s) => new Date(s)),
     ),
     notes: z.string().max(MEASUREMENT_NOTES_MAX_LENGTH).optional(),
     // v1.10.0 QA — validate against the client-writable subset, not the full
@@ -611,7 +532,7 @@ export const updateMeasurementSchema = z.object({
   // v1.17 W1b — same plausibility bound on the edit path; an edit cannot
   // forward-date a reading into the future nor before 1900.
   measuredAt: validateEntryInstant(
-    z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+    isoDateTime().transform((s) => new Date(s)),
   ).optional(),
   notes: z
     .string()
@@ -645,12 +566,10 @@ export const listPersonalRecordsSchema = z.object({
 export const listMeasurementsSchema = z
   .object({
     type: measurementTypeEnum.optional(),
-    from: z.iso
-      .datetime({ offset: true })
+    from: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
-    to: z.iso
-      .datetime({ offset: true })
+    to: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the

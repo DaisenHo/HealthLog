@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours} godz. {minutes} min",
     "durationMinutes": "{minutes} min",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} godz."
+    "durationClockHours": "{time} godz.",
+    "errorIdLabel": "ID błędu",
+    "errorIdCopy": "Kopiuj ID błędu",
+    "errorIdCopied": "Skopiowano ID błędu"
   },
   "apiErrors": {
     "measurement": {
@@ -153,6 +156,20 @@
       },
       "event": {
         "notFound": "Ten wpis już nie istnieje."
+      }
+    },
+    "medications": {
+      "notFound": "Ten lek nie jest już dostępny.",
+      "ingredients": {
+        "invalid": "Sprawdź skład i spróbuj ponownie.",
+        "unitMismatch": "Ta jednostka nie jest dostępna dla tego składnika.",
+        "extract": {
+          "fileType": "Prześlij plik JPEG, PNG, WebP lub PDF.",
+          "fileTooLarge": "Plik jest większy niż 10 MB.",
+          "rateLimited": "Za dużo odczytów etykiet. Spróbuj ponownie za godzinę.",
+          "budgetExceeded": "Dzisiejszy budżet AI został wykorzystany.",
+          "failed": "Nie udało się odczytać etykiety. Spróbuj ostrzejszego zdjęcia."
+        }
       }
     }
   },
@@ -367,7 +384,20 @@
       "notes": "Dodatkowe uwagi"
     },
     "courseRange": "Kuracja od {start} do {end}",
-    "courseSince": "Kuracja od {start}"
+    "courseSince": "Kuracja od {start}",
+    "lifePackYears": "Paczkolata",
+    "lifeAuditC": "AUDIT-C (badanie przesiewowe)",
+    "lifeAuditCScore": "{score} z 12 dnia {date}.",
+    "lifeAuditCAbove": "Na lub powyżej progu {cutoff} ({source}).",
+    "lifeAuditCBelow": "Poniżej progu {cutoff} ({source}).",
+    "lifeAuditCNoCutoff": "Bez progu zależnego od płci.",
+    "lifeActivity": "Aktywność fizyczna",
+    "lifeActivityValue": "{minutes} minut w tygodniu, według deklaracji",
+    "lifeSitting": "Siedzenie w dzień roboczy",
+    "lifeSittingValue": "{hours} godz., według deklaracji",
+    "lifeWork": "Praca",
+    "lifeNightWork": "praca w nocy",
+    "lifeExposures": "narażenia: {list}"
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -525,7 +555,7 @@
       "loading": "Sprawdzanie linku…",
       "invalid": "Ten link już nie działa",
       "invalidHint": "Jest nieznany, wygasł, został wycofany albo już użyty. Poproś osobę, która go wysłała, o nowy.",
-      "oidcOnly": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO), więc profilu nie można tu jeszcze przejąć.",
+      "oidcOnly": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO). Kontynuuj u swojego dostawcy tożsamości.",
       "signedInTitle": "Najpierw się wyloguj",
       "signedInBody": "Masz zalogowaną sesję jako {username}. Ten link tworzy logowanie dla kogoś innego, więc wyloguj się, zanim go użyjesz.",
       "signOut": "Wyloguj i kontynuuj",
@@ -542,7 +572,19 @@
       "errorTaken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
       "errorRateLimit": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
       "errorFailed": "Nie udało się. Spróbuj ponownie za chwilę.",
-      "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie."
+      "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.",
+      "ssoContinue": "Kontynuuj przez {provider}",
+      "ssoStarting": "Przekierowywanie…",
+      "ssoHint": "Od tej pory logujesz się tutaj swoim kontem {provider}.",
+      "ssoDivider": "lub",
+      "ssoFallbackName": "logowanie jednokrotne (SSO)",
+      "errorTitle": "Przejęcie się nie udało",
+      "errorSubjectBound": "To logowanie należy już do innego konta na tym serwerze. Otwórz link ponownie i użyj innego konta u swojego dostawcy tożsamości.",
+      "errorEmailTaken": "Twój dostawca tożsamości przekazał adres e-mail, którego używa już inne konto na tym serwerze. Otwórz link ponownie i użyj innego konta albo zapytaj osobę, która administruje serwerem.",
+      "errorUsernameTaken": "W międzyczasie ktoś zajął tę nazwę użytkownika. Otwórz link ponownie i wybierz inną.",
+      "errorSignedIn": "Po powrocie byłeś zalogowany. Wyloguj się i otwórz link ponownie.",
+      "errorSso": "Logowanie u dostawcy tożsamości się nie powiodło. Otwórz link ponownie, aby spróbować jeszcze raz.",
+      "signInInstead": "Zaloguj się na to konto"
     },
     "inviteInvalid": {
       "title": "Nieprawidłowe zaproszenie",
@@ -2399,6 +2441,34 @@
         "invalidRange": "Ostatni dzień nie może być przed pierwszym.",
         "generic": "Nie udało się zapisać. Spróbuj ponownie."
       }
+    },
+    "composition": {
+      "title": "Skład",
+      "empty": "Dodaj, co zawiera jedna tabletka lub kapsułka, aby każda przyjęta dawka liczyła się do twoich mikroskładników.",
+      "perUnitNote": "Na tabletkę lub kapsułkę; każda przyjęta dawka dolicza się do mikroskładników dnia.",
+      "add": "Dodaj",
+      "edit": "Edytuj",
+      "rowHelper": "Co zawiera jedna tabletka lub kapsułka, dla mikroskładników.",
+      "sheetTitle": "Co zawiera jedna jednostka",
+      "sheetDescription": "Wpisz ilości na tabletkę lub kapsułkę tak, jak podano na etykiecie.",
+      "nutrientLabel": "Składnik",
+      "amountLabel": "Ilość",
+      "unitLabel": "Jednostka",
+      "choose": "Wybierz składnik",
+      "addRow": "Dodaj składnik",
+      "removeRow": "Usuń {name}",
+      "editorEmpty": "Brak składników. Dodaj jeden na każdą linię etykiety.",
+      "labelPhoto": "Odczytaj ze zdjęcia etykiety",
+      "labelReading": "Odczytywanie etykiety…",
+      "labelWaiting": "Usługa w tle jeszcze nie zajęła się etykietą.",
+      "labelReviewNote": "Sprawdź każdą linię z etykietą przed zapisaniem.",
+      "lowConfidence": "Ta linia była trudna do odczytania; sprawdź ją z etykietą.",
+      "unmatchedTitle": "Linie bez pasującego składnika, w razie potrzeby wpisz je ręcznie:",
+      "servingNote": "Na etykiecie: {note}. Ilości podano na jedną jednostkę.",
+      "labelError": "Nie udało się odczytać etykiety",
+      "saveError": "Nie udało się zapisać składu",
+      "catalogError": "Nie udało się wczytać listy składników",
+      "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
     }
   },
   "charts": {
@@ -2666,7 +2736,8 @@
     "bmiEmptyAction": "Otwórz ustawienia konta",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}"
+      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}",
+      "benchmark": "Typowo w tym wieku: od {low} do {high} {unit} ({source})"
     },
     "loadError": "Nie udało się załadować analiz",
     "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",
@@ -4220,6 +4291,21 @@
         "learning": "Faza uczenia: zapisano {entries} z {threshold} dni. Porównanie pojawi się, gdy będzie ich dość.",
         "noPattern": "W zapisanych dotąd {entries} dniach nic nie jest na tyle regularne, by porównać z nimi dzień. Gdy zapisujesz też kontekst dnia, więcej da się porównać.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Wzorce w twoim nastroju",
+        "basedOn": "Na podstawie {subject} i {comparison} dni. Wzorzec, nie przyczyna.",
+        "previousDayHigher": "Po dniu poniżej twojej normy następny dzień jest zwykle lepszy ({subject} wobec {comparison} po dniu powyżej normy).",
+        "previousDayLower": "Dzień poniżej twojej normy zwykle przenosi się na następny ({subject} wobec {comparison} po dniu powyżej normy).",
+        "weekendHigher": "W weekendy twój nastrój jest zwykle lepszy ({subject} wobec {comparison} w dni robocze).",
+        "weekendLower": "W weekendy twój nastrój jest zwykle gorszy ({subject} wobec {comparison} w dni robocze).",
+        "bestWeekday": "{weekday} to zwykle twój najlepszy dzień ({subject} wobec {comparison} w pozostałe dni).",
+        "notesHigher": "W dni z notatką twój nastrój jest zwykle lepszy ({subject} wobec {comparison} bez notatki).",
+        "notesLower": "W dni z notatką twój nastrój jest zwykle gorszy ({subject} wobec {comparison} bez notatki).",
+        "delayedTagHigher": "Dzień po „{tag}” twój nastrój jest zwykle lepszy ({subject} wobec {comparison} w pozostałe dni).",
+        "delayedTagLower": "Dzień po „{tag}” twój nastrój jest zwykle gorszy ({subject} wobec {comparison} w pozostałe dni).",
+        "multipleEntriesHigher": "W dni z kilkoma wpisami twój nastrój jest zwykle lepszy ({subject} wobec {comparison} przy jednym wpisie).",
+        "multipleEntriesLower": "W dni z kilkoma wpisami twój nastrój jest zwykle gorszy ({subject} wobec {comparison} przy jednym wpisie)."
       }
     },
     "derived": {
@@ -5459,7 +5545,7 @@
         "subtitle": "Zdecyduj, które źródło wygrywa, gdy dwa podają tę samą metrykę.",
         "nutrients": {
           "title": "Zsynchronizowane spożycie składników",
-          "description": "Dzienne sumy z Apple Health z ostatnich {days} dni.",
+          "description": "Dzienne sumy z ostatnich {days} dni: dane zsynchronizowane z Apple Health oraz przyjęte suplementy.",
           "empty": "Nie zsynchronizowano jeszcze danych o składnikach odżywczych.",
           "latest": "{amount} {unit} dnia {date}",
           "daysWithData": "{count} z {days} dni",
@@ -5821,7 +5907,10 @@
           "remove": "Usuń okres lokalizacji",
           "removeConfirmTitle": "Usunąć tę podróż?",
           "removeConfirmBody": "Pomiary z tego okresu pozostają w historii; znika tylko wpis podróży.",
-          "range": "Od {start} do {end}"
+          "range": "Od {start} do {end}",
+          "suggestionsIntro": "Dawarich znalazł dni za granicą, których nie obejmuje jeszcze żaden okres.",
+          "suggestionUse": "Użyj",
+          "suggestionDismiss": "Odrzuć sugestię"
         },
         "backfill": {
           "title": "Uzupełnij minione dni",
@@ -6255,7 +6344,8 @@
         "subLabel": "Dokumenty są czytane i indeksowane przez skonfigurowanego dostawcę AI bez potwierdzania każdego dokumentu.",
         "honesty": "Po włączeniu każdy przesłany dokument jest wysyłany do skonfigurowanego dostawcy AI, aby go odczytać, opisać i zaindeksować do wyszukiwania, bez potwierdzania każdego dokumentu. Włączenie działa też wstecz: dokumenty już przesłane, które nie mają jeszcze streszczenia, również zostaną wysłane (do 200 przy każdym włączeniu). Dzieje się to na serwerze, a treść dokumentu opuszcza to urządzenie i trafia do tego dostawcy. Jeśli skonfigurowany dostawca to połączenie subskrypcyjne (zalogowane konto AI zamiast klucza API), obowiązują jego własne ustawienia danych: dostawcy subskrypcyjni mogą wykorzystywać treść do ulepszania swoich modeli i nie obejmuje tego żadna umowa powierzenia przetwarzania danych. Dokumenty odczytywane przez samodzielnie hostowany model lokalny nigdy nie opuszczają Twojego serwera. Domyślnie wyłączone; włącz je tylko wtedy, gdy akceptujesz ten kompromis dla swoich dokumentów.",
         "confirm": "Rozumiem, włącz",
-        "cancel": "Anuluj"
+        "cancel": "Anuluj",
+        "restingFrugal": "Wstrzymane na oszczędnym poziomie AI: dokumenty są czytane tylko na żądanie."
       },
       "centralCodex": {
         "title": "Użyj wspólnego dostępu AI serwera",
@@ -6313,7 +6403,33 @@
         "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
       },
       "providerCardDescription": "Dostawca, którego HealthLog pyta najpierw, wraz z kluczem i modelem.",
-      "runtimeTitle": "Sprawdź i odśwież"
+      "runtimeTitle": "Sprawdź i odśwież",
+      "usage": {
+        "title": "Użycie AI",
+        "description": "Ile pracy AI wykonuje się dla Ciebie w tle, przy czym Coach działa tak samo na każdym poziomie.",
+        "levels": {
+          "frugal": {
+            "label": "Oszczędny",
+            "hint": "Karty odświeżają się po synchronizacji najwyżej raz dziennie, krótkie podsumowanie dnia, dokumenty są czytane tylko na żądanie."
+          },
+          "standard": {
+            "label": "Standardowy",
+            "hint": "Karty odświeżają się po synchronizacji co kilka godzin, pełne podsumowanie dnia."
+          },
+          "full": {
+            "label": "Pełny",
+            "hint": "Karty odświeżają się po nowych danych nawet co godzinę, jak przed wprowadzeniem tego ustawienia."
+          }
+        },
+        "limited": "Ograniczone przez administratora serwera.",
+        "estimate": "około {tokens} tokenów dziennie, szacunkowo",
+        "measured": "Zmierzono: {tokens} tokenów dziennie w ostatnich {days} dniach, łącznie z Coachem. Wartości dla poziomów są szacunkami.",
+        "noEstimate": "Szacunek dla każdego poziomu pojawi się po trzech dniach korzystania z AI.",
+        "capped": "Wybrano poziom {choice}, na który serwer obecnie nie pozwala, więc obowiązuje {level}. Twój wybór zostaje zapisany.",
+        "followsDefault": "Korzystasz z ustawienia domyślnego serwera ({level}).",
+        "useDefault": "Użyj ustawienia domyślnego serwera ({level})",
+        "saveError": "Nie udało się zapisać poziomu. Spróbuj ponownie."
+      }
     },
     "dashboard": {
       "units": {
@@ -6646,7 +6762,14 @@
       "docs": "Dokumentacja",
       "credits": "Autorzy i źródła danych",
       "linksHeading": "Źródła i dokumentacja",
-      "newerAvailable": "Nowa wersja: {tag}"
+      "newerAvailable": "Nowa wersja: {tag}",
+      "support": {
+        "title": "Pomoc",
+        "description": "Podsumowanie do zgłoszenia błędu, bez imienia, adresu e-mail i wartości zdrowotnych.",
+        "copy": "Kopiuj informacje dla pomocy",
+        "copied": "Skopiowano",
+        "copyFailed": "Nie udało się zebrać informacji dla pomocy."
+      }
     },
     "testConnection": {
       "test": "Testuj połączenie",
@@ -7133,7 +7256,8 @@
         "lastReceived": "Ostatnio odebrano {relative}",
         "lastNewValue": "Ostatnia nowa wartość {relative}",
         "lastBackground": "Ostatnio w tle {relative}",
-        "never": "Jeszcze nie odebrano"
+        "never": "Jeszcze nie odebrano",
+        "lastBackfill": "Historia uzupełniona {relative}"
       }
     },
     "garminInfo": {
@@ -7267,6 +7391,46 @@
         "failureStreak": "Seria błędów: {count} z {threshold}",
         "copyFailed": "Nie udało się skopiować. Zaznacz tekst i skopiuj go ręcznie."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Ruch",
+    "dawarichDescription": "Połącz swoją instancję Dawarich, aby pobierać dzienny dystans, czas poza domem i dni podróży.",
+    "dawarichUrl": "Adres Dawarich",
+    "dawarichApiKey": "Klucz API",
+    "dawarichApiKeyHelp": "Znajdziesz go w Dawarich w sekcji Konto. HealthLog odczytuje nim tylko wartości dzienne, nigdy współrzędne ani nazwy miejsc.",
+    "dawarichConnect": "Połącz",
+    "dawarichUpdate": "Zapisz zmiany",
+    "dawarichConnected": "Dawarich połączony. Trwa wczytywanie ostatnich 30 dni.",
+    "dawarichSync": "Pobierz teraz",
+    "dawarichSyncQueued": "Ostatnie siedem dni zostanie zaraz pobrane.",
+    "dawarichSyncAlreadyQueued": "Pobieranie już trwa.",
+    "dawarichDisconnect": "Rozłącz",
+    "dawarichDisconnectTitle": "Rozłączyć Dawarich?",
+    "dawarichDisconnectDescription": "Kolejne pobierania zostaną zatrzymane. Zapisane dni pozostaną.",
+    "dawarichDisconnectDelete": "Rozłącz i usuń dni",
+    "dawarichDisconnectDeleteTitle": "Rozłączyć i usunąć wszystkie dni?",
+    "dawarichDisconnectDeleteDescription": "Połączenie i wszystkie zapisane dni ruchu zostaną usunięte. Tego nie można cofnąć.",
+    "dawarichHomePlaceSet": "Dom jest ustawiony.",
+    "dawarichHomePlaceMissing": "Ustaw dom, aby można było mierzyć czas poza domem.",
+    "dawarichHomeCountryIs": "Kraj zamieszkania: {country}.",
+    "dawarichHomeCountryMissing": "Brak kraju zamieszkania, więc brak dni podróży.",
+    "dawarichDaysStored": "Zapisane dni: {count}",
+    "dawarichHomePlace": "Dom",
+    "dawarichHomePlaceChoose": "Wybierz miejsce z Dawarich",
+    "dawarichHomePlaceChange": "Wybierz dom",
+    "dawarichHomeCountry": "Kraj zamieszkania",
+    "dawarichHomeCountryHelp": "Dwuliterowy kod kraju, na przykład DE. Jeśli zostawisz puste, liczy się kraj, w którym spędziłeś najwięcej dni w ostatnim roku.",
+    "dawarichHomeSave": "Zapisz",
+    "dawarichHomeSaved": "Zapisano.",
+    "dawarichErrors": {
+      "invalid": "Ten adres nie działa. Użyj adresu instancji bez danych logowania.",
+      "privateOrigin": "Ta instancja jest w sieci prywatnej. Poproś operatora serwera o jej dopuszczenie.",
+      "credentials": "Dawarich nie zaakceptował klucza API.",
+      "unreachable": "Dawarich jest nieosiągalny. Sprawdź adres i czy instancja działa.",
+      "rateLimited": "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
+      "homePlaceUnknown": "Instancja Dawarich nie zna już tego miejsca.",
+      "notConnected": "Dawarich nie jest połączony.",
+      "generic": "Nie udało się. Spróbuj ponownie."
     }
   },
   "admin": {
@@ -7343,7 +7507,8 @@
       "spendToday": "Dzisiaj, według dnia kalendarzowego każdego konta: {total} tokenów, w tym {operator} na kluczu operatora (konta ze zużyciem: {accounts}).",
       "statusPaused": "Wstrzymany",
       "pausedHint": "Wstrzymany po powtarzających się błędach dla {count} użytkowników do {at}. Potem zostanie automatycznie ponowiony.",
-      "modelNotServed": "Punkt końcowy nie oferuje już modelu {model}. Wybierz w ustawieniach AI model, który oferuje."
+      "modelNotServed": "Punkt końcowy nie oferuje już modelu {model}. Wybierz w ustawieniach AI model, który oferuje.",
+      "usageLevels": "Konta według poziomu użycia AI: oszczędny {frugal}, standardowy {standard}, pełny {full}."
     },
     "aiQuality": {
       "title": "Jakość analiz",
@@ -7753,7 +7918,8 @@
         "eventDetails": "Szczegóły zdarzenia",
         "closeDetails": "Zamknij szczegóły",
         "processDetail": "Bufor jest ulotny i ograniczony do 500 wpisów.",
-        "cardTitle": "Ostatnie zdarzenia"
+        "cardTitle": "Ostatnie zdarzenia",
+        "filterErrorId": "ID błędu"
       },
       "backups": {
         "title": "Kopie zapasowe",
@@ -7840,6 +8006,7 @@
         "restoreSkippedCoachAttachment": "Powiązanie dokumentu z Coachem",
         "restoreSkippedCoachReference": "Odwołanie Coacha",
         "restoreSkippedDocumentConditionLink": "Przypisanie dokumentu",
+        "restoreSkippedRelationLink": "Powiązanie między wpisami",
         "restoreSkippedExtractedFact": "Fakt z dokumentu",
         "restoreSkippedFactCommitment": "Zapis faktu",
         "docsLink": "Dokumentacja",
@@ -8016,6 +8183,56 @@
         "started": "Konserwacja uruchomiona.",
         "alreadyQueued": "Konserwacja jest już w kolejce lub trwa.",
         "startFailed": "Nie udało się uruchomić konserwacji."
+      },
+      "pulseDayMean": {
+        "title": "Dzienna średnia tętna",
+        "description": "Jak godziny z niewieloma pomiarami liczą się do tętna danego dnia.",
+        "body": "Dotąd każda godzina z pomiarem liczy się tak samo, więc jeden przypadkowy pomiar może przesunąć cały dzień. Metoda ważona sprawia, że godzina liczy się w pełni od trzech pomiarów, a pojedynczy pomiar w jednej trzeciej. Najpierw uruchom próbę, aby zobaczyć, ile dni by się zmieniło. Zastosowanie przelicza zapisane dni tętna w tle.",
+        "method": {
+          "hourly": "Każda godzina tak samo",
+          "weighted": "Rzadkie godziny ważone"
+        },
+        "loading": "Sprawdzanie dziennej średniej tętna…",
+        "loadError": "Nie udało się odczytać stanu dziennej średniej tętna.",
+        "state": {
+          "idle": "Jeszcze nie było próby.",
+          "queued": "Próba czeka na proces w tle.",
+          "running": "Próba trwa.",
+          "done": "Próba zakończona {at}.",
+          "failed": "Próba została przerwana. Dziennik aplikacji podaje przyczynę; uruchom ją ponownie."
+        },
+        "result": {
+          "days": "Porównane dni",
+          "changed": "Dni ze zmianą powyżej 1 bpm",
+          "max": "Największa zmiana",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Konto {account}",
+          "accountDays": "Zmienia się {changed} z {days} dni"
+        },
+        "appliedAt": "Metoda ważona zastosowana {at}.",
+        "dryRun": "Próba",
+        "apply": "Zastosuj",
+        "confirmTitle": "Zastosować ważoną dzienną średnią tętna?",
+        "confirmBody": "Od tej chwili dni tętna wszystkich kont są liczone z ważonymi rzadkimi godzinami. Zapisane dni tętna są przeliczane w tle, co na dużej instancji może chwilę potrwać.",
+        "confirm": "Zastosuj",
+        "cancel": "Anuluj",
+        "dryRunStarted": "Próba uruchomiona.",
+        "applied": "Metoda ważona zastosowana. Dni tętna są przeliczane.",
+        "appliedNoRebuild": "Metoda ważona zastosowana. Inny przebieg wciąż trwa; zastosuj ponownie, gdy się zakończy, aby przeliczyć dni tętna.",
+        "error": {
+          "busy": "Próba lub przeliczanie wciąż trwa. Spróbuj ponownie, gdy się zakończy.",
+          "dryRunRequired": "Najpierw uruchom próbę. Do zastosowania potrzebna jest próba zakończona w ciągu ostatnich siedmiu dni.",
+          "generic": "Żądanie nie zostało zrealizowane."
+        },
+        "rebuild": {
+          "queued": "Ponowne przeliczenie czeka na proces w tle.",
+          "running": "Dni pulsu są przeliczane.",
+          "done": "Dni pulsu przeliczone {at} dla kont: {accounts}.",
+          "failed": "Przeliczanie zostało przerwane. Przyczynę podaje log aplikacji; uruchom je ponownie."
+        },
+        "rebuildAgain": "Przelicz ponownie",
+        "rebuildStarted": "Przeliczanie rozpoczęte."
       }
     },
     "carrier": "Operator",
@@ -8120,7 +8337,25 @@
       "codes": "Dla administratora: żądania API odpowiadają 503 z kodem błędu {code}, a /api/health podaje powód {reason}."
     },
     "loginOverviewCardTitle": "Zdarzenia logowania",
-    "userColumn": "Użytkownik"
+    "userColumn": "Użytkownik",
+    "supportReport": {
+      "title": "Raport dla pomocy",
+      "description": "Podsumowanie tej instancji do zgłoszenia błędu, bez adresów e-mail, identyfikatorów i wartości.",
+      "body": "Konta pojawiają się jako „Account 1”, „Account 2” itd. Przeczytaj raport, zanim go udostępnisz.",
+      "copy": "Kopiuj",
+      "copied": "Skopiowano",
+      "download": "Pobierz",
+      "loadError": "Nie udało się utworzyć raportu dla pomocy."
+    },
+    "aiUsage": {
+      "title": "Poziomy użycia AI",
+      "description": "Najwyższy poziom, jaki mogą wybrać konta, i poziom, od którego zaczynają.",
+      "maxLabel": "Najwyższy poziom",
+      "defaultLabel": "Poziom domyślny",
+      "defaultAboveCeiling": "Poziom domyślny nie może być wyższy niż najwyższy poziom.",
+      "gapLabel": "Godziny między odświeżeniami kart po synchronizacji (Standardowy)",
+      "gapHint": "Pełne godziny od 1 do 48. Zostaw puste, aby użyć AI_SYNC_REGEN_GAP_HOURS, w przeciwnym razie 6. Obecnie obowiązuje: {hours} h."
+    }
   },
   "achievements": {
     "title": "Osiągnięcia",
@@ -9215,7 +9450,9 @@
     "periodStartSaved": "Początek miesiączki zapisany",
     "periodEndSaved": "Koniec miesiączki zapisany",
     "startedPeriodOnDate": "Miesiączka zaczęła się tego dnia",
-    "endedPeriodOnDate": "Miesiączka skończyła się tego dnia"
+    "endedPeriodOnDate": "Miesiączka skończyła się tego dnia",
+    "startAbsorbed": "Początek miesiączki zapisany. Twój początek z {absorbed} został połączony z {date}.",
+    "startRestored": "Zapisano. Początek z {dates} jest z powrotem."
   },
   "cycleReminders": {
     "periodSoonTitle": "Miesiączka prawdopodobnie wkrótce",
@@ -9604,12 +9841,16 @@
         "apob": "Apolipoproteina B to białko strukturalne obecne na każdej z aterogennych cząstek lipoprotein, więc jej pomiar zlicza te cząstki bezpośrednio, a nie cholesterol, który przenoszą. Ponieważ na każdej cząstce LDL, VLDL i pokrewnej znajduje się jedna cząsteczka ApoB, może ona wychwycić ryzyko sercowo-naczyniowe, które umyka wartości cholesterolu LDL, zwłaszcza gdy liczba cząstek i ich zawartość cholesterolu się rozchodzą. Z tego powodu coraz częściej używa się jej do uściślenia oceny ryzyka opartej na lipidach. Interpretuje się ją wraz ze zwykłym profilem lipidowym.",
         "lp-a": "Lipoproteina(a) to cząstka podobna do LDL z dodatkowo przyłączonym białkiem, której poziom jest w dużej mierze uwarunkowany genetycznie i pozostaje dość stabilny przez całe życie. Podwyższona Lp(a) jest niezależnym, dziedzicznym czynnikiem ryzyka chorób sercowo-naczyniowych i zwężenia zastawki aortalnej. Ponieważ niewiele się zmienia, zwykle oznacza się ją raz, aby ustalić ryzyko danej osoby na całe życie, a nie śledzić wielokrotnie. Podaje się ją w jednostkach molowych i odczytuje w ramach całościowego ryzyka sercowo-naczyniowego.",
         "fasting-insulin": "Insulina na czczo to poziom insuliny (hormonu, który przenosi glukozę z krwi do komórek) mierzony po nocnym poście. W połączeniu z glukozą na czczo pomaga oszacować insulinooporność, czyli stan, w którym organizm potrzebuje więcej insuliny, aby utrzymać glukozę w zakresie. Wysoka insulina na czczo przy prawidłowej glukozie może być wczesnym znakiem, że ta kompensacja jest w toku. Odczytuje się ją w ramach obrazu zdrowia metabolicznego, a nie w oderwaniu.",
-        "omega-3-index": "Indeks omega-3 to udział EPA i DHA (dwóch długołańcuchowych morskich kwasów tłuszczowych omega-3) wśród kwasów tłuszczowych błon czerwonych krwinek. Ponieważ czerwone krwinki odnawiają się powoli, odzwierciedla on długoterminowe spożycie omega-3, a nie niedawny posiłek. Wyższy indeks wiązano w badaniach obserwacyjnych z niższym ryzykiem sercowo-naczyniowym. Śledzi się go jako stabilny marker stanu omega-3, który reaguje na dietę w ciągu miesięcy."
+        "omega-3-index": "Indeks omega-3 to udział EPA i DHA (dwóch długołańcuchowych morskich kwasów tłuszczowych omega-3) wśród kwasów tłuszczowych błon czerwonych krwinek. Ponieważ czerwone krwinki odnawiają się powoli, odzwierciedla on długoterminowe spożycie omega-3, a nie niedawny posiłek. Wyższy indeks wiązano w badaniach obserwacyjnych z niższym ryzykiem sercowo-naczyniowym. Śledzi się go jako stabilny marker stanu omega-3, który reaguje na dietę w ciągu miesięcy.",
+        "alkaline-phosphatase": "Fosfataza alkaliczna (ALP) to enzym występujący głównie w wątrobie, drogach żółciowych i kościach. Rośnie przy utrudnionym odpływie żółci oraz w okresach aktywnej przebudowy kości, na przykład podczas wzrostu u dzieci i młodzieży albo gojenia złamania. Ponieważ uwalniają ją oba narządy, podwyższony wynik czyta się zwykle razem z GGTP i pozostałymi próbami wątrobowymi, aby odróżnić przyczynę wątrobową od kostnej. Należy do standardowych prób wątrobowych.",
+        "bilirubin-total": "Bilirubina całkowita to żółty produkt rozpadu hemoglobiny ze zużytych czerwonych krwinek, mierzony jako suma jej postaci niesprzężonej i sprzężonej. Wątroba ją wychwytuje, sprzęga i wydala z żółcią, więc jej poziom pokazuje, jak działa ta droga. Może rosnąć przy chorobach wątroby, zablokowanych drogach żółciowych lub nasilonym rozpadzie czerwonych krwinek, a nieszkodliwie w zespole Gilberta. Odczytuje się ją razem z pozostałymi próbami wątrobowymi."
       },
       "apob": "Apolipoproteina B (ApoB)",
       "lp-a": "Lipoproteina(a)",
       "fasting-insulin": "Insulina na czczo",
-      "omega-3-index": "Indeks omega-3"
+      "omega-3-index": "Indeks omega-3",
+      "alkaline-phosphatase": "Fosfataza alkaliczna (ALP)",
+      "bilirubin-total": "Bilirubina całkowita"
     },
     "noteLoadFailed": "Nie udało się wczytać notatki; pozostanie niezmieniona po zapisaniu.",
     "showingLatestOf": "Wyświetlanie najnowszych {shown} z {total} wyników",
@@ -9683,6 +9924,54 @@
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}",
       "printed": "wydrukowano w {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "według nazwy, którą wybrałeś wcześniej",
+      "viaCatalog": "rozpoznano jako popularny skrót",
+      "chooseLabel": "Należy do",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "Nowy biomarker",
+      "rememberHint": "Ta nazwa zostanie zapamiętana na następny wynik.",
+      "chooseHint": "Wybierz biomarker, jeśli już go śledzisz."
+    },
+    "aliases": {
+      "title": "Zapisywany też jako",
+      "taken": "{alias} należy już do innego biomarkera.",
+      "saveError": "Nie udało się zapisać nazw. Spróbuj ponownie.",
+      "remove": "Usuń {alias}",
+      "empty": "Dodaj nazwy, które inne laboratoria drukują dla {name}, aby ich wyniki trafiały tutaj.",
+      "placeholder": "np. ALP",
+      "addLabel": "Inna nazwa tego biomarkera",
+      "add": "Dodaj",
+      "alsoWritten": "Zapisywany też jako {aliases}"
+    },
+    "merge": {
+      "open": "Scal",
+      "title": "Scal biomarkery",
+      "description": "Połącz biomarkery, które są tym samym badaniem zapisanym inaczej.",
+      "pickHint": "Zaznacz co najmniej dwa biomarkery.",
+      "keepLabel": "Zachowaj",
+      "keepHint": "Pozostałe zostaną włączone do tego, a ich nazwy staną się jego innymi nazwami.",
+      "showPreview": "Pokaż podgląd",
+      "back": "Wstecz",
+      "confirm": "Scal teraz",
+      "previewSummaryOne": "{count} pomiar przechodzi do {name} ({unit}).",
+      "previewSummaryFew": "{count} pomiary przechodzą do {name} ({unit}).",
+      "previewSummaryOther": "{count} pomiarów przechodzi do {name} ({unit}).",
+      "movesOne": "{count} pomiar, już w tej samej jednostce",
+      "movesFew": "{count} pomiary, już w tej samej jednostce",
+      "movesOther": "{count} pomiarów, już w tej samej jednostce",
+      "convertedOne": "{count} pomiar, przeliczony z {unit} na {targetUnit}",
+      "convertedFew": "{count} pomiary, przeliczone z {unit} na {targetUnit}",
+      "convertedOther": "{count} pomiarów, przeliczonych z {unit} na {targetUnit}",
+      "refused": "Nie można przeliczyć {unit} na {targetUnit}.",
+      "aliasesAdded": "Te nazwy będą prowadzić do zachowanego biomarkera:",
+      "blocked": "Nic nie zostanie scalone, dopóki jednej jednostki nie da się przeliczyć. Pomiń ten biomarker albo zachowaj inny.",
+      "noUndo": "Scalenia nie można cofnąć.",
+      "doneToastOne": "Scalono w {name}, przeniesiono {count} pomiar",
+      "doneToastFew": "Scalono w {name}, przeniesiono {count} pomiary",
+      "doneToastOther": "Scalono w {name}, przeniesiono {count} pomiarów",
+      "error": "Nie udało się scalić biomarkerów. Spróbuj ponownie."
     }
   },
   "modules": {
@@ -10644,25 +10933,11 @@
     },
     "profileFacts": {
       "cardTitle": "Kontekst stylu życia",
-      "cardDescription": "Zapisz aktualne informacje, które zmieniają interpretację pomiarów zdrowotnych.",
       "smokingLabel": "Palenie tytoniu",
       "alcoholLabel": "Wzorzec spożycia alkoholu",
       "shiftLabel": "Harmonogram pracy",
       "notRecorded": "Brak danych",
-      "unreadable": "Nie udało się odczytać zapisanej wartości",
-      "save": "Zapisz",
-      "savedToast": "Zapisano kontekst stylu życia",
-      "savePartialError": "Nie udało się zapisać {kinds}. Spróbuj ponownie.",
-      "saveKindError": "Nie zapisano",
-      "loadError": "Nie udało się wczytać kontekstu stylu życia",
       "remove": "Usuń: {kind}",
-      "removeShort": "Usuń",
-      "removeConfirmTitle": "Usunąć: {kind}?",
-      "removeConfirmDescription": "Bieżąca wartość zmieni się na brak danych. Historia z datami zostanie zachowana.",
-      "removedToast": "Usunięto {kind} z bieżącego kontekstu stylu życia",
-      "removeError": "Nie udało się usunąć: {kind}",
-      "historyTitle": "Poprzednie wartości",
-      "to": "do",
       "values": {
         "SMOKING_STATUS": {
           "NEVER": "Nigdy nie pali",
@@ -10842,6 +11117,235 @@
       "savedToast": "Informacje na wypadek nagły zapisane",
       "saveError": "Nie udało się zapisać informacji na wypadek nagły.",
       "loadError": "Nie udało się wczytać informacji na wypadek nagły."
+    },
+    "life": {
+      "cardTitle": "Warunki życia",
+      "cardDescription": "Palenie, alkohol, aktywność, praca, nawyki i cele, z datą i zawsze dobrowolnie.",
+      "loadError": "Nie udało się wczytać warunków życia.",
+      "noAnswer": "Brak odpowiedzi",
+      "yes": "Tak",
+      "no": "Nie",
+      "validSince": "Obowiązuje od",
+      "month": "Miesiąc",
+      "year": "Rok",
+      "lastConfirmed": "Ostatnio potwierdzono {date}",
+      "notAnswered": "Jeszcze bez odpowiedzi",
+      "unreadable": "Tej odpowiedzi nie da się odczytać na tym serwerze.",
+      "save": "Zapisz sekcję",
+      "savedToast": "Sekcja zapisana",
+      "saveError": "Nie udało się zapisać sekcji.",
+      "review": {
+        "question": "Czy to nadal aktualne? Twoja ostatnia odpowiedź ma ponad rok.",
+        "confirm": "Nadal aktualne",
+        "confirmedToast": "Dziękujemy, oznaczono jako aktualne",
+        "confirmError": "Nie udało się zapisać potwierdzenia."
+      },
+      "ai": {
+        "label": "Udostępnij tę sekcję AI",
+        "shiftLabel": "Udostępnij pracę zmianową AI",
+        "hint": "Po wyłączeniu Coach i podsumowania nigdy nie widzą tych odpowiedzi.",
+        "savedToast": "Udostępnianie AI zaktualizowane",
+        "saveError": "Nie udało się zapisać ustawienia AI."
+      },
+      "sections": {
+        "tobacco": {
+          "title": "Palenie i nikotyna"
+        },
+        "alcohol": {
+          "title": "Alkohol"
+        },
+        "activity": {
+          "title": "Aktywność i siedzenie"
+        },
+        "work": {
+          "title": "Praca i rytm dnia"
+        },
+        "habits": {
+          "title": "Sen, odżywianie i kofeina"
+        },
+        "goals": {
+          "title": "Cele"
+        }
+      },
+      "fields": {
+        "smokingStatus": "Palenie tytoniu",
+        "products": "Używane produkty",
+        "cigarettesPerDay": "Papierosy dziennie",
+        "startYear": "Rok rozpoczęcia",
+        "quitMonth": "Kiedy rzucono",
+        "secondhandSmoke": "Regularne bierne palenie",
+        "moderateDaysPerWeek": "Dni w tygodniu z umiarkowaną lub intensywną aktywnością, np. szybkim marszem",
+        "moderateMinutesPerDay": "Minuty w te dni, średnio",
+        "sittingHoursWorkday": "Godziny siedzenia w dzień roboczy",
+        "shiftSchedule": "Praca zmianowa",
+        "situation": "Sytuacja zawodowa",
+        "physicalNature": "Rodzaj pracy",
+        "nightWork": "Praca w nocy",
+        "exposures": "Narażenia w pracy",
+        "freeWeekdays": "Wolne dni tygodnia",
+        "napRegularly": "Regularna drzemka",
+        "snoringReported": "Inni mówią, że chrapiesz",
+        "dietPattern": "Sposób odżywiania",
+        "dietSpecifics": "Szczegóły",
+        "lateMealsPerWeek": "Posiłki po 21:00 w tygodniu",
+        "fruitVegPortionsPerDay": "Porcje owoców i warzyw dziennie",
+        "caffeineDrinksPerDay": "Napoje z kofeiną dziennie",
+        "latestCaffeine": "Najpóźniejsza kofeina w ciągu dnia",
+        "goals": "Nad czym chcesz pracować",
+        "goalsHint": "Najwyżej trzy."
+      },
+      "values": {
+        "products": {
+          "cigarettes": "Papierosy",
+          "cigars_pipe": "Cygara lub fajka",
+          "e_cigarette": "E-papieros",
+          "heated_tobacco": "Podgrzewany tytoń",
+          "snus_pouches": "Snus lub saszetki nikotynowe"
+        },
+        "situation": {
+          "none": "Bez pracy zarobkowej",
+          "indoor": "Głównie w pomieszczeniach",
+          "outdoor": "Głównie na zewnątrz",
+          "mixed": "W środku i na zewnątrz"
+        },
+        "physicalNature": {
+          "mostly_sitting": "Głównie siedząca",
+          "standing_walking": "Stojąca lub w ruchu",
+          "heavy_physical": "Ciężka praca fizyczna"
+        },
+        "exposures": {
+          "heat": "Upał",
+          "cold": "Zimno",
+          "dust": "Pył",
+          "fumes_solvents": "Opary lub rozpuszczalniki",
+          "noise": "Hałas"
+        },
+        "dietPattern": {
+          "mixed": "Dieta mieszana",
+          "vegetarian": "Wegetariańska",
+          "vegan": "Wegańska",
+          "pescetarian": "Peskatariańska",
+          "other": "Inna"
+        },
+        "dietSpecifics": {
+          "intermittent_fasting": "Post przerywany",
+          "low_carb": "Niskowęglowodanowa",
+          "prescribed_diet": "Dieta zalecona przez lekarza"
+        },
+        "latestCaffeine": {
+          "before_12": "Przed 12:00",
+          "12_15": "12:00 do 15:00",
+          "15_18": "15:00 do 18:00",
+          "after_18": "Po 18:00"
+        },
+        "goals": {
+          "weight": "Waga",
+          "blood_pressure": "Ciśnienie krwi",
+          "blood_sugar": "Cukier we krwi",
+          "sleep": "Sen",
+          "fitness": "Kondycja",
+          "stress_recovery": "Stres i regeneracja",
+          "medication_routine": "Regularne przyjmowanie leków",
+          "quit_smoking": "Rzucenie palenia",
+          "less_alcohol": "Mniej alkoholu"
+        },
+        "weekdays": {
+          "1": "pon.",
+          "2": "wt.",
+          "3": "śr.",
+          "4": "czw.",
+          "5": "pt.",
+          "6": "sob.",
+          "7": "niedz."
+        }
+      },
+      "derived": {
+        "packYears": "{value} paczkolat",
+        "packYearsMissing": "Do paczkolat brakuje liczby papierosów dziennie albo roku rozpoczęcia.",
+        "activityMinutes": "{value} minut w tygodniu.",
+        "meetsWho": "To spełnia zalecenie WHO 150 minut tygodniowo.",
+        "belowWho": "To poniżej zalecenia WHO 150 minut tygodniowo.",
+        "measuredSteps": "Zmierzone kroki mają pierwszeństwo, ta odpowiedź dodaje kontekst.",
+        "freeDaysDefault": "Bez odpowiedzi sobota i niedziela liczą się jako dni wolne."
+      },
+      "auditC": {
+        "intro": "Trzy pytania o alkohol z testu AUDIT WHO. Badanie przesiewowe, nie diagnoza.",
+        "start": "Odpowiedz na pytania",
+        "again": "Odpowiedz ponownie",
+        "offerDue": "Wystarczy zajrzeć raz w roku.",
+        "submit": "Zapisz odpowiedzi",
+        "notValidated": "Dla Twojego języka nie ma jeszcze zwalidowanego tłumaczenia, dlatego pytania są po angielsku.",
+        "savedToast": "Odpowiedzi zapisane",
+        "saveError": "Nie udało się zapisać odpowiedzi.",
+        "result": "{score} z 12 punktów",
+        "above": "Na lub powyżej progu przesiewowego {cutoff}.",
+        "below": "Poniżej progu przesiewowego {cutoff}.",
+        "noCutoff": "Bez płci w profilu pokazujemy tylko sumę.",
+        "source": "Źródło: {source}",
+        "history": "Wcześniejsze wpisy",
+        "remove": "Usuń wpis",
+        "removeConfirmTitle": "Usunąć ten wpis?",
+        "removeConfirmBody": "Wpis zniknie z historii. Tutaj nie da się tego cofnąć.",
+        "removedToast": "Wpis usunięty",
+        "removeError": "Nie udało się usunąć wpisu.",
+        "historyEntry": "{date}: {score} z 12",
+        "legacyLabel": "Wcześniejsza odpowiedź: {value}",
+        "legacyHint": "Z krótkiego pytania o alkohol sprzed tego kwestionariusza. Gdy jest wynik kwestionariusza, Coach przestaje ją czytać.",
+        "legacyRemove": "Usuń wcześniejszą odpowiedź",
+        "legacyRemoveConfirmTitle": "Usunąć wcześniejszą odpowiedź?",
+        "legacyRemoveConfirmBody": "Wcześniejsza odpowiedź zniknie z Twoich danych. Wyniki kwestionariusza zostają.",
+        "legacyRemovedToast": "Wcześniejsza odpowiedź usunięta",
+        "legacyRemoveError": "Nie udało się usunąć wcześniejszej odpowiedzi."
+      },
+      "takeOver": {
+        "conditionsButton": "Przenieś do dziennika stanów",
+        "allergiesButton": "Przenieś do alergii",
+        "conditionsTitle": "Dodaj chorobę przewlekłą",
+        "allergiesTitle": "Dodaj alergię",
+        "description": "Twój tekst pozostaje bez zmian, dopóki sam go nie wyczyścisz.",
+        "freeTextLabel": "Twój tekst",
+        "conditionLabel": "Choroba",
+        "onset": "Od",
+        "save": "Dodaj",
+        "savedToast": "Wpis dodany",
+        "saveError": "Nie udało się dodać wpisu.",
+        "clearQuestion": "Wpis zapisany. Wyczyścić teraz tekst?",
+        "clear": "Wyczyść tekst",
+        "keep": "Zostaw",
+        "clearedToast": "Tekst wyczyszczony",
+        "clearError": "Nie udało się wyczyścić tekstu."
+      },
+      "screening": {
+        "cardTitle": "Wskazówki dotyczące badań przesiewowych",
+        "cardDescription": "Na podstawie warunków życia, z regułą i krajem, z którego pochodzi.",
+        "noReminder": "To tylko wskazówka; przypomnienie ustaw sam, jeśli chcesz.",
+        "source": "Źródło: {source}",
+        "titles": {
+          "lung_ldct": "Niskodawkowa TK w kierunku raka płuca",
+          "aaa_ultrasound": "USG aorty brzusznej"
+        },
+        "status": {
+          "suggested": "Może Cię dotyczyć",
+          "not_eligible": "Nie dotyczy Cię",
+          "unknown": "Za mało informacji"
+        },
+        "reasons": {
+          "never_smoked": "Nigdy nie paliłeś.",
+          "missing_birth_date": "Brakuje daty urodzenia.",
+          "age_out_of_range": "Wiek poza zakresem.",
+          "missing_smoking_status": "Brakuje informacji o paleniu.",
+          "no_cigarettes": "Reguła liczy tylko papierosy.",
+          "missing_smoking_history": "Brakuje liczby papierosów dziennie lub roku rozpoczęcia.",
+          "pack_years_below_15": "Mniej niż 15 paczkolat.",
+          "pack_years_below_20": "Mniej niż 20 paczkolat.",
+          "smoked_years_below_25": "Mniej niż 25 lat palenia.",
+          "missing_quit_date": "Brakuje daty rzucenia.",
+          "quit_over_10_years": "Rzucenie ponad 10 lat temu.",
+          "quit_over_15_years": "Rzucenie ponad 15 lat temu.",
+          "missing_sex": "W profilu brakuje płci.",
+          "sex_not_male": "Reguła dotyczy mężczyzn."
+        }
+      }
     }
   },
   "environment": {
@@ -10875,6 +11379,10 @@
       "mugwort": "bylica",
       "olive": "oliwka",
       "ragweed": "ambrozja"
+    },
+    "movement": {
+      "awayFromHome": "Czas poza domem",
+      "distance": "Przebyty dystans"
     }
   },
   "documents": {
@@ -11122,7 +11630,8 @@
       "extractEmpty": "Z tego dokumentu nie udało się odczytać żadnych wartości.",
       "failUnitRequired": "Wartość liczbowa potrzebuje jednostki, zanim będzie można ją zapisać.",
       "failUnitMismatch": "Podana jednostka nie zgadza się z zapisaną jednostką tego wskaźnika. Popraw ją i zakończ przegląd ponownie.",
-      "failGeneric": "Nie udało się zapisać tej wartości."
+      "failGeneric": "Nie udało się zapisać tej wartości.",
+      "failUnknownBiomarker": "Wybrany biomarker już nie istnieje. Wybierz inny."
     },
     "contentIndex": {
       "indexPrompt": "Udostępnij treść dokumentów do wyszukiwania.",
@@ -11344,7 +11853,9 @@
       "molybdenum": "Molibden",
       "iodine": "Jod",
       "water": "Woda",
-      "caffeine": "Kofeina"
+      "caffeine": "Kofeina",
+      "dha": "DHA (kwas omega-3)",
+      "epa": "EPA (kwas omega-3)"
     },
     "page": {
       "title": "Spożycie składników odżywczych",
@@ -11376,9 +11887,26 @@
       "rowMetaNoRef": "{days} z {window} dni",
       "footer": "{tracked} z {total} śledzonych mikroskładników ma dane w tym okresie.",
       "emptyTitle": "Brak jeszcze zsynchronizowanych danych o mikroskładnikach",
-      "loadError": "Nie udało się wczytać danych o składnikach odżywczych"
+      "loadError": "Nie udało się wczytać danych o składnikach odżywczych",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Powyżej tolerowanego górnego poziomu spożycia dla dorosłych {value} {unit} dziennie ({source}).",
+      "aboveUpperLimitSupplemental": "Część z suplementów przekracza tolerowany górny poziom dla dorosłych {value} {unit} dziennie dla suplementów ({source}).",
+      "upperLimitForm": {
+        "retinol": "Poziom dotyczy tylko gotowej witaminy A (retinolu): jeśli ilość pochodzi z beta-karotenu, nie ma zastosowania.",
+        "folic_acid": "Poziom dotyczy kwasu foliowego z suplementów i żywności wzbogacanej, nie folianów ze zwykłego jedzenia.",
+        "magnesium_salts": "Poziom dotyczy łatwo dysocjujących soli magnezu w suplementach, nie magnezu z jedzenia.",
+        "alpha_tocopherol": "Poziom ustalono dla alfa-tokoferolu."
+      }
     },
-    "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy z Apple Health odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie."
+    "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy z Apple Health odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie.",
+    "units": {
+      "IU": "j.m."
+    },
+    "sources": {
+      "APPLE_HEALTH": "Zsynchronizowane",
+      "MANUAL": "Wpisane",
+      "SUPPLEMENT": "Suplementy"
+    }
   },
   "daily": {
     "line": {
@@ -11880,9 +12408,11 @@
         "revokeFailed": "Nie udało się wycofać linku. Spróbuj ponownie.",
         "errorFailed": "Nie udało się utworzyć linku przekazania.",
         "errorRosterChanged": "W międzyczasie zmieniło się, kto opiekuje się kartą. Zamknij to i otwórz ponownie.",
-        "oidcOnly": "Przekazanie profilu nie jest możliwe, dopóki ten serwer pozwala tylko na logowanie jednokrotne (SSO).",
+        "oidcOnly": "Przekazanie profilu nie jest możliwe na tym serwerze.",
         "loadError": "Nie udało się wczytać stanu przekazania.",
-        "entryHint": "Gdy {name} chce samodzielnie prowadzić tę kartę."
+        "entryHint": "Gdy {name} chce samodzielnie prowadzić tę kartę.",
+        "methodSso": "{name} loguje się przez logowanie jednokrotne (SSO), gdy użyje linku.",
+        "methodBoth": "{name} może ustawić hasło albo zalogować się przez logowanie jednokrotne (SSO)."
       }
     },
     "toast": {
@@ -12008,7 +12538,11 @@
       "customVaccineDelete": "{name} usunął własną szczepionkę",
       "lifeEventCreate": "{name} dodał wydarzenie życiowe",
       "lifeEventUpdate": "{name} zmienił wydarzenie życiowe",
-      "lifeEventDelete": "{name} usunął wydarzenie życiowe"
+      "lifeEventDelete": "{name} usunął wydarzenie życiowe",
+      "biomarkerMerge": "{name} scalił biomarkery",
+      "medicationIngredientsUpdate": "{name} zmienił skład suplementu",
+      "auditCCreate": "{name} wypełnił kwestionariusz AUDIT-C",
+      "auditCDelete": "{name} usunął wpis AUDIT-C"
     },
     "section": {
       "measurements": {
@@ -12227,7 +12761,34 @@
       "removed": "Odłączono: {name}",
       "linked": "Połączone",
       "loadNewer": "Wczytaj nowsze",
-      "loadOlder": "Wczytaj starsze"
+      "loadOlder": "Wczytaj starsze",
+      "period": {
+        "showing": "Okres: {period}"
+      }
+    },
+    "related": {
+      "title": "Powiązane",
+      "kind": {
+        "labResult": "Wynik badania",
+        "encounter": "Wizyta",
+        "document": "Dokument",
+        "conditionEpisode": "Choroba",
+        "medication": "Lek",
+        "vaccination": "Szczepienie"
+      },
+      "via": {
+        "encounter": "przez wizytę",
+        "efficacyTarget": "przez cel skuteczności"
+      },
+      "pick": {
+        "conditionEpisode": "Choroby",
+        "document": "Dokumenty",
+        "encounter": "Wizyty",
+        "medication": "Leki",
+        "vaccination": "Szczepienia"
+      },
+      "nothingToOffer": "Na razie nie ma czego powiązać.",
+      "saveError": "Nie udało się zapisać powiązania."
     }
   },
   "bodySites": {
@@ -12369,7 +12930,8 @@
       "scores": "Wyniki",
       "running": "W toku tego dnia",
       "values": "Wartości",
-      "happened": "Co się działo"
+      "happened": "Co się działo",
+      "movement": "W drodze"
     },
     "notable": {
       "extremeHigh": "Najwyższa wartość dzienna od {since}",
@@ -12425,7 +12987,18 @@
     "today": "Dzisiaj",
     "hasEntries": "z wpisami",
     "dayNSince": "Dzień {n}, od {date}",
-    "sinceDate": "Od {date}"
+    "sinceDate": "Od {date}",
+    "movement": {
+      "total": "Dystans",
+      "driving": "Samochodem",
+      "train": "Pociągiem",
+      "places": "Odwiedzone miejsca",
+      "away": "Poza domem",
+      "travel": "Dzień podróży",
+      "travelYes": "Tak",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Oś czasu",
@@ -12760,5 +13333,13 @@
     "lastUpdated": "Ostatnia aktualizacja: {date}",
     "project": "Projekt",
     "credits": "Podziękowania"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Twój cel, górna granica",
+      "targetLower": "Twój cel, dolna granica",
+      "clinicalUpper": "Kliniczna górna granica",
+      "clinicalLower": "Kliniczna dolna granica"
+    }
   }
 }

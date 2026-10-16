@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,8 @@ export function FamilyHistoryManager() {
       toast.success(t("records.family.deletedToast"));
       queryClient.invalidateQueries({ queryKey: queryKeys.familyHistory() });
     },
-    onError: () => toast.error(t("records.family.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("records.family.deleteError"), { cause: failure }),
   });
 
   function openNew() {

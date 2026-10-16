@@ -24,9 +24,11 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/settings/integrations",
 }));
 
+// The Dawarich card belongs to the opt-in environment module.
+let environmentOn = true;
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
-    user: { id: "u1", role: "USER" },
+    user: { id: "u1", role: "USER", modules: { environment: environmentOn } },
     isAuthenticated: true,
     isLoading: false,
     refetch: vi.fn(),
@@ -148,6 +150,18 @@ describe("ConnectionsPanel — every envelope entry surfaces", () => {
     // The steady state: nothing unclaimed, so the panel adds no catch-all row.
     envelope = fullEnvelope();
     expect(render()).not.toContain('data-testid="integration-fallback-row"');
+  });
+
+  it("shows a stored Dawarich connection read-only while the environment module is off", () => {
+    environmentOn = false;
+    try {
+      envelope = fullEnvelope();
+      const html = render();
+      expect(html).not.toContain('data-testid="dawarich-card"');
+      expect(html).toContain('data-integration="dawarich"');
+    } finally {
+      environmentOn = true;
+    }
   });
 
   it("renders no fallback row for a card-less provider that is not configured", () => {

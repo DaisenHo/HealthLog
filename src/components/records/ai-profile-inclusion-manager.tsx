@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -42,6 +42,18 @@ const SECTION_LABEL_KEY: Record<HealthProfileAiSection, string> = {
   ALCOHOL_PATTERN: "records.aiInclusion.sectionAlcohol",
   SHIFT_SCHEDULE: "records.aiInclusion.sectionShiftSchedule",
 };
+
+/**
+ * v1.43 (#614) — smoking, alcohol and shift work are switched beside their
+ * answers in the life-circumstances card; listing them here as well would put
+ * two switches for one setting on one page. They still travel in the PUT
+ * below with their saved value, so this card never changes them.
+ */
+const LIFE_CARD_SECTIONS: ReadonlySet<HealthProfileAiSection> = new Set([
+  "SMOKING_STATUS",
+  "ALCOHOL_PATTERN",
+  "SHIFT_SCHEDULE",
+]);
 
 export function AiProfileInclusionManager() {
   const { t } = useTranslations();
@@ -83,12 +95,15 @@ export function AiProfileInclusionManager() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.insightsAdvisor(),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.lifeCircumstances(),
+      });
     },
     onError: (error) => {
       if (isConflict(error)) {
         queryClient.invalidateQueries({ queryKey: queryKeys.coachAboutMe() });
       }
-      toast.error(t("records.aiInclusion.saveError"));
+      showErrorToast(t("records.aiInclusion.saveError"), { cause: error });
     },
   });
 
@@ -106,7 +121,9 @@ export function AiProfileInclusionManager() {
   return (
     <div className="space-y-4" data-slot="ai-profile-inclusion-manager">
       <div className="divide-border divide-y">
-        {HEALTH_PROFILE_AI_SECTIONS.map((section) => {
+        {HEALTH_PROFILE_AI_SECTIONS.filter(
+          (section) => !LIFE_CARD_SECTIONS.has(section),
+        ).map((section) => {
           const checked = value.includes(section);
           return (
             <div

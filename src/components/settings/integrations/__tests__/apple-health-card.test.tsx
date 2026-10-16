@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { Locale } from "@/lib/i18n/config";
@@ -54,6 +62,17 @@ function render(locale: Locale = "en") {
     </I18nProvider>,
   );
 }
+
+// "Last data: today" only holds when the fixture's hours-ago stays on the same
+// local day, so the clock is pinned to midday rather than the wall clock.
+const PINNED_NOW = new Date("2026-10-08T12:00:00.000Z");
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(PINNED_NOW);
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 describe("<AppleHealthCard>", () => {
   beforeEach(() => {
@@ -453,6 +472,31 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastBackgroundAt: hoursAgo(1),
     });
     expect(out).not.toContain("Last in background");
+  });
+
+  // v1.43 (ios #77) — a history catch-up is named apart, and a type that
+  // only ever arrived through one still reads as not received live.
+  it("names the last backfill apart from the live arrival", () => {
+    const live = html({
+      ...base,
+      lastReceivedAt: hoursAgo(1),
+      lastTrigger: "foreground",
+      lastNewSampleAt: hoursAgo(1),
+      lastBackfillAt: hoursAgo(3),
+    });
+    expect(live).toContain('data-state="received"');
+    expect(live).toContain("History caught up 3 h ago");
+    const backfillOnly = html({
+      ...base,
+      lastReceivedAt: null,
+      lastTrigger: null,
+      lastNewSampleAt: null,
+      lastBackfillAt: hoursAgo(2),
+    });
+    expect(backfillOnly).toContain('data-state="never"');
+    expect(backfillOnly).toContain(
+      "Not received yet, History caught up 2 h ago",
+    );
   });
 
   it("names the medication dose row in the freshness list", () => {

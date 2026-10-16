@@ -58,7 +58,8 @@ import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { markSyncCheckpoint } from "@/lib/sync/checkpoint";
 import {
-  HEALTHKIT_SYNC_TRIGGERS,
+  BACKFILL_SYNC_TRIGGER,
+  HEALTHKIT_REQUEST_SYNC_TRIGGERS,
   MEDICATION_DOSE_ARRIVAL_TYPE,
   recordHealthKitTypeArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
@@ -100,6 +101,7 @@ import {
   INTAKE_NOT_TRACKED_REASON,
   isRecordOnly,
 } from "@/lib/medications/intake-tracking";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -108,8 +110,7 @@ const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const bulkEntrySchema = z
   .object({
     medicationId: z.string().min(1),
-    scheduledFor: z.iso
-      .datetime({ offset: true })
+    scheduledFor: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     // v1.16.9 — shared plausibility bounds (no future beyond clock skew,
@@ -134,8 +135,7 @@ const bulkEntrySchema = z
     // entry skipped (`force_slot_invalid`) per the bulk per-entry contract.
     // Ignored on non-taken entries (a pending echo / skip carries no take
     // to attribute).
-    forceSlotInstant: z.iso
-      .datetime({ offset: true })
+    forceSlotInstant: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
     // v1.16.4 — per-entry dose override, mirroring the single intake
@@ -176,7 +176,9 @@ const bulkPayloadSchema = z.object({
   // v1.42.4 — what woke the phone for this sync, the same diagnostic-only
   // field `POST /api/measurements/batch` takes. It changes no row; it only
   // feeds the `MEDICATION_DOSE` arrival record below.
-  syncTrigger: z.enum(HEALTHKIT_SYNC_TRIGGERS).optional(),
+  // v1.43 (ios #77) — `backfill` for a history catch-up: it moves only the
+  // dose entry's `lastBackfillAt`, never the live stamps or the checkpoint.
+  syncTrigger: z.enum(HEALTHKIT_REQUEST_SYNC_TRIGGERS).optional(),
 });
 
 // v1.8.2 — `updated` joins the per-entry status vocabulary: a write that
@@ -1038,8 +1040,10 @@ async function postBulk(request: NextRequest): Promise<Response> {
   // The SyncMode checkpoint belongs to the push that moved the data, not to
   // the `/api/sync/state` handshake that reports it. This endpoint is one of
   // the three domains that handshake summarises, so an intake drain advances
-  // it.
-  await markSyncCheckpoint(user.id);
+  // it. A `backfill` catch-up does not: it is history, not a sync.
+  if (syncTrigger !== BACKFILL_SYNC_TRIGGER) {
+    await markSyncCheckpoint(user.id);
+  }
 
   return apiSuccess({
     processed: entries.length,

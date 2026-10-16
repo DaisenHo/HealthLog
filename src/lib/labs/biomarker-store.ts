@@ -14,6 +14,13 @@ import { Buffer } from "node:buffer";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
+import {
+  addToIndex,
+  loadMarkerIndex,
+  resolveInIndex,
+  type IndexedMarker,
+  type MarkerIndex,
+} from "@/lib/labs/biomarker-resolve";
 import { getEvent } from "@/lib/logging/context";
 
 /** Encrypt a UTF-8 context note into the `Bytes` payload the schema stores. */
@@ -72,18 +79,19 @@ export interface MintedBiomarker {
  * v1.18.1 — resolve (or mint) the user-scoped Biomarker for a free-text lab
  * write so NO `LabResult` row ever persists unlinked.
  *
- * The catalog identity is `(userId, lower(analyte))`: a reading for "LDL",
- * "ldl", and "LDL " all resolve to one marker. An existing marker (hand-
- * defined or previously minted) is reused as-is — its unit / range are
- * authoritative and the incoming free-text unit / bounds are NOT allowed to
- * silently rewrite it. When no marker exists yet, one is minted from the
- * reading's own free-text spelling / unit / bounds. The `@@unique([userId,
- * name])` index is the structural backstop; a concurrent double-write
- * converges via the catch-and-refetch.
+ * Since v1.43 (D1223) the name resolves through `resolveInIndex`: the
+ * marker's own name (case aside), then an alias of the account, then a
+ * catalog name for the same analyte as one of the account's markers ("GPT"
+ * for "ALT") when the reading's unit fits that marker. An existing marker is
+ * reused as-is: its unit / range are authoritative and the incoming free-text
+ * unit / bounds are NOT allowed to silently rewrite it. When nothing resolves,
+ * a marker is minted from the reading's own spelling / unit / bounds. The
+ * `@@unique([userId, name])` index is the structural backstop; a concurrent
+ * double-write converges via the catch-and-refetch.
  *
- * Turning the boot-time backfill into a pure historical migration: from
- * v1.18.1 on, every write goes through here, so the only unlinked rows that
- * can exist are pre-upgrade ones the backfill heals.
+ * `index` lets a caller writing many rows load the account's markers once;
+ * a marker minted here is added to it so a later row with the same name finds
+ * it.
  */
 export async function resolveOrMintBiomarker(
   userId: string,
@@ -94,28 +102,15 @@ export async function resolveOrMintBiomarker(
     referenceHigh: number | null;
     panel: string | null;
   },
+  options: { index?: MarkerIndex } = {},
 ): Promise<MintedBiomarker> {
   const name = input.analyte.trim();
-  const select = {
-    id: true,
-    name: true,
-    unit: true,
-    lowerBound: true,
-    upperBound: true,
-    panel: true,
-    analyteKey: true,
-  } as const;
-
-  // Case-insensitive match on the catalog identity. Postgres is the store;
-  // `mode: "insensitive"` keeps "LDL" === "ldl" without a functional index.
-  const existing = await prisma.biomarker.findFirst({
-    where: { userId, name: { equals: name, mode: "insensitive" } },
-    select,
-  });
-  if (existing) return existing;
+  const index = options.index ?? (await loadMarkerIndex(prisma, userId));
+  const hit = resolveInIndex(index, name, input.unit || null);
+  if (hit) return toMinted(hit.marker);
 
   try {
-    return await prisma.biomarker.create({
+    const created = await prisma.biomarker.create({
       data: {
         userId,
         name,
@@ -125,15 +120,44 @@ export async function resolveOrMintBiomarker(
         panel: input.panel,
         analyteKey: matchAnalyteKey({ name, unit: input.unit }),
       },
-      select,
+      select: INDEXED_SELECT,
     });
+    addToIndex(index, created);
+    return toMinted(created);
   } catch {
     // A concurrent write minted the same `(userId, name)` first — adopt it.
     const raced = await prisma.biomarker.findFirst({
       where: { userId, name: { equals: name, mode: "insensitive" } },
-      select,
+      select: INDEXED_SELECT,
     });
-    if (raced) return raced;
+    if (raced) {
+      addToIndex(index, raced);
+      return toMinted(raced);
+    }
     throw new Error("Failed to resolve biomarker for lab write");
   }
+}
+
+const INDEXED_SELECT = {
+  id: true,
+  name: true,
+  unit: true,
+  lowerBound: true,
+  upperBound: true,
+  panel: true,
+  analyteKey: true,
+  hidden: true,
+  createdAt: true,
+} as const;
+
+function toMinted(marker: IndexedMarker): MintedBiomarker {
+  return {
+    id: marker.id,
+    name: marker.name,
+    unit: marker.unit,
+    lowerBound: marker.lowerBound,
+    upperBound: marker.upperBound,
+    panel: marker.panel,
+    analyteKey: marker.analyteKey,
+  };
 }

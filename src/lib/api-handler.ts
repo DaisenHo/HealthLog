@@ -54,6 +54,8 @@ import {
   attachRecordContextEcho,
 } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
+import { acceptIncomingRequestId } from "./http/request-id";
+import { withErrorRequestId } from "./api-response";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -229,11 +231,10 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
 
     const evt = new WideEventBuilder("http");
 
-    // Propagate x-request-id if present
-    const incomingRequestId = safeRequestProp(
-      request,
-      (r) => r.headers.get("x-request-id"),
-      null,
+    // Propagate x-request-id when it is a well-formed token. A malformed one
+    // never reaches the log or the response; the event keeps its fresh id.
+    const incomingRequestId = acceptIncomingRequestId(
+      safeRequestProp(request, (r) => r.headers.get("x-request-id"), null),
     );
     if (incomingRequestId) evt.setRequestId(incomingRequestId);
 
@@ -363,7 +364,13 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
             /* logging must never crash the handler */
           }
         }
-        const nr = response as NextResponse;
+        // Every error envelope names its request id in `meta.requestId`, so
+        // the id survives a proxy that strips the header (see
+        // `withErrorRequestId`).
+        const nr = (await withErrorRequestId(
+          response as Response,
+          evt.getRequestId(),
+        )) as NextResponse;
         nr.headers.set("x-request-id", evt.getRequestId());
         if (isBypassRoute) applyBypassRouteHeaders(nr.headers);
         // v1.37.0 — echo the record context this response was actually served

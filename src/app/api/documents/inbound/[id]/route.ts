@@ -32,7 +32,10 @@ import {
   replaceVaccinationLinks,
 } from "@/lib/documents/links";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
-import { serialiseDocumentDetail } from "@/lib/documents/store";
+import {
+  markerIndexForFacts,
+  serialiseDocumentDetail,
+} from "@/lib/documents/store";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -42,6 +45,7 @@ import {
 } from "@/lib/validations/inbound-documents";
 import type { Prisma } from "@/generated/prisma/client";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
+import { withRelated } from "@/lib/links/related";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -129,15 +133,21 @@ export const GET = apiHandler(
     });
 
     return apiSuccess(
-      serialiseDocumentDetail(
-        document,
-        document.facts,
-        links.get(document.id) ?? [],
-        contentIndex !== null,
-        toContentIndexSource(contentIndex?.source),
-        thumbnail !== null,
-        visitLinks.get(document.id) ?? [],
-        doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
+      await withRelated(
+        prisma,
+        serialiseDocumentDetail(
+          document,
+          document.facts,
+          links.get(document.id) ?? [],
+          contentIndex !== null,
+          toContentIndexSource(contentIndex?.source),
+          thumbnail !== null,
+          visitLinks.get(document.id) ?? [],
+          doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
+          // v1.43 — the marker each pending lab value resolves to, or choices.
+          await markerIndexForFacts(user.id, document.facts),
+        ),
+        { userId: user.id, grantId, kind: "document", id: document.id },
       ),
     );
   },

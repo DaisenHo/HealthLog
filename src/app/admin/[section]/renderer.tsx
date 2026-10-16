@@ -22,6 +22,7 @@ import { AiServerKeySection } from "@/components/admin/ai-server-key-section";
 import { ProviderHealthSection } from "@/components/admin/provider-health-section";
 import { CentralCodexSection } from "@/components/admin/central-codex-section";
 import { AssistantSection } from "@/components/admin/assistant-section";
+import { AiUsageSection } from "@/components/admin/ai-usage-section";
 import { CoachFeedbackSection } from "@/components/admin/coach-feedback-section";
 import { ApiTokenOverviewSection } from "@/components/admin/api-token-overview-section";
 import { AppLogPreviewSection } from "@/components/admin/app-log-preview-section";
@@ -36,9 +37,11 @@ import { ModuleAvailabilitySection } from "@/components/admin/module-availabilit
 import { RemindersSection } from "@/components/admin/reminders-section";
 import { ServicesSection } from "@/components/admin/services-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
+import { SupportReportCard } from "@/components/admin/support-report-card";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasurementMaintenanceCard } from "@/components/admin/measurement-maintenance-card";
+import { PulseDayMeanCard } from "@/components/admin/pulse-day-mean-card";
 import { InviteTokensSection } from "@/components/admin/invite-tokens-section";
 import { UserManagementSection } from "@/components/admin/user-management-section";
 import type { AdminSectionSlug } from "@/components/admin/section-slugs";
@@ -69,8 +72,12 @@ export function AdminSectionRenderer({
         >
           <SectionFrame>
             <SystemStatusSection />
+            {/* v1.43 — the redacted report for a bug report. */}
+            <SupportReportCard />
             {/* v1.42 — the table maintenance after the tombstone purge. */}
             <MeasurementMaintenanceCard />
+            {/* v1.43 — the pulse day-mean method, dry run before apply. */}
+            <PulseDayMeanCard />
           </SectionFrame>
         </RevealWhenSettled>
       );
@@ -102,6 +109,7 @@ export function AdminSectionRenderer({
       return (
         <SectionFrame>
           <AssistantSection />
+          <AiUsageSection />
           <AiServerKeySection />
           <CentralCodexSection />
           <ProviderHealthSection />

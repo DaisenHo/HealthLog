@@ -5,6 +5,7 @@
  * per-nutrient summaries (latest day + total, days-with-data), the
  * module gate, and the `days` query validation.
  */
+import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -111,11 +112,41 @@ describe("GET /api/nutrients", () => {
     // Rows arrive nutrient ASC, day DESC (the route's orderBy) — the
     // fold takes the first row per nutrient as the latest.
     vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([
-      { nutrient: "caffeine", unit: "mg", day: "2026-07-13", amount: 310 },
-      { nutrient: "caffeine", unit: "mg", day: "2026-07-12", amount: 250 },
-      { nutrient: "caffeine", unit: "mg", day: "2026-07-11", amount: 400 },
-      { nutrient: "vitamin_d", unit: "ug", day: "2026-07-13", amount: 22.5 },
-      { nutrient: "vitamin_d", unit: "ug", day: "2026-07-10", amount: 20 },
+      {
+        nutrient: "caffeine",
+        unit: "mg",
+        day: "2026-07-13",
+        amount: 310,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "caffeine",
+        unit: "mg",
+        day: "2026-07-12",
+        amount: 250,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "caffeine",
+        unit: "mg",
+        day: "2026-07-11",
+        amount: 400,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "vitamin_d",
+        unit: "ug",
+        day: "2026-07-13",
+        amount: 22.5,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "vitamin_d",
+        unit: "ug",
+        day: "2026-07-10",
+        amount: 20,
+        source: "APPLE_HEALTH",
+      },
     ] as never);
 
     const res = await GET(getReq("?days=7"));
@@ -129,6 +160,9 @@ describe("GET /api/nutrients", () => {
         latestDay: "2026-07-13",
         latestAmount: 22.5,
         daysWithData: 2,
+        latestBySource: { APPLE_HEALTH: 22.5 },
+        upperLimit: NUTRIENT_CATALOG.vitamin_d.upperLimit,
+        latestAboveUpperLimit: false,
       },
       {
         nutrient: "caffeine",
@@ -136,6 +170,9 @@ describe("GET /api/nutrients", () => {
         latestDay: "2026-07-13",
         latestAmount: 310,
         daysWithData: 3,
+        latestBySource: { APPLE_HEALTH: 310 },
+        upperLimit: null,
+        latestAboveUpperLimit: null,
       },
     ]);
   });
@@ -145,10 +182,34 @@ describe("GET /api/nutrients", () => {
     // day logged via both APPLE_HEALTH and MANUAL must still count as ONE
     // day, not two.
     vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([
-      { nutrient: "water", unit: "ml", day: "2026-07-13", amount: 900 },
-      { nutrient: "water", unit: "ml", day: "2026-07-12", amount: 600 },
-      { nutrient: "water", unit: "ml", day: "2026-07-12", amount: 400 },
-      { nutrient: "water", unit: "ml", day: "2026-07-11", amount: 500 },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-13",
+        amount: 900,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-12",
+        amount: 600,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-12",
+        amount: 400,
+        source: "MANUAL",
+      },
+      {
+        nutrient: "water",
+        unit: "ml",
+        day: "2026-07-11",
+        amount: 500,
+        source: "APPLE_HEALTH",
+      },
     ] as never);
 
     const res = await GET(getReq("?days=7"));
@@ -163,6 +224,59 @@ describe("GET /api/nutrients", () => {
       // four, since the 12th's second source row didn't match the pinned
       // `latestDay` (the 13th) and opened a phantom extra day.
       daysWithData: 3,
+      latestBySource: { APPLE_HEALTH: 900 },
+      upperLimit: null,
+      latestAboveUpperLimit: null,
+    });
+  });
+
+  it("splits the latest day by source and judges it against the upper limit (v1.43)", async () => {
+    vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([
+      {
+        nutrient: "vitamin_d",
+        unit: "ug",
+        day: "2026-07-13",
+        amount: 30,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "vitamin_d",
+        unit: "ug",
+        day: "2026-07-13",
+        amount: 80,
+        source: "SUPPLEMENT",
+      },
+      {
+        nutrient: "magnesium",
+        unit: "mg",
+        day: "2026-07-13",
+        amount: 300,
+        source: "APPLE_HEALTH",
+      },
+      {
+        nutrient: "magnesium",
+        unit: "mg",
+        day: "2026-07-13",
+        amount: 200,
+        source: "SUPPLEMENT",
+      },
+    ] as never);
+
+    const res = await GET(getReq("?days=7"));
+    const body = (await res.json()) as OverviewResponse;
+    const byCode = new Map(body.data.nutrients.map((n) => [n.nutrient, n]));
+    // 110 µg in total against a total-scope limit of 100.
+    expect(byCode.get("vitamin_d")).toMatchObject({
+      latestAmount: 110,
+      latestBySource: { APPLE_HEALTH: 30, SUPPLEMENT: 80 },
+      latestAboveUpperLimit: true,
+    });
+    // 500 mg in total, but the limit covers the supplement share only (200).
+    expect(byCode.get("magnesium")).toMatchObject({
+      latestAmount: 500,
+      latestBySource: { APPLE_HEALTH: 300, SUPPLEMENT: 200 },
+      upperLimit: { value: 250, scope: "supplemental" },
+      latestAboveUpperLimit: false,
     });
   });
 

@@ -73,10 +73,21 @@ import {
   findFoldedWindowDuplicates,
 } from "@/lib/measurements/folded-window";
 import {
-  HEALTHKIT_SYNC_TRIGGERS,
+  BACKFILL_SYNC_TRIGGER,
+  HEALTHKIT_REQUEST_SYNC_TRIGGERS,
   recordHealthKitTypeArrivals,
   type HealthKitTypeArrival,
 } from "@/lib/integrations/healthkit-type-sync";
+import {
+  classifyHourBucket,
+  HOUR_BUCKET_SKIP_REASONS,
+  combineHourWrites,
+  parseHourBucketId,
+  writeHourBuckets,
+  type HourBucketEntry,
+  type HourBucketWrite,
+} from "@/lib/measurements/intraday-hour-buckets";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
 import {
   classifyExternalId,
@@ -103,6 +114,7 @@ import {
   type MeasurementSource,
   type MeasurementType,
 } from "@/generated/prisma/client";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.4.25 W16c — historical-backfill threshold for PR push
 // suppression. A batch larger than this fires the detection job with
@@ -147,8 +159,8 @@ const batchEntrySchema = z.object({
   hkIdentifier: z.string().min(1).max(120),
   value: z.number().finite(),
   unit: z.string().min(1).max(60),
-  startDate: z.iso.datetime({ offset: true }),
-  endDate: z.iso.datetime({ offset: true }),
+  startDate: isoDateTime(),
+  endDate: isoDateTime(),
   sleepStage: z.number().int().min(0).max(20).optional(),
   // v1.10.0 — categorical events (WX-B). The integer `HKCategoryValue`
   // codepoint for an EVENT-class category sample (irregular-rhythm,
@@ -199,7 +211,9 @@ const batchEntrySchema = z.object({
 // pre-#66 caller stays byte-for-byte unchanged.
 // v1.42 (#1173) — `manual` names a user-initiated "Sync all" run, as opposed to
 // the app simply being open (`foreground`).
-const syncTriggerEnum = z.enum(HEALTHKIT_SYNC_TRIGGERS);
+// v1.43 (ios #77) — `backfill` names a history catch-up. It moves only the
+// per-type `lastBackfillAt`, never the live sync stamps (see below).
+const syncTriggerEnum = z.enum(HEALTHKIT_REQUEST_SYNC_TRIGGERS);
 
 const batchPayloadSchema = z.object({
   entries: z.array(batchEntrySchema).min(1),
@@ -380,6 +394,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const prepared: Prepared[] = [];
   const results: EntryResult[] = new Array(entries.length);
   const unstableShapes: UnstableExternalIdShape[] = [];
+  // v1.43 — hourly sums for the intraday profile, and the zone they are cut in
+  // (the account's, the one `/api/auth/me` publishes as `timezone`).
+  const hourWrites: HourBucketEntry[] = [];
+  let accountTz: string | undefined;
+  const batchNow = new Date();
 
   for (let index = 0; index < entries.length; index++) {
     const entry = entries[index];
@@ -399,6 +418,76 @@ async function postBatch(request: NextRequest): Promise<Response> {
         status: "skipped",
         reason: UNSTABLE_EXTERNAL_ID_REASON,
       };
+      continue;
+    }
+
+    // v1.43 (ios #77) — an hourly sum of a summed type
+    // (`stats:<HK>:<YYYY-MM-DD>T<HH>`) is never a measurement: it lands in the
+    // intraday profile behind the same-time baseline, and the day's total
+    // stays the day row. Validated here, written after the measurements.
+    const hourId = parseHourBucketId(entry.externalId);
+    if (hourId) {
+      const skip = (reason: string) => {
+        results[index] = { index, status: "skipped", reason };
+      };
+      // The profile has no source dimension and is the phone's: a bridge or a
+      // hand-entered row cannot post hours into it.
+      if (scoped || (entry.source ?? "APPLE_HEALTH") !== "APPLE_HEALTH") {
+        skip(HOUR_BUCKET_SKIP_REASONS.unsupportedType);
+        continue;
+      }
+      accountTz ??= await resolveStoredTimezone(user.timezone);
+      const startDate = new Date(entry.startDate);
+      const verdict = classifyHourBucket(
+        hourId,
+        startDate,
+        accountTz,
+        batchNow,
+      );
+      if (!verdict.ok) {
+        skip(verdict.reason);
+        continue;
+      }
+      if (!isPlausibleEntryInstant(startDate)) {
+        skip("implausible_timestamp");
+        continue;
+      }
+      const hourMapped = mapAppleHealthEntry({
+        hkIdentifier: entry.hkIdentifier,
+        value: entry.value,
+        unit: entry.unit,
+        startDate: entry.startDate,
+        endDate: entry.endDate,
+      });
+      if (!hourMapped || hourMapped.type !== verdict.type) {
+        // The entry's identifier must be the one its id names.
+        skip(
+          hourMapped
+            ? HOUR_BUCKET_SKIP_REASONS.unsupportedType
+            : "unmappable_identifier",
+        );
+        continue;
+      }
+      if (
+        hourMapped.value < 0 ||
+        validateMeasurementRange(hourMapped.type, hourMapped.value) !== null
+      ) {
+        results[index] = outOfRangeResult(
+          index,
+          hourMapped.type,
+          hourMapped.value,
+        );
+        continue;
+      }
+      hourWrites.push({
+        index,
+        type: verdict.type,
+        hkIdentifier: hourId.hkIdentifier,
+        dateKey: hourId.dateKey,
+        hour: hourId.hour,
+        value: hourMapped.value,
+        startMs: startDate.getTime(),
+      });
       continue;
     }
 
@@ -898,15 +987,79 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }
   }
 
+  // v1.43 — the hours, after the measurements. One write per slot: the last
+  // entry for one start wins (an earlier one in the same batch is a
+  // superseded duplicate), and the two starts of the hour a fall-back day
+  // repeats are summed (`combineHourWrites`).
+  let hourInsertedCount = 0;
+  let hourUpdatedCount = 0;
+  const hourLanded: HourBucketWrite[] = [];
+  if (hourWrites.length > 0 && accountTz) {
+    const { writes, superseded } = combineHourWrites(hourWrites);
+    for (const index of superseded) {
+      results[index] = {
+        index,
+        status: "duplicate",
+        reason: "superseded_in_batch",
+      };
+      duplicateCount++;
+    }
+    const toWrite = writes.map(({ write }) => write);
+    try {
+      const statuses = await writeHourBuckets(
+        prisma,
+        user.id,
+        accountTz,
+        toWrite,
+      );
+      for (const { write, contributors } of writes) {
+        const status = statuses.get(write.index) ?? "inserted";
+        for (const index of contributors) {
+          results[index] = { index, status };
+          if (status === "inserted") hourInsertedCount++;
+          else hourUpdatedCount++;
+        }
+        hourLanded.push(write);
+      }
+    } catch (err) {
+      for (const { contributors } of writes) {
+        for (const index of contributors) {
+          results[index] = {
+            index,
+            status: "failed",
+            reason: "write_failed",
+          };
+          failedCount++;
+        }
+      }
+      annotate({
+        action: { name: "measurement.batch.hour-bucket.failed" },
+        meta: { error: err instanceof Error ? err.message : String(err) },
+      });
+    }
+    annotate({
+      action: { name: "measurement.batch.hour-bucket" },
+      meta: {
+        attempted: hourWrites.length,
+        inserted: hourInsertedCount,
+        updated: hourUpdatedCount,
+        processed: entries.length,
+      },
+    });
+  }
+
   const healthKitSyncSucceeded =
     failedCount === 0 &&
-    prepared.some((p) => {
-      if ((p.entry.source ?? "APPLE_HEALTH") !== "APPLE_HEALTH") return false;
-      const status = results[p.index]?.status;
-      return (
-        status === "inserted" || status === "updated" || status === "duplicate"
-      );
-    });
+    (hourLanded.length > 0 ||
+      prepared.some((p) => {
+        if ((p.entry.source ?? "APPLE_HEALTH") !== "APPLE_HEALTH") return false;
+        const status = results[p.index]?.status;
+        return (
+          status === "inserted" ||
+          status === "updated" ||
+          status === "duplicate"
+        );
+      }));
 
   // This batch route is the native ingestion boundary, so it is also where the
   // SyncMode checkpoint (`User.lastSyncedAt`, the same column
@@ -938,6 +1091,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // uses to size its undelivered window, so letting a scale advance it can make
   // the phone skip a window of its own samples — a silent data loss whose cause
   // would be nowhere near the code that caused it.
+  //
+  // v1.43 (ios #77) — a `backfill` batch is a catch-up, not a sync. It records
+  // its types under `lastBackfillAt` only and moves none of the live stamps:
+  // thirty days of history must not read as thirty healthy daily syncs.
+  const backfill = syncTrigger === BACKFILL_SYNC_TRIGGER;
   if (failedCount === 0 && !scoped) {
     const syncedAt = new Date();
     const deliveredWithoutTheApp =
@@ -962,6 +1120,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
       if (status !== "duplicate") entry.newSamples += 1;
       arrivals.set(type, entry);
     }
+    // The hours the phone posted are an arrival of their type as well.
+    for (const w of hourLanded) {
+      const entry = arrivals.get(w.type) ?? { accepted: 0, newSamples: 0 };
+      entry.accepted += 1;
+      entry.newSamples += 1;
+      arrivals.set(w.type, entry);
+    }
     if (arrivals.size > 0) {
       await recordHealthKitTypeArrivals(prisma, {
         userId: user.id,
@@ -970,21 +1135,23 @@ async function postBatch(request: NextRequest): Promise<Response> {
         at: syncedAt,
       });
     }
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastSyncedAt: syncedAt,
-        ...(healthKitSyncSucceeded
-          ? {
-              healthKitLastSyncedAt: syncedAt,
-              healthKitLastSyncTrigger: syncTrigger ?? null,
-              ...(deliveredWithoutTheApp
-                ? { healthKitLastBackgroundSyncAt: syncedAt }
-                : {}),
-            }
-          : {}),
-      },
-    });
+    if (!backfill) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastSyncedAt: syncedAt,
+          ...(healthKitSyncSucceeded
+            ? {
+                healthKitLastSyncedAt: syncedAt,
+                healthKitLastSyncTrigger: syncTrigger ?? null,
+                ...(deliveredWithoutTheApp
+                  ? { healthKitLastBackgroundSyncAt: syncedAt }
+                  : {}),
+              }
+            : {}),
+        },
+      });
+    }
   }
 
   const freshlyInsertedRows = insertedPrepared.map((p) => ({
@@ -1209,7 +1376,12 @@ async function postBatch(request: NextRequest): Promise<Response> {
     // v1.37.19 (C2-F1) — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as
     // inserts, so this deliberately retains the prepared-row scope.
-    await afterMeasurementMutation(user.id, writtenIdentities);
+    // A batch is the phone's sync, held to the sync gap, unless it wrote one
+    // of the person's own hand-entered readings, which is narrated like any
+    // other hand entry.
+    await afterMeasurementMutation(user.id, writtenIdentities, {
+      source: wroteManualRow ? "manual" : "sync",
+    });
 
     // S4 — Apple-Health sleep is the third sleep transport. If any SLEEP_DURATION
     // row for last night just landed, kick the debounced morning refresh so the
@@ -1251,10 +1423,21 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }
   }
 
+  // v1.43 — the hours are not measurements, so they touched none of the
+  // measurement consumers above; only the caches that read the intraday
+  // profile (the same-time baseline) are marked stale.
+  if (
+    hourInsertedCount + hourUpdatedCount > 0 &&
+    insertedCount === 0 &&
+    updatedCount === 0
+  ) {
+    invalidateUserMeasurements(user.id);
+  }
+
   const response = apiSuccess({
     processed: entries.length,
-    inserted: insertedCount,
-    updated: updatedCount,
+    inserted: insertedCount + hourInsertedCount,
+    updated: updatedCount + hourUpdatedCount,
     duplicates: duplicateCount,
     failed: failedCount,
     skipped,

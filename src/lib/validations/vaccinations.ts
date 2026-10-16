@@ -29,6 +29,7 @@ import {
   ANTIGEN_SLUGS,
   VACCINE_CATALOG_SLUGS,
 } from "@/lib/vaccinations/vaccine-catalog";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const KNOWN_SLUGS: ReadonlySet<string> = new Set(VACCINE_CATALOG_SLUGS);
 
@@ -43,7 +44,7 @@ const KNOWN_SLUGS: ReadonlySet<string> = new Set(VACCINE_CATALOG_SLUGS);
  */
 const DAY_SKEW_MS = 24 * 60 * 60 * 1000;
 
-const doseInstant = z.iso.datetime({ offset: true }).refine(
+const doseInstant = isoDateTime().refine(
   (value) => {
     const at = new Date(value).getTime();
     if (Number.isNaN(at)) return false;
@@ -191,8 +192,8 @@ export type VaccinationUpdate = z.infer<typeof vaccinationUpdateSchema>;
 export const vaccinationListQuerySchema = z
   .object({
     antigenSlug: z.string().min(1).max(64).optional(),
-    from: z.iso.datetime({ offset: true }).optional(),
-    to: z.iso.datetime({ offset: true }).optional(),
+    from: isoDateTime().optional(),
+    to: isoDateTime().optional(),
     limit: z.coerce.number().int().min(1).max(500).optional(),
   })
   .strict()
@@ -253,13 +254,11 @@ export type CustomVaccineUpdate = z.infer<typeof customVaccineUpdateSchema>;
 /* ── links ────────────────────────────────────────────────────────── */
 
 /**
- * The one link family a dose has.
- *
- * A single-member enum rather than a bare constant, so the wire shape matches
- * the encounter link route's and a second family — if this venture ever loses
- * the argument against one — is an added member rather than a changed shape.
+ * The link families a dose has: the page it was transcribed from and, since
+ * v1.43, the visit it was given at (`encounter_vaccination_links`, the same
+ * table the visit's own links route writes from its end).
  */
-export const vaccinationLinkTargetEnum = z.enum(["document"]);
+export const vaccinationLinkTargetEnum = z.enum(["document", "encounter"]);
 
 export const vaccinationLinkSchema = z
   .object({
@@ -301,7 +300,7 @@ export type VaccinationBoosterInput = z.infer<typeof vaccinationBoosterSchema>;
  */
 export const vaccinationSuggestQuerySchema = z
   .object({
-    anchor: z.iso.datetime({ offset: true }),
+    anchor: isoDateTime(),
   })
   .strict();
 

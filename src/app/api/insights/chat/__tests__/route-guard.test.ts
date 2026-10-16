@@ -127,6 +127,7 @@ vi.mock("@/lib/ai/coach/refusal", () => ({ detectRefusal }));
 // NB: the outbound guard + numeric verifier are REAL — that is the point.
 vi.mock("@/lib/ai/coach/system-prompt", () => ({
   getCoachSystemPrompt: vi.fn(() => "SYSTEM"),
+  buildCoachTurnNotes: vi.fn(() => ""),
 }));
 vi.mock("@/lib/ai/coach/about-me", () => ({
   getSelfContextTextForUser: vi.fn(async () => null),

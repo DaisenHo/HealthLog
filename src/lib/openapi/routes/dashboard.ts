@@ -14,6 +14,7 @@
  * the single-source `@/lib/dashboard-layout` module so the contract cannot
  * drift. Part of the OpenAPI route table; aggregated in `./index.ts`.
  */
+import { trendSentiment, trendVerdict } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
@@ -35,6 +36,7 @@ import {
   recordRefusal,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const dashboardWidgetConfig = z.object({
   id: z.enum(DASHBOARD_WIDGET_CATALOGUE_IDS),
@@ -101,8 +103,7 @@ const dashboardLayoutPutBody = dashboardLayoutSchema
 
 const dashboardLayoutResult = dashboardLayoutSchema
   .extend({
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .optional()
       .describe(
         "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
@@ -225,8 +226,7 @@ const dashboardMetricCard = z
       .describe(
         "Up to seven points: the last seven DAY rollup buckets for a measured metric regardless of age (daily sum for cumulative metrics such as steps, daily mean otherwise), the trailing nights' asleep hours for `sleep`, the last seven daily means for `mood`, and the trailing derived series for `bmi`. May be empty.",
       ),
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .nullable()
       .describe(
         "Instant behind `latestValue`, falling back to the metric's newest reading. For `mood` this is the first instant of the latest daily bucket's day in the account's time zone, not a reading time (the series pins a local day, not an instant); formatted in that zone it always lands on the day the entry was logged. For `bmi` it is the WEIGHT metadata, since BMI moves exactly when weight does.",
@@ -237,12 +237,18 @@ const dashboardMetricCard = z
       .describe(
         "Total readings ever logged for this metric — the gate that keeps a tile visible through a logging gap. Summed across both sides for `bloodPressure`; the mood entry count for `mood`; the WEIGHT count for `bmi`.",
       ),
-    lastSeenAt: z.iso
-      .datetime({ offset: true })
+    lastSeenAt: isoDateTime()
       .nullable()
       .describe(
         "The metric's newest reading, for the 'last reading N days ago' caption when it is older than the sparkline window.",
       ),
+    direction: trendVerdict
+      .nullable()
+      .optional()
+      .describe("v1.43 — which way a change of this metric counts."),
+    trendSentiment: trendSentiment
+      .optional()
+      .describe("v1.43 — the verdict applied to this card's `trend`."),
   })
   .meta({
     id: "DashboardMetricCard",
@@ -259,7 +265,7 @@ const dashboardSummaryResponse = z
           .describe(
             "Already-localised greeting including the display name (or username). One of the few strings this payload still translates server-side, in the account's own locale.",
           ),
-        date: z.iso.datetime({ offset: true }).describe("Build instant."),
+        date: isoDateTime().describe("Build instant."),
       })
       .describe("Header block."),
     streak: z
@@ -300,9 +306,7 @@ const dashboardSummaryResponse = z
     sleepRhythm: sleepRhythmResponse.describe(
       "The same server-authoritative sleep-debt + chronotype + average-per-night DTO `GET /api/sleep/rhythm` returns, off the same canonical night reconstruction. Always present, with its own calm `partial` / `learning` states — it is NOT gated by the sleep module here, so it can carry figures while the sleep metric CARD is filtered out.",
     ),
-    lastUpdated: z.iso
-      .datetime({ offset: true })
-      .describe("Build instant of the cached body."),
+    lastUpdated: isoDateTime().describe("Build instant of the cached body."),
   })
   .meta({
     id: "DashboardSummaryResponse",

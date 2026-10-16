@@ -54,6 +54,10 @@ const { calls, rows, prismaMock } = vi.hoisted(() => {
       calls.push(name);
       return Promise.resolve(rows[`${name}Unique`]?.[0] ?? null);
     },
+    findFirst: () => {
+      calls.push(name);
+      return Promise.resolve(rows[`${name}First`]?.[0] ?? null);
+    },
   });
   return {
     calls,
@@ -463,6 +467,8 @@ describe("zero read for unchosen leaves", () => {
     ["ANAMNESIS", "userHealthProfile"],
     ["EMERGENCY", "userHealthProfile"],
     ["ANAMNESIS", "healthProfileFactRevision"],
+    // v1.43 — the newest AUDIT-C entry rides the anamnesis leaf.
+    ["ANAMNESIS", "mentalHealthAssessment"],
   ];
 
   // ANAMNESIS and EMERGENCY both read `userHealthProfile` (and VISITS and

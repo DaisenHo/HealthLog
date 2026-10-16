@@ -7,6 +7,7 @@ import {
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
 import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
+import { resolveRequestId } from "@/lib/http/request-id";
 
 /**
  * Paths that do NOT require a session cookie (public pages + external webhooks).
@@ -568,8 +569,10 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Generate or propagate x-request-id for request correlation
-  const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
+  // Generate or propagate x-request-id for request correlation. An incoming
+  // id is adopted only when it is a plain token (`resolveRequestId`); it is
+  // echoed and logged, so anything else is replaced with a fresh one.
+  const requestId = resolveRequestId(request.headers.get("x-request-id"));
 
   // 128 bits of random, base64-encoded. randomUUID().toString() only carries
   // ~122 bits and has a predictable structure that base64-encodes to a
@@ -822,6 +825,6 @@ export const config = {
     // the matcher and `apiHandler` performs the proxy's duties for it. The
     // alternation must stay equal to that list; `proxy-body-limit.test.ts`
     // compiles this exactly as Next does and checks.
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/apple-health-export|/health-connect-export)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/apple-health-export|/health-connect-export)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
   ],
 };

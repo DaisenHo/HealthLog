@@ -8,3 +8,7 @@ export {
   medicationDoseHistoryImportFatalReasonEnum,
 } from "./schemas";
 export { medicationPaths } from "./paths";
+export {
+  medicationIngredientPaths,
+  supplementLabelExtractResult,
+} from "./ingredients";

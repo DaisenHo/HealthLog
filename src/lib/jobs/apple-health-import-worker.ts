@@ -605,7 +605,11 @@ export async function handleAppleHealthImport(
     if (importedTypes.length > 0) {
       // Registered so the test suite can await the detached handle.
       trackBackgroundTask(
-        invalidateStatusInsightsForTypes(userId, importedTypes).catch((err) => {
+        invalidateStatusInsightsForTypes(userId, importedTypes, {
+          // An export file the person chose to import, narrated like any
+          // other import rather than held to the sync gap.
+          source: "manual",
+        }).catch((err) => {
           console.warn(
             `[apple-health-import] status-insight invalidate failed for user ${userId}`,
             err,

@@ -72,6 +72,7 @@ import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 import { annotate } from "@/lib/logging/context";
+import { foldForMatch } from "@/lib/i18n/fold-for-match";
 import type { BackupMeasurement } from "@/lib/validations/backup";
 import {
   isCompatibleSchemaVersion,
@@ -115,6 +116,7 @@ import { restoreEnvironmentData } from "@/lib/export/environment-backup";
 import { restoreEcgData } from "@/lib/export/ecg-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoreLifeEventsData } from "@/lib/export/life-events-backup";
+import { restoreRelationLinksData } from "@/lib/export/relation-links-backup";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
   encryptCategoryLabel,
@@ -180,6 +182,7 @@ export interface RestoreResponse {
     encounterLinks: number;
     vaccinations: number;
     vaccinationLinks: number;
+    relationLinks: number;
     customVaccines: number;
     measurementReminders: number;
     measurementReminderEvents: number;
@@ -195,6 +198,7 @@ export interface RestoreResponse {
     userAchievements: number;
     environmentContexts: number;
     environmentTravelLocations: number;
+    dawarichDays: number;
     ecgRecordings: number;
     symptomDefinitions: number;
     lifeEvents: number;
@@ -1154,6 +1158,12 @@ export async function restoreBackup(
 
         const medByName = new Map<string, string>();
         const restoredMedicationIds = new Set<string>();
+        // The id each medication had in the source account, to the id it got
+        // here. A disaster-recovery file keeps the id, so this is the
+        // identity there; a portable file names the source row only through
+        // `ref`, and the relation links (written last) are re-pointed through
+        // this map instead of being dropped as "end is gone".
+        const medicationIdBySourceId = new Map<string, string>();
         // The efficacy targets cannot ride inside the medication create
         // beside the schedules and the packs: `biomarkerId` is a foreign key
         // into a catalogue this transaction has not restored yet. They are
@@ -1329,6 +1339,22 @@ export async function restoreBackup(
               // running when the backup was taken is still running after the
               // restore, and closing it here would silently convert an
               // ongoing decision into a historical one.
+              // v1.43 — the composition, nested so it binds to the id the
+              // drug actually got. Restored as written; the SUPPLEMENT
+              // nutrient rows it produced travel in the nutrient section.
+              ingredients: {
+                create: m.ingredients.map((i) => ({
+                  ...(i.id ? { id: i.id } : {}),
+                  userId: ownerId,
+                  nutrient: i.nutrient,
+                  amountPerUnit: i.amountPerUnit,
+                  unit: i.unit,
+                  enteredAmount: i.enteredAmount ?? null,
+                  enteredUnit: i.enteredUnit ?? null,
+                  source: i.source,
+                  ...(i.createdAt ? { createdAt: new Date(i.createdAt) } : {}),
+                })),
+              },
               pauseEras: {
                 create: m.pauseEras.map((p) => ({
                   ...(p.id ? { id: p.id } : {}),
@@ -1434,6 +1460,10 @@ export async function restoreBackup(
             },
           });
           restoredMedicationIds.add(created.id);
+          const medicationSourceId = m.id ?? m.ref;
+          if (medicationSourceId) {
+            medicationIdBySourceId.set(medicationSourceId, created.id);
+          }
           if (!medByName.has(m.name)) medByName.set(m.name, created.id);
           // v1.39.4 — the clinical category lives in its own table keyed on the
           // medication id, so it is written after the row exists and inside the
@@ -2076,12 +2106,84 @@ export async function restoreBackup(
           });
           biomarkerByName.set(biomarker.name, created.id);
           restoredBiomarkerIds.add(created.id);
+          // v1.43 (D1223) — the other spellings, folded the way the resolver
+          // reads them, so the next scan matches them again.
+          const aliasRows = (biomarker.aliases ?? [])
+            .map((alias) => ({
+              id: alias.id,
+              name: alias.name.trim().slice(0, 120),
+              nameFolded: foldForMatch(alias.name).slice(0, 120),
+              source: alias.source,
+              createdAt: alias.createdAt,
+            }))
+            .filter(
+              (alias) =>
+                alias.nameFolded !== "" &&
+                alias.nameFolded !== foldForMatch(biomarker.name),
+            );
+          if (aliasRows.length > 0) {
+            await tx.biomarkerAlias.createMany({
+              data: aliasRows.map((alias) => ({
+                ...(alias.id ? { id: alias.id } : {}),
+                userId: ownerId,
+                biomarkerId: created.id,
+                name: alias.name,
+                nameFolded: alias.nameFolded,
+                source: alias.source,
+                ...(alias.createdAt
+                  ? { createdAt: new Date(alias.createdAt) }
+                  : {}),
+              })),
+              // One spelling answers to one marker per account; a file that
+              // names it twice keeps the first.
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        // v1.43 (D1223) — the merge ledger, against the markers just written:
+        // by id where the file carries one this restore kept, by name
+        // otherwise. A row whose target the file does not carry has nothing
+        // to point at and is left out (counted on the event).
+        let unresolvedMerges = 0;
+        const mergeRows = (payload.biomarkerMerges ?? []).flatMap((merge) => {
+          const targetId =
+            merge.targetBiomarkerId &&
+            restoredBiomarkerIds.has(merge.targetBiomarkerId)
+              ? merge.targetBiomarkerId
+              : biomarkerByName.get(merge.targetName);
+          if (!targetId) {
+            unresolvedMerges += 1;
+            return [];
+          }
+          return [
+            {
+              ...(merge.id ? { id: merge.id } : {}),
+              userId: ownerId,
+              targetBiomarkerId: targetId,
+              sourceBiomarkerId: merge.sourceBiomarkerId,
+              sourceName: merge.sourceName,
+              readingCount: merge.readingCount,
+              mergedAt: new Date(merge.mergedAt),
+            },
+          ];
+        });
+        if (mergeRows.length > 0) {
+          await tx.biomarkerMerge.createMany({ data: mergeRows });
+        }
+        if (unresolvedMerges > 0) {
+          annotate({
+            action: { name: "backup.restore.biomarkerMerge.unresolved" },
+            meta: { count: unresolvedMerges },
+          });
         }
 
         // Collected for the staged facts further down: an approved fact's
         // `committedRecordId` names the lab result it was committed to, and
         // that reference is resolved against the rows this loop writes.
         const restoredLabResultIds = new Set<string>();
+        // Same arrangement as `medicationIdBySourceId`, for the lab results.
+        const labResultIdBySourceId = new Map<string, string>();
         // What each drug was supposed to move, written now that both ends
         // exist. The drugs came back several hundred lines up and the
         // analytes only just now, and one of those two had to move for a
@@ -2190,6 +2292,9 @@ export async function restoreBackup(
             },
           });
           restoredLabResultIds.add(createdLab.id);
+          const labSourceId = lab.id ?? lab.ref;
+          if (labSourceId)
+            labResultIdBySourceId.set(labSourceId, createdLab.id);
         }
 
         reportSection("illness");
@@ -2584,6 +2689,21 @@ export async function restoreBackup(
           skips,
         );
 
+        // The five relation links (v1.43), last of the record sections they
+        // join: every end is a foreign key against a lab result, document,
+        // visit, dose, medication or condition, all written above. Both ends
+        // of this section live in `src/lib/export/relation-links-backup.ts`.
+        const relationLinksCleared = await restoreRelationLinksData(
+          tx,
+          ownerId,
+          payload,
+          skips,
+          {
+            medications: medicationIdBySourceId,
+            labResults: labResultIdBySourceId,
+          },
+        );
+
         // The Coach's threads, turns and document links. AFTER the
         // documents on purpose: an attachment carries a `documentId` that
         // is a foreign key against them, so running earlier would make
@@ -2716,6 +2836,7 @@ export async function restoreBackup(
           encounterLinks: visitsCleared.encounterLinks,
           vaccinations: vaccinationsCleared.vaccinations,
           vaccinationLinks: vaccinationsCleared.vaccinationLinks,
+          relationLinks: relationLinksCleared.relationLinks,
           customVaccines: vaccinationsCleared.customVaccines,
           measurementReminders: remindersCleared.measurementReminders,
           measurementReminderEvents: remindersCleared.measurementReminderEvents,
@@ -2732,6 +2853,7 @@ export async function restoreBackup(
           environmentContexts: environmentCleared.environmentContexts,
           environmentTravelLocations:
             environmentCleared.environmentTravelLocations,
+          dawarichDays: environmentCleared.dawarichDays,
           ecgRecordings: ecgCleared.ecgRecordings,
           symptomDefinitions: symptomsCleared.symptomDefinitions,
           lifeEvents: lifeEventsCleared.lifeEvents,
@@ -2995,6 +3117,7 @@ export async function restoreBackup(
         encounterLinks: summary.encounterLinks,
         vaccinations: summary.vaccinations,
         vaccinationLinks: summary.vaccinationLinks,
+        relationLinks: summary.relationLinks,
         customVaccines: summary.customVaccines,
         measurementReminders: summary.measurementReminders,
         measurementReminderEvents: summary.measurementReminderEvents,

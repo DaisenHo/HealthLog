@@ -41,7 +41,10 @@ describe("apiHandler while the encryption key does not match", () => {
     expect(response.status).toBe(503);
     const body = await response.json();
     expect(body.data).toBeNull();
-    expect(body.meta).toEqual({ errorCode: "encryption.key_mismatch" });
+    expect(body.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "encryption.key_mismatch",
+    });
     expect(response.headers.get("Retry-After")).toBe("300");
     expect(handler).not.toHaveBeenCalled();
   });

@@ -1,13 +1,11 @@
 /**
  * v1.42 (#615) — the environment locations sealed at rest, against real
- * Postgres with the migrated schema (0381, 0382).
+ * Postgres with the migrated schema (0381, 0382, and 0409, which dropped the
+ * readable location columns).
  *
  *   - the writers (home, period) store only the sealed copy, the overview
  *     answers readable, and the air-quality switch round-trips through its
  *     route;
- *   - the boot-time backfill finds the accounts still holding a readable
- *     home, period or day, seals each, clears the readable columns, and
- *     converges (a second pass and a second discovery find nothing);
  *   - the backup carries the location readable in a portable file and sealed
  *     in a disaster-recovery file, and both restore to a location that opens
  *     to the same coarse place, with the air-quality values of the day;
@@ -22,10 +20,6 @@ import { POST as postTravel } from "@/app/api/environment/travel/route";
 import { PATCH as patchPreferences } from "@/app/api/environment/preferences/route";
 import { GET as getOverview } from "@/app/api/environment/route";
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  enqueueBootTimeFreeTextEncryptionBackfill,
-  runFreeTextEncryptionBackfillForUser,
-} from "@/lib/jobs/free-text-encryption-backfill";
 import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import {
   buildEnvironmentBackupSection,
@@ -134,19 +128,18 @@ describe("environment writers and the overview", () => {
     ).toBe(201);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: OWNER } });
-    expect([user.homeLat, user.homeLon, user.homeLabel]).toEqual([
-      null,
-      null,
-      null,
-    ]);
+    expect(user).not.toHaveProperty("homeLat");
     const travel = await prisma.environmentTravelLocation.findFirstOrThrow({
       where: { userId: OWNER },
     });
-    expect([travel.lat, travel.lon, travel.label]).toEqual([null, null, null]);
+    expect(travel).not.toHaveProperty("lat");
     // No readable trace of either place anywhere in the two rows.
     expect(
       JSON.stringify({ ...user, homeLocationEncrypted: null }),
     ).not.toMatch(/Bochum/);
+    expect(JSON.stringify({ ...travel, locationEncrypted: null })).not.toMatch(
+      /Lisbon/,
+    );
 
     const overview = (await (await getOverview()).json()).data;
     expect(overview.home).toMatchObject({
@@ -231,93 +224,6 @@ describe("environment writers and the overview", () => {
   });
 });
 
-describe("the encryption backfill (real Postgres)", () => {
-  it("discovers, seals, clears and converges", async () => {
-    const prisma = getPrismaClient();
-    await seedUser("env-other");
-    const stamp = new Date("2026-03-01T10:00:00.000Z");
-    await prisma.user.update({
-      where: { id: OWNER },
-      data: { homeLat: 51.5, homeLon: 7.2, homeLabel: "Bochum, Germany" },
-    });
-    await prisma.environmentTravelLocation.create({
-      data: {
-        userId: OWNER,
-        startDate: "2026-08-01",
-        endDate: "2026-08-10",
-        lat: 38.7,
-        lon: -9.1,
-        label: "Lisbon, Portugal",
-        updatedAt: stamp,
-      },
-    });
-    await prisma.environmentContext.create({
-      data: {
-        userId: OWNER,
-        date: "2026-08-02",
-        lat: 38.7,
-        lon: -9.1,
-        locationLabel: "Lisbon, Portugal",
-        source: "TRAVEL",
-      },
-    });
-
-    const sent: string[] = [];
-    setGlobalBoss({
-      send: async (_q: string, payload: { userId?: string }) => {
-        if (payload.userId) sent.push(payload.userId);
-        return "job";
-      },
-    } as never);
-    const discovery = await enqueueBootTimeFreeTextEncryptionBackfill();
-    expect(discovery.error).toBeNull();
-    expect(sent).toEqual([OWNER]);
-
-    const summary = await runFreeTextEncryptionBackfillForUser(OWNER);
-    expect(summary).toMatchObject({
-      homeLocationsMigrated: 1,
-      travelLocationsMigrated: 1,
-      dayLocationsMigrated: 1,
-    });
-
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: OWNER } });
-    expect(user.homeLat).toBeNull();
-    expect(openLocation(user.homeLocationEncrypted!)).toEqual({
-      lat: 51.5,
-      lon: 7.2,
-      label: "Bochum, Germany",
-    });
-    const travel = await prisma.environmentTravelLocation.findFirstOrThrow({
-      where: { userId: OWNER },
-    });
-    expect(travel.lat).toBeNull();
-    expect(travel.updatedAt).toEqual(stamp);
-    expect(openLocation(travel.locationEncrypted!).label).toBe(
-      "Lisbon, Portugal",
-    );
-    const day = await prisma.environmentContext.findFirstOrThrow({
-      where: { userId: OWNER },
-    });
-    expect([day.lat, day.lon, day.locationLabel]).toEqual([null, null, null]);
-    expect(openLocation(day.locationEncrypted!).lat).toBe(38.7);
-
-    // Converged: nothing readable is left to find.
-    expect(await runFreeTextEncryptionBackfillForUser(OWNER)).toMatchObject({
-      homeLocationsMigrated: 0,
-      travelLocationsMigrated: 0,
-      dayLocationsMigrated: 0,
-    });
-    sent.length = 0;
-    await enqueueBootTimeFreeTextEncryptionBackfill();
-    expect(sent).toEqual([]);
-    const remaining = await prisma.$queryRaw<{ n: bigint }[]>`
-      SELECT (SELECT count(*) FROM users WHERE home_lat IS NOT NULL)
-           + (SELECT count(*) FROM environment_travel_locations WHERE lat IS NOT NULL)
-           + (SELECT count(*) FROM environment_contexts WHERE lat IS NOT NULL) AS n`;
-    expect(Number(remaining[0].n)).toBe(0);
-  });
-});
-
 describe("the environment backup with sealed locations", () => {
   async function seedDay() {
     const prisma = getPrismaClient();
@@ -383,7 +289,7 @@ describe("the environment backup with sealed locations", () => {
     const restored = await prisma.environmentContext.findFirstOrThrow({
       where: { userId: OWNER },
     });
-    expect([restored.lat, restored.locationLabel]).toEqual([null, null]);
+    expect(restored).not.toHaveProperty("lat");
     expect(openLocation(restored.locationEncrypted!)).toEqual({
       lat: 38.7,
       lon: -9.1,

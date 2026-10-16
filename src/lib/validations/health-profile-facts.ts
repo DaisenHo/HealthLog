@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const HEALTH_PROFILE_AI_SECTIONS = [
   "ABOUT_ME",
@@ -26,6 +27,36 @@ export const DEFAULT_HEALTH_PROFILE_AI_SECTIONS = [
 ] as const satisfies readonly HealthProfileAiSection[];
 
 export const healthProfileAiSectionSchema = z.enum(HEALTH_PROFILE_AI_SECTIONS);
+
+/**
+ * Every value the `ai_included_sections` column can hold: the eight above and
+ * the four life-circumstance sections (v1.43, #614). The eight-value schema is
+ * the wire form of `/api/coach/about-me`, which older app builds decode
+ * closed; this one is for the places that carry the column as stored, the
+ * backup file first among them, where dropping a value would silently take an
+ * opt-in back on restore.
+ */
+export const STORED_HEALTH_PROFILE_AI_SECTIONS = [
+  ...HEALTH_PROFILE_AI_SECTIONS,
+  "ACTIVITY",
+  "WORK",
+  "HABITS",
+  "GOALS",
+] as const;
+export type StoredHealthProfileAiSection =
+  (typeof STORED_HEALTH_PROFILE_AI_SECTIONS)[number];
+export const storedHealthProfileAiSectionSchema = z.enum(
+  STORED_HEALTH_PROFILE_AI_SECTIONS,
+);
+
+/** Narrow a stored section list to the eight the about-me wire carries. */
+export function aboutMeAiSections(
+  stored: readonly string[],
+): HealthProfileAiSection[] {
+  return stored.filter((section): section is HealthProfileAiSection =>
+    (HEALTH_PROFILE_AI_SECTIONS as readonly string[]).includes(section),
+  );
+}
 
 export const SMOKING_STATUS_VALUES = ["NEVER", "FORMER", "CURRENT"] as const;
 export const ALCOHOL_PATTERN_VALUES = [
@@ -74,25 +105,6 @@ export function isHealthProfileFactValue(
   return HEALTH_PROFILE_FACT_VALUES[kind][value] === true;
 }
 
-export const healthProfileFactWriteSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("SMOKING_STATUS"),
-    value: z.enum(SMOKING_STATUS_VALUES),
-  }),
-  z.object({
-    kind: z.literal("ALCOHOL_PATTERN"),
-    value: z.enum(ALCOHOL_PATTERN_VALUES),
-  }),
-  z.object({
-    kind: z.literal("SHIFT_SCHEDULE"),
-    value: z.enum(SHIFT_SCHEDULE_VALUES),
-  }),
-]);
-
-export const healthProfileFactCorrectionSchema = z.object({
-  value: z.string().trim().min(1),
-});
-
 export function validateCorrectedFactValue(
   kind: HealthProfileFactKind,
   value: string,
@@ -105,11 +117,11 @@ export const healthProfileFactDtoSchema = z.object({
   kind: healthProfileFactKindSchema,
   value: z.string().nullable(),
   unreadable: z.boolean(),
-  validFrom: z.iso.datetime({ offset: true }),
-  validUntil: z.iso.datetime({ offset: true }).nullable(),
+  validFrom: isoDateTime(),
+  validUntil: isoDateTime().nullable(),
   provenance: z.enum(["USER_REPORTED", "USER_CORRECTION"]),
   supersededByRevisionId: z.string().nullable(),
-  createdAt: z.iso.datetime({ offset: true }),
+  createdAt: isoDateTime(),
 });
 
 export const healthProfileFactsResponseSchema = z.object({
@@ -119,10 +131,4 @@ export const healthProfileFactsResponseSchema = z.object({
     SHIFT_SCHEDULE: healthProfileFactDtoSchema.nullable(),
   }),
   history: z.array(healthProfileFactDtoSchema),
-});
-
-export const removedHealthProfileFactSchema = z.object({
-  id: z.string(),
-  kind: healthProfileFactKindSchema,
-  removedAt: z.iso.datetime({ offset: true }),
 });

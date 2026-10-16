@@ -148,6 +148,13 @@ export function buildCoachToolRequest(args: {
   guidedBlock: string;
   transcript: string;
   languageName: string;
+  /**
+   * v1.43 (#1217) — what changes from one turn to the next: the opener hint,
+   * the name clause, a resolved follow-up, the table rules once a table
+   * exists. Carried here, on the user side, so `system` is the same string
+   * on every turn and every round. Empty or absent: nothing is added.
+   */
+  turnNotes?: string;
 }): { system: string; messages: AiMessage[] } {
   const focusBlock = args.focusHint ? `${args.focusHint}\n\n` : "";
   const workoutDataBlock =
@@ -160,7 +167,7 @@ ${fenceHealthData(JSON.stringify({ thisWorkout: args.workoutEvidence }))}
   const messages: AiMessage[] = [
     {
       role: "user",
-      content: `${focusBlock}${workoutDataBlock}${args.memoryBlock ? `${args.memoryBlock}\n\n` : ""}${args.dataInventory}${args.priorResults ? `\n\n${args.priorResults}` : ""}${args.guidedBlock}
+      content: `${focusBlock}${workoutDataBlock}${args.memoryBlock ? `${args.memoryBlock}\n\n` : ""}${args.dataInventory}${args.priorResults ? `\n\n${args.priorResults}` : ""}${args.guidedBlock}${args.turnNotes ? `\n\n${args.turnNotes}` : ""}
 
 CONVERSATION
 ${args.transcript}

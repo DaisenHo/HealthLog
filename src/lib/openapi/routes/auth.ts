@@ -10,6 +10,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { HANDOVER_METHODS, claimSsoSchema } from "@/lib/validations/claim-sso";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import {
@@ -54,6 +55,7 @@ import {
   claimSchema,
 } from "@/lib/validations/managed-profile-handover";
 import { HANDOVER_ACCESS_LEVELS } from "@/lib/managed-profiles/handover-access";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Sub-schemas owned here (route-specific shapes) ───────────────────
 
@@ -108,14 +110,14 @@ const accessRefreshBundle = z
       .describe(
         "Access token (`hlk_<64hex>`); only present for native-policy callers. A browser caller gets the session cookie instead.",
       ),
-    tokenExpiresAt: z.iso.datetime({ offset: true }).optional(),
+    tokenExpiresAt: isoDateTime().optional(),
     refreshToken: z
       .string()
       .optional()
       .describe(
         "Refresh token (`hlr_<64hex>`); only present for native-policy callers.",
       ),
-    refreshTokenExpiresAt: z.iso.datetime({ offset: true }).optional(),
+    refreshTokenExpiresAt: isoDateTime().optional(),
   })
   .meta({
     id: "AccessRefreshBundle",
@@ -194,8 +196,8 @@ const sessionListResponse = z
           .string()
           .nullable()
           .describe("Resolved coarse location, when available."),
-        lastActiveAt: z.iso.datetime({ offset: true }).nullable(),
-        createdAt: z.iso.datetime({ offset: true }),
+        lastActiveAt: isoDateTime().nullable(),
+        createdAt: isoDateTime(),
         isCurrent: z
           .boolean()
           .describe("True for the session making this request."),
@@ -213,9 +215,9 @@ const trustedDeviceListResponse = z
           .string()
           .nullable()
           .describe("Coarse, IP-free device label (e.g. 'Firefox on macOS')."),
-        createdAt: z.iso.datetime({ offset: true }),
-        lastUsedAt: z.iso.datetime({ offset: true }),
-        expiresAt: z.iso.datetime({ offset: true }),
+        createdAt: isoDateTime(),
+        lastUsedAt: isoDateTime(),
+        expiresAt: isoDateTime(),
         isCurrent: z
           .boolean()
           .describe("True for the device making this request."),
@@ -279,7 +281,7 @@ const securityActivityResponse = z
         action: z
           .string()
           .describe("Audit action name, e.g. auth.login.password."),
-        createdAt: z.iso.datetime({ offset: true }),
+        createdAt: isoDateTime(),
         location: z.string().nullable(),
         ipMasked: z.string().nullable().describe("Host-masked IP."),
         carrier: z.string().nullable(),
@@ -294,8 +296,8 @@ const webauthnCredentialInfo = z
   .object({
     id: z.string(),
     name: z.string(),
-    createdAt: z.iso.datetime({ offset: true }),
-    lastUsedAt: z.iso.datetime({ offset: true }).nullable(),
+    createdAt: isoDateTime(),
+    lastUsedAt: isoDateTime().nullable(),
   })
   .meta({ id: "WebauthnMfaCredentialInfo" });
 
@@ -319,9 +321,8 @@ const passkeyInfo = z
       .describe(
         "Whether the authenticator reported the credential as backed up (synced to the platform keychain) at registration time. Not re-read afterwards.",
       ),
-    createdAt: z.iso.datetime({ offset: true }).describe("Registered at."),
-    lastUsedAt: z.iso
-      .datetime({ offset: true })
+    createdAt: isoDateTime().describe("Registered at."),
+    lastUsedAt: isoDateTime()
       .nullable()
       .describe(
         "When this passkey last completed a verified assertion; null when it has never been used to sign in. Stamped on every successful login, so a client can render a real 'last used' rather than assuming never.",
@@ -391,7 +392,7 @@ const stepUpMintResponse = z
       .describe(
         "Opaque single-use elevation (`hle_<64hex>`). Present it in the `X-Step-Up` header on ONE second-factor-management call. Returned exactly once; store it in memory only.",
       ),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
     expiresInSeconds: z.number().int(),
     method: z
       .enum(["password", "totp", "webauthn", "passkey"])
@@ -472,12 +473,11 @@ const apiTokenInfo = z
       .describe(
         'The token\'s scope list. `["*"]` is cookie-equivalent (what a native login mints); anything else is narrow and reaches only the routes that name it. Admin endpoints are cookie-only and are reachable by no token at any scope.',
       ),
-    lastUsedAt: z.iso
-      .datetime({ offset: true })
+    lastUsedAt: isoDateTime()
       .nullable()
       .describe("Stamped fire-and-forget on use; null for an unused token."),
-    expiresAt: z.iso.datetime({ offset: true }).nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime().nullable(),
+    createdAt: isoDateTime(),
     revoked: z
       .boolean()
       .describe(
@@ -504,7 +504,7 @@ const createMeasurementTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash, so there is no way to retrieve it later; a client that does not capture it here has to mint a replacement. Treat it as a secret in logs, crash reports and analytics.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateMeasurementTokenResponse",
@@ -526,7 +526,7 @@ const createWorkoutTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be retrieved later. Treat it as a secret.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateWorkoutTokenResponse",
@@ -548,7 +548,7 @@ const createDocumentTokenResponse = z
         "The raw `hlk_` Bearer, RETURNED EXACTLY ONCE. It is stored only as an HMAC-SHA256 hash and cannot be retrieved later. Treat it as a secret.",
       ),
     name: z.string(),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({
     id: "CreateDocumentTokenResponse",
@@ -714,7 +714,7 @@ const claimPreview = z
       .string()
       .nullable()
       .describe("The profile's name, as its guardians set it."),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
     guardians: z
       .array(
         z.object({
@@ -730,8 +730,27 @@ const claimPreview = z
       .describe(
         "Each guardian and the access they keep after the claim, as proposed. The new owner confirms or changes it after signing in.",
       ),
+    methods: z
+      .array(z.enum(HANDOVER_METHODS))
+      .optional()
+      .describe(
+        "v1.43 — how this link can be redeemed: `password` and/or `sso`. Absent on older servers.",
+      ),
+    ssoProviderName: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        'v1.43 — the identity provider\'s display name for the "Continue with …" button; null without one.',
+      ),
   })
   .meta({ id: "ProfileClaimPreview" });
+
+const claimSsoRequest = claimSsoSchema.meta({
+  id: "ProfileClaimSsoRequest",
+  description:
+    "`token` is the `hlp_` token from the handover link, in the body; `username` follows the registration rules and may not start with `managed-`.",
+});
 
 const claimRequest = claimSchema.meta({
   id: "ProfileClaimRequest",
@@ -740,6 +759,43 @@ const claimRequest = claimSchema.meta({
 });
 
 export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/auth/claim/sso": {
+    post: {
+      // No credential: the token in the body is the credential.
+      security: [],
+      tags: ["Auth"],
+      summary: "Claim a managed profile through single sign-on (v1.43)",
+      description:
+        "Web only. Checks the link and the username, sets a sealed `hl_claim` cookie (10 minutes, `httpOnly`) and answers where to continue: `/api/auth/oidc/login?intent=claim`. The OIDC callback binds the identity provider's subject to the profile and signs the new owner in; a subject already bound to an account, or a verified email another account holds, is refused there. Works on a single-sign-on-only instance. When the callback refuses, the browser lands on `/auth/claim?error=<reason>` with reason `claim_expired` (the link was used, withdrawn, replaced or expired in the meantime, or the cookie is missing, expired or belongs to another start), `claim_sso_subject_bound`, `claim_email_taken`, `claim_username_taken` (taken during the round trip), `claim_signed_in`, or one of the sign-in reasons (`oidc_denied`, `oidc_state`, `oidc_failed`, `oidc_rate_limited`, `oidc_disabled`); on success it lands on `/onboarding/handover`, where the new owner decides each guardian's access. The cookie is cleared either way. 404 `profile_claim.invalid` (no usable link) or `profile_claim.sso_unavailable` (no identity provider configured); 409 `profile_claim.taken` (username) or `auth.already_authenticated`; rate-limited per source address like the password claim.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: claimSsoRequest } },
+      },
+      responses: {
+        "200": {
+          description: "Continue at `redirectTo`.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ redirectTo: z.string() }),
+                "ProfileClaimSsoEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "`profile_claim.invalid` or `profile_claim.sso_unavailable`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description: "`profile_claim.taken` or `auth.already_authenticated`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/claim/preview": {
     post: {
       // No credential: the person claiming the profile has none yet. The
@@ -748,7 +804,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Preview a managed-profile handover link",
       description:
-        "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link whose creator lost access, all answer the same 404. Rate-limited per source address.",
+        "What a handover link would hand over: the profile's display name, the link's expiry, and each guardian's proposal. Anonymous; the token travels in the body. An unknown, expired, used or withdrawn token, and a link whose creator lost access, all answer the same 404. Rate-limited per source address. Since v1.43 answered on a single-sign-on-only instance too, with `methods` naming the ways in.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: claimPreviewRequest } },
@@ -761,11 +817,6 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(claimPreview, "ProfileClaimPreviewEnvelope"),
             },
           },
-        },
-        "403": {
-          description:
-            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
-          content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {
           description:
@@ -1064,7 +1115,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 z
                   .object({
                     method: z.enum(["password", "totp", "webauthn", "passkey"]),
-                    verifiedAt: z.string().datetime(),
+                    verifiedAt: isoDateTime({ offset: false }),
                   })
                   .meta({ id: "ReproofResponse" }),
                 "ReproofEnvelope",
@@ -2279,6 +2330,12 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .describe(
               "Browser leg only: where to land after login. Sanitised to an in-app path; ignored entirely on the native leg.",
             ),
+          intent: z
+            .literal("claim")
+            .optional()
+            .describe(
+              "v1.43 — `claim` continues a managed-profile claim started at POST /api/auth/claim/sso; the link and username ride the sealed `hl_claim` cookie that call set, never this URL. Without a valid cookie for a still-usable link the start redirects to `/auth/claim?error=claim_expired`. Browser leg only: with `client=native` it fails with `oidc_invalid_request`. `next` is ignored.",
+            ),
           client_proto: z
             .enum(["http", "https"])
             .optional()
@@ -2297,7 +2354,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         "302": {
           description:
-            "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `oidc_failed`. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",
+            "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser; `/auth/claim?error=<reason>` with `intent=claim`, where `claim_expired` is one more reason) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `oidc_failed`. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",
         },
       },
     },

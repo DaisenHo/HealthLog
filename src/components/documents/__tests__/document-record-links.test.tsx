@@ -18,6 +18,7 @@ vi.mock("@/components/links/use-link-picker-pages", async (importOriginal) => ({
     setTerm: vi.fn(),
     searchPending: false,
     filterLocally: true,
+    period: null,
     hasOlder: false,
     hasNewer: false,
     loadingOlder: false,

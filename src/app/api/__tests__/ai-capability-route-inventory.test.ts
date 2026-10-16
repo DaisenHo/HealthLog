@@ -165,6 +165,36 @@ describe("AI capability route inventory", () => {
   });
 });
 
+/**
+ * Capabilities no route asks, each with its reason. Every other capability is
+ * asked by at least one route on `AI_ROUTES`, so a key cannot be added to the
+ * table and forgotten at the edge.
+ *
+ *   - `reactionLines`: written by a job after a new reading arrives, never on
+ *     request; the job asks `aiCapabilityForJob`.
+ */
+const CAPABILITIES_WITHOUT_ROUTE: Readonly<
+  Partial<Record<(typeof AI_CAPABILITY_KEYS)[number], string>>
+> = {
+  reactionLines: "job only",
+};
+
+describe("every capability reaches a route", () => {
+  it("is asked by an AI route, or named with its reason", () => {
+    const asked = new Set(
+      Object.values(AI_ROUTES).flatMap((entry) => [...entry.capabilities]),
+    );
+    const orphaned = AI_CAPABILITY_KEYS.filter(
+      (key) => !asked.has(key) && !(key in CAPABILITIES_WITHOUT_ROUTE),
+    );
+    expect(orphaned).toEqual([]);
+    const stale = Object.keys(CAPABILITIES_WITHOUT_ROUTE).filter((key) =>
+      asked.has(key as (typeof AI_CAPABILITY_KEYS)[number]),
+    );
+    expect(stale, "asked by a route now: drop it from the list").toEqual([]);
+  });
+});
+
 /** The route that queues each kind of background run. */
 const RUN_QUEUED_BY: Record<DocumentAiRunKindValue, string> = {
   DOCUMENT_INDEX: "src/app/api/documents/inbound/[id]/index/route.ts",
@@ -172,6 +202,8 @@ const RUN_QUEUED_BY: Record<DocumentAiRunKindValue, string> = {
   DOCUMENT_SUMMARY: "src/app/api/documents/inbound/[id]/summary/route.ts",
   DOCUMENT_SUGGEST: "src/app/api/documents/inbound/[id]/suggest/route.ts",
   DOCUMENT_EXTRACT: "src/app/api/documents/inbound/[id]/extract/route.ts",
+  SUPPLEMENT_LABEL_EXTRACT:
+    "src/app/api/medications/[id]/ingredients/extract/route.ts",
 };
 
 describe("background run kinds", () => {

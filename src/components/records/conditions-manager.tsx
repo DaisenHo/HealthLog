@@ -24,10 +24,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
+import { FreeTextTakeOver } from "@/components/records/free-text-take-over";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -89,8 +91,8 @@ export function ConditionsManager() {
         queryKey: queryKeys.coachAboutMeQuestions(),
       });
     },
-    onError: () => {
-      toast.error(t("records.conditions.saveError"));
+    onError: (failure) => {
+      showErrorToast(t("records.conditions.saveError"), { cause: failure });
     },
   });
 
@@ -139,6 +141,8 @@ export function ConditionsManager() {
             t("settings.ai.aboutMe.focusPlaceholder"),
           )}
           <SettingsCardActions>
+            {/* v1.43 (#614) — move the free text into the condition journal by hand. */}
+            <FreeTextTakeOver field="conditions" />
             <Button
               type="button"
               size="sm"

@@ -82,6 +82,7 @@ const subsystemSurface = {
   "step-consolidation": { audience: "system" },
   "step-consolidation-repair": { audience: "system" },
   "cumulative-pr-rederive": { audience: "system" },
+  "supplement-nutrient-recompute": { audience: "system" },
   "mean-consolidation": { audience: "system" },
   "dense-intraday-retention": { audience: "system" },
   "dense-intraday-hourly-rebuild": { audience: "system" },
@@ -97,6 +98,7 @@ const subsystemSurface = {
   // register-maintenance.ts
   "environment-fetch": { audience: "account" },
   "environment-aq-history": { audience: "system" },
+  "dawarich-sync": { audience: "account" },
   "data-backup": { audience: "system" },
   "rate-limit-cleanup": { audience: "system" },
   "idempotency-cleanup": { audience: "system" },
@@ -122,6 +124,7 @@ const subsystemSurface = {
   "compaction-tombstone-purge": { audience: "system" },
   "measurement-fold-repair": { audience: "system" },
   "measurement-maintenance": { audience: "system" },
+  "pulse-day-mean": { audience: "system" },
   "medication-intake-import": { audience: "system" },
   "intake-slot-dedup": { audience: "system" },
   "mood-reminder-cleanup": { audience: "system" },

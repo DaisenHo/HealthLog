@@ -13,8 +13,24 @@ import {
 } from "@/lib/mental-health/instruments";
 import { assertStableExternalId } from "@/lib/validations/external-id";
 import { isValidTimezone } from "@/lib/tz/format";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const assessmentInstrumentEnum = z.enum(["PHQ9", "GAD7", "WHO5", "SCI"]);
+
+/**
+ * The mental-health screeners, as opposed to every `AssessmentInstrument`.
+ * Since v1.43 the table also stores AUDIT-C (the alcohol section of the life
+ * circumstances), which no mental-health surface may list or score: older app
+ * builds decode `instrument` against exactly these four values.
+ */
+export const SCREENER_INSTRUMENTS = assessmentInstrumentEnum.options;
+export type ScreenerInstrument = (typeof SCREENER_INSTRUMENTS)[number];
+
+export function isScreenerInstrument(
+  instrument: string,
+): instrument is ScreenerInstrument {
+  return (SCREENER_INSTRUMENTS as readonly string[]).includes(instrument);
+}
 
 /**
  * Client provenance for an administration. Closed enum so the column can never
@@ -38,7 +54,7 @@ export const createAssessmentSchema = z
     /** Optional functional-impairment follow-up (not scored into the total). */
     functionalDifficulty: z.number().int().min(0).max(3).optional(),
     /** ISO instant the screener was taken; defaults to now server-side. */
-    takenAt: z.string().datetime().optional(),
+    takenAt: isoDateTime({ offset: false }).optional(),
     tz: z
       .string()
       .max(64)

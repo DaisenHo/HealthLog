@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -76,17 +77,20 @@ function render(
     consentRequired?: boolean;
   } = {},
 ): string {
+  // The dialog reads the account's markers once rows are on screen (v1.43).
   return renderToStaticMarkup(
-    <I18nProvider initialLocale={locale}>
-      <OcrReviewDialog
-        open
-        onOpenChange={() => {}}
-        mode={options.mode ?? "vision"}
-        pdfSupported={options.pdfSupported ?? true}
-        consentRequired={options.consentRequired}
-        onCommitted={() => {}}
-      />
-    </I18nProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nProvider initialLocale={locale}>
+        <OcrReviewDialog
+          open
+          onOpenChange={() => {}}
+          mode={options.mode ?? "vision"}
+          pdfSupported={options.pdfSupported ?? true}
+          consentRequired={options.consentRequired}
+          onCommitted={() => {}}
+        />
+      </I18nProvider>
+    </QueryClientProvider>,
   );
 }
 

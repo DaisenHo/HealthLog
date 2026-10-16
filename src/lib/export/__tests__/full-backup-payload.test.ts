@@ -190,6 +190,19 @@ function makePrisma() {
               createdAt: new Date("2026-07-15T08:01:00.000Z"),
             },
           ],
+          // v1.43 — a composition entered in IU, stored canonically.
+          ingredients: [
+            {
+              id: "ingredient-vitamin-d",
+              nutrient: "vitamin_d",
+              amountPerUnit: 25,
+              unit: "ug",
+              enteredAmount: 1000,
+              enteredUnit: "IU",
+              source: "MANUAL",
+              createdAt: new Date("2026-07-01T08:00:00.000Z"),
+            },
+          ],
           // v1.40 (#1024) — one ended course with a note, one running.
           courses: [
             {
@@ -425,6 +438,7 @@ function makePrisma() {
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     // The Coach transcript. Deliberately NOT `?? []` at the call site, so a
     // future `include` that forgets the relation fails here loudly instead of
     // exporting an account whose Coach never spoke.
@@ -446,6 +460,11 @@ function makePrisma() {
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
     lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     // Left unmocked on purpose: `buildProfileBackupSection` runs for real
     // against these, so the assertions below exercise the builder rather than
     // a stand-in that would agree with whatever the payload happened to do.
@@ -786,6 +805,35 @@ describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
           endsOn: null,
           note: null,
           createdAt: "2026-06-10T08:00:00.000Z",
+        },
+      ]);
+    },
+  );
+});
+
+describe("buildFullBackupPayload — supplement composition (v1.43)", () => {
+  it.each(["portable-export", "disaster-recovery"] as const)(
+    "carries the composition with its entered unit in a %s file",
+    async (purpose) => {
+      installSectionMocks();
+      const { payload } = await buildFullBackupPayload(
+        makePrisma() as never,
+        "user-1",
+        { purpose, exportedAt: new Date("2026-07-20T00:00:00.000Z") },
+      );
+      const parsed = parseBackupPayload(payload);
+      expect(parsed.medications[0].ingredients).toEqual([
+        {
+          ...(purpose === "disaster-recovery"
+            ? { id: "ingredient-vitamin-d" }
+            : {}),
+          nutrient: "vitamin_d",
+          amountPerUnit: 25,
+          unit: "ug",
+          enteredAmount: 1000,
+          enteredUnit: "IU",
+          source: "MANUAL",
+          createdAt: "2026-07-01T08:00:00.000Z",
         },
       ]);
     },

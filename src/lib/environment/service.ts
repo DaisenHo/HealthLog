@@ -165,9 +165,6 @@ export interface FetchAndStoreResult {
 
 /** The user columns every environment read resolves the home from. */
 export const HOME_SELECT = {
-  homeLat: true,
-  homeLon: true,
-  homeLabel: true,
   homeLocationEncrypted: true,
   homeTimezone: true,
   homeSince: true,
@@ -176,25 +173,16 @@ export const HOME_SELECT = {
 } as const;
 
 /**
- * The account's home as the resolver uses it: the sealed copy opened, or the
- * readable columns for a row the encryption backfill has not reached. Null
+ * The account's home as the resolver uses it: the sealed copy opened. Null
  * when no home is set (or the sealed value does not open).
  */
 export function resolveHome(user: {
-  homeLat: number | null;
-  homeLon: number | null;
-  homeLabel: string | null;
   homeLocationEncrypted: Uint8Array | null;
   homeTimezone: string | null;
   homeSince: Date | null;
   timezone: string;
 }): HomeLocation | null {
-  const location = readLocation({
-    sealed: user.homeLocationEncrypted,
-    lat: user.homeLat,
-    lon: user.homeLon,
-    label: user.homeLabel ?? "",
-  });
+  const location = readLocation(user.homeLocationEncrypted);
   if (!location) return null;
   return {
     ...location,
@@ -229,21 +217,13 @@ export async function readTravelOverrides(userId: string): Promise<{
     select: {
       startDate: true,
       endDate: true,
-      lat: true,
-      lon: true,
-      label: true,
       locationEncrypted: true,
     },
   });
   const overrides: TravelOverride[] = [];
   const unreadable: UnreadablePeriod[] = [];
   for (const row of records) {
-    const location = readLocation({
-      sealed: row.locationEncrypted,
-      lat: row.lat,
-      lon: row.lon,
-      label: row.label,
-    });
+    const location = readLocation(row.locationEncrypted);
     if (location) {
       overrides.push({
         startDate: row.startDate,
@@ -478,12 +458,8 @@ export function buildUpsert(
       ? airQualityColumns(air.day, air.now)
       : AIR_QUALITY_UNFETCHED;
   const data = {
-    // The coarse location rides sealed only; the readable columns are
-    // written empty (they drop in a later release).
+    // The coarse location rides sealed only.
     locationEncrypted: sealed,
-    lat: null,
-    lon: null,
-    locationLabel: null,
     source: loc.source,
     tempMin: obs.tempMin,
     tempMax: obs.tempMax,
@@ -550,9 +526,6 @@ export async function fillAirQualityGaps(
     take: maxDays,
     select: {
       date: true,
-      lat: true,
-      lon: true,
-      locationLabel: true,
       locationEncrypted: true,
     },
   });
@@ -564,12 +537,7 @@ export async function fillAirQualityGaps(
     { lat: number; lon: number; days: string[] }
   >();
   for (const row of rows) {
-    const location = readLocation({
-      sealed: row.locationEncrypted,
-      lat: row.lat,
-      lon: row.lon,
-      label: row.locationLabel,
-    });
+    const location = readLocation(row.locationEncrypted);
     if (!location) continue;
     const key = `${location.lat},${location.lon}`;
     const group = byLocation.get(key) ?? {

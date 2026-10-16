@@ -16,6 +16,10 @@ import {
   type AggregateGrain,
 } from "@/lib/measurements/range-aggregation";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
+import {
+  hourWeightSql,
+  weightedHourMeanSql,
+} from "@/lib/measurements/day-mean";
 import { HOURLY_MEAN_DAY_TYPES } from "@/lib/measurements/day-statistic";
 import { readTieredRollupSeries } from "@/lib/rollups/measurement-read-wmy";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
@@ -201,6 +205,11 @@ export async function readLiveBuckets(opts: {
   const rankRaw = Prisma.raw(
     buildSourceRankCase(priorityJson, 'p."type"', 'p."source"'),
   );
+  // The day of an hourly-mean type: its hours' means, each hour weighed by the
+  // active pulse day-mean method (`day-mean.ts`). Code-built SQL, no input.
+  const dayOfHours = Prisma.raw(
+    weightedHourMeanSql("h.hour_mean", hourWeightSql("h.n")),
+  );
   const typeFilter = type
     ? Prisma.sql`AND m."type" = ${type}::measurement_type`
     : Prisma.empty;
@@ -242,20 +251,21 @@ export async function readLiveBuckets(opts: {
         ${typeFilter}
       GROUP BY m."type", m."source", 3
     ),
-    -- A day of a type with an activity-dependent sampling rate is the mean of
-    -- its local hours' means, each hour once, not the mean of its readings: a
-    -- workout hour holds hundreds of times as many readings as a resting one.
+    -- A day of a type with an activity-dependent sampling rate is the weighted
+    -- mean of its local hours' means, not the mean of its readings: a workout
+    -- hour holds hundreds of times as many readings as a resting one.
     -- Empty for every other type.
     hour_mean AS (
       SELECT h."type", h."source", h.day,
-             AVG(h.hour_mean)::double precision AS day_mean
+             ${dayOfHours}::double precision AS day_mean
       FROM (
         SELECT
           m."type",
           m."source",
           date_trunc('day', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) AS day,
           date_trunc('hour', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) AS hr,
-          AVG(m."value") AS hour_mean
+          AVG(m."value") AS hour_mean,
+          COUNT(*) AS n
         FROM measurements m
         WHERE m."user_id" = ${userId}
           AND m."measured_at" >= ${from}

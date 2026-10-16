@@ -13,11 +13,21 @@ export const MAX_TARGETS_PER_CALL = 100;
 
 /** The record a link hangs off. */
 export type LinkSourceKind =
-  "encounter" | "document" | "vaccination" | "conditionEpisode";
+  | "encounter"
+  | "document"
+  | "vaccination"
+  | "conditionEpisode"
+  | "medication"
+  | "labResult";
 
 /** The record a link points at. */
 export type LinkTargetKind =
-  "document" | "labResult" | "conditionEpisode" | "encounter" | "vaccination";
+  | "document"
+  | "labResult"
+  | "conditionEpisode"
+  | "encounter"
+  | "vaccination"
+  | "medication";
 
 export interface LinkRequest {
   userId: string;
@@ -87,6 +97,12 @@ interface OwnedRowDelegate {
 interface EndpointSpec {
   /** The owning model's delegate, for the ownership re-read. */
   delegate: (tx: Prisma.TransactionClient) => OwnedRowDelegate;
+  /**
+   * Whether the model carries a `deletedAt` tombstone. A medication does
+   * not (it is paused or ended, never tombstoned), so filtering it on the
+   * column would be a query error rather than a no-op.
+   */
+  softDeletes: boolean;
   /** Columns the label and date are derived from. */
   select: Record<string, boolean>;
   label: (row: Record<string, unknown>) => string;
@@ -114,6 +130,11 @@ function narrow<T>(delegate: unknown): T {
   return delegate as T;
 }
 
+/** The "still live" filter for a model, empty for one without a tombstone. */
+function live(softDeletes: boolean): { deletedAt?: null } {
+  return softDeletes ? { deletedAt: null } : {};
+}
+
 function asDate(value: unknown): string | null {
   return value instanceof Date ? value.toISOString() : null;
 }
@@ -129,30 +150,48 @@ const SOURCES: Record<
     delegate: (tx: Prisma.TransactionClient) => OwnedRowDelegate;
     /** The link row's relation field back to the source, for a joined filter. */
     relationField: string;
+    softDeletes: boolean;
   }
 > = {
   encounter: {
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.encounter),
     relationField: "encounter",
+    softDeletes: true,
   },
   document: {
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.inboundDocument),
     relationField: "document",
+    softDeletes: true,
   },
   vaccination: {
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.vaccinationRecord),
     relationField: "vaccination",
+    softDeletes: true,
   },
-  // A condition is a source only in the read direction of two tables that
-  // already exist (see the two `conditionEpisode:*` pairs below).
+  // A condition is a source in the read direction of the tables that file
+  // things against it (see the `conditionEpisode:*` pairs below).
   conditionEpisode: {
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.illnessEpisode),
     relationField: "episode",
+    softDeletes: true,
+  },
+  // v1.43 — a medication files its indication, its documents and its visits.
+  medication: {
+    delegate: (tx) => narrow<OwnedRowDelegate>(tx.medication),
+    relationField: "medication",
+    softDeletes: false,
+  },
+  // v1.43 — a lab result files the report it was read from and its visits.
+  labResult: {
+    delegate: (tx) => narrow<OwnedRowDelegate>(tx.labResult),
+    relationField: "labResult",
+    softDeletes: true,
   },
 };
 
 const DOCUMENT_ENDPOINT: EndpointSpec = {
   delegate: (tx) => narrow<OwnedRowDelegate>(tx.inboundDocument),
+  softDeletes: true,
   select: {
     id: true,
     title: true,
@@ -171,6 +210,7 @@ const DOCUMENT_ENDPOINT: EndpointSpec = {
 
 const LAB_RESULT_ENDPOINT: EndpointSpec = {
   delegate: (tx) => narrow<OwnedRowDelegate>(tx.labResult),
+  softDeletes: true,
   select: { id: true, analyte: true, panel: true, takenAt: true },
   label: (row) => {
     const panel = asString(row.panel);
@@ -182,6 +222,7 @@ const LAB_RESULT_ENDPOINT: EndpointSpec = {
 
 const ENCOUNTER_ENDPOINT: EndpointSpec = {
   delegate: (tx) => narrow<OwnedRowDelegate>(tx.encounter),
+  softDeletes: true,
   select: { id: true, kind: true, occurredAt: true },
   // The visit's KIND, as the enum constant, and this is the one endpoint whose
   // label is deliberately not prose. A document title and an analyte name are
@@ -196,6 +237,7 @@ const ENCOUNTER_ENDPOINT: EndpointSpec = {
 
 const VACCINATION_ENDPOINT: EndpointSpec = {
   delegate: (tx) => narrow<OwnedRowDelegate>(tx.vaccinationRecord),
+  softDeletes: true,
   select: { id: true, antigenSlug: true, vaccineName: true, occurredAt: true },
   // The person's own wording first, then the catalogue slug. A caller that
   // renders a dose resolves the slug through its own bundle instead (see
@@ -208,9 +250,21 @@ const VACCINATION_ENDPOINT: EndpointSpec = {
 
 const CONDITION_ENDPOINT: EndpointSpec = {
   delegate: (tx) => narrow<OwnedRowDelegate>(tx.illnessEpisode),
+  softDeletes: true,
   select: { id: true, label: true, onsetAt: true },
   label: (row) => String(row.label),
   date: (row) => asDate(row.onsetAt),
+};
+
+const MEDICATION_ENDPOINT: EndpointSpec = {
+  delegate: (tx) => narrow<OwnedRowDelegate>(tx.medication),
+  softDeletes: false,
+  select: { id: true, name: true, dose: true, startsOn: true, createdAt: true },
+  label: (row) => {
+    const dose = asString(row.dose);
+    return dose ? `${String(row.name)} ${dose}` : String(row.name);
+  },
+  date: (row) => asDate(row.startsOn) ?? asDate(row.createdAt),
 };
 
 /**
@@ -218,16 +272,16 @@ const CONDITION_ENDPOINT: EndpointSpec = {
  *
  * A pair absent from here is not linkable, and asking for one is a programming
  * error rather than a user error — hence the throw in {@link tableFor} rather
- * than a result field. Three is the number of encounter link tables this
- * design allows; a fourth is the point at which this stops being a small set
- * of named relations and starts being a general edge store.
+ * than a result field.
  *
- * That ceiling is per source, and the `vaccination` source owns exactly ONE
- * pair. A dose is administered once, so the practitioner and the visit attach
- * by scalar FK rather than through a table; the many-to-many argument that
- * justifies the lab and condition links does not transfer. A second
- * vaccination pair is this becoming the edge store, and is the point to stop
- * and raise it rather than to add a row here.
+ * Since v1.43 this is the storage half of the relation matrix: every pair of
+ * lab result, visit, document, condition, medication and vaccination either
+ * has a table here (written in one direction, read in both) or is a written
+ * exception in `src/lib/links/related.ts`, and `relation-matrix.test.ts` holds
+ * the two together. The earlier ceilings (three visit tables, one vaccination
+ * pair) were lifted by that decision rather than by drift: a visit that
+ * prescribed a medication or gave a dose was a dead end otherwise. Each table
+ * is still a named relation between two records, never a general edge store.
  */
 const LINK_TABLES: Partial<
   Record<`${LinkSourceKind}:${LinkTargetKind}`, LinkTableSpec>
@@ -305,6 +359,82 @@ const LINK_TABLES: Partial<
     targetColumn: "encounterId",
     target: ENCOUNTER_ENDPOINT,
   },
+
+  // ── v1.43 — the pairs that close the relation matrix ──────────────────────
+  // `lab_result_document_links`: the report a result was read from. Written
+  // from the result's links route and, one document to many results, by the
+  // scan commit.
+  "labResult:document": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.labResultDocumentLink),
+    sourceColumn: "labResultId",
+    targetColumn: "documentId",
+    target: DOCUMENT_ENDPOINT,
+  },
+  "document:labResult": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.labResultDocumentLink),
+    sourceColumn: "documentId",
+    targetColumn: "labResultId",
+    target: LAB_RESULT_ENDPOINT,
+  },
+  // `encounter_lab_links` read from the result's end.
+  "labResult:encounter": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterLabLink),
+    sourceColumn: "labResultId",
+    targetColumn: "encounterId",
+    target: ENCOUNTER_ENDPOINT,
+  },
+  // `encounter_medication_links`: prescribed, changed or reviewed at a visit.
+  "encounter:medication": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterMedicationLink),
+    sourceColumn: "encounterId",
+    targetColumn: "medicationId",
+    target: MEDICATION_ENDPOINT,
+  },
+  "medication:encounter": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterMedicationLink),
+    sourceColumn: "medicationId",
+    targetColumn: "encounterId",
+    target: ENCOUNTER_ENDPOINT,
+  },
+  // `encounter_vaccination_links`: a dose given at a visit.
+  "encounter:vaccination": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterVaccinationLink),
+    sourceColumn: "encounterId",
+    targetColumn: "vaccinationId",
+    target: VACCINATION_ENDPOINT,
+  },
+  "vaccination:encounter": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterVaccinationLink),
+    sourceColumn: "vaccinationId",
+    targetColumn: "encounterId",
+    target: ENCOUNTER_ENDPOINT,
+  },
+  // `medication_document_links`: a prescription, a plan, a package insert.
+  "medication:document": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.medicationDocumentLink),
+    sourceColumn: "medicationId",
+    targetColumn: "documentId",
+    target: DOCUMENT_ENDPOINT,
+  },
+  "document:medication": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.medicationDocumentLink),
+    sourceColumn: "documentId",
+    targetColumn: "medicationId",
+    target: MEDICATION_ENDPOINT,
+  },
+  // `medication_condition_links`: the indication.
+  "medication:conditionEpisode": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.medicationConditionLink),
+    sourceColumn: "medicationId",
+    targetColumn: "episodeId",
+    target: CONDITION_ENDPOINT,
+  },
+  "conditionEpisode:medication": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.medicationConditionLink),
+    sourceColumn: "episodeId",
+    targetColumn: "medicationId",
+    target: MEDICATION_ENDPOINT,
+  },
 };
 
 function tableFor(
@@ -340,8 +470,9 @@ async function ownsSource(
     sourceId,
   }: Omit<LinkRequest, "targetKind" | "targetIds">,
 ): Promise<boolean> {
-  const rows = await SOURCES[sourceKind].delegate(tx).findMany({
-    where: { id: sourceId, userId, deletedAt: null },
+  const source = SOURCES[sourceKind];
+  const rows = await source.delegate(tx).findMany({
+    where: { id: sourceId, userId, ...live(source.softDeletes) },
     select: { id: true },
   });
   return rows.length === 1;
@@ -356,7 +487,7 @@ async function ownedTargetIds(
 ): Promise<Set<string>> {
   if (targetIds.length === 0) return new Set();
   const rows = await spec.target.delegate(tx).findMany({
-    where: { id: { in: targetIds }, userId, deletedAt: null },
+    where: { id: { in: targetIds }, userId, ...live(spec.target.softDeletes) },
     select: { id: true },
   });
   return new Set(rows.map((row) => String(row.id)));
@@ -527,7 +658,11 @@ export async function listTargets(
   // soft-delete filter belongs on the target, and a tombstoned row must drop
   // out of the list even though its link row survives the soft delete.
   const rows = await spec.target.delegate(tx).findMany({
-    where: { id: { in: targetIds }, userId: request.userId, deletedAt: null },
+    where: {
+      id: { in: targetIds },
+      userId: request.userId,
+      ...live(spec.target.softDeletes),
+    },
     select: spec.target.select,
   });
   const byId = new Map(rows.map((row) => [String(row.id), row]));
@@ -587,7 +722,7 @@ export async function listTargetsBySource(
     where: {
       id: { in: targetIds },
       userId: request.userId,
-      ...(request.includeDeletedTargets ? {} : { deletedAt: null }),
+      ...(request.includeDeletedTargets ? {} : live(spec.target.softDeletes)),
     },
     select: spec.target.select,
   });
@@ -626,12 +761,14 @@ export async function listDistinctTargets(
   },
 ): Promise<LinkedTarget[]> {
   const spec = tableFor(request.sourceKind, request.targetKind);
-  const sourceRelation = SOURCES[request.sourceKind].relationField;
+  const source = SOURCES[request.sourceKind];
 
   const links = await spec.delegate(tx).findMany({
     where: {
       userId: request.userId,
-      [sourceRelation]: { deletedAt: null },
+      ...(source.softDeletes
+        ? { [source.relationField]: { deletedAt: null } }
+        : {}),
     },
     select: { [spec.targetColumn]: true },
     orderBy: { [spec.targetColumn]: "asc" },

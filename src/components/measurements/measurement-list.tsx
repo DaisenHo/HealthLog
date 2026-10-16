@@ -65,13 +65,14 @@ import { useTableSort } from "@/hooks/use-table-sort";
 import { useUrlFilterSync } from "@/hooks/use-url-filter-sync";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { formatDateOrRelative, formatDateTime } from "@/lib/format";
 import { DayLink, DayLinkAt } from "@/components/day/day-link";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { CUMULATIVE_DAY_SUM_TYPES } from "@/lib/measurements/cumulative-day-sum";
 import { rawDisplayFractionDigits } from "@/lib/measurements/display-transform";
-import { getUnitForType } from "@/lib/validations/measurement";
+import { getUnitForType } from "@/lib/measurements/unit-map";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   convertGlucose,
@@ -84,10 +85,8 @@ import {
   queryKeys,
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
-import {
-  MEASUREMENT_NOTES_MAX_LENGTH,
-  measurementSourceEnum,
-} from "@/lib/validations/measurement";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
+import { MEASUREMENT_SOURCES } from "@/lib/measurements/sources";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -254,7 +253,7 @@ function formatMeasurementSource(
  * management-list source filter. Derived from the shared Zod enum so a
  * future source addition surfaces here automatically.
  */
-const MEASUREMENT_SOURCE_OPTIONS = measurementSourceEnum.options;
+const MEASUREMENT_SOURCE_OPTIONS = MEASUREMENT_SOURCES;
 
 /**
  * v1.15.13 — convert a `<input type="date">` value (YYYY-MM-DD) into the
@@ -687,8 +686,8 @@ export function MeasurementList({
         await invalidateKeys(queryClient, measurementDependentKeys);
         await refetchInactiveDailyReads(queryClient);
         toast.success(t("measurements.restoredToast"));
-      } catch {
-        toast.error(t("measurements.restoreError"));
+      } catch (failure) {
+        showErrorToast(t("measurements.restoreError"), { cause: failure });
       }
     },
     [queryClient, t],
@@ -711,8 +710,8 @@ export function MeasurementList({
     // v1.16.4 — a failed row delete used to fail silently (no onError
     // handler); the edit-dialog path surfaced its own inline error but
     // the row-level confirm had no feedback at all.
-    onError: () => {
-      toast.error(t("measurements.deleteError"));
+    onError: (failure) => {
+      showErrorToast(t("measurements.deleteError"), { cause: failure });
     },
   });
 
@@ -744,8 +743,8 @@ export function MeasurementList({
         },
       );
     },
-    onError: () => {
-      toast.error(t("measurements.bulkDeleteError"));
+    onError: (failure) => {
+      showErrorToast(t("measurements.bulkDeleteError"), { cause: failure });
     },
   });
 

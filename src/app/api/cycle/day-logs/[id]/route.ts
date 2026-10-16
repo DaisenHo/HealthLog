@@ -3,7 +3,8 @@
  * (ios-contract §2.A).
  * `DELETE /api/cycle/day-logs/{id}` — soft-delete (ios-contract §2.F):
  *   set `deletedAt` + bump `syncVersion`, emit a tombstone on the next
- *   sync page. 204. Idempotent.
+ *   sync page. 204. Idempotent. With `Prefer: return=representation` 200
+ *   with the removed cycle and the starts given back (v1.43).
  *
  * Both are gated (`cycle.disabled` 403) and owner-scoped (a row owned by
  * another user 404s).
@@ -34,6 +35,7 @@ import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { replaceSymptomLinks } from "@/lib/cycle/day-log-write";
 import { cycleDayLogPatchSchema } from "@/lib/validations/cycle";
 import { toCycleDayLogDTO, dayLogSymptomInclude } from "@/lib/cycle/dto";
+import { cycleDeleteOutcome } from "@/lib/cycle/delete-outcome";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -176,11 +178,13 @@ export const PATCH = apiHandler(
       row,
     );
     let removedCycleId: string | null = null;
+    let restored: Array<{ cycleId: string; startDate: string }> = [];
     if (!openedCycleId && !stillBleeds(row)) {
       const removed = await prisma.$transaction((db) =>
         removeCycleStartedOn(db, user.id, existing.date),
       );
       removedCycleId = removed?.cycleId ?? null;
+      restored = removed?.restored ?? [];
     }
 
     await auditLog("cycle.day-log.update", {
@@ -221,7 +225,9 @@ export const PATCH = apiHandler(
       },
     });
 
-    return apiSuccess(toCycleDayLogDTO(row));
+    // v1.43 (ios #116 item 9) — the starts this edit gave back by clearing
+    // the flow on a start day; empty when it removed none.
+    return apiSuccess({ ...toCycleDayLogDTO(row), restored });
   },
 );
 
@@ -303,7 +309,11 @@ export const DELETE = apiHandler(
       },
     });
 
-    return new Response(null, { status: 204 });
+    return cycleDeleteOutcome(
+      request,
+      removed?.cycleId ?? null,
+      removed?.restored ?? [],
+    );
   },
 );
 

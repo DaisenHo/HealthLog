@@ -35,6 +35,7 @@
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { prisma, toJson } from "@/lib/db";
+import { recomputeSupplementsIfNutrientsTurnedOn } from "@/lib/medications/ingredients/recompute-job";
 
 export interface RecordModuleWrite {
   /** The record whose modules these are — never the actor, under a switch. */
@@ -59,10 +60,19 @@ export async function writeRecordModulePreferences(
   input: RecordModuleWrite,
 ): Promise<{ cycleTrackingEnabled: boolean | null }> {
   if (input.modulePreferences !== undefined) {
+    const before = await prisma.user.findUnique({
+      where: { id: input.recordId },
+      select: { modulePreferencesJson: true },
+    });
     await prisma.user.update({
       where: { id: input.recordId },
       data: { modulePreferencesJson: toJson(input.modulePreferences) },
     });
+    await recomputeSupplementsIfNutrientsTurnedOn(
+      input.recordId,
+      before?.modulePreferencesJson,
+      input.modulePreferences,
+    );
   }
   if (input.cycleTrackingEnabled !== undefined) {
     await getOrCreateCycleProfile(input.recordId);

@@ -26,6 +26,11 @@
  *      imports the shared statistic, hands the type to a fold that does, or
  *      is listed with the reason it never averages pulse readings.
  *
+ * A third matcher has no list: since the pulse day-mean method (v1.43) an
+ * hour weighs by the method, so no day may still be folded from its hours'
+ * means with every hour weighing one (`AVG(hour_mean)`, a sum over hours
+ * divided by their number). The weight lives in the helper alone.
+ *
  * Comments are stripped before matching, the matchers are whitespace-tolerant,
  * and the floors fail the guard if either matcher stops finding anything. The
  * planted cases run each matcher over an offender; dropping the type from the
@@ -67,6 +72,15 @@ const TS_MEAN =
 
 const NAMES_PULSE = /\bPULSE\b/;
 
+/**
+ * A day folded from its hours' means with every hour weighing one: SQL
+ * `AVG(hour_mean)` and an in-memory sum over hours divided by their number.
+ * Since v1.43 an hour weighs by the pulse day-mean method, which only the
+ * helper applies (`hourWeightSql`, `combineHourCells`), so none may remain.
+ */
+const UNWEIGHTED_HOURS =
+  /\bAVG\s*\(\s*(?:[a-z_]+\s*\.\s*)?"?hour_mean"?\s*\)|\/\s*hours\.(?:length|size)\b/g;
+
 type Entry =
   /** Averages pulse and imports the shared statistic. */
   | { helper: true }
@@ -85,6 +99,8 @@ const SQL_READERS: Record<string, Entry> = {
   "lib/doctor-report/dense-buckets.ts": HELPER,
   "lib/insights/comprehensive-aggregator.ts": HELPER,
   "lib/insights/comprehensive-generate.ts": HELPER,
+  // The dry run's hour means, weighed by both methods through the helper.
+  "lib/jobs/pulse-day-mean.ts": HELPER,
   "lib/measurements/daily-series-read.ts": HELPER,
   "lib/rollups/measurement-rollups.ts": HELPER,
   "lib/rollups/tiered-context.ts": HELPER,
@@ -125,6 +141,10 @@ const TS_READERS: Record<string, Entry> = {
   "lib/analytics/correlations-fast-path.ts": {
     exempt: "mood mean; pulse enters as the resting series, never a day mean",
   },
+  "app/api/dashboard/summary/route.ts": {
+    exempt:
+      "places a card's seven-day sparkline mean against its band for the trend verdict; each sparkline point is already one rollup day value, so the mean weighs every day once",
+  },
   "lib/dashboard/snapshot.ts": {
     exempt: "summarises water-intake days and glucose contexts",
   },
@@ -159,7 +179,11 @@ const TS_READERS: Record<string, Entry> = {
   },
 };
 
-function scan(): { sql: Map<string, number>; ts: Map<string, number> } {
+function scan(): {
+  sql: Map<string, number>;
+  ts: Map<string, number>;
+  unweighted: string[];
+} {
   const files = walkSourceFiles(SRC, { floor: 1500 }).filter(
     (f) =>
       !f.startsWith("generated/") &&
@@ -169,8 +193,11 @@ function scan(): { sql: Map<string, number>; ts: Map<string, number> } {
   );
   const sql = new Map<string, number>();
   const ts = new Map<string, number>();
+  const unweighted: string[] = [];
   for (const f of files) {
     const text = stripComments(readFileSync(join(SRC, f), "utf8"));
+    if (UNWEIGHTED_HOURS.test(text)) unweighted.push(f);
+    UNWEIGHTED_HOURS.lastIndex = 0;
     const s = text.match(SQL_MEAN)?.length ?? 0;
     if (s > 0) sql.set(f, s);
     if (NAMES_PULSE.test(text)) {
@@ -178,10 +205,10 @@ function scan(): { sql: Map<string, number>; ts: Map<string, number> } {
       if (t > 0) ts.set(f, t);
     }
   }
-  return { sql, ts };
+  return { sql, ts, unweighted };
 }
 
-const { sql, ts } = scan();
+const { sql, ts, unweighted } = scan();
 const source = (f: string) => readFileSync(join(SRC, f), "utf8");
 
 function check(found: Map<string, number>, listed: Record<string, Entry>) {
@@ -233,6 +260,22 @@ describe("pulse day-mean reader guard", () => {
       stale: [],
       broken: [],
     });
+  });
+
+  it("leaves no day folded from equally weighted hours", () => {
+    expect(unweighted).toEqual([]);
+  });
+
+  it("catches a planted unweighted hour fold", () => {
+    expect(`AVG(h.hour_mean) AS day_mean`.match(UNWEIGHTED_HOURS)).toHaveLength(
+      1,
+    );
+    expect(
+      `hours.reduce((s, h) => s + h.total / h.count, 0) / hours.length`.match(
+        UNWEIGHTED_HOURS,
+      ),
+    ).toHaveLength(1);
+    expect(`SUM(h.hour_mean * w) / SUM(w)`.match(UNWEIGHTED_HOURS)).toBeNull();
   });
 
   it("catches a planted plain AVG and a planted fold", () => {

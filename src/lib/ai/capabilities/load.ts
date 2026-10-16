@@ -9,7 +9,9 @@
  *     memoised reads the account payload and every module gate use;
  *   - provider presence: the record's credential row and the operator's
  *     provider columns (`probeProviderChain`), presence only;
- *   - consent: the kinds of the record's active receipts, one indexed read.
+ *   - consent: the kinds of the record's active receipts, one indexed read;
+ *   - the record's AI usage level (v1.43): the operator's bounds (memoised)
+ *     and one point read of the record's choice.
  *
  * Any failure resolves to `null`, which the resolver turns into
  * `check_failed` for every capability. Failing closed is safe because no data
@@ -38,6 +40,7 @@ import {
   type AiRecordKind,
 } from "./resolve";
 import type { AiCapabilities } from "./types";
+import { loadAiUsageState, loadRecordUsageLevel } from "./usage";
 
 /** Whose record, seen by whom, through which grant. */
 export interface AiCapabilityScope {
@@ -89,14 +92,21 @@ export function loadAiCapabilityInputs(
     `ai-capability-inputs:${scopeKey(scope)}`,
     async () => {
       try {
-        const [switches, modules, availability, provider, activeConsentKinds] =
-          await Promise.all([
-            loadAssistantSwitches(),
-            resolveModuleMap(scope.recordId),
-            getOperatorModuleAvailability(),
-            probeProviderChain(scope.recordId, scope.authority),
-            loadActiveConsentKinds(scope.recordId),
-          ]);
+        const [
+          switches,
+          modules,
+          availability,
+          provider,
+          activeConsentKinds,
+          usageLevel,
+        ] = await Promise.all([
+          loadAssistantSwitches(),
+          resolveModuleMap(scope.recordId),
+          getOperatorModuleAvailability(),
+          probeProviderChain(scope.recordId, scope.authority),
+          loadActiveConsentKinds(scope.recordId),
+          loadRecordUsageLevel(scope.recordId),
+        ]);
         if (switches === null) return null;
         const { moduleAccess } = buildModuleDisclosure(
           modules,
@@ -110,6 +120,7 @@ export function loadAiCapabilityInputs(
           provider,
           activeConsentKinds,
           recordKind: scope.recordKind,
+          usageLevel,
         };
       } catch {
         getEvent()?.addWarning(
@@ -122,9 +133,22 @@ export function loadAiCapabilityInputs(
   );
 }
 
-/** The whole `ai` block for one scope. */
+/**
+ * The whole `ai` block for one scope, the record's AI usage level included
+ * (v1.43). The measured use and the estimates are published for one's own
+ * record only: a delegate sees which level a record runs at, not what its
+ * owner spends. A usage read that fails leaves `usage` out rather than
+ * failing the block; the capabilities already carry the level they resolved.
+ */
 export async function loadAiCapabilities(
   scope: AiCapabilityScope,
 ): Promise<AiCapabilities> {
-  return resolveAiBlock(await loadAiCapabilityInputs(scope));
+  const [inputs, usage] = await Promise.all([
+    loadAiCapabilityInputs(scope),
+    loadAiUsageState(scope.recordId, {
+      withMeasurement: scope.recordKind === "self",
+    }).catch(() => undefined),
+  ]);
+  const block = resolveAiBlock(inputs);
+  return usage ? { ...block, usage } : block;
 }

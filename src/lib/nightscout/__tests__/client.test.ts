@@ -18,11 +18,10 @@ import {
 } from "../client";
 
 function jsonResponse(status: number, body: unknown): Response {
-  return {
+  return new Response(JSON.stringify(body), {
     status,
-    ok: status >= 200 && status < 300,
-    json: async () => body,
-  } as unknown as Response;
+    headers: { "content-type": "application/json" },
+  });
 }
 
 const SAMPLE: NightscoutSgvEntry[] = [
@@ -294,5 +293,28 @@ describe("fetchSgvEntries — SSRF gating", () => {
     });
     expect(entries).toHaveLength(2);
     expect(entries[0]!.sgv).toBe(112);
+  });
+
+  it("stops reading an answer that runs past the cap", async () => {
+    // Streamed without a length, so only the running count can catch it.
+    const chunk = new Uint8Array(1024 * 1024).fill(32);
+    let sent = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        sent += 1;
+        if (sent > 64) controller.close();
+        else controller.enqueue(chunk);
+      },
+    });
+    safeFetchMock.mockResolvedValue(new Response(body, { status: 200 }));
+    await expect(
+      fetchSgvEntries({
+        baseUrl: "https://ns.example.com",
+        token: "",
+        count: 10,
+        allowPrivateHost: false,
+      }),
+    ).rejects.toThrow(/oversized/);
+    expect(sent).toBeLessThan(64);
   });
 });

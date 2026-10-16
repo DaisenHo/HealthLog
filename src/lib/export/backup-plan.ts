@@ -205,6 +205,23 @@ export const BACKED_UP_MODELS = [
   // restore without the row opens a blank questionnaire for somebody who has
   // already answered it.
   "OnboardingRecord",
+
+  // ── v1.43 ─────────────────────────────────────────────────────────────────
+  // A marker's other spellings and its merge ledger, a supplement's
+  // composition, the Dawarich daily values, and the five relation links that
+  // close the relation matrix. Each is owned data nothing recomputes; each is
+  // on COVERAGE_PENDING until its section carries it (the composition does:
+  // TWO_ENDED_MODELS). The relation links travel since the release that
+  // introduces them (`src/lib/export/relation-links-backup.ts`).
+  "BiomarkerAlias",
+  "BiomarkerMerge",
+  "MedicationIngredient",
+  "DawarichDay",
+  "LabResultDocumentLink",
+  "EncounterMedicationLink",
+  "EncounterVaccinationLink",
+  "MedicationDocumentLink",
+  "MedicationConditionLink",
 ] as const;
 
 /**
@@ -279,6 +296,9 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/symptoms-backup.ts",
   // The person's life events, both ends beside each other (v1.42).
   "src/lib/export/life-events-backup.ts",
+  // The five relation links that close the relation matrix (v1.43), both
+  // ends beside each other, each through its OWN delegate.
+  "src/lib/export/relation-links-backup.ts",
   "src/lib/cycle/backup.ts",
   // The medication category is read through the one helper that normalises
   // it; the payload writer calls the helper rather than the delegate. The
@@ -303,6 +323,7 @@ export const BACKUP_RESTORE_FILES: readonly string[] = [
   "src/lib/export/ecg-backup.ts",
   "src/lib/export/symptoms-backup.ts",
   "src/lib/export/life-events-backup.ts",
+  "src/lib/export/relation-links-backup.ts",
   "src/lib/cycle/backup.ts",
   // The restore writes the medication category through the same helper.
   "src/lib/medication-category.ts",
@@ -337,6 +358,8 @@ export const TWO_ENDED_MODELS = [
   "MedicationCategoryAssignment",
   "MedicationCategoryLabel",
   "MedicationCourse",
+  // v1.43 — a supplement's composition, nested in its medication both ways.
+  "MedicationIngredient",
   "MoodEntry",
   "MoodContext",
   "MoodEntryTagLink",
@@ -508,6 +531,10 @@ export const TWO_ENDED_MODELS = [
   // fortnight at home, days after a restore that reported success.
   "EnvironmentContext",
   "EnvironmentTravelLocation",
+  // v1.43 — the Dawarich movement days ride the same environment section
+  // (`src/lib/export/environment-backup.ts`): owned values a pruned instance
+  // can no longer hand back.
+  "DawarichDay",
   // How a schedule got to where it is. The register said a restored
   // medication keeps today's schedule and loses the record of when the dose or
   // the timing moved. Measured, it costs more than a record: the era minter
@@ -561,6 +588,22 @@ export const TWO_ENDED_MODELS = [
   // questionnaire over every module decision taken in Settings since. It is
   // carried and asserted, not defaulted.
   "OnboardingRecord",
+  // v1.43 (D1223) — a marker's other spellings ride on the marker as
+  // `aliases[]`, and the merge ledger travels as its own list whose target is
+  // resolved by id or by name like a lab result's marker. Without the aliases a
+  // restored account is asked again at the next scan which marker each
+  // spelling belongs to; without the ledger a link to a merged marker reads as
+  // a plain 404 instead of leading to the marker it went into.
+  "BiomarkerAlias",
+  "BiomarkerMerge",
+  // v1.43 — the five relation links that close the relation matrix, carried
+  // from the release that introduces them. Each is two ids and the instant it
+  // was filed, so carrying them cost no more than owing them would have.
+  "LabResultDocumentLink",
+  "EncounterMedicationLink",
+  "EncounterVaccinationLink",
+  "MedicationDocumentLink",
+  "MedicationConditionLink",
 ] as const;
 
 /** One model claimed to travel both ways. */
@@ -597,6 +640,8 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
  * rather than by what is cheapest to write.
  */
 export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
+  // v1.43 — the new tables are declared here with the schema and move to
+  // TWO_ENDED_MODELS when their section writer and restore branch land.
   WorkoutRoute:
     "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
   WorkoutSamples:
@@ -879,6 +924,13 @@ export const USER_COLUMN_BACKUP_CLASS = {
   nightscoutUrlEncrypted: "CREDENTIAL",
   nightscoutTokenEncrypted: "CREDENTIAL",
   nightscoutAllowPrivateHost: "CREDENTIAL",
+  // v1.43 — the Dawarich connection, credentials like the Nightscout pair. The
+  // sealed preferences name a place id on that instance, which means nothing
+  // without the key, so they stay behind with it.
+  dawarichUrlEncrypted: "CREDENTIAL",
+  dawarichApiKeyEncrypted: "CREDENTIAL",
+  dawarichPrefsEncrypted: "CREDENTIAL",
+  dawarichAllowPrivateHost: "CREDENTIAL",
   polarAccessTokenEncrypted: "CREDENTIAL",
   polarUserIdEncrypted: "CREDENTIAL",
   polarClientIdEncrypted: "CREDENTIAL",
@@ -935,13 +987,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   avatarContentType: "SETTING",
   avatarUpdatedAt: "SETTING",
   // Home, which the environment history is resolved against.
-  homeLat: "SETTING",
-  homeLon: "SETTING",
-  homeLabel: "SETTING",
   homeTimezone: "SETTING",
   homeSince: "SETTING",
-  // v1.42 (#615) — the sealed copy of the same home location, and the
-  // account's switch for the air-quality part of the module.
+  // v1.42 (#615) — the sealed home location (the only copy since v1.43),
+  // and the account's switch for the air-quality part of the module.
   homeLocationEncrypted: "SETTING",
   environmentAirQualityEnabled: "SETTING",
   // How the interface reads.
@@ -983,6 +1032,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   insightsPrivacyMode: "SETTING",
   insightsExcludeMetrics: "SETTING",
   disableCoach: "SETTING",
+  // v1.43 (#1217) — the account's own AI usage level; NULL follows the
+  // instance default, and a restored level above this host's ceiling is
+  // capped at read time like any stored choice.
+  aiUsageLevel: "SETTING",
   coachPrefsJson: "SETTING",
   documentsAutoAiRead: "SETTING",
   labsLocalOcrEnabled: "SETTING",

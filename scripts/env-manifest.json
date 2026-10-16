@@ -143,6 +143,10 @@
           "purpose": "Per-user hourly ceiling for the document-AI actions (read/index, extract, suggest, summarise share one bucket). Default 6, clamped to 1-1000."
         },
         {
+          "name": "AI_SYNC_REGEN_GAP_HOURS",
+          "purpose": "Minimum hours between two status-card regenerations after a sync. Default 6, whole hours 1-48; hand entries keep one hour. The admin AI setting wins."
+        },
+        {
           "name": "DOCUMENT_UPLOAD_LIMIT_PER_HOUR",
           "purpose": "Hourly upload ceiling per document-upload token (Paperless workflow, import script). Default 120, clamped to 1-1000. Web and phone uploads keep their own bucket."
         },
@@ -303,6 +307,17 @@
         {
           "name": "NOTIFICATION_PRIVATE_ORIGINS",
           "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"https://gotify.example.com,http://ntfy.lan:8080\". Link-local, metadata and unspecified addresses stay refused even when listed; a malformed entry is logged once and grants nothing."
+        }
+      ]
+    },
+    {
+      "name": "Dawarich on a private network",
+      "description": "Operator grant for Dawarich instances on the operator's own network, read by the movement context of the Environment module. Unset, a Dawarich URL that resolves to a private address is refused at connect time with private_origin_not_approved. Optional; a public instance never needs it.",
+      "required": false,
+      "variables": [
+        {
+          "name": "DAWARICH_PRIVATE_ORIGINS",
+          "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"http://dawarich.lan:3000\". Link-local, metadata and unspecified addresses stay refused even when listed; a malformed entry makes the connect form name it."
         }
       ]
     },

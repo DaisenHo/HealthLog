@@ -573,7 +573,10 @@ export async function retireOuraSleepRecords(
       where: { userId, id: { in: rows.map((r) => r.id) }, deletedAt: null },
       data: { deletedAt: new Date() },
     });
-    await afterMeasurementMutation(userId, rows, "oura");
+    await afterMeasurementMutation(userId, rows, {
+      source: "sync",
+      label: "oura",
+    });
     invalidateUserMeasurements(userId);
     annotate({ meta: { oura_sleep_retired_rows: res.count } });
     return res.count;
@@ -808,6 +811,7 @@ export async function upsertOuraMeasurements(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `oura: status-insight invalidate failed for ${userId}: ${err}`,

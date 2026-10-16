@@ -51,7 +51,10 @@
     "durationHoursMinutes": "{hours}h {minutes}m",
     "durationMinutes": "{minutes}m",
     "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} h"
+    "durationClockHours": "{time} h",
+    "errorIdLabel": "Error ID",
+    "errorIdCopy": "Copy error ID",
+    "errorIdCopied": "Error ID copied"
   },
   "apiErrors": {
     "measurement": {
@@ -153,6 +156,20 @@
       },
       "event": {
         "notFound": "This entry no longer exists."
+      }
+    },
+    "medications": {
+      "notFound": "This medication is no longer available.",
+      "ingredients": {
+        "invalid": "Check the composition and try again.",
+        "unitMismatch": "This unit is not offered for the nutrient.",
+        "extract": {
+          "fileType": "Upload a JPEG, PNG, WebP or PDF.",
+          "fileTooLarge": "The file is larger than 10 MB.",
+          "rateLimited": "Too many label reads. Try again in an hour.",
+          "budgetExceeded": "Your AI usage budget for today is reached.",
+          "failed": "The label could not be read. Try a sharper photo."
+        }
       }
     }
   },
@@ -367,7 +384,20 @@
     "immunizationsColDose": "Dose",
     "immunizationsColLot": "Lot",
     "courseRange": "Course {start} to {end}",
-    "courseSince": "Course since {start}"
+    "courseSince": "Course since {start}",
+    "lifePackYears": "Pack-years",
+    "lifeAuditC": "AUDIT-C (screening)",
+    "lifeAuditCScore": "{score} of 12 on {date}.",
+    "lifeAuditCAbove": "At or above the cut-off of {cutoff} ({source}).",
+    "lifeAuditCBelow": "Below the cut-off of {cutoff} ({source}).",
+    "lifeAuditCNoCutoff": "No sex-specific cut-off applied.",
+    "lifeActivity": "Physical activity",
+    "lifeActivityValue": "{minutes} minutes a week, self-reported",
+    "lifeSitting": "Sitting on a workday",
+    "lifeSittingValue": "{hours} hours, self-reported",
+    "lifeWork": "Work",
+    "lifeNightWork": "night work",
+    "lifeExposures": "exposures: {list}"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -525,7 +555,7 @@
       "loading": "Checking your link…",
       "invalid": "This link no longer works",
       "invalidHint": "It is unknown, expired, withdrawn or already used. Ask the person who sent it for a new one.",
-      "oidcOnly": "This server only allows single sign-on, so a profile cannot be taken over here yet.",
+      "oidcOnly": "This server only allows single sign-on. Continue with your identity provider instead.",
       "signedInTitle": "Sign out first",
       "signedInBody": "You are signed in as {username}. This link sets up a sign-in for someone else, so sign out before you use it.",
       "signOut": "Sign out and continue",
@@ -542,7 +572,19 @@
       "errorTaken": "That username or email address is already in use.",
       "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
       "errorFailed": "That did not work. Try again in a moment.",
-      "errorOffline": "That did not reach the server. Check your connection and try again."
+      "errorOffline": "That did not reach the server. Check your connection and try again.",
+      "ssoContinue": "Continue with {provider}",
+      "ssoStarting": "Redirecting…",
+      "ssoHint": "From then on you sign in here with your {provider} account.",
+      "ssoDivider": "or",
+      "ssoFallbackName": "single sign-on",
+      "errorTitle": "The handover did not go through",
+      "errorSubjectBound": "This sign-in already belongs to another account on this server. Open the link again and use a different account at your identity provider.",
+      "errorEmailTaken": "Your identity provider gave an email address that another account here already uses. Open the link again and use a different account, or ask the server's administrator.",
+      "errorUsernameTaken": "Someone took that username in the meantime. Open the link again and choose another one.",
+      "errorSignedIn": "You were signed in when you came back. Sign out, then open the link again.",
+      "errorSso": "Signing in with your identity provider did not work. Open the link again to try once more.",
+      "signInInstead": "Sign in to that account"
     },
     "inviteInvalid": {
       "title": "Invitation invalid",
@@ -2399,6 +2441,34 @@
         "invalidRange": "The last day cannot be before the first.",
         "generic": "That did not save. Please try again."
       }
+    },
+    "composition": {
+      "title": "Composition",
+      "empty": "Add what one tablet or capsule contains to count every dose taken in your micronutrients.",
+      "perUnitNote": "Per tablet or capsule; every dose taken adds this to the day's micronutrients.",
+      "add": "Add",
+      "edit": "Edit",
+      "rowHelper": "What one tablet or capsule contains, for its micronutrients.",
+      "sheetTitle": "What one unit contains",
+      "sheetDescription": "Enter the amounts per tablet or capsule as the label states them.",
+      "nutrientLabel": "Nutrient",
+      "amountLabel": "Amount",
+      "unitLabel": "Unit",
+      "choose": "Choose a nutrient",
+      "addRow": "Add a nutrient",
+      "removeRow": "Remove {name}",
+      "editorEmpty": "No nutrient yet. Add one per line of the label.",
+      "labelPhoto": "Read from a label photo",
+      "labelReading": "Reading the label…",
+      "labelWaiting": "Still waiting for the background worker to pick this up.",
+      "labelReviewNote": "Check each line against the label before you save.",
+      "lowConfidence": "This line was hard to read; check it against the label.",
+      "unmatchedTitle": "Lines without a matching nutrient, to enter by hand if needed:",
+      "servingNote": "The label states: {note}. The amounts are shown per single unit.",
+      "labelError": "The label could not be read",
+      "saveError": "The composition could not be saved",
+      "catalogError": "The list of nutrients could not be loaded",
+      "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
     }
   },
   "charts": {
@@ -2666,7 +2736,8 @@
     "bmiEmptyAction": "Open account settings",
     "personalRecord": {
       "badge": "PR",
-      "tooltip": "Personal record: {value} {unit} on {date}"
+      "tooltip": "Personal record: {value} {unit} on {date}",
+      "benchmark": "Typical at that age: {low} to {high} {unit} ({source})"
     },
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",
@@ -4220,6 +4291,21 @@
         "learning": "Learning phase: {entries} of {threshold} days recorded. A comparison appears once there are enough of them.",
         "noPattern": "Nothing in the {entries} days recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
         "featureValue": "{field}: {value}"
+      },
+      "patterns": {
+        "title": "Patterns in your mood",
+        "basedOn": "Based on {subject} and {comparison} days. A pattern, not a cause.",
+        "previousDayHigher": "After a below-usual day, the next day tends to be better ({subject} against {comparison} after an above-usual day).",
+        "previousDayLower": "A below-usual day tends to carry over into the next one ({subject} against {comparison} after an above-usual day).",
+        "weekendHigher": "Your mood tends to be higher at the weekend ({subject} against {comparison} on weekdays).",
+        "weekendLower": "Your mood tends to be lower at the weekend ({subject} against {comparison} on weekdays).",
+        "bestWeekday": "{weekday} tends to be your best day ({subject} against {comparison} on the other days).",
+        "notesHigher": "On days with a note your mood tends to be higher ({subject} against {comparison} without one).",
+        "notesLower": "On days with a note your mood tends to be lower ({subject} against {comparison} without one).",
+        "delayedTagHigher": "The day after “{tag}”, your mood tends to be higher ({subject} against {comparison} otherwise).",
+        "delayedTagLower": "The day after “{tag}”, your mood tends to be lower ({subject} against {comparison} otherwise).",
+        "multipleEntriesHigher": "On days you log more than once, your mood tends to be higher ({subject} against {comparison} on single-entry days).",
+        "multipleEntriesLower": "On days you log more than once, your mood tends to be lower ({subject} against {comparison} on single-entry days)."
       }
     },
     "derived": {
@@ -5459,7 +5545,7 @@
         "subtitle": "Decide which source wins when two report the same metric.",
         "nutrients": {
           "title": "Synced nutrient intake",
-          "description": "Daily totals synced from Apple Health over the last {days} days.",
+          "description": "Daily totals over the last {days} days: what Apple Health synced plus the supplements you took.",
           "empty": "No nutrient data has been synced yet.",
           "latest": "{amount} {unit} on {date}",
           "daysWithData": "{count} of {days} days",
@@ -5821,7 +5907,10 @@
           "remove": "Remove location period",
           "removeConfirmTitle": "Remove this trip?",
           "removeConfirmBody": "Readings taken during it stay in your record; only the trip entry goes.",
-          "range": "{start} to {end}"
+          "range": "{start} to {end}",
+          "suggestionsIntro": "Dawarich found days abroad that no period covers yet.",
+          "suggestionUse": "Use",
+          "suggestionDismiss": "Dismiss suggestion"
         },
         "backfill": {
           "title": "Backfill past days",
@@ -6255,7 +6344,8 @@
         "subLabel": "Your AI provider reads and indexes each new document without a tap per document.",
         "honesty": "When on, each document you upload is sent to your configured AI provider to be read, described, and indexed for search, with no per-document confirmation. Turning it on also reaches backwards: documents you have already uploaded that carry no summary yet are sent too, up to 200 each time you switch it on. This happens on the server and the document's contents leave this machine to that provider. If your configured provider is a subscription connection (a signed-in AI account rather than an API key), that provider's own data settings apply: subscription providers may use the content to improve their models, and no data-processing agreement covers it. Documents read by a self-hosted local model never leave your server. Off by default; turn it on only if you accept this trade for your documents.",
         "confirm": "I understand, turn on",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "restingFrugal": "Paused at the frugal AI usage level: documents are read only when you ask."
       },
       "centralCodex": {
         "title": "Use the server's shared AI access",
@@ -6313,7 +6403,33 @@
         "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
       },
       "providerCardDescription": "The provider HealthLog asks first, and its key and model.",
-      "runtimeTitle": "Check and refresh"
+      "runtimeTitle": "Check and refresh",
+      "usage": {
+        "title": "AI usage",
+        "description": "How much AI work runs in the background for you, while the Coach stays the same at every level.",
+        "levels": {
+          "frugal": {
+            "label": "Frugal",
+            "hint": "Cards refresh at most once a day after a sync, a short daily briefing, documents are read only when you ask."
+          },
+          "standard": {
+            "label": "Standard",
+            "hint": "Cards refresh every few hours after a sync, the full daily briefing."
+          },
+          "full": {
+            "label": "Full",
+            "hint": "Cards refresh up to every hour after new data, as before this setting existed."
+          }
+        },
+        "limited": "Limited by the server operator.",
+        "estimate": "about {tokens} tokens a day, estimated",
+        "measured": "Measured: {tokens} tokens a day over the last {days} days, the Coach included. The figures per level are estimates.",
+        "noEstimate": "An estimate per level appears after three days of AI use.",
+        "capped": "You chose {choice}, which the server does not allow at the moment, so {level} applies. Your choice is kept.",
+        "followsDefault": "You follow the server default ({level}).",
+        "useDefault": "Use the server default ({level})",
+        "saveError": "The level could not be saved. Please try again."
+      }
     },
     "dashboard": {
       "units": {
@@ -6646,7 +6762,14 @@
       "docs": "Documentation",
       "credits": "Credits & data attributions",
       "linksHeading": "Sources & docs",
-      "newerAvailable": "Newer version: {tag}"
+      "newerAvailable": "Newer version: {tag}",
+      "support": {
+        "title": "Support",
+        "description": "A summary for a bug report, without your name, email or health values.",
+        "copy": "Copy support info",
+        "copied": "Copied",
+        "copyFailed": "The support info could not be put together."
+      }
     },
     "testConnection": {
       "test": "Test connection",
@@ -7133,7 +7256,8 @@
         "lastReceived": "Last received {relative}",
         "lastNewValue": "Last new value {relative}",
         "lastBackground": "Last in background {relative}",
-        "never": "Not received yet"
+        "never": "Not received yet",
+        "lastBackfill": "History caught up {relative}"
       }
     },
     "garminInfo": {
@@ -7267,6 +7391,46 @@
         "failureStreak": "Failure streak: {count} of {threshold}",
         "copyFailed": "Could not copy. Select the text and copy it by hand."
       }
+    },
+    "dawarich": "Dawarich",
+    "dawarichTag": "Movement",
+    "dawarichDescription": "Connect your Dawarich instance to bring in daily distance, time away from home and travel days.",
+    "dawarichUrl": "Dawarich address",
+    "dawarichApiKey": "API key",
+    "dawarichApiKeyHelp": "You find it in Dawarich under Account. HealthLog uses it to read daily values only, never coordinates or place names.",
+    "dawarichConnect": "Connect",
+    "dawarichUpdate": "Save changes",
+    "dawarichConnected": "Dawarich connected. The last 30 days are loading now.",
+    "dawarichSync": "Fetch now",
+    "dawarichSyncQueued": "The last seven days will be fetched shortly.",
+    "dawarichSyncAlreadyQueued": "A fetch is already on its way.",
+    "dawarichDisconnect": "Disconnect",
+    "dawarichDisconnectTitle": "Disconnect Dawarich?",
+    "dawarichDisconnectDescription": "Future fetches stop. Days already stored stay.",
+    "dawarichDisconnectDelete": "Disconnect and delete days",
+    "dawarichDisconnectDeleteTitle": "Disconnect and delete every day?",
+    "dawarichDisconnectDeleteDescription": "The connection and every stored movement day are removed. This cannot be undone.",
+    "dawarichHomePlaceSet": "Home is set.",
+    "dawarichHomePlaceMissing": "Set your home so time away from home can be measured.",
+    "dawarichHomeCountryIs": "Home country: {country}.",
+    "dawarichHomeCountryMissing": "No home country yet, so no travel days.",
+    "dawarichDaysStored": "Days stored: {count}",
+    "dawarichHomePlace": "Home",
+    "dawarichHomePlaceChoose": "Choose a place from Dawarich",
+    "dawarichHomePlaceChange": "Choose home",
+    "dawarichHomeCountry": "Home country",
+    "dawarichHomeCountryHelp": "Two-letter country code, such as DE. Left empty, the country you spent most days in over the last year counts.",
+    "dawarichHomeSave": "Save",
+    "dawarichHomeSaved": "Saved.",
+    "dawarichErrors": {
+      "invalid": "That address does not work. Use the instance address without credentials.",
+      "privateOrigin": "This instance is on a private network. Ask the server operator to approve it.",
+      "credentials": "Dawarich did not accept the API key.",
+      "unreachable": "Dawarich cannot be reached. Check the address and that the instance is running.",
+      "rateLimited": "Too many attempts. Wait a moment, then try again.",
+      "homePlaceUnknown": "The Dawarich instance no longer knows this place.",
+      "notConnected": "Dawarich is not connected.",
+      "generic": "That did not work. Try again."
     }
   },
   "admin": {
@@ -7343,7 +7507,8 @@
       "spendToday": "Today, on each account's own calendar day: {total} tokens, {operator} of them on the operator's own key (accounts with spend: {accounts}).",
       "statusPaused": "Paused",
       "pausedHint": "Paused after repeated failures for {count} users until {at}. It is tried again automatically then.",
-      "modelNotServed": "The endpoint no longer offers the model {model}. Choose a model it lists in the AI settings."
+      "modelNotServed": "The endpoint no longer offers the model {model}. Choose a model it lists in the AI settings.",
+      "usageLevels": "Accounts per AI usage level: {frugal} frugal, {standard} standard, {full} full."
     },
     "aiQuality": {
       "title": "Insights Quality",
@@ -7753,7 +7918,8 @@
         "eventDetails": "Event details",
         "closeDetails": "Close details",
         "processDetail": "Buffer is volatile and capped at 500 entries.",
-        "cardTitle": "Recent events"
+        "cardTitle": "Recent events",
+        "filterErrorId": "Error ID"
       },
       "backups": {
         "title": "Backups",
@@ -7840,6 +8006,7 @@
         "restoreSkippedCoachAttachment": "Coach document link",
         "restoreSkippedCoachReference": "Coach reference",
         "restoreSkippedDocumentConditionLink": "Document filing",
+        "restoreSkippedRelationLink": "Link between records",
         "restoreSkippedExtractedFact": "Document fact",
         "restoreSkippedFactCommitment": "Fact commitment",
         "docsLink": "Documentation",
@@ -8016,6 +8183,56 @@
         "started": "Maintenance started.",
         "alreadyQueued": "A maintenance run is already queued or running.",
         "startFailed": "Could not start the maintenance."
+      },
+      "pulseDayMean": {
+        "title": "Pulse day mean",
+        "description": "How hours with only a few readings count toward a day's pulse.",
+        "body": "Up to now every hour with a reading counts the same, so a single stray reading can move a whole day. The weighted method lets an hour count fully from three readings on, and a lone reading a third. Run the dry run first to see how many days would change. Applying recalculates the stored pulse days in the background.",
+        "method": {
+          "hourly": "Every hour equal",
+          "weighted": "Sparse hours weighted"
+        },
+        "loading": "Checking the pulse day mean…",
+        "loadError": "Could not read the pulse day-mean status.",
+        "state": {
+          "idle": "No dry run yet.",
+          "queued": "The dry run is waiting for the background worker.",
+          "running": "The dry run is in progress.",
+          "done": "Dry run finished on {at}.",
+          "failed": "The dry run stopped. The app log names the cause; start it again."
+        },
+        "result": {
+          "days": "Days compared",
+          "changed": "Days moving more than 1 bpm",
+          "max": "Largest change",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
+          "account": "Account {account}",
+          "accountDays": "{changed} of {days} days move"
+        },
+        "appliedAt": "Weighted method applied on {at}.",
+        "dryRun": "Dry run",
+        "apply": "Apply",
+        "confirmTitle": "Apply the weighted pulse day mean?",
+        "confirmBody": "Every account's pulse days are then computed with sparse hours weighted. The stored pulse days are recalculated in the background, which can take a while on a large instance.",
+        "confirm": "Apply",
+        "cancel": "Cancel",
+        "dryRunStarted": "Dry run started.",
+        "applied": "Weighted method applied. The pulse days are being recalculated.",
+        "appliedNoRebuild": "Weighted method applied. Another run is still working, so apply again once it has finished to recalculate the pulse days.",
+        "error": {
+          "busy": "A dry run or recalculation is still running. Try again once it has finished.",
+          "dryRunRequired": "Run a dry run first. Applying needs one that finished in the last seven days.",
+          "generic": "The request did not go through."
+        },
+        "rebuild": {
+          "queued": "The recalculation is waiting for the background worker.",
+          "running": "The pulse days are being recalculated.",
+          "done": "Pulse days recalculated on {at} for {accounts} accounts.",
+          "failed": "The recalculation stopped. The app log names the cause; run it again."
+        },
+        "rebuildAgain": "Recalculate again",
+        "rebuildStarted": "Recalculation started."
       }
     },
     "carrier": "Carrier",
@@ -8120,7 +8337,25 @@
       "codes": "For the operator: API requests answer 503 with error code {code}, and /api/health reports reason {reason}."
     },
     "loginOverviewCardTitle": "Sign-in events",
-    "userColumn": "User"
+    "userColumn": "User",
+    "supportReport": {
+      "title": "Support report",
+      "description": "A summary of this instance for a bug report, without emails, IDs or values.",
+      "body": "Accounts appear as “Account 1”, “Account 2” and so on. Read the report before you share it.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download",
+      "loadError": "The support report could not be created."
+    },
+    "aiUsage": {
+      "title": "AI usage levels",
+      "description": "The highest level accounts may choose and the level they start at.",
+      "maxLabel": "Highest level",
+      "defaultLabel": "Default level",
+      "defaultAboveCeiling": "The default level cannot be above the highest level.",
+      "gapLabel": "Hours between card refreshes after a sync (Standard)",
+      "gapHint": "Whole hours from 1 to 48. Leave empty to use AI_SYNC_REGEN_GAP_HOURS, else 6. In effect now: {hours} h."
+    }
   },
   "achievements": {
     "title": "Achievements",
@@ -9215,7 +9450,9 @@
     "periodStartSaved": "Period start saved",
     "periodEndSaved": "End of period saved",
     "startedPeriodOnDate": "My period started this day",
-    "endedPeriodOnDate": "My period ended this day"
+    "endedPeriodOnDate": "My period ended this day",
+    "startAbsorbed": "Period start saved. Your start on {absorbed} was merged into {date}.",
+    "startRestored": "Saved. The start on {dates} is back."
   },
   "cycleReminders": {
     "periodSoonTitle": "Period likely soon",
@@ -9604,12 +9841,16 @@
         "apob": "Apolipoprotein B is the structural protein carried by each of the atherogenic lipoprotein particles, so measuring it counts those particles directly rather than the cholesterol they carry. Because one ApoB molecule sits on each LDL, VLDL, and related particle, it can capture cardiovascular risk that an LDL-cholesterol value misses, particularly when particle number and cholesterol content diverge. For this reason it is increasingly used to refine lipid-based risk assessment. It is interpreted alongside the standard lipid panel.",
         "lp-a": "Lipoprotein(a) is an LDL-like particle with an extra attached protein, and its level is largely set by genetics and stays fairly stable through life. Elevated Lp(a) is an independent, inherited risk factor for cardiovascular disease and aortic-valve narrowing. Because it changes little, it is usually measured once to establish a person's lifelong risk rather than tracked repeatedly. It is reported in molar units and read as part of overall cardiovascular risk.",
         "fasting-insulin": "Fasting insulin is the level of insulin (the hormone that moves glucose from the blood into cells) measured after an overnight fast. Paired with fasting glucose, it helps estimate insulin resistance, the state in which the body needs more insulin to keep glucose in range. A high fasting insulin alongside normal glucose can be an early sign that this compensation is under way. It is read as part of a metabolic-health picture rather than in isolation.",
-        "omega-3-index": "The omega-3 index is the share of EPA and DHA (the two long-chain marine omega-3 fatty acids) among the fatty acids in red-blood-cell membranes. Because red cells turn over slowly, it reflects long-term omega-3 intake rather than a recent meal. A higher index has been associated in observational studies with lower cardiovascular risk. It is tracked as a stable marker of omega-3 status that responds to diet over months."
+        "omega-3-index": "The omega-3 index is the share of EPA and DHA (the two long-chain marine omega-3 fatty acids) among the fatty acids in red-blood-cell membranes. Because red cells turn over slowly, it reflects long-term omega-3 intake rather than a recent meal. A higher index has been associated in observational studies with lower cardiovascular risk. It is tracked as a stable marker of omega-3 status that responds to diet over months.",
+        "alkaline-phosphatase": "Alkaline phosphatase (ALP) is an enzyme found mainly in the liver, the bile ducts and bone. It rises when bile flow is blocked and during phases of active bone building, such as growth in children and adolescents or bone healing. Because both organs release it, a raised value is usually read together with GGT and the other liver markers to tell a liver source from a bone source. It is one of the standard liver-panel markers.",
+        "bilirubin-total": "Total bilirubin is the yellow breakdown product of haemoglobin from worn-out red blood cells, measured as the sum of its unconjugated and conjugated forms. The liver takes it up, conjugates it and excretes it in bile, so the level reflects how well this pathway is working. It can rise with liver disease, blocked bile ducts or increased breakdown of red cells, and harmlessly in Gilbert's syndrome. It is read alongside the other liver markers."
       },
       "apob": "Apolipoprotein B (ApoB)",
       "lp-a": "Lipoprotein(a)",
       "fasting-insulin": "Fasting insulin",
-      "omega-3-index": "Omega-3 index"
+      "omega-3-index": "Omega-3 index",
+      "alkaline-phosphatase": "Alkaline phosphatase (ALP)",
+      "bilirubin-total": "Total bilirubin"
     },
     "noteLoadFailed": "Note could not be loaded; it will be kept unchanged when you save.",
     "showingLatestOf": "Showing the latest {shown} of {total} readings",
@@ -9683,6 +9924,54 @@
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}",
       "printed": "as printed in {unit}: {range}"
+    },
+    "match": {
+      "viaAlias": "by a name you chose before",
+      "viaCatalog": "recognised as a common abbreviation",
+      "chooseLabel": "Belongs to",
+      "suggestionOption": "{name} ({unit})",
+      "newMarkerOption": "A new biomarker",
+      "rememberHint": "This name will be remembered for the next report.",
+      "chooseHint": "Pick a biomarker if this is one you already track."
+    },
+    "aliases": {
+      "title": "Also written as",
+      "taken": "{alias} already belongs to another biomarker.",
+      "saveError": "The names could not be saved. Try again.",
+      "remove": "Remove {alias}",
+      "empty": "Add the names other labs print for {name}, so their reports land here.",
+      "placeholder": "e.g. Alk.P",
+      "addLabel": "Another name for this biomarker",
+      "add": "Add",
+      "alsoWritten": "Also written as {aliases}"
+    },
+    "merge": {
+      "open": "Merge",
+      "title": "Merge biomarkers",
+      "description": "Combine markers that are the same test written differently.",
+      "pickHint": "Select at least two biomarkers.",
+      "keepLabel": "Keep",
+      "keepHint": "The others move into this one and their names become its other names.",
+      "showPreview": "Show preview",
+      "back": "Back",
+      "confirm": "Merge now",
+      "previewSummaryOne": "{count} reading moves to {name} ({unit}).",
+      "previewSummaryFew": "{count} readings move to {name} ({unit}).",
+      "previewSummaryOther": "{count} readings move to {name} ({unit}).",
+      "movesOne": "{count} reading, already in the same unit",
+      "movesFew": "{count} readings, already in the same unit",
+      "movesOther": "{count} readings, already in the same unit",
+      "convertedOne": "{count} reading, converted from {unit} to {targetUnit}",
+      "convertedFew": "{count} readings, converted from {unit} to {targetUnit}",
+      "convertedOther": "{count} readings, converted from {unit} to {targetUnit}",
+      "refused": "{unit} cannot be converted to {targetUnit}.",
+      "aliasesAdded": "These names will lead to the kept biomarker:",
+      "blocked": "Nothing can be merged while a unit cannot be converted. Leave that biomarker out or keep another one.",
+      "noUndo": "A merge cannot be undone.",
+      "doneToastOne": "Merged into {name}, {count} reading moved",
+      "doneToastFew": "Merged into {name}, {count} readings moved",
+      "doneToastOther": "Merged into {name}, {count} readings moved",
+      "error": "The biomarkers could not be merged. Try again."
     }
   },
   "modules": {
@@ -10644,25 +10933,11 @@
     },
     "profileFacts": {
       "cardTitle": "Lifestyle context",
-      "cardDescription": "Record the current facts that change how your health readings should be interpreted.",
       "smokingLabel": "Smoking status",
       "alcoholLabel": "Alcohol pattern",
       "shiftLabel": "Work schedule",
       "notRecorded": "Not recorded",
-      "unreadable": "Stored value could not be read",
-      "save": "Save",
-      "savedToast": "Lifestyle context saved",
-      "savePartialError": "Couldn't save {kinds}. Please try again.",
-      "saveKindError": "Not saved",
-      "loadError": "Could not load lifestyle context",
       "remove": "Remove {kind}",
-      "removeShort": "Remove",
-      "removeConfirmTitle": "Remove {kind}?",
-      "removeConfirmDescription": "The current value will become not recorded. Its dated history will be retained.",
-      "removedToast": "{kind} removed from current lifestyle context",
-      "removeError": "Could not remove {kind}",
-      "historyTitle": "Previous values",
-      "to": "to",
       "values": {
         "SMOKING_STATUS": {
           "NEVER": "Never smoked",
@@ -10842,6 +11117,235 @@
       "savedToast": "Emergency information saved",
       "saveError": "Couldn't save your emergency information.",
       "loadError": "Couldn't load your emergency information."
+    },
+    "life": {
+      "cardTitle": "Life circumstances",
+      "cardDescription": "Smoking, alcohol, activity, work, habits and goals, dated and each optional.",
+      "loadError": "Your life circumstances could not be loaded.",
+      "noAnswer": "No answer",
+      "yes": "Yes",
+      "no": "No",
+      "validSince": "Valid since",
+      "month": "Month",
+      "year": "Year",
+      "lastConfirmed": "Last confirmed on {date}",
+      "notAnswered": "Not answered yet",
+      "unreadable": "This answer cannot be read on this server.",
+      "save": "Save section",
+      "savedToast": "Section saved",
+      "saveError": "The section could not be saved.",
+      "review": {
+        "question": "Is this still true? Your last answer is more than a year old.",
+        "confirm": "Still true",
+        "confirmedToast": "Thanks, marked as still true",
+        "confirmError": "The confirmation could not be saved."
+      },
+      "ai": {
+        "label": "Share this section with the AI",
+        "shiftLabel": "Share shift work with the AI",
+        "hint": "Off means the Coach and the briefings never see these answers.",
+        "savedToast": "AI sharing updated",
+        "saveError": "The AI setting could not be saved."
+      },
+      "sections": {
+        "tobacco": {
+          "title": "Smoking and nicotine"
+        },
+        "alcohol": {
+          "title": "Alcohol"
+        },
+        "activity": {
+          "title": "Activity and sitting"
+        },
+        "work": {
+          "title": "Work and rhythm"
+        },
+        "habits": {
+          "title": "Sleep, diet and caffeine"
+        },
+        "goals": {
+          "title": "Goals"
+        }
+      },
+      "fields": {
+        "smokingStatus": "Smoking status",
+        "products": "Products used",
+        "cigarettesPerDay": "Cigarettes per day",
+        "startYear": "Year you started",
+        "quitMonth": "When you stopped",
+        "secondhandSmoke": "Regular secondhand smoke",
+        "moderateDaysPerWeek": "Days per week with moderate to strenuous activity, such as brisk walking",
+        "moderateMinutesPerDay": "Minutes on those days, on average",
+        "sittingHoursWorkday": "Hours sitting on a workday",
+        "shiftSchedule": "Shift work",
+        "situation": "Work situation",
+        "physicalNature": "Kind of work",
+        "nightWork": "Night work",
+        "exposures": "Exposures at work",
+        "freeWeekdays": "Free days of the week",
+        "napRegularly": "Regular nap",
+        "snoringReported": "Others say you snore",
+        "dietPattern": "Diet",
+        "dietSpecifics": "Specifics",
+        "lateMealsPerWeek": "Meals after 9 pm per week",
+        "fruitVegPortionsPerDay": "Portions of fruit and vegetables per day",
+        "caffeineDrinksPerDay": "Caffeinated drinks per day",
+        "latestCaffeine": "Latest caffeine of the day",
+        "goals": "What you want to work on",
+        "goalsHint": "Up to three."
+      },
+      "values": {
+        "products": {
+          "cigarettes": "Cigarettes",
+          "cigars_pipe": "Cigars or pipe",
+          "e_cigarette": "E-cigarette",
+          "heated_tobacco": "Heated tobacco",
+          "snus_pouches": "Snus or nicotine pouches"
+        },
+        "situation": {
+          "none": "Not in paid work",
+          "indoor": "Mostly indoors",
+          "outdoor": "Mostly outdoors",
+          "mixed": "Indoors and outdoors"
+        },
+        "physicalNature": {
+          "mostly_sitting": "Mostly sitting",
+          "standing_walking": "Standing or walking",
+          "heavy_physical": "Heavy physical work"
+        },
+        "exposures": {
+          "heat": "Heat",
+          "cold": "Cold",
+          "dust": "Dust",
+          "fumes_solvents": "Fumes or solvents",
+          "noise": "Noise"
+        },
+        "dietPattern": {
+          "mixed": "Mixed diet",
+          "vegetarian": "Vegetarian",
+          "vegan": "Vegan",
+          "pescetarian": "Pescetarian",
+          "other": "Other"
+        },
+        "dietSpecifics": {
+          "intermittent_fasting": "Intermittent fasting",
+          "low_carb": "Low carb",
+          "prescribed_diet": "Diet prescribed by a doctor"
+        },
+        "latestCaffeine": {
+          "before_12": "Before noon",
+          "12_15": "Noon to 3 pm",
+          "15_18": "3 to 6 pm",
+          "after_18": "After 6 pm"
+        },
+        "goals": {
+          "weight": "Weight",
+          "blood_pressure": "Blood pressure",
+          "blood_sugar": "Blood sugar",
+          "sleep": "Sleep",
+          "fitness": "Fitness",
+          "stress_recovery": "Stress and recovery",
+          "medication_routine": "Taking medication regularly",
+          "quit_smoking": "Stop smoking",
+          "less_alcohol": "Drink less alcohol"
+        },
+        "weekdays": {
+          "1": "Mon",
+          "2": "Tue",
+          "3": "Wed",
+          "4": "Thu",
+          "5": "Fri",
+          "6": "Sat",
+          "7": "Sun"
+        }
+      },
+      "derived": {
+        "packYears": "{value} pack-years",
+        "packYearsMissing": "Pack-years need cigarettes per day and the year you started.",
+        "activityMinutes": "{value} minutes a week.",
+        "meetsWho": "That meets the WHO recommendation of 150 minutes a week.",
+        "belowWho": "That is below the WHO recommendation of 150 minutes a week.",
+        "measuredSteps": "Your measured steps come first; this answer adds context.",
+        "freeDaysDefault": "Without an answer, Saturday and Sunday count as free days."
+      },
+      "auditC": {
+        "intro": "Three questions on alcohol from the WHO AUDIT. A screening, not a diagnosis.",
+        "start": "Answer the questions",
+        "again": "Answer again",
+        "offerDue": "A quick look once a year is enough.",
+        "notValidated": "There is no validated translation for your language yet, so the questions are shown in English.",
+        "submit": "Save answers",
+        "savedToast": "Answers saved",
+        "saveError": "The answers could not be saved.",
+        "result": "{score} of 12 points",
+        "above": "At or above the screening cut-off of {cutoff}.",
+        "below": "Below the screening cut-off of {cutoff}.",
+        "noCutoff": "Without a sex in your profile only the sum is shown.",
+        "source": "Source: {source}",
+        "history": "Earlier entries",
+        "remove": "Remove entry",
+        "removeConfirmTitle": "Remove this entry?",
+        "removeConfirmBody": "The entry leaves your history. This cannot be undone here.",
+        "removedToast": "Entry removed",
+        "removeError": "The entry could not be removed.",
+        "historyEntry": "{date}: {score} of 12",
+        "legacyLabel": "Earlier answer: {value}",
+        "legacyHint": "From the short alcohol question asked before this questionnaire. Once a questionnaire result is on file, the Coach no longer reads it.",
+        "legacyRemove": "Remove earlier answer",
+        "legacyRemoveConfirmTitle": "Remove the earlier answer?",
+        "legacyRemoveConfirmBody": "The earlier answer leaves your record. Questionnaire results stay.",
+        "legacyRemovedToast": "Earlier answer removed",
+        "legacyRemoveError": "The earlier answer could not be removed."
+      },
+      "takeOver": {
+        "conditionsButton": "Add to condition journal",
+        "allergiesButton": "Add to allergies",
+        "conditionsTitle": "Add a chronic condition",
+        "allergiesTitle": "Add an allergy",
+        "description": "Your free text stays as it is until you clear it yourself.",
+        "freeTextLabel": "Your free text",
+        "conditionLabel": "Condition",
+        "onset": "Since",
+        "save": "Add",
+        "savedToast": "Entry added",
+        "saveError": "The entry could not be added.",
+        "clearQuestion": "The entry is saved. Clear the free text now?",
+        "clear": "Clear free text",
+        "keep": "Keep it",
+        "clearedToast": "Free text cleared",
+        "clearError": "The free text could not be cleared."
+      },
+      "screening": {
+        "cardTitle": "Screening hints",
+        "cardDescription": "From your life circumstances, with the rule and the country it comes from.",
+        "noReminder": "This is a hint only; set a reminder yourself if you want one.",
+        "source": "Source: {source}",
+        "titles": {
+          "lung_ldct": "Low-dose CT for lung cancer",
+          "aaa_ultrasound": "Ultrasound of the abdominal aorta"
+        },
+        "status": {
+          "suggested": "May apply to you",
+          "not_eligible": "Does not apply to you",
+          "unknown": "Not enough information"
+        },
+        "reasons": {
+          "never_smoked": "You have never smoked.",
+          "missing_birth_date": "Your birth date is missing.",
+          "age_out_of_range": "Your age is outside the range.",
+          "missing_smoking_status": "Your smoking status is missing.",
+          "no_cigarettes": "The rule counts cigarettes only.",
+          "missing_smoking_history": "Cigarettes per day or the start year is missing.",
+          "pack_years_below_15": "Fewer than 15 pack-years.",
+          "pack_years_below_20": "Fewer than 20 pack-years.",
+          "smoked_years_below_25": "Fewer than 25 years of smoking.",
+          "missing_quit_date": "The date you stopped is missing.",
+          "quit_over_10_years": "You stopped more than 10 years ago.",
+          "quit_over_15_years": "You stopped more than 15 years ago.",
+          "missing_sex": "Your sex is missing in the profile.",
+          "sex_not_male": "The rule applies to men."
+        }
+      }
     }
   },
   "environment": {
@@ -10875,6 +11379,10 @@
       "mugwort": "mugwort",
       "olive": "olive",
       "ragweed": "ragweed"
+    },
+    "movement": {
+      "awayFromHome": "Time away from home",
+      "distance": "Distance travelled"
     }
   },
   "documents": {
@@ -11122,7 +11630,8 @@
       "extractEmpty": "No values could be extracted from this document.",
       "failUnitRequired": "A numeric value needs a unit before it can be saved.",
       "failUnitMismatch": "The stated unit does not match the saved unit for this marker. Adjust it, then finish the review again.",
-      "failGeneric": "This value could not be saved."
+      "failGeneric": "This value could not be saved.",
+      "failUnknownBiomarker": "The chosen biomarker no longer exists. Pick another one."
     },
     "contentIndex": {
       "indexPrompt": "Make document contents searchable.",
@@ -11344,7 +11853,9 @@
       "molybdenum": "Molybdenum",
       "iodine": "Iodine",
       "water": "Water",
-      "caffeine": "Caffeine"
+      "caffeine": "Caffeine",
+      "dha": "DHA (omega-3)",
+      "epa": "EPA (omega-3)"
     },
     "page": {
       "title": "Nutrient intake",
@@ -11376,9 +11887,26 @@
       "rowMetaNoRef": "{days} of {window} days",
       "footer": "{tracked} of {total} tracked micronutrients have data in this window.",
       "emptyTitle": "No micronutrient data synced yet",
-      "loadError": "Your nutrient data could not be loaded"
+      "loadError": "Your nutrient data could not be loaded",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Above the tolerable upper intake level for adults of {value} {unit} a day ({source}).",
+      "aboveUpperLimitSupplemental": "The supplement share is above the tolerable upper intake level for adults of {value} {unit} a day for supplements ({source}).",
+      "upperLimitForm": {
+        "retinol": "The level covers preformed vitamin A (retinol) only: if the amount comes from beta-carotene, it does not apply.",
+        "folic_acid": "The level covers folic acid from supplements and fortified foods, not the folate in ordinary food.",
+        "magnesium_salts": "The level covers readily dissociable magnesium salts in supplements, not the magnesium in food.",
+        "alpha_tocopherol": "The level is set for alpha-tocopherol."
+      }
     },
-    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake."
+    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake.",
+    "units": {
+      "IU": "IU"
+    },
+    "sources": {
+      "APPLE_HEALTH": "Synced",
+      "MANUAL": "Entered",
+      "SUPPLEMENT": "Supplements"
+    }
   },
   "daily": {
     "line": {
@@ -11880,9 +12408,11 @@
         "revokeFailed": "The link could not be withdrawn. Try again.",
         "errorFailed": "The handover link could not be created.",
         "errorRosterChanged": "The list of guardians changed in the meantime. Close this and open it again.",
-        "oidcOnly": "Handing over a profile is not available while this server allows single sign-on only.",
+        "oidcOnly": "Handing over a profile is not available on this server.",
         "loadError": "The handover status could not be loaded.",
-        "entryHint": "When {name} is ready to look after this record themselves."
+        "entryHint": "When {name} is ready to look after this record themselves.",
+        "methodSso": "{name} signs in through single sign-on when they use the link.",
+        "methodBoth": "{name} can set a password or sign in through single sign-on."
       }
     },
     "toast": {
@@ -12008,7 +12538,11 @@
       "customVaccineDelete": "{name} removed an own vaccine",
       "lifeEventCreate": "{name} added a life event",
       "lifeEventUpdate": "{name} changed a life event",
-      "lifeEventDelete": "{name} removed a life event"
+      "lifeEventDelete": "{name} removed a life event",
+      "biomarkerMerge": "{name} merged biomarkers",
+      "medicationIngredientsUpdate": "{name} changed what a supplement contains",
+      "auditCCreate": "{name} answered the AUDIT-C questions",
+      "auditCDelete": "{name} removed an AUDIT-C entry"
     },
     "section": {
       "measurements": {
@@ -12227,7 +12761,34 @@
       "removed": "Unlinked {name}",
       "linked": "Linked",
       "loadNewer": "Load newer",
-      "loadOlder": "Load older"
+      "loadOlder": "Load older",
+      "period": {
+        "showing": "Showing {period}"
+      }
+    },
+    "related": {
+      "title": "Related",
+      "kind": {
+        "labResult": "Lab result",
+        "encounter": "Visit",
+        "document": "Document",
+        "conditionEpisode": "Condition",
+        "medication": "Medication",
+        "vaccination": "Vaccination"
+      },
+      "via": {
+        "encounter": "through a visit",
+        "efficacyTarget": "through the efficacy target"
+      },
+      "pick": {
+        "conditionEpisode": "Conditions",
+        "document": "Documents",
+        "encounter": "Visits",
+        "medication": "Medications",
+        "vaccination": "Vaccinations"
+      },
+      "nothingToOffer": "Nothing to link yet.",
+      "saveError": "The link could not be saved."
     }
   },
   "bodySites": {
@@ -12369,7 +12930,8 @@
       "scores": "Scores",
       "running": "Running that day",
       "values": "Values",
-      "happened": "What happened"
+      "happened": "What happened",
+      "movement": "On the move"
     },
     "notable": {
       "extremeHigh": "Highest daily value since {since}",
@@ -12425,7 +12987,18 @@
     "today": "Today",
     "hasEntries": "has entries",
     "dayNSince": "Day {n}, since {date}",
-    "sinceDate": "Since {date}"
+    "sinceDate": "Since {date}",
+    "movement": {
+      "total": "Distance",
+      "driving": "By car",
+      "train": "By train",
+      "places": "Places visited",
+      "away": "Away from home",
+      "travel": "Travel day",
+      "travelYes": "Yes",
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
+    }
   },
   "timeline": {
     "title": "Timeline",
@@ -12760,5 +13333,13 @@
     "lastUpdated": "Last updated: {date}",
     "project": "Project",
     "credits": "Credits"
+  },
+  "series": {
+    "reference": {
+      "targetUpper": "Your target, upper limit",
+      "targetLower": "Your target, lower limit",
+      "clinicalUpper": "Clinical upper limit",
+      "clinicalLower": "Clinical lower limit"
+    }
   }
 }

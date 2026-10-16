@@ -394,17 +394,13 @@ describe("the environment home (v1.42, sealed at rest)", () => {
     );
   });
 
-  it("seals a readable home from a file and writes the readable columns empty", () => {
+  it("seals a readable home from a file", () => {
     const { data, refused } = admitAccountSettings(
       { homeLat: 48.137, homeLon: 11.575, homeLabel: "Munich" },
       ctx,
     );
     expect(refused).toEqual([]);
-    expect(data).toMatchObject({
-      homeLat: null,
-      homeLon: null,
-      homeLabel: null,
-    });
+    expect(data).not.toHaveProperty("homeLat");
     expect(openLocation(data.homeLocationEncrypted as Uint8Array)).toEqual({
       lat: 48.1,
       lon: 11.6,
@@ -421,11 +417,6 @@ describe("the environment home (v1.42, sealed at rest)", () => {
     expect(Buffer.from(restored).equals(Buffer.from(sealed))).toBe(true);
     expect(
       admitAccountSettings({ homeLat: null, homeLon: null }, ctx).data,
-    ).toEqual({
-      homeLocationEncrypted: null,
-      homeLat: null,
-      homeLon: null,
-      homeLabel: null,
-    });
+    ).toEqual({ homeLocationEncrypted: null });
   });
 });

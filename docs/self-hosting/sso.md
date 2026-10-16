@@ -112,6 +112,12 @@ Client registration essentials only — the IdP's own docs cover the rest.
   MFA in the IdP's policy engine — that is the point of delegating
   authentication. HealthLog-side 2FA remains available on top for the
   step-up gates above.
+- **Claiming a managed profile binds a fresh identity only.** When a
+  person claims a managed profile through SSO, their `(issuer, sub)` is
+  bound to that record, and only if no account on the instance already
+  holds it, and the provider's address is used only when it is verified
+  and not already taken. A claim can therefore never attach somebody's
+  existing sign-in to a second record or take over an existing account.
 - **Linking is once.** There is no unlink/relink flow in this cut; the
   pin is deliberately sticky. Moving an account to a new IdP identity is
   an operator decision (a manual `users.oidc_issuer` / `users.oidc_sub`
@@ -134,6 +140,10 @@ Consequences to accept before turning it on:
 - **Self-disabling on half-config.** The flag only takes effect while
   the three provider vars are fully set, so a typo in the provider group
   can never lock every user out.
+- **Managed profiles are still handed over** (v1.43). The person claims the
+  record through the identity provider instead of setting a password; the
+  password claim is refused. See
+  [Handing a record over to its person](account-sharing.md#handing-a-record-over-to-its-person).
 
 ### Break-glass (IdP down or misconfigured)
 

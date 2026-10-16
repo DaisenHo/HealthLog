@@ -22,6 +22,7 @@ import {
   measurementTypeEnum,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const csvImportRowResult = z
   .object({
@@ -71,11 +72,9 @@ const jsonImportMeasurement = z
         "Checked against the type's server-side plausibility range; an out-of-range value fails the whole request with 422.",
       ),
     unit: z.string(),
-    measuredAt: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "Bounded: no future instants beyond a 5-min clock-skew tolerance, nothing before 1900.",
-      ),
+    measuredAt: isoDateTime().describe(
+      "Bounded: no future instants beyond a 5-min clock-skew tolerance, nothing before 1900.",
+    ),
     glucoseContext: glucoseContextEnum
       .optional()
       .describe(
@@ -121,8 +120,7 @@ const jsonImportMoodEntry = z
       .string()
       .optional()
       .describe("JSON-encoded array of tag strings, stored verbatim."),
-    loggedAt: z.iso
-      .datetime({ offset: true })
+    loggedAt: isoDateTime()
       .optional()
       .describe(
         "Bounded like `measuredAt`. Absent → the server derives a stable per-row instant within the `date` day, so a re-import of the same file dedups instead of duplicating.",
@@ -186,8 +184,8 @@ const healthConnectImportJob = z
       .describe(
         "`queued`, `unpacking`, `parsing`, `upserting`, `done` or `failed`. A plain string, like the Apple Health status.",
       ),
-    startedAt: z.iso.datetime({ offset: true }),
-    completedAt: z.iso.datetime({ offset: true }).nullable(),
+    startedAt: isoDateTime(),
+    completedAt: isoDateTime().nullable(),
     uploadBytes: z.number().int(),
     progress: z
       .record(z.string(), z.unknown())
@@ -493,11 +491,10 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     .describe(
                       "`queued`, `unpacking`, `parsing`, `upserting`, `done` or `failed`. A plain string on the wire, not a closed enum — the column is untyped and a future phase name would arrive here without a schema change.",
                     ),
-                  startedAt: z.iso.datetime({ offset: true }),
-                  completedAt: z.iso.datetime({ offset: true }).nullable(),
+                  startedAt: isoDateTime(),
+                  completedAt: isoDateTime().nullable(),
                   uploadBytes: z.number().int(),
-                  exportedAt: z.iso
-                    .datetime({ offset: true })
+                  exportedAt: isoDateTime()
                     .nullable()
                     .describe(
                       "The instant the Health app stamped on the export itself, once the worker has read it. Null before then.",

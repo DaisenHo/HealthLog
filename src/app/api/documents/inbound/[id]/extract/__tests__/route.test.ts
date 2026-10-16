@@ -51,6 +51,7 @@ vi.mock("@/lib/documents/store", () => ({
   encryptFactData: vi.fn(() => new Uint8Array([1])),
   encryptFactProvenance: vi.fn(() => new Uint8Array([2])),
   serialiseDocumentDetail: vi.fn(() => ({ id: "doc-1", facts: [] })),
+  markerIndexForFacts: vi.fn(async () => null),
 }));
 vi.mock("@/lib/documents/content-index", () => ({
   loadDocumentChatText: vi.fn(),
@@ -371,6 +372,7 @@ describe("POST /api/documents/inbound/[id]/extract — the documentAi capability
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "assistant.disabled.documentAi",
       capability: "documentAi",
       reason: "operator_disabled",

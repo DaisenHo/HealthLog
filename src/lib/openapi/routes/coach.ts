@@ -13,12 +13,15 @@ import {
 } from "@/lib/validations/about-me";
 import {
   healthProfileAiSectionSchema,
-  healthProfileFactCorrectionSchema,
   healthProfileFactDtoSchema,
   healthProfileFactsResponseSchema,
-  healthProfileFactWriteSchema,
-  removedHealthProfileFactSchema,
 } from "@/lib/validations/health-profile-facts";
+import {
+  factCorrectionSchema,
+  factWriteSchema,
+  lifeFactRevisionSchema,
+  removedFactSchema,
+} from "@/lib/validations/life-circumstances";
 import {
   emergencyProfileDtoSchema,
   emergencyProfileUpdateSchema,
@@ -76,6 +79,7 @@ import {
   aiExtractionRefusalDescription,
   aiExtractionRefusals,
 } from "./ai-extraction-refusals";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // The assigning form, deliberately: `schema.meta({...})` as a bare statement
 // returns a clone and registers nothing, so the component id would never
@@ -266,8 +270,7 @@ const insightsLayoutPutBody = insightsLayoutSchema
   });
 const insightsLayoutResult = insightsLayoutSchema
   .extend({
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .optional()
       .describe(
         "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
@@ -312,14 +315,13 @@ const coachFactItem = z.object({
     .string()
     .nullable()
     .describe("v1.41 — the message the fact came out of, when known."),
-  lastUsedAt: z.iso
-    .datetime({ offset: true })
+  lastUsedAt: isoDateTime()
     .nullable()
     .describe("v1.41 — when the fact last went into a Coach turn."),
-  createdAt: z.iso.datetime({ offset: true }),
-  updatedAt: z.iso
-    .datetime({ offset: true })
-    .describe("v1.41 — when the fact was last written or edited."),
+  createdAt: isoDateTime(),
+  updatedAt: isoDateTime().describe(
+    "v1.41 — when the fact was last written or edited.",
+  ),
 });
 
 const coachFactCreateRequest = coachFactCreateSchema.meta({
@@ -352,7 +354,7 @@ const coachFactCreatedResponse = z.object({
 
 const coachFactUpdatedResponse = z.object({
   fact: coachFactWrittenItem.extend({
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   }),
 });
 
@@ -411,8 +413,7 @@ const coachPlanItem = z
     status: z
       .enum(COACH_PLAN_STATUSES)
       .describe("App-side lifecycle: proposed | active | met | abandoned."),
-    reviewDate: z.iso
-      .datetime({ offset: true })
+    reviewDate: isoDateTime()
       .nullable()
       .describe("Optional check-in checkpoint; null when none."),
     sourceConversationId: z
@@ -421,8 +422,8 @@ const coachPlanItem = z
       .describe(
         "Id of the conversation the proposal was extracted from; null for a plan without conversation provenance. Lets a chat surface show only the proposals born in the open thread.",
       ),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "CoachPlan",
@@ -478,12 +479,12 @@ const coachReminderItem = z
       ),
     metric: z.string().nullable(),
     triggerKind: z.enum(["date", "context"]),
-    dueAt: z.iso.datetime({ offset: true }).nullable(),
+    dueAt: isoDateTime().nullable(),
     contextCue: z.string().nullable(),
     status: z.enum(COACH_REMINDER_STATUSES),
     source: z.enum(["sentinel", "extractor", "manual", "action"]),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "CoachReminder",
@@ -546,7 +547,7 @@ const coachMessageSchema = z
     content: z
       .string()
       .describe("Decrypted message body — the server decrypts on read."),
-    createdAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
     metricSource: coachProvenanceSchema
       .nullable()
       .describe("Provenance envelope (assistant turns); null for user turns."),
@@ -598,10 +599,10 @@ const coachConversationSchema = z
   .object({
     id: z.string(),
     title: z.string().describe("Title summarised from the first user message."),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso
-      .datetime({ offset: true })
-      .describe("Bumped on every appended message; the rail orders by this."),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime().describe(
+      "Bumped on every appended message; the rail orders by this.",
+    ),
     messageCount: z.number().int(),
     fenced: z
       .boolean()
@@ -647,8 +648,8 @@ const coachConversationDetailSchema = z
   .object({
     id: z.string(),
     title: z.string(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
     messageCount: z.number().int(),
     messages: z
       .array(coachMessageSchema)
@@ -1383,8 +1384,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "application/json": {
               schema: dataEnvelope(
                 z.object({
-                  nudgedAt: z.iso
-                    .datetime({ offset: true })
+                  nudgedAt: isoDateTime()
                     .nullable()
                     .describe(
                       "Timestamp of the newest Coach assistant message; null when none exists.",
@@ -1426,9 +1426,9 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "application/json": {
               schema: dataEnvelope(
                 z.object({
-                  seenAt: z.iso
-                    .datetime({ offset: true })
-                    .describe("The server-minted open timestamp."),
+                  seenAt: isoDateTime().describe(
+                    "The server-minted open timestamp.",
+                  ),
                 }),
                 "CoachSeenResponse",
               ),
@@ -1459,7 +1459,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                   coachFocus: z.string().nullable(),
                   aiIncludedSections: z.array(healthProfileAiSectionSchema),
                   pendingQuestions: z.array(z.string()),
-                  updatedAt: z.iso.datetime({ offset: true }).nullable(),
+                  updatedAt: isoDateTime().nullable(),
                   maxChars: z.number().int(),
                   fieldMaxChars: z.number().int(),
                   ai: aiCapabilityState.describe(
@@ -1503,7 +1503,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                   coachFocus: z.string().nullable(),
                   aiIncludedSections: z.array(healthProfileAiSectionSchema),
                   pendingQuestions: z.array(z.string()),
-                  updatedAt: z.iso.datetime({ offset: true }),
+                  updatedAt: isoDateTime(),
                   maxChars: z.number().int(),
                   fieldMaxChars: z.number().int(),
                   ai: aiCapabilityState.describe(
@@ -1526,7 +1526,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Read effective-dated anamnesis facts",
       description:
-        "Returns the current value and immutable revision history for the caller's smoking status, alcohol pattern and shift schedule. Values are decrypted server-side; unreadable ciphertext returns `value: null` with `unreadable: true`.",
+        "Returns the current value and immutable revision history for the caller's smoking status, alcohol pattern and shift schedule, and only those three kinds: the life-circumstance kinds are read through `GET /api/anamnesis/life-circumstances`. Values are decrypted server-side; unreadable ciphertext returns `value: null` with `unreadable: true`.",
       responses: {
         ...recordRefusal(),
         "200": {
@@ -1547,12 +1547,12 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Create an anamnesis fact",
       description:
-        "Creates the first current revision for one closed fact kind. The answer is encrypted before persistence. A second current value for the same kind returns 409; corrections use the revision endpoint.",
+        "Creates the first current revision for one fact kind. The answer is encrypted before persistence. The three closed kinds take their string value and answer the closed revision shape; the six life-circumstance kinds (v1.43, send only when `features.lifeCircumstances` is true) take an object with `schema: 1` and answer a `LifeFactRevision`. Optional `validFrom` (a calendar day) dates the answer back. A second current value for the same kind returns 409; corrections use the revision endpoint.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,
         content: {
-          "application/json": { schema: healthProfileFactWriteSchema },
+          "application/json": { schema: factWriteSchema },
         },
       },
       responses: {
@@ -1562,7 +1562,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                healthProfileFactDtoSchema,
+                z.union([healthProfileFactDtoSchema, lifeFactRevisionSchema]),
                 "CreateAnamnesisFactResponse",
               ),
             },
@@ -1578,7 +1578,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Insights"],
       summary: "Correct a current anamnesis fact",
       description:
-        "Closes the current revision at the correction instant and creates a successor. Prior ciphertext and its half-open validity interval remain in history.",
+        "Closes the current revision at the correction instant (or at the optional `validFrom` day, never earlier than the revision it replaces) and creates a successor. The value takes the stored kind's form: a string for the closed kinds, an object with `schema: 1` for the life-circumstance kinds; any other is 422 `anamnesis.fact.invalidValue`. Prior ciphertext and its half-open validity interval remain in history.",
       parameters: [
         {
           name: "id",
@@ -1590,7 +1590,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestBody: {
         required: true,
         content: {
-          "application/json": { schema: healthProfileFactCorrectionSchema },
+          "application/json": { schema: factCorrectionSchema },
         },
       },
       responses: {
@@ -1599,7 +1599,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                healthProfileFactDtoSchema,
+                z.union([healthProfileFactDtoSchema, lifeFactRevisionSchema]),
                 "CorrectAnamnesisFactResponse",
               ),
             },
@@ -1629,7 +1629,7 @@ export const coachPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                removedHealthProfileFactSchema,
+                removedFactSchema,
                 "RemoveAnamnesisFactResponse",
               ),
             },
@@ -2127,7 +2127,7 @@ export const coachFeedbackPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({
                   id: z.string(),
-                  createdAt: z.iso.datetime({ offset: true }),
+                  createdAt: isoDateTime(),
                 }),
                 "CoachMessageFeedbackResponse",
               ),

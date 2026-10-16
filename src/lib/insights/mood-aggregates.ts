@@ -18,6 +18,11 @@
  * importing from here unchanged.
  */
 
+import {
+  computeMoodPatterns,
+  moodPatternsWire,
+  type MoodPatternFinding,
+} from "@/lib/insights/mood-pattern-cards";
 import { prisma } from "@/lib/db";
 import {
   significantPearsonCorrelation,
@@ -512,6 +517,13 @@ export interface MoodAggregates {
    * `stability` and does not publish this map.
    */
   stabilityByWindow: Record<MoodStabilityWindow, MoodStability | null>;
+  /**
+   * v1.43 (ios #116 item 6) — the gated mood patterns per selectable window
+   * (`mood-pattern-cards.ts`). Cached with the aggregate like the stability
+   * map; the route serves the chosen window as `patterns`. Optional so an
+   * aggregate cached before it existed still reads (as none found).
+   */
+  patternsByWindow?: Record<MoodStabilityWindow, MoodPatternFinding[]>;
   tags: TagSummaryRow[];
   /**
    * v1.38 — how the day's pleasantness sat on days carrying each context
@@ -579,6 +591,11 @@ export function computeMoodAggregates(args: {
    * calendar day. Defaults to Berlin for legacy / test callers.
    */
   tz?: string;
+  /**
+   * v1.43 — the mood days that carry a note, for the `notes` pattern. Read
+   * as a separate projection so the note text itself is never loaded here.
+   */
+  noteDays?: ReadonlySet<string>;
 }): MoodAggregates {
   const { entries, measurements, now } = args;
   const userPriorityJson = args.userPriorityJson ?? null;
@@ -633,6 +650,18 @@ export function computeMoodAggregates(args: {
           ),
     ]),
   ) as Record<MoodStabilityWindow, MoodStability | null>;
+  const todayKey = dayOffsetToDayKey(now, 0, tz);
+  const patternsByWindow = Object.fromEntries(
+    MOOD_STABILITY_WINDOWS.map((days) => [
+      days,
+      computeMoodPatterns({
+        entries,
+        noteDays: args.noteDays ?? new Set<string>(),
+        todayKey,
+        windowDays: days,
+      }),
+    ]),
+  ) as Record<MoodStabilityWindow, MoodPatternFinding[]>;
   const tags = computeTagSummary(entries, now);
   const structuredTags = computeStructuredTagSummary(entries, now);
   const tagInfluence = computeTagInfluence(entries, now);
@@ -715,6 +744,7 @@ export function computeMoodAggregates(args: {
     timeOfDay,
     stability,
     stabilityByWindow,
+    patternsByWindow,
     tags,
     structuredTags,
     tagInfluence,
@@ -921,9 +951,20 @@ export async function fetchMoodAggregates(
     });
   }
 
-  const [userPriorityJson, tz] = await Promise.all([
+  // v1.43 — which mood days carry a note, without reading a single note.
+  const [userPriorityJson, tz, noteRows] = await Promise.all([
     loadUserSourcePriority(userId),
     resolveUserTimezone(userId),
+    prisma.moodEntry.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        moodLoggedAt: { gte: windowCutoff },
+        OR: [{ noteEncrypted: { not: null } }, { note: { not: null } }],
+      },
+      select: { date: true },
+      distinct: ["date"],
+    }),
   ]);
 
   const aggregate = computeMoodAggregates({
@@ -932,6 +973,7 @@ export async function fetchMoodAggregates(
     now,
     userPriorityJson,
     tz,
+    noteDays: new Set(noteRows.map((row) => row.date)),
   });
 
   const tagEvidence = aggregate.tagMetricCrosstab.map((row) => ({
@@ -995,8 +1037,10 @@ export async function fetchMoodAggregates(
 export function moodInsightsWire(
   result: MoodAggregates,
   stabilityWindowDays: MoodStabilityWindow,
+  /** Names a pattern's tag in the reader's language (catalogue tags). */
+  t: (key: string) => string,
 ) {
-  const { stabilityByWindow, ...wire } = result;
+  const { stabilityByWindow, patternsByWindow, ...wire } = result;
   return {
     ...wire,
     stability:
@@ -1004,5 +1048,8 @@ export function moodInsightsWire(
         ? result.stability
         : (stabilityByWindow?.[stabilityWindowDays] ?? null),
     stabilityWindowDays,
+    // v1.43 — the patterns of the same window; an aggregate cached before
+    // they existed reads as none found until its next rebuild.
+    patterns: moodPatternsWire(patternsByWindow?.[stabilityWindowDays], t),
   };
 }

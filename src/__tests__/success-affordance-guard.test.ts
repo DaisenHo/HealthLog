@@ -92,6 +92,8 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   "src/components/admin/assistant-section.tsx": { "toast.success": 1 },
+  // v1.43 — the AI usage bounds: a settings save, not a write with counts.
+  "src/components/admin/ai-usage-section.tsx": { "toast.success": 1 },
   "src/components/admin/backups-section.tsx": { "toast.success": 4 },
   "src/components/admin/central-codex-section.tsx": { "toast.success": 2 },
   "src/components/admin/danger-zone-section.tsx": { "text-success": 1 },
@@ -104,6 +106,11 @@ const PINNED_AFFORDANCES: Record<
   // reads as an info toast instead, and the outcome itself is the status line.
   "src/components/admin/measurement-maintenance-card.tsx": {
     "toast.success": 1,
+  },
+  // Fires only on a 202: the dry run was queued, or the method was applied.
+  // The dry run's outcome itself is the status line.
+  "src/components/admin/pulse-day-mean-card.tsx": {
+    "toast.success": 2,
   },
   "src/components/admin/invite-tokens-section.tsx": {
     "text-success": 2,
@@ -370,6 +377,11 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 2,
   },
   // The saved-credentials confirmation line.
+  // Connected, a fetch queued, the home saved: confirmations of a request
+  // that wrote no record (the fetch itself reports through `health`).
+  "src/components/settings/integrations/dawarich-card.tsx": {
+    "toast.success": 3,
+  },
   "src/components/settings/integrations/credentials-form.tsx": {
     "text-success": 1,
   },
@@ -496,7 +508,17 @@ const RESULT_SURFACES: ReadonlyArray<{
     forbidsMarkers: true,
   },
   {
-    path: "src/components/records/health-profile-facts-manager.tsx",
+    path: "src/components/records/life-circumstances-manager.tsx",
+    through: /toastWrittenOutcome/,
+    forbidsMarkers: true,
+  },
+  {
+    path: "src/components/records/audit-c-panel.tsx",
+    through: /toastWrittenOutcome/,
+    forbidsMarkers: true,
+  },
+  {
+    path: "src/components/records/free-text-take-over.tsx",
     through: /toastWrittenOutcome/,
     forbidsMarkers: true,
   },

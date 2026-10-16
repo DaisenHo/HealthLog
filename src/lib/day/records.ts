@@ -29,6 +29,7 @@ import type {
   DaySectionKey,
 } from "@/lib/day/contract";
 import { prisma } from "@/lib/db";
+import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 import { listTargetsBySource } from "@/lib/links/link-service";
 import { getEvent } from "@/lib/logging/context";
 import { lastDayCovered } from "@/lib/life-events/dates";
@@ -851,6 +852,8 @@ async function assessmentsPart(frame: DayFrame): Promise<SectionPart> {
     where: {
       userId: frame.userId,
       deletedAt: null,
+      // AUDIT-C (v1.43) lives in the life circumstances, not the day's screeners.
+      instrument: { in: [...SCREENER_INSTRUMENTS] },
       takenAt: zoneSafeWindow(frame),
     },
     select: {

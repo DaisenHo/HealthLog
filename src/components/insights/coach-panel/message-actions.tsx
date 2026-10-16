@@ -18,6 +18,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   BookmarkCheck,
   BookmarkPlus,
@@ -139,8 +140,8 @@ function CopyMessageButton({
       await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error(t("insights.coach.copyMessageError"));
+    } catch (failure) {
+      showErrorToast(t("insights.coach.copyMessageError"), { cause: failure });
     }
   }, [content, strip, t]);
   // Absent where the Clipboard API is (plain-HTTP self-hosts) rather than
@@ -309,8 +310,10 @@ function RememberMessageButton({ messageId }: { messageId: string }) {
         ),
       );
     },
-    onError: () => {
-      toast.error(t("insights.coach.rememberMessage.failed"));
+    onError: (failure) => {
+      showErrorToast(t("insights.coach.rememberMessage.failed"), {
+        cause: failure,
+      });
     },
   });
 

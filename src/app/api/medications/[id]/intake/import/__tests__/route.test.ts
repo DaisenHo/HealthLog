@@ -344,6 +344,7 @@ describe("POST /api/medications/[id]/intake/import — durable kickoff", () => {
     await expect(res.json()).resolves.toEqual({
       data: null,
       error: "Medication intake import already in progress",
+      meta: { requestId: expect.any(String) },
     });
     expect(prisma.medicationIntakeImportJob.create).not.toHaveBeenCalled();
     expect(getGlobalBoss).not.toHaveBeenCalled();

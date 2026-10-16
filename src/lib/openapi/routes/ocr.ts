@@ -82,6 +82,32 @@ const extractedRow = z
         "The analyte the matched marker is (the catalog slug, e.g. `fasting-glucose` or `ldl`, or a registry-only key such as `urea`), or null when the marker does not exist yet or its name matches none. With `markerUnit` it tells a client whether a row in another unit can be converted on commit.",
     }),
     duplicateOf: z.string().nullable(),
+    biomarkerId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43 — the marker this row was matched to automatically (by name, by an alias of the account, or by a catalogue abbreviation); null without a match.",
+      ),
+    matchKind: z
+      .enum(["name", "alias", "catalog"])
+      .nullable()
+      .optional()
+      .describe("v1.43 — how `biomarkerId` was found."),
+    suggestions: z
+      .array(
+        z.object({
+          biomarkerId: z.string(),
+          name: z.string(),
+          unit: z.string(),
+          matchKind: z.enum(["catalog", "similar"]),
+        }),
+      )
+      .max(3)
+      .optional()
+      .describe(
+        "v1.43 — up to three markers to choose from when nothing matched; empty when `biomarkerId` is set.",
+      ),
   })
   .meta({
     id: "OcrExtractedRow",
@@ -151,10 +177,12 @@ const commitResponse = z
     skipped: z.array(
       z.object({
         analyte: z.string(),
-        reason: z.enum(["duplicate", "unit_mismatch"]).meta({
-          description:
-            "`duplicate`: the row matched a live reading at commit time. `unit_mismatch`: the row states a unit other than the one its marker is tracked in and the pair cannot be converted, so it was not written. A pair that can be converted is written in the marker's unit and reported with `converted: true`.",
-        }),
+        reason: z
+          .enum(["duplicate", "unit_mismatch", "unknown_biomarker"])
+          .meta({
+            description:
+              "`duplicate`: the row matched a live reading at commit time. `unit_mismatch`: the row states a unit other than the one its marker is tracked in and the pair cannot be converted, so it was not written. A pair that can be converted is written in the marker's unit and reported with `converted: true`. `unknown_biomarker` (v1.43): the row named a `biomarkerId` that is not one of the record's markers.",
+          }),
       }),
     ),
     outcome: z.enum(["empty", "failed", "partial", "success"]).meta({

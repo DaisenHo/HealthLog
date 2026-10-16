@@ -1,3 +1,5 @@
+import type { RelatedLink } from "@/lib/links/related";
+
 import type {
   ReferenceRangeOrigin,
   ReferenceRangeStatus,
@@ -58,6 +60,8 @@ export interface LabResultDto {
 /** The single-resource detail DTO — carries the decrypted note. */
 export interface LabResultDetailDto extends Omit<LabResultDto, "hasNote"> {
   note: string | null;
+  /** v1.43 — the records this reading relates to, resolved on the server. */
+  related?: RelatedLink[];
 }
 
 export interface LabResultListResponse {
@@ -95,6 +99,11 @@ export interface BiomarkerDto {
   analyteKey: string | null;
   hasContext: boolean;
   context: string | null;
+  /**
+   * v1.43 — other spellings that resolve to this marker, sorted, without its
+   * own name. Absent from an older server.
+   */
+  aliases?: string[];
   /** v1.22 — a hidden marker drops from the active list + lab-entry pickers. */
   hidden: boolean;
   createdAt: string;
@@ -103,4 +112,22 @@ export interface BiomarkerDto {
 
 export interface BiomarkerListResponse {
   biomarkers: BiomarkerDto[];
+}
+
+/** v1.43 — `POST /api/biomarkers/{id}/merge`, for the preview and the result. */
+export interface BiomarkerMergeResultDto {
+  dryRun: boolean;
+  target: BiomarkerDto;
+  sources: Array<{
+    id: string;
+    name: string;
+    unit: string;
+    readingCount: number;
+    conversion: "none" | "converted" | "refused";
+    refusal: "unknown_analyte" | "unknown_unit" | "not_finite" | null;
+  }>;
+  movedReadings: number;
+  convertedReadings: number;
+  aliasesAdded: string[];
+  mergeId: string | null;
 }

@@ -9,14 +9,29 @@
  */
 import { z } from "zod/v4";
 
-import { NUTRIENT_CATALOG, NUTRIENT_CODES } from "@/lib/nutrients/catalog";
+import {
+  NUTRIENT_CATALOG,
+  NUTRIENT_CODES,
+  SYNCABLE_NUTRIENT_CODES,
+} from "@/lib/nutrients/catalog";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 export const MAX_NUTRIENT_ENTRIES_PER_BATCH = 500;
 
 export const nutrientCodeEnum = z.enum(NUTRIENT_CODES).meta({
   id: "NutrientCode",
   description:
-    "Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine. Energy, macros and sodium/potassium are out of scope.",
+    "Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and sodium/potassium are out of scope. Decode unknown values leniently.",
+});
+
+/**
+ * v1.43 — the codes the batch accepts: the catalogue without the
+ * supplement-only codes, so the HealthKit sync contract stays unchanged.
+ */
+export const syncableNutrientCodeEnum = z.enum(SYNCABLE_NUTRIENT_CODES).meta({
+  id: "SyncableNutrientCode",
+  description:
+    "A nutrient code HealthKit may send: the 24 Dietary vitamin/mineral types plus water and caffeine. Never `dha` or `epa`.",
 });
 
 /**
@@ -30,7 +45,7 @@ export const nutrientCodeEnum = z.enum(NUTRIENT_CODES).meta({
 export const nutrientEntrySchema = z
   .object({
     day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    nutrient: nutrientCodeEnum,
+    nutrient: syncableNutrientCodeEnum,
     unit: z.string().min(1).max(10),
     amount: z.number().finite().min(0),
     externalSourceVersion: z.string().min(1).max(120).optional(),
@@ -88,6 +103,46 @@ export const nutrientOverviewQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(365).default(14),
 });
 
+/**
+ * v1.43 — the tolerable upper intake level of a nutrient (EFSA), applied by
+ * the server to the day's total or to the supplemental share as `scope` says.
+ */
+export const nutrientUpperLimitSchema = z
+  .object({
+    value: z.number(),
+    unit: z.string(),
+    scope: z.enum(["total", "supplemental"]),
+    form: z
+      .enum(["retinol", "folic_acid", "magnesium_salts", "alpha_tocopherol"])
+      .nullable()
+      .describe(
+        "v1.43 — the chemical form the level is set for, where narrower than the nutrient: `retinol` (vitamin A: preformed retinol only, beta-carotene does not count), `folic_acid`, `magnesium_salts` (readily dissociable salts in supplements), `alpha_tocopherol`. `null` where the level covers the nutrient as such. Phrase it in the reader's language; skip an unknown value.",
+      ),
+    source: z
+      .string()
+      .describe(
+        "The bare citation (EFSA overview and the opinion it rests on), not prose. Every level here is the adult one.",
+      ),
+  })
+  .meta({
+    id: "NutrientUpperLimit",
+    description:
+      "The tolerable upper intake level, with the unit, whether it applies to the total intake or to the supplemental share only, and the cited source. `null` where no level is established.",
+  });
+
+/** v1.43 — a day total split by where it came from. */
+export const nutrientBySourceSchema = z
+  .object({
+    APPLE_HEALTH: z.number().optional(),
+    MANUAL: z.number().optional(),
+    SUPPLEMENT: z.number().optional(),
+  })
+  .meta({
+    id: "NutrientAmountBySource",
+    description:
+      "The amount split by source: synced from Apple Health, entered by hand, and counted from taken supplement doses. A source with nothing is absent.",
+  });
+
 export const nutrientOverviewSchema = z
   .object({
     windowDays: z.number().int().min(1),
@@ -98,11 +153,25 @@ export const nutrientOverviewSchema = z
         latestDay: z.string(),
         latestAmount: z.number(),
         daysWithData: z.number().int().min(1),
+        latestBySource: nutrientBySourceSchema
+          .optional()
+          .describe("v1.43 — `latestAmount` split by source."),
+        upperLimit: nutrientUpperLimitSchema
+          .nullable()
+          .optional()
+          .describe("v1.43 — the nutrient's upper intake level, or null."),
+        latestAboveUpperLimit: z
+          .boolean()
+          .nullable()
+          .optional()
+          .describe(
+            "v1.43 — whether the latest day is above the upper limit; null without one.",
+          ),
       }),
     ),
     lastAttempt: z
       .object({
-        at: z.iso.datetime({ offset: true }),
+        at: isoDateTime(),
         topReason: z.string(),
       })
       .nullable()
@@ -177,8 +246,27 @@ export const nutrientDailySeriesSchema = z
     nutrient: nutrientCodeEnum,
     unit: z.string(),
     windowDays: z.number().int().min(1),
-    days: z.array(z.object({ day: z.string(), amount: z.number() })),
+    days: z.array(
+      z.object({
+        day: z.string(),
+        amount: z.number(),
+        bySource: nutrientBySourceSchema
+          .optional()
+          .describe("v1.43 — the day's amount split by source."),
+        aboveUpperLimit: z
+          .boolean()
+          .nullable()
+          .optional()
+          .describe(
+            "v1.43 — whether the day is above the upper limit; null without one.",
+          ),
+      }),
+    ),
     reference: resolvedNutrientReferenceSchema.nullable(),
+    upperLimit: nutrientUpperLimitSchema
+      .nullable()
+      .optional()
+      .describe("v1.43 — the nutrient's upper intake level, or null."),
   })
   .meta({
     id: "NutrientDailySeries",

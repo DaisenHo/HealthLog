@@ -19,6 +19,7 @@
  * twin was in the YAML, which left grant-scope reviewers unable to see the
  * cross-section read at all.
  */
+import { moodPattern } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
@@ -61,6 +62,7 @@ import {
   updatedAtTokenField,
 } from "./shared";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Request schemas — annotated for spec emission ────────────────────
 //
@@ -302,7 +304,7 @@ export const moodContextWire = z
       .max(5)
       .nullish()
       .describe("-5 (clearly bad) to +5 (clearly good)."),
-    eventAt: z.iso.datetime({ offset: true }).nullish(),
+    eventAt: isoDateTime().nullish(),
     note: z
       .string()
       .max(500)
@@ -373,9 +375,7 @@ const bulkMoodEntry = z
       .describe(
         "The day's context. Absent leaves a stored context untouched on a re-post; an empty one removes it.",
       ),
-    moodLoggedAt: z.iso
-      .datetime({ offset: true })
-      .describe("ISO instant the entry was logged."),
+    moodLoggedAt: isoDateTime().describe("ISO instant the entry was logged."),
     source: moodSourceEnum.optional().describe("Defaults to MANUAL."),
     externalId: z
       .string()
@@ -514,16 +514,16 @@ const moodEntryDto = z
       .string()
       .nullable()
       .describe("The sync client's source-stable dedup id, or null."),
-    moodLoggedAt: z.iso.datetime({ offset: true }),
+    moodLoggedAt: isoDateTime(),
     tz: z
       .string()
       .nullable()
       .describe(
         `IANA zone the \`date\` label is anchored to. Null on legacy rows (read as ${DEFAULT_TIMEZONE}).`,
       ),
-    syncedAt: z.iso.datetime({ offset: true }),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    syncedAt: isoDateTime(),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
     syncVersion: z
       .number()
       .int()
@@ -711,7 +711,7 @@ const moodPrognosisPresent = z.object({
       "Complete days the fit used. Display it WHEREVER `predicted` is displayed: a value built from 30 days and one built from 300 look identical otherwise.",
     ),
   modelVersion: z.string(),
-  computedAt: z.iso.datetime({ offset: true }),
+  computedAt: isoDateTime(),
   ageDays: z
     .number()
     .int()
@@ -1196,6 +1196,12 @@ const moodAggregatesResponse = z
       )
       .describe(
         "Mood against five health channels, keyed `sleep`, `steps`, `pulse`, `weight`, `bloodPressureSystolic`. Every key is always present; an empty channel carries `result: null` with no points.",
+      ),
+    patterns: z
+      .array(moodPattern)
+      .optional()
+      .describe(
+        "v1.43 — the patterns that passed the gate over the `?days` window, on the account's mood day. Empty means none was found.",
       ),
   })
   .meta({

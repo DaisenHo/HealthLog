@@ -83,7 +83,8 @@ export async function buildMedicationsList(
   ] = await Promise.all([
     prisma.medication.findMany({
       where: { userId },
-      include: { schedules: true },
+      // v1.43 — the ingredient count only, for `hasIngredients`.
+      include: { schedules: true, _count: { select: { ingredients: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.medicationIntakeEvent.groupBy({
@@ -310,8 +311,12 @@ export async function buildMedicationsList(
             liveSchedulesDto,
             Number(m.unitsPerDose),
           );
+    const { _count: counts, ...row } = m;
     return {
-      ...m,
+      ...row,
+      // v1.43 — whether a composition per unit is stored; the detail read
+      // carries the composition itself.
+      hasIngredients: counts.ingredients > 0,
       // v1.16.12 — Decimal → number so the wire stays a JSON number, not
       // the string Prisma would otherwise serialise a Decimal to.
       unitsPerDose: Number(m.unitsPerDose),

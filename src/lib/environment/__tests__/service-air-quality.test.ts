@@ -113,9 +113,6 @@ beforeEach(() => {
   vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "");
   vi.stubEnv("ENCRYPTION_KEY", "d".repeat(64));
   db.user = {
-    homeLat: null,
-    homeLon: null,
-    homeLabel: null,
     homeLocationEncrypted: sealLocation({
       lat: 51.48,
       lon: 7.21,
@@ -146,9 +143,6 @@ describe("fetchAndStoreEnvironment", () => {
       {
         startDate: "2026-05-02",
         endDate: "2026-05-03",
-        lat: null,
-        lon: null,
-        label: null,
         locationEncrypted: damaged,
       },
     ];
@@ -189,10 +183,10 @@ describe("fetchAndStoreEnvironment", () => {
       expect([call.lat, call.lon]).toEqual([51.5, 7.2]);
     }
     const { create } = db.upserts[0];
+    // The location rides sealed only; no readable column exists to write.
+    expect(create).not.toHaveProperty("lat");
+    expect(create).not.toHaveProperty("locationLabel");
     expect(create).toMatchObject({
-      lat: null,
-      lon: null,
-      locationLabel: null,
       source: "HOME",
       apparentMax: 25,
       pm25Mean: 9.5,
@@ -260,9 +254,6 @@ describe("fetchAndStoreEnvironment", () => {
       {
         startDate: "2026-05-01",
         endDate: "2026-05-02",
-        lat: null,
-        lon: null,
-        label: null,
         locationEncrypted: sealLocation({
           lat: 38.72,
           lon: -9.14,
@@ -290,16 +281,10 @@ describe("fillAirQualityGaps", () => {
     db.days = [
       {
         date: "2026-05-03",
-        lat: null,
-        lon: null,
-        locationLabel: null,
         locationEncrypted: sealed,
       },
       {
         date: "2026-05-02",
-        lat: null,
-        lon: null,
-        locationLabel: null,
         locationEncrypted: sealed,
       },
     ];

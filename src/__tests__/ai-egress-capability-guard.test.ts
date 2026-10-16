@@ -115,6 +115,11 @@ const EGRESS_SITES: Record<string, EgressSite> = {
     reason:
       "Document extraction/indexing; reached from the document routes and the index jobs, which resolve `documentAi` first.",
   },
+  "lib/medications/ingredients/label-extract.ts": {
+    recheck: false,
+    reason:
+      "Supplement label read (v1.43); reached from the background run worker (`lib/jobs/document-ai-run.ts`), which re-checks `supplementLabel` for the picked provider, for a label the ingredients extract route queued under that capability.",
+  },
   "lib/labs/ocr-extract.ts": {
     recheck: false,
     reason:

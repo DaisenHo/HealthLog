@@ -23,19 +23,22 @@ import { decryptAllergyReaction } from "@/lib/doctor-report-helpers";
 import type { DoctorReportData } from "@/lib/doctor-report-types";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { decryptHealthProfileFactValue } from "@/lib/profile/health-facts";
+import { loadLifeClinicalSummary } from "@/lib/profile/life-circumstances";
 import {
   emergencyProfileHasContent,
   readEmergencyProfile,
 } from "@/lib/profile/emergency-profile";
-import type {
-  HealthProfileFactKind,
-  HealthProfileFactValue,
+import {
+  HEALTH_PROFILE_FACT_KINDS,
+  type HealthProfileFactKind,
+  type HealthProfileFactValue,
 } from "@/lib/validations/health-profile-facts";
 
 /**
  * Structured lab results over the window, reduced to the latest reading per
- * analyte with a count, so the report is a concise panel rather than a raw
- * dump. Analyte keys fold case-insensitively.
+ * marker with a count, so the report is a concise panel rather than a raw
+ * dump. Readings group by their biomarker and carry its name; a legacy
+ * unlinked reading groups by its own name, case-insensitively.
  */
 export async function loadLabResults(
   userId: string,
@@ -58,6 +61,8 @@ export async function loadLabResults(
       sourceReferenceText: true,
       sourceUnit: true,
       takenAt: true,
+      biomarkerId: true,
+      biomarker: { select: { name: true, panel: true } },
     },
   });
   const byAnalyte = new Map<
@@ -65,7 +70,13 @@ export async function loadLabResults(
     NonNullable<DoctorReportData["labResults"]>[number]
   >();
   for (const r of rows) {
-    const key = r.analyte.toLowerCase();
+    // One line per marker: readings filed under one biomarker are one series
+    // whatever each report printed (a merge keeps the printed `analyte` on
+    // every reading), and the marker's own name heads it. A legacy unlinked
+    // reading still groups by its name.
+    const key = r.biomarkerId
+      ? `bm:${r.biomarkerId}`
+      : `analyte:${r.analyte.toLowerCase()}`;
     const prev = byAnalyte.get(key);
     // The row already stamps the catalog band it was written under; the
     // reading's own report window, when present, is what the physician read
@@ -77,8 +88,8 @@ export async function loadLabResults(
       r,
     );
     byAnalyte.set(key, {
-      panel: r.panel,
-      analyte: r.analyte,
+      panel: r.biomarker?.panel ?? r.panel,
+      analyte: r.biomarker?.name ?? r.analyte,
       value: r.value,
       valueText: r.valueText,
       unit: r.unit,
@@ -426,7 +437,7 @@ export async function loadEmergency(
 export async function loadAnamnesis(
   userId: string,
 ): Promise<NonNullable<DoctorReportData["anamnesis"]>> {
-  const [profile, factRows] = await Promise.all([
+  const [profile, factRows, life] = await Promise.all([
     prisma.userHealthProfile.findUnique({
       where: { userId },
       select: { conditionsEncrypted: true },
@@ -434,11 +445,15 @@ export async function loadAnamnesis(
     prisma.healthProfileFactRevision.findMany({
       where: {
         userId,
+        // The three closed kinds; the life-circumstance kinds arrive through
+        // `loadLifeClinicalSummary` with their own codec.
+        kind: { in: [...HEALTH_PROFILE_FACT_KINDS] },
         validUntil: null,
         supersededByRevisionId: null,
       },
       select: { kind: true, valueEncrypted: true },
     }),
+    loadLifeClinicalSummary(userId),
   ]);
 
   let conditions: string | null = null;
@@ -483,5 +498,6 @@ export async function loadAnamnesis(
       DoctorReportData["anamnesis"]
     >["shiftSchedule"],
     unreadableFacts,
+    life,
   };
 }

@@ -47,6 +47,7 @@ const CONTRACT: Record<AiUnavailableReason, [number, string]> = {
   not_permitted_for_record: [403, "ai.record.notPermitted"],
   module_disabled: [403, "module.disabled"],
   user_disabled: [403, "module.disabled"],
+  usage_level: [403, "ai.usage.levelTooLow"],
   no_provider: [422, "ai.provider.none"],
   consent_required: [403, "consent.ai.required"],
 };
@@ -73,6 +74,18 @@ describe("the refusal table", () => {
         `assistant.disabled.${AI_CAPABILITIES[key].operatorSwitch}`,
       );
     }
+  });
+
+  it("names the level a usage refusal needs (#1217)", () => {
+    expect(aiRefusal("supplementLabel", "usage_level")).toEqual({
+      status: 403,
+      meta: {
+        errorCode: "ai.usage.levelTooLow",
+        capability: "supplementLabel",
+        reason: "usage_level",
+        requiredLevel: "standard",
+      },
+    });
   });
 
   it("keeps the code shipped clients know for the Coach", () => {
@@ -137,6 +150,7 @@ describe("apiHandler renders it", () => {
     expect(body.data).toBeNull();
     expect(typeof body.error).toBe("string");
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "consent.ai.required",
       capability: "coach",
       reason: "consent_required",

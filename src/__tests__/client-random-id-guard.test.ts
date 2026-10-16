@@ -47,8 +47,6 @@ const SKIP_DIRS = new Set([
  * runs on the server where the property always exists.
  */
 const SERVER_SIDE_EXEMPT = new Set([
-  // Next middleware — runs on the edge runtime, never in the page.
-  "src/proxy.ts",
   // The one module allowed to reach for the platform call.
   "src/lib/random-id.ts",
 ]);

@@ -11,6 +11,8 @@ export const coachKeys = {
   coachAboutMeQuestions: () => ["coach-about-me", "questions"] as const,
   /** Encrypted, effective-dated structured anamnesis facts. */
   healthProfileFacts: () => ["health-profile-facts"] as const,
+  /** v1.43 (#614) — the life-circumstance sections, derived values and AUDIT-C. */
+  lifeCircumstances: () => ["life-circumstances"] as const,
   /** v1.16.1 — unseen proactive-nudge state for the floating Coach bubble. */
   coachNudgeStatus: () => ["coach-nudge-status"] as const,
   /** v1.18.6 (CCH-03) — mark-Coach-seen mutation (clears the FAB unread dot). */

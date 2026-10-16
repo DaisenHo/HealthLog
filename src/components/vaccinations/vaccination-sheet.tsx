@@ -20,7 +20,7 @@
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -37,6 +37,8 @@ import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useTranslations } from "@/lib/i18n/context";
+import { RelatedRecordsBlock } from "@/components/links/related-records";
+import type { RelatedLink } from "@/lib/links/related";
 import {
   useVaccination,
   useVaccinationMutations,
@@ -100,7 +102,7 @@ export function VaccinationSheet({
       const message =
         err instanceof Error ? err.message : t("vaccinations.saveFailed");
       setError(message);
-      toast.error(message);
+      showErrorToast(message, { cause: err });
     }
   };
 
@@ -149,6 +151,16 @@ export function VaccinationSheet({
               : undefined
           }
         />
+        {/* v1.43 — the visit the dose was given at and anything else it
+            relates to; its pages have their own picker above. */}
+        {vaccination ? (
+          <RelatedRecordsBlock
+            related={
+              (detail.data as { related?: RelatedLink[] } | undefined)?.related
+            }
+            omitKinds={["document"]}
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-destructive text-sm">
             {error}
@@ -188,8 +200,10 @@ export function VaccinationSheet({
                   onClick={() => {
                     remove.mutate(vaccination.id, {
                       onSuccess: () => onOpenChange(false),
-                      onError: () =>
-                        toast.error(t("vaccinations.deleteFailed")),
+                      onError: (failure) =>
+                        showErrorToast(t("vaccinations.deleteFailed"), {
+                          cause: failure,
+                        }),
                     });
                   }}
                 >

@@ -250,7 +250,12 @@ describe("POST /api/mental-health/assessments", () => {
     expect(body.data.assessment.id).toBe("mha_dup");
     expect(prisma.mentalHealthAssessment.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: "user-1", externalId: "outbox-7f3c" },
+        // Screeners only: an AUDIT-C entry (v1.43) is never a dedup match.
+        where: {
+          userId: "user-1",
+          externalId: "outbox-7f3c",
+          instrument: { in: ["PHQ9", "GAD7", "WHO5", "SCI"] },
+        },
       }),
     );
     expect(prisma.mentalHealthAssessment.create).not.toHaveBeenCalled();

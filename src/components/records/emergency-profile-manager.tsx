@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -84,7 +84,8 @@ export function EmergencyProfileManager() {
       queryClient.setQueryData(queryKeys.emergencyProfile(), data);
       toastWrittenOutcome("success", t("records.emergency.savedToast"));
     },
-    onError: () => toast.error(t("records.emergency.saveError")),
+    onError: (failure) =>
+      showErrorToast(t("records.emergency.saveError"), { cause: failure }),
   });
 
   if (query.isError) {

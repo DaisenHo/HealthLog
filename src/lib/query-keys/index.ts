@@ -250,6 +250,9 @@ export const medicationDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  // v1.43 — a taken supplement dose adds to the day's micronutrients
+  // (`source = SUPPLEMENT`), so a dose write evicts the nutrient reads.
+  queryKeys.nutrientsRoot(),
 ];
 
 /**

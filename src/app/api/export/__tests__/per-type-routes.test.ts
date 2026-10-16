@@ -62,6 +62,7 @@ vi.mock("@/lib/db", () => ({
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     coachConversation: { findMany: vi.fn().mockResolvedValue([]) },
     moodTagCategory: { findMany: vi.fn().mockResolvedValue([]) },
     moodTagHidden: { findMany: vi.fn().mockResolvedValue([]) },
@@ -77,6 +78,11 @@ vi.mock("@/lib/db", () => ({
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
     lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     // v1.15.0 — cycle tables read by the full-backup helper.
     cycleProfile: { findUnique: vi.fn() },
     menstrualCycle: { findMany: vi.fn() },
@@ -86,6 +92,8 @@ vi.mock("@/lib/db", () => ({
     // helper now also reads (`buildRecordsBackupSection`).
     labResult: { findMany: vi.fn() },
     biomarker: { findMany: vi.fn() },
+    biomarkerAlias: { findMany: vi.fn() },
+    biomarkerMerge: { findMany: vi.fn() },
     illnessEpisode: { findMany: vi.fn() },
     allergy: { findMany: vi.fn() },
     familyHistoryEntry: { findMany: vi.fn() },
@@ -135,6 +143,8 @@ beforeEach(() => {
   // `resetAllMocks` clears the inline defaults, and the full-backup payload
   // builder reads these unconditionally.
   vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerMerge.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medicationCategoryLabel.findMany).mockResolvedValue(
     [] as never,
   );
@@ -175,6 +185,21 @@ beforeEach(() => {
   vi.mocked(prisma.ecgRecording.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.lifeEvent.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.labResultDocumentLink.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.encounterMedicationLink.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.encounterVaccinationLink.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.medicationDocumentLink.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.medicationConditionLink.findMany).mockResolvedValue(
+    [] as never,
+  );
   vi.mocked(prisma.moodTagCategory.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.moodTagHidden.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.mentalHealthAssessment.findMany).mockResolvedValue(
@@ -191,6 +216,7 @@ beforeEach(() => {
   vi.mocked(prisma.environmentTravelLocation.findMany).mockResolvedValue(
     [] as never,
   );
+  vi.mocked(prisma.dawarichDay.findMany).mockResolvedValue([] as never);
 });
 
 afterEach(() => {

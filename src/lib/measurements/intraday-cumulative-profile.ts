@@ -110,6 +110,14 @@ export interface CumulativeDayFold {
 export interface CumulativeDayProfile extends CumulativeDayFold {
   /** Whether this came off the table or was folded live from raw rows. */
   origin: "stored" | "live";
+  /**
+   * v1.43 (ios #77) — what the running totals were built from: the fold of
+   * single samples, or the hours the phone posted (`intraday-hour-buckets`).
+   * `sampleCount` is the number of posted hours for the latter.
+   */
+  basis: "PER_SAMPLE" | "HOUR_BUCKETS";
+  /** Posted hours behind the day; null for a fold of single samples. */
+  bucketCount: number | null;
 }
 
 /**
@@ -207,8 +215,25 @@ export async function mergeIntradayCumulativeProfile(
 
   const existing = await tx.intradayCumulativeProfile.findUnique({
     where: { userId_type_dateKey: key },
-    select: { hourlyCumulative: true, sampleCount: true, timezone: true },
+    select: {
+      hourlyCumulative: true,
+      sampleCount: true,
+      timezone: true,
+      basis: true,
+    },
   });
+
+  // v1.43 (ios #77) — a day built from the hours the phone posted keeps that
+  // shape: the posted hours already account for every sample, so adding a
+  // fold of the same samples would count the day twice. The fold is dropped,
+  // exactly as the samples it came from are about to be.
+  if (
+    existing !== null &&
+    existing.basis === "HOUR_BUCKETS" &&
+    existing.timezone === increment.timezone
+  ) {
+    return;
+  }
 
   const reusable =
     existing !== null &&
@@ -227,6 +252,11 @@ export async function mergeIntradayCumulativeProfile(
     dayTotal: hourlyCumulative[PROFILE_HOURS - 1],
     sampleCount,
     timezone: increment.timezone,
+    // A profile cut on another clock is replaced whole, its posted hours
+    // included (`basis` stays the default for a day under the threshold).
+    ...(existing !== null && existing.timezone !== increment.timezone
+      ? { hourlyIncrements: [], bucketCount: null, basis: "PER_SAMPLE" }
+      : {}),
   };
 
   await tx.intradayCumulativeProfile.upsert({
@@ -300,6 +330,8 @@ export async function readCumulativeDayProfiles(args: {
       hourlyCumulative: true,
       dayTotal: true,
       sampleCount: true,
+      basis: true,
+      bucketCount: true,
     },
   });
 
@@ -316,6 +348,8 @@ export async function readCumulativeDayProfiles(args: {
       dayTotal: row.dayTotal,
       sampleCount: row.sampleCount,
       origin: "stored",
+      basis: row.basis === "HOUR_BUCKETS" ? "HOUR_BUCKETS" : "PER_SAMPLE",
+      bucketCount: row.bucketCount,
     });
   }
 
@@ -326,7 +360,14 @@ export async function readCumulativeDayProfiles(args: {
     if (dateKey < startDateKey) break;
     if (byDay.has(dateKey)) continue;
     const folded = await foldLiveDay(db, userId, type, dateKey, timezone);
-    if (folded) byDay.set(dateKey, { ...folded, origin: "live" });
+    if (folded) {
+      byDay.set(dateKey, {
+        ...folded,
+        origin: "live",
+        basis: "PER_SAMPLE",
+        bucketCount: null,
+      });
+    }
   }
 
   return [...byDay.values()].sort((a, b) => (a.dateKey < b.dateKey ? 1 : -1));

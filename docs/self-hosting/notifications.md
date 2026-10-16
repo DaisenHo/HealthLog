@@ -472,7 +472,7 @@ once per event type, and every channel carries the same target:
 | Medication reminder, low supply, shared dose | `/medications` (low supply opens the medication)                                   |
 | Check-up and measurement reminders           | `/checkups`                                                                        |
 | Proactive Coach nudge                        | the Coach conversation it started                                                  |
-| Cycle reminders                              | `/cycle` (nothing with discreet notifications on)                                  |
+| Cycle reminders                              | `/cycle` (the dashboard with discreet notifications on)                            |
 | New sign-in                                  | Settings, Security                                                                 |
 | Integration sync failing                     | Settings, Integrations (an admin alert about another account opens the admin page) |
 | Illness red flag                             | the illness episode                                                                |
@@ -496,8 +496,11 @@ How each channel carries it:
 ntfy, Telegram, the webhook and email need an absolute link, built from
 `APP_URL` (or `NEXT_PUBLIC_APP_URL`). Without one those channels deliver as
 before, just without a link. A notification about a profile you look after
-as a Guardian carries no deep link, because your session opens on your own
-record.
+as a Guardian opens the dashboard rather than the profile's page, because
+your session opens on your own record and the record switcher lives there.
+A discreet notification opens the dashboard as well, so its link names
+nothing. The silent background sync push for medication intake is the only
+notification without a link.
 
 ### Health figures in notifications
 
@@ -537,6 +540,23 @@ token is the only credential, so it is built to be harmless on its own:
 
 The buttons need `APP_URL`, because the ntfy app calls the URL from your
 phone. Your phone has to reach the instance at that address.
+
+### Quick answers behind forward auth
+
+If the instance sits behind a forward-auth gateway (Authelia, Authentik,
+oauth2-proxy, Cloudflare Access and the like), the gateway answers the
+button's request with its login page and the answer is never logged: the
+ntfy app has no session with the gateway. Exempt the one path from the
+gateway:
+
+```
+/api/notifications/action/*
+```
+
+The route does not rely on the gateway. The signed token is its only
+credential, it is rate-limited before the token is read, and it can log one
+mood answer for one account and nothing else. Every other path stays behind
+the gateway.
 
 What the token cannot protect against is the topic itself. The button URLs,
 token included, travel through your ntfy server inside the message, and the

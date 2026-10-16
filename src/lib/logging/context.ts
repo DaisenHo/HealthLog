@@ -2,6 +2,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { WideEvent } from "./types";
 import { WideEventBuilder } from "./event-builder";
 import { registerSourcePriorityParseObserver } from "@/lib/validations/source-priority";
+import {
+  DATETIME_NO_SECONDS_COUNTER,
+  registerDatetimeNoSecondsObserver,
+} from "@/lib/validations/datetime";
 
 /** AsyncLocalStorage fuer den aktuellen Request-Kontext */
 export const eventStorage = new AsyncLocalStorage<WideEventBuilder>();
@@ -36,4 +40,17 @@ export function annotate(fields: {
 // context.
 registerSourcePriorityParseObserver((fields) => {
   annotate(fields);
+});
+
+// v1.43 — count every request instant refused for lacking seconds, per wide
+// event, so a client still on a minute-precision encoder is visible in the
+// logs (`meta["validation.datetime.no_seconds"]`) before its users report
+// the 422. Same bundle-safe registration as the breadcrumb above.
+const noSecondsCounts = new WeakMap<WideEventBuilder, number>();
+registerDatetimeNoSecondsObserver(() => {
+  const evt = getEvent();
+  if (!evt) return;
+  const next = (noSecondsCounts.get(evt) ?? 0) + 1;
+  noSecondsCounts.set(evt, next);
+  evt.addMeta(DATETIME_NO_SECONDS_COUNTER, next);
 });

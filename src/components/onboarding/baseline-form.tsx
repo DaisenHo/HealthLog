@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   BaselineFields,
@@ -234,7 +235,9 @@ export function BaselineForm({
         await onConfirmed();
       },
       (err) =>
-        toast.error(localizedApiError(err, t, "onboarding.errorGeneric")),
+        showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+          cause: err,
+        }),
     );
   }
 

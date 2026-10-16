@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { INJECTION_SITE_KEYS } from "@/lib/medications/injection-sites";
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { hhmmToMinutes } from "@/lib/medications/scheduling/hhmm";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * v1.8.5 — the eight injection-site enum values, mirrored from the
@@ -244,7 +245,7 @@ export const TAKEN_AT_MAX_AGE_MS = 5 * 365 * 24 * 60 * 60 * 1000;
  * 1900 floor. The 5-min clock-skew tolerance is the shared default.
  */
 export const boundedTakenAtSchema = validateEntryInstant(
-  z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+  isoDateTime().transform((s) => new Date(s)),
   {
     maxAgeMs: TAKEN_AT_MAX_AGE_MS,
     // Preserve the established wording so the iOS contract + tests stay stable.

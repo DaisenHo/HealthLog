@@ -13,7 +13,7 @@ import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Activity, TrendingUp } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { SegmentedToggle } from "@/components/medications/detail/segmented-toggle";
@@ -434,12 +434,14 @@ function RetargetControl({
       await apiPut(`/api/medications/${medicationId}/efficacy/target`, body);
       onChanged();
       if (clear) setValue("");
-    } catch {
+    } catch (failure) {
       // v1.30 UI audit (M9) — the save previously failed silently: the
       // buttons re-enabled with no toast, no inline alert, and the
       // rejection escaped as an unhandled promise. The user could not
       // tell the override was not saved.
-      toast.error(t("medications.efficacy.retarget.error"));
+      showErrorToast(t("medications.efficacy.retarget.error"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }

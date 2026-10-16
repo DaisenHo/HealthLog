@@ -30,6 +30,7 @@ vi.mock("@/lib/db", () => ({
     // channels in (read from EnvironmentContext); default empty so no env
     // channel produces a point.
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     customMetric: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
   },
@@ -159,6 +160,7 @@ beforeEach(() => {
   ).mockResolvedValue([]);
   vi.mocked(prisma.customMetric.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.dawarichDay.findMany).mockResolvedValue([] as never);
   vi.mocked(hadFindingsBeforeSeasonalAdjustment).mockResolvedValue(false);
 });
 

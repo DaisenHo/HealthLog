@@ -21,6 +21,12 @@ import {
   OIDC_STATE_COOKIE_PATH,
   OIDC_STATE_TTL_MS,
 } from "@/lib/auth/oidc-cookie";
+import {
+  CLAIM_COOKIE,
+  CLAIM_ERROR_PATH,
+  readClaimCookie,
+} from "@/lib/managed-profiles/claim-cookie";
+import { isHandoverUsable } from "@/lib/managed-profiles/handover";
 
 /**
  * Redirects the browser to the configured OIDC provider's authorization
@@ -40,15 +46,33 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // nothing — an error redirect carries no code, ticket, or session (spec §1).
   const isNative = req.nextUrl.searchParams.get("client") === "native";
   const appCodeChallenge = req.nextUrl.searchParams.get("code_challenge");
+  // v1.43 (#959) — `intent=claim`: the sign-in claims a managed profile. The
+  // link and the username ride the sealed `hl_claim` cookie set by
+  // `POST /api/auth/claim/sso`, never this URL; the intent only says to look
+  // for it. Web only.
+  const isClaim = req.nextUrl.searchParams.get("intent") === "claim";
 
   // Native-aware error redirect: the scheme for a native start, the web login
-  // page otherwise. Machine-readable `error=<reason>` in both.
+  // page otherwise, and the claim page for a claim. Machine-readable
+  // `error=<reason>` in all three.
   const loginError = (reason: string): NextResponse => {
     if (isNative) {
       return NextResponse.redirect(buildNativeCallbackUrl({ error: reason }));
     }
+    if (isClaim) {
+      return NextResponse.redirect(
+        oidcAppUrl(`${CLAIM_ERROR_PATH}?error=${reason}`),
+      );
+    }
     return NextResponse.redirect(oidcAppUrl(`/auth/login?error=${reason}`));
   };
+
+  // The app never claims a profile: the claim runs in a browser, and the new
+  // owner signs in to the app afterwards through the ordinary native leg.
+  if (isClaim && isNative) {
+    annotate({ meta: { reason: "claim_on_native" } });
+    return loginError("oidc_invalid_request");
+  }
 
   const config = getOidcConfig();
   if (!config) {
@@ -90,6 +114,19 @@ export const GET = apiHandler(async (req: NextRequest) => {
     return loginError("oidc_invalid_request");
   }
 
+  // A claim needs its sealed cookie and a link that is still usable. Checked
+  // here, after the rate limit, so a dead link is told before the round trip
+  // to the provider; the callback checks both again.
+  let claimBinding: string | null = null;
+  if (isClaim) {
+    const claim = readClaimCookie(req.cookies.get(CLAIM_COOKIE)?.value);
+    if (!claim || !(await isHandoverUsable(claim.handoverId))) {
+      annotate({ meta: { reason: "claim_expired" } });
+      return loginError("claim_expired");
+    }
+    claimBinding = claim.binding;
+  }
+
   let metadata;
   try {
     metadata = await discoverOidcMetadata(config);
@@ -104,10 +141,12 @@ export const GET = apiHandler(async (req: NextRequest) => {
   const codeChallenge = s256Challenge(codeVerifier);
 
   // `next` is a post-login WEB path, meaningless to the app — pin it to "/" on
-  // the native branch (one less input to sanitize).
-  const safeNext = isNative
-    ? "/"
-    : sanitizeOidcNextPath(req.nextUrl.searchParams.get("next"), req.url);
+  // the native branch (one less input to sanitize). A claim lands on a fixed
+  // page the callback names, so its `next` is pinned too.
+  const safeNext =
+    isNative || isClaim
+      ? "/"
+      : sanitizeOidcNextPath(req.nextUrl.searchParams.get("next"), req.url);
 
   const redirectUri = getOidcRedirectUri();
   const authorizationUrl = buildAuthorizationUrl({
@@ -117,6 +156,8 @@ export const GET = apiHandler(async (req: NextRequest) => {
     nonce,
     codeChallenge,
     redirectUri,
+    // A claim only; an ordinary sign-in keeps single sign-on.
+    forceLogin: claimBinding !== null,
   });
 
   const response = NextResponse.redirect(authorizationUrl);
@@ -132,6 +173,12 @@ export const GET = apiHandler(async (req: NextRequest) => {
       next: safeNext,
       ...(isNative
         ? { native: true as const, appCodeChallenge: appCodeChallenge! }
+        : {}),
+      // The claim's binding, inside the same tamper-authenticated blob: the
+      // callback admits the claim only when the cookie it carries back holds
+      // this exact value.
+      ...(claimBinding !== null
+        ? { intent: "claim" as const, claimBinding }
         : {}),
     }),
   );

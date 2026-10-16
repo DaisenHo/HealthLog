@@ -457,6 +457,7 @@ export async function syncUserMeasurements(
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),
+      { source: "sync" },
     ).catch((err) => {
       getEvent()?.addWarning(
         `withings: status-insight invalidate failed for ${userId}: ${err}`,

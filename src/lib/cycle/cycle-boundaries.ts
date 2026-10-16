@@ -366,6 +366,8 @@ export async function removeCycleStartedOn(
   cycleId: string;
   reanchored: ReanchoredCycle | null;
   restoredCycleIds: string[];
+  /** The same starts with their dates, for the answer to the client. */
+  restored: Array<{ cycleId: string; startDate: string }>;
 } | null> {
   const opened = await db.menstrualCycle.findFirst({
     where: { userId, deletedAt: null, startDate: date },
@@ -432,6 +434,10 @@ export async function removeCycleStartedOn(
     cycleId: opened.id,
     reanchored,
     restoredCycleIds: restored.map((row) => row.id),
+    restored: restored.map((row) => ({
+      cycleId: row.id,
+      startDate: row.startDate,
+    })),
   };
 }
 

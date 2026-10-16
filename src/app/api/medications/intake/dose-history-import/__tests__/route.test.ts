@@ -232,6 +232,7 @@ describe("POST /api/medications/intake/dose-history-import", () => {
     expect(res.status).toBe(422);
     const body = await res.json();
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "missing_required_columns",
       detail: "Medication, Status",
     });

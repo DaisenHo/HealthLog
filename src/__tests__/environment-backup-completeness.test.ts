@@ -43,13 +43,7 @@ const EXCLUDED: Record<string, string> = {
 };
 
 /** Columns written through the location helper rather than `row.<column>`. */
-const LOCATION_COLUMNS = new Set([
-  "lat",
-  "lon",
-  "locationLabel",
-  "label",
-  "locationEncrypted",
-]);
+const LOCATION_COLUMNS = new Set(["locationEncrypted"]);
 
 function block(text: string, start: string, end = "\n}"): string {
   const from = text.indexOf(start);
@@ -95,9 +89,10 @@ describe.each([
   const selected = selectKeys(selectName);
 
   it("parses both ends into a plausible shape", () => {
-    expect(columns.length).toBeGreaterThan(8);
+    // A period is seven columns since v1.43 (the readable location dropped).
+    expect(columns.length).toBeGreaterThan(6);
     expect(columns).toContain("locationEncrypted");
-    expect(selected.length).toBeGreaterThan(5);
+    expect(selected.length).toBeGreaterThan(4);
   });
 
   it("the backup select covers every column", () => {

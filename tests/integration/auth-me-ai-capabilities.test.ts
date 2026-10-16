@@ -56,6 +56,8 @@ const ALL = [
   "documentAi",
   "labsOcr",
   "medicationExtract",
+  // v1.43 — the supplement label photo (needs the nutrients module, on below).
+  "supplementLabel",
 ] as const;
 type Key = (typeof ALL)[number];
 
@@ -99,6 +101,8 @@ async function makeUser(
       aiModel: "claude-sonnet-4-6",
       // Presence only: the probe never decrypts, so any value will do.
       aiAnthropicKeyEncrypted: "v1:presence-only",
+      // The nutrients module is opt-in; on, so every capability can open.
+      modulePreferencesJson: { nutrients: true },
       ...overrides,
     },
   });
@@ -206,7 +210,7 @@ describe("GET /api/auth/me — ai", () => {
     await signIn(user.id);
     expectOnly(
       await readMe(),
-      ["documentAi", "labsOcr", "medicationExtract"],
+      ["documentAi", "labsOcr", "medicationExtract", "supplementLabel"],
       "operator_disabled",
     );
   });
@@ -250,7 +254,13 @@ describe("GET /api/auth/me — ai", () => {
     await grantConsent(user.id, "ai_insights_only");
     expectOnly(
       await readMe(),
-      ["coach", "documentAi", "labsOcr", "medicationExtract"],
+      [
+        "coach",
+        "documentAi",
+        "labsOcr",
+        "medicationExtract",
+        "supplementLabel",
+      ],
       "consent_required",
     );
   });
@@ -264,7 +274,7 @@ describe("GET /api/auth/me — ai", () => {
 
   it("reads the AI analysis opt-out as the person's own choice", async () => {
     const user = await makeUser("insights-off", {
-      modulePreferencesJson: { insights: false },
+      modulePreferencesJson: { insights: false, nutrients: true },
     });
     await grantConsent(user.id, "ai_full");
     await signIn(user.id);
@@ -283,7 +293,7 @@ describe("GET /api/auth/me — ai", () => {
 
   it("closes workout notes with the workouts module", async () => {
     const user = await makeUser("workouts-off", {
-      modulePreferencesJson: { workouts: false },
+      modulePreferencesJson: { workouts: false, nutrients: true },
     });
     await grantConsent(user.id, "ai_full");
     await signIn(user.id);

@@ -83,6 +83,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "folds duplicate rows of doses already recorded",
   "lib/doctor-report/collect.ts":
     "administration ledger lists recorded doses; rates gate via expectsDoses",
+  "lib/medications/ingredients/recompute.ts":
+    "sums the nutrients of doses that were taken; a recorded dose counts whatever the switch says",
 };
 
 /**
@@ -94,6 +96,10 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
   // as stored, schedule and switch included.
   "lib/export/full-backup-payload.ts": "backup carries the stored rows",
   "lib/export/restore-backup.ts": "restore writes the stored rows back",
+  // v1.43 — the units a taken dose consumed, resolved per slot exactly as
+  // the inventory does. It reads only doses already recorded as taken.
+  "lib/medications/ingredients/recompute.ts":
+    "units per slot of doses already taken",
   "app/api/export/route.ts": "data export of the stored record",
   "app/api/export/medications/route.ts": "medication CSV export of the record",
   // Intake WRITE helpers: they run only when a dose is being recorded, bind

@@ -8,7 +8,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -215,8 +215,10 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
     },
     // v1.16.4 — a failed delete used to fail silently, leaving the row
     // in place with no signal that the request was rejected.
-    onError: () => {
-      toast.error(t("medications.sideEffects.deleteError"));
+    onError: (failure) => {
+      showErrorToast(t("medications.sideEffects.deleteError"), {
+        cause: failure,
+      });
     },
   });
 

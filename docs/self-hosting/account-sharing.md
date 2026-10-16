@@ -231,11 +231,58 @@ as something to log in as.
   person it was sent to, so the admin notification diagnostic can answer
   "who was this for" and "whose record was it about" separately.
 
-There is no emancipation flow: no route, no control and no copy suggests
-a managed profile can be turned into an ordinary account. The data model
-leaves room for it (the credentials are nullable and the managed marker
-can be cleared) and clearing that marker stops the notification fan-out,
-but nothing in v1.37.0 exercises any of that.
+### Handing a record over to its person
+
+Since v1.42 a guardian can hand a managed profile over to the person it
+describes, so the record becomes their own account with its whole history.
+Nothing is copied or moved; the profile's row gets credentials, loses the
+managed marker, and stops fanning reminders out to its guardians.
+
+- A guardian with a fresh second factor creates a one-time link (valid for
+  one, seven or fourteen days, shown once) and proposes, for each guardian,
+  no access, view only or manage. Only a keyed hash of the link is stored,
+  at most one link per profile is open, and any guardian can withdraw it
+  without a second factor.
+- The person opens the link, sees the record's name, the expiry and who
+  keeps which access, and chooses how they sign in. The claim runs as one
+  transaction: the link is consumed, the proposals are applied, open
+  invitations the record offered are withdrawn, and the disclaimer,
+  onboarding and AI consent are reset so the person gives them themselves.
+  After the first sign-in they confirm or change each guardian's access.
+- How the person signs in depends on the instance:
+
+  | Instance                          | Ways in                    |
+  | --------------------------------- | -------------------------- |
+  | No SSO configured                 | Password                   |
+  | SSO configured, `OIDC_ONLY` unset | Password or single sign-on |
+  | `OIDC_ONLY="true"`                | Single sign-on only        |
+
+  The guardian's panel and the claim page both show which ways are open.
+
+- **Through single sign-on** (v1.43) the person picks a username and
+  continues to the identity provider. When they come back, the provider's
+  `(issuer, sub)` pair is bound to the record in the same transaction, the
+  address is taken from the provider only when it asserts
+  `email_verified: true` (otherwise the account has no address), and no
+  password is set. Refused, with the record left exactly as it was:
+  a provider identity that already signs in to an account on this instance
+  (one identity, one account; the refusal is audited on that account as
+  `auth.oidc.claim_conflict`), a verified address another account holds,
+  a username taken in the meantime, a link that was used, withdrawn,
+  replaced or expired while the person was at the provider, and a browser
+  that is signed in to another account.
+- The link never appears in a URL the server builds: the claim page sends it
+  in request bodies only, and the single-sign-on leg carries a sealed,
+  ten-minute, HttpOnly cookie that names the link by its id. The `/claim/`
+  path and `hlp_` tokens are scrubbed from logs.
+- The iOS app does not claim. The person claims in a browser and then signs
+  in to the app as usual (with SSO, through the app's own SSO sign-in).
+
+Audit rows: `managed_profile.handover.created` and `.revoked` on the record,
+`managed_profile.claim_sso.started` when a single-sign-on claim starts,
+`managed_profile.claimed` and `auth.claim` (with `method: "password"` or
+`"sso"`) when it lands, and `managed_profile.handed_over` on each guardian's
+own account.
 
 ## Seeing what happened
 

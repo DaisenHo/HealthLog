@@ -45,6 +45,7 @@ export const GET = apiHandler(async () => {
     where: { userId: user.id, deletedAt: null, value: { not: null } },
     select: {
       analyte: true,
+      biomarkerId: true,
       unit: true,
       value: true,
       referenceLow: true,
@@ -61,6 +62,7 @@ export const GET = apiHandler(async () => {
   const summary = summariseLabChanges(
     rows.map((r) => ({
       analyte: r.analyte,
+      biomarkerId: r.biomarkerId,
       unit: r.unit,
       value: r.value as number,
       referenceLow: r.referenceLow,

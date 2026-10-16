@@ -41,6 +41,7 @@ import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { deriveA1 } from "@/lib/mood/level-a";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // Derived from canonical enum so round-trip export → import covers every
 // type. Previous hardcoded subset silently dropped 4 of 11 types
@@ -51,12 +52,12 @@ const measurementSchema = z
     value: z.number(),
     unit: z.string(),
     // v1.17.1 — share the canonical entry-instant bound used by the single
-    // POST + edit paths (v1.17 W1b). Previously a bare `z.string().datetime()`
+    // POST + edit paths (v1.17 W1b). Previously a bare datetime check
     // with no ceiling, so a crafted JSON import could forward-date a reading.
     // `validateEntryInstant` rejects any future instant beyond a 5-min skew
     // tolerance and any instant before 1900; the field transforms to a `Date`.
     measuredAt: validateEntryInstant(
-      z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+      isoDateTime().transform((s) => new Date(s)),
     ),
     glucoseContext: glucoseContextEnum.optional(),
     source: z.string().optional(),
@@ -96,7 +97,7 @@ const moodEntrySchema = z
     // v1.17.1 — same entry-instant bound as measurements; an imported mood
     // log cannot be forward-dated. Optional + transforms to a `Date` when set.
     loggedAt: validateEntryInstant(
-      z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+      isoDateTime().transform((s) => new Date(s)),
     ).optional(),
     // v1.12.1 — optional source-stable id (e.g. a Daylio row id). When
     // present, the import upserts on `(userId, source, externalId)` so a
@@ -483,7 +484,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // (type, day) the import touched (collapsed, so a 10 000-row restore pays
   // at most ~N recomputes) and re-warm the touched types' status
   // assessments. Best-effort: a populator hiccup never fails the importer.
-  await afterMeasurementMutation(userId, touchedMeasurements, "import");
+  await afterMeasurementMutation(userId, touchedMeasurements, {
+    // A file the person chose to import: a deliberate act, narrated like a
+    // hand entry rather than held to the sync gap.
+    source: "manual",
+    label: "import",
+  });
 
   annotate({
     meta: {

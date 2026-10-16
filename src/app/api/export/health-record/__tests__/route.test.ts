@@ -36,6 +36,8 @@ vi.mock("@/lib/db", () => ({
     familyHistoryEntry: { findMany: vi.fn() },
     userHealthProfile: { findUnique: vi.fn() },
     healthProfileFactRevision: { findMany: vi.fn() },
+    // v1.43 — the anamnesis leaf also carries the newest AUDIT-C entry.
+    mentalHealthAssessment: { findMany: vi.fn(async () => []) },
     user: { findUnique: vi.fn(), update: vi.fn() },
     // The whole-record gate reads the session's own stamps: a sign-in a
     // moment ago is the proof, on an account without a second factor.

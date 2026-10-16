@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { aiUsageState } from "./ai-usage";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { notificationPrefsSchema } from "@/lib/validations/notification-prefs";
@@ -59,6 +60,7 @@ import {
   updatedAtTokenField,
   validationIssue,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // v1.18.0 — module enable/disable. The PATCH request is the REAL runtime
 // validator (`modulePrefsPatchSchema` — strict over the toggleable key
@@ -128,7 +130,7 @@ export const moduleAccessMap = z
 export const aiUnavailableReason = z.enum(AI_UNAVAILABLE_REASONS).meta({
   id: "AiUnavailableReason",
   description:
-    "Why an AI capability is unavailable, listed in precedence order; only the outermost reason that applies is reported, because it names the layer that would have to change first. `check_failed` — an input could not be read and the answer failed closed. `operator_disabled` — the operator's master switch, the capability's own switch, or the operator's instance-wide availability of its module. `not_permitted_for_record` — AI work is not admitted for this record (a delegate inside somebody else's record). `module_disabled` — an owning module is off for this record, by its own switch or by the edge of the active grant. `user_disabled` — the record's own AI opt-out: the Coach preference for the Coach, the `insights` module (AI analysis) for everything else. `no_provider` — no configured provider can serve this capability's input. `consent_required` — the provider chain needs an AI consent receipt and none is active. The list is closed; a client that meets a value it does not know treats the capability as unavailable.",
+    "Why an AI capability is unavailable, listed in precedence order; only the outermost reason that applies is reported, because it names the layer that would have to change first. `check_failed` — an input could not be read and the answer failed closed. `operator_disabled` — the operator's master switch, the capability's own switch, or the operator's instance-wide availability of its module. `not_permitted_for_record` — AI work is not admitted for this record (a delegate inside somebody else's record). `module_disabled` — an owning module is off for this record, by its own switch or by the edge of the active grant. `user_disabled` — the record's own AI opt-out: the Coach preference for the Coach, the `insights` module (AI analysis) for everything else. `usage_level` — the record's AI usage level (`ai.usage.level`, v1.43) is below what the capability needs; today only `supplementLabel` on `frugal`. `no_provider` — no configured provider can serve this capability's input. `consent_required` — the provider chain needs an AI consent receipt and none is active. The list is closed; a client that meets a value it does not know treats the capability as unavailable.",
 });
 
 export const aiCapabilityState = z
@@ -140,7 +142,7 @@ export const aiCapabilityState = z
     onDeviceAllowed: z
       .boolean()
       .describe(
-        "Whether an on-device model may do this work. False for `operator_disabled`, `not_permitted_for_record`, `module_disabled`, `user_disabled` and `check_failed`: the operator's and the person's decisions hold on the device too. True otherwise, since a missing server provider or a missing consent for server egress do not concern a model that runs on the device. Resolved here so the client never decides which reasons apply off the server.",
+        "Whether an on-device model may do this work. False for `operator_disabled`, `not_permitted_for_record`, `module_disabled`, `user_disabled`, `usage_level` and `check_failed`: the operator's and the person's decisions hold on the device too. True otherwise, since a missing server provider or a missing consent for server egress do not concern a model that runs on the device. Resolved here so the client never decides which reasons apply off the server.",
       ),
   })
   .meta({
@@ -163,7 +165,7 @@ export const aiCapabilities = z
   .meta({
     id: "AiCapabilities",
     description:
-      "Every AI capability, always all present. `coach` — chat, fenced document chat, attachments, Coach memory upkeep, AI nudges, every Coach launcher. `briefing` — the daily briefing and every place its text is lifted into. `periodNarrative` — the model-written half of a period narrative (the deterministic narrative is data). `statusText` — per-metric status notes and the AI override of a derived assessment. `workoutInsights` — the paragraph on a workout. `reactionLines` — the line written after a new reading. `aboutMeQuestions` — model-written follow-up questions on the about-me profile (a deterministic set stays). `documentAi` — suggest, summary, extract, index and chat over a stored document. `labsOcr` — reading a lab report image. `medicationExtract` — turning a typed medication description into a schedule.",
+      "Every AI capability, always all present. `coach` — chat, fenced document chat, attachments, Coach memory upkeep, AI nudges, every Coach launcher. `briefing` — the daily briefing and every place its text is lifted into. `periodNarrative` — the model-written half of a period narrative (the deterministic narrative is data). `statusText` — per-metric status notes and the AI override of a derived assessment. `workoutInsights` — the paragraph on a workout. `reactionLines` — the line written after a new reading. `aboutMeQuestions` — model-written follow-up questions on the about-me profile (a deterministic set stays). `documentAi` — suggest, summary, extract, index and chat over a stored document. `labsOcr` — reading a lab report image. `medicationExtract` — turning a typed medication description into a schedule. `supplementLabel` (v1.43) — reading a supplement's label photo into its ingredients; unavailable on the `frugal` usage level.",
   });
 
 export const aiProviderState = z
@@ -198,7 +200,15 @@ export const aiProviderState = z
   });
 
 export const aiAccountBlock = z
-  .object({ capabilities: aiCapabilities, provider: aiProviderState })
+  .object({
+    capabilities: aiCapabilities,
+    provider: aiProviderState,
+    usage: aiUsageState
+      .optional()
+      .describe(
+        "v1.43 — the account's AI usage level. Absent on older servers; hide the setting then.",
+      ),
+  })
   .meta({
     id: "AiAccountBlock",
     description:
@@ -403,8 +413,7 @@ const healthScoreConfigResponse = z
       .describe(
         "Per-user recipe version, monotonic and incremented on every accepted write. 0 while no selection has been written. A score record names the version that produced it, so a comparison can see the recipe move.",
       ),
-    changedAt: z.iso
-      .datetime({ offset: true })
+    changedAt: isoDateTime()
       .nullable()
       .describe("When the recipe last changed; null while it never has."),
     updatedAt: updatedAtTokenField,
@@ -533,7 +542,7 @@ const profileResponse = z
     username: z.string(),
     displayName: z.string().nullable().optional(),
     email: z.string().nullable(),
-    dateOfBirth: z.iso.datetime({ offset: true }).nullable(),
+    dateOfBirth: isoDateTime().nullable(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     heightCm: z.number().nullable(),
     locale: z.string().nullable(),
@@ -581,7 +590,7 @@ const profileUpdateResponse = z
     username: z.string(),
     displayName: z.string().nullable().optional(),
     email: z.string().nullable(),
-    dateOfBirth: z.iso.datetime({ offset: true }).nullable(),
+    dateOfBirth: isoDateTime().nullable(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     heightCm: z.number().nullable(),
     locale: z.string().nullable(),
@@ -896,8 +905,8 @@ const deviceInfo = z
       .describe(
         "Which push transports this device row can currently be reached on. Derived from which token columns are populated, not from a stored list.",
       ),
-    lastSeenAt: z.iso.datetime({ offset: true }),
-    createdAt: z.iso.datetime({ offset: true }),
+    lastSeenAt: isoDateTime(),
+    createdAt: isoDateTime(),
     isCurrent: z
       .boolean()
       .describe(
@@ -1517,7 +1526,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     "image/png",
                     "image/webp",
                   ]),
-                  updatedAt: z.iso.datetime({ offset: true }),
+                  updatedAt: isoDateTime(),
                 }),
                 "UploadAvatarResponse",
               ),

@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { useAuth } from "@/hooks/use-auth";
 import { apiPatch } from "@/lib/api/api-fetch";
@@ -106,7 +107,7 @@ export function useModuleToggle(options?: {
         toast.message(t("common.conflictReloaded"));
         return;
       }
-      toast.error(t("settings.sections.modules.error"));
+      showErrorToast(t("settings.sections.modules.error"), { cause: err });
     },
   });
 }

@@ -126,7 +126,9 @@ async function grantManage(input: {
 const enqueueFromSharedMutation: (request: NextRequest) => Promise<Response> =
   apiHandler(async () => {
     const { user } = await requireRecordAuth("manage", "medications");
-    await invalidateStatusInsightsForTypes(user.id, ["WEIGHT"]);
+    await invalidateStatusInsightsForTypes(user.id, ["WEIGHT"], {
+      source: "manual",
+    });
     return NextResponse.json({ data: { queued: true }, error: null });
   });
 

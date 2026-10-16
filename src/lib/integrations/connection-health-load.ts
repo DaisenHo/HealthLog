@@ -15,6 +15,7 @@
  *
  * Read-only. A connection that does not exist resolves to null.
  */
+import { BACKFILL_LEDGER_PREFIX } from "./healthkit-type-sync";
 import { prisma } from "@/lib/db";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import type { IntegrationKey } from "./status";
@@ -43,6 +44,8 @@ import { withingsPlanUnavailableFeatures } from "@/lib/withings/plan-features";
 import { hasActivityScope } from "@/lib/withings/client";
 import { readOuraScopeDenied } from "@/lib/oura/credentials";
 import { ouraScopeReconnectList } from "@/lib/oura/scope";
+import { localDayWindow } from "@/lib/tz/local-day";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 export type ConnectionHealthMap = Record<
   ConnectionKey,
@@ -98,6 +101,20 @@ async function newestWorkoutAt(
     select: { startedAt: true },
   });
   return row?.startedAt ?? null;
+}
+
+/**
+ * Dawarich stores days, not readings: its newest data is the start of the
+ * newest stored day, in the account's zone.
+ */
+async function newestDawarichDayAt(userId: string): Promise<Date | null> {
+  const row = await prisma.dawarichDay.findFirst({
+    where: { userId },
+    orderBy: { date: "desc" },
+    select: { date: true },
+  });
+  if (!row) return null;
+  return localDayWindow(row.date, await resolveUserTimezone(userId)).dayStart;
 }
 
 function newestOf(...values: Array<Date | null | undefined>): Date | null {
@@ -165,6 +182,7 @@ export async function loadConnectionFacts(
         ouraScopeDenied: true,
         stravaAccessTokenEncrypted: true,
         nightscoutUrlEncrypted: true,
+        dawarichUrlEncrypted: true,
         healthKitLastSyncedAt: true,
       },
     }),
@@ -194,7 +212,12 @@ export async function loadConnectionFacts(
       : null,
     wanted.has("apple-health")
       ? prisma.healthKitTypeSync.findMany({
-          where: { userId },
+          // A backfill's own ledger row is a catch-up, not a live arrival,
+          // and must not make the connection look alive (ios #77).
+          where: {
+            userId,
+            NOT: { type: { startsWith: BACKFILL_LEDGER_PREFIX } },
+          },
           select: { type: true, lastReceivedAt: true, lastNewSampleAt: true },
           orderBy: { lastReceivedAt: "desc" },
         })
@@ -217,6 +240,7 @@ export async function loadConnectionFacts(
     oura: !!dbUser?.ouraAccessTokenEncrypted,
     strava: !!dbUser?.stravaAccessTokenEncrypted,
     nightscout: !!dbUser?.nightscoutUrlEncrypted,
+    dawarich: !!dbUser?.dawarichUrlEncrypted,
     // Apple Health has nothing to connect; it is "connected" once the phone
     // has delivered anything (a live batch, or rows from the export import).
     "apple-health": false,
@@ -239,6 +263,10 @@ export async function loadConnectionFacts(
         return;
       }
       if (!connected[key]) return;
+      if (key === "dawarich") {
+        lastData.set(key, await newestDawarichDayAt(userId));
+        return;
+      }
       const mSource = INTEGRATION_MEASUREMENT_SOURCE[key as IntegrationKey];
       const wSource = INTEGRATION_WORKOUT_SOURCE[key as IntegrationKey];
       const [m, w] = await Promise.all([

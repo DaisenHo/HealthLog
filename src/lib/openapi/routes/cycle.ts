@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { cycleDeleteOutcome, cycleRestoredStart } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import {
@@ -38,6 +39,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Cycle tracking (v1.15.0) ─────────────────────────────────────────
 // The `/api/cycle/*` capture / calendar / history / settings surface +
@@ -138,8 +140,8 @@ export const cycleDayLogDto = z
     source: z.string(),
     externalId: z.string().nullable(),
     syncVersion: z.number().int(),
-    updatedAt: z.iso.datetime({ offset: true }),
-    deletedAt: z.iso.datetime({ offset: true }).nullable(),
+    updatedAt: isoDateTime(),
+    deletedAt: isoDateTime().nullable(),
   })
   .meta({
     id: "CycleDayLogDTO",
@@ -158,7 +160,7 @@ export const menstrualCycleDto = z
     ovulationConfirmed: z.boolean(),
     isPredicted: z.boolean(),
     syncVersion: z.number().int(),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "MenstrualCycleDTO",
@@ -288,7 +290,7 @@ const cycleProfileDto = z
     typicalCycleLength: z.number().int().nullable(),
     typicalPeriodLength: z.number().int().nullable(),
     lutealPhaseLength: z.number().int().nullable(),
-    updatedAt: z.iso.datetime({ offset: true }),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "CycleProfileDTO",
@@ -314,7 +316,7 @@ const cycleCalendarResponse = z.object({
   // Additive + back-compatible.
   stillLearning: z.boolean(),
   days: z.array(cycleCalendarDayDto),
-  meta: z.object({ generatedAt: z.iso.datetime({ offset: true }) }),
+  meta: z.object({ generatedAt: isoDateTime() }),
 });
 
 const cycleHistoryResponse = z.object({
@@ -327,9 +329,48 @@ const cycleHistoryResponse = z.object({
   }),
 });
 
+const cycleDeleteOutcomeEnvelope = dataEnvelope(
+  cycleDeleteOutcome,
+  "CycleDeleteOutcomeEnvelope",
+);
+
+/**
+ * `Prefer: return=representation` on the two deletes that can remove a start.
+ * A factory, so each operation carries its own copy: a shared object becomes a
+ * YAML anchor and renumbers every other anchor in the document.
+ */
+const preferReturnRepresentationParameter = () => ({
+  name: "Prefer",
+  in: "header" as const,
+  required: false,
+  schema: { type: "string" as const, example: "return=representation" },
+  description:
+    "v1.43 — send `return=representation` (RFC 7240) to get 200 with what the delete changed (`CycleDeleteOutcome`) and a `Preference-Applied: return=representation` header. Without it the route answers 204 with no body, as before.",
+});
+
+/** The 200 a delete answers with when the request preferred a representation. */
+const cycleDeleteOutcomeResponse = () => ({
+  description:
+    "v1.43 — with `Prefer: return=representation`: the removed cycle (null when the delete removed none, e.g. a day that opened no cycle or a repeated delete) and the starts the removal gave back.",
+  content: {
+    "application/json": { schema: cycleDeleteOutcomeEnvelope },
+  },
+  headers: z.object({
+    "Preference-Applied": z.literal("return=representation").meta({
+      description: "The route honoured `Prefer: return=representation`.",
+    }),
+  }),
+});
+
 const cyclePeriodResponse = z.object({
   cycle: menstrualCycleDto.nullable(),
   dayLog: cycleDayLogDto.nullable(),
+  absorbed: cycleRestoredStart
+    .nullable()
+    .optional()
+    .describe(
+      'v1.43 — a later start within the period length that this start folded in (it stops being a start of its own), or null. Present on every `action: "start"` answer; null on `end`.',
+    ),
 });
 
 const cyclePhaseCrosstabRow = z
@@ -767,7 +808,20 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Day-log updated.",
           content: {
             "application/json": {
-              schema: dataEnvelope(cycleDayLogDto, "CycleDayLogPatchEnvelope"),
+              schema: dataEnvelope(
+                z.intersection(
+                  cycleDayLogDto,
+                  z.object({
+                    restored: z
+                      .array(cycleRestoredStart)
+                      .optional()
+                      .describe(
+                        "v1.43 — starts given back because this edit cleared the flow on a start day; empty when it gave back none. Absent on older servers.",
+                      ),
+                  }),
+                ),
+                "CycleDayLogPatchEnvelope",
+              ),
             },
           },
         },
@@ -783,9 +837,11 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Soft-delete a cycle day-log (v1.15.0)",
       description:
-        "Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. 204. Idempotent.",
+        "Sets `deletedAt` + bumps `syncVersion`; surfaces as a tombstone on the next `/api/sync/changes` page. A day that opened a cycle takes that cycle with it, which gives back any start that cycle had folded in. 204, or 200 with `CycleDeleteOutcome` under `Prefer: return=representation`. Idempotent.",
       requestParams: { path: z.object({ id: z.string() }) },
+      parameters: [preferReturnRepresentationParameter()],
       responses: {
+        "200": cycleDeleteOutcomeResponse(),
         "204": { description: "Soft-deleted (no body)." },
         "404": {
           description: "Day-log not found / not owned.",
@@ -938,9 +994,11 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Soft-delete a menstrual cycle (v1.15.0)",
       description:
-        "Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. 204. Idempotent.",
+        "Sets `deletedAt` + bumps `syncVersion`; tombstones on the next sync page. Any start this cycle had folded in stands again. 204, or 200 with `CycleDeleteOutcome` under `Prefer: return=representation`. Idempotent.",
       requestParams: { path: z.object({ id: z.string() }) },
+      parameters: [preferReturnRepresentationParameter()],
       responses: {
+        "200": cycleDeleteOutcomeResponse(),
         "204": { description: "Soft-deleted (no body)." },
         "404": {
           description: "Cycle not found / not owned.",

@@ -92,6 +92,12 @@ import {
   type DocumentFilingBackupSection,
 } from "@/lib/export/document-filing-backup";
 import {
+  buildRelationLinksBackupSection,
+  countRelationLinksBackupSection,
+  type RelationLinksBackupCounts,
+  type RelationLinksBackupSection,
+} from "@/lib/export/relation-links-backup";
+import {
   buildAwardsBackupSection,
   countAwardsBackupSection,
   type AwardsBackupCounts,
@@ -155,6 +161,7 @@ export interface FullBackupCounts
     CoachMemoryBackupCounts,
     SensitiveBackupCounts,
     DocumentFilingBackupCounts,
+    RelationLinksBackupCounts,
     AwardsBackupCounts,
     EnvironmentBackupCounts,
     OnboardingBackupCounts,
@@ -736,6 +743,7 @@ export async function buildFullBackupPayload(
     ecg,
     symptoms,
     lifeEvents,
+    relationLinks,
     nutrientDays,
     accountSettings,
   ] = await Promise.all([
@@ -763,6 +771,9 @@ export async function buildFullBackupPayload(
         inventoryItems: { orderBy: { createdAt: "asc" } },
         inventoryEvents: { orderBy: { occurredAt: "asc" } },
         phaseConfig: true,
+        // v1.43 — the composition per unit; ordered so two exports of the
+        // same account write it identically.
+        ingredients: { orderBy: { nutrient: "asc" } },
         // The archived schedule eras. Ordered TOTALLY, not just by the column
         // that reads like the sort key: the position in this list is the
         // identifier the supersede pointer travels as, so two eras sharing a
@@ -925,6 +936,11 @@ export async function buildFullBackupPayload(
     buildLifeEventsBackupSection(prisma, userId, {
       purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
     }),
+    // The five relation links that close the relation matrix (v1.43). Both
+    // ends live in `src/lib/export/relation-links-backup.ts`.
+    buildRelationLinksBackupSection(prisma, userId, {
+      purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
+    }),
     // Nutrient day totals were absent from every export path, which
     // contradicted the schema's own reason for denormalising the unit column
     // ("rows stay self-describing in exports even if the catalog ever drifts").
@@ -980,6 +996,7 @@ export async function buildFullBackupPayload(
   const ecgSection: EcgBackupSection = ecg;
   const symptomsSection: SymptomsBackupSection = symptoms;
   const lifeEventsSection: LifeEventsBackupSection = lifeEvents;
+  const relationLinksSection: RelationLinksBackupSection = relationLinks;
   const accountSettingsSection: AccountSettingsBackupSection = accountSettings;
 
   // The three unbounded tables, either read into arrays or left as markers
@@ -1077,7 +1094,9 @@ export async function buildFullBackupPayload(
             externalId: m.externalId,
             updatedAt: m.updatedAt.toISOString(),
           }
-        : {}),
+        : // No id: a portable restore mints a fresh one. The relation links
+          // still name this drug, so the file says which row they mean.
+          { ref: m.id }),
       name: m.name,
       dose: m.dose,
       active: m.active,
@@ -1165,6 +1184,20 @@ export async function buildFullBackupPayload(
       // v1.40 (#1024) — the courses: "when did I last take this" lives here
       // and nowhere else once a second course exists. The medication's own
       // window above is the projection of the latest one.
+      // v1.43 — what one unit contains. Both purposes: it is something the
+      // person typed off a label, and without it the supplement's doses stop
+      // counting toward the day's micronutrients. Canonical amount plus the
+      // amount as entered, so the form shows what was typed.
+      ingredients: m.ingredients.map((i) => ({
+        ...(disasterRecovery ? { id: i.id } : {}),
+        nutrient: i.nutrient,
+        amountPerUnit: i.amountPerUnit,
+        unit: i.unit,
+        enteredAmount: i.enteredAmount,
+        enteredUnit: i.enteredUnit,
+        source: i.source,
+        createdAt: i.createdAt.toISOString(),
+      })),
       courses: m.courses.map((c) => ({
         startsOn: dayKeyOfDate(c.startsOn),
         endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
@@ -1387,6 +1420,7 @@ export async function buildFullBackupPayload(
     ...ecgSection,
     ...symptomsSection,
     ...lifeEventsSection,
+    ...relationLinksSection,
     nutrientDays: nutrientDays.map((n) => ({
       day: n.day,
       nutrient: n.nutrient,
@@ -1456,6 +1490,7 @@ export async function buildFullBackupPayload(
       ...countEcgBackupSection(ecg),
       ...countSymptomsBackupSection(symptoms),
       ...countLifeEventsBackupSection(lifeEvents),
+      ...countRelationLinksBackupSection(relationLinks),
     },
   };
 }

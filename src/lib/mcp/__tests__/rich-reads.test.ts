@@ -27,6 +27,11 @@ const { labResult, measurement, user } = vi.hoisted(() => ({
   // narrated sentence, which reads the stored preference.
   user: { findUnique: vi.fn(async () => ({ locale: "de" })) },
 }));
+// v1.43 — a lab name resolves to a marker through the account's names and
+// aliases; no marker resolves here, so the reads keep their text match.
+vi.mock("@/lib/labs/biomarker-resolve", () => ({
+  resolveMarkerForRead: vi.fn(async () => null),
+}));
 vi.mock("@/lib/db", () => ({ prisma: { labResult, measurement, user } }));
 
 import {

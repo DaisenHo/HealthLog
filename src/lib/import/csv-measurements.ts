@@ -41,8 +41,8 @@ import {
   measurementTypeEnum,
   glucoseContextEnum,
   validateMeasurementRange,
-  MEASUREMENT_NOTES_MAX_LENGTH,
 } from "@/lib/validations/measurement";
+import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
 import { isStableExternalId } from "@/lib/validations/external-id";
 import { resolveToCanonicalUnit } from "@/lib/measurements/unit-aliases";

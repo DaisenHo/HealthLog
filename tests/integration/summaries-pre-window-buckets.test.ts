@@ -116,9 +116,11 @@ describe("all-time summaries with DAY buckets older than the fold window", () =>
     await recomputeUserRollups(userId);
     // A backdated reading, as a manual entry or a sync of old samples writes
     // it: the hook folds that one day, window or not.
-    await afterMeasurementMutation(userId, [
-      { type: "WEIGHT", measuredAt: old.at },
-    ]);
+    await afterMeasurementMutation(
+      userId,
+      [{ type: "WEIGHT", measuredAt: old.at }],
+      { source: "manual" },
+    );
 
     await expectTrueFigures(userId, [64, 80]);
   });

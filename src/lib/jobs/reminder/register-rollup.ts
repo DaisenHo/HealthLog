@@ -46,6 +46,12 @@ import {
   type MedicationComplianceBackfillPayload,
 } from "@/lib/rollups/medication-compliance-rollups";
 import {
+  SUPPLEMENT_NUTRIENT_RECOMPUTE_QUEUE,
+  SUPPLEMENT_NUTRIENT_RECOMPUTE_CONCURRENCY,
+  runSupplementNutrientRecompute,
+  type SupplementNutrientRecomputePayload,
+} from "@/lib/medications/ingredients/recompute-job";
+import {
   drainPerSampleCumulative,
   DRAIN_CUMULATIVE_CUTOFF_HOURS,
 } from "@/lib/measurements/drain-per-sample-cumulative";
@@ -177,6 +183,9 @@ const allQueues = [
   // drain schedule silently no-ops and the per-sample APPLE_HEALTH rows
   // never collapse.
   DRAIN_CUMULATIVE_QUEUE,
+  // v1.43 — one account's supplement doses recomputed into the day's
+  // micronutrients after a change that spans more than one day.
+  SUPPLEMENT_NUTRIENT_RECOMPUTE_QUEUE,
 ];
 
 const schedules: ScheduleEntry[] = [
@@ -213,6 +222,11 @@ const queuePolicies: QueuePolicyTable = {
     policy: "short",
     reason:
       "Same shape as the measurement recompute: re-reads the bucket at run time, so only queued duplicates may be collapsed.",
+  },
+  [SUPPLEMENT_NUTRIENT_RECOMPUTE_QUEUE]: {
+    policy: "short",
+    reason:
+      "Per-account recompute of supplement nutrient rows; the pass reads the live doses and composition when it starts, so a queued duplicate may be collapsed, while a send during a running pass must still queue the next one.",
   },
 
   // The rest are per-user, self-converging boot/discovery backfills. A second
@@ -403,6 +417,21 @@ export async function registerRollupQueues(
         days_recomputed: daysRecomputed,
         failures,
       });
+    },
+  );
+
+  // v1.43 — supplement nutrient recompute. One account per job, serial.
+  await createAndWork<SupplementNutrientRecomputePayload>(
+    boss,
+    SUPPLEMENT_NUTRIENT_RECOMPUTE_QUEUE,
+    { localConcurrency: SUPPLEMENT_NUTRIENT_RECOMPUTE_CONCURRENCY },
+    async (jobs) => {
+      let rowsWritten = 0;
+      for (const job of jobs) {
+        const result = await runSupplementNutrientRecompute(job.data);
+        rowsWritten += result.rowsWritten;
+      }
+      return jobDone({ users: jobs.length, rows_written: rowsWritten });
     },
   );
 

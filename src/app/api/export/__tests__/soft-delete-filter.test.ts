@@ -67,6 +67,8 @@ vi.mock("@/lib/db", () => ({
     cycleDayLog: { findMany: vi.fn() },
     labResult: { findMany: vi.fn() },
     biomarker: { findMany: vi.fn() },
+    biomarkerAlias: { findMany: vi.fn() },
+    biomarkerMerge: { findMany: vi.fn() },
     allergy: { findMany: vi.fn() },
     familyHistoryEntry: { findMany: vi.fn() },
     workout: { findMany: vi.fn() },
@@ -77,8 +79,14 @@ vi.mock("@/lib/db", () => ({
     ecgRecording: { findMany: vi.fn() },
     symptomDefinition: { findMany: vi.fn() },
     lifeEvent: { findMany: vi.fn() },
+    labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     onboardingRecord: { findUnique: vi.fn().mockResolvedValue(null) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     personalRecord: { findMany: vi.fn().mockResolvedValue([]) },
     coachReminder: { findMany: vi.fn().mockResolvedValue([]) },
@@ -205,6 +213,8 @@ beforeEach(() => {
   vi.mocked(prisma.cycleDayLog.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.biomarkerMerge.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.allergy.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.familyHistoryEntry.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.workout.findMany).mockResolvedValue([] as never);

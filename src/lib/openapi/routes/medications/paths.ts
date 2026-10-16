@@ -44,6 +44,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "../shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
 // annotating in place, so each annotated schema is bound to a const and the
@@ -145,12 +146,10 @@ const bulkDeleteIntakeRequest = bulkDeleteIntakeEventsSchema.meta({
 const bulkIntakeEntry = z
   .object({
     medicationId: z.string().min(1),
-    scheduledFor: z.iso
-      .datetime({ offset: true })
+    scheduledFor: isoDateTime()
       .optional()
       .describe("ISO instant; defaults to `takenAt` then now() when omitted."),
-    takenAt: z.iso
-      .datetime({ offset: true })
+    takenAt: isoDateTime()
       .optional()
       .describe("ISO instant of the take; omit + `skipped:false` = pending."),
     skipped: z.boolean().optional().describe("Default false."),
@@ -160,8 +159,7 @@ const bulkIntakeEntry = z
       .describe(
         "Per-entry injection site; a disallowed site marks THIS entry skipped without failing the batch.",
       ),
-    forceSlotInstant: z.iso
-      .datetime({ offset: true })
+    forceSlotInstant: isoDateTime()
       .optional()
       .describe(
         "Pin a taken entry onto a named real scheduled slot; ignored on non-taken entries.",
@@ -199,10 +197,10 @@ const bulkIntakePayload = z
   .object({
     entries: z.array(bulkIntakeEntry).min(1).max(500),
     syncTrigger: z
-      .enum(["foreground", "background", "push", "manual"])
+      .enum(["foreground", "background", "push", "manual", "backfill"])
       .optional()
       .describe(
-        'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client for this sync. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated` or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`. It changes no dose row. Optional; omitted records a null trigger.',
+        'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client for this sync. `backfill` (v1.43, only when `features.syncTriggerBackfill` is `true`) marks a history catch-up, which moves only the `MEDICATION_DOSE` entry\'s `lastBackfillAt` and leaves its live stamps and the sync checkpoint alone. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated` or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`. It changes no dose row. Optional; omitted records a null trigger.',
       ),
   })
   .meta({

@@ -41,6 +41,7 @@ import { APPLE_HEALTH_IMPORT_SEND_OPTIONS } from "@/lib/jobs/apple-health-import
 import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-intake-import";
 import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
 import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
+import { PULSE_DAY_MEAN_SEND_OPTIONS } from "@/lib/jobs/pulse-day-mean";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
@@ -213,6 +214,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   ),
   "step-consolidation-repair": short(
     "One account's tombstoned step rows inside the retention window.",
+  ),
+  "supplement-nutrient-recompute": short(
+    "One account's taken doses of medications with a composition: a few thousand rows for years of a daily supplement.",
   ),
   "cumulative-pr-rederive": short(
     "One account's record detection; measured at 20 seconds for 1.25 million rows.",
@@ -407,6 +411,23 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     },
     why: "Rebuilds every index of the largest table, one at a time.",
   },
+  "pulse-day-mean": {
+    runtime: "long",
+    expireInSeconds: PULSE_DAY_MEAN_SEND_OPTIONS.expireInSeconds,
+    expiryVia: ["PULSE_DAY_MEAN_SEND_OPTIONS"],
+    stop: {
+      oneShot:
+        "A dry run or rebuild that stops part way is started again by the operator; the send sets retryLimit 0.",
+    },
+    exclusive: {
+      marker: "retryLimit: 0",
+      at: {
+        file: "lib/jobs/pulse-day-mean.ts",
+        fn: "PULSE_DAY_MEAN_SEND_OPTIONS",
+      },
+    },
+    why: "Walks every account's pulse history a window at a time, twice over for a dry run.",
+  },
   "medication-intake-import": {
     runtime: "long",
     expireInSeconds: MEDICATION_INTAKE_IMPORT_SEND_OPTIONS.expireInSeconds,
@@ -474,6 +495,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "document-thumbnail-backfill": short("Enqueues at most 1 000 documents."),
   "environment-fetch": short(
     "A fan-out of sends, or one account's bounded archive range.",
+  ),
+  "dawarich-sync": short(
+    "A fan-out of sends, or one account's range: one timeline request per 30 days (at most 13), one visits request and at most two residency requests.",
   ),
   "environment-aq-history": short(
     "A fan-out of sends, or one account's history run: at most eight ranges of up to 90 days, two requests each, then a follow-up.",

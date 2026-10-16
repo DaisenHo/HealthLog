@@ -1,3 +1,4 @@
+import { redactSensitiveFields } from "@/lib/observability/redact-payload";
 import { describe, expect, it } from "vitest";
 import { redactSecrets, redactOptional, PATH_SECRET_PATHS } from "../redact";
 
@@ -249,6 +250,25 @@ describe("redactSecrets", () => {
         "/api/auth/claim/preview",
       );
       expect(redactSecrets("/api/auth/claim")).toBe("/api/auth/claim");
+      // v1.43 (#959) — the single-sign-on start and its landing carry no
+      // credential in the URL, and stay readable.
+      expect(redactSecrets("/api/auth/claim/sso")).toBe("/api/auth/claim/sso");
+      expect(redactSecrets("/api/auth/oidc/login?intent=claim")).toBe(
+        "/api/auth/oidc/login?intent=claim",
+      );
+      expect(redactSecrets("/auth/claim?error=claim_expired")).toBe(
+        "/auth/claim?error=claim_expired",
+      );
+    });
+
+    it("redacts the handover token in a single-sign-on claim body", () => {
+      const token = `hlp_${"ef".repeat(32)}`;
+      const excerpt = JSON.stringify(
+        redactSensitiveFields({ token, username: "robin" }),
+      );
+      expect(excerpt).not.toContain(token);
+      expect(excerpt).toContain("robin");
+      expect(redactSecrets(JSON.stringify({ token }))).not.toContain(token);
     });
 
     it("registers the clinician share-view prefix in PATH_SECRET_PATHS", () => {

@@ -23,6 +23,7 @@ import {
   documentSuggestResponse,
   documentSummaryResponse,
 } from "./documents";
+import { supplementLabelExtractResult } from "./medications";
 import { ocrExtractResponse } from "./ocr";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
@@ -35,6 +36,7 @@ const aiRun = z
       "DOCUMENT_SUMMARY",
       "DOCUMENT_SUGGEST",
       "DOCUMENT_EXTRACT",
+      "SUPPLEMENT_LABEL_EXTRACT",
     ]),
     documentId: z
       .string()
@@ -48,10 +50,11 @@ const aiRun = z
         documentSummaryResponse,
         documentSuggestResponse,
         documentExtractRunResult,
+        supplementLabelExtractResult,
       ])
       .nullable()
       .describe(
-        "Present once `status` is `SUCCEEDED`: the body the queuing route answers with synchronously. `DOCUMENT_INDEX` carries `DocumentIndexResponse`, `LABS_OCR_EXTRACT` carries `OcrExtractResponse`, `DOCUMENT_SUMMARY` carries `DocumentSummaryResponse`, `DOCUMENT_SUGGEST` carries `DocumentSuggestResponse`, `DOCUMENT_EXTRACT` carries `DocumentExtractRunResult` (not the extract route's detail body). Decode by `kind`; treat an unknown `kind` as a run this client did not start.",
+        "Present once `status` is `SUCCEEDED`: the body the queuing route answers with synchronously. `DOCUMENT_INDEX` carries `DocumentIndexResponse`, `LABS_OCR_EXTRACT` carries `OcrExtractResponse`, `DOCUMENT_SUMMARY` carries `DocumentSummaryResponse`, `DOCUMENT_SUGGEST` carries `DocumentSuggestResponse`, `DOCUMENT_EXTRACT` carries `DocumentExtractRunResult` (not the extract route's detail body), `SUPPLEMENT_LABEL_EXTRACT` (v1.43) carries `SupplementLabelExtractResult`. Decode by `kind`; treat an unknown `kind` as a run this client did not start.",
       ),
     error: z
       .object({

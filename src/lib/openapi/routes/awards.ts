@@ -9,6 +9,7 @@
  * under the owner's name — and both are read-only in fact as well as in
  * declaration.
  */
+import { recordBenchmark } from "./trend-verdict";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
@@ -21,6 +22,7 @@ import {
   recordRefusal,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const personalRecord = z
   .object({
@@ -44,7 +46,7 @@ const personalRecord = z
       ),
     value: z.number(),
     unit: z.string(),
-    achievedAt: z.iso.datetime({ offset: true }),
+    achievedAt: isoDateTime(),
     sourceMeasurementId: z
       .string()
       .nullable()
@@ -53,7 +55,13 @@ const personalRecord = z
       ),
     source: measurementSourceEnum,
     externalId: z.string().nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    benchmark: recordBenchmark
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43 — an age- and sex-aware comparison band where a cited norm exists, in the record's unit; null otherwise.",
+      ),
   })
   .meta({
     id: "PersonalRecord",
@@ -86,7 +94,7 @@ const achievement = z
     points: z.number().int(),
     unlocked: z.boolean(),
     progressPercent: z.number(),
-    completedAt: z.iso.datetime({ offset: true }).nullable(),
+    completedAt: isoDateTime().nullable(),
     isHidden: z
       .boolean()
       .describe(
@@ -137,7 +145,7 @@ const achievementIosEntry = z
     description: z.string(),
     iconName: z.string(),
     unlocked: z.boolean(),
-    unlockedAt: z.iso.datetime({ offset: true }).nullable(),
+    unlockedAt: isoDateTime().nullable(),
     progress: z.number().describe("0–1, clamped. Not the 0–100 percent."),
     category: z.string(),
     points: z.number().int(),

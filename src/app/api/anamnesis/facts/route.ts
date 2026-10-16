@@ -14,10 +14,18 @@ import { annotate } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
   createHealthProfileFact,
+  createLifeFact,
   readHealthProfileFacts,
 } from "@/lib/profile/health-facts";
-import { healthProfileFactWriteSchema } from "@/lib/validations/health-profile-facts";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
+import { factWriteSchema } from "@/lib/validations/life-circumstances";
 
+/**
+ * `GET` lists the three closed kinds only (`SMOKING_STATUS`, `ALCOHOL_PATTERN`,
+ * `SHIFT_SCHEDULE`): older app builds decode this list closed. `POST` also
+ * takes the six life-circumstance kinds (v1.43, #614), which are read back
+ * through `GET /api/anamnesis/life-circumstances`.
+ */
 export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("read", "profile");
   const payload = await readHealthProfileFacts(user.id);
@@ -38,15 +46,33 @@ async function postFact(request: NextRequest): Promise<Response> {
   });
   if (error) return error;
 
-  const parsed = healthProfileFactWriteSchema.safeParse(rawBody);
+  const parsed = factWriteSchema.safeParse(rawBody);
   if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
 
+  const now = new Date();
+  const validFrom = parsed.data.validFrom
+    ? dateOnlyAtNoonUtc(parsed.data.validFrom)
+    : undefined;
   try {
-    const fact = await createHealthProfileFact(
-      user.id,
-      parsed.data.kind,
-      parsed.data.value,
-    );
+    const input = parsed.data;
+    const fact =
+      input.kind === "SMOKING_STATUS" ||
+      input.kind === "ALCOHOL_PATTERN" ||
+      input.kind === "SHIFT_SCHEDULE"
+        ? await createHealthProfileFact(
+            user.id,
+            input.kind,
+            input.value,
+            now,
+            validFrom,
+          )
+        : await createLifeFact(
+            user.id,
+            input.kind,
+            input.value,
+            now,
+            validFrom,
+          );
     await auditLog("anamnesis.fact.create", {
       userId: user.id,
       ipAddress: getClientIp(request),

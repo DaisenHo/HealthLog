@@ -13,4 +13,10 @@ export const environmentKeys = {
   /** Geocoding search results for a query string (cached per query). */
   environmentGeocode: (query: string) =>
     ["environment", "geocode", query] as const,
+  /**
+   * v1.43 — trips suggested from Dawarich travel days. Under the root prefix,
+   * so adding a trip (which covers a suggestion) refreshes the list too.
+   */
+  environmentTravelSuggestions: () =>
+    ["environment", "travel-suggestions"] as const,
 };

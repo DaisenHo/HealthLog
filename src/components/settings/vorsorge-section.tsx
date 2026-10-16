@@ -12,11 +12,14 @@
  */
 
 import { VorsorgeSettings } from "@/components/measurement-reminders/vorsorge-settings";
+import { ScreeningHintsCard } from "@/components/records/screening-hints-card";
 
 export function VorsorgeSection() {
   return (
     <div className="space-y-6">
       <VorsorgeSettings />
+      {/* v1.43 (#614) — hints from the life circumstances, with their source. */}
+      <ScreeningHintsCard />
     </div>
   );
 }

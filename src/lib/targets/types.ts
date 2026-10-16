@@ -10,6 +10,7 @@ import type {
 } from "@/lib/analytics/compliance";
 import type { ScheduleRevisionLike } from "@/lib/medications/scheduling/schedule-eras";
 import type { ThresholdOverridesJson } from "@/lib/analytics/effective-range";
+import type { TrendSentiment, TrendVerdict } from "./trend-verdict";
 
 export type TargetTrend = "up" | "down" | "stable" | null;
 export type DayBand = "in" | "near" | "out";
@@ -35,6 +36,13 @@ export interface TargetItem extends TargetConsistency {
   range: { min: number; max: number } | null;
   classification: { category: string; color: string } | null;
   source: string;
+  /**
+   * v1.43 (ios #116 item 3) — which way a change of this target counts for
+   * the person (`src/lib/targets/trend-verdict.ts`), and that verdict
+   * applied to `trend`. Set on every item by `buildTargetsResponse`.
+   */
+  direction?: TrendVerdict | null;
+  trendSentiment?: TrendSentiment | null;
   details?: {
     medications?: Array<{
       name: string;

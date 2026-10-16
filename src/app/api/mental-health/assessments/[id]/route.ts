@@ -30,6 +30,7 @@
  */
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -122,7 +123,12 @@ export const GET = apiHandler(
     // Fetch-then-guard against the resolved user (the by-id sibling pattern);
     // a soft-deleted row 404s like it does on the list.
     const row = await prisma.mentalHealthAssessment.findFirst({
-      where: { id, deletedAt: null },
+      // Screeners only; an AUDIT-C entry (v1.43) is a 404 here.
+      where: {
+        id,
+        deletedAt: null,
+        instrument: { in: [...SCREENER_INSTRUMENTS] },
+      },
       select: {
         id: true,
         userId: true,

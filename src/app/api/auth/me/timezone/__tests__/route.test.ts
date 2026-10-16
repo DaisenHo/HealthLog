@@ -31,6 +31,12 @@ vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
   enqueueUserMedicationComplianceBackfill: refoldMock,
 }));
 
+// The supplement nutrient rows are keyed by the same local day.
+const nutrientMock = vi.hoisted(() => vi.fn(async () => ({ queued: true })));
+vi.mock("@/lib/medications/ingredients/recompute-job", () => ({
+  enqueueSupplementNutrientRecompute: nutrientMock,
+}));
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -118,6 +124,7 @@ describe("PUT /api/auth/me/timezone", () => {
     const res = await PUT(mkReq({ timezone: "America/New_York" }));
     expect(res.status).toBe(200);
     expect(refoldMock).toHaveBeenCalledWith("user-1");
+    expect(nutrientMock).toHaveBeenCalledWith("user-1");
   });
 
   it("does not re-fold when the zone is unchanged", async () => {
@@ -130,6 +137,7 @@ describe("PUT /api/auth/me/timezone", () => {
     const res = await PUT(mkReq({ timezone: "Europe/Berlin" }));
     expect(res.status).toBe(200);
     expect(refoldMock).not.toHaveBeenCalled();
+    expect(nutrientMock).not.toHaveBeenCalled();
   });
 
   it("trims whitespace before validating", async () => {

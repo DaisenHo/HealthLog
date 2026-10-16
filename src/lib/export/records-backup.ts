@@ -83,6 +83,8 @@ function readForExport(
 export interface LabResultBackupEntry {
   /** Present in canonical DR payloads so rows keep a stable identity. */
   id?: string;
+  /** The source row's id in a portable payload, for the relation links. */
+  ref?: string;
   panel: string | null;
   analyte: string;
   value: number | null;
@@ -126,8 +128,36 @@ export interface BiomarkerBackupEntry {
   context: string | null;
   /** The catalogue key the marker's name and unit resolve to. */
   analyteKey?: string | null;
+  /**
+   * v1.43 (D1223) — the other spellings the marker answers to, with where
+   * each came from. Absent on files written before them.
+   */
+  aliases?: BiomarkerAliasBackupEntry[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface BiomarkerAliasBackupEntry {
+  /** Present in canonical DR payloads. */
+  id?: string;
+  name: string;
+  source: "MERGE" | "IMPORT_CHOICE" | "MANUAL";
+  createdAt?: string;
+}
+
+/**
+ * v1.43 (D1223) — one marker folded into another. The target travels by id
+ * in a disaster-recovery file and by name in both, the way a lab result's
+ * marker does; the source is gone, so its id and name are the record.
+ */
+export interface BiomarkerMergeBackupEntry {
+  id?: string;
+  targetBiomarkerId?: string;
+  targetName: string;
+  sourceBiomarkerId: string;
+  sourceName: string;
+  readingCount: number;
+  mergedAt: string;
 }
 
 export interface WorkoutBackupEntry {
@@ -237,6 +267,7 @@ type CanonicalAllergy = AllergyDTO & {
 export interface RecordsBackupSection {
   labResults: LabResultBackupEntry[];
   biomarkers: BiomarkerBackupEntry[];
+  biomarkerMerges: BiomarkerMergeBackupEntry[];
   illnessEpisodes: CanonicalIllnessEpisode[];
   allergies: CanonicalAllergy[];
   familyHistory: FamilyHistoryEntryDTO[];
@@ -286,6 +317,8 @@ export async function buildRecordsBackupSection(
     PrismaClient,
     | "labResult"
     | "biomarker"
+    | "biomarkerAlias"
+    | "biomarkerMerge"
     | "illnessEpisode"
     | "allergy"
     | "familyHistoryEntry"
@@ -351,6 +384,8 @@ export async function buildRecordsBackupSection(
   const [
     labResultRows,
     biomarkerRows,
+    biomarkerAliasRows,
+    biomarkerMergeRows,
     episodeRows,
     allergyRows,
     familyRows,
@@ -365,6 +400,22 @@ export async function buildRecordsBackupSection(
     prisma.biomarker.findMany({
       where: { userId },
       orderBy: { name: "asc" },
+    }),
+    prisma.biomarkerAlias.findMany({
+      where: { userId },
+      orderBy: [{ biomarkerId: "asc" }, { nameFolded: "asc" }],
+      select: {
+        id: true,
+        biomarkerId: true,
+        name: true,
+        source: true,
+        createdAt: true,
+      },
+    }),
+    prisma.biomarkerMerge.findMany({
+      where: { userId },
+      orderBy: { mergedAt: "asc" },
+      include: { target: { select: { name: true } } },
     }),
     prisma.illnessEpisode.findMany({
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
@@ -406,6 +457,9 @@ export async function buildRecordsBackupSection(
           note: null,
         }
       : {
+          // No id: a portable restore mints a fresh one. The relation links
+          // still name this row, so the file says which row they mean.
+          ref: r.id,
           note: readForExport(
             r.noteEncrypted,
             "lab note",
@@ -429,6 +483,32 @@ export async function buildRecordsBackupSection(
     biomarkerName: r.biomarker?.name ?? null,
   }));
 
+  const aliasesByMarker = new Map<string, BiomarkerAliasBackupEntry[]>();
+  for (const alias of biomarkerAliasRows) {
+    const list = aliasesByMarker.get(alias.biomarkerId) ?? [];
+    list.push({
+      name: alias.name,
+      source: alias.source as BiomarkerAliasBackupEntry["source"],
+      ...(disasterRecovery
+        ? { id: alias.id, createdAt: alias.createdAt.toISOString() }
+        : {}),
+    });
+    aliasesByMarker.set(alias.biomarkerId, list);
+  }
+
+  const biomarkerMerges: BiomarkerMergeBackupEntry[] = biomarkerMergeRows.map(
+    (m) => ({
+      ...(disasterRecovery
+        ? { id: m.id, targetBiomarkerId: m.targetBiomarkerId }
+        : {}),
+      targetName: m.target.name,
+      sourceBiomarkerId: m.sourceBiomarkerId,
+      sourceName: m.sourceName,
+      readingCount: m.readingCount,
+      mergedAt: m.mergedAt.toISOString(),
+    }),
+  );
+
   const biomarkers: BiomarkerBackupEntry[] = biomarkerRows.map((b) => ({
     ...(disasterRecovery
       ? {
@@ -449,6 +529,7 @@ export async function buildRecordsBackupSection(
       decryptContextFromBytes,
     ),
     analyteKey: b.analyteKey,
+    aliases: aliasesByMarker.get(b.id) ?? [],
   }));
 
   const illnessEpisodes: CanonicalIllnessEpisode[] = disasterRecovery
@@ -598,6 +679,7 @@ export async function buildRecordsBackupSection(
   return {
     labResults,
     biomarkers,
+    biomarkerMerges,
     illnessEpisodes,
     allergies,
     familyHistory,

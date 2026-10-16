@@ -18,6 +18,7 @@
  * two-member `origin` enum. The match key that connects them is a server-side
  * column and reaches no response.
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -43,6 +44,7 @@ import {
   recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
 // annotating in place, so each annotated schema is bound to a const and the
@@ -163,8 +165,8 @@ const customVaccine = z
       ),
     typicalSeriesDoses: z.number().int().nullable(),
     boosterIntervalMonths: z.number().int().nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "CustomVaccine",
@@ -470,7 +472,10 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The dose.",
           content: {
             "application/json": {
-              schema: dataEnvelope(vaccination, "GetVaccinationEnvelope"),
+              schema: dataEnvelope(
+                withRelated(vaccination),
+                "GetVaccinationEnvelope",
+              ),
             },
           },
         },
@@ -624,9 +629,9 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/vaccinations/{id}/links": {
     post: {
       tags: ["Records"],
-      summary: "File documents against a vaccination",
+      summary: "File documents or a visit against a vaccination",
       description:
-        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document and visit link and unlink.",
+        "Adds links. Idempotent: a pair that already exists succeeds and changes nothing. Session-authenticated only, matching document and visit link and unlink. Since v1.43 `targetKind` also takes `encounter` (the visit the dose was given at); that link shows in the dose's `related` list (`GET /api/vaccinations/{id}`), not in `documents`.",
       requestParams: idPath,
       requestBody: {
         required: true,
@@ -653,7 +658,7 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
     delete: {
       tags: ["Records"],
-      summary: "Unfile documents from a vaccination",
+      summary: "Unfile documents or a visit from a vaccination",
       description:
         "Removes links. Idempotent, and it still works for a page the account has since deleted — refusing would leave a filing nobody can clear.",
       requestParams: idPath,

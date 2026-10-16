@@ -122,7 +122,7 @@ async function postRestore(request: NextRequest): Promise<Response> {
         type: row.type as MeasurementType,
         measuredAt: row.measuredAt,
       })),
-      "measurements restore",
+      { source: "manual", label: "measurements restore" },
     );
   }
 

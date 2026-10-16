@@ -22,6 +22,7 @@ import { z } from "zod/v4";
 import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** Max rows a single scan / commit may carry — a dense panel is ~30 analytes. */
 export const OCR_MAX_ROWS = 100;
@@ -34,10 +35,10 @@ const LAB_TAKEN_AT_MAX_AGE_MS = 50 * 365.25 * 24 * 60 * 60 * 1000;
 
 /** Shared committed-row `takenAt`: ISO string → Date, plausibility-bounded. */
 const takenAtField = validateEntryInstant(
-  z
-    .string()
-    .datetime({ message: "takenAt must be an ISO 8601 datetime" })
-    .transform((s) => new Date(s)),
+  isoDateTime({
+    offset: false,
+    message: "takenAt must be an ISO 8601 datetime",
+  }).transform((s) => new Date(s)),
   {
     maxAgeMs: LAB_TAKEN_AT_MAX_AGE_MS,
     pastMessage: "Sample date is too far in the past",
@@ -138,6 +139,19 @@ export interface OcrExtractedRowDto {
    */
   markerAnalyteKey: string | null;
   duplicateOf: string | null;
+  /**
+   * v1.43 (D1223) — the marker the row was matched to automatically: by its
+   * name, an alias of the account, or a catalog abbreviation. Null when none.
+   */
+  biomarkerId: string | null;
+  matchKind: "name" | "alias" | "catalog" | null;
+  /** Up to three markers to choose from when nothing matched; else empty. */
+  suggestions: Array<{
+    biomarkerId: string;
+    name: string;
+    unit: string;
+    matchKind: "catalog" | "similar";
+  }>;
 }
 
 export interface OcrExtractResponseDto {
@@ -190,6 +204,18 @@ export const ocrCommitRowSchema = z
       .optional()
       .or(z.literal("").transform(() => undefined)),
     takenAt: takenAtField,
+    /**
+     * v1.43 (D1223) — the marker the person chose for this row on the review
+     * screen. The row is written under it whatever `analyte` says; an id that
+     * is not one of the record's markers skips the row (`unknown_biomarker`).
+     */
+    biomarkerId: z.string().trim().min(1).max(64).optional(),
+    /**
+     * With `biomarkerId`: remember `analyte` as another spelling of that
+     * marker, so the next report with the same name matches on its own.
+     * Default true. Ignored when the name is the marker's own.
+     */
+    rememberAlias: z.boolean().optional(),
   })
   // Numeric XOR qualitative: exactly one of value / valueText.
   .refine((d) => (d.value !== undefined) !== (d.valueText !== undefined), {
@@ -246,11 +272,12 @@ export type OcrCommitInput = z.infer<typeof ocrCommitSchema>;
 /**
  * A row the commit route did not write. `duplicate`: it matched a live reading
  * at commit time. `unit_mismatch`: it states a unit other than the one its
- * marker is tracked in.
+ * marker is tracked in. `unknown_biomarker`: the chosen `biomarkerId` is not
+ * one of the record's markers.
  */
 export interface OcrSkippedRowDto {
   analyte: string;
-  reason: "duplicate" | "unit_mismatch";
+  reason: "duplicate" | "unit_mismatch" | "unknown_biomarker";
 }
 
 export interface OcrCommitResponseDto {

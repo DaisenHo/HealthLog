@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Eye, Loader2, Target } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -98,7 +98,8 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
       onSettled: () => setPending(null),
       // v1.16.4 — a failed save used to revert the switch silently once the
       // spinner cleared; a toast names the rejection.
-      onError: () => toast.error(t("insights.coach.prefsSaveError")),
+      onError: (failure) =>
+        showErrorToast(t("insights.coach.prefsSaveError"), { cause: failure }),
     });
   }
 

@@ -63,6 +63,7 @@ import {
   droppedLinkKeysForWire,
   NO_DROPPED_LINK_KEYS,
 } from "@/lib/mood/tag-links";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const MAX_ENTRIES_PER_BATCH = 500;
 const BATCH_RATE_LIMIT_MAX = 60;
@@ -135,7 +136,7 @@ const bulkEntrySchema = z.object({
    * @per-entry-parse: moodContextSchema, in the loop below
    */
   context: z.unknown().optional(),
-  moodLoggedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+  moodLoggedAt: isoDateTime().transform((s) => new Date(s)),
   source: moodSourceEnum.optional().default("MANUAL"),
   /**
    * Optional iOS-side identifier (e.g. SwiftData row UUID) that lets

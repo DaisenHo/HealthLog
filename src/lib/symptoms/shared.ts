@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 
 import { CUSTOM_SYMPTOM_ICON_ALLOWLIST } from "@/lib/cycle/custom-symptoms-shared";
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Person-defined symptoms (v1.40): client-safe constants, wire types and the
@@ -108,8 +109,7 @@ const intensitySchema = z
   .max(SYMPTOM_INTENSITY_MAX);
 
 const occurredAtSchema = validateEntryInstant(
-  z.iso
-    .datetime({ offset: true })
+  isoDateTime()
     .transform((s) => new Date(s))
     .pipe(z.date()),
 );
@@ -141,8 +141,8 @@ export const symptomEventUpdateSchema = z
   );
 
 export const symptomEventListQuerySchema = z.object({
-  from: z.iso.datetime({ offset: true }).optional(),
-  to: z.iso.datetime({ offset: true }).optional(),
+  from: isoDateTime().optional(),
+  to: isoDateTime().optional(),
   definitionId: z.string().min(1).max(40).optional(),
   episodeId: z.string().min(1).max(40).optional(),
   limit: z.coerce

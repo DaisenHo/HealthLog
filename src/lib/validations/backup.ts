@@ -77,10 +77,12 @@ import {
 } from "@/generated/prisma/enums";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
-  healthProfileAiSectionSchema,
-  healthProfileFactKindSchema,
-  isHealthProfileFactValue,
+  storedHealthProfileAiSectionSchema,
 } from "@/lib/validations/health-profile-facts";
+import {
+  STORED_FACT_KINDS,
+  isStoredFactPlaintext,
+} from "@/lib/validations/life-circumstances";
 import {
   advanceDirectiveStatusSchema,
   emergencyBloodTypeSchema,
@@ -213,6 +215,25 @@ const medicationPauseEraSchema = z
     id: z.string().min(1).optional(),
     pausedAt: isoDateTime,
     resumedAt: isoDateTime.nullable(),
+    createdAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+/**
+ * v1.43 — one ingredient of a medication's composition per unit, in the
+ * catalogue's canonical unit. The code stays a string: a file from a newer
+ * server may name a nutrient this one does not know, and the row is still
+ * the person's.
+ */
+const medicationIngredientSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    nutrient: z.string().min(1).max(40),
+    amountPerUnit: z.number().finite().positive(),
+    unit: z.string().min(1).max(8),
+    enteredAmount: z.number().finite().nullable().optional(),
+    enteredUnit: z.string().max(8).nullable().optional(),
+    source: z.enum(["MANUAL", "LABEL_AI"]).default("MANUAL"),
     createdAt: isoDateTime.optional(),
   })
   .passthrough();
@@ -371,6 +392,10 @@ const customMedicationCategorySchema = z
 const medicationSchema = z
   .object({
     id: z.string().min(1).optional(),
+    // The source row's id in a portable file, which carries no `id`: the
+    // relation links name the medication by it, and the restore re-points
+    // them at the row it writes (`relation-links-backup.ts`).
+    ref: z.string().min(1).optional(),
     name: z.string().min(1),
     dose: z.string(),
     treatmentClass: z.enum(MedicationCategory).optional(),
@@ -424,6 +449,9 @@ const medicationSchema = z
     // Defaulted for the same reason: a file written before pause eras rode the
     // wire still parses, and a drug that was never paused writes [].
     pauseEras: z.array(medicationPauseEraSchema).default([]),
+    // v1.43 — defaulted: a file written before compositions travelled, or a
+    // drug without one, writes [].
+    ingredients: z.array(medicationIngredientSchema).default([]),
     // Same default, same reason: an older file parses, a drug never titrated
     // writes [].
     doseChanges: z.array(medicationDoseChangeSchema).default([]),
@@ -808,9 +836,18 @@ const healthProfileBackupSchema = z
     conditions: z.string().nullable().default(null),
     allergies: z.string().nullable().default(null),
     coachFocus: z.string().nullable().default(null),
+    // Every stored section, the four life-circumstance ones included (v1.43):
+    // a file written by an account that opted one in must restore it opted in.
     aiIncludedSections: z
-      .array(healthProfileAiSectionSchema)
+      .array(storedHealthProfileAiSectionSchema)
       .default([...DEFAULT_HEALTH_PROFILE_AI_SECTIONS]),
+    // v1.43 (#614) — section confirmations, section key to ISO instant.
+    // Carried as stored; the read route judges each stamp, so an unreadable
+    // one costs a "still true?" prompt rather than the whole restore.
+    lifeConfirmedJson: z
+      .record(z.string().max(64), z.string().max(64))
+      .nullable()
+      .optional(),
     // Emergency profile: three plaintext enums (carried by value in both
     // purposes), three free-text columns following the ciphertext-or-plaintext
     // split of the self-context fields above.
@@ -838,7 +875,7 @@ const healthProfileBackupSchema = z
 const healthProfileFactBackupSchema = z
   .object({
     id: z.string().min(1),
-    kind: healthProfileFactKindSchema,
+    kind: z.enum(STORED_FACT_KINDS),
     value: z.string().nullable().default(null),
     valueEncrypted: base64BytesSchema.optional(),
     validFrom: isoDateTime,
@@ -852,7 +889,7 @@ const healthProfileFactBackupSchema = z
     if (fact.valueEncrypted === undefined) {
       if (
         fact.value === null ||
-        !isHealthProfileFactValue(fact.kind, fact.value)
+        !isStoredFactPlaintext(fact.kind, fact.value)
       ) {
         ctx.addIssue({
           code: "custom",
@@ -964,6 +1001,12 @@ const intradayProfileBackupSchema = z
     hourlyCumulative: z.array(z.number()),
     dayTotal: z.number(),
     sampleCount: z.number().int(),
+    // v1.43 (ios #77) — the hours the phone posted, what the curve was built
+    // from, and how many hours there were. Defaulted so a file written before
+    // the hours existed restores as a fold of single samples, which it was.
+    hourlyIncrements: z.array(z.number()).default([]),
+    basis: z.enum(["PER_SAMPLE", "HOUR_BUCKETS"]).default("PER_SAMPLE"),
+    bucketCount: z.number().int().nonnegative().nullable().default(null),
     // The zone the day was cut on. The reader compares it against the
     // account's current zone and drops the mismatched days, so a restore that
     // dropped this column would make old curves look comparable when their
@@ -1087,11 +1130,16 @@ const appSettingsBackupSchema = z
 const labResultBackupSchema = z
   .object({
     id: z.string().min(1).optional(),
+    // The source row's id in a portable file, as on a medication.
+    ref: z.string().min(1).optional(),
     panel: z.string().nullable().optional(),
     analyte: z.string().min(1),
     value: z.number().nullable().optional(),
     valueText: z.string().nullable().optional(),
-    unit: z.string().min(1),
+    // A qualitative reading ("positive", "trace") has no unit and is stored
+    // under its marker's empty one (`POST /api/labs`); the refine below keeps
+    // the unit required for every numeric reading.
+    unit: z.string(),
     referenceLow: z.number().nullable().optional(),
     referenceHigh: z.number().nullable().optional(),
     // Optional so a backup written before these columns existed still
@@ -1113,13 +1161,29 @@ const labResultBackupSchema = z
     deletedAt: isoDateTime.nullable().optional(),
     updatedAt: isoDateTime.optional(),
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((reading, ctx) => {
+    const qualitative =
+      (reading.value === null || reading.value === undefined) &&
+      typeof reading.valueText === "string" &&
+      reading.valueText.length > 0;
+    if (reading.unit.length === 0 && !qualitative) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["unit"],
+        message: "A numeric lab reading needs its unit",
+      });
+    }
+  });
 
 const biomarkerBackupSchema = z
   .object({
     id: z.string().min(1).optional(),
     name: z.string().min(1),
-    unit: z.string().min(1),
+    // Empty for a qualitative marker, minted from a reading with no unit. The
+    // payload refine below refuses an empty unit on a marker a numeric
+    // reading is filed under.
+    unit: z.string(),
     lowerBound: z.number().nullable().optional(),
     upperBound: z.number().nullable().optional(),
     panel: z.string().nullable().optional(),
@@ -1127,8 +1191,35 @@ const biomarkerBackupSchema = z
     // v1.42 (#1095) — the catalogue analyte the marker resolves to.
     analyteKey: z.string().nullable().optional(),
     context: z.string().nullable().optional(),
+    // v1.43 (D1223) — the other spellings the marker answers to. Absent on
+    // files written before them.
+    aliases: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).optional(),
+            name: z.string().min(1).max(120),
+            source: z.enum(["MERGE", "IMPORT_CHOICE", "MANUAL"]),
+            createdAt: isoDateTime.optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+// v1.43 (D1223) — the ledger of markers merged into others.
+const biomarkerMergeBackupSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    targetBiomarkerId: z.string().min(1).optional(),
+    targetName: z.string().min(1),
+    sourceBiomarkerId: z.string().min(1),
+    sourceName: z.string().min(1).max(120),
+    readingCount: z.number().int().min(0),
+    mergedAt: isoDateTime,
   })
   .passthrough();
 
@@ -1376,6 +1467,23 @@ const vaccinationLinkBackupSchema = z
   .passthrough();
 
 /**
+ * v1.43 — one row of a relation link table: its two ends, by the column
+ * names of the table, and the instant it was filed.
+ */
+function relationLinkBackupSchema<A extends string, B extends string>(
+  a: A,
+  b: B,
+) {
+  return z
+    .object({
+      [a]: z.string().min(1),
+      [b]: z.string().min(1),
+      createdAt: isoDateTime,
+    } as { [K in A | B]: z.ZodString } & { createdAt: typeof isoDateTime })
+    .passthrough();
+}
+
+/**
  * One Vorsorge reminder, and one row of its completion ledger (v1.37.20,
  * #223 / iOS #68).
  *
@@ -1548,6 +1656,37 @@ const environmentTravelLocationBackupSchema = z
     lon: z.number().nullable(),
     label: z.string().nullable(),
     locationEncrypted: base64BytesSchema.nullable().optional(),
+    createdAt: isoDateTime.optional(),
+    updatedAt: isoDateTime.optional(),
+  })
+  .passthrough();
+
+/**
+ * v1.43 — one local day of Dawarich movement values. Daily values only; the
+ * country rides readable (portable) or sealed (disaster recovery).
+ */
+const dawarichDayBackupSchema = z
+  .object({
+    date: environmentDayKey,
+    totalDistanceM: z.number().int().nonnegative().nullable().optional(),
+    drivingDistanceM: z.number().int().nonnegative().nullable().optional(),
+    trainDistanceM: z.number().int().nonnegative().nullable().optional(),
+    placesVisited: z.number().int().nonnegative().nullable().optional(),
+    awayFromHomeMinutes: z
+      .number()
+      .int()
+      .min(0)
+      .max(25 * 60)
+      .nullable()
+      .optional(),
+    countryCode: z
+      .string()
+      .regex(/^[A-Z]{2}$/)
+      .nullable()
+      .optional(),
+    countryCodeEncrypted: base64BytesSchema.nullable().optional(),
+    isTravelDay: z.boolean().nullable().optional(),
+    fetchedAt: isoDateTime.optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })
@@ -2031,6 +2170,8 @@ const accountSettingsBackupSchema = z
     insightsPrivacyMode: z.string().optional(),
     insightsExcludeMetrics: z.array(z.string()).optional(),
     disableCoach: z.boolean().optional(),
+    // v1.43 (#1217) — the account's AI usage level; the codec checks the value.
+    aiUsageLevel: z.string().nullable().optional(),
     coachPrefsJson: z.unknown().optional(),
     documentsAutoAiRead: z.boolean().optional(),
     labsLocalOcrEnabled: z.boolean().optional(),
@@ -2092,6 +2233,8 @@ export const backupPayloadSchema = z
     // fields; portable exports retain the metadata-only subset.
     labResults: z.array(labResultBackupSchema).default([]),
     biomarkers: z.array(biomarkerBackupSchema).default([]),
+    // Defaulted: a file written before v1.43 carries no key.
+    biomarkerMerges: z.array(biomarkerMergeBackupSchema).default([]),
     illnessEpisodes: z.array(illnessEpisodeBackupSchema).default([]),
     // Defaulted: a file written before v1.40 carries no key.
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),
@@ -2145,6 +2288,23 @@ export const backupPayloadSchema = z
     customVaccines: z.array(customVaccineBackupSchema).default([]),
     vaccinations: z.array(vaccinationBackupSchema).default([]),
     vaccinationDocumentLinks: z.array(vaccinationLinkBackupSchema).default([]),
+    // v1.43 — the five relation links that close the relation matrix.
+    // Defaulted: a file written before v1.43 carries no key.
+    labResultDocumentLinks: z
+      .array(relationLinkBackupSchema("labResultId", "documentId"))
+      .default([]),
+    encounterMedicationLinks: z
+      .array(relationLinkBackupSchema("encounterId", "medicationId"))
+      .default([]),
+    encounterVaccinationLinks: z
+      .array(relationLinkBackupSchema("encounterId", "vaccinationId"))
+      .default([]),
+    medicationDocumentLinks: z
+      .array(relationLinkBackupSchema("medicationId", "documentId"))
+      .default([]),
+    medicationConditionLinks: z
+      .array(relationLinkBackupSchema("medicationId", "episodeId"))
+      .default([]),
     // The Vorsorge reminders and their completion ledger (v1.37.20, #223 /
     // iOS #68). Defaulted for the same reason as the sections above: a file
     // written before the reminders travelled carries no key, and an account
@@ -2174,6 +2334,9 @@ export const backupPayloadSchema = z
     environmentTravelLocations: z
       .array(environmentTravelLocationBackupSchema)
       .default([]),
+    // v1.43 — the Dawarich movement days, restored with the environment
+    // section. A file written before them carries no key.
+    dawarichDays: z.array(dawarichDayBackupSchema).default([]),
     // The ECG strips. Defaulted for the same reason as the sections above: a
     // file written before the recordings travelled carries no key, and an
     // account whose watch has never taken one writes [].
@@ -2186,6 +2349,30 @@ export const backupPayloadSchema = z
   })
   .passthrough()
   .superRefine((payload, ctx) => {
+    // A marker without a unit is a qualitative one. A numeric reading filed
+    // under it would restore as a number with no unit, so the file is refused
+    // naming the marker rather than restored into that.
+    const numericByMarker = new Set<string>();
+    for (const reading of payload.labResults) {
+      if (reading.value === null || reading.value === undefined) continue;
+      if (reading.biomarkerId) numericByMarker.add(`id:${reading.biomarkerId}`);
+      if (reading.biomarkerName) {
+        numericByMarker.add(`name:${reading.biomarkerName}`);
+      }
+    }
+    payload.biomarkers.forEach((marker, index) => {
+      if (marker.unit.length > 0) return;
+      if (
+        (marker.id && numericByMarker.has(`id:${marker.id}`)) ||
+        numericByMarker.has(`name:${marker.name}`)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["biomarkers", index, "unit"],
+          message: `Biomarker "${marker.name}" has numeric readings and needs its unit`,
+        });
+      }
+    });
     if (payload.schemaVersion !== BACKUP_SCHEMA_VERSION) return;
     payload.measurements.forEach((measurement, index) => {
       if (!measurement.id) {

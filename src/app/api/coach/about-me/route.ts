@@ -42,6 +42,7 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserInsights } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
+import { lockAiSections } from "@/lib/profile/life-circumstances";
 import { takeBaseToken, invalidBaseTokenError } from "@/lib/optimistic-lock";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -64,7 +65,9 @@ import {
 } from "@/lib/validations/about-me";
 import {
   DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
-  type HealthProfileAiSection,
+  HEALTH_PROFILE_AI_SECTIONS,
+  aboutMeAiSections,
+  type StoredHealthProfileAiSection,
 } from "@/lib/validations/health-profile-facts";
 
 const PUT_RATE_LIMIT = 30;
@@ -101,9 +104,13 @@ export const GET = apiHandler(async () => {
     }),
     getAiCapability("aboutMeQuestions"),
   ]);
-  const aiIncludedSections =
-    (row?.aiIncludedSections as HealthProfileAiSection[] | undefined) ??
-    DEFAULT_HEALTH_PROFILE_AI_SECTIONS;
+  // The eight sections this wire has always carried. The life-circumstance
+  // sections (v1.43) live in the same column but are switched and read
+  // through `/api/anamnesis/life-circumstances`; older app builds decode this
+  // list closed.
+  const aiIncludedSections = aboutMeAiSections(
+    row?.aiIncludedSections ?? DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
+  );
   // A stored set may be model-written. While the capability is unavailable
   // an outstanding set is swapped for the deterministic hints; an answered
   // (empty) set stays empty.
@@ -201,7 +208,7 @@ export const PUT = apiHandler(async (req: Request) => {
     conditionsEncrypted?: Uint8Array<ArrayBuffer> | null;
     allergiesEncrypted?: Uint8Array<ArrayBuffer> | null;
     coachFocusEncrypted?: Uint8Array<ArrayBuffer> | null;
-    aiIncludedSections?: HealthProfileAiSection[];
+    aiIncludedSections?: StoredHealthProfileAiSection[];
   } = {};
   const aboutMePayload = encryptOptional(parsed.data.aboutMe);
   if (aboutMePayload !== undefined) {
@@ -218,9 +225,6 @@ export const PUT = apiHandler(async (req: Request) => {
   const coachFocusPayload = encryptOptional(parsed.data.coachFocus);
   if (coachFocusPayload !== undefined) {
     update.coachFocusEncrypted = coachFocusPayload;
-  }
-  if (parsed.data.aiIncludedSections !== undefined) {
-    update.aiIncludedSections = parsed.data.aiIncludedSections;
   }
   const fieldLengths: Record<string, number> = {
     ...(text !== undefined ? { aboutMe: text.length } : {}),
@@ -240,6 +244,26 @@ export const PUT = apiHandler(async (req: Request) => {
   // commit while an hour-fresh advisor payload still references excluded
   // profile content.
   const persistence = await prisma.$transaction(async (tx) => {
+    // A PUT here replaces the eight sections it lists and leaves the
+    // life-circumstance switches (v1.43) exactly as stored.
+    if (parsed.data.aiIncludedSections !== undefined) {
+      // Taken before the read, so a switch changed concurrently is read
+      // after it commits and carried over as it now stands.
+      await lockAiSections(tx, user.id);
+      const stored = await tx.userHealthProfile.findUnique({
+        where: { userId: user.id },
+        select: { aiIncludedSections: true },
+      });
+      update.aiIncludedSections = [
+        ...parsed.data.aiIncludedSections,
+        ...(stored?.aiIncludedSections ?? []).filter(
+          (section) =>
+            !(HEALTH_PROFILE_AI_SECTIONS as readonly string[]).includes(
+              section,
+            ),
+        ),
+      ];
+    }
     let updatedAtIso: string;
     let savedProfileUpdatedAt: Date | null = null;
 
@@ -334,10 +358,9 @@ export const PUT = apiHandler(async (req: Request) => {
       select: { aiIncludedSections: true },
     }),
   ]);
-  const aiIncludedSections = (controlRow?.aiIncludedSections as
-    HealthProfileAiSection[] | undefined) ?? [
-    ...DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
-  ];
+  const aiIncludedSections = aboutMeAiSections(
+    controlRow?.aiIncludedSections ?? DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
+  );
   const aiContext = filterSelfContextForAi(ctx, aiIncludedSections);
   const aiContextIsEmpty =
     aiContext.aboutMe === null &&

@@ -25,6 +25,12 @@ import {
 /** A single numeric lab reading, with both windows it could be judged against. */
 export interface LabChangeRow extends SourceReferenceRange {
   analyte: string;
+  /**
+   * The marker the reading is filed under. Two reports print the same marker
+   * under different names ("HbA1c", "Glykiertes Hämoglobin"); the marker is
+   * what pairs them. A reading without one pairs by its printed name.
+   */
+  biomarkerId?: string | null;
   unit: string;
   value: number;
   referenceLow: number | null;
@@ -88,9 +94,18 @@ function dayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Normalised analyte name for cross-panel matching (free-text tolerant). */
-function analyteKey(analyte: string): string {
-  return analyte.trim().toLowerCase();
+/**
+ * Cross-panel matching key: the marker when the reading is filed under one,
+ * else the normalised printed name (free-text tolerant).
+ */
+function analyteKey(row: LabChangeRow): string {
+  return row.biomarkerId
+    ? `marker:${row.biomarkerId}`
+    : `name:${row.analyte.trim().toLowerCase()}`;
+}
+
+function sameUnit(a: LabChangeRow, b: LabChangeRow): boolean {
+  return a.unit.trim().toLowerCase() === b.unit.trim().toLowerCase();
 }
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -116,7 +131,7 @@ export function summariseLabChanges(
       analytes = new Map();
       byDay.set(day, analytes);
     }
-    const key = analyteKey(row.analyte);
+    const key = analyteKey(row);
     const existing = analytes.get(key);
     if (!existing || row.takenAt.getTime() >= existing.takenAt.getTime()) {
       analytes.set(key, row);
@@ -144,7 +159,8 @@ export function summariseLabChanges(
   const changes: LabChange[] = [];
   for (const [key, latestRow] of latest) {
     const previousRow = previous.get(key);
-    if (!previousRow) continue;
+    // A delta across two units is no change, it is a conversion; skip it.
+    if (!previousRow || !sameUnit(latestRow, previousRow)) continue;
     const delta = round2(latestRow.value - previousRow.value);
     const direction: LabChange["direction"] =
       delta > 0 ? "up" : delta < 0 ? "down" : "flat";

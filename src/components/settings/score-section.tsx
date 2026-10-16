@@ -48,6 +48,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -248,7 +249,7 @@ export function ScoreSection() {
           return;
         }
       }
-      toast.error(t("settings.sections.score.error"));
+      showErrorToast(t("settings.sections.score.error"), { cause: err });
     },
   });
 
@@ -267,8 +268,10 @@ export function ScoreSection() {
       );
       void queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
     },
-    onError: () => {
-      toast.error(t("settings.sections.score.notice.dismissError"));
+    onError: (failure) => {
+      showErrorToast(t("settings.sections.score.notice.dismissError"), {
+        cause: failure,
+      });
     },
   });
 
@@ -287,8 +290,10 @@ export function ScoreSection() {
       );
       void queryClient.invalidateQueries({ queryKey: queryKeys.analytics() });
     },
-    onError: () => {
-      toast.error(t("settings.sections.score.notice.dismissError"));
+    onError: (failure) => {
+      showErrorToast(t("settings.sections.score.notice.dismissError"), {
+        cause: failure,
+      });
     },
   });
 

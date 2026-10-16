@@ -54,6 +54,7 @@ import {
 } from "@/lib/export/restore-skips";
 import type { Prisma } from "@/generated/prisma/client";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
+import { withRelated } from "@/lib/links/related";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -81,7 +82,14 @@ export const GET = apiHandler(
       },
     });
 
-    return apiSuccess(toEncounterDTO(row, links));
+    return apiSuccess(
+      await withRelated(prisma, toEncounterDTO(row, links), {
+        userId: user.id,
+        grantId,
+        kind: "encounter",
+        id,
+      }),
+    );
   },
 );
 

@@ -31,6 +31,12 @@ vi.mock("@/lib/db", () => ({
     apiToken: {
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    // v1.43 — no composition: the GET carries `ingredients: []` and a PUT
+    // queues no supplement recompute.
+    medicationIngredient: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     $transaction: vi.fn(),
   },
 }));

@@ -27,6 +27,7 @@
  * Server-only — reads `@/lib/db`.
  */
 import { prisma } from "@/lib/db";
+import { userDayKey } from "@/lib/tz/format";
 import { getEvent } from "@/lib/logging/context";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -40,7 +41,25 @@ import {
   type HealthProfileFactKind,
   type HealthProfileFactValue,
 } from "@/lib/validations/health-profile-facts";
-import { decryptHealthProfileFactValue } from "@/lib/profile/health-facts";
+import {
+  decryptHealthProfileFactValue,
+  decryptLifeFactValue,
+} from "@/lib/profile/health-facts";
+import { LIFE_KIND_AI_SECTION } from "@/lib/profile/life-derived";
+import { auditCCutoff } from "@/lib/mental-health/audit-c";
+import { loadNewestReadableAuditC } from "@/lib/profile/audit-c-entries";
+import {
+  LIFE_FACT_KINDS,
+  isLifeFactKind,
+  type ActivityHabitValue,
+  type FreeWeekdaysValue,
+  type HabitsValue,
+  type HealthGoalsValue,
+  type LifeFactKind,
+  type LifeFactValue,
+  type TobaccoDetailValue,
+  type WorkContextValue,
+} from "@/lib/validations/life-circumstances";
 
 export interface SelfContext {
   aboutMe: string | null;
@@ -397,6 +416,256 @@ export function composeStructuredHealthFactsText(
   return lines.length > 0 ? lines.join("\n") : null;
 }
 
+// ── Life circumstances (v1.43, #614) ─────────────────────────────────────────
+
+type LifeLang = "de" | "en";
+
+const LIFE_LABELS: Record<LifeLang, Record<string, string>> = {
+  de: {
+    selfReport: "Selbstauskunft, gilt seit",
+    products: "Tabakprodukte",
+    cigarettes: "Zigaretten pro Tag",
+    startYear: "Rauchbeginn",
+    quit: "Rauchstopp",
+    secondhand: "Passivrauch",
+    activity: "Mäßige bis anstrengende Bewegung",
+    activityValue: "{days} Tage pro Woche, je {minutes} Minuten",
+    sitting: "Sitzen an Werktagen (Stunden)",
+    situation: "Arbeitssituation",
+    nature: "Art der Arbeit",
+    night: "Nachtarbeit",
+    exposures: "Belastungen bei der Arbeit",
+    freeDays: "Freie Wochentage",
+    nap: "Regelmäßiger Mittagsschlaf",
+    snoring: "Schnarchen laut anderen",
+    diet: "Ernährungsweise",
+    dietSpecifics: "Besonderheiten",
+    lateMeals: "Mahlzeiten nach 21 Uhr pro Woche",
+    fruitVeg: "Portionen Obst und Gemüse pro Tag",
+    caffeine: "Koffeinhaltige Getränke pro Tag",
+    latestCaffeine: "Spätestes Koffein",
+    goals: "Gesundheitsziele",
+    auditC: "AUDIT-C (Screening, keine Diagnose)",
+    auditCValue: "{score} von 12 am {date}",
+    above: "Screening-Grenzwert {cutoff} erreicht",
+    below: "unter dem Screening-Grenzwert {cutoff}",
+    yes: "ja",
+    no: "nein",
+  },
+  en: {
+    selfReport: "self-report, valid since",
+    products: "Tobacco products",
+    cigarettes: "Cigarettes per day",
+    startYear: "Started smoking",
+    quit: "Stopped smoking",
+    secondhand: "Secondhand smoke",
+    activity: "Moderate to strenuous activity",
+    activityValue: "{days} days a week, {minutes} minutes each",
+    sitting: "Sitting on a workday (hours)",
+    situation: "Work situation",
+    nature: "Physical nature of work",
+    night: "Night work",
+    exposures: "Exposures at work",
+    freeDays: "Free weekdays",
+    nap: "Regular nap",
+    snoring: "Snoring reported by others",
+    diet: "Diet pattern",
+    dietSpecifics: "Specifics",
+    lateMeals: "Meals after 9 pm per week",
+    fruitVeg: "Fruit and vegetable portions per day",
+    caffeine: "Caffeinated drinks per day",
+    latestCaffeine: "Latest caffeine",
+    goals: "Health goals",
+    auditC: "AUDIT-C (screening, not a diagnosis)",
+    auditCValue: "{score} of 12 on {date}",
+    above: "at or above the screening cut-off of {cutoff}",
+    below: "below the screening cut-off of {cutoff}",
+    yes: "yes",
+    no: "no",
+  },
+};
+
+const WEEKDAY_NAMES: Record<LifeLang, readonly string[]> = {
+  de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+};
+
+function fill(
+  template: string,
+  params: Record<string, string | number>,
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) =>
+    String(params[key] ?? ""),
+  );
+}
+
+/** One current life-circumstance revision as the prompt block reads it. */
+export interface LifeFactForPrompt {
+  kind: LifeFactKind;
+  value: LifeFactValue;
+  validFrom: Date;
+}
+
+/** The newest AUDIT-C entry as the prompt block reads it: the sum and the cut-off verdict only. */
+export interface AuditCForPrompt {
+  totalScore: number;
+  takenAt: Date;
+  /** The zone the entry was taken in, for its calendar day. */
+  tz: string;
+  cutoff: number | null;
+  aboveCutoff: boolean | null;
+}
+
+/**
+ * Compose the life-circumstance lines of the self-context block: each line
+ * says it is a self-report and since when it holds, the enum values stay in
+ * their wire form where a translation would add nothing (`fumes_solvents`
+ * reads fine to a model), and AUDIT-C is a sum with a screening verdict,
+ * never a label for the person. Null when there is nothing to say.
+ */
+export function composeLifeCircumstancesText(
+  facts: readonly LifeFactForPrompt[],
+  auditC: AuditCForPrompt | null,
+  locale: string,
+): string | null {
+  const lang: LifeLang = locale === "de" ? "de" : "en";
+  const L = LIFE_LABELS[lang];
+  const yesNo = (v: boolean) => (v ? L.yes : L.no);
+  const since = (d: Date) => `(${L.selfReport} ${d.toISOString().slice(0, 7)})`;
+  const words = (list: readonly string[]) =>
+    list.map((w) => w.replace(/_/g, " ")).join(", ");
+  const lines: string[] = [];
+
+  for (const fact of facts) {
+    const parts: string[] = [];
+    switch (fact.kind) {
+      case "TOBACCO_DETAIL": {
+        const v = fact.value as TobaccoDetailValue;
+        if (v.products.length > 0)
+          parts.push(`${L.products}: ${words(v.products)}`);
+        if (v.cigarettesPerDay !== null)
+          parts.push(`${L.cigarettes}: ${v.cigarettesPerDay}`);
+        if (v.startYear !== null) parts.push(`${L.startYear}: ${v.startYear}`);
+        if (v.quitMonth !== null) parts.push(`${L.quit}: ${v.quitMonth}`);
+        if (v.secondhandSmoke !== null)
+          parts.push(`${L.secondhand}: ${yesNo(v.secondhandSmoke)}`);
+        break;
+      }
+      case "ACTIVITY_HABIT": {
+        const v = fact.value as ActivityHabitValue;
+        if (
+          v.moderateDaysPerWeek !== null &&
+          v.moderateMinutesPerDay !== null
+        ) {
+          parts.push(
+            `${L.activity}: ${fill(L.activityValue, {
+              days: v.moderateDaysPerWeek,
+              minutes: v.moderateMinutesPerDay,
+            })}`,
+          );
+        }
+        if (v.sittingHoursWorkday !== null)
+          parts.push(`${L.sitting}: ${v.sittingHoursWorkday}`);
+        break;
+      }
+      case "WORK_CONTEXT": {
+        const v = fact.value as WorkContextValue;
+        if (v.situation !== null)
+          parts.push(`${L.situation}: ${words([v.situation])}`);
+        if (v.physicalNature !== null)
+          parts.push(`${L.nature}: ${words([v.physicalNature])}`);
+        if (v.nightWork !== null)
+          parts.push(`${L.night}: ${yesNo(v.nightWork)}`);
+        if (v.exposures.length > 0)
+          parts.push(`${L.exposures}: ${words(v.exposures)}`);
+        break;
+      }
+      case "FREE_WEEKDAYS": {
+        const v = fact.value as FreeWeekdaysValue;
+        parts.push(
+          `${L.freeDays}: ${[...v.days]
+            .sort((a, b) => a - b)
+            .map((d) => WEEKDAY_NAMES[lang][d - 1])
+            .join(", ")}`,
+        );
+        break;
+      }
+      case "HABITS": {
+        const v = fact.value as HabitsValue;
+        if (v.napRegularly !== null)
+          parts.push(`${L.nap}: ${yesNo(v.napRegularly)}`);
+        if (v.snoringReported !== null)
+          parts.push(`${L.snoring}: ${yesNo(v.snoringReported)}`);
+        if (v.dietPattern !== null)
+          parts.push(`${L.diet}: ${words([v.dietPattern])}`);
+        if (v.dietSpecifics.length > 0)
+          parts.push(`${L.dietSpecifics}: ${words(v.dietSpecifics)}`);
+        if (v.lateMealsPerWeek !== null)
+          parts.push(`${L.lateMeals}: ${v.lateMealsPerWeek}`);
+        if (v.fruitVegPortionsPerDay !== null)
+          parts.push(`${L.fruitVeg}: ${v.fruitVegPortionsPerDay}`);
+        if (v.caffeineDrinksPerDay !== null)
+          parts.push(`${L.caffeine}: ${v.caffeineDrinksPerDay}`);
+        if (v.latestCaffeine !== null)
+          parts.push(`${L.latestCaffeine}: ${words([v.latestCaffeine])}`);
+        break;
+      }
+      case "HEALTH_GOALS": {
+        const v = fact.value as HealthGoalsValue;
+        if (v.goals.length > 0) parts.push(`${L.goals}: ${words(v.goals)}`);
+        break;
+      }
+    }
+    if (parts.length > 0)
+      lines.push(`${parts.join("; ")} ${since(fact.validFrom)}`);
+  }
+
+  if (auditC) {
+    const verdict =
+      auditC.cutoff === null || auditC.aboveCutoff === null
+        ? ""
+        : `, ${fill(auditC.aboveCutoff ? L.above : L.below, { cutoff: auditC.cutoff })}`;
+    lines.push(
+      `${L.auditC}: ${fill(L.auditCValue, {
+        score: auditC.totalScore,
+        date: userDayKey(auditC.takenAt, auditC.tz),
+      })}${verdict}`,
+    );
+  }
+  return lines.length > 0 ? lines.join("\n") : null;
+}
+
+/**
+ * The newest AUDIT-C entry for a prompt: only when the alcohol section is
+ * released. "Newest" is the newest entry whose answers open, the same entry
+ * the read route shows as the result (`audit-c-entries.ts`). The profile sex
+ * for the cut-off is read only when there is an entry to judge.
+ */
+async function loadAuditCForPrompt(
+  userId: string,
+  included: ReadonlySet<string>,
+): Promise<AuditCForPrompt | null> {
+  if (!included.has("ALCOHOL_PATTERN")) return null;
+  const audit = await loadNewestReadableAuditC(userId);
+  if (!audit) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { gender: true, locale: true, timezone: true },
+  });
+  const cutoff = auditCCutoff(
+    audit.locale,
+    user?.gender ?? null,
+    user?.locale ?? "en",
+  );
+  return {
+    totalScore: audit.totalScore,
+    takenAt: audit.takenAt,
+    tz: audit.tz ?? user?.timezone ?? "UTC",
+    cutoff: cutoff?.value ?? null,
+    aboveCutoff: cutoff ? audit.totalScore >= cutoff.value : null,
+  };
+}
+
 /**
  * Compose the merged self-context text the prompt block quotes: profile
  * facts first (age/gender from the User row — the single source, never
@@ -486,51 +755,64 @@ export async function getSelfContextTextForUser(
       (controlRow?.aiIncludedSections ??
         DEFAULT_HEALTH_PROFILE_AI_SECTIONS) as HealthProfileAiSection[],
     );
-    const includedFactKinds = (
-      ["SMOKING_STATUS", "ALCOHOL_PATTERN", "SHIFT_SCHEDULE"] as const
-    ).filter((kind) => included.has(kind));
+    const includedStored: ReadonlySet<string> = new Set<string>(
+      controlRow?.aiIncludedSections ?? DEFAULT_HEALTH_PROFILE_AI_SECTIONS,
+    );
+    // One read for every fact kind a released section covers: the three
+    // closed kinds and the life-circumstance kinds (v1.43). A kind whose
+    // section is not released is never read, so it is never decrypted.
+    const includedFactKinds = [
+      ...(["SMOKING_STATUS", "ALCOHOL_PATTERN", "SHIFT_SCHEDULE"] as const),
+      ...LIFE_FACT_KINDS,
+    ].filter((kind) =>
+      includedStored.has(
+        isLifeFactKind(kind) ? LIFE_KIND_AI_SECTION[kind] : kind,
+      ),
+    );
 
-    const [ctx, user, allergyRows, familyRows, factRows] = await Promise.all([
-      getSelfContextForUser(userId, prisma, included),
-      included.has("ABOUT_ME")
-        ? prisma.user.findUnique({
-            where: { id: userId },
-            select: { dateOfBirth: true, gender: true },
-          })
-        : Promise.resolve(null),
-      included.has("ALLERGIES")
-        ? prisma.allergy.findMany({
-            where: { userId, deletedAt: null },
-            orderBy: { createdAt: "asc" },
-            select: {
-              substance: true,
-              type: true,
-              severity: true,
-              status: true,
-              reactionEncrypted: true,
-            },
-          })
-        : Promise.resolve([]),
-      included.has("FAMILY_HISTORY")
-        ? prisma.familyHistoryEntry.findMany({
-            where: { userId, deletedAt: null },
-            orderBy: { createdAt: "asc" },
-            select: { relationship: true, condition: true, ageAtOnset: true },
-          })
-        : Promise.resolve([]),
-      includedFactKinds.length > 0
-        ? prisma.healthProfileFactRevision.findMany({
-            where: {
-              userId,
-              kind: { in: includedFactKinds },
-              validUntil: null,
-              supersededByRevisionId: null,
-            },
-            orderBy: { kind: "asc" },
-            select: { kind: true, valueEncrypted: true },
-          })
-        : Promise.resolve([]),
-    ]);
+    const [ctx, user, allergyRows, familyRows, factRows, auditC] =
+      await Promise.all([
+        getSelfContextForUser(userId, prisma, included),
+        included.has("ABOUT_ME")
+          ? prisma.user.findUnique({
+              where: { id: userId },
+              select: { dateOfBirth: true, gender: true },
+            })
+          : Promise.resolve(null),
+        included.has("ALLERGIES")
+          ? prisma.allergy.findMany({
+              where: { userId, deletedAt: null },
+              orderBy: { createdAt: "asc" },
+              select: {
+                substance: true,
+                type: true,
+                severity: true,
+                status: true,
+                reactionEncrypted: true,
+              },
+            })
+          : Promise.resolve([]),
+        included.has("FAMILY_HISTORY")
+          ? prisma.familyHistoryEntry.findMany({
+              where: { userId, deletedAt: null },
+              orderBy: { createdAt: "asc" },
+              select: { relationship: true, condition: true, ageAtOnset: true },
+            })
+          : Promise.resolve([]),
+        includedFactKinds.length > 0
+          ? prisma.healthProfileFactRevision.findMany({
+              where: {
+                userId,
+                kind: { in: includedFactKinds },
+                validUntil: null,
+                supersededByRevisionId: null,
+              },
+              orderBy: { kind: "asc" },
+              select: { kind: true, valueEncrypted: true, validFrom: true },
+            })
+          : Promise.resolve([]),
+        loadAuditCForPrompt(userId, includedStored),
+      ]);
 
     const selfText = composeSelfContextText(
       ctx,
@@ -552,24 +834,40 @@ export async function getSelfContextTextForUser(
       locale,
     );
     const factsText = composeStructuredHealthFactsText(
-      factRows.flatMap((row) => {
-        const decrypted = decryptHealthProfileFactValue(
-          row.kind as HealthProfileFactKind,
-          row.valueEncrypted,
-        );
-        return decrypted.value
-          ? [
-              {
-                kind: row.kind as HealthProfileFactKind,
-                value: decrypted.value,
-              },
-            ]
-          : [];
-      }),
+      factRows
+        .filter((row) => !isLifeFactKind(row.kind))
+        // The old one-word alcohol pattern gives way to an AUDIT-C entry:
+        // the questionnaire is the measured answer to the same question, and
+        // the two side by side would let a years-old guess argue with it.
+        .filter((row) => !(auditC && row.kind === "ALCOHOL_PATTERN"))
+        .flatMap((row) => {
+          const decrypted = decryptHealthProfileFactValue(
+            row.kind as HealthProfileFactKind,
+            row.valueEncrypted,
+          );
+          return decrypted.value
+            ? [
+                {
+                  kind: row.kind as HealthProfileFactKind,
+                  value: decrypted.value,
+                },
+              ]
+            : [];
+        }),
       locale,
     );
-    if (!selfText && !recordsText && !factsText) return null;
-    return [selfText, recordsText, factsText].filter(Boolean).join("\n");
+    const lifeFacts = factRows.flatMap((row) => {
+      if (!isLifeFactKind(row.kind)) return [];
+      const opened = decryptLifeFactValue(row.kind, row.valueEncrypted);
+      return opened.value
+        ? [{ kind: row.kind, value: opened.value, validFrom: row.validFrom }]
+        : [];
+    });
+    const lifeText = composeLifeCircumstancesText(lifeFacts, auditC, locale);
+    if (!selfText && !recordsText && !factsText && !lifeText) return null;
+    return [selfText, recordsText, factsText, lifeText]
+      .filter(Boolean)
+      .join("\n");
   } catch (err) {
     getEvent()?.addWarning(
       `coach self-context text load failed: ${
@@ -683,7 +981,11 @@ INTERPRETATIONSREGELN:
 - Das Alkoholkonsum-Muster nur als Kontext nutzen, ohne Menge oder Wirkung zu
   erfinden.
 - Feste oder wechselnde Schichtarbeit bei der Schlafzeit-Einordnung
-  berücksichtigen; unregelmäßiges Timing nicht allein als Problem darstellen.`;
+  berücksichtigen; unregelmäßiges Timing nicht allein als Problem darstellen.
+- Ein AUDIT-C-Wert ist ein Screening-Ergebnis: nie als Diagnose oder
+  Alkoholproblem bezeichnen.
+- Selbstauskünfte zu Bewegung, Schlaf und Ernährung ergänzen die Messdaten und
+  ersetzen sie nie; bei Widerspruch gelten die Messdaten.`;
   }
   return `
 
@@ -702,5 +1004,9 @@ INTERPRETATION RULES:
   smoking cessation.
 - Use an alcohol pattern as context only, without inventing amount or effect.
 - Account for fixed or rotating shifts when interpreting sleep timing; do not
-  call irregular timing a problem on that fact alone.`;
+  call irregular timing a problem on that fact alone.
+- An AUDIT-C score is a screening result: never call it a diagnosis or an
+  alcohol problem.
+- Self-reported activity, sleep and diet habits add to the measurements and
+  never replace them; on a conflict the measurements win.`;
 }

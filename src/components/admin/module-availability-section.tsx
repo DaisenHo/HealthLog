@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ToggleLeft } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -74,10 +75,11 @@ function useUpdateModuleAvailability() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      toast.error(
+      showErrorToast(
         err instanceof Error && err.message
           ? err.message
           : t("admin.modules.saveError"),
+        { cause: err },
       );
       client.invalidateQueries({
         queryKey: queryKeys.adminModuleAvailability(),

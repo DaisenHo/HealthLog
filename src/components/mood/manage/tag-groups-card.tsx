@@ -30,6 +30,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -173,7 +174,10 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
         toast.message(t("common.conflictReloaded"));
         return false;
       }
-      toast.error(err instanceof ApiError ? err.message : t("common.error"));
+      showErrorToast(
+        err instanceof ApiError ? err.message : t("common.error"),
+        { cause: err },
+      );
       return false;
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -354,8 +358,9 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
                     );
                     toast.success(t("mood.manage.groupDeleted"));
                   } catch (err) {
-                    toast.error(
+                    showErrorToast(
                       err instanceof ApiError ? err.message : t("common.error"),
+                      { cause: err },
                     );
                   } finally {
                     void invalidateMoodTagCaches(queryClient);
@@ -554,9 +559,12 @@ function GroupEditorSheet({
       void invalidateMoodTagCaches(queryClient);
     } catch (err) {
       if (err instanceof ApiError && err.status === 422) {
-        toast.error(t("mood.manage.groupLimitReached"));
+        showErrorToast(t("mood.manage.groupLimitReached"), { cause: err });
       } else {
-        toast.error(err instanceof ApiError ? err.message : t("common.error"));
+        showErrorToast(
+          err instanceof ApiError ? err.message : t("common.error"),
+          { cause: err },
+        );
       }
     } finally {
       setSaving(false);

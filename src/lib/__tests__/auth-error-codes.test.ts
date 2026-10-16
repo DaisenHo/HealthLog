@@ -236,7 +236,11 @@ describe("auth failures carry a machine-readable errorCode", () => {
     )) as Response;
 
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ data: null, error: "Not found" });
+    expect(await res.json()).toEqual({
+      data: null,
+      error: "Not found",
+      meta: { requestId: expect.any(String) },
+    });
   });
 
   it("keeps every code distinct and dot.case", () => {

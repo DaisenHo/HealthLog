@@ -40,7 +40,7 @@ import { ConditionsManager } from "@/components/records/conditions-manager";
 import { EmergencyProfileManager } from "@/components/records/emergency-profile-manager";
 import { FamilyHistoryManager } from "@/components/records/family-history-manager";
 import { AiProfileInclusionManager } from "@/components/records/ai-profile-inclusion-manager";
-import { HealthProfileFactsManager } from "@/components/records/health-profile-facts-manager";
+import { LifeCircumstancesManager } from "@/components/records/life-circumstances-manager";
 
 export function AnamnesisSection() {
   const { t } = useTranslations();
@@ -99,14 +99,17 @@ export function AnamnesisSection() {
         </SettingsCard>
       )}
 
+      {/* v1.43 (#614) — the life circumstances took over the three profile
+          facts (smoking status and shift work live in their sections now;
+          alcohol is AUDIT-C). */}
       <SettingsCard>
         <SettingsCardHeader
-          anchor="profile-facts"
+          anchor="life-circumstances"
           icon={ClipboardList}
-          title={t("records.profileFacts.cardTitle")}
-          description={t("records.profileFacts.cardDescription")}
+          title={t("records.life.cardTitle")}
+          description={t("records.life.cardDescription")}
         />
-        <HealthProfileFactsManager />
+        <LifeCircumstancesManager />
       </SettingsCard>
 
       <SettingsCard>

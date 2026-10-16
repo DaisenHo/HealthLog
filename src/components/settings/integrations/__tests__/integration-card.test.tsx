@@ -6,7 +6,7 @@
  * else, so what is checked here is that each `health` lands on the right
  * badge, sentence and (at most one) button.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -40,7 +40,18 @@ import {
 import type { IntegrationStatusViewModel } from "../shared";
 import { healthFixture } from "./health-fixture";
 
-const NOW = Date.now();
+// "Last data: today" only holds when the fixture's hours-ago stays on the same
+// local day, so the clock is pinned to midday rather than the wall clock.
+const PINNED_NOW = new Date("2026-10-08T12:00:00.000Z");
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(PINNED_NOW);
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
+
+const NOW = PINNED_NOW.getTime();
 const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
 
 function render(

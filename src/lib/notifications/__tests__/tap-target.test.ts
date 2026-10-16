@@ -6,10 +6,24 @@
  * `Record<EventType, …>` type already refuses to compile without one; this
  * pins that every entry is also a usable path).
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { EVENT_TYPES, type EventType } from "@/lib/notifications/types";
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    user: { findUnique: vi.fn().mockResolvedValue({ locale: "en" }) },
+  },
+}));
+
+import { withDeliveryLinks } from "@/lib/notifications/delivery-links";
+import { buildNtfyMessage } from "@/lib/notifications/senders/ntfy";
+import { buildWebhookBody } from "@/lib/notifications/senders/webhook";
 import {
+  EVENT_TYPES,
+  type EventType,
+  type NotificationPayload,
+} from "@/lib/notifications/types";
+import {
+  NEUTRAL_TAP_PATH,
   NOTIFICATION_TAP_PATHS,
   absoluteAppUrl,
   configuredAppOrigin,
@@ -91,14 +105,15 @@ describe("resolveTapPath", () => {
     ).toBe("/coach");
   });
 
-  it("gives a managed Guardian delivery no path", () => {
+  it("gives a managed Guardian delivery the app root, not the event's path", () => {
     expect(
       resolveTapPath({
         eventType: "MEDICATION_REMINDER",
         recordUserId: "record-1",
         recipientUserId: "guardian-1",
+        metadata: { url: "/medications/m1" },
       }),
-    ).toBeNull();
+    ).toBe(NEUTRAL_TAP_PATH);
   });
 
   it("keeps a self delivery's path when both ids are the same", () => {
@@ -111,10 +126,14 @@ describe("resolveTapPath", () => {
     ).toBe("/medications");
   });
 
-  it("gives a discreet delivery no path, so nothing names the cycle surface", () => {
+  it("gives a discreet delivery the app root, so nothing names the cycle surface", () => {
     expect(
-      resolveTapPath({ eventType: "CYCLE_PERIOD_SOON", discreet: true }),
-    ).toBeNull();
+      resolveTapPath({
+        eventType: "CYCLE_PERIOD_SOON",
+        discreet: true,
+        metadata: { url: "/cycle?day=1" },
+      }),
+    ).toBe(NEUTRAL_TAP_PATH);
   });
 
   it("gives the silent sync push no path even with an override", () => {
@@ -162,5 +181,69 @@ describe("telegramLinkMode", () => {
     ["nonsense", "none"],
   ])("%s → %s", (url, mode) => {
     expect(telegramLinkMode(url)).toBe(mode);
+  });
+});
+
+/**
+ * Every visible delivery carries a target on every channel: each event type,
+ * delivered to its own account, to a Guardian of a managed record, and in
+ * discreet mode. Only the silent sync push carries none. The channels that
+ * take the absolute URL are checked through their pure builders; APNs and Web
+ * Push take the path and are pinned in their own sender tests.
+ */
+describe("tap target on every kind and channel", () => {
+  const variants: Array<{
+    name: string;
+    extra: Pick<
+      Partial<NotificationPayload>,
+      "recordUserId" | "recipientUserId" | "discreet"
+    >;
+    neutral: boolean;
+  }> = [
+    { name: "own account", extra: {}, neutral: false },
+    {
+      name: "managed Guardian",
+      extra: { recordUserId: "record-1", recipientUserId: "guardian-1" },
+      neutral: true,
+    },
+    { name: "discreet", extra: { discreet: true }, neutral: true },
+  ];
+
+  it.each(variants)("$name", async ({ extra, neutral }) => {
+    process.env.APP_URL = "https://health.example";
+    let checked = 0;
+    for (const eventType of EVENT_TYPES) {
+      const payload = await withDeliveryLinks(
+        { userId: "u1", title: "t", message: "m", eventType, ...extra },
+        "guardian-1",
+      );
+      if (SILENT.has(eventType)) {
+        expect(payload.tap, `${eventType} is silent`).toBeUndefined();
+        continue;
+      }
+      const expectedPath = neutral
+        ? NEUTRAL_TAP_PATH
+        : NOTIFICATION_TAP_PATHS[eventType];
+      expect(payload.tap?.path, eventType).toBe(expectedPath);
+      const url = `https://health.example${expectedPath}`;
+      expect(payload.tap?.url, eventType).toBe(url);
+
+      expect(
+        buildNtfyMessage("topic", payload).click,
+        `ntfy ${eventType}`,
+      ).toBe(url);
+      expect(
+        JSON.parse(buildWebhookBody({ format: "generic" }, payload)).url,
+        `webhook ${eventType}`,
+      ).toBe(url);
+      expect(
+        JSON.parse(buildWebhookBody({ format: "gotify" }, payload)).extras[
+          "client::notification"
+        ].click.url,
+        `gotify ${eventType}`,
+      ).toBe(url);
+      checked += 1;
+    }
+    expect(checked).toBe(EVENT_TYPES.length - SILENT.size);
   });
 });

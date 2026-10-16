@@ -61,6 +61,7 @@ import {
   Unlink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -307,10 +308,11 @@ export function DoseHistoryLedger({
         // reads (Today hero + dashboard) are unmounted behind the detail
         // page, so force their inactive refetch too (v1.32.19).
         await refetchInactiveDailyReads(queryClient);
-      } catch {
+      } catch (failure) {
         if (prev) queryClient.setQueryData(queryKey, prev);
-        toast.error(
+        showErrorToast(
           t("medications.intakeToastFailed", { name: medicationName }),
+          { cause: failure },
         );
       } finally {
         setMarking(null);
@@ -359,8 +361,10 @@ export function DoseHistoryLedger({
         // page, so force their inactive refetch too (v1.32.19).
         await refetchInactiveDailyReads(queryClient);
         toast.success(t("medications.detail.intake.edit.savedToast"));
-      } catch {
-        toast.error(t("medications.detail.intake.edit.failed"));
+      } catch (failure) {
+        showErrorToast(t("medications.detail.intake.edit.failed"), {
+          cause: failure,
+        });
       }
     },
     [medicationId, queryClient, queryKey, t],
@@ -393,8 +397,10 @@ export function DoseHistoryLedger({
         // reads (Today hero + dashboard) are unmounted behind the detail
         // page, so force their inactive refetch too (v1.32.19).
         await refetchInactiveDailyReads(queryClient);
-      } catch {
-        toast.error(t("medications.detail.intake.edit.failed"));
+      } catch (failure) {
+        showErrorToast(t("medications.detail.intake.edit.failed"), {
+          cause: failure,
+        });
       }
     },
     [medicationId, queryClient, queryKey, t],
@@ -412,8 +418,10 @@ export function DoseHistoryLedger({
       // reads (Today hero + dashboard) are unmounted behind the detail
       // page, so force their inactive refetch too (v1.32.19).
       await refetchInactiveDailyReads(queryClient);
-    } catch {
-      toast.error(t("medications.detail.intake.deleteRow.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.intake.deleteRow.failed"), {
+        cause: failure,
+      });
     }
   }
 

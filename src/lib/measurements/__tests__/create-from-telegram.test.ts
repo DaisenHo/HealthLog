@@ -96,7 +96,7 @@ describe("logTelegramMeasurement", () => {
     expect(afterMeasurementMutation).toHaveBeenCalledWith(
       "user-1",
       [expect.objectContaining({ type: "WEIGHT" })],
-      "telegram-measurement",
+      { source: "manual", label: "telegram-measurement" },
     );
   });
 

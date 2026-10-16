@@ -22,8 +22,11 @@
  *     paged further forward from there;
  *
  * and a typed term switches to `search`, which asks the list route itself
- * (`q`) so a match is found wherever it sits in the history. With no date
- * yet the picker opens on the newest records and pages back.
+ * (`q`) so a match is found wherever it sits in the history. A term that names
+ * a year or a month ("2019", "03.2019", "März 2019") searches that period
+ * instead, through the route's date window, on every family including the
+ * visit list that has no text search (`parsePeriodQuery`). With no date yet
+ * the picker opens on the newest records and pages back.
  *
  * Every page comes from the family's own list route through `fetchPage`, so
  * paging, the filter and the ownership check stay server-side.
@@ -33,6 +36,9 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { ENCOUNTER_SUGGEST_WINDOW_DAYS } from "@/lib/encounters/suggest-window";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
+
+import { parsePeriodQuery, type PeriodQuery } from "./period-query";
 
 export type PickerDirection = "older" | "newer" | "search";
 
@@ -50,6 +56,10 @@ export interface PickerPageRequest {
   term: string;
   /** The family's own cursor (an offset or a row id), null for page one. */
   cursor: string | null;
+  /** The UI locale, which names the months a period search understands. */
+  locale: string;
+  /** The person's timezone, where a period's days begin and end. */
+  timeZone: string;
 }
 
 /** Records per page, the same for every family. */
@@ -106,17 +116,41 @@ export function useLinkPickerPages<T extends { id: string }>({
    */
   serverSearch?: boolean;
 }) {
+  const { locale } = useTranslations();
+  const timeZone = useDisplayTimezone();
   const [rawTerm, setTerm] = useState("");
   const debounced = useDebouncedValue(rawTerm.trim(), SEARCH_DEBOUNCE_MS);
-  const term = serverSearch ? debounced : "";
+  // A period goes to the route as a date window, which every family's route
+  // has, so it is searched on the server even where text is not.
+  const period: PeriodQuery | null = useMemo(
+    () => parsePeriodQuery(debounced, locale),
+    [debounced, locale],
+  );
+  const typedPeriod = useMemo(
+    () => parsePeriodQuery(rawTerm.trim(), locale) !== null,
+    [rawTerm, locale],
+  );
+  const term = serverSearch || period !== null ? debounced : "";
   const searching = term.length > 0;
+  // "März 2019" and "03.2019" are one request; the key says which period, in
+  // which zone, rather than how it was typed.
+  const searchKey = period
+    ? `period:${period.fromDay}..${period.toDay}@${timeZone}`
+    : term;
 
   const older = useInfiniteQuery({
     queryKey: queryKey("older", pivot, ""),
     enabled: enabled && !searching,
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
-      fetchPage({ direction: "older", pivot, term: "", cursor: pageParam }),
+      fetchPage({
+        direction: "older",
+        pivot,
+        term: "",
+        cursor: pageParam,
+        locale,
+        timeZone,
+      }),
     getNextPageParam: (last) => last.next ?? undefined,
   });
 
@@ -131,16 +165,30 @@ export function useLinkPickerPages<T extends { id: string }>({
     enabled: enabled && !searching && newerRequested,
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
-      fetchPage({ direction: "newer", pivot, term: "", cursor: pageParam }),
+      fetchPage({
+        direction: "newer",
+        pivot,
+        term: "",
+        cursor: pageParam,
+        locale,
+        timeZone,
+      }),
     getNextPageParam: (last) => last.next ?? undefined,
   });
 
   const search = useInfiniteQuery({
-    queryKey: queryKey("search", null, term),
+    queryKey: queryKey("search", null, searchKey),
     enabled: enabled && searching,
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
-      fetchPage({ direction: "search", pivot: null, term, cursor: pageParam }),
+      fetchPage({
+        direction: "search",
+        pivot: null,
+        term,
+        cursor: pageParam,
+        locale,
+        timeZone,
+      }),
     getNextPageParam: (last) => last.next ?? undefined,
   });
 
@@ -171,10 +219,15 @@ export function useLinkPickerPages<T extends { id: string }>({
     setTerm,
     /** A search is in flight (typed, or its first page not back yet). */
     searchPending:
-      serverSearch &&
+      (serverSearch || typedPeriod || period !== null) &&
       (rawTerm.trim() !== term || (searching && search.isPending)),
-    /** The picker filters the loaded options by the term itself. */
-    filterLocally: !serverSearch,
+    /**
+     * The picker filters the loaded options by the term itself: a route
+     * without text search, and a term that is not a period.
+     */
+    filterLocally: !serverSearch && !typedPeriod,
+    /** The period the list is showing, when the term names one. */
+    period: searching ? period : null,
     hasOlder: searching ? search.hasNextPage : older.hasNextPage,
     // Unknown until asked: offered once for every dated record, then only
     // while the server reports another page.

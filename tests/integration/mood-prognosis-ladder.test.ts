@@ -418,8 +418,9 @@ describe("GET /api/mood/prognosis", () => {
     expect(res.status).toBe(403);
 
     // Asserted on the bytes, not on a parsed field: the point is that not one
-    // figure of the owner's reached the response.
-    const raw = await res.text();
+    // figure of the owner's reached the response. The error's random request
+    // id is taken out first, since its hex digits can spell any small count.
+    const raw = (await res.text()).replace(/"requestId":"[^"]*"/, "");
     expect(raw).not.toContain("predicted");
     expect(raw).not.toContain("ciLow");
     expect(raw).not.toContain("dimension:a2");

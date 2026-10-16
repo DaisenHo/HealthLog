@@ -6,6 +6,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
+import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
 import { consumeImportedIntakesBatch } from "@/lib/medications/inventory/consumption";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import {
@@ -849,6 +850,10 @@ async function workMedicationIntakeImport(
       if (outcome.result.imported > 0) {
         invalidateUserMedications(outcome.userId, { evict: true });
         queueMedicationIntakeSync({ userId: outcome.userId });
+        // v1.43 — the chunks recomputed their compliance days inside their
+        // own transactions; the supplement nutrient rows follow once, now
+        // that every imported dose is committed.
+        await enqueueSupplementNutrientRecompute(outcome.userId);
       }
       return outcome.result;
     }

@@ -282,7 +282,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(92);
   });
 });
 
@@ -1095,6 +1095,131 @@ manageContract("PUT /api/biomarkers/[id]", {
   applied: async (row) =>
     (await getPrismaClient().biomarker.findUnique({ where: { id: row.id } }))
       ?.unit === "ng/mL",
+});
+
+manageContract("DELETE /api/biomarkers/[id]", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/biomarkers/[id]" && entry.action === "DELETE",
+  )!,
+  prepare: async (userId) =>
+    getPrismaClient().biomarker.create({
+      data: { userId, name: "Transferrin", unit: "g/L" },
+    }),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/biomarkers/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/biomarkers/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "biomarker.delete",
+  applied: async (row) =>
+    (await getPrismaClient().biomarker.findUnique({
+      where: { id: row.id },
+    })) === null,
+});
+
+manageContract("POST /api/biomarkers/[id]/merge", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) => entry.route === "/api/biomarkers/[id]/merge",
+  )!,
+  prepare: async (userId) => {
+    const prisma = getPrismaClient();
+    const target = await prisma.biomarker.create({
+      data: { userId, name: "Alkaline Phosphatase", unit: "U/L" },
+    });
+    const source = await prisma.biomarker.create({
+      data: { userId, name: "Alk.P", unit: "U/L" },
+    });
+    await prisma.labResult.create({
+      data: {
+        userId,
+        biomarkerId: source.id,
+        analyte: "Alk.P",
+        value: 81,
+        unit: "U/L",
+        takenAt: new Date("2026-05-01T08:00:00.000Z"),
+      },
+    });
+    return { id: target.id, sourceId: source.id };
+  },
+  act: async (row) => {
+    const { POST } = await import("@/app/api/biomarkers/[id]/merge/route");
+    return call(
+      POST as Handler,
+      "POST",
+      `/api/biomarkers/${row.id}/merge`,
+      { sourceIds: [row.sourceId] },
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "labs.biomarker.merge",
+  applied: async (row) =>
+    (await getPrismaClient().biomarker.findUnique({
+      where: { id: row.sourceId },
+    })) === null &&
+    (await getPrismaClient().labResult.count({
+      where: { biomarkerId: row.id },
+    })) === 1,
+});
+
+manageContract("POST /api/anamnesis/audit-c", {
+  contract: admittedContract("/api/anamnesis/audit-c", "POST"),
+  prepare: async (ownerId) => ({ ownerId }),
+  act: async () => {
+    const { POST } = await import("@/app/api/anamnesis/audit-c/route");
+    return call(POST as Handler, "POST", "/api/anamnesis/audit-c", {
+      items: [1, 1, 0],
+      source: "WEB",
+    });
+  },
+  ok: 201,
+  auditAction: "anamnesis.audit_c.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().mentalHealthAssessment.count({
+      where: { userId: ownerId, instrument: "AUDIT_C", deletedAt: null },
+    })) === 1,
+});
+
+manageContract("DELETE /api/anamnesis/audit-c/[id]", {
+  contract: admittedContract("/api/anamnesis/audit-c/[id]", "DELETE"),
+  prepare: async (ownerId) =>
+    getPrismaClient().mentalHealthAssessment.create({
+      data: {
+        userId: ownerId,
+        instrument: "AUDIT_C",
+        locale: "en",
+        responsesEncrypted: Buffer.from("sealed"),
+        totalScore: 2,
+        severityBand: "unbanded",
+        takenAt: new Date("2026-09-01T08:00:00.000Z"),
+      },
+      select: { id: true },
+    }),
+  act: async (row) => {
+    const { DELETE } = await import("@/app/api/anamnesis/audit-c/[id]/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      `/api/anamnesis/audit-c/${row.id}`,
+      undefined,
+      { id: row.id },
+    );
+  },
+  ok: 200,
+  auditAction: "anamnesis.audit_c.delete",
+  applied: async (row) =>
+    (
+      await getPrismaClient().mentalHealthAssessment.findUnique({
+        where: { id: row.id },
+      })
+    )?.deletedAt != null,
 });
 
 manageContract("POST /api/allergies", {
@@ -2184,6 +2309,36 @@ proveManageRoute("POST /api/medications/[id]/glp1", {
     })) === 1,
 });
 
+proveManageRoute("PUT /api/medications/[id]/ingredients", {
+  route: "/api/medications/[id]/ingredients",
+  action: "PUT",
+  prepare: async (ownerId) => {
+    // The composition lives behind the opt-in nutrients module.
+    await getPrismaClient().user.update({
+      where: { id: ownerId },
+      data: { modulePreferencesJson: { nutrients: true } },
+    });
+    return {
+      ownerId,
+      medication: await getPrismaClient().medication.create({
+        data: { userId: ownerId, name: "Vitamin D3", dose: "1000 IU" },
+      }),
+    };
+  },
+  params: ({ medication }) => ({ id: medication.id }),
+  body: () => ({
+    ingredients: [{ nutrient: "vitamin_d", amount: 1000, unit: "IU" }],
+  }),
+  ok: 200,
+  auditAction: "medication.ingredients.update",
+  applied: async ({ medication }) =>
+    (
+      await getPrismaClient().medicationIngredient.findFirst({
+        where: { medicationId: medication.id },
+      })
+    )?.amountPerUnit === 25,
+});
+
 proveManageRoute("PUT /api/medications/[id]/intake/[eventId]", {
   route: "/api/medications/[id]/intake/[eventId]",
   action: "PUT",
@@ -2851,13 +3006,13 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(87);
+    expect(STRICT_DRIVER_KEYS.size).toBe(92);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 
   it("executes every registered driver through its owned effect and actor audit", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(87);
+    expect(REAL_EFFECT_KEYS.size).toBe(92);
     expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
   });
 });

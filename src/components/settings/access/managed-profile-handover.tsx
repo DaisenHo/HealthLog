@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { stepUpErrorKey } from "@/components/settings/access/grant-action-error";
@@ -110,6 +110,18 @@ export function ManagedProfileHandover({
           name: profileName,
         })}
       </p>
+      {/* v1.43 — how the person will get in, when it is not only a password
+          they set themselves (the description already implies that one). */}
+      {status.data.available && status.data.methods?.includes("sso") ? (
+        <p className="text-sm" data-slot="managed-profile-handover-methods">
+          {t(
+            status.data.methods.includes("password")
+              ? "recordSharing.managed.handover.methodBoth"
+              : "recordSharing.managed.handover.methodSso",
+            { name: profileName },
+          )}
+        </p>
+      ) : null}
 
       {!status.data.available ? (
         <>
@@ -406,8 +418,10 @@ function HandoverLink({
         t("recordSharing.managed.handover.copied"),
       );
       window.setTimeout(() => setCopied(false), 2_000);
-    } catch {
-      toast.error(t("recordSharing.managed.handover.copyError"));
+    } catch (failure) {
+      showErrorToast(t("recordSharing.managed.handover.copyError"), {
+        cause: failure,
+      });
     }
   }
 

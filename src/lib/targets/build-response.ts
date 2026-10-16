@@ -31,6 +31,11 @@ import {
   readMoodDayRollups,
 } from "@/lib/rollups/mood-rollups";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
+import { readSevenDayMeans } from "@/lib/analytics/summaries-slice";
+import {
+  summarizeSleepNights,
+  type SleepStageRow,
+} from "@/lib/analytics/sleep-night";
 import { buildGlucoseTargets } from "./glucose-builder";
 import { readGlucoseTargetSummaries } from "./glucose-read";
 import { buildMedicationTarget } from "./medication-builder";
@@ -39,6 +44,11 @@ import { buildSleepTarget } from "./sleep-builder";
 import { buildTargetPageSummary } from "./summary-builder";
 import { buildVitalTargets } from "./vitals-builder";
 import type { TargetItem, TargetMoodEntry, TargetValueByType } from "./types";
+import {
+  resolveTrendVerdict,
+  trendSentimentOfTrend,
+  type TrendVerdictContext,
+} from "./trend-verdict";
 
 import type { User } from "@/generated/prisma/client";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
@@ -107,6 +117,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
     latestMoodEntry,
     glucoseSummaries,
     restingPulseProxy,
+    sevenDayMeans,
   ] = await Promise.all([
     limit(() =>
       prisma.user.findUnique({
@@ -242,6 +253,10 @@ export async function buildTargetsResponse(user: AuthedUser) {
         timeZone: timezone,
       }),
     ),
+    // The verdict is placed with the value the dashboard tile places it
+    // with: the seven-day mean, computed by the summary slice's own query,
+    // so a target and its tile never disagree on which way a change counts.
+    limit(() => readSevenDayMeans(userId)),
   ]);
 
   // Rollup coverage fallback stays an explicit repository read here rather
@@ -362,6 +377,30 @@ export async function buildTargetsResponse(user: AuthedUser) {
     }),
   );
 
+  // v1.43 (ios #116 item 3) — every item carries which way its change
+  // counts, judged with the same rule the dashboard tiles use.
+  const verdictTargets = withTargetVerdicts(
+    targets,
+    {
+      profile: {
+        heightCm,
+        dateOfBirth: dbUser?.dateOfBirth ?? null,
+        gender: dbUser?.gender ?? null,
+      },
+      thresholdsJson: dbUser?.thresholdsJson ?? null,
+    },
+    verdictSummaries(sevenDayMeans, latestByType, {
+      // Sleep the way the dashboard summarises it: per night, from the
+      // same stage rows and source ladder.
+      SLEEP_DURATION: summarizeSleepNights(
+        sleepStageRows as SleepStageRow[],
+        timezone,
+        dbUser?.sourcePriorityJson ?? null,
+      ).summary,
+    }),
+  );
+  targets.splice(0, targets.length, ...verdictTargets);
+
   const pageSummary = buildTargetPageSummary(targets);
   annotate({
     action: { name: "insights.targets" },
@@ -392,4 +431,104 @@ export async function buildTargetsResponse(user: AuthedUser) {
       glucoseUnit,
     },
   };
+}
+
+/**
+ * The dashboard summary each target item's verdict is placed with: the key
+ * its dashboard tile reads its direction under. Blood pressure is judged by
+ * its systolic side, BMI by the weight it is derived from, and the resting
+ * pulse by the resting heart rate where the account records one (the tile
+ * shows that series then).
+ */
+function summaryKeysFor(type: string): string[] {
+  switch (type) {
+    case "BLOOD_PRESSURE":
+      return ["BLOOD_PRESSURE_SYS"];
+    case "BMI":
+      return ["WEIGHT"];
+    case "PULSE":
+      return ["RESTING_HEART_RATE", "PULSE"];
+    default:
+      return [type];
+  }
+}
+
+type VerdictSummaries = Readonly<
+  Record<string, { avg7: number | null; latest: number | null } | undefined>
+>;
+
+/**
+ * The dashboard's `{ avg7, latest }` per type: the slice's seven-day mean,
+ * and the newest reading where there is none in the last seven days.
+ */
+function verdictSummaries(
+  sevenDayMeans: Readonly<Record<string, number | null>>,
+  latestByType: TargetValueByType,
+  folded: Readonly<
+    Record<string, { avg7: number | null; latest: number | null }>
+  >,
+): VerdictSummaries {
+  const out: Record<string, { avg7: number | null; latest: number | null }> =
+    {};
+  const types = new Set([
+    ...Object.keys(sevenDayMeans),
+    ...Object.keys(latestByType),
+  ]);
+  for (const type of types) {
+    out[type] = {
+      avg7: sevenDayMeans[type] ?? null,
+      latest: latestByType[type as keyof TargetValueByType] ?? null,
+    };
+  }
+  return { ...out, ...folded };
+}
+
+/**
+ * The value a target's verdict is placed with, in the stored unit: the same
+ * basis as the dashboard tile (`resolveSummaryVerdicts`), the seven-day mean
+ * else the latest reading. Only when the account has no summary for the type
+ * does the item's own value stand in (latest, else thirty-day average; sleep
+ * is served in hours and stored in minutes).
+ */
+export function targetVerdictReference(
+  item: Pick<TargetItem, "type" | "current" | "average30">,
+  summaries: VerdictSummaries,
+  weightItem: Pick<TargetItem, "current" | "average30"> | undefined,
+): number | null {
+  for (const key of summaryKeysFor(item.type)) {
+    const summary = summaries[key];
+    const value = summary ? (summary.avg7 ?? summary.latest) : null;
+    if (value !== null && value !== undefined) return value;
+  }
+  const own =
+    item.type === "BMI"
+      ? weightItem
+        ? (weightItem.current ?? weightItem.average30)
+        : null
+      : (item.current ?? item.average30);
+  if (own === null) return null;
+  return item.type === "SLEEP_DURATION" ? own * 60 : own;
+}
+
+/**
+ * Lay the verdict over each target item, placed with the dashboard's basis
+ * (`targetVerdictReference`).
+ */
+export function withTargetVerdicts(
+  targets: readonly TargetItem[],
+  ctx: Omit<TrendVerdictContext, "referenceValue">,
+  summaries: VerdictSummaries,
+): TargetItem[] {
+  const weight = targets.find((item) => item.type === "WEIGHT");
+  return targets.map((item) => {
+    const direction = resolveTrendVerdict(item.type, {
+      ...ctx,
+      referenceValue: targetVerdictReference(item, summaries, weight),
+    });
+    return {
+      ...item,
+      direction,
+      trendSentiment: trendSentimentOfTrend(item.trend, direction),
+    };
+  });
 }

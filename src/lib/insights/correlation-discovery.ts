@@ -135,6 +135,7 @@ export function metricFamily(key: string): string {
   // near-tautology). They stay free to pair cross-domain against mood / sleep /
   // vitals — the whole point of the module.
   if (key.startsWith("ENV_")) return "ENVIRONMENT";
+  if (key.startsWith("MOVEMENT_")) return "MOVEMENT";
   if (key.startsWith("CUSTOM_METRIC:")) return key;
   // v1.21.0 (FDREXTEND) — medication compliance and symptom severity each form
   // their OWN single-channel family, so the loop's same-family guard collapses
@@ -452,6 +453,16 @@ export const MEDICATION_COMPLIANCE_CHANNEL_KEY = "MEDICATION_COMPLIANCE";
  * never a spurious all-zero constant that could fabricate a link.
  */
 export const SYMPTOM_SEVERITY_CHANNEL_KEY = "SYMPTOM_SEVERITY";
+
+/**
+ * v1.43 — the Dawarich movement context as two BEHAVIOUR channels: minutes
+ * away from home and the day's total distance. Both share the `MOVEMENT`
+ * family (a day far from home is a day with distance; pairing the two with
+ * each other would be a tautology) and pair at the default next-day lag:
+ * "a day out, then the night's sleep". Owned by the environment module.
+ */
+export const MOVEMENT_AWAY_CHANNEL_KEY = "MOVEMENT_AWAY";
+export const MOVEMENT_DISTANCE_CHANNEL_KEY = "MOVEMENT_DISTANCE";
 
 /**
  * v1.21.0 (FDREXTEND) — discovery channels that are NOT `MeasurementType` enum

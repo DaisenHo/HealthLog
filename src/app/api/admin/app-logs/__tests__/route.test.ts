@@ -136,4 +136,38 @@ describe("GET /api/admin/app-logs", () => {
     expect(json.error).toBe("Validation failed");
     expect(json.details.issues.length).toBeGreaterThan(0);
   });
+
+  it("finds an error by the first 8 characters of its id in the problems ring", async () => {
+    appendLogEvent(
+      makeEvent({ level: "error", request_id: "3f9a2c1b-1111-4000-8000-0000" }),
+    );
+    for (let i = 0; i < 600; i++) {
+      appendLogEvent(makeEvent({ level: "info" }));
+    }
+    const gone = await GET(req("requestId=3f9a2c1b"));
+    const goneJson = (await gone.json()) as { data: { events: WideEvent[] } };
+    expect(goneJson.data.events).toHaveLength(0);
+
+    const res = await GET(req("requestId=3f9a2c1b&ring=problems"));
+    const json = (await res.json()) as {
+      data: {
+        events: WideEvent[];
+        meta: { problemsBufferMax: number; ring: string };
+      };
+    };
+    expect(json.data.events.map((e) => e.request_id)).toEqual([
+      "3f9a2c1b-1111-4000-8000-0000",
+    ]);
+    expect(json.data.meta.problemsBufferMax).toBe(1000);
+    expect(json.data.meta.ring).toBe("problems");
+  });
+
+  it("refuses a request id shorter than 8 characters or outside the id alphabet", async () => {
+    for (const bad of ["3f9a2c1", "3f9a2c1b%20OR%201", "a".repeat(65)]) {
+      const res = await GET(req(`requestId=${bad}`));
+      expect(res.status).toBe(422);
+    }
+    const ring = await GET(req("ring=everything"));
+    expect(ring.status).toBe(422);
+  });
 });

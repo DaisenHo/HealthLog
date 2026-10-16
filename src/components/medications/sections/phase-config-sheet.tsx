@@ -28,6 +28,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -227,10 +228,11 @@ function PhaseConfigForm({
       toast.success(t("medications.phaseSaved"));
       onClose();
     } catch (err) {
-      toast.error(
+      showErrorToast(
         err instanceof ApiError && err.message
           ? err.message
           : t("medications.detail.phases.saveFailed"),
+        { cause: err },
       );
     } finally {
       setSaving(false);

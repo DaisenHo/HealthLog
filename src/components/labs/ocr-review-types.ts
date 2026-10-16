@@ -34,6 +34,16 @@ export interface OcrReviewRow {
   markerAnalyteKey: string | null;
   /** Non-null when the server flagged a likely duplicate of a live reading. */
   duplicateOf: string | null;
+  /**
+   * v1.43 (D1223) — the marker the server matched the name to (its name, an
+   * alias, or a catalog abbreviation), and how; null when nothing matched.
+   */
+  biomarkerId: string | null;
+  matchKind: "name" | "alias" | "catalog" | null;
+  /** Up to three markers to choose from when nothing matched. */
+  suggestions: OcrExtractedRowDto["suggestions"];
+  /** The suggestion the person picked; null keeps the automatic outcome. */
+  chosenBiomarkerId: string | null;
   /** Whether the row is selected for saving. Defaults false for duplicates. */
   confirmed: boolean;
 }
@@ -58,6 +68,11 @@ export function seedReviewRows(
     markerUnit: row.markerUnit,
     markerAnalyteKey: row.markerAnalyteKey,
     duplicateOf: row.duplicateOf,
+    // A scan read before v1.43 carries none of the three.
+    biomarkerId: row.biomarkerId ?? null,
+    matchKind: row.matchKind ?? null,
+    suggestions: row.suggestions ?? [],
+    chosenBiomarkerId: null,
     // A flagged duplicate starts unchecked, and so does a reading in another
     // unit than its marker's that cannot be converted (it carries a badge
     // saying why, and ticking it marks the unit field until it is fixed); a
@@ -73,4 +88,32 @@ export function seedReviewRows(
         markerAnalyteKey: row.markerAnalyteKey,
       }),
   }));
+}
+
+/**
+ * Point a row at a suggestion the person picked, or back at a new marker. The
+ * marker's unit and analyte come with the choice, so the unit check and the
+ * conversion badge judge the row against the marker it will be filed under.
+ */
+export function chooseMarker(
+  row: OcrReviewRow,
+  choice: { biomarkerId: string; unit: string } | null,
+  analyteKeyOf: (biomarkerId: string) => string | null,
+): OcrReviewRow {
+  if (choice === null) {
+    return {
+      ...row,
+      chosenBiomarkerId: null,
+      biomarkerMatch: "new",
+      markerUnit: null,
+      markerAnalyteKey: null,
+    };
+  }
+  return {
+    ...row,
+    chosenBiomarkerId: choice.biomarkerId,
+    biomarkerMatch: "existing",
+    markerUnit: choice.unit,
+    markerAnalyteKey: analyteKeyOf(choice.biomarkerId),
+  };
 }

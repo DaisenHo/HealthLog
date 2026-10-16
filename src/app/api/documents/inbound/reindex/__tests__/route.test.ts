@@ -137,6 +137,7 @@ describe("POST /api/documents/inbound/reindex — the documentAi capability", ()
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "assistant.disabled.documentAi",
       capability: "documentAi",
       reason: "operator_disabled",

@@ -10,6 +10,7 @@
  * `doctor-report-data.ts`.
  */
 
+import type { LifeClinicalSummary } from "@/lib/profile/life-derived";
 import type { GlucoseUnit } from "@/lib/glucose";
 import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import type { MeasurementSource } from "@/generated/prisma/client";
@@ -463,6 +464,13 @@ export interface DoctorReportData {
     unreadableFacts: Array<
       "SMOKING_STATUS" | "ALCOHOL_PATTERN" | "SHIFT_SCHEDULE"
     >;
+    /**
+     * v1.43 (#614) — the clinical part of the life circumstances: pack-years,
+     * the newest AUDIT-C (a screening result with its cut-off and source),
+     * activity and work. Optional so a report built before v1.43 still
+     * renders.
+     */
+    life?: LifeClinicalSummary;
   } | null;
   /**
    * Emergency ("Notfalldaten") facts for the page-one section. Present only

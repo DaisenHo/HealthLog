@@ -20,6 +20,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Key, Link2, Loader2, Plug, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -106,12 +107,16 @@ function McpConnectionsCard() {
         method: "DELETE",
       });
       if (!res.ok) {
-        toast.error(t("settings.mcp.connectionRevokeFailed"));
+        showErrorToast(t("settings.mcp.connectionRevokeFailed"), {
+          cause: res,
+        });
         return;
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.mcpConnections() });
-    } catch {
-      toast.error(t("settings.mcp.connectionRevokeFailed"));
+    } catch (failure) {
+      showErrorToast(t("settings.mcp.connectionRevokeFailed"), {
+        cause: failure,
+      });
     }
   }
 
@@ -224,7 +229,8 @@ function McpEnableCard() {
       void invalidateKeys(queryClient, aiInputDependentKeys);
       toast.success(t("settings.sections.modules.saved"));
     },
-    onError: () => toast.error(t("settings.sections.modules.error")),
+    onError: (failure) =>
+      showErrorToast(t("settings.sections.modules.error"), { cause: failure }),
   });
 
   return (
@@ -334,8 +340,8 @@ function McpTokensCard() {
       setTokenCopied(true);
       toast.success(t("settings.tokenCopied"));
       setTimeout(() => setTokenCopied(false), 2_000);
-    } catch {
-      toast.error(t("settings.tokenCopyFailed"));
+    } catch (failure) {
+      showErrorToast(t("settings.tokenCopyFailed"), { cause: failure });
     }
   }
 
@@ -345,12 +351,12 @@ function McpTokensCard() {
         method: "DELETE",
       });
       if (!res.ok) {
-        toast.error(t("settings.tokenRevokeFailed"));
+        showErrorToast(t("settings.tokenRevokeFailed"), { cause: res });
         return;
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.mcpTokens() });
-    } catch {
-      toast.error(t("settings.tokenRevokeFailed"));
+    } catch (failure) {
+      showErrorToast(t("settings.tokenRevokeFailed"), { cause: failure });
     }
   }
 

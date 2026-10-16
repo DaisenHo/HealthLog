@@ -24,6 +24,7 @@
 import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -135,8 +136,10 @@ function IntakeEditDialogBody({
       await invalidateMedicationReads(queryClient);
       toast.success(t("medications.detail.intake.edit.savedToast"));
       onClose();
-    } catch {
-      toast.error(t("medications.detail.intake.edit.failed"));
+    } catch (failure) {
+      showErrorToast(t("medications.detail.intake.edit.failed"), {
+        cause: failure,
+      });
     } finally {
       setBusy(false);
     }

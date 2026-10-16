@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
 import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
+import { toIngredientDtos } from "@/lib/medications/ingredients/composition";
+import {
+  enqueueSupplementNutrientRecompute,
+  medicationHasComposition,
+} from "@/lib/medications/ingredients/recompute-job";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
@@ -62,6 +67,7 @@ import {
 import { floorWhole } from "@/lib/medications/units-per-dose";
 import { resolveIntakeActionability } from "@/lib/medications/intake-actionable";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { buildRelated } from "@/lib/links/related";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -103,7 +109,7 @@ function reconcileScheduleWindow(
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("read", "medications");
+    const { user, grantId } = await requireRecordAuth("read", "medications");
 
     const { id } = await params;
     const medication = await prisma.medication.findUnique({
@@ -260,6 +266,18 @@ export const GET = apiHandler(
             Number(medication.unitsPerDose),
           );
 
+    // v1.43 — the composition per unit, labelled in the account language.
+    const ingredientRows = await prisma.medicationIngredient.findMany({
+      where: { medicationId: id, userId: user.id },
+      select: {
+        nutrient: true,
+        amountPerUnit: true,
+        unit: true,
+        enteredAmount: true,
+        enteredUnit: true,
+      },
+    });
+
     // v1.40 (#1024) — the courses, resolved on the server.
     const courseFields = (
       await resolveCourseFields(
@@ -294,6 +312,14 @@ export const GET = apiHandler(
       stockUnitsRemaining,
       stockDosesRemaining,
       runwayDays,
+      ingredients: toIngredientDtos(ingredientRows, user.locale ?? null),
+      // v1.43 — the records this medication relates to (`src/lib/links/`).
+      related: await buildRelated(prisma, {
+        userId: user.id,
+        grantId,
+        kind: "medication",
+        id,
+      }),
     });
   },
 );
@@ -1122,6 +1148,13 @@ export const PUT = apiHandler(
     const resolvedCategory = (await resolveMedicationCategories([id]))[id];
     const normalizedCategory = resolvedCategory?.category ?? "OTHER";
 
+    // v1.43 — a changed units-per-dose (on the medication or on a slot)
+    // changes what every taken dose added, so a medication with a composition
+    // has its doses recomputed. Cheap and coalesced when nothing moved.
+    if (await medicationHasComposition(user.id, id)) {
+      await enqueueSupplementNutrientRecompute(user.id);
+    }
+
     await auditLog("medication.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
@@ -1225,6 +1258,10 @@ export const DELETE = apiHandler(
       data: { revoked: true },
     });
 
+    // v1.43 — whether its doses counted toward the micronutrients, read
+    // before the delete cascades the composition away.
+    const hadComposition = await medicationHasComposition(user.id, id);
+
     await deleteMedicationCategory(id);
     await prisma.medication.delete({ where: { id } });
 
@@ -1245,6 +1282,9 @@ export const DELETE = apiHandler(
     // v1.4.34 IW-G — bust per-user medications + compliance + achievement
     // caches so the next read reflects the deletion.
     invalidateUserMedications(user.id, { evict: true });
+
+    // Its doses are gone with it, so the days they counted on are recomputed.
+    if (hadComposition) await enqueueSupplementNutrientRecompute(user.id);
 
     return apiSuccess({ deleted: true });
   },

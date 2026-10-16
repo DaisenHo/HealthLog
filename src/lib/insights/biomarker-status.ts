@@ -315,7 +315,7 @@ export async function generateBiomarkerStatus(args: {
       value: r.value,
     })),
   };
-  const snapshotJson = JSON.stringify(snapshot, null, 2);
+  const snapshotJson = JSON.stringify(snapshot);
 
   annotate({
     action: { name: cacheAction },

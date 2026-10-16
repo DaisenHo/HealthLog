@@ -20,6 +20,7 @@ import { fireAndForget } from "@/lib/logging/fire-and-forget";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
+  apiError,
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
@@ -30,8 +31,16 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
+import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
+import { rememberImportAlias } from "@/lib/labs/biomarker-aliases";
+import {
+  addAliasToIndex,
+  loadMarkerIndex,
+  resolveInIndex,
+  type IndexedMarker,
+} from "@/lib/labs/biomarker-resolve";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
 import { readingInMarkerUnit } from "@/lib/labs/reading-conversion";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
@@ -67,13 +76,20 @@ async function isDuplicate(
   userId: string,
   row: OcrCommitRow,
   tz: string,
+  /** The marker the row resolves to, when it resolves to one already. */
+  biomarkerId: string | null,
 ): Promise<boolean> {
   const day = labReadingDay(new Date(row.takenAt), tz);
   const rows = await prisma.labResult.findMany({
     where: {
       userId,
       deletedAt: null,
-      analyte: { equals: row.analyte.trim(), mode: "insensitive" },
+      // The printed name, or a reading already filed under the marker this
+      // name resolves to: an earlier report may have spelled it another way.
+      OR: [
+        { analyte: { equals: row.analyte.trim(), mode: "insensitive" } },
+        ...(biomarkerId ? [{ biomarkerId }] : []),
+      ],
       takenAt: labReadingDaySearchRange(day),
     },
     select: {
@@ -121,8 +137,15 @@ async function isDuplicate(
  * Mirrors the `isDuplicate` match semantics so in-batch dedup no longer depends
  * on a prior row autocommitting before the next row's live query runs.
  */
-function inBatchKey(row: OcrCommitRow, tz: string): string {
-  const analyte = row.analyte.trim().toLowerCase();
+function inBatchKey(
+  row: OcrCommitRow,
+  tz: string,
+  biomarkerId: string | null,
+): string {
+  // Two spellings of one marker in one document are one marker (D1223).
+  const analyte = biomarkerId
+    ? `bm:${biomarkerId}`
+    : row.analyte.trim().toLowerCase();
   const dayKey = labReadingDay(new Date(row.takenAt), tz);
   const valuePart =
     row.value !== undefined
@@ -135,6 +158,17 @@ function inBatchKey(row: OcrCommitRow, tz: string): string {
 
 async function commitOcrRows(request: NextRequest) {
   const { user } = await requireAuth();
+
+  // Shared per-account write ceiling, the same bucket every other lab write
+  // charges (`POST /api/labs`, `POST /api/biomarkers`). A commit can write a
+  // whole report's rows and mint markers on the way, so it was the one lab
+  // write a looping client could repeat without any ceiling.
+  const writeRl = await checkRecordWriteRateLimit(user.id);
+  if (!writeRl.allowed) {
+    return apiError("Too many writes, try again later", 429, {
+      errorCode: "record_write.rate_limited",
+    });
+  }
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 256 * 1024,
@@ -175,14 +209,59 @@ async function commitOcrRows(request: NextRequest) {
   const writtenInBatch = new Set<string>();
 
   const tz = await resolveUserTimezone(user.id);
+  // v1.43 (D1223) — the account's markers and aliases, loaded once: every row
+  // resolves its name against them (name, alias, catalog abbreviation) the
+  // way the review did, and a marker minted for one row is found by the next.
+  const markerIndex = await loadMarkerIndex(prisma, user.id);
+  let aliasesRemembered = 0;
   for (const row of parsed.data.rows) {
-    const key = inBatchKey(row, tz);
-    if (writtenInBatch.has(key) || (await isDuplicate(user.id, row, tz))) {
+    const isQualitative = row.valueText !== undefined;
+
+    // The marker the person picked on the review screen, if they picked one.
+    let chosen: IndexedMarker | null = null;
+    if (row.biomarkerId) {
+      chosen =
+        markerIndex.markers.find((m) => m.id === row.biomarkerId) ?? null;
+      if (!chosen) {
+        skipped.push({
+          analyte: row.analyte.trim(),
+          reason: "unknown_biomarker",
+        });
+        continue;
+      }
+      // The choice is remembered, so the next report spelled this way
+      // matches on its own.
+      if (row.rememberAlias !== false) {
+        const wrote = await rememberImportAlias(
+          prisma,
+          user.id,
+          chosen,
+          row.analyte,
+        );
+        if (wrote) {
+          addAliasToIndex(markerIndex, chosen.id, row.analyte);
+          aliasesRemembered += 1;
+        }
+      }
+    }
+    const resolvedId =
+      chosen?.id ??
+      resolveInIndex(
+        markerIndex,
+        row.analyte,
+        isQualitative ? null : (row.unit ?? null),
+      )?.marker.id ??
+      null;
+
+    const key = inBatchKey(row, tz, resolvedId);
+    if (
+      writtenInBatch.has(key) ||
+      (await isDuplicate(user.id, row, tz, resolvedId))
+    ) {
       skipped.push({ analyte: row.analyte.trim(), reason: "duplicate" });
       continue;
     }
 
-    const isQualitative = row.valueText !== undefined;
     // The window the scan read off the report. The confirmed numeric bounds
     // win over a re-parse of the string (the human may have corrected them on
     // the review screen); the string rides along either way.
@@ -190,14 +269,20 @@ async function commitOcrRows(request: NextRequest) {
     const sourceLow = row.referenceLow ?? printed?.low ?? null;
     const sourceHigh = row.referenceHigh ?? printed?.high ?? null;
     const sourceText = printed?.text ?? null;
-    const biomarker = await resolveOrMintBiomarker(user.id, {
-      analyte: row.analyte,
-      // A qualitative reading has no numeric unit / range.
-      unit: isQualitative ? (row.unit ?? "") : (row.unit as string),
-      referenceLow: isQualitative ? null : sourceLow,
-      referenceHigh: isQualitative ? null : sourceHigh,
-      panel: row.panel ?? null,
-    });
+    const biomarker = chosen
+      ? chosen
+      : await resolveOrMintBiomarker(
+          user.id,
+          {
+            analyte: row.analyte,
+            // A qualitative reading has no numeric unit / range.
+            unit: isQualitative ? (row.unit ?? "") : (row.unit as string),
+            referenceLow: isQualitative ? null : sourceLow,
+            referenceHigh: isQualitative ? null : sourceHigh,
+            panel: row.panel ?? null,
+          },
+          { index: markerIndex },
+        );
 
     // The marker's unit is the one the reading is stored under. A row that
     // states another unit is converted when the marker's analyte is known and
@@ -260,6 +345,8 @@ async function commitOcrRows(request: NextRequest) {
     });
 
     writtenInBatch.add(key);
+    // A freshly minted marker is now the row's; key the batch on it too.
+    writtenInBatch.add(inBatchKey(row, tz, biomarker.id));
     inserted.push(serialiseLabResult(created, biomarker));
     linkable.push({
       labResultId: created.id,
@@ -284,6 +371,17 @@ async function commitOcrRows(request: NextRequest) {
       parsed.data.documentId,
       linkable,
     ).catch(() => {});
+    // v1.43 — the stored relation as well: each written result points at the
+    // report it was read from (`lab_result_document_links`), so the result's
+    // and the document's `related` lists name each other. Best-effort for the
+    // same reason; the service narrows both ends to this record.
+    await linkTargets(prisma, {
+      userId: user.id,
+      sourceKind: "document",
+      sourceId: parsed.data.documentId,
+      targetKind: "labResult",
+      targetIds: linkable.map((row) => row.labResultId),
+    }).catch(() => {});
   }
 
   // The visit the review step offered, if it offered one. ONE LINK PER RESULT
@@ -306,7 +404,11 @@ async function commitOcrRows(request: NextRequest) {
   await auditLog("labs.ocr.commit", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { count: inserted.length, skipped: skipped.length },
+    details: {
+      count: inserted.length,
+      skipped: skipped.length,
+      aliasesRemembered,
+    },
   });
 
   annotate({

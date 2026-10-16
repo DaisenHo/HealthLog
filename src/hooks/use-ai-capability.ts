@@ -9,6 +9,7 @@ import type {
 } from "@/lib/ai/capabilities/types";
 import { PROVIDER_DEFAULT_TIMEOUT_MS } from "@/lib/ai/effective-timeout";
 import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
+import type { AiUsageState } from "@/lib/ai/usage-level";
 
 /**
  * The web reader for the `ai` block on `GET /api/auth/me`.
@@ -83,6 +84,25 @@ export function useCoachReasoning(): CoachReasoningState | null {
 function useCoachReasoningInner(): CoachReasoningState | null {
   const { user } = useAuth();
   return user?.coachReasoning ?? null;
+}
+
+/**
+ * v1.43 (#1217) — the record's AI usage level (`ai.usage` on
+ * `GET /api/auth/me`): the level in effect, the person's choice, the
+ * operator's bounds, the three options with their estimates. `null` while it
+ * is not known or on a server that does not publish it; the setting is then
+ * not shown. Render from it; never compute an estimate or an allowance here.
+ */
+export function useAiUsage(): AiUsageState | null {
+  const hasClient = useQueryClientMounted();
+  if (!hasClient) return null;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useAiUsageInner();
+}
+
+function useAiUsageInner(): AiUsageState | null {
+  const { user } = useAuth();
+  return user?.ai?.usage ?? null;
 }
 
 /**

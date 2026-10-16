@@ -32,7 +32,10 @@ export const adminKeys = {
     action: string | undefined,
     level: string | undefined,
     range: string | undefined,
-  ) => ["admin", "app-logs", traceId, action, level, range] as const,
+    requestId?: string,
+  ) => ["admin", "app-logs", traceId, action, level, range, requestId] as const,
+  /** v1.43 — the redacted support report on the admin status page. */
+  adminSupportReport: () => ["admin", "support-report"] as const,
   adminAssistantFlags: () => ["admin", "settings", "assistant-flags"] as const,
   /** v1.18.0 — operator-level server-wide module availability matrix. */
   adminModuleAvailability: () =>
@@ -50,6 +53,8 @@ export const adminKeys = {
   adminEncryptionStatus: () => ["admin", "encryption", "status"] as const,
   adminMeasurementMaintenance: () =>
     ["admin", "maintenance", "measurements"] as const,
+  /** v1.43 — the pulse day-mean method, its dry run and apply step. */
+  adminPulseDayMean: () => ["admin", "maintenance", "pulse-day-mean"] as const,
   /** v1.40.0 — the "Back up your encryption key" step (admin + dashboard banner). */
   adminEncryptionKeyBackup: () =>
     ["admin", "encryption", "key-backup"] as const,

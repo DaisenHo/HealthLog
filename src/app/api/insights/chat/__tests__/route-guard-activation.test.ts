@@ -154,6 +154,7 @@ vi.mock("@/lib/ai/coach/outbound-guard", () => ({
 }));
 vi.mock("@/lib/ai/coach/system-prompt", () => ({
   getCoachSystemPrompt: vi.fn(() => "SYSTEM"),
+  buildCoachTurnNotes: vi.fn(() => ""),
 }));
 vi.mock("@/lib/ai/coach/about-me", () => ({
   getSelfContextTextForUser: vi.fn(async () => null),

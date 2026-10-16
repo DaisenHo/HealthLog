@@ -21,6 +21,7 @@ import { annotate } from "@/lib/logging/context";
 import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
 import { cached, caches } from "@/lib/cache/server-cache";
 import { workoutSportTypeEnum } from "@/lib/validations/workout";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 function emptyQueryValueToUndefined(value: unknown): unknown {
   if (value == null) return undefined;
@@ -32,8 +33,7 @@ function emptyQueryValueToUndefined(value: unknown): unknown {
 const normalizedTimestampFilter = z
   .preprocess(
     emptyQueryValueToUndefined,
-    z.iso
-      .datetime({ offset: true })
+    isoDateTime()
       .transform((value) => new Date(value).toISOString())
       .optional(),
   )

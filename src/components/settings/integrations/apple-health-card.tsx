@@ -148,16 +148,25 @@ export function ArrivalDetail({
   now?: Date;
 }) {
   if (entry.lastReceivedAt === undefined) return null;
-  if (entry.lastReceivedAt === null) {
-    return (
-      <span data-testid="apple-health-arrival" data-state="never">
-        {t("settings.appleHealth.freshness.never")}
-      </span>
-    );
-  }
   const reference = (now ?? new Date()).getTime();
   const relative = (iso: string) =>
     formatRelative(Math.max(0, reference - new Date(iso).getTime()), t);
+  // v1.43 (ios #77) — a history catch-up is named apart from the live
+  // arrivals, and never counts as one.
+  const backfill = entry.lastBackfillAt
+    ? t("settings.appleHealth.freshness.lastBackfill", {
+        relative: relative(entry.lastBackfillAt),
+      })
+    : null;
+  if (entry.lastReceivedAt === null) {
+    return (
+      <span data-testid="apple-health-arrival" data-state="never">
+        {[t("settings.appleHealth.freshness.never"), backfill]
+          .filter((part): part is string => part !== null)
+          .join(", ")}
+      </span>
+    );
+  }
   const trigger = entry.lastTrigger ?? null;
   const parts = [
     t("settings.appleHealth.freshness.lastReceived", {
@@ -189,6 +198,7 @@ export function ArrivalDetail({
       }),
     );
   }
+  if (backfill) parts.push(backfill);
   return (
     <span
       data-testid="apple-health-arrival"

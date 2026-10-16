@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   CheckCircle2,
   Compass,
@@ -171,10 +171,10 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
         queryKey: queryKeys.aiConsentReceipt("ai_full"),
       });
     },
-    onError: () => {
+    onError: (failure) => {
       // The button stays. A failed grant is a failed grant; the screen must
       // not read as though consent were on file.
-      toast.error(t("onboarding.ai.offer.error"));
+      showErrorToast(t("onboarding.ai.offer.error"), { cause: failure });
     },
   });
 

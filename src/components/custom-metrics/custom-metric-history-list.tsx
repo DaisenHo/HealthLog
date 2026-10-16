@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { DeleteButton, SortableHead } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
@@ -96,8 +97,8 @@ export function CustomMetricHistoryList({
       });
       invalidate();
       toast.success(t("customMetrics.entry.restoredToast"));
-    } catch {
-      toast.error(t("customMetrics.entry.restoreError"));
+    } catch (failure) {
+      showErrorToast(t("customMetrics.entry.restoreError"), { cause: failure });
     }
   }
 
@@ -113,7 +114,8 @@ export function CustomMetricHistoryList({
         },
       });
     },
-    onError: () => toast.error(t("customMetrics.entry.deleteError")),
+    onError: (failure) =>
+      showErrorToast(t("customMetrics.entry.deleteError"), { cause: failure }),
   });
 
   const updateMutation = useMutation({

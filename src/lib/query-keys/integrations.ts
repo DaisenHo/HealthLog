@@ -63,6 +63,11 @@ export const integrationKeys = {
   strava: () => ["strava"] as const,
   stravaStatus: () => ["strava", "status"] as const,
 
+  // v1.43 — the Dawarich movement context card: its status (home place and
+  // country, stored days) and the instance's places, read live per query.
+  dawarichStatus: () => ["dawarich", "status"] as const,
+  dawarichPlaces: (query: string) => ["dawarich", "places", query] as const,
+
   integrationsStatus: () => ["integrations", "status"] as const,
   // Apple Health live-sync freshness comes from the existing HealthKit config
   // endpoint. It is intentionally separate from the OAuth integration ledger:

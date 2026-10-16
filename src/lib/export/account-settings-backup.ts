@@ -41,6 +41,7 @@ import { Buffer } from "node:buffer";
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import {
+  AiUsageLevel,
   DateFormatPreference,
   InjectionSite,
   TimeFormatPreference,
@@ -384,21 +385,19 @@ const insuranceNumber: SettingCodec = {
 
 /**
  * v1.42 (#615) — the environment home, sealed at rest as one value
- * (`homeLocationEncrypted`, see `src/lib/environment/location-cipher.ts`)
- * beside the readable `homeLat` / `homeLon` / `homeLabel` that the
- * encryption backfill empties. The four columns travel as one, the way the
- * avatar's three do:
+ * (`homeLocationEncrypted`, see `src/lib/environment/location-cipher.ts`).
+ * The readable `homeLat` / `homeLon` / `homeLabel` columns were dropped in
+ * v1.43; the three keys live on in the file:
  *
- *   - a portable file carries the home readable, opened from the sealed copy
- *     when there is one, and no sealed value;
- *   - a disaster-recovery file carries the sealed value verbatim (base64)
- *     beside whatever the readable columns still hold.
+ *   - a portable file carries the home readable (`homeLat` / `homeLon` /
+ *     `homeLabel`), opened from the sealed copy, and no sealed value;
+ *   - a disaster-recovery file carries the sealed value verbatim (base64).
  *
  * The restore writes the sealed value as it came, or seals a readable home
- * under this host's key, and writes the readable columns empty either way. A
- * file whose home is null clears the account's home. A home without a label
- * (allowed since v1.25) is sealed with an empty label, which every reader
- * shows as no label.
+ * (a portable file, or a disaster-recovery file written before v1.43) under
+ * this host's key. A file whose home is null clears the account's home. A
+ * home without a label (allowed since v1.25) is sealed with an empty label,
+ * which every reader shows as no label.
  */
 const homeLocation: SettingCodec = {
   write: (row, disasterRecovery) => {
@@ -408,21 +407,13 @@ const homeLocation: SettingCodec = {
         : null;
     if (disasterRecovery) {
       return {
-        homeLat: row.homeLat,
-        homeLon: row.homeLon,
-        homeLabel: row.homeLabel,
         homeLocationEncrypted:
           sealed && sealed.byteLength > 0
             ? Buffer.from(sealed).toString("base64")
             : null,
       };
     }
-    const home = readLocation({
-      sealed,
-      lat: row.homeLat as number | null,
-      lon: row.homeLon as number | null,
-      label: (row.homeLabel as string | null) ?? "",
-    });
+    const home = readLocation(sealed);
     return home
       ? {
           homeLat: home.lat,
@@ -432,12 +423,7 @@ const homeLocation: SettingCodec = {
       : { homeLat: null, homeLon: null, homeLabel: null };
   },
   read: (entry) => {
-    const cleared = {
-      homeLocationEncrypted: null,
-      homeLat: null,
-      homeLon: null,
-      homeLabel: null,
-    };
+    const cleared = { homeLocationEncrypted: null };
     const sealedValue = entry.homeLocationEncrypted;
     if (has(entry, "homeLocationEncrypted") && sealedValue !== null) {
       if (typeof sealedValue !== "string") {
@@ -471,12 +457,6 @@ const homeLocation: SettingCodec = {
   },
 };
 
-/** Carried by the home codec above. */
-const ridesWithHome: SettingCodec = {
-  write: () => ({}),
-  read: () => undefined,
-};
-
 const ACCOUNT_SETTING_CODECS: Readonly<
   Record<AccountSettingColumn, SettingCodec>
 > = {
@@ -493,9 +473,6 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   avatarBytes: avatar,
   avatarContentType: ridesWithAvatar,
   avatarUpdatedAt: ridesWithAvatar,
-  homeLat: ridesWithHome,
-  homeLon: ridesWithHome,
-  homeLabel: ridesWithHome,
   homeTimezone: timeZone("homeTimezone", true),
   homeSince: instant("homeSince"),
   homeLocationEncrypted: homeLocation,
@@ -545,6 +522,7 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   ),
   insightsExcludeMetrics: plain("insightsExcludeMetrics"),
   disableCoach: plain("disableCoach"),
+  aiUsageLevel: oneOf("aiUsageLevel", Object.values(AiUsageLevel), true),
   coachPrefsJson: json("coachPrefsJson"),
   documentsAutoAiRead: plain("documentsAutoAiRead"),
   labsLocalOcrEnabled: plain("labsLocalOcrEnabled"),

@@ -160,6 +160,8 @@ function sourceClient() {
     // Records section: empty, exercised by its own suite.
     labResult: empty,
     biomarker: empty,
+    biomarkerAlias: empty,
+    biomarkerMerge: empty,
     illnessEpisode: empty,
     allergy: empty,
     familyHistoryEntry: empty,
@@ -302,6 +304,7 @@ function sourceClient() {
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },
     environmentTravelLocation: { findMany: vi.fn().mockResolvedValue([]) },
+    dawarichDay: { findMany: vi.fn().mockResolvedValue([]) },
     coachConversation: { findMany: vi.fn().mockResolvedValue([]) },
     moodTagCategory: { findMany: vi.fn().mockResolvedValue([]) },
     moodTagHidden: { findMany: vi.fn().mockResolvedValue([]) },
@@ -317,6 +320,11 @@ function sourceClient() {
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
     lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
+    medicationConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     customMetric: {
       findMany: vi.fn().mockResolvedValue([
         {

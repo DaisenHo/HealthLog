@@ -36,16 +36,19 @@ import type { CoachScope, CoachScopeSource, CoachScopeWindow } from "./types";
 export const DAILY_TIMELINE_DAYS = 14;
 
 /**
- * v1.7.0 — assembled-snapshot soft char cap. After the snapshot is
- * built we measure `JSON.stringify(snapshot).length` as a ~4-chars-per-
- * token proxy and, if it exceeds this cap, progressively degrade the
- * lowest-priority clusters (drop `timeline.recent`, then collapse the
- * weekly buckets) until it fits. ~24 000 chars ≈ ~6 000 tokens, which
- * sits comfortably inside every provider's context alongside the system
- * prompt + history window. The daily token ledger (`budget.ts`) stays
- * the per-day cost backstop; this is the per-prompt shape backstop.
+ * v1.7.0 — assembled-snapshot soft char cap. After the snapshot is built we
+ * measure its compact JSON (`JSON.stringify(snapshot).length`, the form the
+ * prompt and every tool result ship) and, if it exceeds this cap,
+ * progressively degrade the lowest-priority clusters (drop
+ * `timeline.recent`, then collapse the weekly buckets) until it fits. The
+ * daily token ledger (`budget.ts`) stays the per-day cost backstop; this is
+ * the per-prompt shape backstop.
+ *
+ * v1.43 (#1217) — 24 000 pretty-printed characters became 14 000 compact
+ * ones. Compact JSON is ~0.42 to ~0.5 of the pretty form for these blocks, so
+ * everything that fitted before still fits: the same data, fewer tokens.
  */
-export const MAX_SNAPSHOT_CHARS = 24_000;
+export const MAX_SNAPSHOT_CHARS = 14_000;
 
 /**
  * v1.18.10 (P-2) — newest-first cap on the single multi-type measurement read

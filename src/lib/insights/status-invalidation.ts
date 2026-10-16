@@ -31,42 +31,53 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { aiCapabilityForRecord } from "@/lib/ai/capabilities/gate";
+import { loadRecordAiUsage } from "@/lib/ai/capabilities/usage";
+import { statusRegenGapHours, type IngestSource } from "@/lib/ai/usage-level";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 /**
- * Minimum gap between a scope's last cached (re)generation and the next
- * ingest-driven re-enqueue. A scope whose cached assessment was
- * (re)generated within this window is left intact on a fresh measurement
- * ingest — not re-enqueued.
+ * Where a batch of fresh measurements came from, which decides how soon the
+ * status cards it dirties may regenerate.
  *
- * A constantly-syncing client (Apple Health drips batches every few
- * minutes) used to delete + re-enqueue every dirtied scope on every batch,
- * and because each delete dropped the cache row the per-(user,scope,locale)
- * enqueue singleton (120 s) could not coalesce across batches that arrive
- * minutes apart — so STEPS / general / a metric card regenerated several
- * times an hour and the assessment felt "regenerated on every visit". This
- * window coalesces the storm: a genuinely stale scope (no fresh assessment)
- * still refreshes immediately, but a scope refreshed inside the window is
- * skipped, so a fresh assessment survives the day's sync drip.
- *
- * v1.16.8 — first widened from 30 min to 6 h to bound provider spend, but
- * a 6 h wall meant same-day data was not narrated same-day: the nightly
- * warm at 04:30 restarted the window, so a notable 08:00 reading never
- * re-enqueued its scopes and the card showed the pre-reading text until
- * the next nightly tick. The window is now a ONE-HOUR minimum gap, and
- * the budget role the 6 h wall carried moves to the worker's content-hash
- * gate: every ingest that lands past the gap re-enqueues the dirtied
- * scopes, the worker's forced run re-gathers the snapshot, and the gate
- * (`refreshUnchangedStatusInsight`) turns an unchanged snapshot into a
- * timestamp refresh with zero provider cost. So this clock only bounds
- * the SQL-gather frequency — at most one worker run per scope per hour
- * under a constant sync drip — while provider spend tracks actual data
- * change, which is what the gate exists to meter. Comparing the hash
- * inline at invalidation time was rejected: it would run the full
- * per-scope data gather inside the ingest path, which is exactly the
- * work the queue exists to keep off that path.
+ *   - `manual`: a reading the person entered or changed by hand (the web
+ *     form, the phone's entry sheet, a Telegram reply, an MCP write, a
+ *     delete or restore, a file they chose to import). It should be narrated
+ *     the same day, so its gap stays short.
+ *   - `sync`: rows a device or an integration delivered on its own schedule
+ *     (the phone's Apple Health sync, Withings, Oura, Fitbit, Polar, WHOOP,
+ *     Nightscout, Google Health, a computed score). A watch drips these all
+ *     day, and every drip moves today's partial bucket, so the content-hash
+ *     gate cannot catch them; only a longer gap does.
  */
-const INGEST_INVALIDATE_MIN_GAP_MS = 60 * 60 * 1000;
+export type StatusIngestSource = IngestSource;
+
+/**
+ * The minimum gap between a scope's last cached (re)generation and the next
+ * ingest-driven re-enqueue. A scope whose cached assessment was
+ * (re)generated within the gap is left intact and not re-enqueued.
+ *
+ * History: v1.9.0 introduced the window (30 min) because a constantly
+ * syncing client re-enqueued every dirtied scope on every batch. v1.16.8
+ * widened it to 6 h for every ingest, which was rolled back to 1 h because a
+ * lone 08:00 reading after the 04:30 nightly warm was not narrated the same
+ * day. Since v1.43 (#1217) the gap is chosen by source and by the record's AI
+ * usage level (`statusRegenGapHours` in `@/lib/ai/usage-level`): a hand entry
+ * keeps the hour (six on `frugal`), a sync waits the operator's sync gap on
+ * `standard` (default six hours), a day on `frugal` (or the operator's gap
+ * when it is longer), the hour on `full`.
+ */
+async function ingestRegenGapMs(
+  userId: string,
+  source: StatusIngestSource,
+): Promise<{ gapMs: number; level: string }> {
+  const usage = await loadRecordAiUsage(userId);
+  const hours = statusRegenGapHours(
+    usage.level,
+    source,
+    usage.settings.syncRegenGapHours,
+  );
+  return { gapMs: hours * 60 * 60 * 1000, level: usage.level };
+}
 
 /**
  * The seven per-metric assessment scopes. Each generator persists its
@@ -130,6 +141,7 @@ function statusScopesForMeasurementType(
 export async function invalidateStatusInsightsForTypes(
   userId: string,
   types: Iterable<MeasurementType>,
+  options: { source: StatusIngestSource },
 ): Promise<void> {
   // One ordered set of every scope the batch dirties. The seven specialised
   // scopes are bare slugs (`weight`, `general`, …); the generic HealthKit
@@ -184,14 +196,25 @@ export async function invalidateStatusInsightsForTypes(
   // only the redundant churn is removed. Past the gap the enqueue always
   // goes through — the worker's content-hash gate decides whether the
   // batch actually changed anything (see the constant's doc).
-  const freshScopes = await findRecentlyWarmedScopes(userId, locale, scopes);
+  const { gapMs, level } = await ingestRegenGapMs(userId, options.source);
+  const freshScopes = await findRecentlyWarmedScopes(
+    userId,
+    locale,
+    scopes,
+    gapMs,
+  );
   const staleScopes = Array.from(scopes).filter(
     (scope) => !freshScopes.has(scope),
   );
   if (staleScopes.length === 0) {
     annotate({
       action: { name: "insights.status.invalidate.debounced" },
-      meta: { skipped: scopes.size, refreshed: 0 },
+      meta: {
+        skipped: scopes.size,
+        refreshed: 0,
+        source: options.source,
+        usage_level: level,
+      },
     });
     return;
   }
@@ -210,7 +233,12 @@ export async function invalidateStatusInsightsForTypes(
 
   annotate({
     action: { name: "insights.status.invalidate.debounced" },
-    meta: { skipped: freshScopes.size, refreshed: staleScopes.length },
+    meta: {
+      skipped: freshScopes.size,
+      refreshed: staleScopes.length,
+      source: options.source,
+      usage_level: level,
+    },
   });
 }
 
@@ -268,7 +296,7 @@ export async function enqueueStatusRefillForUser(
 
 /**
  * v1.9.0 — return the subset of `scopes` whose cached assessment for
- * `locale` was generated within `INGEST_INVALIDATE_MIN_GAP_MS` and is a
+ * `locale` was generated within `gapMs` and is a
  * real (non-stub) assessment. Those scopes are skipped by the ingest
  * invalidator so a fresh assessment survives the sync drip.
  *
@@ -281,8 +309,9 @@ async function findRecentlyWarmedScopes(
   userId: string,
   locale: SupportedLocale,
   scopes: ReadonlySet<InsightStatusScope>,
+  gapMs: number,
 ): Promise<Set<InsightStatusScope>> {
-  const cutoff = new Date(Date.now() - INGEST_INVALIDATE_MIN_GAP_MS);
+  const cutoff = new Date(Date.now() - gapMs);
   // Match exactly the cache actions for the candidate scopes in this locale.
   const candidateActions = Array.from(scopes, (scope) =>
     statusCacheAction(scope, locale),

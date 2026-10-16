@@ -99,7 +99,7 @@ describe("runCoachToolLoop — result tables", () => {
     expect(JSON.stringify(out.toolResults)).not.toContain("987654");
   });
 
-  it("adds the table rules to the rounds after the first table, not before", async () => {
+  it("adds the table rules to the rounds after the first table, not before, without touching the system prompt", async () => {
     executeCoachTool
       .mockResolvedValueOnce({ present: true, data: { n: 1 } })
       .mockResolvedValueOnce({
@@ -113,16 +113,27 @@ describe("runCoachToolLoop — result tables", () => {
       name,
       arguments: '{"metric":"pulse"}',
     });
-    runRawCompletionWithFallback
-      .mockResolvedValueOnce(round("", [call("a", "get_metric_series")]))
-      .mockResolvedValueOnce(round("", [call("b", "get_metric_table")]))
-      .mockResolvedValueOnce(round("answer"));
+    // The loop hands every round the same growing message array, so record
+    // what each round saw at the moment it was called.
+    const seen: Array<{ system: string; messages: unknown[] }> = [];
+    const replies = [
+      round("", [call("a", "get_metric_series")]),
+      round("", [call("b", "get_metric_table")]),
+      round("answer"),
+    ];
+    runRawCompletionWithFallback.mockImplementation(async (arg: unknown) => {
+      const { params } = arg as {
+        params: { system: string; messages: unknown[] };
+      };
+      seen.push({ system: params.system, messages: [...params.messages] });
+      return replies[seen.length - 1];
+    });
 
     await runCoachToolLoop({
       userId: "u1",
       providers: [],
       system: "sys",
-      systemOnceTableShown: "sys+tables",
+      tableRulesOnceShown: "TABLE RULES",
       messages: [{ role: "user", content: "q" }],
       tools: COACH_TOOL_DEFS,
       reach: UNBOUNDED_REACH,
@@ -133,9 +144,26 @@ describe("runCoachToolLoop — result tables", () => {
         refs: createResultRefAllocator(),
       },
     });
-    const systems = runRawCompletionWithFallback.mock.calls.map(
-      ([arg]) => (arg as { params: { system: string } }).params.system,
+    // #1217 — one system prompt for every round, so the cached prefix holds.
+    expect(seen.map((round) => round.system)).toEqual(["sys", "sys", "sys"]);
+    const rulesIn = seen.map((round) =>
+      round.messages.some(
+        (m) =>
+          (m as { role: string; content: unknown }).role === "user" &&
+          (m as { content: unknown }).content === "TABLE RULES",
+      ),
     );
-    expect(systems).toEqual(["sys", "sys", "sys+tables"]);
+    expect(rulesIn).toEqual([false, false, true]);
+    // The rules follow the tool results that produced the table.
+    const last = seen[2]!.messages as Array<{ role: string }>;
+    expect(last.at(-1)).toEqual({ role: "user", content: "TABLE RULES" });
+    expect(last.at(-2)?.role).toBe("tool");
+    // Each round's messages extend the previous round's: a stable prefix.
+    expect(seen[1]!.messages.slice(0, seen[0]!.messages.length)).toEqual(
+      seen[0]!.messages,
+    );
+    expect(seen[2]!.messages.slice(0, seen[1]!.messages.length)).toEqual(
+      seen[1]!.messages,
+    );
   });
 });

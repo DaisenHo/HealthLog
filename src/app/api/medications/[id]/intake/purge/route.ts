@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  enqueueSupplementNutrientRecompute,
+  medicationHasComposition,
+} from "@/lib/medications/ingredients/recompute-job";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -62,6 +66,11 @@ export const DELETE = apiHandler(
     await prisma.medicationComplianceRollup.deleteMany({
       where: { medicationId: id, userId: user.id },
     });
+
+    // v1.43 — the purged doses no longer count toward the micronutrients.
+    if (await medicationHasComposition(user.id, id)) {
+      await enqueueSupplementNutrientRecompute(user.id);
+    }
 
     await auditLog("medication.intake.purge", {
       userId: user.id,

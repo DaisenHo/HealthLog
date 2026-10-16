@@ -6,6 +6,8 @@ vi.mock("@/lib/db", () => ({
     personalRecord: {
       findMany: vi.fn(),
     },
+    user: { findUnique: vi.fn() },
+    measurement: { findFirst: vi.fn() },
   },
 }));
 
@@ -185,5 +187,78 @@ describe("GET /api/personal-records", () => {
     expect(body.data).toHaveLength(1);
     expect(body.data[0].value).toBe(47.2);
     expect(body.data[0].metricType).toBe("VO2_MAX");
+  });
+
+  // v1.43 (ios #116 item 5) — every stored field stays, and the band for the
+  // age the record was set at rides beside it.
+  it("projects every stored field and adds the benchmark", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const createdAt = new Date("2026-05-02T00:00:00.000Z");
+    vi.mocked(prisma.personalRecord.findMany).mockResolvedValue([
+      {
+        id: "pr-1",
+        userId: "user-1",
+        metricType: "VO2_MAX",
+        metricSlot: null,
+        direction: "MAX",
+        value: 47.2,
+        unit: "mL/(kg·min)",
+        achievedAt: new Date("2026-05-01T07:00:00.000Z"),
+        sourceMeasurementId: "m-1",
+        source: "APPLE_HEALTH",
+        externalId: "x-1",
+        createdAt,
+      },
+      {
+        id: "pr-2",
+        userId: "user-1",
+        metricType: "ACTIVITY_STEPS",
+        metricSlot: null,
+        direction: "MAX",
+        value: 21000,
+        unit: "steps",
+        achievedAt: new Date("2026-04-01T07:00:00.000Z"),
+        sourceMeasurementId: null,
+        source: "APPLE_HEALTH",
+        externalId: null,
+        createdAt,
+      },
+    ] as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dateOfBirth: new Date("1981-03-10T00:00:00.000Z"),
+      gender: "MALE",
+      heightCm: 180,
+    } as never);
+    const res = await GET(req("http://localhost/api/personal-records"));
+    const body = (await res.json()) as { data: Array<Record<string, unknown>> };
+    expect(Object.keys(body.data[0]).sort()).toEqual(
+      [
+        "achievedAt",
+        "benchmark",
+        "createdAt",
+        "direction",
+        "externalId",
+        "id",
+        "metricSlot",
+        "metricType",
+        "source",
+        "sourceMeasurementId",
+        "unit",
+        "userId",
+        "value",
+      ].sort(),
+    );
+    // 45 when the record was set: between the 40s and 50s male FRIEND bands.
+    expect(body.data[0].benchmark).toMatchObject({
+      unit: "mL/(kg·min)",
+      source: "friend_2015",
+    });
+    const band = body.data[0].benchmark as { low: number; high: number };
+    expect(band.low).toBeGreaterThan(31);
+    expect(band.high).toBeLessThan(49);
+    // A step record has no cited norm.
+    expect(body.data[1].benchmark).toBeNull();
+    // No six-minute walk on the page, so no weight read.
+    expect(prisma.measurement.findFirst).not.toHaveBeenCalled();
   });
 });

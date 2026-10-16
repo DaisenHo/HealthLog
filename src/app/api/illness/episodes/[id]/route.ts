@@ -27,12 +27,13 @@ import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { illnessEpisodeUpdateSchema } from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
 import type { Prisma } from "@/generated/prisma/client";
+import { withRelated } from "@/lib/links/related";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export const GET = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("read", "illness");
+    const { user, grantId } = await requireRecordAuth("read", "illness");
 
     const gate = await requireIllnessEnabled(user.id);
     if (!gate.enabled) return gate.response;
@@ -51,7 +52,14 @@ export const GET = apiHandler(
       },
     });
 
-    return apiSuccess(toIllnessEpisodeDTO(row));
+    return apiSuccess(
+      await withRelated(prisma, toIllnessEpisodeDTO(row), {
+        userId: user.id,
+        grantId,
+        kind: "conditionEpisode",
+        id,
+      }),
+    );
   },
 );
 

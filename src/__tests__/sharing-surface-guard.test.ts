@@ -853,11 +853,15 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/biomarkers/route.ts": {
     domain: "labs",
-    why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are refused.",
+    why: "The record's biomarker catalogue: the analytes this account tracks and the ranges it tracks them against. Adding a marker is a delegable write; the PUT and DELETE on the sibling route are manage-level.",
   },
   "app/api/biomarkers/[id]/route.ts": {
     domain: "labs",
     why: "One biomarker of the record, fetch-then-guard against the resolved user.",
+  },
+  "app/api/biomarkers/[id]/merge/route.ts": {
+    domain: "labs",
+    why: "Merging markers of the record into one (v1.43): every read and write is narrowed to the resolved user, and the sources must be that record's markers.",
   },
   "app/api/allergies/route.ts": {
     domain: "profile",
@@ -886,6 +890,18 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/anamnesis/facts/route.ts": {
     domain: "profile",
     why: "The record's health-profile facts, read through `readHealthProfileFacts(user.id)`. The module holds write helpers, and the GET calls none of them.",
+  },
+  "app/api/anamnesis/life-circumstances/route.ts": {
+    domain: "profile",
+    why: "The record's life circumstances (v1.43), the structured sibling of the facts above and under the same `profile` grant. Read-only: the section switches and confirmations are written through their own owner-only routes; AUDIT-C through the manage-level pair below.",
+  },
+  "app/api/anamnesis/audit-c/route.ts": {
+    domain: "profile",
+    why: "Recording an AUDIT-C (v1.43) into the record, the alcohol section of the life circumstances. Reached only through its MANAGE arm, the level allergies and family history are written at; the entry is scored on the server against the record's profile.",
+  },
+  "app/api/anamnesis/audit-c/[id]/route.ts": {
+    domain: "profile",
+    why: "Removing one AUDIT-C entry of the record, scoped `userId: user.id` and `instrument: AUDIT_C` in the guarded update, so a foreign id or a screener id is a 404. Reached only through its MANAGE arm.",
   },
   "app/api/profile/summary/route.ts": {
     domain: "profile",
@@ -930,6 +946,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/sleep/rhythm/route.ts": {
     domain: "measurements",
     why: "The record's sleep rhythm, built from `buildSleepRhythm(user.id)` and gated on the record's sleep module.",
+  },
+  "app/api/nutrients/catalog/route.ts": {
+    domain: "measurements",
+    why: "The nutrient catalogue as the composition form reads it (v1.43): codes, units and upper limits, labels in the record's language. Reference data the record's module gate opens; nothing of the record itself.",
   },
   "app/api/nutrients/route.ts": {
     domain: "measurements",
@@ -1092,6 +1112,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/medications/[id]/route.ts": {
     domain: "medications",
     why: "One medication of the record, fetch-then-guard against the resolved user before anything is serialised.",
+  },
+  "app/api/medications/[id]/ingredients/route.ts": {
+    domain: "medications",
+    why: "One medication's composition per unit (v1.43), behind the ownership check against the resolved record. The PUT is the route's only verb and is manage-level; the label read beside it stays owner-only, because provider work is never admitted inside somebody else's record.",
   },
   "app/api/medications/[id]/cadence/route.ts": {
     domain: "medications",
@@ -1601,13 +1625,28 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
   },
   "app/api/biomarkers/[id]/route.ts": {
     domain: "labs",
-    conditions: ["C4"],
-    why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it stays refused.",
+    conditions: ["C3", "C4"],
+    why: "Editing an analyte's reference range, the one admitted edit whose error is silent, which is why C4 puts it in the feed. The DELETE beside it resolves through the same labs authority since v1.43 instead of a bare requireAuth; it hard-deletes the marker with its readings, so C3 files the name, unit and reading count it took.",
+  },
+  "app/api/biomarkers/[id]/merge/route.ts": {
+    domain: "labs",
+    conditions: ["C3"],
+    why: "Merging markers moves their readings into one and deletes the sources, with no undo, so it sits at the same level as the delete beside it. C3: each deleted source files its id and how many readings went with it; the name stays in the merge ledger. The shared record-write ceiling is charged to the actor, like every record write.",
   },
   "app/api/allergies/route.ts": {
     domain: "profile",
     conditions: [],
     why: "Recording an allergy. Reachable through the record's settings on a managed profile, dormant on an invited one, and argued as such.",
+  },
+  "app/api/anamnesis/audit-c/route.ts": {
+    domain: "profile",
+    conditions: ["C1"],
+    why: "Recording an AUDIT-C (v1.43) in the record a manager runs, like an allergy. C1: the 30-an-hour bucket keys on the actor. Arithmetic on three answers, no generation; the trail files the entry id and instrument, never the answers.",
+  },
+  "app/api/anamnesis/audit-c/[id]/route.ts": {
+    domain: "profile",
+    conditions: [],
+    why: "Removing an AUDIT-C entry is a soft delete (`deletedAt`), so the row stays to reconstruct and the delete needs no C3; it is the counterpart of the create beside it.",
   },
   "app/api/allergies/[id]/route.ts": {
     domain: "profile",
@@ -1753,6 +1792,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "medications",
     conditions: ["C4", "C7"],
     why: "Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it stays refused.",
+  },
+  "app/api/medications/[id]/ingredients/route.ts": {
+    domain: "medications",
+    conditions: ["C1", "C4"],
+    why: "Replacing a supplement's composition (v1.43), which rewrites what every taken dose adds to the record's micronutrients. C1, and C4 because the replaced composition is filed as one comparable line. The recompute it queues is arithmetic, not generation.",
   },
   "app/api/medications/[id]/schedule-revisions/route.ts": {
     domain: "medications",
@@ -2104,8 +2148,24 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.42.4 -- the Labs list's per-marker overview joins the record list
  * beside `GET /api/labs`, the rows it groups. 255 -> 256.
+ *
+ * v1.43 -- two reads join the record list: the life circumstances beside the
+ * facts (`profile`) and the nutrient catalogue beside the nutrient reads
+ * (`measurements`). The biomarker DELETE joins the manage literal on a module
+ * that was already there. 256 -> 258.
+ *
+ * v1.43 -- merging biomarkers joins the record list and the manage literal
+ * (D1223). 258 -> 260.
+ *
+ * v1.43 -- a supplement's composition joins the record list and the manage
+ * literal: its PUT replaces the composition every taken dose counts with.
+ * 260 -> 262.
+ *
+ * v1.43 -- AUDIT-C's create and soft delete join the record list and the
+ * manage literal under `profile`, the level allergies are written at.
+ * 262 -> 266.
  */
-const FROZEN_ENTRY_COUNT = 256;
+const FROZEN_ENTRY_COUNT = 266;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2866,7 +2926,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(87);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(92);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { trendSentiment, trendVerdict } from "../trend-verdict";
 import { z } from "zod/v4";
 import { measurementSourceEnum, measurementTypeEnum } from "../shared";
 import { METRIC_STATUS_IDS } from "@/lib/insights/metric-status-registry";
@@ -25,6 +26,7 @@ import {
   SCORE_HISTORY_IDS,
   SCORE_HISTORY_MAX_DAYS,
 } from "@/lib/insights/score-history-ids";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /** The retrospective periods the narrative route accepts, read off the engine. */
 const NARRATIVE_PERIOD_VALUES = Object.keys(PERIOD_DAYS);
@@ -103,8 +105,7 @@ export const metricStatusResponse = z
     cached: z
       .boolean()
       .describe("True when `text` is served from cache (incl. last-good)."),
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .nullable()
       .describe("When the served assessment was generated; null when none."),
     preparing: z
@@ -225,9 +226,7 @@ export const wellnessScoreValue = z
       .describe(
         "Days that actually carried a score inside the window. Compare against `provenance.windowDays` — a shorter record answers a wide request with fewer days, and this is where that shows.",
       ),
-    asOf: z.iso
-      .datetime({ offset: true })
-      .describe("`measuredAt` of the latest score."),
+    asOf: isoDateTime().describe("`measuredAt` of the latest score."),
     series: z
       .array(z.number())
       .describe(
@@ -326,9 +325,9 @@ export const derivedProvenance = z
       .number()
       .int()
       .describe("Trailing window the value summarises, in days."),
-    computedAt: z.iso
-      .datetime({ offset: true })
-      .describe("Compute time (for cache-staleness + the 'as of' chip)."),
+    computedAt: isoDateTime().describe(
+      "Compute time (for cache-staleness + the 'as of' chip).",
+    ),
   })
   .meta({ id: "DerivedProvenance" });
 
@@ -391,9 +390,9 @@ export const derivedAssessment = z
       .describe(
         "'deterministic' for the always-on template text, or 'ai' when warmer provider prose has been cached.",
       ),
-    updatedAt: z.iso
-      .datetime({ offset: true })
-      .describe("When the text was produced / last warmed."),
+    updatedAt: isoDateTime().describe(
+      "When the text was produced / last warmed.",
+    ),
   })
   .meta({ id: "DerivedAssessment" });
 
@@ -411,7 +410,7 @@ export const derivedMetricResponse = z
       .record(z.string(), z.unknown())
       .nullable()
       .describe(
-        "Metric-specific value object when status is 'ok'; null when 'insufficient'. The shape is chosen by `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` / `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to discover by inspecting a live payload. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series }, where `series` is the trailing per-day means for the inline sparkline. The remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under `src/lib/insights/derived/`.",
+        "Metric-specific value object when status is 'ok'; null when 'insufficient'. The shape is chosen by `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` / `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to discover by inspecting a live payload. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with `center` placed against their own target or a profile default. The remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under `src/lib/insights/derived/`.",
       ),
     coverage: derivedCoverage,
     confidence: derivedConfidence
@@ -781,8 +780,7 @@ export const insightStatusResponse = z
     cached: z
       .boolean()
       .describe("True when `text` is served from cache (incl. last-good)."),
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .nullable()
       .describe("When the served assessment was generated; null when none."),
     preparing: z
@@ -842,8 +840,7 @@ export const biomarkerAssessmentResponse = z
     cached: z
       .boolean()
       .describe("True when `text` is served from cache (incl. last-good)."),
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .nullable()
       .describe("When the served assessment was generated; null when none."),
     preparing: z
@@ -911,8 +908,7 @@ export const medicationComplianceStatusResponse = z
       .describe(
         "True when the envelope is served from cache (incl. last-good).",
       ),
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .nullable()
       .describe("When the served assessment was generated; null when none."),
     preparing: z
@@ -1258,6 +1254,12 @@ export const dashboardSnapshotResponse = z
         "Server-computed band / target math resolved from the user's profile facts, so the client reads these numbers instead of recomputing them. Every sub-field is null only when the driving profile fact is missing (no date of birth for blood pressure, no height and no weight target for weight).",
       ),
     tiles: z.object({
+      directions: z
+        .record(z.string(), trendVerdict)
+        .optional()
+        .describe(
+          "v1.43 — per measurement type, which way a change counts. `weightTrend` stays.",
+        ),
       summaries: dataSummaryRecord,
       lastSeenByType: z.record(z.string(), z.unknown()),
       mood: z.object({
@@ -1549,7 +1551,7 @@ const insightCard = z
       .describe(
         "Suggested follow-ups; empty on the current rule-engine cards.",
       ),
-    generatedAt: z.iso.datetime({ offset: true }),
+    generatedAt: isoDateTime(),
     provider: z
       .string()
       .describe(
@@ -1579,9 +1581,9 @@ const ecgClassification = z
 const ecgRecordingListItem = z
   .object({
     id: z.string().describe("Recording id (cuid)."),
-    recordedAt: z.iso
-      .datetime({ offset: true })
-      .describe("On-device recording time (the display timestamp)."),
+    recordedAt: isoDateTime().describe(
+      "On-device recording time (the display timestamp).",
+    ),
     durationSeconds: z
       .number()
       .nullable()
@@ -1653,9 +1655,9 @@ export const ecgDetailQuery = z
 
 export const ecgDetailResponse = z
   .object({
-    recordedAt: z.iso
-      .datetime({ offset: true })
-      .describe("On-device recording time (the display timestamp)."),
+    recordedAt: isoDateTime().describe(
+      "On-device recording time (the display timestamp).",
+    ),
     durationSeconds: z
       .number()
       .nullable()
@@ -1710,11 +1712,9 @@ export const ecgIngestRequest = z
       .describe(
         "The recording's stable id AS THE CLIENT KNOWS IT — for an Apple Health client, the `HKSample.uuid`. It is the source's own identity, not a content hash: re-posting the same id overwrites that recording in place. It does not have to agree with the id the `export.zip` importer derives for the same strip; the server reconciles the two doors itself (see `status: duplicate`).",
       ),
-    recordedAt: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "When the strip was recorded on-device, with offset. Part of the recording's identity — see `status: duplicate`.",
-      ),
+    recordedAt: isoDateTime().describe(
+      "When the strip was recorded on-device, with offset. Part of the recording's identity — see `status: duplicate`.",
+    ),
     samplingFrequency: z
       .number()
       .min(1)
@@ -1770,9 +1770,9 @@ export const ecgIngestResponse = z
       .describe(
         "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. All three statuses mean the recording is stored and the client may advance its cursor.",
       ),
-    recordedAt: z.iso
-      .datetime({ offset: true })
-      .describe("The `recordedAt` that was submitted, echoed back."),
+    recordedAt: isoDateTime().describe(
+      "The `recordedAt` that was submitted, echoed back.",
+    ),
     sampleCount: z
       .number()
       .int()
@@ -1826,9 +1826,9 @@ const rhythmEventListItem = z
     id: z.string().describe("Measurement row id (cuid)."),
     type: rhythmEventType,
     classification: rhythmEventClassification,
-    occurredAt: z.iso
-      .datetime({ offset: true })
-      .describe("Device-reported event time (`measuredAt`)."),
+    occurredAt: isoDateTime().describe(
+      "Device-reported event time (`measuredAt`).",
+    ),
     source: measurementSourceEnum,
     deviceType: z
       .string()
@@ -1924,7 +1924,7 @@ export const dataSummary = z
 
 const lastSeenSlot = z
   .object({
-    lastSeenAt: z.iso.datetime({ offset: true }),
+    lastSeenAt: isoDateTime(),
     daysAgo: z
       .number()
       .int()
@@ -2361,8 +2361,7 @@ export const insightsSettingsResponse = z
       .describe(
         "The account's own ChatGPT-OAuth connection state; `disconnected` when the account row carries none.",
       ),
-    codexConnectedAt: z.iso
-      .datetime({ offset: true })
+    codexConnectedAt: isoDateTime()
       .nullable()
       .describe("When that connection was made; null when never connected."),
     hasAdminKey: z
@@ -2390,8 +2389,7 @@ export const insightsSettingsResponse = z
       .describe(
         "What leaves for the provider: aggregated figures or raw readings. `aggregated` when the account has never chosen.",
       ),
-    lastInsightAt: z.iso
-      .datetime({ offset: true })
+    lastInsightAt: isoDateTime()
       .nullable()
       .describe("When the cached insight text was last written."),
   })
@@ -2478,6 +2476,14 @@ const targetItem = z
       .describe(
         "Per-tile extras. Only the medication-compliance tile carries any today; every other tile omits the key.",
       ),
+    direction: trendVerdict
+      .nullable()
+      .optional()
+      .describe("v1.43 — which way a change of this target counts."),
+    trendSentiment: trendSentiment
+      .nullable()
+      .optional()
+      .describe("v1.43 — the verdict applied to this tile's change."),
   })
   .meta({
     id: "TargetItem",
@@ -2589,8 +2595,7 @@ export const insightsGenerateReadResponse = z
     cached: z
       .boolean()
       .describe("True when a payload was served from the cache."),
-    cachedAt: z.iso
-      .datetime({ offset: true })
+    cachedAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
@@ -2658,8 +2663,7 @@ export const insightsGeneratePostResponse = z
         "The insight payload, fresh or cached depending on `cached`, with its `dailyBriefing` resolved for today exactly as on the read GET. A cached briefing generated on an earlier calendar day never short-circuits an account with a provider: like a briefingless cache, it regenerates, and degrades to the cached payload on an exhausted quota.",
       ),
     cached: z.boolean(),
-    cachedAt: z.iso
-      .datetime({ offset: true })
+    cachedAt: isoDateTime()
       .optional()
       .describe("Present on the cached branch only."),
     legacyPayload: z.boolean(),
@@ -2779,7 +2783,7 @@ export const narrativeResponse = z
           .describe(
             "Where the text came from — provider prose or the deterministic non-causal fallback a provider-less account gets.",
           ),
-        updatedAt: z.iso.datetime({ offset: true }),
+        updatedAt: isoDateTime(),
       })
       .nullable()
       .describe(
@@ -2827,11 +2831,9 @@ export const glp1TimelineResponse = z
     entries: z
       .array(
         z.object({
-          date: z.iso
-            .datetime({ offset: true })
-            .describe(
-              "When it happened. A `side-effect` entry is a DAY rather than an instant, and is stamped at 12:00 UTC of that day so it sorts — do not read it as a capture time.",
-            ),
+          date: isoDateTime().describe(
+            "When it happened. A `side-effect` entry is a DAY rather than an instant, and is stamped at 12:00 UTC of that day so it sorts — do not read it as a capture time.",
+          ),
           kind: z.enum([
             "dose-change",
             "injection",

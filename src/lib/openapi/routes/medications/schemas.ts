@@ -5,6 +5,8 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { relatedList } from "../relation-links";
+import { medicationIngredient } from "./ingredients";
 import { z } from "zod/v4";
 import { baseUpdatedAtField } from "../shared";
 import {
@@ -19,6 +21,7 @@ import {
   MEDICATION_ORDER_MAX_ENTRIES,
 } from "@/lib/medication-list-layout";
 import { MEDICATION_IMPORT_SKIP_REASONS } from "@/lib/jobs/medication-intake-import";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Medications (v1.5 scheduling) ────────────────────────────────────
 //
@@ -276,16 +279,15 @@ export const medicationResource = z
       .describe(
         "v1.9.0 optional RxNorm RxCUI (numeric, US identifier, e.g. `2601723`). Secondary FHIR coding under `http://www.nlm.nih.gov/research/umls/rxnorm`, alongside any ATC code. NULL = no code captured.",
       ),
-    pausedAt: z.iso.datetime({ offset: true }).nullable(),
-    snoozedUntil: z.iso.datetime({ offset: true }).nullable(),
+    pausedAt: isoDateTime().nullable(),
+    snoozedUntil: isoDateTime().nullable(),
     remindersActive: z
       .boolean()
       .optional()
       .describe(
         "Present on the READ paths only (list and single GET). v1.42.2 — whether the server sends dose reminders for this medication: true only when `notificationsEnabled` is on, the medication is `active`, its course has not ended (`endsOn` is today or later on the person's clock, or unset), its intake is tracked (`trackIntake`), it is not `asNeeded`, and `autoMarkTaken` is off. The same decision gates every server-side reminder send. A client that arms local reminders arms them from this, not from `notificationsEnabled`. Read-only — computed, not stored.",
       ),
-    nextDueAt: z.iso
-      .datetime({ offset: true })
+    nextDueAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
@@ -297,14 +299,12 @@ export const medicationResource = z
       .describe(
         "Present on the READ paths only, alongside `nextDueAt`. v1.16.4 — true when `nextDueAt` is an OPEN overdue slot: its anchor has passed, `now` is still inside the slot's catch-up band, and no taken / skipped / auto-missed row resolves it. False for a regular future next-due (and when `nextDueAt` is null). Read-only — computed, not stored.",
       ),
-    startsOn: z.iso
-      .datetime({ offset: true })
+    startsOn: isoDateTime()
       .nullable()
       .describe(
         "v1.5 course start (ISO date). Anchors RRULE BYDAY / BYMONTHDAY patterns and the rolling-interval countdown's first window. NULL means active from creation.",
       ),
-    endsOn: z.iso
-      .datetime({ offset: true })
+    endsOn: isoDateTime()
       .nullable()
       .describe(
         "v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.",
@@ -329,14 +329,13 @@ export const medicationResource = z
       .describe(
         "v1.42.2 — doses are recorded automatically. False (the default) for every medication that existed before the field. When true the server records each scheduled dose as taken (an intake with `autoRecorded: true`, `takenAt` = the slot time) shortly after its time passes, from `autoMarkTakenSince` on. A slot the person took, skipped or removed is never touched, and they can still change or skip any dose. No medication reminder is sent for it on any channel while it is on; a client that arms local reminders should not arm them for it either. `notificationsEnabled` keeps the person's own setting and applies again once this is switched off.",
       ),
-    autoMarkTakenSince: z.iso
-      .datetime({ offset: true })
+    autoMarkTakenSince: isoDateTime()
       .nullable()
       .describe(
         "v1.42.2 — when `autoMarkTaken` was last switched on. No slot anchored before it is ever recorded automatically. NULL while the option is off. Read-only — set by the server on the switch.",
       ),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
     schedules: z
       .array(medicationScheduleResource)
       .describe(
@@ -370,7 +369,7 @@ export const medicationListEntry = medicationResource
       ),
     // The list read always computes these two, so they are required here
     // even though the shared base leaves them optional for the write paths.
-    nextDueAt: z.iso.datetime({ offset: true }).nullable(),
+    nextDueAt: isoDateTime().nullable(),
     nextDueOverdue: z.boolean(),
     remindersActive: z
       .boolean()
@@ -387,8 +386,7 @@ export const medicationListEntry = medicationResource
       .describe(
         "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored.",
       ),
-    lastTakenAt: z.iso
-      .datetime({ offset: true })
+    lastTakenAt: isoDateTime()
       .nullable()
       .describe(
         "Latest non-skipped `MedicationIntakeEvent.takenAt` for the medication. Drives the rolling-cadence countdown surface.",
@@ -419,6 +417,12 @@ export const medicationListEntry = medicationResource
       .nullable()
       .describe(
         "v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate (the same math the low-stock notification engine runs, so the wire and the push can never disagree). NULL = inventory tracking off or no consuming cadence derivable; 0 = tracking on, supply ran out. Read-only — computed, not stored.",
+      ),
+    hasIngredients: z
+      .boolean()
+      .optional()
+      .describe(
+        "v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`). Absent on older servers.",
       ),
   })
   .meta({
@@ -468,6 +472,13 @@ export const medicationDetailEntry = medicationResource
       .describe(
         "v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate; NULL = tracking off or no consuming cadence.",
       ),
+    ingredients: z
+      .array(medicationIngredient)
+      .optional()
+      .describe(
+        "v1.43 — the composition per unit, empty when none is stored. Absent on older servers.",
+      ),
+    related: relatedList,
   })
   .meta({
     id: "MedicationDetail",
@@ -506,20 +517,18 @@ export const medicationInventoryItemResource = z
       .describe(
         'Units left in the container. v1.16.12 — fractional (a ½-tablet dose leaves 29.5 of 30). Decremented by the intake consumption hook (FEFO with spillover across containers); refunded when a taken dose is skipped, edited away, or deleted. v1.18.3 (iOS#31) — NULL when the count is unknown (a corrupt or legacy row); the client renders "unknown", never a fabricated 0 it could decrement into negatives.',
       ),
-    firstUseAt: z.iso
-      .datetime({ offset: true })
+    firstUseAt: isoDateTime()
       .nullable()
       .describe(
         "Instant the container was first used. NULL until opened. On a PEN / AMPOULE it starts the 30-day in-use clock; on the other kinds it only records that the pack is open.",
       ),
-    expiresAt: z.iso
-      .datetime({ offset: true })
+    expiresAt: isoDateTime()
       .nullable()
       .describe(
         "Persisted MIN(firstUseAt + 30 days, printedExpiry) for a clock-bearing container (PEN / AMPOULE), else printedExpiry alone. NULL when no deadline applies — an opened blister with no printed date has none.",
       ),
-    printedExpiry: z.iso.datetime({ offset: true }).nullable(),
-    purchasedAt: z.iso.datetime({ offset: true }).nullable(),
+    printedExpiry: isoDateTime().nullable(),
+    purchasedAt: isoDateTime().nullable(),
     manufacturer: z
       .string()
       .nullable()
@@ -533,8 +542,8 @@ export const medicationInventoryItemResource = z
         'Strength as printed on the container, e.g. "5 mg/0.5 ml". Free text, not split into a number + unit — pens state strength per dose, per ml, or per cartridge. NULL when unknown.',
       ),
     notes: z.string().nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
   })
   .meta({
     id: "MedicationInventoryItem",
@@ -582,8 +591,8 @@ export const medicationIntakeEventResource = z
     id: z.string(),
     userId: z.string(),
     medicationId: z.string(),
-    scheduledFor: z.iso.datetime({ offset: true }),
-    takenAt: z.iso.datetime({ offset: true }).nullable(),
+    scheduledFor: isoDateTime(),
+    takenAt: isoDateTime().nullable(),
     skipped: z.boolean(),
     autoMissed: z
       .boolean()
@@ -602,8 +611,8 @@ export const medicationIntakeEventResource = z
       ),
     source: z.enum(["WEB", "API", "REMINDER", "IMPORT", "APPLE_HEALTH"]),
     idempotencyKey: z.string().nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
+    updatedAt: isoDateTime(),
     injectionSite: z
       .enum([
         "ABDOMEN_LEFT",
@@ -643,8 +652,7 @@ export const medicationIntakeEventResource = z
       .describe(
         "Monotonic per-row version for incremental sync readers; bumps on every mutation.",
       ),
-    deletedAt: z.iso
-      .datetime({ offset: true })
+    deletedAt: isoDateTime()
       .nullable()
       .describe(
         "Soft-delete tombstone. Non-null rows are excluded from every list/aggregate read; sync readers use it to propagate deletions.",
@@ -658,9 +666,9 @@ export const medicationIntakeEventResource = z
 
 export const medicationCadenceTimelinePoint = z
   .object({
-    day: z.iso.datetime({ offset: true }),
-    windowStart: z.iso.datetime({ offset: true }),
-    windowEnd: z.iso.datetime({ offset: true }),
+    day: isoDateTime(),
+    windowStart: isoDateTime(),
+    windowEnd: isoDateTime(),
     scheduleIndex: z.number().int().nonnegative(),
     status: z.string(),
   })
@@ -710,11 +718,11 @@ export const medicationCadenceChips = z
 export const medicationCadenceResponse = z
   .object({
     windowDays: z.number().int().positive(),
-    anchorIso: z.iso.datetime({ offset: true }),
+    anchorIso: isoDateTime(),
     next: z
       .object({
-        windowStart: z.iso.datetime({ offset: true }),
-        windowEnd: z.iso.datetime({ offset: true }),
+        windowStart: isoDateTime(),
+        windowEnd: isoDateTime(),
         scheduleIndex: z.number().int().nonnegative(),
       })
       .nullable(),
@@ -863,14 +871,12 @@ export const complianceDisplay = z
           .describe(
             "Open-cycle state, decoupled from the percentage rows: `on_track` = next dose not yet due; `due` = due now / in grace; `missed` = past grace with no logged intake (the only red state); `none` = no projected next dose (PRN / paused / ended).",
           ),
-        nextDueAt: z.iso
-          .datetime({ offset: true })
+        nextDueAt: isoDateTime()
           .nullable()
           .describe(
             "The open cycle's due instant. Null when `state` is `none`.",
           ),
-        graceUntil: z.iso
-          .datetime({ offset: true })
+        graceUntil: isoDateTime()
           .nullable()
           .describe(
             "End of the due slot's grace window. Null when `state` is `none`.",
@@ -899,8 +905,7 @@ export const complianceDisplay = z
           .describe(
             "Per-dose state of the open cycle, server-derived from the window model so the card renders the take-window (green) / overdue / heavily-overdue escalation from one authority. `upcoming` when no dose is open (PRN / paused / ended).",
           ),
-        targetAt: z.iso
-          .datetime({ offset: true })
+        targetAt: isoDateTime()
           .nullable()
           .describe(
             "Target instant of the open dose. Null when no dose is open.",
@@ -1015,12 +1020,12 @@ export const scheduleRevisionEntrySummary = z
 export const scheduleRevisionResource = z
   .object({
     id: z.string(),
-    validFrom: z.iso.datetime().describe("Inclusive start instant of the era."),
-    validUntil: z.iso
-      .datetime()
-      .describe(
-        "Exclusive end instant of the era — the moment the next plan took over.",
-      ),
+    validFrom: isoDateTime({ offset: false }).describe(
+      "Inclusive start instant of the era.",
+    ),
+    validUntil: isoDateTime({ offset: false }).describe(
+      "Exclusive end instant of the era — the moment the next plan took over.",
+    ),
     source: z
       .enum(["ARCHIVED", "MANUAL"])
       .describe(
@@ -1035,11 +1040,9 @@ export const scheduleRevisionResource = z
   });
 
 export const scheduleRevisionListResponse = z.object({
-  currentSince: z.iso
-    .datetime()
-    .describe(
-      "Instant the LIVE plan took over: the newest revision's `validUntil`, or the medication's `createdAt` when no era has been archived.",
-    ),
+  currentSince: isoDateTime({ offset: false }).describe(
+    "Instant the LIVE plan took over: the newest revision's `validUntil`, or the medication's `createdAt` when no era has been archived.",
+  ),
   revisions: z
     .array(scheduleRevisionResource)
     .describe("Archived eras, newest first."),
@@ -1084,14 +1087,12 @@ export const medicationExtractRequest = z
 // (iOS #64) adds `intake.source` so a client can label how each dose was
 // recorded.
 export const doseHistoryQuery = z.object({
-  from: z.iso
-    .datetime({ offset: true })
+  from: isoDateTime()
     .optional()
     .describe(
       "Window start (inclusive). Defaults to 90 days before `to`; clamped to a 366-day span floor. Recorded doses are returned from this instant. A slot from before the medication's `createdAt` appears only when a recorded row (a take, a skip, or a miss carried in with restored history) claims it; the server's own placeholder for such a slot is not returned.",
     ),
-  to: z.iso
-    .datetime({ offset: true })
+  to: isoDateTime()
     .optional()
     .describe(
       "Window end (inclusive). Defaults to now. Must be ≥ `from`. A dose recorded ahead of its slot (the slot's time within a day after `to`) is still returned.",
@@ -1105,9 +1106,9 @@ const doseHistoryRow = z
       .describe(
         "`slot` — a scheduled dose window; `ad_hoc` — a standalone off-schedule intake.",
       ),
-    at: z.iso
-      .datetime({ offset: true })
-      .describe("The slot anchor instant, or the ad-hoc take's own time."),
+    at: isoDateTime().describe(
+      "The slot anchor instant, or the ad-hoc take's own time.",
+    ),
     timeOfDay: z
       .string()
       .nullable()
@@ -1128,7 +1129,7 @@ const doseHistoryRow = z
       ),
     nearestSlot: z
       .object({
-        at: z.iso.datetime({ offset: true }),
+        at: isoDateTime(),
         timeOfDay: z.string(),
         filled: z.boolean(),
       })
@@ -1139,8 +1140,8 @@ const doseHistoryRow = z
     intake: z
       .object({
         id: z.string().nullable(),
-        scheduledFor: z.iso.datetime({ offset: true }),
-        takenAt: z.iso.datetime({ offset: true }).nullable(),
+        scheduledFor: isoDateTime(),
+        takenAt: isoDateTime().nullable(),
         skipped: z.boolean(),
         autoMissed: z.boolean(),
         autoRecorded: z
@@ -1166,16 +1167,12 @@ const doseHistoryRow = z
 
 export const doseHistoryResponse = z
   .object({
-    from: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "Start of the window recorded doses were read over: the requested `from` after the span clamp.",
-      ),
-    to: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "End of the window recorded doses were read over: the requested `to`, or the slot time of a dose recorded ahead of its slot when that lies later (at most one day after `to`).",
-      ),
+    from: isoDateTime().describe(
+      "Start of the window recorded doses were read over: the requested `from` after the span clamp.",
+    ),
+    to: isoDateTime().describe(
+      "End of the window recorded doses were read over: the requested `to`, or the slot time of a dose recorded ahead of its slot when that lies later (at most one day after `to`).",
+    ),
     family: z
       .enum(["daily", "weekly", "one_shot", "none"])
       .describe("Cadence family the window's slots were minted under."),
@@ -1236,8 +1233,7 @@ export const medicationListLayoutPutBody = medicationListLayoutSchema
 
 export const medicationListLayoutResult = medicationListLayoutSchema
   .extend({
-    updatedAt: z.iso
-      .datetime({ offset: true })
+    updatedAt: isoDateTime()
       .optional()
       .describe(
         "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as `baseUpdatedAt` on the next write. Opaque.",
@@ -1389,13 +1385,11 @@ export const medicationIntakeImportJobStatusResponse = z
       .string()
       .nullable()
       .describe("Set only when `status` is `failed`; null otherwise."),
-    createdAt: z.iso.datetime({ offset: true }),
-    startedAt: z.iso
-      .datetime({ offset: true })
+    createdAt: isoDateTime(),
+    startedAt: isoDateTime()
       .nullable()
       .describe("When the worker picked the job up; null while still queued."),
-    completedAt: z.iso
-      .datetime({ offset: true })
+    completedAt: isoDateTime()
       .nullable()
       .describe("When the job reached `done` or `failed`; null while active."),
   })
@@ -1524,19 +1518,16 @@ export const todayIntakeEntry = z
   .object({
     id: z.string().describe("Intake-event id."),
     medicationId: z.string(),
-    scheduledAt: z.iso
-      .datetime({ offset: true })
-      .describe(
-        "The slot the dose belongs to — the event's `scheduledFor`, renamed on this wire only.",
-      ),
-    takenAt: z.iso.datetime({ offset: true }).nullable(),
+    scheduledAt: isoDateTime().describe(
+      "The slot the dose belongs to — the event's `scheduledFor`, renamed on this wire only.",
+    ),
+    takenAt: isoDateTime().nullable(),
     status: z
       .enum(["skipped", "taken", "missed", "pending", "snoozed"])
       .describe(
         "Resolved in that precedence order. `missed` is TERMINAL — the nightly cron closed a never-acted slot — and is not a `pending` that can still be answered. `snoozed` is not a property of this event at all: it reflects the MEDICATION's deferral stamp still lying in the future, so every pending dose of that medication reads snoozed at once.",
       ),
-    snoozedUntil: z.iso
-      .datetime({ offset: true })
+    snoozedUntil: isoDateTime()
       .nullable()
       .describe(
         "The medication's deferral stamp, repeated on each of its events. Null when the medication is not deferred.",
@@ -1570,7 +1561,7 @@ export const complianceDayBucket = z
 export const glp1DoseChange = z
   .object({
     id: z.string(),
-    effectiveFrom: z.iso.datetime({ offset: true }),
+    effectiveFrom: isoDateTime(),
     doseValue: z.number(),
     doseUnit: z.string(),
     note: z
@@ -1627,7 +1618,7 @@ export const glp1DetailResponse = z
     recentIntakes: z
       .array(
         z.object({
-          takenAt: z.iso.datetime({ offset: true }).nullable(),
+          takenAt: isoDateTime().nullable(),
           injectionSite: z
             .string()
             .nullable()
@@ -1655,7 +1646,7 @@ export const glp1InventoryEvent = z
     medicationId: z.string(),
     delta: z.number().int().describe("Positive added, negative consumed."),
     reason: z.string(),
-    occurredAt: z.iso.datetime({ offset: true }),
+    occurredAt: isoDateTime(),
   })
   .meta({
     id: "Glp1InventoryEvent",
@@ -1761,7 +1752,7 @@ export const medicationSideEffect = z
         "The RECORD owner, which is not the actor on a delegated write.",
       ),
     medicationId: z.string(),
-    occurredAt: z.iso.datetime({ offset: true }),
+    occurredAt: isoDateTime(),
     category: z
       .string()
       .describe(
@@ -1775,7 +1766,7 @@ export const medicationSideEffect = z
       .describe(
         "The free-text note, decrypted on read. Stored encrypted; the ciphertext column is stripped before the row leaves the server.",
       ),
-    createdAt: z.iso.datetime({ offset: true }),
+    createdAt: isoDateTime(),
   })
   .meta({
     id: "MedicationSideEffect",

@@ -9,6 +9,7 @@
 import { Eye, EyeOff, Loader2, Pencil, Tag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -55,8 +56,10 @@ function CategoryRow({
     try {
       await update.mutateAsync({ key: category.key, label: trimmed });
       setEditing(false);
-    } catch {
-      toast.error(t("medications.category.custom.saveFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.category.custom.saveFailed"), {
+        cause: failure,
+      });
     }
   }
 
@@ -66,8 +69,10 @@ function CategoryRow({
         key: category.key,
         isActive: !category.isActive,
       });
-    } catch {
-      toast.error(t("medications.category.custom.saveFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.category.custom.saveFailed"), {
+        cause: failure,
+      });
     }
   }
 
@@ -221,8 +226,10 @@ export function MedicationCategoriesSheet({
           count: String(result.movedCount),
         }),
       );
-    } catch {
-      toast.error(t("medications.category.custom.saveFailed"));
+    } catch (failure) {
+      showErrorToast(t("medications.category.custom.saveFailed"), {
+        cause: failure,
+      });
     }
   }
 

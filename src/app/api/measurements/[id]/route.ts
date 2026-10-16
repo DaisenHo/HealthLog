@@ -248,10 +248,14 @@ export const PUT = apiHandler(
     // NEW identity ride the list: an edit can move the row across day
     // boundaries or re-type it, and the helper collapses identical
     // (type, day) pairs so the common in-place edit fires once.
-    await afterMeasurementMutation(user.id, [
-      { type: measurement.type, measuredAt: measurement.measuredAt },
-      { type: existing.type, measuredAt: existing.measuredAt },
-    ]);
+    await afterMeasurementMutation(
+      user.id,
+      [
+        { type: measurement.type, measuredAt: measurement.measuredAt },
+        { type: existing.type, measuredAt: existing.measuredAt },
+      ],
+      { source: "manual" },
+    );
 
     return apiSuccess(shapeMeasurementNotes(measurement));
   },
@@ -312,9 +316,11 @@ export const DELETE = apiHandler(
 
     // v1.37.19 (C2-F1) — shared post-mutation tail (the recompute drops
     // the rollup row when the day's measurement count goes to zero).
-    await afterMeasurementMutation(user.id, [
-      { type: existing.type, measuredAt: existing.measuredAt },
-    ]);
+    await afterMeasurementMutation(
+      user.id,
+      [{ type: existing.type, measuredAt: existing.measuredAt }],
+      { source: "manual" },
+    );
 
     return apiSuccess({ deleted: true });
   },

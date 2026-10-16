@@ -273,6 +273,7 @@ describe("reading a stored document — POST /api/documents/inbound/[id]/suggest
 
     expect(status).toBe(403);
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "assistant.disabled.documentAi",
       capability: "documentAi",
       reason: "operator_disabled",
@@ -303,6 +304,7 @@ describe("reading a stored document — POST /api/documents/inbound/[id]/suggest
 
     expect(status).toBe(403);
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "consent.ai.required",
       capability: "documentAi",
       reason: "consent_required",
@@ -336,6 +338,7 @@ describe("reading a stored document — POST /api/documents/inbound/[id]/suggest
 
     expect(status).toBe(422);
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "documents.inbound.providerUnsupported",
       capability: "documentAi",
       reason: "no_provider",
@@ -390,6 +393,7 @@ describe("scanning a lab report — POST /api/labs/ocr/extract", () => {
 
     expect(status).toBe(403);
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "module.disabled",
       capability: "labsOcr",
       reason: "module_disabled",
@@ -438,6 +442,7 @@ describe("turning medication text into a schedule — POST /api/medications/extr
 
     expect(status).toBe(403);
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "assistant.disabled.documentAi",
       capability: "medicationExtract",
       reason: "operator_disabled",
@@ -457,6 +462,7 @@ describe("turning medication text into a schedule — POST /api/medications/extr
 
     expect(status).toBe(503);
     expect(body.meta).toEqual({
+      requestId: expect.any(String),
       errorCode: "ai.provider.none",
       capability: "medicationExtract",
       reason: "no_provider",

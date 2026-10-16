@@ -218,6 +218,11 @@ NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false pnpm build
 
 ## Troubleshooting
 
+- **Where to look.** For a bug report, copy the support report (Admin,
+  System status) and the support info (Settings, About), and note the error
+  id the failure showed. Admin, App logs finds the event behind an error id.
+  What each contains, and what it never contains, is in
+  [`support.md`](./support.md).
 - **`app` container exits with a Prisma migration error.** The
   Postgres healthcheck races the migration on slow disks. Run
   `docker compose restart app` once the database has stabilised —
@@ -397,6 +402,10 @@ or `HealthLog: Database schema is up to date.` when the image brings none.
 The line is a notice and does not pause the start: the migrations run right
 after it. So the dump belongs before step 2, not after you see the line; by
 then the database is already being migrated.
+
+If an update to v1.43 stops at migration `0409_drop_plaintext_location`,
+nothing was changed; the recovery is in
+[`docs/ops/migration-0409-plaintext-location.md`](../ops/migration-0409-plaintext-location.md).
 
 For the ordering on a host where you want the migration result before the
 new container takes traffic, see [`docs/ops/deploy.md`](../ops/deploy.md).

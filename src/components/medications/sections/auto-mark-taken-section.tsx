@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/lib/i18n/context";
@@ -55,9 +56,11 @@ export function AutoMarkTakenBody({
           ? t("medications.autoMarkTaken.enabledToast")
           : t("medications.autoMarkTaken.disabledToast"),
       );
-    } catch {
+    } catch (failure) {
       setLocalOn(previous);
-      toast.error(t("medications.autoMarkTaken.toggleFailed"));
+      showErrorToast(t("medications.autoMarkTaken.toggleFailed"), {
+        cause: failure,
+      });
     } finally {
       setSubmitting(false);
     }

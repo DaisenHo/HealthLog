@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArchiveRestore, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
   AlertDialog,
@@ -70,9 +71,12 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
     } catch (err) {
       rollback();
       if (err instanceof ApiError && err.status === 422) {
-        toast.error(t("mood.manage.tagLimitReached"));
+        showErrorToast(t("mood.manage.tagLimitReached"), { cause: err });
       } else {
-        toast.error(err instanceof ApiError ? err.message : t("common.error"));
+        showErrorToast(
+          err instanceof ApiError ? err.message : t("common.error"),
+          { cause: err },
+        );
       }
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -89,7 +93,10 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       toast.success(t("mood.manage.purged"));
     } catch (err) {
       rollback();
-      toast.error(err instanceof ApiError ? err.message : t("common.error"));
+      showErrorToast(
+        err instanceof ApiError ? err.message : t("common.error"),
+        { cause: err },
+      );
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }

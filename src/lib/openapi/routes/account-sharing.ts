@@ -20,6 +20,7 @@
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`.
  */
+import { HANDOVER_METHODS } from "@/lib/validations/claim-sso";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -44,6 +45,7 @@ import {
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * The four request bodies this table publishes, and the one thing to know about
@@ -521,9 +523,31 @@ const accountPayload = z
           .describe(
             "Medications take `trackIntake`: a medication can be kept as a record whose doses are never due, and a dose written against one is refused with `medication.intake.notTracked`.",
           ),
+        cumulativeHourBuckets: z
+          .boolean()
+          .optional()
+          .describe(
+            "v1.43 — `POST /api/measurements/batch` takes hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` rows for steps, active energy, walking and running distance and flights climbed. Send them only when this is `true`: an older server stores every hour as its own measurement.",
+          ),
+        syncTriggerBackfill: z
+          .boolean()
+          .optional()
+          .describe(
+            'v1.43 — `syncTrigger: "backfill"` is accepted on the measurement batch and the intake bulk. Send it only when this is `true`: an older server refuses the whole batch.',
+          ),
+        biomarkerMerge: z
+          .boolean()
+          .optional()
+          .describe("v1.43 — `POST /api/biomarkers/{id}/merge` is available."),
+        lifeCircumstances: z
+          .boolean()
+          .optional()
+          .describe(
+            "v1.43 — the life-circumstances routes under `/api/anamnesis/life-circumstances` and `/api/anamnesis/audit-c` are available.",
+          ),
       })
       .describe(
-        "What this server understands, for a client released apart from it. Constant across accounts; a flag appears once the server supports the feature and stays `true`. Absent on servers older than v1.42.0. A client that meets a flag it does not know ignores it.",
+        "What this server understands, for a client released apart from it. Constant across accounts. A flag that is absent or `false` means this server does not have the feature; a client checks for `true` before it calls a route or sends a request form the flag names. Absent on servers older than v1.42.0. A client that meets a flag it does not know ignores it.",
       ),
     accountAccess: accountAccessBlock,
     moduleAccess: moduleAccessMap,
@@ -596,7 +620,7 @@ const managedProfileHandover = z
         "The one-time `hlp_` token. Returned only in this response and never again; only its hash is stored.",
       ),
     url: z.string().describe("The link to hand over: `<app>/claim/<token>`."),
-    expiresAt: z.iso.datetime({ offset: true }),
+    expiresAt: isoDateTime(),
   })
   .meta({ id: "ManagedProfileHandover" });
 
@@ -605,13 +629,19 @@ const managedProfileHandoverStatus = z
     available: z
       .boolean()
       .describe(
-        "False on an instance that allows single sign-on only, where a handover cannot be created.",
+        "Whether a handover can be created on this instance. Up to v1.42 false on an instance that allows single sign-on only; from v1.43 true whenever `methods` is not empty.",
+      ),
+    methods: z
+      .array(z.enum(HANDOVER_METHODS))
+      .optional()
+      .describe(
+        "v1.43 — how a link can be redeemed here: `password` (not on a single-sign-on-only instance) and `sso` (whenever an identity provider is configured). Absent on older servers.",
       ),
     open: z
       .object({
         id: z.string(),
-        createdAt: z.iso.datetime({ offset: true }),
-        expiresAt: z.iso.datetime({ offset: true }),
+        createdAt: isoDateTime(),
+        expiresAt: isoDateTime(),
         createdByYou: z.boolean(),
       })
       .nullable()
@@ -631,7 +661,7 @@ const pendingHandoverDecision = z
   .object({
     pending: z
       .object({
-        claimedAt: z.iso.datetime({ offset: true }),
+        claimedAt: isoDateTime(),
         guardians: z.array(
           z.object({
             grantId: z
@@ -707,7 +737,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "The instance allows single sign-on only (`meta.errorCode: profile_claim.oidc_only_unsupported`).",
+            "Neither a password nor single sign-on could redeem a link on this instance (`meta.errorCode: profile_claim.oidc_only_unsupported`). Since v1.43 a single-sign-on-only instance hands over through the identity provider, so a working configuration never answers this.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {

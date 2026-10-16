@@ -13,6 +13,7 @@
 import { z } from "zod/v4";
 
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * How long a value naming an account may be.
@@ -41,7 +42,7 @@ export const inviteGrantSchema = z
      * ends it — the common household case, where an expiry the owner has to
      * remember to renew is worse than one that does not exist.
      */
-    expiresAt: z.iso.datetime({ offset: true }).nullable().optional(),
+    expiresAt: isoDateTime().nullable().optional(),
     /**
      * What the invitation offers, and the ONLY place the level is defaulted.
      *

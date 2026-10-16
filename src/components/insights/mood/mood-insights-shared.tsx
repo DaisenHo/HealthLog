@@ -30,6 +30,7 @@ import type { MoodBetterDayFactor } from "./mood-better-days";
 import type { MoodTagMetricCrosstabRow } from "./mood-tag-metric-crosstab";
 import type { MoodFactorMetricCrosstabRow } from "./mood-factor-metric-crosstab";
 import type { ContextComparisonRow } from "@/lib/insights/mood-context-crosstab";
+import type { MoodPatternRow } from "./mood-patterns";
 
 export interface MoodInsightsResponse {
   summary: {
@@ -65,6 +66,11 @@ export interface MoodInsightsResponse {
   // rollout; the live endpoint always populates it.
   factorCrosstab?: MoodFactorMetricCrosstabRow[];
   narratives: MoodNarrativeItem[];
+  /**
+   * v1.43 — the gated patterns the server found over the requested window.
+   * Optional to tolerate a payload from before it existed.
+   */
+  patterns?: MoodPatternRow[];
   correlations: {
     sleep: MoodMetricCorrelationData;
     steps: MoodMetricCorrelationData;

@@ -68,6 +68,18 @@ export interface ProviderCall {
 }
 export const providerCalls: ProviderCall[] = [];
 
+/**
+ * Everything one provider call carried on the user side. Since #1217 a turn's
+ * own lines (a resolved follow-up, an answered clarification, a continuation)
+ * travel here, never in the system prompt, so the cached prefix holds.
+ */
+export function userSide(call: ProviderCall): string {
+  return call.messages
+    .filter((msg) => msg.role === "user")
+    .map((msg) => msg.content)
+    .join("\n\n");
+}
+
 /** The last assistant message of the stored conversation. */
 export const LAST_ASSISTANT_ID = "m-a1";
 export const CONVERSATION_ID = "c-dialog";

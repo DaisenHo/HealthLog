@@ -535,6 +535,10 @@ function zodObjectShape(path: string, schemaName: string): ZodObjectShape {
     let current = expression;
     while (ts.isCallExpression(current)) {
       const callee = current.expression;
+      // The shared instant helper (`@/lib/validations/datetime`) is a leaf.
+      if (ts.isIdentifier(callee) && callee.text === "isoDateTime") {
+        return [prefix];
+      }
       expect(
         ts.isPropertyAccessExpression(callee),
         `${prefix || schemaName} contains an unsupported Zod call: ${current.getText(file)}`,
@@ -754,9 +758,20 @@ const OCR_COLLECTION_CONSUMERS: Readonly<Record<string, readonly string[]>> = {
   skipped: ["result.skipped.length"],
 };
 
+/**
+ * `/api/<provider>/sync` routes that only queue a background job and answer
+ * 202 `{ enqueued }`: nothing is written while the request runs, so there is
+ * no written outcome to resolve. Each entry says why.
+ */
+const QUEUE_ONLY_SYNC_ROUTES: Readonly<Record<string, string>> = {
+  dawarich:
+    "Dawarich daily values are fetched by the dawarich-sync job; the route answers 202 { enqueued } and the outcome reaches the card through the connection health, not this response.",
+};
+
 function discoveredSyncRoutes(): Array<{ id: string; path: string }> {
   return readdirSync(API_ROOT, { withFileTypes: true }).flatMap((entry) => {
     if (!entry.isDirectory()) return [];
+    if (entry.name in QUEUE_ONLY_SYNC_ROUTES) return [];
     const path = join(API_ROOT, entry.name, "sync", "route.ts");
     return existsSync(path) ? [{ id: entry.name, path }] : [];
   });
@@ -1077,6 +1092,13 @@ describe("written-outcome response consumer guard", () => {
           `${field} no longer reads ${access} in the sync outcome adapter`,
         ).toBe(true);
       }
+    }
+    for (const [id, reason] of Object.entries(QUEUE_ONLY_SYNC_ROUTES)) {
+      expect(
+        existsSync(join(API_ROOT, id, "sync", "route.ts")),
+        `${id} is listed as a queue-only sync route but has none`,
+      ).toBe(true);
+      expect(reason.length).toBeGreaterThan(40);
     }
     const discovered = discoveredSyncRoutes().sort((a, b) =>
       a.id.localeCompare(b.id),

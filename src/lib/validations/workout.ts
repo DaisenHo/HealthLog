@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import { writableMeasurementSourceEnum } from "./measurement";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
  * Workout sport-type union.
@@ -84,7 +85,7 @@ export type GeoJsonLineString = z.infer<typeof geoJsonLineStringSchema>;
  */
 export const workoutRouteSamplesSchema = z.array(
   z.object({
-    t: z.iso.datetime({ offset: true }),
+    t: isoDateTime(),
     speedMs: z.number().min(0).max(50).optional(),
     hr: z.number().int().min(20).max(300).optional(),
   }),
@@ -122,7 +123,7 @@ export const MAX_WORKOUT_HR_SAMPLES = 30_000;
 export const workoutHrSamplesSchema = z
   .array(
     z.object({
-      t: z.iso.datetime({ offset: true }),
+      t: isoDateTime(),
       hr: z.number().int().min(20).max(300).optional(),
       speedMs: z.number().min(0).max(50).optional(),
       power: z.number().min(0).max(3000).optional(),
@@ -157,8 +158,8 @@ export type WorkoutHrSamples = z.infer<typeof workoutHrSamplesSchema>;
 export const createWorkoutSchema = z
   .object({
     sportType: workoutSportTypeEnum,
-    startedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
-    endedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+    startedAt: isoDateTime().transform((s) => new Date(s)),
+    endedAt: isoDateTime().transform((s) => new Date(s)),
     totalEnergyKcal: z.number().min(0).max(50000).optional(),
     totalDistanceM: z.number().min(0).max(1_000_000).optional(),
     avgHeartRate: z.number().int().min(20).max(300).optional(),

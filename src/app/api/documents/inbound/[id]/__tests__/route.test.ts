@@ -57,6 +57,15 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// `related[]` has its own tests (`src/lib/links/__tests__`); here it is the
+// empty list, so the detail assertions stay about the document.
+vi.mock("@/lib/links/related", () => ({
+  withRelated: async (_tx: unknown, detail: object) => ({
+    ...detail,
+    related: [],
+  }),
+}));
+
 vi.mock("@/lib/crypto", () => ({
   encrypt: vi.fn((s: string) => `v1.${s}`),
   decrypt: vi.fn((s: string) => s.replace(/^v1\./u, "")),

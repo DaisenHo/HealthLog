@@ -14,6 +14,7 @@
  * stores until the confirm route commits the user's approvals; a low-confidence
  * fact fails closed.
  */
+import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
@@ -46,6 +47,7 @@ import {
   recordRefusal,
   stdResponses,
 } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const kindEnum = z.enum(INBOUND_DOCUMENT_KINDS);
 
@@ -169,6 +171,32 @@ const extractedFact = z
     provenance: factProvenance,
     committedRecordId: z.string().nullable(),
     committedRecordType: z.string().nullable(),
+    biomarkerId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43, OBSERVATION only — the marker matched automatically (name, alias or catalogue abbreviation); null without a match.",
+      ),
+    matchKind: z
+      .enum(["name", "alias", "catalog"])
+      .nullable()
+      .optional()
+      .describe("v1.43, OBSERVATION only — how `biomarkerId` was found."),
+    suggestions: z
+      .array(
+        z.object({
+          biomarkerId: z.string(),
+          name: z.string(),
+          unit: z.string(),
+          matchKind: z.enum(["catalog", "similar"]),
+        }),
+      )
+      .max(3)
+      .optional()
+      .describe(
+        "v1.43, OBSERVATION only — up to three markers to choose from when nothing matched.",
+      ),
   })
   .meta({
     id: "ExtractedFact",
@@ -728,7 +756,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     linkedProcedures: z.array(
                       z.object({
                         encounterId: z.string(),
-                        occurredAt: z.iso.datetime({ offset: true }),
+                        occurredAt: isoDateTime(),
                         reason: z.string().nullable(),
                         bodySite: z.string().nullable(),
                         laterality: z
@@ -862,7 +890,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                inboundDocumentDetail,
+                withRelated(inboundDocumentDetail),
                 "InboundDocumentDetailEnvelope",
               ),
             },

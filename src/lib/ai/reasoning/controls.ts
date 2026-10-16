@@ -13,6 +13,11 @@ import { isOperatorFundedProvider } from "@/lib/ai/coach/budget";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import type { ProviderWorkAuthority } from "@/lib/sharing/provider-work-authority";
 import type { CompletionParams } from "@/lib/ai/types";
+import { loadRecordUsageLevel } from "@/lib/ai/capabilities/usage";
+import {
+  AI_USAGE_LEVEL_EFFECTS,
+  type AiUsageLevel,
+} from "@/lib/ai/usage-level";
 import {
   coachReasoningLevel,
   type CoachPrefs,
@@ -167,9 +172,33 @@ export async function loadCoachReasoningState(args: {
 export async function resolveJobReasoning(
   job: BackgroundReasoningJob,
   chain: ReadonlyArray<{ providerType: ProviderChainType }>,
+  /**
+   * v1.43 (#1217) — the record the job runs for. On the `frugal` AI usage
+   * level background jobs do not reason at all; the call goes out as it did
+   * before reasoning existed. Absent: no level applies.
+   */
+  recordId?: string,
 ): Promise<CompletionParams["reasoning"]> {
   // Reasoning is an improvement to a job, never a precondition for it: any
   // failure here sends the call exactly as it went before reasoning existed.
+  if (recordId !== undefined) {
+    let level: AiUsageLevel;
+    try {
+      level = await loadRecordUsageLevel(recordId);
+    } catch {
+      return undefined;
+    }
+    if (!AI_USAGE_LEVEL_EFFECTS[level].backgroundReasoning) {
+      annotate({
+        meta: {
+          ai_reasoning_job: job,
+          ai_reasoning_effort: "off",
+          ai_reasoning_usage_level: level,
+        },
+      });
+      return undefined;
+    }
+  }
   let resolved;
   try {
     resolved = resolveReasoning({

@@ -1,18 +1,35 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { CircleSlash, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
-import { classifySettingsDestination } from "@/lib/record-settings";
+import { classifySettingsDestination } from "@/lib/record-settings/classification";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ManagedIntegrationStatus } from "@/components/settings/managed-integration-status";
-import { ManagedRecordSettingsSection } from "@/components/settings/managed-record-settings-section";
-import { RecordAnamnesisSection } from "@/components/settings/record-anamnesis-section";
 import { SettingsCard } from "@/components/settings/settings-card";
 import type { SettingsSectionSlug } from "@/components/settings/section-slugs";
+
+// The two record-scoped surfaces load on demand. Both are forms that validate
+// with Zod (the managed settings patch, the allergy and family-history
+// entries), and every settings page renders this gate, so importing them
+// statically put Zod into the first load of every section for a branch that
+// only a shared or managed record ever reaches. The classifier is imported
+// from its leaf for the same reason: the `@/lib/record-settings` barrel also
+// re-exports the settings-patch schemas.
+const ManagedRecordSettingsSection = dynamic(() =>
+  import("@/components/settings/managed-record-settings-section").then(
+    (m) => m.ManagedRecordSettingsSection,
+  ),
+);
+const RecordAnamnesisSection = dynamic(() =>
+  import("@/components/settings/record-anamnesis-section").then(
+    (m) => m.RecordAnamnesisSection,
+  ),
+);
 
 /**
  * The record-CONTENT destinations, and what each one renders inside a record.
@@ -23,7 +40,7 @@ import type { SettingsSectionSlug } from "@/components/settings/section-slugs";
  * is what stops a new destination inheriting this one's forms.
  */
 export const RECORD_CONTENT_SECTIONS: Partial<
-  Record<SettingsSectionSlug, () => ReactNode>
+  Record<SettingsSectionSlug, ComponentType>
 > = {
   anamnesis: RecordAnamnesisSection,
 };

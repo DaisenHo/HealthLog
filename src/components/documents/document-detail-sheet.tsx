@@ -35,6 +35,7 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 import { useAuth } from "@/hooks/use-auth";
@@ -85,6 +86,8 @@ import {
 import { DocumentAiSection } from "./document-ai-section";
 import { DocumentEncounterSuggestion } from "./document-encounter-suggestion";
 import { DocumentRecordLinks } from "./document-record-links";
+import { RelatedRecordsBlock } from "@/components/links/related-records";
+import type { RelatedLink } from "@/lib/links/related";
 import { DocumentFactsSection } from "./document-facts-review";
 import { VaccinationDocumentSuggestion } from "@/components/vaccinations/vaccination-document-suggestion";
 import { DocumentSummaryBlock } from "./document-summary-block";
@@ -567,11 +570,11 @@ export function DocumentDetailSheet({
           ? error.meta.reason
           : "";
       if (reason === "purged") {
-        toast.error(t("documents.error.purged"));
+        showErrorToast(t("documents.error.purged"), { cause: error });
       } else if (reason === "duplicateExists") {
-        toast.error(t("documents.error.duplicateExists"));
+        showErrorToast(t("documents.error.duplicateExists"), { cause: error });
       } else {
-        toast.error(t("documents.toast.restoreFailed"));
+        showErrorToast(t("documents.toast.restoreFailed"), { cause: error });
       }
     },
   });
@@ -681,16 +684,17 @@ export function DocumentDetailSheet({
         onSuccess: (result) => {
           if ("summary" in result) {
             if (result.persistence === "withheld") {
-              toast.error(result.summary);
+              showErrorToast(result.summary);
             } else if (result.persistence === "failed") {
-              toast.error(t("documents.detail.saveError"));
+              showErrorToast(t("documents.detail.saveError"));
             }
           }
           void queryClient.invalidateQueries({
             queryKey: queryKeys.inboundDocument(documentId),
           });
         },
-        onError: (error) => toast.error(aiErrorText(error)),
+        onError: (error) =>
+          showErrorToast(aiErrorText(error), { cause: error }),
       },
     );
   };
@@ -709,7 +713,8 @@ export function DocumentDetailSheet({
               ? tCount("documents.ai.readStaged", result.labFactsStaged)
               : t("documents.ai.readDone"),
           ),
-        onError: (error) => toast.error(aiErrorText(error)),
+        onError: (error) =>
+          showErrorToast(aiErrorText(error), { cause: error }),
       },
     );
   };
@@ -1198,6 +1203,14 @@ export function DocumentDetailSheet({
                 seedError={!linkSeedFresh && detail.isRefetchError}
                 onRetrySeed={() => void detail.refetch()}
                 onChange={(part) => patch.mutate(part)}
+              />
+
+              {/* v1.43 — the lab results read from this page and the
+                  medications it belongs to. Conditions, visits and doses
+                  have their own blocks above. */}
+              <RelatedRecordsBlock
+                related={(doc as { related?: RelatedLink[] }).related}
+                omitKinds={["conditionEpisode", "encounter", "vaccination"]}
               />
 
               {/* Staged-facts review + the stored-text extract recovery. The
