@@ -46,9 +46,13 @@ export function MedicationRelatedSection({
           related={related}
           anchor={startsOn}
           onSaved={() => {
-            // The other end lists the medication too.
+            // The other end lists the medication too: every kind the
+            // pickers file (episode, document, visit) reads it back on its
+            // own detail, so each one's prefix goes stale.
             for (const queryKey of [
               queryKeys.medicationDetail(medicationId),
+              queryKeys.illness(),
+              queryKeys.documents(),
               queryKeys.encounters(),
             ]) {
               void qc.invalidateQueries({ queryKey });
