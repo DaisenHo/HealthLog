@@ -11873,8 +11873,14 @@
       "emptyTitle": "Noch keine Mikronährstoffdaten synchronisiert",
       "loadError": "Deine Nährstoffdaten konnten nicht geladen werden",
       "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Über der tolerierbaren Höchstmenge von {value} {unit} pro Tag ({source}).",
-      "aboveUpperLimitSupplemental": "Der Anteil aus Präparaten liegt über der tolerierbaren Höchstmenge von {value} {unit} pro Tag für Präparate ({source})."
+      "aboveUpperLimit": "Über der tolerierbaren Höchstmenge für Erwachsene von {value} {unit} pro Tag ({source}).",
+      "aboveUpperLimitSupplemental": "Der Anteil aus Präparaten liegt über der tolerierbaren Höchstmenge für Erwachsene von {value} {unit} pro Tag für Präparate ({source}).",
+      "upperLimitForm": {
+        "retinol": "Die Höchstmenge gilt nur für vorgeformtes Vitamin A (Retinol): Stammt die Menge aus Beta-Carotin, gilt sie nicht.",
+        "folic_acid": "Die Höchstmenge gilt für Folsäure aus Präparaten und angereicherten Lebensmitteln, nicht für das Folat in gewöhnlicher Nahrung.",
+        "magnesium_salts": "Die Höchstmenge gilt für leicht lösliche Magnesiumsalze in Präparaten, nicht für das Magnesium aus der Nahrung.",
+        "alpha_tocopherol": "Die Höchstmenge ist für Alpha-Tocopherol festgelegt."
+      }
     },
     "sparseNote": "Ein niedriger Wert bedeutet hier meist lückenhafte Erfassung, keinen Mangel. Die Tagessummen aus Apple Health spiegeln wider, was deine Apps erfasst haben, nicht die gesamte Nahrungsaufnahme.",
     "units": {

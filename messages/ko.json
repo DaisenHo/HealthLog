@@ -11873,8 +11873,14 @@
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
       "loadError": "영양소 데이터를 불러오지 못했어요",
       "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "하루 상한 섭취량 {value} {unit}을(를) 넘었어요 ({source}).",
-      "aboveUpperLimitSupplemental": "보충제로 섭취한 양이 보충제 기준 하루 상한 섭취량 {value} {unit}을(를) 넘었어요 ({source})."
+      "aboveUpperLimit": "성인 하루 상한 섭취량 {value} {unit}을(를) 넘었어요 ({source}).",
+      "aboveUpperLimitSupplemental": "보충제로 섭취한 양이 성인 보충제 기준 하루 상한 섭취량 {value} {unit}을(를) 넘었어요 ({source}).",
+      "upperLimitForm": {
+        "retinol": "이 상한은 기성 비타민 A(레티놀)에만 적용돼요. 베타카로틴에서 온 양이라면 적용되지 않아요.",
+        "folic_acid": "이 상한은 보충제와 강화식품의 엽산에 적용되며, 일반 음식의 엽산염에는 적용되지 않아요.",
+        "magnesium_salts": "이 상한은 보충제의 쉽게 해리되는 마그네슘염에 적용되며, 음식의 마그네슘에는 적용되지 않아요.",
+        "alpha_tocopherol": "이 상한은 알파토코페롤 기준이에요."
+      }
     },
     "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요.",
     "units": {

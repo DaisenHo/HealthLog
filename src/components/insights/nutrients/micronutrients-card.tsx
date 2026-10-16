@@ -131,6 +131,9 @@ function UpperLimitNote({
             source: limit.source,
           },
         )}
+        {limit.form
+          ? ` ${t(`nutrients.micronutrients.upperLimitForm.${limit.form}`)}`
+          : null}
       </span>
     </p>
   );

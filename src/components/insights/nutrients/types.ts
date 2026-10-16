@@ -37,6 +37,9 @@ export interface NutrientUpperLimitDto {
   value: number;
   unit: string;
   scope: "total" | "supplemental";
+  /** The chemical form the level covers; `null` for the nutrient as such. */
+  form?:
+    "retinol" | "folic_acid" | "magnesium_salts" | "alpha_tocopherol" | null;
   source: string;
 }
 

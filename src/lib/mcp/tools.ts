@@ -62,7 +62,10 @@ import {
   NUTRIENT_LABELS,
   type NutrientsDailyResult,
 } from "@/lib/mcp/nutrients-read";
-import { NUTRIENT_CODES } from "@/lib/nutrients/catalog";
+import {
+  NUTRIENT_CODES,
+  type NutrientUpperLimit,
+} from "@/lib/nutrients/catalog";
 import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { encodeOffsetCursor, decodeOffsetCursor } from "@/lib/mcp/pagination";
@@ -371,6 +374,18 @@ function plainClinicalText(
   return `${head}${band}`.trim();
 }
 
+/** What the EFSA level covers where it is narrower than the nutrient. */
+const UPPER_LIMIT_FORM_NOTE: Record<
+  NonNullable<NutrientUpperLimit["form"]>,
+  string
+> = {
+  retinol:
+    " (preformed vitamin A, retinol, only; beta-carotene does not count toward it)",
+  folic_acid: " (folic acid from supplements and fortified foods)",
+  magnesium_salts: " (readily dissociable magnesium salts in supplements)",
+  alpha_tocopherol: " (alpha-tocopherol)",
+};
+
 /**
  * Render a `fetch` result for a nutrient code as a plain-text citation
  * sentence: the most recent non-zero day's total plus the resolved EFSA
@@ -407,8 +422,9 @@ function plainNutrientText(
   if (limit && latestDay?.aboveUpperLimit) {
     const share =
       limit.scope === "supplemental" ? " for the supplement share" : "";
+    const form = limit.form ? UPPER_LIMIT_FORM_NOTE[limit.form] : "";
     parts.push(
-      `that day is above the EFSA upper intake level of ${round1(limit.value)}${unit}${share}`,
+      `that day is above the EFSA upper intake level of ${round1(limit.value)}${unit}${share}${form}`,
     );
   }
   return parts.length > 0

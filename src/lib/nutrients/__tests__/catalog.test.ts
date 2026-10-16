@@ -269,10 +269,16 @@ describe("upper intake levels (v1.43)", () => {
       expect(def.upperLimit.unit, def.code).toBe(def.unit);
       expect(def.upperLimit.value).toBeGreaterThan(0);
       expect(def.upperLimit.source).toContain("EFSA");
+      // A bare citation: what the level covers is `form`, phrased per locale.
+      expect(def.upperLimit.source, def.code).not.toMatch(/adults|:/);
     }
     expect(NUTRIENT_CATALOG.vitamin_d.upperLimit?.value).toBe(100);
     expect(NUTRIENT_CATALOG.magnesium.upperLimit?.scope).toBe("supplemental");
     expect(NUTRIENT_CATALOG.vitamin_c.upperLimit).toBeNull();
+    // Vitamin A's level is set for preformed retinol; beta-carotene does not
+    // count toward it.
+    expect(NUTRIENT_CATALOG.vitamin_a.upperLimit?.form).toBe("retinol");
+    expect(NUTRIENT_CATALOG.vitamin_d.upperLimit?.form).toBeNull();
     expect(NUTRIENT_CATALOG.dha.upperLimit).toBeNull();
   });
 
