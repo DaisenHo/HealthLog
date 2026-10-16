@@ -635,6 +635,106 @@ describe("doctor-report clinical glucose panel", () => {
 // v1.18.1 P4 — illness / condition episodes section. Retrospective + factual:
 // label, type, course, onset, resolved. Present only when the aggregator
 // populated `illnessEpisodes` (module on + episode in window).
+describe("doctor-report recorded precision", () => {
+  function lab(
+    over: Partial<NonNullable<DoctorReportData["labResults"]>[number]>,
+  ): NonNullable<DoctorReportData["labResults"]>[number] {
+    return {
+      panel: null,
+      analyte: "PSA",
+      value: 0.034,
+      valueText: null,
+      unit: "ng/mL",
+      sourceValue: null,
+      referenceLow: null,
+      referenceHigh: 4,
+      catalogReferenceLow: null,
+      catalogReferenceHigh: 4,
+      sourceReferenceText: null,
+      referenceOrigin: "catalog",
+      referenceDivergesFromCatalog: false,
+      takenAt: "2026-04-20T08:00:00.000Z",
+      count: 1,
+      ...over,
+    };
+  }
+
+  async function render(data: DoctorReportData): Promise<string> {
+    const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
+      t: getServerTranslator("en").t,
+      locale: "en",
+      now: FIXED_NOW,
+    });
+    return extractText(bytes);
+  }
+
+  it("prints a lab value and its range with the digits they were recorded with", async () => {
+    const text = await render(
+      makeData({
+        labResults: [
+          lab({}),
+          lab({
+            analyte: "TSH",
+            value: 2.345,
+            unit: "mIU/L",
+            referenceLow: 0.27,
+            referenceHigh: 4.2,
+            catalogReferenceLow: 0.27,
+            catalogReferenceHigh: 4.2,
+          }),
+        ],
+      }),
+    );
+    // A one-decimal report printed these as "0.0 ng/mL" and "0.3–4.2".
+    expect(text).toContain("0.034 ng/mL");
+    expect(text).toContain("2.345 mIU/L");
+    expect(text).toContain("0.27–4.2");
+  });
+
+  it("prints a converted lab value with the precision its report printed", async () => {
+    const text = await render(
+      makeData({
+        labResults: [
+          lab({
+            analyte: "Cholesterol",
+            value: 5.2 * 38.67,
+            unit: "mg/dL",
+            sourceValue: 5.2,
+            referenceLow: null,
+            referenceHigh: 5 * 38.67,
+            catalogReferenceHigh: null,
+            referenceOrigin: "source",
+          }),
+        ],
+      }),
+    );
+    expect(text).toContain("201 mg/dL");
+    // The PDF spells "≤" as "<=" (WinAnsi).
+    expect(text).toContain("<= 193");
+  });
+
+  it("keeps the digits of a measurement read below one", async () => {
+    const text = await render(
+      makeData({
+        stats: {
+          WAIST_TO_HEIGHT: {
+            avg: 0.525,
+            min: 0.52,
+            max: 0.53,
+            count: 2,
+            latest: 0.53,
+          },
+        },
+      }),
+    );
+    // The fixed single decimal printed every one of these as "0.5".
+    expect(text).toContain("0.53");
+    expect(text).toContain("0.52");
+  });
+});
+
 describe("doctor-report illness section", () => {
   it("prints the conditions table with label, type, and dates", async () => {
     const data = makeData({

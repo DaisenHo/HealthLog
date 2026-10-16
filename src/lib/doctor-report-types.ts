@@ -284,6 +284,12 @@ export interface DoctorReportData {
     valueText: string | null;
     unit: string;
     /**
+     * The figure the source report printed when `value` was converted into
+     * the marker's unit; null for a reading stored as stated. It sets the
+     * precision the converted value is printed with (`formatLabValue`).
+     */
+    sourceValue: number | null;
+    /**
      * The reference window this reading is judged against: the range printed
      * on its own report when it carries one, the catalog band otherwise.
      * Resolved server-side through `resolveEffectiveReferenceRange` so the PDF

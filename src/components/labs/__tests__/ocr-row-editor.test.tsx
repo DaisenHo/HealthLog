@@ -175,7 +175,8 @@ describe("<OcrRowEditor> unit differs but converts", () => {
   it("says what Save will store and what the report stated, not that it is blocked", () => {
     const html = render(undefined, "en", converts);
     expect(html).toContain('data-slot="ocr-row-converted-badge"');
-    expect(html).toContain("Saved as 100.9 mg/dL, converted from 5.6 mmol/L");
+    // The converted value keeps the precision of the printed 5.6.
+    expect(html).toContain("Saved as 101 mg/dL, converted from 5.6 mmol/L");
     expect(html).not.toContain("Tracked in");
     expect(html).not.toContain('aria-invalid="true"');
   });

@@ -1,46 +1,57 @@
 /**
- * v1.18.1 — shared lab-value number formatting.
+ * Shared lab-value number formatting.
  *
- * The list card, the detail history rows, and the chart tooltip all trim a
- * lab reading the same way: whole numbers render bare, fractional values keep
- * up to two decimals (no trailing-zero noise), and a value below 1 keeps three
- * significant digits so a small reading (TSH 0.004, troponin 0.012) never
- * reads as zero. Centralised so the three surfaces stay byte-identical.
+ * Every surface that prints a lab reading (the list card, the detail history,
+ * the chart tooltip, the doctor report PDF, the clinician share page) prints
+ * it through here, so a reading reads the same everywhere. The precision rule
+ * is the recorded-number rule in `src/lib/format/recorded-number.ts`: a
+ * reading keeps every digit it was stored with (TSH 0.004, PSA 0.034, a
+ * troponin of 0.0012 never shortened), and a reading converted from the unit
+ * its report printed keeps the precision of the printed figure.
  *
- * The digits themselves come from the caller's locale number formatter
- * (`useFormatters().number`), so a German reader sees "1,8 mIU/L" where an
- * English one sees "1.8 mIU/L". This module only decides the precision.
+ * The digits themselves come from the caller's locale number formatter, so a
+ * German reader sees "1,8 mIU/L" where an English one sees "1.8 mIU/L". This
+ * module only decides the precision.
  */
-export type LabNumberFormat = (value: number) => string;
+import {
+  formatRecordedNumber,
+  type FractionDigitsFormat,
+} from "@/lib/format/recorded-number";
+
+/**
+ * A lab number in the reader's locale. `printed` is the figure the source
+ * report printed when the number was converted from it (`sourceValue`).
+ */
+export type LabNumberFormat = (
+  value: number,
+  printed?: number | null,
+) => string;
 
 export function formatLabValue(
   value: number,
-  formatNumber: LabNumberFormat,
+  formatNumber: FractionDigitsFormat,
+  printed?: number | null,
 ): string {
-  if (Number.isInteger(value)) return formatNumber(value);
-  const rounded =
-    Math.abs(value) < 1
-      ? Number(value.toPrecision(3))
-      : Number(value.toFixed(2));
-  return formatNumber(rounded);
+  return formatRecordedNumber(value, formatNumber, printed);
 }
 
 /**
- * v1.18.9 — render a reading's display value: a qualitative row (numeric
- * `value` is null) shows its `valueText` verbatim; a numeric row shows the
- * formatted number plus its unit. One helper so the list card, the history
- * rows, and the detail header stay consistent.
+ * Render a reading's display value: a qualitative row (numeric `value` is
+ * null) shows its `valueText` verbatim; a numeric row shows the formatted
+ * number plus its unit. One helper so the list card, the history rows, and
+ * the detail header stay consistent.
  */
 export function formatLabReading(
   reading: {
     value: number | null;
     valueText: string | null;
     unit: string;
+    sourceValue?: number | null;
   },
   formatNumber: LabNumberFormat,
 ): string {
   if (reading.value === null) {
     return reading.valueText ?? "";
   }
-  return `${formatLabValue(reading.value, formatNumber)} ${reading.unit}`.trim();
+  return `${formatNumber(reading.value, reading.sourceValue)} ${reading.unit}`.trim();
 }

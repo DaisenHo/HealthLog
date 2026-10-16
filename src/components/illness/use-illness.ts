@@ -29,15 +29,30 @@ import type {
   IllnessInsightsResponse,
 } from "./types";
 
-/** Newest-first episode list. */
+/** The list route's largest page. */
+const EPISODE_PAGE_SIZE = 100;
+
+/**
+ * Every episode, newest first. The list route pages (50 by default, 100 at
+ * most), and the journal, its settings and every picker read this as the
+ * whole record; a single unpaged call dropped the oldest episodes once there
+ * were more than one page of them, and a person then found an old condition
+ * only through search. So this reads page after page until a short one.
+ */
 export function useIllnessEpisodes(includeResolved = true, enabled = true) {
   return useQuery({
     queryKey: queryKeys.illnessEpisodes(includeResolved),
     enabled,
-    queryFn: () =>
-      apiGet<IllnessEpisodeDTO[]>(
-        `/api/illness/episodes?includeResolved=${includeResolved}`,
-      ),
+    queryFn: async () => {
+      const all: IllnessEpisodeDTO[] = [];
+      for (let offset = 0; ; offset += EPISODE_PAGE_SIZE) {
+        const page = await apiGet<IllnessEpisodeDTO[]>(
+          `/api/illness/episodes?includeResolved=${includeResolved}&limit=${EPISODE_PAGE_SIZE}&offset=${offset}`,
+        );
+        all.push(...page);
+        if (page.length < EPISODE_PAGE_SIZE) return all;
+      }
+    },
   });
 }
 

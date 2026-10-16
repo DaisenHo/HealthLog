@@ -17,6 +17,7 @@ import {
   encounterKindLabelKey,
   lateralityLabelKey,
 } from "@/lib/encounters/kind-label";
+import type { LabNumberFormat } from "@/lib/labs/format-value";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import {
@@ -47,13 +48,14 @@ export function LabResultsSection({
   report,
   scope,
   fmtDate,
-  fmtNum,
+  fmtLab,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
   fmtDate: (iso: string) => string;
-  fmtNum: (n: number) => string;
+  /** Lab figures keep the precision they were recorded at (`formatLabValue`). */
+  fmtLab: LabNumberFormat;
 }) {
   const results = report.labResults ?? [];
 
@@ -71,9 +73,13 @@ export function LabResultsSection({
         const qualitative = lab.value === null;
         const reading = qualitative
           ? lab.valueText
-          : `${fmtNum(lab.value as number)} ${lab.unit}`.trim();
-        const range = (low: number | null, high: number | null) =>
-          formatReferenceRange(low, high, fmtNum, {
+          : `${fmtLab(lab.value as number, lab.sourceValue)} ${lab.unit}`.trim();
+        const range = (
+          low: number | null,
+          high: number | null,
+          printed?: number | null,
+        ) =>
+          formatReferenceRange(low, high, (n) => fmtLab(n, printed), {
             emptyText: "",
           });
         // The window the reading was judged against, printed as the source
@@ -83,7 +89,11 @@ export function LabResultsSection({
           ? null
           : lab.referenceOrigin === "source" && lab.sourceReferenceText
             ? lab.sourceReferenceText
-            : range(lab.referenceLow, lab.referenceHigh);
+            : range(
+                lab.referenceLow,
+                lab.referenceHigh,
+                lab.referenceOrigin === "source" ? lab.sourceValue : null,
+              );
         // When the report's own window and the saved band disagree about the
         // same number, both are named. Showing one of two disagreeing windows
         // is a partial answer, and the PDF's footnote says so; here it fits on

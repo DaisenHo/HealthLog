@@ -42,12 +42,15 @@ export function Glp1Section({
   scope,
   fmtDate,
   fmtNum,
+  fmtRecorded,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
   fmtDate: (iso: string) => string;
   fmtNum: (n: number) => string;
+  /** A dose keeps every digit it was recorded with (0.125 mg, not 0.13). */
+  fmtRecorded: (n: number) => string;
 }) {
   const glp1 = report.glp1 ?? null;
   const medications = glp1?.medications ?? [];
@@ -89,7 +92,7 @@ export function Glp1Section({
                 value={
                   med.currentDose
                     ? t("doctorReport.glp1CurrentDose", {
-                        value: fmtNum(med.currentDose.value),
+                        value: fmtRecorded(med.currentDose.value),
                         unit: med.currentDose.unit,
                         since: fmtDate(med.currentDose.since),
                       })
@@ -112,7 +115,7 @@ export function Glp1Section({
                   key={`${change.effectiveFrom}-${index}`}
                   label={fmtDate(change.effectiveFrom)}
                   value={
-                    `${fmtNum(change.value)} ${change.unit}` +
+                    `${fmtRecorded(change.value)} ${change.unit}` +
                     (change.note ? ` · ${change.note}` : "")
                   }
                 />
@@ -167,13 +170,14 @@ export function DoseLogSection({
   report,
   scope,
   fmtDateTime,
-  fmtNum,
+  fmtRecorded,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
   fmtDateTime: (iso: string) => string;
-  fmtNum: (n: number) => string;
+  /** A dose keeps every digit it was recorded with (0.125 mg, not 0.13). */
+  fmtRecorded: (n: number) => string;
 }) {
   const administrations = report.medicationAdministrations ?? [];
   // Newest first: a clinician reads "when did they last take it", not "when
@@ -212,7 +216,7 @@ export function DoseLogSection({
               ? t("doctorReport.colTaken")
               : t("doctorReport.colSkipped")) +
             (dose.dose
-              ? ` · ${fmtNum(dose.dose.value)} ${dose.dose.unit}`
+              ? ` · ${fmtRecorded(dose.dose.value)} ${dose.dose.unit}`
               : dose.doseText
                 ? ` · ${dose.doseText}`
                 : "") +

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.43.1] — 2026-10-16
+
+### Fixed
+
+- **Lab values keep their precision** in the doctor report, the share view,
+  the day view, the scan review and the Labs page: a stored value keeps every
+  digit it has, a converted value keeps the precision of the printed one.
+  Reference ranges follow the same rule, and so do GLP-1 doses and the
+  measurement rows of the report (Refs #1228).
+- **Every illness episode stays reachable.** An ended episode that belongs to
+  a condition now shows in both the card and the list view, flares nested two
+  levels deep included, and the illness page loads past the first fifty
+  episodes (Refs #1224).
+
 ## [1.43.0] — 2026-10-16
 
 Records that link to each other, supplement composition as a nutrient source,

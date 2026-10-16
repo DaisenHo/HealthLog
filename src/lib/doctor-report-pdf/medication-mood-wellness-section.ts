@@ -2,6 +2,7 @@ import type { jsPDF } from "jspdf";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import autoTable from "jspdf-autotable";
 import { adherenceRatePercent } from "../doctor-report-data";
+import { formatRecordedNumber } from "../format/recorded-number";
 import {
   pdfCursorState,
   type DoctorReportPdfCursorState,
@@ -184,7 +185,7 @@ export function buildMedicationMoodWellnessSection(
       if (med.currentDose) {
         doc.text(
           t("doctorReport.glp1CurrentDose", {
-            value: num(med.currentDose.value, 2),
+            value: formatRecordedNumber(med.currentDose.value, num),
             unit: med.currentDose.unit,
             since: fmtDate(med.currentDose.since),
           }),
@@ -212,7 +213,7 @@ export function buildMedicationMoodWellnessSection(
       if (med.doseHistory.length > 0) {
         const historyRows = med.doseHistory.map((dc) => [
           fmtDate(dc.effectiveFrom),
-          `${num(dc.value, 2)} ${dc.unit}`,
+          `${formatRecordedNumber(dc.value, num)} ${dc.unit}`,
           dc.note ?? "",
         ]);
         // A titration history reads as one block — break before it if the

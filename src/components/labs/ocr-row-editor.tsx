@@ -206,7 +206,10 @@ export function OcrRowEditor({
                   <Ruler aria-hidden />
                   <span className="min-w-0 break-words">
                     {t("labs.ocr.unitConvertedBadge", {
-                      value: labNumber(conversion.value),
+                      value: labNumber(
+                        conversion.value,
+                        conversion.statedValue,
+                      ),
                       markerUnit: conversion.unit,
                       statedValue: labNumber(conversion.statedValue),
                       unit: conversion.statedUnit,

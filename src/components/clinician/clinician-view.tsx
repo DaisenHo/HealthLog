@@ -30,6 +30,7 @@
  * document list in `./documents-list`, the downloads in `./download-actions`.
  */
 import type { DoctorReportData } from "@/lib/doctor-report-data";
+import { formatLabValue, type LabNumberFormat } from "@/lib/labs/format-value";
 import {
   makeFormatters,
   type DateFormatPreference,
@@ -152,6 +153,10 @@ export function ClinicianView({
   // Two decimals at most, in the owner's locale: a German reader gets
   // "80,5", not the "80.5" a bare number prints.
   const fmtNum = (n: number) => fmt.number(Math.round(n * 100) / 100);
+  // A lab figure or a dose is what was recorded, not a statistic: it keeps
+  // every digit it holds, so a PSA of 0.034 does not read as 0.03.
+  const fmtRecorded: LabNumberFormat = (n, printed) =>
+    formatLabValue(n, fmt.number, printed);
   const scope = makeLeafScope(selection, unavailableLeaves);
 
   return (
@@ -198,7 +203,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtNum={fmtNum}
+              fmtDigits={fmt.number}
             />
             {report.bmi !== null &&
             report.bmi !== undefined &&
@@ -219,14 +224,14 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtNum={fmtNum}
+              fmtDigits={fmt.number}
             />
             <LabResultsSection
               t={t}
               report={report}
               scope={scope}
               fmtDate={fmtDate}
-              fmtNum={fmtNum}
+              fmtLab={fmtRecorded}
             />
 
             {/* ── medications ──────────────────────────────────────── */}
@@ -242,13 +247,14 @@ export function ClinicianView({
               scope={scope}
               fmtDate={fmtDate}
               fmtNum={fmtNum}
+              fmtRecorded={fmtRecorded}
             />
             <DoseLogSection
               t={t}
               report={report}
               scope={scope}
               fmtDateTime={fmtDateTime}
-              fmtNum={fmtNum}
+              fmtRecorded={fmtRecorded}
             />
 
             {/* ── history ──────────────────────────────────────────── */}

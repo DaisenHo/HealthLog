@@ -47,6 +47,7 @@ import { NewEpisodeSheet } from "./new-episode-sheet";
 import { EpisodeMenu } from "./episode-menu";
 import { IllnessInsightsCard } from "./illness-insights-card";
 import { SymptomsSection } from "@/components/symptoms/symptoms-section";
+import { groupEpisodes } from "./group-episodes";
 import { useIllnessEpisodes, useResolveEpisode } from "./use-illness";
 import type { IllnessEpisodeDTO } from "./types";
 
@@ -57,6 +58,51 @@ function todayLocal(): string {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+/**
+ * The flares and recurring bouts filed under a condition, inside its card or
+ * list row. Each one names its course, since a recurring bout is not a flare,
+ * and an ended one says so; the count heading reads "flares" only when that is
+ * what they all are.
+ */
+function NestedEpisodes({ episodes }: { episodes?: IllnessEpisodeDTO[] }) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const count = episodes?.length ?? 0;
+  if (!episodes || count === 0) return null;
+  const allFlares = episodes.every((e) => e.lifecycle === "FLARE");
+  return (
+    <div className="space-y-1 border-l-2 pl-3" data-slot="nested-episodes">
+      {allFlares ? (
+        <p className="text-muted-foreground text-xs font-medium">
+          {count === 1
+            ? t("illness.flares.countOne")
+            : t("illness.flares.countOther", { count })}
+        </p>
+      ) : null}
+      <ul className="space-y-1">
+        {episodes.map((child) => (
+          <li key={child.id}>
+            <Link
+              href={`/illness/${child.id}`}
+              className="text-foreground/80 hover:text-foreground flex items-center gap-2 text-xs hover:underline"
+            >
+              <span className="truncate">{child.label}</span>
+              <span className="text-muted-foreground shrink-0">
+                {allFlares
+                  ? fmt.dateShortSmart(new Date(child.onsetAt))
+                  : `${t(`illness.lifecycle.${child.lifecycle}`)} · ${fmt.dateShortSmart(new Date(child.onsetAt))}`}
+                {child.resolvedAt
+                  ? `–${fmt.dateShortSmart(new Date(child.resolvedAt))}`
+                  : ""}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 interface EpisodeCardProps {
@@ -85,7 +131,6 @@ function EpisodeCard({
   const fmt = useFormatters();
   const active = episode.resolvedAt === null;
   const isChronic = episode.lifecycle === "CHRONIC_ONGOING";
-  const flareCount = flares?.length ?? 0;
 
   // v1.18.6 (MOD-03) — compact list row: a single divided line per episode
   // (label + status chips + onset; tap navigates to the detail surface).
@@ -117,6 +162,9 @@ function EpisodeCard({
                 </DayLinkStated>
               </span>
             </div>
+            {/* The list row carries the nested episodes too: a bout filed
+                under this condition has no row of its own. */}
+            <NestedEpisodes episodes={flares} />
           </div>
           {canManageIllness && (
             <div className="flex shrink-0 items-center gap-1">
@@ -202,30 +250,7 @@ function EpisodeCard({
           ) : null}
         </p>
 
-        {flareCount > 0 ? (
-          <div className="space-y-1 border-l-2 pl-3">
-            <p className="text-muted-foreground text-xs font-medium">
-              {flareCount === 1
-                ? t("illness.flares.countOne")
-                : t("illness.flares.countOther", { count: flareCount })}
-            </p>
-            <ul className="space-y-1">
-              {flares!.map((flare) => (
-                <li key={flare.id}>
-                  <Link
-                    href={`/illness/${flare.id}`}
-                    className="text-foreground/80 hover:text-foreground flex items-center gap-2 text-xs hover:underline"
-                  >
-                    <span className="truncate">{flare.label}</span>
-                    <span className="text-muted-foreground shrink-0">
-                      {fmt.dateShortSmart(new Date(flare.onsetAt))}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        <NestedEpisodes episodes={flares} />
 
         {/* Bottom-pinned single primary action — the daily-use "log a day"
             flow, promoted from a busy inline cluster. The card navigates to
@@ -360,38 +385,13 @@ export function IllnessView() {
   const logEpisode = episodes?.find((e) => e.id === logEpisodeId) ?? null;
 
   /**
-   * Group the flat list into active / resolved, nesting flares under their
-   * parent condition. A flare nests only when its parent lives in the same
-   * status group (so an active flare under a resolved parent still surfaces as
-   * its own active card rather than vanishing); otherwise it renders as a
-   * standalone parent card in its own group.
+   * Group the flat list into active / resolved, nesting flares and recurring
+   * bouts inside the card of the condition they belong to (`groupEpisodes`).
    */
   const grouped = useMemo(() => {
-    const list = episodes ?? [];
-    const byId = new Map(list.map((e) => [e.id, e]));
-    const isActive = (e: IllnessEpisodeDTO) => e.resolvedAt === null;
-
-    const activeParents: IllnessEpisodeDTO[] = [];
-    const resolvedParents: IllnessEpisodeDTO[] = [];
-    const childrenByParent = new Map<string, IllnessEpisodeDTO[]>();
-
-    for (const e of list) {
-      const parent = e.parentConditionId
-        ? byId.get(e.parentConditionId)
-        : undefined;
-      const nestsUnderParent =
-        parent !== undefined && isActive(parent) === isActive(e);
-
-      if (nestsUnderParent) {
-        const bucket = childrenByParent.get(parent.id) ?? [];
-        bucket.push(e);
-        childrenByParent.set(parent.id, bucket);
-      } else if (isActive(e)) {
-        activeParents.push(e);
-      } else {
-        resolvedParents.push(e);
-      }
-    }
+    const { activeParents, resolvedParents, childrenByParent } = groupEpisodes(
+      episodes ?? [],
+    );
 
     return {
       // v1.18.6 (MOD-03) — honour the user's persisted manual order within
