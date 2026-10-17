@@ -12905,7 +12905,7 @@
     },
     "episode": {
       "title": "Symptômes notés",
-      "filed": "noté avec cette maladie"
+      "during": "pendant {illness}"
     }
   },
   "day": {

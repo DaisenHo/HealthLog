@@ -2,15 +2,18 @@
 
 /**
  * "Symptoms logged" on an episode's detail page (v1.40): the person's own
- * symptom occurrences that belong to this episode, either because they were
- * filed against it or because they happened while it ran (onset to recovery,
- * or to now while it is open). The filed ones say so. Renders nothing when
- * there are none, so an episode without them looks exactly as before.
+ * symptom occurrences filed against this episode, and only those. Renders
+ * nothing when there are none, so an episode without them looks exactly as
+ * before.
  *
- * This is the reader of `SymptomEvent.episodeId`; the quick-entry sheet's
- * "during" selector is its writer.
+ * Filed means `SymptomEvent.episodeId`, the link the "during" selector of the
+ * entry and edit sheets writes. Until v1.43.4 this card also listed every
+ * occurrence that merely fell inside the episode's span, so a long-running
+ * condition showed the symptoms of every other illness overlapping it, and
+ * choosing an illness in the sheet changed nothing visible. The time span
+ * decides which episodes the selector offers; it never assigns.
  */
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Activity } from "lucide-react";
 
 import { TileHeader } from "@/components/insights/tile-header";
@@ -19,7 +22,6 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { SymptomEventDTO } from "@/lib/symptoms/shared";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 import {
@@ -29,11 +31,11 @@ import {
 } from "./symptoms-section";
 import { useSymptomDefinitions, useSymptomEvents } from "./use-symptoms";
 
-export function EpisodeSymptomsCard({
-  episode,
-}: {
-  episode: { id: string; onsetAt: string; resolvedAt: string | null };
-}) {
+/** The whole history: a filed occurrence may lie anywhere in time. */
+const FILED_FROM = "1900-01-01T00:00:00.000Z";
+const FILED_TO = "9999-12-31T23:59:59.999Z";
+
+export function EpisodeSymptomsCard({ episode }: { episode: { id: string } }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { user } = useAuth();
@@ -41,52 +43,38 @@ export function EpisodeSymptomsCard({
   const canManage = canManageDomain("illness");
   const timezone = user?.timezone ?? DEFAULT_TIMEZONE;
 
-  // The span is fixed per episode state, so the key stays stable while the
-  // page is open; an open episode reads up to a few minutes past mount.
-  const [openUntil] = useState(() =>
-    new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-  );
-  const range = {
-    from: episode.onsetAt,
-    to: episode.resolvedAt ?? openUntil,
-  };
   const definitions = useSymptomDefinitions(true);
-  const inSpan = useSymptomEvents(range.from, range.to);
-  const filed = useSymptomEvents("1900-01-01T00:00:00.000Z", range.to, {
+  const filed = useSymptomEvents(FILED_FROM, FILED_TO, {
     episodeId: episode.id,
   });
 
-  const merged = useMemo(() => {
-    const byId = new Map<string, SymptomEventDTO>();
-    for (const event of [
-      ...(inSpan.data?.events ?? []),
-      ...(filed.data?.events ?? []),
-    ]) {
-      byId.set(event.id, event);
-    }
-    return [...byId.values()].sort((a, b) =>
-      a.occurredAt < b.occurredAt ? 1 : a.occurredAt > b.occurredAt ? -1 : 0,
-    );
-  }, [inSpan.data, filed.data]);
+  // The route already narrows to the link; the guard keeps a stale or wider
+  // answer from ever showing another episode's occurrence here.
+  const events = useMemo(
+    () =>
+      (filed.data?.events ?? []).filter(
+        (event) => event.episodeId === episode.id,
+      ),
+    [filed.data, episode.id],
+  );
 
-  if (definitions.isError || inSpan.isError || filed.isError) {
+  if (definitions.isError || filed.isError) {
     return (
       <QueryErrorCard
         title={t("symptoms.section.loadError")}
         onRetry={() => {
           void definitions.refetch();
-          void inSpan.refetch();
           void filed.refetch();
         }}
       />
     );
   }
-  if (merged.length === 0) return null;
+  if (events.length === 0) return null;
 
   const byId = new Map(
     (definitions.data?.definitions ?? []).map((d) => [d.id, d]),
   );
-  const days = groupEventsByDay(merged, timezone);
+  const days = groupEventsByDay(events, timezone);
 
   return (
     <Card data-testid="episode-symptoms-card">
@@ -113,11 +101,6 @@ export function EpisodeSymptomsCard({
                     key={event.id}
                     event={event}
                     definition={definition}
-                    annotation={
-                      event.episodeId === episode.id
-                        ? t("symptoms.episode.filed")
-                        : undefined
-                    }
                     actions={
                       canManage ? (
                         <SymptomEventMenu event={event} label={label} />

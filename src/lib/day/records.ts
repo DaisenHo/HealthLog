@@ -537,6 +537,9 @@ async function symptomsPart(frame: DayFrame): Promise<SectionPart> {
       intensity: true,
       noteEncrypted: true,
       episodeId: true,
+      // The link opens its episode only while that episode exists; a link to
+      // a deleted one opens the illness page like an unfiled occurrence.
+      episode: { select: { deletedAt: true } },
       definition: { select: { labelEncrypted: true } },
     },
     orderBy: { occurredAt: "asc" },
@@ -552,7 +555,10 @@ async function symptomsPart(frame: DayFrame): Promise<SectionPart> {
         title: openText(row.definition.labelEncrypted, "symptom label") ?? "",
         meta: String(row.intensity),
         note: openText(row.noteEncrypted, "symptom note"),
-        href: row.episodeId ? `/illness/${row.episodeId}` : "/illness",
+        href:
+          row.episodeId && row.episode && row.episode.deletedAt === null
+            ? `/illness/${row.episodeId}`
+            : "/illness",
       }),
     ),
   };

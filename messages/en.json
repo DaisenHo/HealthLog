@@ -12905,7 +12905,7 @@
     },
     "episode": {
       "title": "Symptoms logged",
-      "filed": "logged with this illness"
+      "during": "during {illness}"
     }
   },
   "day": {

@@ -12905,7 +12905,7 @@
     },
     "episode": {
       "title": "Erfasste Symptome",
-      "filed": "zu dieser Erkrankung erfasst"
+      "during": "bei {illness}"
     }
   },
   "day": {

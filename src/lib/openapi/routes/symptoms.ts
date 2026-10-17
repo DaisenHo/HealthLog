@@ -48,19 +48,19 @@ const updateSymptomDefinitionRequest = symptomDefinitionUpdateSchema.meta({
 const createSymptomEventRequest = symptomEventCreateSchema.meta({
   id: "CreateSymptomEventRequest",
   description:
-    "Log one occurrence. `intensity` is 0-10 (0 none, 10 the worst imaginable). `occurredAt` defaults to now and may not lie in the future beyond five minutes. `episodeId`, when given, must name one of the record's own illness episodes that is still open (422 `symptoms.episode.notOpen` otherwise). The note is encrypted at rest.",
+    "Log one occurrence. `intensity` is 0-10 (0 none, 10 the worst imaginable). `occurredAt` defaults to now and may not lie in the future beyond five minutes. `episodeId`, when given, must name one of the record's own illness episodes that is still open, or a resolved one whose onset-to-recovery span holds `occurredAt` (422 `symptoms.episode.notOpen` otherwise). The note is encrypted at rest.",
 });
 
 const updateSymptomEventRequest = symptomEventUpdateSchema.meta({
   id: "UpdateSymptomEventRequest",
   description:
-    "Partial edit of one occurrence. `note: null` clears the note, `episodeId: null` drops the link. A changed `episodeId` must name an open episode; an unchanged link to an episode that has since resolved is kept.",
+    "Partial edit of one occurrence. `note: null` clears the note, `episodeId: null` drops the link. A changed `episodeId` must name an open episode or a resolved one whose span holds the occurrence's time after the edit; an unchanged link to an episode that has since resolved is kept.",
 });
 
 const listSymptomEventsQuery = symptomEventListQuerySchema.meta({
   id: "ListSymptomEventsQuery",
   description:
-    "Optional `from` / `to` (ISO instants, inclusive), `definitionId`, `episodeId`, and `limit` (1-500, default 200). Newest first.",
+    "Optional `from` / `to` (ISO instants, inclusive), `definitionId`, `episodeId` (only the occurrences filed against that episode: the link, not the time span, is what assigns an occurrence to an illness), and `limit` (1-500, default 200). Newest first.",
 });
 
 const symptomDefinition = z

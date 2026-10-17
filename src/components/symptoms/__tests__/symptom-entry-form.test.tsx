@@ -1,11 +1,14 @@
 /**
  * The symptom quick-entry form (v1.40): the person's symptoms as chips with
  * the inline "add" chip beside them, the 0-10 slider, and the "during" episode
- * selector only while an episode is open.
+ * selector whenever an episode ran at the chosen time.
  *
  * Mutation checks (each run, each seen red):
- *   - drop the `resolvedAt === null` filter on the episodes → "offers no
- *     episode selector when every episode is resolved" goes red;
+ *   - offer every episode instead of `linkableEpisodes(...)` → "offers no
+ *     episode selector when every episode ended before the chosen time" goes
+ *     red;
+ *   - offer only open episodes (the pre-#1237 filter) → "offers a resolved
+ *     episode that ran on the chosen day" goes red;
  *   - render the add chip unconditionally → "a delegate who may log but not
  *     manage gets no add chip" goes red;
  *   - drop the `definitions.isError` branch → "a failed read shows the error
@@ -20,6 +23,7 @@ const state = vi.hoisted(() => ({
   episodes: [] as Array<{
     id: string;
     label: string;
+    onsetAt: string;
     resolvedAt: string | null;
   }>,
 }));
@@ -86,10 +90,10 @@ vi.mock("../use-symptoms", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { SymptomEntryForm } from "../symptom-entry-form";
 
-function render(): string {
+function render(defaultDate?: string): string {
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <SymptomEntryForm />
+      <SymptomEntryForm defaultDate={defaultDate} />
     </I18nProvider>,
   );
 }
@@ -116,15 +120,40 @@ describe("<SymptomEntryForm>", () => {
 
   it("offers the episode selector only while an episode is open", () => {
     state.canManage = true;
-    state.episodes = [{ id: "e1", label: "Migraine", resolvedAt: null }];
+    state.episodes = [
+      {
+        id: "e1",
+        label: "Migraine",
+        onsetAt: "2026-01-01T00:00:00.000Z",
+        resolvedAt: null,
+      },
+    ];
     expect(render()).toContain("-episode");
   });
 
-  it("offers no episode selector when every episode is resolved", () => {
+  it("offers no episode selector when every episode ended before the chosen time", () => {
     state.episodes = [
-      { id: "e1", label: "Cold", resolvedAt: "2026-08-08T00:00:00.000Z" },
+      {
+        id: "e1",
+        label: "Cold",
+        onsetAt: "2026-08-01T00:00:00.000Z",
+        resolvedAt: "2026-08-08T00:00:00.000Z",
+      },
     ];
     expect(render()).not.toContain("-episode");
+  });
+
+  it("offers a resolved episode that ran on the chosen day", () => {
+    // Opened from a day inside the episode: what happened then belongs to it.
+    state.episodes = [
+      {
+        id: "e1",
+        label: "Cold",
+        onsetAt: "2026-08-01T00:00:00.000Z",
+        resolvedAt: "2026-08-08T23:00:00.000Z",
+      },
+    ];
+    expect(render("2026-08-05")).toContain("-episode");
   });
 
   it("a failed read shows the error row, not the empty hint", () => {

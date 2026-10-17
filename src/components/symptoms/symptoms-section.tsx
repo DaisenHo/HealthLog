@@ -45,6 +45,7 @@ import {
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { TagChip } from "@/components/ui/tag-chip";
 import { QuickEntrySheets } from "@/components/dashboard/quick-entry-sheets";
+import { useIllnessEpisodes } from "@/components/illness/use-illness";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeepLinkedRecord } from "@/hooks/use-deep-linked-record";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -93,7 +94,7 @@ export function SymptomEventRow({
 }: {
   event: SymptomEventDTO;
   definition: SymptomDefinitionDTO | undefined;
-  /** A short muted tag after the time, e.g. "filed with this episode". */
+  /** A short muted tag after the time, e.g. the illness it is filed with. */
   annotation?: string;
   actions?: React.ReactNode;
 }) {
@@ -360,6 +361,12 @@ export function SymptomsSection() {
   const range = useThirtyDayWindow();
   const definitions = useSymptomDefinitions(true);
   const events = useSymptomEvents(range.from, range.to);
+  // Which illness each occurrence is filed against, named on its row, so the
+  // link the sheets write is visible where the occurrences are listed.
+  const episodes = useIllnessEpisodes(true);
+  const episodeLabelById = new Map(
+    (episodes.data ?? []).map((episode) => [episode.id, episode.label]),
+  );
   const [logOpen, setLogOpen] = useState(false);
   const [editingDefinition, setEditingDefinition] =
     useState<SymptomDefinitionDTO | null>(null);
@@ -499,11 +506,19 @@ export function SymptomsSection() {
                       const definition = byId.get(event.definitionId);
                       const label =
                         definition?.label ?? t("symptoms.unreadableLabel");
+                      const illness = event.episodeId
+                        ? episodeLabelById.get(event.episodeId)
+                        : undefined;
                       return (
                         <SymptomEventRow
                           key={event.id}
                           event={event}
                           definition={definition}
+                          annotation={
+                            illness
+                              ? t("symptoms.episode.during", { illness })
+                              : undefined
+                          }
                           actions={
                             canManage ? (
                               <SymptomEventMenu event={event} label={label} />
