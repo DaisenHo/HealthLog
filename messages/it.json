@@ -12906,7 +12906,7 @@
     },
     "episode": {
       "title": "Sintomi registrati",
-      "filed": "registrato con questa malattia"
+      "during": "durante {illness}"
     }
   },
   "day": {

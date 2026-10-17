@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.43.4] — 2026-10-17
+
+### Fixed
+
+- **An illness shows only the symptoms filed under it.** The illness detail
+  view merged the symptom events linked to the illness with every event inside
+  its date range, so overlapping illnesses showed each other's symptoms. It now
+  shows linked events only, and every symptom row on the illness page names its
+  illness. The symptom edit sheet has the illness field, with the current link
+  preselected; an event can be filed under an ongoing illness or an ended one
+  whose dates contain it, and POST and PATCH accept the same set. The day view
+  no longer links a symptom to a deleted illness (Refs #1237).
+
 ## [1.43.3] — 2026-10-17
 
 ### Fixed

@@ -70,6 +70,31 @@ export interface SymptomEventDTO {
   updatedAt: string;
 }
 
+/**
+ * Whether an occurrence at `occurredAt` may be filed against `episode`: one
+ * that is still open, or one that had begun by then and was not yet over. A
+ * resolved episode takes only what happened while it ran, so filing
+ * something into it never rewrites how it ended; an open one also takes what
+ * came just before its recorded onset, the way a cold starts before anyone
+ * names it.
+ *
+ * The one rule. The server checks it before writing a new link
+ * (`isLinkableEpisode`), and the entry and edit sheets offer exactly the
+ * episodes it admits, so the selector never offers what the server refuses.
+ */
+export function isEpisodeLinkableAt(
+  episode: { onsetAt: Date | string; resolvedAt: Date | string | null },
+  occurredAt: Date | string,
+): boolean {
+  if (episode.resolvedAt === null) return true;
+  const at = new Date(occurredAt).getTime();
+  if (Number.isNaN(at)) return false;
+  return (
+    new Date(episode.onsetAt).getTime() <= at &&
+    at <= new Date(episode.resolvedAt).getTime()
+  );
+}
+
 const labelSchema = z
   .string()
   .trim()
@@ -120,7 +145,10 @@ export const symptomEventCreateSchema = z.object({
   occurredAt: occurredAtSchema.optional(),
   intensity: intensitySchema,
   note: z.string().trim().max(500).nullish(),
-  /** Must be one of the caller's own episodes that is still open. */
+  /**
+   * One of the caller's own episodes that is open, or that ran over
+   * `occurredAt` (`isEpisodeLinkableAt`).
+   */
   episodeId: z.string().min(1).max(40).nullish(),
 });
 

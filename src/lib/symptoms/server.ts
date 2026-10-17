@@ -16,7 +16,11 @@ import type {
   SymptomEvent,
 } from "@/generated/prisma/client";
 
-import type { SymptomDefinitionDTO, SymptomEventDTO } from "./shared";
+import {
+  isEpisodeLinkableAt,
+  type SymptomDefinitionDTO,
+  type SymptomEventDTO,
+} from "./shared";
 
 export * from "./shared";
 
@@ -137,18 +141,19 @@ export async function listSymptomDefinitions(
 }
 
 /**
- * Whether `episodeId` names an episode an event of `userId` may be filed
- * against: the caller's own, not deleted, and still open. A resolved episode
- * is history; filing a new occurrence into it would rewrite what the person
- * recorded about how it ended.
+ * Whether `episodeId` names an episode an event of `userId` at `occurredAt`
+ * may be filed against: the caller's own, not deleted, and linkable at that
+ * instant by the shared rule (`isEpisodeLinkableAt`): still open, or resolved
+ * after an onset the occurrence falls between.
  */
 export async function isLinkableEpisode(
   userId: string,
   episodeId: string,
+  occurredAt: Date,
 ): Promise<boolean> {
   const episode = await prisma.illnessEpisode.findFirst({
-    where: { id: episodeId, userId, deletedAt: null, resolvedAt: null },
-    select: { id: true },
+    where: { id: episodeId, userId, deletedAt: null },
+    select: { onsetAt: true, resolvedAt: true },
   });
-  return episode !== null;
+  return episode !== null && isEpisodeLinkableAt(episode, occurredAt);
 }

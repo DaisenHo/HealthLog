@@ -12906,7 +12906,7 @@
     },
     "episode": {
       "title": "기록된 증상",
-      "filed": "이 질병과 함께 기록됨"
+      "during": "{illness} 중"
     }
   },
   "day": {

@@ -2,9 +2,10 @@
 
 /**
  * The two edit sheets of the symptoms section (v1.40): one occurrence (how
- * strong, when, the note) and one symptom (its name and icon). Same
- * `ResponsiveSheet` + `FieldGroup` + `SliderField` vocabulary as the entry
- * form, with Cancel + Save in the sheet footer like the illness day sheet.
+ * strong, when, the note, the illness it is filed against) and one symptom
+ * (its name and icon). Same `ResponsiveSheet` + `FieldGroup` + `SliderField`
+ * vocabulary as the entry form, with Cancel + Save in the sheet footer like
+ * the illness day sheet.
  */
 import { useState } from "react";
 
@@ -23,7 +24,13 @@ import {
   type SymptomDefinitionDTO,
   type SymptomEventDTO,
 } from "@/lib/symptoms/shared";
+import { useIllnessEpisodes } from "@/components/illness/use-illness";
 
+import {
+  effectiveEpisodeId,
+  EpisodeLinkField,
+  linkableEpisodes,
+} from "./episode-link-field";
 import { SymptomIconPicker } from "./symptom-icon-picker";
 import {
   useUpdateSymptomDefinition,
@@ -55,7 +62,22 @@ export function EditSymptomEventSheet({
   const [intensity, setIntensity] = useState<number>(event.intensity);
   const [occurredAt, setOccurredAt] = useState(toLocalValue(event.occurredAt));
   const [note, setNote] = useState(event.note ?? "");
+  // The occurrence's illness link, loaded with it and editable like the rest
+  // (#1237: the sheet used to carry no link at all, so an occurrence's
+  // illness could be neither seen nor changed once logged).
+  const [episodeId, setEpisodeId] = useState<string | null>(event.episodeId);
   const [error, setError] = useState<string | null>(null);
+  const episodes = useIllnessEpisodes(true);
+  const episodeOptions = linkableEpisodes(
+    episodes.data ?? [],
+    occurredAt,
+    event.episodeId,
+  );
+  const linkedEpisodeId = effectiveEpisodeId(episodeId, episodeOptions);
+  // What the sheet showed when it opened. Only a change from that is sent, so
+  // a link the list cannot show (a deleted episode, the list still loading)
+  // is left alone rather than silently dropped.
+  const initialEpisodeId = effectiveEpisodeId(event.episodeId, episodeOptions);
   const low = t("symptoms.entry.anchorLow");
   const high = t("symptoms.entry.anchorHigh");
 
@@ -68,6 +90,9 @@ export function EditSymptomEventSheet({
           intensity,
           occurredAt: new Date(occurredAt).toISOString(),
           note: note.trim() ? note.trim() : null,
+          ...(linkedEpisodeId !== initialEpisodeId
+            ? { episodeId: linkedEpisodeId }
+            : {}),
         },
       });
       onClose();
@@ -124,6 +149,12 @@ export function EditSymptomEventSheet({
             required
           />
         </FieldGroup>
+        <EpisodeLinkField
+          id="symptom-event-episode"
+          value={linkedEpisodeId}
+          onChange={setEpisodeId}
+          options={episodeOptions}
+        />
         <FieldGroup
           htmlFor="symptom-event-note"
           label={

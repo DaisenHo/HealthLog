@@ -2,8 +2,9 @@
  * One occurrence of a person-defined symptom (v1.40).
  *
  *   PATCH  /api/symptoms/events/{id} — change the time, intensity, note or
- *          episode link. A new link must name an open episode of the record;
- *          an unchanged link to an episode that has since resolved is kept.
+ *          episode link. A new link must name an episode of the record that
+ *          is open or ran over the occurrence's time; an unchanged link to an
+ *          episode that has since resolved is kept.
  *   DELETE /api/symptoms/events/{id} — remove it.
  *
  * Owner-scoped (another account's id is a 404), module-gated on the record,
@@ -76,12 +77,18 @@ export const PATCH = apiHandler(
     });
     if (!existing) return notFound();
 
+    // A new link is checked against the time the occurrence will have after
+    // this edit, so moving it and filing it in one save is judged as a whole.
     if (
       entry.episodeId &&
       entry.episodeId !== existing.episodeId &&
-      !(await isLinkableEpisode(user.id, entry.episodeId))
+      !(await isLinkableEpisode(
+        user.id,
+        entry.episodeId,
+        entry.occurredAt ?? existing.occurredAt,
+      ))
     ) {
-      return apiError("Episode is not open", 422, {
+      return apiError("Episode did not run at that time", 422, {
         errorCode: "symptoms.episode.notOpen",
       });
     }

@@ -2,8 +2,9 @@
 
 /**
  * Log one occurrence of a symptom the person defined (v1.40): which one, how
- * strong (0-10, the scale the pain score uses), when, an optional note, and,
- * only while an illness episode is open, which episode it happened during.
+ * strong (0-10, the scale the pain score uses), when, an optional note, and
+ * which illness episode it belongs to, offered whenever one ran at that time
+ * (`EpisodeLinkField`).
  *
  * Built like the measurement and mood quick-entry forms it sits beside: the
  * `FieldGroup` rhythm, `SliderField` for the bounded scale, `DateTimeField`
@@ -29,13 +30,6 @@ import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { SliderField } from "@/components/ui/slider";
 import {
   useActiveRecordName,
@@ -51,11 +45,15 @@ import { cn } from "@/lib/utils";
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 
 import { AddSymptomChip } from "./add-symptom-chip";
+import {
+  effectiveEpisodeId,
+  EpisodeLinkField,
+  linkableEpisodes,
+} from "./episode-link-field";
 import { SymptomIcon } from "./symptom-icons";
 import { useLogSymptomEvent, useSymptomDefinitions } from "./use-symptoms";
 
 const NOTE_MAX_LENGTH = 500;
-const NO_EPISODE = "none";
 
 function nowLocalValue(): string {
   const now = new Date();
@@ -86,7 +84,9 @@ export function SymptomEntryForm({
   const { canManageDomain } = useRecordCapabilities();
   const canDefine = canManageDomain("illness");
   const definitions = useSymptomDefinitions(false);
-  const episodes = useIllnessEpisodes(false);
+  // Resolved ones too: a backdated occurrence may belong to an illness that
+  // has since ended, as long as it happened while that one ran.
+  const episodes = useIllnessEpisodes(true);
   const log = useLogSymptomEvent();
 
   const [definitionId, setDefinitionId] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export function SymptomEntryForm({
     localDateTimeValue(defaultDate),
   );
   const [note, setNote] = useState("");
-  const [episodeId, setEpisodeId] = useState<string>(NO_EPISODE);
+  const [episodeId, setEpisodeId] = useState<string | null>(null);
   const [symptomError, setSymptomError] = useState<string | null>(null);
   const [intensityError, setIntensityError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,18 +106,16 @@ export function SymptomEntryForm({
   const list = definitions.data?.definitions ?? [];
   const limit = definitions.data?.limit ?? 0;
   const atLimit = limit > 0 && list.length >= limit;
-  // Only an open episode can take a new occurrence; the server refuses the
-  // rest, so the selector never offers them.
-  const openEpisodes = (episodes.data ?? []).filter(
-    (episode) => episode.resolvedAt === null,
-  );
+  // Exactly the episodes the server admits at the chosen time.
+  const episodeOptions = linkableEpisodes(episodes.data ?? [], occurredAt);
+  const linkedEpisodeId = effectiveEpisodeId(episodeId, episodeOptions);
 
   function resetForm() {
     setDefinitionId(null);
     setIntensity(null);
     setOccurredAt(localDateTimeValue(defaultDate));
     setNote("");
-    setEpisodeId(NO_EPISODE);
+    setEpisodeId(null);
     setSymptomError(null);
     setIntensityError(null);
     setError(null);
@@ -142,7 +140,7 @@ export function SymptomEntryForm({
         intensity,
         occurredAt: new Date(occurredAt).toISOString(),
         note: note.trim() ? note.trim() : undefined,
-        episodeId: episodeId === NO_EPISODE ? undefined : episodeId,
+        episodeId: linkedEpisodeId ?? undefined,
       });
       toast.success(
         t("common.saved"),
@@ -342,35 +340,12 @@ export function SymptomEntryForm({
         />
       </FieldGroup>
 
-      {openEpisodes.length > 0 ? (
-        <FieldGroup
-          htmlFor={`${formId}-episode`}
-          label={
-            <>
-              {t("symptoms.entry.during")}
-              <span className="text-muted-foreground ml-1 font-normal">
-                ({t("common.optional")})
-              </span>
-            </>
-          }
-        >
-          <Select value={episodeId} onValueChange={setEpisodeId}>
-            <SelectTrigger id={`${formId}-episode`} className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_EPISODE}>
-                {t("symptoms.entry.duringNone")}
-              </SelectItem>
-              {openEpisodes.map((episode) => (
-                <SelectItem key={episode.id} value={episode.id}>
-                  {episode.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FieldGroup>
-      ) : null}
+      <EpisodeLinkField
+        id={`${formId}-episode`}
+        value={linkedEpisodeId}
+        onChange={setEpisodeId}
+        options={episodeOptions}
+      />
 
       <FieldGroup
         htmlFor={`${formId}-note`}

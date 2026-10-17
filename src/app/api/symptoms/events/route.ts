@@ -8,7 +8,7 @@
  *        occurredAt?, note?, episodeId? }`). `occurredAt` defaults to now and
  *        may not lie in the future beyond the shared five-minute skew;
  *        `episodeId` must name one of the record's own episodes that is still
- *        open. The note is encrypted at rest.
+ *        open or that ran over `occurredAt`. The note is encrypted at rest.
  *
  * Module-gated on the record (`illness.disabled`). `userId` comes from auth
  * and is never a body field.
@@ -124,8 +124,12 @@ async function postEvent(request: NextRequest): Promise<Response> {
     });
   }
 
-  if (entry.episodeId && !(await isLinkableEpisode(user.id, entry.episodeId))) {
-    return apiError("Episode is not open", 422, {
+  const occurredAt = entry.occurredAt ?? new Date();
+  if (
+    entry.episodeId &&
+    !(await isLinkableEpisode(user.id, entry.episodeId, occurredAt))
+  ) {
+    return apiError("Episode did not run at that time", 422, {
       errorCode: "symptoms.episode.notOpen",
     });
   }
@@ -134,7 +138,7 @@ async function postEvent(request: NextRequest): Promise<Response> {
     data: {
       userId: user.id,
       definitionId: definition.id,
-      occurredAt: entry.occurredAt ?? new Date(),
+      occurredAt,
       intensity: entry.intensity,
       noteEncrypted: entry.note ? encryptSymptomText(entry.note) : null,
       episodeId: entry.episodeId ?? null,

@@ -12906,7 +12906,7 @@
     },
     "episode": {
       "title": "Zapisane objawy",
-      "filed": "zapisano przy tej chorobie"
+      "during": "podczas: {illness}"
     }
   },
   "day": {
