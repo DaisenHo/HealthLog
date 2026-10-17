@@ -21,6 +21,13 @@ import { prisma } from "@/lib/db";
  * a behaviour change to five destructive actions, made in passing, for the
  * benefit of a sixth. `canProveFreshFactor` in `api-handler.ts` is where the wider question
  * lives.
+ *
+ * Since v1.43.3 a passkey DOES count as a second factor where the gate is
+ * unconditional: `requireFreshMfa` defaults to `any-possession`, so a
+ * passkey-only account clears the managed-profile acts with a passkey
+ * re-proof instead of being told to enrol something. That decision was made
+ * there and not here, on purpose; the note beside `FreshFactorProofSource`
+ * lists what it does and does not change.
  */
 export async function hasSecondFactorEnrolled(user: {
   id: string;

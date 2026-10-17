@@ -9,6 +9,10 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
 import { stepUpErrorKey } from "@/components/settings/access/grant-action-error";
+import {
+  ReproofCancelledError,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { ApiError } from "@/lib/api/api-fetch";
 import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
@@ -88,7 +92,12 @@ export function ManagedProfileCreateForm({
   onCreated?: (profile: ManagedProfileView) => void;
 } = {}) {
   const { t, locale: actorLocale } = useTranslations();
-  const create = useCreateManagedProfile();
+  // Gated on a fresh second factor: the dialog collects it and the request
+  // goes out once more. A closed dialog changed nothing and says nothing.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
+  const create = useCreateManagedProfile(recentProof.run);
 
   const [displayName, setDisplayName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -135,165 +144,173 @@ export function ManagedProfileCreateForm({
         // person is being asked to retry, and a form that emptied itself
         // would make them type it all again to find out whether the second
         // attempt fails the same way.
-        onError: (err) => setError(t(createManagedProfileErrorKey(err))),
+        onError: (err) => {
+          if (err instanceof ReproofCancelledError) return;
+          setError(t(createManagedProfileErrorKey(err)));
+        },
       },
     );
   };
 
   return (
-    <form
-      onSubmit={submit}
-      data-slot="managed-profile-create-form"
-      className="space-y-3"
-    >
-      <div className="space-y-1.5">
-        <Label htmlFor="managed-profile-name">
-          {t("recordSharing.managed.nameLabel")}
-        </Label>
-        <Input
-          id="managed-profile-name"
-          data-slot="managed-profile-name"
-          value={displayName}
-          onChange={(e) => {
-            setDisplayName(e.target.value);
-            setError(null);
-          }}
-          placeholder={t("recordSharing.managed.namePlaceholder")}
-          autoComplete="off"
-          maxLength={80}
-          aria-invalid={
-            displayName.length > 0 && nameIssue !== null ? "true" : undefined
-          }
-          aria-describedby="managed-profile-name-hint"
-        />
-        <FieldGuidance
-          slot="managed-profile-name"
-          hintId="managed-profile-name-hint"
-          hint={t("recordSharing.managed.nameHint")}
-          // Only once somebody has typed. "Give the record a name" on an empty
-          // field they have not reached yet is a telling-off, not guidance.
-          error={
-            displayName.length > 0 && nameIssue !== null ? t(nameIssue) : null
-          }
-        />
-      </div>
+    <>
+      {/* Outside the form: the dialog's own form must not submit this one
+          through the portal. */}
+      {recentProof.dialog}
+      <form
+        onSubmit={submit}
+        data-slot="managed-profile-create-form"
+        className="space-y-3"
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="managed-profile-name">
+            {t("recordSharing.managed.nameLabel")}
+          </Label>
+          <Input
+            id="managed-profile-name"
+            data-slot="managed-profile-name"
+            value={displayName}
+            onChange={(e) => {
+              setDisplayName(e.target.value);
+              setError(null);
+            }}
+            placeholder={t("recordSharing.managed.namePlaceholder")}
+            autoComplete="off"
+            maxLength={80}
+            aria-invalid={
+              displayName.length > 0 && nameIssue !== null ? "true" : undefined
+            }
+            aria-describedby="managed-profile-name-hint"
+          />
+          <FieldGuidance
+            slot="managed-profile-name"
+            hintId="managed-profile-name-hint"
+            hint={t("recordSharing.managed.nameHint")}
+            // Only once somebody has typed. "Give the record a name" on an empty
+            // field they have not reached yet is a telling-off, not guidance.
+            error={
+              displayName.length > 0 && nameIssue !== null ? t(nameIssue) : null
+            }
+          />
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="managed-profile-dob">
-          {t("recordSharing.managed.dobLabel")}
-        </Label>
-        <DateField
-          id="managed-profile-dob"
-          data-slot="managed-profile-dob"
-          data-testid="managed-profile-dob-input"
-          value={dateOfBirth}
-          onChange={setDateOfBirth}
-          aria-describedby="managed-profile-dob-hint"
-        />
-        <p
-          id="managed-profile-dob-hint"
-          className="text-muted-foreground text-xs"
-        >
-          {t("recordSharing.managed.dobHint")}
-        </p>
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="managed-profile-dob">
+            {t("recordSharing.managed.dobLabel")}
+          </Label>
+          <DateField
+            id="managed-profile-dob"
+            data-slot="managed-profile-dob"
+            data-testid="managed-profile-dob-input"
+            value={dateOfBirth}
+            onChange={setDateOfBirth}
+            aria-describedby="managed-profile-dob-hint"
+          />
+          <p
+            id="managed-profile-dob-hint"
+            className="text-muted-foreground text-xs"
+          >
+            {t("recordSharing.managed.dobHint")}
+          </p>
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="managed-profile-locale">
-          {t("recordSharing.managed.localeLabel")}
-        </Label>
-        <NativeSelect
-          id="managed-profile-locale"
-          data-slot="managed-profile-locale"
-          className="w-full"
-          value={locale}
-          onChange={(e) => setLocale(e.target.value as Locale)}
-        >
-          {locales.map((option) => (
-            <option key={option} value={option}>
-              {localeLabels[option]}
-            </option>
-          ))}
-        </NativeSelect>
-        <p className="text-muted-foreground text-xs">
-          {t("recordSharing.managed.localeHint")}
-        </p>
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="managed-profile-locale">
+            {t("recordSharing.managed.localeLabel")}
+          </Label>
+          <NativeSelect
+            id="managed-profile-locale"
+            data-slot="managed-profile-locale"
+            className="w-full"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as Locale)}
+          >
+            {locales.map((option) => (
+              <option key={option} value={option}>
+                {localeLabels[option]}
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-muted-foreground text-xs">
+            {t("recordSharing.managed.localeHint")}
+          </p>
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="managed-profile-gender">
-          {t("recordSharing.managed.genderLabel")}
-        </Label>
-        <NativeSelect
-          id="managed-profile-gender"
-          data-slot="managed-profile-gender"
-          className="w-full"
-          value={gender ?? ""}
-          onChange={(e) => setGender(genderFromSelect(e.target.value))}
-        >
-          {MANAGED_PROFILE_GENDER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {t(option.labelKey)}
-            </option>
-          ))}
-        </NativeSelect>
-        <p className="text-muted-foreground text-xs">
-          {t("recordSharing.managed.genderHint")}
-        </p>
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="managed-profile-gender">
+            {t("recordSharing.managed.genderLabel")}
+          </Label>
+          <NativeSelect
+            id="managed-profile-gender"
+            data-slot="managed-profile-gender"
+            className="w-full"
+            value={gender ?? ""}
+            onChange={(e) => setGender(genderFromSelect(e.target.value))}
+          >
+            {MANAGED_PROFILE_GENDER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-muted-foreground text-xs">
+            {t("recordSharing.managed.genderHint")}
+          </p>
+        </div>
 
-      <div className="space-y-1.5">
-        <TimezonePicker
-          id="managed-profile-timezone"
-          value={timezone}
-          onChange={(next) => {
-            setTimezone(next);
-            setError(null);
-          }}
-          hint={t("recordSharing.managed.timezoneHint")}
-        />
-        {/* The picker's own list comes from the engine, so the select branch
+        <div className="space-y-1.5">
+          <TimezonePicker
+            id="managed-profile-timezone"
+            value={timezone}
+            onChange={(next) => {
+              setTimezone(next);
+              setError(null);
+            }}
+            hint={t("recordSharing.managed.timezoneHint")}
+          />
+          {/* The picker's own list comes from the engine, so the select branch
             cannot produce an unknown zone. Its free-text fallback (older
             engines without `Intl.supportedValuesOf`) can, and this sentence is
             then the ONLY explanation for a submit button that will not press.
             It rides beside the picker rather than through its `hint` prop,
             because that prop renders muted meta and a refusal rendered as meta
             is a refusal nobody reads. */}
-        <FieldGuidance
-          slot="managed-profile-timezone"
-          error={timezoneIssue === null ? null : t(timezoneIssue)}
-        />
-      </div>
+          <FieldGuidance
+            slot="managed-profile-timezone"
+            error={timezoneIssue === null ? null : t(timezoneIssue)}
+          />
+        </div>
 
-      <Button
-        type="submit"
-        data-slot="managed-profile-create-submit"
-        disabled={create.isPending || blocked}
-      >
-        {create.isPending
-          ? t("recordSharing.managed.creating")
-          : (submitLabel ?? t("recordSharing.managed.create"))}
-      </Button>
+        <Button
+          type="submit"
+          data-slot="managed-profile-create-submit"
+          disabled={create.isPending || blocked}
+        >
+          {create.isPending
+            ? t("recordSharing.managed.creating")
+            : (submitLabel ?? t("recordSharing.managed.create"))}
+        </Button>
 
-      {error && (
-        <p
-          role="alert"
-          data-slot="managed-profile-create-error"
-          className="text-destructive text-sm"
-        >
-          {error}
-        </p>
-      )}
-      {created && (
-        <p
-          role="status"
-          data-slot="managed-profile-created"
-          className="text-sm"
-        >
-          {t("recordSharing.managed.created", { name: created })}
-        </p>
-      )}
-    </form>
+        {error && (
+          <p
+            role="alert"
+            data-slot="managed-profile-create-error"
+            className="text-destructive text-sm"
+          >
+            {error}
+          </p>
+        )}
+        {created && (
+          <p
+            role="status"
+            data-slot="managed-profile-created"
+            className="text-sm"
+          >
+            {t("recordSharing.managed.created", { name: created })}
+          </p>
+        )}
+      </form>
+    </>
   );
 }
 

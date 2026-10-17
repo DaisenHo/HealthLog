@@ -43,6 +43,7 @@ import {
 } from "@/lib/api/api-fetch";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { describeStepUp } from "./security-keys-card";
+import { ReproofCancelledError, useRecentProof } from "./use-recent-proof";
 
 interface PasskeyInfo {
   id: string;
@@ -164,22 +165,30 @@ export function PasskeyListSection({
     onError: (err: Error) => setMsg(err.message),
   });
 
+  // Removal is step-up gated: a second factor, or on a passkey-only account a
+  // passkey, proved within five minutes. The server names what clears it and
+  // the shared dialog collects that, then the removal runs again.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await apiDelete(`/api/auth/passkeys/${id}`);
+      await recentProof.run(() => apiDelete(`/api/auth/passkeys/${id}`));
     },
     onSuccess: () => {
       setMsg(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.passkeys() });
     },
-    // Removal is step-up gated. The server's own prose says "second-factor",
-    // which is wrong for the passkey-only account this card mostly serves — the
-    // credential to re-prove is the passkey — so the refusal gets its own
-    // sentence naming the recovery that exists on the web: sign in again.
-    onError: (err: Error) =>
+    // A refusal the dialog could not take up keeps its own sentence. The
+    // server's prose says "second-factor", which is wrong for the passkey-only
+    // account this card mostly serves, so it names the recovery that always
+    // exists on the web: sign in again.
+    onError: (err: Error) => {
+      if (err instanceof ReproofCancelledError) return;
       setMsg(
         describeStepUp(err, err.message, t("settings.passkeyStepUpRequired")),
-      ),
+      );
+    },
   });
 
   const DEVICE_TYPE_LABELS: Record<string, string> = {
@@ -189,6 +198,7 @@ export function PasskeyListSection({
 
   return (
     <SettingsCard>
+      {recentProof.dialog}
       <SettingsCardHeader
         anchor="passkeys"
         icon={Fingerprint}

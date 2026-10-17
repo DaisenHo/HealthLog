@@ -5160,7 +5160,7 @@
         "changeInSettings": "Modificali in Impostazioni, Account",
         "cta": "Conferma e continua",
         "managedTitle": "La persona di cui ti prendi cura",
-        "managedBody": "La sua cartella non ha un accesso proprio; la gestisci dal tuo account. Per crearla serve un secondo fattore sul tuo account.",
+        "managedBody": "La sua cartella non ha un accesso proprio; la gestisci dal tuo account. Per crearla serve un secondo fattore o una passkey sul tuo account.",
         "managedCreate": "Crea il profilo e concludi",
         "managedLater": "Puoi crearlo anche in seguito in Impostazioni, Accesso condiviso.",
         "finishWithoutProfile": "Concludi senza il profilo"
@@ -7323,6 +7323,7 @@
     "emailChangePassword": "Password attuale (necessaria per cambiare l'indirizzo email)",
     "reproof": {
       "description": "Questa azione condivide o esporta i tuoi dati sanitari. Conferma che sei tu per continuare.",
+      "descriptionChange": "Questo modifica qualcosa che solo tu dovresti poter modificare. Conferma che sei tu per continuare.",
       "signInAgain": "Accedi di nuovo, poi riprova. Il tuo account non ha una password o una passkey da confermare qui.",
       "failed": "Non ha funzionato. Controlla quanto inserito e riprova."
     },
@@ -12260,7 +12261,7 @@
       "errorFailed": "Non è stato possibile inviare l'invito. Riprova.",
       "errorScope": "Queste sezioni non si possono condividere così. Scegli almeno una sezione oppure condividi l'intera cartella.",
       "errorManageBrowserOnly": "L'accesso di gestione si può offrire solo da un browser.",
-      "errorStepUp": "Conferma il tuo secondo fattore e riprova.",
+      "errorStepUp": "Conferma il tuo secondo fattore o la tua passkey e riprova.",
       "errorOffline": "La richiesta non ha raggiunto il server. Il tuo invito è ancora qui: controlla la connessione e riprova."
     },
     "given": {
@@ -12337,7 +12338,7 @@
       "create": "Crea profilo",
       "creating": "Creazione in corso…",
       "created": "{name} è pronto. Puoi entrare in quella cartella dal menu dell'account.",
-      "errorStepUp": "Conferma il tuo secondo fattore e riprova.",
+      "errorStepUp": "Conferma il tuo secondo fattore o la tua passkey e riprova.",
       "errorOffline": "Non è arrivato al server. Non è cambiato nulla. Controlla la connessione e riprova.",
       "errorInvalid": "Il server ha rifiutato questi dati. Controlla nome, data e fuso orario.",
       "errorFailed": "Non è stato possibile creare il profilo.",
@@ -12376,7 +12377,7 @@
       "guardianErrorNoAccount": "Su questa istanza non esiste un account con quel nome o quella e-mail.",
       "guardianErrorRateLimit": "Troppi inviti nell'ultima ora. Aspetta un po' e riprova.",
       "guardianErrorFailed": "Non è stato possibile inviare l'invito.",
-      "errorMfaRequired": "Serve un secondo fattore e il tuo account non ne ha ancora uno. Impostane uno in Impostazioni → Sicurezza e riprova.",
+      "errorMfaRequired": "Serve un secondo fattore o una passkey e il tuo account non ha ancora né l'uno né l'altra. Impostane uno in Impostazioni → Sicurezza e riprova.",
       "rosterLoadError": "Non è stato possibile caricare chi si occupa di questa cartella.",
       "errorRateLimit": "Troppi profili creati nell'ultima ora. Aspetta un po' e riprova.",
       "handover": {

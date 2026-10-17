@@ -37,10 +37,12 @@ import { formatDate } from "@/lib/format";
 import {
   ExistingFactorReauthDialog,
   isReproofRequired,
+  nothingToReprove,
   offeredReauthMethods,
   type ExistingFactorProof,
   type ReauthMethod,
 } from "./existing-factor-reauth-dialog";
+import { ReproofCancelledError, useRecentProof } from "./use-recent-proof";
 
 export interface WebauthnKeyInfo {
   id: string;
@@ -133,6 +135,11 @@ export function SecurityKeysCard({
       queryClient.invalidateQueries({ queryKey: queryKeys.mfaStatus() });
     },
     onError: (err, proof) => {
+      if (isReproofRequired(err) && nothingToReprove(err)) {
+        setReauthOpen(false);
+        setError(t("settings.reproof.signInAgain"));
+        return;
+      }
       if (isReproofRequired(err)) {
         setOfferedMethods(offeredReauthMethods(err));
         setError(null);
@@ -172,26 +179,35 @@ export function SecurityKeysCard({
       ),
   });
 
+  // Removing a key needs the second factor proved within five minutes; the
+  // shared dialog collects it when the server asks, then the removal runs
+  // again.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await apiDelete(`/api/auth/me/mfa/webauthn/${id}`);
+      await recentProof.run(() => apiDelete(`/api/auth/me/mfa/webauthn/${id}`));
     },
     onSuccess: () => {
       setError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.mfaStatus() });
     },
-    onError: (err) =>
+    onError: (err) => {
+      if (err instanceof ReproofCancelledError) return;
       setError(
         describeStepUp(
           err,
           t("settings.security.keys.removeFailed"),
           t("settings.security.stepUpRequired"),
         ),
-      ),
+      );
+    },
   });
 
   return (
     <SettingsCard>
+      {recentProof.dialog}
       <SettingsCardHeader
         anchor="security-keys"
         icon={Usb}

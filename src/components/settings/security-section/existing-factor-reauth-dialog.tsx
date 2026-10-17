@@ -56,6 +56,22 @@ const REAUTH_METHODS: readonly ReauthMethod[] = [
  * none. On an account with a second factor the server leaves the password out,
  * so the dialog does not offer a choice that can only be refused.
  */
+/**
+ * The refusal says the account holds nothing it could re-prove here: an
+ * account that signs in through an identity provider only, with no password,
+ * passkey or second factor. A dialog would only offer it a password it does
+ * not have, so the callers say "sign in again" instead — a fresh sign-in is
+ * the proof such an account can give (`Session.createdAt` within five
+ * minutes).
+ */
+export function nothingToReprove(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    Array.isArray(err.meta?.methods) &&
+    err.meta.methods.length === 0
+  );
+}
+
 export function offeredReauthMethods(err: unknown): ReauthMethod[] | null {
   if (!(err instanceof ApiError)) return null;
   const raw = err.meta?.methods;

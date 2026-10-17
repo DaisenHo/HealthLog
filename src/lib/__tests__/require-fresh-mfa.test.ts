@@ -82,6 +82,46 @@ describe("requireFreshMfa", () => {
     });
   });
 
+  /**
+   * The stale refusal names what clears it, so the browser can open the
+   * re-proof dialog instead of printing a sentence (#959): the possession
+   * proofs the account holds, never a password, which stamps `reproofAt` only
+   * and would leave this gate shut.
+   */
+  it("names the possession proofs on a stale refusal", async () => {
+    mockSession({ ...MFA_USER, passwordHash: "argon2-hash" });
+    vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+      mfaVerifiedAt: new Date(Date.now() - 10 * 60_000),
+    } as never);
+
+    await expect(requireFreshMfa(5 * 60)).rejects.toMatchObject({
+      errorCode: "auth.stepup.required",
+      extraMeta: { methods: ["totp", "webauthn", "passkey"] },
+    });
+  });
+
+  it("offers a passkey-only account its passkey, not its password", async () => {
+    mockSession({
+      ...MFA_USER,
+      totpConfirmedAt: null,
+      passwordHash: "argon2-hash",
+    });
+    vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+      mfaVerifiedAt: null,
+    } as never);
+
+    await expect(
+      requireFreshMfa(5 * 60, "any-possession"),
+    ).rejects.toMatchObject({
+      errorCode: "auth.stepup.required",
+      extraMeta: { methods: ["passkey"] },
+    });
+  });
+
   it("rejects an absent verification stamp", async () => {
     mockSession(MFA_USER);
     vi.mocked(prisma.session.findUnique).mockResolvedValue({
@@ -93,9 +133,10 @@ describe("requireFreshMfa", () => {
     );
   });
 
-  it("rejects a user with neither TOTP nor a security key", async () => {
+  it("rejects a user with neither TOTP nor a security key nor a passkey", async () => {
     mockSession({ ...MFA_USER, totpConfirmedAt: null });
     vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(0 as never);
     await expect(requireFreshMfa(5 * 60)).rejects.toMatchObject({
       errorCode: "auth.stepup.mfa_not_enrolled",
     });
@@ -123,21 +164,50 @@ describe("requireFreshMfa", () => {
    * parameter, and it changes nothing else: the freshness read below is the same
    * read either way.
    *
-   * A primary passkey is deliberately outside the default set and inside
-   * `"any-possession"`. It DOES stamp `mfaVerifiedAt` on login, so it can clear
-   * the gate — but counting it by default would pull every passkey-holding
+   * Since v1.43.3 a primary passkey counts by default: `requireFreshMfa`
+   * defaults to `"any-possession"`, so a passkey-only account clears the
+   * managed-profile acts with a passkey re-proof. It DOES stamp `mfaVerifiedAt`
+   * on login and on re-proof, so it can clear the gate. What stays narrow is
+   * `hasSecondFactorEnrolled`: widening THAT would pull every passkey-holding
    * account into `requireFreshMfaIfEnrolled`'s gate on account deletion, the
-   * data reset, the password change, the encrypted export and key rotation,
-   * none of which have ever applied to them. The sibling suite
-   * `require-fresh-mfa-if-enrolled.test.ts` is what catches that if the two
-   * predicates are ever collapsed into one.
+   * data reset, the password change, the encrypted export and key rotation.
+   * The sibling suite `require-fresh-mfa-if-enrolled.test.ts` is what catches
+   * that if the two predicates are ever collapsed into one.
    */
+  it("admits a passkey-only account by default, with a fresh stamp", async () => {
+    mockSession({ ...MFA_USER, totpConfirmedAt: null });
+    vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+      mfaVerifiedAt: new Date(Date.now() - 60_000),
+    } as never);
+
+    const ctx = await requireFreshMfa(MFA_STEP_UP_MAX_AGE_SECONDS);
+    expect(ctx.user.id).toBe("user-1");
+  });
+
+  it("asks a passkey-only account for its passkey by default when the stamp is stale", async () => {
+    mockSession({ ...MFA_USER, totpConfirmedAt: null });
+    vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+      mfaVerifiedAt: null,
+    } as never);
+
+    await expect(requireFreshMfa(5 * 60)).rejects.toMatchObject({
+      errorCode: "auth.stepup.required",
+      extraMeta: { methods: ["passkey"] },
+    });
+  });
+
   it("refuses a passkey-only account when only a second factor counts", async () => {
     mockSession({ ...MFA_USER, totpConfirmedAt: null });
     vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
     vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
 
-    await expect(requireFreshMfa(5 * 60)).rejects.toMatchObject({
+    await expect(
+      requireFreshMfa(5 * 60, "second-factor"),
+    ).rejects.toMatchObject({
       errorCode: "auth.stepup.mfa_not_enrolled",
     });
   });

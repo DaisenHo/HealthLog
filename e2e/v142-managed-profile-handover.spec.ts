@@ -30,8 +30,19 @@ function connect(): pg.Pool {
   return new pg.Pool({ connectionString: url });
 }
 
-/** WCAG 2.1 AA on the screen as it stands. */
+/**
+ * WCAG 2.1 AA on the screen as it stands.
+ *
+ * The decision screen is reached by a client navigation, and during one the
+ * framework unmounts the old route's `<title>` and mounts the new one from a
+ * suspended metadata boundary, which can reveal after the page body has
+ * painted. Measured under CPU throttling: the decision is on screen for about
+ * 200 ms before the title arrives. A scan in that stretch audits the
+ * navigation, not the screen, so the title is waited for first, and asserted:
+ * a screen that never gets one still fails here.
+ */
 async function expectNoAxeViolations(page: Page): Promise<void> {
+  await expect(page).toHaveTitle("HealthLog");
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
