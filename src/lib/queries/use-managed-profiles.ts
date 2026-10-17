@@ -109,20 +109,33 @@ function useInvalidateManagedProfiles() {
 }
 
 /**
+ * Runs a request that the server may hold back for a fresh proof — in a
+ * component, `useRecentProof().run`.
+ *
+ * Every write in this family resolves `requireFreshMfa`, whose 401
+ * `auth.stepup.required` names the proofs that clear it in `meta.methods`.
+ * The guard opens the re-proof dialog on that answer, posts the proof and
+ * sends the request once more, so the mutation settles with the real outcome
+ * instead of a sentence telling somebody to confirm a factor with nowhere to
+ * do it. The argument is required rather than defaulted: a caller that forgot
+ * it would compile, render the refusal as text, and be the defect again.
+ */
+export type ProofGuard = <T>(action: () => Promise<T>) => Promise<T>;
+
+/**
  * Create a record somebody looks after.
  *
  * `requireFreshMfa` guards the route, so a 401 carrying
  * `meta.errorCode: auth.stepup.required` is the EXPECTED first answer for
- * anybody who has a second factor and has not proved it recently. The form
- * routes that into the app's re-verification path rather than into a generic
- * failure — see `managed-profile-create-form.tsx`.
+ * anybody who has a second factor and has not proved it recently. `guard`
+ * turns it into the re-proof dialog and a second attempt.
  */
-export function useCreateManagedProfile() {
+export function useCreateManagedProfile(guard: ProofGuard) {
   const invalidate = useInvalidateManagedProfiles();
   return useMutation({
     mutationKey: queryKeys.managedProfileCreate(),
     mutationFn: (input: CreateManagedProfileInput) =>
-      apiPost<ManagedProfileView>("/api/managed-profiles", input),
+      guard(() => apiPost<ManagedProfileView>("/api/managed-profiles", input)),
     onSuccess: invalidate,
   });
 }
@@ -151,21 +164,23 @@ export function useManagedProfile(profileId: string, enabled = true) {
  *
  * Guarded by `requireFreshMfa` like every other act in this family, so a 401
  * carrying `meta.errorCode: auth.stepup.required` is the expected first answer
- * rather than a failure — the form routes it into the re-verification path.
+ * rather than a failure — `guard` routes it into the re-proof dialog.
  *
  * The whole family is invalidated on success because the display name is what
  * the switcher, the record banner and this card all identify the record by, and
  * the record's own identity read is dropped alongside so a second edit opens
  * from the server's version rather than from the one that was just replaced.
  */
-export function useUpdateManagedProfile() {
+export function useUpdateManagedProfile(guard: ProofGuard) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: queryKeys.managedProfileUpdate(),
     mutationFn: (input: UpdateManagedProfileInput) =>
-      apiPatch<ManagedProfileView>(
-        `/api/managed-profiles/${input.profileId}`,
-        managedProfileEditBody(input),
+      guard(() =>
+        apiPatch<ManagedProfileView>(
+          `/api/managed-profiles/${input.profileId}`,
+          managedProfileEditBody(input),
+        ),
       ),
     onSuccess: (_result, input) => {
       invalidateManagedProfileReads(queryClient);
@@ -250,12 +265,14 @@ export function useManagedProfileGuardians(profileId: string, enabled = true) {
  * floor. A Guardian may not strand a record with nobody looking after it, but
  * they may end the record.
  */
-export function useDeleteManagedProfile() {
+export function useDeleteManagedProfile(guard: ProofGuard) {
   const invalidate = useInvalidateManagedProfiles();
   return useMutation({
     mutationKey: queryKeys.managedProfileDelete(),
     mutationFn: (profileId: string) =>
-      apiDelete<{ deleted: true }>(`/api/managed-profiles/${profileId}`),
+      guard(() =>
+        apiDelete<{ deleted: true }>(`/api/managed-profiles/${profileId}`),
+      ),
     onSuccess: invalidate,
   });
 }
@@ -285,14 +302,16 @@ export interface InviteManagedProfileGuardianInput {
  * here accepts on their behalf, and until they accept they do not count toward
  * the last-Guardian floor.
  */
-export function useInviteManagedProfileGuardian() {
+export function useInviteManagedProfileGuardian(guard: ProofGuard) {
   const invalidate = useInvalidateManagedProfiles();
   return useMutation({
     mutationKey: queryKeys.managedProfileGuardianInvite(),
     mutationFn: (input: InviteManagedProfileGuardianInput) =>
-      apiPost(
-        `/api/managed-profiles/${input.profileId}/guardians`,
-        guardianInviteBody(input),
+      guard(() =>
+        apiPost(
+          `/api/managed-profiles/${input.profileId}/guardians`,
+          guardianInviteBody(input),
+        ),
       ),
     onSuccess: invalidate,
   });
@@ -328,7 +347,7 @@ export function guardianInviteBody(input: InviteManagedProfileGuardianInput): {
  * `variables` carries both ids so a refusal can be rendered on the guardian row
  * it belongs to rather than on the panel.
  */
-export function useRemoveManagedProfileGuardian() {
+export function useRemoveManagedProfileGuardian(guard: ProofGuard) {
   const invalidate = useInvalidateManagedProfiles();
   return useMutation({
     mutationKey: queryKeys.managedProfileGuardianRemove(),
@@ -338,7 +357,10 @@ export function useRemoveManagedProfileGuardian() {
     }: {
       profileId: string;
       grantId: string;
-    }) => apiDelete(`/api/managed-profiles/${profileId}/guardians/${grantId}`),
+    }) =>
+      guard(() =>
+        apiDelete(`/api/managed-profiles/${profileId}/guardians/${grantId}`),
+      ),
     onSuccess: invalidate,
   });
 }
@@ -409,19 +431,22 @@ export function useManagedProfileHandover(profileId: string, enabled = true) {
 
 /**
  * Mint the handover link. Step-up gated like every act in this family, so a
- * 401 carrying `auth.stepup.required` is the expected first answer.
+ * 401 carrying `auth.stepup.required` is the expected first answer, and
+ * `guard` turns it into the re-proof dialog and a second attempt.
  *
  * The link lives in the mutation's `data` and nowhere else: it is shown once
  * and never cached under a query key.
  */
-export function useCreateManagedProfileHandover() {
+export function useCreateManagedProfileHandover(guard: ProofGuard) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: queryKeys.managedProfileHandoverCreate(),
     mutationFn: async (input: CreateManagedProfileHandoverInput) => {
-      const link = await apiPost<ManagedProfileHandoverLink>(
-        `/api/managed-profiles/${input.profileId}/handover`,
-        handoverCreateBody(input),
+      const link = await guard(() =>
+        apiPost<ManagedProfileHandoverLink>(
+          `/api/managed-profiles/${input.profileId}/handover`,
+          handoverCreateBody(input),
+        ),
       );
       // Lazy chunk, as the admin invite and the share link do: the QR encoder
       // is needed here, at mint time, and nowhere else.

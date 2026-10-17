@@ -7,6 +7,10 @@ import {
   GrantActionAlert,
   grantActionErrorKey,
 } from "@/components/settings/access/grant-action-error";
+import {
+  ReproofCancelledError,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { ManagedProfileCreateForm } from "@/components/settings/access/managed-profile-create-form";
 import { ManagedProfileEditForm } from "@/components/settings/access/managed-profile-edit-form";
 import { ManagedProfileGuardians } from "@/components/settings/access/managed-profile-guardians";
@@ -69,11 +73,17 @@ import {
 export function ManagedProfileCard() {
   const { t } = useTranslations();
   const { user } = useAuth();
-  const remove = useDeleteManagedProfile();
+  // Ending a record is gated on a fresh second factor; the dialog collects it
+  // and the deletion goes out once more.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
+  const remove = useDeleteManagedProfile(recentProof.run);
   const profiles = managedProfilesOf(user?.accountAccess?.accounts);
 
   return (
     <SettingsCard data-slot="managed-profile-card">
+      {recentProof.dialog}
       <SettingsCardHeader
         anchor="managed-profiles"
         icon={UserRoundCog}
@@ -131,7 +141,10 @@ function ManagedProfileRow({
   const { t, tCount } = useTranslations();
   const guardians = useManagedProfileGuardians(profile.accountId);
   const name = accountLabel(profile);
-  const failed = remove.isError && remove.variables === profile.accountId;
+  const failed =
+    remove.isError &&
+    !(remove.error instanceof ReproofCancelledError) &&
+    remove.variables === profile.accountId;
   // Per row, not per card. The edit form reads the record's identity when it
   // opens, so one shared flag would put every row's form on the wire the
   // moment any of them was opened.

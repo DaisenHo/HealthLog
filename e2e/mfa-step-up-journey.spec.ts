@@ -52,7 +52,10 @@ import {
  *     floor advanced on every accept (`src/lib/auth/mfa/verify-factor.ts`), so
  *     a code already spent is refused even inside its own 30-second life;
  *   - the sensitive action once the step-up stamp has aged out — 401 with
- *     `meta.errorCode = "auth.stepup.required"`, and the card's prompt;
+ *     `meta.errorCode = "auth.stepup.required"` naming the proofs it would
+ *     take, and the re-proof dialog in place of the rotation. Cancelling it
+ *     sends nothing more and changes nothing; proving the factor there runs
+ *     the rotation once more, and only then does it go through;
  *   - a recovery code presented a second time — 401. The matched row is burned
  *     on first use;
  *   - one login past the documented per-IP cap — 429, with the bucket's own
@@ -125,6 +128,20 @@ async function alignToStepBoundary(page: Page): Promise<void> {
   await page.waitForTimeout(nextBoundary - now);
 }
 
+function stepOf(atMs: number): number {
+  return Math.floor(atMs / (TOTP_PERIOD_SECONDS * 1000));
+}
+
+/**
+ * Park until the TOTP step after `step` has begun, so a code minted for now is
+ * above the replay floor that step's code left. Bounded by one period.
+ */
+async function alignPastStep(page: Page, step: number): Promise<void> {
+  const nextBoundary = (step + 1) * TOTP_PERIOD_SECONDS * 1000;
+  const wait = nextBoundary - Date.now();
+  if (wait > 0) await page.waitForTimeout(wait + 250);
+}
+
 async function sessionCookie(context: BrowserContext) {
   const cookies = await context.cookies();
   return cookies.find((c) => c.name === "healthlog_session");
@@ -170,17 +187,14 @@ async function submitFactor(page: Page, code: string): Promise<Response> {
 }
 
 /**
- * Open the regeneration dialog, confirm it, and return the route's answer.
+ * Open the regeneration dialog and confirm it, without waiting for the end.
  *
  * The confirming click calls `preventDefault()` so the dialog survives the
- * request in flight; the mutation takes it down again when the request
- * settles, whatever the answer was. That matters on a REFUSAL, where the card
- * behind the dialog is the only thing that says why — on a success the
- * fresh-codes panel replaces the whole branch the dialog lives in and it would
- * unmount either way. So the dialog being gone here is a product assertion,
- * not housekeeping: nothing in this helper dismisses it.
+ * request in flight, and it stays up for as long as the rotation is pending —
+ * which, when the step-up has aged out, includes the re-proof dialog that opens
+ * above it. Returns the route's first answer.
  */
-async function regenerateRecoveryCodes(page: Page): Promise<Response> {
+async function confirmRegeneration(page: Page): Promise<Response> {
   await page.getByTestId("recovery-regenerate").click();
   const answer = page.waitForResponse(
     (res) =>
@@ -188,9 +202,35 @@ async function regenerateRecoveryCodes(page: Page): Promise<Response> {
       res.request().method() === "POST",
   );
   await page.getByTestId("recovery-regenerate-confirm").click();
-  const settled = await answer;
+  return answer;
+}
+
+/**
+ * Open the regeneration dialog, confirm it, and return the route's answer.
+ *
+ * The mutation takes the dialog down again when the request settles; on a
+ * success the fresh-codes panel replaces the whole branch the dialog lives in.
+ * So the dialog being gone here is a product assertion, not housekeeping:
+ * nothing in this helper dismisses it.
+ */
+async function regenerateRecoveryCodes(page: Page): Promise<Response> {
+  const settled = await confirmRegeneration(page);
   await expect(page.getByTestId("recovery-regenerate-dialog")).toBeHidden();
   return settled;
+}
+
+/** The first refusal of an aged-out rotation: what the server said. */
+async function expectStepUpRefusal(answer: Response): Promise<void> {
+  expect(answer.status()).toBe(401);
+  const body = (await answer.json()) as {
+    data: null;
+    meta?: { errorCode?: string; methods?: string[] };
+  };
+  expect(body.data).toBeNull();
+  expect(body.meta?.errorCode).toBe("auth.stepup.required");
+  // The proofs that clear it. A password never stands in for the second
+  // factor, so it is not offered.
+  expect(body.meta?.methods).toEqual(["totp"]);
 }
 
 /** The codes currently on screen, gated on the panel being painted. */
@@ -259,6 +299,7 @@ test.describe("second factor", () => {
     let secret = "";
     let spentCode = "";
     let liveRecoveryCodes: string[] = [];
+    let enrolmentStep = 0;
 
     await test.step("signs in with a password alone while no factor exists", async () => {
       const answer = await submitPassword(page, account);
@@ -292,9 +333,11 @@ test.describe("second factor", () => {
       // up enrolled against different secrets.
       expect(setupBody.data.otpauthUri).toContain(secret);
 
+      const enrolledAt = Date.now();
+      enrolmentStep = stepOf(enrolledAt);
       await page
         .getByTestId("totp-confirm-code")
-        .fill(totpCodeAt(secret, Date.now()));
+        .fill(totpCodeAt(secret, enrolledAt));
       const confirm = page.waitForResponse(
         (res) =>
           res.url().includes("/api/auth/me/mfa/totp/confirm") &&
@@ -320,20 +363,69 @@ test.describe("second factor", () => {
       liveRecoveryCodes = rotated;
     });
 
-    await test.step("refuses the same rotation once the step-up has aged out", async () => {
+    await test.step("asks for the factor again once the step-up has aged out", async () => {
       await page.getByTestId("recovery-codes-dismiss").click();
       await expireStepUp(account);
 
-      const answer = await regenerateRecoveryCodes(page);
-      expect(answer.status()).toBe(401);
-      const body = (await answer.json()) as {
-        data: null;
-        meta?: { errorCode?: string };
-      };
-      expect(body.data).toBeNull();
-      expect(body.meta?.errorCode).toBe("auth.stepup.required");
-      // And the card says so, on a card the closed dialog no longer covers.
-      await expect(page.getByTestId("totp-error")).toBeVisible();
+      const regenerateDialog = page.getByTestId("recovery-regenerate-dialog");
+      const reproofDialog = page.getByTestId("factor-reauth-dialog");
+      const regenerateCalls: string[] = [];
+      page.on("request", (req) => {
+        if (req.url().includes(REGENERATE_ENDPOINT))
+          regenerateCalls.push(req.method());
+      });
+
+      // The refusal opens the re-proof dialog above the pending confirmation,
+      // and the dialog holds the focus.
+      await expectStepUpRefusal(await confirmRegeneration(page));
+      await expect(reproofDialog).toBeVisible();
+      await expect
+        .poll(() =>
+          reproofDialog.evaluate((el) => el.contains(document.activeElement)),
+        )
+        .toBe(true);
+      await expect(page.getByTestId("totp-error")).toBeHidden();
+
+      // Cancelled: nothing more is sent, both dialogs go, no sentence and no
+      // fresh batch on the card. The live codes are still the live codes.
+      await reproofDialog.getByRole("button", { name: /cancel/i }).click();
+      await expect(reproofDialog).toBeHidden();
+      await expect(regenerateDialog).toBeHidden();
+      await expect(page.getByTestId("totp-error")).toBeHidden();
+      await expect(page.getByTestId("recovery-codes")).toBeHidden();
+      expect(regenerateCalls).toEqual(["POST"]);
+
+      // Proved: the rotation runs once more and goes through.
+      await expectStepUpRefusal(await confirmRegeneration(page));
+      await expect(reproofDialog).toBeVisible();
+      // The code the enrolment spent is below the replay floor; wait for the
+      // step after it when it is still current. Bounded by one period.
+      await alignPastStep(page, enrolmentStep);
+      await reproofDialog
+        .locator('input[autocomplete="one-time-code"]')
+        .fill(totpCodeAt(secret, Date.now()));
+      const proof = page.waitForResponse(
+        (res) =>
+          res.url().includes("/api/auth/reproof") &&
+          res.request().method() === "POST",
+      );
+      const retried = page.waitForResponse(
+        (res) =>
+          res.url().includes(REGENERATE_ENDPOINT) &&
+          res.request().method() === "POST" &&
+          res.status() === 200,
+      );
+      await page.getByTestId("factor-reauth-submit").click();
+      expect((await proof).status()).toBe(200);
+      expect((await retried).status()).toBe(200);
+      await expect(reproofDialog).toBeHidden();
+      await expect(regenerateDialog).toBeHidden();
+      expect(regenerateCalls).toEqual(["POST", "POST", "POST"]);
+
+      const rotated = await visibleRecoveryCodes(page);
+      expect(rotated).not.toEqual(liveRecoveryCodes);
+      await expect(page.getByTestId("totp-error")).toBeHidden();
+      liveRecoveryCodes = rotated;
     });
 
     await test.step("asks for the second factor on the next sign-in", async () => {

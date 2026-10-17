@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.43.3] — 2026-10-17
+
+### Fixed
+
+- **Every action behind a second-factor check opens the confirmation
+  dialog.** Handing over a managed profile, creating, editing or deleting
+  one, adding or removing a guardian, turning off TOTP, regenerating recovery
+  codes, removing a security key or passkey, changing the password, deleting
+  data or the account and the admin key rotation only showed a sentence when
+  the second factor needed confirming. They now open the confirmation dialog
+  and retry once confirmed, also after a single sign-on login (Refs #959).
+  The refusal names the methods the account has in `meta.methods`.
+- **A passkey counts as a second factor for managed profiles.** An account
+  whose only strong sign-in is a passkey was told to set up a second factor
+  before it could create, edit, hand over or delete a managed profile or
+  manage its guardians. A passkey sign-in, or confirming the passkey in the
+  dialog, is now enough; the admin key rotation follows the same rule.
+  Password sign-in, the native app and the actions that ask for a fresh
+  factor only from accounts with TOTP or a security key are unchanged.
+- An account that signs in only through single sign-on is no longer offered
+  a password field it cannot fill when it sets up a second factor; it is
+  asked to sign in again.
+
 ## [1.43.2] — 2026-10-16
 
 ### Fixed

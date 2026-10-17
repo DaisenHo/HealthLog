@@ -10,6 +10,10 @@ import {
   genderFromSelect,
 } from "@/components/settings/access/managed-profile-create-form";
 import { stepUpErrorKey } from "@/components/settings/access/grant-action-error";
+import {
+  ReproofCancelledError,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
 import { Button } from "@/components/ui/button";
@@ -124,7 +128,12 @@ function ManagedProfileEditFields({
   onDone: () => void;
 }) {
   const { t, locale: actorLocale } = useTranslations();
-  const update = useUpdateManagedProfile();
+  // Gated on a fresh second factor: the dialog collects it and the request
+  // goes out once more. A closed dialog changed nothing and says nothing.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
+  const update = useUpdateManagedProfile(recentProof.run);
 
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(profile.dateOfBirth ?? "");
@@ -172,143 +181,151 @@ function ManagedProfileEditFields({
         // Nothing is reset: a refused save is one somebody is being asked to
         // retry, and a form that restored the server's values would throw the
         // edit away to explain that it did not land.
-        onError: (err) => setError(t(editManagedProfileErrorKey(err))),
+        onError: (err) => {
+          if (err instanceof ReproofCancelledError) return;
+          setError(t(editManagedProfileErrorKey(err)));
+        },
       },
     );
   };
 
   return (
-    <form
-      onSubmit={submit}
-      data-slot="managed-profile-edit-form"
-      className="space-y-3"
-    >
-      <div className="space-y-1.5">
-        <Label htmlFor={`managed-profile-edit-name-${profile.id}`}>
-          {t("recordSharing.managed.nameLabel")}
-        </Label>
-        <Input
-          id={`managed-profile-edit-name-${profile.id}`}
-          data-slot="managed-profile-edit-name"
-          value={displayName}
-          onChange={(e) => {
-            setDisplayName(e.target.value);
-            setError(null);
-          }}
-          autoComplete="off"
-          maxLength={80}
-          aria-invalid={nameIssue !== null ? "true" : undefined}
-        />
-        <FieldGuidance
-          slot="managed-profile-edit-name"
-          error={nameIssue === null ? null : t(nameIssue)}
-        />
-      </div>
+    <>
+      {/* Outside the form: the dialog's own form must not submit this one
+          through the portal. */}
+      {recentProof.dialog}
+      <form
+        onSubmit={submit}
+        data-slot="managed-profile-edit-form"
+        className="space-y-3"
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor={`managed-profile-edit-name-${profile.id}`}>
+            {t("recordSharing.managed.nameLabel")}
+          </Label>
+          <Input
+            id={`managed-profile-edit-name-${profile.id}`}
+            data-slot="managed-profile-edit-name"
+            value={displayName}
+            onChange={(e) => {
+              setDisplayName(e.target.value);
+              setError(null);
+            }}
+            autoComplete="off"
+            maxLength={80}
+            aria-invalid={nameIssue !== null ? "true" : undefined}
+          />
+          <FieldGuidance
+            slot="managed-profile-edit-name"
+            error={nameIssue === null ? null : t(nameIssue)}
+          />
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={`managed-profile-edit-dob-${profile.id}`}>
-          {t("recordSharing.managed.dobLabel")}
-        </Label>
-        <DateField
-          id={`managed-profile-edit-dob-${profile.id}`}
-          data-slot="managed-profile-edit-dob"
-          value={dateOfBirth}
-          onChange={setDateOfBirth}
-        />
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`managed-profile-edit-dob-${profile.id}`}>
+            {t("recordSharing.managed.dobLabel")}
+          </Label>
+          <DateField
+            id={`managed-profile-edit-dob-${profile.id}`}
+            data-slot="managed-profile-edit-dob"
+            value={dateOfBirth}
+            onChange={setDateOfBirth}
+          />
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={`managed-profile-edit-locale-${profile.id}`}>
-          {t("recordSharing.managed.localeLabel")}
-        </Label>
-        <NativeSelect
-          id={`managed-profile-edit-locale-${profile.id}`}
-          data-slot="managed-profile-edit-locale"
-          className="w-full"
-          value={locale}
-          onChange={(e) => setLocale(e.target.value as Locale)}
-        >
-          {locales.map((option) => (
-            <option key={option} value={option}>
-              {localeLabels[option]}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`managed-profile-edit-locale-${profile.id}`}>
+            {t("recordSharing.managed.localeLabel")}
+          </Label>
+          <NativeSelect
+            id={`managed-profile-edit-locale-${profile.id}`}
+            data-slot="managed-profile-edit-locale"
+            className="w-full"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as Locale)}
+          >
+            {locales.map((option) => (
+              <option key={option} value={option}>
+                {localeLabels[option]}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={`managed-profile-edit-gender-${profile.id}`}>
-          {t("recordSharing.managed.genderLabel")}
-        </Label>
-        <NativeSelect
-          id={`managed-profile-edit-gender-${profile.id}`}
-          data-slot="managed-profile-edit-gender"
-          className="w-full"
-          value={gender ?? ""}
-          onChange={(e) => setGender(genderFromSelect(e.target.value))}
-        >
-          {MANAGED_PROFILE_GENDER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {t(option.labelKey)}
-            </option>
-          ))}
-        </NativeSelect>
-        <p className="text-muted-foreground text-xs">
-          {t("recordSharing.managed.genderHint")}
-        </p>
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`managed-profile-edit-gender-${profile.id}`}>
+            {t("recordSharing.managed.genderLabel")}
+          </Label>
+          <NativeSelect
+            id={`managed-profile-edit-gender-${profile.id}`}
+            data-slot="managed-profile-edit-gender"
+            className="w-full"
+            value={gender ?? ""}
+            onChange={(e) => setGender(genderFromSelect(e.target.value))}
+          >
+            {MANAGED_PROFILE_GENDER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-muted-foreground text-xs">
+            {t("recordSharing.managed.genderHint")}
+          </p>
+        </div>
 
-      <div className="space-y-1.5">
-        <TimezonePicker
-          id={`managed-profile-edit-timezone-${profile.id}`}
-          value={timezone}
-          onChange={(next) => {
-            setTimezone(next);
-            setError(null);
-          }}
-          hint={t("recordSharing.managed.timezoneHint")}
-        />
-        <FieldGuidance
-          slot="managed-profile-edit-timezone"
-          error={timezoneIssue === null ? null : t(timezoneIssue)}
-        />
-      </div>
+        <div className="space-y-1.5">
+          <TimezonePicker
+            id={`managed-profile-edit-timezone-${profile.id}`}
+            value={timezone}
+            onChange={(next) => {
+              setTimezone(next);
+              setError(null);
+            }}
+            hint={t("recordSharing.managed.timezoneHint")}
+          />
+          <FieldGuidance
+            slot="managed-profile-edit-timezone"
+            error={timezoneIssue === null ? null : t(timezoneIssue)}
+          />
+        </div>
 
-      {/* Above the action row, per UI-STANDARDS §12: nothing follows it. */}
-      {error && (
-        <p
-          role="alert"
-          data-slot="managed-profile-edit-error"
-          className="text-destructive text-sm"
-        >
-          {error}
-        </p>
-      )}
+        {/* Above the action row, per UI-STANDARDS §12: nothing follows it. */}
+        {error && (
+          <p
+            role="alert"
+            data-slot="managed-profile-edit-error"
+            className="text-destructive text-sm"
+          >
+            {error}
+          </p>
+        )}
 
-      <SettingsCardActions>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          data-slot="managed-profile-edit-cancel"
-          onClick={onDone}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          type="submit"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          data-slot="managed-profile-edit-submit"
-          disabled={blocked || update.isPending}
-        >
-          {update.isPending
-            ? t("recordSharing.managed.editSaving")
-            : t("recordSharing.managed.editSave")}
-        </Button>
-      </SettingsCardActions>
-    </form>
+        <SettingsCardActions>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            data-slot="managed-profile-edit-cancel"
+            onClick={onDone}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            data-slot="managed-profile-edit-submit"
+            disabled={blocked || update.isPending}
+          >
+            {update.isPending
+              ? t("recordSharing.managed.editSaving")
+              : t("recordSharing.managed.editSave")}
+          </Button>
+        </SettingsCardActions>
+      </form>
+    </>
   );
 }
 

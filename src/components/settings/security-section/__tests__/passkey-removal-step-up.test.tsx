@@ -15,11 +15,12 @@
  *   3. an ordinary failure still shows its own message rather than being
  *      swallowed by the step-up sentence,
  *   4. the sentence resolves in more than one locale,
- *   5. the sentence names the recovery the web actually has. The mint endpoint
- *      is Bearer-only by design, so there is no in-page re-proof dialog for a
- *      cookie session; signing in again is the recovery, and a passkey login
- *      stamps `mfaVerifiedAt`. If that ever changes, this assertion is the
- *      reminder that the copy has to change with it.
+ *   5. the sentence names a recovery that always exists. A refusal that names
+ *      its proofs (`meta.methods`) opens the re-proof dialog instead and never
+ *      reaches this sentence (`useRecentProof`, pinned by
+ *      `step-up-web-caller-guard.test.ts`); what is left is a refusal the
+ *      dialog cannot take up, and signing in again is the recovery there — a
+ *      passkey login stamps `mfaVerifiedAt`.
  *
  * Mutation check: return `err.message` from the removal's `onError` and cases 1,
  * 2 and 4 go red; narrow `describeStepUp` to the exact `auth.stepup.required`
@@ -85,9 +86,9 @@ describe("passkey removal — the step-up refusal a person sees", () => {
   });
 
   it("names the recovery the web actually has", () => {
-    // Not "verify to continue": there is no in-page re-proof for a cookie
-    // session, because the elevation mint is Bearer-only by design. Signing in
-    // again is the recovery, and a passkey login stamps the session.
+    // The dialog handles every refusal that names its proofs; this sentence
+    // is for the rest, where signing in again is the recovery and a passkey
+    // login stamps the session.
     expect(STEP_UP_SENTENCE.toLowerCase()).toContain("sign in again");
   });
 

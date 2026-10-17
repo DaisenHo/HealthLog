@@ -21,6 +21,11 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import {
+  recentProofErrorMessage,
+  throwIfReproofRequired,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { loadDocument } from "@/lib/navigation/load-document";
 
 /**
@@ -57,6 +62,9 @@ export function AdvancedSection() {
 function DataResetCard() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -68,11 +76,18 @@ function DataResetCard() {
     setMsg(null);
     setMsgType(null);
     try {
-      const res = await apiFetchRaw("/api/settings/data", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: "DELETE" }),
-      });
+      // An account with a second factor wipes its record only with that
+      // factor proved within five minutes; the shared dialog collects it when
+      // the server asks and the wipe is sent again.
+      const res = await recentProof.run(async () =>
+        throwIfReproofRequired(
+          await apiFetchRaw("/api/settings/data", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ confirm: "DELETE" }),
+          }),
+        ),
+      );
       const json = await res.json();
       if (!res.ok) {
         setMsg(json.error || t("settings.dangerZoneDeleteFailed"));
@@ -84,8 +99,13 @@ function DataResetCard() {
       setMsg(t("settings.dangerZoneSuccess"));
       setMsgType("success");
       setConfirmOpen(false);
-    } catch {
-      setMsg(t("settings.dangerZoneDeleteFailed"));
+    } catch (err) {
+      const message = recentProofErrorMessage(
+        err,
+        t("settings.dangerZoneDeleteFailed"),
+      );
+      if (message === null) return;
+      setMsg(message);
       setMsgType("error");
     } finally {
       setDeleting(false);
@@ -94,6 +114,7 @@ function DataResetCard() {
 
   return (
     <SettingsCard data-slot="settings-data-reset-card">
+      {recentProof.dialog}
       {/* v1.4.43 QoL (L5) — dropped the `AlertTriangle` icon and
           neutralised the title colour so the danger-zone shaping is
           GitHub-style (red CTA only) rather than red-on-red-on-red.
@@ -193,6 +214,9 @@ function DataResetCard() {
  */
 function AccountDeleteCard() {
   const { t } = useTranslations();
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -204,11 +228,17 @@ function AccountDeleteCard() {
     setMsg(null);
     setMsgType(null);
     try {
-      const res = await apiFetchRaw("/api/settings/account", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: "DELETE_ACCOUNT" }),
-      });
+      // Same gate as the wipe: a second factor proved within five minutes on
+      // an account that has one, collected by the shared dialog.
+      const res = await recentProof.run(async () =>
+        throwIfReproofRequired(
+          await apiFetchRaw("/api/settings/account", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ confirm: "DELETE_ACCOUNT" }),
+          }),
+        ),
+      );
       if (!res.ok) {
         try {
           const json = await res.json();
@@ -229,15 +259,21 @@ function AccountDeleteCard() {
       setTimeout(() => {
         loadDocument("/auth/login");
       }, 1_500);
-    } catch {
-      setMsg(t("settings.deleteAccountFailed"));
-      setMsgType("error");
+    } catch (err) {
       setDeleting(false);
+      const message = recentProofErrorMessage(
+        err,
+        t("settings.deleteAccountFailed"),
+      );
+      if (message === null) return;
+      setMsg(message);
+      setMsgType("error");
     }
   }
 
   return (
     <SettingsCard data-slot="settings-account-delete-card">
+      {recentProof.dialog}
       <SettingsCardHeader
         anchor="delete-account"
         icon={Trash2}

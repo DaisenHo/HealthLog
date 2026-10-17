@@ -16,6 +16,8 @@ vi.mock("@/lib/db", () => ({
     apiToken: { findUnique: vi.fn(), update: vi.fn() },
     user: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn() },
+    // The stale refusal names the proofs the account holds, passkeys among them.
+    passkey: { count: vi.fn() },
     stepUpElevation: { findUnique: vi.fn() },
     $queryRaw: vi.fn(),
   },

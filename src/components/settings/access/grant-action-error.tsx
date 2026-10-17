@@ -65,7 +65,7 @@ const STEP_UP_ACTIONS = new Set<GrantAction>([
  *
  * `requireFreshMfa` refuses for two different reasons and says which: a stale
  * proof (`auth.stepup.required`), which the person clears by proving their
- * factor, and NO factor at all (`auth.stepup.mfa_not_enrolled`), which they
+ * factor in the re-proof dialog (`useRecentProof`), and NO factor at all (`auth.stepup.mfa_not_enrolled`), which they
  * cannot clear that way. Collapsing the two tells somebody with no second
  * factor to confirm one — a dead end offered by the very surface that owns
  * the route out of it.
@@ -74,9 +74,19 @@ const STEP_UP_ACTIONS = new Set<GrantAction>([
  * invitation, and the two acts below) so the two sentences cannot come apart.
  */
 export function stepUpErrorKey(err: ApiError): string {
-  return err.meta?.errorCode === "auth.stepup.mfa_not_enrolled"
-    ? "recordSharing.managed.errorMfaRequired"
-    : "recordSharing.managed.errorStepUp";
+  switch (err.meta?.errorCode) {
+    case "auth.stepup.mfa_not_enrolled":
+      return "recordSharing.managed.errorMfaRequired";
+    // The re-proof dialog had nothing to offer (an account that signs in
+    // through an identity provider only); signing in again is the way through.
+    case "auth.reproof.sign_in_again":
+      return "settings.reproof.signInAgain";
+    // A stale proof normally never gets here: every action in this family runs
+    // through the re-proof dialog, which clears it and sends the request again.
+    // This is the sentence for a refusal the dialog could not take up.
+    default:
+      return "recordSharing.managed.errorStepUp";
+  }
 }
 
 /**

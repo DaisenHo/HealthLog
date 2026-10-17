@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.43.2
+  version: 1.43.3
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -2333,7 +2333,11 @@ paths:
         /api/mcp/tokens, POST /api/tokens/measurements, POST /api/tokens/workouts, POST /api/tokens/documents, and the
         admin backup download, upload and restore, the admin data wipe and the admin password reset. Those answer 401
         `auth.reproof.required` with `meta.methods` (the proofs this account can give) when the session signed in or
-        re-proved more than five minutes ago.
+        re-proved more than five minutes ago. A `totp`, `webauthn` or `passkey` proof here also clears the routes that
+        ask for a fresh second factor (the managed-profile acts, the second-factor and passkey changes, the password
+        change, account deletion, the data wipe and key rotation): on a browser session those answer 401
+        `auth.stepup.required` with `meta.methods` naming the possession proofs the account holds, and the web re-proves
+        here and retries.
 
 
         The body takes the same shapes as POST /api/auth/step-up. On an account with a second factor only `totp`,
@@ -21681,10 +21685,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManagedProfileEnvelope"
         "401":
-          description: "No fresh second-factor proof (`meta.errorCode: auth.stepup.required`), or none enrolled at all
-            (`meta.errorCode: auth.stepup.mfa_not_enrolled`) — this gate is unconditional, so an account without a
-            second factor cannot create a managed profile until it enrols one. The ordinary unauthenticated 401 arrives
-            here too, including for a Bearer caller, whose transport this gate does not read."
+          description: "No fresh second-factor proof (`meta.errorCode: auth.stepup.required`, with `meta.methods` naming the
+            proofs that clear it at POST /api/auth/reproof), or none enrolled at all (`meta.errorCode:
+            auth.stepup.mfa_not_enrolled`) — this gate is unconditional, so an account with neither a second factor nor
+            a passkey cannot create a managed profile until it enrols one. A passkey counts: an account whose only
+            strong credential is a passkey is offered `passkey` in `meta.methods`. The ordinary unauthenticated 401
+            arrives here too, including for a Bearer caller, whose transport this gate does not read."
           content:
             application/json:
               schema:
@@ -34613,8 +34619,9 @@ components:
         Guardian reading it: they decide how the profile's own reminders are worded and when its day starts. Strict — an
         unexpected field is a 422 rather than an ignored key. Cookie transport only and step-up gated
         (`requireFreshMfa`, unconditional): a Bearer caller cannot mint a credential-less person and a permanent
-        management relationship, and an account with no second factor enrolled is refused rather than waved through.
-        Rate-limited to ten an hour per caller."
+        management relationship, and an account with no second factor enrolled is refused rather than waved through. A
+        primary passkey counts as that factor here: a passkey sign-in or a passkey re-proof at POST /api/auth/reproof
+        stamps the session. Rate-limited to ten an hour per caller."
     UpdateManagedProfileRequest:
       type: object
       properties:

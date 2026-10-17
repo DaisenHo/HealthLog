@@ -16,6 +16,11 @@ import {
 } from "@/components/settings/account-section/account-section-utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import {
+  recentProofErrorMessage,
+  throwIfReproofRequired,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 
 /**
  * Change-password card.
@@ -40,6 +45,9 @@ export function PasswordCard() {
   const [msg, setMsg] = useState<StatusMessage | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -55,15 +63,23 @@ export function PasswordCard() {
     }
 
     try {
-      const res = await apiFetchRaw("/api/auth/password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-          confirmPassword,
-        }),
+      // An account with a second factor changes its password only with that
+      // factor proved within five minutes; the shared dialog collects it when
+      // the server asks and the change is sent again.
+      const body = JSON.stringify({
+        currentPassword,
+        newPassword,
+        confirmPassword,
       });
+      const res = await recentProof.run(async () =>
+        throwIfReproofRequired(
+          await apiFetchRaw("/api/auth/password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+          }),
+        ),
+      );
       const json = await res.json();
 
       if (!res.ok) {
@@ -79,8 +95,10 @@ export function PasswordCard() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch {
-      setMsg({ key: "common.networkError" });
+    } catch (err) {
+      const message = recentProofErrorMessage(err, "");
+      if (message === null) return;
+      setMsg(message ? { text: message } : { key: "common.networkError" });
       setMsgType("error");
     } finally {
       setSaving(false);
@@ -89,6 +107,7 @@ export function PasswordCard() {
 
   return (
     <>
+      {recentProof.dialog}
       {/* The action is this card's only one, so it sits in the card's action
           row like every other primary. It stays full-width under `sm` — the
           German "Passwort ändern" is long enough that a right-hugging button
