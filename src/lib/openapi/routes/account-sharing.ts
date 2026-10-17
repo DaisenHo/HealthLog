@@ -1089,7 +1089,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "401": {
           description:
-            "No fresh second-factor proof (`meta.errorCode: auth.stepup.required`), or none enrolled at all (`meta.errorCode: auth.stepup.mfa_not_enrolled`) — this gate is unconditional, so an account without a second factor cannot create a managed profile until it enrols one. The ordinary unauthenticated 401 arrives here too, including for a Bearer caller, whose transport this gate does not read.",
+            "No fresh second-factor proof (`meta.errorCode: auth.stepup.required`, with `meta.methods` naming the proofs that clear it at POST /api/auth/reproof), or none enrolled at all (`meta.errorCode: auth.stepup.mfa_not_enrolled`) — this gate is unconditional, so an account without a second factor cannot create a managed profile until it enrols one. The ordinary unauthenticated 401 arrives here too, including for a Bearer caller, whose transport this gate does not read.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "429": {

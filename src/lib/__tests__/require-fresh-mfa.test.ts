@@ -82,6 +82,46 @@ describe("requireFreshMfa", () => {
     });
   });
 
+  /**
+   * The stale refusal names what clears it, so the browser can open the
+   * re-proof dialog instead of printing a sentence (#959): the possession
+   * proofs the account holds, never a password, which stamps `reproofAt` only
+   * and would leave this gate shut.
+   */
+  it("names the possession proofs on a stale refusal", async () => {
+    mockSession({ ...MFA_USER, passwordHash: "argon2-hash" });
+    vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+      mfaVerifiedAt: new Date(Date.now() - 10 * 60_000),
+    } as never);
+
+    await expect(requireFreshMfa(5 * 60)).rejects.toMatchObject({
+      errorCode: "auth.stepup.required",
+      extraMeta: { methods: ["totp", "webauthn", "passkey"] },
+    });
+  });
+
+  it("offers a passkey-only account its passkey, not its password", async () => {
+    mockSession({
+      ...MFA_USER,
+      totpConfirmedAt: null,
+      passwordHash: "argon2-hash",
+    });
+    vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+      mfaVerifiedAt: null,
+    } as never);
+
+    await expect(
+      requireFreshMfa(5 * 60, "any-possession"),
+    ).rejects.toMatchObject({
+      errorCode: "auth.stepup.required",
+      extraMeta: { methods: ["passkey"] },
+    });
+  });
+
   it("rejects an absent verification stamp", async () => {
     mockSession(MFA_USER);
     vi.mocked(prisma.session.findUnique).mockResolvedValue({

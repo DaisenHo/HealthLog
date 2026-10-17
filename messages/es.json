@@ -7323,6 +7323,7 @@
     "emailChangePassword": "Contraseña actual (necesaria para cambiar la dirección de correo)",
     "reproof": {
       "description": "Esto comparte o exporta tus datos de salud. Confirma que eres tú para continuar.",
+      "descriptionChange": "Esto cambia algo que solo tú deberías poder cambiar. Confirma que eres tú para continuar.",
       "signInAgain": "Vuelve a iniciar sesión y inténtalo de nuevo. Tu cuenta no tiene contraseña ni llave de acceso que confirmar aquí.",
       "failed": "No ha funcionado. Revisa lo que has introducido e inténtalo de nuevo."
     },

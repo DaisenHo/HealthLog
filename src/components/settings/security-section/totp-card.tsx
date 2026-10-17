@@ -31,11 +31,17 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { RecoveryCodesPanel } from "./recovery-codes-panel";
+import {
+  ReproofCancelledError,
+  recentProofErrorMessage,
+  useRecentProof,
+} from "./use-recent-proof";
 import {
   ExistingFactorReauthDialog,
   isReproofRequired,
+  nothingToReprove,
   offeredReauthMethods,
   type ExistingFactorProof,
   type ReauthMethod,
@@ -117,6 +123,33 @@ export function TotpCard({
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [disableOpen, setDisableOpen] = useState(false);
 
+  // Disabling the factor and rotating the recovery codes both need the second
+  // factor proved within five minutes. When it is older, the server names the
+  // proofs that clear it and the shared dialog collects one, then the action
+  // runs again.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
+
+  // Disabling is asked BEFORE the confirmation opens, not after its code was
+  // typed: the route checks the session's proof before it reads the code, and
+  // a code typed first and then spent on the re-proof would be refused as a
+  // replay when the disable is sent again.
+  async function openDisable() {
+    setError(null);
+    try {
+      await recentProof.run(() => apiGet("/api/auth/reproof"));
+    } catch (err) {
+      const message = recentProofErrorMessage(
+        err,
+        t("settings.security.totp.disableFailed"),
+      );
+      if (message) setError(message);
+      return;
+    }
+    setDisableOpen(true);
+  }
+
   function resetWizard() {
     setSetup(null);
     setQrDataUrl(null);
@@ -154,6 +187,11 @@ export function TotpCard({
       }
     },
     onError: (err, proof) => {
+      if (isReproofRequired(err) && nothingToReprove(err)) {
+        setReauthOpen(false);
+        setError(t("settings.reproof.signInAgain"));
+        return;
+      }
       if (isReproofRequired(err)) {
         const offered = offeredReauthMethods(err);
         if (offered) setReauthMethods(offered);
@@ -194,31 +232,37 @@ export function TotpCard({
 
   const disable = useMutation({
     mutationFn: async () => {
-      await apiPost("/api/auth/me/mfa/disable", {
-        code: disableCode,
-        method: disableMethod,
-      });
+      await recentProof.run(() =>
+        apiPost("/api/auth/me/mfa/disable", {
+          code: disableCode,
+          method: disableMethod,
+        }),
+      );
     },
     onSuccess: () => {
       setDisableCode("");
       setFreshCodes(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.mfaStatus() });
     },
-    onError: (err) =>
+    onError: (err) => {
+      if (err instanceof ReproofCancelledError) return;
       setError(
         describeError(
           err,
           t("settings.security.totp.disableFailed"),
           t("settings.security.stepUpRequired"),
         ),
-      ),
+      );
+    },
     onSettled: () => setDisableOpen(false),
   });
 
   const regenerate = useMutation({
     mutationFn: async () => {
-      return apiPost<{ recoveryCodes: string[] }>(
-        "/api/auth/me/mfa/recovery-codes/regenerate",
+      return recentProof.run(() =>
+        apiPost<{ recoveryCodes: string[] }>(
+          "/api/auth/me/mfa/recovery-codes/regenerate",
+        ),
       );
     },
     onSuccess: (data) => {
@@ -226,14 +270,16 @@ export function TotpCard({
       setFreshCodes(data.recoveryCodes);
       queryClient.invalidateQueries({ queryKey: queryKeys.mfaStatus() });
     },
-    onError: (err) =>
+    onError: (err) => {
+      if (err instanceof ReproofCancelledError) return;
       setError(
         describeError(
           err,
           t("settings.security.recovery.regenFailed"),
           t("settings.security.stepUpRequired"),
         ),
-      ),
+      );
+    },
     onSettled: () => setRegenerateOpen(false),
   });
 
@@ -250,6 +296,7 @@ export function TotpCard({
 
   return (
     <SettingsCard data-testid="totp-card">
+      {recentProof.dialog}
       <SettingsCardHeader
         anchor="two-factor"
         icon={Smartphone}
@@ -471,7 +518,13 @@ export function TotpCard({
                 </AlertDialogContent>
               </AlertDialog>
 
-              <AlertDialog open={disableOpen} onOpenChange={setDisableOpen}>
+              <AlertDialog
+                open={disableOpen}
+                onOpenChange={(open) => {
+                  if (open) void openDisable();
+                  else setDisableOpen(false);
+                }}
+              >
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"

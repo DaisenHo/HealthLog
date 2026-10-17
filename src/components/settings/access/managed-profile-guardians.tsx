@@ -8,6 +8,10 @@ import {
   stepUpErrorKey,
 } from "@/components/settings/access/grant-action-error";
 import { endOfDayIso } from "@/components/settings/access/grant-invite-card";
+import {
+  ReproofCancelledError,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { DateField } from "@/components/ui/date-field";
@@ -80,8 +84,14 @@ export function ManagedProfileGuardians({
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { user } = useAuth();
-  const invite = useInviteManagedProfileGuardian();
-  const remove = useRemoveManagedProfileGuardian();
+  // Both acts are gated on a fresh second factor; the dialog collects it and
+  // the request goes out once more. A closed dialog changed nothing and says
+  // nothing.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
+  const invite = useInviteManagedProfileGuardian(recentProof.run);
+  const remove = useRemoveManagedProfileGuardian(recentProof.run);
 
   const [identifier, setIdentifier] = useState("");
   const [expiresOn, setExpiresOn] = useState("");
@@ -116,6 +126,7 @@ export function ManagedProfileGuardians({
 
   return (
     <div data-slot="managed-profile-guardians" className="space-y-3">
+      {recentProof.dialog}
       <h3 className="text-sm font-medium">
         {t("recordSharing.managed.guardiansTitle", { name: profileName })}
       </h3>
@@ -129,7 +140,9 @@ export function ManagedProfileGuardians({
           // one is the caller's own — which the route refuses anyway.
           const removable = !isSelf;
           const failed =
-            remove.isError && remove.variables?.grantId === guardian.grantId;
+            remove.isError &&
+            !(remove.error instanceof ReproofCancelledError) &&
+            remove.variables?.grantId === guardian.grantId;
           return (
             <li
               key={guardian.grantId}
@@ -269,7 +282,7 @@ export function ManagedProfileGuardians({
             ? t("recordSharing.managed.guardianInviting")
             : t("recordSharing.managed.guardianInvite")}
         </Button>
-        {invite.isError && (
+        {invite.isError && !(invite.error instanceof ReproofCancelledError) && (
           <p
             role="alert"
             data-slot="managed-profile-guardian-error"

@@ -116,7 +116,9 @@ describe("what a managed-profile change refreshes", () => {
 
 describe("the creation hook, driven for real", () => {
   it("posts the four fields the strict schema accepts, and no others", async () => {
-    const options = useCreateManagedProfile() as unknown as {
+    const options = useCreateManagedProfile((action) =>
+      action(),
+    ) as unknown as {
       mutationFn: (input: unknown) => Promise<unknown>;
       onSuccess: () => void;
     };
@@ -147,7 +149,9 @@ describe("the creation hook, driven for real", () => {
   });
 
   it("puts the new profile in the switcher by refreshing the payload", () => {
-    const options = useCreateManagedProfile() as unknown as {
+    const options = useCreateManagedProfile((action) =>
+      action(),
+    ) as unknown as {
       onSuccess: () => void;
     };
     options.onSuccess();

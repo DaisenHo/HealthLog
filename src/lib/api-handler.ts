@@ -1321,7 +1321,20 @@ export async function requireFreshMfa(
   });
   const verifiedAt = row?.mfaVerifiedAt ?? null;
   if (!verifiedAt || verifiedAt.getTime() < Date.now() - maxAgeSeconds * 1000) {
-    throw new StepUpRequiredError();
+    // Name the proofs that clear this gate, the way the recent-proof gate
+    // does, so the browser can open the re-proof dialog instead of printing a
+    // sentence with nowhere to act on it. Only the possession proofs: a
+    // `POST /api/auth/reproof` with one of them stamps `mfaVerifiedAt`, a
+    // password stamps `reproofAt` only and would leave this gate shut.
+    const methods = (await recentProofMethods(sessionData.user)).filter(
+      (method) => method !== "password",
+    );
+    annotate({ meta: { step_up_methods: methods.join(",") } });
+    throw new StepUpRequiredError(
+      "auth.stepup.required",
+      "Recent second-factor verification required",
+      { methods },
+    );
   }
 
   return { ...sessionData, authMethod: "cookie", mfaVerifiedAt: verifiedAt };

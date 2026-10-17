@@ -6,7 +6,11 @@
  * token, or run an admin backup, restore, wipe or reset. Those routes answer
  * 401 `auth.reproof.required` with `meta.methods` when the session carries no
  * recent proof; the web opens the re-proof dialog, posts the proof here, and
- * retries.
+ * retries. The fresh-factor routes (`requireFreshMfa`: the managed-profile
+ * acts, second-factor and passkey changes, the password change, account
+ * deletion, the data wipe, key rotation) answer 401 `auth.stepup.required`
+ * with `meta.methods` on a browser session, and the same dialog clears them
+ * here with a possession proof.
  *
  * What a proof stamps on the session row:
  *   - `totp`, `webauthn` or `passkey`: `mfaVerifiedAt` and `reproofAt`. The

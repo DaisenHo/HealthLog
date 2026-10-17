@@ -45,6 +45,11 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { getApiErrorMessage } from "./_shared";
+import {
+  recentProofErrorMessage,
+  throwIfReproofRequired,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { KeyBackupCard } from "./key-backup-card";
 import { useKeyBackupStatus } from "./use-key-backup-status";
 
@@ -105,12 +110,22 @@ export function EncryptionSection() {
     staleTime: 15_000,
   });
 
+  // Rotation needs the admin's second factor proved within five minutes. When
+  // it is older the server names the proofs that clear it, the shared dialog
+  // collects one, and the rotation is queued once more.
+  const recentProof = useRecentProof({
+    description: t("settings.reproof.descriptionChange"),
+  });
   const rotate = useMutation({
     mutationFn: async () => {
-      const res = await apiFetchRaw("/api/admin/encryption/rotate", {
-        method: "POST",
-        credentials: "include",
-      });
+      const res = await recentProof.run(async () =>
+        throwIfReproofRequired(
+          await apiFetchRaw("/api/admin/encryption/rotate", {
+            method: "POST",
+            credentials: "include",
+          }),
+        ),
+      );
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error(t("admin.section.encryption.stepUpNeeded"));
@@ -126,10 +141,12 @@ export function EncryptionSection() {
       });
     },
     onError: (err: Error) => {
-      showErrorToast(
+      const message = recentProofErrorMessage(
+        err,
         err.message || t("admin.section.encryption.rotateFailed"),
-        { cause: err },
       );
+      if (message === null) return;
+      showErrorToast(message, { cause: err });
     },
   });
 
@@ -182,6 +199,7 @@ export function EncryptionSection() {
 
   return (
     <div className="space-y-6">
+      {recentProof.dialog}
       <KeyBackupCard />
       {/* ── Coverage summary ───────────────────────────────────────── */}
       <SettingsCard>
