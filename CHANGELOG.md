@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.43.3] — 2026-10-17
+
+### Fixed
+
+- **Every action behind a second-factor check opens the confirmation
+  dialog.** Handing over a managed profile, creating, editing or deleting
+  one, adding or removing a guardian, turning off TOTP, regenerating recovery
+  codes, removing a security key or passkey, changing the password, deleting
+  data or the account and the admin key rotation only showed a sentence when
+  the second factor needed confirming. They now open the confirmation dialog
+  and retry once confirmed, also after a single sign-on login (Refs #959).
+  The refusal names the methods the account has in `meta.methods`.
+- An account that signs in only through single sign-on is no longer offered
+  a password field it cannot fill when it sets up a second factor; it is
+  asked to sign in again.
+
 ## [1.43.2] — 2026-10-16
 
 ### Fixed
