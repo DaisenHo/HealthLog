@@ -21687,9 +21687,10 @@ paths:
         "401":
           description: "No fresh second-factor proof (`meta.errorCode: auth.stepup.required`, with `meta.methods` naming the
             proofs that clear it at POST /api/auth/reproof), or none enrolled at all (`meta.errorCode:
-            auth.stepup.mfa_not_enrolled`) — this gate is unconditional, so an account without a second factor cannot
-            create a managed profile until it enrols one. The ordinary unauthenticated 401 arrives here too, including
-            for a Bearer caller, whose transport this gate does not read."
+            auth.stepup.mfa_not_enrolled`) — this gate is unconditional, so an account with neither a second factor nor
+            a passkey cannot create a managed profile until it enrols one. A passkey counts: an account whose only
+            strong credential is a passkey is offered `passkey` in `meta.methods`. The ordinary unauthenticated 401
+            arrives here too, including for a Bearer caller, whose transport this gate does not read."
           content:
             application/json:
               schema:
@@ -34618,8 +34619,9 @@ components:
         Guardian reading it: they decide how the profile's own reminders are worded and when its day starts. Strict — an
         unexpected field is a 422 rather than an ignored key. Cookie transport only and step-up gated
         (`requireFreshMfa`, unconditional): a Bearer caller cannot mint a credential-less person and a permanent
-        management relationship, and an account with no second factor enrolled is refused rather than waved through.
-        Rate-limited to ten an hour per caller."
+        management relationship, and an account with no second factor enrolled is refused rather than waved through. A
+        primary passkey counts as that factor here: a passkey sign-in or a passkey re-proof at POST /api/auth/reproof
+        stamps the session. Rate-limited to ten an hour per caller."
     UpdateManagedProfileRequest:
       type: object
       properties:

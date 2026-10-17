@@ -5160,7 +5160,7 @@
         "changeInSettings": "À modifier dans Réglages, Compte",
         "cta": "Confirmer et continuer",
         "managedTitle": "La personne dont vous vous occupez",
-        "managedBody": "Son dossier n'a pas d'identifiant propre ; vous le gérez depuis votre compte. Un second facteur sur votre compte est nécessaire pour le créer.",
+        "managedBody": "Son dossier n'a pas d'identifiant propre ; vous le gérez depuis votre compte. Un second facteur ou une clé d'accès sur votre compte est nécessaire pour le créer.",
         "managedCreate": "Créer le profil et terminer",
         "managedLater": "Vous pouvez aussi le créer plus tard dans Réglages, Accès partagé.",
         "finishWithoutProfile": "Terminer sans le profil"
@@ -12261,7 +12261,7 @@
       "errorFailed": "L'invitation n'a pas pu être envoyée. Veuillez réessayer.",
       "errorScope": "Ces rubriques ne peuvent pas être partagées ainsi. Choisissez au moins une rubrique, ou partagez le dossier complet.",
       "errorManageBrowserOnly": "Un accès de gestion ne peut être proposé que depuis un navigateur.",
-      "errorStepUp": "Confirmez votre deuxième facteur, puis réessayez.",
+      "errorStepUp": "Confirmez votre deuxième facteur ou votre clé d'accès, puis réessayez.",
       "errorOffline": "Cela n'a pas atteint le serveur. Votre invitation est toujours là : vérifiez votre connexion et réessayez."
     },
     "given": {
@@ -12338,7 +12338,7 @@
       "create": "Créer le profil",
       "creating": "Création…",
       "created": "{name} est en place. Vous pouvez entrer dans ce dossier depuis le menu du compte.",
-      "errorStepUp": "Confirmez votre deuxième facteur, puis réessayez.",
+      "errorStepUp": "Confirmez votre deuxième facteur ou votre clé d'accès, puis réessayez.",
       "errorOffline": "Cela n'a pas atteint le serveur. Rien n'a changé. Vérifiez votre connexion et réessayez.",
       "errorInvalid": "Le serveur a refusé ces informations. Vérifiez le nom, la date et le fuseau horaire.",
       "errorFailed": "Le profil n'a pas pu être créé.",
@@ -12377,7 +12377,7 @@
       "guardianErrorNoAccount": "Aucun compte de cette instance ne porte ce nom ou cette adresse e-mail.",
       "guardianErrorRateLimit": "Trop d'invitations dans la dernière heure. Patientez un peu et réessayez.",
       "guardianErrorFailed": "L'invitation n'a pas pu être envoyée.",
-      "errorMfaRequired": "Cela demande un deuxième facteur, et votre compte n'en a pas encore. Configurez-en un dans Réglages → Sécurité, puis réessayez.",
+      "errorMfaRequired": "Cela demande un deuxième facteur ou une clé d'accès, et votre compte n'a encore ni l'un ni l'autre. Configurez-en un dans Réglages → Sécurité, puis réessayez.",
       "rosterLoadError": "Impossible de charger qui s'occupe de ce dossier.",
       "errorRateLimit": "Trop de profils créés dans la dernière heure. Patientez un peu et réessayez.",
       "handover": {

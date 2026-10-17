@@ -43,12 +43,12 @@ under `v1` (the synthetic id assigned to the existing `ENCRYPTION_KEY`).
    retained.
 3. **Re-encrypt the stored data under the new key.** Open **Admin →
    Encryption** and press **Rotate now**. The button needs an admin account
-   with a second factor, confirmed recently; it queues one background run
+   with a second factor or a passkey, confirmed recently; it queues one background run
    (`POST /api/admin/encryption/rotate`) on the app's own worker, so it
    works on the published image with nothing else installed. The same page
    shows the per-column counts and the result of the last run.
 
-   Without a second factor on any admin account, run the rotation script
+   Without a second factor or a passkey on any admin account, run the rotation script
    instead. It imports the application code and the generated database
    client, so it runs from a source checkout of the same release, not
    inside the production container (the image has no package manager and

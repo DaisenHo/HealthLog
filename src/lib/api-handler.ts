@@ -1253,11 +1253,13 @@ export type FreshMfaContext = AuthContext & { mfaVerifiedAt: Date };
  * the route is protecting.
  *
  *   `second-factor` — a confirmed TOTP secret or a registered second-factor
- *   security key. The default, and the right question for the routes that MANAGE
- *   a second factor: there is nothing there to protect if nothing is enrolled.
+ *   security key. The default of `requireMfaManagementAuth`, and the right
+ *   question for the routes that MANAGE a second factor: there is nothing there
+ *   to protect if nothing is enrolled.
  *
- *   `any-possession` — the above, OR a registered PRIMARY passkey. The right
- *   question for a route protecting the passkey itself, because a passkey is a
+ *   `any-possession` — the above, OR a registered PRIMARY passkey. The default
+ *   of `requireFreshMfa` since v1.43.3, and the right question for a route
+ *   protecting the passkey itself, because a passkey is a
  *   possession factor in its own right and this codebase already treats it as
  *   one in three places: `/api/auth/passkey/login-verify` stamps `mfaVerifiedAt`
  *   on a passkey login (v1.23, M-review M1), `passkey` is in
@@ -1269,6 +1271,37 @@ export type FreshMfaContext = AuthContext & { mfaVerifiedAt: Date };
  *   the proof all along.
  */
 export type FreshFactorProofSource = "second-factor" | "any-possession";
+
+/*
+ * A PASSKEY COUNTS AS A SECOND FACTOR FOR THE UNCONDITIONAL STEP-UP GATE.
+ *
+ * Maintainer decision, v1.43.3. `requireFreshMfa` defaults to
+ * `any-possession`, so an account whose only strong credential is a passkey
+ * is no longer refused `mfa_not_enrolled` on the routes that call it directly
+ * (creating, editing, deleting and handing over a managed profile, inviting
+ * and removing a guardian, the admin key rotation). It clears the gate the
+ * way every other account does: a passkey sign-in or a passkey re-proof at
+ * `POST /api/auth/reproof` stamps `Session.mfaVerifiedAt`, and the gate reads
+ * that stamp inside the same five minutes.
+ *
+ * The limits, each deliberate:
+ *
+ *   - `hasSecondFactorEnrolled` keeps its narrow meaning. It decides whether
+ *     the CONDITIONAL gates (`requireFreshMfaIfEnrolled`,
+ *     `requireFreshMfaOrElevationIfEnrolled`, `requireRecentProof`'s branches,
+ *     the enrollment proofs) apply at all. Widening it would newly gate
+ *     account deletion, the data reset, the password change and the export
+ *     for every passkey holder, take the password re-proof away from them, and
+ *     change what the native app's Bearer requests need. None of that is part
+ *     of the decision.
+ *   - Password login is untouched. It asks for a second factor from
+ *     `totpConfirmedAt` and the security-key count only; a passkey-only
+ *     account signing in with its password is not challenged, as before.
+ *   - The MFA-management routes (`requireMfaManagementAuth`) still default to
+ *     `second-factor`: disabling TOTP or rotating recovery codes on an account
+ *     with no second factor has nothing to protect.
+ *   - Cookie only, as ever. The Bearer path is not reached from here.
+ */
 
 /**
  * v1.23 — step-up gate. Passes only for a COOKIE session whose
@@ -1285,12 +1318,13 @@ export type FreshFactorProofSource = "second-factor" | "any-possession";
  * waves gate account deletion, key rotation, and passphrase export on it.
  *
  * @param proofSource which credentials count as "can prove a factor". Defaults
- *   to the second-factor set every existing caller means; see
- *   {@link FreshFactorProofSource}.
+ *   to `any-possession`, so a primary passkey counts (see the decision note
+ *   below {@link FreshFactorProofSource}); `requireMfaManagementAuth` passes
+ *   `second-factor` explicitly.
  */
 export async function requireFreshMfa(
   maxAgeSeconds: number,
-  proofSource: FreshFactorProofSource = "second-factor",
+  proofSource: FreshFactorProofSource = "any-possession",
 ): Promise<FreshMfaContext> {
   const sessionData = await getSession();
   if (!sessionData)

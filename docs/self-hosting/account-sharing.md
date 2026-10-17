@@ -189,9 +189,11 @@ no password, no passkey and no e-mail address, and it is never presented
 as something to log in as.
 
 - It is created from **Settings → Shared access**, under a fresh second
-  factor. An account with no second factor enrolled is refused rather than
-  waved through, because the act creates a permanent management
-  relationship over a person who cannot object to it.
+  factor. A passkey counts as one: a guardian who signs in with a passkey,
+  or confirms it in the dialog the app opens, gets through. An account with
+  neither a second factor nor a passkey is refused rather than waved
+  through, because the act creates a permanent management relationship
+  over a person who cannot object to it.
 - Creation takes a display name, optionally a real date of birth, and the
   language and timezone the record's own days and reminders are measured
   in. A year on its own is never turned into the first of January. The
@@ -356,10 +358,11 @@ Four operational notes:
   and no address to look it up by.
 - **The second-factor requirement is not the same on both features, and
   the difference is deliberate.** Creating a managed profile, deleting
-  one and inviting a second guardian require a second factor
-  unconditionally: an account with none enrolled is refused and told to
-  set one up, because those acts create or end a permanent relationship
-  over somebody who cannot object. Offering manage access on an ordinary
-  invitation asks for a fresh factor only from an account that has one, so
+  one, handing it over and inviting a second guardian require a second
+  factor unconditionally, and a passkey counts as one there: an account
+  with neither is refused and told to set one up, because those acts
+  create or end a permanent relationship over somebody who cannot object.
+  Offering manage access on an ordinary invitation asks for a fresh factor
+  only from an account with TOTP or a security key, so
   an instance where nobody has enrolled a factor can still use every level
   of ordinary sharing. All of them are browser-only either way.

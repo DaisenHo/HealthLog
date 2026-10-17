@@ -600,7 +600,7 @@ describe("ending a managed profile", () => {
       "p1",
     );
     const html = renderGatedSection();
-    expect(html).toContain("Confirm your second factor");
+    expect(html).toContain("Confirm your second factor or passkey");
     expect(html).not.toContain("The profile could not be deleted");
   });
 
@@ -616,7 +616,7 @@ describe("ending a managed profile", () => {
       "p1",
     );
     const html = renderGatedSection();
-    expect(html).toContain("does not have one yet");
+    expect(html).toContain("has neither yet");
     expect(html).toContain("Security");
   });
 
