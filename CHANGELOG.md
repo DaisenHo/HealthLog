@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.43.5] — 2026-10-18
+
+### Fixed
+
+- **Backups of accounts with many documents no longer run out of memory.**
+  The weekly in-database backup, the manual backup and the restore held the
+  document vault and ECG traces in memory several times over (bytes, base64,
+  the serialised section and the preview check), and sealed one oversized
+  chunk; an account with a large document vault crashed a 524 MB heap. Document
+  bytes are now read and written in 1.5 MB slices, ECG traces page by page,
+  every section is written element by element and no chunk exceeds the chunk
+  size. The restore reads documents without their bytes first and writes each
+  one on its own. The file format is unchanged (Refs #1239).
+- A failed tombstone purge names its phase and condition (e.g.
+  `statement_timeout`) instead of a bare error.
+
+### Added
+
+- The admin support report and System status flag a heap limit below 700 MB
+  and point to `APP_MEMORY_LIMIT`; `/api/admin/status` carries
+  `memory: { heapLimitMb, low }`.
+
 ## [1.43.4] — 2026-10-17
 
 ### Fixed
