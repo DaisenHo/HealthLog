@@ -8,6 +8,12 @@
  * alone would not fit a 1 GB container beside the running app (#1031). Every
  * other section of the same file is a few megabytes.
  *
+ * The documents are the other one: a stored document is up to a hundred
+ * megabytes, and a vault of 190 MB held whole cost more heap than a 524 MB
+ * process has (#1239). The first read keeps each document without its stored
+ * bytes (`DOCUMENT_CONTENT_LEFT_OUT` in their place), and
+ * `forEachDocumentContent` reads them again one document at a time.
+ *
  * So the file is read twice. The first read keeps everything except the
  * measurements, and checks each measurement against the same element schema
  * the whole-file schema uses, counting them. Nothing is written on the
@@ -44,7 +50,22 @@ async function loadMeasurementSchema(): Promise<MeasurementSchema> {
 export type BackupSource = () => AsyncIterable<Uint8Array>;
 
 const MEASUREMENTS = "measurements";
-const STREAMED = new Set([MEASUREMENTS]);
+const DOCUMENTS = "documents";
+const STREAMED = new Set([MEASUREMENTS, DOCUMENTS]);
+const MEASUREMENTS_ONLY = new Set([MEASUREMENTS]);
+const DOCUMENTS_ONLY = new Set([DOCUMENTS]);
+
+/**
+ * What a document's `contentEncrypted` reads as in `raw`, where the stored
+ * bytes are left out (#1239): valid base64, so the whole-file schema still
+ * sees a document that carries content, and too short to be ciphertext, so
+ * nothing could mistake it for some. The restore writes the real value, from
+ * `forEachDocumentContent`.
+ */
+const DOCUMENT_CONTENT_LEFT_OUT = "AA==";
+
+/** Base64, as the backup schema accepts it for stored bytes. */
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
 /** A measurement the element schema refused, with where it is in the file. */
 export class StreamedBackupInvalidError extends Error {
@@ -77,6 +98,15 @@ export interface StreamedBackup {
   forEachMeasurementBatch(
     size: number,
     fn: (batch: BackupMeasurement[]) => Promise<void>,
+  ): Promise<void>;
+  /**
+   * Read the file again and hand over each document's `contentEncrypted`
+   * (the base64 the first read left out of `raw`, or undefined where the
+   * file carries none) with the document's position, one document at a time.
+   * Awaits `fn` before reading further.
+   */
+  forEachDocumentContent(
+    fn: (content: string | undefined, index: number) => Promise<void>,
   ): Promise<void>;
 }
 
@@ -119,6 +149,7 @@ export async function readStreamedBackup(
   let firstWithoutId: number | null = null;
   let bytes = 0;
   const keys = new BackupKeyIdCollector();
+  const documents: unknown[] = [];
   async function* counted() {
     for await (const chunk of source()) {
       bytes += chunk.byteLength;
@@ -127,7 +158,11 @@ export async function readStreamedBackup(
   }
   const { document, streamedCounts } = await scanBackupJson(counted(), {
     streamKeys: STREAMED,
-    onElement: (_key, element, index) => {
+    onElement: (key, element, index) => {
+      if (key === DOCUMENTS) {
+        documents.push(withoutContent(element, index, keys));
+        return;
+      }
       const row = parseMeasurement(schema, element, index);
       if (!row.id && firstWithoutId === null) firstWithoutId = index;
       keys.visit(element, MEASUREMENTS);
@@ -147,10 +182,14 @@ export async function readStreamedBackup(
     );
   }
 
+  if (DOCUMENTS in document) document[DOCUMENTS] = documents;
   keys.visit(document);
 
   const skipKeys = new Set(
     Object.keys(document).filter((key) => key !== MEASUREMENTS),
+  );
+  const documentSkipKeys = new Set(
+    Object.keys(document).filter((key) => key !== DOCUMENTS),
   );
 
   return {
@@ -161,7 +200,7 @@ export async function readStreamedBackup(
     async forEachMeasurementBatch(size, fn) {
       let batch: BackupMeasurement[] = [];
       await scanBackupJson(source(), {
-        streamKeys: STREAMED,
+        streamKeys: MEASUREMENTS_ONLY,
         skipKeys,
         onElement: async (_key, element, index) => {
           batch.push(parseMeasurement(schema, element, index));
@@ -174,5 +213,40 @@ export async function readStreamedBackup(
       });
       if (batch.length > 0) await fn(batch);
     },
+    async forEachDocumentContent(fn) {
+      await scanBackupJson(source(), {
+        streamKeys: DOCUMENTS_ONLY,
+        skipKeys: documentSkipKeys,
+        onElement: async (_key, element, index) => {
+          const content = (element as { contentEncrypted?: unknown })
+            ?.contentEncrypted;
+          await fn(typeof content === "string" ? content : undefined, index);
+        },
+      });
+    },
   };
+}
+
+/**
+ * A document as `raw` keeps it: its stored bytes replaced by
+ * `DOCUMENT_CONTENT_LEFT_OUT`, after the key they were written under is
+ * recorded and their form is checked, since the whole-file schema only sees
+ * the stand-in.
+ */
+function withoutContent(
+  element: unknown,
+  index: number,
+  keys: BackupKeyIdCollector,
+): unknown {
+  if (!element || typeof element !== "object") return element;
+  const { contentEncrypted, ...rest } = element as Record<string, unknown>;
+  if (typeof contentEncrypted !== "string") return element;
+  if (contentEncrypted.length % 4 !== 0 || !BASE64.test(contentEncrypted)) {
+    throw new StreamedBackupInvalidError(
+      `${DOCUMENTS}.${index}.contentEncrypted`,
+      "Expected base64-encoded encrypted bytes",
+    );
+  }
+  keys.add(DOCUMENTS, contentEncrypted, "contentEncrypted");
+  return { ...rest, contentEncrypted: DOCUMENT_CONTENT_LEFT_OUT };
 }

@@ -13,8 +13,8 @@
  * Two writers read this file, not one. `buildFullBackupPayload` materialises
  * the whole payload, which is what the two export routes and every test want.
  * `streamFullBackupJson` (`full-backup-stream.ts`) asks for the same payload
- * with `deferBulk`, which leaves the three unbounded tables as markers and
- * pulls their rows through itself — the weekly job takes that path because
+ * with `deferBulk`, which leaves the unbounded tables (and the two whose rows
+ * carry stored bytes) as markers and pulls their rows through itself — the weekly job takes that path because
  * materialising a large record is what used to exhaust the container's heap.
  * Both go through the same per-row serialisers below, so a column that reaches
  * one reaches the other; the integration suite pins the two outputs byte for
@@ -35,6 +35,7 @@ import {
 import {
   buildRecordsBackupSection,
   countRecordsBackupSection,
+  iterateBackupDocuments,
   type RecordsBackupCounts,
   type RecordsBackupSection,
 } from "@/lib/export/records-backup";
@@ -112,6 +113,7 @@ import {
 import {
   buildEcgBackupSection,
   countEcgBackupSection,
+  iterateBackupEcgRecordings,
   type EcgBackupCounts,
   type EcgBackupSection,
 } from "@/lib/export/ecg-backup";
@@ -196,9 +198,10 @@ export interface FullBackupOptions {
   purpose?: "portable-export" | "disaster-recovery";
   exportedAt?: Date;
   /**
-   * Declare the three unbounded tables instead of reading them.
+   * Declare the large tables instead of reading them.
    *
-   * `measurements`, `intakeEvents` and `moodEntries` come back as
+   * `measurements`, `intakeEvents` and `moodEntries` (unbounded in rows) and
+   * `documents` and `ecgRecordings` (large in bytes) come back as
    * `DeferredRows` markers and their counts as 0. Only `streamFullBackupJson`
    * sets this; every other caller wants the arrays and gets them.
    */
@@ -686,13 +689,15 @@ const DEFERRED_ROWS = Symbol("healthlog.backup.deferredRows");
 
 export interface DeferredRows {
   readonly [DEFERRED_ROWS]: true;
-  /** Open the row source. Called exactly once, by the streaming writer. */
-  rows(): AsyncIterable<Record<string, unknown>>;
+  /**
+   * Open the row source. Called exactly once, by the streaming writer. A row
+   * is a plain object, or a `StreamedField` (`streamed-field.ts`) for a row
+   * with one field too large to hold as a string.
+   */
+  rows(): AsyncIterable<unknown>;
 }
 
-function deferredRows(
-  rows: () => AsyncIterable<Record<string, unknown>>,
-): DeferredRows {
+function deferredRows(rows: () => AsyncIterable<unknown>): DeferredRows {
   return { [DEFERRED_ROWS]: true, rows };
 }
 
@@ -836,6 +841,7 @@ export async function buildFullBackupPayload(
     }),
     buildRecordsBackupSection(prisma, userId, {
       purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
+      deferDocuments: deferBulk,
     }),
     // Durable self-context, user-defined metrics, and persisted pattern
     // decisions. These account-owned rows cannot be reconstructed from an
@@ -925,6 +931,7 @@ export async function buildFullBackupPayload(
     // arrangement as the sections above and for the same reason.
     buildEcgBackupSection(prisma, userId, {
       purpose: disasterRecovery ? "disaster-recovery" : "portable-export",
+      defer: deferBulk,
     }),
     // The person's own symptoms with their occurrences nested inside. Both
     // ends live in `src/lib/export/symptoms-backup.ts`.
@@ -1019,6 +1026,22 @@ export async function buildFullBackupPayload(
         )
       : moodEntries!,
   };
+  // The two sections whose rows carry stored bytes: the documents (up to a
+  // hundred megabytes each) and the ECG traces. Deferred, they keep the
+  // position their section gives them in the payload (a key that already
+  // exists keeps its place when it is assigned again) and are read a document
+  // or a page of strips at a time (#1239).
+  const purpose = disasterRecovery ? "disaster-recovery" : "portable-export";
+  const deferredBytes = deferBulk
+    ? {
+        documents: deferredRows(() =>
+          iterateBackupDocuments(prisma, userId, { purpose }),
+        ),
+        ecgRecordings: deferredRows(() =>
+          iterateBackupEcgRecordings(prisma, userId, { purpose }),
+        ),
+      }
+    : {};
 
   // The clinical category lives in its own table rather than on the
   // medication row and is read through the one helper that normalises it.
@@ -1421,6 +1444,7 @@ export async function buildFullBackupPayload(
     ...symptomsSection,
     ...lifeEventsSection,
     ...relationLinksSection,
+    ...deferredBytes,
     nutrientDays: nutrientDays.map((n) => ({
       day: n.day,
       nutrient: n.nutrient,

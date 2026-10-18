@@ -139,70 +139,135 @@ const ECG_RECORDING_BACKUP_SELECT = {
   updatedAt: true,
 } satisfies Prisma.EcgRecordingSelect;
 
+type EcgRecordingBackupRow = Prisma.EcgRecordingGetPayload<{
+  select: typeof ECG_RECORDING_BACKUP_SELECT;
+}>;
+
+/**
+ * The order both readers below walk the strips in. Total, with the id after
+ * the instant, because the paged reader's cursor needs a total order and two
+ * strips recorded in the same second must not swap places between two
+ * exports of the same account.
+ */
+const ECG_RECORDING_ORDER = [
+  { recordedAt: "asc" },
+  { id: "asc" },
+] as const satisfies Prisma.EcgRecordingOrderByWithRelationInput[];
+
+/**
+ * One strip as it rides the wire, or null for a portable export of a strip
+ * that will not decrypt (see the file header). Shared by both readers, so the
+ * paged one and the materialising one cannot drift.
+ */
+function serialiseEcgRecording(
+  row: EcgRecordingBackupRow,
+  disasterRecovery: boolean,
+): EcgRecordingBackupEntry | null {
+  const common = {
+    source: row.source,
+    externalRecordingId: row.externalRecordingId,
+    recordedAt: row.recordedAt.toISOString(),
+    samplingFrequency: row.samplingFrequency,
+    sampleCount: row.sampleCount,
+    durationSeconds: row.durationSeconds,
+    lead: row.lead,
+    averageHeartRate: row.averageHeartRate,
+    rhythmClassification: row.rhythmClassification,
+    measurementId: row.measurementId,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+
+  if (disasterRecovery) {
+    return {
+      id: row.id,
+      waveformEncrypted: Buffer.from(row.waveformEncrypted).toString("base64"),
+      ...common,
+    };
+  }
+
+  // See the file header: a strip that will not decrypt is left out rather
+  // than written as a recording with no trace behind it.
+  try {
+    return {
+      waveform: decryptWaveformFromBytes(row.waveformEncrypted),
+      ...common,
+    };
+  } catch (err) {
+    getEvent()?.addWarning(
+      `ECG waveform decrypt failed, recording omitted from portable export: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return null;
+  }
+}
+
+/**
+ * How many strips one page of the paged reader carries. A strip's trace is
+ * tens of kilobytes of ciphertext, so a page is a few megabytes.
+ */
+const ECG_PAGE_SIZE = 50;
+
+/**
+ * Every strip of the account, one serialised row at a time, read a page at a
+ * time. For the streaming backup writer, which must not hold every trace of a
+ * long-lived account at once (#1239).
+ */
+export async function* iterateBackupEcgRecordings(
+  prisma: Pick<PrismaClient, "ecgRecording">,
+  userId: string,
+  options: EcgBackupOptions = {},
+): AsyncGenerator<EcgRecordingBackupEntry, void, void> {
+  const disasterRecovery = options.purpose === "disaster-recovery";
+  let cursorId: string | null = null;
+  for (;;) {
+    const page: EcgRecordingBackupRow[] = await prisma.ecgRecording.findMany({
+      where: { userId },
+      orderBy: ECG_RECORDING_ORDER,
+      take: ECG_PAGE_SIZE,
+      ...(cursorId !== null ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      select: ECG_RECORDING_BACKUP_SELECT,
+    });
+    if (page.length === 0) return;
+    for (const row of page) {
+      const entry = serialiseEcgRecording(row, disasterRecovery);
+      if (entry) yield entry;
+    }
+    if (page.length < ECG_PAGE_SIZE) return;
+    cursorId = page[page.length - 1]!.id;
+  }
+}
+
 /**
  * Build the ECG slice of a user's full backup.
  *
  * Takes the delegate it uses rather than a whole client, matching the other
  * section builders. The table carries no tombstone column, so both purposes
  * read the same rows; they differ only in how the waveform travels.
+ *
+ * With `defer`, nothing is read and the slice comes back empty: the streaming
+ * writer pulls the strips through `iterateBackupEcgRecordings` itself.
  */
 export async function buildEcgBackupSection(
   prisma: Pick<PrismaClient, "ecgRecording">,
   userId: string,
-  options: EcgBackupOptions = {},
+  options: EcgBackupOptions & { defer?: boolean } = {},
 ): Promise<EcgBackupSection> {
+  if (options.defer) return { ecgRecordings: [] };
   const disasterRecovery = options.purpose === "disaster-recovery";
 
   const rows = await prisma.ecgRecording.findMany({
     where: { userId },
-    orderBy: { recordedAt: "asc" },
+    orderBy: ECG_RECORDING_ORDER,
     select: ECG_RECORDING_BACKUP_SELECT,
   });
 
   const ecgRecordings: EcgRecordingBackupEntry[] = [];
   for (const row of rows) {
-    const common = {
-      source: row.source,
-      externalRecordingId: row.externalRecordingId,
-      recordedAt: row.recordedAt.toISOString(),
-      samplingFrequency: row.samplingFrequency,
-      sampleCount: row.sampleCount,
-      durationSeconds: row.durationSeconds,
-      lead: row.lead,
-      averageHeartRate: row.averageHeartRate,
-      rhythmClassification: row.rhythmClassification,
-      measurementId: row.measurementId,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    };
-
-    if (disasterRecovery) {
-      ecgRecordings.push({
-        id: row.id,
-        waveformEncrypted: Buffer.from(row.waveformEncrypted).toString(
-          "base64",
-        ),
-        ...common,
-      });
-      continue;
-    }
-
-    // See the file header: a strip that will not decrypt is left out rather
-    // than written as a recording with no trace behind it.
-    let waveform: number[];
-    try {
-      waveform = decryptWaveformFromBytes(row.waveformEncrypted);
-    } catch (err) {
-      getEvent()?.addWarning(
-        `ECG waveform decrypt failed, recording omitted from portable export: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
-      continue;
-    }
-    ecgRecordings.push({ waveform, ...common });
+    const entry = serialiseEcgRecording(row, disasterRecovery);
+    if (entry) ecgRecordings.push(entry);
   }
-
   return { ecgRecordings };
 }
 

@@ -14,9 +14,14 @@
  * What changed. The three tables that scale with a long-lived record —
  * measurements, intake events, mood entries — are declared rather than read
  * (`deferBulk`), and this writer pulls them through page by page, serialising
- * one row at a time straight into the sink. Every other section is stringified
- * and then RELEASED from the payload before the next one is touched, so the
- * peak is the largest single section rather than the sum of all of them.
+ * one row at a time straight into the sink. The two sections whose rows carry
+ * stored bytes are deferred the same way (#1239): the ECG traces a page at a
+ * time, and the documents one at a time with each document's bytes arriving
+ * in slices (`StreamedField`), because a vault of 190 MB read whole cost about
+ * five times that in heap and took a 524 MB process down on its own. Every
+ * other section is written an element at a time and then RELEASED from the
+ * payload before the next one is touched, so the largest string this writer
+ * makes is one row's.
  *
  * The output is byte-identical to `JSON.stringify(payload)`. That is not a
  * hope: `Object.entries` walks a plain object in insertion order, which is the
@@ -25,6 +30,8 @@
  * The integration suite pins it against the materialising builder rather than
  * trusting that paragraph.
  */
+import { randomUUID } from "node:crypto";
+
 import type { PrismaClient } from "@/generated/prisma/client";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
 import {
@@ -33,6 +40,34 @@ import {
   type FullBackupCounts,
   type FullBackupOptions,
 } from "@/lib/export/full-backup-payload";
+import {
+  isStreamedField,
+  type StreamedField,
+} from "@/lib/export/streamed-field";
+
+/**
+ * Write a row whose one large field arrives in pieces, exactly as
+ * `JSON.stringify` writes the whole row: the row is serialised with a marker
+ * in the field's place, and the marker is replaced by the quoted pieces on the
+ * way out. The marker is random per call, so no value in the row can equal it.
+ */
+async function writeStreamedRow(
+  streamed: StreamedField,
+  write: (piece: string) => Promise<void>,
+): Promise<void> {
+  const marker = `\u0000streamed:${randomUUID()}`;
+  const json = JSON.stringify({ ...streamed.row, [streamed.field]: marker });
+  const quoted = JSON.stringify(marker);
+  const at = json.indexOf(quoted);
+  if (at < 0) {
+    throw new Error(`Streamed field ${streamed.field} is not in its row`);
+  }
+  await write(json.slice(0, at));
+  await write('"');
+  for await (const piece of streamed.pieces()) await write(piece);
+  await write('"');
+  await write(json.slice(at + quoted.length));
+}
 
 /** Where the writer puts its pieces. Awaited, so a sink can apply backpressure. */
 export type BackupJsonSink = (chunk: string) => void | Promise<void>;
@@ -139,10 +174,14 @@ export async function streamFullBackupJson(
       await write("[");
       let rows = 0;
       for await (const row of value.rows()) {
-        observe?.(key, row);
-        await write(
-          rows === 0 ? JSON.stringify(row) : `,${JSON.stringify(row)}`,
-        );
+        if (rows > 0) await write(",");
+        if (isStreamedField(row)) {
+          observe?.(key, { ...row.row, [row.field]: row.observed });
+          await writeStreamedRow(row, write);
+        } else {
+          observe?.(key, row);
+          await write(JSON.stringify(row));
+        }
         rows++;
         if (rows % PROGRESS_EVERY_ROWS === 0) {
           reportJobProgress({ backup_section: key, backup_section_rows: rows });
@@ -150,6 +189,19 @@ export async function streamFullBackupJson(
       }
       await write("]");
       bulkCounts[key] = rows;
+    } else if (Array.isArray(value)) {
+      // An element at a time, so the largest string this writer makes is one
+      // row's, never a section's: `JSON.stringify` of a whole section was a
+      // second copy of it on top of the rows (#1239). The same bytes either
+      // way; an element `JSON.stringify` cannot write becomes `null`, as it
+      // does inside an array.
+      observe?.(key, value);
+      await write("[");
+      for (let at = 0; at < value.length; at++) {
+        if (at > 0) await write(",");
+        await write(JSON.stringify(value[at]) ?? "null");
+      }
+      await write("]");
     } else {
       observe?.(key, value);
       await write(JSON.stringify(value));

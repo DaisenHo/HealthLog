@@ -196,6 +196,18 @@ describe("the copy in sealed pieces", () => {
     expect(readChunked(sealed)).toBe(json);
   });
 
+  it("keeps every piece to its size when one write carries megabytes", async () => {
+    // A single write of a whole section used to become a single piece of the
+    // section's size, copied twice more on its way into the database (#1239).
+    const json = incompressibleJson(5 * BACKUP_CHUNK_BYTES);
+    const sealed = await packChunked(json, json.length);
+    expect(sealed.length).toBeGreaterThan(2);
+    for (const piece of sealed) {
+      expect(piece.byteLength).toBeLessThan(BACKUP_CHUNK_BYTES + 1024);
+    }
+    expect(readChunked(sealed)).toBe(json);
+  });
+
   it("always ends with a piece marked as the last, even an empty one", async () => {
     const sealed = await packChunked("{}");
     expect(sealed).toHaveLength(1);
