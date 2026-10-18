@@ -55,7 +55,8 @@ import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { holdAccountFoldLock } from "@/lib/export/restore-lock";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { jobBudget } from "@/lib/jobs/job-budget";
-import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
+import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
+import { failureCode } from "@/lib/jobs/failure-condition";
 import { reportJobRun, type JobRunCandidate } from "@/lib/jobs/job-run-report";
 import { purgeTombstonesByAccount } from "@/lib/jobs/measurement-tombstone-cleanup";
 import { PURGE_BATCH_SIZE, PURGE_MAX_BATCHES } from "@/lib/jobs/purge-batch";
@@ -110,6 +111,35 @@ export interface PurgeCompactionTombstonesOptions {
   scanPageSize?: number;
   pauseMs?: number;
   shouldStop?: () => boolean;
+}
+
+/**
+ * A run that stopped on a database failure, named by what it was doing and
+ * the condition (`failure-condition.ts`). Before #1239 the run threw the bare
+ * Prisma error, and the support report read seven failed runs as "Error".
+ */
+class CompactionPurgeStoppedError extends Error {
+  constructor(
+    readonly stage: "scanning tombstones" | "deleting a batch",
+    cause: unknown,
+  ) {
+    super(`stopped while ${stage} (${failureCode(cause)})`, { cause });
+    this.name = "CompactionPurgeStoppedError";
+  }
+}
+
+/** Run `work`, naming `stage` on anything it throws. */
+async function during<T>(
+  stage: CompactionPurgeStoppedError["stage"],
+  work: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await work();
+  } catch (err) {
+    throw err instanceof CompactionPurgeStoppedError
+      ? err
+      : new CompactionPurgeStoppedError(stage, err);
+  }
 }
 
 type ScannedRow = {
@@ -245,27 +275,28 @@ export async function purgeCompactionTombstones(
       ready = ready.filter((row) => !skip.has(row.userId));
       while (ready.length < take && !exhausted) {
         if (options.shouldStop?.()) break;
-        await classifyNextPage(skip);
+        await during("scanning tombstones", () => classifyNextPage(skip));
       }
       return ready.splice(0, take);
     },
-    deleteIds: async (tx, ids, userId) => {
-      // A re-fold reads an account's live samples and its leftovers under the
-      // fold lock, so it never sees the leftovers half gone; it reads the
-      // repair marker under the same lock and stays off them once the repair
-      // has run (`fold-constituents.ts`).
-      await holdAccountFoldLock(tx, userId);
-      // Re-checked at delete time: a row a restore wrote back, or one a
-      // person resurrected since the scan, is not a tombstone any more.
-      const result = await tx.measurement.deleteMany({
-        where: {
-          id: { in: ids },
-          deletedAt: { not: null },
-          source: "APPLE_HEALTH",
-        },
-      });
-      return result.count;
-    },
+    deleteIds: (tx, ids, userId) =>
+      during("deleting a batch", async () => {
+        // A re-fold reads an account's live samples and its leftovers under the
+        // fold lock, so it never sees the leftovers half gone; it reads the
+        // repair marker under the same lock and stays off them once the repair
+        // has run (`fold-constituents.ts`).
+        await holdAccountFoldLock(tx, userId);
+        // Re-checked at delete time: a row a restore wrote back, or one a
+        // person resurrected since the scan, is not a tombstone any more.
+        const result = await tx.measurement.deleteMany({
+          where: {
+            id: { in: ids },
+            deletedAt: { not: null },
+            source: "APPLE_HEALTH",
+          },
+        });
+        return result.count;
+      }),
   });
 
   return {
@@ -301,7 +332,21 @@ export async function handleCompactionTombstonePurge(
   );
   return withBackgroundEvent("job.compaction_tombstone_purge", async (evt) => {
     const startedAt = Date.now();
-    const result = await purgeCompactionTombstones(prisma, { shouldStop });
+    let result: CompactionTombstonePurgeOutcome;
+    try {
+      result = await purgeCompactionTombstones(prisma, { shouldStop });
+    } catch (err) {
+      // The reason names the stage and the condition, which is what the
+      // admin's failing-jobs card and the support report show; the error
+      // itself rides as the cause, for the log.
+      return jobFailed(
+        err instanceof CompactionPurgeStoppedError
+          ? err.message
+          : `stopped (${failureCode(err)})`,
+        err,
+        { continuation },
+      );
+    }
     const candidates: JobRunCandidate[] = [
       ...result.deferredUserIds.map((userId): JobRunCandidate => ({
         key: accountKey(userId),
