@@ -492,8 +492,8 @@ services:
     # workload can grow large enough to starve Postgres on a shared host.
     # Node sizes its heap from this limit: 1g gives a 524 MB heap, which a
     # long-used account fills in normal operation, so garbage collection
-    # stalls requests for seconds and a weekly backup can crash the process.
-    # 1536m gives 792 MB. On a host with 2 GB or less, lower it with
+    # stalls requests for seconds. 1536m gives 792 MB. The support report and
+    # Admin > System status flag a heap below 700 MB. On a host with 2 GB or less, lower it with
     # APP_MEMORY_LIMIT in .env; on a busy instance, raise it.
     mem_limit: "${APP_MEMORY_LIMIT:-1536m}"
     healthcheck:

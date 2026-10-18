@@ -61,6 +61,8 @@ export interface SystemStatus {
   buildTime: string;
   startTime: string;
   database: string;
+  /** The process's heap ceiling; `low` when it is below what a long-used account needs. */
+  memory: { heapLimitMb: number; low: boolean };
   worker: WorkerStatus;
   /**
    * Queues whose jobs exhausted their retries recently. `null` means the

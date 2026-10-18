@@ -18,9 +18,14 @@
  *
  * The report is English on purpose: it is read by whoever answers the issue.
  */
-import { getHeapStatistics } from "node:v8";
 
 import { prisma } from "@/lib/db";
+import { failureCondition } from "@/lib/jobs/failure-condition";
+import {
+  heapLimitMb,
+  isHeapLimitLow,
+  lowHeapLimitAdvice,
+} from "@/lib/support/heap-limit";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isOidcConfigured, isOidcOnly } from "@/lib/auth/oidc";
 import { getLoggingConfig } from "@/lib/logging/config";
@@ -183,6 +188,11 @@ export function errorClassOf(text: string | null | undefined): string {
   const parts: string[] = [];
   const named = /^([A-Z][A-Za-z0-9]{1,60}(?:Error|Exception))\b/.exec(trimmed);
   if (named) parts.push(named[1]);
+  // The database condition (`statement_timeout`, `lock_timeout`, ...): a
+  // Prisma error carries it only as a SQLSTATE inside the message, and
+  // without it a statement timeout read as the bare class "Error" (#1239).
+  const condition = failureCondition(trimmed);
+  if (condition) return [...parts, condition].join(" ");
   const code =
     /\b(P\d{4})\b/.exec(trimmed) ??
     /\b(E[A-Z][A-Z_]{2,30})\b/.exec(trimmed) ??
@@ -605,9 +615,7 @@ export async function collectSupportReportFacts(
       builtAt: process.env.NEXT_PUBLIC_APP_BUILT_AT?.trim() || null,
       node: process.version,
       processType: getProcessType(),
-      heapLimitMb: Math.round(
-        getHeapStatistics().heap_size_limit / 1024 / 1024,
-      ),
+      heapLimitMb: heapLimitMb(),
       uptimeSeconds: Math.round(process.uptime()),
     },
     database,
@@ -722,6 +730,9 @@ export function renderSupportReport(facts: SupportReportFacts): string {
   row("Node", facts.build.node);
   row("Process type", facts.build.processType);
   row("Heap limit", `${facts.build.heapLimitMb} MB`);
+  if (isHeapLimitLow(facts.build.heapLimitMb)) {
+    row("Heap limit note", lowHeapLimitAdvice(facts.build.heapLimitMb));
+  }
   row(
     "Uptime",
     `${Math.floor(facts.build.uptimeSeconds / 3600)} h ${Math.floor((facts.build.uptimeSeconds % 3600) / 60)} min`,

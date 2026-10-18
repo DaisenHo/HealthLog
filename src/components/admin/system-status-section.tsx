@@ -13,6 +13,7 @@ import {
   Key,
   Loader2,
   Map,
+  MemoryStick,
   Server,
   Users,
 } from "lucide-react";
@@ -155,6 +156,16 @@ export function SystemStatusSection() {
                   : t("admin.databaseError")
               }
               tone={status.database === "connected" ? "success" : "destructive"}
+            />
+            <StatusItem
+              icon={MemoryStick}
+              label={t("admin.heapLimitLabel")}
+              value={
+                status.memory.low
+                  ? t("admin.heapLimitLow", { mb: status.memory.heapLimitMb })
+                  : t("admin.heapLimitValue", { mb: status.memory.heapLimitMb })
+              }
+              tone={status.memory.low ? "warning" : undefined}
             />
             <StatusItem
               icon={Clock}

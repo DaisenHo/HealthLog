@@ -200,6 +200,25 @@ describe("support report redaction", () => {
     expect(text).toContain("environment-fetch");
   });
 
+  it("says what to raise when the heap limit is low, and keeps it through redaction", () => {
+    const facts = seededFacts();
+    const low = redactSupportText(
+      renderSupportReport({
+        ...facts,
+        build: { ...facts.build, heapLimitMb: 524 },
+      }),
+      CONTEXT,
+    );
+    expect(low).toContain("- Heap limit: 524 MB");
+    expect(low).toContain(
+      "- Heap limit note: The heap limit of 524 MB is below 700 MB.",
+    );
+    expect(low).toContain("APP_MEMORY_LIMIT=1536m in .env");
+    expect(low).toContain("docker compose up -d.");
+    const enough = redactSupportText(renderSupportReport(facts), CONTEXT);
+    expect(enough).not.toContain("Heap limit note");
+  });
+
   it("the seeds really are in the unredacted text", () => {
     const raw = renderSupportReport(seededFacts());
     for (const value of FORBIDDEN) expect(raw).toContain(value);
@@ -255,6 +274,21 @@ describe("error classes never carry the message", () => {
     );
     expect(errorClassOf("job timed out: did not finish within 1 h")).toBe(
       "timeout",
+    );
+    // A statement past its timeout, as Prisma words it: the SQLSTATE is the
+    // class, not the bare "Error" it used to read as.
+    expect(
+      errorClassOf(
+        "\nInvalid `prisma.measurement.findMany()` invocation:\n\n\nDatabase error. Code: `57014`. Message: `canceling statement due to statement timeout`",
+      ),
+    ).toBe("statement_timeout");
+    expect(
+      errorClassOf(
+        "compaction-tombstone-purge: stopped while deleting a batch (lock_timeout)",
+      ),
+    ).toBe("lock_timeout");
+    expect(errorClassOf("timeout exceeded when trying to connect")).toBe(
+      "pool_timeout",
     );
     expect(errorClassOf("anything at all, an email a@b.co")).toBe("Error");
     expect(errorClassOf(null)).toBe("unknown");

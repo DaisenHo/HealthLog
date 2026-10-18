@@ -657,7 +657,9 @@ describe("buildFullBackupPayload disaster-recovery mode", () => {
     expect(mocks.buildRecordsBackupSection).toHaveBeenCalledWith(
       prisma,
       "user-1",
-      { purpose: "disaster-recovery" },
+      // The materialising payload reads the documents itself; only the
+      // streaming writer defers them.
+      { purpose: "disaster-recovery", deferDocuments: false },
     );
     expect(payload).toMatchObject({
       schemaVersion: "2",

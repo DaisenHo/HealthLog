@@ -230,6 +230,21 @@ rather than by the size of the record going through it: measured on the same
 died and the new one finished holding tens of megabytes, writing a 9.1 MB
 object that restores to the identical record.
 
+Up to 1.43.4 that held for the tables that are long in rows, not for the
+ones that are heavy in bytes. The stored documents and the ECG traces were
+still read whole, and a vault of 190 MB cost about five times that in heap:
+the bytes, their base64, the section's JSON and the preview's copies of each
+row. A single account with that many documents took a 524 MB process down on
+every weekly run, while 1.25 million measurements beside them fitted easily.
+Both writers now read the traces a page at a time and the documents one at a
+time, each document's bytes in slices of 1.5 MB. Measured on that account
+under `--max-old-space-size=524`, the peak went from 930 MB (a crash) to
+209 MB. The restore had the same problem in the other direction: it kept
+every document of the file in memory and peaked at 1.25 GB on the same copy.
+It now leaves the stored bytes out of its first read and writes the
+documents one at a time from a second one, and the copy restores every
+document byte for byte inside the 524 MB heap.
+
 One ceiling remains, and it is structural rather than a memory bound: a
 multipart upload carries 10 000 parts, so 80 GB is the largest object one
 account can produce. Past it the account's backup fails with a clear refusal,

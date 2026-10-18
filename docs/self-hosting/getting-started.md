@@ -18,7 +18,7 @@ already installed, longer if a TLS-fronted public hostname is in scope
   heap at about 792 MB). On a 2 GB host that leaves too little for
   Postgres and the system, so set `APP_MEMORY_LIMIT=1g` in `.env`
   (a heap of about 524 MB); a long-used account then runs closer to
-  that heap, and the weekly backup with it.
+  that heap, and the support report and Admin > System status say so.
 - **Outbound HTTPS** to `ghcr.io` (image pulls) plus whichever
   integration endpoints you plan to enable (Withings, OpenAI, etc.).
   The opt-in environmental-context module additionally reaches
