@@ -9,6 +9,7 @@ import {
   readFailingQueues,
 } from "@/lib/jobs/job-failures";
 import { readFileSync } from "node:fs";
+import { heapLimitMb, isHeapLimitLow } from "@/lib/support/heap-limit";
 import {
   geoLookupMode,
   geoProviderChosen,
@@ -73,6 +74,9 @@ export const GET = apiHandler(async () => {
   // reports. `null` = no queue schema to ask (web-only deployment); an empty
   // array = asked, nothing is failing.
   const failingJobs = await readFailingQueues();
+  // The process's heap ceiling, and whether it is the 1 GB-container size
+  // that a long-used account can fill (`heap-limit.ts`).
+  const heapLimit = heapLimitMb();
 
   return apiSuccess({
     version: process.env.npm_package_version || "0.1.0",
@@ -81,6 +85,7 @@ export const GET = apiHandler(async () => {
     buildTime: BUILD_TIME,
     startTime: START_TIME,
     database: "connected",
+    memory: { heapLimitMb: heapLimit, low: isHeapLimitLow(heapLimit) },
     worker: {
       running: workerStatus.running,
       startedAt: workerStatus.startedAt,

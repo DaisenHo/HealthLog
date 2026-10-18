@@ -44,6 +44,14 @@ vi.mock("@/lib/jobs/worker-status", () => ({
   })),
 }));
 
+const heapMock = vi.hoisted(() => ({ mb: 792 }));
+vi.mock("@/lib/support/heap-limit", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/support/heap-limit")
+  >("@/lib/support/heap-limit");
+  return { ...actual, heapLimitMb: () => heapMock.mb };
+});
+
 const geoMock = vi.hoisted(() => ({
   lookup: "online" as "offline" | "online" | "off",
   chosen: false,
@@ -185,6 +193,19 @@ describe("GET /api/admin/status (integration health summary)", () => {
     // Regression: only NON-revoked tokens are counted as "active".
     const tokenCallArgs = vi.mocked(prisma.apiToken.count).mock.calls[0]?.[0];
     expect(tokenCallArgs).toEqual({ where: { revoked: false } });
+  });
+
+  it("flags a heap limit too small for a long-used account", async () => {
+    heapMock.mb = 524;
+    const low = (await (await GET()).json()) as {
+      data: { memory: { heapLimitMb: number; low: boolean } };
+    };
+    expect(low.data.memory).toEqual({ heapLimitMb: 524, low: true });
+    heapMock.mb = 792;
+    const enough = (await (await GET()).json()) as {
+      data: { memory: { heapLimitMb: number; low: boolean } };
+    };
+    expect(enough.data.memory).toEqual({ heapLimitMb: 792, low: false });
   });
 
   it("reports named failing queues through failingJobs only", async () => {
