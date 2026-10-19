@@ -734,5 +734,9 @@
   "errorBoundary": {
     "title": "Algo deu errado",
     "description": "Ocorreu um erro inesperado. Você pode tentar novamente, copiar os detalhes técnicos ou abrir um relatório de bug."
+  },
+  "notFound": {
+    "title": "Esta página não existe.",
+    "backToDashboard": "Voltar ao painel"
   }
 }
