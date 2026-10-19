@@ -351,6 +351,31 @@ describe("a collection ended short", () => {
     ).toMatchObject({ ...END, attempts: 2 });
   });
 
+  it("starts the count over when the retry got further back before it stalled again", async () => {
+    const further = { ...END, at: "2023-01-02T00:00:00.000Z" };
+    const done = new Set<string>();
+    const { ended, collections } = await slice(
+      async () => {
+        noteGoogleHealthDeferred();
+        await recordGoogleHealthBackfillEnd("fetchHeartRate", further);
+        return 4;
+      },
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", parked(1, 25)],
+      ]),
+      done,
+    );
+    // Progress, then a new stall: parked again, not final.
+    expect(ended.get("fetchHeartRate")).toMatchObject({
+      ...further,
+      attempts: 1,
+    });
+    expect(done.has("fetchHeartRate")).toBe(false);
+    expect(collections).toEqual([
+      expect.objectContaining({ key: "fetchHeartRate", status: "stopped" }),
+    ]);
+  });
+
   it("goes back to an ordinary walk when the second attempt gets somewhere", async () => {
     const { ended, collections } = await slice(
       async () => {

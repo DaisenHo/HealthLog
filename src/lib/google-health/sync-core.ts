@@ -497,9 +497,10 @@ interface BackfillResumeTracker {
   ended: Map<string, GoogleHealthBackfillEnd>;
   /**
    * Collections walked again this attempt after an earlier one ended without
-   * progress, with how many attempts had ended that way.
+   * progress, with how many attempts in a row had ended that way and the edge
+   * they ended at.
    */
-  retrying: Map<string, number>;
+  retrying: Map<string, { attempts: number; at: string }>;
 }
 const backfillResumeStorage = new AsyncLocalStorage<BackfillResumeTracker>();
 
@@ -857,14 +858,18 @@ export async function recordGoogleHealthBackfillEnd(
   const resume = backfillResumeStorage.getStore();
   if (!resume) return;
   const ended = new Map(resume.ended);
+  // Counted across attempts that end at the same edge: a walk that got
+  // further back before it stalled again made progress, and its count starts
+  // over. Only attempts in a row that reach nowhere make the end final.
+  const parked = resume.retrying.get(key);
+  const sameEdge =
+    parked !== undefined && Date.parse(parked.at) === Date.parse(end.at);
   ended.set(
     key,
     end.reason === "no_progress"
       ? {
           ...end,
-          // Counted across attempts: the one walked again this attempt
-          // carries the count it was parked with.
-          attempts: (resume.retrying.get(key) ?? 0) + 1,
+          attempts: sameEdge ? parked.attempts + 1 : 1,
           endedAt: new Date().toISOString(),
         }
       : end,
@@ -1073,8 +1078,12 @@ export async function runGoogleHealthCollection(
   if (parked) {
     // Its earlier attempt ended without progress and its wait is over: walk
     // it again from its edge. The note goes with the next write; the count
-    // stays with the attempt, so a second end without progress is final.
-    resume.retrying.set(key, parked.attempts ?? 1);
+    // and the edge stay with the attempt, so a second end at the same edge
+    // is final.
+    resume.retrying.set(key, {
+      attempts: parked.attempts ?? 1,
+      at: parked.at,
+    });
     resume.ended.delete(key);
   }
   const startedAt = performance.now();
