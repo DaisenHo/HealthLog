@@ -55,6 +55,7 @@ import {
   IntegrationCard,
   type IntegrationMenuAction,
 } from "./integration-card";
+import { HistoryEndsNote } from "./history-ends-note";
 import { MetricFreshnessList } from "./metric-freshness-list";
 import {
   CallbackMismatchNotice,
@@ -505,6 +506,7 @@ export function OAuthIntegrationCardView({
         ) : undefined
       }
     >
+      <HistoryEndsNote provider={provider} entries={viewModel?.backfillEnded} />
       {syncResults ?? (
         <ActionResultLines provider={provider} sync={sync} test={test} />
       )}

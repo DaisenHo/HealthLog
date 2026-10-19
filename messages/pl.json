@@ -7398,6 +7398,10 @@
         "causePermission": "uprawnienie",
         "failureStreak": "Seria błędów: {count} z {threshold}",
         "copyFailed": "Nie udało się skopiować. Zaznacz tekst i skopiuj go ręcznie."
+      },
+      "historyEnds": {
+        "horizon": "{type}: zaimportowano wstecz do {date}. Starsze odczyty wykraczają poza limit importu.",
+        "noProgress": "{type}: zaimportowano wstecz do {date}. Google przestał zwracać starsze odczyty, więc import kończy się w tym miejscu."
       }
     },
     "dawarich": "Dawarich",

@@ -7398,6 +7398,10 @@
         "causePermission": "permiso",
         "failureStreak": "Racha de fallos: {count} de {threshold}",
         "copyFailed": "No se pudo copiar. Selecciona el texto y cópialo a mano."
+      },
+      "historyEnds": {
+        "horizon": "{type}: importado hasta el {date}. Las lecturas más antiguas quedan fuera del límite de importación.",
+        "noProgress": "{type}: importado hasta el {date}. Google dejó de devolver lecturas más antiguas, así que la importación termina ahí."
       }
     },
     "dawarich": "Dawarich",

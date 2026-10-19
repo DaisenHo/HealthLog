@@ -7398,6 +7398,10 @@
         "causePermission": "autorizzazione",
         "failureStreak": "Serie di errori: {count} su {threshold}",
         "copyFailed": "Copia non riuscita. Seleziona il testo e copialo a mano."
+      },
+      "historyEnds": {
+        "horizon": "{type}: importato fino al {date}. Le misurazioni più vecchie superano il limite di importazione.",
+        "noProgress": "{type}: importato fino al {date}. Google non restituiva più misurazioni più vecchie, quindi l'importazione si ferma lì."
       }
     },
     "dawarich": "Dawarich",

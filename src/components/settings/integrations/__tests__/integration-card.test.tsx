@@ -137,6 +137,35 @@ describe("<IntegrationCard> per state", () => {
     );
   });
 
+  it("history ended short: no longer loading, and says where it ends and why", () => {
+    const html = render(
+      "google-health",
+      connected(healthFixture(), {
+        backfillCompleted: true,
+        backfillEnded: [
+          {
+            type: "PULSE",
+            endsAt: "2024-05-11T08:00:00.000Z",
+            reason: "no_progress",
+          },
+          {
+            type: "WEIGHT",
+            endsAt: "2006-10-17T12:00:00.000Z",
+            reason: "horizon",
+          },
+        ],
+      }),
+    );
+    expect(html).not.toContain("Older history is loading");
+    expect(html).toContain('data-testid="google-health-history-ends"');
+    expect(html).toMatch(
+      /data-reason="no_progress"[^>]*>Pulse: imported back to [^<]*2024[^<]*\. Google stopped returning older readings/,
+    );
+    expect(html).toMatch(
+      /data-reason="horizon"[^>]*>Weight: imported back to [^<]*2006[^<]*\. Older readings lie beyond the import limit\./,
+    );
+  });
+
   it("limited by plan: the sentence names up to three, counts the rest, no button", () => {
     const html = render(
       "withings",
