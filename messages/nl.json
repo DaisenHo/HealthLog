@@ -54,7 +54,8 @@
     "durationClockHours": "{time} u",
     "errorIdLabel": "Fout-ID",
     "errorIdCopy": "Fout-ID kopiëren",
-    "errorIdCopied": "Fout-ID gekopieerd"
+    "errorIdCopied": "Fout-ID gekopieerd",
+    "readThrottled": "Er zijn net te veel verzoeken. Probeer het later opnieuw."
   },
   "apiErrors": {
     "measurement": {
@@ -1272,7 +1273,8 @@
       "bodyNotLogged": "Voor deze dag is niets vastgelegd in het ziektedagboek",
       "openIllness": "Openen"
     },
-    "sourceNotification": "Melding"
+    "sourceNotification": "Melding",
+    "tagCatalogLoadError": "De tags konden niet worden geladen."
   },
   "medications": {
     "title": "Medicatie",
@@ -3173,7 +3175,8 @@
         "steadyLatestAbove": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, hoger dan dat.",
         "steadyLatestBelow": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, lager dan dat.",
         "insufficient": "Je gebruikelijke bereik wordt nog bepaald. Blijf nog een paar dagen metingen vastleggen.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Je gebruikelijke bereik kon niet worden geladen."
       },
       "scope": {
         "prefix": "De Coach kijkt al naar {metric}"
@@ -4290,7 +4293,8 @@
         "caveat": "Dit is een vergelijking met je eigen eerdere dagen, geen uitspraak over waarom een dag verliep zoals hij verliep.",
         "learning": "Leerfase: {entries} van {threshold} dagen vastgelegd. Een vergelijking verschijnt zodra er genoeg zijn.",
         "noPattern": "Niets in de {entries} tot nu toe vastgelegde dagen is stabiel genoeg om een dag mee te vergelijken. Als je ook de context van een dag vastlegt, wordt meer ervan vergelijkbaar.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "De verwachte waarde volgens je eigen patroon kon niet worden geladen."
       },
       "patterns": {
         "title": "Patronen in je stemming",
@@ -4389,6 +4393,10 @@
             "consistency": "Regelmaat",
             "timing": "Timing",
             "composition": "Samenstelling"
+          },
+          "gap": {
+            "fewNights": "nog niet genoeg nachten ({count} van 3)",
+            "noMainSleep": "de laatste dag had alleen een dutje"
           }
         },
         "READINESS": {
@@ -4665,7 +4673,10 @@
         "averageHeartRateExplainer": "Je gemiddelde hartslag over de hele dag of cyclus, zoals gerapporteerd door je wearable.",
         "maxHeartRateExplainer": "Je hoogste hartslag over de hele dag of cyclus, zoals gerapporteerd door je wearable.",
         "energyExpenditureKjExplainer": "De energie die je lichaam over de dag heeft verbruikt, in kilojoule, zoals je apparaat die zelf rapporteert."
-      }
+      },
+      "emptyAction": "Integraties openen",
+      "emptyOuraNoResilience": "Oura is verbonden, maar voor dit account is nog geen veerkrachtniveau binnengekomen. HealthLog vraagt het bij elke synchronisatie op bij Oura, dus het verschijnt hier zodra Oura er een levert. Als de Oura-app wel een niveau toont, noemt de Oura-kaart onder Instellingen, Integraties wat de verbinding niet kan leveren. De paraatheid van Oura is al je herstelscore, hierboven gelinkt.",
+      "emptyOuraPermission": "Oura is verbonden, maar de gegeven toestemming laat hartgezondheidsgegevens weg, en het veerkrachtniveau van Oura valt daaronder. Verbind Oura één keer opnieuw onder Instellingen, Integraties en sta toegang tot hartgezondheid toe; het niveau verschijnt dan bij de volgende synchronisatie. De paraatheid van Oura is al je herstelscore, hierboven gelinkt."
     },
     "bodyTempDeviation": {
       "title": "Afwijking lichaamstemperatuur",
@@ -7398,6 +7409,10 @@
         "causePermission": "toestemming",
         "failureStreak": "Fouten op rij: {count} van {threshold}",
         "copyFailed": "Kopiëren is mislukt. Selecteer de tekst en kopieer hem handmatig."
+      },
+      "historyEnds": {
+        "horizon": "{type}: geïmporteerd tot {date}. Oudere metingen liggen voorbij de importgrens.",
+        "noProgress": "{type}: geïmporteerd tot {date}. Google gaf geen oudere metingen meer terug, dus de import stopt daar."
       }
     },
     "dawarich": "Dawarich",
@@ -9204,7 +9219,8 @@
       "viewDetails": "Cyclusinzichten bekijken"
     },
     "wellnessRing": {
-      "label": "Cyclus"
+      "label": "Cyclus",
+      "loadError": "Je cyclus kon niet worden geladen."
     },
     "disclaimer": "Deze voorspellingen zijn beschrijvende schattingen op basis van je geregistreerde gegevens, geen anticonceptiemethode en geen medisch advies. Ze geven nooit aan dat onbeschermde seks veilig is. Raadpleeg voor anticonceptie of een medische beslissing een zorgverlener.",
     "title": "Je cyclus",
@@ -11890,7 +11906,8 @@
       "referenceMeta": "Referentie-inname {value} {unit}/dag (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag (EFSA)"
+      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag (EFSA)",
+      "loadError": "Cafeïne kon niet worden geladen."
     },
     "micronutrients": {
       "title": "Vitaminen en mineralen",
@@ -12982,7 +12999,8 @@
       "allOther": "Alle {count} tonen",
       "fewer": "Minder tonen",
       "note": "Samengesteld uit je registraties, zonder oordeel. Elke datum opent de hele dag.",
-      "report": "Artsenrapport van {date} tot vandaag"
+      "report": "Artsenrapport van {date} tot vandaag",
+      "loadError": "Kon niet laden wat er sinds het laatste bezoek is gebeurd."
     },
     "travel": "Op reis",
     "event": {
