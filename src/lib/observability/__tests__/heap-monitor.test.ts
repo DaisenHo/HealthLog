@@ -1,14 +1,23 @@
 import {
+  chmodSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import {
+  clearLogBuffer,
+  getLogBufferSize,
+  readLogBuffer,
+} from "@/lib/logging/in-memory-buffer";
 
 import { walkSourceFiles } from "@/__tests__/helpers/source-files";
 
@@ -22,6 +31,8 @@ import {
   HeapMonitor,
   type HeapFigures,
   type HeapMonitorDeps,
+  emitHeapLine,
+  isPrivateDirectory,
   writeDiagnosticHeapSnapshot,
 } from "../heap-monitor";
 import { InFlightRegistry } from "../in-flight";
@@ -212,7 +223,7 @@ describe("runtime.heap task names", () => {
 });
 
 describe("default snapshot writer", () => {
-  it("writes into a 0700 directory, the file 0600", () => {
+  it("writes into a fresh random 0700 directory, the file 0600", () => {
     const dir = mkdtempSync(join(tmpdir(), "hl-heap-test-"));
     const previous = process.env.HEALTHLOG_DIAG_DIR;
     process.env.HEALTHLOG_DIAG_DIR = dir;
@@ -220,13 +231,65 @@ describe("default snapshot writer", () => {
       const outcome = writeDiagnosticHeapSnapshot();
       expect(outcome.snapshot).toBe("written");
       if (outcome.snapshot !== "written") return;
-      const sub = readdirSync(dir)[0];
+      const [sub] = readdirSync(dir);
+      expect(sub).toMatch(/^healthlog-heap-/);
+      // Not derived from the pid, which is 1 in most containers.
+      expect(sub).not.toBe(`healthlog-heap-${process.pid}`);
       expect(statSync(join(dir, sub)).mode & 0o777).toBe(0o700);
       expect(statSync(outcome.snapshot_path).mode & 0o777).toBe(0o600);
+      expect(outcome.snapshot_path.startsWith(join(dir, sub) + "/")).toBe(true);
     } finally {
       if (previous === undefined) delete process.env.HEALTHLOG_DIAG_DIR;
       else process.env.HEALTHLOG_DIAG_DIR = previous;
       rmSync(dir, { recursive: true, force: true });
     }
   }, 90_000);
+
+  it("accepts only a real directory of its own user closed to others", () => {
+    const dir = mkdtempSync(join(tmpdir(), "hl-heap-dir-"));
+    try {
+      const own = join(dir, "own");
+      mkdirSync(own, { mode: 0o700 });
+      chmodSync(own, 0o700);
+      expect(isPrivateDirectory(own)).toBe(true);
+
+      const open = join(dir, "open");
+      mkdirSync(open);
+      chmodSync(open, 0o755);
+      expect(isPrivateDirectory(open)).toBe(false);
+
+      // A symlink to a private directory is still refused: lstat, not stat.
+      const link = join(dir, "link");
+      symlinkSync(own, link);
+      expect(isPrivateDirectory(link)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("admin log ring", () => {
+  it("keeps periodic samples out, and pressure reports in", () => {
+    const write = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    try {
+      clearLogBuffer();
+      for (let i = 0; i < 20; i++) {
+        emitHeapLine(HEAP_TASK_NAMES.sampled, "info", { heap_used_mb: i });
+      }
+      // The samples still reach stdout.
+      expect(write).toHaveBeenCalledTimes(20);
+      expect(getLogBufferSize("all")).toBe(0);
+
+      emitHeapLine(HEAP_TASK_NAMES.pressure, "warn", { heap_used_mb: 900 });
+      expect(getLogBufferSize("all")).toBe(1);
+      expect(getLogBufferSize("problems")).toBe(1);
+      const [event] = readLogBuffer({ ring: "problems" });
+      expect(event.background?.task_name).toBe(HEAP_TASK_NAMES.pressure);
+    } finally {
+      write.mockRestore();
+      clearLogBuffer();
+    }
+  });
 });

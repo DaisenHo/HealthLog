@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync } from "node:fs";
+import { chmodSync, lstatSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import {
   getHeapSpaceStatistics,
@@ -25,7 +25,8 @@ import { inFlightRegistry, type InFlightRegistry } from "./in-flight";
  *
  *   - `runtime.heap.sampled`, every five minutes, and every minute while the
  *     heap stands at or above 70 % of its limit. About 290 lines a day on a
- *     quiet process, a trend line rather than a flood.
+ *     quiet process, a trend line rather than a flood. It goes to stdout and
+ *     Loki but not into the admin log ring, which it would otherwise flush.
  *   - `runtime.heap.pressure`, at `warn`, the first time the heap reaches 85 %
  *     of its limit: the heap figures plus the oldest requests and jobs in
  *     flight and the routes most of them share (see `in-flight.ts`). It
@@ -42,8 +43,8 @@ import { inFlightRegistry, type InFlightRegistry } from "./in-flight";
  *
  * Opt-in heap snapshot: with `HEALTHLOG_HEAP_SNAPSHOT=1`, the first pressure
  * report is followed by one `v8.writeHeapSnapshot()` into
- * `HEALTHLOG_DIAG_DIR` (default `/tmp`), inside a directory only the process
- * user can open, the file chmod 0600. One per process, ever. A snapshot is a
+ * `HEALTHLOG_DIAG_DIR` (default `/tmp`), inside a fresh randomly named
+ * directory only the process user can open, the file chmod 0600. One per process, ever. A snapshot is a
  * copy of the whole heap, decrypted health records and keys included: it is
  * never uploaded, never logged, and only its path is reported. Writing it
  * blocks the process for seconds and needs memory of its own, so it is a tool
@@ -133,7 +134,8 @@ function defaultReadFigures(registry: InFlightRegistry): HeapFigures {
   };
 }
 
-function defaultEmit(
+/** The production emit; exported for its ring-buffer test. */
+export function emitHeapLine(
   taskName: string,
   level: "info" | "warn",
   meta: Record<string, unknown>,
@@ -143,18 +145,45 @@ function defaultEmit(
   for (const [key, value] of Object.entries(meta)) event.addMeta(key, value);
   if (level === "warn") event.elevateLevel("warn");
   event.finish();
-  emitIfSampled(event.toJSON());
+  // The periodic sample stays out of the admin log ring: at a minute apart
+  // under load it would evict the very events someone opens that page for.
+  // stdout and Loki still get it; the pressure and snapshot lines (warn) go
+  // everywhere.
+  emitIfSampled(event.toJSON(), {
+    skipMemoryRing: taskName === HEAP_TASK_NAMES.sampled,
+  });
 }
 
-/** The opt-in heap snapshot; exported for its file-mode test. */
+/**
+ * Whether `path` is a real directory (not a symlink) owned by this process's
+ * user and closed to everyone else. Checked before a snapshot is written into
+ * it, because the snapshot holds decrypted health data.
+ */
+export function isPrivateDirectory(path: string): boolean {
+  const stat = lstatSync(path);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) return false;
+  if (typeof process.getuid === "function" && stat.uid !== process.getuid()) {
+    return false;
+  }
+  return (stat.mode & 0o077) === 0;
+}
+
+/**
+ * The opt-in heap snapshot; exported for its file-mode test.
+ *
+ * The directory comes from `mkdtempSync`: an unpredictable name created
+ * atomically with mode 0700, so nobody can have placed a directory or a
+ * symlink there first (a pid-based name is not that: in a container the pid
+ * is usually 1). It is re-checked with `lstat` before anything is written.
+ */
 export function writeDiagnosticHeapSnapshot(): SnapshotOutcome {
   try {
-    const dir = join(
-      envOr("HEALTHLOG_DIAG_DIR", "/tmp"),
-      `healthlog-heap-${process.pid}`,
+    const dir = mkdtempSync(
+      join(envOr("HEALTHLOG_DIAG_DIR", "/tmp"), "healthlog-heap-"),
     );
-    mkdirSync(dir, { recursive: true, mode: 0o700 });
-    chmodSync(dir, 0o700);
+    if (!isPrivateDirectory(dir)) {
+      return { snapshot: "failed", snapshot_error: "unsafe_directory" };
+    }
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const path = writeHeapSnapshot(join(dir, `heap-${stamp}.heapsnapshot`));
     chmodSync(path, 0o600);
@@ -255,7 +284,7 @@ export function startHeapMonitor(overrides: Partial<HeapMonitorDeps> = {}) {
     readHeap: defaultReadHeap,
     readFigures: () => defaultReadFigures(registry),
     registry,
-    emit: defaultEmit,
+    emit: emitHeapLine,
     snapshotEnabled: envFlag("HEALTHLOG_HEAP_SNAPSHOT"),
     writeSnapshot: writeDiagnosticHeapSnapshot,
     ...overrides,
