@@ -77,7 +77,7 @@ vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: headersGet })),
 }));
 
-import { POST, GET } from "../route";
+import { POST, GET, DELETE } from "../route";
 import { resolveBearerToken } from "@/lib/auth/bearer";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { checkMcpRateLimit } from "@/lib/rate-limit";
@@ -428,24 +428,40 @@ describe("/mcp — write tools gate on health:write", () => {
   });
 });
 
-describe("/mcp — GET transport", () => {
-  it("is wired for GET (SSE stream open) behind the same gates", async () => {
+describe("/mcp — GET and DELETE", () => {
+  const bearer = { authorization: "Bearer hlk_" + "a".repeat(64) };
+
+  it("answers an authenticated GET with 405 and Allow: POST, without spending a rate-limit slot", async () => {
     validToken();
     const res = await GET(
       new Request("http://localhost/mcp", {
         method: "GET",
-        headers: {
-          authorization: "Bearer hlk_" + "a".repeat(64),
-          accept: "text/event-stream",
-        },
+        headers: { ...bearer, accept: "text/event-stream" },
       }),
     );
-    // Auth + gates ran; the transport answers (a stream open or a
-    // method-specific status), never a 401/404/429 on the happy path.
-    expect([200, 405]).toContain(res.status);
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("POST");
     expect(resolveBearerToken).toHaveBeenCalledTimes(1);
-    expect(isModuleEnabled).toHaveBeenCalledWith("user-1", "mcp");
-    // Release any opened stream so the test process can exit cleanly.
-    await res.body?.cancel().catch(() => {});
+    expect(isModuleEnabled).not.toHaveBeenCalled();
+  });
+
+  it("answers DELETE the same way", async () => {
+    validToken();
+    const res = await DELETE(
+      new Request("http://localhost/mcp", {
+        method: "DELETE",
+        headers: bearer,
+      }),
+    );
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("POST");
+  });
+
+  it("still challenges an unauthenticated GET with 401, so discovery works", async () => {
+    const res = await GET(
+      new Request("http://localhost/mcp", { method: "GET" }),
+    );
+    expect(res.status).toBe(401);
+    expect(res.headers.get("www-authenticate")).toBeTruthy();
   });
 });

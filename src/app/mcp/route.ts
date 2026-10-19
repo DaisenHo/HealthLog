@@ -181,6 +181,24 @@ async function handleMcp(request: Request): Promise<Response> {
       return unauthorized(request, SCOPE_HEALTH_READ);
     }
 
+    // The server is stateless and answers every call as one buffered JSON
+    // response, so it offers no server-to-client stream and no session to
+    // end. The transport specification answers GET and DELETE with 405 and
+    // `Allow: POST` in that case, and a client then stops asking. Letting
+    // the SDK open an event stream here closed it again straight away; the
+    // client read that as a dropped connection and reconnected about once a
+    // second, each attempt spending a rate-limit slot and a module lookup.
+    if (request.method !== "POST") {
+      annotate({
+        action: { name: "mcp.method.not_allowed" },
+        meta: { method: request.method },
+      });
+      return Response.json(
+        { error: "method_not_allowed" },
+        { status: 405, headers: { Allow: "POST" } },
+      );
+    }
+
     // 2. RATE LIMIT — per `<userId>:<tokenId>` credential binding.
     const rl = await checkMcpRateLimit(ctx.binding);
     if (!rl.allowed) {
