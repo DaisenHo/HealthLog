@@ -7408,6 +7408,10 @@
         "causePermission": "권한",
         "failureStreak": "연속 실패: {threshold}회 중 {count}회",
         "copyFailed": "복사하지 못했어요. 텍스트를 선택해서 직접 복사해 주세요."
+      },
+      "historyEnds": {
+        "horizon": "{type}: {date}까지 가져왔습니다. 그보다 오래된 기록은 가져오기 한도를 넘습니다.",
+        "noProgress": "{type}: {date}까지 가져왔습니다. Google이 더 오래된 기록을 반환하지 않아 가져오기가 여기서 끝났습니다."
       }
     },
     "dawarich": "Dawarich",

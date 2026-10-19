@@ -7408,6 +7408,10 @@
         "causePermission": "Freigabe",
         "failureStreak": "Fehlerserie: {count} von {threshold}",
         "copyFailed": "Kopieren hat nicht geklappt. Markiere den Text und kopiere ihn von Hand."
+      },
+      "historyEnds": {
+        "horizon": "{type}: übernommen bis zurück zum {date}. Ältere Werte liegen jenseits der Importgrenze.",
+        "noProgress": "{type}: übernommen bis zurück zum {date}. Google lieferte keine älteren Werte mehr, deshalb endet der Import dort."
       }
     },
     "dawarich": "Dawarich",

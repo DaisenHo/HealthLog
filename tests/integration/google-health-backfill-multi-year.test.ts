@@ -22,9 +22,10 @@
  *   - the hourly sync runs between slices (and beside one, by waiting for
  *     it) instead of being skipped for as long as the import runs;
  *   - every slice writes a log event naming its requests and where it got to;
- *   - the heap does not grow with the history (run it under the production
- *     ceiling: `NODE_OPTIONS=--max-old-space-size=524`);
- *   - and, in a second run over four years, a Google that refuses the resume
+ *   - over the full history, the heap does not grow with it (run it under
+ *     the production ceiling: `NODE_OPTIONS=--max-old-space-size=524`);
+ *   - and, in a second run over four years (a third longer than the first),
+ *     a Google that refuses the resume
  *     edge's upper bound (`<=`): the backfill falls back to reading without
  *     it, notes the refusal so it is met only once, keeps its place in the
  *     unbounded list from slice to slice so the pages it reads stay linear in
@@ -34,6 +35,24 @@
  * Google is replaced at the `safeFetch` seam by a generator that builds each
  * page on request from the filter and page token it is asked with, so the
  * fixture never sits in memory.
+ *
+ * How much history it walks is set by `HEALTHLOG_BACKFILL_TEST_DAYS`. What a
+ * run costs is its heart-rate pages (a request, a thousand row writes and a
+ * progress note each), so a shorter history only helps if the slices shrink
+ * with it. Unset, the first run walks 120 days and the second 160, at one
+ * reading a minute and a thousand a page, in slices of 50 pages instead of
+ * 500, with the faults moved to the same places within them: the same
+ * sequence of slices, boundaries, retries and rate limit, at about a tenth
+ * of the pages. Two things differ. The light collections start out walked,
+ * because the first slice walks them before heart rate (some hundred empty
+ * requests here) and a 50-page slice would spend itself on them; and 120
+ * days is a floor, not a choice: the first hourly sync reads the last 30
+ * days, the first slice has to have written them already, as it has in the
+ * full run, or the backfill's import counts no longer add up to the history,
+ * and the history has to outlast four slices. The full three and four years
+ * (some 3.7 million readings, every collection, production slices, over
+ * twenty minutes) run when the variable is at least `1095`, which the
+ * nightly `integration-long.yml` workflow does.
  */
 import v8 from "node:v8";
 import vm from "node:vm";
@@ -48,8 +67,6 @@ const USER = "gh-multi-year-owner";
 const MINUTE = 60_000;
 /** The newest reading: now, so the hourly sync's window lands on real data. */
 const NOW = Math.floor(Date.now() / MINUTE) * MINUTE;
-/** Three years of heart rate, one reading a minute. */
-const POINTS = 3 * 365 * 24 * 60;
 
 /**
  * How much the collected heap may grow over the second half of the history:
@@ -63,6 +80,47 @@ const POINTS = 3 * 365 * 24 * 60;
  * grow by hundreds of MB over the same stretch.
  */
 const GROWTH_BUDGET_BYTES = 16 * 1024 * 1024;
+
+/**
+ * The run's size (see the header): the full three years with production
+ * slices when `HEALTHLOG_BACKFILL_TEST_DAYS` is at least 1095, else that
+ * many days (120 unless set) with 50-page slices and heart rate the only
+ * collection left to walk.
+ */
+const size = vi.hoisted(() => {
+  const raw = process.env.HEALTHLOG_BACKFILL_TEST_DAYS;
+  const days = raw && /^\d+$/.test(raw) && Number(raw) > 0 ? Number(raw) : 120;
+  const full = days >= 3 * 365;
+  return { days, full, slicePages: full ? 500 : 50 };
+});
+
+/** Days of heart rate the first run walks; the second walks a third more. */
+const DAYS = size.days;
+/** One reading a minute. */
+const POINTS = DAYS * 24 * 60;
+/** Pages a slice reads, and the faults' places scaled to it. */
+const SLICE_PAGES = size.slicePages;
+const SCALE = SLICE_PAGES / 500;
+
+vi.mock("@/lib/jobs/google-health-backfill", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/jobs/google-health-backfill")>();
+  if (size.slicePages === actual.GOOGLE_HEALTH_BACKFILL_SLICE_PAGES) {
+    return actual;
+  }
+  // The drain runs each slice with the production budget; a shorter run
+  // gives it shorter slices through the job's own test seam.
+  return {
+    ...actual,
+    runGoogleHealthBackfillForUser: (
+      ...args: Parameters<typeof actual.runGoogleHealthBackfillForUser>
+    ) =>
+      actual.runGoogleHealthBackfillForUser(args[0], args[1], args[2], {
+        ...args[3],
+        slicePages: size.slicePages,
+      }),
+  };
+});
 
 const fake = vi.hoisted(() => ({
   now: 0,
@@ -239,6 +297,19 @@ async function seed(points: number): Promise<void> {
       accessToken: encrypt("access"),
       refreshToken: encrypt("refresh"),
       tokenExpiresAt: new Date(Date.now() + 7 * 86_400_000),
+      // A shorter run starts with every light collection walked, so its
+      // short first slice goes to heart rate (see the header).
+      ...(size.full
+        ? {}
+        : {
+            backfillProgress: {
+              done: (
+                await import("@/lib/google-health/collection-keys")
+              ).GOOGLE_HEALTH_COLLECTION_KEYS.filter(
+                (k) => k !== "fetchHeartRate",
+              ),
+            },
+          }),
     },
   });
   fake.now = NOW;
@@ -284,7 +355,7 @@ function nextSlice(): AdmissionPayload | null {
   return next ? (next.data as AdmissionPayload) : null;
 }
 
-describe("Google Health backfill over three years of heart rate (#1220)", () => {
+describe(`Google Health backfill over ${DAYS} days of heart rate (#1220)`, () => {
   it("completes slice by slice, imports every reading once, and keeps the hourly sync running", async () => {
     const { drainIntegrationBackfillAdmission } =
       await import("@/lib/jobs/integration-backfill-drain");
@@ -292,15 +363,13 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
       await import("@/lib/jobs/reminder/google-health-sync");
     const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
       await import("@/lib/google-health/client");
-    const { GOOGLE_HEALTH_BACKFILL_SLICE_PAGES } =
-      await import("@/lib/jobs/google-health-backfill");
     GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
 
     // A server error and a lost request in the first slice, and a rate limit
     // Google will not lift for an hour in the second.
-    fake.faults.set(40, "503");
-    fake.faults.set(80, "timeout");
-    fake.faults.set(GOOGLE_HEALTH_BACKFILL_SLICE_PAGES + 120, "429-long");
+    fake.faults.set(Math.round(40 * SCALE), "503");
+    fake.faults.set(Math.round(80 * SCALE), "timeout");
+    fake.faults.set(SLICE_PAGES + Math.round(120 * SCALE), "429-long");
 
     // Heap samples from inside the page requests, between two pages of the
     // work being measured, once the second slice is over (see the budget).
@@ -309,7 +378,9 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
     let peak = 0;
     let samples = 0;
     fake.onRequest = () => {
-      if (!measuring || fake.heartRateRequests % 50 !== 0) return;
+      if (!measuring || fake.heartRateRequests % Math.round(50 * SCALE) !== 0) {
+        return;
+      }
       const live = liveHeapBytes();
       if (anchor === null) {
         anchor = peak = live;
@@ -431,15 +502,21 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
         `${mb(v8.getHeapStatistics().heap_size_limit)} MB, peak ${mb(peak)} MB)`,
     );
     expect(samples).toBeGreaterThan(5);
-    expect(growth).toBeLessThan(GROWTH_BUDGET_BYTES);
+    // Only over the full history: a short run is still warming up (one
+    // measured 47 MB of growth over 120 days with nothing held), and a walk
+    // that held what it read would hold too little of a short history to
+    // stand out. On every run the walk's memory is pinned by
+    // google-health-dense-backfill-memory.test.ts.
+    if (size.full) expect(growth).toBeLessThan(GROWTH_BUDGET_BYTES);
   }, 3_600_000);
 
   it("completes when Google refuses the resume edge's upper bound, meeting the refusal once", async () => {
-    // Four years: the first slice reads without an edge, the second resumes
-    // with the bound and is refused, every later one reads without it. Long
-    // enough that passing over everything already written on every slice
-    // would read the history several times over.
-    const points = 4 * 365 * 24 * 60;
+    // A third longer than the first run (four years in the full run): the
+    // first slice reads without an edge, the second resumes with the bound
+    // and is refused, every later one reads without it. Long enough that
+    // passing over everything already written on every slice would read the
+    // history several times over.
+    const points = Math.round((DAYS * 4) / 3) * 24 * 60;
     await seed(points);
     fake.refuseUpperBound = true;
 
@@ -449,8 +526,6 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
       await import("@/lib/jobs/reminder/google-health-sync");
     const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
       await import("@/lib/google-health/client");
-    const { GOOGLE_HEALTH_BACKFILL_SLICE_PAGES } =
-      await import("@/lib/jobs/google-health-backfill");
     GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
 
     const prisma = getPrismaClient();
@@ -528,7 +603,7 @@ describe("Google Health backfill over three years of heart rate (#1220)", () => 
         `history pages=${historyPages} slices=${slices.length}`,
     );
     expect(fake.backfillRequests).toBeLessThanOrEqual(
-      historyPages + GOOGLE_HEALTH_BACKFILL_SLICE_PAGES + 2 * slices.length,
+      historyPages + SLICE_PAGES + 2 * slices.length,
     );
 
     // The bound was asked for once, refused once, and never again: the

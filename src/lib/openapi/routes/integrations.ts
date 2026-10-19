@@ -207,6 +207,31 @@ export const connectionHealth = z
       "The one server-resolved health state of a connection (v1.42.4). It folds the ledger state, the liveness verdict, plan and permission gaps, provider reauth flags and the integration watchdog's silence flag into four states. Clients render it and never recompute it. The older health-shaped fields beside it stay for one release after the clients read `health`, then go.",
   });
 
+// #1220 — a Google Health backfill that ended a data type's history short of
+// its beginning says where and why, so a client can say so instead of
+// "older history is still loading".
+const googleHealthBackfillEnded = z
+  .array(
+    z.object({
+      type: z
+        .string()
+        .describe(
+          "The measurement type whose imported history ends here (e.g. `PULSE` for heart rate).",
+        ),
+      endsAt: isoDateTime().describe(
+        "The oldest instant the imported history of this type reaches back to.",
+      ),
+      reason: z
+        .enum(["horizon", "no_progress"])
+        .describe(
+          "`horizon`: the backfill reads back a set number of years (`GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS`, twenty by default) and the history goes further. `no_progress`: Google kept returning pages that reached no further back, so the import stopped there.",
+        ),
+    }),
+  )
+  .describe(
+    "Data types whose history backfill ended before the beginning of their history, with where and why. Empty when every type was read to its start. Kept after the backfill completes; cleared on reconnect.",
+  );
+
 const metricFreshnessEntry = z
   .object({
     type: z
@@ -975,6 +1000,7 @@ const fitbitStatusResponse = z.object(connectionStatusShape()).meta({
 const googleHealthStatusResponse = z
   .object({
     ...connectionStatusShape(),
+    backfillEnded: googleHealthBackfillEnded.optional(),
     needsReauth: z
       .boolean()
       .optional()
@@ -1088,6 +1114,11 @@ const integrationEnvelopeEntry = z
       .optional()
       .meta(legacy("Null — not false — when there is no connection to judge.")),
     backfillCompleted: z.boolean().nullable().optional(),
+    backfillEnded: googleHealthBackfillEnded
+      .optional()
+      .describe(
+        "Google Health only. Data types whose history backfill ended before the beginning of their history, with where and why.",
+      ),
     scope: z.string().nullable().optional().describe("Withings only."),
     hasActivityScope: z.boolean().optional().meta(legacy("Withings only.")),
     planUnavailable: z

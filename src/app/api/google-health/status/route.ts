@@ -3,6 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
+import { googleHealthBackfillEndedList } from "@/lib/google-health/sync-core";
 
 /**
  * Get Google Health connection status for the current user (v1.26.0).
@@ -37,6 +38,7 @@ export const GET = apiHandler(async () => {
       lastSyncedAt: true,
       tokenExpiresAt: true,
       backfillCompletedAt: true,
+      backfillProgress: true,
       needsReauth: true,
       createdAt: true,
       scope: true,
@@ -57,6 +59,7 @@ export const GET = apiHandler(async () => {
     tokenExpired,
     tokenExpiresAt: connection.tokenExpiresAt,
     backfillCompleted: !!connection.backfillCompletedAt,
+    backfillEnded: googleHealthBackfillEndedList(connection.backfillProgress),
     needsReauth: connection.needsReauth,
     scope: connection.scope,
     // The one server-resolved state (ok / limited / degraded /

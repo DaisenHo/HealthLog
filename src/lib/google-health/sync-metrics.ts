@@ -29,6 +29,7 @@ import {
   GOOGLE_HEALTH_DATA_TYPES,
   GOOGLE_HEALTH_DEFAULT_MAX_PAGES,
   GOOGLE_HEALTH_DENSE_MAX_PAGES,
+  type GoogleHealthDataPoint,
   type GoogleHealthDataType,
   type GoogleHealthMappedMeasurement,
   type GoogleHealthTokenSource,
@@ -46,8 +47,8 @@ import {
   mapRestingHeartRate,
   mapWeight,
   mapWristTemperature,
-  noteGoogleHealthDeferred,
 } from "./client";
+import { googleHealthBackfillHorizon } from "./backfill-bounds";
 import {
   getValidToken,
   googleHealthBackfillCursor,
@@ -55,6 +56,7 @@ import {
   googleHealthTokenSource,
   handleCollectionFetchError,
   noteGoogleHealthEdgeFilterUnsupported,
+  recordGoogleHealthBackfillEnd,
   recordGoogleHealthBackfillPage,
   recordGoogleHealthBackfillResumePoint,
   runGoogleHealthCollection,
@@ -65,6 +67,7 @@ import {
 import { getEvent } from "@/lib/logging/context";
 import type { GoogleHealthCollectionKey } from "./collection-keys";
 import { prisma } from "@/lib/db";
+import type { MeasurementType } from "@/generated/prisma/client";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 /** One mappable metric: its data-type encoding + the per-point mapper + a verb. */
@@ -75,6 +78,12 @@ interface MetricResource {
     tz: string,
   ) => GoogleHealthMappedMeasurement[];
   verb: GoogleHealthCollectionKey;
+  /**
+   * The measurement type the collection's readings land as (heart rate's
+   * main one for the intraday stream), which names its history when a
+   * backfill ends it short.
+   */
+  type: MeasurementType;
   /** Page ceiling for the walk; the client default when omitted. */
   maxPages?: number;
   /**
@@ -90,41 +99,49 @@ const METRIC_RESOURCES: MetricResource[] = [
     dataType: GOOGLE_HEALTH_DATA_TYPES.weight,
     map: mapWeight,
     verb: "fetchWeight",
+    type: "WEIGHT",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.bodyFat,
     map: mapBodyFat,
     verb: "fetchBodyFat",
+    type: "BODY_FAT",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.oxygenSaturation,
     map: mapOxygenSaturation,
     verb: "fetchSpo2",
+    type: "OXYGEN_SATURATION",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.heartRateVariability,
     map: mapHeartRateVariability,
     verb: "fetchHrv",
+    type: "HEART_RATE_VARIABILITY",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.restingHeartRate,
     map: mapRestingHeartRate,
     verb: "fetchRhr",
+    type: "RESTING_HEART_RATE",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.respiratoryRate,
     map: mapRespiratoryRate,
     verb: "fetchRespiratoryRate",
+    type: "RESPIRATORY_RATE",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.bloodGlucose,
     map: mapBloodGlucose,
     verb: "fetchBloodGlucose",
+    type: "BLOOD_GLUCOSE",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.coreBodyTemperature,
     map: mapCoreBodyTemperature,
     verb: "fetchCoreBodyTemperature",
+    type: "BODY_TEMPERATURE",
   },
   // Nightly sleep skin temperature — the documented `nightlyTemperatureCelsius`
   // is an absolute reading (not the once-assumed signed deviation), so it lands
@@ -133,6 +150,7 @@ const METRIC_RESOURCES: MetricResource[] = [
     dataType: GOOGLE_HEALTH_DATA_TYPES.sleepTemperature,
     map: mapWristTemperature,
     verb: "fetchSleepTemperature",
+    type: "WRIST_TEMPERATURE",
   },
   // Last: the dense stream. A backfill finishes every light collection in
   // its first slice and then works through this one slice by slice; ahead
@@ -141,6 +159,7 @@ const METRIC_RESOURCES: MetricResource[] = [
     dataType: GOOGLE_HEALTH_DATA_TYPES.heartRate,
     map: mapHeartRate,
     verb: "fetchHeartRate",
+    type: "PULSE",
     maxPages: GOOGLE_HEALTH_DENSE_MAX_PAGES,
     intraday: true,
   },
@@ -153,14 +172,6 @@ const METRIC_RESOURCES: MetricResource[] = [
 function isResumable(resource: MetricResource): boolean {
   return resource.dataType.timeField === "sample";
 }
-
-/**
- * The page ceilings of every resumable collection, summed: the most pages a
- * backfill can ever spend on them across all of its attempts.
- */
-export const GOOGLE_HEALTH_RESUMABLE_PAGE_CEILING = METRIC_RESOURCES.filter(
-  isResumable,
-).reduce((sum, r) => sum + (r.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES), 0);
 
 export async function syncUserMetrics(
   userId: string,
@@ -274,20 +285,30 @@ async function syncMetricCollection(
   let imported = 0;
   // Inside a backfill a spot-reading collection keeps its place: it starts
   // from the edge an earlier attempt reached and records its new edge after
-  // every page it writes (see `GoogleHealthBackfillCursor`). Its page ceiling
-  // then counts across attempts, so a cursor that never ends is still bounded.
+  // every page it writes (see `GoogleHealthBackfillCursor`). Its walk is
+  // bounded per attempt by the slice, across attempts by the edge having to
+  // move back on every page and by the horizon: readings older than it are
+  // not read, and the collection ends there (see `backfill-bounds.ts`).
   const cursor = isResumable(resource)
     ? googleHealthBackfillCursor(resource.verb)
     : null;
-  const ceiling = resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES;
-  const maxPages = ceiling - (cursor?.pagesSoFar ?? 0);
-  if (cursor && maxPages <= 0) {
-    getEvent()?.addWarning(
-      `google-health ${resource.verb}: backfill reached its page ceiling of ${resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES} pages for ${userId}`,
-    );
-    noteGoogleHealthDeferred();
-    return 0;
-  }
+  const maxPages = resource.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES;
+  const horizon = cursor ? googleHealthBackfillHorizon() : null;
+  // The order the walk returns readings in: the one its edge has recorded,
+  // else the page's own (as `recordGoogleHealthBackfillPage` reads it),
+  // newest first when a page cannot tell.
+  const walkOrder = (page: GoogleHealthDataPoint[]): "desc" | "asc" => {
+    const known = googleHealthBackfillCursor(resource.verb)?.edge?.order;
+    if (known) return known;
+    const instants = page
+      .map((p) =>
+        googleHealthSampleInstant(p, resource.dataType, tz)?.getTime(),
+      )
+      .filter((t): t is number => t !== undefined);
+    return instants.length > 1 && instants[0]! < instants.at(-1)!
+      ? "asc"
+      : "desc";
+  };
   // Once one page's write fails, the edge stays where it is for the rest of
   // the walk: moving it past the failed page would leave that page's rows
   // behind it for good.
@@ -305,12 +326,22 @@ async function syncMetricCollection(
         ...(cursor
           ? {
               resumable: true,
+              // Google keeps handing out pages that reach no further back:
+              // the history ends where the walk got to, and the backfill
+              // goes on without it instead of meeting the same wall again.
+              onNoProgress: async () => {
+                // A page whose write failed fails the collection instead.
+                if (edgeHeld) return;
+                const at = googleHealthBackfillCursor(resource.verb)?.edge?.at;
+                await recordGoogleHealthBackfillEnd(resource.verb, {
+                  type: resource.type,
+                  at: (at ?? new Date()).toISOString(),
+                  reason: "no_progress",
+                });
+              },
               edge: cursor.edge && {
                 ...cursor.edge,
                 tz,
-                // Without the bound the walk passes over what earlier slices
-                // wrote, and they wrote no more than the collection's ceiling.
-                maxSkipPages: ceiling,
                 onFilterUnsupported: () =>
                   noteGoogleHealthEdgeFilterUnsupported(resource.verb),
                 // A place past a page whose write failed would leave that
@@ -326,7 +357,21 @@ async function syncMetricCollection(
             }
           : {}),
       },
-      async (points) => {
+      async (page) => {
+        // Past the horizon nothing is written; on a newest-first walk
+        // everything after it is older still, so the walk ends there. An
+        // oldest-first walk starts beyond the horizon and works toward it,
+        // so it is read as before: dropping its first pages would write
+        // nothing and move no edge, and the slice would fail as stuck.
+        let points = page;
+        let pastHorizon = false;
+        if (horizon && walkOrder(page) === "desc") {
+          points = page.filter((p) => {
+            const t = googleHealthSampleInstant(p, resource.dataType, tz);
+            return t === null || t.getTime() >= horizon.getTime();
+          });
+          pastHorizon = points.length < page.length;
+        }
         const readings: GoogleHealthMeasurementUpsert[] = [];
         for (const point of points) {
           for (const m of resource.map(point, tz)) {
@@ -345,17 +390,30 @@ async function syncMetricCollection(
             deferRollup: opts.deferRollup,
           })
         ).imported;
-        if (!cursor || points.length === 0) return;
+        if (!cursor) return;
         if (googleHealthHardFailureCount() !== failuresBefore) edgeHeld = true;
-        if (edgeHeld) return;
-        await recordGoogleHealthBackfillPage(resource.verb, {
-          first: googleHealthSampleInstant(points[0]!, resource.dataType, tz),
-          last: googleHealthSampleInstant(
-            points[points.length - 1]!,
-            resource.dataType,
-            tz,
-          ),
-        });
+        if (points.length > 0 && !edgeHeld) {
+          await recordGoogleHealthBackfillPage(resource.verb, {
+            first: googleHealthSampleInstant(points[0]!, resource.dataType, tz),
+            last: googleHealthSampleInstant(
+              points[points.length - 1]!,
+              resource.dataType,
+              tz,
+            ),
+          });
+        }
+        if (pastHorizon) {
+          // With a page's write failed the collection is not finished
+          // either way; it is walked again next slice.
+          if (!edgeHeld) {
+            await recordGoogleHealthBackfillEnd(resource.verb, {
+              type: resource.type,
+              at: horizon!.toISOString(),
+              reason: "horizon",
+            });
+          }
+          return "end";
+        }
       },
     );
   } catch (err) {
