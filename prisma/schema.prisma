@@ -4463,11 +4463,14 @@ model GoogleHealthConnection {
   /// repair pending (or the connection predates the fix).
   sleepRepairedAt     DateTime? @map("sleep_repaired_at")
   /// How far the in-flight history backfill has got
-  /// (`{ done: string[], cursors: { [collection]: { at, order, pages } } }`):
-  /// the collections it walked to the end, and for each collection read page
-  /// by page the edge it has written up to, so the next slice resumes there
-  /// instead of starting over. Null once the backfill completes, and reset
-  /// on every reconnect.
+  /// (`{ done: string[], cursors: { [collection]: { at, order, pages } },
+  /// ended?: { [collection]: { type, at, reason } } }`): the collections it
+  /// walked to the end, for each collection read page by page the edge it has
+  /// written up to, so the next slice resumes there instead of starting over,
+  /// and the collections it ended short of their history's start (the
+  /// horizon, or a walk that stopped getting anywhere). Once the backfill
+  /// completes only `ended` is kept, or null when nothing ended short; the
+  /// status routes publish it as `backfillEnded`. Reset on every reconnect.
   backfillProgress    Json?     @map("backfill_progress")
   /// One bounded, owner-scoped current sync run. This is replaced at the start
   /// of every run and never retains provider payloads or historical runs.

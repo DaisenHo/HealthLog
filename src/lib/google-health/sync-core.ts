@@ -18,9 +18,11 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { MeasurementType as MeasurementTypes } from "@/generated/prisma/enums";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { annotate, getEvent } from "@/lib/logging/context";
 import type { GoogleHealthCollectionKey } from "./collection-keys";
+import type { GoogleHealthBackfillEnd } from "./backfill-bounds";
 import { userDayKey } from "@/lib/tz/format";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
@@ -440,7 +442,14 @@ export interface GoogleHealthBackfillCursor {
   at: string;
   /** The order the walk returned samples in: newest first, or oldest first. */
   order: "desc" | "asc";
-  /** Pages this collection has read across every attempt so far. */
+  /**
+   * Pages this collection has written across every attempt so far. Kept for
+   * the record only: it bounds nothing. It once capped the walk at ten
+   * thousand pages, which a dense heart-rate history passes in under three
+   * years, and since it never reset the backfill stopped there for good
+   * (#1220). The walk is bounded by its progress and the backfill horizon
+   * instead (`backfill-bounds.ts`).
+   */
   pages: number;
   /**
    * Only for a collection read without the edge bound: where its last walk
@@ -480,6 +489,8 @@ interface BackfillResumeTracker {
   collections: GoogleHealthBackfillCollectionReport[];
   /** Collections whose resumed request Google refused the edge filter on. */
   edgeFilterUnsupported: Set<string>;
+  /** Collections whose walk ended short of the history's start, and where. */
+  ended: Map<string, GoogleHealthBackfillEnd>;
 }
 const backfillResumeStorage = new AsyncLocalStorage<BackfillResumeTracker>();
 
@@ -537,6 +548,79 @@ export function readGoogleHealthBackfillCursors(
 }
 
 /**
+ * Read the `backfillProgress` column into the collections whose backfill
+ * ended short of the start of their history (the horizon, or a walk that
+ * stopped getting anywhere), each with where it ended and why. Survives the
+ * completion stamp, so the integration card can say where history ends.
+ */
+export function readGoogleHealthBackfillEnded(
+  value: unknown,
+): Map<string, GoogleHealthBackfillEnd> {
+  const out = new Map<string, GoogleHealthBackfillEnd>();
+  const ended = progressRecord(progressRecord(value).ended);
+  for (const [key, raw] of Object.entries(ended)) {
+    if (key.length > 64) continue;
+    const e = progressRecord(raw);
+    const at = typeof e.at === "string" ? e.at : null;
+    if (!at || Number.isNaN(Date.parse(at))) continue;
+    if (e.reason !== "horizon" && e.reason !== "no_progress") continue;
+    if (typeof e.type !== "string" || !(e.type in MeasurementTypes)) {
+      continue;
+    }
+    out.set(key, {
+      type: e.type as MeasurementType,
+      at: new Date(at).toISOString(),
+      reason: e.reason,
+    });
+  }
+  return out;
+}
+
+/**
+ * Where each data type's imported history ends short of its beginning, and
+ * why, as the status routes publish it (`backfillEnded`), by type.
+ */
+export interface GoogleHealthBackfillEndedEntry {
+  type: MeasurementType;
+  /** The oldest instant the imported history reaches back to. */
+  endsAt: string;
+  reason: GoogleHealthBackfillEnd["reason"];
+}
+
+/** The `backfillProgress` column's ended collections, as published. */
+export function googleHealthBackfillEndedList(
+  value: unknown,
+): GoogleHealthBackfillEndedEntry[] {
+  return [...readGoogleHealthBackfillEnded(value).values()]
+    .map((e) => ({ type: e.type, endsAt: e.at, reason: e.reason }))
+    .sort((a, b) => a.type.localeCompare(b.type));
+}
+
+/**
+ * The `backfillProgress` value to keep once the backfill is stamped complete:
+ * only where collections ended short, or nothing at all.
+ */
+export function googleHealthBackfillProgressAfterCompletion(
+  ended: Map<string, GoogleHealthBackfillEnd>,
+): {
+  ended: Record<string, { type: string; at: string; reason: string }>;
+} | null {
+  return ended.size > 0 ? { ended: endedJson(ended) } : null;
+}
+
+/** The ended collections as the column stores them. */
+function endedJson(
+  ended: Map<string, GoogleHealthBackfillEnd>,
+): Record<string, { type: string; at: string; reason: string }> {
+  return Object.fromEntries(
+    [...ended].map(([key, e]) => [
+      key,
+      { type: e.type, at: e.at, reason: e.reason },
+    ]),
+  );
+}
+
+/**
  * Read the `backfillProgress` column into the collections Google refused the
  * edge filter on.
  */
@@ -564,10 +648,12 @@ async function persistBackfillProgress(
     done: Set<string>;
     cursors: Map<string, GoogleHealthBackfillCursor>;
     edgeFilterUnsupported?: Set<string>;
+    ended?: Map<string, GoogleHealthBackfillEnd>;
   },
 ): Promise<void> {
   const unsupported =
     next.edgeFilterUnsupported ?? tracker.edgeFilterUnsupported;
+  const ended = next.ended ?? tracker.ended;
   await prisma.googleHealthConnection.update({
     where: { userId: tracker.userId },
     data: {
@@ -589,11 +675,15 @@ async function persistBackfillProgress(
         ...(unsupported.size > 0
           ? { edgeFilterUnsupported: [...unsupported] }
           : {}),
+        ...(ended.size > 0 ? { ended: endedJson(ended) } : {}),
       },
     },
   });
   if (unsupported !== tracker.edgeFilterUnsupported) {
     for (const key of unsupported) tracker.edgeFilterUnsupported.add(key);
+  }
+  if (ended !== tracker.ended) {
+    for (const [key, e] of ended) tracker.ended.set(key, e);
   }
   // `next` may be the tracker's own collections: copy before clearing.
   const done = [...next.done];
@@ -611,6 +701,8 @@ export interface GoogleHealthBackfillAttempt<T> {
   /** Collections whose edge moved, each with the edge it started from. */
   advanced: Map<string, string | null>;
   collections: GoogleHealthBackfillCollectionReport[];
+  /** Every collection ended short so far, this attempt's and earlier ones. */
+  ended: Map<string, GoogleHealthBackfillEnd>;
 }
 
 /**
@@ -625,6 +717,7 @@ export async function runWithGoogleHealthBackfillResume<T>(
   fn: () => Promise<T>,
   cursors: Map<string, GoogleHealthBackfillCursor> = new Map(),
   edgeFilterUnsupported: Set<string> = new Set(),
+  ended: Map<string, GoogleHealthBackfillEnd> = new Map(),
 ): Promise<GoogleHealthBackfillAttempt<T>> {
   const tracker: BackfillResumeTracker = {
     userId,
@@ -634,6 +727,7 @@ export async function runWithGoogleHealthBackfillResume<T>(
     advanced: new Map(),
     collections: [],
     edgeFilterUnsupported,
+    ended,
   };
   const result = await backfillResumeStorage.run(tracker, fn);
   return {
@@ -641,15 +735,16 @@ export async function runWithGoogleHealthBackfillResume<T>(
     skipped: tracker.skipped,
     advanced: tracker.advanced,
     collections: tracker.collections,
+    ended: tracker.ended,
   };
 }
 
 /**
  * Where a resumable collection's walk starts in this backfill attempt: the
- * edge an earlier attempt recorded (if any), whether Google may be asked for
- * it with a filter (false once Google refused that filter for the
- * collection), and the pages it has already read. Null outside a backfill,
- * where every walk reads its whole window.
+ * edge an earlier attempt recorded (if any), and whether Google may be asked
+ * for it with a filter (false once Google refused that filter for the
+ * collection). Null outside a backfill, where every walk reads its whole
+ * window.
  */
 export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
   edge?: {
@@ -658,7 +753,6 @@ export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
     filter: boolean;
     resumeFrom?: GoogleHealthResumePoint;
   };
-  pagesSoFar: number;
 } | null {
   const resume = backfillResumeStorage.getStore();
   if (!resume) return null;
@@ -679,9 +773,44 @@ export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
               }
             : {}),
         },
-        pagesSoFar: cursor.pages,
       }
-    : { pagesSoFar: 0 };
+    : {};
+}
+
+/**
+ * Record that a collection's backfill ended short of the start of its
+ * history, at `at`, because of `reason` (see `backfill-bounds.ts`). The
+ * collection then counts as finished for this backfill
+ * (`runGoogleHealthCollection`), and the note outlives the completion stamp
+ * so the card can say where the history ends. Outside a backfill this does
+ * nothing.
+ */
+export async function recordGoogleHealthBackfillEnd(
+  key: GoogleHealthCollectionKey,
+  end: GoogleHealthBackfillEnd,
+): Promise<void> {
+  const resume = backfillResumeStorage.getStore();
+  if (!resume) return;
+  const ended = new Map(resume.ended);
+  ended.set(key, end);
+  annotate({
+    meta: { "googleHealth.backfill.ended": Object.fromEntries(ended) },
+  });
+  try {
+    await persistBackfillProgress(resume, {
+      done: resume.done,
+      cursors: resume.cursors,
+      ended,
+    });
+  } catch (err) {
+    // Not ended, then: the next slice walks it again and meets the same end.
+    getEvent()?.addWarning(
+      `google-health: backfill progress write failed for ${key}: ${err}`,
+    );
+    annotate({
+      meta: { "googleHealth.backfill.progressWriteFailed": key },
+    });
+  }
 }
 
 /**
@@ -845,7 +974,7 @@ export async function runGoogleHealthCollection(
 ): Promise<number> {
   const resume = backfillResumeStorage.getStore();
   if (!resume) return fn();
-  if (resume.done.has(key)) {
+  if (resume.done.has(key) || resume.ended.has(key)) {
     resume.skipped.push(key);
     return 0;
   }
@@ -870,7 +999,11 @@ export async function runGoogleHealthCollection(
     (hardFailStorage.getStore()?.failures.length ?? 0) !== hardBefore ||
     (softSkipStorage.getStore()?.count ?? 0) !== softBefore;
   const truncated = truncatedBefore || googleHealthOutcomeTruncated();
-  const clean = !failedHard && !truncated;
+  // A walk that ended short on purpose (the horizon, or no progress) has
+  // read all it is going to: finished, though the walk may report itself
+  // truncated.
+  const endedShort = resume.ended.has(key);
+  const clean = !failedHard && (endedShort || !truncated);
   let finished = false;
   if (clean) {
     // The collection counts as finished only once the note says so. The job

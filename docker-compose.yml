@@ -226,6 +226,10 @@ x-healthlog-env: &healthlog_env
   # the authorization code somewhere else.
   FITBIT_REDIRECT_URI: "${FITBIT_REDIRECT_URI:-}"
   GOOGLE_HEALTH_REDIRECT_URI: "${GOOGLE_HEALTH_REDIRECT_URI:-}"
+  # How many years back the Google Health history backfill reads (a whole
+  # number from 1 to 100; 20 when unset). A data type whose history goes
+  # further ends there, and the integration card says so.
+  GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS: "${GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS:-}"
   # Nightscout origins on your own network that the per-user connection
   # validator should accept, comma-separated (e.g. "http://nightscout.lan").
   # Without it a LAN/private Nightscout URL is refused as an SSRF target.
