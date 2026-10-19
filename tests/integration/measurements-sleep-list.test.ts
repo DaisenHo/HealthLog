@@ -66,7 +66,10 @@ async function seedSession(username: string) {
     data: { username, email: `${username}@example.test`, role: "USER" },
   });
   const session = await prisma.session.create({
-    data: { userId: user.id, expiresAt: new Date(Date.now() + 60_000) },
+    // An hour, not a minute: walking every page of a long history can
+    // outlast a minute on a loaded runner, and an expired session reads as
+    // a 401 halfway through.
+    data: { userId: user.id, expiresAt: new Date(Date.now() + 3_600_000) },
   });
   cookieJar.set("healthlog_session", session.id);
   return user;
@@ -287,5 +290,61 @@ describe("GET /api/measurements?type=SLEEP_DURATION", () => {
     ).json()) as ListEnvelope;
     expect(drill.data.measurements).toHaveLength(1);
     expect(drill.data.measurements[0].sleepStage).toBe("CORE");
+  }, 240_000);
+
+  // Review finding on the SQL paging: the page labels a session by the last
+  // row of ANY writer, the reconstruction by its winning writer. A watch that
+  // stops before midnight beside a phone whose in-bed span runs past it gave
+  // two different days, and matching by label dropped the night from both.
+  it("keeps a night whose losing writer runs past midnight", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedSession("sleep-midnight-user");
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { timezone: "UTC" },
+    });
+    const base = {
+      userId: user.id,
+      type: "SLEEP_DURATION" as const,
+      unit: "minutes",
+      source: "APPLE_HEALTH" as const,
+    };
+    await prisma.measurement.createMany({
+      data: [
+        // The watch wins the device ladder and ends at 23:50.
+        {
+          ...base,
+          value: 420,
+          measuredAt: new Date("2026-03-10T23:50:00.000Z"),
+          externalId: "uuid-watch-core",
+          sleepStage: "CORE" as const,
+          deviceType: "watch",
+        },
+        // The phone's in-bed span ends at 00:20 the next day.
+        {
+          ...base,
+          value: 450,
+          measuredAt: new Date("2026-03-11T00:20:00.000Z"),
+          externalId: "uuid-phone-inbed",
+          sleepStage: "IN_BED" as const,
+          deviceType: "phone",
+        },
+      ],
+    });
+
+    const list = (await (
+      await callList("type=SLEEP_DURATION")
+    ).json()) as ListEnvelope;
+    expect(list.data.meta.total).toBe(1);
+    // The night is listed, not lost between two labels.
+    expect(list.data.measurements).toHaveLength(1);
+    const [night] = list.data.measurements;
+    expect(night.value).toBe(420);
+
+    // Its drill-down, asked by the label the list gave it, finds it too.
+    const drill = (await (
+      await callList(`type=SLEEP_DURATION&dayKey=${night.dayKey}`)
+    ).json()) as ListEnvelope;
+    expect(drill.data.measurements.map((m) => m.sleepStage)).toEqual(["CORE"]);
   });
 });

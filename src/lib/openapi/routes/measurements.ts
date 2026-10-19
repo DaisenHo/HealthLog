@@ -804,7 +804,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "List measurements",
       description:
         "Filter by type + date range. Response is paged via offset/limit; default limit 100.\n\n" +
-        "With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over those days; every returned day is complete. `type=SLEEP_DURATION` returns one row per night, paged the same way over nights. On both, `meta.total` counts the days or nights in the filtered window, and a page holds at most 1000 of them (`meta.limit` echoes the value applied).",
+        "With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over those days; every returned day is complete. `type=SLEEP_DURATION` returns one row per night, paged the same way over nights. On both, `meta.total` counts the days or nights in the filtered window. A day-sum page takes `limit` as asked (up to the list's 5000); a sleep page holds at most 1000 nights, and `meta.limit` echoes the value applied.",
       requestParams: {
         query: listMeasurementsSchema,
       },
