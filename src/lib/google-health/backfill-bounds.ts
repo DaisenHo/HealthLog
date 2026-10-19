@@ -140,4 +140,50 @@ export interface GoogleHealthBackfillEnd {
   type: MeasurementType;
   at: string;
   reason: GoogleHealthBackfillEndReason;
+  /**
+   * `no_progress` only: how many separate attempts have ended this way, and
+   * when the last one did (see `googleHealthBackfillEndIsFinal`).
+   */
+  attempts?: number;
+  endedAt?: string;
+}
+
+/**
+ * Separate attempts that must end without progress before a data type's
+ * history counts as ending there. One is not enough: Google handing out the
+ * same page for a while is as likely a passing fault in its paging as the end
+ * of what it holds, and a reconnect would be the only way back.
+ */
+export const GOOGLE_HEALTH_NO_PROGRESS_ATTEMPTS = 2;
+
+/** How long after an attempt ended without progress the next one starts. */
+export const GOOGLE_HEALTH_NO_PROGRESS_RETRY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether an end is where the history stays: always at the horizon, and
+ * after `GOOGLE_HEALTH_NO_PROGRESS_ATTEMPTS` attempts without progress.
+ * Until then the data type waits for its next attempt, unfinished, and is not
+ * published as ending anywhere.
+ */
+export function googleHealthBackfillEndIsFinal(
+  end: GoogleHealthBackfillEnd,
+): boolean {
+  return (
+    end.reason === "horizon" ||
+    (end.attempts ?? 1) >= GOOGLE_HEALTH_NO_PROGRESS_ATTEMPTS
+  );
+}
+
+/**
+ * When an end that is not final may be walked again (epoch ms), or null for
+ * a final one. An end without a readable time is due at once.
+ */
+export function googleHealthBackfillEndRetryAt(
+  end: GoogleHealthBackfillEnd,
+): number | null {
+  if (googleHealthBackfillEndIsFinal(end)) return null;
+  const endedAt = end.endedAt ? Date.parse(end.endedAt) : Number.NaN;
+  return Number.isNaN(endedAt)
+    ? 0
+    : endedAt + GOOGLE_HEALTH_NO_PROGRESS_RETRY_MS;
 }

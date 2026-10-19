@@ -17,8 +17,11 @@
  *   - an account left at the old ceiling resumes with the next slice, from
  *     where it stopped, and completes;
  *   - a Google that keeps answering with the same page is stopped after a
- *     bounded number of requests, and the backfill still completes, with the
- *     data type noted as ending there because of it;
+ *     bounded number of requests; the data type waits a day for a second
+ *     attempt (a restart before then leaves it alone), and only when that
+ *     one stalls too does the backfill complete with the type noted as
+ *     ending there;
+ *   - a walk that stalls before writing anything notes no end at all;
  *   - a history older than the horizon is imported up to the horizon, and the
  *     data type is noted as ending at it;
  *   - a history handed out oldest first is read whole, not ended at the
@@ -46,6 +49,8 @@ const fake = vi.hoisted(() => ({
   perPage: 1000,
   /** Answer every heart-rate request with the newest page and a next token. */
   loop: false,
+  /** Answer every heart-rate request with no readings and a next token. */
+  empty: false,
   /** Hand the history out oldest first instead. */
   asc: false,
   heartRateRequests: 0,
@@ -66,6 +71,9 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
         return respond({});
       }
       fake.heartRateRequests += 1;
+      if (fake.empty) {
+        return respond({ dataPoints: [], nextPageToken: "1" });
+      }
       const filter = u.searchParams.get("filter") ?? "";
       const upTo = /physical_time <= "([^"]+)"/.exec(filter)?.[1];
       const from = /physical_time >= "([^"]+)"/.exec(filter)?.[1];
@@ -109,13 +117,21 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   };
 });
 
-/** The next slices the backfill queues, recorded. */
-const sent = vi.hoisted(() => ({ slices: [] as number[] }));
+/** The next slices the backfill queues, recorded, with their delays. */
+const sent = vi.hoisted(() => ({
+  slices: [] as number[],
+  delays: [] as number[],
+}));
 vi.mock("@/lib/jobs/boss-instance", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/jobs/boss-instance")>()),
   getGlobalBoss: () => ({
-    send: async (_queue: string, data: { data?: { slice?: number } }) => {
+    send: async (
+      _queue: string,
+      data: { data?: { slice?: number } },
+      options?: { startAfter?: number },
+    ) => {
       sent.slices.push(data.data?.slice ?? -1);
+      sent.delays.push(options?.startAfter ?? 0);
       return `job-${sent.slices.length}`;
     },
   }),
@@ -176,9 +192,11 @@ async function seed(opts: {
   fake.spacing = opts.spacing;
   fake.perPage = opts.perPage;
   fake.loop = false;
+  fake.empty = false;
   fake.asc = false;
   fake.heartRateRequests = 0;
   sent.slices = [];
+  sent.delays = [];
 }
 
 /** Pages a slice reads here: a fifth of production, so slices stay cheap. */
@@ -186,12 +204,13 @@ const SLICE_PAGES = 100;
 
 /**
  * Run slices the way the admission drain does, each one sending the next,
- * until one ends the chain. Returns how many ran.
+ * until one ends the chain or sends the next one an hour or more out (a
+ * collection waiting for another attempt). Returns how many ran.
  */
-async function runChain(maxSlices: number): Promise<number> {
+async function runChain(maxSlices: number, from = 0): Promise<number> {
   const { runGoogleHealthBackfillForUser } =
     await import("@/lib/jobs/google-health-backfill");
-  let slice = 0;
+  let slice = from;
   let ran = 0;
   for (; ran < maxSlices; ran++) {
     const before = sent.slices.length;
@@ -204,6 +223,7 @@ async function runChain(maxSlices: number): Promise<number> {
     if (!outcome.continued) return ran + 1;
     expect(sent.slices.length).toBe(before + 1);
     slice = sent.slices.at(-1)!;
+    if (sent.delays.at(-1)! >= 3600) return ran + 1;
   }
   throw new Error(`backfill did not finish within ${maxSlices} slices`);
 }
@@ -311,29 +331,78 @@ describe("Google Health backfill bounded by progress, not pages (#1220)", () => 
     expect(fake.heartRateRequests).toBeLessThanOrEqual(10 + 2 * slices);
   }, 600_000);
 
-  it("stops a walk Google keeps answering with the same page, and completes with the reason noted", async () => {
+  it("parks a walk Google keeps answering with the same page, tries it again a day later, and only then ends it", async () => {
     await seed({ total: 5_000, spacing: 60_000, perPage: 1000 });
     fake.loop = true;
-
-    await runChain(5);
-
     const { GOOGLE_HEALTH_NO_PROGRESS_PAGES } =
       await import("@/lib/google-health/backfill-bounds");
     const { googleHealthBackfillEndedList } =
       await import("@/lib/google-health/sync-core");
-    // The first page and the twenty that repeated it, then never again.
-    expect(fake.heartRateRequests).toBe(1 + GOOGLE_HEALTH_NO_PROGRESS_PAGES);
-    const c = await connection();
+    const walk = 1 + GOOGLE_HEALTH_NO_PROGRESS_PAGES;
+
+    // First attempt: the first page and the twenty that repeat it. Not
+    // complete, nothing published, and the next slice a day out.
+    await runChain(5);
+    expect(fake.heartRateRequests).toBe(walk);
+    let c = await connection();
+    expect(c.backfillCompletedAt).toBeNull();
+    expect(googleHealthBackfillEndedList(c.backfillProgress)).toEqual([]);
+    expect(sent.delays.at(-1)).toBeGreaterThan(23 * 3600);
+
+    // A slice that comes early (a restart) leaves it alone and waits again.
+    await runChain(1, sent.slices.at(-1)!);
+    expect(fake.heartRateRequests).toBe(walk);
+    expect((await connection()).backfillCompletedAt).toBeNull();
+
+    // A day later the walk goes on from its edge, gets one page further,
+    // meets the same wall, and this time the history ends there.
+    const prisma = getPrismaClient();
+    const progress = c.backfillProgress as {
+      ended: Record<string, { endedAt: string }>;
+    };
+    progress.ended.fetchHeartRate!.endedAt = new Date(
+      Date.now() - 25 * HOUR,
+    ).toISOString();
+    await prisma.googleHealthConnection.update({
+      where: { userId: USER },
+      data: { backfillProgress: progress },
+    });
+    await runChain(5, sent.slices.at(-1)!);
+
+    expect(fake.heartRateRequests).toBe(2 * walk);
+    c = await connection();
     expect(c.backfillCompletedAt).toBeInstanceOf(Date);
     expect(googleHealthBackfillEndedList(c.backfillProgress)).toEqual([
       {
         type: "PULSE",
-        // The oldest reading the one real page wrote.
-        endsAt: new Date(NOW - 999 * 60_000).toISOString(),
+        // The oldest reading the second attempt's one real page wrote.
+        endsAt: new Date(NOW - 1998 * 60_000).toISOString(),
         reason: "no_progress",
       },
     ]);
-    expect(await pulseRows()).toBe(1000);
+    expect(await pulseRows()).toBe(1999);
+  }, 600_000);
+
+  it("notes no end for a walk that wrote nothing before it stalled", async () => {
+    // Pages without a single reading, forever: there is no place to say the
+    // history ends at, and "today" would be false. The slice fails as stuck.
+    await seed({ total: 5_000, spacing: 60_000, perPage: 1000 });
+    fake.empty = true;
+    const { runGoogleHealthBackfillForUser } =
+      await import("@/lib/jobs/google-health-backfill");
+    const { GOOGLE_HEALTH_NO_PROGRESS_PAGES } =
+      await import("@/lib/google-health/backfill-bounds");
+
+    await expect(
+      runGoogleHealthBackfillForUser(USER, () => false, 0, {
+        slicePages: SLICE_PAGES,
+      }),
+    ).rejects.toThrow(/no progress in slice 0/);
+    expect(fake.heartRateRequests).toBe(GOOGLE_HEALTH_NO_PROGRESS_PAGES);
+    const c = await connection();
+    expect(c.backfillCompletedAt).toBeNull();
+    expect(c.backfillProgress).not.toHaveProperty("ended");
+    expect(await pulseRows()).toBe(0);
   }, 600_000);
 
   it("reads back to the horizon and notes where the history ends", async () => {

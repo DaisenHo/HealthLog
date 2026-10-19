@@ -327,15 +327,20 @@ async function syncMetricCollection(
           ? {
               resumable: true,
               // Google keeps handing out pages that reach no further back:
-              // the history ends where the walk got to, and the backfill
-              // goes on without it instead of meeting the same wall again.
+              // the walk is noted as ending where it got to. The first time
+              // it waits a day for another attempt; a second such end is
+              // where the history stays (`backfill-bounds.ts`).
               onNoProgress: async () => {
                 // A page whose write failed fails the collection instead.
                 if (edgeHeld) return;
+                // Nothing written yet: there is no place the history could
+                // be said to end at, and "now" would be false. The walk
+                // stays unfinished and fails the slice like any stuck one.
                 const at = googleHealthBackfillCursor(resource.verb)?.edge?.at;
+                if (!at) return;
                 await recordGoogleHealthBackfillEnd(resource.verb, {
                   type: resource.type,
-                  at: (at ?? new Date()).toISOString(),
+                  at: at.toISOString(),
                   reason: "no_progress",
                 });
               },
