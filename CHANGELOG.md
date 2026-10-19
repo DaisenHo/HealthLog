@@ -21,18 +21,25 @@
   only when it has not moved back in time for 20 pages in a row, or when it
   reaches the horizon (`GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS`, 20 by default). A
   type that ends says where its history ends and why, on the integration card,
-  instead of showing "loading" forever (Refs #1220).
+  instead of showing "loading" forever. A first end without progress is only
+  provisional: the type keeps its place and gets a second attempt a day later
+  before the end is final (Refs #1220).
 - **Consistency in the sleep score no longer reads 0 after a day without a
   night.** A day on which the ring recorded only a nap was placed on the clock
   by that nap, hours away from the other nights, and one such day in thirty
-  pushed the spread past the scale. A day only counts toward the rhythm when its
-  main sleep is long enough; the nap still counts toward that day's sleep. When
-  there are not enough nights to judge a rhythm, the row says so instead of
-  showing a number (Refs #1204).
-- **An empty recovery page says what is missing.** For an Oura account the page
-  names the cause: the connection lacks the heart-health permission, or the
-  provider returned no resilience level for the account, and links to
-  reconnecting in the first case (Refs #1204).
+  pushed the spread past the scale. A day whose only sleep is a short daytime
+  nap now leaves the rhythm (the nap still counts toward that day's sleep); a
+  short night stays on the clock. Every reader of the sleep midpoint follows the
+  same rule. When there are not enough nights to judge a rhythm, or the latest
+  day had only a nap, the row says so instead of showing a number. The sleep
+  score value, including `rhythmNights` and `gap`, is now published in the
+  OpenAPI schema (Refs #1204).
+- **An empty recovery page no longer guesses.** It asks for a reconnect only
+  when a missing permission is recorded, and otherwise says that no level has
+  arrived yet and points to the Oura card (Refs #1204).
+- **The MCP endpoint answers GET and DELETE with 405 and `Allow: POST`.** A
+  client that probed for a server-sent event stream was retried in a loop, which
+  produced hundreds of thousands of requests per week.
 - **No empty frame under the next appointment.** The "since the last visit" card
   drew its border before knowing whether it had anything to show. Optional
   tiles on the insights pages no longer flash a skeleton that collapses to
