@@ -30,6 +30,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { emitIfSampled } from "@/lib/logging/transports";
 import { readActiveJobsStartedBefore } from "@/lib/jobs/job-failures";
+import { trackInFlight } from "@/lib/observability/in-flight";
 
 /** How often a running job writes `job.progress`. */
 export const JOB_PROGRESS_INTERVAL_MS = 2 * 60 * 1000;
@@ -160,7 +161,9 @@ export async function observeJob<R>(
   };
 
   try {
-    const result = await progressStore.run(cell, run);
+    const result = await trackInFlight({ kind: "job", target: queue }, () =>
+      progressStore.run(cell, run),
+    );
     const did =
       result !== null && typeof result === "object" && "did" in result
         ? (result as { did?: unknown }).did
