@@ -4657,6 +4657,9 @@
       "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
       "empty": "Hier ist noch nichts zu sehen. Diese Seite zeigt die Werte zu Aufladung, Belastung und Trainingslast, die WHOOP und Polar aufzeichnen, und Ouras Resilienz-Stufe. Ouras Readiness erscheint als dein Erholungs-Score, oben verlinkt.",
+      "emptyOuraPermission": "Oura ist verbunden, aber die erteilte Berechtigung umfasst keine Herzgesundheitsdaten, und genau dahinter liegt Ouras Resilienz-Stufe. Verbinde Oura unter Einstellungen, Integrationen einmal neu und erlaube den Zugriff auf Herzgesundheit; die Stufe erscheint dann mit der nächsten Synchronisierung hier. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
+      "emptyOuraNoResilience": "Oura ist verbunden und die Berechtigung umfasst die Resilienz, aber Oura hat für dieses Konto noch keine Resilienz-Stufe geschickt. HealthLog fragt bei jeder Synchronisierung danach, sie erscheint hier, sobald Oura eine liefert. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
+      "emptyAction": "Integrationen öffnen",
       "block": {
         "ansChargeExplainer": "Wie aufgeladen dein autonomes Nervensystem in den Tag startet, ein Recharge-Wert aus deinen nächtlichen Herz- und Atemsignalen.",
         "dayStrainExplainer": "Die kardiovaskuläre Tagesbelastung auf der Belastungsskala deines Geräts. Lies sie im Verhältnis zu deiner Erholung, nicht als Ziel für sich.",

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Activity,
   Battery,
@@ -14,6 +15,12 @@ import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useTranslations } from "@/lib/i18n/context";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import {
+  pickStatus,
+  useIntegrationStatuses,
+  type IntegrationStatusViewModel,
+} from "@/components/settings/integrations/shared";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { RestModeBanner } from "@/components/insights/rest-mode-banner";
 import type { RestModeAnnotation } from "@/lib/analytics/score/types";
@@ -37,6 +44,33 @@ interface BlockSpec {
 interface BlockGroup {
   key: string;
   blocks: BlockSpec[];
+}
+
+/**
+ * Why this account's recovery page is empty, from the server's view of its
+ * Oura connection. An Oura ring feeds this page through its resilience level
+ * alone, so a connected ring with an empty page has exactly two causes: the
+ * grant does not cover the heart-health data the level sits behind (the
+ * server records that per collection and publishes it as an unavailable
+ * item), or Oura has not sent a level for this account. Everyone else gets
+ * the general note naming what fills the page.
+ */
+type RecoveryEmptyCase = "general" | "oura-permission" | "oura-no-resilience";
+
+const EMPTY_COPY = {
+  general: "insights.recovery.empty",
+  "oura-permission": "insights.recovery.emptyOuraPermission",
+  "oura-no-resilience": "insights.recovery.emptyOuraNoResilience",
+} as const satisfies Record<RecoveryEmptyCase, string>;
+
+function recoveryEmptyCase(
+  oura: IntegrationStatusViewModel | undefined,
+): RecoveryEmptyCase {
+  if (!oura?.connected) return "general";
+  const withheld = oura.health?.unavailable.some(
+    (u) => u.item === "resilience" && u.cause === "permission",
+  );
+  return withheld ? "oura-permission" : "oura-no-resilience";
 }
 
 /**
@@ -181,6 +215,13 @@ export function RecoverySection() {
         group.blocks.some((block) => (summaries[block.type]?.count ?? 0) > 0),
       ));
 
+  // Only an empty page asks which connection could fill it, so a page with
+  // data never pays for the integrations read.
+  const statuses = useIntegrationStatuses(
+    !isLoading && summaries != null && !hasAny,
+  );
+  const emptyCase = recoveryEmptyCase(pickStatus(statuses.data, "oura"));
+
   if (isLoading || summaries == null) {
     return (
       <div className="space-y-3" data-slot="recovery-loading">
@@ -193,9 +234,19 @@ export function RecoverySection() {
     return (
       <EmptyState
         data-slot="recovery-empty"
+        data-empty-case={emptyCase}
         icon={<Heart className="size-6" />}
         title={t("insights.recovery.emptyTitle")}
-        description={t("insights.recovery.empty")}
+        description={t(EMPTY_COPY[emptyCase])}
+        action={
+          emptyCase === "oura-permission" ? (
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/settings/integrations">
+                {t("insights.recovery.emptyAction")}
+              </Link>
+            </Button>
+          ) : undefined
+        }
       />
     );
   }

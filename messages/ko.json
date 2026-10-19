@@ -4657,6 +4657,9 @@
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
       "empty": "아직 여기에 표시할 내용이 없어요. 이 페이지는 WHOOP과 Polar가 기록하는 충전, 부하, 운동량 값과 Oura의 회복 탄력성 단계를 보여줘요. Oura의 준비도(Readiness)는 위에 연결된 회복 점수에 표시돼요.",
+      "emptyOuraPermission": "Oura는 연결되어 있지만 허용된 권한에 심장 건강 데이터가 빠져 있어요. Oura의 회복 탄력성 단계는 바로 이 데이터에 속해요. 설정, 통합에서 Oura를 한 번 다시 연결하고 심장 건강 접근을 허용하면 다음 동기화 때 여기에 단계가 표시돼요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
+      "emptyOuraNoResilience": "Oura가 연결되어 있고 권한에도 회복 탄력성이 포함되어 있지만, Oura가 아직 이 계정의 회복 탄력성 단계를 보내지 않았어요. HealthLog는 동기화할 때마다 요청하므로 Oura가 보내는 즉시 여기에 표시돼요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
+      "emptyAction": "통합 열기",
       "block": {
         "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요. 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",
         "dayStrainExplainer": "기기의 부하 척도로 본 하루 전체의 심혈관 부하예요. 그 자체를 목표로 삼지 말고 회복과 견줘 보세요.",
