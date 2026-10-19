@@ -2,7 +2,7 @@ name: Integration tests (long)
 
 # The integration tests that take their size from the environment run small
 # on every pull request and at full size here, once a night. Today that is
-# the Google Health multi-year backfill: 45 and 60 days of heart rate on a
+# the Google Health multi-year backfill: 120 and 160 days of heart rate on a
 # pull request, three and four years (some 3.7 million readings, over twenty
 # minutes) here. See the header of
 # tests/integration/google-health-backfill-multi-year.test.ts.
