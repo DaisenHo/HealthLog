@@ -48,6 +48,7 @@ vi.mock("@/lib/api/api-fetch", async () => {
 });
 
 import { dateKeyOfInstant, todayKeyInZone } from "@/components/day/day-url";
+import { ApiError } from "@/lib/api/api-fetch";
 import type { DayNotableWindowResponse } from "@/lib/day/contract";
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -234,8 +235,8 @@ describe("<VisitsSection> since the last visit", () => {
     expect(upcomingCards(html)).toBe(upcomingCards(baseline));
   });
 
-  it("says a failed read failed, rather than passing it off as a quiet window", () => {
-    const html = render({ upcoming: [next], past: [last] }, (queryClient) => {
+  function seedFailure(error: Error) {
+    return (queryClient: QueryClient) => {
       const tz = DEFAULT_TIMEZONE;
       const queryKey = queryKeys.dayNotable(
         dateKeyOfInstant(last.occurredAt, tz),
@@ -247,17 +248,31 @@ describe("<VisitsSection> since the last visit", () => {
       queryClient
         .getQueryCache()
         .build(queryClient, { queryKey })
-        .setState({
-          status: "error",
-          error: new Error("window read failed"),
-          fetchStatus: "idle",
-        });
-    });
+        .setState({ status: "error", error, fetchStatus: "idle" });
+    };
+  }
+
+  it("says a failed read failed, rather than passing it off as a quiet window", () => {
+    const html = render(
+      { upcoming: [next], past: [last] },
+      seedFailure(new ApiError("window read failed", 500)),
+    );
     const baseline = render({ upcoming: [next], past: [] });
     expect(html).toContain('data-slot="since-last-visit-error"');
     expect(html).toContain('role="alert"');
     expect(html).not.toContain('data-slot="since-last-visit"');
     expect(upcomingCards(html)).toBe(upcomingCards(baseline));
+  });
+
+  // Visits need the profile section, the window reads measurements, and a
+  // share can carry the first without the second. A refusal is not a failure.
+  it("draws nothing when the window read is refused", () => {
+    const html = render(
+      { upcoming: [next], past: [last] },
+      seedFailure(new ApiError("Forbidden", 403)),
+    );
+    expect(html).not.toContain("since-last-visit-error");
+    expect(html).not.toContain('role="alert"');
   });
 
   it("draws one card with the rows once there is something to list", () => {

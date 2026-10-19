@@ -24,6 +24,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { randomId } from "@/lib/random-id";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
+import { readFailureKind } from "@/components/ui/read-failure-row";
 
 import {
   cycleDependentKeys,
@@ -151,7 +152,13 @@ export function useCycleRingDial(enabled: boolean): {
   return {
     dial: enabled && verdict?.phase != null && verdict.dayOfCycle != null,
     pending: enabled && calendar.isPending,
-    failed: enabled && calendar.isError && !calendar.data,
+    // A refused read is not a failure to report: the tile would draw nothing
+    // and leave its cell empty.
+    failed:
+      enabled &&
+      calendar.isError &&
+      !calendar.data &&
+      readFailureKind(calendar.error) !== "denied",
   };
 }
 

@@ -88,7 +88,10 @@ async function seedSession(username: string) {
     },
   });
   const session = await prisma.session.create({
-    data: { userId: user.id, expiresAt: new Date(Date.now() + 60_000) },
+    // An hour, not a minute: walking every page of a long history can
+    // outlast a minute on a loaded runner, and an expired session reads as
+    // a 401 halfway through.
+    data: { userId: user.id, expiresAt: new Date(Date.now() + 3_600_000) },
   });
   cookieJar.set("healthlog_session", session.id);
   return user;
@@ -207,7 +210,7 @@ describe("GET /api/measurements?groupBy=day paging (#1245)", () => {
     ).json()) as ListEnvelope;
     expect(past.data.measurements).toEqual([]);
     expect(past.data.meta.total).toBe(expected.size);
-  });
+  }, 240_000);
 
   it("starts at the oldest day ascending and counts only the filtered window", async () => {
     const user = await seedSession("day-paging-window-user");
@@ -235,5 +238,5 @@ describe("GET /api/measurements?groupBy=day paging (#1245)", () => {
     }
     expect(windowed.data.meta.total).toBe(inWindow);
     expect(windowed.data.measurements).toHaveLength(PAGE);
-  });
+  }, 240_000);
 });

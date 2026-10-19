@@ -55,7 +55,7 @@ import {
   pickMainNightAndNaps,
   SESSION_GAP_MS,
 } from "@/lib/analytics/sleep-night";
-import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { resolveStoredTimezone, resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   isNamedSleepStageBody,
   sleepStageEntrySchema,
@@ -79,7 +79,6 @@ import {
   type GlucoseContext,
   type SleepStage,
 } from "@/generated/prisma/client";
-import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/tz/format";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "measurements");
@@ -193,10 +192,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // hid. Gated to cumulative HK types — the spot-sample types render
   // one-row-per-event already and have nothing to drill into.
   if (dayKey && type && CUMULATIVE_HK_TYPES.has(type as MeasurementType)) {
-    const tz =
-      user.timezone && user.timezone.length > 0
-        ? user.timezone
-        : DEFAULT_TIMEZONE;
+    // The same zone the day-grouped list cuts its days in, so a row's
+    // drill-down opens exactly the day the row summed.
+    const tz = await resolveStoredTimezone(user.timezone);
     // Resolve `[dayStart, dayEnd)` for the requested calendar day in
     // the user's local zone. v1.4.37 W10 — `localDayWindow` honours
     // DST: the previous shape (`canonicalDailyTimestamp ± 12 h`)
@@ -408,13 +406,10 @@ async function dayGroupedListResponse(
   },
 ) {
   const { type, limit, offset, sortDir } = opts;
-  const stored =
-    user.timezone && user.timezone.length > 0
-      ? user.timezone
-      : DEFAULT_TIMEZONE;
-  // A zone Postgres does not know would 500 the read; the drill-down cuts
-  // days in the same zone, so both must agree on it.
-  const tz = isValidTimezone(stored) ? stored : DEFAULT_TIMEZONE;
+  // One resolver for the stored zone, shared with the drill-down and the
+  // sleep list: a usable IANA name or the instance default, never a value
+  // Postgres would refuse. The drill-down must cut the same days.
+  const tz = await resolveStoredTimezone(user.timezone);
 
   // The request's filters, as SQL: the same ones the plain list applies.
   const filters = Prisma.sql`
@@ -623,7 +618,7 @@ const SLEEP_NIGHT_PAGE_MAX = 1000;
  * there without saying so to the client.
  */
 async function sleepListResponse(
-  user: { id: string },
+  user: { id: string; timezone?: string | null },
   opts: {
     from?: Date;
     to?: Date;
@@ -636,7 +631,7 @@ async function sleepListResponse(
   const { from, to, offset, sortDir, dayKey } = opts;
   const limit = Math.min(opts.limit, SLEEP_NIGHT_PAGE_MAX);
   const [tz, priorityJson] = await Promise.all([
-    resolveUserTimezone(user.id),
+    resolveStoredTimezone(user.timezone),
     loadUserSourcePriority(user.id),
   ]);
 
@@ -647,7 +642,6 @@ async function sleepListResponse(
     ...(dayKey ? { night: dayKey, limit: 1, offset: 0 } : { limit, offset }),
   });
   const nightKeys = page.nights.map((n) => n.night);
-  const wanted = new Set(nightKeys);
 
   // The page's sessions lie between the first one's start and the last one's
   // end, and every other session is more than the session gap away from that
@@ -692,8 +686,23 @@ async function sleepListResponse(
       },
     });
   }
-  const sessions = reconstructSleepSessions(rows, tz, priorityJson).filter(
-    (s) => wanted.has(s.night),
+  // Each reconstructed session is filed under the page night whose span
+  // holds it, and takes that night's label. Matching by the reconstruction's
+  // own label lost a night whenever the two named different days: the page
+  // counted it under one, the reconstruction filed it under the other, and
+  // the filter dropped it from both.
+  const sessions = reconstructSleepSessions(rows, tz, priorityJson).flatMap(
+    (session) => {
+      // A second of slack absorbs the sub-millisecond rounding between the
+      // two start computations; sessions sit hours apart, so it can never
+      // reach a neighbour.
+      const home = page.nights.find(
+        (n) =>
+          n.spanStart.getTime() - 1000 <= session.start.getTime() &&
+          session.end.getTime() <= n.spanEnd.getTime() + 1000,
+      );
+      return home ? [{ ...session, night: home.night }] : [];
+    },
   );
 
   // Drill-down — return the requested night's canonical stage segments.
@@ -812,11 +821,24 @@ async function sleepListResponse(
  * filtered set from the same query. `spanStart` / `spanEnd` bound the
  * night's counting sessions, so the caller reads exactly their rows.
  *
- * The session's night here is taken over every writer, while the JS fold
- * takes it over the winning writer only. They part only when a losing writer
- * runs past midnight and the winner does not; that night then sits on the
- * page and comes back without a row, and `total` counts it.
+ * This label is the list's own: the page is cut by it, a row carries it and
+ * a drill-down asks by it. It is taken over every writer, where the JS
+ * reconstruction takes the winning writer only, so the two can name
+ * different days (a losing phone's in-bed span running past midnight while
+ * the watch stops before it). The caller therefore never matches the two by
+ * label: it files each reconstructed session under the night whose span
+ * holds it, which is exact, because a reconstructed session is one of these
+ * sessions narrowed to its winner.
+ *
+ * With `night` set (a drill-down) the scan is cut to a window of 36 hours
+ * either side of that local day. Sessions are split at a three-hour gap, so
+ * a session ending on that day starts inside the window unless it lasted
+ * over a day and a half, and every session the cut truncates ends on another
+ * day.
  */
+/** How far a drill-down's session scan reaches either side of its day. */
+const DRILL_DOWN_REACH_MS = 36 * 60 * 60 * 1000;
+
 async function sleepNightPage(
   userId: string,
   tz: string,
@@ -832,8 +854,8 @@ async function sleepNightPage(
   nights: Array<{ night: string; spanStart: Date; spanEnd: Date }>;
   total: number;
 }> {
-  const zone = isValidTimezone(tz) ? tz : DEFAULT_TIMEZONE;
   const gapSeconds = SESSION_GAP_MS / 1000;
+  const window = opts.night ? localDayWindow(opts.night, tz) : null;
   // Direction comes from the Zod enum, never from raw input.
   const direction = Prisma.raw(opts.sortDir === "asc" ? "ASC" : "DESC");
   const nightsCte = Prisma.sql`
@@ -849,6 +871,12 @@ async function sleepNightPage(
         AND m."deleted_at" IS NULL
         ${opts.from ? Prisma.sql`AND m."measured_at" >= ${opts.from}` : Prisma.empty}
         ${opts.to ? Prisma.sql`AND m."measured_at" <= ${opts.to}` : Prisma.empty}
+        ${
+          window
+            ? Prisma.sql`AND m."measured_at" >= ${new Date(window.dayStart.getTime() - DRILL_DOWN_REACH_MS)}
+              AND m."measured_at" < ${new Date(window.dayEnd.getTime() + DRILL_DOWN_REACH_MS)}`
+            : Prisma.empty
+        }
     ), o AS (
       SELECT r.*, MAX(e) OVER (
         ORDER BY s, e ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
@@ -867,7 +895,7 @@ async function sleepNightPage(
       HAVING BOOL_OR(asleep)
     ), nights AS (
       SELECT
-        to_char((e AT TIME ZONE 'UTC') AT TIME ZONE ${zone}, 'YYYY-MM-DD') AS night,
+        to_char((e AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD') AS night,
         MIN(s) AS span_start,
         MAX(e) AS span_end
       FROM sess

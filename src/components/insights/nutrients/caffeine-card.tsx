@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Coffee } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { TileHeader } from "@/components/insights/tile-header";
 import { NutrientDailyBarChartDynamic } from "@/components/charts/nutrient-daily-bar-chart-dynamic";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -30,7 +30,7 @@ export function CaffeineCard() {
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isError, refetch } = useQuery({
+  const { data, error, isError, refetch } = useQuery({
     queryKey: queryKeys.nutrientDaily("caffeine", WINDOW_DAYS),
     queryFn: () =>
       apiGet<NutrientDailySeries>(
@@ -43,7 +43,8 @@ export function CaffeineCard() {
 
   if (isError && !data) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={error}
         slot="nutrients-caffeine-error"
         message={t("nutrients.caffeine.loadError")}
         onRetry={() => void refetch()}

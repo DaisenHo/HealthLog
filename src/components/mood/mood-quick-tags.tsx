@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
@@ -63,7 +63,7 @@ export function MoodQuickTags({
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, error, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.moodTagCatalog(),
     queryFn: async () => apiGet<CatalogResponse>("/api/mood/tags"),
     enabled: isAuthenticated,
@@ -75,7 +75,8 @@ export function MoodQuickTags({
   }
   if (isError && !data) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={error}
         slot="mood-quick-tags-error"
         message={t("mood.tagCatalogLoadError")}
         onRetry={() => void refetch()}

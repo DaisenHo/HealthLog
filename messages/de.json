@@ -54,7 +54,8 @@
     "durationClockHours": "{time} Std.",
     "errorIdLabel": "Fehler-ID",
     "errorIdCopy": "Fehler-ID kopieren",
-    "errorIdCopied": "Fehler-ID kopiert"
+    "errorIdCopied": "Fehler-ID kopiert",
+    "readThrottled": "Gerade zu viele Anfragen. Versuch es später noch einmal."
   },
   "apiErrors": {
     "measurement": {

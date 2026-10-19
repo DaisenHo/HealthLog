@@ -32,7 +32,7 @@ import { Compass } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { useAuth } from "@/hooks/use-auth";
 import { apiGet } from "@/lib/api/api-fetch";
 import { formatDate } from "@/lib/date-format";
@@ -62,7 +62,7 @@ export function MoodPrognosisCard() {
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
 
-  const { data, isError, refetch } = useQuery({
+  const { data, error, isError, refetch } = useQuery({
     queryKey: queryKeys.moodPrognosis(),
     queryFn: async () => apiGet<PrognosisReading>("/api/mood/prognosis"),
     enabled: isAuthenticated,
@@ -71,7 +71,8 @@ export function MoodPrognosisCard() {
 
   if (isError && !data) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={error}
         slot="mood-prognosis-error"
         message={t("insights.mood.prognosis.loadError")}
         onRetry={() => void refetch()}

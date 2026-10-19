@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListRow } from "@/components/ui/list-row";
 import {
@@ -1924,7 +1924,8 @@ function DayDrillDown({
   }
   if (error) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={error}
         slot="measurement-drilldown-error"
         message={t("measurements.loadError")}
         onRetry={() => void refetch()}
