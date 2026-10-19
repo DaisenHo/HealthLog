@@ -58,6 +58,12 @@ export interface AnatomyContributor {
   value: number | null;
   /** Effective weight share after null-redistribution, 0..1. */
   weight: number;
+  /**
+   * What a missing contributor still needs, when the server says why it is
+   * missing (the sleep score's rhythm sub-scores). Shown in place of the
+   * generic "no data".
+   */
+  missingLabel?: string;
 }
 
 export interface ScoreAnatomyViewProps {
@@ -238,7 +244,8 @@ function ContributorRow({ contributor }: { contributor: AnatomyContributor }) {
                 value: Math.round(clamped),
                 weight: weightPct,
               })
-            : t("insights.derived.anatomy.contributorMissing")}
+            : (contributor.missingLabel ??
+              t("insights.derived.anatomy.contributorMissing"))}
         </span>
       </div>
       <div

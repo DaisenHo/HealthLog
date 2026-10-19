@@ -4389,6 +4389,10 @@
             "consistency": "Regularność",
             "timing": "Pora",
             "composition": "Struktura"
+          },
+          "gap": {
+            "fewNights": "za mało nocy ({count} z 3)",
+            "noMainSleep": "ostatniej nocy brak głównego snu"
           }
         },
         "READINESS": {
@@ -4657,6 +4661,9 @@
       "scoreCrossLink": "Zobacz łączny wynik regeneracji",
       "emptyTitle": "Brak danych o regeneracji",
       "empty": "Na razie nie ma tu nic do pokazania. Ta strona pokazuje odczyty ładowania, wysiłku i obciążenia, które rejestrują WHOOP i Polar, oraz poziom odporności z Oura. Gotowość (readiness) z Oura pojawia się jako wynik regeneracji, link powyżej.",
+      "emptyOuraPermission": "Oura jest połączona, ale udzielone uprawnienie nie obejmuje danych o zdrowiu serca, od których zależy poziom odporności z Oura. Połącz Oura ponownie raz w Ustawieniach, Integracjach i zezwól na dostęp do zdrowia serca; poziom pojawi się tutaj przy następnej synchronizacji. Gotowość (readiness) z Oura jest już Twoim wynikiem regeneracji, link powyżej.",
+      "emptyOuraNoResilience": "Oura jest połączona, a uprawnienie obejmuje odporność, ale Oura nie przesłała jeszcze poziomu odporności dla tego konta. HealthLog pyta o niego przy każdej synchronizacji, więc pojawi się tutaj, gdy tylko Oura go dostarczy. Gotowość (readiness) z Oura jest już Twoim wynikiem regeneracji, link powyżej.",
+      "emptyAction": "Otwórz integracje",
       "block": {
         "ansChargeExplainer": "Jak naładowany jest Twój autonomiczny układ nerwowy na dany dzień: odczyt regeneracji oparty na nocnych sygnałach serca i oddechu.",
         "dayStrainExplainer": "Dzienne obciążenie sercowo-naczyniowe na skali wysiłku Twojego urządzenia. Odczytuj je w odniesieniu do regeneracji, nie jako cel sam w sobie.",

@@ -4389,6 +4389,10 @@
             "consistency": "Costanza",
             "timing": "Orario",
             "composition": "Composizione"
+          },
+          "gap": {
+            "fewNights": "notti ancora insufficienti ({count} su 3)",
+            "noMainSleep": "nessun sonno principale l'ultima notte"
           }
         },
         "READINESS": {
@@ -4657,6 +4661,9 @@
       "scoreCrossLink": "Vedi il punteggio di recupero composito",
       "emptyTitle": "Ancora nessun dato di recupero",
       "empty": "Qui non c'è ancora nulla da mostrare. Questa pagina mostra i valori di ricarica, sforzo e carico che registrano WHOOP e Polar, e il livello di resilienza di Oura. La prontezza (readiness) di Oura compare come punteggio di recupero, collegato qui sopra.",
+      "emptyOuraPermission": "Oura è collegato, ma l'autorizzazione concessa non include i dati sulla salute cardiaca, da cui dipende il livello di resilienza di Oura. Ricollega Oura una volta in Impostazioni, Integrazioni e consenti l'accesso alla salute cardiaca; il livello comparirà qui con la prossima sincronizzazione. La prontezza (readiness) di Oura è già il tuo punteggio di recupero, collegato qui sopra.",
+      "emptyOuraNoResilience": "Oura è collegato e l'autorizzazione copre la resilienza, ma Oura non ha ancora inviato un livello di resilienza per questo account. HealthLog lo richiede a ogni sincronizzazione, quindi comparirà qui non appena Oura ne fornirà uno. La prontezza (readiness) di Oura è già il tuo punteggio di recupero, collegato qui sopra.",
+      "emptyAction": "Apri integrazioni",
       "block": {
         "ansChargeExplainer": "Quanto è carico il tuo sistema nervoso autonomo per la giornata: una lettura di ricarica ricavata dai segnali notturni di cuore e respiro.",
         "dayStrainExplainer": "Il carico cardiovascolare della giornata sulla scala di sforzo del tuo dispositivo. Leggilo in rapporto al tuo recupero, non come obiettivo a sé.",

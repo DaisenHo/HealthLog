@@ -4389,6 +4389,10 @@
             "consistency": "Consistency",
             "timing": "Timing",
             "composition": "Composition"
+          },
+          "gap": {
+            "fewNights": "not enough nights yet ({count} of 3)",
+            "noMainSleep": "latest night had no main sleep"
           }
         },
         "READINESS": {
@@ -4657,6 +4661,9 @@
       "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
       "empty": "Nothing to chart here yet. This page shows the recharge, strain and load readings that WHOOP and Polar record, and Oura's resilience level. Oura's readiness appears as your recovery score, linked above.",
+      "emptyOuraPermission": "Oura is connected, but the permission it was given leaves out heart-health data, and Oura's resilience level sits behind it. Reconnect Oura once under Settings, Integrations and allow heart-health access; the level then appears here with the next sync. Oura's readiness is already your recovery score, linked above.",
+      "emptyOuraNoResilience": "Oura is connected and the permission covers resilience, but Oura has not sent a resilience level for this account yet. HealthLog asks for it on every sync, so it appears here as soon as Oura provides one. Oura's readiness is already your recovery score, linked above.",
+      "emptyAction": "Open integrations",
       "block": {
         "ansChargeExplainer": "How charged your autonomic nervous system is for the day ahead, a recharge reading drawn from your overnight heart and breathing signals.",
         "dayStrainExplainer": "The day's whole-body cardiovascular load on your device's strain scale. Read it against your recovery, not as a goal on its own.",
