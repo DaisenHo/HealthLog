@@ -187,14 +187,23 @@ year of history fills depends on the device. Two bounds apply instead:
 - **Progress.** A walk has to reach older readings as it goes. If Google
   hands out 20 pages in a row that reach no further back than the ones before
   them (the same page again, or a page token that goes round in a circle),
-  the walk stops, and that data type's history ends at the oldest reading
-  written so far. Retrying would only meet the same wall, so it is not
-  retried; a reconnect starts the backfill over.
+  the walk stops where it got to. A passing fault in Google's paging looks
+  the same as the end of what it holds, so the first time this happens the
+  data type only waits: it keeps its place, the rest of the backfill goes
+  on, and a day later it is walked again from there. If that second attempt
+  also stops without getting anywhere, the data type's history ends at the
+  oldest reading written so far. If it moves on, it is an ordinary walk
+  again. A walk that stops before it has written a single reading notes no
+  end at all (there is no date it could be said to end at); the slice fails
+  as stuck and is retried like any other. A reconnect starts the backfill
+  over.
 
-Either way the data type counts as finished, the backfill completes once
-every other type is in, and the integration card stops saying that older
-history is loading. Instead it says, per data type, how far back the import
-reaches and why it ends there.
+Either way the data type counts as finished once its end is final, the
+backfill completes once every other type is in, and the integration card
+stops saying that older history is loading. Instead it says, per data type,
+how far back the import reaches and why it ends there. While a type waits
+for its second attempt the backfill is not complete, and the card still
+says older history is loading.
 
 Before 1.43.6 every page-by-page data type had a ceiling of pages counted
 across all slices (10,000 for heart rate, 1,000 for the others). A dense
@@ -249,7 +258,12 @@ reading:
   - `edges`: where every unfinished page-by-page data type stands now.
   - `ended`: data types whose history ended short of its beginning, each
     with its measurement `type`, the instant it ends at (`at`) and the
-    `reason` (`horizon` or `no_progress`).
+    `reason` (`horizon` or `no_progress`). A `no_progress` entry also
+    carries `attempts` and `endedAt`; with one attempt it is waiting for
+    its second, a day after `endedAt`, and is not yet published.
+- `action: google_health.backfill.retry_scheduled` marks a slice that found
+  nothing left but a data type waiting for its second attempt and queued the
+  next slice for when it is due (`delaySeconds`).
 - `meta["googleHealth.backfill.ended"]` appears on the slice where a data
   type ended short, with the same entries. A walk stopped for lack of
   progress also leaves a warning:

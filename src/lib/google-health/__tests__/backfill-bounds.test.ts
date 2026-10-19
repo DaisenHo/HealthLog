@@ -29,10 +29,12 @@ import {
   googleHealthBackfillHorizonYears,
   googleHealthWalkProgress,
   noteGoogleHealthWalkPage,
+  type GoogleHealthBackfillEnd,
 } from "../backfill-bounds";
 import {
   googleHealthBackfillEndedList,
   googleHealthBackfillProgressAfterCompletion,
+  googleHealthBackfillRetryPending,
   readGoogleHealthBackfillEnded,
   recordGoogleHealthBackfillEnd,
   runGoogleHealthCollection,
@@ -253,69 +255,202 @@ describe("a collection ended short", () => {
     prismaMock.googleHealthConnection.update.mockResolvedValue({});
   });
 
+  const HOUR = 3_600_000;
   const END = {
     type: "PULSE" as const,
     at: "2024-05-11T00:00:00.000Z",
     reason: "no_progress" as const,
   };
+  const HORIZON_END = {
+    type: "WEIGHT" as const,
+    at: "2006-10-17T12:00:00.000Z",
+    reason: "horizon" as const,
+  };
+  /** An end without progress `attempts` deep, the last `hoursAgo` back. */
+  const parked = (attempts: number, hoursAgo: number) => ({
+    ...END,
+    attempts,
+    endedAt: new Date(Date.now() - hoursAgo * HOUR).toISOString(),
+  });
 
-  it("counts as finished even though its walk ended truncated, and is noted with where and why", async () => {
-    const done = new Set<string>();
-    const { ended, collections } = await runWithGoogleHealthClientOutcome(() =>
-      runWithGoogleHealthBackfillResume("u1", done, () =>
-        runGoogleHealthCollection("fetchHeartRate", async () => {
-          // The walk stopped for no progress: truncated, and the end noted.
-          noteGoogleHealthDeferred();
-          await recordGoogleHealthBackfillEnd("fetchHeartRate", END);
-          return 0;
-        }),
+  /** One slice walking heart rate with `walk`, from `ended`. */
+  async function slice(
+    walk: () => Promise<number>,
+    ended = new Map<string, GoogleHealthBackfillEnd>(),
+    done = new Set<string>(),
+  ) {
+    return runWithGoogleHealthClientOutcome(() =>
+      runWithGoogleHealthBackfillResume(
+        "u1",
+        done,
+        () => runGoogleHealthCollection("fetchHeartRate", walk),
+        new Map(),
+        new Set(),
+        ended,
       ),
     ).then((r) => r.result);
+  }
+
+  /** A walk stopped for no progress: truncated, and the end noted. */
+  const stalls = vi.fn(async () => {
+    noteGoogleHealthDeferred();
+    await recordGoogleHealthBackfillEnd("fetchHeartRate", END);
+    return 0;
+  });
+
+  it("parks a first end without progress: not finished, edge kept, not published", async () => {
+    const done = new Set<string>();
+    const { ended, collections } = await slice(stalls, new Map(), done);
     expect(collections).toEqual([
-      expect.objectContaining({ key: "fetchHeartRate", status: "done" }),
+      expect.objectContaining({ key: "fetchHeartRate", status: "stopped" }),
     ]);
-    expect([...ended]).toEqual([["fetchHeartRate", END]]);
+    expect(done.has("fetchHeartRate")).toBe(false);
+    const note = ended.get("fetchHeartRate")!;
+    expect(note).toMatchObject({ ...END, attempts: 1 });
+    expect(Date.now() - Date.parse(note.endedAt!)).toBeLessThan(60_000);
     const written = prismaMock.googleHealthConnection.update.mock.calls.at(
       -1,
     )![0].data.backfillProgress as unknown;
     expect(
       readGoogleHealthBackfillEnded(written).get("fetchHeartRate"),
-    ).toEqual(END);
+    ).toEqual(note);
+    // Waiting for another try is not where the history ends.
+    expect(googleHealthBackfillEndedList(written)).toEqual([]);
+    expect(googleHealthBackfillProgressAfterCompletion(ended)).toBeNull();
   });
 
-  it("is skipped by the next slice instead of walked into the same wall", async () => {
+  it("is not walked again before its day is up", async () => {
     const walk = vi.fn(async () => 1);
-    const { skipped } = await runWithGoogleHealthBackfillResume(
-      "u1",
-      new Set(),
-      () => runGoogleHealthCollection("fetchHeartRate", walk),
-      new Map(),
-      new Set(),
-      new Map([["fetchHeartRate", END]]),
+    const { skipped } = await slice(
+      walk,
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", parked(1, 23)],
+      ]),
     );
     expect(walk).not.toHaveBeenCalled();
     expect(skipped).toEqual(["fetchHeartRate"]);
   });
 
-  it("outlives the completion stamp, and nothing else does", () => {
+  it("is walked again once its day is up, and a second end without progress is final", async () => {
+    const done = new Set<string>();
+    const { ended, collections } = await slice(
+      stalls,
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", parked(1, 25)],
+      ]),
+      done,
+    );
+    expect(stalls).toHaveBeenCalledTimes(1);
+    expect(collections).toEqual([
+      expect.objectContaining({ key: "fetchHeartRate", status: "done" }),
+    ]);
+    expect(done.has("fetchHeartRate")).toBe(true);
+    expect(ended.get("fetchHeartRate")).toMatchObject({ ...END, attempts: 2 });
+    expect(
+      googleHealthBackfillProgressAfterCompletion(ended)!.ended.fetchHeartRate,
+    ).toMatchObject({ ...END, attempts: 2 });
+  });
+
+  it("goes back to an ordinary walk when the second attempt gets somewhere", async () => {
+    const { ended, collections } = await slice(
+      async () => {
+        // Moved on, then ran out of slice: no end this time.
+        noteGoogleHealthDeferred();
+        return 5;
+      },
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", parked(1, 25)],
+      ]),
+    );
+    expect(collections).toEqual([
+      expect.objectContaining({ key: "fetchHeartRate", status: "stopped" }),
+    ]);
+    expect(ended.has("fetchHeartRate")).toBe(false);
+  });
+
+  it("is skipped for good once final, and so is the horizon", async () => {
+    const walk = vi.fn(async () => 1);
+    const { skipped } = await slice(
+      walk,
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", parked(2, 100)],
+      ]),
+    );
+    expect(walk).not.toHaveBeenCalled();
+    expect(skipped).toEqual(["fetchHeartRate"]);
+
+    const atHorizon = await slice(
+      walk,
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", { ...HORIZON_END, type: "PULSE" as const }],
+      ]),
+    );
+    expect(walk).not.toHaveBeenCalled();
+    expect(atHorizon.skipped).toEqual(["fetchHeartRate"]);
+  });
+
+  it("finishes the collection at once at the horizon", async () => {
+    const done = new Set<string>();
+    const { collections } = await slice(
+      async () => {
+        await recordGoogleHealthBackfillEnd("fetchHeartRate", {
+          ...HORIZON_END,
+          type: "PULSE",
+        });
+        return 3;
+      },
+      new Map(),
+      done,
+    );
+    expect(collections).toEqual([
+      expect.objectContaining({ key: "fetchHeartRate", status: "done" }),
+    ]);
+    expect(done.has("fetchHeartRate")).toBe(true);
+  });
+
+  it("outlives the completion stamp when final, and nothing else does", () => {
     expect(googleHealthBackfillProgressAfterCompletion(new Map())).toBeNull();
     expect(
       googleHealthBackfillProgressAfterCompletion(
-        new Map([["fetchHeartRate", END]]),
+        new Map<string, GoogleHealthBackfillEnd>([
+          ["fetchWeight", HORIZON_END],
+          ["fetchHeartRate", parked(1, 1)],
+        ]),
       ),
-    ).toEqual({ ended: { fetchHeartRate: END } });
+    ).toEqual({ ended: { fetchWeight: HORIZON_END } });
   });
 
-  it("is published per type, and a malformed note is dropped", () => {
+  it("names the earliest retry among the parked ones", () => {
+    const early = parked(1, 20);
+    expect(
+      googleHealthBackfillRetryPending(
+        new Map<string, GoogleHealthBackfillEnd>([
+          ["fetchWeight", HORIZON_END],
+          ["fetchHeartRate", early],
+          ["fetchHrv", parked(1, 2)],
+          ["fetchSpo2", parked(2, 30)],
+        ]),
+      ),
+    ).toEqual({
+      keys: ["fetchHeartRate", "fetchHrv"],
+      dueAt: Date.parse(early.endedAt) + 24 * HOUR,
+    });
+    expect(
+      googleHealthBackfillRetryPending(
+        new Map<string, GoogleHealthBackfillEnd>([
+          ["fetchWeight", HORIZON_END],
+        ]),
+      ),
+    ).toBeNull();
+  });
+
+  it("is published per type when final, and a malformed note is dropped", () => {
     expect(
       googleHealthBackfillEndedList({
         ended: {
-          fetchHeartRate: END,
-          fetchWeight: {
-            type: "WEIGHT",
-            at: "2006-10-17T12:00:00.000Z",
-            reason: "horizon",
-          },
+          fetchHeartRate: parked(2, 30),
+          fetchRhr: parked(1, 1),
+          fetchWeight: HORIZON_END,
           fetchBodyFat: { type: "BODY_FAT", at: "nope", reason: "horizon" },
           fetchSpo2: { type: "NOT_A_TYPE", at: END.at, reason: "horizon" },
           fetchHrv: { type: "PULSE", at: END.at, reason: "because" },

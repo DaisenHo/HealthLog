@@ -37,8 +37,12 @@ const {
     /** Collections whose resume edge the mocked walk moves. */
     advances: [] as string[],
     collections: [] as Array<{ key: string; status: string }>,
-    /** Collections the mocked walk ends short (horizon / no progress). */
+    /** Collections the mocked walk ends short for good. */
     ends: [] as string[],
+    /** Collections the mocked walk parks after a first end without progress. */
+    parks: [] as string[],
+    /** When the parked ones are due again (epoch ms). */
+    retryDueAt: 0,
   },
 }));
 
@@ -67,6 +71,14 @@ vi.mock("@/lib/google-health/sync-core", () => ({
   readGoogleHealthBackfillEnded: () => new Map(),
   googleHealthBackfillProgressAfterCompletion: (ended: Map<string, unknown>) =>
     ended.size > 0 ? { ended: Object.fromEntries(ended) } : null,
+  googleHealthBackfillRetryPending: (
+    ended: Map<string, { reason: string; attempts?: number }>,
+  ) => {
+    const keys = [...ended]
+      .filter(([, e]) => e.reason === "no_progress" && (e.attempts ?? 1) < 2)
+      .map(([key]) => key);
+    return keys.length > 0 ? { keys, dueAt: resumeState.retryDueAt } : null;
+  },
   runWithGoogleHealthBackfillResume: async (
     _userId: string,
     done: Set<string>,
@@ -78,10 +90,21 @@ vi.mock("@/lib/google-health/sync-core", () => ({
     const result = await fn();
     for (const key of resumeState.finishes) done.add(key);
     for (const key of resumeState.ends) {
+      // Final: finished the way `runGoogleHealthCollection` finishes it.
       ended.set(key, {
         type: "PULSE",
         at: "2024-05-11T00:00:00.000Z",
         reason: "no_progress",
+        attempts: 2,
+      });
+      done.add(key);
+    }
+    for (const key of resumeState.parks) {
+      ended.set(key, {
+        type: "PULSE",
+        at: "2024-05-11T00:00:00.000Z",
+        reason: "no_progress",
+        attempts: 1,
       });
     }
     return {
@@ -104,6 +127,7 @@ import {
   runGoogleHealthBackfillForUser,
 } from "../google-health-backfill";
 import { INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS } from "@/lib/jobs/integration-backfill-admission";
+import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";
 import {
   GOOGLE_HEALTH_DATA_TYPES,
   forEachDataPointPage,
@@ -121,6 +145,8 @@ beforeEach(() => {
   resumeState.advances = [];
   resumeState.collections = [];
   resumeState.ends = [];
+  resumeState.parks = [];
+  resumeState.retryDueAt = 0;
 });
 
 describe("runGoogleHealthBackfillForUser — verdict-gated marker", () => {
@@ -326,9 +352,62 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
           type: "PULSE",
           at: "2024-05-11T00:00:00.000Z",
           reason: "no_progress",
+          attempts: 2,
         },
       },
     });
+  });
+
+  it("continues a slice that only parked a collection for another try", async () => {
+    resumeState.parks = ["fetchHeartRate"];
+    resumeState.retryDueAt = Date.now() + 24 * 3_600_000;
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 0, failed: true });
+
+    await expect(
+      runGoogleHealthBackfillForUser("u1", undefined, 4),
+    ).resolves.toEqual({ imported: 0, continued: true });
+    // Other collections are still to walk: the next slice comes as usual.
+    expect(bossSend.mock.calls[0]![2]).toMatchObject({
+      startAfter: INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
+    });
+    expect(prismaMock.googleHealthConnection.update).not.toHaveBeenCalled();
+  });
+
+  it("waits for the retry instead of stamping when only a parked collection is left", async () => {
+    resumeState.doneBefore = GOOGLE_HEALTH_COLLECTION_KEYS.filter(
+      (k) => k !== "fetchHeartRate",
+    );
+    resumeState.parks = ["fetchHeartRate"];
+    resumeState.retryDueAt = Date.now() + 10 * 3_600_000;
+    // The parked collection was skipped as not yet due: a clean run.
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 0, failed: false });
+
+    await expect(
+      runGoogleHealthBackfillForUser("u1", undefined, 7),
+    ).resolves.toEqual({ imported: 0, continued: true });
+    expect(prismaMock.googleHealthConnection.update).not.toHaveBeenCalled();
+    expect(bossSend).toHaveBeenCalledTimes(1);
+    const startAfter = (bossSend.mock.calls[0]![2] as { startAfter: number })
+      .startAfter;
+    expect(Math.abs(startAfter - 10 * 3600)).toBeLessThanOrEqual(2);
+    expect(bossSend.mock.calls[0]![1]).toMatchObject({
+      data: { slice: 8 },
+    });
+  });
+
+  it("does not stamp over a parked collection when the retry cannot be queued", async () => {
+    resumeState.doneBefore = GOOGLE_HEALTH_COLLECTION_KEYS.filter(
+      (k) => k !== "fetchHeartRate",
+    );
+    resumeState.parks = ["fetchHeartRate"];
+    resumeState.retryDueAt = Date.now() + 3_600_000;
+    bossSend.mockResolvedValue(null);
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 0, failed: false });
+
+    await expect(
+      runGoogleHealthBackfillForUser("u1", undefined, 7),
+    ).resolves.toEqual({ imported: 0 });
+    expect(prismaMock.googleHealthConnection.update).not.toHaveBeenCalled();
   });
 
   it("continues a slice that only moved a collection's edge", async () => {

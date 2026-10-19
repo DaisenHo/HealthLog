@@ -26,8 +26,10 @@ import {
   readGoogleHealthBackfillDone,
   readGoogleHealthBackfillEdgeFilterUnsupported,
   readGoogleHealthBackfillEnded,
+  googleHealthBackfillRetryPending,
   runWithGoogleHealthBackfillResume,
 } from "@/lib/google-health/sync-core";
+import { googleHealthBackfillEndIsFinal } from "@/lib/google-health/backfill-bounds";
 import {
   isGoogleHealthParked,
   syncUserGoogleHealth,
@@ -204,11 +206,20 @@ export async function runGoogleHealthBackfillForUser(
   const endedBefore = readGoogleHealthBackfillEnded(
     connection?.backfillProgress,
   );
-  // A collection that ended short (`endedBefore`) has read all it is going
-  // to, so it counts as finished alongside the ones read to the end.
+  // A collection that ended short for good has read all it is going to, so
+  // it counts as finished alongside the ones read to the end. One parked
+  // after a first end without progress does not: it waits for another try.
   const finishedCount = (): number =>
-    new Set([...done, ...endedBefore.keys()]).size;
+    new Set([
+      ...done,
+      ...[...endedBefore]
+        .filter(([, e]) => googleHealthBackfillEndIsFinal(e))
+        .map(([key]) => key),
+    ]).size;
   const doneBefore = finishedCount();
+  const parkedBefore = new Set(
+    googleHealthBackfillRetryPending(endedBefore)?.keys ?? [],
+  );
 
   const budget = googleHealthSliceBudget(
     sliceOptions.sliceMs ?? GOOGLE_HEALTH_BACKFILL_SLICE_MS,
@@ -274,28 +285,75 @@ export async function runGoogleHealthBackfillForUser(
     );
   }
 
-  if (failed) {
-    // Progress is what this slice put on disk: collections finished, and
-    // edges moved. Either is enough to go on; neither means stuck.
-    const progressed = finished > 0 || advanced.size > 0;
-    if (progressed && slice + 1 <= GOOGLE_HEALTH_BACKFILL_MAX_SLICE) {
-      const boss = getGlobalBoss();
-      const sent = boss
-        ? await enqueueIntegrationBackfillAdmission(
-            boss,
-            {
-              kind: "google-health-backfill",
-              data: {
-                userId,
-                enqueuedAt: new Date().toISOString(),
-                slice: slice + 1,
-              },
+  const sendNextSlice = async (delaySeconds: number): Promise<boolean> => {
+    if (slice + 1 > GOOGLE_HEALTH_BACKFILL_MAX_SLICE) return false;
+    const boss = getGlobalBoss();
+    const sent = boss
+      ? await enqueueIntegrationBackfillAdmission(
+          boss,
+          {
+            kind: "google-health-backfill",
+            data: {
+              userId,
+              enqueuedAt: new Date().toISOString(),
+              slice: slice + 1,
             },
-            budget.stopReason === "rate_limited"
-              ? GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS
-              : INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
-          )
-        : null;
+          },
+          delaySeconds,
+        )
+      : null;
+    return Boolean(sent);
+  };
+
+  // Collections parked after a first end without progress
+  // (`backfill-bounds.ts`). Once nothing else is left, the next slice waits
+  // until the earliest of them is due; the marker is never stamped over one.
+  const pending = googleHealthBackfillRetryPending(ended);
+  const onlyRetriesLeft =
+    pending !== null &&
+    GOOGLE_HEALTH_COLLECTION_KEYS.every(
+      (key) => done.has(key) || pending.keys.includes(key),
+    );
+  if (pending && (onlyRetriesLeft || !failed)) {
+    const delaySeconds = Math.max(
+      INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
+      Math.ceil((pending.dueAt - Date.now()) / 1000),
+    );
+    if (await sendNextSlice(delaySeconds)) {
+      annotate({
+        action: {
+          name: "google_health.backfill.retry_scheduled",
+          details: { slice, collections: pending.keys, delaySeconds },
+        },
+      });
+      return { imported, continued: true };
+    }
+    // Not queued (most often one is already waiting under the same slice
+    // key, sent by an earlier boot's slice). Nothing is lost: the marker is
+    // not stamped, so the next boot offers the backfill again.
+    annotate({
+      action: {
+        name: "google_health.backfill.retry_not_queued",
+        details: { slice, collections: pending.keys },
+      },
+    });
+    return { imported };
+  }
+
+  if (failed) {
+    // Progress is what this slice put on disk: collections finished, edges
+    // moved, or a collection parked for another attempt. Any is enough to go
+    // on; none means stuck.
+    const newlyParked = (pending?.keys ?? []).filter(
+      (key) => !parkedBefore.has(key),
+    ).length;
+    const progressed = finished > 0 || advanced.size > 0 || newlyParked > 0;
+    if (progressed) {
+      const sent = await sendNextSlice(
+        budget.stopReason === "rate_limited"
+          ? GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS
+          : INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
+      );
       if (sent) {
         annotate({
           action: {
