@@ -279,19 +279,19 @@ describe("buildCoachNudgePayload", () => {
 
   it("opens the title with a localized morning greeting and the name", () => {
     const { title, body } = buildCoachNudgePayload("bp", "de", {
-      name: "Marc",
+      name: "Alex",
       openerSeed: 0,
     });
-    expect(title).toBe("Guten Morgen, Marc");
+    expect(title).toBe("Guten Morgen, Alex");
     expect(body.length).toBeGreaterThan(0);
   });
 
   it("rotates to the casual opener on an odd seed", () => {
     const { title } = buildCoachNudgePayload("bp", "de", {
-      name: "Marc",
+      name: "Alex",
       openerSeed: 1,
     });
-    expect(title).toBe("Hey Marc");
+    expect(title).toBe("Hey Alex");
   });
 
   it("drops the name from the greeting when none is given", () => {
@@ -361,11 +361,11 @@ describe("resolveGreetingName", () => {
   it("prefers the display name's first token", () => {
     expect(
       resolveGreetingName({
-        displayName: "Marc B.",
-        fullName: "Marc Bombeck",
-        username: "marc",
+        displayName: "Alex B.",
+        fullName: "Alex Example",
+        username: "alex",
       }),
-    ).toBe("Marc");
+    ).toBe("Alex");
   });
 
   it("falls back to the full name's given token", () => {

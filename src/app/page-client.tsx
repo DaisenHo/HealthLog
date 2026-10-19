@@ -295,7 +295,7 @@ export default function DashboardPageClient({
   const digestQuery = useDailyDigest(isAuthenticated);
 
   // v1.29.1 — the v1.29.0 selected-score-ring cluster is removed from the web
-  // hero (Marc, live-use: uneven, wasted tile space). The snapshot still
+  // hero (live use: uneven, wasted tile space). The snapshot still
   // resolves `scoreRings` server-side for the iOS selection contract; the web
   // hero just no longer renders them, so no client-side ring ordering here.
 
