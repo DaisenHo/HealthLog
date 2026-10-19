@@ -54,7 +54,8 @@
     "durationClockHours": "{time} h",
     "errorIdLabel": "Error ID",
     "errorIdCopy": "Copy error ID",
-    "errorIdCopied": "Error ID copied"
+    "errorIdCopied": "Error ID copied",
+    "readThrottled": "Too many requests just now. Try again later."
   },
   "apiErrors": {
     "measurement": {

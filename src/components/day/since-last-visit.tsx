@@ -18,7 +18,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import type { EncounterDTO } from "@/lib/encounters/dto";
 import { apiGet } from "@/lib/api/api-fetch";
 import type {
@@ -61,7 +61,9 @@ import { useTodayKey } from "./use-today-key";
  * most often turns out empty, then collapse it again. Arriving late costs
  * only the visit list below a shift, once per window; the read is cached for
  * five minutes. A failed read is not a quiet window, so it says so in a
- * compact row with a retry.
+ * compact row with a retry. A refused one draws nothing: visits need the
+ * profile section and this window reads measurements, and a share can carry
+ * the first without the second.
  */
 
 const EVENT_ICON: Partial<Record<DayEventKind, LucideIcon>> = {
@@ -193,7 +195,8 @@ export function SinceLastVisit({
 
   if (window.isError && rows.length === 0) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={window.error}
         slot="since-last-visit-error"
         message={t("day.sinceLastVisit.loadError")}
         onRetry={() => void window.refetch()}

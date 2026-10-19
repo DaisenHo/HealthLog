@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Tag } from "lucide-react";
 
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
@@ -105,7 +105,7 @@ export function MoodTagPicker({
   // tile belongs to, or null when closed.
   const [createGroupKey, setCreateGroupKey] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, error, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.moodTagCatalog(),
     queryFn: async () => {
       return apiGet<CatalogResponse>("/api/mood/tags");
@@ -124,7 +124,8 @@ export function MoodTagPicker({
 
   if (isError && !data) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={error}
         slot="mood-tag-picker-error"
         message={t("mood.tagCatalogLoadError")}
         onRetry={() => void refetch()}

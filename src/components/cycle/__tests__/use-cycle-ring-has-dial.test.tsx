@@ -13,6 +13,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
+import { ApiError } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
 import { localYmd, useCycleRingDial } from "../use-cycle";
@@ -32,9 +33,11 @@ function Probe({ enabled }: { enabled: boolean }) {
 
 /** Marks the calendar read as failed, with no data behind it. */
 const FAILED = Symbol("failed");
+/** Marks the calendar read as refused (a share without the section). */
+const REFUSED = Symbol("refused");
 
 function probe(
-  verdict: unknown | undefined | typeof FAILED,
+  verdict: unknown | undefined | typeof FAILED | typeof REFUSED,
   enabled = true,
 ): string {
   const client = new QueryClient({
@@ -45,13 +48,16 @@ function probe(
     },
   });
   const [from, to] = window();
-  if (verdict === FAILED) {
+  if (verdict === FAILED || verdict === REFUSED) {
     client
       .getQueryCache()
       .build(client, { queryKey: queryKeys.cycleCalendar(from, to) })
       .setState({
         status: "error",
-        error: new Error("calendar read failed"),
+        error:
+          verdict === REFUSED
+            ? new ApiError("Forbidden", 403)
+            : new Error("calendar read failed"),
         fetchStatus: "idle",
       });
   } else if (verdict !== undefined) {
@@ -91,6 +97,11 @@ describe("useCycleRingDial", () => {
   it("reports a failed read instead of settling it to no dial", () => {
     expect(probe(FAILED)).toBe("false:false:failed");
     expect(probe(FAILED, false)).toBe("false:false");
+  });
+
+  // A refused read draws nothing in the tile, so it must not hold a cell.
+  it("holds no cell for a refused read", () => {
+    expect(probe(REFUSED)).toBe("false:false");
   });
 });
 

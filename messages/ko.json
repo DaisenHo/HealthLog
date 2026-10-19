@@ -54,7 +54,8 @@
     "durationClockHours": "{time}시간",
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
-    "errorIdCopied": "오류 ID 복사됨"
+    "errorIdCopied": "오류 ID 복사됨",
+    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요."
   },
   "apiErrors": {
     "measurement": {

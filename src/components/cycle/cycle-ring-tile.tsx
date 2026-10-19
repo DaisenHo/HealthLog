@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Droplets } from "lucide-react";
 
-import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { CycleRing } from "./cycle-ring";
@@ -71,7 +71,8 @@ export function CycleRingTile({ className }: { className?: string }) {
   if (calendar.isLoading && !calendar.data) return null;
   if (calendar.isError && !calendar.data) {
     return (
-      <QueryErrorRow
+      <ReadFailureRow
+        error={calendar.error}
         slot="wellness-cycle-tile-error"
         message={t("cycle.wellnessRing.loadError")}
         onRetry={() => void calendar.refetch()}

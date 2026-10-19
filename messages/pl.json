@@ -54,7 +54,8 @@
     "durationClockHours": "{time} godz.",
     "errorIdLabel": "ID błędu",
     "errorIdCopy": "Kopiuj ID błędu",
-    "errorIdCopied": "Skopiowano ID błędu"
+    "errorIdCopied": "Skopiowano ID błędu",
+    "readThrottled": "Zbyt wiele zapytań w tej chwili. Spróbuj ponownie później."
   },
   "apiErrors": {
     "measurement": {
