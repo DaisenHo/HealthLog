@@ -175,18 +175,20 @@ export function InstrumentCard({
         </div>
       )}
 
-      <CardContent className="flex h-full flex-col">
-        {/* Bottom-pinned single primary action — the med-/Vorsorge card slot.
-            Nothing sits below it now: the attribution moved to the header's
-            info control, so the Start button stands alone with clean space. */}
-        {canManageMind && (
+      {/* Bottom-pinned single primary action — the med-/Vorsorge card slot.
+          Nothing sits below it now: the attribution moved to the header's
+          info control, so the Start button stands alone with clean space.
+          Without the right to start, the slot is not drawn at all: an empty
+          one still took the card's gap at its foot. */}
+      {canManageMind && (
+        <CardContent className="flex h-full flex-col">
           <div className="mt-auto pt-0">
             <Button type="button" className="min-h-11 w-full" onClick={onStart}>
               {t("mentalHealth.start")}
             </Button>
           </div>
-        )}
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }

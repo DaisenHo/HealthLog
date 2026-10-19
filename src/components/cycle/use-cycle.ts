@@ -136,17 +136,22 @@ export function useCycleRingCalendar(enabled = true) {
  * takes Strain's place for it): the ring renders nothing without an active
  * cycle, and a cell reserved for it would sit empty in the row. While the
  * calendar read is `pending` the strip holds its skeleton, so it never paints
- * Strain and then swaps it for the ring. A failed read settles to no dial.
+ * Strain and then swaps it for the ring. A failed read draws no dial but is
+ * `failed`: the strip still gives the ring its cell, where the tile says the
+ * read failed and offers a retry. Settling it to "no dial" passed a failure
+ * off as a day without an active cycle.
  */
 export function useCycleRingDial(enabled: boolean): {
   dial: boolean;
   pending: boolean;
+  failed: boolean;
 } {
   const calendar = useCycleRingCalendar(enabled);
   const verdict = calendar.data?.verdict;
   return {
     dial: enabled && verdict?.phase != null && verdict.dayOfCycle != null,
     pending: enabled && calendar.isPending,
+    failed: enabled && calendar.isError && !calendar.data,
   };
 }
 

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Coffee } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { TileHeader } from "@/components/insights/tile-header";
 import { NutrientDailyBarChartDynamic } from "@/components/charts/nutrient-daily-bar-chart-dynamic";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -16,39 +16,38 @@ const WINDOW_DAYS = 30;
 
 /**
  * v1.29 — caffeine card on `/insights/nutrients`. Rendered ONLY when the
- * window carries at least one logged day (a query-error also collapses
- * to nothing rather than a card the user can do nothing with — the
- * hydration card above already carries the surface's error affordance).
- * The EFSA safe-level value is phrased as a ceiling, never "limit
- * exceeded" colouring: a day above the dashed line is just a bar above
- * a dashed line.
+ * window carries at least one logged day. The EFSA safe-level value is
+ * phrased as a ceiling, never "limit exceeded" colouring: a day above the
+ * dashed line is just a bar above a dashed line.
+ *
+ * Nothing is drawn while the read is on its way. Most accounts never log
+ * caffeine, so a loading card was most often a card that collapsed again a
+ * moment later. A failed read says so with a retry, instead of passing for
+ * a month without caffeine; it is its own read, so the hydration card's
+ * notice does not cover it.
  */
 export function CaffeineCard() {
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading } = useQuery({
+  const { data, isError, refetch } = useQuery({
     queryKey: queryKeys.nutrientDaily("caffeine", WINDOW_DAYS),
     queryFn: () =>
       apiGet<NutrientDailySeries>(
         `/api/nutrients/daily?nutrient=caffeine&days=${WINDOW_DAYS}`,
       ),
-    // v1.30 UI audit (M7) — this card unmounts entirely on a no-data window
-    // (`hasData` gate below), so a self-hoster who never logs caffeine saw
-    // the 280px skeleton collapse on every `/insights/nutrients` visit. A
-    // 60s `staleTime` (the "route swing within a minute is a free cache
-    // hit" convention used across the insights queries) keeps the flash to
-    // once per session rather than once per mount.
+    // The "route swing within a minute is a free cache hit" convention used
+    // across the insights queries.
     staleTime: 60_000,
   });
 
-  if (isLoading) {
+  if (isError && !data) {
     return (
-      <Card data-slot="nutrients-caffeine-card">
-        <CardContent className="py-6" aria-hidden="true">
-          <Skeleton className="h-[280px] w-full" />
-        </CardContent>
-      </Card>
+      <QueryErrorRow
+        slot="nutrients-caffeine-error"
+        message={t("nutrients.caffeine.loadError")}
+        onRetry={() => void refetch()}
+      />
     );
   }
 

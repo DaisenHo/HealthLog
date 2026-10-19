@@ -53,6 +53,7 @@ import {
 import {
   reconstructSleepSessions,
   pickMainNightAndNaps,
+  SESSION_GAP_MS,
 } from "@/lib/analytics/sleep-night";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
@@ -71,12 +72,14 @@ import {
   oppositeMergeSource,
 } from "@/lib/measurements/cross-source-merge";
 import { NextRequest } from "next/server";
-import type {
-  MeasurementType,
-  MeasurementSource,
-  GlucoseContext,
+import {
+  Prisma,
+  type MeasurementType,
+  type MeasurementSource,
+  type GlucoseContext,
+  type SleepStage,
 } from "@/generated/prisma/client";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/tz/format";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "measurements");
@@ -234,161 +237,23 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // v1.4.37 W7c — collapsed "one row per day" mode for cumulative
   // types. The list page renders the day's SUM as a single synthesised
   // row with a `sampleCount` chevron that drills back into the
-  // per-sample rows via the `dayKey=…` branch above.
+  // per-sample rows via the `dayKey=…` branch above. `limit` / `offset`
+  // page over DAYS, not raw rows (#1245).
   if (
     groupBy === "day" &&
     type &&
     CUMULATIVE_HK_TYPES.has(type as MeasurementType)
   ) {
-    const tz =
-      user.timezone && user.timezone.length > 0
-        ? user.timezone
-        : DEFAULT_TIMEZONE;
-    // v1.29.6 — DESC + take so a long history returns the MOST RECENT
-    // window of raw samples for bucketing. The previous `orderBy: asc`
-    // + `take: limit` sliced the OLDEST page of rows before the
-    // day-bucketing loop ran below — on an account with more than
-    // `limit` cumulative samples in its history, the buckets were built
-    // entirely from year-old rows and the recent days silently never
-    // appeared. Mirrors the workouts-list ordering fix (05f80ad37):
-    // re-establish "most recent" as the page the caller actually gets.
-    const rows = await prisma.measurement.findMany({
-      where,
-      orderBy: { measuredAt: "desc" },
-      // Per-sample row scan within the requested window — bounded by
-      // the existing `limit` cap (default 100, max 5000) so a wide
-      // multi-year window can still walk the whole range when the
-      // chart explicitly asks for it.
-      take: limit,
-      select: {
-        id: true,
-        type: true,
-        value: true,
-        unit: true,
-        source: true,
-        measuredAt: true,
-        notes: true,
-        deviceType: true,
-      },
-    });
-
-    // v1.29.6 — collapse overlapping sources to the ladder-canonical
-    // reading per day BEFORE summing. Without this, a day with both an
-    // Apple Health AND a Withings write for the same cumulative metric
-    // (e.g. steps) summed BOTH sources into one inflated total — a day
-    // the dashboard tile (which reads through the source-collapsed
-    // rollup, `collapseRollupRowsBySource` in
-    // `src/lib/rollups/measurement-read.ts`) showed correctly. Uses the
-    // same `metricKeyForType` ladder lookup the rollup collapse uses, so
-    // this list and the tile agree on which source wins. A type with no
-    // ladder (e.g. TIME_IN_DAYLIGHT, FALL_COUNT) has nothing to collapse
-    // against — every row passes through unchanged, matching the
-    // pass-through fallback used at the other `pickCanonicalSourceRows`
-    // call sites.
-    const metricKey = metricKeyForType(type as MeasurementType);
-    const priorityJson = await loadUserSourcePriority(user.id);
-    const canonicalRows = metricKey
-      ? pickCanonicalSourceRows(
-          rows.map((r) => ({ ...r, type: r.type as MeasurementType })),
-          metricKey,
-          priorityJson,
-          (d) => dayKeyForUserTz(d, tz),
-        ).canonicalRows
-      : rows;
-
-    // Group by the user's calendar day, sum values, keep a representative
-    // unit/source from the bucket's first row so the rendered row carries
-    // a sensible label even when the bucket mixes sources.
-    type Bucket = {
-      dayKey: string;
-      total: number;
-      sampleCount: number;
-      latest: Date;
-      unit: string;
-      source: string;
-    };
-    const buckets = new Map<string, Bucket>();
-    for (const row of canonicalRows) {
-      const key = dayKeyForUserTz(row.measuredAt, tz);
-      const slot = buckets.get(key);
-      if (!slot) {
-        buckets.set(key, {
-          dayKey: key,
-          total: row.value,
-          sampleCount: 1,
-          latest: row.measuredAt,
-          unit: row.unit,
-          source: row.source,
-        });
-      } else {
-        slot.total += row.value;
-        slot.sampleCount += 1;
-        if (row.measuredAt > slot.latest) slot.latest = row.measuredAt;
-      }
-    }
-
-    // v1.30.3 (QA F6) — the read above is DESC + take(limit), so once a
-    // dense account's in-window row count crosses the cap, the OLDEST
-    // returned row sits mid-day: every earlier sample on that same
-    // calendar day was cut off, and its bucket's SUM understates the real
-    // day total with no marker. Flag exactly that one bucket — the day
-    // containing the cutoff row (the minimum dayKey among the buckets
-    // actually built) — `partial: true` only when the cap was truly hit;
-    // a read that came in under the cap covers its whole window and no
-    // day is a truncation artifact.
-    const cappedRead = rows.length === limit;
-    let oldestDayKey: string | null = null;
-    if (cappedRead) {
-      for (const key of buckets.keys()) {
-        if (oldestDayKey === null || key < oldestDayKey) oldestDayKey = key;
-      }
-    }
-
-    const measurements = Array.from(buckets.values())
-      .map((b) => ({
-        // Synthetic id so the list-row key stays stable across pages
-        // and the row never collides with a real `Measurement.id`.
-        id: `day:${type}:${b.dayKey}`,
-        type,
-        value: b.total,
-        unit: b.unit,
-        source: b.source,
-        // Anchor the row's timestamp to local noon so the row sorts
-        // cleanly between same-day spot samples — matches the
-        // `canonicalDailyTimestamp` convention used by the drain.
-        measuredAt: canonicalDailyTimestamp(b.dayKey, tz).toISOString(),
-        notes: null,
-        dayKey: b.dayKey,
-        sampleCount: b.sampleCount,
-        ...(b.dayKey === oldestDayKey ? { partial: true } : {}),
-      }))
-      .sort((a, b) => {
-        const cmp = a.dayKey < b.dayKey ? -1 : a.dayKey > b.dayKey ? 1 : 0;
-        return sortDir === "asc" ? cmp : -cmp;
-      });
-
-    annotate({
-      action: { name: "measurement.list" },
-      meta: {
-        total: measurements.length,
-        type,
-        groupBy: "day",
-        rowsScanned: rows.length,
-        droppedDuplicates: rows.length - canonicalRows.length,
-        // QA F6 — surfaces when the oldest bucket in this page is a
-        // partial-day sum (the read hit the cap).
-        capped: cappedRead,
-      },
-    });
-    return apiSuccess({
-      measurements,
-      meta: {
-        total: measurements.length,
-        limit,
-        offset: 0,
-        groupBy: "day",
-        droppedDuplicates: rows.length - canonicalRows.length,
-      },
+    return dayGroupedListResponse(user, {
+      type: type as MeasurementType,
+      limit,
+      offset,
+      sortDir,
+      sourceEq,
+      valueMin,
+      valueMax,
+      from,
+      to,
     });
   }
 
@@ -507,6 +372,237 @@ export const GET = apiHandler(async (request: NextRequest) => {
 });
 
 /**
+ * The day-grouped list for a cumulative type, paged over local days.
+ *
+ * Everything heavy runs in Postgres. The first query picks the page: the
+ * distinct local days that hold a reading, sorted and cut by `limit` /
+ * `offset`, each row carrying the distinct-day count of the whole filtered
+ * set as `meta.total` from a window count. The second folds only the page's
+ * days, one row per day, source, device and unit with its sum and sample
+ * count, and the source ladder picks among those groups exactly as it would
+ * among the raw rows (it keeps or drops whole source and device groups per
+ * day, never single rows). So a page costs its own days whatever the length
+ * of the history, every day is complete, and no raw row reaches the heap.
+ *
+ * Until v1.43.6 the branch read the newest `limit` raw rows (the web asked
+ * for 5000), bucketed them and returned every bucket. A long history came
+ * back as thousands of rows in one response, and every day older than the
+ * 5000th raw row was missing with nothing to say so.
+ *
+ * A day exists for the page when any reading of the type falls on it; the
+ * source collapse narrows a day's groups but never empties one, so the count
+ * and the folded rows agree.
+ */
+async function dayGroupedListResponse(
+  user: { id: string; timezone?: string | null },
+  opts: {
+    type: MeasurementType;
+    limit: number;
+    offset: number;
+    sortDir: "asc" | "desc";
+    sourceEq?: MeasurementSource;
+    valueMin?: number;
+    valueMax?: number;
+    from?: Date;
+    to?: Date;
+  },
+) {
+  const { type, limit, offset, sortDir } = opts;
+  const stored =
+    user.timezone && user.timezone.length > 0
+      ? user.timezone
+      : DEFAULT_TIMEZONE;
+  // A zone Postgres does not know would 500 the read; the drill-down cuts
+  // days in the same zone, so both must agree on it.
+  const tz = isValidTimezone(stored) ? stored : DEFAULT_TIMEZONE;
+
+  // The request's filters, as SQL: the same ones the plain list applies.
+  const filters = Prisma.sql`
+    m."user_id" = ${user.id}
+    AND m."type" = ${type}::measurement_type
+    AND m."deleted_at" IS NULL
+    ${opts.sourceEq ? Prisma.sql`AND m."source" = ${opts.sourceEq}::measurement_source` : Prisma.empty}
+    ${opts.valueMin != null ? Prisma.sql`AND m."value" >= ${opts.valueMin}` : Prisma.empty}
+    ${opts.valueMax != null ? Prisma.sql`AND m."value" <= ${opts.valueMax}` : Prisma.empty}
+    ${opts.from ? Prisma.sql`AND m."measured_at" >= ${opts.from}` : Prisma.empty}
+    ${opts.to ? Prisma.sql`AND m."measured_at" <= ${opts.to}` : Prisma.empty}
+  `;
+  const localDay = Prisma.sql`to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD')`;
+  // Direction comes from the Zod enum, never from raw input. The window
+  // count runs before LIMIT, so every row of the page carries the
+  // distinct-day total of the whole filtered set.
+  const direction = Prisma.raw(sortDir === "asc" ? "ASC" : "DESC");
+  const pageDays = await prisma.$queryRaw<
+    Array<{ day_key: string; total: number }>
+  >`
+    SELECT d.day_key, (COUNT(*) OVER ())::int AS total
+    FROM (
+      SELECT ${localDay} AS day_key
+      FROM measurements m
+      WHERE ${filters}
+      GROUP BY 1
+    ) d
+    ORDER BY d.day_key ${direction}
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  // A page past the end has no row to carry the total; only then is it
+  // counted on its own.
+  const total =
+    pageDays.length > 0
+      ? Number(pageDays[0].total)
+      : offset > 0
+        ? Number(
+            (
+              await prisma.$queryRaw<Array<{ total: number }>>`
+                SELECT COUNT(DISTINCT ${localDay})::int AS total
+                FROM measurements m
+                WHERE ${filters}
+              `
+            )[0]?.total ?? 0,
+          )
+        : 0;
+  const dayKeys = pageDays.map((d) => d.day_key);
+
+  // The page's days are consecutive in the sorted day set, so the span from
+  // the first one's start to the last one's end holds exactly their rows.
+  let groups: Array<{
+    day_key: string;
+    source: MeasurementSource;
+    device_type: string | null;
+    unit: string;
+    total: number;
+    n: number;
+  }> = [];
+  if (dayKeys.length > 0) {
+    const sorted = [...dayKeys].sort();
+    const spanStart = localDayWindow(sorted[0], tz).dayStart;
+    const spanEnd = localDayWindow(sorted[sorted.length - 1], tz).dayEnd;
+    // Newest group first within a day, so the day's label comes from its
+    // latest reading, as it did when raw rows were read newest first.
+    groups = await prisma.$queryRaw`
+      SELECT
+        ${localDay} AS day_key,
+        m."source"::text AS source,
+        m."device_type" AS device_type,
+        m."unit" AS unit,
+        SUM(m."value")::float8 AS total,
+        COUNT(*)::int AS n
+      FROM measurements m
+      WHERE ${filters}
+        AND m."measured_at" >= ${spanStart}
+        AND m."measured_at" < ${spanEnd}
+      GROUP BY 1, 2, 3, 4
+      ORDER BY 1, MAX(m."measured_at") DESC, 2, 3, 4
+    `;
+  }
+
+  // v1.29.6 — collapse overlapping sources to the ladder-canonical
+  // reading per day BEFORE summing. Without this, a day with both an
+  // Apple Health AND a Withings write for the same cumulative metric
+  // (e.g. steps) summed BOTH sources into one inflated total — a day
+  // the dashboard tile (which reads through the source-collapsed
+  // rollup, `collapseRollupRowsBySource` in
+  // `src/lib/rollups/measurement-read.ts`) showed correctly. Uses the
+  // same `metricKeyForType` ladder lookup the rollup collapse uses, so
+  // this list and the tile agree on which source wins. A type with no
+  // ladder (e.g. TIME_IN_DAYLIGHT, FALL_COUNT) has nothing to collapse
+  // against — every group passes through unchanged. Each group stands at
+  // its day's local noon, so the picker files it under the day SQL cut.
+  const groupRows = groups.map((g) => ({
+    ...g,
+    type,
+    deviceType: g.device_type,
+    measuredAt: canonicalDailyTimestamp(g.day_key, tz),
+  }));
+  const metricKey = metricKeyForType(type);
+  const priorityJson = metricKey ? await loadUserSourcePriority(user.id) : null;
+  const canonicalGroups = metricKey
+    ? pickCanonicalSourceRows(groupRows, metricKey, priorityJson, (d) =>
+        dayKeyForUserTz(d, tz),
+      ).canonicalRows
+    : groupRows;
+
+  // Sum per local day; unit and source come from the day's first kept group
+  // so the rendered row carries a sensible label even when sources mix.
+  const buckets = new Map<
+    string,
+    { total: number; sampleCount: number; unit: string; source: string }
+  >();
+  for (const g of canonicalGroups) {
+    const slot = buckets.get(g.day_key);
+    if (!slot) {
+      buckets.set(g.day_key, {
+        total: g.total,
+        sampleCount: g.n,
+        unit: g.unit,
+        source: g.source,
+      });
+    } else {
+      slot.total += g.total;
+      slot.sampleCount += g.n;
+    }
+  }
+  const rowsScanned = groups.reduce((sum, g) => sum + g.n, 0);
+  const rowsKept = canonicalGroups.reduce((sum, g) => sum + g.n, 0);
+
+  // Rows follow the page's day order from SQL.
+  const measurements = dayKeys.flatMap((dayKey) => {
+    const b = buckets.get(dayKey);
+    if (!b) return [];
+    return [
+      {
+        // Synthetic id so the list-row key stays stable across pages
+        // and the row never collides with a real `Measurement.id`.
+        id: `day:${type}:${dayKey}`,
+        type,
+        value: b.total,
+        unit: b.unit,
+        source: b.source,
+        // Anchor the row's timestamp to local noon so the row sorts
+        // cleanly between same-day spot samples — matches the
+        // `canonicalDailyTimestamp` convention used by the drain.
+        measuredAt: canonicalDailyTimestamp(dayKey, tz).toISOString(),
+        notes: null,
+        dayKey,
+        sampleCount: b.sampleCount,
+      },
+    ];
+  });
+
+  annotate({
+    action: { name: "measurement.list" },
+    meta: {
+      total,
+      type,
+      groupBy: "day",
+      days: measurements.length,
+      rowsScanned,
+      droppedDuplicates: rowsScanned - rowsKept,
+    },
+  });
+  return apiSuccess({
+    measurements,
+    meta: {
+      total,
+      limit,
+      offset,
+      groupBy: "day",
+      droppedDuplicates: rowsScanned - rowsKept,
+    },
+  });
+}
+
+/**
+ * A sleep page holds at most this many nights. The nights' stage rows are
+ * read and reconstructed in the process, so the bound sits on the nights;
+ * the applied value comes back as `meta.limit`, and `meta.total` still counts
+ * every night, so a caller asking for more pages on rather than losing any.
+ * Until v1.43.6 the list read no more than a year of nights however large
+ * the limit, so this is a widening, never a new cut.
+ */
+const SLEEP_NIGHT_PAGE_MAX = 1000;
+
+/**
  * v1.11.5 — per-night collapse for the SLEEP_DURATION list. Sleep is
  * stored one row per STAGE per night (minutes); a plain list leaks every
  * stage segment. This collapses the raw rows into the canonical per-night
@@ -521,11 +617,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
  *    nap count, and awakenings in the row so the UI can caption the night
  *    without a second fetch.
  *
- * The read is bounded to the last year (matching the series route's sleep
- * read) so an unbounded list never walks a multi-year per-stage row set.
+ * The nights are paged in Postgres (`sleepNightPage`), like the days of the
+ * cumulative list, and only the stage rows of the page's nights are read.
+ * Until v1.43.6 the read stopped at a year before `to` and the list ended
+ * there without saying so to the client.
  */
-const SLEEP_LIST_MAX_DAYS = 365;
-
 async function sleepListResponse(
   user: { id: string },
   opts: {
@@ -537,53 +633,74 @@ async function sleepListResponse(
     dayKey?: string;
   },
 ) {
-  const { from, to, limit, offset, sortDir, dayKey } = opts;
+  const { from, to, offset, sortDir, dayKey } = opts;
+  const limit = Math.min(opts.limit, SLEEP_NIGHT_PAGE_MAX);
   const [tz, priorityJson] = await Promise.all([
     resolveUserTimezone(user.id),
     loadUserSourcePriority(user.id),
   ]);
 
-  // Bound the read window to a year ending at `to` (or now). An explicit
-  // `from` narrows it but never widens it: an early `from` used to walk every
-  // per-stage row back to that date, which on a multi-year, multi-source
-  // account is the unbounded read this cap exists to stop. Older nights are
-  // reached by moving `to` back, and `meta.windowFrom` says where a cut
-  // window started so a client can tell a cut from an empty history.
-  const windowEnd = to ?? new Date();
-  const floor = new Date(
-    windowEnd.getTime() - SLEEP_LIST_MAX_DAYS * 86_400_000,
-  );
-  const since = from && from > floor ? from : floor;
-  const windowCut = from !== undefined && from < floor;
-  const rows = await prisma.measurement.findMany({
-    where: {
-      userId: user.id,
-      type: "SLEEP_DURATION",
-      deletedAt: null,
-      measuredAt: {
-        gte: since,
-        ...(to ? { lte: to } : {}),
-      },
-    },
-    orderBy: { measuredAt: "asc" },
-    select: {
-      id: true,
-      value: true,
-      measuredAt: true,
-      sleepStage: true,
-      source: true,
-      // Writer-level collapse: two HealthKit apps behind one source (watch
-      // stages vs phone in-bed) must not blend into one night.
-      deviceType: true,
-    },
+  const page = await sleepNightPage(user.id, tz, {
+    from,
+    to,
+    sortDir,
+    ...(dayKey ? { night: dayKey, limit: 1, offset: 0 } : { limit, offset }),
   });
+  const nightKeys = page.nights.map((n) => n.night);
+  const wanted = new Set(nightKeys);
+
+  // The page's sessions lie between the first one's start and the last one's
+  // end, and every other session is more than the session gap away from that
+  // span, so this read holds the page's sessions whole and no part of any
+  // other.
+  let rows: Array<{
+    id: string;
+    value: number;
+    measuredAt: Date;
+    sleepStage: SleepStage | null;
+    source: MeasurementSource;
+    deviceType: string | null;
+  }> = [];
+  if (page.nights.length > 0) {
+    let spanStart = page.nights[0].spanStart;
+    let spanEnd = page.nights[0].spanEnd;
+    for (const n of page.nights) {
+      if (n.spanStart < spanStart) spanStart = n.spanStart;
+      if (n.spanEnd > spanEnd) spanEnd = n.spanEnd;
+    }
+    rows = await prisma.measurement.findMany({
+      where: {
+        userId: user.id,
+        type: "SLEEP_DURATION",
+        deletedAt: null,
+        AND: [
+          { measuredAt: { gte: spanStart, lte: spanEnd } },
+          ...(from ? [{ measuredAt: { gte: from } }] : []),
+          ...(to ? [{ measuredAt: { lte: to } }] : []),
+        ],
+      },
+      orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        value: true,
+        measuredAt: true,
+        sleepStage: true,
+        source: true,
+        // Writer-level collapse: two HealthKit apps behind one source (watch
+        // stages vs phone in-bed) must not blend into one night.
+        deviceType: true,
+      },
+    });
+  }
+  const sessions = reconstructSleepSessions(rows, tz, priorityJson).filter(
+    (s) => wanted.has(s.night),
+  );
 
   // Drill-down — return the requested night's canonical stage segments.
   if (dayKey) {
-    const sessions = reconstructSleepSessions(rows, tz, priorityJson).filter(
-      (s) => s.night === dayKey,
+    const { main, naps } = pickMainNightAndNaps(
+      sessions.filter((s) => s.night === dayKey),
     );
-    const { main, naps } = pickMainNightAndNaps(sessions);
     const dayUnit = getUnitForType("SLEEP_DURATION");
     // One row per stage segment of the main night + each nap, so the
     // drill-down reveals exactly the rows that summed into the headline.
@@ -624,9 +741,7 @@ async function sleepListResponse(
   // Per-night collapse — one synthetic row per wake day. The headline
   // value is the MAIN night's TIME ASLEEP (the longest session that day),
   // per the nap convention: naps are surfaced as a count, never folded
-  // into the main night's headline. Reconstruct sessions and pick the
-  // main + naps per wake day.
-  const sessions = reconstructSleepSessions(rows, tz, priorityJson);
+  // into the main night's headline.
   const byDay = new Map<string, typeof sessions>();
   for (const s of sessions) {
     const list = byDay.get(s.night) ?? [];
@@ -635,78 +750,163 @@ async function sleepListResponse(
   }
 
   const dayUnit = getUnitForType("SLEEP_DURATION");
-  const nightRows: Array<{
-    id: string;
-    type: string;
-    value: number;
-    unit: string;
-    source: string;
-    measuredAt: string;
-    notes: null;
-    dayKey: string;
-    sampleCount: number;
-    sleepStages: Record<string, number>;
-    inBedMinutes: number | null;
-    awakeMinutes: number | null;
-    napCount: number;
-    napAsleepMinutes: number;
-    awakenings: number;
-  }> = [];
-  for (const [day, daySessions] of byDay) {
-    const { main, naps } = pickMainNightAndNaps(daySessions);
-    if (!main) continue;
-    nightRows.push({
-      // Synthetic id mirrors the series route's `sleep:<night>` shape.
-      id: `sleep:${day}`,
-      type: "SLEEP_DURATION",
-      value: Math.round(main.asleepMinutes),
-      unit: dayUnit,
-      source: main.source ?? "MANUAL",
-      measuredAt: main.end.toISOString(),
-      notes: null,
-      dayKey: day,
-      // Drives the drill-down chevron — number of stage segments behind
-      // the night, matching the cumulative-type `sampleCount` contract.
-      sampleCount: main.segments.length,
-      sleepStages: main.stages as Record<string, number>,
-      inBedMinutes: main.inBedMinutes,
-      awakeMinutes: main.awakeMinutes,
-      napCount: naps.length,
-      napAsleepMinutes: naps.reduce((sum, n) => sum + n.asleepMinutes, 0),
-      awakenings: main.awakenings,
-    });
-  }
-
-  // Honour offset + limit against the full night set, and report the true
-  // pre-slice night count as `meta.total` — matching the non-sleep list
-  // branch's pagination contract so a client can page through nights.
-  const totalNights = nightRows.length;
-  const measurements = nightRows
-    .sort((a, b) => {
-      const cmp = a.dayKey < b.dayKey ? -1 : a.dayKey > b.dayKey ? 1 : 0;
-      return sortDir === "asc" ? cmp : -cmp;
-    })
-    .slice(offset, offset + limit);
+  // Rows follow the page's night order from SQL.
+  const measurements = nightKeys.flatMap((day) => {
+    const { main, naps } = pickMainNightAndNaps(byDay.get(day) ?? []);
+    if (!main) return [];
+    return [
+      {
+        // Synthetic id mirrors the series route's `sleep:<night>` shape.
+        id: `sleep:${day}`,
+        type: "SLEEP_DURATION",
+        value: Math.round(main.asleepMinutes),
+        unit: dayUnit,
+        source: main.source ?? "MANUAL",
+        measuredAt: main.end.toISOString(),
+        notes: null,
+        dayKey: day,
+        // Drives the drill-down chevron — number of stage segments behind
+        // the night, matching the cumulative-type `sampleCount` contract.
+        sampleCount: main.segments.length,
+        sleepStages: main.stages as Record<string, number>,
+        inBedMinutes: main.inBedMinutes,
+        awakeMinutes: main.awakeMinutes,
+        napCount: naps.length,
+        napAsleepMinutes: naps.reduce((sum, n) => sum + n.asleepMinutes, 0),
+        awakenings: main.awakenings,
+      },
+    ];
+  });
 
   annotate({
     action: { name: "measurement.list" },
     meta: {
-      total: totalNights,
+      total: page.total,
       type: "SLEEP_DURATION",
       mode: "sleep-per-night",
+      nights: measurements.length,
       rowsScanned: rows.length,
     },
   });
   return apiSuccess({
     measurements,
     meta: {
-      total: totalNights,
+      total: page.total,
       limit,
       offset,
       groupBy: "night",
-      ...(windowCut ? { windowFrom: since.toISOString() } : {}),
     },
   });
+}
+
+/**
+ * One page of sleep nights, chosen in Postgres.
+ *
+ * The stage rows are cut into sessions the way `reconstructSleepSessions`
+ * cuts them: ordered by start (`measured_at` minus the minutes), a new
+ * session wherever a row starts more than `SESSION_GAP_MS` after every
+ * earlier row has ended. A session counts when it holds an asleep row (a
+ * bare or granular asleep stage, or a stage-less one, with minutes), and its
+ * night is the local day its last row ends on. Nights are grouped, sorted
+ * and cut by `limit` / `offset`; `total` is the night count of the whole
+ * filtered set from the same query. `spanStart` / `spanEnd` bound the
+ * night's counting sessions, so the caller reads exactly their rows.
+ *
+ * The session's night here is taken over every writer, while the JS fold
+ * takes it over the winning writer only. They part only when a losing writer
+ * runs past midnight and the winner does not; that night then sits on the
+ * page and comes back without a row, and `total` counts it.
+ */
+async function sleepNightPage(
+  userId: string,
+  tz: string,
+  opts: {
+    from?: Date;
+    to?: Date;
+    sortDir: "asc" | "desc";
+    limit: number;
+    offset: number;
+    night?: string;
+  },
+): Promise<{
+  nights: Array<{ night: string; spanStart: Date; spanEnd: Date }>;
+  total: number;
+}> {
+  const zone = isValidTimezone(tz) ? tz : DEFAULT_TIMEZONE;
+  const gapSeconds = SESSION_GAP_MS / 1000;
+  // Direction comes from the Zod enum, never from raw input.
+  const direction = Prisma.raw(opts.sortDir === "asc" ? "ASC" : "DESC");
+  const nightsCte = Prisma.sql`
+    WITH r AS (
+      SELECT
+        m."measured_at" AS e,
+        m."measured_at" - m."value" * interval '1 minute' AS s,
+        (m."value" > 0 AND (m."sleep_stage" IS NULL
+          OR m."sleep_stage" IN ('ASLEEP', 'REM', 'CORE', 'DEEP'))) AS asleep
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."type" = 'SLEEP_DURATION'::measurement_type
+        AND m."deleted_at" IS NULL
+        ${opts.from ? Prisma.sql`AND m."measured_at" >= ${opts.from}` : Prisma.empty}
+        ${opts.to ? Prisma.sql`AND m."measured_at" <= ${opts.to}` : Prisma.empty}
+    ), o AS (
+      SELECT r.*, MAX(e) OVER (
+        ORDER BY s, e ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+      ) AS prev_end
+      FROM r
+    ), g AS (
+      SELECT o.*, SUM(
+        CASE WHEN prev_end IS NULL
+          OR s - prev_end > make_interval(secs => ${gapSeconds}::double precision) THEN 1 ELSE 0 END
+      ) OVER (ORDER BY s, e ROWS UNBOUNDED PRECEDING) AS sid
+      FROM o
+    ), sess AS (
+      SELECT MIN(s) AS s, MAX(e) AS e
+      FROM g
+      GROUP BY sid
+      HAVING BOOL_OR(asleep)
+    ), nights AS (
+      SELECT
+        to_char((e AT TIME ZONE 'UTC') AT TIME ZONE ${zone}, 'YYYY-MM-DD') AS night,
+        MIN(s) AS span_start,
+        MAX(e) AS span_end
+      FROM sess
+      GROUP BY 1
+    )
+  `;
+  const rows = await prisma.$queryRaw<
+    Array<{ night: string; span_start: Date; span_end: Date; total: number }>
+  >`
+    ${nightsCte}
+    SELECT night, span_start, span_end, (COUNT(*) OVER ())::int AS total
+    FROM nights
+    ${opts.night ? Prisma.sql`WHERE night = ${opts.night}` : Prisma.empty}
+    ORDER BY night ${direction}
+    LIMIT ${opts.limit} OFFSET ${opts.offset}
+  `;
+  // A page past the end has no row to carry the total; only then is it
+  // counted on its own.
+  const total =
+    rows.length > 0
+      ? Number(rows[0].total)
+      : opts.offset > 0
+        ? Number(
+            (
+              await prisma.$queryRaw<Array<{ total: number }>>`
+                ${nightsCte}
+                SELECT COUNT(*)::int AS total FROM nights
+              `
+            )[0]?.total ?? 0,
+          )
+        : 0;
+  return {
+    nights: rows.map((r) => ({
+      night: r.night,
+      spanStart: r.span_start,
+      spanEnd: r.span_end,
+    })),
+    total,
+  };
 }
 
 /**

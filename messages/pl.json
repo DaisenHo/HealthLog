@@ -1272,7 +1272,8 @@
       "bodyNotLogged": "Na ten dzień nic nie zapisano w dzienniku choroby",
       "openIllness": "Otwórz"
     },
-    "sourceNotification": "Powiadomienie"
+    "sourceNotification": "Powiadomienie",
+    "tagCatalogLoadError": "Nie udało się załadować tagów."
   },
   "medications": {
     "title": "Leki",
@@ -3173,7 +3174,8 @@
         "steadyLatestAbove": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był wyższy.",
         "steadyLatestBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był niższy.",
         "insufficient": "Wciąż poznaję twój zwykły zakres. Rejestruj jeszcze przez kilka dni.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Nie udało się załadować twojego typowego zakresu."
       },
       "scope": {
         "prefix": "Coach jest już przy {metric}"
@@ -4290,7 +4292,8 @@
         "caveat": "To porównanie z twoimi wcześniejszymi dniami, nie stwierdzenie, jak doszło do takiego przebiegu dnia.",
         "learning": "Faza uczenia: zapisano {entries} z {threshold} dni. Porównanie pojawi się, gdy będzie ich dość.",
         "noPattern": "W zapisanych dotąd {entries} dniach nic nie jest na tyle regularne, by porównać z nimi dzień. Gdy zapisujesz też kontekst dnia, więcej da się porównać.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "Nie udało się załadować wartości oczekiwanej na podstawie twoich wzorców."
       },
       "patterns": {
         "title": "Wzorce w twoim nastroju",
@@ -9211,7 +9214,8 @@
       "viewDetails": "Zobacz analizy cyklu"
     },
     "wellnessRing": {
-      "label": "Cykl"
+      "label": "Cykl",
+      "loadError": "Nie udało się załadować twojego cyklu."
     },
     "disclaimer": "Te prognozy to opisowe szacunki na podstawie zapisanych danych, a nie metoda antykoncepcji ani porada medyczna. Nigdy nie oznaczają, że współżycie bez zabezpieczenia jest bezpieczne. W sprawach antykoncepcji lub decyzji medycznych skonsultuj się z pracownikiem ochrony zdrowia.",
     "title": "Twój cykl",
@@ -11897,7 +11901,8 @@
       "referenceMeta": "Zalecane spożycie {value} {unit}/dzień (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Bezpieczny limit {value} {unit}/dzień (EFSA)"
+      "ceilingMeta": "Bezpieczny limit {value} {unit}/dzień (EFSA)",
+      "loadError": "Nie udało się załadować kofeiny."
     },
     "micronutrients": {
       "title": "Witaminy i minerały",
@@ -12989,7 +12994,8 @@
       "allOther": "Pokaż wszystkie {count}",
       "fewer": "Pokaż mniej",
       "note": "Zestawione z Twoich wpisów, bez oceny. Każda data otwiera cały dzień.",
-      "report": "Raport lekarski od {date} do dziś"
+      "report": "Raport lekarski od {date} do dziś",
+      "loadError": "Nie udało się załadować tego, co wydarzyło się od ostatniej wizyty."
     },
     "travel": "W podróży",
     "event": {

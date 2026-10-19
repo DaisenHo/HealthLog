@@ -1272,7 +1272,8 @@
       "bodyNotLogged": "Per questa giornata non c'è nulla nel diario di malattia",
       "openIllness": "Apri"
     },
-    "sourceNotification": "Notifica"
+    "sourceNotification": "Notifica",
+    "tagCatalogLoadError": "Impossibile caricare le etichette."
   },
   "medications": {
     "title": "Farmaci",
@@ -3173,7 +3174,8 @@
         "steadyLatestAbove": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sopra.",
         "steadyLatestBelow": "I tuoi valori sono di solito {low} {unit}; la tua ultima misurazione, del {date}, era {value}, al di sotto.",
         "insufficient": "Sto ancora imparando il tuo intervallo abituale. Continua a registrare per qualche giorno in più.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Impossibile caricare il tuo intervallo abituale."
       },
       "scope": {
         "prefix": "Il Coach è già su {metric}"
@@ -4290,7 +4292,8 @@
         "caveat": "È un confronto con le tue giornate passate, non un'affermazione su come una giornata sia andata a finire così.",
         "learning": "Fase di apprendimento: {entries} giornate su {threshold} registrate. Il confronto compare quando ce ne sono abbastanza.",
         "noPattern": "Nelle {entries} giornate registrate finora non c'è nulla di abbastanza costante per confrontare una giornata. Quando registri anche il contesto della giornata, ne rendi confrontabile una parte maggiore.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "Impossibile caricare il valore atteso in base alle tue abitudini."
       },
       "patterns": {
         "title": "Schemi nel tuo umore",
@@ -9211,7 +9214,8 @@
       "viewDetails": "Vedi le analisi del ciclo"
     },
     "wellnessRing": {
-      "label": "Ciclo"
+      "label": "Ciclo",
+      "loadError": "Impossibile caricare il tuo ciclo."
     },
     "disclaimer": "Queste previsioni sono stime descrittive basate sui tuoi dati registrati, non un metodo contraccettivo né un parere medico. Non indicano mai che sia sicuro avere rapporti non protetti. Per la contraccezione o qualsiasi decisione medica, consulta un professionista sanitario.",
     "title": "Il tuo ciclo",
@@ -11897,7 +11901,8 @@
       "referenceMeta": "Apporto di riferimento {value} {unit}/giorno (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Limite di sicurezza {value} {unit}/giorno (EFSA)"
+      "ceilingMeta": "Limite di sicurezza {value} {unit}/giorno (EFSA)",
+      "loadError": "Impossibile caricare la caffeina."
     },
     "micronutrients": {
       "title": "Vitamine e minerali",
@@ -12989,7 +12994,8 @@
       "allOther": "Mostra tutte le {count}",
       "fewer": "Mostra meno",
       "note": "Raccolto dalle tue voci, senza valutazioni. Ogni data apre l’intera giornata.",
-      "report": "Referto medico dal {date} a oggi"
+      "report": "Referto medico dal {date} a oggi",
+      "loadError": "Impossibile caricare ciò che è successo dall’ultima visita."
     },
     "travel": "In viaggio",
     "event": {

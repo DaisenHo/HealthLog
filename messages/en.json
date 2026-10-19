@@ -1272,7 +1272,8 @@
       "bodyNotLogged": "Nothing is logged in the illness journal for this day",
       "openIllness": "Open"
     },
-    "sourceNotification": "Notification"
+    "sourceNotification": "Notification",
+    "tagCatalogLoadError": "Could not load the tags."
   },
   "medications": {
     "title": "Medications",
@@ -3173,7 +3174,8 @@
         "steadyLatestAbove": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, above that.",
         "steadyLatestBelow": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, below that.",
         "insufficient": "Still learning your usual range. Keep logging for a few more days.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Could not load your usual range."
       },
       "scope": {
         "prefix": "The Coach is already on {metric}"
@@ -4290,7 +4292,8 @@
         "caveat": "This is a comparison with your own past days, not a statement about how a day came to go the way it did.",
         "learning": "Learning phase: {entries} of {threshold} days recorded. A comparison appears once there are enough of them.",
         "noPattern": "Nothing in the {entries} days recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "Could not load the value expected on your own pattern."
       },
       "patterns": {
         "title": "Patterns in your mood",
@@ -9211,7 +9214,8 @@
       "viewDetails": "View cycle insights"
     },
     "wellnessRing": {
-      "label": "Cycle"
+      "label": "Cycle",
+      "loadError": "Could not load your cycle."
     },
     "disclaimer": "These predictions are descriptive estimates from your logged data, not a contraceptive method and not medical advice. They never indicate that it is safe to have unprotected sex. For contraception or any medical decision, consult a healthcare professional.",
     "title": "Your cycle",
@@ -11897,7 +11901,8 @@
       "referenceMeta": "Reference intake {value} {unit}/day (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)"
+      "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)",
+      "loadError": "Could not load caffeine."
     },
     "micronutrients": {
       "title": "Vitamins & minerals",
@@ -12989,7 +12994,8 @@
       "allOther": "Show all {count}",
       "fewer": "Show fewer",
       "note": "Compiled from your entries, without judgement. Every date opens the whole day.",
-      "report": "Doctor report from {date} to today"
+      "report": "Doctor report from {date} to today",
+      "loadError": "Could not load what happened since the last visit."
     },
     "travel": "Away",
     "event": {

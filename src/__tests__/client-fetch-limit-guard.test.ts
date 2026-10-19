@@ -13,6 +13,13 @@
  * a `useInfiniteQuery` in the file), or is listed below with the reason the
  * cap cannot cut anything off.
  *
+ * Only code counts as a pager. A comment that says "offset" sends nothing,
+ * and an offset pinned to a literal `0` is the opposite of paging: it asks
+ * for the first page and nothing else. The day-grouped measurement list
+ * passed this guard in exactly that shape (#1245), `limit` 5000 between a
+ * comment about pagination and `offset` "0", while it drew every day of a
+ * long history on one page and lost the days past the cap.
+ *
  * What it matches: `limit=<digits>` inside a URL string, and the two
  * `URLSearchParams` spellings, `.set("limit", "<digits>")` and
  * `limit: "<digits>"`. What it does not: a limit routed through a named
@@ -98,6 +105,36 @@ const LIMIT_PATTERNS: readonly RegExp[] = [
 const PAGER_NEARBY = /\boffset\b|\bcursor\b|\bpageParam\b/;
 const PAGER_LINES = 3;
 
+/** The line with every block comment that opens and closes on it removed. */
+function withoutInlineBlocks(text: string): string {
+  return text.replace(/\/\*.*?\*\//g, "");
+}
+
+/** A whole-line comment: it describes code, it sends nothing. */
+function isCommentLine(text: string): boolean {
+  const trimmed = withoutInlineBlocks(text).trim();
+  return (
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("/*") ||
+    trimmed.startsWith("*")
+  );
+}
+
+/**
+ * The line as code a pager could live in: a trailing `// …` comment cut off
+ * (only after whitespace, so a `https://` inside a string survives), and
+ * every offset pinned to a literal zero removed, in the URL spelling and
+ * both `URLSearchParams` spellings.
+ */
+function pagerCode(text: string): string {
+  if (isCommentLine(text)) return "";
+  return withoutInlineBlocks(text)
+    .replace(/\s\/\/.*$/, "")
+    .replace(/[?&]offset=0(?!\d)/g, "")
+    .replace(/\.set\(\s*["']offset["']\s*,\s*["']0["']\s*\)/g, "")
+    .replace(/\boffset:\s*["']?0["']?(?![\d.])/g, "");
+}
+
 function clientFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 })
     .filter((p) => !p.startsWith("generated/"))
@@ -126,12 +163,12 @@ function findLimitHits(file: string, source: string): Hit[] {
   const hits: Hit[] = [];
   lines.forEach((text, index) => {
     // Comments describe old shapes; they send nothing.
-    const trimmed = text.trim();
-    if (trimmed.startsWith("//") || trimmed.startsWith("*")) return;
+    if (isCommentLine(text)) return;
     for (const pattern of LIMIT_PATTERNS) {
       for (const match of text.matchAll(pattern)) {
         const near = lines
           .slice(Math.max(0, index - PAGER_LINES), index + PAGER_LINES + 1)
+          .map(pagerCode)
           .join("\n");
         hits.push({
           file,
@@ -194,6 +231,55 @@ describe("client fetch limits", () => {
     expect(hits).toHaveLength(1);
     expect(hits[0].paged).toBe(false);
     expect(isAllowed(hits[0])).toBe(false);
+  });
+
+  // #1245 — the day-grouped measurement list as it stood: a wide limit, a
+  // comment that talks about the offset, and the offset pinned to zero.
+  // Neither of the two is a pager.
+  it("flags the shape the day-grouped measurement list had", () => {
+    const hits = findLimitHits(
+      "components/measurements/measurement-list.tsx",
+      [
+        "      if (isCumulativeFilter) {",
+        '        params.set("groupBy", "day");',
+        "        // pagination/offset don't apply on the server side.",
+        '        params.set("limit", "5000");',
+        "        // Reset the offset so a sort flip stays on the first page.",
+        '        params.set("offset", "0");',
+        "      }",
+      ].join("\n"),
+    );
+    expect(hits).toHaveLength(1);
+    expect(hits[0].limit).toBe(5000);
+    expect(hits[0].paged).toBe(false);
+  });
+
+  it("counts neither a comment nor a zero offset as a pager, in any spelling", () => {
+    const shapes = [
+      'apiGet("/api/x?limit=500&offset=0")',
+      'apiGet("/api/x?limit=500") // the offset is fixed',
+      '/* offset */ apiGet("/api/x?limit=500")',
+      'new URLSearchParams({ limit: "500", offset: "0" })',
+      'new URLSearchParams({ limit: "500", offset: 0 })',
+    ];
+    for (const shape of shapes) {
+      const hits = findLimitHits("components/example.tsx", shape);
+      expect(hits, shape).toHaveLength(1);
+      expect(hits[0].paged, shape).toBe(false);
+    }
+  });
+
+  it("still accepts an offset that is a page, beside a zero elsewhere", () => {
+    const shapes = [
+      "fetch(`/api/x?limit=100&offset=${(page - 1) * 100}`)",
+      'params.set("limit", "100");\nparams.set("offset", String(offset));',
+      'apiGet("/api/x?limit=100&offset=10")',
+    ];
+    for (const shape of shapes) {
+      const hits = findLimitHits("components/example.tsx", shape);
+      expect(hits, shape).toHaveLength(1);
+      expect(hits[0].paged, shape).toBe(true);
+    }
   });
 
   it("accepts a limit that travels with an offset", () => {

@@ -391,7 +391,8 @@ export default function InsightsPageClient() {
   // Until that read answers the strip keeps its skeleton, so it never paints
   // Strain first and swaps it for the ring when the calendar lands.
   const cycleRing = useCycleRingDial(isAuthenticated && cycleRingVisible);
-  const cycleRingDial = cycleRing.dial;
+  // A failed read keeps the cell too: the tile then says so, with a retry.
+  const cycleRingCell = cycleRing.dial || cycleRing.failed;
 
   // A failed comprehensive read no longer replaces the page. The payload only
   // decides the "no data yet" empty state below; every section on the page
@@ -492,11 +493,11 @@ export default function InsightsPageClient() {
         // AND the operator server-wide kill-switch) so an operator-off
         // instance never renders the ring nor fires its calendar read.
         // v1.39 — and only once the ring has a dial to draw (see above).
-        extraTile={cycleRingDial ? <CycleRingTile /> : undefined}
+        extraTile={cycleRingCell ? <CycleRingTile /> : undefined}
         // v1.15.5 — when the cycle ring is shown it TAKES the Strain slot:
         // hide Strain so the strip stays compact instead of growing a sixth
         // tile. Strain stays visible for non-cycle accounts.
-        hideStrain={cycleRingDial}
+        hideStrain={cycleRingCell}
       />
     ),
     // Hidden, never an error card, while the briefing is unavailable for any

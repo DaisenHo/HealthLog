@@ -161,60 +161,131 @@ describe("GET /api/measurements?type=SLEEP_DURATION", () => {
     expect(stages).toEqual(["CORE", "DEEP", "REM"]);
   });
 
-  it("reads at most a year ending at `to`, however early `from` is", async () => {
-    // An explicit early `from` used to walk every per-stage row back to it.
+  it("pages over every night of a long history in SQL, with no year cut", async () => {
     const prisma = getPrismaClient();
-    const user = await seedSession("sleep-window-user");
+    const user = await seedSession("sleep-paging-user");
     const day = 86_400_000;
     const morning = new Date();
     morning.setUTCHours(4, 0, 0, 0);
-    // One night of a single CORE stage every day for two years.
-    await prisma.measurement.createMany({
-      data: Array.from({ length: 730 }, (_, i) => ({
+    const NIGHTS = 730;
+    const dayKeyOf = (d: Date) => d.toISOString().slice(0, 10);
+    // One night of a single CORE stage every day for two years. Every
+    // seventh day also carries an afternoon nap, which is not a night of its
+    // own, and every eleventh an in-bed-only evening (more than the session
+    // gap from both the nap and the night), which holds no sleep and must
+    // not count as a night either.
+    const rows: Array<{
+      userId: string;
+      type: "SLEEP_DURATION";
+      value: number;
+      unit: string;
+      source: "APPLE_HEALTH";
+      measuredAt: Date;
+      externalId: string;
+      sleepStage: "CORE" | "IN_BED";
+    }> = [];
+    for (let i = 0; i < NIGHTS; i++) {
+      const wake = new Date(morning.getTime() - i * day);
+      const base = {
         userId: user.id,
         type: "SLEEP_DURATION" as const,
-        value: 420,
         unit: "minutes",
         source: "APPLE_HEALTH" as const,
-        measuredAt: new Date(morning.getTime() - i * day),
+      };
+      rows.push({
+        ...base,
+        value: 420,
+        measuredAt: wake,
         externalId: `uuid-night-${i}`,
-        sleepStage: "CORE" as const,
-      })),
-    });
+        sleepStage: "CORE",
+      });
+      if (i % 7 === 0) {
+        rows.push({
+          ...base,
+          value: 30,
+          measuredAt: new Date(wake.getTime() + 10 * 3_600_000),
+          externalId: `uuid-nap-${i}`,
+          sleepStage: "CORE",
+        });
+      }
+      if (i % 11 === 5) {
+        rows.push({
+          ...base,
+          value: 20,
+          measuredAt: new Date(wake.getTime() - 10.5 * 3_600_000),
+          externalId: `uuid-inbed-${i}`,
+          sleepStage: "IN_BED",
+        });
+      }
+    }
+    await prisma.measurement.createMany({ data: rows });
+
     const spy = vi.spyOn(prisma.measurement, "findMany");
-    const from = new Date(morning.getTime() - 800 * day).toISOString();
-    const res = await callList(
-      `type=SLEEP_DURATION&from=${encodeURIComponent(from)}&limit=1000`,
-    );
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as ListEnvelope;
-    expect(body.data.meta.total).toBeLessThanOrEqual(366);
-    expect(body.data.meta.total).toBeGreaterThanOrEqual(364);
-    expect(body.data.meta.windowFrom).toBeDefined();
-    const windowFrom = Date.parse(body.data.meta.windowFrom!);
-    expect(Date.now() - windowFrom).toBeLessThan(366 * day);
-    expect(Date.now() - windowFrom).toBeGreaterThan(364 * day);
-    // The read itself was bounded, not just the answer.
+    const first = await callList("type=SLEEP_DURATION&limit=25");
+    expect(first.status).toBe(200);
+    const firstBody = (await first.json()) as ListEnvelope;
+    expect(firstBody.data.meta.total).toBe(NIGHTS);
+    expect(firstBody.data.meta.windowFrom).toBeUndefined();
+    expect(firstBody.data.measurements).toHaveLength(25);
+    expect(firstBody.data.measurements[0].dayKey).toBe(dayKeyOf(morning));
+    expect(firstBody.data.measurements[0].value).toBe(420);
+    expect(firstBody.data.measurements[0].napCount).toBe(1);
+    // The stage read covered the page's nights, not the history.
     const read = spy.mock.calls
-      .map(([args]) => args as { where?: { measuredAt?: { gte?: Date } } })
-      .find((args) => args?.where?.measuredAt?.gte);
-    expect(read?.where?.measuredAt?.gte?.getTime()).toBe(windowFrom);
+      .map(
+        ([args]) =>
+          args as {
+            where?: { AND?: Array<{ measuredAt?: { gte?: Date } }> };
+          },
+      )
+      .find((args) => args?.where?.AND?.[0]?.measuredAt?.gte);
+    const readFrom = read!.where!.AND![0].measuredAt!.gte!.getTime();
+    expect(morning.getTime() - readFrom).toBeLessThan(26 * day);
 
-    // Older nights are reached by moving `to` back.
-    const to = new Date(morning.getTime() - 400 * day).toISOString();
-    const older = await callList(
-      `type=SLEEP_DURATION&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=1000`,
-    );
-    const olderBody = (await older.json()) as ListEnvelope;
-    expect(olderBody.data.meta.total).toBeGreaterThanOrEqual(329);
-    expect(olderBody.data.meta.total).toBeLessThanOrEqual(331);
+    // Walk every page: each night exactly once, newest first, back to the
+    // oldest one two years ago.
+    const seen: string[] = [];
+    for (let offset = 0; offset < NIGHTS; offset += 100) {
+      const res = await callList(
+        `type=SLEEP_DURATION&limit=100&offset=${offset}`,
+      );
+      const body = (await res.json()) as ListEnvelope;
+      expect(body.data.meta.total).toBe(NIGHTS);
+      for (const row of body.data.measurements) {
+        seen.push(row.dayKey!);
+        expect(row.value).toBe(420);
+      }
+    }
+    expect(seen).toHaveLength(NIGHTS);
+    expect(new Set(seen).size).toBe(NIGHTS);
+    expect(seen).toEqual([...seen].sort().reverse());
+    const oldest = dayKeyOf(new Date(morning.getTime() - (NIGHTS - 1) * day));
+    expect(seen[seen.length - 1]).toBe(oldest);
 
-    // A window inside the year is untouched and carries no marker.
-    const recent = await callList(
-      `type=SLEEP_DURATION&from=${encodeURIComponent(new Date(morning.getTime() - 10.5 * day).toISOString())}`,
-    );
-    const recentBody = (await recent.json()) as ListEnvelope;
-    expect(recentBody.data.meta.total).toBe(11);
-    expect(recentBody.data.meta.windowFrom).toBeUndefined();
+    // Past the end: an empty page that still reports the total.
+    const past = (await (
+      await callList(`type=SLEEP_DURATION&limit=25&offset=${NIGHTS + 25}`)
+    ).json()) as ListEnvelope;
+    expect(past.data.measurements).toEqual([]);
+    expect(past.data.meta.total).toBe(NIGHTS);
+
+    // Ascending starts at the oldest night; a window counts only its nights.
+    const asc = (await (
+      await callList("type=SLEEP_DURATION&limit=5&sortDir=asc")
+    ).json()) as ListEnvelope;
+    expect(asc.data.measurements[0].dayKey).toBe(oldest);
+    const recent = (await (
+      await callList(
+        `type=SLEEP_DURATION&from=${encodeURIComponent(new Date(morning.getTime() - 10.5 * day).toISOString())}`,
+      )
+    ).json()) as ListEnvelope;
+    expect(recent.data.meta.total).toBe(11);
+
+    // A night older than a year still drills down.
+    const drill = (await (
+      await callList(`type=SLEEP_DURATION&dayKey=${oldest}`)
+    ).json()) as ListEnvelope;
+    expect(drill.data.measurements).toHaveLength(1);
+    expect(drill.data.measurements[0].sleepStage).toBe("CORE");
   });
 });

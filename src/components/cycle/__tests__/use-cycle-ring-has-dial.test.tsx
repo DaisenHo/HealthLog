@@ -26,16 +26,35 @@ function window(): [string, string] {
 }
 
 function Probe({ enabled }: { enabled: boolean }) {
-  const { dial, pending } = useCycleRingDial(enabled);
-  return <span>{`${dial}:${pending}`}</span>;
+  const { dial, pending, failed } = useCycleRingDial(enabled);
+  return <span>{`${dial}:${pending}${failed ? ":failed" : ""}`}</span>;
 }
 
-function probe(verdict: unknown | undefined, enabled = true): string {
+/** Marks the calendar read as failed, with no data behind it. */
+const FAILED = Symbol("failed");
+
+function probe(
+  verdict: unknown | undefined | typeof FAILED,
+  enabled = true,
+): string {
   const client = new QueryClient({
-    defaultOptions: { queries: { staleTime: Infinity, retry: 0 } },
+    // `retryOnMount: false` keeps a seeded failure a failure on mount, the
+    // state the strip sees once the real read has given up.
+    defaultOptions: {
+      queries: { staleTime: Infinity, retry: 0, retryOnMount: false },
+    },
   });
   const [from, to] = window();
-  if (verdict !== undefined) {
+  if (verdict === FAILED) {
+    client
+      .getQueryCache()
+      .build(client, { queryKey: queryKeys.cycleCalendar(from, to) })
+      .setState({
+        status: "error",
+        error: new Error("calendar read failed"),
+        fetchStatus: "idle",
+      });
+  } else if (verdict !== undefined) {
     client.setQueryData(queryKeys.cycleCalendar(from, to), { verdict });
   }
   const html = renderToStaticMarkup(
@@ -65,6 +84,29 @@ describe("useCycleRingDial", () => {
 
   it("is pending until the calendar read lands", () => {
     expect(probe(undefined)).toBe("false:true");
+  });
+
+  // A failed read is not a day without a cycle: the strip keeps the ring's
+  // cell so the tile can say the read failed.
+  it("reports a failed read instead of settling it to no dial", () => {
+    expect(probe(FAILED)).toBe("false:false:failed");
+    expect(probe(FAILED, false)).toBe("false:false");
+  });
+});
+
+describe("the scores strip keeps the ring's cell on a failed read", () => {
+  it("mounts the tile on a dial or a failure, and only then drops Strain", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/insights/page-client.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(
+      /cycleRingCell = cycleRing\.dial \|\| cycleRing\.failed/,
+    );
+    expect(source).toMatch(
+      /extraTile=\{cycleRingCell \? <CycleRingTile \/> : undefined\}/,
+    );
+    expect(source).toMatch(/hideStrain=\{cycleRingCell\}/);
   });
 });
 
