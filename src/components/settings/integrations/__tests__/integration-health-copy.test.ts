@@ -13,6 +13,7 @@ import es from "../../../../../messages/es.json";
 import fr from "../../../../../messages/fr.json";
 import itMessages from "../../../../../messages/it.json";
 import ko from "../../../../../messages/ko.json";
+import nl from "../../../../../messages/nl.json";
 import pl from "../../../../../messages/pl.json";
 
 import {
@@ -31,6 +32,7 @@ const CATALOGS: Record<Locale, unknown> = {
   fr,
   it: itMessages,
   pl,
+  nl,
   ko,
 };
 

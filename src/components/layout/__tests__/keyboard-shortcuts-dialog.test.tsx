@@ -103,7 +103,7 @@ describe("<KeyboardShortcutsDialog>", () => {
     expect(kbd).not.toMatch(/#[0-9a-f]{3,6}|dracula|\[/i);
   });
 
-  it.each(["de", "es", "fr", "it", "pl", "ko"])(
+  it.each(["de", "es", "fr", "it", "pl", "ko", "nl"])(
     "is translated in %s",
     (locale) => {
       const html = render({}, locale);

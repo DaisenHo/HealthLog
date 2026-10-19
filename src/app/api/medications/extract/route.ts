@@ -118,7 +118,7 @@ const requestSchema = z
   .object({
     text: z.string().min(1).max(MAX_TEXT_LENGTH),
     /** Optional UI locale; informational hint for the model. */
-    locale: z.enum(["en", "de", "es", "fr", "it", "pl", "ko"]).optional(),
+    locale: z.enum(["en", "de", "es", "fr", "it", "pl", "ko", "nl"]).optional(),
     /**
      * Optional override of the reference date used to resolve relative
      * phrases ("tomorrow", "next Monday"). Defaults to the server's

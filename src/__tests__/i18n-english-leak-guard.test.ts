@@ -33,7 +33,7 @@ const EN_PATH = join(MESSAGES_DIR, "en.json");
 // intentionally excluded — it carries accepted anglicisms (e.g. "Health
 // Score") that would be noise here, and is covered by its own pinned checks in
 // `i18n-locale-integrity`.
-const LEAK_LOCALES = ["es", "fr", "it", "pl", "ko"] as const;
+const LEAK_LOCALES = ["es", "fr", "it", "pl", "ko", "nl"] as const;
 
 function flattenValues(
   obj: unknown,
@@ -209,6 +209,16 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.nightscoutUrl",
   "admin.aiServerKey.baseUrlLabel",
   "admin.webPushVapidSubject",
+  // Dutch spells these exactly as English does: "In bed" and "capsule(s)" are
+  // ordinary Dutch, and the clinical index names and the fatty-acid
+  // abbreviations are written in their international form.
+  "mood.dayContext.linkedInBed",
+  "insights.sleep.stages.inBed",
+  "medications.wizard.steps.step3.unit.capsules",
+  "doctorReport.glucoseClinical.gmi",
+  "insights.bloodGlucose.clinical.advanced.jIndex.label",
+  "nutrients.names.dha",
+  "nutrients.names.epa",
 ]);
 
 describe("i18n English-leak guard", () => {

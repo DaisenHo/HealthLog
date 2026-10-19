@@ -42,7 +42,7 @@ import { describe, expect, it } from "vitest";
 import { consentNeededForProviders } from "@/lib/ai/capabilities/resolve";
 
 const MESSAGES = join(__dirname, "../../messages");
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
 
 function bundle(locale: string): Record<string, unknown> {
   return JSON.parse(readFileSync(join(MESSAGES, `${locale}.json`), "utf8"));
@@ -81,6 +81,7 @@ const FINALITY_PHRASES: Record<string, readonly string[]> = {
   ],
   pl: ["nie można cofnąć", "nie można tego cofnąć", "trwale", "nieodwracaln"],
   ko: ["되돌릴 수 없", "복구할 수 없", "영구", "완전히 삭제"],
+  nl: ["niet ongedaan", "definitief", "permanent", "onherroepelijk"],
 };
 
 /** Per-locale phrase that promises the short undo window. */
@@ -92,6 +93,7 @@ const UNDO_PHRASES: Record<string, string> = {
   it: "annullare",
   pl: "cofnąć",
   ko: "되돌릴 수 있",
+  nl: "ongedaan maken",
 };
 
 /** Confirmation bodies whose surface renders an Undo affordance. */
@@ -176,6 +178,7 @@ describe("sleep debt is labelled as a balance, not a summed deficit", () => {
     it: ["cumulato", "cumulata", "accumulato", "deficit"],
     pl: ["skumulowan", "niedobór", "niedoboru"],
     ko: ["누적", "부족분", "적자", "쌓인"],
+    nl: ["cumulatief", "opgeteld", "tekort", "opgebouwd"],
   };
 
   for (const locale of LOCALES) {
@@ -302,6 +305,17 @@ describe("the mood prognosis never states a cause", () => {
     ],
     pl: ["ponieważ", "powoduje", "z powodu", "wywołuje", "poprawia twój"],
     ko: ["때문", "탓", "원인", "유발", "초래", "야기", "덕분", "인해"],
+    nl: [
+      "omdat",
+      "veroorzaakt",
+      "leidt tot",
+      "zorgt voor",
+      "vanwege",
+      "verbetert je",
+      "verslechtert je",
+      "verlaagt je",
+      "verhoogt je",
+    ],
   };
 
   /** Every leaf string under `insights.mood.prognosis`, flattened. */
@@ -401,6 +415,11 @@ describe("the MCP token copy never claims the mint is read-only", () => {
     it: ["token in sola lettura"],
     pl: ["token tylko do odczytu"],
     ko: ["읽기 전용 토큰", "읽기전용 토큰"],
+    nl: [
+      "alleen-lezen token",
+      "alleen-lezentoken",
+      "token met alleen leesrechten",
+    ],
   };
 
   for (const locale of LOCALES) {
@@ -450,6 +469,7 @@ describe("AI consent withdrawal copy matches what withdrawing does", () => {
     it: ["tua chiave", "modello locale"],
     pl: ["własnym kluczu", "lokalnym modelu"],
     ko: ["자신의 키", "로컬 모델"],
+    nl: ["eigen sleutel", "lokaal model"],
   };
 
   for (const locale of LOCALES) {

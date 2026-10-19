@@ -111,7 +111,7 @@ export function auditCTotal(items: readonly number[]): number {
 }
 
 /** The app languages; anything else is read as English. */
-const APP_LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+const APP_LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
 
 /** Normalise a requested or stored locale onto the app languages. */
 export function normaliseAuditCLocale(

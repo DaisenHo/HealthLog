@@ -39,6 +39,7 @@ const EXPECTED_LANGUAGE_NAME: Record<Locale, string> = {
   es: "Spanish",
   it: "Italian",
   pl: "Polish",
+  nl: "Dutch",
   ko: "Korean",
 };
 
@@ -50,6 +51,7 @@ const EXPECTED_BODY: Record<Locale, "de" | "en"> = {
   es: "en",
   it: "en",
   pl: "en",
+  nl: "en",
   ko: "en",
 };
 

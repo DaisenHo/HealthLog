@@ -242,7 +242,7 @@ describe("offline-geo runtime detection", () => {
     // issue #659 — the message used to tell a self-hoster to set
     // MAXMIND_LICENSE_KEY in this repository's Actions secrets, which is
     // not something they can do. Every locale must name the mount instead.
-    const locales = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+    const locales = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
     for (const locale of locales) {
       const bundle = JSON.parse(
         readFileSync(

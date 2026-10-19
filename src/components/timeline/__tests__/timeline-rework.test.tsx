@@ -34,7 +34,7 @@ import { TimelineLegend } from "../timeline-view";
 import { useSeriesValueFormat } from "../use-series-value-format";
 import { item, wordsIn } from "./timeline-fixture";
 
-const LOCALES: Locale[] = ["de", "en", "es", "fr", "it", "pl", "ko"];
+const LOCALES: Locale[] = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"];
 
 function render(node: React.ReactElement, locale: Locale = "en") {
   return renderToStaticMarkup(

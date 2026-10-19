@@ -411,7 +411,7 @@ function ProfileSettingsForm({
           <option value="">
             {t("settings.sharedRecord.managedSettings.profile.systemDefault")}
           </option>
-          {["de", "en", "es", "fr", "it", "pl", "ko"].map((locale) => (
+          {["de", "en", "es", "fr", "it", "pl", "ko", "nl"].map((locale) => (
             <option key={locale} value={locale}>
               {locale}
             </option>

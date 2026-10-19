@@ -33,6 +33,7 @@ const NAMES: Record<Locale, readonly string[]> = {
   es: ["Ramipril", "Amlodipino", "Eliquis"],
   it: ["Ramipril", "Amlodipina", "Eliquis"],
   pl: ["Ramipril", "Amlodypina", "Eliquis"],
+  nl: ["Ramipril 5 mg", "Amlodipine", "Eliquis"],
   ko: ["라미프릴", "암로디핀", "엘리퀴스"],
 };
 
@@ -92,6 +93,17 @@ const VIOLATIONS: Record<Locale, readonly string[]> = {
     "Pomiń amlodypinę jutro.",
     "Odstaw ramipril przed biegiem.",
     "Weź jedną tabletkę więcej.",
+  ],
+  nl: [
+    "Neem daarna een extra ramipril.",
+    "Sla de amlodipine morgen over.",
+    "Neem nog een tablet ramipril.",
+    "Stop je bloedverdunner voor het hardlopen.",
+    "Neem vanavond twee tabletten ramipril.",
+    "Laat de Eliquis morgen weg.",
+    "Pauzeer je Eliquis in het weekend.",
+    "Neem een halve tablet amlodipine.",
+    "Neem vanavond een tablet meer.",
   ],
   ko: [
     "라미프릴을 한 알 더 드세요.",
@@ -170,6 +182,17 @@ const CLEAN: Record<Locale, readonly string[]> = {
     "Nie pomiń amlodypiny.",
     "Nie bierz dodatkowej tabletki.",
     "Zrób dodatkowy spacer po obiedzie.",
+  ],
+  nl: [
+    "Je ramipril-logboek laat zien dat je elke dosis hebt genomen.",
+    "Sla je ramipril niet over.",
+    "Neem geen extra tablet als je er een vergeten bent.",
+    "Je hebt dinsdag een extra tablet genomen.",
+    "Neem een extra wandeling na het eten.",
+    "Neem je ramipril zoals voorgeschreven.",
+    "Ramipril en amlodipine verlagen allebei de bloeddruk.",
+    "Laat de suiker in je koffie weg.",
+    "Neem nog een meting vanavond.",
   ],
   ko: [
     "라미프릴 기록을 보면 모두 복용하셨어요.",

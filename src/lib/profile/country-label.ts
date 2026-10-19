@@ -15,6 +15,7 @@ const NAMES: Readonly<Record<string, Readonly<Record<SourceCountry, string>>>> =
     fr: { DE: "Allemagne", KR: "Corée du Sud", US: "États-Unis" },
     it: { DE: "Germania", KR: "Corea del Sud", US: "Stati Uniti" },
     pl: { DE: "Niemcy", KR: "Korea Południowa", US: "Stany Zjednoczone" },
+    nl: { DE: "Duitsland", KR: "Zuid-Korea", US: "Verenigde Staten" },
     ko: { DE: "독일", KR: "대한민국", US: "미국" },
   };
 
