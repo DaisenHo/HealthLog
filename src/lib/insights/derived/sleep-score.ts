@@ -398,9 +398,17 @@ export function reconstructNights(
     // adds its minutes, which put the midpoint of a 23:00 to 07:00 night with a
     // 14:00 nap at about 11:00 and read every such day as a ~7-hour shift in
     // consistency and timing.
+    //
+    // And only when that main session is a main sleep. On a day the ring or
+    // watch recorded no night (left on the charger, taken off), the day's
+    // largest session is an afternoon nap, and its 14:00 midpoint sat ten
+    // hours from every other night: a single such day in a month pushed the
+    // midpoint spread past the 90-minute full scale and read the whole
+    // rhythm as Consistency 0. Such a day still counts its minutes; it just
+    // has no place on the clock.
     const main = n.mainSession;
     const midpoint =
-      main && main.asleepMinutes > 0
+      main && main.asleepMinutes >= MAIN_SLEEP_MIN_MINUTES
         ? minutesOfDay(
             new Date(main.end.getTime() - (main.asleepMinutes / 2) * 60_000),
             tz,
@@ -418,6 +426,15 @@ export function reconstructNights(
     };
   });
 }
+
+/**
+ * The least asleep time a day's main session needs before its midpoint is a
+ * point on the sleep rhythm (consistency, timing, chronotype, regularity).
+ * Three hours is where wearables draw the line between a nap and a main
+ * sleep (Oura types a period `long_sleep` from three hours on), and well
+ * above any nap, while a short night still clears it.
+ */
+const MAIN_SLEEP_MIN_MINUTES = 180;
 
 function minutesOfDay(d: Date, tz: string): number {
   if (tz === "UTC") return d.getUTCHours() * 60 + d.getUTCMinutes();
