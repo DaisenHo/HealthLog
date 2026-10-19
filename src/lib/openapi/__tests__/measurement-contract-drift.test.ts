@@ -103,7 +103,7 @@ describe("GET /api/measurements — documented response matches the handler", ()
     expect(listResponse.safeParse(stale).success).toBe(false);
   });
 
-  it("accepts the collapsed day-sum mode (dayKey / sampleCount / partial)", () => {
+  it("accepts the collapsed day-sum mode (dayKey / sampleCount)", () => {
     const wire = {
       data: {
         measurements: [
@@ -117,7 +117,6 @@ describe("GET /api/measurements — documented response matches the handler", ()
             notes: null,
             dayKey: "2026-07-18",
             sampleCount: 12,
-            partial: true,
           },
         ],
         meta: {

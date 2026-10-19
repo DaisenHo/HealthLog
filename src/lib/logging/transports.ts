@@ -239,28 +239,43 @@ export function _resetLokiTransportForTests(): void {
  * Event emittieren falls Sampling-Kriterien erfuellt.
  * Zentraler Einstiegspunkt — entfernt Stack Traces falls konfiguriert.
  */
-export function emitIfSampled(event: WideEvent): void {
+export function emitIfSampled(
+  event: WideEvent,
+  options: EmitOptions = {},
+): void {
   const config = getLoggingConfig();
   if (!config.includeStackTrace && event.error?.stack) {
     delete event.error.stack;
   }
   if (shouldEmit(event)) {
-    emitEvent(event);
+    emitEvent(event, options);
   }
 }
 
+export interface EmitOptions {
+  /**
+   * Keep the event out of the in-memory ring `/admin/app-logs` reads, while
+   * it still reaches stdout and Loki. For periodic telemetry only: a line
+   * written every minute would otherwise evict the events an operator opens
+   * that page to find. Never set it on a warn or error event.
+   */
+  skipMemoryRing?: boolean;
+}
+
 /** Zentraler Emit: stdout + optional Loki-Buffer + in-memory ring buffer */
-export function emitEvent(event: WideEvent): void {
+export function emitEvent(event: WideEvent, options: EmitOptions = {}): void {
   emitToStdout(event);
 
   // Push into the per-process in-memory ring buffer so admins can drill
   // into the most recent ~500 wide events from the `/admin/app-logs`
   // page without standing up a Loki stack. See `in-memory-buffer.ts`.
   // Wrapped in try/catch so a buffer bug never poisons the request.
-  try {
-    appendLogEvent(event);
-  } catch {
-    /* logging must never crash the handler */
+  if (!options.skipMemoryRing) {
+    try {
+      appendLogEvent(event);
+    } catch {
+      /* logging must never crash the handler */
+    }
   }
 
   const config = getLoggingConfig();

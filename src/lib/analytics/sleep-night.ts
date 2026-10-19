@@ -252,9 +252,11 @@ function inBedEnvelopeMinutes(rows: readonly SleepStageRow[]): number | null {
  * Gap (ms) between consecutive stage segments that starts a new sleep
  * session. Stage segments within one night are contiguous (minutes to a
  * couple of hours apart); a > 3 h gap separates a nap from the overnight
- * block, or two genuine sessions in one day.
+ * block, or two genuine sessions in one day. The sleep list pages its
+ * nights in SQL with the same cut (`sleepNightPage` in the measurements
+ * list route), so this is the one value both read.
  */
-const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
+export const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
 
 export interface SleepStageRow {
   value: number;

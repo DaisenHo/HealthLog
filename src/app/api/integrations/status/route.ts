@@ -52,6 +52,10 @@ import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
 import { hasActivityScope } from "@/lib/withings/client";
 import { loadConnectionHealth } from "@/lib/integrations/connection-health-load";
+import {
+  googleHealthBackfillEndedList,
+  type GoogleHealthBackfillEndedEntry,
+} from "@/lib/google-health/sync-core";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 
 export const dynamic = "force-dynamic";
@@ -156,6 +160,7 @@ export const GET = apiHandler(async () => {
         lastSyncedAt: true,
         createdAt: true,
         backfillCompletedAt: true,
+        backfillProgress: true,
         needsReauth: true,
       },
     }),
@@ -384,6 +389,9 @@ export const GET = apiHandler(async () => {
         backfillCompleted: googleHealthConn
           ? !!googleHealthConn.backfillCompletedAt
           : null,
+        backfillEnded: googleHealthConn
+          ? googleHealthBackfillEndedList(googleHealthConn.backfillProgress)
+          : [],
         // v1.27.0 — `needsReauth` is the 7-day Testing-mode refresh expiry (or a
         // user-revoked grant) surfaced from the connection row; the card reads it
         // to raise a distinct "Reconnect" CTA separate from parked/disconnected.
@@ -555,6 +563,7 @@ interface GoogleHealthExtras {
   tokenExpiresAt: string | null;
   tokenExpired: boolean | null;
   backfillCompleted: boolean | null;
+  backfillEnded: GoogleHealthBackfillEndedEntry[];
   needsReauth: boolean;
 }
 

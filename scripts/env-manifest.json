@@ -401,6 +401,23 @@
           "example": "2048"
         }
       ]
+    },
+    {
+      "name": "Heap diagnostics",
+      "description": "Opt-in heap snapshot for chasing an out-of-memory crash. Off by default; a snapshot holds decrypted health data and keys. See docs/ops/heap-diagnostics.md.",
+      "required": false,
+      "variables": [
+        {
+          "name": "HEALTHLOG_HEAP_SNAPSHOT",
+          "purpose": "Set to 1 to write one heap snapshot the first time the heap reaches 85 % of its limit.",
+          "example": "1"
+        },
+        {
+          "name": "HEALTHLOG_DIAG_DIR",
+          "purpose": "Directory the heap snapshot is written to. Default /tmp.",
+          "example": "/tmp"
+        }
+      ]
     }
   ]
 }

@@ -54,7 +54,8 @@
     "durationClockHours": "{time} h",
     "errorIdLabel": "ID de error",
     "errorIdCopy": "Copiar ID de error",
-    "errorIdCopied": "ID de error copiado"
+    "errorIdCopied": "ID de error copiado",
+    "readThrottled": "Demasiadas solicitudes ahora mismo. Vuelve a intentarlo más tarde."
   },
   "apiErrors": {
     "measurement": {
@@ -1272,7 +1273,8 @@
       "bodyNotLogged": "No hay nada registrado en el diario de enfermedad para este día",
       "openIllness": "Abrir"
     },
-    "sourceNotification": "Notificación"
+    "sourceNotification": "Notificación",
+    "tagCatalogLoadError": "No se pudieron cargar las etiquetas."
   },
   "medications": {
     "title": "Medicamentos",
@@ -3173,7 +3175,8 @@
         "steadyLatestAbove": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por encima.",
         "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual. Sigue registrando unos días más.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "No se pudo cargar tu rango habitual."
       },
       "scope": {
         "prefix": "El Coach ya está en {metric}"
@@ -4290,7 +4293,8 @@
         "caveat": "Es una comparación con tus propios días anteriores, no una afirmación sobre cómo llegó a transcurrir un día.",
         "learning": "Fase de aprendizaje: {entries} de {threshold} días registrados. La comparación aparece cuando haya suficientes.",
         "noPattern": "En los {entries} días registrados hasta ahora no hay nada lo bastante constante para comparar un día. Cuando anotas también el contexto del día, se puede comparar una parte mayor.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "No se pudo cargar el valor esperado según tus propios patrones."
       },
       "patterns": {
         "title": "Patrones en tu estado de ánimo",
@@ -4389,6 +4393,10 @@
             "consistency": "Consistencia",
             "timing": "Horario",
             "composition": "Composición"
+          },
+          "gap": {
+            "fewNights": "aún no hay suficientes noches ({count} de 3)",
+            "noMainSleep": "el último día solo tuvo una siesta"
           }
         },
         "READINESS": {
@@ -4657,6 +4665,9 @@
       "scoreCrossLink": "Ver la puntuación de recuperación combinada",
       "emptyTitle": "Aún no hay datos de recuperación",
       "empty": "Aún no hay nada que mostrar aquí. Esta página muestra las lecturas de recarga, esfuerzo y carga que registran WHOOP y Polar, y el nivel de resiliencia de Oura. La preparación (readiness) de Oura aparece como tu puntuación de recuperación, enlazada arriba.",
+      "emptyOuraPermission": "Oura está conectado, pero el permiso concedido no incluye los datos de salud cardíaca, y el nivel de resiliencia de Oura depende de ellos. Vuelve a conectar Oura una vez en Ajustes, Integraciones y permite el acceso a la salud cardíaca; el nivel aparecerá aquí con la próxima sincronización. La preparación (readiness) de Oura ya es tu puntuación de recuperación, enlazada arriba.",
+      "emptyOuraNoResilience": "Oura está conectado, pero todavía no ha llegado ningún nivel de resiliencia para esta cuenta. HealthLog lo pide en cada sincronización, así que aparecerá aquí en cuanto Oura lo proporcione. Si la app de Oura muestra un nivel, la tarjeta de Oura en Ajustes, Integraciones indica todo lo que la conexión no puede entregar. La preparación (readiness) de Oura ya es tu puntuación de recuperación, enlazada arriba.",
+      "emptyAction": "Abrir integraciones",
       "block": {
         "ansChargeExplainer": "Cuán cargado está tu sistema nervioso autónomo para el día: una lectura de recarga obtenida de tus señales nocturnas de corazón y respiración.",
         "dayStrainExplainer": "La carga cardiovascular del día en la escala de esfuerzo de tu dispositivo. Léela en relación con tu recuperación, no como una meta en sí.",
@@ -7398,6 +7409,10 @@
         "causePermission": "permiso",
         "failureStreak": "Racha de fallos: {count} de {threshold}",
         "copyFailed": "No se pudo copiar. Selecciona el texto y cópialo a mano."
+      },
+      "historyEnds": {
+        "horizon": "{type}: importado hasta el {date}. Las lecturas más antiguas quedan fuera del límite de importación.",
+        "noProgress": "{type}: importado hasta el {date}. Google dejó de devolver lecturas más antiguas, así que la importación termina ahí."
       }
     },
     "dawarich": "Dawarich",
@@ -9204,7 +9219,8 @@
       "viewDetails": "Ver análisis del ciclo"
     },
     "wellnessRing": {
-      "label": "Ciclo"
+      "label": "Ciclo",
+      "loadError": "No se pudo cargar tu ciclo."
     },
     "disclaimer": "Estas predicciones son estimaciones descriptivas a partir de tus datos registrados, no un método anticonceptivo ni un consejo médico. Nunca indican que sea seguro tener relaciones sin protección. Para anticoncepción o cualquier decisión médica, consulta a un profesional sanitario.",
     "title": "Tu ciclo",
@@ -11890,7 +11906,8 @@
       "referenceMeta": "Ingesta de referencia {value} {unit}/día (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)"
+      "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)",
+      "loadError": "No se pudo cargar la cafeína."
     },
     "micronutrients": {
       "title": "Vitaminas y minerales",
@@ -12982,7 +12999,8 @@
       "allOther": "Mostrar las {count}",
       "fewer": "Mostrar menos",
       "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
-      "report": "Informe médico del {date} hasta hoy"
+      "report": "Informe médico del {date} hasta hoy",
+      "loadError": "No se pudo cargar lo ocurrido desde la última visita."
     },
     "travel": "De viaje",
     "event": {

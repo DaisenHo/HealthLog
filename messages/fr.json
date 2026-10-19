@@ -54,7 +54,8 @@
     "durationClockHours": "{time} h",
     "errorIdLabel": "ID d'erreur",
     "errorIdCopy": "Copier l'ID d'erreur",
-    "errorIdCopied": "ID d'erreur copié"
+    "errorIdCopied": "ID d'erreur copié",
+    "readThrottled": "Trop de requêtes pour le moment. Réessaie plus tard."
   },
   "apiErrors": {
     "measurement": {
@@ -1272,7 +1273,8 @@
       "bodyNotLogged": "Rien n'est consigné dans le journal de maladie pour cette journée",
       "openIllness": "Ouvrir"
     },
-    "sourceNotification": "Notification"
+    "sourceNotification": "Notification",
+    "tagCatalogLoadError": "Impossible de charger les étiquettes."
   },
   "medications": {
     "title": "Médicaments",
@@ -3173,7 +3175,8 @@
         "steadyLatestAbove": "Tes valeurs sont habituellement à {low} {unit} ; ta dernière mesure, du {date}, était de {value}, au-dessus.",
         "steadyLatestBelow": "Tes valeurs sont habituellement à {low} {unit} ; ta dernière mesure, du {date}, était de {value}, en dessous.",
         "insufficient": "J'apprends encore ta plage habituelle. Continue à enregistrer quelques jours de plus.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Impossible de charger ta plage habituelle."
       },
       "scope": {
         "prefix": "Le Coach est déjà sur {metric}"
@@ -4290,7 +4293,8 @@
         "caveat": "C'est une comparaison avec tes propres journées passées, pas une affirmation sur la manière dont une journée s'est déroulée.",
         "learning": "Phase d'apprentissage : {entries} journées sur {threshold} enregistrées. La comparaison apparaît une fois qu'il y en a assez.",
         "noPattern": "Dans les {entries} journées enregistrées jusqu'ici, rien n'est assez régulier pour comparer une journée. Quand tu notes aussi le contexte d'une journée, tu en rends davantage comparable.",
-        "featureValue": "{field} : {value}"
+        "featureValue": "{field} : {value}",
+        "loadError": "Impossible de charger la valeur attendue selon tes propres habitudes."
       },
       "patterns": {
         "title": "Tendances de votre humeur",
@@ -4389,6 +4393,10 @@
             "consistency": "Régularité",
             "timing": "Timing",
             "composition": "Composition"
+          },
+          "gap": {
+            "fewNights": "pas encore assez de nuits ({count} sur 3)",
+            "noMainSleep": "le dernier jour n'a eu qu'une sieste"
           }
         },
         "READINESS": {
@@ -4657,6 +4665,9 @@
       "scoreCrossLink": "Voir le score de récupération composite",
       "emptyTitle": "Pas encore de données de récupération",
       "empty": "Rien à afficher ici pour l'instant. Cette page montre les mesures de recharge, d'effort et de charge qu'enregistrent WHOOP et Polar, ainsi que le niveau de résilience d'Oura. La disponibilité (readiness) d'Oura apparaît comme votre score de récupération, en lien ci-dessus.",
+      "emptyOuraPermission": "Oura est connecté, mais l'autorisation accordée n'inclut pas les données de santé cardiaque, dont dépend le niveau de résilience d'Oura. Reconnectez Oura une fois dans Réglages, Intégrations et autorisez l'accès à la santé cardiaque ; le niveau apparaîtra ici à la prochaine synchronisation. La disponibilité (readiness) d'Oura est déjà votre score de récupération, en lien ci-dessus.",
+      "emptyOuraNoResilience": "Oura est connecté, mais aucun niveau de résilience n'est encore arrivé pour ce compte. HealthLog le demande à chaque synchronisation, il apparaîtra ici dès qu'Oura en fournira un. Si l'app Oura affiche un niveau, la carte Oura dans Réglages, Intégrations indique tout ce que la connexion ne peut pas fournir. La disponibilité (readiness) d'Oura est déjà votre score de récupération, en lien ci-dessus.",
+      "emptyAction": "Ouvrir les intégrations",
       "block": {
         "ansChargeExplainer": "À quel point votre système nerveux autonome est rechargé pour la journée : une mesure de recharge issue de vos signaux nocturnes de cœur et de respiration.",
         "dayStrainExplainer": "La charge cardiovasculaire de la journée sur l'échelle d'effort de votre appareil. Lisez-la au regard de votre récupération, pas comme un objectif en soi.",
@@ -7398,6 +7409,10 @@
         "causePermission": "autorisation",
         "failureStreak": "Série d’échecs : {count} sur {threshold}",
         "copyFailed": "La copie a échoué. Sélectionnez le texte et copiez-le à la main."
+      },
+      "historyEnds": {
+        "horizon": "{type} : importé jusqu'au {date}. Les mesures plus anciennes dépassent la limite d'import.",
+        "noProgress": "{type} : importé jusqu'au {date}. Google ne renvoyait plus de mesures plus anciennes, l'import s'arrête donc là."
       }
     },
     "dawarich": "Dawarich",
@@ -9204,7 +9219,8 @@
       "viewDetails": "Voir les analyses du cycle"
     },
     "wellnessRing": {
-      "label": "Cycle"
+      "label": "Cycle",
+      "loadError": "Impossible de charger ton cycle."
     },
     "disclaimer": "Ces prévisions sont des estimations descriptives issues de vos données enregistrées, ni une méthode de contraception ni un avis médical. Elles n'indiquent jamais qu'il est sûr d'avoir des rapports non protégés. Pour la contraception ou toute décision médicale, consultez un professionnel de santé.",
     "title": "Ton cycle",
@@ -11890,7 +11906,8 @@
       "referenceMeta": "Apport de référence {value} {unit}/jour (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Plafond de sécurité {value} {unit}/jour (EFSA)"
+      "ceilingMeta": "Plafond de sécurité {value} {unit}/jour (EFSA)",
+      "loadError": "Impossible de charger la caféine."
     },
     "micronutrients": {
       "title": "Vitamines et minéraux",
@@ -12982,7 +12999,8 @@
       "allOther": "Afficher les {count}",
       "fewer": "Afficher moins",
       "note": "Établi à partir de vos entrées, sans évaluation. Chaque date ouvre la journée entière.",
-      "report": "Rapport médical du {date} à aujourd’hui"
+      "report": "Rapport médical du {date} à aujourd’hui",
+      "loadError": "Impossible de charger ce qui s’est passé depuis la dernière visite."
     },
     "travel": "En déplacement",
     "event": {

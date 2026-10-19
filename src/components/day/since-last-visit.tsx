@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import type { EncounterDTO } from "@/lib/encounters/dto";
 import { apiGet } from "@/lib/api/api-fetch";
 import type {
@@ -52,6 +53,17 @@ import { useTodayKey } from "./use-today-key";
  * today: the server lists every context change in it (a dose change always,
  * however quiet the day around it) and every notable observation. Nothing is
  * recomputed here; this only spells the rows.
+ *
+ * The component owns its card and draws nothing until it has a row to show:
+ * not while the window loads, not when it holds nothing worth listing. A card
+ * frame drawn by the caller around it stayed on screen empty in each of those
+ * cases (#1241), and a loading skeleton would open a card for a window that
+ * most often turns out empty, then collapse it again. Arriving late costs
+ * only the visit list below a shift, once per window; the read is cached for
+ * five minutes. A failed read is not a quiet window, so it says so in a
+ * compact row with a retry. A refused one draws nothing: visits need the
+ * profile section and this window reads measurements, and a share can carry
+ * the first without the second.
  */
 
 const EVENT_ICON: Partial<Record<DayEventKind, LucideIcon>> = {
@@ -181,94 +193,99 @@ export function SinceLastVisit({
       })
     : [];
 
-  const loading = window.isPending && window.fetchStatus !== "idle";
-  const failed = window.isError;
-  if (!loading && !failed && rows.length === 0) return null;
-  // A preparation that could not be read is left out rather than shown half:
-  // the visit card stands on its own, and the day links stay everywhere else.
-  if (failed && rows.length === 0) return null;
+  if (window.isError && rows.length === 0) {
+    return (
+      <ReadFailureRow
+        error={window.error}
+        slot="since-last-visit-error"
+        message={t("day.sinceLastVisit.loadError")}
+        onRetry={() => void window.refetch()}
+      />
+    );
+  }
+  // Nothing to show is nothing drawn: still loading, or a quiet window. The
+  // visit card stands on its own, and the day links stay everywhere else.
+  if (rows.length === 0) return null;
 
   const visible = showAll ? rows : rows.slice(0, VISIBLE_ROWS);
   const lastLabel = fmt.dateShortSmartCalendar(lastDay);
   const nextDay = dateKeyOfInstant(next.occurredAt, timeZone);
 
   return (
-    <section
-      data-slot="since-last-visit"
-      aria-labelledby={`since-last-visit-${next.id}`}
-      className="space-y-2"
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`since-last-visit-${next.id}`} className={DAY_SECTION_LABEL}>
-          {t("day.sinceLastVisit.title", { date: lastLabel })}
-        </h3>
-        {rows.length > 0 ? (
-          <span className="text-muted-foreground shrink-0 text-xs">
-            {tCount("day.sinceLastVisit.count", rows.length)}
-          </span>
-        ) : null}
-      </div>
-      {loading && rows.length === 0 ? (
-        <div className="space-y-2" aria-hidden="true">
-          <Skeleton className="h-10 w-full rounded-lg" />
-          <Skeleton className="h-10 w-full rounded-lg" />
-        </div>
-      ) : (
-        <ul className="border-border divide-border divide-y rounded-lg border px-3.5">
-          {visible.map((row) => (
-            <li
-              key={row.key}
-              data-slot="since-last-visit-row"
-              className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 py-2.5 sm:grid-cols-[7.5rem_1.25rem_minmax(0,1fr)]"
+    <Card className="gap-3 py-3 md:gap-3 md:py-4">
+      <CardContent>
+        <section
+          data-slot="since-last-visit"
+          aria-labelledby={`since-last-visit-${next.id}`}
+          className="space-y-2"
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <h3
+              id={`since-last-visit-${next.id}`}
+              className={DAY_SECTION_LABEL}
             >
-              <span className="col-start-2 text-sm sm:col-start-1 sm:row-start-1">
-                <DayLink date={row.date}>
-                  {fmt.dateShortSmartCalendar(row.date)}
-                </DayLink>
-              </span>
-              <row.Icon
-                className="text-muted-foreground row-span-2 mt-0.5 size-4 sm:row-span-1 sm:row-start-1"
-                aria-hidden="true"
-              />
-              <div className="col-start-2 min-w-0 sm:col-start-3 sm:row-start-1">
-                {row.title ? <p className="text-sm">{row.title}</p> : null}
-                {row.meta ? (
-                  <p className="text-muted-foreground text-xs">{row.meta}</p>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      {rows.length > VISIBLE_ROWS ? (
-        <button
-          type="button"
-          aria-expanded={showAll}
-          onClick={() => setShowAll((value) => !value)}
-          className="focus-visible:ring-ring/50 min-h-11 rounded-md text-sm font-medium focus-visible:ring-[3px] focus-visible:outline-none sm:min-h-9"
-        >
-          {showAll
-            ? t("day.sinceLastVisit.fewer")
-            : tCount("day.sinceLastVisit.all", rows.length)}
-        </button>
-      ) : null}
-      <p className="text-muted-foreground text-xs">
-        {t("day.sinceLastVisit.note")}
-      </p>
-      <Button
-        asChild
-        variant="outline"
-        size="sm"
-        className="min-h-11 sm:min-h-9"
-      >
-        <Link
-          href={`/settings/gesundheitsakte?reportFrom=${lastDay}&reportTo=${nextDay < today ? nextDay : today}`}
-          data-slot="since-last-visit-report"
-        >
-          <FileText className="size-4" aria-hidden="true" />
-          {t("day.sinceLastVisit.report", { date: lastLabel })}
-        </Link>
-      </Button>
-    </section>
+              {t("day.sinceLastVisit.title", { date: lastLabel })}
+            </h3>
+            <span className="text-muted-foreground shrink-0 text-xs">
+              {tCount("day.sinceLastVisit.count", rows.length)}
+            </span>
+          </div>
+          <ul className="border-border divide-border divide-y rounded-lg border px-3.5">
+            {visible.map((row) => (
+              <li
+                key={row.key}
+                data-slot="since-last-visit-row"
+                className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 py-2.5 sm:grid-cols-[7.5rem_1.25rem_minmax(0,1fr)]"
+              >
+                <span className="col-start-2 text-sm sm:col-start-1 sm:row-start-1">
+                  <DayLink date={row.date}>
+                    {fmt.dateShortSmartCalendar(row.date)}
+                  </DayLink>
+                </span>
+                <row.Icon
+                  className="text-muted-foreground row-span-2 mt-0.5 size-4 sm:row-span-1 sm:row-start-1"
+                  aria-hidden="true"
+                />
+                <div className="col-start-2 min-w-0 sm:col-start-3 sm:row-start-1">
+                  {row.title ? <p className="text-sm">{row.title}</p> : null}
+                  {row.meta ? (
+                    <p className="text-muted-foreground text-xs">{row.meta}</p>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+          {rows.length > VISIBLE_ROWS ? (
+            <button
+              type="button"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((value) => !value)}
+              className="focus-visible:ring-ring/50 min-h-11 rounded-md text-sm font-medium focus-visible:ring-[3px] focus-visible:outline-none sm:min-h-9"
+            >
+              {showAll
+                ? t("day.sinceLastVisit.fewer")
+                : tCount("day.sinceLastVisit.all", rows.length)}
+            </button>
+          ) : null}
+          <p className="text-muted-foreground text-xs">
+            {t("day.sinceLastVisit.note")}
+          </p>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+          >
+            <Link
+              href={`/settings/gesundheitsakte?reportFrom=${lastDay}&reportTo=${nextDay < today ? nextDay : today}`}
+              data-slot="since-last-visit-report"
+            >
+              <FileText className="size-4" aria-hidden="true" />
+              {t("day.sinceLastVisit.report", { date: lastLabel })}
+            </Link>
+          </Button>
+        </section>
+      </CardContent>
+    </Card>
   );
 }

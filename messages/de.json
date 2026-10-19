@@ -54,7 +54,8 @@
     "durationClockHours": "{time} Std.",
     "errorIdLabel": "Fehler-ID",
     "errorIdCopy": "Fehler-ID kopieren",
-    "errorIdCopied": "Fehler-ID kopiert"
+    "errorIdCopied": "Fehler-ID kopiert",
+    "readThrottled": "Gerade zu viele Anfragen. Versuch es später noch einmal."
   },
   "apiErrors": {
     "measurement": {
@@ -1272,7 +1273,8 @@
       "bodyNotLogged": "Für diesen Tag ist im Krankheitstagebuch nichts erfasst",
       "openIllness": "Öffnen"
     },
-    "sourceNotification": "Benachrichtigung"
+    "sourceNotification": "Benachrichtigung",
+    "tagCatalogLoadError": "Die Tags konnten nicht geladen werden."
   },
   "medications": {
     "title": "Medikamente",
@@ -3173,7 +3175,8 @@
         "steadyLatestAbove": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
         "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Dein üblicher Bereich konnte nicht geladen werden."
       },
       "scope": {
         "prefix": "Der Coach ist schon bei {metric}"
@@ -4290,7 +4293,8 @@
         "caveat": "Das ist ein Vergleich mit deinen eigenen bisherigen Tagen, keine Aussage darüber, wie ein Tag zustande gekommen ist.",
         "learning": "Lernphase: {entries} von {threshold} Tagen erfasst. Ein Vergleich erscheint, sobald genug davon zusammengekommen sind.",
         "noPattern": "In den bisher erfassten {entries} Tagen ist noch nichts gleichmäßig genug, um einen Tag damit zu vergleichen. Wenn du auch den Kontext eines Tages festhältst, wird mehr davon vergleichbar.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "Der auf Basis deiner Muster erwartete Wert konnte nicht geladen werden."
       },
       "patterns": {
         "title": "Muster in deiner Stimmung",
@@ -4389,6 +4393,10 @@
             "consistency": "Konstanz",
             "timing": "Timing",
             "composition": "Zusammensetzung"
+          },
+          "gap": {
+            "fewNights": "noch nicht genug Nächte ({count} von 3)",
+            "noMainSleep": "letzter Tag nur mit Nickerchen"
           }
         },
         "READINESS": {
@@ -4657,6 +4665,9 @@
       "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
       "empty": "Hier ist noch nichts zu sehen. Diese Seite zeigt die Werte zu Aufladung, Belastung und Trainingslast, die WHOOP und Polar aufzeichnen, und Ouras Resilienz-Stufe. Ouras Readiness erscheint als dein Erholungs-Score, oben verlinkt.",
+      "emptyOuraPermission": "Oura ist verbunden, aber die erteilte Berechtigung umfasst keine Herzgesundheitsdaten, und genau dahinter liegt Ouras Resilienz-Stufe. Verbinde Oura unter Einstellungen, Integrationen einmal neu und erlaube den Zugriff auf Herzgesundheit; die Stufe erscheint dann mit der nächsten Synchronisierung hier. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
+      "emptyOuraNoResilience": "Oura ist verbunden, aber für dieses Konto ist noch keine Resilienz-Stufe angekommen. HealthLog fragt bei jeder Synchronisierung danach, sie erscheint hier, sobald Oura eine liefert. Zeigt die Oura-App eine Stufe, nennt die Oura-Karte unter Einstellungen, Integrationen alles, was die Verbindung nicht liefern kann. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
+      "emptyAction": "Integrationen öffnen",
       "block": {
         "ansChargeExplainer": "Wie aufgeladen dein autonomes Nervensystem in den Tag startet, ein Recharge-Wert aus deinen nächtlichen Herz- und Atemsignalen.",
         "dayStrainExplainer": "Die kardiovaskuläre Tagesbelastung auf der Belastungsskala deines Geräts. Lies sie im Verhältnis zu deiner Erholung, nicht als Ziel für sich.",
@@ -7398,6 +7409,10 @@
         "causePermission": "Freigabe",
         "failureStreak": "Fehlerserie: {count} von {threshold}",
         "copyFailed": "Kopieren hat nicht geklappt. Markiere den Text und kopiere ihn von Hand."
+      },
+      "historyEnds": {
+        "horizon": "{type}: übernommen bis zurück zum {date}. Ältere Werte liegen jenseits der Importgrenze.",
+        "noProgress": "{type}: übernommen bis zurück zum {date}. Google lieferte keine älteren Werte mehr, deshalb endet der Import dort."
       }
     },
     "dawarich": "Dawarich",
@@ -9204,7 +9219,8 @@
       "viewDetails": "Zyklus-Erkenntnisse ansehen"
     },
     "wellnessRing": {
-      "label": "Zyklus"
+      "label": "Zyklus",
+      "loadError": "Dein Zyklus konnte nicht geladen werden."
     },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
     "title": "Dein Zyklus",
@@ -11890,7 +11906,8 @@
       "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)"
+      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)",
+      "loadError": "Koffein konnte nicht geladen werden."
     },
     "micronutrients": {
       "title": "Vitamine & Mineralstoffe",
@@ -12982,7 +12999,8 @@
       "allOther": "Alle {count} anzeigen",
       "fewer": "Weniger anzeigen",
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
-      "report": "Arztbericht {date} bis heute"
+      "report": "Arztbericht {date} bis heute",
+      "loadError": "Was seit dem letzten Besuch war, konnte nicht geladen werden."
     },
     "travel": "Unterwegs",
     "event": {

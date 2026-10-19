@@ -50,6 +50,11 @@ import {
   type GoogleHealthRollupPoint,
 } from "./mappers";
 import { envValue } from "@/lib/env";
+import {
+  GOOGLE_HEALTH_NO_PROGRESS_PAGES,
+  googleHealthWalkProgress,
+  noteGoogleHealthWalkPage,
+} from "./backfill-bounds";
 
 export * from "./mappers";
 
@@ -700,16 +705,15 @@ export const GOOGLE_HEALTH_PAGE_SIZE = 1000;
 export const GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE = 25;
 
 /**
- * Page ceiling for the intraday heart-rate walk.
+ * Page ceiling for one intraday heart-rate walk.
  *
- * The default of 1000 pages is a million points, which a watch that records
- * a reading a minute passes in under two years. A walk that hits the ceiling
- * reports `truncated`, the backfill treats that as incomplete and throws, and
- * pg-boss retries it — so an account with a longer history re-ran the whole
- * walk on every retry and every boot and never completed. Ten thousand pages
- * is nineteen years at that rate: still a bound on a runaway cursor, no longer
- * a bound a real history reaches. The walk is paged (`forEachDataPointPage`),
- * so the ceiling costs time, not memory.
+ * Per walk, never across walks: a backfill reads at most a slice's pages per
+ * walk and keeps its place between slices, and an hourly sync reads a few
+ * pages. What stops a walk that keeps going without getting anywhere is the
+ * progress guard (`GOOGLE_HEALTH_NO_PROGRESS_PAGES`), and what bounds a
+ * backfill that does get somewhere is its horizon in years (see
+ * `backfill-bounds.ts`). The walk is paged (`forEachDataPointPage`), so the
+ * ceiling costs time, not memory.
  */
 export const GOOGLE_HEALTH_DENSE_MAX_PAGES = 10_000;
 
@@ -758,8 +762,9 @@ interface DataPointQuery {
    * beyond the edge here instead (see `forEachDataPointPage`); the walk falls
    * back to that on its own when Google refuses the bound, and calls
    * `onFilterUnsupported` once when it does. `tz` reads an offset-less sample
-   * time the way the edge was recorded. `maxSkipPages` bounds how far into
-   * the unbounded list the walk may get before it reaches the edge.
+   * time the way the edge was recorded. Passing over has no page bound of
+   * its own: the pages passed over move toward the edge, and a walk whose
+   * pages stop moving is stopped by the progress guard like any other.
    *
    * A walk without the bound keeps its place in that list across slices:
    * `resumeFrom` is where an earlier slice's walk stopped, and
@@ -772,10 +777,16 @@ interface DataPointQuery {
     filter?: boolean;
     tz?: string;
     onFilterUnsupported?: () => void | Promise<void>;
-    maxSkipPages?: number;
     resumeFrom?: GoogleHealthResumePoint;
     onResumePoint?: (point: GoogleHealthResumePoint) => void | Promise<void>;
   };
+  /**
+   * Told once when the walk is stopped for going
+   * `GOOGLE_HEALTH_NO_PROGRESS_PAGES` pages in a row without reaching any
+   * further back (see `backfill-bounds.ts`). The walk then reports itself
+   * truncated, as it does on its page ceiling.
+   */
+  onNoProgress?: () => void | Promise<void>;
 }
 
 /**
@@ -1229,13 +1240,24 @@ export async function fetchDataPoints(
  * applies back-pressure to the fetch. The date-filter fallback still works:
  * it only fires when the first request is rejected, which is before any page
  * reaches `onPage`.
+ *
+ * `onPage` answers `"end"` when the caller has read as far as it wants (a
+ * backfill that reached its horizon): the walk ends there as complete, not
+ * truncated.
+ *
+ * A walk over spot readings (`timeField: "sample"`) also watches whether it
+ * is getting anywhere: `GOOGLE_HEALTH_NO_PROGRESS_PAGES` pages in a row that
+ * reach no further back than the pages before them end it, truncated, and
+ * tell `onNoProgress` (see `backfill-bounds.ts`).
  */
 export async function forEachDataPointPage(
   dataType: GoogleHealthDataType,
   accessToken: GoogleHealthAccessToken,
   verb: string,
   query: DataPointQuery,
-  onPage: (points: GoogleHealthDataPoint[]) => void | Promise<void>,
+  onPage: (
+    points: GoogleHealthDataPoint[],
+  ) => void | "end" | Promise<void | "end">,
 ): Promise<void> {
   const maxPages = query.maxPages ?? GOOGLE_HEALTH_DEFAULT_MAX_PAGES;
   const pageSize = query.pageSize ?? GOOGLE_HEALTH_PAGE_SIZE;
@@ -1267,7 +1289,15 @@ export async function forEachDataPointPage(
     let skipped = 0;
     const startPosition = resumeFrom?.page ?? 0;
     const skipStartedAt = skipTo ? sliceNow() : 0;
-    const maxSkip = skipTo?.maxSkipPages ?? GOOGLE_HEALTH_DENSE_MAX_PAGES;
+    // Whether the walk is still reaching further back. A walk filtered to
+    // the edge starts from it; one passing over the samples beyond the edge
+    // starts from nothing, since those pages move toward the edge too.
+    const progress =
+      dataType.timeField === "sample"
+        ? googleHealthWalkProgress(edge && edgeBy === "filter" ? edge : null)
+        : null;
+    const progressTz = edge?.tz ?? query.tz;
+    let noProgress = false;
     const sampleAt = (point: GoogleHealthDataPoint): number | null =>
       googleHealthSampleInstant(point, dataType, skipTo?.tz)?.getTime() ?? null;
     const beyondEdge = (point: GoogleHealthDataPoint): boolean | null => {
@@ -1293,13 +1323,6 @@ export async function forEachDataPointPage(
       // keeps its place below, so the next slice goes on from there.
       const untimed = !crossed && restarted;
       if (untimed ? stopRequested(false) : stopRequested(resumable)) {
-        stopped = true;
-        break;
-      }
-      if (!crossed && startPosition + pageCount >= maxSkip) {
-        getEvent()?.addWarning(
-          `google-health ${verb}: passed over ${startPosition + pageCount} pages without reaching the resume edge`,
-        );
         stopped = true;
         break;
       }
@@ -1419,6 +1442,24 @@ export async function forEachDataPointPage(
       pageCount += 1;
       fetched += page.length;
       noteSlicePage();
+      if (
+        progress &&
+        noteGoogleHealthWalkPage(
+          progress,
+          page.map(
+            (p) =>
+              googleHealthSampleInstant(p, dataType, progressTz)?.getTime() ??
+              null,
+          ),
+        )
+      ) {
+        getEvent()?.addWarning(
+          `google-health ${verb}: ${GOOGLE_HEALTH_NO_PROGRESS_PAGES} pages in a row reached no further back than ${progress.furthest === null ? "the first" : new Date(progress.furthest).toISOString()}; walk stopped`,
+        );
+        noProgress = true;
+        stopped = true;
+        break;
+      }
       if (!crossed) {
         // Placed samples beyond the edge were written by an earlier slice;
         // one without a sample time cannot be placed and is passed over
@@ -1433,7 +1474,10 @@ export async function forEachDataPointPage(
         if (restarted) extendSliceDeadline(sliceNow() - skipStartedAt);
         page = page.filter((p) => beyondEdge(p) !== true);
       }
-      await onPage(page);
+      if ((await onPage(page)) === "end") {
+        pageToken = null;
+        break;
+      }
     } while (pageToken && pageCount - skipped < maxPages);
 
     const truncated = stopped || Boolean(pageToken);
@@ -1443,6 +1487,7 @@ export async function forEachDataPointPage(
       await skipTo.onResumePoint?.({ token: lastToken, page: lastPosition });
     }
     notePagination(pageCount, fetched, truncated);
+    if (noProgress) await query.onNoProgress?.();
   };
 
   // The fallback only exists for filtered daily-summary reads — every other

@@ -56,6 +56,20 @@ export async function register() {
       await import("@/lib/observability/event-loop-lag");
     startEventLoopLagMonitor();
 
+    // The same for its heap: a trend line, and one report naming the work in
+    // flight before the heap runs out (a heap-limit crash logs nothing else).
+    try {
+      const [{ startHttpInFlightTracking }, { startHeapMonitor }] =
+        await Promise.all([
+          import("@/lib/observability/in-flight"),
+          import("@/lib/observability/heap-monitor"),
+        ]);
+      startHttpInFlightTracking();
+      startHeapMonitor();
+    } catch {
+      // A diagnostic must never break boot.
+    }
+
     const { shouldRunWorker } = await import("@/lib/process-type");
     if (!shouldRunWorker()) {
       // Split deployment: web requests still produce queue jobs, but this

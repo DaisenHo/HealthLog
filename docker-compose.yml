@@ -226,6 +226,10 @@ x-healthlog-env: &healthlog_env
   # the authorization code somewhere else.
   FITBIT_REDIRECT_URI: "${FITBIT_REDIRECT_URI:-}"
   GOOGLE_HEALTH_REDIRECT_URI: "${GOOGLE_HEALTH_REDIRECT_URI:-}"
+  # How many years back the Google Health history backfill reads (a whole
+  # number from 1 to 100; 20 when unset). A data type whose history goes
+  # further ends there, and the integration card says so.
+  GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS: "${GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS:-}"
   # Nightscout origins on your own network that the per-user connection
   # validator should accept, comma-separated (e.g. "http://nightscout.lan").
   # Without it a LAN/private Nightscout URL is refused as an SSRF target.
@@ -409,6 +413,13 @@ x-healthlog-env: &healthlog_env
   LOG_SAMPLE_RATE: "${LOG_SAMPLE_RATE:-}"
   LOG_SLOW_THRESHOLD_MS: "${LOG_SLOW_THRESHOLD_MS:-}"
   LOG_INCLUDE_STACK: "${LOG_INCLUDE_STACK:-}"
+  # Heap diagnostics, off by default. HEALTHLOG_HEAP_SNAPSHOT=1 writes ONE
+  # heap snapshot the first time the heap reaches 85 % of its limit, into
+  # HEALTHLOG_DIAG_DIR (default /tmp inside the container). A snapshot holds
+  # decrypted health data and keys: turn it on only to chase a crash, then
+  # delete the file. See docs/ops/heap-diagnostics.md.
+  HEALTHLOG_HEAP_SNAPSHOT: "${HEALTHLOG_HEAP_SNAPSHOT:-}"
+  HEALTHLOG_DIAG_DIR: "${HEALTHLOG_DIAG_DIR:-}"
   # Optional log shipping to a Loki instance. Set LOKI_ENDPOINT to the base
   # URL or the full push URL to turn it on; a Loki on your own network works.
   # The username/password pair is only needed when your Loki is behind basic

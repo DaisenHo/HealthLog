@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Droplets } from "lucide-react";
 
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { CycleRing } from "./cycle-ring";
@@ -31,9 +32,12 @@ import { useCycleRingCalendar } from "./use-cycle";
  * `user.cycleTrackingEnabled` is true (the same `/api/auth/me` signal the
  * sidebar-nav entry + the summary card gate on), so the cycle read never fires
  * for an account without the feature. The tile additionally renders nothing
- * while the calendar read resolves, on a hard error, and when there is no
- * active cycle phase today — never an empty-framed or half-painted dial in the
- * strip (no gap, no placeholder).
+ * while the calendar read resolves and when there is no active cycle phase
+ * today — never an empty-framed or half-painted dial in the strip (no gap, no
+ * placeholder). A failed read takes the tile's place with a notice and a
+ * retry: silence there read as "no cycle phase today", and the summary card
+ * further down stays out on the same failure, so the tile is the one place
+ * the page says it.
  */
 
 export function CycleRingTile({ className }: { className?: string }) {
@@ -61,11 +65,21 @@ export function CycleRingTile({ className }: { className?: string }) {
     }
   });
 
-  // Stay silent until the read resolves, on a hard error, and when today has
-  // no phase (no active cycle) — the strip must never show a half-painted or
-  // empty-framed cycle dial. The full cycle page owns the empty-state CTA.
+  // Stay silent until the read resolves and when today has no phase (no
+  // active cycle) — the strip must never show a half-painted or empty-framed
+  // cycle dial. The full cycle page owns the empty-state CTA.
   if (calendar.isLoading && !calendar.data) return null;
-  if (calendar.isError && !calendar.data) return null;
+  if (calendar.isError && !calendar.data) {
+    return (
+      <ReadFailureRow
+        error={calendar.error}
+        slot="wellness-cycle-tile-error"
+        message={t("cycle.wellnessRing.loadError")}
+        onRetry={() => void calendar.refetch()}
+        className={className}
+      />
+    );
+  }
   if (verdict?.phase == null || verdict.dayOfCycle == null) return null;
 
   const hue = PHASE_HUE[verdict.phase];

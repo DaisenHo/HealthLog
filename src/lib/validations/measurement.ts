@@ -619,12 +619,9 @@ export const listMeasurementsSchema = z
     // and `sampleCount` = number of per-sample rows behind the bucket.
     // Omitted = legacy per-sample list behaviour (iOS contract stable).
     //
-    // v1.4.37 W10 — the route's groupBy=day branch hard-codes `offset:0`
-    // in the meta because the collapse runs after the per-sample scan;
-    // real pagination would require Postgres-side `date_trunc` grouping
-    // and a separate `prisma.count({ distinct: ["dayKey"] })`. Until
-    // that lands, reject any caller threading a non-zero offset so the
-    // pagination contract isn't silently dropped.
+    // v1.43.6 — `limit` / `offset` page over DAYS on this mode: the route
+    // picks the page's local days in Postgres and reports the distinct-day
+    // count as `meta.total` (#1245).
     groupBy: z.enum(["day"]).optional(),
     // v1.4.37 W7c — drill-down to per-sample rows for a single day in
     // the user's IANA timezone. Format `YYYY-MM-DD`; the route resolves
@@ -632,9 +629,8 @@ export const listMeasurementsSchema = z
     // expandable list row to reveal the chunks that contributed to the
     // collapsed daily total.
     //
-    // v1.4.37 W10 — same offset restriction as `groupBy=day`; the
-    // drill-down branch returns a single bounded page rather than a
-    // cursor.
+    // v1.4.37 W10 — a drill-down returns one bounded page rather than a
+    // cursor, so it refuses a non-zero `offset`.
     dayKey: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey must be YYYY-MM-DD")
@@ -652,15 +648,11 @@ export const listMeasurementsSchema = z
       )
       .optional(),
   })
-  .refine(
-    ({ offset, groupBy, dayKey }) =>
-      !(offset > 0 && (groupBy === "day" || dayKey != null)),
-    {
-      message:
-        "offset is not supported with groupBy=day or dayKey; use a smaller window or omit offset",
-      path: ["offset"],
-    },
-  )
+  .refine(({ offset, dayKey }) => !(offset > 0 && dayKey != null), {
+    message:
+      "offset is not supported with dayKey; a drill-down returns the whole day",
+    path: ["offset"],
+  })
   // v1.4.38 — surface the drill-down cap on the validator so a caller
   // asking for more than 1000 rows on a per-day branch sees a 422
   // instead of a silent `Math.min(limit, 1000)` clamp inside the

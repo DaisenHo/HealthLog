@@ -5,7 +5,7 @@ import { join } from "node:path";
 /**
  * v1.28.52 (Documents R3) — "Ask the Coach" opens the REAL fenced coach
  * conversation in the shared SIDE DRAWER, scoped to the document, instead of a
- * full-page nav to `/coach?doc=<id>` (the v1.28.51 behaviour Marc corrected).
+ * full-page nav to `/coach?doc=<id>` (the v1.28.51 behaviour, since corrected).
  *
  * The wiring is source-structural (the send-path fence itself is covered by the
  * coach-send-target unit tests — untouched here). These guards pin:

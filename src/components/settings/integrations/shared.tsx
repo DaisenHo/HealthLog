@@ -55,6 +55,15 @@ export interface IntegrationStatusViewModel {
   /** WHOOP / Fitbit / Google Health: older history still loading. */
   backfillCompleted?: boolean | null;
   /**
+   * Google Health: data types whose history backfill ended before the start
+   * of their history, with where and why.
+   */
+  backfillEnded?: Array<{
+    type: string;
+    endsAt: string;
+    reason: "horizon" | "no_progress";
+  }>;
+  /**
    * Polar / Oura / Strava: usable credentials resolve (BYO or the shared
    * app). Greys out "Connect" when false.
    */

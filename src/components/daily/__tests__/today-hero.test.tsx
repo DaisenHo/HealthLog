@@ -318,7 +318,7 @@ describe("<TodayHero>", () => {
   });
 
   // v1.29.1 — the v1.29.0 selected-score-ring cluster was removed from the web
-  // hero (Marc, live-use: uneven, wasted tile space). Only the main
+  // hero (live use: uneven, wasted tile space). Only the main
   // health-score ring paints now; the cluster's data-slots are gone.
   it("renders no score-ring cluster — only the health-score ring", () => {
     const html = render(<TodayHero digest={digest()} />);

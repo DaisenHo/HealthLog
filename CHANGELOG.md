@@ -1,5 +1,72 @@
 # Changelog
 
+## [1.43.6] — 2026-10-19
+
+### Fixed
+
+- **A long measurement history no longer loads in one response.** The list for
+  cumulative types (steps, active energy and similar) loaded every day since
+  the first reading in one request and drew one table row per day; past 5000
+  raw rows the oldest days were cut off without a word. The server now pages
+  over days with a correct total, folds the days in SQL instead of reading raw
+  rows into the process, and the list shows 25 days per page. The sleep list
+  pages over nights the same way and no longer stops at one year; a night older
+  than a year opens its detail. For `groupBy=day`, `limit` counts days. The
+  `partial` flag and the `windowFrom` field are gone because nothing is cut off
+  any more (Refs #1245).
+- **A Google Health backfill that keeps moving no longer stops at a page
+  ceiling.** The ceiling counted pages across every attempt and was never
+  reset, so a dense type such as heart rate reached it after roughly two and a
+  half years and every later slice stopped at the same wall. A walk now stops
+  only when it has not moved back in time for 20 pages in a row, or when it
+  reaches the horizon (`GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS`, 20 by default). A
+  type that ends says where its history ends and why, on the integration card,
+  instead of showing "loading" forever. A first end without progress is only
+  provisional: the type keeps its place and gets a second attempt a day later
+  before the end is final (Refs #1220).
+- **Consistency in the sleep score no longer reads 0 after a day without a
+  night.** A day on which the ring recorded only a nap was placed on the clock
+  by that nap, hours away from the other nights, and one such day in thirty
+  pushed the spread past the scale. A day whose only sleep is a short daytime
+  nap now leaves the rhythm (the nap still counts toward that day's sleep); a
+  short night stays on the clock. Every reader of the sleep midpoint follows the
+  same rule. When there are not enough nights to judge a rhythm, or the latest
+  day had only a nap, the row says so instead of showing a number. The sleep
+  score value, including `rhythmNights` and `gap`, is now published in the
+  OpenAPI schema (Refs #1204).
+- **An empty recovery page no longer guesses.** It asks for a reconnect only
+  when a missing permission is recorded, and otherwise says that no level has
+  arrived yet and points to the Oura card (Refs #1204).
+- **The MCP endpoint answers GET and DELETE with 405 and `Allow: POST`.** A
+  client that probed for a server-sent event stream was retried in a loop, which
+  produced hundreds of thousands of requests per week.
+- **No empty frame under the next appointment.** The "since the last visit" card
+  drew its border before knowing whether it had anything to show. Optional
+  tiles on the insights pages no longer flash a skeleton that collapses to
+  nothing, and a failed read on them now says so with a retry instead of
+  vanishing (Refs #1241).
+- Workout dates in the list, the header and the dashboard tile follow the
+  profile timezone instead of the browser's.
+
+### Added
+
+- **Heap diagnostics.** The process logs `runtime.heap.sampled` every five
+  minutes (every minute above 70 % of the heap limit) and, once, a
+  `runtime.heap.pressure` report above 85 % that lists the oldest requests and
+  jobs in flight and the busiest routes. With `HEALTHLOG_HEAP_SNAPSHOT=1` it also
+  writes one heap snapshot into `HEALTHLOG_DIAG_DIR`; a snapshot holds plain
+  health data, see `docs/ops/heap-diagnostics.md`.
+- A nightly run of the full multi-year Google Health backfill test; the run on
+  every pull request uses a tenth of the pages.
+
+### Changed
+
+- Dependabot keeps `next`, `eslint-config-next` and `@next/bundle-analyzer` out of
+  the weekly groups, so a red Next bump no longer holds the other updates red.
+- The timezone guard also matches `getDateTimeFormat(locale, options)` calls
+  that leave the zone out, and comments and test fixtures no longer carry
+  personal names.
+
 ## [1.43.5] — 2026-10-18
 
 ### Fixed

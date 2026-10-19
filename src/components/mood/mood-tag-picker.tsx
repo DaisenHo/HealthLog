@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Tag } from "lucide-react";
 
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
@@ -104,7 +105,7 @@ export function MoodTagPicker({
   // tile belongs to, or null when closed.
   const [createGroupKey, setCreateGroupKey] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, error, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.moodTagCatalog(),
     queryFn: async () => {
       return apiGet<CatalogResponse>("/api/mood/tags");
@@ -114,8 +115,22 @@ export function MoodTagPicker({
     staleTime: 60 * 60 * 1000,
   });
 
+  // The placeholder stays: the catalogue ships seeded, so the picker nearly
+  // always fills it. A failed read says so with a retry; it used to leave the
+  // field without its tags and without a word.
   if (isLoading) {
     return <Skeleton className="h-24 w-full rounded-lg" />;
+  }
+
+  if (isError && !data) {
+    return (
+      <ReadFailureRow
+        error={error}
+        slot="mood-tag-picker-error"
+        message={t("mood.tagCatalogLoadError")}
+        onRetry={() => void refetch()}
+      />
+    );
   }
 
   if (!data || data.categories.length === 0) {

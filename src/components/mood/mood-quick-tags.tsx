@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
@@ -21,7 +22,10 @@ import { selectQuickTagKeys } from "./recent-tags";
  *
  * Reads the same `/api/mood/tags` catalogue as `MoodTagPicker` (shared query
  * key → one network round-trip). Renders nothing while the catalogue is
- * empty so a cleared taxonomy degrades gracefully.
+ * empty so a cleared taxonomy degrades gracefully. The loading placeholder
+ * stays because the catalogue ships seeded and the row nearly always fills
+ * it; a failed read says so with a retry rather than leaving the sheet
+ * without its tags and without a word.
  */
 
 interface CatalogTag {
@@ -59,7 +63,7 @@ export function MoodQuickTags({
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
 
-  const { data, isLoading } = useQuery({
+  const { data, error, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.moodTagCatalog(),
     queryFn: async () => apiGet<CatalogResponse>("/api/mood/tags"),
     enabled: isAuthenticated,
@@ -68,6 +72,16 @@ export function MoodQuickTags({
 
   if (isLoading) {
     return <Skeleton className="h-11 w-full rounded-lg" />;
+  }
+  if (isError && !data) {
+    return (
+      <ReadFailureRow
+        error={error}
+        slot="mood-quick-tags-error"
+        message={t("mood.tagCatalogLoadError")}
+        onRetry={() => void refetch()}
+      />
+    );
   }
   if (!data || data.categories.length === 0) return null;
 

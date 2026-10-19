@@ -13,16 +13,25 @@ updates:
       # One weekly pull request per dependency kind instead of a trickle of
       # single bumps: patch and minor updates travel together and pass the
       # same checks once. Majors stay single so each gets its own review.
+      #
+      # The Next.js line travels alone: while a 16.4 patch is still being
+      # re-measured, a red Next bump inside the group holds every harmless
+      # update in it red as well.
       production-weekly:
         dependency-type: "production"
         update-types:
           - "patch"
           - "minor"
+        exclude-patterns:
+          - "next"
       development-weekly:
         dependency-type: "development"
         update-types:
           - "patch"
           - "minor"
+        exclude-patterns:
+          - "eslint-config-next"
+          - "@next/bundle-analyzer"
     ignore:
       # Next 16.4.0 breaks URL state after history traversal: with a sheet
       # opened through `?doc=`, Back leaves it open, and `[` / `]` sometimes

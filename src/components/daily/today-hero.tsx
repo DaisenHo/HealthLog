@@ -14,7 +14,7 @@
  *   - the day's read: the health `ScoreRing` (`flat`, md) with its
  *     server-computed band and an honest provisional/final face — a null
  *     score paints the ring's own provisional state, never a zero;
- *   - v1.29.1 (Marc, live-use): the v1.29.0 selected-score-ring cluster is
+ *   - v1.29.1 (live use): the v1.29.0 selected-score-ring cluster is
  *     removed from the web hero — it read as uneven and wasted tile space.
  *     The health `ScoreRing` is the hero's only ring now. The score-ring
  *     SELECTION contract stays server-side (`selectedScoreRings` on the

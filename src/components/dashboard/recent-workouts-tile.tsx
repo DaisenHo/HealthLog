@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Activity } from "lucide-react";
 
 import { formatDurationMinutes } from "@/lib/i18n/duration";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { useWorkouts, type WorkoutListEntry } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -32,9 +32,10 @@ import { iconForSport } from "@/lib/workouts/sport-icons";
  * round-trip per session.
  */
 
-function formatDayLabel(iso: string, locale: string): string {
+function formatDayLabel(iso: string, locale: string, timeZone: string): string {
   const d = new Date(iso);
   return getDateTimeFormat(locale, {
+    timeZone,
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -61,6 +62,7 @@ function renderRow(workout: WorkoutListEntry, sportName: string) {
 
 export function RecentWorkoutsTile() {
   const { t, locale } = useTranslations();
+  const timeZone = useDisplayTimezone();
   const { data, isError, refetch } = useWorkouts({ limit: 3 });
 
   // A query's `isLoading` is not a hydration-safe branch: TanStack reports the
@@ -145,7 +147,7 @@ export function RecentWorkoutsTile() {
                   >
                     {renderRow(workout, sportName)}
                     <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                      {formatDayLabel(workout.startedAt, locale)}
+                      {formatDayLabel(workout.startedAt, locale, timeZone)}
                     </span>
                     <span className="ml-1 shrink-0 text-xs font-medium tabular-nums">
                       {formatDurationMinutes(

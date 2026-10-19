@@ -54,7 +54,8 @@
     "durationClockHours": "{time} h",
     "errorIdLabel": "Error ID",
     "errorIdCopy": "Copy error ID",
-    "errorIdCopied": "Error ID copied"
+    "errorIdCopied": "Error ID copied",
+    "readThrottled": "Too many requests just now. Try again later."
   },
   "apiErrors": {
     "measurement": {
@@ -1272,7 +1273,8 @@
       "bodyNotLogged": "Nothing is logged in the illness journal for this day",
       "openIllness": "Open"
     },
-    "sourceNotification": "Notification"
+    "sourceNotification": "Notification",
+    "tagCatalogLoadError": "Could not load the tags."
   },
   "medications": {
     "title": "Medications",
@@ -3173,7 +3175,8 @@
         "steadyLatestAbove": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, above that.",
         "steadyLatestBelow": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, below that.",
         "insufficient": "Still learning your usual range. Keep logging for a few more days.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Could not load your usual range."
       },
       "scope": {
         "prefix": "The Coach is already on {metric}"
@@ -4290,7 +4293,8 @@
         "caveat": "This is a comparison with your own past days, not a statement about how a day came to go the way it did.",
         "learning": "Learning phase: {entries} of {threshold} days recorded. A comparison appears once there are enough of them.",
         "noPattern": "Nothing in the {entries} days recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "Could not load the value expected on your own pattern."
       },
       "patterns": {
         "title": "Patterns in your mood",
@@ -4389,6 +4393,10 @@
             "consistency": "Consistency",
             "timing": "Timing",
             "composition": "Composition"
+          },
+          "gap": {
+            "fewNights": "not enough nights yet ({count} of 3)",
+            "noMainSleep": "latest day had only a nap"
           }
         },
         "READINESS": {
@@ -4657,6 +4665,9 @@
       "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
       "empty": "Nothing to chart here yet. This page shows the recharge, strain and load readings that WHOOP and Polar record, and Oura's resilience level. Oura's readiness appears as your recovery score, linked above.",
+      "emptyOuraPermission": "Oura is connected, but the permission it was given leaves out heart-health data, and Oura's resilience level sits behind it. Reconnect Oura once under Settings, Integrations and allow heart-health access; the level then appears here with the next sync. Oura's readiness is already your recovery score, linked above.",
+      "emptyOuraNoResilience": "Oura is connected, but no resilience level has arrived for this account yet. HealthLog asks Oura for it on every sync, so it appears here as soon as Oura provides one. If the Oura app shows a level, the Oura card under Settings, Integrations names anything the connection cannot deliver. Oura's readiness is already your recovery score, linked above.",
+      "emptyAction": "Open integrations",
       "block": {
         "ansChargeExplainer": "How charged your autonomic nervous system is for the day ahead, a recharge reading drawn from your overnight heart and breathing signals.",
         "dayStrainExplainer": "The day's whole-body cardiovascular load on your device's strain scale. Read it against your recovery, not as a goal on its own.",
@@ -7398,6 +7409,10 @@
         "causePermission": "permission",
         "failureStreak": "Failure streak: {count} of {threshold}",
         "copyFailed": "Could not copy. Select the text and copy it by hand."
+      },
+      "historyEnds": {
+        "horizon": "{type}: imported back to {date}. Older readings lie beyond the import limit.",
+        "noProgress": "{type}: imported back to {date}. Google stopped returning older readings, so the import ends there."
       }
     },
     "dawarich": "Dawarich",
@@ -9204,7 +9219,8 @@
       "viewDetails": "View cycle insights"
     },
     "wellnessRing": {
-      "label": "Cycle"
+      "label": "Cycle",
+      "loadError": "Could not load your cycle."
     },
     "disclaimer": "These predictions are descriptive estimates from your logged data, not a contraceptive method and not medical advice. They never indicate that it is safe to have unprotected sex. For contraception or any medical decision, consult a healthcare professional.",
     "title": "Your cycle",
@@ -11890,7 +11906,8 @@
       "referenceMeta": "Reference intake {value} {unit}/day (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)"
+      "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)",
+      "loadError": "Could not load caffeine."
     },
     "micronutrients": {
       "title": "Vitamins & minerals",
@@ -12982,7 +12999,8 @@
       "allOther": "Show all {count}",
       "fewer": "Show fewer",
       "note": "Compiled from your entries, without judgement. Every date opens the whole day.",
-      "report": "Doctor report from {date} to today"
+      "report": "Doctor report from {date} to today",
+      "loadError": "Could not load what happened since the last visit."
     },
     "travel": "Away",
     "event": {

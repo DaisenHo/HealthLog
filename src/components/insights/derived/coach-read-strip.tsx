@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { metricFractionDigits } from "@/lib/measurements/value-domain";
 import { apiGet } from "@/lib/api/api-fetch";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ReadFailureRow } from "@/components/ui/read-failure-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape";
@@ -79,7 +80,7 @@ export function CoachReadStrip({
   const transformed = unitDisplay.isTransformed(metricType);
   const resolvedUnit = transformed ? unitDisplay.unitFor(metricType) : unit;
 
-  const { data, isError } = useQuery({
+  const { data, error, isError, refetch } = useQuery({
     queryKey: queryKeys.insightsCoachRead(metricType, locale),
     queryFn: () =>
       apiGet<CoachReadStripData>(
@@ -94,9 +95,23 @@ export function CoachReadStrip({
   // shape: it lands above the chart, and popping in later pushed the chart
   // and everything under it down the page. A landed read always paints (the
   // baseline line degrades to the "learning" copy), so the placeholder only
-  // ever gives way to a card of its own height; a failed read drops it.
+  // ever gives way to a card of its own height. A failed read gives way to a
+  // notice with a retry: dropping the strip read as "nothing to say about
+  // today", which is not what happened. The route is a manage-level read, so
+  // a viewer on a read-only share is refused it; that draws nothing, and a
+  // spent analytics budget says so without offering a retry.
   if (!mounted || !data) {
-    if (!isAuthenticated || isError) return null;
+    if (!isAuthenticated) return null;
+    if (isError) {
+      return (
+        <ReadFailureRow
+          error={error}
+          slot="coach-read-strip-error"
+          message={t("insights.coach.readStrip.loadError")}
+          onRetry={() => void refetch()}
+        />
+      );
+    }
     return (
       <Card
         data-slot="coach-read-strip"

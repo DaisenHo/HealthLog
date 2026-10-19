@@ -13,6 +13,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
+import { ApiError } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
 import { localYmd, useCycleRingDial } from "../use-cycle";
@@ -26,16 +27,40 @@ function window(): [string, string] {
 }
 
 function Probe({ enabled }: { enabled: boolean }) {
-  const { dial, pending } = useCycleRingDial(enabled);
-  return <span>{`${dial}:${pending}`}</span>;
+  const { dial, pending, failed } = useCycleRingDial(enabled);
+  return <span>{`${dial}:${pending}${failed ? ":failed" : ""}`}</span>;
 }
 
-function probe(verdict: unknown | undefined, enabled = true): string {
+/** Marks the calendar read as failed, with no data behind it. */
+const FAILED = Symbol("failed");
+/** Marks the calendar read as refused (a share without the section). */
+const REFUSED = Symbol("refused");
+
+function probe(
+  verdict: unknown | undefined | typeof FAILED | typeof REFUSED,
+  enabled = true,
+): string {
   const client = new QueryClient({
-    defaultOptions: { queries: { staleTime: Infinity, retry: 0 } },
+    // `retryOnMount: false` keeps a seeded failure a failure on mount, the
+    // state the strip sees once the real read has given up.
+    defaultOptions: {
+      queries: { staleTime: Infinity, retry: 0, retryOnMount: false },
+    },
   });
   const [from, to] = window();
-  if (verdict !== undefined) {
+  if (verdict === FAILED || verdict === REFUSED) {
+    client
+      .getQueryCache()
+      .build(client, { queryKey: queryKeys.cycleCalendar(from, to) })
+      .setState({
+        status: "error",
+        error:
+          verdict === REFUSED
+            ? new ApiError("Forbidden", 403)
+            : new Error("calendar read failed"),
+        fetchStatus: "idle",
+      });
+  } else if (verdict !== undefined) {
     client.setQueryData(queryKeys.cycleCalendar(from, to), { verdict });
   }
   const html = renderToStaticMarkup(
@@ -65,6 +90,34 @@ describe("useCycleRingDial", () => {
 
   it("is pending until the calendar read lands", () => {
     expect(probe(undefined)).toBe("false:true");
+  });
+
+  // A failed read is not a day without a cycle: the strip keeps the ring's
+  // cell so the tile can say the read failed.
+  it("reports a failed read instead of settling it to no dial", () => {
+    expect(probe(FAILED)).toBe("false:false:failed");
+    expect(probe(FAILED, false)).toBe("false:false");
+  });
+
+  // A refused read draws nothing in the tile, so it must not hold a cell.
+  it("holds no cell for a refused read", () => {
+    expect(probe(REFUSED)).toBe("false:false");
+  });
+});
+
+describe("the scores strip keeps the ring's cell on a failed read", () => {
+  it("mounts the tile on a dial or a failure, and only then drops Strain", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/insights/page-client.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(
+      /cycleRingCell = cycleRing\.dial \|\| cycleRing\.failed/,
+    );
+    expect(source).toMatch(
+      /extraTile=\{cycleRingCell \? <CycleRingTile \/> : undefined\}/,
+    );
+    expect(source).toMatch(/hideStrain=\{cycleRingCell\}/);
   });
 });
 

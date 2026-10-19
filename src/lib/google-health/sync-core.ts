@@ -18,9 +18,15 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { MeasurementType as MeasurementTypes } from "@/generated/prisma/enums";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { annotate, getEvent } from "@/lib/logging/context";
 import type { GoogleHealthCollectionKey } from "./collection-keys";
+import {
+  googleHealthBackfillEndIsFinal,
+  googleHealthBackfillEndRetryAt,
+  type GoogleHealthBackfillEnd,
+} from "./backfill-bounds";
 import { userDayKey } from "@/lib/tz/format";
 import { isP2002 } from "@/lib/prisma-errors";
 import {
@@ -440,7 +446,14 @@ export interface GoogleHealthBackfillCursor {
   at: string;
   /** The order the walk returned samples in: newest first, or oldest first. */
   order: "desc" | "asc";
-  /** Pages this collection has read across every attempt so far. */
+  /**
+   * Pages this collection has written across every attempt so far. Kept for
+   * the record only: it bounds nothing. It once capped the walk at ten
+   * thousand pages, which a dense heart-rate history passes in under three
+   * years, and since it never reset the backfill stopped there for good
+   * (#1220). The walk is bounded by its progress and the backfill horizon
+   * instead (`backfill-bounds.ts`).
+   */
   pages: number;
   /**
    * Only for a collection read without the edge bound: where its last walk
@@ -480,6 +493,13 @@ interface BackfillResumeTracker {
   collections: GoogleHealthBackfillCollectionReport[];
   /** Collections whose resumed request Google refused the edge filter on. */
   edgeFilterUnsupported: Set<string>;
+  /** Collections whose walk ended short of the history's start, and where. */
+  ended: Map<string, GoogleHealthBackfillEnd>;
+  /**
+   * Collections walked again this attempt after an earlier one ended without
+   * progress, with how many attempts had ended that way.
+   */
+  retrying: Map<string, number>;
 }
 const backfillResumeStorage = new AsyncLocalStorage<BackfillResumeTracker>();
 
@@ -537,6 +557,133 @@ export function readGoogleHealthBackfillCursors(
 }
 
 /**
+ * Read the `backfillProgress` column into the collections whose backfill
+ * ended short of the start of their history (the horizon, or a walk that
+ * stopped getting anywhere), each with where it ended and why. Survives the
+ * completion stamp, so the integration card can say where history ends.
+ */
+export function readGoogleHealthBackfillEnded(
+  value: unknown,
+): Map<string, GoogleHealthBackfillEnd> {
+  const out = new Map<string, GoogleHealthBackfillEnd>();
+  const ended = progressRecord(progressRecord(value).ended);
+  for (const [key, raw] of Object.entries(ended)) {
+    if (key.length > 64) continue;
+    const e = progressRecord(raw);
+    const at = typeof e.at === "string" ? e.at : null;
+    if (!at || Number.isNaN(Date.parse(at))) continue;
+    if (e.reason !== "horizon" && e.reason !== "no_progress") continue;
+    if (typeof e.type !== "string" || !(e.type in MeasurementTypes)) {
+      continue;
+    }
+    const attempts =
+      typeof e.attempts === "number" &&
+      Number.isInteger(e.attempts) &&
+      e.attempts >= 1
+        ? e.attempts
+        : undefined;
+    const endedAt =
+      typeof e.endedAt === "string" && !Number.isNaN(Date.parse(e.endedAt))
+        ? new Date(e.endedAt).toISOString()
+        : undefined;
+    out.set(key, {
+      type: e.type as MeasurementType,
+      at: new Date(at).toISOString(),
+      reason: e.reason,
+      ...(attempts !== undefined ? { attempts } : {}),
+      ...(endedAt !== undefined ? { endedAt } : {}),
+    });
+  }
+  return out;
+}
+
+/**
+ * Where each data type's imported history ends short of its beginning, and
+ * why, as the status routes publish it (`backfillEnded`), by type.
+ */
+export interface GoogleHealthBackfillEndedEntry {
+  type: MeasurementType;
+  /** The oldest instant the imported history reaches back to. */
+  endsAt: string;
+  reason: GoogleHealthBackfillEnd["reason"];
+}
+
+/**
+ * The `backfillProgress` column's ended collections, as published: only the
+ * final ends. One still waiting for another attempt is not where its history
+ * ends yet.
+ */
+export function googleHealthBackfillEndedList(
+  value: unknown,
+): GoogleHealthBackfillEndedEntry[] {
+  return [...readGoogleHealthBackfillEnded(value).values()]
+    .filter(googleHealthBackfillEndIsFinal)
+    .map((e) => ({ type: e.type, endsAt: e.at, reason: e.reason }))
+    .sort((a, b) => a.type.localeCompare(b.type));
+}
+
+/**
+ * The `backfillProgress` value to keep once the backfill is stamped complete:
+ * only where collections ended short, or nothing at all.
+ */
+export function googleHealthBackfillProgressAfterCompletion(
+  ended: Map<string, GoogleHealthBackfillEnd>,
+): {
+  ended: Record<string, GoogleHealthBackfillEndJson>;
+} | null {
+  const final = new Map(
+    [...ended].filter(([, e]) => googleHealthBackfillEndIsFinal(e)),
+  );
+  return final.size > 0 ? { ended: endedJson(final) } : null;
+}
+
+/** One ended collection as the column stores it. */
+type GoogleHealthBackfillEndJson = {
+  type: string;
+  at: string;
+  reason: string;
+  attempts?: number;
+  endedAt?: string;
+};
+
+/** The ended collections as the column stores them. */
+function endedJson(
+  ended: Map<string, GoogleHealthBackfillEnd>,
+): Record<string, GoogleHealthBackfillEndJson> {
+  return Object.fromEntries(
+    [...ended].map(([key, e]) => [
+      key,
+      {
+        type: e.type,
+        at: e.at,
+        reason: e.reason,
+        ...(e.attempts !== undefined ? { attempts: e.attempts } : {}),
+        ...(e.endedAt !== undefined ? { endedAt: e.endedAt } : {}),
+      },
+    ]),
+  );
+}
+
+/**
+ * The collections waiting for another attempt after one ended without
+ * progress, and the earliest instant (epoch ms) one of them is due, or null
+ * when none waits.
+ */
+export function googleHealthBackfillRetryPending(
+  ended: Map<string, GoogleHealthBackfillEnd>,
+): { keys: string[]; dueAt: number } | null {
+  const keys: string[] = [];
+  let dueAt = Infinity;
+  for (const [key, e] of ended) {
+    const at = googleHealthBackfillEndRetryAt(e);
+    if (at === null) continue;
+    keys.push(key);
+    dueAt = Math.min(dueAt, at);
+  }
+  return keys.length > 0 ? { keys, dueAt } : null;
+}
+
+/**
  * Read the `backfillProgress` column into the collections Google refused the
  * edge filter on.
  */
@@ -564,10 +711,12 @@ async function persistBackfillProgress(
     done: Set<string>;
     cursors: Map<string, GoogleHealthBackfillCursor>;
     edgeFilterUnsupported?: Set<string>;
+    ended?: Map<string, GoogleHealthBackfillEnd>;
   },
 ): Promise<void> {
   const unsupported =
     next.edgeFilterUnsupported ?? tracker.edgeFilterUnsupported;
+  const ended = next.ended ?? tracker.ended;
   await prisma.googleHealthConnection.update({
     where: { userId: tracker.userId },
     data: {
@@ -589,11 +738,15 @@ async function persistBackfillProgress(
         ...(unsupported.size > 0
           ? { edgeFilterUnsupported: [...unsupported] }
           : {}),
+        ...(ended.size > 0 ? { ended: endedJson(ended) } : {}),
       },
     },
   });
   if (unsupported !== tracker.edgeFilterUnsupported) {
     for (const key of unsupported) tracker.edgeFilterUnsupported.add(key);
+  }
+  if (ended !== tracker.ended) {
+    for (const [key, e] of ended) tracker.ended.set(key, e);
   }
   // `next` may be the tracker's own collections: copy before clearing.
   const done = [...next.done];
@@ -611,6 +764,8 @@ export interface GoogleHealthBackfillAttempt<T> {
   /** Collections whose edge moved, each with the edge it started from. */
   advanced: Map<string, string | null>;
   collections: GoogleHealthBackfillCollectionReport[];
+  /** Every collection ended short so far, this attempt's and earlier ones. */
+  ended: Map<string, GoogleHealthBackfillEnd>;
 }
 
 /**
@@ -625,6 +780,7 @@ export async function runWithGoogleHealthBackfillResume<T>(
   fn: () => Promise<T>,
   cursors: Map<string, GoogleHealthBackfillCursor> = new Map(),
   edgeFilterUnsupported: Set<string> = new Set(),
+  ended: Map<string, GoogleHealthBackfillEnd> = new Map(),
 ): Promise<GoogleHealthBackfillAttempt<T>> {
   const tracker: BackfillResumeTracker = {
     userId,
@@ -634,6 +790,8 @@ export async function runWithGoogleHealthBackfillResume<T>(
     advanced: new Map(),
     collections: [],
     edgeFilterUnsupported,
+    ended,
+    retrying: new Map(),
   };
   const result = await backfillResumeStorage.run(tracker, fn);
   return {
@@ -641,15 +799,16 @@ export async function runWithGoogleHealthBackfillResume<T>(
     skipped: tracker.skipped,
     advanced: tracker.advanced,
     collections: tracker.collections,
+    ended: tracker.ended,
   };
 }
 
 /**
  * Where a resumable collection's walk starts in this backfill attempt: the
- * edge an earlier attempt recorded (if any), whether Google may be asked for
- * it with a filter (false once Google refused that filter for the
- * collection), and the pages it has already read. Null outside a backfill,
- * where every walk reads its whole window.
+ * edge an earlier attempt recorded (if any), and whether Google may be asked
+ * for it with a filter (false once Google refused that filter for the
+ * collection). Null outside a backfill, where every walk reads its whole
+ * window.
  */
 export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
   edge?: {
@@ -658,7 +817,6 @@ export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
     filter: boolean;
     resumeFrom?: GoogleHealthResumePoint;
   };
-  pagesSoFar: number;
 } | null {
   const resume = backfillResumeStorage.getStore();
   if (!resume) return null;
@@ -679,9 +837,56 @@ export function googleHealthBackfillCursor(key: GoogleHealthCollectionKey): {
               }
             : {}),
         },
-        pagesSoFar: cursor.pages,
       }
-    : { pagesSoFar: 0 };
+    : {};
+}
+
+/**
+ * Record that a collection's backfill ended short of the start of its
+ * history, at `at`, because of `reason` (see `backfill-bounds.ts`). A final
+ * end (`googleHealthBackfillEndIsFinal`) counts the collection as finished
+ * for this backfill (`runGoogleHealthCollection`) and outlives the
+ * completion stamp, so the card can say where the history ends. A first end
+ * without progress parks the collection with its edge until its next
+ * attempt is due. Outside a backfill this does nothing.
+ */
+export async function recordGoogleHealthBackfillEnd(
+  key: GoogleHealthCollectionKey,
+  end: Pick<GoogleHealthBackfillEnd, "type" | "at" | "reason">,
+): Promise<void> {
+  const resume = backfillResumeStorage.getStore();
+  if (!resume) return;
+  const ended = new Map(resume.ended);
+  ended.set(
+    key,
+    end.reason === "no_progress"
+      ? {
+          ...end,
+          // Counted across attempts: the one walked again this attempt
+          // carries the count it was parked with.
+          attempts: (resume.retrying.get(key) ?? 0) + 1,
+          endedAt: new Date().toISOString(),
+        }
+      : end,
+  );
+  annotate({
+    meta: { "googleHealth.backfill.ended": Object.fromEntries(ended) },
+  });
+  try {
+    await persistBackfillProgress(resume, {
+      done: resume.done,
+      cursors: resume.cursors,
+      ended,
+    });
+  } catch (err) {
+    // Not ended, then: the next slice walks it again and meets the same end.
+    getEvent()?.addWarning(
+      `google-health: backfill progress write failed for ${key}: ${err}`,
+    );
+    annotate({
+      meta: { "googleHealth.backfill.progressWriteFailed": key },
+    });
+  }
 }
 
 /**
@@ -845,7 +1050,13 @@ export async function runGoogleHealthCollection(
 ): Promise<number> {
   const resume = backfillResumeStorage.getStore();
   if (!resume) return fn();
-  if (resume.done.has(key)) {
+  const parked = resume.ended.get(key);
+  if (
+    resume.done.has(key) ||
+    (parked &&
+      (googleHealthBackfillEndIsFinal(parked) ||
+        googleHealthBackfillEndRetryAt(parked)! > Date.now()))
+  ) {
     resume.skipped.push(key);
     return 0;
   }
@@ -859,6 +1070,13 @@ export async function runGoogleHealthCollection(
     });
     return 0;
   }
+  if (parked) {
+    // Its earlier attempt ended without progress and its wait is over: walk
+    // it again from its edge. The note goes with the next write; the count
+    // stays with the attempt, so a second end without progress is final.
+    resume.retrying.set(key, parked.attempts ?? 1);
+    resume.ended.delete(key);
+  }
   const startedAt = performance.now();
   const pagesBefore = googleHealthSlicePagesRead();
   const edgeFrom = resume.cursors.get(key)?.at ?? null;
@@ -870,7 +1088,13 @@ export async function runGoogleHealthCollection(
     (hardFailStorage.getStore()?.failures.length ?? 0) !== hardBefore ||
     (softSkipStorage.getStore()?.count ?? 0) !== softBefore;
   const truncated = truncatedBefore || googleHealthOutcomeTruncated();
-  const clean = !failedHard && !truncated;
+  // A walk that ended short for good (the horizon, or no progress on its
+  // last attempt) has read all it is going to: finished, though the walk may
+  // report itself truncated. One that ended without progress for the first
+  // time is not: it keeps its edge and waits for its next attempt.
+  const end = resume.ended.get(key);
+  const endedFinal = end !== undefined && googleHealthBackfillEndIsFinal(end);
+  const clean = !failedHard && (endedFinal || (!truncated && !end));
   let finished = false;
   if (clean) {
     // The collection counts as finished only once the note says so. The job

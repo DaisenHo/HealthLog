@@ -126,16 +126,19 @@ export function formatDateRange(
   endedAt: string,
   locale: string,
   timeFormat: TimeFormatPreference,
+  timeZone: string,
 ): string {
   const start = new Date(startedAt);
   const end = new Date(endedAt);
   const dateFmt = getDateTimeFormat(locale, {
+    timeZone,
     weekday: "long",
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
   const timeFmt = getDateTimeFormat(locale, {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     ...hourCycleOptions(timeFormat),

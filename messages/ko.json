@@ -54,7 +54,8 @@
     "durationClockHours": "{time}시간",
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
-    "errorIdCopied": "오류 ID 복사됨"
+    "errorIdCopied": "오류 ID 복사됨",
+    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요."
   },
   "apiErrors": {
     "measurement": {
@@ -1272,7 +1273,8 @@
       "bodyNotLogged": "이 날은 아픈 날 일지에 기록된 게 없어요",
       "openIllness": "열기"
     },
-    "sourceNotification": "알림"
+    "sourceNotification": "알림",
+    "tagCatalogLoadError": "태그를 불러오지 못했어요."
   },
   "medications": {
     "title": "복약",
@@ -3173,7 +3175,8 @@
         "steadyLatestAbove": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소보다 높았어요.",
         "steadyLatestBelow": "평소 값: {low} {unit}. 마지막 측정({date}) 값 {value}, 평소보다 낮았어요.",
         "insufficient": "아직 평소 범위를 배우는 중이에요. 며칠 더 기록해 주세요.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "평소 범위를 불러오지 못했어요."
       },
       "scope": {
         "prefix": "코치가 이미 보고 있어요: {metric}"
@@ -4290,7 +4293,8 @@
         "caveat": "이건 내 지난 날들과의 비교일 뿐, 그날이 왜 그렇게 흘러갔는지에 대한 설명은 아니에요.",
         "learning": "학습 중이에요: {threshold}일 중 {entries}일 기록했어요. 충분히 모이면 비교가 나타나요.",
         "noPattern": "지금까지 기록한 {entries}일 중에는 하루를 견줄 만큼 일정한 패턴이 없어요. 하루의 맥락까지 함께 남기면 비교할 수 있는 게 늘어나요.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "내 패턴상 예상값을 불러오지 못했어요."
       },
       "patterns": {
         "title": "기분 패턴",
@@ -4389,6 +4393,10 @@
             "consistency": "일관성",
             "timing": "타이밍",
             "composition": "구성"
+          },
+          "gap": {
+            "fewNights": "아직 밤이 부족함 ({count}/3)",
+            "noMainSleep": "최근 하루는 낮잠만 있음"
           }
         },
         "READINESS": {
@@ -4657,6 +4665,9 @@
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
       "empty": "아직 여기에 표시할 내용이 없어요. 이 페이지는 WHOOP과 Polar가 기록하는 충전, 부하, 운동량 값과 Oura의 회복 탄력성 단계를 보여줘요. Oura의 준비도(Readiness)는 위에 연결된 회복 점수에 표시돼요.",
+      "emptyOuraPermission": "Oura는 연결되어 있지만 허용된 권한에 심장 건강 데이터가 빠져 있어요. Oura의 회복 탄력성 단계는 바로 이 데이터에 속해요. 설정, 통합에서 Oura를 한 번 다시 연결하고 심장 건강 접근을 허용하면 다음 동기화 때 여기에 단계가 표시돼요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
+      "emptyOuraNoResilience": "Oura가 연결되어 있지만 이 계정의 회복 탄력성 단계가 아직 도착하지 않았어요. HealthLog는 동기화할 때마다 요청하므로 Oura가 보내는 즉시 여기에 표시돼요. Oura 앱에 단계가 보인다면 설정, 통합의 Oura 카드에서 이 연결이 가져올 수 없는 항목을 확인할 수 있어요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
+      "emptyAction": "통합 열기",
       "block": {
         "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요. 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",
         "dayStrainExplainer": "기기의 부하 척도로 본 하루 전체의 심혈관 부하예요. 그 자체를 목표로 삼지 말고 회복과 견줘 보세요.",
@@ -7398,6 +7409,10 @@
         "causePermission": "권한",
         "failureStreak": "연속 실패: {threshold}회 중 {count}회",
         "copyFailed": "복사하지 못했어요. 텍스트를 선택해서 직접 복사해 주세요."
+      },
+      "historyEnds": {
+        "horizon": "{type}: {date}까지 가져왔습니다. 그보다 오래된 기록은 가져오기 한도를 넘습니다.",
+        "noProgress": "{type}: {date}까지 가져왔습니다. Google이 더 오래된 기록을 반환하지 않아 가져오기가 여기서 끝났습니다."
       }
     },
     "dawarich": "Dawarich",
@@ -9204,7 +9219,8 @@
       "viewDetails": "주기 인사이트 보기"
     },
     "wellnessRing": {
-      "label": "주기"
+      "label": "주기",
+      "loadError": "주기를 불러오지 못했어요."
     },
     "disclaimer": "이 예측은 기록한 데이터로 추정한 설명일 뿐, 피임 방법도 의학적 조언도 아니에요. 피임 없는 성관계가 안전하다는 뜻은 절대 아니에요. 피임이나 의학적 결정은 의료 전문가와 상의해 주세요.",
     "title": "내 주기",
@@ -11890,7 +11906,8 @@
       "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)"
+      "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)",
+      "loadError": "카페인을 불러오지 못했어요."
     },
     "micronutrients": {
       "title": "비타민·미네랄",
@@ -12982,7 +12999,8 @@
       "allOther": "{count}개 모두 보기",
       "fewer": "줄여 보기",
       "note": "평가 없이 기록에서 모았어요. 날짜를 누르면 그날 전체가 열려요.",
-      "report": "{date}부터 오늘까지 진료 보고서"
+      "report": "{date}부터 오늘까지 진료 보고서",
+      "loadError": "지난 방문 이후의 기록을 불러오지 못했어요."
     },
     "travel": "여행 중",
     "event": {

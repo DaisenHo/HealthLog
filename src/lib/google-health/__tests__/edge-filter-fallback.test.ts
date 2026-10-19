@@ -42,6 +42,7 @@ import {
   runWithGoogleHealthStop,
 } from "../client";
 import { GoogleHealthApiError } from "../response-classifier";
+import { GOOGLE_HEALTH_NO_PROGRESS_PAGES } from "../backfill-bounds";
 import {
   googleHealthBackfillCursor,
   noteGoogleHealthEdgeFilterUnsupported,
@@ -479,14 +480,42 @@ describe("passing over the samples beyond the edge inside a slice", () => {
     expect(outcome.truncated).toBe(true);
   });
 
-  it("gives up past its own ceiling instead of reading without end", async () => {
+  it("stops passing over once the pages it reads stop reaching further back", async () => {
+    // A list that hands out its newest page whatever token it is asked with:
+    // passing over it would never reach the edge. There is no page count to
+    // run into any more; the walk stops because it gets nowhere.
+    safeFetchMock.mockImplementation(async (url: string) => {
+      const u = new URL(url);
+      u.searchParams.delete("pageToken");
+      const res = respond(u.toString());
+      const body = (await res.json()) as object;
+      return json({ ...body, nextPageToken: "1" });
+    });
+    const onNoProgress = vi.fn();
     const { pages, outcome } = await walk({
       resumable: true,
-      edge: { at: at(30), order: "desc", filter: false, maxSkipPages: 2 },
+      edge: { at: at(30), order: "desc", filter: false },
+      onNoProgress,
     });
     expect(pages).toHaveLength(0);
-    expect(safeFetchMock).toHaveBeenCalledTimes(2);
+    // The first page reaches somewhere; the twenty after it repeat it.
+    expect(safeFetchMock).toHaveBeenCalledTimes(
+      1 + GOOGLE_HEALTH_NO_PROGRESS_PAGES,
+    );
     expect(outcome.truncated).toBe(true);
+    expect(onNoProgress).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes over as many pages as it takes while they move toward the edge", async () => {
+    // One reading a page, so reaching the edge takes more pages than the
+    // no-progress limit and more than any page count a walk once had to fit.
+    const { rows, outcome } = await walk({
+      resumable: true,
+      pageSize: 1,
+      edge: { at: at(30), order: "desc", filter: false },
+    });
+    expect(rows).toHaveLength(TOTAL - 30);
+    expect(outcome.truncated).toBe(false);
   });
 });
 

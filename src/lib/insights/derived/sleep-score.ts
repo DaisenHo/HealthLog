@@ -78,7 +78,21 @@ export interface SleepSubScore {
   value: number | null;
   /** Effective weight after null-redistribution, 0..1. */
   weight: number;
+  /**
+   * Why a rhythm sub-score (consistency, timing) has no value, set only when
+   * `value` is null. `few_nights`: fewer than `RHYTHM_MIN_NIGHTS` nights in
+   * the window have a main sleep to place on the clock. `no_main_sleep`: the
+   * window has enough, but the latest night has none (a nap-only day). A
+   * client names the gap instead of reading it as "no data", and never as 0.
+   */
+  gap?: SleepSubScoreGap;
 }
+
+/** The two reasons a rhythm sub-score is withheld. See `SleepSubScore.gap`. */
+export type SleepSubScoreGap = "few_nights" | "no_main_sleep";
+
+/** Nights with a main sleep the rhythm sub-scores need before they score. */
+export const RHYTHM_MIN_NIGHTS = 3;
 
 export interface SleepScoreValue {
   /** The composite 0..100. */
@@ -95,6 +109,12 @@ export interface SleepScoreValue {
   subScores: SleepSubScore[];
   /** Nights in the window that backed the consistency/timing baseline. */
   windowNights: number;
+  /**
+   * Nights in the window whose main sleep places them on the clock — the
+   * nights consistency and timing are computed from. Below
+   * `RHYTHM_MIN_NIGHTS` both are withheld with `gap: "few_nights"`.
+   */
+  rhythmNights: number;
   /**
    * v1.42 — the score of every scorable night in the window (oldest → newest,
    * capped to `SPARKLINE_MAX_POINTS`), so a surface can show the score's
@@ -232,7 +252,7 @@ export function circularMeanMinutes(minutes: number[]): number | null {
  * not penalised for a spurious ~24-hour spread.
  */
 export function scoreConsistency(midpointMinutes: number[]): number | null {
-  if (midpointMinutes.length < 3) return null;
+  if (midpointMinutes.length < RHYTHM_MIN_NIGHTS) return null;
   const mean = circularMeanMinutes(midpointMinutes);
   if (mean == null) return null;
   const variance =
@@ -256,7 +276,11 @@ export function scoreTiming(
   habitualMidpoint: number | null,
   windowNights: number,
 ): number | null {
-  if (nightMidpoint == null || habitualMidpoint == null || windowNights < 3) {
+  if (
+    nightMidpoint == null ||
+    habitualMidpoint == null ||
+    windowNights < RHYTHM_MIN_NIGHTS
+  ) {
     return null;
   }
   const FULL_SCALE = 90;
@@ -302,6 +326,24 @@ export function blendSleepSubScores(
     if (s.value !== null) composite += s.value * s.weight;
   }
   return { score: clamp100(composite), subScores };
+}
+
+/**
+ * The reason a rhythm sub-score came out null, or undefined when it has a
+ * value or is not a rhythm sub-score. Consistency needs `RHYTHM_MIN_NIGHTS`
+ * nights on the clock; timing needs those and a main sleep on the latest
+ * night. Pure.
+ */
+export function rhythmGap(
+  sub: Pick<SleepSubScore, "key" | "value">,
+  rhythmNights: number,
+  latestMidpoint: number | null,
+): SleepSubScoreGap | undefined {
+  if (sub.value !== null) return undefined;
+  if (sub.key !== "consistency" && sub.key !== "timing") return undefined;
+  if (rhythmNights < RHYTHM_MIN_NIGHTS) return "few_nights";
+  if (sub.key === "timing" && latestMidpoint == null) return "no_main_sleep";
+  return undefined;
 }
 
 // ── night reconstruction ───────────────────────────────────────────────
@@ -398,13 +440,27 @@ export function reconstructNights(
     // adds its minutes, which put the midpoint of a 23:00 to 07:00 night with a
     // 14:00 nap at about 11:00 and read every such day as a ~7-hour shift in
     // consistency and timing.
+    //
+    // And only when that main session is a main sleep, not a daytime nap. On
+    // a day the ring or watch recorded no night (left on the charger, taken
+    // off), the day's largest session is an afternoon nap, and its 14:00
+    // midpoint sat ten hours from every other night: a single such day in a
+    // month pushed the midpoint spread past the 90-minute full scale and read
+    // the whole rhythm as Consistency 0. Such a day still counts its minutes;
+    // it just has no place on the clock. A short session at night is still
+    // the night (insomnia, a newborn, split sleep), so it keeps its place.
     const main = n.mainSession;
+    const mainMidpoint = main
+      ? minutesOfDay(
+          new Date(main.end.getTime() - (main.asleepMinutes / 2) * 60_000),
+          tz,
+        )
+      : null;
     const midpoint =
-      main && main.asleepMinutes > 0
-        ? minutesOfDay(
-            new Date(main.end.getTime() - (main.asleepMinutes / 2) * 60_000),
-            tz,
-          )
+      main &&
+      mainMidpoint != null &&
+      !isDaytimeNap(main.asleepMinutes, mainMidpoint)
+        ? mainMidpoint
         : null;
     return {
       night: n.night,
@@ -417,6 +473,38 @@ export function reconstructNights(
       midpoint,
     };
   });
+}
+
+/**
+ * Below this much asleep time a session can be a nap. Three hours is where
+ * wearables draw the line between a nap and a main sleep (Oura types a
+ * period `long_sleep` from three hours on).
+ */
+const MAIN_SLEEP_MIN_MINUTES = 180;
+
+/**
+ * The night window, in local minutes-of-day: a session whose midpoint falls
+ * from 20:00 to 10:00 is night sleep however short it is. Wide enough for a
+ * late chronotype (asleep 04:00 to 12:00 has its midpoint at 08:00) and for
+ * an early one, and clear of the afternoon where naps sit.
+ */
+const NIGHT_WINDOW_START = 20 * 60;
+const NIGHT_WINDOW_END = 10 * 60;
+
+/**
+ * True for a session that is a nap rather than a night: short (under
+ * `MAIN_SLEEP_MIN_MINUTES` asleep) AND centred in the daytime. A short night
+ * is still the night; a long daytime sleep (after a night shift) is still a
+ * main sleep. Pure.
+ */
+export function isDaytimeNap(
+  asleepMinutes: number,
+  midpointMinutes: number,
+): boolean {
+  if (asleepMinutes >= MAIN_SLEEP_MIN_MINUTES) return false;
+  const atNight =
+    midpointMinutes >= NIGHT_WINDOW_START || midpointMinutes < NIGHT_WINDOW_END;
+  return !atNight;
 }
 
 function minutesOfDay(d: Date, tz: string): number {
@@ -554,7 +642,12 @@ export async function computeSleepScore(
     ),
   };
 
-  const { score, subScores } = blendSleepSubScores(raw);
+  const blended = blendSleepSubScores(raw);
+  const score = blended.score;
+  const subScores = blended.subScores.map((s) => {
+    const gap = rhythmGap(s, midpoints.length, latest.midpoint);
+    return gap ? { ...s, gap } : s;
+  });
 
   // The same blend over every scorable night in the window. Consistency is a
   // window-level figure and timing reads against the window's habitual
@@ -602,6 +695,7 @@ export async function computeSleepScore(
         latest.inBedMinutes === null ? null : Math.round(latest.inBedMinutes),
       subScores,
       windowNights: scorableNights.length,
+      rhythmNights: midpoints.length,
       series,
     },
     coverage,

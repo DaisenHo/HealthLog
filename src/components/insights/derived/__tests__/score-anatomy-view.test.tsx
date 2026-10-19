@@ -67,6 +67,35 @@ describe("<ScoreAnatomyView>", () => {
     expect(html).not.toContain("absolute top-3 right-3");
   });
 
+  it("names why a contributor is missing when the caller knows", () => {
+    const html = render(
+      <ScoreAnatomyView
+        title="Sleep score"
+        score={70}
+        contributors={[
+          { key: "sufficiency", label: "Sufficiency", value: 90, weight: 1 },
+          {
+            key: "consistency",
+            label: "Consistency",
+            value: null,
+            weight: 0,
+            missingLabel: "not enough nights yet (2 of 3)",
+          },
+          { key: "composition", label: "Composition", value: null, weight: 0 },
+        ]}
+        coverage={COVERAGE}
+        confidence={CONFIDENCE}
+        provenance={PROVENANCE}
+        method="m"
+      />,
+    );
+    expect(html).toContain("not enough nights yet (2 of 3)");
+    // A missing contributor without a reason keeps the general note.
+    expect(html).toContain("no data");
+    // Neither reads as a 0 score.
+    expect(html).not.toMatch(/>0, weighted/);
+  });
+
   it("tints the card + leans the ring hue when a hue is passed (F1)", () => {
     const html = render(
       <ScoreAnatomyView
