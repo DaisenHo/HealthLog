@@ -425,7 +425,7 @@ export function MeasurementList({
   // never a history entry per keystroke); an external URL change (back
   // button, deep link) re-seeds the draft via the render-phase derived-state
   // adjustment below, exactly like the vault's search field.
-  const urlValueRange = `${filters.valueMin ?? ""} ${filters.valueMax ?? ""}`;
+  const urlValueRange = `${filters.valueMin ?? ""}\u0000${filters.valueMax ?? ""}`;
   const [valueDraft, setValueDraft] = useState(() => ({
     min: filters.valueMin ?? "",
     max: filters.valueMax ?? "",
