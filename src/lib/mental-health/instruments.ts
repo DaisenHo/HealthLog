@@ -99,6 +99,13 @@ export interface InstrumentDefinition {
   attribution: string;
 }
 
+/**
+ * The app languages whose PHQ-9 / GAD-7 / WHO-5 item wording is bundled from
+ * a published validated version. `nl` is absent on purpose: its bundle carries
+ * a Dutch wording that has not yet been read against the published Dutch
+ * PHQ-9, GAD-7 and WHO-5 forms, so Dutch readers get the English items plus
+ * the honest note until it has.
+ */
 const ALL_APP_LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
 
 /**
@@ -559,5 +566,6 @@ export const AUDIT_C_STANDARD_DRINK: Readonly<Record<string, string>> = {
   fr: "Un verre standard contient 10 g d'alcool pur, par exemple 25 cl de bière à 5°, 10 cl de vin à 12° ou 3 cl d'alcool à 40°.",
   it: "Una bevanda corrisponde a una bevanda standard di circa 10 g di alcol puro, la definizione dell'OMS su cui si basano queste domande.",
   pl: "Standardowa porcja alkoholu to około 10 g czystego alkoholu, zgodnie z definicją WHO, na której opierają się te pytania.",
+  nl: "Eén drankje is een standaardglas met ongeveer 10 g pure alcohol, de WHO-definitie waarop deze vragen gebaseerd zijn.",
   ko: "표준 1잔: 양주잔으로 양주 1잔, 와인잔으로 와인 1잔, 막걸리 1사발이 각각 표준 1잔이다. 맥주는 캔맥주 1캔 또는 작은 병맥주 1병이며 생맥주는 500 mL가 표준 1잔이다. 소주는 1/4병이 표준 1잔에 해당한다.",
 };

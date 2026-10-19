@@ -93,7 +93,7 @@ const NOT_IN_THE_FEED = [
 /** What an action with no sentence of its own renders as. */
 const FALLBACK_KEY = "recordSharing.activity.acted";
 /** The six bundles the product ships. */
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
 
 /** Every `route.ts` under `src/app/api`, walked rather than globbed: a glob's
  *  `*` skips a leading dot and this tree has dot-directories. */

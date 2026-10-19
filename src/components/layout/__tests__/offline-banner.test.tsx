@@ -66,7 +66,16 @@ describe("<OfflineBanner>", () => {
   });
 
   it("ships the message key in every supported locale", () => {
-    for (const locale of ["en", "de", "fr", "es", "it", "pl", "ko"] as const) {
+    for (const locale of [
+      "en",
+      "de",
+      "fr",
+      "es",
+      "it",
+      "pl",
+      "ko",
+      "nl",
+    ] as const) {
       const m = loadMessages(locale);
       expect(m.offlineBanner.message.length, locale).toBeGreaterThan(0);
     }

@@ -20,6 +20,7 @@ import frMessages from "./messages/fr.json";
 import itMessages from "./messages/it.json";
 import plMessages from "./messages/pl.json";
 import koMessages from "./messages/ko.json";
+import nlMessages from "./messages/nl.json";
 
 primeMessages("de", deMessages);
 primeMessages("en", enMessages);
@@ -28,6 +29,7 @@ primeMessages("fr", frMessages);
 primeMessages("it", itMessages);
 primeMessages("pl", plMessages);
 primeMessages("ko", koMessages);
+primeMessages("nl", nlMessages);
 
 /**
  * Leave no background work in flight when a test ends.

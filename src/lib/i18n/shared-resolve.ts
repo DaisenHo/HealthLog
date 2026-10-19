@@ -21,6 +21,7 @@ import esMessages from "../../../messages/es.json";
 import itMessages from "../../../messages/it.json";
 import plMessages from "../../../messages/pl.json";
 import koMessages from "../../../messages/ko.json";
+import nlMessages from "../../../messages/nl.json";
 import { locales, type Locale } from "./config";
 import { resolveKey } from "./resolve-key";
 
@@ -38,6 +39,7 @@ export const allMessages: Record<Locale, Record<string, unknown>> = {
   it: itMessages,
   pl: plMessages,
   ko: koMessages,
+  nl: nlMessages,
 };
 
 /**

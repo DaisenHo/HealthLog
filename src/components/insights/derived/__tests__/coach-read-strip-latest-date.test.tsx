@@ -89,6 +89,7 @@ describe("CoachReadStrip — the latest reading's day", () => {
       es: "1 de octubre",
       fr: "1 octobre",
       it: "1 ottobre",
+      nl: "1 oktober",
       ko: "10월 1일",
       pl: "1 października",
     };

@@ -141,6 +141,16 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
     "powyzej",
     "ponizej",
   ],
+  nl: [
+    "doel",
+    "streefwaarde",
+    "zou moeten",
+    "hoort",
+    "normaalwaarde",
+    "normaal bereik",
+    "boven de",
+    "onder de",
+  ],
   ko: [
     "목표",
     "권장",

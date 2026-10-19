@@ -23,6 +23,7 @@ const DOSE_VIOLATIONS: Record<Locale, string> = {
   es: "Aumente su dosis a 2,4 mg la próxima semana.",
   it: "Aumenti la sua dose a 2,4 mg la prossima settimana.",
   pl: "Proszę zwiększyć dawkę do 2,4 mg w przyszłym tygodniu.",
+  nl: "Verhoog je dosis volgende week naar 2,4 mg.",
   ko: "다음 주에 2.4mg으로 늘려 보세요.",
 };
 
@@ -38,6 +39,7 @@ const DOSE_CLEAN: Record<Locale, string> = {
   es: "Está en la semana 3 con 7,5 mg, y su peso está bajando.",
   it: "È alla settimana 3 con 7,5 mg, e il suo peso sta calando.",
   pl: "Jest Pan w 3. tygodniu na 7,5 mg, a waga spada.",
+  nl: "Je zit in week 3 op 7,5 mg, en je gewicht gaat omlaag.",
   ko: "3주째 7.5mg을 복용 중이고, 체중은 내려가고 있어요.",
 };
 
@@ -96,6 +98,7 @@ const RISK_VIOLATIONS: Record<Locale, string> = {
   es: "Su riesgo es del 12%.",
   it: "Il suo rischio è del 12%.",
   pl: "Pana ryzyko wynosi 12%.",
+  nl: "Je risico ligt op ongeveer 12%.",
   ko: "10년 심혈관 위험도는 약 12%예요.",
 };
 
@@ -107,6 +110,7 @@ const RISK_CLEAN: Record<Locale, string> = {
   es: "Su adherencia fue del 92% en los últimos 30 días.",
   it: "La sua aderenza è stata del 92% negli ultimi 30 giorni.",
   pl: "Przestrzeganie zaleceń wyniosło 92% w ostatnich 30 dniach.",
+  nl: "Je therapietrouw was 92% in de afgelopen 30 dagen.",
   ko: "지난 30일 복약 순응도는 92%였어요.",
 };
 
@@ -350,6 +354,7 @@ const CAUSAL_VIOLATIONS: Record<Locale, string> = {
   es: "Su peso bajó porque durmió más.",
   it: "Il suo peso è calato perché ha dormito di più.",
   pl: "Waga spadła, ponieważ spał Pan więcej.",
+  nl: "Je gewicht daalde omdat je meer sliep.",
   ko: "수면 때문에 체중이 줄었어요.",
 };
 
@@ -361,6 +366,7 @@ const CAUSAL_CLEAN: Record<Locale, string> = {
   es: "Su peso evolucionó junto con su sueño esta semana.",
   it: "Il suo peso si è mosso insieme al suo sonno questa settimana.",
   pl: "Waga zmieniała się razem ze snem w tym tygodniu.",
+  nl: "Je gewicht bewoog deze week mee met je slaap.",
   ko: "이번 주 체중은 수면과 함께 움직였어요.",
 };
 
@@ -514,6 +520,16 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Pomiń wieczorną dawkę.",
     "Przestań brać metforminę.",
   ],
+  nl: [
+    "Verhoog je metformine naar 2000 mg per dag.",
+    "Verlaag je insuline met 4 eenheden.",
+    "Neem 's avonds 2 tabletten.",
+    "Halveer je insulinedosis.",
+    "Sla de avonddosis vandaag over.",
+    "Stop met het innemen van metformine.",
+    "Je zou de metformine een week kunnen stoppen.",
+    "Bouw je dosis af naar 5 mg.",
+  ],
   ko: [
     "메트포르민을 2000mg으로 증량하세요.",
     "하루 2정 드세요.",
@@ -571,6 +587,17 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
   pl: [
     "Przyjmuje Pan 1000 mg dwa razy dziennie.",
     "Nie przestawaj brać leków.",
+  ],
+  nl: [
+    "Je neemt 1000 mg twee keer per dag.",
+    "Je logboek laat 2000 mg zien.",
+    "Sla je avonddosis niet over.",
+    "Vraag je arts of je de dosis moet verhogen.",
+    "Je dosis is in mei verhoogd naar 2000 mg.",
+    "Verdubbel je stappen twee weken lang.",
+    "Verlaag je natrium naar 1500 mg per dag.",
+    "Probeer je glucose na de maaltijd onder 140 mg/dL te houden.",
+    "Vraag je arts voordat je stopt met metformine.",
   ],
   ko: [
     "하루 두 번 1000mg을 복용하고 계세요.",

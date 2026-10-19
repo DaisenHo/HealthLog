@@ -60,7 +60,7 @@ const profilePatchSchema = z
     dateOfBirth: z.string().date().nullable().optional(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable().optional(),
     locale: z
-      .enum(["de", "en", "es", "fr", "it", "pl", "ko"])
+      .enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"])
       .nullable()
       .optional(),
     timezone: timezoneSchema.optional(),

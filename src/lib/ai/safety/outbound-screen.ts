@@ -64,19 +64,19 @@ export interface OutboundDecision {
  * the screen recognised and passed every pattern.
  */
 const COUNT_UNIT =
-  "(?:tablets?|pills?|capsules?|drops?|puffs?|sprays?|tabletten?|kapseln?|tropfen|hübe|hub|sprühstöße|comprimés?|gélules?|gouttes?|bouffées?|comprimidos?|pastillas?|c[áa]psulas?|gotas?|compress[ae]|pastigli[ae]|gocce|goccia|tabletk[aęiy]|tabletek|kapsułk[aęiy]|kapsułek|krople|kropli)";
+  "(?:tablets?|pills?|capsules?|drops?|puffs?|sprays?|tabletten?|kapseln?|tropfen|hübe|hub|sprühstöße|comprimés?|gélules?|gouttes?|bouffées?|comprimidos?|pastillas?|c[áa]psulas?|gotas?|compress[ae]|pastigli[ae]|gocce|goccia|tabletk[aęiy]|tabletek|kapsułk[aęiy]|kapsułek|krople|kropli|druppels?|pillen|pufjes?)";
 
 /**
  * Dose units for a target dose a model must never name. Mass and insulin
  * units plus the count forms; `ml` is left out on purpose because
  * "increase your water intake to 2000 ml" is ordinary hydration advice.
  */
-const DRUG_UNIT = `(?:mg|mcg|µg|iu|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|ie|i\\.e\\.|einheiten|${COUNT_UNIT})`;
+const DRUG_UNIT = `(?:mg|mcg|µg|iu|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|${COUNT_UNIT})`;
 
 /**
  * Dose units, shared across every locale. The GLP-1 + general oral-dose
  * vocabulary; `ie` / `i.e.` / `einheiten` / `unità` / `jednostk` cover the
- * insulin-unit spellings the six locales use.
+ * insulin-unit spellings the locales use (`eenheden` is the Dutch one).
  */
 const DOSE_UNIT = `(?:ml|${DRUG_UNIT})`;
 
@@ -118,12 +118,16 @@ const IT_STOP =
 const PL_STOP =
   "nie|i|lub|albo|ale|jeśli|czy|sód|sodu|sól|soli|kofein\\S*|cukr\\S*|wod\\S*|białk\\S*|błonnik\\S*";
 
+const NL_STOP =
+  "niet|nooit|geen|en|of|maar|als|wanneer|natrium|zout|cafeïne|suiker\\S*|water|vocht|eiwit\\S*|vezels?|koffie|alcohol|stappen|calorieën";
+
 const EN_SLOT = objectSlot(EN_STOP);
 const DE_SLOT = objectSlot(DE_STOP);
 const FR_SLOT = objectSlot(FR_STOP);
 const ES_SLOT = objectSlot(ES_STOP);
 const IT_SLOT = objectSlot(IT_STOP);
 const PL_SLOT = objectSlot(PL_STOP);
+const NL_SLOT = objectSlot(NL_STOP);
 
 /**
  * A tighter slot for the shapes that carry no number: an extra / one more /
@@ -146,6 +150,10 @@ const FR_SHORT = objectSlot(
 const ES_SHORT = objectSlot(`${ES_STOP}|para|con|antes|después|sin|a|al`, 2);
 const IT_SHORT = objectSlot(`${IT_STOP}|per|con|prima|dopo|senza|a|al`, 2);
 const PL_SHORT = objectSlot(`${PL_STOP}|z|ze|do|na|po|przed|bez|dla`, 2);
+const NL_SHORT = objectSlot(
+  `${NL_STOP}|om|voor|met|bij|in|op|van|naar|tot|na|zonder|tijdens|over|dan|te`,
+  2,
+);
 
 /**
  * A count written as a word: "take two tablets", "nimm zwei Tabletten",
@@ -155,7 +163,7 @@ const PL_SHORT = objectSlot(`${PL_STOP}|z|ze|do|na|po|przed|bez|dla`, 2);
  * count, and the "eine Tablette mehr" shape is its own pattern below.
  */
 const SPELLED_COUNT =
-  "(?:one|two|three|four|five|six|half\\s+an?|zwei|drei|vier|fünf|sechs|eine?n?\\s+halbe|halbe|deux|trois|quatre|cinq|demi|dos|tres|cuatro|cinco|media|due|tre|quattro|cinque|mezza|dwie|dwa|trzy|cztery|pięć|jedn[ąa]|pół)";
+  "(?:one|two|three|four|five|six|half\\s+an?|zwei|drei|vier|fünf|sechs|eine?n?\\s+halbe|halbe|deux|trois|quatre|cinq|demi|dos|tres|cuatro|cinco|media|due|tre|quattro|cinque|mezza|dwie|dwa|trzy|cztery|pięć|jedn[ąa]|pół|één|twee|drie|vier|vijf|zes|halve)";
 
 /** A target dose: a number, a drug unit, and an honest unit end. */
 const TARGET = `(?:[\\d.,]+\\s*${DRUG_UNIT}${UNIT_END}|(?<![\\w])${SPELLED_COUNT}\\s+${COUNT_UNIT}${UNIT_END})`;
@@ -190,6 +198,7 @@ const IT_MED_NOUN =
   "(?:dos[ei]|compress[ae]|pastigli[ae]|farmac[oi]|medicinal[ei]|insulina|iniezion[ei]|capsul[ae]|terapia)";
 const PL_MED_NOUN =
   "(?:dawk[aęiy]|dawek|tabletk[aęiy]|tabletek|lek|leki|leku|leków|insulin[aęy]|zastrzyk[ia]?|zastrzyków|kapsułk[aęiy]|pigułk[aęiy])(?=[\\s.,;:!?]|$)";
+const NL_MED_NOUN = `(?:[${LETTER}]*(?:dosis|doses|dosering|tablet(?:ten|je|jes)?|medicijn(?:en)?|medicatie|medicament(?:en)?|geneesmiddel(?:en)?|insuline|injecties?|capsules?)|pil(?:len|letje|letjes)?|prik(?:ken)?|spuitjes?|inhalator)(?![${LETTER}])`;
 const KO_MED_NOUN =
   "(?:약을|약은|약\\s|알약|정제|인슐린|주사|용량|복용량|투약)";
 
@@ -204,6 +213,7 @@ const MED_CLASS: Record<Locale, string> = {
   es: "(?:anticoagulantes?|antiagregantes?|estatinas?|betabloqueantes?|diuréticos?|antidepresivos?)",
   it: "(?:anticoagulant[ei]|antiaggregant[ei]|statin[ae]|betabloccant[ei]|diuretic[oi]|antidepressiv[oi])",
   pl: "(?:lek\\S*\\s+przeciwzakrzepow\\S*|antykoagulant\\S*|statyn\\S*|beta-?bloker\\S*|diuretyk\\S*|lek\\S*\\s+moczopędn\\S*|antydepresant\\S*)",
+  nl: "\\S*(?:bloedverdunner\\w*|antistolling\\w*|anticoagul\\w*|plaatjesremmer\\w*|statine\\w*|b[eè]tablokker\\w*|plastablet\\w*|diuretic\\w*|diuretica|antidepressiv\\w*|antidepressiva|slaappil\\w*|slaapmiddel\\w*|bloeddrukverlager\\w*|ace-remmer\\w*)",
   ko: "(?:혈액\\s*희석제|항응고제|항혈소판제|스타틴|베타\\s*차단제|이뇨제|항우울제)",
 };
 
@@ -303,6 +313,7 @@ function medVocabulary(names: string | null): MedVocabulary {
     es: `(?:${ES_MED_NOUN}|${extra("es")})`,
     it: `${elided}(?:${IT_MED_NOUN}|${extra("it")})`,
     pl: `(?:${PL_MED_NOUN}|${extra("pl")})`,
+    nl: `(?:${NL_MED_NOUN}|${extra("nl")})`,
     ko: `(?:${KO_MED_NOUN}|(?:${extra("ko")})\\S{0,3})`,
   };
 }
@@ -577,6 +588,65 @@ function buildDoseChangeClass(
         "i",
       ),
     ],
+    nl: [
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:verhoog|verhogen|verlaag|verlagen|verminder|verminderen|halveer|halveren|verdubbel|verdubbelen)\\s+${NL_SLOT}(?:van\\s+${TARGET}\\s+)?(?:naar|tot|met)\\s+${TARGET}`,
+        "i",
+      ),
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:ga|gaan|breng|brengen|bouw|bouwen|zet|zetten)\\s+${NL_SLOT}(?:van\\s+${TARGET}\\s+)?(?:omhoog\\s+|omlaag\\s+|terug\\s+|af\\s+|op\\s+)?(?:naar|tot)\\s+${TARGET}`,
+        "i",
+      ),
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\bzet\\s+${NL_SLOT}op\\s+${TARGET}`,
+        "i",
+      ),
+      // The infinitive closes a Dutch clause: "om je metformine naar 2000 mg te
+      // verhogen". A past participle ("verhoogd") is a log restatement and
+      // does not match.
+      new RegExp(
+        `\\b(?:naar|tot|met)\\s+${TARGET}[^.?!]{0,30}?\\b(?:verhogen|verlagen|verminderen|ophogen|opbouwen|afbouwen|terugbrengen|halveren|verdubbelen)\\b`,
+        "i",
+      ),
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:neem|slik|spuit|injecteer|begin\\s+met|start\\s+met)\\s+${NL_SLOT}${TARGET}`,
+        "i",
+      ),
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:halveer|verdubbel|pauzeer|deel|onderbreek)\\s+${NL_SLOT}${m.nl}`,
+        "i",
+      ),
+      // "Overslaan" is separable: "sla je avonddosis over". A negation between
+      // the object and the particle ("sla je dosis niet over") is a warning.
+      new RegExp(
+        `\\bsla\\s+${NL_SLOT}${m.nl}(?:(?!\\b(?:niet|nooit)\\b)[^.?!]){0,25}?\\bover\\b`,
+        "i",
+      ),
+      new RegExp(
+        `\\bstop\\s+met\\s+(?:het\\s+)?(?:innemen|slikken|gebruiken|spuiten|nemen)\\b`,
+        "i",
+      ),
+      // Stop, halt or leave out a named medication or a drug class: "stop je
+      // bloedverdunner", "laat de Eliquis morgen weg".
+      new RegExp(`\\b(?:stop|staak)\\s+(?:met\\s+)?${NL_SHORT}${m.nl}`, "i"),
+      new RegExp(
+        `\\blaat\\s+${NL_SLOT}${m.nl}(?:(?!\\b(?:niet|nooit)\\b)[^.?!]){0,25}?\\bweg\\b`,
+        "i",
+      ),
+      // The same behind a recommending cue, with the verb last. A referral
+      // ("vraag", "overleg", "voordat", "of") or a negation ends it.
+      new RegExp(
+        `\\b(?:je\\s+zou|u\\s+zou|je\\s+kunt|u\\s+kunt|ik\\s+raad|ik\\s+adviseer|overweeg|probeer|het\\s+is\\s+(?:beter|verstandig))\\b(?:(?!\\b(?:niet|nooit|geen|vraag|overleg|voordat|of|eerst)\\b)[^.?!]){0,40}?${m.nl}(?:(?!\\b(?:niet|nooit)\\b)[^.?!]){0,30}?\\b(?:overslaan|over\\s+te\\s+slaan|stoppen|te\\s+stoppen|staken|te\\s+staken|halveren|te\\s+halveren|verdubbelen|te\\s+verdubbelen|pauzeren|te\\s+pauzeren|weglaten|weg\\s+te\\s+laten)\\b`,
+        "i",
+      ),
+      // An extra, another or one more of a medication: "neem een extra
+      // ramipril", "neem nog een tablet", "neem vanavond een tablet meer".
+      // A negation ("geen") cannot enter the short slot.
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:neem|slik|spuit|injecteer|voeg)\\s+${NL_SHORT}(?:(?:(?:een|één|twee|\\d+)\\s+)?(?:extra|aanvullende?|tweede)[-\\s]+${NL_SHORT}${m.nl}|nog\\s+(?:een|één|twee|\\d+)\\s+${NL_SHORT}${m.nl}|(?:een|één|twee|drie|\\d+)\\s+${NL_SHORT}${m.nl}\\s+(?:meer|extra)\\b)`,
+        "i",
+      ),
+    ],
     ko: [
       // A stated amount closed by an imperative or a recommendation, with or
       // without a target particle: "2000mg으로 증량하세요", "하루 2정 드세요".
@@ -752,6 +822,29 @@ const DOSE_PATTERNS: Record<Locale, readonly RegExp[]> = {
       `\\b(?:nast[ęe]pna|kolejna|nowa)\\s+dawka\\b[^.?!]{0,30}\\b[\\d.,]+\\s*${DOSE_UNIT}${UNIT_END}`,
       "i",
     ),
+  ],
+  nl: [
+    // verhoog / ga omhoog / bouw op naar|tot|met N unit
+    new RegExp(
+      `\\b(?:verhoog|verhogen|ophogen|ga\\s+omhoog|bouw\\s+op|opbouwen)(?:\\s+(?:je|jouw|de|uw)\\s+(?:dosis|dosering))?\\s+(?:naar|tot|met)\\s+[\\d.,]+\\s*${DOSE_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    // verlaag / verminder / bouw af naar|tot|met N unit
+    new RegExp(
+      `\\b(?:verlaag|verlagen|verminder|verminderen|ga\\s+omlaag|bouw\\s+af|afbouwen)(?:\\s+(?:je|jouw|de|uw)\\s+(?:dosis|dosering))?\\s+(?:naar|tot|met)\\s+[\\d.,]+\\s*${DOSE_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    // A recommending cue in front of a drug amount. `ml` is left out: "probeer
+    // 2000 ml water per dag" is hydration advice.
+    new RegExp(
+      `\\b(?:overweeg|probeer|je\\s+zou|u\\s+zou|ik\\s+raad|ik\\s+adviseer|ik\\s+stel\\s+voor)\\b[^.?!]{0,40}\\b[\\d.,]+\\s*${DRUG_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:volgende|nieuwe)\\s+(?:dosis|stap)\\b[^.?!]{0,30}\\b[\\d.,]+\\s*${DOSE_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    /\b(?:halveer|halveren|verdubbel|verdubbelen|sla\s+\S+\s+over|overslaan|stop\s+met)\b[^.?!]{0,25}(?:dosis|tablet\w*|medicijn\w*|medicatie|insuline|injectie\w*)[^.?!]{0,40}\b(?:(?:een|twee|drie|vier|\d+)\s+(?:dag|dagen|week|weken|maand|maanden)|om\s+te\s+(?:zien|testen|kijken|proberen))\b/i,
   ], // Korean is verb-final: the dose comes first and the change verb closes the
   // clause ("2.4mg으로 늘려 보세요"), the mirror image of the Latin banks. A
   // target-marking particle on the dose is required, the same demand the Latin
@@ -880,6 +973,21 @@ const RISK_NOUN_PL = "(?:ryzyk\\w*|prawdopodobieństw\\w*)";
 const RESULT_VERB_PL =
   "(?:umieszcza\\s+(?:cię|pana|panią)|klasyfikuje\\s+(?:cię|pana|panią)|znajdujesz\\s+się\\s+w|wpadasz\\s+w|kwalifikuje\\s+(?:cię|pana|panią))";
 
+const SPELLED_NL =
+  "(?:nul|een|één|twee|drie|vier|vijf|zes|zeven|acht|negen|tien|elf|twaalf|dertien|veertien|vijftien|zestien|zeventien|achttien|negentien|twintig|dertig|veertig|vijftig|zestig)";
+const PCT_WORD_NL = `${SPELLED_NL}\\s+procent`;
+const QUAL_NUM_NL = `(?:\\d{1,3}\\s*%|${PCT_WORD_NL})`;
+const RISK_NOUN_NL = "(?:risico\\w*|kans|waarschijnlijkheid)";
+const HORIZON_NL =
+  "(?:(?:10|tien)[- ]?jaars?[- ]?risico\\w*|levenslang\\s+risico\\w*|risico\\w*(?:\\s+\\S+){0,3}\\s+(?:binnen|in)\\s+(?:de\\s+komende\\s+)?(?:10|tien)\\s+jaar)";
+const RESULT_VERB_NL =
+  "(?:plaatst\\s+(?:je|u)|deelt\\s+(?:je|u)\\s+in|zet\\s+(?:je|u)\\s+in|(?:je|u)\\s+valt\\s+in|valt\\s+(?:je|u)\\s+in|brengt\\s+(?:je|u)\\s+in)";
+const RISK_BAND_NL =
+  "(?:hoog|hoger|laag|lager|middel|matig|verhoogd)\\w*[- ]?risico(?:categorie|groep|klasse|zone)";
+const RISK_LEVEL_NL =
+  "(?:verhoogd|hoog|hoger|matig|gemiddeld|zorgwekkend|aanzienlijk)";
+const RISK_VERDICT_NL = `(?:is|ligt|lijkt|blijft|wijst\\s+op|komt\\s+uit\\s+op)\\s+(?:\\w+\\s+){0,2}${RISK_LEVEL_NL}`;
+
 // Korean carries no `\\b` next to a Hangul token: `\\b` is an ASCII \\w boundary
 // and Hangul is not \\w, so /\\b위험/ matches nothing. Spelled-out percentages are
 // omitted deliberately — Korean writes "12%", and the Sino-Korean numerals
@@ -1006,6 +1114,31 @@ const RISK_PATTERNS: Record<Locale, readonly RegExp[]> = {
     new RegExp(`${QUAL_NUM_PL}[^.?!]{0,50}\\b${ENGINE}\\b`, "i"),
     new RegExp(`\\b${ENGINE}\\b[^.?!]{0,60}${RESULT_VERB_PL}`, "i"),
   ],
+  nl: [
+    new RegExp(
+      `\\brisico\\w*\\s+(?:van|is|ligt\\s+op|bedraagt|op)\\s+(?:ongeveer\\s+|zo['’]?n\\s+|circa\\s+|rond\\s+|~)?\\d{1,3}\\s*%`,
+      "i",
+    ),
+    new RegExp(`\\b\\d{1,3}\\s*%\\s+${RISK_NOUN_NL}\\b`, "i"),
+    new RegExp(`\\b${RISK_NOUN_NL}\\b[^.?!]{0,40}\\b${PCT_WORD_NL}\\b`, "i"),
+    new RegExp(`\\b${PCT_WORD_NL}\\b[^.?!]{0,40}\\b${RISK_NOUN_NL}\\b`, "i"),
+    new RegExp(`\\b${HORIZON_NL}\\b[^.?!]{0,40}${QUAL_NUM_NL}`, "i"),
+    new RegExp(`${QUAL_NUM_NL}[^.?!]{0,40}\\b${HORIZON_NL}\\b`, "i"),
+    new RegExp(`\\b${ENGINE}\\b[^.?!]{0,50}${QUAL_NUM_NL}`, "i"),
+    new RegExp(`${QUAL_NUM_NL}[^.?!]{0,50}\\b${ENGINE}\\b`, "i"),
+    new RegExp(
+      `\\b(?:${ENGINE}|${HORIZON_NL})\\b[^.?!]{0,60}${RESULT_VERB_NL}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:${ENGINE}|${HORIZON_NL})\\b[^.?!]{0,60}${RISK_BAND_NL}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:${ENGINE}|${HORIZON_NL})\\b[^.?!]{0,40}${RISK_VERDICT_NL}`,
+      "i",
+    ),
+  ],
   ko: [
     new RegExp(`${RISK_NOUN_KO}[^.?!]{0,15}${QUAL_NUM_KO}`, "i"),
     new RegExp(`${QUAL_NUM_KO}[^.?!]{0,15}${RISK_NOUN_KO}`, "i"),
@@ -1105,6 +1238,19 @@ const CAUSAL_PATTERNS: Record<Locale, readonly RegExp[]> = {
     /\bdzi[ęe]ki\b/i,
     /\bodpowiedzialn\w*\s+za\b/i,
   ],
+  nl: [
+    /\bomdat\b/i,
+    /\bdoordat\b/i,
+    /\bvanwege\b/i,
+    /\bveroorza\w*/i,
+    /\b(?:ten|als)\s+gevolg\s+van\b/i,
+    /\bleid(?:t|de|den)\s+tot\b/i,
+    /\bkomt\s+door\b/i,
+    /\bdankzij\b/i,
+    /\bde\s+schuld\s+van\b/i,
+    /\boorzaak\b/i,
+    /\bverantwoordelijk\s+voor\b/i,
+  ],
   ko: [
     /때문(?:에|이)/,
     /(?:으로|로)\s*인(?:해|하여|한)/,
@@ -1167,6 +1313,7 @@ const DOSE_CONTINUATION: Record<Locale, RegExp> = {
   es: /\b(?:siga\s+(?:tomando|con)|continúe|mantenga|según\s+lo\s+prescrito)\b/i,
   it: /\b(?:continui\s+(?:a|con|il)|mantenga|come\s+prescritto)\b/i,
   pl: /\b(?:kontynuuj|przyjmuj\s+dalej|zgodnie\s+z\s+zaleceniem|pozosta[ńn]\s+przy)\b/i,
+  nl: /\b(?:blijf|ga\s+door\s+met|neem\s+\S+\s+(?:gewoon\s+)?verder|zoals\s+(?:voorgeschreven|afgesproken|gebruikelijk|gewoonlijk|altijd|eerder|je\s+gewend\s+bent)|volgens\s+(?:voorschrift|afspraak))\b/i,
   ko: /(?:그대로\s*(?:유지|복용)|계속\s*(?:복용|드시|유지)|처방(?:대로|받은\s*대로)|지시(?:대로|받은\s*대로)|유지하세요)/,
 };
 
@@ -1177,6 +1324,7 @@ const DOSE_CHANGE_STEM: Record<Locale, RegExp> = {
   es: /\b(?:aument|reduzc|reduc|baj|disminu|dobl|omit|salt)\w*/i,
   it: /\b(?:aument|riduc|ridur|abbass|diminu|raddoppi|salt|dimezz)\w*/i,
   pl: /\b(?:zwiększ|zmniejsz|obniż|podnie[śs]|podwyższ|zreduk|pomi[ńn]|opu[śs][ćc])\w*/i,
+  nl: /\b(?:verho|verla|vermind|halve|verdubbel|ophog|afbouw|bouw\s+af|overslaan|sla\s+\S+\s+over|stop)\w*/i,
   ko: /(?:올리|올려|늘리|늘려|증량|높이|높여|인상|내리|내려|줄이|줄여|감량|낮추|낮춰|감축|절반|반으로|두\s?배|건너뛰|중단|끊)/,
 };
 

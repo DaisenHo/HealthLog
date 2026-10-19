@@ -49,7 +49,7 @@ import {
 } from "@/lib/ai/capabilities/types";
 
 const ROOT = path.resolve(__dirname, "../../../..");
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
 
 interface RetiredSwitch {
   /** The wire name, also the admin copy key. */

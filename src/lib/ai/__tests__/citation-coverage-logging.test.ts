@@ -252,6 +252,7 @@ describe("normative-claim detection across the shipped locales", () => {
     es: "Su sistólica debería mantenerse por debajo del objetivo de 130 mmHg.",
     it: "La sistolica dovrebbe restare al di sotto dell’obiettivo di 130 mmHg.",
     pl: "Ciśnienie skurczowe powinno pozostać poniżej celu 130 mmHg.",
+    nl: "Je bovendruk zou onder de streefwaarde van 130 mmHg moeten blijven.",
     ko: "수축기 혈압은 목표인 130 mmHg 아래로 유지해야 해요.",
   };
 
@@ -267,6 +268,7 @@ describe("normative-claim detection across the shipped locales", () => {
     es: "Su media de 7 días excede en 4 mmHg su mediana de 90 días.",
     it: "La media a 7 giorni supera di 4 mmHg la mediana a 90 giorni.",
     pl: "Twoja średnia z 7 dni przekracza medianę z 90 dni o 4 mmHg.",
+    nl: "Je 7-daagse gemiddelde ligt 4 mmHg hoger dan je 90-daagse mediaan.",
     ko: "7일 평균이 90일 중앙값보다 4 mmHg 더 커요.",
   };
 

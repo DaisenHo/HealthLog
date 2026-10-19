@@ -33,7 +33,7 @@ import {
   type SetupScreen,
 } from "./setup-flow-helpers";
 
-const LOCALES = ["en", "de", "es", "fr", "it", "pl", "ko"] as const;
+const LOCALES = ["en", "de", "es", "fr", "it", "pl", "ko", "nl"] as const;
 
 const VIEWPORTS = [
   { label: "desktop 1280", width: 1280, height: 800 },

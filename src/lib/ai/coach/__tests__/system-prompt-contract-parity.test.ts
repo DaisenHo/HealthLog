@@ -24,7 +24,7 @@ import type { Locale } from "@/lib/i18n/config";
  *    translated) and only ever appears inside the dose-safety contract.
  */
 
-const ALL_LOCALES: Locale[] = ["de", "en", "fr", "es", "it", "pl", "ko"];
+const ALL_LOCALES: Locale[] = ["de", "en", "fr", "es", "it", "pl", "ko", "nl"];
 
 describe("resolved Coach system prompt — grounding + GLP-1 per locale", () => {
   for (const locale of ALL_LOCALES) {
