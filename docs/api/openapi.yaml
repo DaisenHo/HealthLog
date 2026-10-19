@@ -64554,7 +64554,8 @@ components:
             `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` /
             `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in
             `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to
-            discover by inspecting a live payload. `VITALS_BASELINE` returns { type, center, low, high, spread,
+            discover by inspecting a live payload. `SLEEP_SCORE` returns the `SleepScoreValue` schema, including
+            `rhythmNights` and the per-sub-score `gap`. `VITALS_BASELINE` returns { type, center, low, high, spread,
             sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline
             and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with
             `center` placed against their own target or a profile default. The remaining metrics' value objects are not
@@ -88182,6 +88183,99 @@ components:
         - trendDelta
         - daysInWindow
         - asOf
+        - series
+      additionalProperties: false
+    SleepScoreValue:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The composite 0–100 sleep score.
+        band:
+          type: string
+          enum:
+            - green
+            - yellow
+            - red
+          description: Server's verdict on the score; never re-band it client-side.
+        night:
+          type: string
+          description: Wake day (YYYY-MM-DD, user's zone) of the night scored.
+        asleepMinutes:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Whole minutes asleep that night.
+        inBedMinutes:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Whole minutes in bed, null when no in-bed signal exists.
+        subScores:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - sufficiency
+                  - efficiency
+                  - consistency
+                  - timing
+                  - composition
+                description: Sub-score id.
+              value:
+                description: 0–100 sub-score; null when the data cannot support it (dropped from the blend, never 0).
+                type:
+                  - number
+                  - "null"
+              weight:
+                type: number
+                description: Effective weight after redistributing missing sub-scores.
+              gap:
+                description: "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than three nights in the
+                  window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had
+                  only a daytime nap. Absent otherwise."
+                type: string
+                enum:
+                  - few_nights
+                  - no_main_sleep
+            required:
+              - key
+              - value
+              - weight
+            additionalProperties: false
+          description: All five sub-scores, present and dropped.
+        windowNights:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Scorable nights in the window.
+        rhythmNights:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Nights in the window with a main sleep placed on the clock — what consistency and timing are computed from.
+            A daytime nap is not one; a short night is.
+        series:
+          type: array
+          items:
+            type: number
+          description: Score of every scorable night in the window, oldest → newest, capped at 30 points; the last point is `score`.
+      required:
+        - score
+        - band
+        - night
+        - asleepMinutes
+        - inBedMinutes
+        - subScores
+        - windowNights
+        - rhythmNights
         - series
       additionalProperties: false
   parameters:

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
@@ -44,6 +45,12 @@ import { RecoverySection } from "../recovery/recovery-section";
 function render(node: React.ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  // The recovery page's empty note waits for the connection status; an
+  // account with no integrations is the settled answer here.
+  queryClient.setQueryData(queryKeys.integrationsStatus(), {
+    threshold: 3,
+    integrations: [],
   });
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>

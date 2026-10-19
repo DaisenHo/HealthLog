@@ -4396,7 +4396,7 @@
           },
           "gap": {
             "fewNights": "pas encore assez de nuits ({count} sur 3)",
-            "noMainSleep": "pas de sommeil principal la dernière nuit"
+            "noMainSleep": "le dernier jour n'a eu qu'une sieste"
           }
         },
         "READINESS": {
@@ -4666,7 +4666,7 @@
       "emptyTitle": "Pas encore de données de récupération",
       "empty": "Rien à afficher ici pour l'instant. Cette page montre les mesures de recharge, d'effort et de charge qu'enregistrent WHOOP et Polar, ainsi que le niveau de résilience d'Oura. La disponibilité (readiness) d'Oura apparaît comme votre score de récupération, en lien ci-dessus.",
       "emptyOuraPermission": "Oura est connecté, mais l'autorisation accordée n'inclut pas les données de santé cardiaque, dont dépend le niveau de résilience d'Oura. Reconnectez Oura une fois dans Réglages, Intégrations et autorisez l'accès à la santé cardiaque ; le niveau apparaîtra ici à la prochaine synchronisation. La disponibilité (readiness) d'Oura est déjà votre score de récupération, en lien ci-dessus.",
-      "emptyOuraNoResilience": "Oura est connecté et l'autorisation couvre la résilience, mais Oura n'a pas encore envoyé de niveau de résilience pour ce compte. HealthLog le demande à chaque synchronisation, il apparaîtra ici dès qu'Oura en fournira un. La disponibilité (readiness) d'Oura est déjà votre score de récupération, en lien ci-dessus.",
+      "emptyOuraNoResilience": "Oura est connecté, mais aucun niveau de résilience n'est encore arrivé pour ce compte. HealthLog le demande à chaque synchronisation, il apparaîtra ici dès qu'Oura en fournira un. Si l'app Oura affiche un niveau, la carte Oura dans Réglages, Intégrations indique tout ce que la connexion ne peut pas fournir. La disponibilité (readiness) d'Oura est déjà votre score de récupération, en lien ci-dessus.",
       "emptyAction": "Ouvrir les intégrations",
       "block": {
         "ansChargeExplainer": "À quel point votre système nerveux autonome est rechargé pour la journée : une mesure de recharge issue de vos signaux nocturnes de cœur et de respiration.",

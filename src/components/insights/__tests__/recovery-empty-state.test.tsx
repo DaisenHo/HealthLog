@@ -9,10 +9,10 @@ import type { DataSummary } from "@/lib/analytics/trends";
 /**
  * The recovery page's empty note says what is missing for THIS account. An
  * Oura ring fills the page through its resilience level alone, so a connected
- * ring with an empty page is either a grant that leaves out the heart-health
- * data the level sits behind, or Oura not having sent a level yet. The
- * connection facts come from the server's integrations read; the page only
- * picks the sentence.
+ * ring with an empty page asks for a reconnect only when the server recorded
+ * that the grant leaves resilience out, and otherwise says only that no
+ * level has arrived. The connection facts come from the server's
+ * integrations read; the page only picks the sentence, and waits for it.
  */
 
 vi.mock("next/dynamic", () => ({
@@ -57,14 +57,19 @@ const OURA_SUMMARIES = {
   HRV_RMSSD: summary(30),
 };
 
-function render(oura: Record<string, unknown> | null) {
+function render(
+  oura: Record<string, unknown> | null,
+  opts: { statusLoaded?: boolean } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  queryClient.setQueryData(queryKeys.integrationsStatus(), {
-    threshold: 3,
-    integrations: oura ? [{ integration: "oura", ...oura }] : [],
-  });
+  if (opts.statusLoaded !== false) {
+    queryClient.setQueryData(queryKeys.integrationsStatus(), {
+      threshold: 3,
+      integrations: oura ? [{ integration: "oura", ...oura }] : [],
+    });
+  }
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">
@@ -104,14 +109,32 @@ describe("<RecoverySection> empty note", () => {
     expect(html).toContain('href="/settings/integrations"');
   });
 
-  it("says Oura has sent no level yet when the grant covers it", () => {
+  it("says only that no level has arrived when no withheld permission is recorded", () => {
     const html = render({
       connected: true,
       health: health([{ item: "spo2", cause: "permission" }]),
     });
     expect(html).toContain('data-empty-case="oura-no-resilience"');
-    expect(html).toContain("has not sent a resilience level");
+    expect(html).toContain("no resilience level has arrived");
+    // The server cannot prove the grant covers resilience, so the note
+    // never says it does.
+    expect(html).not.toContain("permission covers");
     expect(html).not.toContain('href="/settings/integrations"');
+  });
+
+  it("stays neutral when the connection carries no health block", () => {
+    const html = render({ connected: true });
+    expect(html).toContain('data-empty-case="oura-no-resilience"');
+    expect(html).not.toContain("permission covers");
+  });
+
+  it("shows no note until the connection status has loaded", () => {
+    const html = render(
+      { connected: true, health: health([]) },
+      { statusLoaded: false },
+    );
+    expect(html).toContain('data-slot="recovery-loading"');
+    expect(html).not.toContain("data-empty-case");
   });
 
   it("keeps the general note for an account without Oura", () => {

@@ -49,11 +49,12 @@ interface BlockGroup {
 /**
  * Why this account's recovery page is empty, from the server's view of its
  * Oura connection. An Oura ring feeds this page through its resilience level
- * alone, so a connected ring with an empty page has exactly two causes: the
- * grant does not cover the heart-health data the level sits behind (the
- * server records that per collection and publishes it as an unavailable
- * item), or Oura has not sent a level for this account. Everyone else gets
- * the general note naming what fills the page.
+ * alone. When the server records that the grant leaves resilience out, the
+ * note asks for one reconnect. Otherwise it says only that no level has
+ * arrived: the server cannot tell "the grant covers it" from "not recorded
+ * yet" (the scope note is cleared on every reconnect and written only by a
+ * sync that reached Oura), so the note never claims coverage. Everyone else
+ * gets the general note naming what fills the page.
  */
 type RecoveryEmptyCase = "general" | "oura-permission" | "oura-no-resilience";
 
@@ -222,7 +223,9 @@ export function RecoverySection() {
   );
   const emptyCase = recoveryEmptyCase(pickStatus(statuses.data, "oura"));
 
-  if (isLoading || summaries == null) {
+  // The empty note waits for the connection status, so it never reads as
+  // the general note first and then changes under the reader.
+  if (isLoading || summaries == null || (!hasAny && statuses.isPending)) {
     return (
       <div className="space-y-3" data-slot="recovery-loading">
         <ChartSkeleton />
