@@ -581,7 +581,7 @@ export function MeasurementList({
   // v1.11.5 — SLEEP_DURATION is collapsed server-side to one row per
   // night (TIME ASLEEP), so the list paints per-night rows with a
   // chevron drilling into the night's stage segments. Like the
-  // cumulative branch it returns a single page of synthesised rows.
+  // cumulative branch it pages server-side over its synthesised rows.
   const isSleepFilter = typeFilter === "SLEEP_DURATION";
   const isDayGroupedFilter = isCumulativeFilter || isSleepFilter;
 
@@ -634,30 +634,11 @@ export function MeasurementList({
       params.set("offset", String((page - 1) * PAGE_SIZE));
       params.set("sortBy", sortBy);
       params.set("sortDir", sortDir);
-      if (isCumulativeFilter) {
-        params.set("groupBy", "day");
-        // The collapsed mode synthesises one row per day from the
-        // window of raw samples. Use the server-side ceiling (5000)
-        // so a chatty pre-drain Apple-Watch account (≈200 per-sample
-        // chunks/day on the busiest days) still fills several screens
-        // of daily rows before the nightly drain reduces each day to
-        // a single `stats:` row. Post-drain the scan is trivially
-        // short — every day reduces to 1 row.
-        params.set("limit", "5000");
-        // The synthesised rows live entirely in the collapse branch
-        // — pagination/offset don't apply on the server side. Reset
-        // the offset so a sort-direction flip doesn't paginate into
-        // an empty slice.
-        params.set("offset", "0");
-      } else if (isSleepFilter) {
-        // v1.11.5 — the route auto-collapses SLEEP_DURATION to one row
-        // per night (no `groupBy` param needed). Request a wide limit
-        // so the per-night list spans the trailing year the route
-        // bounds the read to; offset doesn't apply to the synthesised
-        // rows.
-        params.set("limit", "366");
-        params.set("offset", "0");
-      }
+      // The day-grouped modes page over days, the same 25 per page as
+      // the per-sample list: `groupBy=day` folds each cumulative day to
+      // its sum, and SLEEP_DURATION collapses to one row per night
+      // without a param.
+      if (isCumulativeFilter) params.set("groupBy", "day");
       return apiGet<{
         measurements: Measurement[];
         meta: { total: number };
@@ -839,14 +820,9 @@ export function MeasurementList({
     blocked: updateMutation.isPending || deleteMutation.isPending,
   });
 
-  // v1.4.37 W7c — the collapsed daily view paints up to 5000
-  // synthesised rows in one shot (one row per day for the
-  // configured window). Pagination would force a second server
-  // round-trip that re-fires the same scan, so the day-grouped
-  // path collapses to a single page. Per-sample lists continue to
-  // paginate at PAGE_SIZE = 25.
-  const totalPages =
-    data && !isDayGroupedFilter ? Math.ceil(data.meta.total / PAGE_SIZE) : 0;
+  // Every mode pages server-side at PAGE_SIZE: the per-sample list over
+  // rows, the day-grouped modes over days or nights (#1245).
+  const totalPages = data ? Math.ceil(data.meta.total / PAGE_SIZE) : 0;
 
   function startEdit(measurement: Measurement) {
     if (onEdit) {

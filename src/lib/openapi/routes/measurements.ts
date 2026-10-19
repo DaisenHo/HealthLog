@@ -328,12 +328,6 @@ export const measurementResource = z
     // Synthesised-row extras — present only on the collapsed day-sum mode.
     dayKey: z.string().optional(),
     sampleCount: z.number().int().optional(),
-    partial: z
-      .boolean()
-      .optional()
-      .describe(
-        "True on the one bucket whose day was cut off by the read cap, so its sum understates the real total.",
-      ),
   })
   .meta({
     id: "MeasurementResource",
@@ -399,11 +393,6 @@ const listMeasurementsMeta = z
       .optional()
       .describe(
         "Rows discarded by the cross-source canonical picker on the day-collapse mode.",
-      ),
-    windowFrom: isoDateTime()
-      .optional()
-      .describe(
-        "Set on the per-night SLEEP_DURATION mode when the requested window was longer than 365 days: the instant the read started from. The window is a year ending at `to` (or now); page further back by moving `to`.",
       ),
   })
   .meta({ id: "ListMeasurementsMeta" });
@@ -814,7 +803,8 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "List measurements",
       description:
-        "Filter by type + date range. Response is paged via offset/limit; default limit 100, hard cap 500.",
+        "Filter by type + date range. Response is paged via offset/limit; default limit 100.\n\n" +
+        "With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over those days; every returned day is complete. `type=SLEEP_DURATION` returns one row per night, paged the same way over nights. On both, `meta.total` counts the days or nights in the filtered window, and a page holds at most 1000 of them (`meta.limit` echoes the value applied).",
       requestParams: {
         query: listMeasurementsSchema,
       },

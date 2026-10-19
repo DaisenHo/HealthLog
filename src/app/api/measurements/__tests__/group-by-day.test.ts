@@ -74,6 +74,67 @@ function getRequest(query: string): NextRequest {
   });
 }
 
+interface Group {
+  day_key: string;
+  source: string;
+  device_type: string | null;
+  unit: string;
+  total: number;
+  n: number;
+}
+
+/** One SQL fold row: a day's readings of one source, device and unit. */
+function group(
+  day_key: string,
+  total: number,
+  n: number,
+  over: Partial<Group> = {},
+): Group {
+  return {
+    day_key,
+    source: "APPLE_HEALTH",
+    device_type: null,
+    unit: "steps",
+    total,
+    n,
+    ...over,
+  };
+}
+
+/**
+ * The day-grouped branch answers from SQL alone: one query picks the page's
+ * days, each row carrying the distinct-day total from a window count; a
+ * second folds those days into source groups. A page past the end has no row
+ * to carry the total, so only then is it counted on its own. Answer each
+ * query by its text.
+ */
+function mockDayPage(
+  days: string[],
+  total = days.length,
+  groups: Group[] = [],
+) {
+  vi.mocked(prisma.$queryRaw).mockImplementation(((
+    strings: TemplateStringsArray,
+  ) => {
+    const text = strings.join("");
+    if (text.includes("COUNT(DISTINCT")) return Promise.resolve([{ total }]);
+    if (text.includes("COUNT(*) OVER ()")) {
+      return Promise.resolve(days.map((day_key) => ({ day_key, total })));
+    }
+    if (text.includes("SUM(")) return Promise.resolve(groups);
+    return Promise.resolve([]);
+  }) as never);
+}
+
+/** The `$queryRaw` calls whose text contains `needle`. */
+function rawCallsWith(needle: string) {
+  return vi
+    .mocked(prisma.$queryRaw)
+    .mock.calls.filter(([strings]) =>
+      (strings as unknown as string[]).join("").includes(needle),
+    );
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
@@ -91,55 +152,12 @@ beforeEach(() => {
 
 describe("GET /api/measurements — groupBy=day (W7c collapsed list)", () => {
   it("collapses per-sample step rows into one row per user-TZ day with sampleCount", async () => {
-    // Three Apple-Watch chunks on 2026-05-15 (Europe/Berlin) +
-    // two on 2026-05-16 — the route should sum each day's bucket.
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      {
-        id: "m-1",
-        type: "ACTIVITY_STEPS",
-        value: 1200,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T08:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-2",
-        type: "ACTIVITY_STEPS",
-        value: 3400,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T11:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-3",
-        type: "ACTIVITY_STEPS",
-        value: 800,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T16:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-4",
-        type: "ACTIVITY_STEPS",
-        value: 2500,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-16T07:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-5",
-        type: "ACTIVITY_STEPS",
-        value: 4500,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-16T14:00:00.000Z"),
-        notes: null,
-      },
-    ] as never);
+    // Three Apple-Watch chunks on 2026-05-15 (Europe/Berlin) summing to 5400
+    // and two on 2026-05-16 summing to 7000, as SQL folds them.
+    mockDayPage(["2026-05-16", "2026-05-15"], 2, [
+      group("2026-05-15", 5400, 3),
+      group("2026-05-16", 7000, 2),
+    ]);
 
     const res = await GET(
       getRequest(
@@ -177,21 +195,42 @@ describe("GET /api/measurements — groupBy=day (W7c collapsed list)", () => {
     expect(day15.measuredAt).toContain("2026-05-15T10:00:00");
   });
 
-  // v1.29.6 — the raw-row scan must read the MOST RECENT window before
-  // bucketing, mirroring the workouts-list ordering fix (05f80ad37): the
-  // canonical/day-bucket picker doesn't reorder its input, but the
-  // underlying `orderBy: asc` + `take: limit` sliced the OLDEST page of
-  // rows before the day-bucketing loop ran — on a long history the most
-  // recent days never appeared at all.
-  it("scans the raw rows newest-first before bucketing", async () => {
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+  // #1245 — the fold covers exactly the page's days: from the start of the
+  // oldest page day to the end of the newest, in the user's zone, on top of
+  // the request's own filters. Nothing outside the page is scanned, and no
+  // raw row is read into the process at all.
+  it("folds only the page's days, in SQL", async () => {
+    mockDayPage(["2026-05-16", "2026-05-15"], 40);
 
     await GET(getRequest("type=ACTIVITY_STEPS&groupBy=day"));
 
-    const call = vi.mocked(prisma.measurement.findMany).mock.calls[0]?.[0] as {
-      orderBy?: { measuredAt?: "asc" | "desc" };
+    const [fold] = rawCallsWith("SUM(");
+    const instants = (fold ?? [])
+      .slice(1)
+      .filter((v): v is Date => v instanceof Date)
+      .map((d) => d.toISOString());
+    // Europe/Berlin is UTC+2 in May.
+    expect(instants).toEqual([
+      "2026-05-14T22:00:00.000Z",
+      "2026-05-16T22:00:00.000Z",
+    ]);
+    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+  });
+
+  it("folds nothing when the page holds no day", async () => {
+    mockDayPage([], 3);
+    const res = await GET(
+      getRequest("type=ACTIVITY_STEPS&groupBy=day&limit=25&offset=25"),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: { measurements: unknown[]; meta: { total: number } };
     };
-    expect(call.orderBy).toEqual({ measuredAt: "desc" });
+    expect(json.data.measurements).toEqual([]);
+    expect(json.data.meta.total).toBe(3);
+    expect(rawCallsWith("SUM(")).toHaveLength(0);
+    // Past the end, and only there, the total is counted on its own.
+    expect(rawCallsWith("COUNT(DISTINCT")).toHaveLength(1);
   });
 
   // v1.29.6 — a day with both an Apple Health AND a Withings write for the
@@ -201,28 +240,10 @@ describe("GET /api/measurements — groupBy=day (W7c collapsed list)", () => {
   // Apple-Health steps + 8800 Withings steps summed to a fabricated 17800 —
   // a number the tile never showed.
   it("collapses cross-source rows to the ladder-canonical source before summing", async () => {
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      {
-        id: "m-apple",
-        type: "ACTIVITY_STEPS",
-        value: 9000,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T08:00:00.000Z"),
-        notes: null,
-        deviceType: null,
-      },
-      {
-        id: "m-withings",
-        type: "ACTIVITY_STEPS",
-        value: 8800,
-        unit: "steps",
-        source: "WITHINGS",
-        measuredAt: new Date("2026-05-15T09:00:00.000Z"),
-        notes: null,
-        deviceType: null,
-      },
-    ] as never);
+    mockDayPage(["2026-05-15"], 1, [
+      group("2026-05-15", 8800, 1, { source: "WITHINGS" }),
+      group("2026-05-15", 9000, 1),
+    ]);
 
     const res = await GET(
       getRequest(
@@ -251,97 +272,54 @@ describe("GET /api/measurements — groupBy=day (W7c collapsed list)", () => {
     expect(json.data.meta.droppedDuplicates).toBe(1);
   });
 
-  // v1.30.3 (QA F6) — a capped read's oldest bucket sits mid-day: every
-  // sample on that calendar day BEFORE the cutoff row was excluded, so the
-  // bucket's SUM understates the real day total. The row must carry a
-  // `partial: true` marker instead of rendering as if it were complete.
-  it("flags the oldest bucket partial when the raw-row read hits the cap", async () => {
-    // limit=3: the DESC-ordered read returns exactly 3 rows (the cap), so
-    // the oldest of the three (2026-05-14) is a truncated day — its bucket
-    // could be missing earlier same-day samples the cap cut off.
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      {
-        id: "m-1",
-        type: "ACTIVITY_STEPS",
-        value: 3400,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T11:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-2",
-        type: "ACTIVITY_STEPS",
-        value: 2500,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T07:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-3",
-        type: "ACTIVITY_STEPS",
-        value: 800,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-14T16:00:00.000Z"),
-        notes: null,
-      },
-    ] as never);
+  // #1245 — `limit` / `offset` page over days and reach the SQL that picks
+  // them; `meta.total` is the distinct-day count, not the page length, and
+  // no row is marked partial because every page day is read whole.
+  it("pages over days and reports the distinct-day total", async () => {
+    mockDayPage(["2026-04-20"], 40, [group("2026-04-20", 3400, 1)]);
 
     const res = await GET(
-      getRequest("type=ACTIVITY_STEPS&groupBy=day&limit=3"),
+      getRequest("type=ACTIVITY_STEPS&groupBy=day&limit=25&offset=25"),
     );
-    expect(res.status).toBe(200);
-    const json = (await res.json()) as {
-      data: {
-        measurements: Array<{
-          dayKey: string;
-          value: number;
-          partial?: boolean;
-        }>;
-        meta: { capped?: boolean };
-      };
-    };
-    const day15 = json.data.measurements.find((m) => m.dayKey === "2026-05-15");
-    const day14 = json.data.measurements.find((m) => m.dayKey === "2026-05-14");
-    expect(day15?.partial).toBeUndefined();
-    expect(day14?.partial).toBe(true);
-  });
-
-  it("flags no bucket partial when the read comes in under the cap (whole window covered)", async () => {
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      {
-        id: "m-1",
-        type: "ACTIVITY_STEPS",
-        value: 3400,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-15T11:00:00.000Z"),
-        notes: null,
-      },
-      {
-        id: "m-3",
-        type: "ACTIVITY_STEPS",
-        value: 800,
-        unit: "steps",
-        source: "APPLE_HEALTH",
-        measuredAt: new Date("2026-05-14T16:00:00.000Z"),
-        notes: null,
-      },
-    ] as never);
-
-    // Default limit (100) is nowhere near hit by 2 rows.
-    const res = await GET(getRequest("type=ACTIVITY_STEPS&groupBy=day"));
     expect(res.status).toBe(200);
     const json = (await res.json()) as {
       data: {
         measurements: Array<{ dayKey: string; partial?: boolean }>;
+        meta: { total: number; limit: number; offset: number };
       };
     };
-    expect(json.data.measurements.every((m) => m.partial === undefined)).toBe(
-      true,
-    );
+    expect(json.data.meta).toMatchObject({ total: 40, limit: 25, offset: 25 });
+    expect(json.data.measurements.map((m) => m.dayKey)).toEqual(["2026-04-20"]);
+    expect(json.data.measurements[0].partial).toBeUndefined();
+    const [pageCall] = rawCallsWith("COUNT(*) OVER ()");
+    expect(pageCall?.slice(1)).toEqual(expect.arrayContaining([25]));
+    expect(pageCall?.slice(1).filter((v) => v === 25)).toHaveLength(2);
+    // The total rode on the page's own rows; there was no second pass over
+    // the history, only the fold of the page's one day.
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(rawCallsWith("COUNT(DISTINCT")).toHaveLength(0);
+  });
+
+  // A device split inside the winning source keeps the top device's
+  // groups only, the same narrowing the picker applies to raw rows.
+  it("keeps the top-ranked device's groups within the winning source", async () => {
+    mockDayPage(["2026-05-15"], 1, [
+      group("2026-05-15", 6000, 40, { device_type: "watch" }),
+      group("2026-05-15", 5500, 12, { device_type: "phone" }),
+    ]);
+    const res = await GET(getRequest("type=ACTIVITY_STEPS&groupBy=day"));
+    const json = (await res.json()) as {
+      data: {
+        measurements: Array<{ value: number; sampleCount: number }>;
+        meta: { droppedDuplicates: number };
+      };
+    };
+    expect(json.data.measurements).toHaveLength(1);
+    expect(json.data.measurements[0]).toMatchObject({
+      value: 6000,
+      sampleCount: 40,
+    });
+    expect(json.data.meta.droppedDuplicates).toBe(12);
   });
 
   it("falls back to the legacy findMany path when groupBy=day is set on a non-cumulative type", async () => {
@@ -480,17 +458,14 @@ describe("GET /api/measurements — dayKey drill-down (W7c)", () => {
 });
 
 describe("GET /api/measurements — schema rejections (W10 reconcile)", () => {
-  // v1.4.37 W10 H1 — the groupBy=day collapsed path runs the collapse
-  // AFTER the per-sample scan, so it can't honour a non-zero offset
-  // without a Postgres-side date_trunc grouping that's a v1.4.38
-  // backlog item. The validator must reject the combination instead
-  // of silently rendering "showing 1-25 of N" with the wrong N.
-  it("rejects offset>0 when groupBy=day is set", async () => {
+  // #1245 — the day-grouped mode pages over days, so an offset is a real
+  // page request now rather than a refused combination.
+  it("accepts offset>0 when groupBy=day is set", async () => {
+    mockDayPage([], 0);
     const res = await GET(
       getRequest("type=ACTIVITY_STEPS&groupBy=day&offset=25"),
     );
-    expect(res.status).toBe(422);
-    expect(prisma.measurement.findMany).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
   });
 
   // v1.4.37 W10 H1 — same restriction for the drill-down branch; it

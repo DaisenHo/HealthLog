@@ -4198,7 +4198,14 @@ paths:
       tags:
         - Measurements
       summary: List measurements
-      description: Filter by type + date range. Response is paged via offset/limit; default limit 100, hard cap 500.
+      description: >-
+        Filter by type + date range. Response is paged via offset/limit; default limit 100.
+
+
+        With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over
+        those days; every returned day is complete. `type=SLEEP_DURATION` returns one row per night, paged the same way
+        over nights. On both, `meta.total` counts the days or nights in the filtered window, and a page holds at most
+        1000 of them (`meta.limit` echoes the value applied).
       parameters:
         - in: query
           name: type
@@ -46242,9 +46249,6 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-        partial:
-          description: True on the one bucket whose day was cut off by the read cap, so its sum understates the real total.
-          type: boolean
       required:
         - id
         - type
@@ -47069,9 +47073,6 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-        partial:
-          description: True on the one bucket whose day was cut off by the read cap, so its sum understates the real total.
-          type: boolean
       required:
         - id
         - type
@@ -47140,12 +47141,6 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-        windowFrom:
-          description: "Set on the per-night SLEEP_DURATION mode when the requested window was longer than 365 days: the instant
-            the read started from. The window is a year ending at `to` (or now); page further back by moving `to`."
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
       required:
         - total
         - limit
@@ -47259,9 +47254,6 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-        partial:
-          description: True on the one bucket whose day was cut off by the read cap, so its sum understates the real total.
-          type: boolean
         status:
           type: string
           enum:
