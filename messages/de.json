@@ -1272,7 +1272,8 @@
       "bodyNotLogged": "Für diesen Tag ist im Krankheitstagebuch nichts erfasst",
       "openIllness": "Öffnen"
     },
-    "sourceNotification": "Benachrichtigung"
+    "sourceNotification": "Benachrichtigung",
+    "tagCatalogLoadError": "Die Tags konnten nicht geladen werden."
   },
   "medications": {
     "title": "Medikamente",
@@ -3173,7 +3174,8 @@
         "steadyLatestAbove": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
         "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "Dein üblicher Bereich konnte nicht geladen werden."
       },
       "scope": {
         "prefix": "Der Coach ist schon bei {metric}"
@@ -4290,7 +4292,8 @@
         "caveat": "Das ist ein Vergleich mit deinen eigenen bisherigen Tagen, keine Aussage darüber, wie ein Tag zustande gekommen ist.",
         "learning": "Lernphase: {entries} von {threshold} Tagen erfasst. Ein Vergleich erscheint, sobald genug davon zusammengekommen sind.",
         "noPattern": "In den bisher erfassten {entries} Tagen ist noch nichts gleichmäßig genug, um einen Tag damit zu vergleichen. Wenn du auch den Kontext eines Tages festhältst, wird mehr davon vergleichbar.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "Der auf Basis deiner Muster erwartete Wert konnte nicht geladen werden."
       },
       "patterns": {
         "title": "Muster in deiner Stimmung",
@@ -9204,7 +9207,8 @@
       "viewDetails": "Zyklus-Erkenntnisse ansehen"
     },
     "wellnessRing": {
-      "label": "Zyklus"
+      "label": "Zyklus",
+      "loadError": "Dein Zyklus konnte nicht geladen werden."
     },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
     "title": "Dein Zyklus",
@@ -11890,7 +11894,8 @@
       "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)"
+      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)",
+      "loadError": "Koffein konnte nicht geladen werden."
     },
     "micronutrients": {
       "title": "Vitamine & Mineralstoffe",
@@ -12982,7 +12987,8 @@
       "allOther": "Alle {count} anzeigen",
       "fewer": "Weniger anzeigen",
       "note": "Zusammengestellt aus deinen Einträgen, ohne Bewertung. Jedes Datum öffnet den ganzen Tag.",
-      "report": "Arztbericht {date} bis heute"
+      "report": "Arztbericht {date} bis heute",
+      "loadError": "Was seit dem letzten Besuch war, konnte nicht geladen werden."
     },
     "travel": "Unterwegs",
     "event": {

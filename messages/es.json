@@ -1272,7 +1272,8 @@
       "bodyNotLogged": "No hay nada registrado en el diario de enfermedad para este día",
       "openIllness": "Abrir"
     },
-    "sourceNotification": "Notificación"
+    "sourceNotification": "Notificación",
+    "tagCatalogLoadError": "No se pudieron cargar las etiquetas."
   },
   "medications": {
     "title": "Medicamentos",
@@ -3173,7 +3174,8 @@
         "steadyLatestAbove": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por encima.",
         "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual. Sigue registrando unos días más.",
-        "driver": "{note}"
+        "driver": "{note}",
+        "loadError": "No se pudo cargar tu rango habitual."
       },
       "scope": {
         "prefix": "El Coach ya está en {metric}"
@@ -4290,7 +4292,8 @@
         "caveat": "Es una comparación con tus propios días anteriores, no una afirmación sobre cómo llegó a transcurrir un día.",
         "learning": "Fase de aprendizaje: {entries} de {threshold} días registrados. La comparación aparece cuando haya suficientes.",
         "noPattern": "En los {entries} días registrados hasta ahora no hay nada lo bastante constante para comparar un día. Cuando anotas también el contexto del día, se puede comparar una parte mayor.",
-        "featureValue": "{field}: {value}"
+        "featureValue": "{field}: {value}",
+        "loadError": "No se pudo cargar el valor esperado según tus propios patrones."
       },
       "patterns": {
         "title": "Patrones en tu estado de ánimo",
@@ -9204,7 +9207,8 @@
       "viewDetails": "Ver análisis del ciclo"
     },
     "wellnessRing": {
-      "label": "Ciclo"
+      "label": "Ciclo",
+      "loadError": "No se pudo cargar tu ciclo."
     },
     "disclaimer": "Estas predicciones son estimaciones descriptivas a partir de tus datos registrados, no un método anticonceptivo ni un consejo médico. Nunca indican que sea seguro tener relaciones sin protección. Para anticoncepción o cualquier decisión médica, consulta a un profesional sanitario.",
     "title": "Tu ciclo",
@@ -11890,7 +11894,8 @@
       "referenceMeta": "Ingesta de referencia {value} {unit}/día (EFSA)"
     },
     "caffeine": {
-      "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)"
+      "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)",
+      "loadError": "No se pudo cargar la cafeína."
     },
     "micronutrients": {
       "title": "Vitaminas y minerales",
@@ -12982,7 +12987,8 @@
       "allOther": "Mostrar las {count}",
       "fewer": "Mostrar menos",
       "note": "Reunido a partir de tus entradas, sin valoración. Cada fecha abre el día completo.",
-      "report": "Informe médico del {date} hasta hoy"
+      "report": "Informe médico del {date} hasta hoy",
+      "loadError": "No se pudo cargar lo ocurrido desde la última visita."
     },
     "travel": "De viaje",
     "event": {

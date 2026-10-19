@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListRow } from "@/components/ui/list-row";
 import {
@@ -1894,7 +1895,7 @@ function DayDrillDown({
 }) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.measurementDrilldown(type, dayKey),
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -1923,9 +1924,12 @@ function DayDrillDown({
   }
   if (error) {
     return (
-      <div className="text-destructive py-2 text-sm">
-        {t("measurements.loadError")}
-      </div>
+      <QueryErrorRow
+        slot="measurement-drilldown-error"
+        message={t("measurements.loadError")}
+        onRetry={() => void refetch()}
+        className={layout === "desktop" ? "m-2" : "mt-2"}
+      />
     );
   }
   const rows = data?.measurements ?? [];

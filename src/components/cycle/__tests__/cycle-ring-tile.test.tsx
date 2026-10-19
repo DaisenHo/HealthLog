@@ -152,13 +152,19 @@ describe("<CycleRingTile>", () => {
     expect(render(<CycleRingTile />)).toBe("");
   });
 
-  it("renders nothing on a hard calendar read error", () => {
+  // A failed read is not a day without a cycle: the tile says it failed and
+  // offers a retry, instead of passing the failure off as nothing to show.
+  it("says a hard calendar read error failed, with a retry", () => {
     calendarState.current = {
       data: undefined,
       isLoading: false,
       isError: true,
     };
-    expect(render(<CycleRingTile />)).toBe("");
+    const html = render(<CycleRingTile />);
+    expect(html).toContain('data-slot="wellness-cycle-tile-error"');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('data-slot="query-error-row-retry"');
+    expect(html).not.toContain('data-slot="wellness-cycle-tile"');
   });
 
   it("renders nothing when there is no active cycle today", () => {

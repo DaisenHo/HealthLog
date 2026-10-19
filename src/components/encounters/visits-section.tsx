@@ -18,7 +18,6 @@ import { Fragment, useState } from "react";
 
 import { SinceLastVisit } from "@/components/day/since-last-visit";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -142,13 +141,11 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
                     onOpen={canManageVisits ? openSheet : undefined}
                   />
                   {/* v1.42 — the next appointment carries what happened
-                      since the last one, each date opening its day. */}
+                      since the last one, each date opening its day. The
+                      component draws its own card, and none when it has
+                      nothing to list. */}
                   {i === 0 && lastDone ? (
-                    <Card className="gap-3 py-3 md:gap-3 md:py-4">
-                      <CardContent>
-                        <SinceLastVisit next={encounter} last={lastDone} />
-                      </CardContent>
-                    </Card>
+                    <SinceLastVisit next={encounter} last={lastDone} />
                   ) : null}
                 </Fragment>
               ))}
