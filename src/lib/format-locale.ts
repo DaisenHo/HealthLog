@@ -124,9 +124,12 @@ function asDate(value: DateInput): Date {
  * lookup is cheap.
  */
 function isCurrentYearInTz(date: Date, tz: string, localeTag: string): boolean {
-  const yearOnly = { timeZone: tz, year: "numeric" as const };
-  const target = getDateTimeFormat(localeTag, yearOnly).format(date);
-  const now = getDateTimeFormat(localeTag, yearOnly).format(new Date());
+  const yearIn = (value: Date) =>
+    getDateTimeFormat(localeTag, { timeZone: tz, year: "numeric" }).format(
+      value,
+    );
+  const target = yearIn(date);
+  const now = yearIn(new Date());
   return target === now;
 }
 

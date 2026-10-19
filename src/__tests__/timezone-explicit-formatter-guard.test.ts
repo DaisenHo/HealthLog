@@ -51,6 +51,11 @@ const ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
 const FORMATTER_PATTERNS = [
   /new Intl\.DateTimeFormat\s*\(/g,
   /\.toLocale(?:Date|Time)String\s*\(/g,
+  // The shared cache's own entry point: it forwards its options straight to
+  // `Intl.DateTimeFormat`, so a call that omits the zone is a bare formatter
+  // exactly like the constructor form (the workout surfaces did this until
+  // v1.43.6).
+  /\bgetDateTimeFormat\s*\(/g,
 ];
 
 /** The argument list starting at the `(` at or after `from`. */
@@ -68,12 +73,30 @@ function argumentList(source: string, from: number): string {
   return source.slice(open);
 }
 
+/** Number of top-level, comma-separated arguments in `(…)`. */
+function topLevelArgCount(args: string): number {
+  let depth = 0;
+  let count = 0;
+  let sawContent = false;
+  for (const ch of args.slice(1, -1)) {
+    if ("([{".includes(ch)) depth += 1;
+    else if (")]}".includes(ch)) depth -= 1;
+    else if (ch === "," && depth === 0) {
+      count += 1;
+      sawContent = false;
+      continue;
+    }
+    if (!/\s/.test(ch)) sawContent = true;
+  }
+  return sawContent ? count + 1 : count;
+}
+
 function bareFormatterSites(): Array<{ file: string; line: number }> {
   const listed = execFileSync(
     "grep",
     [
       "-rlE",
-      "new Intl\\.DateTimeFormat|\\.toLocale(Date|Time)String\\(",
+      "new Intl\\.DateTimeFormat|\\.toLocale(Date|Time)String\\(|getDateTimeFormat\\(",
       "src",
       "--include=*.ts",
       "--include=*.tsx",
@@ -105,6 +128,15 @@ function bareFormatterSites(): Array<{ file: string; line: number }> {
         // of them and the honest response would be to allowlist them — which
         // is how a guard stops guarding.
         if (/\btimeZone\s*(?::|,|\}|$)/m.test(args)) continue;
+        // `getDateTimeFormat(locale, tz, options)` takes the zone as its own
+        // argument; only the two-argument `(locale, options)` form can leave
+        // it out.
+        if (m[0].startsWith("getDateTimeFormat") && topLevelArgCount(args) >= 3)
+          continue;
+        // A mention in a comment renders nothing.
+        const lineStart = source.lastIndexOf("\n", m.index) + 1;
+        if (/^\s*(?:\/\/|\*|\/\*)/.test(source.slice(lineStart, m.index)))
+          continue;
         hits.push({
           file,
           line: source.slice(0, m.index).split("\n").length,
@@ -125,7 +157,7 @@ describe("date formatters name the calendar they render in", () => {
       "grep",
       [
         "-rlE",
-        "new Intl\\.DateTimeFormat|\\.toLocale(Date|Time)String\\(",
+        "new Intl\\.DateTimeFormat|\\.toLocale(Date|Time)String\\(|getDateTimeFormat\\(",
         "src",
         "--include=*.ts",
         "--include=*.tsx",

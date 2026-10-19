@@ -7,7 +7,11 @@ import { HeartPulse, Loader2, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNumberFormat, getDateTimeFormat } from "@/lib/intl/formatter-cache";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
-import { useTranslations, useTimeFormatPreference } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useTimeFormatPreference,
+  useTranslations,
+} from "@/lib/i18n/context";
 import {
   hourCycleOptions,
   type TimeFormatPreference,
@@ -40,12 +44,16 @@ function formatDate(
   iso: string,
   locale: string,
   timeFormat: TimeFormatPreference,
+  timeZone: string,
 ): string {
   const d = new Date(iso);
   // Show the year whenever the workout is not from the current year, so a
   // "Do., 16. Dez." from a previous year is never mistaken for this year's.
-  const showYear = d.getFullYear() !== new Date().getFullYear();
+  const yearOf = (value: Date) =>
+    getDateTimeFormat(locale, { timeZone, year: "numeric" }).format(value);
+  const showYear = yearOf(d) !== yearOf(new Date());
   return getDateTimeFormat(locale, {
+    timeZone,
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -75,6 +83,7 @@ export function WorkoutList({
 }: WorkoutListProps) {
   const { t, locale } = useTranslations();
   const timeFormat = useTimeFormatPreference();
+  const timeZone = useDisplayTimezone();
   const { preference } = useUnitDisplay();
 
   return (
@@ -141,7 +150,12 @@ export function WorkoutList({
                     stays readable beside the stats column. */}
                 <span className="text-muted-foreground text-xs">
                   <DayLinkAt at={workout.startedAt} className="z-10">
-                    {formatDate(workout.startedAt, locale, timeFormat)}
+                    {formatDate(
+                      workout.startedAt,
+                      locale,
+                      timeFormat,
+                      timeZone,
+                    )}
                   </DayLinkAt>
                 </span>
               </div>

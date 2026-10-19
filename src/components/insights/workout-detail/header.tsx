@@ -1,6 +1,10 @@
 "use client";
 
-import { useTranslations, useTimeFormatPreference } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useTimeFormatPreference,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import type { WorkoutDetailPayload } from "@/hooks/use-workouts";
@@ -32,6 +36,7 @@ function renderSportIconBadge(sportType: string) {
 export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
   const { t, locale } = useTranslations();
   const timeFormat = useTimeFormatPreference();
+  const timeZone = useDisplayTimezone();
   const { preference } = useUnitDisplay();
   const sportLabelKey = `insights.workouts.sport.${workout.sportType}`;
   const sportLabel = t(sportLabelKey);
@@ -68,6 +73,7 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
               workout.endedAt,
               locale,
               timeFormat,
+              timeZone,
             )}
           </p>
         </div>
