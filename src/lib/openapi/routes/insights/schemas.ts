@@ -199,7 +199,7 @@ export const derivedMetricQuery = z
  *
  * STILL OPAQUE, and known to be: the value shapes of `VITALS_BASELINE` (prose
  * only, in the `value` description), `FITNESS_AGE`, `VASCULAR_AGE_DELTA`,
- * `HRV_BALANCE`, `BMI`, `SLEEP_SCORE`, `READINESS`, `COINCIDENT_DEVIATION`,
+ * `HRV_BALANCE`, `BMI`, `READINESS`, `COINCIDENT_DEVIATION`,
  * `TRAJECTORY`, `SAME_TIME_BASELINE`, `SIX_MINUTE_WALK_BAND`, `HEALTH_SCORE`
  * and the three fixed-type baselines. Each is a TypeScript interface next to
  * its engine under `src/lib/insights/derived/`; modelling them is a schema per
@@ -273,6 +273,76 @@ export const wellnessScoreValue = z
       ),
   })
   .meta({ id: "WellnessScoreValue" });
+
+/**
+ * The `SLEEP_SCORE` value, published beside `WellnessScoreValue` for the same
+ * reason (the derived envelope's `value` is an open record). Held to the
+ * engine's emitted object by `derived-sleep-value-contract.test.ts`.
+ */
+export const sleepScoreValue = z
+  .object({
+    score: z.number().int().describe("The composite 0–100 sleep score."),
+    band: z
+      .enum(["green", "yellow", "red"])
+      .describe("Server's verdict on the score; never re-band it client-side."),
+    night: z
+      .string()
+      .describe("Wake day (YYYY-MM-DD, user's zone) of the night scored."),
+    asleepMinutes: z
+      .number()
+      .int()
+      .describe("Whole minutes asleep that night."),
+    inBedMinutes: z
+      .number()
+      .int()
+      .nullable()
+      .describe("Whole minutes in bed, null when no in-bed signal exists."),
+    subScores: z
+      .array(
+        z.object({
+          key: z
+            .enum([
+              "sufficiency",
+              "efficiency",
+              "consistency",
+              "timing",
+              "composition",
+            ])
+            .describe("Sub-score id."),
+          value: z
+            .number()
+            .nullable()
+            .describe(
+              "0–100 sub-score; null when the data cannot support it (dropped from the blend, never 0).",
+            ),
+          weight: z
+            .number()
+            .describe(
+              "Effective weight after redistributing missing sub-scores.",
+            ),
+          gap: z
+            .enum(["few_nights", "no_main_sleep"])
+            .optional()
+            .describe(
+              "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than three nights in the window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had only a daytime nap. Absent otherwise.",
+            ),
+        }),
+      )
+      .describe("All five sub-scores, present and dropped."),
+    windowNights: z.number().int().describe("Scorable nights in the window."),
+    rhythmNights: z
+      .number()
+      .int()
+      .describe(
+        "Nights in the window with a main sleep placed on the clock — what consistency and timing are computed from. A daytime nap is not one; a short night is.",
+      ),
+    series: z
+      .array(z.number())
+      .describe(
+        `Score of every scorable night in the window, oldest → newest, capped at ${SPARKLINE_MAX_POINTS} points; the last point is \`score\`.`,
+      ),
+  })
+  .meta({ id: "SleepScoreValue" });
 
 export const derivedCoverage = z
   .object({
@@ -410,7 +480,7 @@ export const derivedMetricResponse = z
       .record(z.string(), z.unknown())
       .nullable()
       .describe(
-        "Metric-specific value object when status is 'ok'; null when 'insufficient'. The shape is chosen by `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` / `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to discover by inspecting a live payload. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with `center` placed against their own target or a profile default. The remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under `src/lib/insights/derived/`.",
+        "Metric-specific value object when status is 'ok'; null when 'insufficient'. The shape is chosen by `metric`, and the record stays open because one route serves eighteen of them. `RECOVERY_SCORE` / `STRESS_SCORE` / `STRAIN_SCORE` return the `WellnessScoreValue` schema — field-by-field in `components.schemas`, including the `series`, `daysInWindow` and `asOf` a client would otherwise have to discover by inspecting a live payload. `SLEEP_SCORE` returns the `SleepScoreValue` schema, including `rhythmNights` and the per-sub-score `gap`. `VITALS_BASELINE` returns { type, center, low, high, spread, sampleDays, k, series, direction }, where `series` is the trailing per-day means for the inline sparkline and `direction` (v1.43, a `TrendVerdict`) says which way a change of the vital counts for this person, with `center` placed against their own target or a profile default. The remaining metrics' value objects are not modelled here yet; their shapes are TypeScript interfaces beside their engines under `src/lib/insights/derived/`.",
       ),
     coverage: derivedCoverage,
     confidence: derivedConfidence
