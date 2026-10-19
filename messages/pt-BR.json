@@ -1,0 +1,176 @@
+{
+  "common": {
+    "save": "Salvar",
+    "conflictReloaded": "Recarregado do servidor. Faça sua alteração novamente.",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "undo": "Desfazer",
+    "edit": "Editar",
+    "moreOptions": "Mais opções",
+    "create": "Criar",
+    "close": "Fechar",
+    "loading": "Carregando…",
+    "loadFailed": "Não foi possível carregar",
+    "error": "Erro",
+    "saved": "Salvo",
+    "pullToRefresh": "Atualizando…",
+    "no": "Não",
+    "noData": "Nenhum dado disponível",
+    "optional": "Opcional",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "disabled": "Desativado",
+    "networkError": "Erro de rede",
+    "openDatePicker": "Abrir seletor de data",
+    "openTimePicker": "Abrir seletor de horário",
+    "hours": "Horas",
+    "minutes": "Minutos",
+    "feet": "ft",
+    "inches": "in",
+    "heightFeet": "Altura em pés",
+    "heightInches": "Altura em polegadas",
+    "period": "AM/PM",
+    "am": "AM",
+    "pm": "PM",
+    "unknownError": "Erro desconhecido",
+    "copied": "Copiado!",
+    "or": "ou",
+    "unknown": "Desconhecido",
+    "add": "Adicionar",
+    "import": "Importar",
+    "test": "Testar",
+    "reset": "Redefinir",
+    "copy": "Copiar",
+    "copyDetails": "Copiar detalhes",
+    "retry": "Tentar novamente",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "learnMore": "Saiba mais",
+    "dismiss": "Dispensar",
+    "moreInfo": "Mais informações",
+    "durationHoursMinutes": "{hours}h {minutes}min",
+    "durationMinutes": "{minutes}min",
+    "durationClockMinutes": "{time} min",
+    "durationClockHours": "{time} h",
+    "errorIdLabel": "ID do erro",
+    "errorIdCopy": "Copiar ID do erro",
+    "errorIdCopied": "ID do erro copiado"
+  },
+  "apiErrors": {
+    "measurement": {
+      "create": {
+        "invalid": "Verifique os dados da medição e tente novamente."
+      },
+      "duplicate_timestamp": "Já existe uma medição registrada para este horário."
+    },
+    "mood": {
+      "list": {
+        "invalid": "Os filtros da lista de humor são inválidos."
+      },
+      "create": {
+        "invalid": "Verifique o registro de humor e tente novamente."
+      },
+      "update": {
+        "invalid": "Verifique o registro de humor e tente novamente."
+      },
+      "duplicate_timestamp": "Já existe um registro de humor para este horário.",
+      "not_found": "Este registro de humor não está mais disponível.",
+      "ratedFactor": {
+        "out_of_range": "Uma classificação de fator está fora do intervalo permitido."
+      }
+    },
+    "labs": {
+      "create": {
+        "invalid": "Verifique o resultado laboratorial e tente novamente."
+      },
+      "result": {
+        "notFound": "Este resultado laboratorial não está mais disponível."
+      },
+      "biomarker": {
+        "notFound": "Este biomarcador não está mais disponível.",
+        "duplicate": "Já existe um biomarcador com este nome.",
+        "create": {
+          "invalid": "Verifique os dados do biomarcador e tente novamente."
+        },
+        "update": {
+          "invalid": "Verifique os dados do biomarcador e tente novamente.",
+          "referenceRangeInvalid": "O valor de referência inferior não pode ser maior que o superior."
+        }
+      },
+      "update": {
+        "invalid": "Verifique o resultado laboratorial e tente novamente.",
+        "linkedFieldsImmutable": "Edite o biomarcador para alterar nome, unidade, painel ou faixa de referência.",
+        "qualitativeExpected": "Informe um resultado em texto para esta leitura qualitativa.",
+        "numericExpected": "Informe um número para esta leitura numérica.",
+        "referenceRangeInvalid": "O valor de referência inferior não pode ser maior que o superior."
+      }
+    },
+    "onboarding": {
+      "disclaimer": {
+        "invalid": "Confirme novamente o aviso médico."
+      },
+      "tour": {
+        "invalid": "Não foi possível salvar o progresso do tour."
+      },
+      "complete": {
+        "invalid": "Verifique os dados do perfil e tente novamente."
+      },
+      "user": {
+        "notFound": "Não foi possível encontrar sua conta."
+      },
+      "step": {
+        "rateLimited": "Muitas tentativas. Aguarde e tente novamente.",
+        "invalid": "Não foi possível salvar esta etapa de configuração.",
+        "completed": "A configuração inicial já foi concluída.",
+        "outOfOrder": "Seu progresso de configuração mudou. Atualize e continue.",
+        "concurrent": "Seu progresso de configuração mudou. Atualize e continue."
+      }
+    },
+    "profile": {
+      "update": {
+        "nothingSaved": "Nada foi salvo. Verifique o campo destacado e tente novamente.",
+        "invalidBody": "Não foi possível ler a atualização do perfil.",
+        "emailInUse": "Este endereço de e-mail já está em uso.",
+        "emailRateLimited": "Muitas alterações de e-mail. Tente novamente mais tarde.",
+        "emailSecondFactorRequired": "Confirme com seu segundo fator ou chave de acesso para alterar o e-mail."
+      }
+    },
+    "auth": {
+      "reproof": {
+        "required": "Confirme sua senha atual para alterar isto.",
+        "failed": "A verificação não foi concluída. Nada foi alterado."
+      }
+    },
+    "biomarkers": {
+      "unit": {
+        "locked": "Este marcador já possui leituras, portanto a unidade não pode ser alterada. Os valores armazenados seriam exibidos na nova unidade sem conversão."
+      }
+    },
+    "symptoms": {
+      "definition": {
+        "limitReached": "Você já tem 8 sintomas. Oculte um para adicionar outro.",
+        "notFound": "Este sintoma não existe mais."
+      },
+      "episode": {
+        "notOpen": "Essa doença não está mais aberta. Escolha outra ou nenhuma."
+      },
+      "event": {
+        "notFound": "Este registro não existe mais."
+      }
+    },
+    "medications": {
+      "notFound": "Este medicamento não está mais disponível.",
+      "ingredients": {
+        "invalid": "Verifique a composição e tente novamente.",
+        "unitMismatch": "Esta unidade não é oferecida para o nutriente.",
+        "extract": {
+          "fileType": "Envie um arquivo JPEG, PNG, WebP ou PDF.",
+          "fileTooLarge": "O arquivo é maior que 10 MB.",
+          "rateLimited": "Muitas leituras de rótulo. Tente novamente em uma hora.",
+          "budgetExceeded": "Seu limite de uso de IA para hoje foi atingido.",
+          "failed": "Não foi possível ler o rótulo. Tente uma foto mais nítida."
+        }
+      }
+    }
+  }
+}
