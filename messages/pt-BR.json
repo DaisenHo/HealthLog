@@ -730,5 +730,9 @@
     },
     "quickAddSymptom": "Registrar sintoma",
     "todayCardVisible": "Mostrar o cartão principal"
+  },
+  "errorBoundary": {
+    "title": "Algo deu errado",
+    "description": "Ocorreu um erro inesperado. Você pode tentar novamente, copiar os detalhes técnicos ou abrir um relatório de bug."
   }
 }
