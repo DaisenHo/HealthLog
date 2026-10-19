@@ -5,7 +5,7 @@
  * document that LOOKS LIKE a lab result is run through the SAME inbound
  * extraction the manual "Extract" button uses — but the facts land PENDING for
  * the existing human-review screen. Nothing is committed here: the user still
- * taps one confirm before a value becomes a `LabResult`. Marc's sign-off is
+ * taps one confirm before a value becomes a `LabResult`. The sign-off is
  * explicit — auto-STAGE, never auto-COMMIT.
  *
  * Gates (ALL must hold, otherwise the manual extract button is left untouched):
