@@ -38,11 +38,11 @@ import type {
   SleepStage,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { shiftDateKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import {
+  asleepMidpointMinutes,
   reconstructSleepNights,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
@@ -434,34 +434,16 @@ export function reconstructNights(
         : n.asleepMinutes > 0 && awakeMinutes > 0
           ? n.asleepMinutes + awakeMinutes
           : null;
-    // Midpoint = centre of the MAIN session's asleep span: its wake instant
-    // minus half its own asleep minutes. Not the whole night's: a nap on the
-    // same wake day moves the night's latest instant to the end of the nap and
-    // adds its minutes, which put the midpoint of a 23:00 to 07:00 night with a
-    // 14:00 nap at about 11:00 and read every such day as a ~7-hour shift in
-    // consistency and timing.
-    //
-    // And only when that main session is a main sleep, not a daytime nap. On
-    // a day the ring or watch recorded no night (left on the charger, taken
-    // off), the day's largest session is an afternoon nap, and its 14:00
-    // midpoint sat ten hours from every other night: a single such day in a
-    // month pushed the midpoint spread past the 90-minute full scale and read
-    // the whole rhythm as Consistency 0. Such a day still counts its minutes;
-    // it just has no place on the clock. A short session at night is still
-    // the night (insomnia, a newborn, split sleep), so it keeps its place.
+    // Midpoint = centre of the MAIN session's asleep span. Not the whole
+    // night's: a nap on the same wake day would drag it into the afternoon.
+    // The main session is the nap convention's (`pickMainNightAndNaps`), so
+    // a day whose only sleep is a daytime nap has none: it still counts its
+    // minutes, it just has no place on the clock, exactly as the night view
+    // and the list show it without a main night.
     const main = n.mainSession;
-    const mainMidpoint = main
-      ? minutesOfDay(
-          new Date(main.end.getTime() - (main.asleepMinutes / 2) * 60_000),
-          tz,
-        )
+    const midpoint = main
+      ? asleepMidpointMinutes(main.end, main.asleepMinutes, tz)
       : null;
-    const midpoint =
-      main &&
-      mainMidpoint != null &&
-      !isDaytimeNap(main.asleepMinutes, mainMidpoint)
-        ? mainMidpoint
-        : null;
     return {
       night: n.night,
       asleepMinutes: n.asleepMinutes,
@@ -473,44 +455,6 @@ export function reconstructNights(
       midpoint,
     };
   });
-}
-
-/**
- * Below this much asleep time a session can be a nap. Three hours is where
- * wearables draw the line between a nap and a main sleep (Oura types a
- * period `long_sleep` from three hours on).
- */
-const MAIN_SLEEP_MIN_MINUTES = 180;
-
-/**
- * The night window, in local minutes-of-day: a session whose midpoint falls
- * from 20:00 to 10:00 is night sleep however short it is. Wide enough for a
- * late chronotype (asleep 04:00 to 12:00 has its midpoint at 08:00) and for
- * an early one, and clear of the afternoon where naps sit.
- */
-const NIGHT_WINDOW_START = 20 * 60;
-const NIGHT_WINDOW_END = 10 * 60;
-
-/**
- * True for a session that is a nap rather than a night: short (under
- * `MAIN_SLEEP_MIN_MINUTES` asleep) AND centred in the daytime. A short night
- * is still the night; a long daytime sleep (after a night shift) is still a
- * main sleep. Pure.
- */
-export function isDaytimeNap(
-  asleepMinutes: number,
-  midpointMinutes: number,
-): boolean {
-  if (asleepMinutes >= MAIN_SLEEP_MIN_MINUTES) return false;
-  const atNight =
-    midpointMinutes >= NIGHT_WINDOW_START || midpointMinutes < NIGHT_WINDOW_END;
-  return !atNight;
-}
-
-function minutesOfDay(d: Date, tz: string): number {
-  if (tz === "UTC") return d.getUTCHours() * 60 + d.getUTCMinutes();
-  const { hour, minute } = wallClockInTz(d, tz);
-  return hour * 60 + minute;
 }
 
 // ── compute ─────────────────────────────────────────────────────────────

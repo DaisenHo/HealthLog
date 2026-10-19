@@ -24,7 +24,6 @@ import { mapSleep, type OuraSleep } from "@/lib/oura/client";
 import {
   computeSleepScore,
   reconstructNights,
-  isDaytimeNap,
   rhythmGap,
   scoreConsistency,
 } from "../sleep-score";
@@ -172,18 +171,6 @@ describe("Sleep Score rhythm on an Oura month", () => {
     expect(sub("consistency").gap).toBeUndefined();
     expect(sub("timing").value).not.toBeNull();
     expect(sub("timing").gap).toBeUndefined();
-  });
-
-  it("tells a nap from a night by length and time of day together", () => {
-    // Short and in the afternoon: a nap.
-    expect(isDaytimeNap(60, 14 * 60)).toBe(true);
-    // Short but at night: the night.
-    expect(isDaytimeNap(150, 2 * 60)).toBe(false);
-    expect(isDaytimeNap(150, 22 * 60)).toBe(false);
-    // A late sleeper's short night, centred at 09:00.
-    expect(isDaytimeNap(150, 9 * 60)).toBe(false);
-    // Long in the daytime (after a night shift): a main sleep.
-    expect(isDaytimeNap(420, 13 * 60)).toBe(false);
   });
 
   it("scores the consistency of a steady sleeper, not 0", async () => {

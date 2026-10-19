@@ -62,8 +62,11 @@ export function computeSleepPillar(
   const midpoints = nights
     .map((night) => night.midpoint)
     .filter((midpoint): midpoint is number => midpoint != null);
+  // The floor is on the nights that have a place on the clock: a day whose
+  // only sleep was a nap counts toward the level but carries no midpoint, so
+  // 21 nights could hold far fewer midpoints than the floor asks for.
   const regularity =
-    nights.length >= SLEEP_REGULARITY_MIN_NIGHTS
+    midpoints.length >= SLEEP_REGULARITY_MIN_NIGHTS
       ? scoreConsistency(midpoints)
       : null;
   // These are the existing Sleep Score's own declared sub-score weights,
