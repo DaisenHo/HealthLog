@@ -4392,7 +4392,7 @@
           },
           "gap": {
             "fewNights": "aún no hay suficientes noches ({count} de 3)",
-            "noMainSleep": "la última noche no tuvo sueño principal"
+            "noMainSleep": "el último día solo tuvo una siesta"
           }
         },
         "READINESS": {

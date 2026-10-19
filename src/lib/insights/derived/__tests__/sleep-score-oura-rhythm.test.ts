@@ -24,6 +24,7 @@ import { mapSleep, type OuraSleep } from "@/lib/oura/client";
 import {
   computeSleepScore,
   reconstructNights,
+  isDaytimeNap,
   rhythmGap,
   scoreConsistency,
 } from "../sleep-score";
@@ -135,6 +136,54 @@ describe("Sleep Score rhythm on an Oura month", () => {
     expect(napOnly.midpoint).toBeNull();
     const regular = nights.find((n) => n.night === "2026-09-11")!;
     expect(regular.midpoint).not.toBeNull();
+  });
+
+  it("keeps a short night on the clock: 2.5 hours asleep is still the night", async () => {
+    // A month of short nights, 01:30 to 04:00 Berlin (23:30 to 02:00 UTC),
+    // the shape of a newborn's first weeks or of insomnia.
+    const rows = Array.from({ length: 20 }, (_, i) => {
+      const d = i + 10;
+      const bed = new Date(Date.UTC(2026, 8, d, 23, 30 + ((d * 7) % 20)));
+      return period(`short-${d}`, "sleep", bed, 150);
+    }).flatMap((p) =>
+      mapSleep(p, TZ)
+        .filter((m) => m.type === "SLEEP_DURATION")
+        .map((m) => ({
+          value: m.value,
+          measuredAt: m.measuredAt,
+          sleepStage: m.sleepStage ?? null,
+          source: "OURA",
+          deviceType: null,
+        })),
+    );
+    const nights = reconstructNights(rows as never, TZ);
+    expect(nights.length).toBe(20);
+    for (const n of nights) {
+      expect(n.asleepMinutes).toBeLessThan(180);
+      expect(n.midpoint).not.toBeNull();
+    }
+    findMany.mockResolvedValue(rows);
+    const result = await computeSleepScore("u1", PROFILE, { now: NOW });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.value.rhythmNights).toBe(20);
+    const sub = (k: string) => result.value.subScores.find((s) => s.key === k)!;
+    expect(sub("consistency").value).toBeGreaterThanOrEqual(70);
+    expect(sub("consistency").gap).toBeUndefined();
+    expect(sub("timing").value).not.toBeNull();
+    expect(sub("timing").gap).toBeUndefined();
+  });
+
+  it("tells a nap from a night by length and time of day together", () => {
+    // Short and in the afternoon: a nap.
+    expect(isDaytimeNap(60, 14 * 60)).toBe(true);
+    // Short but at night: the night.
+    expect(isDaytimeNap(150, 2 * 60)).toBe(false);
+    expect(isDaytimeNap(150, 22 * 60)).toBe(false);
+    // A late sleeper's short night, centred at 09:00.
+    expect(isDaytimeNap(150, 9 * 60)).toBe(false);
+    // Long in the daytime (after a night shift): a main sleep.
+    expect(isDaytimeNap(420, 13 * 60)).toBe(false);
   });
 
   it("scores the consistency of a steady sleeper, not 0", async () => {

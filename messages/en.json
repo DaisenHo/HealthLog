@@ -4392,7 +4392,7 @@
           },
           "gap": {
             "fewNights": "not enough nights yet ({count} of 3)",
-            "noMainSleep": "latest night had no main sleep"
+            "noMainSleep": "latest day had only a nap"
           }
         },
         "READINESS": {

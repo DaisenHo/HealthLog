@@ -4392,7 +4392,7 @@
           },
           "gap": {
             "fewNights": "아직 밤이 부족함 ({count}/3)",
-            "noMainSleep": "최근 밤에 주 수면 없음"
+            "noMainSleep": "최근 하루는 낮잠만 있음"
           }
         },
         "READINESS": {
