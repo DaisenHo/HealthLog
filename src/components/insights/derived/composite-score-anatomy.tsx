@@ -238,6 +238,14 @@ export function CompositeScoreAnatomy({
           label: t(`insights.derived.composite.SLEEP_SCORE.sub.${s.key}`),
           value: s.value,
           weight: s.weight,
+          missingLabel:
+            s.gap === "few_nights"
+              ? t("insights.derived.composite.SLEEP_SCORE.gap.fewNights", {
+                  count: v.rhythmNights ?? 0,
+                })
+              : s.gap === "no_main_sleep"
+                ? t("insights.derived.composite.SLEEP_SCORE.gap.noMainSleep")
+                : undefined,
         }))
         .sort(rankByImpact);
     } else if (metric === "READINESS") {

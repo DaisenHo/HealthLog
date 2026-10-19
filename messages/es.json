@@ -4389,6 +4389,10 @@
             "consistency": "Consistencia",
             "timing": "Horario",
             "composition": "Composición"
+          },
+          "gap": {
+            "fewNights": "aún no hay suficientes noches ({count} de 3)",
+            "noMainSleep": "la última noche no tuvo sueño principal"
           }
         },
         "READINESS": {

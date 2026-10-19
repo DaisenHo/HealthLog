@@ -78,7 +78,21 @@ export interface SleepSubScore {
   value: number | null;
   /** Effective weight after null-redistribution, 0..1. */
   weight: number;
+  /**
+   * Why a rhythm sub-score (consistency, timing) has no value, set only when
+   * `value` is null. `few_nights`: fewer than `RHYTHM_MIN_NIGHTS` nights in
+   * the window have a main sleep to place on the clock. `no_main_sleep`: the
+   * window has enough, but the latest night has none (a nap-only day). A
+   * client names the gap instead of reading it as "no data", and never as 0.
+   */
+  gap?: SleepSubScoreGap;
 }
+
+/** The two reasons a rhythm sub-score is withheld. See `SleepSubScore.gap`. */
+export type SleepSubScoreGap = "few_nights" | "no_main_sleep";
+
+/** Nights with a main sleep the rhythm sub-scores need before they score. */
+export const RHYTHM_MIN_NIGHTS = 3;
 
 export interface SleepScoreValue {
   /** The composite 0..100. */
@@ -95,6 +109,12 @@ export interface SleepScoreValue {
   subScores: SleepSubScore[];
   /** Nights in the window that backed the consistency/timing baseline. */
   windowNights: number;
+  /**
+   * Nights in the window whose main sleep places them on the clock — the
+   * nights consistency and timing are computed from. Below
+   * `RHYTHM_MIN_NIGHTS` both are withheld with `gap: "few_nights"`.
+   */
+  rhythmNights: number;
   /**
    * v1.42 — the score of every scorable night in the window (oldest → newest,
    * capped to `SPARKLINE_MAX_POINTS`), so a surface can show the score's
@@ -232,7 +252,7 @@ export function circularMeanMinutes(minutes: number[]): number | null {
  * not penalised for a spurious ~24-hour spread.
  */
 export function scoreConsistency(midpointMinutes: number[]): number | null {
-  if (midpointMinutes.length < 3) return null;
+  if (midpointMinutes.length < RHYTHM_MIN_NIGHTS) return null;
   const mean = circularMeanMinutes(midpointMinutes);
   if (mean == null) return null;
   const variance =
@@ -256,7 +276,11 @@ export function scoreTiming(
   habitualMidpoint: number | null,
   windowNights: number,
 ): number | null {
-  if (nightMidpoint == null || habitualMidpoint == null || windowNights < 3) {
+  if (
+    nightMidpoint == null ||
+    habitualMidpoint == null ||
+    windowNights < RHYTHM_MIN_NIGHTS
+  ) {
     return null;
   }
   const FULL_SCALE = 90;
@@ -302,6 +326,24 @@ export function blendSleepSubScores(
     if (s.value !== null) composite += s.value * s.weight;
   }
   return { score: clamp100(composite), subScores };
+}
+
+/**
+ * The reason a rhythm sub-score came out null, or undefined when it has a
+ * value or is not a rhythm sub-score. Consistency needs `RHYTHM_MIN_NIGHTS`
+ * nights on the clock; timing needs those and a main sleep on the latest
+ * night. Pure.
+ */
+export function rhythmGap(
+  sub: Pick<SleepSubScore, "key" | "value">,
+  rhythmNights: number,
+  latestMidpoint: number | null,
+): SleepSubScoreGap | undefined {
+  if (sub.value !== null) return undefined;
+  if (sub.key !== "consistency" && sub.key !== "timing") return undefined;
+  if (rhythmNights < RHYTHM_MIN_NIGHTS) return "few_nights";
+  if (sub.key === "timing" && latestMidpoint == null) return "no_main_sleep";
+  return undefined;
 }
 
 // ── night reconstruction ───────────────────────────────────────────────
@@ -571,7 +613,12 @@ export async function computeSleepScore(
     ),
   };
 
-  const { score, subScores } = blendSleepSubScores(raw);
+  const blended = blendSleepSubScores(raw);
+  const score = blended.score;
+  const subScores = blended.subScores.map((s) => {
+    const gap = rhythmGap(s, midpoints.length, latest.midpoint);
+    return gap ? { ...s, gap } : s;
+  });
 
   // The same blend over every scorable night in the window. Consistency is a
   // window-level figure and timing reads against the window's habitual
@@ -619,6 +666,7 @@ export async function computeSleepScore(
         latest.inBedMinutes === null ? null : Math.round(latest.inBedMinutes),
       subScores,
       windowNights: scorableNights.length,
+      rhythmNights: midpoints.length,
       series,
     },
     coverage,

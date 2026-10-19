@@ -24,6 +24,7 @@ import { mapSleep, type OuraSleep } from "@/lib/oura/client";
 import {
   computeSleepScore,
   reconstructNights,
+  rhythmGap,
   scoreConsistency,
 } from "../sleep-score";
 
@@ -151,6 +152,46 @@ describe("Sleep Score rhythm on an Oura month", () => {
         Date.UTC(2026, 7, 31),
       );
     }
+  });
+
+  it("names too few nights as a gap, never as 0", async () => {
+    // Two nights on the ring so far: no rhythm yet.
+    const two = fixture().filter(
+      (r) =>
+        r.source === "OURA" &&
+        r.measuredAt >= new Date("2026-09-29T12:00:00Z") &&
+        r.measuredAt < new Date("2026-10-01T06:00:00Z"),
+    );
+    findMany.mockResolvedValue(two);
+    const result = await computeSleepScore("u1", PROFILE, { now: NOW });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.value.rhythmNights).toBe(2);
+    for (const key of ["consistency", "timing"]) {
+      const s = result.value.subScores.find((x) => x.key === key)!;
+      expect(s.value).toBeNull();
+      expect(s.weight).toBe(0);
+      expect(s.gap).toBe("few_nights");
+    }
+    // A sub-score with a value carries no gap.
+    const sufficiency = result.value.subScores.find(
+      (x) => x.key === "sufficiency",
+    )!;
+    expect(sufficiency.value).not.toBeNull();
+    expect(sufficiency.gap).toBeUndefined();
+  });
+
+  it("names a latest night without a main sleep for timing only", () => {
+    expect(rhythmGap({ key: "timing", value: null }, 20, null)).toBe(
+      "no_main_sleep",
+    );
+    expect(
+      rhythmGap({ key: "consistency", value: null }, 20, null),
+    ).toBeUndefined();
+    expect(rhythmGap({ key: "timing", value: 80 }, 20, 180)).toBeUndefined();
+    expect(
+      rhythmGap({ key: "efficiency", value: null }, 1, null),
+    ).toBeUndefined();
   });
 
   it("still reads a truly irregular rhythm as irregular", () => {
