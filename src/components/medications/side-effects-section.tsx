@@ -50,6 +50,7 @@ import {
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { apiDelete, apiGetList, apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.4.25 — GLP-1 side-effect section for the medication detail
@@ -339,9 +340,11 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       )}
 
       {!isLoading && !isError && items.length === 0 && (
-        <p className="text-muted-foreground py-1">
-          {t("medications.sideEffects.emptyState")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("medications.sideEffects.emptyState")}
+        />
       )}
 
       {!isLoading && !isError && items.length > 0 && (

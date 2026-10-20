@@ -32,6 +32,7 @@ import {
   type IntradayResolution,
   type TensionWindow,
 } from "@/lib/analytics/intraday-pulse";
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
 /** Slim DTO the intraday route returns (type-only — no server code bundled). */
 interface IntradayPulseDto {
@@ -264,9 +265,10 @@ export function IntradayPulseChart({
         // A lone reading or two on a 24-hour axis drew a dot in an empty
         // field and called it the course of the day. Below a handful of
         // buckets the card says there is not enough for a course.
-        <div className="text-muted-foreground flex h-44 items-center justify-center rounded-lg border border-dashed text-sm">
-          {t("insights.intradayPulse.empty")}
-        </div>
+        <ChartEmptyState
+          title={t("insights.intradayPulse.empty")}
+          height={176}
+        />
       ) : (
         <div className="touch-pan-y">
           <ResponsiveContainer width="100%" height={180}>

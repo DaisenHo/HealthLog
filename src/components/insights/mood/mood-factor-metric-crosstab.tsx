@@ -4,13 +4,13 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
-import { cn } from "@/lib/utils";
-import type { MoodInfluenceConfidence } from "./mood-tag-influence";
 import {
-  PatternDismissButton,
-  PatternDismissedNotice,
-  usePatternDismissalOverrides,
-} from "@/components/insights/pattern-dismiss-action";
+  crosstabReading,
+  MetricCrosstab,
+  withUnit,
+  type CrosstabMeasure,
+} from "@/components/insights/metric-crosstab";
+import type { MoodInfluenceConfidence } from "./mood-tag-influence";
 
 /**
  * v1.14.0 — RATED-factor × vital crosstab card.
@@ -62,26 +62,14 @@ const METRIC_LABEL_KEY: Record<string, string> = {
   bloodPressureSystolic: "insights.mood.factorCrosstab.metricBloodPressureSys",
 };
 
-const UNIT_KEY: Record<MoodFactorCrosstabDisplay, string> = {
-  hours: "insights.mood.factorCrosstab.unitHours",
-  score: "insights.mood.factorCrosstab.unitScore",
-  steps: "insights.mood.factorCrosstab.unitSteps",
-  bpm: "insights.mood.factorCrosstab.unitBpm",
-  ms: "insights.mood.factorCrosstab.unitMs",
-  kg: "insights.mood.factorCrosstab.unitKg",
-  mmHg: "insights.mood.factorCrosstab.unitMmHg",
-};
-
-const CONFIDENCE_KEY: Record<MoodInfluenceConfidence, string> = {
-  low: "insights.mood.influence.confidenceLow",
-  medium: "insights.mood.influence.confidenceMedium",
-  high: "insights.mood.influence.confidenceHigh",
-};
-
-const CONFIDENCE_CLASS: Record<MoodInfluenceConfidence, string> = {
-  low: "bg-secondary text-muted-foreground",
-  medium: "bg-info/15 text-info",
-  high: "bg-success/15 text-success",
+/** The measurement each row reads (`src/lib/insights/mood-crosstab.ts`). */
+const METRIC_TYPE: Record<string, string> = {
+  sleepDuration: "SLEEP_DURATION",
+  steps: "ACTIVITY_STEPS",
+  restingHeartRate: "RESTING_HEART_RATE",
+  heartRateVariability: "HEART_RATE_VARIABILITY",
+  weight: "WEIGHT",
+  bloodPressureSystolic: "BLOOD_PRESSURE_SYS",
 };
 
 /** Whole numbers for steps; one decimal otherwise. */
@@ -101,120 +89,58 @@ export function MoodFactorMetricCrosstab({
   const { t } = useTranslations();
   const nf = useFormatters();
   const unitDisplay = useUnitDisplay();
-  const dismissal = usePatternDismissalOverrides();
-  if (rows.length === 0) return null;
-
   return (
-    <div data-slot="mood-factor-metric-crosstab">
-      <p className="text-muted-foreground mb-2 text-sm">
-        {t("insights.mood.factorCrosstab.description")}
-      </p>
-      <ul className="divide-border divide-y">
-        {rows.map((row) => {
-          const patternId = row.patternId;
-          if (
-            patternId &&
-            dismissal.isDismissed(patternId, row.dismissed === true)
-          ) {
-            return (
-              <li key={row.canonicalKey ?? patternId} className="py-2">
-                <PatternDismissedNotice
-                  compact
-                  patternId={patternId}
-                  onRestored={() => dismissal.setDismissed(patternId, false)}
-                  onSettled={() => dismissal.clearDismissed(patternId, false)}
-                />
-              </li>
-            );
-          }
-          const Icon = moodTagIcon(row.icon);
-          const factorLabel = t(row.labelKey);
-          const metricLabel = t(
-            METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey,
-          );
-          const pairLabel = t("insights.mood.factorCrosstab.pairLabel", {
+    <MetricCrosstab
+      slot="mood-factor-metric-crosstab"
+      rowSlot="mood-factor-crosstab-row"
+      description={t("insights.mood.factorCrosstab.description")}
+      rows={rows.map((row) => {
+        const factorLabel = t(row.labelKey);
+        const metricLabel = t(METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey);
+        // Weight follows the metric/imperial preference (values and unit
+        // together); every other row keeps the server's value.
+        const measure: CrosstabMeasure = {
+          type: METRIC_TYPE[row.metricKey] ?? null,
+          display: row.display,
+        };
+        const { unit, abs, delta } = crosstabReading(measure, unitDisplay, t);
+        // `delta` = lowAvg − highAvg: positive = the vital runs higher on the
+        // low-factor (worse) days.
+        return {
+          key: `${row.metricKey}:${row.factor}`,
+          metricKey: row.metricKey,
+          pairLabel: t("insights.mood.factorCrosstab.pairLabel", {
             factor: factorLabel,
             metric: metricLabel,
-          });
-          // v1.32.26 — the weight ("kg") row follows the metric/imperial
-          // preference: the unit symbol + the values (averages + delta, all in
-          // kg, offset-free) convert together. Every other display is unitless
-          // to the preference and keeps its i18n label + raw value.
-          const isWeightRow = row.display === "kg";
-          const unit = isWeightRow
-            ? unitDisplay.unitFor("WEIGHT")
-            : t(UNIT_KEY[row.display]);
-          const conv = (v: number) =>
-            isWeightRow ? unitDisplay.toDisplay("WEIGHT", v) : v;
-          // `delta` = lowAvg − highAvg: positive = the vital runs higher on the
-          // low-factor (worse) days. The number stays NEUTRAL — a higher value
-          // is good for steps but bad for resting HR, and this board is
-          // observational ("associations, not causes"), so colouring it
-          // green/red would imply a health verdict the data doesn't support.
-          // The sign prefix + `data-direction` carry the direction.
-          const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${formatValue(conv(row.delta), row.display, nf)} ${unit}`;
-          return (
-            <li
-              key={`${row.metricKey}:${row.factor}`}
-              className="flex flex-col gap-1.5 py-2"
-              data-slot="mood-factor-crosstab-row"
-              data-metric={row.metricKey}
-              data-direction={up ? "up" : "down"}
-              data-confidence={row.confidence}
-            >
-              <div className="flex items-center gap-2 text-sm">
-                {Icon && (
-                  <Icon
-                    className="text-muted-foreground h-4 w-4 shrink-0"
-                    aria-hidden="true"
-                  />
-                )}
-                <span
-                  className="text-foreground min-w-0 flex-1 truncate"
-                  title={pairLabel}
-                >
-                  {pairLabel}
-                </span>
-                <span className="text-foreground shrink-0 text-sm font-semibold tabular-nums">
-                  {deltaText}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    CONFIDENCE_CLASS[row.confidence],
-                  )}
-                >
-                  {t(CONFIDENCE_KEY[row.confidence])}
-                </span>
-                {patternId ? (
-                  <PatternDismissButton
-                    patternId={patternId}
-                    onDismissed={() => dismissal.setDismissed(patternId, true)}
-                    onSettled={() => dismissal.clearDismissed(patternId, true)}
-                    className="shrink-0"
-                  />
-                ) : null}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {t(
-                  row.inverse
-                    ? "insights.mood.factorCrosstab.detailInverse"
-                    : "insights.mood.factorCrosstab.detail",
-                  {
-                    factor: factorLabel,
-                    metric: metricLabel,
-                    lowAvg: formatValue(conv(row.lowAvg), row.display, nf),
-                    highAvg: formatValue(conv(row.highAvg), row.display, nf),
-                    unit,
-                    lowDays: row.lowDays,
-                  },
-                )}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+          }),
+          icon: moodTagIcon(row.icon),
+          up: row.delta >= 0,
+          deltaValue: formatValue(delta(row.delta), row.display, nf),
+          measure,
+          confidence: row.confidence,
+          detail: t(
+            row.inverse
+              ? "insights.mood.factorCrosstab.detailInverse"
+              : "insights.mood.factorCrosstab.detail",
+            {
+              factor: factorLabel,
+              metric: metricLabel,
+              lowAvg: withUnit(
+                formatValue(abs(row.lowAvg), row.display, nf),
+                unit,
+              ),
+              highAvg: withUnit(
+                formatValue(abs(row.highAvg), row.display, nf),
+                unit,
+              ),
+              lowDays: row.lowDays,
+            },
+          ),
+          patternId: row.patternId,
+          canonicalKey: row.canonicalKey,
+          dismissed: row.dismissed,
+        };
+      })}
+    />
   );
 }

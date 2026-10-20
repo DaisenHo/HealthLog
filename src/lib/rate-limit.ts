@@ -136,25 +136,23 @@ export async function checkEnvironmentBackfillRateLimit(
 }
 
 /**
- * Shared per-account ceiling for the single-record writes.
+ * Shared per-account ceiling for every authenticated write.
  *
  * The batch endpoints have been capped at 60 calls a minute since they were
  * written; the per-record siblings a naive or older client loops over were not
  * capped at all, which is backwards — the batch endpoint is the one a
- * well-behaved client uses. This is the floor under the other direction:
- * `POST /api/measurements`, `/api/mood-entries`, both medication-intake writes,
- * `/api/labs`, a custom-metric entry, a cycle day-log, a vaccination, an
- * allergy, a biomarker and an encounter.
+ * well-behaved client uses. This was first the floor under a dozen creates,
+ * called by hand; it is now charged where the caller is resolved
+ * (`meterAccountWrite`, `src/lib/auth/write-meter.ts`), so every POST, PUT,
+ * PATCH and DELETE an authenticated caller sends counts against it, except on
+ * the bulk ingest routes that meter themselves.
  *
  * One shared bucket, not one per route, for the reason
- * `checkAnalyticsReadRateLimit` gives: a loop that rotates across ten creates
+ * `checkAnalyticsReadRateLimit` gives: a loop that rotates across ten routes
  * should still meet a cap. Three hundred a minute is five writes a second
  * sustained for a full minute — no hand-driven session and no sync burst
- * reaches it. Ten of the eleven are wrapped in `withIdempotency`, so an honest
- * retry storm is deduplicated before it is counted; `POST
- * /api/medications/intake` is not, because it updates a named `intakeId`
- * rather than creating a row, so a replay writes the status that is already
- * there. It exists to cut off the pathological loop, not to shape traffic.
+ * reaches it. It exists to cut off the pathological loop, not to shape
+ * traffic.
  *
  * A refused request is counted too: the check runs before the body is read,
  * so a client looping on a 422 spends its allowance without writing a row.

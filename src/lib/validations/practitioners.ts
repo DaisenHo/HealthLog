@@ -10,6 +10,8 @@
  */
 import { z } from "zod/v4";
 
+import { listOffsetField } from "@/lib/http/list-query-fields";
+
 export const practitionerCreateSchema = z
   .object({
     name: z.string().min(1).max(160),
@@ -50,6 +52,11 @@ export const practitionerListQuerySchema = z
   .object({
     q: z.string().min(1).max(160).optional(),
     limit: z.coerce.number().int().min(1).max(200).optional(),
+    offset: listOffsetField()
+      .optional()
+      .describe(
+        "Rows to skip, for reading the address book page by page; `meta.truncated` says whether another page exists.",
+      ),
   })
   .strict();
 

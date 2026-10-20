@@ -356,10 +356,12 @@ export const stdResponses = {
  *
  * The batch endpoints have been capped at 60 calls a minute since they were
  * written and the per-record siblings were not capped at all, which is exactly
- * backwards: the batch endpoint is the one a well-behaved client uses. The
- * eleven single-record creates now share one generous per-account bucket, and
- * this is the response that names it — a client that meets a ceiling should be
- * able to read which one it met without a bug report.
+ * backwards: the batch endpoint is the one a well-behaved client uses. Every
+ * authenticated write now shares one generous per-account bucket, charged where
+ * the caller is resolved (`src/lib/auth/write-meter.ts`), and this is the
+ * response that names it on the single-record creates that publish it — a
+ * client that meets a ceiling should be able to read which one it met without
+ * a bug report.
  *
  * Spread AFTER `...stdResponses` so it replaces the generic 429 on those
  * operations. The headers block is the one the standard 429 already declares.
@@ -371,7 +373,7 @@ export const stdResponses = {
 export const recordWriteRateLimitResponse = {
   "429": {
     description:
-      "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes — `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns their own allowance rather than the record owner's. Nothing was written. `meta.errorCode` is `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422 spends the same allowance as one that writes rows. A client with more than a handful of rows to send should use the batch endpoint for its domain instead of looping this one.",
+      "Rate limit exceeded. This route shares one per-account bucket with every other authenticated write — `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns their own allowance rather than the record owner's. Only the routes that meter themselves with a dedicated bucket (the bulk ingest endpoints and the model-turn chats) and a POST that writes nothing stay outside it. If the bucket cannot be read, the write goes ahead unmetered rather than failing. Nothing was written. `meta.errorCode` is `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422 spends the same allowance as one that writes rows. A client with more than a handful of rows to send should use the batch endpoint for its domain instead of looping this one.",
     content: { "application/json": { schema: errorEnvelope } },
     headers: stdResponses["429"].headers,
   },

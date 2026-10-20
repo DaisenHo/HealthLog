@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Heatmap zur Medikamenteneinnahme von {start} bis {end}, {days} aktive Tage.",
       "complianceHeatmapEmpty": "Heatmap zur Medikamenteneinnahme, noch keine aktiven Tage."
     },
-    "medicationsEmptyAction": "Medikament anlegen"
+    "medicationsEmptyAction": "Medikament anlegen",
+    "rangeLabel": "Zeitraum"
   },
   "chart": {
     "overlay": {
@@ -4220,13 +4221,8 @@
         "metricNextDayRecovery": "Erholung am Folgetag",
         "metricNextDayRestingHr": "Ruhepuls am Folgetag",
         "metricNextDayHrv": "Herzfrequenzvariabilität am Folgetag",
-        "unitHours": "Std.",
-        "unitKcal": "kcal",
-        "unitScore": "Pkt.",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "Durchschnittlich {withAvg} {unit} an den {withDays} Tagen mit diesem Tag gegenüber {withoutAvg} {unit} ohne.",
-        "detailNextDay": "Durchschnittlich {withAvg} {unit} am Tag nach den {withDays} Tagen mit diesem Tag gegenüber {withoutAvg} {unit} sonst."
+        "detailSameDay": "Durchschnittlich {withAvg} an den {withDays} Tagen mit diesem Tag gegenüber {withoutAvg} ohne.",
+        "detailNextDay": "Durchschnittlich {withAvg} am Tag nach den {withDays} Tagen mit diesem Tag gegenüber {withoutAvg} sonst."
       },
       "factorCrosstab": {
         "title": "Deine bewerteten Faktoren und deine Vitalwerte",
@@ -4238,15 +4234,8 @@
         "metricHrv": "Herzfrequenzvariabilität",
         "metricWeight": "Gewicht",
         "metricBloodPressureSys": "Systolisch",
-        "unitHours": "Std.",
-        "unitScore": "Pkt.",
-        "unitSteps": "Schritte",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "Durchschnittlich {lowAvg} {unit} an den {lowDays} Tagen mit niedriger {factor}-Bewertung gegenüber {highAvg} {unit} an den Tagen mit hoher Bewertung.",
-        "detailInverse": "Durchschnittlich {lowAvg} {unit} an deinen {lowDays} schlechteren {factor}-Tagen gegenüber {highAvg} {unit} an deinen besseren."
+        "detail": "Durchschnittlich {lowAvg} an den {lowDays} Tagen mit niedriger {factor}-Bewertung gegenüber {highAvg} an den Tagen mit hoher Bewertung.",
+        "detailInverse": "Durchschnittlich {lowAvg} an deinen {lowDays} schlechteren {factor}-Tagen gegenüber {highAvg} an deinen besseren."
       },
       "discovery": {
         "title": "Was auffällt",
@@ -6673,21 +6662,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Verbunden",
-      "errorReconnect": "Fehler: neu verbinden",
-      "warningServerError": "Sync fehlgeschlagen",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Pausiert: neu verbinden",
-      "notConnected": "Nicht verbunden",
       "justNow": "gerade eben",
       "minutesAgo": "vor {count} min",
       "hoursAgo": "vor {count} Std.",
       "daysAgo": "vor {count} d",
       "resumeSuccess": "Integration wieder aktiv",
-      "resumeError": "Wieder verbinden fehlgeschlagen",
-      "stale": "Verbunden, keine neuen Daten",
-      "stalled": "Sync gestoppt",
-      "pendingSetup": "Warte auf erste Daten"
+      "resumeError": "Wieder verbinden fehlgeschlagen"
     },
     "integrationFreshness": {
       "title": "Empfangene Daten",
@@ -7756,6 +7736,7 @@
     "tokensEmptyTitle": "Noch keine API-Tokens",
     "tokensEmptyDescription": "Tokens werden bei der Anmeldung nativer Clients oder über Einstellungen → Account ausgestellt.",
     "loginOverviewDescription": "Anmelde- und Auth-Ereignisse aller Konten, filterbar und als CSV exportierbar.",
+    "loginOverviewFilterLabel": "Ereignisse filtern",
     "allAuthEvents": "Alle Auth-Ereignisse",
     "failedOnly": "Nur fehlgeschlagene",
     "loginEmptyDescription": "Anmeldungen, Abmeldungen und Passkey-Änderungen erscheinen hier.",
@@ -7884,6 +7865,7 @@
           "admin": "Admins",
           "user": "Nutzer"
         },
+        "filterLabel": "Benutzer filtern",
         "forceLogout": "Abmeldung erzwingen",
         "forceLogoutConfirmTitle": "{name} abmelden?",
         "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich.",
@@ -8909,6 +8891,7 @@
     "inTarget": "Im Zielbereich",
     "aboveTarget": "{delta} {unit} über Zielbereich",
     "belowTarget": "{delta} {unit} unter Zielbereich",
+    "systolic": "Systolisch",
     "diastolic": "Diastolisch",
     "glucoseFasting": "Glukose, nüchtern",
     "glucosePostprandial": "Glukose, postprandial",
@@ -9165,9 +9148,9 @@
     "insights": {
       "headline": {
         "title": "Dein Zyklus und dein Körper",
-        "restingHeartRate": "Dein Ruhepuls liegt in der Lutealphase etwa {delta} {unit} {dir} als in der Follikelphase.",
-        "heartRateVariability": "Deine Herzfrequenzvariabilität liegt in der Lutealphase etwa {delta} {unit} {dir} als in der Follikelphase.",
-        "generic": "Dein/e {metric} liegt in der Lutealphase etwa {delta} {unit} {dir} als in der Follikelphase.",
+        "restingHeartRate": "Dein Ruhepuls liegt in der Lutealphase etwa {delta} {dir} als in der Follikelphase.",
+        "heartRateVariability": "Deine Herzfrequenzvariabilität liegt in der Lutealphase etwa {delta} {dir} als in der Follikelphase.",
+        "generic": "Dein/e {metric} liegt in der Lutealphase etwa {delta} {dir} als in der Follikelphase.",
         "dirHigher": "höher",
         "dirLower": "niedriger",
         "empty": "Noch nicht genug Zyklen und Messwerte für ein Phasenmuster. Logge weiter, das füllt sich, je länger deine Historie wird."
@@ -9175,7 +9158,7 @@
       "crosstab": {
         "description": "Wie sich jeder Messwert zwischen deiner Luteal- und Follikelphase vergleicht, auf deinen eigenen Daten.",
         "pairLabel": "{metric}: Luteal- vs. Follikelphase",
-        "detail": "Luteal {lutealAvg} {unit} ({lutealDays} Tage) vs. Follikel {follicularAvg} {unit} ({follicularDays} Tage).",
+        "detail": "Luteal {lutealAvg} ({lutealDays} Tage) vs. Follikel {follicularAvg} ({follicularDays} Tage).",
         "metricRestingHeartRate": "Ruhepuls",
         "metricHrv": "Herzfrequenzvariabilität",
         "metricSleepDuration": "Schlafdauer",
@@ -9185,15 +9168,7 @@
         "metricWristTemperature": "Handgelenkstemperatur nachts",
         "metricSkinTemperature": "Hauttemperatur",
         "metricBloodGlucose": "Blutzucker",
-        "metricMood": "Stimmung",
-        "unitHours": "Std.",
-        "unitSteps": "Schritte",
-        "unitBpm": "S/min",
-        "unitMs": "ms",
-        "unitMood": "Pkt.",
-        "confidenceLow": "Geringe Sicherheit",
-        "confidenceMedium": "Mittlere Sicherheit",
-        "confidenceHigh": "Hohe Sicherheit"
+        "metricMood": "Stimmung"
       },
       "title": "Zyklus-Erkenntnisse",
       "symptomPatternsTitle": "Symptommuster nach Phase",

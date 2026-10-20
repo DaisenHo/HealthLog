@@ -97,8 +97,8 @@ export function ResilienceTile() {
           size="sm"
           icon={ShieldCheck}
           title={t("measurements.typeResilience")}
+          reserveLines={2}
           className="min-w-0"
-          titleClassName="min-w-0 truncate"
           right={
             bandKey != null ? (
               <span

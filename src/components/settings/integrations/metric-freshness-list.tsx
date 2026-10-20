@@ -22,7 +22,7 @@
 import type { ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 
-import { formatRelative } from "@/components/settings/integration-status-pill";
+import { formatRelative } from "./format-relative";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/components/measurements/measurement-list-meta";
 import { useTranslations } from "@/lib/i18n/context";
 import type { MetricFreshnessEntry } from "@/lib/integrations/sync-verdict";

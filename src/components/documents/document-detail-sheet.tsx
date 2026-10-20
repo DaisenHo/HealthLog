@@ -75,14 +75,14 @@ import {
   useFencedObjectUrl,
 } from "@/hooks/use-fenced-object-url";
 import { cn } from "@/lib/utils";
-import {
-  INBOUND_DOCUMENT_KINDS,
-  type DocumentSourceSystemValue,
-  type DocumentSuggestionDto,
-  type DocumentSummaryMode,
-  type InboundDocumentDetailDto,
-  type InboundDocumentKindValue,
+import type {
+  DocumentSourceSystemValue,
+  DocumentSuggestionDto,
+  DocumentSummaryMode,
+  InboundDocumentDetailDto,
+  InboundDocumentKindValue,
 } from "@/lib/validations/inbound-documents";
+import { INBOUND_DOCUMENT_KINDS } from "@/lib/documents/inbound-constants";
 import { DocumentAiSection } from "./document-ai-section";
 import { DocumentEncounterSuggestion } from "./document-encounter-suggestion";
 import { DocumentRecordLinks } from "./document-record-links";
@@ -102,7 +102,7 @@ import {
   useDocumentSummary,
   useSuggestDetails,
 } from "./use-document-assist";
-import { formatBytes } from "./vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 type PatchInput = {

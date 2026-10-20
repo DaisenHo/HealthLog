@@ -71,7 +71,9 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // Metered by the document chat's own bucket below, not the shared
+    // ceiling.
+    const { user } = await requireAuth(undefined, { writeBucket: "own" });
     const userId = user.id;
 
     const gate = await requireModuleEnabled(userId, "inboundDocuments");

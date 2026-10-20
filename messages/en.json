@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Medication compliance heatmap from {start} to {end}, {days} active days.",
       "complianceHeatmapEmpty": "Medication compliance heatmap, no active days yet."
     },
-    "medicationsEmptyAction": "Add a medication"
+    "medicationsEmptyAction": "Add a medication",
+    "rangeLabel": "Time range"
   },
   "chart": {
     "overlay": {
@@ -4220,13 +4221,8 @@
         "metricNextDayRecovery": "Next-day recovery",
         "metricNextDayRestingHr": "Next-day resting heart rate",
         "metricNextDayHrv": "Next-day heart-rate variability",
-        "unitHours": "h",
-        "unitKcal": "kcal",
-        "unitScore": "pts",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "Averages {withAvg} {unit} on the {withDays} days you tagged this vs {withoutAvg} {unit} without it.",
-        "detailNextDay": "Averages {withAvg} {unit} the day after the {withDays} days you tagged this vs {withoutAvg} {unit} otherwise."
+        "detailSameDay": "Averages {withAvg} on the {withDays} days you tagged this vs {withoutAvg} without it.",
+        "detailNextDay": "Averages {withAvg} the day after the {withDays} days you tagged this vs {withoutAvg} otherwise."
       },
       "factorCrosstab": {
         "title": "Your rated factors and your vitals",
@@ -4238,15 +4234,8 @@
         "metricHrv": "Heart-rate variability",
         "metricWeight": "Weight",
         "metricBloodPressureSys": "Systolic",
-        "unitHours": "h",
-        "unitScore": "pts",
-        "unitSteps": "steps",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "Averages {lowAvg} {unit} on the {lowDays} days you rated {factor} low vs {highAvg} {unit} on the days you rated it high.",
-        "detailInverse": "Averages {lowAvg} {unit} on your {lowDays} worse {factor} days vs {highAvg} {unit} on your better ones."
+        "detail": "Averages {lowAvg} on the {lowDays} days you rated {factor} low vs {highAvg} on the days you rated it high.",
+        "detailInverse": "Averages {lowAvg} on your {lowDays} worse {factor} days vs {highAvg} on your better ones."
       },
       "discovery": {
         "title": "What stands out",
@@ -6673,21 +6662,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Connected",
-      "errorReconnect": "Error: reconnect",
-      "warningServerError": "Sync failing",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Paused: reconnect",
-      "notConnected": "Not connected",
       "justNow": "just now",
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
       "resumeSuccess": "Integration resumed",
-      "resumeError": "Reconnect failed",
-      "stale": "Connected, no recent data",
-      "stalled": "Sync stopped",
-      "pendingSetup": "Waiting for first data"
+      "resumeError": "Reconnect failed"
     },
     "integrationFreshness": {
       "title": "Data received",
@@ -7756,6 +7736,7 @@
     "tokensEmptyTitle": "No API tokens yet",
     "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings → Account.",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
+    "loginOverviewFilterLabel": "Filter events",
     "allAuthEvents": "All auth events",
     "failedOnly": "Failed only",
     "loginEmptyDescription": "Sign-ins, sign-outs, and passkey changes will show up here.",
@@ -7884,6 +7865,7 @@
           "admin": "Admins",
           "user": "Users"
         },
+        "filterLabel": "Filter users",
         "forceLogout": "Force logout",
         "forceLogoutConfirmTitle": "Force logout {name}?",
         "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device.",
@@ -8909,6 +8891,7 @@
     "inTarget": "Within target range",
     "aboveTarget": "{delta} {unit} above target",
     "belowTarget": "{delta} {unit} below target",
+    "systolic": "Systolic",
     "diastolic": "Diastolic",
     "glucoseFasting": "Glucose (fasting)",
     "glucosePostprandial": "Glucose (post-meal)",
@@ -9165,9 +9148,9 @@
     "insights": {
       "headline": {
         "title": "Your cycle and your body",
-        "restingHeartRate": "Your resting heart rate runs about {delta} {unit} {dir} in your luteal phase than your follicular phase.",
-        "heartRateVariability": "Your heart-rate variability runs about {delta} {unit} {dir} in your luteal phase than your follicular phase.",
-        "generic": "Your {metric} runs about {delta} {unit} {dir} in your luteal phase than your follicular phase.",
+        "restingHeartRate": "Your resting heart rate runs about {delta} {dir} in your luteal phase than your follicular phase.",
+        "heartRateVariability": "Your heart-rate variability runs about {delta} {dir} in your luteal phase than your follicular phase.",
+        "generic": "Your {metric} runs about {delta} {dir} in your luteal phase than your follicular phase.",
         "dirHigher": "higher",
         "dirLower": "lower",
         "empty": "Not enough cycles and readings yet to surface a phase pattern. Keep logging; this fills in as your history grows."
@@ -9175,7 +9158,7 @@
       "crosstab": {
         "description": "How each measurement compares between your luteal and follicular phases, on your own data.",
         "pairLabel": "{metric}: luteal vs follicular",
-        "detail": "Luteal {lutealAvg} {unit} ({lutealDays} days) vs follicular {follicularAvg} {unit} ({follicularDays} days).",
+        "detail": "Luteal {lutealAvg} ({lutealDays} days) vs follicular {follicularAvg} ({follicularDays} days).",
         "metricRestingHeartRate": "Resting heart rate",
         "metricHrv": "Heart-rate variability",
         "metricSleepDuration": "Sleep duration",
@@ -9185,15 +9168,7 @@
         "metricWristTemperature": "Overnight wrist temperature",
         "metricSkinTemperature": "Skin temperature",
         "metricBloodGlucose": "Blood glucose",
-        "metricMood": "Mood",
-        "unitHours": "h",
-        "unitSteps": "steps",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Low confidence",
-        "confidenceMedium": "Medium confidence",
-        "confidenceHigh": "High confidence"
+        "metricMood": "Mood"
       },
       "title": "Cycle insights",
       "symptomPatternsTitle": "Symptom patterns by phase",

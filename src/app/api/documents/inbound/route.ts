@@ -50,6 +50,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { getAiCapability } from "@/lib/ai/capabilities/gate";
+import { listPage } from "@/lib/http/list-query";
 import { prisma } from "@/lib/db";
 import { hashQueryTokens } from "@/lib/documents/content-index";
 import {
@@ -710,16 +711,17 @@ export const GET = apiHandler(async (request: Request) => {
 
   // Hardening: the list NEVER fetches the encrypted blob column — a page of
   // 50 rows would otherwise drag up to 50 × cap ciphertext bytes per request.
-  const rows = await prisma.inboundDocument.findMany({
-    where,
-    omit: { contentEncrypted: true },
-    orderBy,
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-  });
+  const { rows: page, cap } = await listPage(limit, (take) =>
+    prisma.inboundDocument.findMany({
+      where,
+      omit: { contentEncrypted: true },
+      orderBy,
+      take,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    }),
+  );
 
-  const hasMore = rows.length > limit;
-  const page = hasMore ? rows.slice(0, limit) : rows;
+  const hasMore = cap.truncated;
   const nextCursor = hasMore ? (page[page.length - 1]?.id ?? null) : null;
 
   // Fact tallies for the whole page in ONE grouped count — no per-document

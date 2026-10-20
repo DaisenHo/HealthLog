@@ -7,13 +7,15 @@
  * and byte formatting. Kept out of the client components so they stay
  * trivially unit-testable without a render harness.
  */
+import type {
+  DocumentLinkedProcedureDto,
+  InboundDocumentDto,
+  InboundDocumentKindValue,
+} from "@/lib/validations/inbound-documents";
 import {
   DOCUMENT_LIST_DEFAULT_LIMIT,
   INBOUND_DOCUMENT_KINDS,
-  type DocumentLinkedProcedureDto,
-  type InboundDocumentDto,
-  type InboundDocumentKindValue,
-} from "@/lib/validations/inbound-documents";
+} from "@/lib/documents/inbound-constants";
 import type { DocumentVaultFilters } from "@/lib/query-keys/documents";
 import { userDayKey } from "@/lib/tz/format";
 
@@ -300,21 +302,6 @@ export function formatMonthLabel(key: string, locale: string): string {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${key}-15T12:00:00.000Z`));
-}
-
-/** Locale byte formatting: 0 B / 412 KB / 1.2 MB / 2.4 GB. */
-export function formatBytes(bytes: number, locale: string): string {
-  const units = ["B", "KB", "MB", "GB"] as const;
-  let value = Math.max(0, bytes);
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  const digits = unit === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 1;
-  return `${new Intl.NumberFormat(locale, {
-    maximumFractionDigits: digits,
-  }).format(value)} ${units[unit]}`;
 }
 
 /**

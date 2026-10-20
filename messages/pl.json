@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Mapa cieplna przyjmowania leków od {start} do {end}, {days} aktywnych dni.",
       "complianceHeatmapEmpty": "Mapa cieplna przyjmowania leków, brak aktywnych dni."
     },
-    "medicationsEmptyAction": "Dodaj lek"
+    "medicationsEmptyAction": "Dodaj lek",
+    "rangeLabel": "Zakres czasu"
   },
   "chart": {
     "overlay": {
@@ -4220,13 +4221,8 @@
         "metricNextDayRecovery": "Regeneracja następnego dnia",
         "metricNextDayRestingHr": "Tętno spoczynkowe następnego dnia",
         "metricNextDayHrv": "Zmienność rytmu serca następnego dnia",
-        "unitHours": "godz.",
-        "unitKcal": "kcal",
-        "unitScore": "pkt",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "Średnio {withAvg} {unit} w {withDays} dniach z tym tagiem wobec {withoutAvg} {unit} bez niego.",
-        "detailNextDay": "Średnio {withAvg} {unit} dzień po {withDays} dniach z tym tagiem wobec {withoutAvg} {unit} w pozostałe dni."
+        "detailSameDay": "Średnio {withAvg} w {withDays} dniach z tym tagiem wobec {withoutAvg} bez niego.",
+        "detailNextDay": "Średnio {withAvg} dzień po {withDays} dniach z tym tagiem wobec {withoutAvg} w pozostałe dni."
       },
       "factorCrosstab": {
         "title": "Twoje ocenione czynniki i parametry życiowe",
@@ -4238,15 +4234,8 @@
         "metricHrv": "Zmienność rytmu serca",
         "metricWeight": "Waga",
         "metricBloodPressureSys": "Skurczowe",
-        "unitHours": "godz.",
-        "unitScore": "pkt",
-        "unitSteps": "kroki",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "Średnio {lowAvg} {unit} w {lowDays} dniach z niską oceną {factor} wobec {highAvg} {unit} w dniach z wysoką oceną.",
-        "detailInverse": "Średnio {lowAvg} {unit} w Twoich {lowDays} gorszych dniach {factor} wobec {highAvg} {unit} w lepszych."
+        "detail": "Średnio {lowAvg} w {lowDays} dniach z niską oceną {factor} wobec {highAvg} w dniach z wysoką oceną.",
+        "detailInverse": "Średnio {lowAvg} w Twoich {lowDays} gorszych dniach {factor} wobec {highAvg} w lepszych."
       },
       "discovery": {
         "title": "Co się wyróżnia",
@@ -6673,21 +6662,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Połączono",
-      "errorReconnect": "Błąd: połącz ponownie",
-      "warningServerError": "Synchronizacja nie działa",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Wstrzymane: połącz ponownie",
-      "notConnected": "Nie połączono",
       "justNow": "przed chwilą",
       "minutesAgo": "{count} min temu",
       "hoursAgo": "{count} godz. temu",
       "daysAgo": "{count} dni temu",
       "resumeSuccess": "Integracja wznowiona",
-      "resumeError": "Ponowne połączenie nieudane",
-      "stale": "Połączono, brak nowych danych",
-      "stalled": "Synchronizacja zatrzymana",
-      "pendingSetup": "Czekam na pierwsze dane"
+      "resumeError": "Ponowne połączenie nieudane"
     },
     "integrationFreshness": {
       "title": "Odebrane dane",
@@ -7756,6 +7736,7 @@
     "tokensEmptyTitle": "Brak tokenów API",
     "tokensEmptyDescription": "Tokeny są wydawane, gdy klient natywny się loguje, lub przez Ustawienia → Konto.",
     "loginOverviewDescription": "Zdarzenia logowania i uwierzytelniania wszystkich kont, z filtrowaniem i eksportem CSV.",
+    "loginOverviewFilterLabel": "Filtruj zdarzenia",
     "allAuthEvents": "Wszystkie zdarzenia uwierzytelniania",
     "failedOnly": "Tylko nieudane",
     "loginEmptyDescription": "Tutaj pojawią się logowania, wylogowania i zmiany kluczy passkey.",
@@ -7884,6 +7865,7 @@
           "admin": "Administratorzy",
           "user": "Użytkownicy"
         },
+        "filterLabel": "Filtruj użytkowników",
         "forceLogout": "Wymuś wylogowanie",
         "forceLogoutConfirmTitle": "Wymusić wylogowanie {name}?",
         "forceLogoutConfirmBody": "Wszystkie aktywne sesje tego użytkownika zostaną unieważnione. Będzie musiał zalogować się ponownie na każdym urządzeniu.",
@@ -8909,6 +8891,7 @@
     "inTarget": "W zakresie docelowym",
     "aboveTarget": "{delta} {unit} powyżej zakresu",
     "belowTarget": "{delta} {unit} poniżej zakresu",
+    "systolic": "Skurczowe",
     "diastolic": "Rozkurczowe",
     "glucoseFasting": "Glikemia: na czczo",
     "glucosePostprandial": "Glikemia: po posiłku",
@@ -9165,9 +9148,9 @@
     "insights": {
       "headline": {
         "title": "Twój cykl i Twoje ciało",
-        "restingHeartRate": "Twoje tętno spoczynkowe jest o około {delta} {unit} {dir} w fazie lutealnej niż w fazie folikularnej.",
-        "heartRateVariability": "Twoja zmienność rytmu serca jest o około {delta} {unit} {dir} w fazie lutealnej niż w fazie folikularnej.",
-        "generic": "Twoje {metric} jest o około {delta} {unit} {dir} w fazie lutealnej niż w fazie folikularnej.",
+        "restingHeartRate": "Twoje tętno spoczynkowe jest o około {delta} {dir} w fazie lutealnej niż w fazie folikularnej.",
+        "heartRateVariability": "Twoja zmienność rytmu serca jest o około {delta} {dir} w fazie lutealnej niż w fazie folikularnej.",
+        "generic": "Twoje {metric} jest o około {delta} {dir} w fazie lutealnej niż w fazie folikularnej.",
         "dirHigher": "wyższe",
         "dirLower": "niższe",
         "empty": "Za mało cykli i pomiarów, aby pokazać wzorzec fazy. Rejestruj dalej, a uzupełni się to wraz z historią."
@@ -9175,7 +9158,7 @@
       "crosstab": {
         "description": "Jak każdy pomiar wypada między fazą lutealną a folikularną, na Twoich danych.",
         "pairLabel": "{metric}: faza lutealna vs folikularna",
-        "detail": "Lutealna {lutealAvg} {unit} ({lutealDays} dni) vs folikularna {follicularAvg} {unit} ({follicularDays} dni).",
+        "detail": "Lutealna {lutealAvg} ({lutealDays} dni) vs folikularna {follicularAvg} ({follicularDays} dni).",
         "metricRestingHeartRate": "Tętno spoczynkowe",
         "metricHrv": "Zmienność rytmu serca",
         "metricSleepDuration": "Czas snu",
@@ -9185,15 +9168,7 @@
         "metricWristTemperature": "Nocna temperatura nadgarstka",
         "metricSkinTemperature": "Temperatura skóry",
         "metricBloodGlucose": "Glukoza we krwi",
-        "metricMood": "Nastrój",
-        "unitHours": "godz.",
-        "unitSteps": "kroki",
-        "unitBpm": "ud./min",
-        "unitMs": "ms",
-        "unitMood": "pkt",
-        "confidenceLow": "Niska pewność",
-        "confidenceMedium": "Średnia pewność",
-        "confidenceHigh": "Wysoka pewność"
+        "metricMood": "Nastrój"
       },
       "title": "Analizy cyklu",
       "symptomPatternsTitle": "Wzorce objawów wg fazy",

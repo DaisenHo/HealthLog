@@ -21,14 +21,30 @@
  * back whole. `src/__tests__/migration-lock-timeout-guard.test.ts` holds the
  * migrations to that.
  *
- * So: on a 55P03 failure of a migration carrying the marker, mark that one
- * migration rolled back and run `migrate deploy` again after a backoff (15,
- * 30, 60, 120, 240 seconds). Any other failure, a lock timeout of a migration
+ * A deadlock (40P01) is the same failure seen from the other side: a marked
+ * migration's `DO` block holds the locks it took until it commits, and an app
+ * transaction that took two of the same tables in the other order makes
+ * Postgres cancel one of the two. When the migration is the one cancelled,
+ * its block rolled back whole, exactly as on a lock timeout.
+ *
+ * So: on a 55P03 or 40P01 failure of a migration carrying the marker, mark
+ * that one migration rolled back and run `migrate deploy` again after a
+ * backoff (15, 30, 60, 120, 240 seconds). Any other failure, a lock timeout of a migration
  * without the marker, or a fifth lock timeout in a row, ends the boot with
  * Prisma's exit code exactly as before. The failure is read from Prisma's
  * own report (`Migration name:` and `Database error code:`), or, on a boot
  * after a failed one (P3009), from the `logs` Prisma stored on the failed
  * row in `_prisma_migrations`.
+ *
+ * Every Prisma call runs with its session pinned to UTC, the way the app's
+ * own connections are (`src/lib/db-session.ts`). Almost every `DateTime`
+ * column is `timestamp` without a time zone and holds UTC, and Postgres
+ * converts between that and `timestamptz` / `now()` through the session time
+ * zone. A migration that mixes the two (0372 does) therefore wrote hours-off
+ * values on a database whose default zone is not UTC. Prisma ignores `PGTZ`,
+ * so the pin rides the connection URL as the libpq `options` parameter, which
+ * Prisma passes to the server. `DATABASE_SESSION_OPTIONS_DISABLED` (a pooler
+ * that refuses `options`) turns it off, as it does for the app.
  *
  * Environment:
  *   HEALTHLOG_PRISMA_CLI      Prisma's CLI entry (default: the image's copy)
@@ -48,19 +64,27 @@ const DEFAULT_RETRY_DELAYS_S = [15, 30, 60, 120, 240];
 /** The line a migration carries when a lock-timeout retry is safe for it. */
 export const RETRY_MARKER = /^--\s*@retry-on-lock-timeout\s*$/m;
 
-const LOCK_TIMEOUT = "55P03";
+/** Lock timeout and deadlock: both leave a marked migration unapplied. */
+const LOCK_FAILURES = new Set(["55P03", "40P01"]);
+const TIME_ZONE_OPTION = "-c TimeZone=UTC";
 const MIGRATION_NAME = /^[A-Za-z0-9_]+$/;
 
+/** The SQLSTATE a P3018 report gives, or null. */
+export function errorCodeInReport(text) {
+  if (typeof text !== "string") return null;
+  return /^Database error code: (\S+)\s*$/m.exec(text)?.[1] ?? null;
+}
+
 /**
- * The migration a P3018 report says failed on a lock timeout, or null.
- * Prisma prints `Migration name: <name>` and `Database error code: <state>`
- * for a migration that failed to apply.
+ * The migration a P3018 report says failed on a lock (a lock timeout or a
+ * deadlock), or null. Prisma prints `Migration name: <name>` and
+ * `Database error code: <state>` for a migration that failed to apply.
  */
 export function lockTimeoutInReport(text) {
   if (typeof text !== "string") return null;
   const name = /^Migration name: (\S+)\s*$/m.exec(text)?.[1];
-  const code = /^Database error code: (\S+)\s*$/m.exec(text)?.[1];
-  return name && code === LOCK_TIMEOUT ? name : null;
+  const code = errorCodeInReport(text);
+  return name && code !== null && LOCK_FAILURES.has(code) ? name : null;
 }
 
 /** Whether Prisma refused to start because a failed migration is on record. */
@@ -78,14 +102,16 @@ function isFailedMigrationOnRecord(output) {
  *   when they were not read
  * @param {(name: string) => string | null} input.readMigration
  *   the migration's SQL, or null when the image does not ship it
- * @returns {{ retry: true, migration: string } | { retry: false, reason: string }}
+ * @returns {{ retry: true, migration: string, code: string } | { retry: false, reason: string }}
  */
 export function decideLockRetry({ output, failedRows, readMigration }) {
   let migration = lockTimeoutInReport(output);
+  let code = migration ? errorCodeInReport(output) : null;
   if (!migration && isFailedMigrationOnRecord(output) && failedRows) {
     // More than one failed row is not a state this boot can reason about.
     if (failedRows.length === 1) {
       migration = lockTimeoutInReport(failedRows[0].logs);
+      code = migration ? errorCodeInReport(failedRows[0].logs) : null;
     }
   }
   if (!migration) {
@@ -104,7 +130,7 @@ export function decideLockRetry({ output, failedRows, readMigration }) {
       reason: `${migration} timed out on a lock but is not marked safe to re-run`,
     };
   }
-  return { retry: true, migration };
+  return { retry: true, migration, code };
 }
 
 /** The backoff schedule, from the environment or the default. */
@@ -116,10 +142,54 @@ export function retryDelays(raw) {
     : DEFAULT_RETRY_DELAYS_S;
 }
 
+/**
+ * `DATABASE_URL` with the session time zone pinned to UTC, for Prisma.
+ *
+ * Appends to an `options` value the operator set rather than replacing it;
+ * a later `-c` wins, so an operator's own `TimeZone` gives way to UTC. A URL
+ * that does not parse, or a host that disabled the startup options, is
+ * returned unchanged.
+ *
+ * @param {string | undefined} raw
+ * @param {{ optionsDisabled?: boolean }} [opts]
+ * @returns {string | undefined}
+ */
+export function utcSessionUrl(raw, { optionsDisabled = false } = {}) {
+  if (!raw || optionsDisabled) return raw;
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return raw;
+  }
+  const existing = url.searchParams.get("options")?.trim();
+  if (existing && existing.endsWith(TIME_ZONE_OPTION)) return raw;
+  url.searchParams.set(
+    "options",
+    existing ? `${existing} ${TIME_ZONE_OPTION}` : TIME_ZONE_OPTION,
+  );
+  return url.toString();
+}
+
+/** The same switch the app reads in `src/lib/db-session.ts`. */
+function sessionOptionsDisabled(env) {
+  const raw = env.DATABASE_SESSION_OPTIONS_DISABLED?.trim();
+  return raw !== undefined && /^(1|true|yes)$/i.test(raw);
+}
+
+/** The environment every Prisma call runs in. */
+export function prismaEnv(env = process.env) {
+  const url = utcSessionUrl(env.DATABASE_URL, {
+    optionsDisabled: sessionOptionsDisabled(env),
+  });
+  return url === undefined ? { ...env } : { ...env, DATABASE_URL: url };
+}
+
 function runPrisma(cli, args) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [cli, ...args], {
       stdio: ["ignore", "pipe", "pipe"],
+      env: prismaEnv(),
     });
     let output = "";
     child.stdout.on("data", (chunk) => {
@@ -217,9 +287,13 @@ async function main({
       return deploy.code;
     }
     const delay = delays[attempt];
+    const cause =
+      decision.code === "40P01"
+        ? "was cancelled in a deadlock (40P01)"
+        : "timed out waiting for a lock (55P03)";
     console.log(
-      `HealthLog: migration ${decision.migration} timed out waiting for a lock ` +
-        `(55P03) and changed nothing; marking it rolled back and retrying in ` +
+      `HealthLog: migration ${decision.migration} ${cause} ` +
+        `and changed nothing; marking it rolled back and retrying in ` +
         `${delay}s (retry ${attempt + 1} of ${delays.length}).`,
     );
     const resolve = await runPrisma(cli, [

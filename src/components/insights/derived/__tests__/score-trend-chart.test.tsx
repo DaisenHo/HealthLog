@@ -94,7 +94,7 @@ describe("<ScoreTrendChart>", () => {
     const html = render(30, { points: POINTS, band: null });
     const tabs = html.match(/<button[^>]*data-slot="chart-range-tab"[^>]*>/g);
     expect(tabs).toHaveLength(4);
-    expect(tabs!.map((tab) => tab.match(/data-range="(\d+)"/)![1])).toEqual([
+    expect(tabs!.map((tab) => tab.match(/data-value="(\d+)"/)![1])).toEqual([
       "7",
       "30",
       "90",
@@ -102,7 +102,7 @@ describe("<ScoreTrendChart>", () => {
     ]);
     const pressed = tabs!.filter((tab) => tab.includes('aria-pressed="true"'));
     expect(pressed).toHaveLength(1);
-    expect(pressed[0]).toContain('data-range="30"');
+    expect(pressed[0]).toContain('data-value="30"');
     expect(html).toContain('data-slot="score-trend-chart"');
     // The range is remembered under the page's own slot.
     expect(prefs.lastKey).toBe("scoreHealth");
@@ -115,7 +115,7 @@ describe("<ScoreTrendChart>", () => {
       html.match(/<button[^>]*data-slot="chart-range-tab"[^>]*>/g) ?? []
     ).filter((tab) => tab.includes('aria-pressed="true"'));
     expect(pressed).toHaveLength(1);
-    expect(pressed[0]).toContain('data-range="90"');
+    expect(pressed[0]).toContain('data-value="90"');
     // The seeded 90-day read is the one the chart drew from.
     expect(html.match(/data-slot="chart-data-table-row"/g)).toHaveLength(3);
   });

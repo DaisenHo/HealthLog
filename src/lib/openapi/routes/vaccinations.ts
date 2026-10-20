@@ -43,6 +43,7 @@ import {
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
+  listEnvelope,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
@@ -413,7 +414,7 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "List vaccinations",
       description:
-        "Returns the caller's live doses, newest first, each with its series resolved per component antigen. Soft-deleted doses are excluded.",
+        "Returns the caller's live doses, newest first, each with its series resolved per component antigen over the whole record, never over the page. Paged with `limit` (default 300) and `offset`; `meta.truncated` says whether another page exists. Soft-deleted doses are excluded.",
       requestParams: { query: listVaccinationsQuery },
       responses: {
         ...recordRefusal(),
@@ -421,7 +422,7 @@ export const vaccinationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The caller's immunization history.",
           content: {
             "application/json": {
-              schema: dataEnvelope(vaccinationList, "ListVaccinationsEnvelope"),
+              schema: listEnvelope(vaccinationList, "ListVaccinationsEnvelope"),
             },
           },
         },

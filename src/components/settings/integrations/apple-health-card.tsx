@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { HeartPulse, Upload } from "lucide-react";
 
-import { formatRelative } from "@/components/settings/integration-status-pill";
+import { formatRelative } from "./format-relative";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { apiGet } from "@/lib/api/api-fetch";

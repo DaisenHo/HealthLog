@@ -121,6 +121,61 @@ const eslintConfig = defineConfig([
       // scripts/strip-planning-tags.mjs; see eslint-plugins/healthlog/
       // planning-tags.js for the shape and its limits.
       "healthlog/no-planning-tags": "error",
+      // A number shown to a person goes through useFormatters() (or
+      // makeFormatters / formatDecimal outside React), in src/components,
+      // src/app, src/hooks and src/lib: toFixed() prints a full stop in every
+      // language and a locale-less toLocaleString() follows the browser
+      // instead of the language picked in the app. SVG path data and other
+      // machine-read strings carry `eslint-disable-next-line ... -- <reason>`;
+      // the rule refuses a directive without one. See the rule header.
+      "healthlog/no-unlocalised-decimal": "error",
+      // A card surface is a <Card> (or SettingsCard / TrendTile), never a
+      // hand-rolled bg-card + border + rounded-xl (UI standards §1). The
+      // files below are where a shell is the point; each says why. A new
+      // exception is a reviewed change to this list, there is no inline
+      // escape. See the rule header.
+      "healthlog/no-raw-card-shell": [
+        "error",
+        {
+          allow: [
+            // The shell primitives themselves.
+            "src/components/settings/settings-card.tsx",
+            "src/components/medications/medication-detail-section.tsx",
+            // The sanctioned identity surface of the dashboard (§1).
+            "src/components/daily/today-hero.tsx",
+            "src/components/daily/today-hero-skeleton.tsx",
+            // Floating surfaces: a chart tooltip, the tour popovers, the
+            // wizard's icon tile.
+            "src/components/charts/chart-tooltip.tsx",
+            "src/components/onboarding/tour.tsx",
+            "src/components/medications/wizard/medication-wizard-dialog.tsx",
+            // The chart frame: chart, skeleton and error state paint the
+            // same frame so a chart never moves when it loads or fails.
+            "src/components/charts/health-chart.tsx",
+            "src/components/charts/chart-skeleton.tsx",
+            "src/components/charts/chart-error-state.tsx",
+            "src/components/charts/medication-compliance-chart.tsx",
+            "src/components/insights/derived/score-trend-chart.tsx",
+            "src/components/insights/intraday-pulse-chart.tsx",
+            // Table frames: a clipped, unpadded border around a table.
+            "src/components/medications/medication-table.tsx",
+            "src/app/notifications/page.tsx",
+            // Surfaces that render outside the app shell: sign-in, register,
+            // claim, the key-mismatch gate.
+            "src/app/auth/login/page.tsx",
+            "src/app/auth/register/page.tsx",
+            "src/components/auth/claim-profile.tsx",
+            "src/app/key-mismatch-page.tsx",
+            // The first-run flow: full-screen steps with their own rhythm.
+            "src/components/onboarding/anamnesis-card.tsx",
+            "src/components/onboarding/baseline-fields.tsx",
+            "src/components/onboarding/confirm-screen.tsx",
+            "src/components/onboarding/done-screen.tsx",
+            "src/components/onboarding/first-result-screen.tsx",
+            "src/components/onboarding/getting-started-checklist.tsx",
+          ],
+        },
+      ],
     },
   },
   // v1.28.17 — every recharts-rendering component funnels through the

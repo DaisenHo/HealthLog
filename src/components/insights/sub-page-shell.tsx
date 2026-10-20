@@ -15,6 +15,7 @@ import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { useTranslations } from "@/lib/i18n/context";
 import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 const INSIGHT_METRIC_RETURN_PATHS: Readonly<Record<string, true>> =
   Object.fromEntries(
@@ -333,95 +334,101 @@ export function SubPageShell({
             with and without a nudge now align. `items-start` keeps the
             Coach icon at the top of the row when the title wraps to two
             lines. */}
-          <div className="flex min-h-10 items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h1
-                ref={headingRef}
-                id="insights-subpage-title"
-                tabIndex={-1}
-                className={cn(
-                  "text-xl font-semibold sm:text-2xl",
-                  // a11y: sighted-keyboard users (e.g. "Skip to content")
-                  // need a visible focus indicator on the programmatic
-                  // `headingRef.focus()` call below. Match the focus ring
-                  // vocabulary used on insights pills + Coach affordances.
-                  "focus-visible:ring-ring/50 rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                )}
-              >
-                {title}
-              </h1>
-              {/* v1.8.6 — the diversity nudge rides the heading as a
-                `Lightbulb` glyph (the node self-gates to nothing when the
-                spread is healthy), replacing the old inline block. */}
-              {diversityNudge}
-              {badge ? (
-                <Badge variant="outline" className="border text-xs">
-                  {badge}
-                </Badge>
-              ) : null}
-            </div>
-            {/* Header action cluster, pinned top-right at heading height by
-              the row's `justify-between` so it aligns with the title
-              regardless of badge / glyph presence or a wrapped title.
+          {/* The heading row is the canonical PageHeader: the H1 on the
+            page-title tier, a programmatic focus target after a client
+            navigation, with the diversity nudge and the badge beside it
+            (outside the heading's name) and the action cluster pinned
+            top-right. The row keeps a constant `min-h-10` so the baseline
+            holds whether or not the 44 px nudge glyph is present. */}
+          <PageHeader
+            title={title}
+            titleId="insights-subpage-title"
+            headingRef={headingRef}
+            focusable
+            className="[&_[data-slot=page-header-row]]:min-h-10"
+            titleAccessory={
+              diversityNudge || badge ? (
+                <>
+                  {/* v1.8.6 — the diversity nudge rides the heading as a
+                    `Lightbulb` glyph (the node self-gates to nothing when
+                    the spread is healthy). */}
+                  {diversityNudge}
+                  {badge ? (
+                    <Badge variant="outline" className="border text-xs">
+                      {badge}
+                    </Badge>
+                  ) : null}
+                </>
+              ) : undefined
+            }
+            actions={
+              <>
+                {/* Header action cluster, pinned top-right at heading height by
+                  the row's `justify-between` so it aligns with the title
+                  regardless of badge / glyph presence or a wrapped title.
 
-              The target-adjust gear sits to the LEFT of the Coach icon.
-              It self-gates on a registered editable target (a metric with
-              no numeric band registers nothing, so the gear stays hidden),
-              and the Coach icon self-gates on the Coach flag + per-user
-              opt-out — so the cluster collapses cleanly to one, both, or
-              neither control.
+                  The target-adjust gear sits to the LEFT of the Coach icon.
+                  It self-gates on a registered editable target (a metric with
+                  no numeric band registers nothing, so the gear stays hidden),
+                  and the Coach icon self-gates on the Coach flag + per-user
+                  opt-out — so the cluster collapses cleanly to one, both, or
+                  neither control.
 
-              `gap-3` (12 px) keeps the siblings' extended hit areas
-              (`before:-inset-1.5`, 6 px per edge) from overlapping —
-              with a tighter gap the later sibling's invisible halo sat
-              on top of its neighbour's clickable edge. */}
-            <div className="flex shrink-0 items-center gap-3">
-              {headerAction}
-              {captureHref ? (
-                <SubPageAddButton label={captureLabel} href={captureHref} />
-              ) : null}
-              {/* v1.16.8 — "show all readings" rides the header cluster
-                as an icon button, LEFT of the target-adjust gear (it
-                used to be a full-width outline button at the page foot).
-                Same 40 px box + extended hit area as its siblings; the
-                label travels via aria-label + title. */}
-              {showAllValuesType ? (
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="icon"
-                  data-slot="metric-show-all-values"
-                  className={cn(
-                    // Match the cluster's 40 px icon box + extended hit
-                    // area (see `<TargetAdjustButton>` for the WCAG
-                    // 2.5.5 note).
-                    "text-muted-foreground hover:text-foreground relative size-10",
-                    "before:absolute before:-inset-1.5 before:content-['']",
-                  )}
-                >
-                  <Link
-                    href={`/insights/values/${showAllValuesType}${
-                      pathname ? `?from=${encodeURIComponent(pathname)}` : ""
-                    }`}
-                    aria-label={t("insights.subPage.showAllValues")}
-                    title={t("insights.subPage.showAllValues")}
-                  >
-                    <ListOrdered className="size-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-              ) : null}
-              <TargetAdjustButton />
-              {/* v1.18.6 — the per-metric Coach launch icon is
-                gone. With the Coach FAB anchored bottom-right on every
-                authenticated page, a second Coach affordance in each
-                metric header was redundant. The `coachLaunch` prop is
-                still accepted (every metric page passes it) but no longer
-                paints a control — the FAB is the single Coach entry. */}
-              {/* v1.16.8 — the v1.16.4 customise cog is gone: the sticky
-                tab strip above already carries the same control on every
-                insights surface, so the header copy was a duplicate. */}
-            </div>
-          </div>
+                  `gap-3` (12 px) keeps the siblings' extended hit areas
+                  (`before:-inset-1.5`, 6 px per edge) from overlapping —
+                  with a tighter gap the later sibling's invisible halo sat
+                  on top of its neighbour's clickable edge. */}
+                <div className="flex shrink-0 items-center gap-3">
+                  {headerAction}
+                  {captureHref ? (
+                    <SubPageAddButton label={captureLabel} href={captureHref} />
+                  ) : null}
+                  {/* v1.16.8 — "show all readings" rides the header cluster
+                    as an icon button, LEFT of the target-adjust gear (it
+                    used to be a full-width outline button at the page foot).
+                    Same 40 px box + extended hit area as its siblings; the
+                    label travels via aria-label + title. */}
+                  {showAllValuesType ? (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      data-slot="metric-show-all-values"
+                      className={cn(
+                        // Match the cluster's 40 px icon box + extended hit
+                        // area (see `<TargetAdjustButton>` for the WCAG
+                        // 2.5.5 note).
+                        "text-muted-foreground hover:text-foreground relative size-10",
+                        "before:absolute before:-inset-1.5 before:content-['']",
+                      )}
+                    >
+                      <Link
+                        href={`/insights/values/${showAllValuesType}${
+                          pathname
+                            ? `?from=${encodeURIComponent(pathname)}`
+                            : ""
+                        }`}
+                        aria-label={t("insights.subPage.showAllValues")}
+                        title={t("insights.subPage.showAllValues")}
+                      >
+                        <ListOrdered className="size-4" aria-hidden="true" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                  <TargetAdjustButton />
+                  {/* v1.18.6 — the per-metric Coach launch icon is
+                    gone. With the Coach FAB anchored bottom-right on every
+                    authenticated page, a second Coach affordance in each
+                    metric header was redundant. The `coachLaunch` prop is
+                    still accepted (every metric page passes it) but no longer
+                    paints a control — the FAB is the single Coach entry. */}
+                  {/* v1.16.8 — the v1.16.4 customise cog is gone: the sticky
+                    tab strip above already carries the same control on every
+                    insights surface, so the header copy was a duplicate. */}
+                </div>
+              </>
+            }
+          />
           {explainerMetric ? (
             // v1.8.4 — surface the metric's static definition inline,
             // directly beneath the heading.

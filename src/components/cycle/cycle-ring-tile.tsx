@@ -10,6 +10,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { CycleRing } from "./cycle-ring";
 import { PHASE_HUE } from "./phase-tokens";
 import { useCycleRingCalendar } from "./use-cycle";
+import { TileHeader } from "@/components/insights/tile-header";
 
 /**
  * v1.15.3 — the compact cycle ring as a WELLNESS-STRIP element.
@@ -107,12 +108,7 @@ export function CycleRingTile({ className }: { className?: string }) {
           className,
         )}
       >
-        <div className="text-foreground flex items-center gap-2">
-          <Droplets className="h-5 w-5 shrink-0" aria-hidden="true" />
-          <span className="truncate text-base leading-none font-semibold">
-            {t("cycle.wellnessRing.label")}
-          </span>
-        </div>
+        <TileHeader icon={Droplets} title={t("cycle.wellnessRing.label")} />
         <div className="flex flex-col items-center gap-1.5">
           <CycleRing
             dayOfCycle={verdict.dayOfCycle}

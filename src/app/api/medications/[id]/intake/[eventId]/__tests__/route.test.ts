@@ -37,8 +37,8 @@ vi.mock("@/lib/medications/inventory/consumption", () => ({
   consumeForIntake: vi.fn().mockResolvedValue(undefined),
   restoreForIntake: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
+  refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/db-compat", () => ({

@@ -655,8 +655,6 @@ export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
 export const DERIVED_MODELS: Readonly<Record<string, string>> = {
   MeasurementRollup:
     "A per-day, per-metric reconstruction of `Measurement`. The boot-time rollup backfill rebuilds it for an account that has none.",
-  MedicationComplianceRollup:
-    "Recomputed from `MedicationIntakeEvent` against the schedule by the compliance analytics tier.",
   MoodEntryRollup:
     "A per-day reconstruction of `MoodEntry`, rebuilt by the same rollup tier that rebuilds the measurement one.",
   MoodPrediction:

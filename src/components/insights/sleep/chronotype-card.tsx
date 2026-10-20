@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LearningGate } from "@/components/ui/learning-gate";
 import { TileHeader } from "@/components/insights/tile-header";
 import type { ChronotypeDto } from "./use-sleep-rhythm";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /** Minutes-of-day → "HH:MM" wall-clock label (24 h, zero-padded). */
 function clockLabel(minutesOfDay: number): string {
@@ -90,12 +91,12 @@ export function ChronotypeCard({ chronotype }: { chronotype: ChronotypeDto }) {
           )}
         </div>
 
-        <button
-          type="button"
+        <InlineAction
+          tone="muted"
+          className="font-medium"
           onClick={() => setShowAdvanced((v) => !v)}
           aria-expanded={showAdvanced}
           aria-controls="chronotype-advanced"
-          className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs font-medium transition-colors"
         >
           {showAdvanced ? (
             <ChevronUp className="h-3.5 w-3.5" />
@@ -103,7 +104,7 @@ export function ChronotypeCard({ chronotype }: { chronotype: ChronotypeDto }) {
             <ChevronDown className="h-3.5 w-3.5" />
           )}
           {t("insights.sleep.chronotype.advancedToggle")}
-        </button>
+        </InlineAction>
 
         {showAdvanced && (
           <div id="chronotype-advanced" className="space-y-2 border-t pt-3">

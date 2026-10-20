@@ -8,7 +8,6 @@ import { type Job } from "pg-boss";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { recordError, recordReminderCheck } from "@/lib/jobs/worker-status";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { decrypt } from "@/lib/crypto";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
@@ -708,15 +707,6 @@ export async function handleReminderCheck(
 
                 missedDosesMinted++;
                 evt.addMeta("missed_dose", `${med.name}:${slotTime}`);
-
-                // v1.4.39 — refresh the compliance rollup so the
-                // per-day `scheduled` count increments before any read.
-                await recomputeMedicationComplianceForEvent({
-                  userId: med.user.id,
-                  medicationId: med.id,
-                  scheduledFor: slotScheduledFor,
-                  tz: med.user.timezone,
-                });
               }
             }
 

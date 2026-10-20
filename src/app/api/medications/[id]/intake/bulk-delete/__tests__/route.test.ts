@@ -46,12 +46,12 @@ vi.mock("@/lib/rate-limit", () => ({
   rateLimitHeaders: vi.fn(() => ({ "X-RateLimit-Remaining": "0" })),
 }));
 
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
   dayKeyForScheduledFor: vi.fn((d: Date) => {
     const iso = d.toISOString();
     return iso.slice(0, 10);
   }),
-  recomputeMedicationComplianceForDay: vi.fn().mockResolvedValue(undefined),
+  refreshDoseDay: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/medications/inventory/consumption", () => ({
@@ -98,8 +98,8 @@ import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   dayKeyForScheduledFor,
-  recomputeMedicationComplianceForDay,
-} from "@/lib/rollups/medication-compliance-rollups";
+  refreshDoseDay,
+} from "@/lib/medications/dose-day-refresh";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -174,7 +174,7 @@ describe("POST /api/medications/[id]/intake/bulk-delete", () => {
     const json = await res.json();
     expect(json.data).toEqual({ deleted: 0 });
     expect(prisma.medicationIntakeEvent.updateMany).not.toHaveBeenCalled();
-    expect(recomputeMedicationComplianceForDay).not.toHaveBeenCalled();
+    expect(refreshDoseDay).not.toHaveBeenCalled();
     // (#22) — a no-op delete queues no cross-device sync fan-out.
     expect(queueMedicationIntakeSync).not.toHaveBeenCalled();
   });
@@ -201,7 +201,7 @@ describe("POST /api/medications/[id]/intake/bulk-delete", () => {
 
     expect(dayKeyForScheduledFor).toHaveBeenCalledTimes(3);
     // Three rows, two unique dayKeys → two recompute calls.
-    expect(recomputeMedicationComplianceForDay).toHaveBeenCalledTimes(2);
+    expect(refreshDoseDay).toHaveBeenCalledTimes(2);
 
     // (#22) — the whole bulk delete queues exactly ONE cross-device
     // sync fan-out, not one per removed row.

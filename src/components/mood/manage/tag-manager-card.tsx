@@ -74,6 +74,7 @@ import {
   type ManageTag,
   type MoodTagLayoutResolved,
 } from "./use-mood-tag-manage";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.17 — per-group tag management for `/settings/mood`. Mirrors the
@@ -317,7 +318,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
       </div>
 
       {visible.categories.length === 0 && (
-        <p className="text-muted-foreground text-sm">{t("common.noData")}</p>
+        <EmptyState variant="plain" size="compact" title={t("common.noData")} />
       )}
 
       {visible.categories.map((category) => {

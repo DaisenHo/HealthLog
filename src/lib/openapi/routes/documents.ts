@@ -118,9 +118,40 @@ const documentChatDetailSchema = documentChatConversationSchema
   })
   .meta({ id: "DocumentChatDetail" });
 
+/** One thread in the document's rail: the conversation row the Coach rail reads. */
+const documentChatListItemSchema = documentChatConversationSchema
+  .extend({
+    fenced: z
+      .boolean()
+      .describe(
+        "Always true here: a chat about a document is a fenced thread (no tools, no health snapshot).",
+      ),
+    attachments: z
+      .array(
+        z.object({
+          documentId: z.string(),
+          title: z
+            .string()
+            .nullable()
+            .describe(
+              "The attached document's title, falling back to its filename; null when it has neither.",
+            ),
+        }),
+      )
+      .optional()
+      .describe("The documents the thread is about, as they are now."),
+    documentTitle: z
+      .string()
+      .nullish()
+      .describe(
+        "The first attached document's title, for a one-line badge; null when none is attached any more.",
+      ),
+  })
+  .meta({ id: "DocumentChatListItem" });
+
 const documentChatListSchema = z
   .object({
-    conversations: z.array(documentChatConversationSchema),
+    conversations: z.array(documentChatListItemSchema),
     nextCursor: z.string().nullable(),
   })
   .meta({ id: "DocumentChatList" });

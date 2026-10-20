@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { formatDateShort } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import { formatMetricValue } from "./format-value";
@@ -64,6 +64,7 @@ export function CustomMetricHistoryList({
   decimals: number | null;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
 
   const { sortBy, sortDir, toggleSort } = useTableSort({
@@ -242,7 +243,7 @@ export function CustomMetricHistoryList({
           {ordered.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="font-semibold tabular-nums">
-                {formatMetricValue(r.value, decimals)}
+                {formatMetricValue(r.value, decimals, fmt.number)}
                 {unit ? ` ${unit}` : ""}
               </TableCell>
               <TableCell className="text-muted-foreground text-sm whitespace-nowrap">

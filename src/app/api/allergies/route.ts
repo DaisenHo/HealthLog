@@ -15,13 +15,11 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
-  apiError,
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { withIdempotency } from "@/lib/idempotency";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -29,7 +27,8 @@ import {
   allergyListQuerySchema,
 } from "@/lib/validations/allergy";
 import { toAllergyDTO } from "@/lib/records/dto";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "profile");
@@ -46,16 +45,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const limit = parsed.data.limit ?? 100;
-  const found = await prisma.allergy.findMany({
-    where: {
-      userId: user.id,
-      deletedAt: null,
-      ...(parsed.data.includeInactive === "false" ? { status: "ACTIVE" } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: overfetch(limit),
-  });
-  const { rows, cap } = capRows(found, limit);
+  const { rows, cap } = await listPage(limit, (take) =>
+    prisma.allergy.findMany({
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        ...(parsed.data.includeInactive === "false"
+          ? { status: "ACTIVE" }
+          : {}),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+    }),
+  );
 
   annotate({
     action: { name: "allergy.list", entity_type: "allergy" },
@@ -88,17 +90,7 @@ async function postAllergy(request: NextRequest): Promise<Response> {
   // A READ or WRITE delegate reaches neither: the destination is not on their
   // Settings list, and this line refuses them with `sharing.access.denied`
   // regardless.
-  const { user, actor } = await requireRecordAuth("manage", "profile");
-
-  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
-  // batch siblings have always been capped; the per-record creates a looping
-  // client hits were not.
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
+  const { user } = await requireRecordAuth("manage", "profile");
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 16 * 1024,

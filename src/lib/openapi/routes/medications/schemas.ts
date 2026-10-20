@@ -13,6 +13,8 @@ import {
   MEDICATION_CATEGORY_VALUES,
   MEDICATION_CONTAINER_TYPE_VALUES,
   MEDICATION_TREATMENT_CLASS_VALUES,
+  doseWindowEntrySchema,
+  injectionSiteEnum,
 } from "@/lib/validations/medication";
 import { medicationExtractionSchema } from "@/lib/ai/coach/medication-extract-prompt";
 import {
@@ -223,6 +225,13 @@ export const medicationScheduleResource = z
       .describe(
         'v1.7.0 cyclic "off" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.',
       ),
+    doseWindows: z
+      .array(doseWindowEntrySchema)
+      .nullable()
+      .optional()
+      .describe(
+        "Per-dose on-time windows as stored. Null when every dose time keeps the default derivation.",
+      ),
   })
   .meta({
     id: "MedicationSchedule",
@@ -233,9 +242,54 @@ export const medicationScheduleResource = z
 export const medicationResource = z
   .object({
     id: z.string(),
+    userId: z.string().optional().describe("The record the row belongs to."),
     name: z.string(),
     dose: z.string(),
     treatmentClass: medicationTreatmentClassEnum,
+    deliveryForm: z
+      .enum(["ORAL", "INJECTION", "OTHER"])
+      .optional()
+      .describe(
+        "How the medication is taken. A one-time injection is `oneShot` with `INJECTION`.",
+      ),
+    trackInjectionSites: z
+      .boolean()
+      .optional()
+      .describe(
+        "Whether intakes record an injection site. Only offered for `INJECTION`.",
+      ),
+    allowedInjectionSites: z
+      .array(injectionSiteEnum)
+      .optional()
+      .describe("The sites the rotation offers; empty means every site."),
+    externalSource: z
+      .literal("APPLE_HEALTH")
+      .nullable()
+      .optional()
+      .describe(
+        "v1.32.25 — provenance of the medication. `APPLE_HEALTH` marks the row a read-only mirror of the iOS 26+ HealthKit Medications sync; NULL is a native HealthLog medication.",
+      ),
+    externalId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "The source's own identifier for a mirrored medication, paired with `externalSource`; null for a native one.",
+      ),
+    lowStockNotifiedAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "When the low-stock alert last fired for this medication; null when it has not since the stock was last topped up. Server-written.",
+      ),
+    lowStockNotifiedThresholdDays: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        "The runway threshold, in days, that alert fired at. Server-written.",
+      ),
     dosesPerUnit: z
       .number()
       .int()
@@ -371,6 +425,12 @@ export const medicationListEntry = medicationResource
     // even though the shared base leaves them optional for the write paths.
     nextDueAt: isoDateTime().nullable(),
     nextDueOverdue: z.boolean(),
+    nextDueScheduleId: z
+      .string()
+      .nullable()
+      .describe(
+        "The schedule `nextDueAt` belongs to; null when nothing is due.",
+      ),
     remindersActive: z
       .boolean()
       .describe(
@@ -1355,13 +1415,15 @@ export const medicationImportProgress = z
     touchedDays: z
       .array(z.string())
       .describe(
-        "Local calendar days (YYYY-MM-DD) touched so far, driving the chunked rollup recompute behind the write.",
+        "Deprecated and inert: always `[]` on a job admitted from v1.43.8, when the per-day compliance rollup it drove was removed. A job admitted earlier keeps the days it recorded. Kept for clients that decode it; do not read it.",
       ),
     rollupProcessed: z
       .number()
       .int()
       .min(0)
-      .describe("Of `touchedDays`, how many have had their rollup recomputed."),
+      .describe(
+        "Deprecated and inert: always `0` on a job admitted from v1.43.8. Kept for clients that decode it; do not read it.",
+      ),
   })
   .meta({
     id: "MedicationImportProgress",

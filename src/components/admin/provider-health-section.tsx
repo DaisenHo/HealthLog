@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { formatDateTime } from "@/lib/format";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.37.31 — the delivery-health readout the `provider_health` ledger never
@@ -143,9 +144,11 @@ export function ProviderHealthSection() {
           onRetry={() => void refetch()}
         />
       ) : providers.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {t("admin.providerHealth.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("admin.providerHealth.empty")}
+        />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="provider-health-list">
           {providers.map((p) => (

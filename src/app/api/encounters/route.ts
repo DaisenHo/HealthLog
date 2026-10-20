@@ -25,7 +25,8 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { combinedCap, listPage } from "@/lib/http/list-query";
 import { withIdempotency } from "@/lib/idempotency";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -109,27 +110,33 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // past reads newest-first, which is the opposite direction; resolving both
   // here means the client renders two lists instead of splitting and
   // re-sorting one, and the ordering lives in one place.
-  const [upcoming, past] = await Promise.all([
-    prisma.encounter.findMany({
-      // `gt` and `gte` are different keys, so the caller's lower bound and this
-      // arm's floor both survive the spread; only the `lte` pair collided.
-      where: { ...where, occurredAt: { ...where.occurredAt, gt: now } },
-      orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
-      take,
-      skip,
-      include: ENCOUNTER_INCLUDE,
-    }),
-    prisma.encounter.findMany({
-      where: {
-        ...where,
-        occurredAt: { ...where.occurredAt, lte: pastCeiling },
-      },
-      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-      take,
-      skip,
-      include: ENCOUNTER_INCLUDE,
-    }),
-  ]);
+  const [{ rows: upcoming, cap: upcomingCap }, { rows: past, cap: pastCap }] =
+    await Promise.all([
+      listPage(take, (overTake) =>
+        prisma.encounter.findMany({
+          // `gt` and `gte` are different keys, so the caller's lower bound and
+          // this arm's floor both survive the spread; only the `lte` pair
+          // collided.
+          where: { ...where, occurredAt: { ...where.occurredAt, gt: now } },
+          orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+          take: overTake,
+          skip,
+          include: ENCOUNTER_INCLUDE,
+        }),
+      ),
+      listPage(take, (overTake) =>
+        prisma.encounter.findMany({
+          where: {
+            ...where,
+            occurredAt: { ...where.occurredAt, lte: pastCeiling },
+          },
+          orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+          take: overTake,
+          skip,
+          include: ENCOUNTER_INCLUDE,
+        }),
+      ),
+    ]);
 
   // The links ride the list. The card counts what a visit produced, and the
   // edit sheet seeds its pickers from the row it was handed — a list without
@@ -152,24 +159,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     upcoming: upcoming.map((row) => toEncounterDTO(row, links.get(row.id))),
     past: past.map((row) => toEncounterDTO(row, links.get(row.id))),
   };
-  return apiSuccess(body);
+  return apiListSuccess(body, combinedCap(upcomingCap, pastCap));
 });
 
 // A double-tap on "save" must not file the same visit twice.
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postEncounter));
 
 async function postEncounter(request: NextRequest): Promise<Response> {
-  const { user, actor, grantId } = await requireRecordAuth("write", "profile");
-
-  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
-  // batch siblings have always been capped; the per-record creates a looping
-  // client hits were not.
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
+  const { user, grantId } = await requireRecordAuth("write", "profile");
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 32 * 1024,

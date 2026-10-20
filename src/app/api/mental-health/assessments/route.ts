@@ -57,7 +57,8 @@ import type {
   MeasurementType,
   MeasurementSource,
 } from "@/generated/prisma/client";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 function shapeRow(row: {
   id: string;
@@ -120,33 +121,34 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const { instrument, limit, offset } = parsed.data;
   const pageSize = limit ?? 100;
-  const found = await prisma.mentalHealthAssessment.findMany({
-    where: {
-      userId: user.id,
-      deletedAt: null,
-      // Screeners only: the table also stores AUDIT-C (v1.43), which older
-      // app builds cannot decode in this list.
-      instrument: instrument ?? { in: [...SCREENER_INSTRUMENTS] },
-    },
-    // Unique tiebreaker — `takenAt` is day-resolution and two instruments
-    // taken in one sitting tie.
-    orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-    take: overfetch(pageSize),
-    skip: offset ?? 0,
-    select: {
-      id: true,
-      instrument: true,
-      locale: true,
-      version: true,
-      totalScore: true,
-      severityBand: true,
-      item9Flagged: true,
-      crisisShownAt: true,
-      takenAt: true,
-      createdAt: true,
-    },
-  });
-  const { rows, cap } = capRows(found, pageSize);
+  const { rows, cap } = await listPage(pageSize, (take) =>
+    prisma.mentalHealthAssessment.findMany({
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        // Screeners only: the table also stores AUDIT-C (v1.43), which older
+        // app builds cannot decode in this list.
+        instrument: instrument ?? { in: [...SCREENER_INSTRUMENTS] },
+      },
+      // Unique tiebreaker — `takenAt` is day-resolution and two instruments
+      // taken in one sitting tie.
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
+      take,
+      skip: offset ?? 0,
+      select: {
+        id: true,
+        instrument: true,
+        locale: true,
+        version: true,
+        totalScore: true,
+        severityBand: true,
+        item9Flagged: true,
+        crisisShownAt: true,
+        takenAt: true,
+        createdAt: true,
+      },
+    }),
+  );
   annotate({
     action: { name: "mental-health.list" },
     meta: { count: rows.length },

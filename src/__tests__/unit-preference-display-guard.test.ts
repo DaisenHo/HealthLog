@@ -328,8 +328,14 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason: "a display-kind tag; the weight row converts through the hook",
   },
   "components/insights/mood/mood-factor-metric-crosstab.tsx": {
-    lines: 2,
-    reason: "a display-kind tag; the weight row converts through the hook",
+    lines: 1,
+    reason:
+      "a display-kind tag; the weight row converts through crosstabReading",
+  },
+  "components/insights/metric-crosstab.tsx": {
+    lines: 3,
+    reason:
+      "the boards' display kinds and the storage token each is in; rows convert through getReadingTransform and label through measurementUnitLabel",
   },
   // ── Canonical by contract ──
   "lib/insights/metric-status-registry.ts": {

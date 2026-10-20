@@ -21,14 +21,13 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   buildScheduleAnchoredComplianceBuckets,
   type ScheduleAnchoredComplianceBucket,
@@ -211,16 +210,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // the response they are already awaiting. What the owner gets instead is the
   // notification at the end of this handler.
   const { user, actor } = await requireRecordAuth("write", "medications");
-
-  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
-  // batch siblings have always been capped; the per-record creates a looping
-  // client hits were not.
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
 
   const { data: body, error } = await safeJson(request, {
     maxBytes: 64 * 1024,
@@ -573,7 +562,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // the affected day so the next read after the cache miss returns
   // the up-to-date `(scheduled, taken, skipped)` tuple. Best-effort:
   // a populator failure annotates ops without blocking the response.
-  await recomputeMedicationComplianceForEvent({
+  await refreshDoseSlot({
     userId: user.id,
     medicationId: existing.medicationId,
     scheduledFor: existing.scheduledFor,
@@ -584,7 +573,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // source day self-corrects while the destination keeps its stale tuple.
   const movedTo = updated?.scheduledFor;
   if (movedTo && movedTo.getTime() !== existing.scheduledFor.getTime()) {
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId: user.id,
       medicationId: existing.medicationId,
       scheduledFor: movedTo,

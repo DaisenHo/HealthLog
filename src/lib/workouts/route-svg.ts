@@ -250,11 +250,13 @@ export function projectRoute(
 
   const vbPoints = simplified.map(toVB);
   const path = vbPoints
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- SVG path data and viewBox, read by the renderer
     .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
     .join(" ");
 
   return {
     path,
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- SVG path data and viewBox, read by the renderer
     viewBox: `0 0 ${VIEW_W} ${height.toFixed(2)}`,
     width: VIEW_W,
     height,

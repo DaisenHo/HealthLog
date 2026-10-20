@@ -129,7 +129,8 @@ function explainTimeout(message: string, expireSeconds: number | null): string {
   const limit =
     expireSeconds !== null && expireSeconds > 0
       ? expireSeconds >= 3600 && expireSeconds % 3600 === 0
-        ? `${expireSeconds / 3600} h`
+        ? // eslint-disable-next-line healthlog/no-unlocalised-decimal -- operator log text, a whole number of hours (checked above)
+          `${expireSeconds / 3600} h`
         : `${Math.round(expireSeconds / 60)} min`
       : null;
   return (

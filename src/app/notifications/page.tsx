@@ -22,6 +22,13 @@ import {
 } from "@/lib/notifications/event-labels";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface ChannelInfo {
   id: string;
@@ -309,17 +316,16 @@ export default function NotificationsPage() {
           const nameKey = eventTranslationKey(eventType);
           const descKey = eventDescriptionTranslationKey(eventType);
           return (
-            <div
-              key={eventType}
-              className="bg-card border-border rounded-xl border p-4"
-            >
-              <div className="mb-3">
-                <div className="text-sm font-medium">{t(nameKey)}</div>
-                <div className="text-muted-foreground text-xs">
+            <Card key={eventType} className="gap-3">
+              <CardHeader className="gap-1">
+                <CardTitle className="text-sm font-medium">
+                  {t(nameKey)}
+                </CardTitle>
+                <CardDescription className="text-xs">
                   {t(descKey)}
-                </div>
-              </div>
-              <div className="space-y-2">
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
                 {activeChannels.map((ch) => {
                   const enabled = isEnabled(ch.id, eventType);
                   const disabled = !ch.enabled;
@@ -355,8 +361,8 @@ export default function NotificationsPage() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>

@@ -37,6 +37,7 @@ import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { formatDate } from "@/lib/date-format";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /** The refusal codes the course routes answer, mapped to their copy. */
 const REFUSAL_KEYS: Record<string, string> = {
@@ -262,9 +263,11 @@ export function CoursesRow({
       </div>
 
       {courses.length === 0 ? (
-        <p className="text-muted-foreground text-xs">
-          {t("medications.course.none")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("medications.course.none")}
+        />
       ) : (
         <ul className="space-y-2">
           {courses.map((course, index) => (

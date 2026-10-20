@@ -24,7 +24,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   decideLockRetry,
   lockTimeoutInReport,
+  prismaEnv,
   retryDelays,
+  utcSessionUrl,
 } from "../migrate-deploy.mjs";
 
 const P3018_LOCK = `Applying migration \`0412_measurement_hot_updates\`
@@ -43,6 +45,11 @@ ERROR: canceling statement due to lock timeout
 const P3018_UNIQUE = P3018_LOCK.replace("55P03", "23505").replace(
   "canceling statement due to lock timeout",
   'duplicate key value violates unique constraint "x"',
+);
+
+const P3018_DEADLOCK = P3018_LOCK.replace("55P03", "40P01").replace(
+  "canceling statement due to lock timeout",
+  "deadlock detected",
 );
 
 const P3009 = `Error: P3009
@@ -76,7 +83,11 @@ describe("which failure is retried", () => {
         failedRows: null,
         readMigration: reader(MARKED),
       }),
-    ).toEqual({ retry: true, migration: "0412_measurement_hot_updates" });
+    ).toEqual({
+      retry: true,
+      migration: "0412_measurement_hot_updates",
+      code: "55P03",
+    });
   });
 
   it("does not retry a lock timeout of an unmarked migration", () => {
@@ -89,6 +100,31 @@ describe("which failure is retried", () => {
     expect(decision).toMatchObject({
       reason: expect.stringContaining("not marked safe to re-run"),
     });
+  });
+
+  it("retries a deadlock of a marked migration, which rolled back whole", () => {
+    expect(lockTimeoutInReport(P3018_DEADLOCK)).toBe(
+      "0412_measurement_hot_updates",
+    );
+    expect(
+      decideLockRetry({
+        output: P3018_DEADLOCK,
+        failedRows: null,
+        readMigration: reader(MARKED),
+      }),
+    ).toEqual({
+      retry: true,
+      migration: "0412_measurement_hot_updates",
+      code: "40P01",
+    });
+    // Unmarked, a deadlock stays fatal like a lock timeout.
+    expect(
+      decideLockRetry({
+        output: P3018_DEADLOCK,
+        failedRows: null,
+        readMigration: reader(UNMARKED),
+      }).retry,
+    ).toBe(false);
   });
 
   it("does not retry any other database error", () => {
@@ -121,7 +157,11 @@ describe("which failure is retried", () => {
         failedRows,
         readMigration: reader(MARKED),
       }),
-    ).toEqual({ retry: true, migration: "0412_measurement_hot_updates" });
+    ).toEqual({
+      retry: true,
+      migration: "0412_measurement_hot_updates",
+      code: "55P03",
+    });
     // A stored failure of another kind stays fatal.
     expect(
       decideLockRetry({
@@ -164,6 +204,53 @@ describe("which failure is retried", () => {
     expect(retryDelays(undefined)).toEqual([15, 30, 60, 120, 240]);
     expect(retryDelays("0, 1")).toEqual([0, 1]);
     expect(retryDelays("a,1")).toEqual([15, 30, 60, 120, 240]);
+  });
+});
+
+describe("the session time zone Prisma migrates in", () => {
+  const options = (url: string | undefined) =>
+    new URL(url ?? "").searchParams.get("options");
+
+  it("pins TimeZone=UTC through the libpq options parameter", () => {
+    const url = utcSessionUrl(
+      "postgresql://u:p@db:5432/healthlog?schema=public",
+    );
+    expect(options(url)).toBe("-c TimeZone=UTC");
+    expect(new URL(url ?? "").searchParams.get("schema")).toBe("public");
+  });
+
+  it("appends to options the operator set, so a later -c wins", () => {
+    const url = utcSessionUrl(
+      "postgresql://u:p@db/h?options=-c%20TimeZone%3DEurope%2FBerlin",
+    );
+    expect(options(url)).toBe("-c TimeZone=Europe/Berlin -c TimeZone=UTC");
+    // Running it again adds nothing.
+    expect(utcSessionUrl(url)).toBe(url);
+  });
+
+  it("leaves a URL alone when the startup options are switched off", () => {
+    const raw = "postgresql://u:p@db/h?schema=public";
+    expect(utcSessionUrl(raw, { optionsDisabled: true })).toBe(raw);
+    expect(
+      prismaEnv({ DATABASE_URL: raw, DATABASE_SESSION_OPTIONS_DISABLED: "1" })
+        .DATABASE_URL,
+    ).toBe(raw);
+  });
+
+  it("passes an unset or unparseable URL through untouched", () => {
+    expect(utcSessionUrl(undefined)).toBeUndefined();
+    expect(utcSessionUrl("")).toBe("");
+    expect(utcSessionUrl("not a url")).toBe("not a url");
+    expect(prismaEnv({}).DATABASE_URL).toBeUndefined();
+  });
+
+  it("hands Prisma the pinned URL and keeps the rest of the environment", () => {
+    const env = prismaEnv({
+      DATABASE_URL: "postgresql://u:p@db/h",
+      HEALTHLOG_X: "1",
+    });
+    expect(options(env.DATABASE_URL)).toBe("-c TimeZone=UTC");
+    expect(env.HEALTHLOG_X).toBe("1");
   });
 });
 
@@ -244,6 +331,24 @@ process.exit(0);
       "migrate deploy --schema x",
     ]);
     expect(result.stdout).toContain("timed out waiting for a lock (55P03)");
+  });
+
+  it("does the same for a deadlock, and names it", () => {
+    const { run, calls } = setup(
+      [
+        [1, P3018_DEADLOCK],
+        [0, "All migrations have been successfully applied."],
+      ],
+      MARKED,
+    );
+    const result = run();
+    expect(result.status).toBe(0);
+    expect(calls()).toEqual([
+      "migrate deploy --schema x",
+      "migrate resolve --rolled-back 0412_measurement_hot_updates --schema x",
+      "migrate deploy --schema x",
+    ]);
+    expect(result.stdout).toContain("was cancelled in a deadlock (40P01)");
   });
 
   it("gives up after the last delay with Prisma's exit code", () => {

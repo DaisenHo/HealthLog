@@ -239,7 +239,12 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // native login mints. The only route that names it. `requireAuth` refuses
   // any acting-account carrier for every credential shape, so the scoped token
   // is confined to its owner's own record without an arm of its own here.
-  const auth = await requireAuth(WORKOUTS_WRITE_SCOPE);
+  // Metered by this route's own bulk bucket below, not the shared per-account
+  // write bucket: the native client syncs through here in bursts (see
+  // `meterAccountWrite`).
+  const auth = await requireAuth(WORKOUTS_WRITE_SCOPE, {
+    writeBucket: "own",
+  });
   const { user } = auth;
 
   // A scoped credential is a bridge, not the native client: the source of

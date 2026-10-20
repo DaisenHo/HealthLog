@@ -19,7 +19,8 @@ import { toMenstrualCycleDTO } from "@/lib/cycle/dto";
 import { median, mad } from "@/lib/cycle";
 import { dayDiff } from "@/lib/cycle/day-math";
 import { MIN_CYCLES_TO_PREDICT } from "@/lib/cycle/types";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 const DEFAULT_LIMIT = 24;
 
@@ -51,12 +52,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const limit = parsed.data.limit ?? DEFAULT_LIMIT;
 
-  const found = await prisma.menstrualCycle.findMany({
-    where: { userId: user.id, deletedAt: null },
-    orderBy: { startDate: "desc" },
-    take: overfetch(limit),
-  });
-  const { rows, cap } = capRows(found, limit);
+  const { rows, cap } = await listPage(limit, (take) =>
+    prisma.menstrualCycle.findMany({
+      where: { userId: user.id, deletedAt: null },
+      orderBy: [{ startDate: "desc" }, { id: "desc" }],
+      take,
+    }),
+  );
 
   // Completed lengths (non-null lengthDays) drive the length stats.
   const lengths = rows

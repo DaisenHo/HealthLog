@@ -55,6 +55,7 @@ import {
   attachRecordContextEcho,
 } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
+import { meterAccountWrite, type WriteMeterOptions } from "./auth/write-meter";
 import { acceptIncomingRequestId } from "./http/request-id";
 import { withErrorEnvelopeDefaults } from "./api-response";
 import {
@@ -545,12 +546,16 @@ export function isScopedCredential(auth: AuthContext): boolean {
  */
 export async function requireAuth(
   requiredPermission?: string,
+  options?: WriteMeterOptions,
 ): Promise<AuthContext> {
   const auth = await authenticateCaller(requiredPermission);
   const carrier = await readActingCarrier(auth);
   if (carrier.kind !== "none") {
     throw refuseUndeclaredMode(auth, carrier);
   }
+  // The shared write ceiling, for every write this resolver admits — see
+  // `meterAccountWrite`.
+  await meterAccountWrite(auth.user.id, options);
   return auth;
 }
 
@@ -866,6 +871,7 @@ export async function requireActorAuth(): Promise<AuthContext> {
     auditRefusal(auth, { kind: "header", accountId: header }, "actor_surface");
     throw new SharingNotPermittedError();
   }
+  await meterAccountWrite(auth.user.id);
   return auth;
 }
 
@@ -913,6 +919,13 @@ export interface RecordAuthOptions {
    * above `"read"`.
    */
   readonly readOverPost?: true;
+  /**
+   * This route meters its writes with a dedicated bucket instead of the shared
+   * per-account one (`meterAccountWrite`). Frozen per route, with the reason,
+   * by `write-rate-limit-guard.test.ts`, which also requires the route to call
+   * its own limiter.
+   */
+  readonly writeBucket?: "own";
 }
 
 /**
@@ -966,6 +979,13 @@ export async function requireRecordAuth(
   // fence reads, so the invariant is "before the carrier", not "before the
   // first database await".
   await assertRecordSessionFence(auth);
+  // The shared write ceiling, charged to the ACTING account before any grant
+  // is read, so a refused write counts like an admitted one — see
+  // `meterAccountWrite`.
+  await meterAccountWrite(auth.user.id, {
+    readOverPost: options?.readOverPost,
+    writeBucket: options?.writeBucket,
+  });
   const carrier = await readActingCarrier(auth);
 
   // A narrow, single-purpose Bearer never acts on another record.
@@ -1063,6 +1083,7 @@ export async function requireGuardianAuth(): Promise<RecordAuthContext> {
   // a context that has since moved must be refused before the marker is read,
   // not after.
   await assertRecordSessionFence(auth);
+  await meterAccountWrite(auth.user.id);
   const carrier = await readActingCarrier(auth);
 
   if (carrier.kind === "none") {
@@ -1207,6 +1228,7 @@ export async function requireAdmin(): Promise<AuthContext> {
   if (sessionData.user.role !== "ADMIN") {
     throw new HttpError(403, "Admin access required", AUTH_ERROR_CODES.admin);
   }
+  await meterAccountWrite(sessionData.user.id);
   return { ...sessionData, authMethod: "cookie" };
 }
 
@@ -1233,6 +1255,7 @@ export async function requireCookieAuth(): Promise<AuthContext> {
       auth_method: "session",
     });
   }
+  await meterAccountWrite(sessionData.user.id);
   return { ...sessionData, authMethod: "cookie" };
 }
 
@@ -1342,6 +1365,8 @@ export async function requireFreshMfa(
       auth_method: "session",
     });
   }
+
+  await meterAccountWrite(sessionData.user.id);
 
   // The account must hold a credential that can stamp `mfaVerifiedAt` in the
   // first place. Without one a step-up-gated action is unreachable by design
@@ -1661,6 +1686,7 @@ export async function requireBearerAuth(): Promise<BearerAuthContext> {
   }
   const raw = authHeader.slice(7);
   const auth = await authenticateBearer(raw, undefined);
+  await meterAccountWrite(auth.user.id);
   return {
     ...auth,
     apiTokenId: auth.session.id,

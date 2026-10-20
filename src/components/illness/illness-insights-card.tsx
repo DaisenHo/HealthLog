@@ -21,6 +21,7 @@ import { useTranslations } from "@/lib/i18n/context";
 
 import { useIllnessInsights } from "./use-illness";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function IllnessInsightsCard({
   windowDays = 365,
@@ -64,9 +65,11 @@ export function IllnessInsightsCard({
             onRetry={() => void counts.refetch()}
           />
         ) : !hasEpisodes ? (
-          <p className="text-muted-foreground text-sm">
-            {t("illness.insights.none")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("illness.insights.none")}
+          />
         ) : (
           <div className="space-y-4 text-sm">
             <p className="text-foreground">

@@ -7,9 +7,10 @@
  * read by id and then checked against the resolved user, so a foreign id and a
  * missing id give the same 404 and probing learns nothing.
  *
- * Deleting a practitioner keeps every visit that named it. The foreign key is
- * SetNull, so the visits survive with no practice attached rather than
- * disappearing with the address-book entry.
+ * Deleting a practitioner takes it out of the address book and the pickers,
+ * not out of the history: every live visit and dose that named it keeps
+ * showing it, and the nightly purge keeps the tombstone for as long as one
+ * does (`soft-delete-retention.ts`).
  */
 import { NextRequest } from "next/server";
 

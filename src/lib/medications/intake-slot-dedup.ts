@@ -59,7 +59,7 @@ import type {
   WorkerMedicationRow,
   WorkerScheduleRow,
 } from "@/lib/medications/scheduling/worker-helpers";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 
 export const INTAKE_SLOT_DEDUP_QUEUE = "intake-slot-dedup";
 
@@ -462,7 +462,7 @@ export async function dedupeUserIntakeSlots(
     const sep = key.indexOf("|");
     const medicationId = key.slice(0, sep);
     const instantIso = key.slice(sep + 1);
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId,
       medicationId,
       scheduledFor: new Date(instantIso),

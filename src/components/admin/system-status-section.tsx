@@ -29,6 +29,7 @@ import {
   useSystemStatus,
   type FailingQueue,
 } from "./_shared";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // v1.4.16: Recharts is ~108 KiB Brotli — defer-load the host
 // metrics chart so the system-status page only ships it when an admin
@@ -89,12 +90,14 @@ export function FailingJobsCard({
         description={t("admin.failingJobs.description")}
       />
       {failingJobs.queues.length === 0 ? (
-        <p
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("admin.failingJobs.none", {
+            hours: failingJobs.windowHours,
+          })}
           data-testid="failing-jobs-none"
-          className="text-muted-foreground text-sm"
-        >
-          {t("admin.failingJobs.none", { hours: failingJobs.windowHours })}
-        </p>
+        />
       ) : (
         <ul data-testid="failing-jobs-list" className="space-y-3">
           {failingJobs.queues.map((queue) => (

@@ -48,8 +48,8 @@ import {
 } from "@/lib/medications/scheduling/next-due";
 import {
   dayKeyForScheduledFor,
-  recomputeMedicationComplianceForDay,
-} from "@/lib/rollups/medication-compliance-rollups";
+  refreshDoseDay,
+} from "@/lib/medications/dose-day-refresh";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import {
   effectiveUnitsPerDose,
@@ -716,9 +716,9 @@ export const PUT = apiHandler(
     // Tombstone today's and future open pending rows of this medication.
     // Runs on a schedule replace (the old anchors are stale) and when intake
     // tracking is switched off (nothing is due any more).
-    // The rollup days the tombstoned slots sat on, recomputed once the
+    // The dose days the tombstoned slots sat on, refreshed once the
     // transaction below has committed the tombstones.
-    const staleRollupDays = new Set<string>();
+    const staleDoseDays = new Set<string>();
     const tombstoneOpenSlots = async (
       db: Prisma.TransactionClient,
     ): Promise<void> => {
@@ -768,7 +768,7 @@ export const PUT = apiHandler(
       });
       // Deduped via the user-tz day key.
       for (const row of tombstoned) {
-        staleRollupDays.add(dayKeyForScheduledFor(row.scheduledFor, userTz));
+        staleDoseDays.add(dayKeyForScheduledFor(row.scheduledFor, userTz));
       }
     };
 
@@ -1085,26 +1085,16 @@ export const PUT = apiHandler(
       throw err;
     }
 
-    // Recompute each rollup day the tombstoned slots sat on, now that the
-    // tombstones are committed. Best-effort like every other rollup
-    // write-hook: a failure is annotated, never fails the edit.
-    for (const dayKey of staleRollupDays) {
-      try {
-        await recomputeMedicationComplianceForDay(
-          user.id,
-          id,
-          dayKey,
-          user.timezone || DEFAULT_TIMEZONE,
-        );
-      } catch (err) {
-        annotate({
-          meta: {
-            medication_compliance_rollup_failed: true,
-            medication_compliance_rollup_error:
-              err instanceof Error ? err.message : String(err),
-          },
-        });
-      }
+    // Refresh each dose day the tombstoned slots sat on, now that the
+    // tombstones are committed. Best-effort like every dose write-hook: a
+    // failure is reported, never fails the edit.
+    for (const dayKey of staleDoseDays) {
+      await refreshDoseDay({
+        userId: user.id,
+        medicationId: id,
+        dayKey,
+        tz: user.timezone || DEFAULT_TIMEZONE,
+      });
     }
 
     // Apply the v1.5.5 primary-schedule grace bridge after the

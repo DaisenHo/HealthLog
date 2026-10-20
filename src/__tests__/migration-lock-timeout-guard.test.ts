@@ -23,6 +23,8 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { RETIRED_MEASUREMENT_INDEXES } from "@/lib/jobs/measurement-maintenance";
+
 import { RETRY_MARKER } from "../../scripts/migrate-deploy.mjs";
 
 const MIGRATIONS_DIR = join(process.cwd(), "prisma", "migrations");
@@ -89,6 +91,109 @@ function violations(name: string, sql: string): string[] {
   return found;
 }
 
+/**
+ * `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` refuse to run in a
+ * transaction block, and under `migrate deploy` they do so whenever the file
+ * holds any other statement (SQLSTATE 25001, seen against Prisma 7 and
+ * Postgres 16). Such a statement therefore stands alone in its file.
+ */
+function concurrentViolations(name: string, sql: string): string[] {
+  const statements = topLevelStatements(sql);
+  const concurrent = statements.filter((statement) =>
+    /\bCONCURRENTLY\b/i.test(statement),
+  );
+  if (concurrent.length === 0 || statements.length === 1) return [];
+  return [
+    `${name}: a CONCURRENTLY statement must be the only statement in its file`,
+  ];
+}
+
+describe("concurrent index statements", () => {
+  it("stand alone in their migration file", () => {
+    const found = migrations().flatMap(({ name, sql }) =>
+      concurrentViolations(name, sql),
+    );
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("reads the statements there are", () => {
+    // No migration holds a concurrent statement since 0416 stopped dropping
+    // concurrently; the rule stands for the next one. A reader that stopped
+    // splitting statements would see none and pass, so it must see many.
+    const statements = migrations().flatMap(({ sql }) =>
+      topLevelStatements(sql),
+    );
+    expect(statements.length).toBeGreaterThan(1000);
+  });
+
+  it("refuses a concurrent statement beside another one", () => {
+    expect(
+      concurrentViolations(
+        "a",
+        'DROP INDEX CONCURRENTLY IF EXISTS "x";\nDROP INDEX CONCURRENTLY IF EXISTS "y";',
+      ),
+    ).toHaveLength(1);
+    expect(
+      concurrentViolations(
+        "b",
+        '-- CONCURRENTLY in a comment\nDROP INDEX CONCURRENTLY IF EXISTS "x";',
+      ),
+    ).toEqual([]);
+  });
+});
+
+/**
+ * `DROP INDEX CONCURRENTLY` blocks no reader or writer, but it waits without
+ * bound for every transaction on the table, and in a migration that wait is
+ * the boot's: a pg_dump or a backfill outlasts the container's start period,
+ * the half-applied migration is left on record, and the next boot stops at
+ * P3009. An index is retired instead by a bounded `DROP INDEX` that tolerates
+ * the timeout, finished by the nightly measurement maintenance (0416).
+ */
+function concurrentDropViolations(name: string, sql: string): string[] {
+  return topLevelStatements(sql).some((statement) =>
+    /^DROP INDEX CONCURRENTLY\b/i.test(statement),
+  )
+    ? [`${name}: DROP INDEX CONCURRENTLY waits on the table at boot`]
+    : [];
+}
+
+describe("retired indexes", () => {
+  it("are never dropped concurrently in the boot path", () => {
+    const found = migrations().flatMap(({ name, sql }) =>
+      concurrentDropViolations(name, sql),
+    );
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("are each dropped by a migration that bounds its wait and tolerates the timeout", () => {
+    expect(RETIRED_MEASUREMENT_INDEXES.length).toBeGreaterThan(0);
+    for (const index of RETIRED_MEASUREMENT_INDEXES) {
+      const owner = migrations().find(({ sql }) =>
+        new RegExp(`DROP INDEX IF EXISTS "${index}"`).test(sql),
+      );
+      expect(owner, index).toBeDefined();
+      expect(owner?.sql).toMatch(/set_config\(\s*'lock_timeout'/);
+      expect(owner?.sql).toMatch(/EXCEPTION WHEN lock_not_available THEN/);
+    }
+  });
+
+  it("counter-check: refuses a concurrent drop, not one in a comment", () => {
+    expect(
+      concurrentDropViolations(
+        "a",
+        'DROP INDEX CONCURRENTLY IF EXISTS "measurements_x_idx";',
+      ),
+    ).toHaveLength(1);
+    expect(
+      concurrentDropViolations(
+        "b",
+        '-- DROP INDEX CONCURRENTLY "x";\nDROP INDEX IF EXISTS "x";',
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe("migration lock waits", () => {
   it("bounds lock waits where they take effect and marks only repeatable files", () => {
     const found = migrations().flatMap(({ name, sql }) =>
@@ -97,11 +202,14 @@ describe("migration lock waits", () => {
     expect(found, found.join("\n")).toEqual([]);
   });
 
-  it("sees the one migration that bounds its wait today", () => {
+  it("sees the migrations that bound their wait", () => {
     const marked = migrations()
       .filter(({ sql }) => RETRY_MARKER.test(sql))
       .map(({ name }) => name);
     expect(marked).toContain("0412_measurement_hot_updates");
+    expect(marked).toContain("0414_drop_medication_compliance_rollups");
+    expect(marked).toContain("0415_foreign_key_and_prefix_indexes");
+    expect(marked).toContain("0416_drop_measurements_type_prefix_index");
   });
 
   it("catches each shape it exists to refuse", () => {

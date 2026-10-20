@@ -48,6 +48,7 @@ import {
 } from "./setup-guide-link";
 import type { IntegrationStatusViewModel } from "./shared";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { InlineAction } from "@/components/ui/inline-action";
 
 interface DawarichStatus {
   connected: boolean;
@@ -91,6 +92,7 @@ export function DawarichCard({
   const connected = viewModel?.connected ?? false;
   const test = useConnectionTest("/api/dawarich/test");
   const [editing, setEditing] = useState(false);
+  const [homeEditing, setHomeEditing] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const refresh = () => {
@@ -182,6 +184,12 @@ export function DawarichCard({
       onSelect: test.run,
     },
     {
+      id: "home",
+      label: t("settings.dawarichHomePlaceChange"),
+      icon: MapPinned,
+      onSelect: () => setHomeEditing(true),
+    },
+    {
       id: "credentials",
       label: t("settings.integrationCard.menu.address"),
       icon: KeyRound,
@@ -231,22 +239,35 @@ export function DawarichCard({
       primary={{ onReconnect: openForm, onResume: openForm }}
       menu={menu}
     >
-      <DawarichHome />
+      <DawarichHome editing={homeEditing} onEditingChange={setHomeEditing} />
       <ActionResultLines provider="dawarich" test={test} />
       {editing ? form : null}
     </IntegrationCard>
   );
 }
 
-/** The home place and home country, and what is stored. */
-function DawarichHome() {
+/**
+ * The home place and home country, and what is stored.
+ *
+ * The editor is closed by default and opens from the card menu (or from the
+ * prompt when nothing is set yet), like the address form beside it. Open, it
+ * carries its own Cancel and Save; closed, the card has exactly one action
+ * row, its own, at the bottom (UI standards §12). It used to show the
+ * country field and a second always-on row of buttons above the card's.
+ */
+function DawarichHome({
+  editing,
+  onEditingChange,
+}: {
+  editing: boolean;
+  onEditingChange: (open: boolean) => void;
+}) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const status = useQuery({
     queryKey: queryKeys.dawarichStatus(),
     queryFn: () => apiGet<DawarichStatus>("/api/dawarich/status"),
   });
-  const [picking, setPicking] = useState(false);
   const [placeId, setPlaceId] = useState("");
   const [country, setCountry] = useState("");
   const places = useQuery({
@@ -255,7 +276,7 @@ function DawarichHome() {
       apiGet<{ places: Array<{ id: number; name: string }> }>(
         "/api/dawarich/places",
       ),
-    enabled: picking,
+    enabled: editing,
   });
 
   const save = useMutation({
@@ -265,7 +286,7 @@ function DawarichHome() {
     }) => apiPatch("/api/dawarich/settings", body),
     onSuccess: () => {
       toast.success(t("settings.dawarichHomeSaved"));
-      setPicking(false);
+      onEditingChange(false);
       setPlaceId("");
       setCountry("");
       queryClient.invalidateQueries({ queryKey: queryKeys.dawarichStatus() });
@@ -293,95 +314,105 @@ function DawarichHome() {
       <p className="text-muted-foreground text-xs">
         {t("settings.dawarichDaysStored", { count: data.daysStored })}
       </p>
-      {picking ? (
-        <div className="space-y-1.5">
-          <Label htmlFor="dawarich-home-place">
-            {t("settings.dawarichHomePlace")}
-          </Label>
-          {places.isError ? (
-            <QueryErrorRow
-              inset
-              error={places.error}
-              slot="dawarich-places-error"
-              message={t(errorKeyOf(places.error))}
-              onRetry={() => void places.refetch()}
-            />
-          ) : (
-            <NativeSelect
-              id="dawarich-home-place"
-              value={placeId}
-              disabled={places.isLoading}
-              onChange={(e) => setPlaceId(e.target.value)}
-            >
-              <option value="">{t("settings.dawarichHomePlaceChoose")}</option>
-              {(places.data?.places ?? []).map((place) => (
-                <option key={place.id} value={String(place.id)}>
-                  {place.name}
+      {!editing && (!data.homePlaceSet || !data.homeCountry) ? (
+        <InlineAction
+          onClick={() => onEditingChange(true)}
+          data-testid="dawarich-pick-home"
+        >
+          <MapPinned aria-hidden="true" />
+          {t("settings.dawarichHomePlaceChange")}
+        </InlineAction>
+      ) : null}
+      {editing ? (
+        <div className="space-y-3" data-slot="dawarich-home-editor">
+          <div className="space-y-1.5">
+            <Label htmlFor="dawarich-home-place">
+              {t("settings.dawarichHomePlace")}
+            </Label>
+            {places.isError ? (
+              <QueryErrorRow
+                inset
+                error={places.error}
+                slot="dawarich-places-error"
+                message={t(errorKeyOf(places.error))}
+                onRetry={() => void places.refetch()}
+              />
+            ) : (
+              <NativeSelect
+                id="dawarich-home-place"
+                value={placeId}
+                disabled={places.isLoading}
+                onChange={(e) => setPlaceId(e.target.value)}
+              >
+                <option value="">
+                  {t("settings.dawarichHomePlaceChoose")}
                 </option>
-              ))}
-            </NativeSelect>
-          )}
+                {(places.data?.places ?? []).map((place) => (
+                  <option key={place.id} value={String(place.id)}>
+                    {place.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dawarich-home-country" className="flex">
+              {t("settings.dawarichHomeCountry")}
+            </Label>
+            <Input
+              id="dawarich-home-country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder={data.homeCountry ?? "DE"}
+              maxLength={2}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="w-24"
+            />
+            <p className="text-muted-foreground text-xs">
+              {t("settings.dawarichHomeCountryHelp")}
+            </p>
+          </div>
+          <SettingsCardActions>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="min-h-11 sm:min-h-9"
+              onClick={() => onEditingChange(false)}
+              data-testid="dawarich-cancel-home"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              disabled={
+                save.isPending ||
+                (placeId === "" && !/^[A-Z]{2}$/.test(countryValue))
+              }
+              onClick={() =>
+                save.mutate({
+                  ...(placeId !== "" ? { homePlaceId: Number(placeId) } : {}),
+                  ...(/^[A-Z]{2}$/.test(countryValue)
+                    ? { homeCountry: countryValue }
+                    : {}),
+                })
+              }
+              data-testid="dawarich-save-home"
+            >
+              {save.isPending ? (
+                <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Save className="size-3.5" aria-hidden="true" />
+              )}
+              {t("settings.dawarichHomeSave")}
+            </Button>
+          </SettingsCardActions>
         </div>
       ) : null}
-      <div className="space-y-1.5">
-        <Label htmlFor="dawarich-home-country" className="flex">
-          {t("settings.dawarichHomeCountry")}
-        </Label>
-        <Input
-          id="dawarich-home-country"
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
-          placeholder={data.homeCountry ?? "DE"}
-          maxLength={2}
-          autoComplete="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-          className="w-24"
-        />
-        <p className="text-muted-foreground text-xs">
-          {t("settings.dawarichHomeCountryHelp")}
-        </p>
-      </div>
-      <SettingsCardActions>
-        {picking ? null : (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="min-h-11 sm:min-h-9"
-            onClick={() => setPicking(true)}
-            data-testid="dawarich-pick-home"
-          >
-            <MapPinned className="size-3.5" aria-hidden="true" />
-            {t("settings.dawarichHomePlaceChange")}
-          </Button>
-        )}
-        <Button
-          type="button"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          disabled={
-            save.isPending ||
-            (placeId === "" && !/^[A-Z]{2}$/.test(countryValue))
-          }
-          onClick={() =>
-            save.mutate({
-              ...(placeId !== "" ? { homePlaceId: Number(placeId) } : {}),
-              ...(/^[A-Z]{2}$/.test(countryValue)
-                ? { homeCountry: countryValue }
-                : {}),
-            })
-          }
-          data-testid="dawarich-save-home"
-        >
-          {save.isPending ? (
-            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="size-3.5" aria-hidden="true" />
-          )}
-          {t("settings.dawarichHomeSave")}
-        </Button>
-      </SettingsCardActions>
     </div>
   );
 }

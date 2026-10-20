@@ -19,7 +19,7 @@ import { type RefObject } from "react";
 import { Progress } from "@/components/ui/progress";
 import { useTranslations } from "@/lib/i18n/context";
 import type { DocumentUsageDto } from "@/lib/validations/inbound-documents";
-import { formatBytes } from "./vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
 
 /** Usage fraction above which the quota bar appears. */
 const QUOTA_BAR_THRESHOLD = 0.8;

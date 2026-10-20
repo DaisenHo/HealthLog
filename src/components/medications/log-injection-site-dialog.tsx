@@ -12,6 +12,7 @@ import {
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
 import { useTranslations } from "@/lib/i18n/context";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.8.5 — post-dose injection-site capture.
@@ -111,9 +112,11 @@ export function LogInjectionSiteDialog({
       }
     >
       {allowed.length === 0 ? (
-        <p className="text-muted-foreground py-4 text-center text-sm">
-          {t("medications.logInjectionSiteNoneAvailable")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("medications.logInjectionSiteNoneAvailable")}
+        />
       ) : (
         <>
           <InjectionSitePicker

@@ -46,6 +46,7 @@ import {
 } from "@/components/medications/use-medication-intake";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-thresholds";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface LogIntakeSchedule extends ScheduleWindowInput {
   label: string | null;
@@ -276,9 +277,11 @@ export function LogIntakeDialog({
         className="space-y-4"
       >
         {medications.length === 0 ? (
-          <p className="text-muted-foreground py-4 text-sm">
-            {t("medications.logIntake.noMedications")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("medications.logIntake.noMedications")}
+          />
         ) : (
           <div className="space-y-3">
             <div className="space-y-2">

@@ -16,6 +16,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { Badge } from "@/components/ui/badge";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,7 +163,8 @@ export function UserManagementSection() {
     setEditQuotaGb(
       u.documentQuotaBytes === null
         ? ""
-        : String(Math.round((u.documentQuotaBytes / 1_073_741_824) * 10) / 10),
+        : // eslint-disable-next-line healthlog/no-unlocalised-decimal -- value of a type="number" input, which only takes a full stop
+          String(Math.round((u.documentQuotaBytes / 1_073_741_824) * 10) / 10),
     );
   }
 
@@ -311,20 +313,17 @@ export function UserManagementSection() {
         className="flex flex-wrap items-center gap-1.5"
         data-slot="admin-users-filter"
       >
-        {(["all", "admin", "user"] as const).map((value) => (
-          <Button
-            key={value}
-            // Neutral pills: the selected filter is a state, not a call to
-            // action, so it never takes the primary fill.
-            variant={filter === value ? "secondary" : "outline"}
-            size="sm"
-            className="min-h-11 min-w-11 px-3 text-xs sm:min-h-9"
-            onClick={() => setFilter(value)}
-            aria-pressed={filter === value}
-          >
-            {t(`admin.section.users.filter.${value}`)}
-          </Button>
-        ))}
+        <Segmented
+          mode="toggle"
+          label={t("admin.section.users.filterLabel")}
+          slot="admin-users-filter-choice"
+          value={filter}
+          onChange={setFilter}
+          options={(["all", "admin", "user"] as const).map((value) => ({
+            value,
+            label: t(`admin.section.users.filter.${value}`),
+          }))}
+        />
       </div>
 
       {filteredUsers ? (

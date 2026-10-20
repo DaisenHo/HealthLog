@@ -15,12 +15,15 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { TagChip } from "@/components/ui/tag-chip";
 import { TileHeader } from "@/components/insights/tile-header";
-import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
+import {
+  useDateFormatPreference,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
 import { readStoredTimezone } from "@/lib/timezone-mirror";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -39,6 +42,7 @@ import {
   useChartDayLinks,
 } from "@/components/day/chart-day-links";
 import { ChartEmptyState } from "./chart-empty-state";
+import { ChartRangeTabs } from "./chart-range-tabs";
 import { ChartErrorState } from "./chart-error-state";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { shiftDailySeriesForward } from "@/lib/charts/comparison-shift";
@@ -123,32 +127,8 @@ interface MoodChartProps {
 // --- Constants ---
 
 // The range tabs select a CALENDAR-DAY window ending now, matching
-// `health-chart.tsx` (see the note there). Until v1.37.29 this chart
-// sliced the last N LOGGED DAYS out of the whole history instead — the
-// same "7" tab meant seven calendar days on a weight chart and seven
-// logged days (possibly weeks apart) on the mood chart one card over.
-const TIME_RANGES_KEYS = [
-  {
-    labelKey: "charts.days7Label",
-    days: 7,
-    titleKey: "charts.days7Title",
-  },
-  {
-    labelKey: "charts.days30Label",
-    days: 30,
-    titleKey: "charts.days30Title",
-  },
-  {
-    labelKey: "charts.days90Label",
-    days: 90,
-    titleKey: "charts.days90Title",
-  },
-  {
-    labelKey: "charts.daysAllLabel",
-    days: 0,
-    titleKey: "charts.daysAllTitle",
-  },
-] as const;
+// `health-chart.tsx`, through the same `ChartRangeTabs` every chart drawn in
+// days carries.
 
 // MOOD_LABELS built dynamically via t() in the component
 
@@ -299,6 +279,7 @@ export function MoodChart({
 }: MoodChartProps) {
   const { isAuthenticated } = useAuth();
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
   // Issue #490 — x-axis tick + tooltip date labels. Every timestamp this
   // chart formats encodes a CALENDAR DAY (noon-UTC of a server day key,
   // or a `bucketTimeSeries` Berlin-day UTC-midnight bucket start), so
@@ -618,9 +599,9 @@ export function MoodChart({
   };
 
   const formatTooltipValue = (value: number): string => {
-    const rounded = Math.round(value * 10) / 10;
+    const rounded = fmt.number(Math.round(value * 10) / 10);
     const label = moodLabels[Math.round(value)];
-    return label ? `${rounded} (${label})` : String(rounded);
+    return label ? `${rounded} (${label})` : rounded;
   };
 
   // v1.4.16 — personal mood baseline (median over visible window).
@@ -681,7 +662,7 @@ export function MoodChart({
     if (scores.length === 0) {
       return t("charts.a11y.noData", { metric });
     }
-    const fmtScore = (v: number) => String(Math.round(v * 10) / 10);
+    const fmtScore = (v: number) => fmt.number(Math.round(v * 10) / 10);
     const minVal = Math.min(...scores);
     const maxVal = Math.max(...scores);
     const latestVal = scores[scores.length - 1];
@@ -727,9 +708,7 @@ export function MoodChart({
       height={CHART_HEIGHT_PX}
     />
   ) : !chartData?.length ? (
-    <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">
-      {t("charts.noData")}
-    </div>
+    <ChartEmptyState title={t("charts.noData")} height={192} />
   ) : chartData.length < 3 ? (
     // v1.4.16 — sparse-data placeholder consistent with the
     // BP/weight/pulse charts. Height tracks the chart strip's
@@ -938,7 +917,7 @@ export function MoodChart({
                     delta = t("charts.deltaUnchanged");
                   } else {
                     const sign = diff > 0 ? "+" : "−";
-                    const formatted = `${sign}${Math.abs(diff).toFixed(1)}`;
+                    const formatted = `${sign}${fmt.number(Math.abs(diff), 1)}`;
                     delta = t(
                       effectiveCompareBaseline === "lastMonth"
                         ? "comparison.deltaVs.lastMonth"
@@ -951,7 +930,7 @@ export function MoodChart({
                     delta = t("charts.deltaUnchanged");
                   } else {
                     const sign = diff > 0 ? "+" : "−";
-                    const formatted = `${sign}${Math.abs(diff).toFixed(1)}`;
+                    const formatted = `${sign}${fmt.number(Math.abs(diff), 1)}`;
                     delta = t("charts.deltaVsBaseline").replace(
                       "{delta}",
                       formatted,
@@ -1123,31 +1102,21 @@ export function MoodChart({
             className="flex flex-nowrap items-center justify-end gap-1 self-end sm:self-auto"
             data-slot="chart-header-controls"
           >
-            {TIME_RANGES_KEYS.map((r) => (
-              <Button
-                key={r.labelKey}
-                variant={rangePoints === r.days ? "default" : "ghost"}
-                aria-pressed={rangePoints === r.days}
-                size="sm"
-                className="min-h-11 px-2 text-xs sm:px-3"
-                onClick={() => {
-                  setRangeHydrated(true);
-                  setRangePoints(r.days);
-                  // v1.30.1 — persist the pick per chart, same
-                  // model as the overlay toggles.
-                  if (chartKey && !windowOverride) {
-                    overlayPrefs.setPrefs({
-                      ...overlayPrefs.prefs,
-                      rangePoints: r.days,
-                    });
-                  }
-                }}
-                title={t(r.titleKey)}
-                data-slot="chart-range-tab"
-              >
-                {t(r.labelKey)}
-              </Button>
-            ))}
+            <ChartRangeTabs
+              value={rangePoints}
+              onChange={(days) => {
+                setRangeHydrated(true);
+                setRangePoints(days);
+                // v1.30.1 — persist the pick per chart, same
+                // model as the overlay toggles.
+                if (chartKey && !windowOverride) {
+                  overlayPrefs.setPrefs({
+                    ...overlayPrefs.prefs,
+                    rangePoints: days,
+                  });
+                }
+              }}
+            />
             {/* v1.4.18 — overlay-controls dropdown next to the
                 range tabs. Only painted when the chart is bound to
                 a persistent chartKey; ad-hoc usages (/insights mood

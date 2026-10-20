@@ -30,6 +30,7 @@ import {
   type MeasurementReminder,
 } from "@/hooks/use-measurement-reminders";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function resolveLabel(
   reminder: MeasurementReminder,
@@ -104,9 +105,11 @@ export function VorsorgeSettings() {
           {isLoading ? (
             <Skeleton className="h-24 w-full" />
           ) : (reminders?.length ?? 0) === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {t("measurementReminders.manage.empty")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("measurementReminders.manage.empty")}
+            />
           ) : (
             <Card>
               <CardContent className="divide-border divide-y p-0">

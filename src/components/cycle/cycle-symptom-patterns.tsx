@@ -10,6 +10,7 @@ import { CYCLE_SYMPTOM_CATALOG } from "./symptom-catalog";
 import { PHASE_HUE } from "./phase-tokens";
 import type { CyclePhase } from "./types";
 import type { SymptomPhaseRow } from "./use-cycle";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.15.0 — symptom patterns by phase (the cycle-NATIVE insight).
@@ -64,9 +65,11 @@ export function CycleSymptomPatterns({ rows }: CycleSymptomPatternsProps) {
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t("cycle.insights.symptomPatternsEmpty")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("cycle.insights.symptomPatternsEmpty")}
+          />
         ) : (
           <ul className="space-y-3" data-slot="cycle-symptom-pattern-list">
             {rows.map((row) => {

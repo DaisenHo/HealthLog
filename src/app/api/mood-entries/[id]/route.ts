@@ -15,10 +15,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey } from "@/lib/mood/date-key";
+import { MOOD_ENTRY_WIRE_INCLUDE, toMoodEntryWire } from "@/lib/mood/list-read";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { deriveA1, shapeLevelA } from "@/lib/mood/level-a";
 import { contextForWire, persistMoodContext } from "@/lib/mood/context";
-import { encryptNote, shapeMoodNote } from "@/lib/crypto/note-cipher";
+import { encryptNote } from "@/lib/crypto/note-cipher";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
 import { recomputeMoodBucketsForEntry } from "@/lib/rollups/mood-rollups";
 import {
@@ -50,9 +51,9 @@ export const GET = apiHandler(
     // (not `findUnique`) because `deletedAt` is not part of a unique index.
     const entry = await prisma.moodEntry.findFirst({
       where: { id, deletedAt: null },
-      // v1.38 — the day context rides with the entry rather than behind a
-      // second request: the edit surface needs both or neither.
-      include: { context: true },
+      // The same joins and the same projection as the list read, so an
+      // entry opened on its own carries `tagKeys` and `ratedFactors` too.
+      include: MOOD_ENTRY_WIRE_INCLUDE,
     });
 
     if (!entry || entry.userId !== user.id) {
@@ -64,14 +65,7 @@ export const GET = apiHandler(
       meta: { moodEntryId: id },
     });
 
-    const { context, ...row } = entry;
-    return apiSuccess({
-      // v1.37 — level-A values under the keys the write path takes.
-      ...shapeLevelA(shapeMoodNote(row)),
-      tags: parseTags(row.tags),
-      // v1.38 — lists decoded, note decrypted, ciphertext dropped.
-      context: context ? contextForWire(context) : null,
-    });
+    return apiSuccess(toMoodEntryWire(entry));
   },
 );
 

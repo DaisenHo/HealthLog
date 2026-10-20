@@ -200,7 +200,7 @@ export function SinceLastVisit({
   // and the reader still sees what could not be loaded.
   if (window.isError && rows.length === 0) {
     return (
-      <Card className="gap-2 py-3 md:py-4">
+      <Card density="compact">
         <CardHeader>
           <TileHeader
             size="sm"
@@ -229,7 +229,7 @@ export function SinceLastVisit({
   const nextDay = dateKeyOfInstant(next.occurredAt, timeZone);
 
   return (
-    <Card className="gap-2 py-3 md:py-4">
+    <Card density="compact">
       <CardHeader>
         <TileHeader
           size="sm"

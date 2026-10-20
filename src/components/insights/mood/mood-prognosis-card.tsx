@@ -106,7 +106,7 @@ export function MoodPrognosisView({ reading }: { reading: PrognosisReading }) {
   if (!data.present && data.reason === "no-output-yet") return null;
 
   return (
-    <Card data-slot="mood-prognosis" className="gap-2 py-3 md:py-4">
+    <Card data-slot="mood-prognosis" density="compact">
       <CardHeader>
         <TileHeader icon={Compass} title={t("insights.mood.prognosis.title")} />
       </CardHeader>

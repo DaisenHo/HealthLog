@@ -31,7 +31,8 @@ export function SampleBriefingCard({ className }: { className?: string }) {
     <Card
       data-slot="sample-briefing-card"
       aria-label={t("onboarding.ai.sampleAriaLabel")}
-      className={cn("bg-muted/30 gap-2 py-3 md:py-4", className)}
+      density="compact"
+      className={cn("bg-muted/30", className)}
     >
       <CardHeader>
         <TileHeader

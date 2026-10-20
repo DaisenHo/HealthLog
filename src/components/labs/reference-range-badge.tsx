@@ -2,7 +2,7 @@
 
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { ScorePill } from "@/components/ui/score-pill";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { ReferenceRangeStatus } from "@/lib/validations/labs";
@@ -39,21 +39,16 @@ export function ReferenceRangeBadge({
 
   if (status === "unknown") return null;
 
-  // Compact: drop the icon, shrink the text and padding so the badge reads as a
-  // subtle qualifier of the heading rather than a second focal point.
-  const compactClass = compact
-    ? "h-auto gap-0.5 px-1.5 py-0 text-xs font-normal [&>svg]:size-2.5"
-    : "";
+  // Compact: a quieter, smaller pill beside the analyte heading, so it reads
+  // as a qualifier of the heading rather than a second focal point.
+  const compactClass = compact ? "gap-0.5 px-1.5 py-0 font-normal" : "";
 
   if (status === "in-range") {
     return (
-      <Badge
-        variant="outline"
-        className={cn("text-muted-foreground", compactClass, className)}
-      >
+      <ScorePill tone="neutral" className={cn(compactClass, className)}>
         {compact ? null : <Minus aria-hidden />}
         {t("labs.range.inRange")}
-      </Badge>
+      </ScorePill>
     );
   }
 
@@ -62,14 +57,13 @@ export function ReferenceRangeBadge({
   const Icon = status === "below" ? ArrowDown : ArrowUp;
   const label =
     status === "below" ? t("labs.range.below") : t("labs.range.above");
-  const toneClass =
-    status === "below"
-      ? "border-info/30 bg-info/10 text-info"
-      : "border-warning/30 bg-warning/10 text-warning";
   return (
-    <Badge variant="outline" className={cn(toneClass, compactClass, className)}>
+    <ScorePill
+      tone={status === "below" ? "info" : "warning"}
+      className={cn(compactClass, className)}
+    >
       <Icon aria-hidden />
       {label}
-    </Badge>
+    </ScorePill>
   );
 }

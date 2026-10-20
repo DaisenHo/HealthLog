@@ -27,6 +27,7 @@ import {
   useDateFormatPreference,
 } from "@/lib/i18n/context";
 import { formatDate as formatCalendarDate } from "@/lib/date-format";
+import { PageHeader } from "@/components/ui/page-header";
 
 export interface MedicationDetailSummaryProps {
   name: string;
@@ -109,8 +110,7 @@ export function MedicationDetailSummary({
 
   return (
     <div className="space-y-1.5" data-slot="medication-detail-summary">
-      <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
-      <p className="text-muted-foreground text-sm">{dose}</p>
+      <PageHeader title={name} description={dose} />
       <div
         className="text-muted-foreground flex items-center gap-2 text-xs"
         data-slot="medication-detail-status-row"

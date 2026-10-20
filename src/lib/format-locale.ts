@@ -180,6 +180,23 @@ export interface Formatters {
 }
 
 /**
+ * A decimal in the reader's notation for text built outside React (a server
+ * sentence, a deterministic fallback): at most `maxFractionDigits` digits,
+ * trailing zeros dropped, no grouping. `toFixed` prints a full stop in every
+ * language; this prints "0,8" in German and "0.8" in English.
+ */
+export function formatDecimal(
+  value: number,
+  locale: Locale,
+  maxFractionDigits: number,
+): string {
+  return getNumberFormat(resolveIntlLocale(locale), {
+    maximumFractionDigits: maxFractionDigits,
+    useGrouping: false,
+  }).format(value);
+}
+
+/**
  * Build the locale-aware formatter set.
  *
  * Every parameter is REQUIRED, deliberately. `timeFormat` and `dateFormat`

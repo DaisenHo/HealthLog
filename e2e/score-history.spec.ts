@@ -137,12 +137,12 @@ async function expectSharedTabs(page: Page, chart: string, pressed: string) {
   await expect(tabs).toHaveCount(4);
   expect(
     await tabs.evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute("data-range")),
+      nodes.map((node) => node.getAttribute("data-value")),
     ),
   ).toEqual(RANGES);
   await expect(
     page.locator(`${chart} [data-slot="chart-range-tab"][aria-pressed="true"]`),
-  ).toHaveAttribute("data-range", pressed);
+  ).toHaveAttribute("data-value", pressed);
 }
 
 test.describe("score histories", () => {
@@ -170,7 +170,7 @@ test.describe("score histories", () => {
     expect(asked).toContain(30);
 
     await chart
-      .locator('[data-slot="chart-range-tab"][data-range="7"]')
+      .locator('[data-slot="chart-range-tab"][data-value="7"]')
       .click();
     await expect(chart).toHaveAttribute("data-range", "7");
     await expect.poll(() => asked.at(-1)).toBe(7);
@@ -185,7 +185,7 @@ test.describe("score histories", () => {
     await expect(chart).toHaveAttribute("data-range", "7");
 
     await chart
-      .locator('[data-slot="chart-range-tab"][data-range="0"]')
+      .locator('[data-slot="chart-range-tab"][data-value="0"]')
       .click();
     await expect(chart).toHaveAttribute("data-range", "0");
     await expect.poll(() => asked.at(-1)).toBe(3650);
@@ -231,7 +231,7 @@ test.describe("score histories", () => {
     await expect(chart).toHaveAttribute("data-score", "READINESS");
     await expectSharedTabs(page, '[data-slot="score-trend-chart"]', "30");
     await chart
-      .locator('[data-slot="chart-range-tab"][data-range="90"]')
+      .locator('[data-slot="chart-range-tab"][data-value="90"]')
       .click();
     await expect(chart).toHaveAttribute("data-range", "90");
     await expect.poll(() => asked.at(-1)).toBe(90);
@@ -262,7 +262,7 @@ test.describe("score histories", () => {
       page.locator(`${chart} [data-slot="chart-overlay-controls-trigger"]`),
     ).toHaveCount(0);
     await page
-      .locator(`${chart} [data-slot="chart-range-tab"][data-range="7"]`)
+      .locator(`${chart} [data-slot="chart-range-tab"][data-value="7"]`)
       .click();
     await expectSharedTabs(page, chart, "7");
     await page.reload();

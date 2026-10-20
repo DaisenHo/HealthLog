@@ -49,6 +49,7 @@ import { dateKeyOfInstant } from "../day/day-url";
 import { INSTRUMENTS } from "@/lib/mental-health/instruments";
 
 import type { AssessmentRow, InstrumentId } from "./types";
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
 interface ChartPoint {
   timestamp: number;
@@ -106,9 +107,7 @@ export function AssessmentHistoryChart({
 
   if (points.length === 0) {
     return (
-      <p className="text-muted-foreground py-10 text-center text-sm">
-        {t("mentalHealth.history.empty")}
-      </p>
+      <ChartEmptyState title={t("mentalHealth.history.empty")} height={160} />
     );
   }
 

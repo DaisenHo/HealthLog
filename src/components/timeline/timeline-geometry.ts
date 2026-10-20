@@ -1157,6 +1157,7 @@ export function layoutSeries(
         thin: p.count < THIN_BUCKET_COUNT,
       };
     });
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- SVG coordinates, read by the renderer, not a person
     const xy = (p: SeriesPointLayout) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
     let path = "";
     let bridges = "";

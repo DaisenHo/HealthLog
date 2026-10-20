@@ -11,10 +11,13 @@ import { I18nProvider } from "@/lib/i18n/context";
  * Maintainer directive 2026-05-14 named three issues with the 5-tile top row:
  *
  *   1. Headings wrapped to two lines at narrow viewports (e.g. "Blood
- *      Pressure" on Pixel 5 / 393 px / 2-col grid). Locked the heading
- *      row to a deterministic `h-5` with `whitespace-nowrap` so even an
- *      unexpectedly long string never breaks the baseline of the value
- *      row below.
+ *      Pressure" on Pixel 5 / 393 px / 2-col grid), moving the value row.
+ *      The heading row is a deterministic height so the value row keeps
+ *      its baseline. It reserves TWO lines (`h-10`, v1.43.8): pinned to one
+ *      line it could only keep that promise by cutting the label, and long
+ *      German compounds and glucose contexts ended in an ellipsis on every
+ *      dashboard. A label wraps (hyphenated) inside the reserve; the rare
+ *      third line clamps with the full text in `title`.
  *   2. Trend arrow rendered as a wrapping flex child after the unit —
  *      sometimes wrapped to its own line, sometimes missing entirely
  *      when slope30 was null. Now sits in a fixed `h-4 w-4` slot with
@@ -27,8 +30,8 @@ import { I18nProvider } from "@/lib/i18n/context";
  *      tile in the strip to share the same baseline.
  *
  * These tests pin the load-bearing class names so a future refactor
- * that drops `h-5` / `items-baseline` / `whitespace-nowrap` triggers a
- * red CI before it reaches the dashboard.
+ * that drops `h-10` / `items-baseline` / `line-clamp-2` triggers a red CI
+ * before it reaches the dashboard.
  */
 
 const RISING = { slope: 0.5, direction: "up" as const, confidence: 0.8 };
@@ -53,13 +56,14 @@ describe("<TrendCard> W20a baseline alignment", () => {
       />,
     );
 
-    // h-5 is the load-bearing class — keeps the value row below at the
-    // same y-coordinate regardless of the label string's actual width.
-    expect(html).toContain("h-5");
-    expect(html).toContain('data-slot="trend-card-label"');
+    // h-10 is the load-bearing class — keeps the value row below at the
+    // same y-coordinate whether the label takes one line or two.
+    expect(html).toMatch(
+      /class="flex h-10 [^"]*"[^>]*><span[^>]*data-slot="trend-card-label"/,
+    );
   });
 
-  it("forbids wrapping on the heading row even with a long label", () => {
+  it("wraps a long label inside the reserve instead of cutting it", () => {
     const html = render(
       <TrendCard
         // Stress test — the live tile uses dashboard.*Short keys but
@@ -75,8 +79,19 @@ describe("<TrendCard> W20a baseline alignment", () => {
       />,
     );
 
-    expect(html).toContain("whitespace-nowrap");
-    expect(html).toContain("truncate");
+    const label = html.match(
+      /<span class="([^"]*)" data-slot="trend-card-label" title="([^"]*)"/,
+    );
+    expect(label, "label span not found").not.toBeNull();
+    const [, classes, title] = label!;
+    // Wraps at a syllable, clamps only past the two reserved lines, and the
+    // clamp keeps the whole name reachable.
+    expect(classes).toContain("hyphens-auto");
+    expect(classes).toContain("break-words");
+    expect(classes).toContain("line-clamp-2");
+    expect(classes).not.toContain("truncate");
+    expect(classes).not.toContain("whitespace-nowrap");
+    expect(title).toBe("A really long blood pressure metric name");
   });
 
   it("renders the value row with baseline alignment", () => {
@@ -166,9 +181,10 @@ describe("<TrendCard> W20a baseline alignment", () => {
         />,
       );
 
-      // Same heading-row height contract — `h-5` + `whitespace-nowrap`.
-      expect(html).toContain("h-5");
-      expect(html).toContain("whitespace-nowrap");
+      // Same heading-row height contract — two reserved label lines.
+      expect(html).toMatch(
+        /class="flex h-10 [^"]*"[^>]*><span[^>]*data-slot="trend-card-label"/,
+      );
       // Same value-row baseline contract — `items-baseline` + `text-3xl`
       // + `leading-none`. Identical font geometry across all five tiles
       // means the digits land at the same y-coordinate inside the grid.

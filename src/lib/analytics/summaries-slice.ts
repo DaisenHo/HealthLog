@@ -74,7 +74,7 @@ import {
   isHourlyMeanTypeSql,
   windowMeanSql,
 } from "@/lib/measurements/day-mean";
-import type { DataSummary } from "@/lib/analytics/trends";
+import { wireSummary, type DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -491,7 +491,7 @@ async function withSleepNightTotals(
   // dashboard tile reads slope30); recompute them off the night series is
   // out of scope here — the per-night `summarize()` already fills slope7 /
   // slope30 from the night DataPoints, so use them directly.
-  slice.summaries.SLEEP_DURATION = summary;
+  slice.summaries.SLEEP_DURATION = wireSummary(summary);
   // Additive, observational: the latest night's main session saw two
   // writer buckets with clearly different asleep totals. Round to whole
   // minutes, matching the `/api/sleep/night` serialisation.

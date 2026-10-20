@@ -65,7 +65,7 @@ import {
 } from "@/components/medications/card-parts/medication-compliance-bars";
 import { DoseHistoryLedger } from "@/components/medications/dose-history-ledger";
 import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
-import { SegmentedToggle } from "@/components/medications/detail/segmented-toggle";
+import { Segmented } from "@/components/ui/segmented";
 import { ScheduleTimesEditor } from "@/components/medications/scheduling/schedule-times-editor";
 import { ScheduleHistoryTimeline } from "@/components/medications/scheduling/schedule-history-timeline";
 import type { DoseWindowEntry } from "@/components/medications/scheduling/dose-window";
@@ -104,6 +104,8 @@ import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-t
 import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
 import type { RelatedLink } from "@/lib/links/related";
+import { InlineAction } from "@/components/ui/inline-action";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // v1.15.20 — Recharts stays out of the detail page's initial bundle:
 // both chart bodies load through `next/dynamic` (client-only) with the
@@ -676,9 +678,11 @@ export function MedicationDetailTabs({
                   longDays={longDays}
                 />
               ) : (
-                <p className="text-muted-foreground text-sm">
-                  {t("medications.detail.uebersicht.complianceEmpty")}
-                </p>
+                <EmptyState
+                  variant="plain"
+                  size="compact"
+                  title={t("medications.detail.uebersicht.complianceEmpty")}
+                />
               )}
             </MedicationDetailSection>
           )}
@@ -854,7 +858,8 @@ export function MedicationDetailTabs({
             Daten (the DataPortabilityRow), not in this header. */}
         <TabsContent value="verlauf" className="space-y-6 pt-2">
           <div className="flex justify-end">
-            <SegmentedToggle
+            <Segmented
+              mode="toggle"
               value={historyView}
               options={[
                 {
@@ -867,8 +872,8 @@ export function MedicationDetailTabs({
                 },
               ]}
               onChange={setHistoryView}
-              ariaLabel={t("medications.detail.intake.viewToggleLabel")}
-              dataSlot="medication-verlauf-view-toggle"
+              label={t("medications.detail.intake.viewToggleLabel")}
+              slot="medication-verlauf-view-toggle"
             />
           </div>
           {historyView === "recent" ? (
@@ -1097,14 +1102,13 @@ function StatusRow({
         <p className="text-muted-foreground text-xs font-medium">{label}</p>
         <p className="text-foreground text-sm">{value}</p>
       </div>
-      <button
-        type="button"
+      <InlineAction
         onClick={onJump}
-        className="text-primary focus-visible:ring-ring shrink-0 rounded-sm text-xs underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+        className="shrink-0"
         data-slot={`${dataSlot}-jump`}
       >
         {jumpLabel}
-      </button>
+      </InlineAction>
     </li>
   );
 }

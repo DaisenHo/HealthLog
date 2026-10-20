@@ -45,6 +45,7 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  listEnvelope,
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
@@ -346,7 +347,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "List visits",
       description:
-        "Returns the caller's live visits, split into `upcoming` and `past`. Bounded and windowed; soft-deleted visits are excluded.",
+        "Returns the caller's live visits, split into `upcoming` (soonest first) and `past` (newest first). `limit` and `offset` apply to each list; `meta.truncated` is true when either list has rows past this page, so a client reads the next `offset` until it is false. Soft-deleted visits are excluded.",
       requestParams: { query: listEncountersQuery },
       responses: {
         ...recordRefusal(),
@@ -354,7 +355,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The caller's visits.",
           content: {
             "application/json": {
-              schema: dataEnvelope(encounterList, "ListEncountersEnvelope"),
+              schema: listEnvelope(encounterList, "ListEncountersEnvelope"),
             },
           },
         },
@@ -612,7 +613,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "List practitioners",
       description:
-        "Returns the caller's address book, name-ordered, with an optional case-insensitive name search.",
+        "Returns the caller's address book, name-ordered, with an optional case-insensitive search over name, practice and specialty. Paged with `limit` and `offset`; `meta.truncated` says whether another page exists.",
       requestParams: { query: listPractitionersQuery },
       responses: {
         ...recordRefusal(),
@@ -620,7 +621,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The caller's address book.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 z.array(practitioner),
                 "ListPractitionersEnvelope",
               ),
@@ -704,7 +705,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "Soft-delete a practitioner",
       description:
-        "Stamps `deletedAt`. Every visit that named this entry survives with no practice attached, because the reference nulls rather than cascades. Idempotent. Audits as `practitioner.contact.delete`.",
+        "Stamps `deletedAt`. The entry leaves the address book and the pickers; every live visit and vaccination that named it keeps showing it, and the tombstone is kept while one does. Idempotent. Audits as `practitioner.contact.delete`.",
       requestParams: idPath,
       responses: {
         ...recordRefusal(),

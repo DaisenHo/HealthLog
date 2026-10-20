@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 import { BackLink } from "@/components/ui/back-link";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,14 @@ import { cn } from "@/lib/utils";
  * row — and only one of the two may be a real `<h1>`. Without this the two
  * shells hand-rolled the whole block to get the second copy, which is how
  * they drifted apart from every module page in the first place.
+ *
+ * `focusable` makes the H1 a programmatic focus target (`tabIndex={-1}`
+ * with a visible ring) and `headingRef` hands the caller the element: a
+ * sub-page or a result screen moves focus to its title after a client
+ * navigation. `titleAccessory` sits beside the H1 and
+ * wraps with it (a nudge glyph, a badge) without becoming part of the
+ * heading's accessible name. Both exist so the insights sub-page shell and
+ * the check-in screens stop hand-rolling their own heading.
  */
 /**
  * A long one-word German title (the illness page was once
@@ -44,6 +52,9 @@ export function PageHeader({
   topSlot,
   actions,
   stackActionsOnPhone = false,
+  headingRef,
+  focusable = false,
+  titleAccessory,
   className,
 }: {
   title: ReactNode;
@@ -61,6 +72,12 @@ export function PageHeader({
    * the title and leave this off.
    */
   stackActionsOnPhone?: boolean;
+  /** The H1 element, for a caller that moves focus to it. */
+  headingRef?: Ref<HTMLHeadingElement>;
+  /** Makes the H1 a programmatic focus target with a visible ring. */
+  focusable?: boolean;
+  /** Beside the H1, outside its accessible name (a nudge glyph, a badge). */
+  titleAccessory?: ReactNode;
   className?: string;
 }) {
   const heading =
@@ -69,10 +86,27 @@ export function PageHeader({
         {title}
       </div>
     ) : (
-      <h1 id={titleId} className={HEADING_CLASS}>
+      <h1
+        ref={headingRef}
+        id={titleId}
+        tabIndex={focusable ? -1 : undefined}
+        className={cn(
+          HEADING_CLASS,
+          focusable &&
+            "focus-visible:ring-ring/50 rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+        )}
+      >
         {title}
       </h1>
     );
+  const titleBlock = titleAccessory ? (
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
+      {heading}
+      {titleAccessory}
+    </div>
+  ) : (
+    heading
+  );
 
   // Title, description and actions share one grid. On a phone the
   // description spans the full row under the title + actions: a header with
@@ -91,7 +125,7 @@ export function PageHeader({
           actions && stackActionsOnPhone && "max-sm:grid-cols-1",
         )}
       >
-        {heading}
+        {titleBlock}
         {actions ? (
           <div
             className={cn(

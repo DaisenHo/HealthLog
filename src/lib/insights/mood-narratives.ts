@@ -158,6 +158,7 @@ function weekdayNarratives(input: MoodNarrativeInput): MoodNarrative[] {
       messageKey: "insights.mood.narrative.weekdayDip",
       vars: {
         weekdayKey: WEEKDAY_LABEL_KEYS[worst.weekday],
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
         delta: dipDelta.toFixed(1),
       },
       strength: dipDelta,
@@ -171,6 +172,7 @@ function weekdayNarratives(input: MoodNarrativeInput): MoodNarrative[] {
       messageKey: "insights.mood.narrative.weekdayPeak",
       vars: {
         weekdayKey: WEEKDAY_LABEL_KEYS[best.weekday],
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
         value: best.avgScore.toFixed(1),
       },
       strength: peakDelta,
@@ -208,6 +210,7 @@ function trendNarrative(input: MoodNarrativeInput): MoodNarrative | null {
         : "insights.mood.narrative.trendDown",
     vars: {
       direction: delta > 0 ? "up" : "down",
+      // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
       delta: Math.abs(delta).toFixed(1),
       days: String(w),
     },
@@ -248,6 +251,7 @@ function weekendNarrative(input: MoodNarrativeInput): MoodNarrative | null {
         : "insights.mood.narrative.weekendDown",
     vars: {
       direction: delta > 0 ? "up" : "down",
+      // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
       delta: Math.abs(delta).toFixed(1),
     },
     strength: Math.abs(delta),
@@ -321,6 +325,7 @@ function tagNarratives(input: MoodNarrativeInput): MoodNarrative[] {
     out.push({
       kind: "tag-lift",
       messageKey: "insights.mood.narrative.tagLift",
+      // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
       vars: { ...tagVars(topLift), delta: topLift.delta.toFixed(1) },
       strength: topLift.delta,
     });
@@ -332,6 +337,7 @@ function tagNarratives(input: MoodNarrativeInput): MoodNarrative[] {
       messageKey: "insights.mood.narrative.tagDrop",
       vars: {
         ...tagVars(topDrop),
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
         delta: Math.abs(topDrop.delta).toFixed(1),
       },
       strength: Math.abs(topDrop.delta),
@@ -427,6 +433,7 @@ function timeOfDayNarrative(input: MoodNarrativeInput): MoodNarrative | null {
     messageKey: "insights.mood.narrative.timeOfDay",
     vars: {
       bucketKey: TIME_OF_DAY_LABEL_KEYS[best],
+      // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire value; the narrative feed parses it and prints it through useFormatters
       value: bestRow.avgScore.toFixed(1),
     },
     strength: delta,

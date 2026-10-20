@@ -65,8 +65,7 @@
 #   - Ops / transient / regenerable: idempotency_keys, rate_limits,
 #     data_backups, import_jobs, host_metrics, feedback,
 #     recommendation_feedback, all rollup tables (measurement_rollups,
-#     mood_entry_rollups, medication_compliance_rollups, strain_trimp_cache,
-#     cycle_predictions) — these REGENERATE on edge01.
+#     mood_entry_rollups, strain_trimp_cache, cycle_predictions) — these REGENERATE on edge01.
 #   - workouts / workout_routes / workout_samples — demo has none.
 #   - app_settings — instance-level, not user data.
 #   - Global catalogues (mood_tags, cycle_symptoms) — pre-exist on edge01;
@@ -299,7 +298,6 @@ DELETE FROM audit_logs                   WHERE user_id = '$EDGE_DEMO_ID';
 -- regenerable / transient tables that may carry FK rows blocking the user delete
 DELETE FROM measurement_rollups          WHERE user_id = '$EDGE_DEMO_ID';
 DELETE FROM mood_entry_rollups           WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM medication_compliance_rollups WHERE user_id = '$EDGE_DEMO_ID';
 DELETE FROM strain_trimp_cache           WHERE user_id = '$EDGE_DEMO_ID';
 DELETE FROM cycle_predictions            WHERE user_id = '$EDGE_DEMO_ID';
 DELETE FROM measurements                 WHERE user_id = '$EDGE_DEMO_ID';

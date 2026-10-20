@@ -3,12 +3,12 @@
 import { LayoutGrid, Table as TableIcon } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { ViewToggle } from "@/components/ui/view-toggle";
+import { Segmented } from "@/components/ui/segmented";
 import type { MedicationListView } from "@/lib/medication-list-layout";
 
 /**
  * v1.16.10 — icon-only card/table view toggle for the /medications page
- * header. Thin wrapper over the shared `ViewToggle` primitive; see its
+ * header. Thin wrapper over the shared `Segmented` primitive (icon-only, toggle mode); see its
  * docstring for the interaction grammar.
  */
 interface MedicationViewToggleProps {
@@ -23,12 +23,14 @@ export function MedicationViewToggle({
   const { t } = useTranslations();
 
   return (
-    <ViewToggle
-      view={view}
+    <Segmented
+      mode="toggle"
+      iconOnly
+      value={view}
       onChange={onChange}
-      groupLabel={t("medications.viewToggleLabel")}
-      dataSlotPrefix="medications-view"
-      segments={[
+      label={t("medications.viewToggleLabel")}
+      optionSlot={(value) => `medications-view-${value}`}
+      options={[
         {
           value: "cards",
           label: t("medications.viewCards"),

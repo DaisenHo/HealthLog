@@ -44,6 +44,7 @@ import { CatalogPicker } from "./catalog-picker";
 import { CustomVaccineSheet } from "./custom-vaccine-sheet";
 import { VaccinationDocumentPicker } from "./vaccination-document-picker";
 import { dayKeyAsUtcMidnight, isCalendarDateKey } from "@/lib/tz/date-only";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /** The seven anatomical sites, mirroring the Prisma `VaccinationSite` enum. */
 export const VACCINATION_SITES = [
@@ -312,14 +313,14 @@ export function VaccinationForm({
           </FieldGroup>
         </div>
       ) : (
-        <button
-          type="button"
+        <InlineAction
+          tone="muted"
+          size="sm"
           data-slot="vaccination-series-reveal"
-          className="text-muted-foreground hover:text-foreground text-sm underline-offset-2 hover:underline"
           onClick={() => setSeriesOpen(true)}
         >
           {t("vaccinations.form.seriesToggle")}
-        </button>
+        </InlineAction>
       )}
 
       <FieldGroup htmlFor="vaccination-lot" label={t("vaccinations.form.lot")}>

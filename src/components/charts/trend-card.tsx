@@ -16,6 +16,7 @@ import {
   sentimentColorClass,
   type TrendDirectionSentiment,
 } from "@/lib/insights/trend-sentiment";
+import { TrendTile } from "@/components/ui/trend-tile";
 
 interface SecondaryMetric {
   /** Sub-value latest reading (e.g. diastolic when latest is systolic). */
@@ -204,21 +205,28 @@ export function TrendCard({
   };
 
   return (
-    <div className="bg-card border-border flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border p-4 md:p-6">
-      {/* v1.4.25 — single-line discipline + deterministic height for
-          the heading row so the value row below sits at the same baseline
-          across every tile. The label is locale-abbreviated upstream (see
-          `dashboard.*Short` keys) so `truncate` is a layout safeguard
-          rather than the primary defence against wraps. `h-5` matches
-          `text-xs leading-5` ≈ 20 px; identical across every tile. */}
-      <div className="flex h-5 min-w-0 items-center justify-between gap-2">
+    <TrendTile data-slot="trend-card">
+      {/* The heading row has a deterministic height so the value row below
+          sits at the same baseline across every tile in the strip. It
+          reserves two lines, not one: a one-line row could only keep that
+          promise by cutting the label, and the label is the only thing that
+          names the figure. An uppercase German compound
+          ("HERZFREQUENZVARIABILITÄT") or a glucose context ("GLUKOSE, VOR
+          DEM SCHLAFEN") does not fit a strip tile on one line in any width
+          the grid hands out, and ended in an ellipsis. `hyphens-auto` splits
+          a compound at a syllable (driven by the document's `lang`),
+          `break-words` is the floor, and the rare label that needs a third
+          line clamps with its full text in `title`. `h-10` is two
+          `text-xs leading-5` lines; identical across every tile. */}
+      <div className="flex h-10 min-w-0 items-start justify-between gap-2">
         <span
-          className="text-muted-foreground min-w-0 flex-1 truncate text-xs leading-5 font-medium tracking-wide whitespace-nowrap uppercase"
+          className="text-muted-foreground line-clamp-2 min-w-0 flex-1 text-xs leading-5 font-medium tracking-wide break-words hyphens-auto uppercase"
           data-slot="trend-card-label"
+          title={label}
         >
           {label}
         </span>
-        <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
+        <Icon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
       </div>
       {/* v1.4.25 — baseline-aligned value row. The headline value,
           unit, and trend arrow share a single flex line with
@@ -465,6 +473,6 @@ export function TrendCard({
               sub-rows. */}
         </div>
       </TooltipProvider>
-    </div>
+    </TrendTile>
   );
 }

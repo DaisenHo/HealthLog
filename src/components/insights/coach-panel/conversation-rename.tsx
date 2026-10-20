@@ -6,7 +6,7 @@ import { Check, Loader2, Pencil, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { COACH_CONVERSATION_TITLE_MAX } from "@/lib/ai/coach/types";
+import { COACH_CONVERSATION_TITLE_MAX } from "@/lib/ai/coach/scope-sources";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 

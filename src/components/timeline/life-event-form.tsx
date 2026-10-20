@@ -52,7 +52,7 @@ import {
   LIFE_EVENT_ERROR_KEY,
   LIFE_EVENT_PRECISION_KEY,
 } from "./label-keys";
-import { Segmented } from "./segmented";
+import { Segmented } from "@/components/ui/segmented";
 import { formatMonthLong, todayKeyIn } from "./timeline-dates";
 import { useLifeEventMutations } from "./use-timeline";
 
@@ -393,7 +393,7 @@ export function LifeEventForm({
             label={t("lifeEvents.fields.precision")}
             slot="life-event-precision"
             stretch
-            asToggleButtons
+            mode="toggle"
           />
         </div>
       </div>

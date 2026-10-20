@@ -20,6 +20,7 @@ import {
   HISTORY_REST_OPACITY,
   HISTORY_PERIOD_OPACITY,
 } from "./phase-tokens";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.15.1 — the cycle-length history chart.
@@ -136,9 +137,11 @@ export function CycleHistoryChart({
       </CardHeader>
       <CardContent className="space-y-4">
         {!hasData ? (
-          <p className="text-muted-foreground text-sm">
-            {t("cycle.history.none")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("cycle.history.none")}
+          />
         ) : (
           <>
             {/* Stat chips — avg / variability / regularity classification. */}

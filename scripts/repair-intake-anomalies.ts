@@ -50,14 +50,9 @@
  *      CREATE/UPDATE only with `--backfill-eras`. Medications that
  *      already have a revision are skipped (idempotent).
  *
- * After any mutation the affected `(user, medication, day)` compliance
- * rollups are recomputed with the SAME slot-level DISTINCT aggregation the
- * shared helper runs — see `recomputeComplianceDay` below, a verbatim
- * SQL twin of `recomputeMedicationComplianceForDay` in
- * `src/lib/rollups/medication-compliance-rollups.ts`. The rollup
- * aggregates DISTINCT slots since v1.15.19, so a recompute alone already
- * heals the counts; the tombstones additionally clear the phantom rows
- * from the history view.
+ * The tombstones clear the phantom rows from the history view; every
+ * compliance reader folds rows sharing a slot, so the counts need no
+ * separate recompute.
  *
  * Default is a DRY-RUN that only reports. Idempotent: a second `--fix`
  * run finds zero groups and changes nothing.
@@ -211,8 +206,8 @@ function pickWinner(rows: IntakeRow[]): IntakeRow {
 // Timezone / day-key helpers — self-contained twins of the app helpers
 // the previous revision imported. Reference implementations:
 //   - `userDayKey` / `DEFAULT_TIMEZONE`: `src/lib/tz/format.ts`
-//   - `tzOffsetMinutes` / `startOfDayUtcInTz` / the DST-safe day-after
-//     boundary: `src/lib/rollups/medication-compliance-rollups.ts`
+//   - `tzOffsetMinutes` / `startOfDayUtcInTz`: `startOfLocalDayKey` in
+//     `src/lib/tz/local-day.ts`
 // ─────────────────────────────────────────────────────────────────────
 
 const DEFAULT_TIMEZONE = "Europe/Berlin";
@@ -287,100 +282,6 @@ function startOfDayUtcInTz(dayKey: string, tz: string): Date {
   return guess;
 }
 
-/**
- * `[start, windowEnd)` UTC window of the local calendar day — the same
- * DST-safe boundary derivation `recomputeMedicationComplianceForDay`
- * runs (23 / 25-hour days fold correctly because the end anchors on
- * the NEXT day's local midnight, not `start + 24 h`).
- */
-function dayWindowUtc(dayKey: string, tz: string): { start: Date; end: Date } {
-  const start = startOfDayUtcInTz(dayKey, tz);
-  const fallbackEnd = new Date(start.getTime() + 86_400_000);
-  const [y, m, d] = dayKey.split("-").map(Number);
-  const probeNext = new Date(Date.UTC(y, m - 1, d, 12, 0, 0) + 86_400_000);
-  const nextDayKey = dayKeyForScheduledFor(probeNext, tz);
-  const dstSafeEnd = startOfDayUtcInTz(nextDayKey, tz);
-  return {
-    start,
-    end: dstSafeEnd.getTime() > start.getTime() ? dstSafeEnd : fallbackEnd,
-  };
-}
-
-/**
- * Recompute one `(userId, medicationId, dayKey)` compliance-rollup row.
- *
- * VERBATIM SQL TWIN of `recomputeMedicationComplianceForDay` in
- * `src/lib/rollups/medication-compliance-rollups.ts` — keep the two in
- * sync when the rollup contract changes. v1.15.19 semantics: the inner
- * CTE folds rows sharing one `scheduled_for` instant into one DISTINCT
- * slot with taken-beats-skipped priority; the outer aggregate counts
- * slots, not rows, so a duplicated slot can never inflate `scheduled`.
- * The upsert re-aggregates inside the statement (atomic against
- * concurrent app writers); the trailing DELETE clears the row when the
- * day no longer holds any live event.
- */
-async function recomputeComplianceDay(
-  client: Client,
-  userId: string,
-  medicationId: string,
-  dayKey: string,
-  tz: string | null | undefined,
-): Promise<void> {
-  const { start, end } = dayWindowUtc(dayKey, safeTimezone(tz));
-  await client.query(
-    `
-    WITH slot AS (
-      SELECT
-        BOOL_OR("taken_at" IS NOT NULL AND NOT "skipped") AS slot_taken,
-        BOOL_OR("skipped")                                AS slot_skipped
-      FROM "medication_intake_events"
-      WHERE "user_id"        = $1
-        AND "medication_id"  = $2
-        AND "deleted_at"     IS NULL
-        AND "scheduled_for" >= $4::timestamp
-        AND "scheduled_for" <  $5::timestamp
-      GROUP BY "scheduled_for"
-    ),
-    aggregate AS (
-      SELECT
-        COUNT(*)::int                                                            AS scheduled,
-        COALESCE(SUM(CASE WHEN "slot_taken" THEN 1 ELSE 0 END), 0)::int          AS taken,
-        COALESCE(SUM(CASE WHEN NOT "slot_taken" AND "slot_skipped" THEN 1 ELSE 0 END), 0)::int AS skipped
-      FROM slot
-    )
-    INSERT INTO "medication_compliance_rollups"
-      ("user_id", "medication_id", "day", "scheduled", "taken", "skipped", "computed_at")
-    SELECT $1, $2, $3, aggregate.scheduled, aggregate.taken, aggregate.skipped, NOW()
-    FROM aggregate
-    WHERE aggregate.scheduled > 0
-    ON CONFLICT ("user_id", "medication_id", "day") DO UPDATE
-      SET "scheduled"   = EXCLUDED."scheduled",
-          "taken"       = EXCLUDED."taken",
-          "skipped"     = EXCLUDED."skipped",
-          "computed_at" = EXCLUDED."computed_at"
-    `,
-    [userId, medicationId, dayKey, utcParam(start), utcParam(end)],
-  );
-  await client.query(
-    `
-    DELETE FROM "medication_compliance_rollups"
-    WHERE "user_id"       = $1
-      AND "medication_id" = $2
-      AND "day"           = $3
-      AND NOT EXISTS (
-        SELECT 1
-        FROM "medication_intake_events"
-        WHERE "user_id"        = $1
-          AND "medication_id"  = $2
-          AND "deleted_at"     IS NULL
-          AND "scheduled_for" >= $4::timestamp
-          AND "scheduled_for" <  $5::timestamp
-      )
-    `,
-    [userId, medicationId, dayKey, utcParam(start), utcParam(end)],
-  );
-}
-
 interface Summary {
   duplicateGroups: number;
   rowsTombstoned: number;
@@ -394,7 +295,6 @@ interface Summary {
   eraRevisionsCreated: number;
   startsOnCandidates: number;
   startsOnAdjusted: number;
-  rollupsRecomputed: number;
 }
 
 const HHMM_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -453,7 +353,6 @@ async function main(): Promise<void> {
     eraRevisionsCreated: 0,
     startsOnCandidates: 0,
     startsOnAdjusted: 0,
-    rollupsRecomputed: 0,
   };
 
   // Optional per-user scope. The fragment is a fixed string with a
@@ -461,7 +360,7 @@ async function main(): Promise<void> {
   const userFilter = opts.userId ? `AND e."user_id" = $1` : "";
   const userParams = opts.userId ? [opts.userId] : [];
 
-  /** `userId -> timezone` cache for the rollup day-key derivation. */
+  /** `userId -> timezone` cache for the local-day derivations. */
   const tzCache = new Map<string, string | null>();
   async function userTimezone(userId: string): Promise<string | null> {
     if (!tzCache.has(userId)) {
@@ -473,10 +372,6 @@ async function main(): Promise<void> {
     }
     return tzCache.get(userId) ?? null;
   }
-
-  // `(userId, medicationId, dayKey)` tuples whose compliance rollup needs
-  // a recompute after the tombstones. Deduped so a busy day folds once.
-  const daysToRecompute = new Set<string>();
 
   try {
     // ─────────────────────────────────────────────────────────────────
@@ -568,12 +463,6 @@ async function main(): Promise<void> {
           [losers.map((r) => r.id)],
         );
         summary.rowsTombstoned += res.rowCount ?? 0;
-
-        const tz = await userTimezone(group.user_id);
-        const dayKey = dayKeyForScheduledFor(group.scheduled_for, tz);
-        daysToRecompute.add(
-          `${group.user_id}|${group.medication_id}|${dayKey}`,
-        );
       }
     }
 
@@ -651,12 +540,6 @@ async function main(): Promise<void> {
       console.log(
         `${TAG} tombstoned ${res.rowCount ?? 0} implausible row(s) (operator opt-in)`,
       );
-
-      for (const row of implausible) {
-        const tz = await userTimezone(row.user_id);
-        const dayKey = dayKeyForScheduledFor(row.scheduled_for, tz);
-        daysToRecompute.add(`${row.user_id}|${row.medication_id}|${dayKey}`);
-      }
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -822,12 +705,6 @@ async function main(): Promise<void> {
         [staleRows.map((r) => r.id)],
       );
       summary.staleAnchorTombstoned = res.rowCount ?? 0;
-
-      for (const row of staleRows) {
-        const tz = await userTimezone(row.user_id);
-        const dayKey = dayKeyForScheduledFor(row.scheduled_for, tz);
-        daysToRecompute.add(`${row.user_id}|${row.medication_id}|${dayKey}`);
-      }
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -1057,35 +934,6 @@ async function main(): Promise<void> {
         summary.startsOnAdjusted += res.rowCount ?? 0;
       }
     }
-
-    // ─────────────────────────────────────────────────────────────────
-    // 6. Recompute the affected compliance rollups so scheduled/taken
-    //    counts self-correct. Same DISTINCT-slot SQL the shared helper
-    //    runs (see `recomputeComplianceDay` above).
-    // ─────────────────────────────────────────────────────────────────
-    if (opts.fix && daysToRecompute.size > 0) {
-      console.log(
-        `\n${TAG} 6) recomputing ${daysToRecompute.size} compliance rollup day(s)`,
-      );
-      for (const key of daysToRecompute) {
-        const [userId, medicationId, dayKey] = key.split("|");
-        try {
-          await recomputeComplianceDay(
-            client,
-            userId,
-            medicationId,
-            dayKey,
-            await userTimezone(userId),
-          );
-          summary.rollupsRecomputed += 1;
-        } catch (err) {
-          console.error(
-            `${TAG} rollup recompute failed for ${key}: ` +
-              `${err instanceof Error ? err.message : String(err)}`,
-          );
-        }
-      }
-    }
   } finally {
     await client.end();
   }
@@ -1112,7 +960,6 @@ async function main(): Promise<void> {
   console.log(`  era revisions created:        ${summary.eraRevisionsCreated}`);
   console.log(`  startsOn candidates:          ${summary.startsOnCandidates}`);
   console.log(`  startsOn adjusted:            ${summary.startsOnAdjusted}`);
-  console.log(`  rollup days recomputed:       ${summary.rollupsRecomputed}`);
 }
 
 main().catch((err) => {

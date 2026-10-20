@@ -57,12 +57,14 @@ function deNum(value: number): string {
  * that only names 54 mg/dL cannot fire on it.
  */
 function glucoseFloor(mgdl: number, locale: ContractLocale): string {
+  // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
   const mmol = mgdlToMmol(mgdl).toFixed(1);
   return `${mgdl} mg/dL (${locale === "de" ? mmol.replace(".", ",") : mmol} mmol/L)`;
 }
 
 /** A temperature floor in both scales, °C first (the scale it is defined in). */
 function temperatureFloor(celsius: number, locale: ContractLocale): string {
+  // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
   const fahrenheit = (celsius * 1.8 + 32).toFixed(1);
   return locale === "de"
     ? `${deNum(celsius)} °C (${fahrenheit.replace(".", ",")} °F)`

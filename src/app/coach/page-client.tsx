@@ -14,7 +14,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
-import { coachScopeSourceSchema } from "@/lib/ai/coach/types";
+import { COACH_SCOPE_SOURCES } from "@/lib/ai/coach/scope-sources";
+import type { CoachScopeSource } from "@/lib/ai/coach/types";
 
 /**
  * v1.12.0 (Coach v2 #6) — full-page Coach conversation.
@@ -117,12 +118,13 @@ function CoachPageBody() {
   // chat (`?doc=`) keeps its own established scope.
   const freshChat = deepLinkedId === null && seedDocumentId === null;
   const rawScope = freshChat ? searchParams.get("scope") : null;
-  const scopeResult = rawScope
-    ? coachScopeSourceSchema.safeParse(rawScope)
-    : null;
-  const launchScope: CoachLaunchScope | null = scopeResult?.success
-    ? { metric: scopeResult.data }
-    : null;
+  // A closed-set check, not a schema parse: the route stays free of the
+  // schema library for one string comparison.
+  const launchScope: CoachLaunchScope | null =
+    rawScope !== null &&
+    (COACH_SCOPE_SOURCES as readonly string[]).includes(rawScope)
+      ? { metric: rawScope as CoachScopeSource }
+      : null;
   const seedPrefill = freshChat ? searchParams.get("ask") : null;
 
   // Read once: the panel consumes it on mount, then the URL loses it.

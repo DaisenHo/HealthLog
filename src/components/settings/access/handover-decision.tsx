@@ -22,6 +22,7 @@ import {
   useHandoverDecision,
   type HandoverDecisionState,
 } from "@/lib/queries/use-handover-decision";
+import { InlineAction } from "@/components/ui/inline-action";
 
 type PendingDecision = NonNullable<HandoverDecisionState["pending"]>;
 
@@ -191,13 +192,14 @@ export function HandoverNotificationHint() {
         <p className="text-sm">
           {t("recordSharing.handoverDecision.notificationsBody")}
         </p>
-        <Link
-          href="/settings/notifications"
-          className="text-primary text-sm underline"
-          data-slot="handover-notification-link"
-        >
-          {t("recordSharing.handoverDecision.notificationsAction")}
-        </Link>
+        <InlineAction asChild size="sm" className="underline">
+          <Link
+            href="/settings/notifications"
+            data-slot="handover-notification-link"
+          >
+            {t("recordSharing.handoverDecision.notificationsAction")}
+          </Link>
+        </InlineAction>
       </div>
     </div>
   );

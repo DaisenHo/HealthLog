@@ -4,8 +4,8 @@ import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
-import { cn } from "@/lib/utils";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
+import { CONFIDENCE_TONE, ScorePill } from "@/components/ui/score-pill";
 
 /**
  * v1.11.5 — "What's associated with your better days" board.
@@ -52,16 +52,6 @@ const CONFIDENCE_KEY: Record<MoodInfluenceConfidence, string> = {
   low: "insights.mood.influence.confidenceLow",
   medium: "insights.mood.influence.confidenceMedium",
   high: "insights.mood.influence.confidenceHigh",
-};
-
-// Confidence chips carry COLORED TEXT, so they ride the semantic feedback
-// tokens (`--info` / `--success`) — these carry the Alucard light-mode
-// overrides that clear AA on the white card. Raw `--dracula-*` stays bright
-// green/cyan in light mode and fails AA for text.
-const CONFIDENCE_CLASS: Record<MoodInfluenceConfidence, string> = {
-  low: "bg-secondary text-muted-foreground",
-  medium: "bg-info/15 text-info",
-  high: "bg-success/15 text-success",
 };
 
 export function MoodBetterDays({
@@ -146,14 +136,9 @@ export function MoodBetterDays({
               >
                 {effectText}
               </span>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                  CONFIDENCE_CLASS[factor.confidence],
-                )}
-              >
+              <ScorePill tone={CONFIDENCE_TONE[factor.confidence]}>
                 {t(CONFIDENCE_KEY[factor.confidence])}
-              </span>
+              </ScorePill>
             </li>
           );
         })}

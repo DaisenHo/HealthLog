@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Mappa di calore dell'aderenza ai farmaci dal {start} al {end}, {days} giorni attivi.",
       "complianceHeatmapEmpty": "Mappa di calore dell'aderenza ai farmaci, nessun giorno attivo."
     },
-    "medicationsEmptyAction": "Aggiungi un farmaco"
+    "medicationsEmptyAction": "Aggiungi un farmaco",
+    "rangeLabel": "Periodo"
   },
   "chart": {
     "overlay": {
@@ -4220,13 +4221,8 @@
         "metricNextDayRecovery": "Recupero il giorno dopo",
         "metricNextDayRestingHr": "Frequenza cardiaca a riposo il giorno dopo",
         "metricNextDayHrv": "Variabilità della frequenza cardiaca il giorno dopo",
-        "unitHours": "h",
-        "unitKcal": "kcal",
-        "unitScore": "pt",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "In media {withAvg} {unit} nei {withDays} giorni con questo tag contro {withoutAvg} {unit} senza.",
-        "detailNextDay": "In media {withAvg} {unit} il giorno dopo i {withDays} giorni con questo tag contro {withoutAvg} {unit} altrimenti."
+        "detailSameDay": "In media {withAvg} nei {withDays} giorni con questo tag contro {withoutAvg} senza.",
+        "detailNextDay": "In media {withAvg} il giorno dopo i {withDays} giorni con questo tag contro {withoutAvg} altrimenti."
       },
       "factorCrosstab": {
         "title": "I tuoi fattori valutati e i tuoi parametri vitali",
@@ -4238,15 +4234,8 @@
         "metricHrv": "Variabilità della frequenza cardiaca",
         "metricWeight": "Peso",
         "metricBloodPressureSys": "Sistolica",
-        "unitHours": "h",
-        "unitScore": "pti",
-        "unitSteps": "passi",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "In media {lowAvg} {unit} nei {lowDays} giorni in cui hai valutato basso {factor} contro {highAvg} {unit} nei giorni in cui lo hai valutato alto.",
-        "detailInverse": "In media {lowAvg} {unit} nei tuoi {lowDays} giorni peggiori di {factor} contro {highAvg} {unit} in quelli migliori."
+        "detail": "In media {lowAvg} nei {lowDays} giorni in cui hai valutato basso {factor} contro {highAvg} nei giorni in cui lo hai valutato alto.",
+        "detailInverse": "In media {lowAvg} nei tuoi {lowDays} giorni peggiori di {factor} contro {highAvg} in quelli migliori."
       },
       "discovery": {
         "title": "Cosa risalta",
@@ -6673,21 +6662,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Connesso",
-      "errorReconnect": "Errore, riconnetti",
-      "warningServerError": "Sincronizzazione in errore",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "In pausa, riconnetti",
-      "notConnected": "Non connesso",
       "justNow": "proprio ora",
       "minutesAgo": "{count} min fa",
       "hoursAgo": "{count} h fa",
       "daysAgo": "{count} g fa",
       "resumeSuccess": "Integrazione ripresa",
-      "resumeError": "Riconnessione fallita",
-      "stale": "Connesso, nessun dato recente",
-      "stalled": "Sincronizzazione ferma",
-      "pendingSetup": "In attesa dei primi dati"
+      "resumeError": "Riconnessione fallita"
     },
     "integrationFreshness": {
       "title": "Dati ricevuti",
@@ -7756,6 +7736,7 @@
     "tokensEmptyTitle": "Ancora nessun token API",
     "tokensEmptyDescription": "I token vengono emessi quando un client nativo accede o tramite Impostazioni → Account.",
     "loginOverviewDescription": "Eventi di accesso e autenticazione di tutti gli account, filtrabili ed esportabili in CSV.",
+    "loginOverviewFilterLabel": "Filtra eventi",
     "allAuthEvents": "Tutti gli eventi di autenticazione",
     "failedOnly": "Solo non riusciti",
     "loginEmptyDescription": "Qui compariranno accessi, disconnessioni e modifiche delle passkey.",
@@ -7884,6 +7865,7 @@
           "admin": "Amministratori",
           "user": "Utenti"
         },
+        "filterLabel": "Filtra utenti",
         "forceLogout": "Forza la disconnessione",
         "forceLogoutConfirmTitle": "Forzare la disconnessione di {name}?",
         "forceLogoutConfirmBody": "Tutte le sessioni attive di questo utente verranno revocate. Dovrà accedere di nuovo su ogni dispositivo.",
@@ -8909,6 +8891,7 @@
     "inTarget": "Nel range obiettivo",
     "aboveTarget": "{delta} {unit} sopra il range",
     "belowTarget": "{delta} {unit} sotto il range",
+    "systolic": "Sistolica",
     "diastolic": "Diastolica",
     "glucoseFasting": "Glicemia (a digiuno)",
     "glucosePostprandial": "Glicemia (postprandiale)",
@@ -9165,9 +9148,9 @@
     "insights": {
       "headline": {
         "title": "Il tuo ciclo e il tuo corpo",
-        "restingHeartRate": "La tua frequenza cardiaca a riposo è di circa {delta} {unit} {dir} nella fase luteale rispetto alla fase follicolare.",
-        "heartRateVariability": "La tua variabilità della frequenza cardiaca è di circa {delta} {unit} {dir} nella fase luteale rispetto alla fase follicolare.",
-        "generic": "Il/la tuo/a {metric} è di circa {delta} {unit} {dir} nella fase luteale rispetto alla fase follicolare.",
+        "restingHeartRate": "La tua frequenza cardiaca a riposo è di circa {delta} {dir} nella fase luteale rispetto alla fase follicolare.",
+        "heartRateVariability": "La tua variabilità della frequenza cardiaca è di circa {delta} {dir} nella fase luteale rispetto alla fase follicolare.",
+        "generic": "Il/la tuo/a {metric} è di circa {delta} {dir} nella fase luteale rispetto alla fase follicolare.",
         "dirHigher": "più alta",
         "dirLower": "più bassa",
         "empty": "Non ci sono ancora abbastanza cicli e rilevazioni per mostrare uno schema di fase. Continua a registrare: si completerà man mano che cresce il tuo storico."
@@ -9175,7 +9158,7 @@
       "crosstab": {
         "description": "Come si confronta ogni misurazione tra la fase luteale e quella follicolare, sui tuoi dati.",
         "pairLabel": "{metric}: fase luteale vs follicolare",
-        "detail": "Luteale {lutealAvg} {unit} ({lutealDays} giorni) vs follicolare {follicularAvg} {unit} ({follicularDays} giorni).",
+        "detail": "Luteale {lutealAvg} ({lutealDays} giorni) vs follicolare {follicularAvg} ({follicularDays} giorni).",
         "metricRestingHeartRate": "Frequenza cardiaca a riposo",
         "metricHrv": "Variabilità della frequenza cardiaca",
         "metricSleepDuration": "Durata del sonno",
@@ -9185,15 +9168,7 @@
         "metricWristTemperature": "Temperatura del polso notturna",
         "metricSkinTemperature": "Temperatura della pelle",
         "metricBloodGlucose": "Glicemia",
-        "metricMood": "Umore",
-        "unitHours": "h",
-        "unitSteps": "passi",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Affidabilità bassa",
-        "confidenceMedium": "Affidabilità media",
-        "confidenceHigh": "Affidabilità alta"
+        "metricMood": "Umore"
       },
       "title": "Analisi del ciclo",
       "symptomPatternsTitle": "Pattern dei sintomi per fase",

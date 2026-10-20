@@ -6,7 +6,11 @@ import { useCalendarDate } from "@/hooks/use-calendar-date";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { ChartDataTable } from "./chart-data-table";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { heatmapDays } from "@/lib/charts/heatmap-days";
 import { moodLabelKeyForScore } from "@/lib/mood/labels";
 
@@ -144,6 +148,7 @@ export function MoodHeatmap({
   stretch = false,
 }: MoodHeatmapProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const timeZone = useDisplayTimezone();
   // Day keys are calendar dates ("YYYY-MM-DD"), read as such in every zone.
   // A noon-UTC instant formatted in the reader's zone was a day late from
@@ -274,7 +279,7 @@ export function MoodHeatmap({
     }
     const labelKey = moodLabelKeyForScore(Math.round(cell.cell.score));
     const moodLabel = labelKey ? t(labelKey) : "";
-    return `${formatDay(cell.dateKey)}: ${cell.cell.score.toFixed(1)}${moodLabel ? ` · ${moodLabel}` : ""}`;
+    return `${formatDay(cell.dateKey)}: ${fmt.number(cell.cell.score, 1)}${moodLabel ? ` · ${moodLabel}` : ""}`;
   };
   // Only the logged days go into the data table; the empty-tinted cells
   // are already covered by the aggregate summary on the SVG, so a rotor
@@ -420,8 +425,8 @@ export function MoodHeatmap({
             formatValue={(value) => {
               const labelKey = moodLabelKeyForScore(Math.round(value));
               return labelKey
-                ? `${value.toFixed(1)} · ${t(labelKey)}`
-                : value.toFixed(1);
+                ? `${fmt.number(value, 1)} · ${t(labelKey)}`
+                : fmt.number(value, 1);
             }}
             formatDate={(date) => formatDay(dateOnlyKey(date))}
             bucket="day"

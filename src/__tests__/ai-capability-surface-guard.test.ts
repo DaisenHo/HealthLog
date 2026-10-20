@@ -56,7 +56,11 @@ const CLIENT_FILES = NON_TEST_FILES.filter((rel) => !rel.startsWith("lib/"));
 
 const FEATURE_FLAG_SWEEP = NON_TEST_FILES.filter(
   (rel) =>
-    !rel.startsWith("lib/feature-flags/") && !rel.startsWith("lib/openapi/"),
+    !rel.startsWith("lib/feature-flags/") &&
+    !rel.startsWith("lib/openapi/") &&
+    // The deprecation registry names the route to date its retirement; it
+    // reads nothing from it.
+    rel !== "lib/http/deprecation.ts",
 );
 
 const read = (rel: string) =>

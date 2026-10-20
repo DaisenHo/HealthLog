@@ -5,7 +5,7 @@ import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { analyticsQuerySchema } from "@/lib/validations/analytics";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { summarize, type DataPoint } from "@/lib/analytics/trends";
+import { summarize, wireSummary, type DataPoint } from "@/lib/analytics/trends";
 import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { loadRecoveryEmpty } from "@/lib/insights/recovery-empty-read";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
@@ -500,8 +500,10 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
     glucoseRows,
     (r) => r.glucoseContext,
   )) {
-    glucoseByContext[bucket] = summarize(
-      ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
+    glucoseByContext[bucket] = wireSummary(
+      summarize(
+        ctxRows.map((r): DataPoint => ({ date: r.measuredAt, value: r.value })),
+      ),
     );
   }
 

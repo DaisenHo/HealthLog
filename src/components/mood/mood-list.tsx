@@ -118,6 +118,7 @@ import {
   droppedAnyLinkKeys,
   type DroppedLinkKeysWire,
 } from "@/lib/mood/dropped-link-keys";
+import { InlineAction } from "@/components/ui/inline-action";
 
 // Re-export the score map under the legacy local name to keep the
 // rest of this file unchanged. v1.4.27 B6 / BL-P6-11 — the single
@@ -845,7 +846,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground max-w-[18rem] text-sm">
-                          <span className="block truncate">
+                          <span className="block break-words">
                             {entry.tags.length > 0
                               ? entry.tags.join(", ")
                               : "-"}
@@ -959,7 +960,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                           </DayLink>
                         </p>
                         {entry.tags.length > 0 && (
-                          <p className="text-muted-foreground truncate text-xs">
+                          <p className="text-muted-foreground text-xs break-words">
                             {entry.tags.join(", ")}
                           </p>
                         )}
@@ -1361,16 +1362,15 @@ function MoodNoteText({
         {note}
       </p>
       {(expanded || clamped) && (
-        <button
-          type="button"
+        <InlineAction
+          className="font-medium"
           onClick={onToggle}
           aria-expanded={expanded}
           aria-controls={noteId}
           data-testid="mood-note-toggle"
-          className="text-primary cursor-pointer text-xs font-medium"
         >
           {expanded ? t("mood.noteCollapse") : t("mood.noteExpand")}
-        </button>
+        </InlineAction>
       )}
     </div>
   );

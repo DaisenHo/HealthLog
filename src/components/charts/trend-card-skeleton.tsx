@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { TrendTile } from "@/components/ui/trend-tile";
 
 /**
  * v1.16.0 — structured loading silhouette for one dashboard trend tile.
@@ -23,20 +24,18 @@ import { cn } from "@/lib/utils";
  */
 export function TrendCardSkeleton({ className }: { className?: string }) {
   return (
-    <div
+    <TrendTile
       aria-hidden="true"
       data-slot="trend-card-skeleton"
-      className={cn(
-        // Same outer chrome as `<TrendCard>` plus the `min-h-[8rem]`
-        // floor the legacy empty silhouette reserved.
-        "bg-card border-border flex h-full min-h-[8rem] w-full min-w-0 flex-col overflow-hidden rounded-xl border p-4 md:p-6",
-        className,
-      )}
+      // The frame `<TrendCard>` uses, plus the `min-h-[8rem]` floor the
+      // legacy empty silhouette reserved.
+      className={cn("min-h-[8rem]", className)}
     >
-      {/* Heading row — label + icon (TrendCard pins this row at h-5). */}
-      <div className="flex h-5 items-center justify-between gap-2">
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="h-4 w-4 shrink-0" />
+      {/* Heading row — label + icon (TrendCard reserves two label lines,
+          h-10, so the loaded tile does not move the value row). */}
+      <div className="flex h-10 items-start justify-between gap-2">
+        <Skeleton className="mt-1 h-3 w-16" />
+        <Skeleton className="mt-0.5 h-4 w-4 shrink-0" />
       </div>
       {/* Headline value row — `text-3xl leading-none` ≈ 30 px, plus the
           unit slot, baseline-aligned exactly like the loaded tile. */}
@@ -51,6 +50,6 @@ export function TrendCardSkeleton({ className }: { className?: string }) {
         <Skeleton className="h-3 w-14" />
         <Skeleton className="h-3 w-14" />
       </div>
-    </div>
+    </TrendTile>
   );
 }

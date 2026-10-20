@@ -31,7 +31,6 @@ import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
 import { mergeBiomarkers as runMerge } from "@/lib/labs/biomarker-merge";
 import { annotate } from "@/lib/logging/context";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { destroyedDetails } from "@/lib/sharing/audit-details";
 import { biomarkerMergeSchema } from "@/lib/validations/biomarker-merge";
 
@@ -45,15 +44,8 @@ async function mergeBiomarkers(
   request: NextRequest,
   { params }: RouteParams,
 ): Promise<Response> {
-  const { user, actor } = await requireRecordAuth("manage", "labs");
+  const { user } = await requireRecordAuth("manage", "labs");
   const { id } = await params;
-
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 4 * 1024,

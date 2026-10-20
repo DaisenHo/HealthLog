@@ -65,6 +65,7 @@ import {
   type IntegrationDocsProvider,
 } from "./setup-guide-link";
 import { failureStreakFor, type IntegrationStatusViewModel } from "./shared";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export type OAuthIntegrationKey =
   | "withings"
@@ -489,16 +490,17 @@ export function OAuthIntegrationCardView({
         details || planLimited || viewModel?.metricFreshness?.length ? (
           <>
             {planLimited ? (
-              <a
-                href={WITHINGS_API_PLANS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="withings-plan-link"
-                className="text-primary inline-flex min-h-11 items-center gap-1 text-sm underline-offset-2 hover:underline sm:min-h-0"
-              >
-                {t("settings.integrations.withings.plan.link")}
-                <ExternalLink className="size-3" aria-hidden="true" />
-              </a>
+              <InlineAction asChild size="sm">
+                <a
+                  href={WITHINGS_API_PLANS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="withings-plan-link"
+                >
+                  {t("settings.integrations.withings.plan.link")}
+                  <ExternalLink className="size-3" aria-hidden="true" />
+                </a>
+              </InlineAction>
             ) : null}
             {details}
             <MetricFreshnessList entries={viewModel?.metricFreshness} />

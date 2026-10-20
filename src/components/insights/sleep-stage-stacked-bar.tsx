@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { ChartDataTable } from "@/components/charts/chart-data-table";
 import {
   ChartDayFooter,
@@ -242,6 +242,26 @@ export function windowHasNap(rows: readonly CompositionRow[]): boolean {
 }
 
 /**
+ * The stages the visible window actually holds, in stack order.
+ *
+ * Recharts lists every mounted `<Bar>` in the legend, filled or not. With all
+ * five stages mounted, a week of staged nights (deep, core, REM, awake) still
+ * showed a green "Asleep" swatch for a band that appears nowhere in the
+ * columns: ASLEEP is the unspecified stage only older sources send. A stage
+ * with no minutes in the window draws nothing, so leaving it unmounted
+ * changes no column and keeps the legend to what is on screen.
+ */
+export function stagesInWindow(
+  rows: readonly CompositionRow[],
+): Array<(typeof STAGE_ORDER)[number]> {
+  return STAGE_ORDER.filter((stage) =>
+    rows.some(
+      (row) => typeof row[stage] === "number" && (row[stage] as number) > 0,
+    ),
+  );
+}
+
+/**
  * Totals for one hovered column, split the way the tooltip reports them.
  *
  * `nightMinutes` is the sum of the stacked stage bands — the main session
@@ -313,17 +333,13 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
     ).rows;
   }, [breakdown, windowDays, locale, t]);
 
-  // Mount the nap band only when the VISIBLE window holds one.
+  // Mount the nap band only when the VISIBLE window holds one, and each
+  // stage band likewise: the legend lists whatever is mounted.
   const hasNap = useMemo(() => windowHasNap(data), [data]);
+  const visibleStages = useMemo(() => stagesInWindow(data), [data]);
 
   // Empty-state guard — no perNight rows AND no aggregate.
-  const hasData =
-    data.length > 0 &&
-    data.some((row) =>
-      STAGE_ORDER.some(
-        (stage) => typeof row[stage] === "number" && (row[stage] as number) > 0,
-      ),
-    );
+  const hasData = visibleStages.length > 0;
 
   // v1.42 — each night's column opens the day it ended on (the day the
   // per-night key names, as `/api/sleep/night` does), through the same doors
@@ -347,13 +363,9 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
         : null;
     },
   });
-  const tableColumns = [...STAGE_ORDER, ...(hasNap ? [NAP_KEY] : [])]
-    .filter((stage) =>
-      data.some(
-        (row) => typeof row[stage] === "number" && (row[stage] as number) > 0,
-      ),
-    )
-    .map((stage) => ({ key: stage, label: stageLabels[stage] ?? stage }));
+  const tableColumns = [...visibleStages, ...(hasNap ? [NAP_KEY] : [])].map(
+    (stage) => ({ key: stage, label: stageLabels[stage] ?? stage }),
+  );
 
   const ariaLabel = t("insights.sleep.compositionAriaLabel", {
     nights: breakdown.nights,
@@ -377,31 +389,21 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
               })}
             </span>
           </div>
-          <div
-            // v1.4.27 — bump the gap from `gap-1` to
-            // `gap-1.5` so the three window-toggle buttons (7d /
-            // 14d / 30d) breathe enough on Pixel 5 that the active
-            // pill's border doesn't fuse with the inactive neighbour.
-            className="flex items-center gap-1.5 self-end sm:self-auto"
-            data-slot="sleep-stage-window-toggle"
-          >
-            {WINDOW_DAYS.map((w) => (
-              <Button
-                key={w}
-                type="button"
-                variant={windowDays === w ? "default" : "ghost"}
-                size="sm"
-                className="min-h-11 px-2 text-xs sm:px-3"
-                onClick={() => setWindowDays(w)}
-                aria-pressed={windowDays === w}
-                data-slot={`sleep-stage-window-${w}`}
-              >
-                {/* The page's other range controls read "7T / 30T"; this
-                    one printed an English "7d" beside them. */}
-                {t("charts.daysNLabel", { days: w })}
-              </Button>
-            ))}
-          </div>
+          {/* The page's other range controls read "7T / 30T"; this one
+              printed an English "7d" beside them, hence `daysNLabel`. */}
+          <Segmented
+            mode="toggle"
+            label={t("charts.rangeLabel")}
+            slot="sleep-stage-window-toggle"
+            optionSlot={(w) => `sleep-stage-window-${w}`}
+            className="self-end sm:self-auto"
+            value={String(windowDays)}
+            onChange={(next) => setWindowDays(Number(next) as WindowSize)}
+            options={WINDOW_DAYS.map((w) => ({
+              value: String(w),
+              label: t("charts.daysNLabel", { days: w }),
+            }))}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -563,7 +565,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                     wrapperStyle={{ fontSize: 11 }}
                     formatter={(value: string) => stageLabels[value] ?? value}
                   />
-                  {STAGE_ORDER.map((stage) => (
+                  {visibleStages.map((stage) => (
                     <Bar
                       key={stage}
                       dataKey={stage}

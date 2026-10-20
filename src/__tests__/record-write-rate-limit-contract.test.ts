@@ -4,9 +4,11 @@
  * The batch endpoints have been capped at 60 calls a minute since they were
  * written; the per-record creates a naive or older client loops over were not
  * capped at all, which is backwards — the batch endpoint is the one a
- * well-behaved client uses. Eleven of them share one generous per-account
- * bucket now, and the operations publish its name and its cap so a client that
- * meets the ceiling can read which one it met.
+ * well-behaved client uses. Every authenticated write now shares one generous
+ * per-account bucket, charged where the caller is resolved
+ * (`src/lib/auth/write-meter.ts`), and the operations listed below publish
+ * its name and its cap so a client that meets the ceiling can read which one
+ * it met.
  *
  * A published number is only worth reading if it cannot drift from the code, so
  * this pulls the bucket key and the limit out of `prisma.$queryRaw` — the same
@@ -15,9 +17,9 @@
  * would prove nothing: the sentence is written by hand, deliberately, and this
  * is what keeps the hand-written half honest.
  *
- * The route half is structural: every route in the list below calls the shared
- * helper. Its limit is that it reads the file rather than the running handler,
- * so a call placed after an early return would still count as present.
+ * The route half is structural: every route in the list below resolves its
+ * caller through a metering resolver and does not opt out. Its limit is that
+ * it reads the file rather than the running handler.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -32,6 +34,7 @@ import {
 } from "@/lib/rate-limit";
 import { buildOpenApiDocument } from "@/lib/openapi/registry";
 import { recordWriteRateLimitResponse } from "@/lib/openapi/routes/shared";
+import { RECORD_WRITE_RATE_LIMITED_CODE } from "@/lib/auth/write-meter";
 
 vi.mock("@/lib/db", () => ({ prisma: { $queryRaw: vi.fn() } }));
 
@@ -121,24 +124,27 @@ describe("the shared single-record write bucket", () => {
     expect(published).toContain("Retry-After");
   });
 
-  it("is called by every route that publishes it", () => {
-    const missing = ON_THE_SHARED_BUCKET.filter(([route]) => {
+  it("is charged on the path every route that publishes it takes", () => {
+    // The bucket is charged by the identity resolvers (`meterAccountWrite`),
+    // not by each route, so a listed route meets it by resolving its caller
+    // through one of them and not opting out. `write-rate-limit-guard`
+    // holds every other mutating route to the same rule.
+    const unmetered = ON_THE_SHARED_BUCKET.filter(([route]) => {
       const src = readFileSync(join(process.cwd(), route), "utf8");
-      return !src.includes("checkRecordWriteRateLimit(");
+      return (
+        !/\brequire(?:Record)?Auth\s*\(/.test(src) ||
+        /\bwriteBucket\s*:\s*["']own["']/.test(src)
+      );
     }).map(([route]) => route);
-    expect(missing).toEqual([]);
+    expect(unmetered).toEqual([]);
   });
 
-  it("names the code it publishes at every site", () => {
-    // The prose is not the discriminator: two of these routes consult a second
-    // bucket of their own, and a client that can only read `error` cannot tell
-    // which one refused it.
-    const silent = ON_THE_SHARED_BUCKET.filter(([route]) => {
-      const src = readFileSync(join(process.cwd(), route), "utf8");
-      return !src.includes('errorCode: "record_write.rate_limited"');
-    }).map(([route]) => route);
-    expect(silent).toEqual([]);
-    expect(published).toContain("record_write.rate_limited");
+  it("names the code it publishes", () => {
+    // The prose is not the discriminator: several of these routes consult a
+    // second bucket of their own, and a client that can only read `error`
+    // cannot tell which one refused it.
+    expect(RECORD_WRITE_RATE_LIMITED_CODE).toBe("record_write.rate_limited");
+    expect(published).toContain(RECORD_WRITE_RATE_LIMITED_CODE);
   });
 
   it("is published on every operation that answers it", () => {

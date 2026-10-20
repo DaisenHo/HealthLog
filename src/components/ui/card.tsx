@@ -15,12 +15,30 @@ import { cn } from "@/lib/utils";
  *
  * Refs `.planning/round-v1433-audit-polish.md` §4.1 + Win 4.
  */
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * The two card densities (UI standards §1) live here, not at the call site:
+ * `default` is the card as shipped, `compact` is the stat-strip and
+ * small-tile rhythm. Spelled by hand as `gap-2 py-3 md:py-4`, the compact
+ * tier kept the base `md:gap-6`, so nineteen "compact" cards opened a 24 px
+ * gap between header and body on a desktop. The prop pins both breakpoints.
+ */
+const CARD_DENSITY = {
+  default: "",
+  compact: "gap-2 py-3 md:gap-2 md:py-4",
+} as const;
+
+function Card({
+  className,
+  density = "default",
+  ...props
+}: React.ComponentProps<"div"> & { density?: keyof typeof CARD_DENSITY }) {
   return (
     <div
       data-slot="card"
+      data-density={density === "default" ? undefined : density}
       className={cn(
         "bg-card text-card-foreground flex flex-col gap-4 rounded-xl border py-4 shadow-sm md:gap-6 md:py-6",
+        CARD_DENSITY[density],
         className,
       )}
       {...props}
@@ -45,7 +63,10 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
+      className={cn(
+        "leading-tight font-semibold break-words hyphens-auto",
+        className,
+      )}
       {...props}
     />
   );

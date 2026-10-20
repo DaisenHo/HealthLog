@@ -24,6 +24,7 @@
  *     moment the catalogue is authoritative, because the picker produced it.
  */
 import { z } from "zod/v4";
+import { listOffsetField } from "@/lib/http/list-query-fields";
 
 import {
   ANTIGEN_SLUGS,
@@ -195,6 +196,11 @@ export const vaccinationListQuerySchema = z
     from: isoDateTime().optional(),
     to: isoDateTime().optional(),
     limit: z.coerce.number().int().min(1).max(500).optional(),
+    offset: listOffsetField()
+      .optional()
+      .describe(
+        "Doses to skip, for reading the log page by page; `meta.truncated` says whether another page exists.",
+      ),
   })
   .strict()
   .refine((q) => !(q.from && q.to) || q.from <= q.to, {

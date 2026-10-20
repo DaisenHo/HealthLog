@@ -40,10 +40,6 @@ export const reportSelectionSchema = z
 
 export type ReportSelectionInput = z.infer<typeof reportSelectionSchema>;
 
-const LEAF_ORDER = new Map<ReportLeafId, number>(
-  ALL_LEAF_IDS.map((leaf, index) => [leaf, index]),
-);
-
 function mint(leaves: Iterable<ReportLeafId>): ReportSelection {
   const set = new Set<ReportLeafId>(leaves);
   const ordered = ALL_LEAF_IDS.filter((leaf) => set.has(leaf));
@@ -119,13 +115,4 @@ export function selectionToBlob(
 /** Whether this selection admits nothing at all. */
 export function isEmptySelection(selection: ReportSelection): boolean {
   return selection.leaves.length === 0;
-}
-
-/** Stable ordering helper, exported for the panel's own state folding. */
-export function orderLeaves(
-  leaves: Iterable<ReportLeafId>,
-): readonly ReportLeafId[] {
-  return [...new Set(leaves)].sort(
-    (a, b) => (LEAF_ORDER.get(a) ?? 0) - (LEAF_ORDER.get(b) ?? 0),
-  );
 }

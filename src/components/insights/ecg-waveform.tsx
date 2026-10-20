@@ -83,6 +83,7 @@ function buildPath(samples: number[]): string {
     const x = i * xStep;
     // Higher voltage → smaller y (up).
     const y = Y_PAD + ((max - samples[i]) / span) * usableH;
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- SVG coordinates, read by the renderer, not a person
     d += `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
     if (i < n - 1) d += " ";
   }

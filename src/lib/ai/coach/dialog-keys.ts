@@ -15,16 +15,16 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
-import {
-  coachScopeSourceSchema,
-  type CoachFollowUpKind,
-  type CoachMethodEntry,
-  type CoachResultGranularity,
-  type CoachResultPeriod,
-  type CoachScopeWindow,
-  type CoachStepDomain,
-  type CoachStepReason,
+import type {
+  CoachFollowUpKind,
+  CoachMethodEntry,
+  CoachResultGranularity,
+  CoachResultPeriod,
+  CoachScopeWindow,
+  CoachStepDomain,
+  CoachStepReason,
 } from "@/lib/ai/coach/types";
+import { COACH_SCOPE_SOURCES } from "@/lib/ai/coach/scope-sources";
 
 // ── Steps ─────────────────────────────────────────────────────────────────
 
@@ -70,9 +70,7 @@ export const COACH_STEP_REASON_KEYS: Readonly<Record<CoachStepReason, string>> =
     invalid_arguments: "coach.step.reason.invalidArguments",
   };
 
-const SCOPE_SOURCES: ReadonlySet<string> = new Set(
-  coachScopeSourceSchema.options,
-);
+const SCOPE_SOURCES: ReadonlySet<string> = new Set(COACH_SCOPE_SOURCES);
 
 /**
  * A domain's display name. A measurement-backed scope source reuses the

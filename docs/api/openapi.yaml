@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.43.7
+  version: 1.43.8
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -396,15 +396,17 @@ paths:
         "409": *a7
         "422": *a4
         "429": &a12
-          description: "Rate limit exceeded. This route shares one per-account bucket with the other single-record writes —
+          description: "Rate limit exceeded. This route shares one per-account bucket with every other authenticated write —
             `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns
-            their own allowance rather than the record owner's. Nothing was written. `meta.errorCode` is
-            `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when
-            both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`
-            headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against
-            the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422
-            spends the same allowance as one that writes rows. A client with more than a handful of rows to send should
-            use the batch endpoint for its domain instead of looping this one."
+            their own allowance rather than the record owner's. Only the routes that meter themselves with a dedicated
+            bucket (the bulk ingest endpoints and the model-turn chats) and a POST that writes nothing stay outside it.
+            If the bucket cannot be read, the write goes ahead unmetered rather than failing. Nothing was written.
+            `meta.errorCode` is `record_write.rate_limited`, which is what tells this refusal apart from a route's own
+            narrower bucket when both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`
+            and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. Every
+            request counts against the bucket, refused ones included: the check runs before the body is read, so a
+            client looping on a 422 spends the same allowance as one that writes rows. A client with more than a handful
+            of rows to send should use the batch endpoint for its domain instead of looping this one."
           headers: *a8
           content:
             application/json:
@@ -838,8 +840,9 @@ paths:
         Deprecated: read `ai` on GET /api/auth/me instead, which resolves each AI capability for the record from the
         switches, the record's modules, the provider, consent and who is asking. This route projects the operator
         switches alone and is removed in the first release after the native build that reads `ai` ships. Responses carry
-        `Deprecation: true` and `Link: </api/auth/me>; rel="successor-version"`. The master is applied server-side, so
-        every sub-switch is already false when it is off.
+        `Deprecation` (the date it was deprecated, as `@<unix seconds>`), `Sunset` (the first day it may stop answering)
+        and `Link: </api/auth/me>; rel="successor-version"`. The master is applied server-side, so every sub-switch is
+        already false when it is off.
 
 
         An ACTOR surface: it answers about the deployment, not about a record, so it keeps answering while the caller is
@@ -854,6 +857,20 @@ paths:
       responses:
         "200":
           description: The resolved assistant matrix.
+          headers:
+            Deprecation:
+              description: "When this route was deprecated, as an RFC 9745 date: `@` and Unix seconds."
+              schema:
+                type: string
+                pattern: ^@[0-9]+$
+            Sunset:
+              description: The first day this route may stop answering (RFC 8594 HTTP-date).
+              schema:
+                type: string
+            Link:
+              description: The successor, as `</api/auth/me>; rel="successor-version"`.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -2969,17 +2986,17 @@ paths:
         - Auth
       summary: List recent account-security activity
       description: "v1.23 — the SHARED security-activity feed: the caller's recent auth + export + deletion audit events with
-        timestamp, resolved location, and a host-masked IP. `limit` query param caps at 100 (default 50). Reuses the
-        AuditLog store; no event detail bodies are surfaced."
+        timestamp, resolved location, and a host-masked IP. `limit` is 1-100 (default 50); a value outside that is a 422
+        naming it. Reuses the AuditLog store; no event detail bodies are surfaced."
       parameters:
         - in: query
           name: limit
           schema:
-            description: Page size; defaults to 50, clamped to 100.
+            description: Page size, 1-100; defaults to 50. Out of range is a 422.
             type: integer
             minimum: 1
             maximum: 100
-          description: Page size; defaults to 50, clamped to 100.
+          description: Page size, 1-100; defaults to 50. Out of range is a 422.
       responses:
         "200":
           description: Recent security events for the caller.
@@ -9544,10 +9561,9 @@ paths:
         defend against a poisoned column. Audit-logged with the old and new zone.
 
 
-        A change is not only a display preference. The medication-compliance rollup keys its rows by the LOCAL day a
-        dose fell on, minted under whatever zone was in force at write time, so moving the zone re-buckets that history
-        and the stored keys go stale — and the coverage probe compares counts rather than keys, so it cannot notice. The
-        route therefore enqueues a re-fold of the trailing window whenever the zone actually changes. Best-effort and
+        A change is not only a display preference. The supplement nutrient rows key on the LOCAL day a dose fell on,
+        minted under whatever zone was in force at write time, so moving the zone re-buckets them. The route therefore
+        enqueues a recompute of the account's supplement nutrients whenever the zone actually changes. Best-effort and
         de-duplicated, so rapid re-picks collapse into one.
       requestBody:
         required: true
@@ -15871,8 +15887,9 @@ paths:
       tags:
         - Records
       summary: List visits
-      description: Returns the caller's live visits, split into `upcoming` and `past`. Bounded and windowed; soft-deleted
-        visits are excluded.
+      description: Returns the caller's live visits, split into `upcoming` (soonest first) and `past` (newest first). `limit`
+        and `offset` apply to each list; `meta.truncated` is true when either list has rows past this page, so a client
+        reads the next `offset` until it is false. Soft-deleted visits are excluded.
       parameters:
         - in: query
           name: from
@@ -16231,7 +16248,8 @@ paths:
       tags:
         - Records
       summary: List practitioners
-      description: Returns the caller's address book, name-ordered, with an optional case-insensitive name search.
+      description: Returns the caller's address book, name-ordered, with an optional case-insensitive search over name,
+        practice and specialty. Paged with `limit` and `offset`; `meta.truncated` says whether another page exists.
       parameters:
         - in: query
           name: q
@@ -16245,6 +16263,15 @@ paths:
             type: integer
             minimum: 1
             maximum: 200
+        - in: query
+          name: offset
+          schema:
+            description: Rows to skip, for reading the address book page by page; `meta.truncated` says whether another page exists.
+            default: 0
+            type: integer
+            minimum: 0
+            maximum: 100000
+          description: Rows to skip, for reading the address book page by page; `meta.truncated` says whether another page exists.
       responses:
         "200":
           description: The caller's address book.
@@ -16343,8 +16370,9 @@ paths:
       tags:
         - Records
       summary: Soft-delete a practitioner
-      description: Stamps `deletedAt`. Every visit that named this entry survives with no practice attached, because the
-        reference nulls rather than cascades. Idempotent. Audits as `practitioner.contact.delete`.
+      description: Stamps `deletedAt`. The entry leaves the address book and the pickers; every live visit and vaccination
+        that named it keeps showing it, and the tombstone is kept while one does. Idempotent. Audits as
+        `practitioner.contact.delete`.
       parameters:
         - in: path
           name: id
@@ -16506,8 +16534,9 @@ paths:
       tags:
         - Records
       summary: List vaccinations
-      description: Returns the caller's live doses, newest first, each with its series resolved per component antigen.
-        Soft-deleted doses are excluded.
+      description: Returns the caller's live doses, newest first, each with its series resolved per component antigen over the
+        whole record, never over the page. Paged with `limit` (default 300) and `offset`; `meta.truncated` says whether
+        another page exists. Soft-deleted doses are excluded.
       parameters:
         - in: query
           name: antigenSlug
@@ -16533,6 +16562,15 @@ paths:
             type: integer
             minimum: 1
             maximum: 500
+        - in: query
+          name: offset
+          schema:
+            description: Doses to skip, for reading the log page by page; `meta.truncated` says whether another page exists.
+            default: 0
+            type: integer
+            minimum: 0
+            maximum: 100000
+          description: Doses to skip, for reading the log page by page; `meta.truncated` says whether another page exists.
       responses:
         "200":
           description: The caller's immunization history.
@@ -36009,6 +36047,13 @@ components:
               maximum: 9007199254740991
             - type: "null"
           description: v1.7.0 cyclic "off" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.
+        doseWindows:
+          description: Per-dose on-time windows as stored. Null when every dose time keeps the default derivation.
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/DoseWindowEntry"
+            - type: "null"
       required:
         - id
         - medicationId
@@ -36229,24 +36274,24 @@ components:
                 profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
                 profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited;
                 report-selection — report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; route — route.retired; search — search.invalid; share-link —
-                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
-                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
-                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
-                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
-                tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached; vaccination —
-                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
-                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
-                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
-                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                report-selection.leaves.unknown; route — route.retired; search — search.invalid; security_activity —
+                security_activity.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
+                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
+                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
+                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
+                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
+                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached;
+                vaccination — vaccination.booster-invalid, vaccination.booster-no-antigen,
+                vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found, vaccination.custom.invalid,
+                vaccination.custom.name-taken, vaccination.custom.not-found, vaccination.encounter-not-found,
+                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
                 — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
@@ -46245,6 +46290,13 @@ components:
           type:
             - string
             - "null"
+        aggregationProvenance:
+          description: "Authority of an aggregate stored under a `stats:` identity: `HEALTHKIT_STATISTICS`,
+            `EXPORT_XML_SOURCE_MAX` or `LEGACY_UNKNOWN`. Null on an ordinary sample row. Decode unknown values
+            leniently."
+          type:
+            - string
+            - "null"
         glucoseContext:
           description: Set only on BLOOD_GLUCOSE rows, and null there too when the writer recorded no classification (a sensor
             export, a device sync). Never invent one.
@@ -46684,85 +46736,7 @@ components:
                 - value
                 - measuredAt
               additionalProperties: false
-          required:
-            - WEIGHT
-            - BLOOD_PRESSURE_SYS
-            - BLOOD_PRESSURE_DIA
-            - PULSE
-            - BODY_FAT
-            - SLEEP_DURATION
-            - ACTIVITY_STEPS
-            - BLOOD_GLUCOSE
-            - TOTAL_BODY_WATER
-            - BONE_MASS
-            - OXYGEN_SATURATION
-            - HEART_RATE_VARIABILITY
-            - RESTING_HEART_RATE
-            - ACTIVE_ENERGY_BURNED
-            - FLIGHTS_CLIMBED
-            - WALKING_RUNNING_DISTANCE
-            - VO2_MAX
-            - BODY_TEMPERATURE
-            - FAT_FREE_MASS
-            - FAT_MASS
-            - MUSCLE_MASS
-            - SKIN_TEMPERATURE
-            - PULSE_WAVE_VELOCITY
-            - VASCULAR_AGE
-            - VISCERAL_FAT
-            - AUDIO_EXPOSURE_ENV
-            - AUDIO_EXPOSURE_HEADPHONE
-            - TIME_IN_DAYLIGHT
-            - WALKING_STEADINESS
-            - AUDIO_EXPOSURE_EVENT
-            - RESPIRATORY_RATE
-            - BODY_MASS_INDEX
-            - LEAN_BODY_MASS
-            - WALKING_HEART_RATE_AVERAGE
-            - WALKING_ASYMMETRY
-            - WALKING_DOUBLE_SUPPORT
-            - WALKING_STEP_LENGTH
-            - WALKING_SPEED
-            - CARDIO_RECOVERY
-            - WRIST_TEMPERATURE
-            - FALL_COUNT
-            - SIX_MINUTE_WALK_DISTANCE
-            - STAIR_ASCENT_SPEED
-            - STAIR_DESCENT_SPEED
-            - BREATHING_DISTURBANCES
-            - IRREGULAR_RHYTHM_NOTIFICATION
-            - HIGH_HEART_RATE_EVENT
-            - LOW_HEART_RATE_EVENT
-            - WALKING_STEADINESS_EVENT
-            - BREATHING_DISTURBANCE_EVENT
-            - RECOVERY_SCORE
-            - STRESS_SCORE
-            - STRAIN_SCORE
-            - HRV_RMSSD
-            - DAY_STRAIN
-            - WORKOUT_STRAIN
-            - SLEEP_PERFORMANCE
-            - SLEEP_EFFICIENCY
-            - SLEEP_CONSISTENCY
-            - SLEEP_NEED
-            - ENERGY_EXPENDITURE_KJ
-            - AVERAGE_HEART_RATE
-            - MAX_HEART_RATE
-            - SLEEP_DISTURBANCE_COUNT
-            - ANS_CHARGE
-            - CARDIO_LOAD
-            - SLEEP_SCORE
-            - BODY_TEMPERATURE_DEVIATION
-            - RESILIENCE
-            - PHQ9_SCORE
-            - GAD7_SCORE
-            - GRIP_STRENGTH
-            - PAIN_NRS
-            - WAIST_CIRCUMFERENCE
-            - WAIST_TO_HEIGHT
-            - WHO5_SCORE
-            - SCI_SCORE
-          description: Per-type daily series, keyed by MeasurementType.
+          description: Per-type daily series, keyed by MeasurementType. Only the requested types are present.
       required:
         - series
       additionalProperties: false
@@ -47086,6 +47060,13 @@ components:
           type:
             - string
             - "null"
+        aggregationProvenance:
+          description: "Authority of an aggregate stored under a `stats:` identity: `HEALTHKIT_STATISTICS`,
+            `EXPORT_XML_SOURCE_MAX` or `LEGACY_UNKNOWN`. Null on an ordinary sample row. Decode unknown values
+            leniently."
+          type:
+            - string
+            - "null"
         glucoseContext:
           description: Set only on BLOOD_GLUCOSE rows, and null there too when the writer recorded no classification (a sensor
             export, a device sync). Never invent one.
@@ -47281,6 +47262,13 @@ components:
             - string
             - "null"
         externalSourceVersion:
+          type:
+            - string
+            - "null"
+        aggregationProvenance:
+          description: "Authority of an aggregate stored under a `stats:` identity: `HEALTHKIT_STATISTICS`,
+            `EXPORT_XML_SOURCE_MAX` or `LEGACY_UNKNOWN`. Null on an ordinary sample row. Decode unknown values
+            leniently."
           type:
             - string
             - "null"
@@ -47730,13 +47718,8 @@ components:
                     type: integer
                     minimum: 0
                     maximum: 9007199254740991
-                  required:
-                    - IN_BED
-                    - AWAKE
-                    - ASLEEP
-                    - REM
-                    - CORE
-                    - DEEP
+                  description: Minutes per stage. Only the stages the night recorded are present; an absent stage is not zero minutes, it
+                    was not measured.
                 segments:
                   type: array
                   items:
@@ -47884,13 +47867,8 @@ components:
                   type: integer
                   minimum: 0
                   maximum: 9007199254740991
-                required:
-                  - IN_BED
-                  - AWAKE
-                  - ASLEEP
-                  - REM
-                  - CORE
-                  - DEEP
+                description: Minutes per stage. Only the stages the night recorded are present; an absent stage is not zero minutes, it
+                  was not measured.
               segments:
                 type: array
                 items:
@@ -49882,12 +49860,68 @@ components:
       properties:
         id:
           type: string
+        userId:
+          description: The record the row belongs to.
+          type: string
         name:
           type: string
         dose:
           type: string
         treatmentClass:
           $ref: "#/components/schemas/MedicationTreatmentClass"
+        deliveryForm:
+          description: How the medication is taken. A one-time injection is `oneShot` with `INJECTION`.
+          type: string
+          enum:
+            - ORAL
+            - INJECTION
+            - OTHER
+        trackInjectionSites:
+          description: Whether intakes record an injection site. Only offered for `INJECTION`.
+          type: boolean
+        allowedInjectionSites:
+          description: The sites the rotation offers; empty means every site.
+          type: array
+          items:
+            type: string
+            enum:
+              - ABDOMEN_LEFT
+              - ABDOMEN_RIGHT
+              - ABDOMEN_UPPER_LEFT
+              - ABDOMEN_UPPER_RIGHT
+              - THIGH_LEFT
+              - THIGH_RIGHT
+              - UPPER_ARM_LEFT
+              - UPPER_ARM_RIGHT
+        externalSource:
+          anyOf:
+            - type: string
+              const: APPLE_HEALTH
+            - type: "null"
+          description: v1.32.25 — provenance of the medication. `APPLE_HEALTH` marks the row a read-only mirror of the iOS 26+
+            HealthKit Medications sync; NULL is a native HealthLog medication. Read-only echo of the stored provenance —
+            the create route sets it, the list read surfaces it so mirrored-vs-native is visible without inspecting the
+            iOS client's local registry.
+        externalId:
+          description: The source's own identifier for a mirrored medication, paired with `externalSource`; null for a native one.
+          type:
+            - string
+            - "null"
+        lowStockNotifiedAt:
+          description: When the low-stock alert last fired for this medication; null when it has not since the stock was last
+            topped up. Server-written.
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lowStockNotifiedThresholdDays:
+          description: The runway threshold, in days, that alert fired at. Server-written.
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         dosesPerUnit:
           anyOf:
             - type: integer
@@ -50062,15 +50096,11 @@ components:
           type: boolean
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
             not one-time, has a course and every course has ended."
-        externalSource:
-          anyOf:
-            - type: string
-              const: APPLE_HEALTH
-            - type: "null"
-          description: v1.32.25 — provenance of the medication. `APPLE_HEALTH` marks the row a read-only mirror of the iOS 26+
-            HealthKit Medications sync; NULL is a native HealthLog medication. Read-only echo of the stored provenance —
-            the create route sets it, the list read surfaces it so mirrored-vs-native is visible without inspecting the
-            iOS client's local registry.
+        nextDueScheduleId:
+          description: The schedule `nextDueAt` belongs to; null when nothing is due.
+          type:
+            - string
+            - "null"
         courseStatus:
           type: string
           enum:
@@ -50136,6 +50166,7 @@ components:
         - name
         - dose
         - treatmentClass
+        - externalSource
         - dosesPerUnit
         - unitsPerDose
         - reorderLeadDays
@@ -50166,7 +50197,7 @@ components:
         - courseCount
         - previousCourseEndedOn
         - canStartCourse
-        - externalSource
+        - nextDueScheduleId
         - courseStatus
         - intakeActionable
         - lastTakenAt
@@ -50255,12 +50286,66 @@ components:
       properties:
         id:
           type: string
+        userId:
+          description: The record the row belongs to.
+          type: string
         name:
           type: string
         dose:
           type: string
         treatmentClass:
           $ref: "#/components/schemas/MedicationTreatmentClass"
+        deliveryForm:
+          description: How the medication is taken. A one-time injection is `oneShot` with `INJECTION`.
+          type: string
+          enum:
+            - ORAL
+            - INJECTION
+            - OTHER
+        trackInjectionSites:
+          description: Whether intakes record an injection site. Only offered for `INJECTION`.
+          type: boolean
+        allowedInjectionSites:
+          description: The sites the rotation offers; empty means every site.
+          type: array
+          items:
+            type: string
+            enum:
+              - ABDOMEN_LEFT
+              - ABDOMEN_RIGHT
+              - ABDOMEN_UPPER_LEFT
+              - ABDOMEN_UPPER_RIGHT
+              - THIGH_LEFT
+              - THIGH_RIGHT
+              - UPPER_ARM_LEFT
+              - UPPER_ARM_RIGHT
+        externalSource:
+          description: v1.32.25 — provenance of the medication. `APPLE_HEALTH` marks the row a read-only mirror of the iOS 26+
+            HealthKit Medications sync; NULL is a native HealthLog medication.
+          anyOf:
+            - type: string
+              const: APPLE_HEALTH
+            - type: "null"
+        externalId:
+          description: The source's own identifier for a mirrored medication, paired with `externalSource`; null for a native one.
+          type:
+            - string
+            - "null"
+        lowStockNotifiedAt:
+          description: When the low-stock alert last fired for this medication; null when it has not since the stock was last
+            topped up. Server-written.
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lowStockNotifiedThresholdDays:
+          description: The runway threshold, in days, that alert fired at. Server-written.
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         dosesPerUnit:
           anyOf:
             - type: integer
@@ -52993,12 +53078,15 @@ components:
           type: array
           items:
             type: string
-          description: Local calendar days (YYYY-MM-DD) touched so far, driving the chunked rollup recompute behind the write.
+          description: "Deprecated and inert: always `[]` on a job admitted from v1.43.8, when the per-day compliance rollup it
+            drove was removed. A job admitted earlier keeps the days it recorded. Kept for clients that decode it; do
+            not read it."
         rollupProcessed:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-          description: Of `touchedDays`, how many have had their rollup recomputed.
+          description: "Deprecated and inert: always `0` on a job admitted from v1.43.8. Kept for clients that decode it; do not
+            read it."
       required:
         - processed
         - total
@@ -55202,12 +55290,26 @@ components:
                 - weekly
                 - biweekly
               description: "Nudge frequency cap: one per 7 or per 14 days."
+            nudgeAiComposed:
+              type: boolean
+              description: Opt-in for model-written nudge copy. Off by default; the deterministic template is always the fallback.
           required:
             - nudgesEnabled
             - nudgeMedication
             - nudgeVitals
             - nudgeRoutine
             - nudgeFrequency
+            - nudgeAiComposed
+          additionalProperties: false
+        measurementReminder:
+          type: object
+          properties:
+            clientManaged:
+              type: boolean
+              description: True when the iOS app owns local check-up reminders; the server-side measurement-reminder APNs send is then
+                suppressed. Default false.
+          required:
+            - clientManaged
           additionalProperties: false
         content:
           type: object
@@ -55234,6 +55336,7 @@ components:
         - mood
         - cycle
         - coach
+        - measurementReminder
         - content
       additionalProperties: false
     PatchNotificationPrefsResponse:
@@ -61730,64 +61833,294 @@ components:
     InsightsComprehensiveResponse:
       type: object
       properties:
-        summary:
-          type: string
-        recommendations:
-          type: array
-          items:
-            type: object
-            propertyNames:
-              type: string
-            additionalProperties: {}
-        citations:
-          type: array
-          items:
-            type: object
-            propertyNames:
-              type: string
-            additionalProperties: {}
-        warnings:
-          type: array
-          items:
-            type: object
-            propertyNames:
-              type: string
-            additionalProperties: {}
-        dailyBriefing:
-          anyOf:
-            - type: object
-              propertyNames:
-                type: string
-              additionalProperties: {}
-            - type: "null"
-        trendAnnotations:
-          anyOf:
-            - type: object
-              propertyNames:
-                type: string
-              additionalProperties: {}
-            - type: "null"
-        storyboardAnnotations:
-          type: array
-          items:
-            type: object
-            propertyNames:
-              type: string
-            additionalProperties: {}
-        metricSource:
+        summaries:
           type: object
           propertyNames:
             type: string
-          additionalProperties: {}
+          additionalProperties:
+            $ref: "#/components/schemas/ComprehensiveMetricSummary"
+          description: Keyed by `MeasurementType`. Only types with readings in the last 90 days are present.
+        bmi:
+          type:
+            - number
+            - "null"
+        bmiClassification:
+          anyOf:
+            - type: object
+              properties:
+                category:
+                  type: string
+                color:
+                  type: string
+                  description: A CSS colour token for the web client.
+                severity:
+                  type: string
+                  enum:
+                    - normal
+                    - elevated
+                    - warning
+                    - danger
+              required:
+                - category
+                - color
+                - severity
+              additionalProperties: false
+            - type: "null"
+        bpClassification:
+          anyOf:
+            - type: object
+              properties:
+                category:
+                  type: string
+                color:
+                  type: string
+                  description: A CSS colour token for the web client.
+                severity:
+                  type: string
+                  enum:
+                    - normal
+                    - elevated
+                    - warning
+                    - danger
+              required:
+                - category
+                - color
+                - severity
+              additionalProperties: false
+            - type: "null"
+        bpPctInTarget:
+          description: Share of blood-pressure readings inside the target band, 0-100.
+          type:
+            - number
+            - "null"
+        bpTargets:
+          anyOf:
+            - type: object
+              properties:
+                sysLow:
+                  type: number
+                sysHigh:
+                  type: number
+                diaLow:
+                  type: number
+                diaHigh:
+                  type: number
+              required:
+                - sysLow
+                - sysHigh
+                - diaLow
+                - diaHigh
+              additionalProperties: false
+            - type: "null"
+          description: Age-banded targets; null without a date of birth.
+        weightBpCorrelation:
+          anyOf:
+            - $ref: "#/components/schemas/CorrelationStat"
+            - type: "null"
+        scatterData:
+          type: array
+          items:
+            type: object
+            properties:
+              weight:
+                type: number
+              sysBP:
+                type: number
+            required:
+              - weight
+              - sysBP
+            additionalProperties: false
+          description: Weight against systolic pressure, paired by day.
+        bpMedicationCorrelation:
+          anyOf:
+            - type: object
+              properties:
+                r:
+                  type: number
+                strength:
+                  type: string
+                  enum:
+                    - stark
+                    - moderat
+                    - schwach
+                    - keine
+                  description: Strength bucket. The tokens are GERMAN on the wire; treat them as opaque identifiers and localise
+                    client-side.
+                n:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                medicationCount:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              required:
+                - r
+                - strength
+                - n
+                - medicationCount
+              additionalProperties: false
+            - type: "null"
+        bpMedicationScatterData:
+          type: array
+          items:
+            type: object
+            properties:
+              continuityPct:
+                type: number
+              sysBP:
+                type: number
+            required:
+              - continuityPct
+              - sysBP
+            additionalProperties: false
+        moodSummary:
+          anyOf:
+            - $ref: "#/components/schemas/ComprehensiveMetricSummary"
+            - type: "null"
+        moodBpCorrelation:
+          anyOf:
+            - $ref: "#/components/schemas/CorrelationStat"
+            - type: "null"
+        moodBpScatterData:
+          type: array
+          items:
+            type: object
+            properties:
+              mood:
+                type: number
+              sysBP:
+                type: number
+            required:
+              - mood
+              - sysBP
+            additionalProperties: false
+        moodWeightCorrelation:
+          anyOf:
+            - $ref: "#/components/schemas/CorrelationStat"
+            - type: "null"
+        moodWeightScatterData:
+          type: array
+          items:
+            type: object
+            properties:
+              mood:
+                type: number
+              weight:
+                type: number
+            required:
+              - mood
+              - weight
+            additionalProperties: false
+        moodPulseCorrelation:
+          anyOf:
+            - $ref: "#/components/schemas/CorrelationStat"
+            - type: "null"
+        moodPulseScatterData:
+          type: array
+          items:
+            type: object
+            properties:
+              mood:
+                type: number
+              pulse:
+                type: number
+            required:
+              - mood
+              - pulse
+            additionalProperties: false
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              dose:
+                type: string
+              category:
+                type: string
+              categoryLabel:
+                description: The label of a custom category; null for a built-in one.
+                type:
+                  - string
+                  - "null"
+              compliance7:
+                type: number
+                description: Percent, 0-100.
+              compliance30:
+                type: number
+                description: Percent, 0-100.
+              streak:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              taken7:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              skipped7:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              missed7:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - id
+              - name
+              - dose
+              - category
+              - categoryLabel
+              - compliance7
+              - compliance30
+              - streak
+              - taken7
+              - skipped7
+              - missed7
+            additionalProperties: false
+          description: Cadence-aware compliance per active medication.
+        alerts:
+          type: array
+          items:
+            type: object
+            properties:
+              level:
+                type: string
+                enum:
+                  - success
+                  - info
+                  - warning
+                  - danger
+              title:
+                type: string
+              message:
+                type: string
+            required:
+              - level
+              - title
+              - message
+            additionalProperties: false
+        hasProvider:
+          type: boolean
+          description: "Whether a configured AI provider exists for the record: provider presence and nothing else. False never
+            means the operator switched AI off or consent is missing; `ai` says that."
+        dataSpanDays:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        totalMeasurements:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
         revalidating:
+          type: boolean
           description: True when the body is served from last-good cache (stale-while-revalidate) while a fresh aggregation runs
             in the background. The client keeps polling on `revalidating` (bounded) so the open page converges on the
             fresh body.
-          type: boolean
-        hasProvider:
-          description: "Whether a configured AI provider exists for the record: provider presence and nothing else. False never
-            means the operator switched AI off or consent is missing; `ai` says that."
-          type: boolean
         ai:
           type: object
           properties:
@@ -61803,14 +62136,163 @@ components:
             notes. Resolved per request, never cached with the body. The overview itself is computed data and loads
             whatever these say."
       required:
-        - summary
-        - recommendations
-        - citations
-        - warnings
+        - summaries
+        - bmi
+        - bmiClassification
+        - bpClassification
+        - bpPctInTarget
+        - bpTargets
+        - weightBpCorrelation
+        - scatterData
+        - bpMedicationCorrelation
+        - bpMedicationScatterData
+        - moodSummary
+        - moodBpCorrelation
+        - moodBpScatterData
+        - moodWeightCorrelation
+        - moodWeightScatterData
+        - moodPulseCorrelation
+        - moodPulseScatterData
+        - medications
+        - alerts
+        - hasProvider
+        - dataSpanDays
+        - totalMeasurements
+        - revalidating
         - ai
       additionalProperties: false
       description: The Insights overview's computed read. No provider is called on this path; every figure is computed from
-        the record.
+        the record. The model-written briefing is not part of it; it is read from `GET /api/insights/generate`.
+    ComprehensiveMetricSummary:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        latest:
+          type:
+            - number
+            - "null"
+        min:
+          type:
+            - number
+            - "null"
+        max:
+          type:
+            - number
+            - "null"
+        mean:
+          type:
+            - number
+            - "null"
+        median:
+          type:
+            - number
+            - "null"
+        avg7:
+          type:
+            - number
+            - "null"
+        avg30:
+          type:
+            - number
+            - "null"
+        slope7:
+          anyOf:
+            - type: object
+              properties:
+                slope:
+                  type: number
+                  description: Least-squares slope in units per day.
+                direction:
+                  type: string
+                  enum:
+                    - up
+                    - down
+                    - stable
+                confidence:
+                  type: number
+                  description: R² of the fit, 0..1.
+              required:
+                - slope
+                - direction
+                - confidence
+              additionalProperties: false
+            - type: "null"
+        slope30:
+          anyOf:
+            - type: object
+              properties:
+                slope:
+                  type: number
+                  description: Least-squares slope in units per day.
+                direction:
+                  type: string
+                  enum:
+                    - up
+                    - down
+                    - stable
+                confidence:
+                  type: number
+                  description: R² of the fit, 0..1.
+              required:
+                - slope
+                - direction
+                - confidence
+              additionalProperties: false
+            - type: "null"
+        anomalyCount:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Readings in the series the outlier rule flags.
+        avg30LastMonth:
+          type:
+            - number
+            - "null"
+        avg30LastYear:
+          type:
+            - number
+            - "null"
+      required:
+        - count
+        - latest
+        - min
+        - max
+        - mean
+        - median
+        - avg7
+        - avg30
+        - slope7
+        - slope30
+        - anomalyCount
+      additionalProperties: false
+    CorrelationStat:
+      type: object
+      properties:
+        r:
+          type: number
+        strength:
+          type: string
+          enum:
+            - stark
+            - moderat
+            - schwach
+            - keine
+          description: Strength bucket. The tokens are GERMAN on the wire; treat them as opaque identifiers and localise
+            client-side.
+        n:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - r
+        - strength
+        - n
+      additionalProperties: false
+      description: A significant Pearson correlation (n >= 20, p < 0.05). The field holding it is null when the pairing is not
+        significant.
     InsightsCardsEnvelope:
       type: object
       properties:
@@ -66752,6 +67234,13 @@ components:
                 minimum: -9007199254740991
                 maximum: 9007199254740991
                 description: Paired-day count.
+              suppressed:
+                description: "Why `result` is null: too few paired days, or a pairing that did not reach significance. Absent when
+                  `result` is set."
+                type: string
+                enum:
+                  - insufficientPairs
+                  - notSignificant
             required:
               - result
               - points
@@ -71341,14 +71830,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     EncounterList:
       type: object
@@ -72076,14 +72562,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     CreatePractitionerEnvelope:
       type: object
@@ -72305,14 +72788,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     VaccinationList:
       type: object
@@ -75240,7 +75720,7 @@ components:
         conversations:
           type: array
           items:
-            $ref: "#/components/schemas/DocumentChatConversation"
+            $ref: "#/components/schemas/DocumentChatListItem"
         nextCursor:
           type:
             - string
@@ -75249,7 +75729,7 @@ components:
         - conversations
         - nextCursor
       additionalProperties: false
-    DocumentChatConversation:
+    DocumentChatListItem:
       type: object
       properties:
         id:
@@ -75262,12 +75742,38 @@ components:
           type: string
         messageCount:
           type: number
+        fenced:
+          type: boolean
+          description: "Always true here: a chat about a document is a fenced thread (no tools, no health snapshot)."
+        attachments:
+          description: The documents the thread is about, as they are now.
+          type: array
+          items:
+            type: object
+            properties:
+              documentId:
+                type: string
+              title:
+                description: The attached document's title, falling back to its filename; null when it has neither.
+                type:
+                  - string
+                  - "null"
+            required:
+              - documentId
+              - title
+            additionalProperties: false
+        documentTitle:
+          description: The first attached document's title, for a one-line badge; null when none is attached any more.
+          type:
+            - string
+            - "null"
       required:
         - id
         - title
         - createdAt
         - updatedAt
         - messageCount
+        - fenced
       additionalProperties: false
     DocumentReindexEnvelope:
       type: object
@@ -82886,10 +83392,13 @@ components:
         timezone:
           type: string
         unitPreference:
-          type: string
-          enum:
-            - metric
-            - imperial
+          anyOf:
+            - type: string
+              enum:
+                - metric
+                - imperial
+            - type: "null"
+          description: "Null when the record never chose one: metric applies."
         timeFormat:
           type: string
           enum:
@@ -84951,8 +85460,8 @@ components:
         - limit
         - hasMore
       additionalProperties: false
-      description: A page of occurrences, newest first. `hasMore` is true when the page is full; page on with `to` set to the
-        oldest `occurredAt` seen.
+      description: A page of occurrences, newest first. `hasMore` is true exactly when an occurrence past this page exists;
+        page on with `to` set to the oldest `occurredAt` seen.
     SymptomEvent:
       type: object
       properties:
@@ -87747,6 +88256,13 @@ components:
               maximum: 9007199254740991
             - type: "null"
           description: v1.7.0 cyclic "off" weeks. Only meaningful when `scheduleType` is CYCLIC; null otherwise.
+        doseWindows:
+          description: Per-dose on-time windows as stored. Null when every dose time keeps the default derivation.
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/DoseWindowEntryOutput"
+            - type: "null"
       required:
         - id
         - medicationId
@@ -87770,6 +88286,29 @@ components:
         primitives are mutually exclusive — enforced by the Zod refine on writes, the route layer, and a DB CHECK
         constraint (`medication_schedules_rrule_xor_rolling`). v1.7.0 adds `scheduleType` (SCHEDULED / PRN / CYCLIC) and
         the cyclic on/off-week fields.
+    DoseWindowEntryOutput:
+      type: object
+      properties:
+        timeOfDay:
+          type: string
+          pattern: ^([01]\d|2[0-3]):([0-5]\d)$
+          description: The dose time this window applies to (matches a `timesOfDay` entry).
+        start:
+          type: string
+          pattern: ^([01]\d|2[0-3]):([0-5]\d)$
+          description: On-time band lower bound (HH:mm, user local).
+        end:
+          type: string
+          pattern: ^([01]\d|2[0-3]):([0-5]\d)$
+          description: On-time band upper bound (HH:mm, user local). Must be >= `start`.
+      required:
+        - timeOfDay
+        - start
+        - end
+      additionalProperties: false
+      description: One explicit per-dose on-time intake window. `timeOfDay` matches a schedule dose time; `[start, end]`
+        (HH:mm, user local, `start <= end`) is the on-time band. Outside it the cadence-derived late tail applies, then
+        ad-hoc.
     DisableCoachFlagOutput:
       type: object
       properties:
@@ -87830,12 +88369,66 @@ components:
       properties:
         id:
           type: string
+        userId:
+          description: The record the row belongs to.
+          type: string
         name:
           type: string
         dose:
           type: string
         treatmentClass:
           $ref: "#/components/schemas/MedicationTreatmentClass"
+        deliveryForm:
+          description: How the medication is taken. A one-time injection is `oneShot` with `INJECTION`.
+          type: string
+          enum:
+            - ORAL
+            - INJECTION
+            - OTHER
+        trackInjectionSites:
+          description: Whether intakes record an injection site. Only offered for `INJECTION`.
+          type: boolean
+        allowedInjectionSites:
+          description: The sites the rotation offers; empty means every site.
+          type: array
+          items:
+            type: string
+            enum:
+              - ABDOMEN_LEFT
+              - ABDOMEN_RIGHT
+              - ABDOMEN_UPPER_LEFT
+              - ABDOMEN_UPPER_RIGHT
+              - THIGH_LEFT
+              - THIGH_RIGHT
+              - UPPER_ARM_LEFT
+              - UPPER_ARM_RIGHT
+        externalSource:
+          description: v1.32.25 — provenance of the medication. `APPLE_HEALTH` marks the row a read-only mirror of the iOS 26+
+            HealthKit Medications sync; NULL is a native HealthLog medication.
+          anyOf:
+            - type: string
+              const: APPLE_HEALTH
+            - type: "null"
+        externalId:
+          description: The source's own identifier for a mirrored medication, paired with `externalSource`; null for a native one.
+          type:
+            - string
+            - "null"
+        lowStockNotifiedAt:
+          description: When the low-stock alert last fired for this medication; null when it has not since the stock was last
+            topped up. Server-written.
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lowStockNotifiedThresholdDays:
+          description: The runway threshold, in days, that alert fired at. Server-written.
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         dosesPerUnit:
           anyOf:
             - type: integer

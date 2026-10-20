@@ -383,6 +383,18 @@ const notificationPrefsResolved = z
       nudgeFrequency: z
         .enum(["weekly", "biweekly"])
         .describe("Nudge frequency cap: one per 7 or per 14 days."),
+      nudgeAiComposed: z
+        .boolean()
+        .describe(
+          "Opt-in for model-written nudge copy. Off by default; the deterministic template is always the fallback.",
+        ),
+    }),
+    measurementReminder: z.object({
+      clientManaged: z
+        .boolean()
+        .describe(
+          "True when the iOS app owns local check-up reminders; the server-side measurement-reminder APNs send is then suppressed. Default false.",
+        ),
     }),
     content: z.object({
       detail: z
@@ -2326,7 +2338,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Set the account timezone",
       description:
         "Lifted out of the profile patch so the picker can send one field without round-tripping the rest. Accepts any zone the running engine's `Intl` knows; anything else is 422 rather than stored, so the resolver never has to defend against a poisoned column. Audit-logged with the old and new zone.\n\n" +
-        "A change is not only a display preference. The medication-compliance rollup keys its rows by the LOCAL day a dose fell on, minted under whatever zone was in force at write time, so moving the zone re-buckets that history and the stored keys go stale — and the coverage probe compares counts rather than keys, so it cannot notice. The route therefore enqueues a re-fold of the trailing window whenever the zone actually changes. Best-effort and de-duplicated, so rapid re-picks collapse into one.",
+        "A change is not only a display preference. The supplement nutrient rows key on the LOCAL day a dose fell on, minted under whatever zone was in force at write time, so moving the zone re-buckets them. The route therefore enqueues a recompute of the account's supplement nutrients whenever the zone actually changes. Best-effort and de-duplicated, so rapid re-picks collapse into one.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: timezonePutRequest } },

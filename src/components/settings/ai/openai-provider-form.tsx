@@ -27,6 +27,7 @@ import {
   uiToLegacyProviderEnum,
   type UserAIProvider,
 } from "./shared";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export function OpenAIProviderForm({
   userProvider,
@@ -172,15 +173,15 @@ export function OpenAIProviderForm({
       )}
 
       <div>
-        <button
-          type="button"
+        <InlineAction
+          tone="muted"
+          className="underline"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="text-muted-foreground hover:text-foreground text-xs underline"
         >
           {showAdvanced
             ? t("settings.ai.openai.hideAdvanced")
             : t("settings.ai.openai.showAdvanced")}
-        </button>
+        </InlineAction>
         {showAdvanced && (
           <div className="mt-2 space-y-1">
             <Label htmlFor="ai-openai-base-url">

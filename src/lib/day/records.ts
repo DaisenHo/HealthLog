@@ -713,6 +713,7 @@ async function labsPart(frame: DayFrame): Promise<SectionPart> {
           row.value !== null
             ? // Every recorded digit, without the float noise a converted
               // reading carries (the labs page prints the same figure).
+              // eslint-disable-next-line healthlog/no-unlocalised-decimal -- the day contract's meta is wire text; the lab figure keeps the notation it was stored in
               `${formatRecordedNumber(row.value, (v, digits) => v.toFixed(digits), row.sourceValue)} ${row.unit}`.trim()
             : (row.valueText ?? null),
         note: openText(row.noteEncrypted, "lab note"),

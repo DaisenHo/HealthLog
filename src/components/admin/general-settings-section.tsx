@@ -54,7 +54,8 @@ export function GeneralSettingsSection() {
       : "";
   const storedQuotaGb =
     settings?.documentQuotaBytes != null
-      ? String(Math.round((settings.documentQuotaBytes / GIB) * 10) / 10)
+      ? // eslint-disable-next-line healthlog/no-unlocalised-decimal -- value of a type="number" input, which only takes a full stop
+        String(Math.round((settings.documentQuotaBytes / GIB) * 10) / 10)
       : "";
 
   const commitMaxFile = () => {

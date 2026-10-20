@@ -14,7 +14,13 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import {
+  apiDelete,
+  apiGet,
+  apiGetList,
+  apiPatch,
+  apiPost,
+} from "@/lib/api/api-fetch";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import {
   invalidateKeys,
@@ -52,6 +58,7 @@ export interface VaccinationWriteBody {
 }
 
 const BASE = "/api/vaccinations";
+const VACCINATION_PAGE_SIZE = 300;
 
 /**
  * The account's immunization log, newest dose first.
@@ -64,12 +71,33 @@ export function useVaccinations(antigenSlug?: string | null, enabled = true) {
   return useQuery({
     queryKey: queryKeys.vaccinationList(antigenSlug ?? null),
     enabled,
-    queryFn: () =>
-      apiGet<VaccinationListDTO>(
-        antigenSlug
-          ? `${BASE}?antigenSlug=${encodeURIComponent(antigenSlug)}`
-          : BASE,
-      ),
+    // The route pages and says whether another page exists; the log is read
+    // to the end. `renewals` is the same on every page, so the first is kept.
+    queryFn: async () => {
+      const page = (offset: number) => {
+        const sp = new URLSearchParams({
+          limit: String(VACCINATION_PAGE_SIZE),
+          offset: String(offset),
+        });
+        if (antigenSlug) sp.set("antigenSlug", antigenSlug);
+        return apiGetList<VaccinationListDTO>(
+          `/api/vaccinations?${sp.toString()}`,
+        );
+      };
+      const first = await page(0);
+      const vaccinations = [...first.data.vaccinations];
+      let cap = first.cap;
+      for (
+        let offset = VACCINATION_PAGE_SIZE;
+        cap?.truncated;
+        offset += VACCINATION_PAGE_SIZE
+      ) {
+        const next = await page(offset);
+        vaccinations.push(...next.data.vaccinations);
+        cap = next.cap;
+      }
+      return { ...first.data, vaccinations };
+    },
   });
 }
 

@@ -46,6 +46,7 @@ const timezoneSchema = z
   .max(64)
   .refine((timezone) => {
     try {
+      // eslint-disable-next-line healthlog/no-unlocalised-decimal -- validates a zone name and formats nothing
       Intl.DateTimeFormat(undefined, { timeZone: timezone });
       return true;
     } catch {

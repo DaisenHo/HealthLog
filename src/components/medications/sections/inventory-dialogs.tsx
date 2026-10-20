@@ -47,6 +47,7 @@ import {
   type ContainerType,
   type InventoryItem,
 } from "./inventory-shared";
+import { Segmented } from "@/components/ui/segmented";
 
 /**
  * Both dates the row carries are entered — and were always stored — as a
@@ -219,33 +220,23 @@ export function AddInventoryDialog({
             {t("medications.detail.bestand.addQuantityLabel")}
           </label>
           {unitsPerDose > 1 && (
-            <div
-              className="border-border/60 inline-flex rounded-md border p-0.5"
-              role="group"
-              aria-label={t("medications.detail.bestand.addQuantityLabel")}
-              data-slot="inventory-quantity-mode"
-            >
-              <Button
-                type="button"
-                size="sm"
-                variant={quantityMode === "doses" ? "secondary" : "ghost"}
-                aria-pressed={quantityMode === "doses"}
-                className="h-7 px-2 text-xs"
-                onClick={() => setQuantityMode("doses")}
-              >
-                {t("medications.detail.bestand.quantityModeDoses")}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={quantityMode === "units" ? "secondary" : "ghost"}
-                aria-pressed={quantityMode === "units"}
-                className="h-7 px-2 text-xs"
-                onClick={() => setQuantityMode("units")}
-              >
-                {t("medications.detail.bestand.quantityModeUnits")}
-              </Button>
-            </div>
+            <Segmented
+              mode="toggle"
+              options={[
+                {
+                  value: "doses",
+                  label: t("medications.detail.bestand.quantityModeDoses"),
+                },
+                {
+                  value: "units",
+                  label: t("medications.detail.bestand.quantityModeUnits"),
+                },
+              ]}
+              value={quantityMode}
+              onChange={setQuantityMode}
+              label={t("medications.detail.bestand.addQuantityLabel")}
+              slot="inventory-quantity-mode"
+            />
           )}
           <Input
             id="inventory-add-quantity"

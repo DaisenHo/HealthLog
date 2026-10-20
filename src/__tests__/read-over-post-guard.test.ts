@@ -2,8 +2,10 @@
  * `readOverPost` lets a delegable route answer a POST at the grant's read
  * level. That widens what a read-only grant reaches, so the set of routes
  * declaring it is frozen here: adding one is a reviewed diff, not an
- * accident. Today it is the record search alone, whose query is health data
- * that must stay out of URLs.
+ * accident. Today it is the record search, whose query is health data that
+ * must stay out of URLs, and the document assist, whose POST writes nothing
+ * (under `requireAuth` the declaration only keeps it off the shared write
+ * ceiling).
  *
  * The matcher tolerates whitespace and line breaks, and the guard asserts it
  * matched something, so a rewrite that hides the declaration from the regex
@@ -16,7 +18,13 @@ import { join, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
 
-const FROZEN = ["src/app/api/search/route.ts"];
+const FROZEN = [
+  // The draft-only document assist: a POST that writes nothing. Under
+  // `requireAuth` the declaration only keeps it out of the shared write
+  // ceiling; there is no grant for it to widen.
+  "src/app/api/documents/inbound/[id]/suggest/route.ts",
+  "src/app/api/search/route.ts",
+];
 
 describe("readOverPost declarations", () => {
   it("are exactly the frozen set", () => {

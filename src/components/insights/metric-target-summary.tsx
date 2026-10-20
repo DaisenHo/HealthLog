@@ -7,7 +7,7 @@ import { ExternalLink, Target } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { queryKeys } from "@/lib/query-keys";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { resolveTargetUnitAdapter } from "@/lib/targets/target-unit-display";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RangeBar } from "@/components/targets/range-bar";
@@ -18,6 +18,7 @@ import { useTargetAdjust } from "@/lib/insights/target-adjust-context";
 import { getTargetSourceLink } from "@/lib/targets/source-link";
 import { apiGet } from "@/lib/api/api-fetch";
 import { resolveGlucoseUnit, type GlucoseUnit } from "@/lib/glucose";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * v1.8.0 → v1.8.5 — surface the per-metric target reference panel on each
@@ -231,6 +232,7 @@ function TargetReferencePanel({
   glucoseUnit: payloadGlucoseUnit,
 }: TargetReferencePanelProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const adjust = useTargetAdjust();
   const { preference, glucoseUnit: accountGlucoseUnit } = useUnitDisplay();
   const glucoseUnit = payloadGlucoseUnit ?? accountGlucoseUnit;
@@ -314,7 +316,7 @@ function TargetReferencePanel({
     const avgValue =
       bpDiastolic?.average30 != null
         ? `${Math.round(average30)}/${Math.round(bpDiastolic.average30)}`
-        : String(Math.round(average30 * 10) / 10);
+        : fmt.number(Math.round(average30 * 10) / 10);
     averageLabel = `${t("targets.average30d")} ${avgValue} ${unit}`;
   }
 
@@ -331,7 +333,7 @@ function TargetReferencePanel({
     <Card
       data-slot="metric-target-summary"
       data-target-type={target.type}
-      className="gap-2 py-3 md:py-4"
+      density="compact"
     >
       {/* Row 1: the canonical tile header — a single-word "Ziel" / "Target"
           heading (the range numbers live on the range bar below, so the
@@ -365,16 +367,25 @@ function TargetReferencePanel({
         ) : null}
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Row 2: range bar — where today's value sits inside the band. */}
+        {/* Row 2: range bar — where today's value sits inside the band.
+          Blood pressure stacks two bars, so each one names its reading;
+          an unlabelled first bar read as the diastolic one's sibling. */}
         {currentValue != null ? (
-          <RangeBar
-            value={currentValue}
-            min={range.min}
-            max={range.max}
-            unit={unit}
-            orangeMin={isMedicationCompliance ? 70 : undefined}
-            orangeMax={isMedicationCompliance ? 100 : undefined}
-          />
+          <div className={isBp ? "space-y-1" : undefined}>
+            {isBp ? (
+              <p className="text-muted-foreground text-xs">
+                {t("targets.systolic")}
+              </p>
+            ) : null}
+            <RangeBar
+              value={currentValue}
+              min={range.min}
+              max={range.max}
+              unit={unit}
+              orangeMin={isMedicationCompliance ? 70 : undefined}
+              orangeMax={isMedicationCompliance ? 100 : undefined}
+            />
+          </div>
         ) : null}
 
         {/* Row 2b: diastolic range bar for blood pressure. */}
@@ -415,19 +426,16 @@ function TargetReferencePanel({
           panel registers itself as that gear's edit target above. */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-0.5">
           {sourceLink ? (
-            <a
-              href={sourceLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-            >
-              <span>
-                {t("targets.sourceLabel", {
-                  source: sourceName(target.source, t),
-                })}
-              </span>
-              <ExternalLink className="size-3" aria-hidden="true" />
-            </a>
+            <InlineAction asChild tone="muted">
+              <a href={sourceLink} target="_blank" rel="noopener noreferrer">
+                <span>
+                  {t("targets.sourceLabel", {
+                    source: sourceName(target.source, t),
+                  })}
+                </span>
+                <ExternalLink className="size-3" aria-hidden="true" />
+              </a>
+            </InlineAction>
           ) : (
             <span className="text-muted-foreground text-xs">
               {t("targets.sourceLabel", {

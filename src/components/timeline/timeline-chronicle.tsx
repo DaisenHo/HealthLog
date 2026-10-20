@@ -222,7 +222,7 @@ export function TimelineChronicle({
   return (
     <div className="space-y-4" data-slot="timeline-chronicle">
       {chips.length > 0 && (
-        <Card className="gap-2 py-3" data-slot="timeline-standing">
+        <Card density="compact" data-slot="timeline-standing">
           <button
             type="button"
             aria-expanded={standingOpen}

@@ -36,7 +36,7 @@ import {
 import { ReportScopePicker } from "@/components/settings/report-selection/report-scope-picker";
 import { ScopeSummary } from "@/components/settings/report-selection/scope-summary";
 import type { ReportLeafId } from "@/lib/report-selection/catalogue";
-import { orderLeaves } from "@/lib/report-selection/selection";
+import { orderLeaves } from "@/lib/report-selection/catalogue";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiPost } from "@/lib/api/api-fetch";

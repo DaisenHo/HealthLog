@@ -57,7 +57,7 @@ export function Glp1PlateauNote() {
   const dose = `${plateau.drug} ${plateau.doseValue} ${plateau.doseUnit}`;
 
   return (
-    <Card className="gap-2 py-3 md:py-4" data-slot="glp1-plateau-note">
+    <Card density="compact" data-slot="glp1-plateau-note">
       <CardHeader>
         <TileHeader
           size="sm"

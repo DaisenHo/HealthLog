@@ -8,6 +8,7 @@ import {
   STAGE_ORDER,
   buildCompositionRows,
   compositionTotals,
+  stagesInWindow,
   windowHasNap,
   type SleepStageBreakdown,
   type SleepStageNight,
@@ -182,10 +183,10 @@ describe("<SleepStageStackedBar>", () => {
       expect(html).toContain('data-slot="sleep-stage-window-30"');
       // The 7d button is default-active.
       expect(html).toMatch(
-        /data-slot="sleep-stage-window-7"[^>]*aria-pressed="true"/,
+        /aria-pressed="true"[^>]*data-slot="sleep-stage-window-7"/,
       );
       expect(html).toMatch(
-        /data-slot="sleep-stage-window-14"[^>]*aria-pressed="false"/,
+        /aria-pressed="false"[^>]*data-slot="sleep-stage-window-14"/,
       );
     });
 
@@ -341,5 +342,51 @@ describe("nap band", () => {
     expect(windowHasNap(buildCompositionRows(perNight, 2, label).rows)).toBe(
       false,
     );
+  });
+});
+
+describe("legend follows the visible stages", () => {
+  const label = (dayKey: string) => dayKey;
+
+  it("leaves a stage the window never holds out of the mounted bands", () => {
+    // A staged week: deep, REM, core and wake bouts, no unspecified "asleep"
+    // minutes. Every mounted band is a legend entry, so ASLEEP must not be one.
+    const perNight: SleepStageNight[] = [
+      {
+        dayKey: "2026-06-03",
+        stages: { DEEP: 60, REM: 90, CORE: 250, AWAKE: 15 },
+      },
+      { dayKey: "2026-06-04", stages: { DEEP: 55, REM: 80, CORE: 260 } },
+    ];
+    const { rows } = buildCompositionRows(perNight, 7, label);
+    expect(stagesInWindow(rows)).toEqual(["DEEP", "REM", "CORE", "AWAKE"]);
+  });
+
+  it("keeps the unspecified stage when an older source sends it", () => {
+    const perNight: SleepStageNight[] = [
+      { dayKey: "2026-06-03", stages: { ASLEEP: 410, AWAKE: 20 } },
+    ];
+    const { rows } = buildCompositionRows(perNight, 7, label);
+    expect(stagesInWindow(rows)).toEqual(["ASLEEP", "AWAKE"]);
+  });
+
+  it("keeps the stack order whatever order the payload uses", () => {
+    const perNight: SleepStageNight[] = [
+      { dayKey: "2026-06-03", stages: { AWAKE: 10, CORE: 200, DEEP: 40 } },
+    ];
+    const { rows } = buildCompositionRows(perNight, 7, label);
+    expect(stagesInWindow(rows)).toEqual(["DEEP", "CORE", "AWAKE"]);
+  });
+
+  it("follows the window, not the whole series", () => {
+    const perNight: SleepStageNight[] = [
+      { dayKey: "2026-05-01", stages: { ASLEEP: 400 } },
+      ...Array.from({ length: 7 }, (_, i) => ({
+        dayKey: `2026-06-0${i + 1}`,
+        stages: { CORE: 250, DEEP: 50 },
+      })),
+    ];
+    const { rows } = buildCompositionRows(perNight, 7, label);
+    expect(stagesInWindow(rows)).toEqual(["DEEP", "CORE"]);
   });
 });

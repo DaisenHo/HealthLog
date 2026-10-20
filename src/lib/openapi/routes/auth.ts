@@ -1708,7 +1708,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "List recent account-security activity",
       description:
-        "v1.23 — the SHARED security-activity feed: the caller's recent auth + export + deletion audit events with timestamp, resolved location, and a host-masked IP. `limit` query param caps at 100 (default 50). Reuses the AuditLog store; no event detail bodies are surfaced.",
+        "v1.23 — the SHARED security-activity feed: the caller's recent auth + export + deletion audit events with timestamp, resolved location, and a host-masked IP. `limit` is 1-100 (default 50); a value outside that is a 422 naming it. Reuses the AuditLog store; no event detail bodies are surfaced.",
       requestParams: {
         query: z.object({
           limit: z.coerce
@@ -1717,7 +1717,9 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .min(1)
             .max(100)
             .optional()
-            .describe("Page size; defaults to 50, clamped to 100."),
+            .describe(
+              "Page size, 1-100; defaults to 50. Out of range is a 422.",
+            ),
         }),
       },
       responses: {

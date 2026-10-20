@@ -39,6 +39,7 @@ import type {
   CoachProvenanceMetric,
 } from "@/lib/ai/coach/types";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * Per-message bubble renderer for the Coach thread, split out of
@@ -775,13 +776,11 @@ function ChatBubbleImpl({
             setup instead of inviting an endless retry. */}
         {(errorCode === "coach.provider.none" ||
           errorCode === "ai.provider.none") && (
-          <Link
-            href="/settings/ai"
-            data-slot="coach-no-provider-cta"
-            className="text-primary text-xs font-medium underline-offset-4 hover:underline"
-          >
-            {t("insights.coach.errorNoProviderAction")}
-          </Link>
+          <InlineAction asChild className="font-medium">
+            <Link href="/settings/ai" data-slot="coach-no-provider-cta">
+              {t("insights.coach.errorNoProviderAction")}
+            </Link>
+          </InlineAction>
         )}
         {/* v1.18.1 — one-tap cadence-suggestion action
             card. Live from the streaming hook, or restored from the

@@ -31,11 +31,8 @@ import { cn } from "@/lib/utils";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import { DOCUMENT_KIND_ICONS } from "./document-kind-meta";
 import type { UploadQueueItem } from "./use-document-upload";
-import {
-  documentCardKeyAction,
-  formatBytes,
-  isDocumentProcessing,
-} from "./vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
+import { documentCardKeyAction, isDocumentProcessing } from "./vault-utils";
 
 /** How long the "Ready" chip stays up after a card's index lands. */
 const READY_FLASH_MS = 3000;
@@ -183,7 +180,12 @@ export function DocumentCard({
 
   const titleBlock = (
     <div className="flex min-w-0 flex-1 flex-col">
-      <p className="truncate text-sm font-medium">{title}</p>
+      <p
+        className="line-clamp-2 text-sm font-medium break-words hyphens-auto"
+        title={title}
+      >
+        {title}
+      </p>
       <p className="text-muted-foreground truncate text-xs">
         {/* v1.42 — a dated document's date opens its day, above the
             whole-card button. It follows the grid's roving tab stop, so the
@@ -220,8 +222,9 @@ export function DocumentCard({
       data-slot="document-card"
       data-variant={variant}
       data-document-id={document.id}
+      density="compact"
       className={cn(
-        "group relative h-full gap-2 py-3 transition-shadow md:py-4",
+        "group relative h-full transition-shadow",
         "hover:shadow-sm",
         highlighted && "ring-primary ring-2",
       )}

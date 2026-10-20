@@ -13,7 +13,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@/components/ui/button";
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import {
@@ -32,6 +31,8 @@ import {
 import { dateKeyOfInstant } from "../day/day-url";
 import { formatMetricValue } from "./format-value";
 import type { CustomMetricEntryDto } from "./types";
+import { Segmented } from "@/components/ui/segmented";
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
 /**
  * v1.25.5 — per-custom-metric trend chart, in the dashboard's visual language.
@@ -121,7 +122,11 @@ export function CustomMetricChart({
     focusFor: (index) => {
       const point = points[index];
       return point
-        ? { label: name, value: formatMetricValue(point.value, decimals), unit }
+        ? {
+            label: name,
+            value: formatMetricValue(point.value, decimals, fmt.number),
+            unit,
+          }
         : null;
     },
   });
@@ -133,25 +138,21 @@ export function CustomMetricChart({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end gap-1">
-        {RANGE_DAYS.map((r) => (
-          <Button
-            key={r.key}
-            size="sm"
-            variant={range === r.key ? "secondary" : "ghost"}
-            aria-pressed={range === r.key}
-            className="h-7 px-2 text-xs"
-            onClick={() => setRange(r.key)}
-          >
-            {t(`customMetrics.chart.range.${r.key}`)}
-          </Button>
-        ))}
+      <div className="flex justify-end">
+        <Segmented
+          options={RANGE_DAYS.map((r) => ({
+            value: r.key,
+            label: t(`customMetrics.chart.range.${r.key}`),
+          }))}
+          value={range}
+          onChange={setRange}
+          label={t("charts.rangeLabel")}
+          slot="custom-metric-chart-range"
+        />
       </div>
 
       {points.length === 0 ? (
-        <p className="text-muted-foreground py-10 text-center text-sm">
-          {t("customMetrics.chart.empty")}
-        </p>
+        <ChartEmptyState title={t("customMetrics.chart.empty")} height={160} />
       ) : (
         <div>
           <div
@@ -187,7 +188,9 @@ export function CustomMetricChart({
                   tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   stroke="var(--border)"
                   width={44}
-                  tickFormatter={(v: number) => formatMetricValue(v, decimals)}
+                  tickFormatter={(v: number) =>
+                    formatMetricValue(v, decimals, fmt.number)
+                  }
                 />
                 {targetLow != null && targetHigh != null ? (
                   <ReferenceArea
@@ -230,7 +233,7 @@ export function CustomMetricChart({
                     const rows: RichTooltipRow[] = [
                       {
                         name: t("customMetrics.chart.valueLabel"),
-                        value: `${formatMetricValue(point.value, decimals)} ${unit}`,
+                        value: `${formatMetricValue(point.value, decimals, fmt.number)} ${unit}`,
                         color: primary,
                       },
                     ];
@@ -272,7 +275,9 @@ export function CustomMetricChart({
             }))}
             columns={[{ key: "value", label: name }]}
             unit={unit}
-            formatValue={(value) => formatMetricValue(value, decimals)}
+            formatValue={(value) =>
+              formatMetricValue(value, decimals, fmt.number)
+            }
             formatDate={(date) => fmt.dateShortSmartCalendar(date)}
             bucket="day"
             metricLabel={name}

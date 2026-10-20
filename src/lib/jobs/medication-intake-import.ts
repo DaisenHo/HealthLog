@@ -9,15 +9,10 @@ import { jobBudget } from "@/lib/jobs/job-budget";
 import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
 import { consumeImportedIntakesBatch } from "@/lib/medications/inventory/consumption";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
-import {
-  dayKeyForScheduledFor,
-  recomputeMedicationComplianceForDay,
-} from "@/lib/rollups/medication-compliance-rollups";
 
 export const MEDICATION_INTAKE_IMPORT_QUEUE = "medication-intake-import";
 export const MEDICATION_INTAKE_IMPORT_CONCURRENCY = 2;
 export const MEDICATION_INTAKE_IMPORT_CHUNK_SIZE = 100;
-export const MEDICATION_INTAKE_IMPORT_ROLLUP_CHUNK_SIZE = 20;
 export const MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS = 15 * 60_000;
 
 export const MEDICATION_INTAKE_IMPORT_SEND_OPTIONS = {
@@ -136,6 +131,11 @@ export interface MedicationImportProgress {
   skipDetails?: MedicationImportSkipDetail[];
   /** Details beyond the hard cap, counted without retaining their contents. */
   skippedDetailsOmitted?: number;
+  /**
+   * Wire fields of the dropped compliance rollup's recompute phase. A job
+   * admitted now carries `[]` and `0` and the worker never advances them;
+   * they stay on the published progress shape for clients that decode it.
+   */
   touchedDays: string[];
   rollupProcessed: number;
 }
@@ -218,7 +218,6 @@ export interface MedicationImportChunkResult {
   imported: number;
   skippedByReason: MedicationImportSkipCounts;
   skipDetails?: MedicationImportSkipDetail[];
-  touchedDays: string[];
 }
 
 let workerPrismaSingleton: PrismaClient | null = null;
@@ -251,15 +250,6 @@ export function advanceMedicationImportProgress(
     previous.total,
     previous.processed + Math.max(0, Math.trunc(chunk.processed)),
   );
-  const touchedDays = [...previous.touchedDays];
-  const seenDays = new Set(touchedDays);
-  for (const day of chunk.touchedDays) {
-    if (!seenDays.has(day)) {
-      seenDays.add(day);
-      touchedDays.push(day);
-    }
-  }
-
   const skippedByReason: MedicationImportSkipCounts = {
     ...previous.skippedByReason,
   };
@@ -293,7 +283,7 @@ export function advanceMedicationImportProgress(
         }
       : {}),
     rollupProcessed: previous.rollupProcessed,
-    touchedDays,
+    touchedDays: previous.touchedDays,
   };
 }
 
@@ -503,67 +493,6 @@ interface ProcessChunkOutcome {
   userId: string | null;
 }
 
-/**
- * A day whose compliance rollup an import invalidated, as one string.
- *
- * A job can now span a whole regimen, so a bare day key no longer identifies
- * what to recompute — two medications touched on the same day are two rollup
- * rows. The medication is folded in ahead of a single space, which occurs in
- * neither a cuid nor a `YYYY-MM-DD` key. Not a NUL byte: this value is persisted
- * in the progress blob and Postgres rejects a NUL byte inside a jsonb string.
- */
-const TOUCHED_DAY_SEPARATOR = " ";
-
-function encodeTouchedDay(medicationId: string, dayKey: string): string {
-  return `${medicationId}${TOUCHED_DAY_SEPARATOR}${dayKey}`;
-}
-
-/**
- * Split a stored touched-day back into its parts.
- *
- * A value with no separator was written before a job could span more than one
- * medication, so it is a bare day key belonging to the job's own medication.
- * Returns null when neither reading yields a medication — a per-medication job
- * that lost its medication cannot be resolved and the day is left alone rather
- * than recomputed against a guess.
- */
-function decodeTouchedDay(
-  value: string,
-  fallbackMedicationId: string | null,
-): { medicationId: string; dayKey: string } | null {
-  const separator = value.indexOf(TOUCHED_DAY_SEPARATOR);
-  if (separator === -1) {
-    if (!fallbackMedicationId) return null;
-    return { medicationId: fallbackMedicationId, dayKey: value };
-  }
-  const medicationId = value.slice(0, separator);
-  const dayKey = value.slice(separator + 1);
-  if (medicationId.length === 0 || dayKey.length === 0) return null;
-  return { medicationId, dayKey };
-}
-
-async function recomputeTouchedDays(
-  client: Pick<PrismaClient, "$executeRaw">,
-  userId: string,
-  jobMedicationId: string | null,
-  timezone: string,
-  days: readonly string[],
-): Promise<void> {
-  await Promise.all(
-    days.map((day) => {
-      const decoded = decodeTouchedDay(day, jobMedicationId);
-      if (!decoded) return Promise.resolve();
-      return recomputeMedicationComplianceForDay(
-        userId,
-        decoded.medicationId,
-        decoded.dayKey,
-        timezone,
-        client,
-      );
-    }),
-  );
-}
-
 async function processNextChunk(
   client: PrismaClient,
   jobId: string,
@@ -587,7 +516,6 @@ async function processNextChunk(
 
       const row = await tx.medicationIntakeImportJob.findUnique({
         where: { id: jobId },
-        include: { recordUser: { select: { timezone: true } } },
       });
       if (!row || row.status === "done" || row.status === "failed") {
         return {
@@ -601,40 +529,6 @@ async function processNextChunk(
       const payload = parsePayload(row.payload);
       const progress = parseProgress(row.progress, payload.entries.length);
       if (progress.processed >= progress.total) {
-        const rollupDays = progress.touchedDays.slice(
-          progress.rollupProcessed,
-          progress.rollupProcessed + MEDICATION_INTAKE_IMPORT_ROLLUP_CHUNK_SIZE,
-        );
-        await recomputeTouchedDays(
-          tx,
-          row.recordUserId,
-          row.medicationId,
-          row.recordUser.timezone,
-          rollupDays,
-        );
-        const finalizedProgress: MedicationImportProgress = {
-          ...progress,
-          rollupProcessed: progress.rollupProcessed + rollupDays.length,
-        };
-        if (finalizedProgress.rollupProcessed < progress.touchedDays.length) {
-          const heartbeatAt = new Date();
-          await tx.medicationIntakeImportJob.update({
-            where: { id: row.id },
-            data: {
-              status: "running",
-              progress: toJson(finalizedProgress),
-              heartbeatAt,
-              startedAt: row.startedAt ?? heartbeatAt,
-              failureReason: null,
-            },
-          });
-          return {
-            terminal: false,
-            finalized: false,
-            result: null,
-            userId: row.recordUserId,
-          };
-        }
         const result: MedicationImportResult = {
           imported: progress.imported,
           skipped: totalMedicationImportSkips(progress.skippedByReason),
@@ -665,7 +559,7 @@ async function processNextChunk(
           data: {
             status: "done",
             result: toJson(result),
-            progress: toJson(finalizedProgress),
+            progress: toJson(progress),
             failureReason: null,
             heartbeatAt: completedAt,
             completedAt,
@@ -782,12 +676,6 @@ async function processNextChunk(
         });
       }
 
-      const touchedDays = created.map((event) =>
-        encodeTouchedDay(
-          event.medicationId,
-          dayKeyForScheduledFor(event.scheduledFor, row.recordUser.timezone),
-        ),
-      );
       // Two different facts, counted apart. The Map collapse above is entries
       // of this submission that resolve to the same instant; `skipDuplicates`
       // then drops whatever the ledger already holds for that instant, from an
@@ -803,7 +691,6 @@ async function processNextChunk(
           already_recorded: uniqueEntries.length - created.length,
         },
         skipDetails: [...duplicateDetails, ...alreadyRecordedDetails],
-        touchedDays,
       });
       const heartbeatAt = new Date();
       await tx.medicationIntakeImportJob.update({

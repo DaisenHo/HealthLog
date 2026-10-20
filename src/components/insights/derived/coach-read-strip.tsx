@@ -118,7 +118,7 @@ export function CoachReadStrip({
         data-slot="coach-read-strip"
         data-state={isError ? "error" : "loading"}
         aria-busy={isError ? undefined : "true"}
-        className="gap-2 py-3 md:py-4"
+        density="compact"
       >
         <CardHeader>
           <TileHeader
@@ -243,7 +243,7 @@ export function CoachReadStrip({
   // text edge ~8 px left of the card norm on md+. Body prose in the
   // regular foreground; muted stays reserved for meta lines.
   return (
-    <Card data-slot="coach-read-strip" className="gap-2 py-3 md:py-4">
+    <Card data-slot="coach-read-strip" density="compact">
       <CardHeader>
         <TileHeader
           icon={Sparkles}

@@ -17,6 +17,7 @@
  * — with a prettified-enum fallback for any unmapped type, so a newly added
  * measurement type degrades gracefully instead of leaking an enum constant.
  */
+import { formatDecimal } from "@/lib/format-locale";
 import type { PeriodNarrativeContext, MetricDelta } from "./period-narrative";
 
 /** Marker stored in `InsightNarrative.providerType` for a fallback row. */
@@ -79,14 +80,9 @@ function labelFor(type: string, locale: Locale): string {
 /** Format a signed number with the locale's decimal mark (no thousands sep). */
 function fmtSigned(n: number, locale: Locale): string {
   const sign = n > 0 ? "+" : n < 0 ? "−" : "±"; // U+2212 minus for typography
-  const abs = Math.abs(n);
-  // Integers print verbatim; fractions print at 2dp with trailing zeros
-  // trimmed (so 1.20 → 1.2, 1.50 → 1.5) WITHOUT touching integer zeros.
-  const s = Number.isInteger(abs)
-    ? String(abs)
-    : abs.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-  const localised = locale === "de" ? s.replace(".", ",") : s;
-  return `${sign}${localised}`;
+  // At most two decimals, trailing zeros trimmed (1.20 → 1.2), in the
+  // reader's notation in every language, not only German.
+  return `${sign}${formatDecimal(Math.abs(n), locale, 2)}`;
 }
 
 /** A delta is "notable" when it has a computable, non-zero change. */

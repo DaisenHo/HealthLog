@@ -23,14 +23,6 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
-// v1.37.19 — the zone change enqueues a compliance re-fold.
-const refoldMock = vi.hoisted(() =>
-  vi.fn(async () => ({ enqueued: true, error: null })),
-);
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  enqueueUserMedicationComplianceBackfill: refoldMock,
-}));
-
 // The supplement nutrient rows are keyed by the same local day.
 const nutrientMock = vi.hoisted(() => vi.fn(async () => ({ queued: true })));
 vi.mock("@/lib/medications/ingredients/recompute-job", () => ({
@@ -110,11 +102,9 @@ describe("PUT /api/auth/me/timezone", () => {
     expect(res.status).toBe(422);
   });
 
-  // Watched red: with the re-fold enqueue removed from the route (the
-  // pre-v1.37.19 write), the changed-zone case fails — the compliance
-  // rollup's day keys were minted under the old zone and nothing ever
-  // re-bucketed them (the coverage probe compares counts, not keys).
-  it("enqueues a compliance re-fold when the zone actually changes", async () => {
+  // The supplement nutrient rows' day keys were minted under the old zone;
+  // without the enqueue nothing re-buckets them.
+  it("enqueues the nutrient recompute when the zone actually changes", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       timezone: "Europe/Berlin",
@@ -123,11 +113,10 @@ describe("PUT /api/auth/me/timezone", () => {
 
     const res = await PUT(mkReq({ timezone: "America/New_York" }));
     expect(res.status).toBe(200);
-    expect(refoldMock).toHaveBeenCalledWith("user-1");
     expect(nutrientMock).toHaveBeenCalledWith("user-1");
   });
 
-  it("does not re-fold when the zone is unchanged", async () => {
+  it("does not recompute when the zone is unchanged", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       timezone: "Europe/Berlin",
@@ -136,7 +125,6 @@ describe("PUT /api/auth/me/timezone", () => {
 
     const res = await PUT(mkReq({ timezone: "Europe/Berlin" }));
     expect(res.status).toBe(200);
-    expect(refoldMock).not.toHaveBeenCalled();
     expect(nutrientMock).not.toHaveBeenCalled();
   });
 

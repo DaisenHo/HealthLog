@@ -75,14 +75,15 @@ import type { InboundDocumentKindValue } from "@/lib/validations/inbound-documen
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 
-import { formatBytes } from "../vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
 import {
   errorCodeOf,
   isStoppingError,
   sourceErrorMessage,
 } from "./source-errors";
-import { SegmentedChoice } from "./segmented-choice";
+import { Segmented } from "@/components/ui/segmented";
 import { systemName } from "./use-document-sources";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export interface DocumentPickerLink {
   kind: DocumentPickerLinkKind;
@@ -408,13 +409,16 @@ export function DocumentSourcePicker({
     >
       <div className="space-y-3" data-slot="document-source-picker">
         {systems.length > 1 && active ? (
-          <SegmentedChoice
-            options={systems}
+          <Segmented
+            options={systems.map((system) => ({
+              value: system,
+              label: systemName(system),
+            }))}
             value={active}
             onChange={switchSystem}
             label={t("documents.sourcePicker.sourceLabel")}
             disabled={running}
-            renderOption={systemName}
+            className="self-start"
           />
         ) : null}
 
@@ -485,19 +489,19 @@ export function DocumentSourcePicker({
           </div>
         </div>
         {hasFilters ? (
-          <button
-            type="button"
+          <InlineAction
+            tone="muted"
             onClick={() => {
               startOver();
               setTag("");
               setFrom("");
               setTo("");
             }}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-8 items-center gap-1 rounded-sm text-xs underline-offset-2 hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
+            className="min-h-8"
           >
             <X className="size-3.5" aria-hidden />
             {t("documents.sourcePicker.clearFilters")}
-          </button>
+          </InlineAction>
         ) : null}
 
         {finished ? (

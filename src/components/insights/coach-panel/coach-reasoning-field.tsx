@@ -38,7 +38,7 @@ import {
   type ReasoningLevel,
 } from "@/lib/ai/reasoning/levels";
 import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
-import { coachReasoningLevel } from "@/lib/validations/coach-prefs";
+import { coachReasoningLevel } from "@/lib/ai/coach/prefs-constants";
 
 export type { CoachReasoningState };
 

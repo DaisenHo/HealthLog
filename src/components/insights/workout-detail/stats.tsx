@@ -28,6 +28,7 @@ import {
   formatPace,
   formatDurationMinutes,
 } from "./format";
+import { InlineAction } from "@/components/ui/inline-action";
 
 interface StatTileProps {
   icon: ReactNode;
@@ -199,14 +200,15 @@ export function WorkoutDetailStats({ workout }: WorkoutDetailStatsProps) {
               <span className="min-w-0 flex-1" />
             )}
             {workout.previousWorkoutId ? (
-              <Link
-                href={`/insights/workouts/${workout.previousWorkoutId}`}
-                data-slot="workout-detail-previous-link"
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex shrink-0 items-center gap-1.5 text-xs underline-offset-4 transition-colors hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
-              >
-                {t("insights.workouts.detail.previousSessionLink")}
-                <ArrowRight className="size-3.5" aria-hidden="true" />
-              </Link>
+              <InlineAction asChild tone="muted" className="shrink-0 gap-1.5">
+                <Link
+                  href={`/insights/workouts/${workout.previousWorkoutId}`}
+                  data-slot="workout-detail-previous-link"
+                >
+                  {t("insights.workouts.detail.previousSessionLink")}
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                </Link>
+              </InlineAction>
             ) : null}
           </div>
         ) : null}

@@ -38,7 +38,8 @@ import {
   resolveRecordBenchmark,
 } from "@/lib/personal-records/record-benchmark";
 import { toProfileSex } from "@/lib/profile/sex";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const dynamic = "force-dynamic";
 
@@ -63,15 +64,16 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const { metricType, limit } = parsed.data;
 
-  const found = await prisma.personalRecord.findMany({
-    where: {
-      userId: user.id,
-      ...(metricType ? { metricType } : {}),
-    },
-    orderBy: { achievedAt: "desc" },
-    take: overfetch(limit),
-  });
-  const { rows: records, cap } = capRows(found, limit);
+  const { rows: records, cap } = await listPage(limit, (take) =>
+    prisma.personalRecord.findMany({
+      where: {
+        userId: user.id,
+        ...(metricType ? { metricType } : {}),
+      },
+      orderBy: [{ achievedAt: "desc" }, { id: "desc" }],
+      take,
+    }),
+  );
 
   const wantsBand = records.some((r) => mayCarryBenchmark(r.metricType));
   const profile = wantsBand

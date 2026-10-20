@@ -9,7 +9,6 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
 import { serialiseCustomMetricEntry } from "@/lib/custom-metrics/custom-metric-store";
@@ -108,15 +107,6 @@ async function postCustomMetricEntry(
   // was never wrong, and the GET arm above stays delegable meanwhile.
   const { user } = await requireAuth();
 
-  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
-  // batch siblings have always been capped; the per-record creates a looping
-  // client hits were not.
-  const writeRl = await checkRecordWriteRateLimit(user.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
   const { id } = await params;
 
   const metric = await prisma.customMetric.findFirst({

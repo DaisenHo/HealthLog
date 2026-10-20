@@ -59,3 +59,10 @@ export const COACH_SCOPE_SOURCES = [
   // Workout model (read from the `Workout` table, not `Measurement`).
   "workouts",
 ] as const;
+
+/**
+ * Maximum user-visible length for generated and explicitly renamed
+ * conversation titles. Here rather than in the schema module so the rename
+ * field reads it without the schema library.
+ */
+export const COACH_CONVERSATION_TITLE_MAX = 80;

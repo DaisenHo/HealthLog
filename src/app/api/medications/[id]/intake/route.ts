@@ -10,7 +10,6 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import {
   intakeSchema,
   listIntakeEventsSchema,
@@ -36,7 +35,7 @@ import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake
 import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
 import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
   findPinConflict,
@@ -61,16 +60,6 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     "write",
     "medications",
   );
-
-  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
-  // batch siblings have always been capped; the per-record creates a looping
-  // client hits were not.
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
 
   // v1.36.1 — the sibling route `POST /api/medications/intake`
   // refuses a delegate changing a dose the owner already recorded. This route
@@ -608,7 +597,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   // v1.4.39 — refresh the persistent compliance rollup for the
   // affected day. The hook is best-effort; failures annotate but never
   // block the user's POST response.
-  await recomputeMedicationComplianceForEvent({
+  await refreshDoseSlot({
     userId: user.id,
     medicationId: id,
     scheduledFor: event.scheduledFor,

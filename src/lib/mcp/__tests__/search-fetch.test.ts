@@ -53,6 +53,7 @@ import { MCP_TOOLS } from "../tools";
 import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
 import { prisma } from "@/lib/db";
+import { loadRecordCandidates } from "@/lib/mcp/record-search";
 import {
   USER_TEXT_FENCE_START,
   USER_TEXT_FENCE_END,
@@ -134,6 +135,37 @@ describe("search", () => {
     expect(result.results.map((r) => r.id)).toContain("lab:LDL");
     expect(result.results.some((r) => r.id.startsWith("med:"))).toBe(false);
   });
+  it("says the search was assembled from a cut read, on every page", async () => {
+    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+      entries: [],
+      window: "90d",
+      restMode: false,
+      cycleEnabled: false,
+    } as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.labResult.findMany).mockResolvedValue([]);
+    vi.mocked(loadRecordCandidates).mockImplementationOnce(
+      async (_userId, _query, _origin, options) => {
+        options?.onTruncated?.("visit");
+        return [];
+      },
+    );
+
+    const cut = (await tool("search").run(CTX, { query: "cardio" })) as {
+      truncated: boolean;
+      truncatedSources?: string[];
+    };
+    expect(cut.truncated).toBe(true);
+    expect(cut.truncatedSources).toEqual(["visit"]);
+
+    const whole = (await tool("search").run(CTX, { query: "cardio" })) as {
+      truncated: boolean;
+      truncatedSources?: string[];
+    };
+    expect(whole.truncated).toBe(false);
+    expect(whole).not.toHaveProperty("truncatedSources");
+  });
+
   it("keeps distinct lab analytes stable across cursor pages", async () => {
     vi.mocked(buildCoachDataInventory).mockResolvedValue({
       entries: [],

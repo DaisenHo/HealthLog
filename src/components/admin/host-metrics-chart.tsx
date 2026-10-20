@@ -47,6 +47,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiGet } from "@/lib/api/api-fetch";
 import { readStoredTimezone } from "@/lib/timezone-mirror";
+import { resolveIntlLocale } from "@/lib/format-locale";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface HostMetricsApiSample {
   capturedAt: string;
@@ -89,7 +91,10 @@ const COLOR_DISK = "var(--dracula-purple)";
  * + the absolute peak BPS used to scale `diskBusyPercent`. Kept as a
  * separate export so the test suite doesn't need to render Recharts.
  */
-export function buildChartRows(samples: HostMetricsApiSample[]): {
+export function buildChartRows(
+  samples: HostMetricsApiSample[],
+  intlLocale?: string,
+): {
   rows: ChartRow[];
   peakDiskBps: number;
   hasDiskData: boolean;
@@ -104,7 +109,7 @@ export function buildChartRows(samples: HostMetricsApiSample[]): {
   // samples), and an operator reading their own instance should see the same
   // clock here as on every other timestamp in the admin area — a spike at
   // "14:20" must not be 14:20 here and 15:20 two screens away.
-  const formatter = new Intl.DateTimeFormat(undefined, {
+  const formatter = new Intl.DateTimeFormat(intlLocale ?? "en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -141,7 +146,7 @@ export function buildChartRows(samples: HostMetricsApiSample[]): {
 }
 
 export function HostMetricsChart() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -156,8 +161,8 @@ export function HostMetricsChart() {
   });
 
   const { rows, peakDiskBps, hasDiskData } = useMemo(
-    () => buildChartRows(data?.samples ?? []),
-    [data?.samples],
+    () => buildChartRows(data?.samples ?? [], resolveIntlLocale(locale)),
+    [data?.samples, locale],
   );
 
   // Total physical memory (latest sample) — lets the tooltip pair the
@@ -223,9 +228,11 @@ export function HostMetricsChart() {
             </span>
           }
         />
-        <p className="text-muted-foreground text-xs">
-          {t("admin.hostMetrics.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("admin.hostMetrics.empty")}
+        />
       </SettingsCard>
     );
   }

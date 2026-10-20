@@ -308,9 +308,7 @@ describe("<VisitsSection> since the last visit", () => {
         html.indexOf("since-last-visit-"),
       ),
     );
-    expect(card).toMatch(
-      /^<div data-slot="card" class="[^"]*gap-2 py-3 md:py-4/,
-    );
+    expect(card).toMatch(/^<div data-slot="card" data-density="compact"/);
     expect(card).toContain('data-slot="tile-header"');
     expect(card).toMatch(
       /<h3 id="since-last-visit-[^"]+" data-slot="card-title" class="[^"]*text-sm/,

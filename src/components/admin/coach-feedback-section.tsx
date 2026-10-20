@@ -28,6 +28,7 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { helpfulRateColour } from "./_shared";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface CoachFeedbackBucket {
   promptVersion: string;
@@ -105,9 +106,11 @@ export function CoachFeedbackSection() {
           onRetry={() => void query.refetch()}
         />
       ) : !hasData ? (
-        <p className="text-muted-foreground text-sm">
-          {t("admin.coachFeedback.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("admin.coachFeedback.empty")}
+        />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-slot="coach-feedback-table">
