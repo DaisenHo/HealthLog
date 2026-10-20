@@ -70,23 +70,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const userId = verified.userId;
 
-  return runOAuthCallbackOnce(
-    "oura",
-    state,
-    {
-      fallbackUrl: SETTINGS_URL(),
-      stateCookie: oauthStateCookieName("oura"),
-    },
-    () => completeCallback(request, userId),
-  );
-});
-
-async function completeCallback(
-  request: NextRequest,
-  userId: string,
-): Promise<NextResponse> {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get("code");
+  // Everything that can refuse the callback without the code runs before
+  // the claim, so a refused callback (a denied consent arrives without a
+  // code) never spends the state: the same authorize URL still works. The
+  // claim stays strictly before the exchange.
+  const params = new URL(request.url).searchParams;
+  const code = params.get("code");
 
   const evt = getEvent();
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
@@ -102,12 +91,28 @@ async function completeCallback(
   // RFC 9207: an authorization server that names itself must be Oura's. The
   // issuer also tells which token endpoint the code belongs to. Older apps
   // send none, which is fine.
-  const iss = searchParams.get("iss");
+  const iss = params.get("iss");
   if (!isAcceptedOuraIssuer(iss)) {
     annotate({ meta: { reason: "issuer" } });
     return ERR("issuer");
   }
 
+  return runOAuthCallbackOnce(
+    "oura",
+    state,
+    {
+      fallbackUrl: SETTINGS_URL(),
+      stateCookie: oauthStateCookieName("oura"),
+    },
+    () => completeCallback(userId, code, iss),
+  );
+});
+
+async function completeCallback(
+  userId: string,
+  code: string,
+  iss: string | null,
+): Promise<NextResponse> {
   try {
     const creds = await getOuraClientCredentials(userId);
     if (!creds) return ERR("nocreds");

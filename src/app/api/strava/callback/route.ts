@@ -60,26 +60,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const userId = verified.userId;
 
-  // Single-use: a callback delivered twice exchanges its code once, and the
-  // duplicate follows the first request's result (src/lib/oauth/callback-claim.ts).
-  return runOAuthCallbackOnce(
-    "strava",
-    state,
-    {
-      fallbackUrl: new URL(
-        "/settings/integrations",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ).toString(),
-      stateCookie: oauthStateCookieName("strava"),
-    },
-    () => completeCallback(request, userId),
-  );
-});
-
-async function completeCallback(
-  request: NextRequest,
-  userId: string,
-): Promise<NextResponse> {
+  // Everything that can refuse the callback without the code runs before
+  // the claim, so a refused callback (a denied consent arrives without a
+  // code) never spends the state: the same authorize URL still works. The
+  // claim stays strictly before the exchange.
   const code = new URL(request.url).searchParams.get("code");
 
   const evt = getEvent();
@@ -93,6 +77,26 @@ async function completeCallback(
 
   if (!code) return ERR("nocode");
 
+  // Single-use: a callback delivered twice exchanges its code once, and the
+  // duplicate follows the first request's result (src/lib/oauth/callback-claim.ts).
+  return runOAuthCallbackOnce(
+    "strava",
+    state,
+    {
+      fallbackUrl: new URL(
+        "/settings/integrations",
+        process.env.NEXT_PUBLIC_APP_URL!,
+      ).toString(),
+      stateCookie: oauthStateCookieName("strava"),
+    },
+    () => completeCallback(userId, code),
+  );
+});
+
+async function completeCallback(
+  userId: string,
+  code: string,
+): Promise<NextResponse> {
   try {
     const creds = await getStravaClientCredentials(userId);
     if (!creds) return ERR("nocreds");

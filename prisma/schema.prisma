@@ -4560,8 +4560,8 @@ model GoogleHealthOAuthState {
 /// sends it to the same place instead of to an error page. Holds no user id,
 /// token or code: `location` is the app's own result URL (`?oura=connected`,
 /// `?whoop=error&reason=…`). Rows outlive the state they guard by a few
-/// minutes and are swept by expiry on the next settle
-/// (`src/lib/oauth/callback-claim.ts`).
+/// minutes and are swept by expiry when a callback completes and by the daily
+/// OAuth-state cleanup (`src/lib/jobs/oauth-callback-claim-cleanup.ts`).
 model OAuthCallbackClaim {
   /// sha256(provider + NUL + state), hex.
   key       String    @id

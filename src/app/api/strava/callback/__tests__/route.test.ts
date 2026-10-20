@@ -28,13 +28,17 @@ const {
 // Single-use claiming is covered against Postgres in
 // tests/integration/oauth-callback-single-use.test.ts; here every callback
 // is the first and only one.
+const { claimSpy } = vi.hoisted(() => ({ claimSpy: vi.fn() }));
 vi.mock("@/lib/oauth/callback-claim", () => ({
   runOAuthCallbackOnce: (
     _p: string,
     _s: string,
     _o: unknown,
     run: () => Promise<unknown>,
-  ) => run(),
+  ) => {
+    claimSpy();
+    return run();
+  },
   settleOAuthCallback: (_p: string, _s: string, run: () => Promise<unknown>) =>
     run(),
   consumeLedgerState: async (
@@ -85,11 +89,12 @@ import { GET } from "../route";
 
 process.env.NEXT_PUBLIC_APP_URL = "https://app.example";
 
-function callback(): Promise<{ headers: { get(k: string): string | null } }> {
-  const req = new NextRequest(
-    "http://localhost/api/strava/callback?code=abc&state=signed-state",
-    { headers: { cookie: "strava_oauth_state=signed-state" } },
-  );
+function callback(
+  query = "code=abc&state=signed-state",
+): Promise<{ headers: { get(k: string): string | null } }> {
+  const req = new NextRequest(`http://localhost/api/strava/callback?${query}`, {
+    headers: { cookie: "strava_oauth_state=signed-state" },
+  });
   return (GET as unknown as (r: NextRequest) => Promise<never>)(req);
 }
 
@@ -125,5 +130,14 @@ describe("GET /api/strava/callback — S-1 backfill enqueue", () => {
 
     expect(res.headers.get("location")).toContain("strava=connected");
     expect(bossSend).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/strava/callback — claim only what can be exchanged", () => {
+  it("does not claim the state for a callback without a code", async () => {
+    const res = await callback("state=signed-state&error=access_denied");
+    expect(res.headers.get("location")).toContain("reason=nocode");
+    expect(claimSpy).not.toHaveBeenCalled();
+    expect(exchangeCodeMock).not.toHaveBeenCalled();
   });
 });

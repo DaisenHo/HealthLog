@@ -1,5 +1,5 @@
 /**
- * Retention and maintenance cleanups: rate-limit rows, idempotency keys, audit logs, OAuth states (Withings / WHOOP), mood-reminder events, push attempts, and measurement tombstones.
+ * Retention and maintenance cleanups: rate-limit rows, idempotency keys, audit logs, OAuth states (Withings / WHOOP) and OAuth callback claims, mood-reminder events, push attempts, and measurement tombstones.
  *
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and the queue bindings.
@@ -33,6 +33,7 @@ import { cleanupOldAuditLogs } from "@/lib/jobs/audit-log-cleanup";
 import { cleanupOldCoachMessages } from "@/lib/jobs/coach-message-cleanup";
 import { cleanupOldWorkoutInsightClaims } from "@/lib/jobs/workout-insight-claim-cleanup";
 import { cleanupExpiredWithingsOAuthStates } from "@/lib/jobs/withings-oauth-state-cleanup";
+import { cleanupExpiredOAuthCallbackClaims } from "@/lib/jobs/oauth-callback-claim-cleanup";
 import { cleanupExpiredOidcNativeHandoffs } from "@/lib/jobs/oidc-handoff-cleanup";
 import {
   cleanupExpiredMeasurementTombstones,
@@ -462,7 +463,12 @@ export async function handleWithingsOAuthStateCleanup(
       try {
         const deleted = await cleanupExpiredWithingsOAuthStates(p);
         evt.addMeta("withings_oauth_state_cleanup_deleted", deleted);
-        return jobDone({ deleted });
+        // The provider-neutral callback claims ride this daily pass: the
+        // callbacks sweep them only when one completes, which a quiet
+        // instance may not see for weeks.
+        const claimsDeleted = await cleanupExpiredOAuthCallbackClaims(p);
+        evt.addMeta("oauth_callback_claim_cleanup_deleted", claimsDeleted);
+        return jobDone({ deleted, callback_claims_deleted: claimsDeleted });
       } catch (err) {
         // The OAuth flow tolerates a stale row for an extra day, which used
         // to be the argument for swallowing this so the queue would not
