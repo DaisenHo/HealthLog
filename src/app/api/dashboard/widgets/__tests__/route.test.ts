@@ -4,9 +4,10 @@
  * Until v1.4.41 this route returned `parsed.error.issues[0].message`,
  * which dropped every issue past the first. iOS contract debugging
  * needed one round-trip per wrong field. The route now returns every
- * issue under `details.issues` AND writes a
- * `dashboard.widgets.validation-failed` audit-ledger row so the
- * operator can grep `/api/admin/audit` for the same trail.
+ * issue under `details.issues` AND files a
+ * `dashboard.widgets.validation-failed` breadcrumb through `auditLog()`,
+ * which since v1.43.7 writes it only for a delegate's request (the
+ * decision is tested in `src/lib/auth/__tests__/audit.test.ts`).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -15,6 +16,10 @@ const transactionLock = vi.hoisted(() => vi.fn(async () => []));
 const transactionUser = vi.hoisted(() => ({
   findUnique: vi.fn(),
   update: vi.fn(),
+}));
+
+vi.mock("@/lib/auth/audit", () => ({
+  auditLog: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -91,6 +96,7 @@ import {
   type DashboardLayoutWithToken,
 } from "@/lib/dashboard-layout";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -198,15 +204,17 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
     // The audit row is fire-and-forget — let the microtask queue drain.
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string; details: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("dashboard.widgets.validation-failed");
-    const details = JSON.parse(call.data.details) as {
-      issues: Array<{ path: string; code: string }>;
-    };
+    expect(auditLog).toHaveBeenCalledTimes(1);
+    const [action, opts] = vi.mocked(auditLog).mock.calls[0] as unknown as [
+      string,
+      {
+        userId: string;
+        details: { issues: Array<{ path: string; code: string }> };
+      },
+    ];
+    expect(opts.userId).toBe("user-1");
+    expect(action).toBe("dashboard.widgets.validation-failed");
+    const details = opts.details;
     expect(details.issues.length).toBe(2);
     for (const issue of details.issues) {
       // v1.4.49 — audit row is the persisted surface. `message`
@@ -226,7 +234,7 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
 
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    expect(auditLog).toHaveBeenCalledTimes(1);
 
     // The full multi-issue envelope still rides on every 422 — the
     // dedup only suppresses the breadcrumb write, never the response.
@@ -297,9 +305,7 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
   });
 
   it("does not block the 422 response when the audit-row write rejects", async () => {
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
+    vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
 
     const res = await callPut(makeReq({ version: 2, widgets: [] }));
     // The response is the contract — the audit row is best-effort.
@@ -361,13 +367,13 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
     // leak into the ledger.
     await callPut(makeReq({ version: 2, widgets: [] }));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { details: string };
-    };
-    const parsed = JSON.parse(call.data.details) as {
-      issues: Array<Record<string, unknown>>;
-    };
+    expect(auditLog).toHaveBeenCalledTimes(1);
+    const parsed = (
+      vi.mocked(auditLog).mock.calls[0] as unknown as [
+        string,
+        { details: { issues: Array<Record<string, unknown>> } },
+      ]
+    )[1].details;
     for (const issue of parsed.issues) {
       expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
     }

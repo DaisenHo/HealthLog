@@ -68,6 +68,7 @@ const widgetIdEnum = z.enum(DASHBOARD_WIDGET_CATALOGUE_IDS);
 // the same 60 s `(userId, action)` window.
 export { __resetAuditDedupMemoForTests } from "@/lib/audit-dedup";
 import { shouldEmitAuditRow } from "@/lib/audit-dedup";
+import { auditLog } from "@/lib/auth/audit";
 
 const layoutSchema = z.object({
   version: z.literal(1),
@@ -379,17 +380,14 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       const auditIssues = sanitiseZodIssues(parsed.error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "dashboard.widgets.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {
-          /* swallow — validation response is the contract, audit row is best-effort */
-        });
+      // Through `auditLog()`, which files a refused attempt only when a
+      // delegate made it; the caller's own refusal stays on the wide event.
+      void auditLog("dashboard.widgets.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — validation response is the contract, audit row is best-effort */
+      });
     }
     return returnAllZodIssues(parsed.error, 422);
   }
