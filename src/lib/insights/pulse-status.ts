@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { readRecentMoodScores } from "@/lib/mood/recent-scores";
+import { readRecentReadings } from "@/lib/insights/recent-readings";
 import {
   getPulseSystemPrompt,
   getPulseUserPrompt,
@@ -185,25 +186,9 @@ export async function preparePulseStatusForUser(
   // estimate for non-Berlin users. `userTz` was already resolved above for
   // the cache day-key.
 
-  // v1.4.28 — cap the snapshot input. The downstream
-  // `applyPayloadBudget` trims further but the unbounded findMany was
-  // pulling tens of thousands of rows for Apple-Health-rich accounts
-  // before the budget call even started.
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        type: "PULSE",
-        deletedAt: null,
-      },
-      orderBy: { measuredAt: "desc" },
-      take: 365,
-      select: {
-        value: true,
-        measuredAt: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  // The latest 365 readings, and never less than the last 30 days: a dense
+  // pulse stream holds 365 readings in a few hours (`readRecentReadings`).
+  const measurements = await readRecentReadings(userId, "PULSE");
 
   // v1.15.12 — the RESTING band is judged against the RESTING series,
   // not the raw PULSE stream (Apple fills PULSE with workout HR). Pull

@@ -1324,9 +1324,16 @@ export function summarizeSleepNights(
   tz: string,
   priorityJson: unknown = null,
 ): SleepNightSummary {
-  const nights = reconstructSleepNights(rows, tz, priorityJson).filter(
-    (n) => n.asleepMinutes > 0,
-  );
+  return summarizeNights(reconstructSleepNights(rows, tz, priorityJson));
+}
+
+/**
+ * `summarizeSleepNights` over nights already reconstructed, for a reader
+ * that gets them from the chunked Postgres walk (`readSleepNights`) instead
+ * of holding the stage rows itself.
+ */
+export function summarizeNights(all: readonly SleepNight[]): SleepNightSummary {
+  const nights = all.filter((n) => n.asleepMinutes > 0);
   const dataPoints = nights.map((n) => ({
     date: n.measuredAt,
     value: n.asleepMinutes,

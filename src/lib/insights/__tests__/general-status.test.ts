@@ -14,6 +14,26 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The per-type latest-readings read is one LATERAL query in Postgres; here
+// it is served from the `measurement.findMany` fixtures, newest first as the
+// query orders them, so the suite keeps describing its data as rows.
+vi.mock("@/lib/insights/recent-readings", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/insights/recent-readings")>();
+  const { prisma: db } = await import("@/lib/db");
+  return {
+    ...actual,
+    readLatestReadingsPerType: async () =>
+      [
+        ...((await db.measurement.findMany({} as never)) as Array<{
+          type: string;
+          value: number;
+          measuredAt: Date;
+        }>),
+      ].reverse(),
+  };
+});
+
 vi.mock("@/lib/insights/status-provider", () => ({
   runStatusCompletion: vi.fn(),
 }));

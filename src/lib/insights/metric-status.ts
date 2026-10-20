@@ -22,6 +22,7 @@
  * the card's insufficient-data state.
  */
 import { prisma } from "@/lib/db";
+import { readRecentReadings } from "@/lib/insights/recent-readings";
 import {
   getMetricArchetypeSystemPrompt,
   getMetricArchetypeUserPrompt,
@@ -293,7 +294,7 @@ export async function generateMetricStatus(args: {
   let measurements: Array<{ measuredAt: Date }> = [];
   if (isSleep) {
     // The latest 365 nights, the sleep twin of the 365 latest readings the
-    // other types read. A cut on stage rows instead (2190 of them) reached
+    // other types read (`readRecentReadings`). A cut on stage rows instead (2190 of them) reached
     // back a few weeks on a stage-rich watch and began mid-night.
     const nights = (
       await readSleepNights(
@@ -308,18 +309,8 @@ export async function generateMetricStatus(args: {
     }
     measurements = nights.map((n) => ({ measuredAt: n.measuredAt }));
   } else {
-    const rows = await prisma.measurement
-      .findMany({
-        where: {
-          userId: args.userId,
-          type: meta.measurementType,
-          deletedAt: null,
-        },
-        orderBy: { measuredAt: "desc" },
-        take: 365,
-        select: { value: true, measuredAt: true },
-      })
-      .then((r) => r.reverse());
+    // The latest 365 readings, never less than the last 30 days.
+    const rows = await readRecentReadings(args.userId, meta.measurementType);
     for (const m of rows) {
       points.push({
         measuredAt: m.measuredAt,
