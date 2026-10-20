@@ -26,17 +26,7 @@ const PROVIDER_DIRS = [
   "whoop",
   "withings",
 ];
-/**
- * Files that still round on their own, with the reason. Google Health's
- * mapper is the one left: it moves to `importValue` with the next change to
- * that directory.
- */
-const PENDING: Readonly<Record<string, string>> = {
-  "google-health/mappers.ts":
-    "moves to importValue with the next Google Health change",
-};
-
-const ROUNDING = /\.toFixed\s*\(|\bfunction\s+round2\b/;
+const ROUNDING = /\.toFixed\s*\(|\b(?:function|const|let)\s+round2\b/;
 
 function strip(text: string): string {
   return text
@@ -56,25 +46,17 @@ describe("provider clients round through importValue", () => {
     expect(files.length).toBeGreaterThanOrEqual(60);
   });
 
-  it("finds no rounding of their own outside the pending list", () => {
-    const offenders = files.filter(
-      (f) =>
-        !(f in PENDING) &&
-        ROUNDING.test(strip(readFileSync(join(LIB, f), "utf8"))),
+  it("finds no rounding of their own", () => {
+    const offenders = files.filter((f) =>
+      ROUNDING.test(strip(readFileSync(join(LIB, f), "utf8"))),
     );
     expect(offenders).toEqual([]);
-  });
-
-  it("keeps the pending list honest", () => {
-    const stale = Object.keys(PENDING).filter(
-      (f) => !ROUNDING.test(strip(readFileSync(join(LIB, f), "utf8"))),
-    );
-    expect(stale).toEqual([]);
   });
 
   it("catches a planted copy", () => {
     expect(ROUNDING.test("const v = parseFloat(n.toFixed(2));")).toBe(true);
     expect(ROUNDING.test("function round2(n: number) {}")).toBe(true);
+    expect(ROUNDING.test("const round2 = (n: number) => n;")).toBe(true);
     expect(ROUNDING.test("value: importValue(n)")).toBe(false);
   });
 });

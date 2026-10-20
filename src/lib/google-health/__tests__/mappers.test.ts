@@ -73,6 +73,43 @@ describe("mapWeight — spot sample", () => {
   });
 });
 
+describe("imported values round half away from zero (importValue)", () => {
+  // Each of these sits on a half at the third decimal whose double lies just
+  // below it, where `toFixed(2)` rounded down.
+  it("rounds a gram-precise weight up on the half", () => {
+    const [r] = mapWeight({
+      weight: {
+        weightGrams: 72345,
+        sampleTime: { physicalTime: "2026-06-01T08:00:00.000Z" },
+      },
+    });
+    expect(r!.value).toBe(72.35);
+  });
+
+  it("rounds a daily distance total up on the half", () => {
+    const [r] = mapDistance({
+      civilStartTime: { date: { year: 2026, month: 6, day: 1 } },
+      distance: { millimetersSum: "1000005" },
+    });
+    expect(r!.value).toBe(1000.01);
+  });
+
+  it("rounds a session distance up on the half", () => {
+    const w = mapWorkout({
+      name: "users/me/dataTypes/exercise/dataPoints/half",
+      exercise: {
+        exerciseType: "RUNNING",
+        interval: {
+          startTime: "2026-06-03T07:00:00.000Z",
+          endTime: "2026-06-03T07:45:00.000Z",
+        },
+        metricsSummary: { distanceMillimeters: "8000025" },
+      },
+    });
+    expect(w!.totalDistanceM).toBe(8000.03);
+  });
+});
+
 describe("mapBodyFat — camelCase union key", () => {
   it("reads the percentage under the camelCase bodyFat key", () => {
     const rows = mapBodyFat({
