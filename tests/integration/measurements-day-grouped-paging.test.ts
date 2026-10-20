@@ -239,4 +239,56 @@ describe("GET /api/measurements?groupBy=day paging (#1245)", () => {
     expect(windowed.data.meta.total).toBe(inWindow);
     expect(windowed.data.measurements).toHaveLength(PAGE);
   }, 240_000);
+
+  // The fold's per-day narrowing, pinned against Postgres rather than a mock
+  // that answers SQL by its text: a day is cut in the user's zone, and within
+  // the winning source the top-ranked device's groups stand alone.
+  it("cuts days in the user's zone and keeps the winning source's top device", async () => {
+    const user = await seedSession("day-paging-device-user");
+    const key = dayKeyAgo(5);
+    const at = (iso: string) => new Date(`${key}T${iso}Z`);
+    const base = {
+      userId: user.id,
+      type: "ACTIVITY_STEPS" as const,
+      unit: "steps",
+      source: "APPLE_HEALTH" as const,
+    };
+    await getPrismaClient().measurement.createMany({
+      data: [
+        // The watch and the phone both counted the morning.
+        {
+          ...base,
+          value: 6000,
+          deviceType: "watch",
+          measuredAt: at("08:00:00"),
+          externalId: "w1",
+        },
+        {
+          ...base,
+          value: 5500,
+          deviceType: "phone",
+          measuredAt: at("08:05:00"),
+          externalId: "p1",
+        },
+        // 23:30 UTC is already the next day in Berlin.
+        {
+          ...base,
+          value: 700,
+          deviceType: "watch",
+          measuredAt: at("23:30:00"),
+          externalId: "w2",
+        },
+      ],
+    });
+    const body = (await (
+      await callList(`type=ACTIVITY_STEPS&groupBy=day&limit=${PAGE}`)
+    ).json()) as ListEnvelope & {
+      data: { meta: { droppedDuplicates?: number } };
+    };
+    const byDay = new Map(body.data.measurements.map((r) => [r.dayKey, r]));
+    expect(byDay.get(key)?.value).toBe(6000);
+    expect(byDay.get(dayKeyAgo(4))?.value).toBe(700);
+    expect(body.data.meta.total).toBe(2);
+    expect(body.data.meta.droppedDuplicates).toBe(1);
+  }, 240_000);
 });

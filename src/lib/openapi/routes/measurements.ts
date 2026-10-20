@@ -465,7 +465,7 @@ const sleepNightResponse = z
   .meta({
     id: "SleepNightResource",
     description:
-      "One reconstructed sleep night: the main session's hypnogram segments + breakdown, plus same-wake-day naps surfaced separately.",
+      "One reconstructed sleep night: the main session's hypnogram segments + breakdown, plus same-wake-day naps surfaced separately. A session is a nap when it holds under three hours asleep centred between 10:00 and 20:00 local time; the main session is the longest session that is not a nap. A day whose only sleep is naps has `main: null` and its naps.",
   });
 
 // ── Sleep rhythm (sleep-debt + chronotype, v1.17.0) ──────────────────
@@ -804,7 +804,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "List measurements",
       description:
         "Filter by type + date range. Response is paged via offset/limit; default limit 100.\n\n" +
-        "With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over those days; every returned day is complete. `type=SLEEP_DURATION` returns one row per night, paged the same way over nights. On both, `meta.total` counts the days or nights in the filtered window. A day-sum page takes `limit` as asked (up to the list's 5000); a sleep page holds at most 1000 nights, and `meta.limit` echoes the value applied.",
+        "With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over those days; every returned day is complete, which is why `valueMin` / `valueMax` (a filter on single readings) are refused with 422 beside `groupBy=day`. `type=SLEEP_DURATION` returns one row per night, paged the same way over nights; every night of the page has a row, and a day whose only sleep is daytime naps carries `value` 0 with its naps in `napCount` / `napAsleepMinutes`. Its `dayKey` is the same day `/api/sleep/night?date=` answers for. On both, `meta.total` counts the days or nights in the filtered window. A day-sum page takes `limit` as asked (up to the list's 5000); a sleep page holds at most 1000 nights, and `meta.limit` echoes the value applied.",
       requestParams: {
         query: listMeasurementsSchema,
       },
@@ -1118,7 +1118,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Reconstructed sleep night (hypnogram source, v1.11.5)",
       description:
-        "Returns one night's reconstructed sleep session for the phase-progression (hypnogram) view: the canonical source's stage segments (each with an absolute start/end), the per-stage breakdown, asleep/in-bed/awake totals, the mid-sleep awakenings count, and same-wake-day naps surfaced separately. Session-clustered, keyed by the local wake day, collapsed to one source via the sleep priority ladder so two sources never overlay. `date` omitted returns the most recent night. A read-only view over existing per-stage SLEEP_DURATION rows — no schema, no new measurement type.",
+        "Returns one night's reconstructed sleep session for the phase-progression (hypnogram) view: the canonical source's stage segments (each with an absolute start/end), the per-stage breakdown, asleep/in-bed/awake totals, the mid-sleep awakenings count, and same-wake-day naps surfaced separately. Session-clustered, keyed by the local wake day, collapsed to one source via the sleep priority ladder so two sources never overlay. `date` omitted returns the most recent night holding sleep, however old. Any past date is answered, with no window cut. A read-only view over existing per-stage SLEEP_DURATION rows — no schema, no new measurement type.",
       requestParams: {
         query: z.object({
           date: z
