@@ -4397,7 +4397,7 @@
             "composition": "Struktura"
           },
           "gap": {
-            "fewNights": "za mało nocy ({count} z 3)",
+            "fewNights": "za mało nocy ({count} z {needed})",
             "noMainSleep": "ostatni dzień tylko z drzemką"
           }
         },

@@ -116,6 +116,11 @@ export interface SleepScoreValue {
    */
   rhythmNights: number;
   /**
+   * `RHYTHM_MIN_NIGHTS`, published so a client names the floor it shows
+   * ("2 of 3 nights") from the server instead of carrying its own copy.
+   */
+  rhythmMinNights: number;
+  /**
    * v1.42 — the score of every scorable night in the window (oldest → newest,
    * capped to `SPARKLINE_MAX_POINTS`), so a surface can show the score's
    * course rather than one night. Each night is scored by the same blend as
@@ -640,6 +645,7 @@ export async function computeSleepScore(
       subScores,
       windowNights: scorableNights.length,
       rhythmNights: midpoints.length,
+      rhythmMinNights: RHYTHM_MIN_NIGHTS,
       series,
     },
     coverage,

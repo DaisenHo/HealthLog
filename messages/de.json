@@ -4397,7 +4397,7 @@
             "composition": "Zusammensetzung"
           },
           "gap": {
-            "fewNights": "noch nicht genug Nächte ({count} von 3)",
+            "fewNights": "noch nicht genug Nächte ({count} von {needed})",
             "noMainSleep": "letzter Tag nur mit Nickerchen"
           }
         },

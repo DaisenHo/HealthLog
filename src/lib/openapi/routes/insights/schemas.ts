@@ -325,7 +325,7 @@ export const sleepScoreValue = z
             .enum(["few_nights", "no_main_sleep"])
             .optional()
             .describe(
-              "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than three nights in the window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had only a daytime nap. Absent otherwise.",
+              "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than `rhythmMinNights` nights in the window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had only a daytime nap. Absent otherwise.",
             ),
         }),
       )
@@ -336,6 +336,12 @@ export const sleepScoreValue = z
       .int()
       .describe(
         "Nights in the window with a main sleep placed on the clock — what consistency and timing are computed from. A daytime nap is not one; a short night is.",
+      ),
+    rhythmMinNights: z
+      .number()
+      .int()
+      .describe(
+        'How many `rhythmNights` consistency and timing need before they are scored; below it they carry `gap: "few_nights"`.',
       ),
     series: z
       .array(z.number())

@@ -4397,7 +4397,7 @@
             "composition": "Composizione"
           },
           "gap": {
-            "fewNights": "notti ancora insufficienti ({count} su 3)",
+            "fewNights": "notti ancora insufficienti ({count} su {needed})",
             "noMainSleep": "l'ultimo giorno solo un pisolino"
           }
         },

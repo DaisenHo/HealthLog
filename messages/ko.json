@@ -4397,7 +4397,7 @@
             "composition": "구성"
           },
           "gap": {
-            "fewNights": "아직 밤이 부족함 ({count}/3)",
+            "fewNights": "아직 밤이 부족함 ({count}/{needed})",
             "noMainSleep": "최근 하루는 낮잠만 있음"
           }
         },
