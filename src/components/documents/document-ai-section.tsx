@@ -36,13 +36,13 @@ import { Button } from "@/components/ui/button";
 import type { AiRunPhase } from "@/hooks/use-ai-run";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
-import {
-  isAiReadSource,
-  type DocumentContentIndexSourceValue,
-  type DocumentIndexOutcomeValue,
-  type DocumentSuggestionDto,
-  type DocumentSummaryMode,
+import type {
+  DocumentContentIndexSourceValue,
+  DocumentIndexOutcomeValue,
+  DocumentSuggestionDto,
+  DocumentSummaryMode,
 } from "@/lib/validations/inbound-documents";
+import { isAiReadSource } from "@/lib/documents/inbound-constants";
 
 import {
   AiRunPhaseNote,

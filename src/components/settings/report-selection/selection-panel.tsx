@@ -63,7 +63,7 @@ import {
   parseSavedProfile,
   SAVED_PROFILE_FALLBACK,
 } from "@/lib/report-selection/profile-shape";
-import { orderLeaves } from "@/lib/report-selection/selection";
+import { orderLeaves } from "@/lib/report-selection/catalogue";
 
 import { ReportScopePicker } from "./report-scope-picker";
 import { ScopeSummary } from "./scope-summary";

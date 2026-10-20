@@ -19,7 +19,7 @@
 import {
   DEFAULT_COACH_CLUSTERS,
   type CoachDataCluster,
-} from "@/lib/validations/coach-prefs";
+} from "@/lib/ai/coach/prefs-constants";
 import type { CoachScopeSource } from "./types";
 
 /**

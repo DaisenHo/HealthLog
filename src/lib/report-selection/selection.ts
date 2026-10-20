@@ -14,7 +14,12 @@
  */
 import { z } from "zod/v4";
 
-import { isReportLeafId, type ReportLeafId, ALL_LEAF_IDS } from "./catalogue";
+import {
+  isReportLeafId,
+  orderLeaves,
+  type ReportLeafId,
+  ALL_LEAF_IDS,
+} from "./catalogue";
 
 declare const brand: unique symbol;
 
@@ -39,10 +44,6 @@ export const reportSelectionSchema = z
   .strict();
 
 export type ReportSelectionInput = z.infer<typeof reportSelectionSchema>;
-
-const LEAF_ORDER = new Map<ReportLeafId, number>(
-  ALL_LEAF_IDS.map((leaf, index) => [leaf, index]),
-);
 
 function mint(leaves: Iterable<ReportLeafId>): ReportSelection {
   const set = new Set<ReportLeafId>(leaves);
@@ -121,11 +122,6 @@ export function isEmptySelection(selection: ReportSelection): boolean {
   return selection.leaves.length === 0;
 }
 
-/** Stable ordering helper, exported for the panel's own state folding. */
-export function orderLeaves(
-  leaves: Iterable<ReportLeafId>,
-): readonly ReportLeafId[] {
-  return [...new Set(leaves)].sort(
-    (a, b) => (LEAF_ORDER.get(a) ?? 0) - (LEAF_ORDER.get(b) ?? 0),
-  );
-}
+// The ordering helper lives beside the catalogue it orders, so a client
+// panel that only folds its own state does not pull the schema library in.
+export { orderLeaves };

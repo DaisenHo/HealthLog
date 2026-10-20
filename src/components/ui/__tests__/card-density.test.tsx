@@ -44,5 +44,13 @@ describe("compact density is the prop, not a class list", () => {
         ),
       );
     expect(hits).toEqual([]);
+    // The prop is where the compact cards went; a walk that finds none of
+    // them read the wrong tree.
+    const users = walkSourceFiles(src, { floor: 2500 }).filter(
+      (p) =>
+        p.endsWith(".tsx") &&
+        readFileSync(join(src, p), "utf8").includes('density="compact"'),
+    );
+    expect(users.length).toBeGreaterThanOrEqual(20);
   });
 });

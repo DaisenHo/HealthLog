@@ -7,13 +7,15 @@
  * and byte formatting. Kept out of the client components so they stay
  * trivially unit-testable without a render harness.
  */
+import type {
+  DocumentLinkedProcedureDto,
+  InboundDocumentDto,
+  InboundDocumentKindValue,
+} from "@/lib/validations/inbound-documents";
 import {
   DOCUMENT_LIST_DEFAULT_LIMIT,
   INBOUND_DOCUMENT_KINDS,
-  type DocumentLinkedProcedureDto,
-  type InboundDocumentDto,
-  type InboundDocumentKindValue,
-} from "@/lib/validations/inbound-documents";
+} from "@/lib/documents/inbound-constants";
 import type { DocumentVaultFilters } from "@/lib/query-keys/documents";
 import { userDayKey } from "@/lib/tz/format";
 

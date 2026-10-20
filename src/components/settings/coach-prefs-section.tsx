@@ -46,16 +46,18 @@ import {
 import { useAiCapability, useCoachReasoning } from "@/hooks/use-ai-capability";
 import { COACH_FOLLOW_UP_UI_KEYS } from "@/lib/ai/coach/dialog-keys";
 import { HISTORY_REACH_DAYS, lookbackText } from "@/lib/ai/coach/history-reach";
+import type {
+  CoachExcludeMetric,
+  CoachPrefs,
+  CoachTone,
+  CoachVerbosity,
+} from "@/lib/validations/coach-prefs";
 import {
   DEFAULT_COACH_CLUSTERS,
   DEFAULT_COACH_PREFS,
-  coachDataClusterEnum,
+  COACH_DATA_CLUSTERS,
   coachReasoningLevel,
-  type CoachExcludeMetric,
-  type CoachPrefs,
-  type CoachTone,
-  type CoachVerbosity,
-} from "@/lib/validations/coach-prefs";
+} from "@/lib/ai/coach/prefs-constants";
 
 const EXCLUDE_OPTIONS: CoachExcludeMetric[] = [
   "bp",
@@ -89,7 +91,7 @@ function sourcesSummary(
 ): string {
   const params = {
     count: (prefs.dataClusters ?? DEFAULT_COACH_CLUSTERS).length,
-    total: coachDataClusterEnum.options.length,
+    total: COACH_DATA_CLUSTERS.length,
   };
   const window = prefs.defaultWindow;
   if (HISTORY_REACH_DAYS[window] === null) {

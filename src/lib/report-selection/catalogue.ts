@@ -424,3 +424,16 @@ export function leafGroup(leaf: ReportLeafId): ReportGroupId {
     ? STRUCTURED_LEAF_GROUP[leaf]
     : MEASUREMENT_LEAF_GROUP[leaf];
 }
+
+const LEAF_ORDER = new Map<ReportLeafId, number>(
+  ALL_LEAF_IDS.map((leaf, index) => [leaf, index]),
+);
+
+/** Stable ordering helper, exported for the panel's own state folding. */
+export function orderLeaves(
+  leaves: Iterable<ReportLeafId>,
+): readonly ReportLeafId[] {
+  return [...new Set(leaves)].sort(
+    (a, b) => (LEAF_ORDER.get(a) ?? 0) - (LEAF_ORDER.get(b) ?? 0),
+  );
+}

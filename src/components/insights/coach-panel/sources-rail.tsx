@@ -22,13 +22,15 @@ import {
   HISTORY_REACH_DAYS,
   lookbackText,
 } from "@/lib/ai/coach/history-reach";
+import type {
+  CoachDefaultWindow,
+  CoachPrefs,
+} from "@/lib/validations/coach-prefs";
 import {
   DEFAULT_COACH_CLUSTERS,
-  coachDataClusterEnum,
+  COACH_DATA_CLUSTERS,
   type CoachDataCluster,
-  type CoachDefaultWindow,
-  type CoachPrefs,
-} from "@/lib/validations/coach-prefs";
+} from "@/lib/ai/coach/prefs-constants";
 
 /**
  * v1.7.2 — "What I can see" rail, backed by the persisted Coach prefs.
@@ -48,8 +50,7 @@ import {
  * member count beneath each label spells out the scope so the user can
  * see how much data each toggle pulls in.
  */
-const CLUSTER_OPTIONS: ReadonlyArray<CoachDataCluster> =
-  coachDataClusterEnum.options;
+const CLUSTER_OPTIONS: ReadonlyArray<CoachDataCluster> = COACH_DATA_CLUSTERS;
 
 /**
  * The lookback options, narrowest first. The choice is a limit
