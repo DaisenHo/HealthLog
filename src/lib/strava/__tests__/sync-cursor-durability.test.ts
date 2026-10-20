@@ -38,6 +38,7 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("@/lib/integrations/status", () => ({
   recordSyncFailure: mocks.recordSyncFailure,
   recordSyncSuccess: mocks.recordSyncSuccess,
+  isReauthRequired: vi.fn(async () => false),
   toFailureKind: vi.fn(() => "transient"),
   markSyncFailureRecorded: <T>(err: T) => err,
 }));
