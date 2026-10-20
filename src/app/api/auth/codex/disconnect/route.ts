@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -21,7 +22,7 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
       codexConnectedAt: null,
       codexConnectionStatus: "disconnected",
       insightsCachedAt: null,
-      insightsCachedText: null,
+      ...INSIGHTS_CACHE_CLEARED,
       insightsCachedLocale: null,
     },
   });

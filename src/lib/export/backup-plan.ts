@@ -951,6 +951,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   // ── Operational ───────────────────────────────────────────────────────────
   insightsCachedAt: "OPERATIONAL",
   insightsCachedText: "OPERATIONAL",
+  insightsCachedTextEncrypted: "OPERATIONAL",
   insightsCachedLocale: "OPERATIONAL",
   insightsSnapshotHash: "OPERATIONAL",
   insightsWarmFailedAt: "OPERATIONAL",

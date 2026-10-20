@@ -63,11 +63,23 @@ describe("User column backup classification", () => {
     expect(sealedSettings.sort()).toEqual([...SEALED_SETTINGS].sort());
   });
 
+  // A cache this host wrote, sealed because its content is model prose about
+  // the person: OPERATIONAL like its readable predecessor, and like every
+  // other class but SETTING it never enters the file. Named here so a sealed
+  // column cannot drift out of CREDENTIAL without someone saying why.
+  const SEALED_OPERATIONAL = ["insightsCachedTextEncrypted"];
+
   it("never classifies a sealed column other than the sealed settings as anything but a credential", () => {
     const sealed = columns.filter(
-      (c) => /Encrypted$/.test(c) && !SEALED_SETTINGS.includes(c),
+      (c) =>
+        /Encrypted$/.test(c) &&
+        !SEALED_SETTINGS.includes(c) &&
+        !SEALED_OPERATIONAL.includes(c),
     );
     expect(sealed.length).toBeGreaterThan(20);
     expect(sealed.filter((c) => classified[c] !== "CREDENTIAL")).toEqual([]);
+    for (const c of SEALED_OPERATIONAL) {
+      expect(classified[c]).toBe("OPERATIONAL");
+    }
   });
 });

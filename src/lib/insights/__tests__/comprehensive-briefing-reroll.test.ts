@@ -98,6 +98,10 @@ import { hashInsightSnapshot } from "../snapshot-hash";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import { featuresInReaderUnits } from "../features-units";
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
+import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
 
 const FEATURES = { weight: { count: 12, latest: 81.4, mean30: 82.1 } };
 // Hashed as the prompt reads it: in the reader's units (defaults here).
@@ -171,12 +175,12 @@ describe("daily-briefing re-roll on unchanged data", () => {
     // The cache write swaps only the paragraph; findings + summary preserved.
     const write = userUpdate.mock.calls.find(
       (c) =>
-        (c[0] as { data: Record<string, unknown> }).data.insightsCachedText !==
-        undefined,
+        (c[0] as { data: Record<string, unknown> }).data
+          .insightsCachedTextEncrypted !== undefined,
     );
     expect(write).toBeTruthy();
     const data = (write![0] as { data: Record<string, unknown> }).data;
-    const stored = JSON.parse(data.insightsCachedText as string);
+    const stored = JSON.parse(openInsightsCachedText(data) as string);
     expect(stored.dailyBriefing.paragraph).toBe("Today's fresh phrasing.");
     expect(stored.dailyBriefing.keyFindings).toEqual([
       { headline: "BP steady", tone: "good" },
@@ -237,7 +241,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
       userUpdate.mock.calls.some(
         (c) =>
           (c[0] as { data: Record<string, unknown> }).data
-            .insightsCachedText !== undefined,
+            .insightsCachedTextEncrypted !== undefined,
       ),
     ).toBe(false);
   });

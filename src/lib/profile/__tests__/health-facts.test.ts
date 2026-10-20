@@ -94,6 +94,7 @@ describe("encrypted health profile fact revisions", () => {
       data: {
         insightsCachedAt: null,
         insightsCachedText: null,
+        insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
     });
@@ -133,6 +134,7 @@ describe("encrypted health profile fact revisions", () => {
       data: {
         insightsCachedAt: null,
         insightsCachedText: null,
+        insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
     });
@@ -198,6 +200,7 @@ describe("encrypted health profile fact revisions", () => {
       data: {
         insightsCachedAt: null,
         insightsCachedText: null,
+        insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
     });
@@ -245,6 +248,7 @@ describe("encrypted health profile fact revisions", () => {
       data: {
         insightsCachedAt: null,
         insightsCachedText: null,
+        insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
     });

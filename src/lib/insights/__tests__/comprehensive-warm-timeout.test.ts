@@ -112,6 +112,9 @@ import { generateComprehensiveInsight } from "../comprehensive-generate";
 import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
+
 const FEATURES = { weight: { count: 12, latest: 81.4, mean30: 82.1 } };
 const VALID = JSON.stringify({ dailyBriefing: { paragraph: "ok" } });
 

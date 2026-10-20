@@ -175,6 +175,10 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { buildUserPrompt } from "@/lib/ai/prompts/insight-system-prompt";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
+import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -455,7 +459,7 @@ describe("POST /api/insights/generate — cache write (v1.16.8)", () => {
     const args = vi.mocked(prisma.user.updateMany).mock.calls[0][0] as {
       data: Record<string, unknown>;
     };
-    expect(args.data.insightsCachedText).toEqual(expect.any(String));
+    expect(openInsightsCachedText(args.data)).toEqual(expect.any(String));
     // SHA-256 hex digest of the compacted feature snapshot.
     expect(args.data.insightsSnapshotHash).toMatch(/^[0-9a-f]{64}$/);
     // The cache row records the language it was written in, so a reader

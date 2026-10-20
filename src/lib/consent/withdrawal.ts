@@ -28,6 +28,10 @@ import { DETERMINISTIC_PROVIDER_TYPE } from "@/lib/insights/narrative/period-nar
 import type { ConsentKind } from "@/lib/validations/consent";
 
 import { INSIGHTS_CONSENT_KINDS, type ConsentReceipt } from "./receipts";
+import {
+  INSIGHTS_CACHE_CLEARED,
+  INSIGHTS_CACHE_PRESENT_WHERE,
+} from "@/lib/insights/cached-text-cipher";
 
 /** How many stored items one withdrawal deleted, per surface. */
 export interface AiTextPurgeCounts {
@@ -62,13 +66,13 @@ export async function purgeRegenerableAiText(
         where: {
           id: userId,
           OR: [
-            { insightsCachedText: { not: null } },
+            ...INSIGHTS_CACHE_PRESENT_WHERE.OR,
             { insightsCachedAt: { not: null } },
             { insightsSnapshotHash: { not: null } },
           ],
         },
         data: {
-          insightsCachedText: null,
+          ...INSIGHTS_CACHE_CLEARED,
           insightsCachedAt: null,
           insightsSnapshotHash: null,
         },

@@ -863,6 +863,15 @@ async function main() {
     } as unknown as CorpusClient),
   );
 
+  // ───── v1.43.7 cached AI insights payload (Bytes, binary2, batched) ─────
+  // The model's briefing and readings on the user row. NULL on a row without
+  // a cache, or one the free-text backfill has not sealed yet; both skipped.
+  results.push(
+    await rotateRegistryColumn("User", "insightsCachedTextEncrypted", {
+      user: prisma.user,
+    } as unknown as CorpusClient),
+  );
+
   // ───── v1.39.3 custom-metric reading note (Bytes column) ─────
   // NULL on a reading without a note, and on a row the free-text backfill has
   // not reached yet; `rotateBytesColumn` skips both.

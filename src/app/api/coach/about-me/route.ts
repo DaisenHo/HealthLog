@@ -69,6 +69,7 @@ import {
   aboutMeAiSections,
   type StoredHealthProfileAiSection,
 } from "@/lib/validations/health-profile-facts";
+import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 
 const PUT_RATE_LIMIT = 30;
 const PUT_WINDOW_MS = 60_000;
@@ -319,7 +320,7 @@ export const PUT = apiHandler(async (req: Request) => {
         where: { id: user.id },
         data: {
           insightsCachedAt: null,
-          insightsCachedText: null,
+          ...INSIGHTS_CACHE_CLEARED,
           insightsCachedLocale: null,
         },
       });
