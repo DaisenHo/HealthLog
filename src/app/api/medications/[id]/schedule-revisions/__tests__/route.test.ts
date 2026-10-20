@@ -42,11 +42,6 @@ vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  enqueueUserMedicationComplianceBackfill: vi
-    .fn()
-    .mockResolvedValue({ enqueued: true, error: null }),
-}));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
@@ -64,7 +59,6 @@ import { GET, POST } from "../route";
 import { DELETE, PATCH } from "../[revisionId]/route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { enqueueUserMedicationComplianceBackfill } from "@/lib/rollups/medication-compliance-rollups";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -349,11 +343,6 @@ describe("POST /api/medications/[id]/schedule-revisions", () => {
     expect(createArgs.data.payload[0].rrule).toBe("FREQ=DAILY");
     expect(createArgs.data.payload[0].scheduleType).toBe("SCHEDULED");
 
-    // History re-segmented — the rollup backfill must be enqueued.
-    expect(enqueueUserMedicationComplianceBackfill).toHaveBeenCalledWith(
-      "user-1",
-    );
-
     // Check-then-insert ran inside the transaction with the
     // per-medication `FOR UPDATE` lock taken first.
     expect(prisma.$transaction).toHaveBeenCalled();
@@ -432,9 +421,6 @@ describe("DELETE /api/medications/[id]/schedule-revisions/[revisionId]", () => {
       where: { medicationId: "m1", supersededByRevisionId: "rev-m" },
       data: { supersededByRevisionId: null },
     });
-    expect(enqueueUserMedicationComplianceBackfill).toHaveBeenCalledWith(
-      "user-1",
-    );
   });
 });
 
@@ -533,9 +519,6 @@ describe("PATCH /api/medications/[id]/schedule-revisions/[revisionId]", () => {
     expect(updateArgs.data.payload[0].rrule).toBe("FREQ=DAILY");
     // In-place — no superseding row is minted.
     expect(prisma.medicationScheduleRevision.create).not.toHaveBeenCalled();
-    expect(enqueueUserMedicationComplianceBackfill).toHaveBeenCalledWith(
-      "user-1",
-    );
     // Check-then-write ran inside the locked transaction.
     expect(prisma.$transaction).toHaveBeenCalled();
     expect(prisma.$queryRaw).toHaveBeenCalled();
@@ -573,8 +556,5 @@ describe("PATCH /api/medications/[id]/schedule-revisions/[revisionId]", () => {
       where: { id: "rev-t" },
       data: { supersededByRevisionId: "rev-fix" },
     });
-    expect(enqueueUserMedicationComplianceBackfill).toHaveBeenCalledWith(
-      "user-1",
-    );
   });
 });

@@ -51,8 +51,8 @@ vi.mock("@/lib/medications/inventory/consumption", () => ({
   consumeForIntake: vi.fn().mockResolvedValue(undefined),
   restoreForIntake: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForDay: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
+  refreshDoseDay: vi.fn().mockResolvedValue(undefined),
   dayKeyForScheduledFor: vi.fn().mockReturnValue("2026-01-01"),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));

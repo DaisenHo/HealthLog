@@ -86,8 +86,8 @@ vi.mock("@/lib/cache/invalidate", () => ({
   invalidateUserMedications: vi.fn(),
 }));
 
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
+  refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/notifications/medication-intake-sync", () => ({

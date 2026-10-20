@@ -286,24 +286,4 @@ describe("dose-history import — the reported export end to end", () => {
     });
     expect(stillInactive).toBe(16);
   }, 240_000);
-
-  it("re-folds the compliance rollup for every medication and day it touched", async () => {
-    const prisma = getPrismaClient();
-    const user = await seedRegimen();
-    const { jobId } = await enqueue(user.id);
-    await processMedicationIntakeImportJob(jobId);
-
-    const rollups = await prisma.medicationComplianceRollup.findMany({
-      where: { userId: user.id },
-      select: { medicationId: true, day: true },
-    });
-    // One rollup row per (medication, local day) the import wrote into. The job
-    // spans sixteen medications, so a bare day key could not have addressed
-    // them — two medications on one day are two rows.
-    expect(rollups.length).toBeGreaterThan(3000);
-    expect(new Set(rollups.map((row) => row.medicationId)).size).toBe(16);
-    expect(
-      new Set(rollups.map((row) => `${row.medicationId} ${row.day}`)).size,
-    ).toBe(rollups.length);
-  }, 480_000);
 });

@@ -203,9 +203,6 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "mood-rollup-full-backfill": short(
     "One account's mood entries, a few a day.",
   ),
-  "medication-compliance-full-backfill": short(
-    "One account's 90-day compliance window.",
-  ),
   "step-consolidation": short(
     "One account's legacy step rows, one transaction per day.",
   ),

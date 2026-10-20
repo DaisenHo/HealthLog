@@ -107,8 +107,8 @@ acknowledgement).
   `audit_logs` rows (the text lives in the `details` JSON) instead.
 - **Transient / regenerable:** idempotency_keys, rate_limits, data_backups,
   import_jobs, host_metrics, feedback, recommendation_feedback, and all rollup
-  tables (measurement_rollups, mood_entry_rollups,
-  medication_compliance_rollups, strain_trimp_cache, cycle_predictions) — these
+  tables (measurement_rollups, mood_entry_rollups, strain_trimp_cache,
+  cycle_predictions) — these
   rebuild on edge01.
 - **No rows:** workouts / workout_routes / workout_samples (demo has none).
 - **Instance / global:** app_settings; global catalogues (mood_tags,

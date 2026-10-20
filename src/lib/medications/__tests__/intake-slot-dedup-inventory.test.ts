@@ -27,8 +27,8 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: vi.fn() }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
+  refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/cache/invalidate", () => ({
   invalidateUserMedications: vi.fn(),

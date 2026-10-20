@@ -1337,30 +1337,4 @@ describe("marking a dose — what the owner is told, and what the rollup recompu
       status: "taken",
     });
   });
-
-  it("recomputes the compliance rollup under the OWNER's id", async () => {
-    // The dose landed in the owner's record; a rollup row keyed on the
-    // delegate would leave the owner's compliance reading stale and give the
-    // delegate a row about a medication they do not have.
-    const owner = await makeUser("owner");
-    const delegate = await makeUser("delegate");
-    const { intakeId } = await seedPendingDose(owner.id);
-    await switchInto(owner.id, delegate.id, "WRITE");
-
-    const { POST } = await import("@/app/api/medications/intake/route");
-    expect(
-      (
-        await post(POST as Handler, "/api/medications/intake", {
-          intakeId,
-          status: "taken",
-        })
-      ).status,
-    ).toBe(200);
-
-    const rollups = await getPrismaClient().medicationComplianceRollup.findMany(
-      { select: { userId: true } },
-    );
-    expect(rollups.length).toBeGreaterThan(0);
-    expect([...new Set(rollups.map((r) => r.userId))]).toEqual([owner.id]);
-  });
 });

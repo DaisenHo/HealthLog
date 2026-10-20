@@ -9544,10 +9544,9 @@ paths:
         defend against a poisoned column. Audit-logged with the old and new zone.
 
 
-        A change is not only a display preference. The medication-compliance rollup keys its rows by the LOCAL day a
-        dose fell on, minted under whatever zone was in force at write time, so moving the zone re-buckets that history
-        and the stored keys go stale — and the coverage probe compares counts rather than keys, so it cannot notice. The
-        route therefore enqueues a re-fold of the trailing window whenever the zone actually changes. Best-effort and
+        A change is not only a display preference. The supplement nutrient rows key on the LOCAL day a dose fell on,
+        minted under whatever zone was in force at write time, so moving the zone re-buckets them. The route therefore
+        enqueues a recompute of the account's supplement nutrients whenever the zone actually changes. Best-effort and
         de-duplicated, so rapid re-picks collapse into one.
       requestBody:
         required: true
@@ -52993,12 +52992,15 @@ components:
           type: array
           items:
             type: string
-          description: Local calendar days (YYYY-MM-DD) touched so far, driving the chunked rollup recompute behind the write.
+          description: "Deprecated and inert: always `[]` on a job admitted from v1.43.8, when the per-day compliance rollup it
+            drove was removed. A job admitted earlier keeps the days it recorded. Kept for clients that decode it; do
+            not read it."
         rollupProcessed:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-          description: Of `touchedDays`, how many have had their rollup recomputed.
+          description: "Deprecated and inert: always `0` on a job admitted from v1.43.8. Kept for clients that decode it; do not
+            read it."
       required:
         - processed
         - total

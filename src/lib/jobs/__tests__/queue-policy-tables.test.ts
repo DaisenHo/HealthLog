@@ -60,7 +60,6 @@ describe("rollup registrar queue policies", () => {
   it.each([
     ["ROLLUP_FULL_BACKFILL_QUEUE", "exclusive"],
     ["MOOD_ROLLUP_FULL_BACKFILL_QUEUE", "exclusive"],
-    ["MEDICATION_COMPLIANCE_BACKFILL_QUEUE", "exclusive"],
     ["STEP_CONSOLIDATION_QUEUE", "exclusive"],
     ["STEP_CONSOLIDATION_REPAIR_QUEUE", "exclusive"],
     ["CUMULATIVE_PR_REDERIVE_QUEUE", "exclusive"],

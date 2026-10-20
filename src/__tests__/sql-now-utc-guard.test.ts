@@ -30,10 +30,6 @@ const ALLOWED: Record<string, { hits: number; why: string }> = {
     hits: 1,
     why: "computed_at is timestamptz",
   },
-  "src/lib/rollups/medication-compliance-rollups.ts": {
-    hits: 1,
-    why: "computed_at is timestamptz",
-  },
   "src/lib/jobs/job-failures.ts": {
     hits: 2,
     why: "pg-boss tables are timestamptz",

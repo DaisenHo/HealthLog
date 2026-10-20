@@ -17,8 +17,8 @@ type RouteParams = { params: Promise<{ id: string }> };
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     // v1.37.0 — MANAGE. It tombstones rather than deletes (since the
-    // delegated-write release) and drops only rollups that recompute, so the
-    // history it clears is reconstructable from the rows themselves.
+    // delegated-write release), so the history it clears is reconstructable
+    // from the rows themselves.
     const { user } = await requireRecordAuth("manage", "medications");
 
     const { id } = await params;
@@ -58,13 +58,6 @@ export const DELETE = apiHandler(
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: { medicationId: id, userId: user.id, deletedAt: null },
       data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
-    });
-
-    // v1.4.39 — drop every rollup row for this medication so the
-    // next compliance read returns zero-filled buckets rather than the
-    // last-known scheduled / taken totals for now-deleted events.
-    await prisma.medicationComplianceRollup.deleteMany({
-      where: { medicationId: id, userId: user.id },
     });
 
     // v1.43 — the purged doses no longer count toward the micronutrients.

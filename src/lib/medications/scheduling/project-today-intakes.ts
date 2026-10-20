@@ -18,9 +18,6 @@
  *   2. Reads existing rows in the today-window.
  *   3. Inserts the missing rows (`skipDuplicates: true` for the
  *      `(userId, medicationId, scheduledFor, source)` unique index).
- *   4. Fires one compliance-rollup recompute per distinct
- *      `(medicationId, dayKey)` so the rollup matches the new
- *      `scheduled` count before the next read.
  *
  * The caller owns its own typed re-read of `MedicationIntakeEvent`
  * afterwards — the two routes return different projections of those
@@ -35,14 +32,12 @@ import {
   scheduleEmitsInWindow,
 } from "@/lib/medications/scheduling/worker-helpers";
 import { localHmAsUtc } from "@/lib/tz/local-day";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import {
   isBeforeLiveEra,
   LIVE_ERA_REVISION_ARGS,
   liveEraStart,
 } from "@/lib/medications/scheduling/live-era";
-import { dayKeyForScheduledFor } from "@/lib/rollups/medication-compliance-rollups";
 
 export interface ProjectTodayIntakesResult {
   projected: number;
@@ -223,37 +218,6 @@ export async function projectTodayIntakesAndRecompute(input: {
     // defense-in-depth.
     skipDuplicates: true,
   });
-
-  // Close the v1.4.39.4 compliance-rollup hook gap: a bulk projection
-  // mints fresh `(medicationId, scheduledFor)` rows in PENDING state;
-  // without this hook the rollup row stays at its previous
-  // `scheduled` count, which inflates compliance % until the user
-  // actually logs against the new row. Coalesce by `(medicationId,
-  // dayKey)` so we fire one recompute per distinct day-tuple instead
-  // of one per row.
-  //
-  // `Promise.allSettled` keeps the best-effort contract explicit at
-  // the call site: the helper swallows internally today, but a
-  // future refactor that lets a throw escape would otherwise turn
-  // the parent POST into a 5xx.
-  const seenDayKeys = new Set<string>();
-  const recomputeJobs: Array<Promise<void>> = [];
-  for (const m of missing) {
-    // The compliance rollup's own day for the slot: two slots on different
-    // local days that share a UTC date must each get their recompute.
-    const key = `${m.medicationId}|${dayKeyForScheduledFor(m.scheduledFor, userTz)}`;
-    if (seenDayKeys.has(key)) continue;
-    seenDayKeys.add(key);
-    recomputeJobs.push(
-      recomputeMedicationComplianceForEvent({
-        userId,
-        medicationId: m.medicationId,
-        scheduledFor: m.scheduledFor,
-        tz: userTz,
-      }),
-    );
-  }
-  await Promise.allSettled(recomputeJobs);
 
   return { projected: projected.length, backfilled: missing.length };
 }

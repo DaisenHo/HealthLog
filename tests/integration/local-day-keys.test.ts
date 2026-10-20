@@ -12,7 +12,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { readActivityDayKeys } from "@/lib/dashboard/summary-reads";
-import { recomputeUserMedicationCompliance } from "@/lib/rollups/medication-compliance-rollups";
 import { userDayKey } from "@/lib/tz/format";
 
 vi.mock("@/lib/db-compat", () => ({
@@ -92,33 +91,5 @@ describe("readActivityDayKeys", () => {
     expect(keys).toEqual(
       [EARLY, LATE].map((at) => userDayKey(at, "America/Los_Angeles")),
     );
-  });
-});
-
-describe("recomputeUserMedicationCompliance", () => {
-  it("keys a late dose onto the person's own day", async () => {
-    const med = await prisma.medication.create({
-      data: { userId: USER, name: "Ramipril", dose: "5mg", active: true },
-    });
-    await prisma.medicationIntakeEvent.create({
-      data: {
-        userId: USER,
-        medicationId: med.id,
-        scheduledFor: LATE,
-        takenAt: LATE,
-        skipped: false,
-        source: "API",
-      },
-    });
-
-    await recomputeUserMedicationCompliance(USER, 30, "Europe/Berlin");
-
-    const rows = await prisma.medicationComplianceRollup.findMany({
-      where: { userId: USER },
-      select: { day: true, scheduled: true, taken: true },
-    });
-    expect(rows).toEqual([
-      { day: key(D + 86_400_000), scheduled: 1, taken: 1 },
-    ]);
   });
 });

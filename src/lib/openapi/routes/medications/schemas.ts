@@ -1355,13 +1355,15 @@ export const medicationImportProgress = z
     touchedDays: z
       .array(z.string())
       .describe(
-        "Local calendar days (YYYY-MM-DD) touched so far, driving the chunked rollup recompute behind the write.",
+        "Deprecated and inert: always `[]` on a job admitted from v1.43.8, when the per-day compliance rollup it drove was removed. A job admitted earlier keeps the days it recorded. Kept for clients that decode it; do not read it.",
       ),
     rollupProcessed: z
       .number()
       .int()
       .min(0)
-      .describe("Of `touchedDays`, how many have had their rollup recomputed."),
+      .describe(
+        "Deprecated and inert: always `0` on a job admitted from v1.43.8. Kept for clients that decode it; do not read it.",
+      ),
   })
   .meta({
     id: "MedicationImportProgress",

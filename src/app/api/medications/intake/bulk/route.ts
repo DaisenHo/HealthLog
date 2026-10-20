@@ -65,9 +65,9 @@ import {
 } from "@/lib/integrations/healthkit-type-sync";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
-  recomputeMedicationComplianceForDay,
   dayKeyForScheduledFor,
-} from "@/lib/rollups/medication-compliance-rollups";
+  refreshDoseDay,
+} from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
   findPinConflict,
@@ -365,10 +365,9 @@ async function postBulk(request: NextRequest): Promise<Response> {
   let extraDosesUnscheduled = 0;
   const skipped: Array<{ index: number; reason: string }> = [];
   const unstableShapes: UnstableExternalIdShape[] = [];
-  // v1.4.39 — collect distinct `(medicationId, dayKey)` pairs
-  // touched by the batch so one rollup recompute fires per pair after
-  // all inserts complete. Per-row recompute would balloon a 500-entry
-  // batch into 500 sequential rollup hits.
+  // Distinct `(medicationId, dayKey)` pairs touched by the batch, so one
+  // dose-day refresh fires per pair after all inserts complete. A per-row
+  // refresh would balloon a 500-entry batch into 500 sequential refreshes.
   const touchedDays = new Map<
     string,
     { medicationId: string; dayKey: string }
@@ -949,30 +948,16 @@ async function postBulk(request: NextRequest): Promise<Response> {
     invalidateUserMedications(user.id, { evict: true });
   }
 
-  // v1.4.39 — refresh one rollup row per distinct
-  // `(medicationId, dayKey)` touched by the batch. Best-effort: failures
-  // are swallowed by the helper's `recomputeMedicationComplianceForEvent`
-  // wrapper, but bulk callers wrap recompute directly to keep the
-  // tight ingest loop unaffected by populator issues.
+  // Refresh the derived rows of each distinct `(medicationId, dayKey)` the
+  // batch touched. Best-effort: the refresh reports its own failures and
+  // never fails the ingest.
   for (const { medicationId, dayKey } of touchedDays.values()) {
-    try {
-      await recomputeMedicationComplianceForDay(
-        user.id,
-        medicationId,
-        dayKey,
-        user.timezone,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      annotate({
-        meta: {
-          medication_compliance_rollup_bulk_failed: true,
-          medication_compliance_rollup_bulk_error: message,
-          medication_compliance_rollup_medication: medicationId,
-          medication_compliance_rollup_day: dayKey,
-        },
-      });
-    }
+    await refreshDoseDay({
+      userId: user.id,
+      medicationId,
+      dayKey,
+      tz: user.timezone,
+    });
   }
 
   // v1.17.1 (#22) — silent cross-device intake sync. ONE queued fan-out

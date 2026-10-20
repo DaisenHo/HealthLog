@@ -494,9 +494,9 @@ describe("taken doses become the day's SUPPLEMENT micronutrients", () => {
         takenAt: twoDaysAgo,
       },
     });
-    const { recomputeMedicationComplianceForEvent } =
-      await import("@/lib/rollups/medication-compliance-rollups");
-    await recomputeMedicationComplianceForEvent({
+    const { refreshDoseSlot } =
+      await import("@/lib/medications/dose-day-refresh");
+    await refreshDoseSlot({
       userId,
       medicationId,
       scheduledFor: twoDaysAgo,

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   MEDICATION_IMPORT_SKIP_DETAIL_LIMIT,
   MEDICATION_INTAKE_IMPORT_CHUNK_SIZE,
-  MEDICATION_INTAKE_IMPORT_ROLLUP_CHUNK_SIZE,
   _setMedicationIntakeImportPrismaForTests,
   advanceMedicationImportProgress,
   appendMedicationImportSkipDetails,
@@ -48,21 +47,18 @@ describe("medication intake import worker bounds", () => {
       processed: 100,
       imported: 98,
       skippedByReason: { duplicate_in_file: 2 },
-      touchedDays: ["2026-07-20", "2026-07-21"],
     });
     const second = advanceMedicationImportProgress(first, {
       from: 100,
       processed: 100,
       imported: 97,
       skippedByReason: { duplicate_in_file: 1, already_recorded: 2 },
-      touchedDays: ["2026-07-21", "2026-07-22"],
     });
     const replay = advanceMedicationImportProgress(second, {
       from: 0,
       processed: 100,
       imported: 98,
       skippedByReason: { duplicate_in_file: 2 },
-      touchedDays: ["2026-07-20"],
     });
 
     expect(first.processed).toBe(100);
@@ -71,7 +67,7 @@ describe("medication intake import worker bounds", () => {
       total: 1_000,
       imported: 195,
       skippedByReason: { duplicate_in_file: 3, already_recorded: 2 },
-      touchedDays: ["2026-07-20", "2026-07-21", "2026-07-22"],
+      touchedDays: [],
       rollupProcessed: 0,
     });
     expect(replay).toBe(second);
@@ -89,7 +85,11 @@ describe("medication intake import worker bounds", () => {
     expect(failure.length).toBeLessThanOrEqual(1_000);
   });
 
-  it("checkpoints bounded rollup transactions across many touched days", async () => {
+  it("finishes a job admitted with pending rollup days without recomputing them", async () => {
+    // A job admitted before the compliance rollup was dropped carries the
+    // days it touched and how many of them were recomputed. It now finishes
+    // on its next pass, writes nothing per day, and keeps its stored
+    // progress shape.
     const touchedDays = Array.from({ length: 1_000 }, (_, index) =>
       new Date(Date.UTC(2020, 0, index + 1)).toISOString().slice(0, 10),
     );
@@ -99,32 +99,27 @@ describe("medication intake import worker bounds", () => {
       imported: 0,
       skippedByReason: {},
       touchedDays,
+      rollupProcessed: 40,
     };
     let status = "running";
-    const executeRawCounts: number[] = [];
+    let executeRawCount = 0;
+    let transactions = 0;
     let auditCount = 0;
-    let transactionNumber = 0;
-    let rejectRollup = true;
 
     const client = {
       $transaction: async (
         operation: (tx: Record<string, unknown>) => Promise<unknown>,
       ) => {
-        transactionNumber += 1;
-        let executeRawCount = 0;
+        transactions += 1;
         const tx = {
-          $queryRaw: async () => [{ id: "job-many-days" }],
+          $queryRaw: async () => [{ id: "job-legacy-days" }],
           $executeRaw: async () => {
             executeRawCount += 1;
-            if (rejectRollup && transactionNumber === 3) {
-              rejectRollup = false;
-              throw new Error("rollup transaction failed");
-            }
             return 1;
           },
           medicationIntakeImportJob: {
             findUnique: async () => ({
-              id: "job-many-days",
+              id: "job-legacy-days",
               recordUserId: "user-1",
               actorUserId: "user-1",
               medicationId: "medication-1",
@@ -132,7 +127,6 @@ describe("medication intake import worker bounds", () => {
               payload: { entries: [] },
               progress: persistedProgress,
               startedAt: new Date(),
-              recordUser: { timezone: "UTC" },
             }),
             update: async (args: {
               data: { progress?: unknown; status?: string };
@@ -151,43 +145,25 @@ describe("medication intake import worker bounds", () => {
             },
           },
         };
-        try {
-          return await operation(tx);
-        } finally {
-          executeRawCounts.push(executeRawCount);
-        }
+        return operation(tx);
       },
     };
 
     _setMedicationIntakeImportPrismaForTests(client as never);
     try {
-      await expect(
-        processMedicationIntakeImportJob("job-many-days"),
-      ).rejects.toThrow("rollup transaction failed");
-      expect(persistedProgress).toMatchObject({
-        rollupProcessed: MEDICATION_INTAKE_IMPORT_ROLLUP_CHUNK_SIZE * 2,
-      });
-      expect(status).toBe("running");
-      expect(auditCount).toBe(0);
-
-      await processMedicationIntakeImportJob("job-many-days");
+      await processMedicationIntakeImportJob("job-legacy-days");
     } finally {
       _setMedicationIntakeImportPrismaForTests(null);
     }
 
-    expect(executeRawCounts).toHaveLength(
-      Math.ceil(
-        touchedDays.length / MEDICATION_INTAKE_IMPORT_ROLLUP_CHUNK_SIZE,
-      ) + 1,
-    );
-    expect(Math.max(...executeRawCounts)).toBeLessThanOrEqual(
-      MEDICATION_INTAKE_IMPORT_ROLLUP_CHUNK_SIZE * 2,
-    );
     expect(status).toBe("done");
-    expect(persistedProgress).toMatchObject({
-      rollupProcessed: touchedDays.length,
-    });
+    expect(transactions).toBe(1);
+    expect(executeRawCount).toBe(0);
     expect(auditCount).toBe(1);
+    expect(persistedProgress).toMatchObject({
+      touchedDays,
+      rollupProcessed: 40,
+    });
   });
 });
 
@@ -229,14 +205,12 @@ describe("medication import skip reporting (#650)", () => {
       processed: 100,
       imported: 90,
       skippedByReason: { duplicate_in_file: 10 },
-      touchedDays: [],
     });
     const second = advanceMedicationImportProgress(first, {
       from: 100,
       processed: 100,
       imported: 95,
       skippedByReason: { already_recorded: 5 },
-      touchedDays: [],
     });
 
     expect(second.skippedByReason).toEqual({

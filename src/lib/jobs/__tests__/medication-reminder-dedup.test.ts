@@ -124,9 +124,6 @@ vi.mock("@/lib/notifications/dispatcher", () => ({
 }));
 vi.mock("@/lib/crypto", () => ({ decrypt: vi.fn(() => "token") }));
 vi.mock("@/lib/telegram", () => ({ deleteMessage: vi.fn() }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
-}));
 
 import { handleReminderCheck } from "@/lib/jobs/reminder/medication-reminder-check";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";

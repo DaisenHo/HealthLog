@@ -72,7 +72,6 @@ const subsystemSurface = {
   "rollup-full-backfill": { audience: "system" },
   "mood-rollup-recompute": { audience: "system" },
   "mood-rollup-full-backfill": { audience: "system" },
-  "medication-compliance-full-backfill": { audience: "system" },
   "step-consolidation": { audience: "system" },
   "step-consolidation-repair": { audience: "system" },
   "cumulative-pr-rederive": { audience: "system" },

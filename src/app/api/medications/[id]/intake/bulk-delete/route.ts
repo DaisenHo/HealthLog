@@ -15,8 +15,8 @@ import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import {
   dayKeyForScheduledFor,
-  recomputeMedicationComplianceForDay,
-} from "@/lib/rollups/medication-compliance-rollups";
+  refreshDoseDay,
+} from "@/lib/medications/dose-day-refresh";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { NextRequest } from "next/server";
@@ -159,26 +159,11 @@ export const POST = apiHandler(
       },
     });
 
-    // Best-effort rollup refresh — one trip per unique dayKey so a
-    // 14-row delete spanning two days closes in two SQL trips. The
-    // helper is idempotent and the catch swallows transient
-    // populator failures (same contract as the single-event delete).
+    // Best-effort dose-day refresh, one per unique dayKey, so a 14-row
+    // delete spanning two days refreshes two days (same contract as the
+    // single-event delete).
     for (const dayKey of dayKeysToRefresh) {
-      try {
-        await recomputeMedicationComplianceForDay(user.id, id, dayKey, tz);
-      } catch (err) {
-        annotate({
-          action: {
-            name: "medications.intake.bulk-delete.recompute-failed",
-            entity_type: "medication",
-            entity_id: id,
-          },
-          meta: {
-            day_key: dayKey,
-            error: err instanceof Error ? err.message : String(err),
-          },
-        });
-      }
+      await refreshDoseDay({ userId: user.id, medicationId: id, dayKey, tz });
     }
 
     await auditLog("medication.intake.bulk_delete", {

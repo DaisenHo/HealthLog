@@ -34,12 +34,6 @@ vi.mock("@/lib/db", () => ({
       // v1.15.18 — the band resolver loads the medication via findFirst.
       findFirst: vi.fn(),
     },
-    medicationComplianceRollup: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
-      upsert: vi.fn(),
-      deleteMany: vi.fn(),
-    },
     // v1.4.43 — audit-ledger breadcrumb for validation-failed paths.
     auditLog: { create: vi.fn() },
     $transaction: vi.fn(),
@@ -119,15 +113,6 @@ beforeEach(() => {
   vi.mocked(prisma.medicationIntakeEvent.createMany).mockResolvedValue({
     count: 0,
   } as never);
-  // v1.4.39 — default the coverage probe to "uncovered" so the
-  // legacy compliance test still exercises the live-fallback branch
-  // and finds the legacy mocked intake events.
-  vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue(
-    null,
-  );
-  vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue(
-    [] as never,
-  );
   // v1.4.39 — the coverage probe is now a single `$queryRaw`
   // aggregate returning `{ rolled_days, event_days }`. Default to
   // "zero rollups, zero events" (covered/trivial-empty) so tests that

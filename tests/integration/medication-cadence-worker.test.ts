@@ -76,13 +76,13 @@ vi.mock("@/lib/db-compat", () => ({
 vi.mock("@/lib/cache/invalidate", () => ({
   invalidateUserMedications: vi.fn(),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", async () => {
+vi.mock("@/lib/medications/dose-day-refresh", async () => {
   const actual = await vi.importActual<
-    typeof import("@/lib/rollups/medication-compliance-rollups")
-  >("@/lib/rollups/medication-compliance-rollups");
+    typeof import("@/lib/medications/dose-day-refresh")
+  >("@/lib/medications/dose-day-refresh");
   return {
     ...actual,
-    recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
+    refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
   };
 });
 

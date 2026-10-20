@@ -118,61 +118,61 @@ model User {
   environmentAqHistoryJson     Json?     @map("environment_aq_history_json")
 
   // Codex OAuth (ChatGPT subscription)
-  codexAccessTokenEncrypted  String?   @map("codex_access_token_encrypted")
-  codexRefreshTokenEncrypted String?   @map("codex_refresh_token_encrypted")
+  codexAccessTokenEncrypted   String?   @map("codex_access_token_encrypted")
+  codexRefreshTokenEncrypted  String?   @map("codex_refresh_token_encrypted")
   /// @internal: dead mirror of the expiry inside the encrypted Codex creds —
   /// the refresh path reads the decrypted blob's own `expiresAt`
   /// (`src/lib/ai/provider.ts`), never this column. Kept (and kept written)
   /// for wire/backup compatibility rather than dropped.
-  codexTokenExpiresAt        DateTime? @map("codex_token_expires_at")
-  codexConnectedAt           DateTime? @map("codex_connected_at")
-  codexConnectionStatus      String    @default("disconnected") @map("codex_connection_status")
+  codexTokenExpiresAt         DateTime? @map("codex_token_expires_at")
+  codexConnectedAt            DateTime? @map("codex_connected_at")
+  codexConnectionStatus       String    @default("disconnected") @map("codex_connection_status")
   // Per-user opt-in to the operator's shared central Codex (ChatGPT
   // subscription) connection stored on `AppSettings.adminCodex*`. OFF by
   // default; only takes effect when the operator has actually connected the
   // central Codex. Routing through it is external egress on a shared,
   // train-by-default account bound by the operator's rate limits — consent-gated
   // exactly like any other server-managed egress.
-  useCentralCodex            Boolean   @default(false) @map("use_central_codex")
-  insightsPrivacyMode        String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
-  insightsCachedAt           DateTime? @map("insights_cached_at")
+  useCentralCodex             Boolean   @default(false) @map("use_central_codex")
+  insightsPrivacyMode         String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
+  insightsCachedAt            DateTime? @map("insights_cached_at")
   /// @internal: legacy plaintext cache of the AI insights payload, read only
   /// as a fallback for rows the free-text encryption backfill has not reached
   /// yet (v1.43.7). Every write since then goes to `insightsCachedTextEncrypted`
   /// and leaves this NULL; the backfill seals and nulls it on the old rows.
   /// DROP this column in a later release, once the backfill reports zero
   /// remaining rows on every instance.
-  insightsCachedText         String?   @map("insights_cached_text")
+  insightsCachedText          String?   @map("insights_cached_text")
   /// v1.43.7 — the cached AI insights payload (briefing, per-domain readings,
   /// recommendations; JSON), AES-256-GCM binary layout under
   /// `INSIGHTS_CACHED_TEXT_AAD`. Read and written only through
   /// `src/lib/insights/cached-text-cipher.ts`.
-  insightsCachedTextEncrypted Bytes?   @map("insights_cached_text_encrypted")
+  insightsCachedTextEncrypted Bytes?    @map("insights_cached_text_encrypted")
   // Language the cached text was generated in. The cache is one slot per
   // user, so a reader in another language must not be served it: the
   // snapshot briefing lift and the advisor read treat a tag that differs
   // from the reader's locale as an empty cache and re-warm in the reader's.
   // NULL on rows written before the tag existed (treated as matching; the
   // next write tags it).
-  insightsCachedLocale       String?   @map("insights_cached_locale")
+  insightsCachedLocale        String?   @map("insights_cached_locale")
   // v1.16.8 — SHA-256 fingerprint of the compacted feature snapshot the
   // cached comprehensive text was generated from. Nightly / forced / lazy
   // regenerations compare the fresh snapshot's hash against this and skip
   // the provider call (refreshing only `insightsCachedAt`) when nothing
   // the prompt sees has changed.
-  insightsSnapshotHash       String?   @map("insights_snapshot_hash")
+  insightsSnapshotHash        String?   @map("insights_snapshot_hash")
   // v1.16.8 — last time a forced full warm's comprehensive step failed or
   // timed out. The forced warm path backs off for an hour after a failure
   // so a persistently broken provider chain cannot be re-driven into a
   // full generation attempt by every page-open.
-  insightsWarmFailedAt       DateTime? @map("insights_warm_failed_at")
+  insightsWarmFailedAt        DateTime? @map("insights_warm_failed_at")
   // v1.18.7 — UTC YYYY-MM-DD of the last daily-briefing phrasing re-roll.
   // The content-hash gate keeps the FINDINGS byte-stable on unchanged data,
   // but the daily-briefing PARAGRAPH is re-rolled once per calendar day at a
   // higher, seedless temperature so the prose reads fresh day-over-day
   // without re-paying for the findings. This stamps the day a re-roll ran so
   // the gate stays at most one extra call per day.
-  insightsBriefingRerollDate String?   @map("insights_briefing_reroll_date")
+  insightsBriefingRerollDate  String?   @map("insights_briefing_reroll_date")
   // Morning-freshness marker: the user-local YYYY-MM-DD (their profile
   // timezone) for which the event-driven morning refresh has run — i.e. last
   // night's sleep has arrived AND the sleep-dependent insight/score cache was
@@ -181,13 +181,13 @@ model User {
   // `morning-digest-refresh` job the sleep-arrival trigger enqueues; the
   // string form makes the "same local morning" comparison timezone-honest
   // without a second timestamp read.
-  morningDigestRefreshedOn   String?   @map("morning_digest_refreshed_on")
+  morningDigestRefreshedOn    String?   @map("morning_digest_refreshed_on")
   // v1.4.36 W3 T3 — per-user AI Insights exclude-metrics list, mirrors
   // `coachPrefsJson.excludeMetrics`. The /api/insights/generate route
   // filters matching keys off `features` before JSON.stringify so the
   // model never sees data the user opted out of. Default `[]` = legacy
   // behaviour for every existing row.
-  insightsExcludeMetrics     String[]  @default([]) @map("insights_exclude_metrics")
+  insightsExcludeMetrics      String[]  @default([]) @map("insights_exclude_metrics")
 
   // v1.8.5 — user-level injection-site deny-list. Sites listed here are
   // never offered for ANY medication's injection-site picker and the
@@ -897,11 +897,6 @@ model User {
   // read serves from this table instead of the unbounded
   // MoodEntry.findMany walk.
   moodEntryRollups                          MoodEntryRollup[]
-  // v1.4.39 W-MED — per-(user, medication, day) compliance rollup.
-  // Per-write hook on MedicationIntakeEvent mutations + the scheduler
-  // keep the row in sync so `/api/medications/intake?scope=compliance`
-  // and `computeUserHealthScoreFastPath` skip the per-event findMany.
-  medicationComplianceRollups               MedicationComplianceRollup[]
   // v1.4.40 SB-10 — AI consent receipts the iOS app POSTs when the user
   // grants AI processing during onboarding. Persisted audit trail
   // covers App-Store Guideline 5.1.2(i) ("data-collection consent must
@@ -2972,10 +2967,6 @@ model Medication {
   /// roll-up (GI / METABOLIC / INJECTION_SITE / COGNITIVE /
   /// GLP1_SPECIFIC) and 1-5 Likert severity per entry.
   sideEffects        MedicationSideEffect[]
-  /// v1.4.39 W-MED — per-(medication, day) compliance rollup. Mutations
-  /// on the linked MedicationIntakeEvent rows refresh the row inline;
-  /// the read paths consume this instead of the per-event findMany.
-  complianceRollups  MedicationComplianceRollup[]
   /// v1.16.3 — archived schedule eras (effective dating). Superseded
   /// schedule states land here when a wholesale schedule replace changes
   /// cadence-relevant fields; the band minter segments historical minting
@@ -5036,39 +5027,6 @@ model MoodEntryRollup {
   @@id([userId, granularity, bucketStart])
   @@index([userId, granularity, bucketStart(sort: Desc)])
   @@map("mood_entry_rollups")
-}
-
-// ─── Medication Compliance Rollup (v1.4.39 W-MED) ─────────────
-//
-// Per-(userId, medicationId, day) compliance ledger. Replaces the
-// unbounded MedicationIntakeEvent findMany on
-// `/api/medications/intake?scope=compliance` and the equivalent
-// fan-out inside `computeUserHealthScoreFastPath`.
-//
-// Day-key is anchored to the user's IANA timezone (TEXT, encoded as
-// `YYYY-MM-DD`) so the read path can collapse a date range into a
-// straight WHERE clause without re-deriving the boundary per row.
-//
-// Write path: every MedicationIntakeEvent create / update / delete
-// (and the scheduler that mints fresh `scheduledFor` rows) fires
-// `recomputeMedicationComplianceForDay` which upserts the
-// `(user, medication, day)` row. Worker handles weekly / monthly
-// re-fold off the hot path.
-model MedicationComplianceRollup {
-  userId       String   @map("user_id")
-  medicationId String   @map("medication_id")
-  day          String // YYYY-MM-DD anchored to user.timezone
-  scheduled    Int
-  taken        Int
-  skipped      Int
-  computedAt   DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
-
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
-
-  @@id([userId, medicationId, day])
-  @@index([userId, day(sort: Desc)])
-  @@map("medication_compliance_rollups")
 }
 
 // ─── Integration Status (v1.4.15) ─────────────────────────

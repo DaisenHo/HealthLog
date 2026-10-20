@@ -33,9 +33,9 @@ metadata (`medication_schedules`):
 - After upgrading to v1.15.19+, when a user reports a compliance rate above
   100 %, duplicate entries in the medication history, or a dose shown as
   taken days away from its slot.
-- The compliance rollup counts DISTINCT slots since v1.15.19, so the
-  percentages self-correct on recompute even without running this script.
-  Running it additionally clears the phantom rows from the history view.
+- Compliance counts DISTINCT slots since v1.15.19, so the percentages are
+  right even without running this script. Running it additionally clears
+  the phantom rows from the history view.
 - The `intake-slot-dedup` worker already collapses canonical-slot
   duplicates at boot and on a daily cron; this script is the manual,
   immediately-observable fallback and the only path that surfaces the
@@ -104,13 +104,9 @@ healthlog-tsx scripts/repair-intake-anomalies.ts --fix
   as the duplicate losers). A medication without any derivable anchor
   (PRN-only / unscheduled) is skipped — there is nothing to compare
   against.
-- **Affected compliance rollups are recomputed** for every touched
-  `(user, medication, day)`. The script executes the same DISTINCT-slot
-  aggregation SQL the shared helper runs (a verbatim twin of
-  `recomputeMedicationComplianceForDay` in
-  `src/lib/rollups/medication-compliance-rollups.ts` — kept inline so
-  the script needs no app imports), so the scheduled/taken counts and
-  the rate self-correct immediately.
+- **No separate recompute is needed.** Every compliance reader folds the
+  rows that share one slot, so the scheduled/taken counts and the rate are
+  right as soon as the duplicates are tombstoned.
 
 The script is idempotent: a second `--fix` run finds zero duplicate groups
 and changes nothing. Exit code is 0 on success (including a clean
