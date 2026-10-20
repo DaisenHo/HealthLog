@@ -1,3 +1,5 @@
+import { DEFAULT_ERROR_CODES } from "@/lib/api-response";
+
 /**
  * Every `meta.errorCode` the API emits, grouped by the surface that emits it.
  *
@@ -211,25 +213,9 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "health_score_config.invalid",
       "health_score_config.too_narrow",
     ],
-    http: [
-      "http.bad_gateway",
-      "http.bad_request",
-      "http.client_error",
-      "http.conflict",
-      "http.forbidden",
-      "http.gateway_timeout",
-      "http.gone",
-      "http.internal",
-      "http.invalid",
-      "http.method_not_allowed",
-      "http.not_found",
-      "http.payload_too_large",
-      "http.rate_limited",
-      "http.server_error",
-      "http.unauthenticated",
-      "http.unavailable",
-      "http.unsupported_media_type",
-    ],
+    // The status defaults, derived from the table `apiHandler` applies so the
+    // two cannot drift apart.
+    http: [...new Set(Object.values(DEFAULT_ERROR_CODES))].sort(),
     illness: [
       "illness.day-log.invalid",
       "illness.disabled",

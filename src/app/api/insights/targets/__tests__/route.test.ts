@@ -322,8 +322,8 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
   });
 
   it("reads latest-ever-per-type one index probe per type, floored at one year", async () => {
-    // Audit High finding 3 established the 365-day floor. The read is the
-    // shared `readLatestEver`: driven from the type list, one LIMIT 1 probe
+    // The read is floored at 365 days. It is the shared `readLatestEver`:
+    // driven from the type list, one LIMIT 1 probe
     // per type, so a dense type never sorts a year of raw rows to keep one.
     await callGet(makeReq());
 
