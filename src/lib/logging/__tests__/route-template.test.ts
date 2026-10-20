@@ -96,7 +96,9 @@ describe("apiHandler's wide event", () => {
   });
 
   it("still scrubs a path secret from both fields", async () => {
-    const route = apiHandler(async () => apiSuccess({ ok: true }));
+    const route = apiHandler(async (_req: NextRequest) =>
+      apiSuccess({ ok: true }),
+    );
     // No params handed in: the route falls back to the pathname, and the
     // redaction floor still hides the secret.
     await route(
