@@ -425,6 +425,7 @@ export function defaultOffhostObjectLimit(): number {
 function size(bytes: number): string {
   const mb = bytes / 1024 / 1024;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  // eslint-disable-next-line healthlog/no-unlocalised-decimal -- operator log text about a backup size
   return mb < 100 ? `${mb.toFixed(1)} MB` : `${Math.round(mb)} MB`;
 }
 

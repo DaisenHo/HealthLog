@@ -199,7 +199,6 @@ export const APPOINTMENT_REMINDER_ADDRESS_INCLUDE = {
       practitioner: {
         select: {
           userId: true,
-          deletedAt: true,
           location: true,
           locationEncrypted: true,
         },
@@ -212,7 +211,9 @@ export const APPOINTMENT_REMINDER_ADDRESS_INCLUDE = {
 /**
  * The address a reminder's push names. A checkup's own free-text `location`;
  * for an appointment, the owning visit's practitioner address, decrypted
- * here. Null when the visit names no live practitioner of the same account.
+ * here. Null when the visit names no practitioner of the same account. A
+ * practitioner deleted from the address book is still the one the booked
+ * visit is with, and the visit still shows it, so the reminder names it too.
  */
 export function appointmentReminderAddress(reminder: {
   userId: string;
@@ -222,7 +223,6 @@ export function appointmentReminderAddress(reminder: {
     userId: string;
     practitioner: {
       userId: string;
-      deletedAt: Date | null;
       location: string | null;
       locationEncrypted: Uint8Array | null;
     } | null;
@@ -235,8 +235,7 @@ export function appointmentReminderAddress(reminder: {
     !visit ||
     !practitioner ||
     visit.userId !== reminder.userId ||
-    practitioner.userId !== reminder.userId ||
-    practitioner.deletedAt !== null
+    practitioner.userId !== reminder.userId
   ) {
     return null;
   }

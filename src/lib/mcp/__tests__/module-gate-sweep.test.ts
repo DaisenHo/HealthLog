@@ -190,11 +190,13 @@ describe("get_visits", () => {
     expect(result.visits[0].conditions).toEqual(["Knee pain"]);
   });
 
-  it("does not name a deleted practitioner", async () => {
+  it("names the practitioner a live visit was with, even once deleted from the address book", async () => {
+    // The web record and the doctor report show it; the agent reads the same
+    // record (the address-book entry is kept while a live visit names it).
     const result = (await tool("get_visits").run(CTX, {})) as {
       visits: Array<{ practitioner: string | null; specialty: string | null }>;
     };
-    expect(result.visits[0].practitioner).toBeNull();
-    expect(result.visits[0].specialty).toBeNull();
+    expect(result.visits[0].practitioner).toBe("Dr. Gone");
+    expect(result.visits[0].specialty).toBe("Cardiology");
   });
 });

@@ -24,9 +24,14 @@
  *   purged measurement.
  *
  * The delete runs per account under the restore lock, in bounded batches
- * (`purgeTombstonesByAccount`). Foreign keys into these tables cascade or set
- * null (none restricts), so a purged visit takes its link rows with it and a
- * live vaccination that named it simply loses the pointer.
+ * (`purgeTombstonesByAccount`). A key that cascades belongs to the row it
+ * points at: a purged visit takes its link rows with it. A key that does not
+ * cascade is a live record's reference, and a live record keeps what it shows:
+ * a visit still names the practitioner it was with after the address-book
+ * entry is deleted, so that entry is not purged while a live visit or dose
+ * names it. Those references are each entry's `referencedBy`, and
+ * `soft-delete-retention-register.test.ts` derives the set from the schema,
+ * so a new nulling key into a purged model cannot ship without one.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
@@ -36,6 +41,19 @@ import {
   purgeTombstonesByAccount,
   type TombstonePurgeOutcome,
 } from "@/lib/jobs/measurement-tombstone-cleanup";
+
+/**
+ * A key into a purged model that does not cascade. While a row that is not
+ * itself tombstoned holds it, the row it names stays.
+ */
+export interface LiveReferrer {
+  /** The physical table holding the key; a literal, spliced into the SQL. */
+  table: string;
+  /** The key column; a literal, spliced into the SQL. */
+  column: string;
+  /** Whether the referring table soft-deletes (a tombstoned row is not live). */
+  softDeletes: boolean;
+}
 
 export type SoftDeleteRetention =
   | { kind: "sync-feed"; days: number }
@@ -51,14 +69,31 @@ export type SoftDeleteRetention =
        * the alias `t`. For a tombstone something live still depends on.
        */
       keep?: string;
+      /** The live references that hold a tombstone back. */
+      referencedBy?: readonly LiveReferrer[];
       /** Why the horizon or the condition differs from the default. */
       why?: string;
     };
 
-const standard = (table: string): SoftDeleteRetention => ({
+const standard = (
+  table: string,
+  referencedBy?: readonly LiveReferrer[],
+): SoftDeleteRetention => ({
   kind: "purge",
   table,
   days: () => TOMBSTONE_RETENTION_DAYS,
+  ...(referencedBy ? { referencedBy } : {}),
+});
+
+const live = (table: string, column: string): LiveReferrer => ({
+  table,
+  column,
+  softDeletes: true,
+});
+const always = (table: string, column: string): LiveReferrer => ({
+  table,
+  column,
+  softDeletes: false,
 });
 
 export const SOFT_DELETE_RETENTION: Readonly<
@@ -75,6 +110,7 @@ export const SOFT_DELETE_RETENTION: Readonly<
     kind: "purge",
     table: "menstrual_cycles",
     days: () => TOMBSTONE_RETENTION_DAYS,
+    referencedBy: [live("cycle_day_logs", "cycle_id")],
     keep: `NOT EXISTS (SELECT 1 FROM "menstrual_cycles" a
                         WHERE a."id" = t."absorbed_into_id"
                           AND a."deleted_at" IS NULL)`,
@@ -88,25 +124,60 @@ export const SOFT_DELETE_RETENTION: Readonly<
   },
 
   MentalHealthAssessment: standard("mental_health_assessments"),
-  MeasurementReminder: standard("measurement_reminders"),
+  MeasurementReminder: standard("measurement_reminders", [
+    live("encounters", "reminder_id"),
+    live("vaccination_records", "reminder_id"),
+  ]),
   LabResult: standard("lab_results"),
   CustomMetric: standard("custom_metrics"),
   CustomMetricEntry: standard("custom_metric_entries"),
   CoachPlan: standard("coach_plans"),
   CoachReminder: standard("coach_reminders"),
-  IllnessEpisode: standard("illness_episodes"),
+  IllnessEpisode: standard("illness_episodes", [
+    live("illness_episodes", "parent_condition_id"),
+    always("symptom_events", "episode_id"),
+  ]),
   IllnessDayLog: standard("illness_day_logs"),
   Allergy: standard("allergies"),
   FamilyHistoryEntry: standard("family_history_entries"),
-  Encounter: standard("encounters"),
-  Practitioner: standard("practitioners"),
+  Encounter: standard("encounters", [
+    live("vaccination_records", "encounter_id"),
+  ]),
+  Practitioner: standard("practitioners", [
+    live("encounters", "practitioner_id"),
+    live("vaccination_records", "practitioner_id"),
+  ]),
   VaccinationRecord: standard("vaccination_records"),
-  CustomVaccine: standard("custom_vaccines"),
+  CustomVaccine: standard("custom_vaccines", [
+    live("vaccination_records", "custom_vaccine_id"),
+  ]),
   LifeEvent: standard("life_events"),
 };
 
 const TABLE = /^[a-z_]+$/;
 const DAY_MS = 86_400_000;
+
+/**
+ * The condition a purgeable row must meet, over the alias `t`: the entry's
+ * own `keep`, and no live row holding a key to it. Every identifier comes
+ * from the register's literals and is asserted against a closed pattern.
+ */
+export function purgeCondition(
+  entry: Extract<SoftDeleteRetention, { kind: "purge" }>,
+): string {
+  const parts: string[] = [];
+  if (entry.keep) parts.push(entry.keep);
+  for (const ref of entry.referencedBy ?? []) {
+    if (!TABLE.test(ref.table) || !TABLE.test(ref.column)) {
+      throw new Error(`Bad referrer ${ref.table}.${ref.column}`);
+    }
+    const alive = ref.softDeletes ? ` AND r."deleted_at" IS NULL` : "";
+    parts.push(
+      `NOT EXISTS (SELECT 1 FROM "${ref.table}" r WHERE r."${ref.column}" = t."id"${alive})`,
+    );
+  }
+  return parts.map((part) => `AND ${part}`).join(" ");
+}
 
 /** One table's purge, for the run report. */
 export interface SoftDeletePurgeLeg extends TombstonePurgeOutcome {
@@ -130,7 +201,7 @@ export async function purgeSoftDeletedTable(
   }
   const table = `"${entry.table}"`;
   const cutoff = new Date(now.getTime() - entry.days() * DAY_MS);
-  const keep = entry.keep ? `AND ${entry.keep}` : "";
+  const keep = purgeCondition(entry);
   const outcome = await purgeTombstonesByAccount({
     prisma,
     findRows: (take, skipUserIds) =>

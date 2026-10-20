@@ -68,6 +68,11 @@ Database error code: 55P03
 HealthLog: migration 0412_measurement_hot_updates timed out waiting for a lock (55P03) and changed nothing; marking it rolled back and retrying in 15s (retry 1 of 5).
 ```
 
+A marked migration that loses a deadlock against an app transaction
+(`Database error code: 40P01`) is in the same state, its block rolled back
+whole, and is handled the same way; the entrypoint's line then says
+`was cancelled in a deadlock (40P01)`.
+
 What happens on its own: such a migration is written so that a timed-out
 attempt changes nothing, and it says so in its file
 (`-- @retry-on-lock-timeout`). The entrypoint then marks that one migration

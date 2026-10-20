@@ -75,6 +75,12 @@ const OWN_BUCKET: Record<string, string> = {
     "The cycle HealthKit sweep sends 500-day slices in sequence; the route's own bulk bucket meters it.",
   "app/api/nutrients/batch/route.ts":
     "The nutrient sync sends 500-row batches in sequence; the route's own batch bucket meters it.",
+  "app/api/insights/chat/route.ts":
+    "A Coach turn is metered by the Coach's own buckets: 20 turns a minute (`coach-chat`) and one turn slot at a time.",
+  "app/api/insights/chat/fenced/route.ts":
+    "A fenced document chat turn is metered by its own per-account bucket, sized for model turns.",
+  "app/api/documents/inbound/[id]/chat/route.ts":
+    "A document chat turn is metered by its own per-account bucket, sized for model turns.",
   "app/api/insights/ecg/route.ts":
     "The ECG sweep sends one recording per request with no client-side delay, newest first, over the whole HealthKit history; the route's own 600-a-minute ingest bucket meters it.",
 };

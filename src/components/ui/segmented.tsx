@@ -37,6 +37,8 @@ export interface SegmentedOption<T extends string> {
   icon?: LucideIcon;
   /** Rendered after the label (a connected check beside a system name). */
   trailing?: ReactNode;
+  /** A longer name shown on hover ("Last 7 days" for "7d"). */
+  title?: string;
 }
 
 export interface SegmentedProps<T extends string> {
@@ -118,8 +120,13 @@ export function Segmented<T extends string>({
                   ...getRadioProps(index),
                 })}
             {...(iconOnly
-              ? { "aria-label": option.label, title: option.label }
-              : {})}
+              ? {
+                  "aria-label": option.label,
+                  title: option.title ?? option.label,
+                }
+              : option.title
+                ? { title: option.title }
+                : {})}
             disabled={disabled}
             data-value={option.value}
             data-slot={segmentSlot?.(option.value)}

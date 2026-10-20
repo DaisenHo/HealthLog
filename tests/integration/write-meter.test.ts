@@ -6,7 +6,9 @@
  * before. What has to hold: a write is counted, a read is not, a spent bucket
  * refuses with the published code and the headers that describe it and
  * writes nothing, and a bulk route on its own bucket keeps working while the
- * shared one is spent.
+ * shared one is spent. A POST that reads (`readOverPost`) is not counted on
+ * either resolver, and a bucket that cannot be read lets the write through
+ * while the limiter itself still fails for its other callers.
  */
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -181,5 +183,60 @@ describe("the shared write bucket on routes without a limiter of their own", () 
     expect(
       await getPrismaClient().measurement.count({ where: { userId: USER_ID } }),
     ).toBe(1);
+  });
+});
+
+describe("what the shared bucket does not count", () => {
+  async function postThrough(options?: { readOverPost: true }) {
+    const { apiHandler, requireAuth } = await import("@/lib/api-handler");
+    const { apiSuccess } = await import("@/lib/api-response");
+    const POST = apiHandler(async (_request: NextRequest) => {
+      const { user } = await requireAuth(undefined, options);
+      return apiSuccess({ id: user.id });
+    });
+    return POST(
+      new NextRequest("http://localhost/api/probe", {
+        method: "POST",
+        body: "{}",
+        headers: { "content-type": "application/json" },
+      }),
+    );
+  }
+
+  it("leaves a read-over-POST through requireAuth uncounted", async () => {
+    expect((await postThrough({ readOverPost: true })).status).toBe(200);
+    expect(await bucketCount()).toBe(0);
+  });
+
+  it("counter-check: the same POST without the declaration is counted", async () => {
+    expect((await postThrough()).status).toBe(200);
+    expect(await bucketCount()).toBe(1);
+  });
+});
+
+describe("a bucket that cannot be read", () => {
+  it("lets the write through instead of answering 500, and the limiter still fails for its own callers", async () => {
+    const prisma = getPrismaClient();
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "rate_limits" RENAME TO "rate_limits_away"`,
+    );
+    try {
+      const res = await patchAllergy({ substance: "Birch pollen" });
+      expect(res.status, await res.clone().text()).toBe(200);
+      const row = await prisma.allergy.findUniqueOrThrow({
+        where: { id: allergyId },
+      });
+      expect(row.substance).toBe("Birch pollen");
+
+      // A login or sign-up limit calls the limiter directly: no fail-open.
+      await expect(
+        checkRateLimit("auth:login:probe", 5, 60_000),
+      ).rejects.toThrow();
+    } finally {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "rate_limits_away" RENAME TO "rate_limits"`,
+      );
+    }
   });
 });

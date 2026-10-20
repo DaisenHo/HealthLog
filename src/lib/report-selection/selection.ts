@@ -14,12 +14,7 @@
  */
 import { z } from "zod/v4";
 
-import {
-  isReportLeafId,
-  orderLeaves,
-  type ReportLeafId,
-  ALL_LEAF_IDS,
-} from "./catalogue";
+import { isReportLeafId, type ReportLeafId, ALL_LEAF_IDS } from "./catalogue";
 
 declare const brand: unique symbol;
 
@@ -121,7 +116,3 @@ export function selectionToBlob(
 export function isEmptySelection(selection: ReportSelection): boolean {
   return selection.leaves.length === 0;
 }
-
-// The ordering helper lives beside the catalogue it orders, so a client
-// panel that only folds its own state does not pull the schema library in.
-export { orderLeaves };

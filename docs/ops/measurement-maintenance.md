@@ -151,7 +151,8 @@ SELECT pg_size_pretty(pg_total_relation_size('measurements')) AS total,
 ## The nightly check
 
 Since v1.43.7 the same queue also runs by itself at 03:40 (Europe/Berlin).
-That run names no steps and changes nothing: vacuuming the table is
+That run names no steps and changes nothing beyond dropping a retired index
+(next section): vacuuming the table is
 autovacuum's job, which migration 0412 starts at 5 % dead rows instead of
 Postgres's 20 %. The check reads the table's live and dead rows and warns
 (`maintenance_autovacuum_behind` on the wide event) when there are at least
@@ -184,6 +185,63 @@ FROM pg_stat_user_tables WHERE relname = 'measurements';
 `n_tup_hot_upd` should now grow along with `n_tup_upd`. The fill factor
 applies to pages written after the migration; a `VACUUM FULL` after the
 upgrade applies it to the whole table.
+
+## Retired indexes
+
+An index the schema no longer declares has to leave the database too, and on
+`measurements` the obvious migration is the wrong one. A plain `DROP INDEX`
+needs an exclusive lock on the table; `DROP INDEX CONCURRENTLY` blocks nobody
+but waits, without limit, for every transaction already running on the
+table. A migration runs at boot, so either one waits for whatever holds the
+table (a `pg_dump`, a long backfill, a `VACUUM FULL`); past the container's
+start period the container is replaced with the migration half done, and the
+next boot stops at `P3009` until someone runs `prisma migrate resolve`.
+
+So an index is retired in two halves (v1.43.8, migration 0416, for
+`measurements_user_id_type_measured_at_idx`):
+
+1. The migration tries a plain `DROP INDEX IF EXISTS` inside a `DO` block with
+   a two-second `lock_timeout` and catches the timeout
+   (`EXCEPTION WHEN lock_not_available`). When nothing holds the table the
+   index is gone at once; otherwise the migration still succeeds and the
+   index stays. The longest the table's other statements can wait behind the
+   attempt is those two seconds. A new database and Prisma's shadow database
+   always take the lock, so the migration history ends without the index,
+   exactly as the schema does, and `prisma migrate dev` / `migrate diff` see
+   no drift and generate nothing.
+2. The index name goes into `RETIRED_MEASUREMENT_INDEXES` in
+   `src/lib/jobs/measurement-maintenance.ts`. Every run of this job, the
+   nightly 03:40 check included, drops each name still present with
+   `DROP INDEX CONCURRENTLY IF EXISTS`, waiting at most 60 seconds for its
+   locks. A run that runs out of time leaves the index (possibly marked
+   invalid, which the next drop finishes), sets
+   `maintenance_retired_index_pending` on the wide event with a warning, and
+   the next night tries again. The index costs writes until then, as it did
+   before the release; nothing reads it.
+
+Until the job has run, the database holds one index the schema does not
+declare. Nothing compares the two at runtime, and the only place they are
+compared, a `migrate diff` against the migration history, never sees it. To
+check by hand:
+
+```sql
+SELECT indexname FROM pg_indexes
+ WHERE tablename = 'measurements'
+   AND indexname = 'measurements_user_id_type_measured_at_idx';
+```
+
+No row: it is gone. To drop it now rather than at night, start a run from the
+admin card (any steps), or run the same statement yourself:
+
+```sql
+SET lock_timeout = '60s';
+DROP INDEX CONCURRENTLY IF EXISTS "measurements_user_id_type_measured_at_idx";
+```
+
+For the next large index, follow the same two halves.
+`src/__tests__/migration-lock-timeout-guard.test.ts` refuses a
+`DROP INDEX CONCURRENTLY` in any migration and requires every retired name to
+have a migration that bounds its wait and catches the timeout.
 
 ## "could not resize shared memory segment"
 

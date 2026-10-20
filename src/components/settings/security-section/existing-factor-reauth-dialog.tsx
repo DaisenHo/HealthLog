@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { Input } from "@/components/ui/input";
 import { useTranslations } from "@/lib/i18n/context";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
@@ -180,28 +180,19 @@ export function ExistingFactorReauthDialog({
         </AlertDialogHeader>
 
         {methods.length > 1 && (
-          <div
-            className="grid grid-cols-2 gap-2"
-            role="group"
-            aria-label={t("settings.passkeyReauth.methodLabel")}
-          >
-            {methods.map((m) => (
-              <Button
-                key={m}
-                type="button"
-                variant={method === m ? "secondary" : "outline"}
-                aria-pressed={method === m}
-                disabled={busy}
-                onClick={() => {
-                  setMethod(m);
-                  setSecret("");
-                  setAssertionError(null);
-                }}
-              >
-                {labels[m]}
-              </Button>
-            ))}
-          </div>
+          <Segmented
+            mode="toggle"
+            stretch
+            label={t("settings.passkeyReauth.methodLabel")}
+            value={method}
+            disabled={busy}
+            onChange={(m) => {
+              setMethod(m);
+              setSecret("");
+              setAssertionError(null);
+            }}
+            options={methods.map((m) => ({ value: m, label: labels[m] }))}
+          />
         )}
 
         {method === "password" && (

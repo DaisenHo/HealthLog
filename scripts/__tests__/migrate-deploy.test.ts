@@ -47,6 +47,11 @@ const P3018_UNIQUE = P3018_LOCK.replace("55P03", "23505").replace(
   'duplicate key value violates unique constraint "x"',
 );
 
+const P3018_DEADLOCK = P3018_LOCK.replace("55P03", "40P01").replace(
+  "canceling statement due to lock timeout",
+  "deadlock detected",
+);
+
 const P3009 = `Error: P3009
 
 migrate found failed migrations in the target database, new migrations will not be applied. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve
@@ -78,7 +83,11 @@ describe("which failure is retried", () => {
         failedRows: null,
         readMigration: reader(MARKED),
       }),
-    ).toEqual({ retry: true, migration: "0412_measurement_hot_updates" });
+    ).toEqual({
+      retry: true,
+      migration: "0412_measurement_hot_updates",
+      code: "55P03",
+    });
   });
 
   it("does not retry a lock timeout of an unmarked migration", () => {
@@ -91,6 +100,31 @@ describe("which failure is retried", () => {
     expect(decision).toMatchObject({
       reason: expect.stringContaining("not marked safe to re-run"),
     });
+  });
+
+  it("retries a deadlock of a marked migration, which rolled back whole", () => {
+    expect(lockTimeoutInReport(P3018_DEADLOCK)).toBe(
+      "0412_measurement_hot_updates",
+    );
+    expect(
+      decideLockRetry({
+        output: P3018_DEADLOCK,
+        failedRows: null,
+        readMigration: reader(MARKED),
+      }),
+    ).toEqual({
+      retry: true,
+      migration: "0412_measurement_hot_updates",
+      code: "40P01",
+    });
+    // Unmarked, a deadlock stays fatal like a lock timeout.
+    expect(
+      decideLockRetry({
+        output: P3018_DEADLOCK,
+        failedRows: null,
+        readMigration: reader(UNMARKED),
+      }).retry,
+    ).toBe(false);
   });
 
   it("does not retry any other database error", () => {
@@ -123,7 +157,11 @@ describe("which failure is retried", () => {
         failedRows,
         readMigration: reader(MARKED),
       }),
-    ).toEqual({ retry: true, migration: "0412_measurement_hot_updates" });
+    ).toEqual({
+      retry: true,
+      migration: "0412_measurement_hot_updates",
+      code: "55P03",
+    });
     // A stored failure of another kind stays fatal.
     expect(
       decideLockRetry({
@@ -293,6 +331,24 @@ process.exit(0);
       "migrate deploy --schema x",
     ]);
     expect(result.stdout).toContain("timed out waiting for a lock (55P03)");
+  });
+
+  it("does the same for a deadlock, and names it", () => {
+    const { run, calls } = setup(
+      [
+        [1, P3018_DEADLOCK],
+        [0, "All migrations have been successfully applied."],
+      ],
+      MARKED,
+    );
+    const result = run();
+    expect(result.status).toBe(0);
+    expect(calls()).toEqual([
+      "migrate deploy --schema x",
+      "migrate resolve --rolled-back 0412_measurement_hot_updates --schema x",
+      "migrate deploy --schema x",
+    ]);
+    expect(result.stdout).toContain("was cancelled in a deadlock (40P01)");
   });
 
   it("gives up after the last delay with Prisma's exit code", () => {

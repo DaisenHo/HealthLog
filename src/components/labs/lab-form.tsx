@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -424,28 +425,18 @@ export function LabForm({
 
         <div className="space-y-1.5">
           <Label>{t("labs.form.resultType")}</Label>
-          <div className="flex gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={resultType === "numeric" ? "secondary" : "ghost"}
-              className="min-h-11 flex-1 sm:min-h-9"
-              onClick={() => setResultType("numeric")}
-              aria-pressed={resultType === "numeric"}
-            >
-              {t("labs.form.numeric")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={resultType === "qualitative" ? "secondary" : "ghost"}
-              className="min-h-11 flex-1 sm:min-h-9"
-              onClick={() => setResultType("qualitative")}
-              aria-pressed={resultType === "qualitative"}
-            >
-              {t("labs.form.qualitative")}
-            </Button>
-          </div>
+          <Segmented
+            mode="toggle"
+            stretch
+            label={t("labs.form.resultType")}
+            slot="lab-form-result-type"
+            value={resultType}
+            onChange={setResultType}
+            options={[
+              { value: "numeric", label: t("labs.form.numeric") },
+              { value: "qualitative", label: t("labs.form.qualitative") },
+            ]}
+          />
         </div>
 
         {/* One column at every width, as in the measurement form. A second

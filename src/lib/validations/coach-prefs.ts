@@ -24,7 +24,6 @@ import {
 // Coach and the settings pages do not pull the schema library in with them.
 // Re-exported here for the server code that imports them from the schema.
 export {
-  COACH_DATA_CLUSTERS,
   DEFAULT_COACH_CLUSTERS,
   DEFAULT_COACH_PREFS,
   coachReasoningLevel,

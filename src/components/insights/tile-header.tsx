@@ -61,6 +61,17 @@ interface TileHeaderProps {
    * section). Default (unset) keeps every other tile a plain CardTitle.
    */
   titleAs?: "h2" | "h3";
+  /**
+   * Reserve two title lines at a fixed height, for a tile that sits in a
+   * grid row beside others. A title that wraps ("Herzfrequenzvariabilität"
+   * on a narrow tile) would otherwise push its value and sparkline below
+   * the neighbours' and the row stops reading as one line; with the reserve
+   * every tile's body starts at the same height whether its title takes one
+   * line or two. A title that would need a third line clamps, with its full
+   * text in `title` when it is a string. The dashboard trend strip does the
+   * same for its labels (`trend-card.tsx`).
+   */
+  reserveLines?: 2;
 }
 
 export function TileHeader({
@@ -71,6 +82,7 @@ export function TileHeader({
   className,
   id,
   titleAs,
+  reserveLines,
 }: TileHeaderProps) {
   const Heading = titleAs ?? "h2";
   // The title wraps; it never truncates. A tile title is the only thing that
@@ -83,14 +95,26 @@ export function TileHeader({
   // line clear of the first; on one line it matches the 20 px icon box, so a
   // single-line header is the height it was. There is no class override:
   // every caller used one to add `truncate`.
+  const reserve = reserveLines === 2;
   const titleClassNames = cn(
     "min-w-0 leading-tight break-words hyphens-auto",
     size === "sm" ? "text-sm" : "text-base",
+    reserve && "line-clamp-2",
   );
+  const fullTitle = reserve && typeof title === "string" ? title : undefined;
   return (
     <div
       data-slot="tile-header"
-      className={cn("flex items-center gap-2", className)}
+      data-reserve-lines={reserve ? 2 : undefined}
+      className={cn(
+        "flex gap-2",
+        // Two `leading-tight` lines: 2 × 20 px at `text-base`, 2 × 17.5 px
+        // at `text-sm`. The icon then sits on the first line.
+        reserve
+          ? cn("items-start", size === "sm" ? "h-9" : "h-10")
+          : "items-center",
+        className,
+      )}
     >
       {/* Icon and heading share the foreground colour — the calm,
           high-contrast read the "Einschätzung" card established. */}
@@ -99,6 +123,7 @@ export function TileHeader({
           className={cn(
             "text-foreground shrink-0",
             size === "sm" ? "h-4 w-4" : "h-5 w-5",
+            reserve && size === "sm" && "mt-px",
           )}
           aria-hidden="true"
         />
@@ -109,12 +134,13 @@ export function TileHeader({
         <Heading
           id={id}
           data-slot="card-title"
+          title={fullTitle}
           className={cn("font-semibold", titleClassNames)}
         >
           {title}
         </Heading>
       ) : (
-        <CardTitle id={id} className={titleClassNames}>
+        <CardTitle id={id} title={fullTitle} className={titleClassNames}>
           {title}
         </CardTitle>
       )}

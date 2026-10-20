@@ -106,18 +106,22 @@ export function buildComparisonBlock(
       return `- ${metric.type}: no prior-period data available`;
     }
     const sign = metric.delta > 0 ? "+" : metric.delta < 0 ? "-" : "±";
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
     const formattedDelta = `${sign}${Math.abs(metric.delta).toFixed(1)}${metric.unit ? ` ${metric.unit}` : ""}`;
     const pct =
       metric.deltaPercent != null
-        ? ` (${metric.deltaPercent > 0 ? "+" : metric.deltaPercent < 0 ? "-" : "±"}${Math.abs(metric.deltaPercent).toFixed(1)} %)`
+        ? // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
+          ` (${metric.deltaPercent > 0 ? "+" : metric.deltaPercent < 0 ? "-" : "±"}${Math.abs(metric.deltaPercent).toFixed(1)} %)`
         : "";
     const current =
       metric.currentAvg != null
-        ? `${metric.currentAvg.toFixed(1)}${metric.unit ? ` ${metric.unit}` : ""}`
+        ? // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
+          `${metric.currentAvg.toFixed(1)}${metric.unit ? ` ${metric.unit}` : ""}`
         : "n/a";
     const prior =
       metric.baselineAvg != null
-        ? `${metric.baselineAvg.toFixed(1)}${metric.unit ? ` ${metric.unit}` : ""}`
+        ? // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
+          `${metric.baselineAvg.toFixed(1)}${metric.unit ? ` ${metric.unit}` : ""}`
         : "n/a";
     return `- ${metric.type}: current ${current}, baseline ${prior}, delta ${formattedDelta}${pct}`;
   };

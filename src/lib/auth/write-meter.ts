@@ -31,9 +31,18 @@
  * record owner's, and cannot collect a fresh one by switching records. A
  * refused request is counted too, since the charge happens before the body is
  * read.
+ *
+ * The bucket fails open. It cuts off a runaway loop; it is not what decides
+ * who may write, which the resolver that called it has already settled. So
+ * when the bucket itself cannot be read (the upsert fails: a lock on
+ * `rate_limits`, a pool at its limit), the write goes ahead and a `warn`
+ * signal says the ceiling was not applied, instead of every authenticated
+ * write in the app answering 500. The login, sign-up and other auth-surface
+ * limits call the limiter directly and keep failing closed.
  */
 import { HttpError } from "@/lib/api-errors";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 
 /** The code a refusal by the shared write bucket carries. */
@@ -76,7 +85,18 @@ export async function meterAccountWrite(
   if (charged.has(evt)) return;
   charged.add(evt);
 
-  const rl = await checkRecordWriteRateLimit(accountId);
+  let rl: Awaited<ReturnType<typeof checkRecordWriteRateLimit>>;
+  try {
+    rl = await checkRecordWriteRateLimit(accountId);
+  } catch (error) {
+    annotate({ meta: { record_write_rate_limit_unavailable: true } });
+    emitSignal({
+      action: "rate_limit.record_write.unavailable",
+      level: "warn",
+      error,
+    });
+    return;
+  }
   if (!rl.allowed) {
     annotate({ meta: { record_write_rate_limited: true } });
     throw new HttpError(

@@ -398,14 +398,15 @@ paths:
         "429": &a12
           description: "Rate limit exceeded. This route shares one per-account bucket with every other authenticated write —
             `record-write:<accountId>`, 300 requests per 60 seconds — keyed on the ACTING account, so a delegate burns
-            their own allowance rather than the record owner's. Only the bulk ingest endpoints, which meter themselves
-            with a dedicated bucket, stay outside it. Nothing was written. `meta.errorCode` is
-            `record_write.rate_limited`, which is what tells this refusal apart from a route's own narrower bucket when
-            both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`
-            headers describe that bucket; back off on `Retry-After` rather than guessing. Every request counts against
-            the bucket, refused ones included: the check runs before the body is read, so a client looping on a 422
-            spends the same allowance as one that writes rows. A client with more than a handful of rows to send should
-            use the batch endpoint for its domain instead of looping this one."
+            their own allowance rather than the record owner's. Only the routes that meter themselves with a dedicated
+            bucket (the bulk ingest endpoints and the model-turn chats) and a POST that writes nothing stay outside it.
+            If the bucket cannot be read, the write goes ahead unmetered rather than failing. Nothing was written.
+            `meta.errorCode` is `record_write.rate_limited`, which is what tells this refusal apart from a route's own
+            narrower bucket when both can answer 429. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`
+            and `X-RateLimit-Reset` headers describe that bucket; back off on `Retry-After` rather than guessing. Every
+            request counts against the bucket, refused ones included: the check runs before the body is read, so a
+            client looping on a 422 spends the same allowance as one that writes rows. A client with more than a handful
+            of rows to send should use the batch endpoint for its domain instead of looping this one."
           headers: *a8
           content:
             application/json:
@@ -16369,8 +16370,9 @@ paths:
       tags:
         - Records
       summary: Soft-delete a practitioner
-      description: Stamps `deletedAt`. Every visit that named this entry survives with no practice attached, because the
-        reference nulls rather than cascades. Idempotent. Audits as `practitioner.contact.delete`.
+      description: Stamps `deletedAt`. The entry leaves the address book and the pickers; every live visit and vaccination
+        that named it keeps showing it, and the tombstone is kept while one does. Idempotent. Audits as
+        `practitioner.contact.delete`.
       parameters:
         - in: path
           name: id
@@ -75718,7 +75720,7 @@ components:
         conversations:
           type: array
           items:
-            $ref: "#/components/schemas/DocumentChatConversation"
+            $ref: "#/components/schemas/DocumentChatListItem"
         nextCursor:
           type:
             - string
@@ -75727,7 +75729,7 @@ components:
         - conversations
         - nextCursor
       additionalProperties: false
-    DocumentChatConversation:
+    DocumentChatListItem:
       type: object
       properties:
         id:
@@ -75740,12 +75742,38 @@ components:
           type: string
         messageCount:
           type: number
+        fenced:
+          type: boolean
+          description: "Always true here: a chat about a document is a fenced thread (no tools, no health snapshot)."
+        attachments:
+          description: The documents the thread is about, as they are now.
+          type: array
+          items:
+            type: object
+            properties:
+              documentId:
+                type: string
+              title:
+                description: The attached document's title, falling back to its filename; null when it has neither.
+                type:
+                  - string
+                  - "null"
+            required:
+              - documentId
+              - title
+            additionalProperties: false
+        documentTitle:
+          description: The first attached document's title, for a one-line badge; null when none is attached any more.
+          type:
+            - string
+            - "null"
       required:
         - id
         - title
         - createdAt
         - updatedAt
         - messageCount
+        - fenced
       additionalProperties: false
     DocumentReindexEnvelope:
       type: object

@@ -246,6 +246,7 @@ export function formatRelationsBlock(
   // Cap at two so the block never crowds out the metric's own grounding.
   const top = correlations.slice(0, 2);
   const lines = top.map(
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- text for the model, never shown to a person
     (c) => `- ${c.interpretation} (n=${c.n}, r=${c.r.toFixed(2)})`,
   );
   if (locale === "en") {

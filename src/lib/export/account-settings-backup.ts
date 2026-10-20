@@ -187,6 +187,7 @@ function isTimeZone(value: unknown): value is string {
     return false;
   }
   try {
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- validates a zone name and formats nothing
     Intl.DateTimeFormat(undefined, { timeZone: value });
     return true;
   } catch {

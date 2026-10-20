@@ -46,6 +46,15 @@
  *     before the first rebuild.
  *   - Every step's size before and after, and its duration, are on the run's
  *     wide event; the totals are job facts.
+ *
+ * Retired indexes. An index the schema no longer declares is dropped by the
+ * migration that retires it only when the lock is there at once (a `DO`
+ * block with a two-second `lock_timeout` that swallows the timeout), so the
+ * boot never waits on a long reader of the table. Where the migration had to
+ * leave it, every run of this job, the nightly tick included, drops it with
+ * `DROP INDEX CONCURRENTLY IF EXISTS` under a bounded lock wait and tries
+ * again the next night if the wait runs out. Runbook:
+ * `docs/ops/measurement-maintenance.md`, "Retired indexes".
  */
 import { Client } from "pg";
 import type { Job } from "pg-boss";
@@ -153,6 +162,22 @@ export function maintenanceSessionStatements(): string[] {
     });
 }
 
+/**
+ * Indexes on `measurements` the schema no longer declares, which a run drops
+ * when the migration that retired them could not. Each one's migration names
+ * it; `IF EXISTS` makes the drop a no-op once it is gone.
+ */
+export const RETIRED_MEASUREMENT_INDEXES: readonly string[] = [
+  // 0416: a prefix of the unique key `(user_id, type, measured_at, source,
+  // sleep_stage)`, which plans every query it served at the same cost.
+  "measurements_user_id_type_measured_at_idx",
+];
+
+/** How long a run waits for the locks that drop a retired index. */
+export const RETIRED_INDEX_LOCK_TIMEOUT = "60s";
+
+const LOCK_TIMEOUT_VALUE = /^\d{1,6}(ms|s)$/;
+
 /** The only shape an index name may have before it is spliced into SQL. */
 const INDEX_NAME = /^[a-z0-9_]{1,63}$/;
 
@@ -162,7 +187,7 @@ const CONCURRENT_COPY = /_ccnew\d*$|_ccold\d*$/;
 const PURGE_QUEUE = "compaction-tombstone-purge";
 
 export interface MaintenanceStep {
-  step: "vacuum" | "reindex" | "drop_invalid";
+  step: "vacuum" | "reindex" | "drop_invalid" | "drop_retired";
   target: string;
   bytesBefore: number;
   bytesAfter: number;
@@ -337,13 +362,69 @@ async function dropInvalidCopies(
 }
 
 /**
+ * Drop every retired index still present. `DROP INDEX CONCURRENTLY` takes no
+ * lock that stops reads or writes, but it waits for every transaction that
+ * may use the index, so the wait is bounded for the statement and the
+ * session's own setting is put back after it. A timed-out drop may leave the
+ * index marked invalid; the next run's `IF EXISTS` drop finishes it.
+ */
+export async function dropRetiredIndexes(
+  db: MaintenanceConnection,
+  steps: MaintenanceStep[],
+  lockTimeout: string = RETIRED_INDEX_LOCK_TIMEOUT,
+): Promise<void> {
+  if (!LOCK_TIMEOUT_VALUE.test(lockTimeout)) {
+    throw new Error(`refusing lock timeout of unexpected shape`);
+  }
+  for (const name of RETIRED_MEASUREMENT_INDEXES) {
+    const bytesBefore = await indexBytes(db, name);
+    const { rows } = await db.query<{ present: boolean }>(
+      `SELECT to_regclass($1) IS NOT NULL AS present`,
+      [name],
+    );
+    if (!rows[0]?.present) continue;
+    const { rows: setting } = await db.query<{ value: string }>(
+      `SELECT current_setting('lock_timeout') AS value`,
+    );
+    const startedAt = Date.now();
+    try {
+      await db.query(`SET lock_timeout = '${lockTimeout}'`);
+      await db.query(`DROP INDEX CONCURRENTLY IF EXISTS ${quoted(name)}`);
+      steps.push({
+        step: "drop_retired",
+        target: name,
+        bytesBefore,
+        bytesAfter: 0,
+        durationMs: Date.now() - startedAt,
+        ok: true,
+      });
+    } catch (err) {
+      logCaught("measurements.maintenance.drop_retired_failed", err);
+      steps.push({
+        step: "drop_retired",
+        target: name,
+        bytesBefore,
+        bytesAfter: await indexBytes(db, name),
+        durationMs: Date.now() - startedAt,
+        ok: false,
+        error: errorText(err),
+      });
+    } finally {
+      await db.query(`SELECT set_config('lock_timeout', $1, false)`, [
+        setting[0]?.value ?? "0",
+      ]);
+    }
+  }
+}
+
+/**
  * The pass itself, on a connection the caller opened with
  * {@link MAINTENANCE_SESSION_OPTIONS}. Exported for the integration test.
  */
 export async function runMeasurementMaintenance(
   db: MaintenanceConnection,
   payload: MaintenanceSteps,
-  options: { shouldStop?: () => boolean } = {},
+  options: { shouldStop?: () => boolean; retiredLockTimeout?: string } = {},
 ): Promise<MeasurementMaintenanceSummary> {
   const before = await relationSizes(db);
   const steps: MaintenanceStep[] = [];
@@ -358,6 +439,10 @@ export async function runMeasurementMaintenance(
     indexBytesBefore: before.indexes,
     indexBytesAfter: after.indexes,
   });
+
+  // Every run, the nightly tick included: a retired index costs every write
+  // until it is gone, and the drop blocks no reader or writer.
+  await dropRetiredIndexes(db, steps, options.retiredLockTimeout);
 
   if (!payload.vacuum && !payload.reindex) return summary("nothing_due");
 
@@ -406,7 +491,10 @@ export async function runMeasurementMaintenance(
   if (payload.reindex) {
     await dropInvalidCopies(db, steps);
     const targets = (await measurementIndexes(db)).filter(
-      (index) => index.valid && !CONCURRENT_COPY.test(index.name),
+      (index) =>
+        index.valid &&
+        !CONCURRENT_COPY.test(index.name) &&
+        !RETIRED_MEASUREMENT_INDEXES.includes(index.name),
     );
     for (const index of targets) {
       if (options.shouldStop?.()) break;
@@ -508,6 +596,15 @@ export async function handleMeasurementMaintenance(
           `measurements heap is ${health.bloatFactor}x what its live rows need; only VACUUM FULL in a maintenance window gives the space back`,
         );
       }
+    }
+    const retiredLeft = result.steps.filter(
+      (s) => s.step === "drop_retired" && !s.ok,
+    );
+    if (retiredLeft.length > 0) {
+      evt.addMeta("maintenance_retired_index_pending", true);
+      evt.addWarning(
+        `retired index ${retiredLeft.map((s) => s.target).join(", ")} could not be dropped within ${RETIRED_INDEX_LOCK_TIMEOUT} (a long transaction on measurements); the next nightly run tries again`,
+      );
     }
     evt.addMeta("maintenance_table_bytes_before", result.tableBytesBefore);
     evt.addMeta("maintenance_table_bytes_after", result.tableBytesAfter);

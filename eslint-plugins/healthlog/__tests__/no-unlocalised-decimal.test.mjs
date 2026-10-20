@@ -58,8 +58,12 @@ ruleTester.run("no-unlocalised-decimal", rule, {
       code: "const s = value.toFixed(2);",
       filename: "/repo/src/app/api/export/route.ts",
     },
-    // Outside the UI roots and in tests the rule is silent.
-    { code: "const s = value.toFixed(2);", filename: "/repo/src/lib/x.ts" },
+    // Outside the source roots and in tests the rule is silent.
+    { code: "const s = value.toFixed(2);", filename: "/repo/scripts/x.ts" },
+    {
+      code: "const s = value.toFixed(2);",
+      filename: "/repo/src/lib/__tests__/x.test.ts",
+    },
     {
       code: "const s = value.toFixed(2);",
       filename: "/repo/src/components/__tests__/x.test.tsx",
@@ -70,6 +74,18 @@ ruleTester.run("no-unlocalised-decimal", rule, {
       code: "const s = value.toFixed(1);",
       filename: APP_FILE,
       errors: [{ messageId: "fixed", data: { method: "toFixed" } }],
+    },
+    // A sentence built on the server for a person: the weekday correlation
+    // printed "0.8 kg" in a German sentence from src/lib.
+    {
+      code: 'const delta = Math.abs(a - b).toFixed(1); t("x", { delta });',
+      filename: "/repo/src/lib/insights/correlations.ts",
+      errors: [{ messageId: "fixed" }],
+    },
+    {
+      code: "const s = value.toFixed(1);",
+      filename: "/repo/src/hooks/use-x.ts",
+      errors: [{ messageId: "fixed" }],
     },
     {
       code: "const s = `${value.toFixed(1)} kg`;",

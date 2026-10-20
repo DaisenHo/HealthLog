@@ -30,6 +30,7 @@
  * sibling of the detail-open button (never nested inside it) so the two
  * actions never collide.
  */
+import { EmptyState } from "@/components/ui/empty-state";
 import { Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -170,9 +171,12 @@ export function InstrumentCard({
           </div>
         </div>
       ) : (
-        <div className="text-muted-foreground flex min-h-[2.75rem] items-center px-4 text-sm md:px-6">
-          {t("mentalHealth.noResultYet")}
-        </div>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          className="px-4 md:px-6"
+          title={t("mentalHealth.noResultYet")}
+        />
       )}
 
       {/* Bottom-pinned single primary action — the med-/Vorsorge card slot.

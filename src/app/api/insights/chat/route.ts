@@ -81,7 +81,9 @@ const COACH_CONCURRENT_TURNS = 2;
 const COACH_TURN_SLOT_MS = TURN_LIMITS.user.wallMs + 30_000;
 
 async function handleChatRequest(request: NextRequest): Promise<Response> {
-  const auth = await requireAuth();
+  // A turn is metered by the Coach's own buckets (`coach-chat`, the turn
+  // slot), not the shared write ceiling.
+  const auth = await requireAuth(undefined, { writeBucket: "own" });
   // The `coach` capability, right after auth and before the rate limit and
   // the body parse. It folds in what the Coach module gate, the operator
   // switch and the `disableCoach` opt-out used to answer separately, plus

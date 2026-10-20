@@ -4221,13 +4221,8 @@
         "metricNextDayRecovery": "Récupération le lendemain",
         "metricNextDayRestingHr": "Fréquence cardiaque au repos le lendemain",
         "metricNextDayHrv": "Variabilité de la fréquence cardiaque le lendemain",
-        "unitHours": "h",
-        "unitKcal": "kcal",
-        "unitScore": "pts",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "En moyenne {withAvg} {unit} les {withDays} jours avec ce tag contre {withoutAvg} {unit} sans.",
-        "detailNextDay": "En moyenne {withAvg} {unit} le lendemain des {withDays} jours avec ce tag contre {withoutAvg} {unit} sinon."
+        "detailSameDay": "En moyenne {withAvg} les {withDays} jours avec ce tag contre {withoutAvg} sans.",
+        "detailNextDay": "En moyenne {withAvg} le lendemain des {withDays} jours avec ce tag contre {withoutAvg} sinon."
       },
       "factorCrosstab": {
         "title": "Vos facteurs notés et vos constantes",
@@ -4239,15 +4234,8 @@
         "metricHrv": "Variabilité de la fréquence cardiaque",
         "metricWeight": "Poids",
         "metricBloodPressureSys": "Systolique",
-        "unitHours": "h",
-        "unitScore": "pts",
-        "unitSteps": "pas",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "En moyenne {lowAvg} {unit} les {lowDays} jours où vous avez noté {factor} bas contre {highAvg} {unit} les jours où vous l'avez noté haut.",
-        "detailInverse": "En moyenne {lowAvg} {unit} sur vos {lowDays} pires jours de {factor} contre {highAvg} {unit} sur les meilleurs."
+        "detail": "En moyenne {lowAvg} les {lowDays} jours où vous avez noté {factor} bas contre {highAvg} les jours où vous l'avez noté haut.",
+        "detailInverse": "En moyenne {lowAvg} sur vos {lowDays} pires jours de {factor} contre {highAvg} sur les meilleurs."
       },
       "discovery": {
         "title": "Ce qui ressort",
@@ -7748,6 +7736,7 @@
     "tokensEmptyTitle": "Aucun jeton d'API pour l'instant",
     "tokensEmptyDescription": "Les jetons sont émis lorsqu'un client natif se connecte ou via Paramètres → Compte.",
     "loginOverviewDescription": "Événements de connexion et d’authentification de tous les comptes, filtrables et exportables en CSV.",
+    "loginOverviewFilterLabel": "Filtrer les événements",
     "allAuthEvents": "Tous les événements d'authentification",
     "failedOnly": "Échecs uniquement",
     "loginEmptyDescription": "Les connexions, déconnexions et modifications de passkey apparaîtront ici.",
@@ -7876,6 +7865,7 @@
           "admin": "Administrateurs",
           "user": "Utilisateurs"
         },
+        "filterLabel": "Filtrer les utilisateurs",
         "forceLogout": "Forcer la déconnexion",
         "forceLogoutConfirmTitle": "Forcer la déconnexion de {name} ?",
         "forceLogoutConfirmBody": "Toutes les sessions actives de cet utilisateur seront révoquées. Il devra se reconnecter sur chaque appareil.",
@@ -9158,9 +9148,9 @@
     "insights": {
       "headline": {
         "title": "Ton cycle et ton corps",
-        "restingHeartRate": "Ta fréquence cardiaque au repos est d'environ {delta} {unit} {dir} en phase lutéale qu'en phase folliculaire.",
-        "heartRateVariability": "Ta variabilité de la fréquence cardiaque est d'environ {delta} {unit} {dir} en phase lutéale qu'en phase folliculaire.",
-        "generic": "Ton/ta {metric} est d'environ {delta} {unit} {dir} en phase lutéale qu'en phase folliculaire.",
+        "restingHeartRate": "Ta fréquence cardiaque au repos est d'environ {delta} {dir} en phase lutéale qu'en phase folliculaire.",
+        "heartRateVariability": "Ta variabilité de la fréquence cardiaque est d'environ {delta} {dir} en phase lutéale qu'en phase folliculaire.",
+        "generic": "Ton/ta {metric} est d'environ {delta} {dir} en phase lutéale qu'en phase folliculaire.",
         "dirHigher": "plus élevée",
         "dirLower": "plus basse",
         "empty": "Pas encore assez de cycles et de relevés pour faire ressortir un schéma de phase. Continue à enregistrer : cela se complétera à mesure que ton historique grandit."
@@ -9168,7 +9158,7 @@
       "crosstab": {
         "description": "Comment chaque mesure se compare entre tes phases lutéale et folliculaire, sur tes propres données.",
         "pairLabel": "{metric} : phase lutéale vs folliculaire",
-        "detail": "Lutéale {lutealAvg} {unit} ({lutealDays} jours) vs folliculaire {follicularAvg} {unit} ({follicularDays} jours).",
+        "detail": "Lutéale {lutealAvg} ({lutealDays} jours) vs folliculaire {follicularAvg} ({follicularDays} jours).",
         "metricRestingHeartRate": "Fréquence cardiaque au repos",
         "metricHrv": "Variabilité de la fréquence cardiaque",
         "metricSleepDuration": "Durée du sommeil",
@@ -9178,12 +9168,7 @@
         "metricWristTemperature": "Température du poignet la nuit",
         "metricSkinTemperature": "Température de la peau",
         "metricBloodGlucose": "Glycémie",
-        "metricMood": "Humeur",
-        "unitHours": "h",
-        "unitSteps": "pas",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitMood": "pts"
+        "metricMood": "Humeur"
       },
       "title": "Analyses du cycle",
       "symptomPatternsTitle": "Tendances des symptômes par phase",

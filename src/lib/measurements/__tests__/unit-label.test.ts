@@ -219,3 +219,65 @@ describe("no display source spells a word unit as a literal", () => {
     ).toEqual(["breaths/min"]);
   });
 });
+
+/**
+ * A component that keeps its own table of unit words is a second source the
+ * shared one cannot correct: three insight boards each mapped their display
+ * kinds to `*.unit<Word>` bundle keys, and the German cycle board printed
+ * "S/min" where every other screen says "bpm". A unit beside a measurement
+ * value comes from `measurementUnitLabel`; an object literal holding two or
+ * more unit-word keys is refused.
+ */
+describe("no display source keeps its own unit table", () => {
+  const SRC = join(process.cwd(), "src");
+  const roots = ["app", "components", "hooks"];
+  const BLOCK = /=\s*\{([^{}]*)\}/g;
+  const UNIT_KEY = /:\s*"[\w.]+\.unit[A-Z]\w*"/g;
+
+  function unitTables(source: string): number[] {
+    const sizes: number[] = [];
+    for (const block of source.matchAll(BLOCK)) {
+      const n = [...block[1].matchAll(UNIT_KEY)].length;
+      if (n >= 2) sizes.push(n);
+    }
+    return sizes;
+  }
+
+  const offenders: string[] = [];
+  let scanned = 0;
+  for (const root of roots) {
+    const dir = join(SRC, root);
+    for (const rel of walkSourceFiles(dir, {
+      floor: root === "hooks" ? 50 : 500,
+    })) {
+      if (rel.includes("__tests__/") || rel.startsWith("api/")) continue;
+      scanned += 1;
+      const source = stripComments(readFileSync(join(dir, rel), "utf8"));
+      for (const size of unitTables(source)) {
+        offenders.push(`${root}/${rel}: a table of ${size} unit keys`);
+      }
+    }
+  }
+
+  it("reads the display tree", () => {
+    expect(scanned).toBeGreaterThan(1000);
+  });
+
+  it("finds none", () => {
+    expect(offenders).toEqual([]);
+  });
+
+  it("counter-check: would catch the boards' old table, not a single key", () => {
+    expect(
+      unitTables(`const UNIT_KEY: Record<D, string> = {
+  hours: "cycle.insights.crosstab.unitHours",
+  bpm: "cycle.insights.crosstab.unitBpm",
+};`),
+    ).toEqual([2]);
+    expect(
+      unitTables(
+        `const entry = { value: "SLEEP", unitKey: "measurements.unitHours" };`,
+      ),
+    ).toEqual([]);
+  });
+});

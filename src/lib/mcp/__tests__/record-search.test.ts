@@ -797,16 +797,26 @@ describe("short query words", () => {
 });
 
 describe("practitioners and planned visits", () => {
-  it("does not match or show a deleted practitioner's name", async () => {
+  it("finds and names the practitioner a live visit was with, even once deleted from the address book", async () => {
+    // Deleting the entry takes it out of the address book, not out of the
+    // visit: the web record shows it, and so does the agent's read.
     store.encounter[0].practitioner = {
       name: "Dr. Weber",
       specialty: "Orthopädie",
-      deletedAt: new Date(),
     };
+    expect((await search(ME, "weber")).results.map((r) => r.id)).toEqual([
+      "visit:v-knee",
+    ]);
+    const hit = await fetchId(ME, "visit:v-knee");
+    expect(hit.metadata.practitioner).toBe("Dr. Weber");
+    expect(hit.text).toContain("Weber");
+  });
+
+  it("counter-check: a visit with no practitioner names none", async () => {
+    store.encounter[0].practitioner = null;
     expect((await search(ME, "weber")).results).toHaveLength(0);
     const hit = await fetchId(ME, "visit:v-knee");
     expect(hit.metadata.practitioner).toBeNull();
-    expect(hit.text).not.toContain("Weber");
   });
 
   it("lists past visits, not future planned ones, for an empty query", async () => {

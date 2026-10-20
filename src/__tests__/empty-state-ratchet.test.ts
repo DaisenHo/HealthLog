@@ -5,15 +5,17 @@
  * Seventy-five surfaces said "nothing here yet" in a hand-written muted
  * paragraph, in five sizes and three alignments, some centred in a padded
  * box, some a bare line under the header. This is a ratchet, not a ban: the
- * hand-written copies that remain are counted, the ceiling below may only go
- * down, and a new copy fails the run. The ones that stay are not list or
- * section empty states but a field that has no value ("not recorded" in a
- * profile row), where a centred block would be the wrong shape.
+ * hand-written copies that remain are listed by file and key, a new one
+ * fails the run, and a site that moves over leaves the list. The ones that
+ * stay are not list or section empty states but a field that has no value
+ * ("not recorded" in a profile row), where a centred block would be the
+ * wrong shape. A count would let a new copy in wherever an old one left.
  *
  * Matched: a `<p>`, `<div>` or `<span>` whose class list carries
  * `text-muted-foreground` and whose only child is `{t("<key>")}` with a last
  * key segment that names an empty state (`empty`, `none`, `noData`,
- * `noResults`, `notRecorded`, …; a `…Hint` key is a hint, not a state).
+ * `noResults`, `notRecorded`, `no…Yet`, `nothing…`; a `…Hint` key is a
+ * hint, not a state).
  *
  * Not matched (stated, not hidden): a message assembled from several nodes,
  * a key built at runtime, a state without the muted colour. The guard holds
@@ -28,15 +30,31 @@ import { walkSourceFiles } from "./helpers/source-files";
 const SRC = join(__dirname, "..");
 
 /**
- * The hand-written empty states that remain. Lower it when a site moves to
- * `EmptyState`; never raise it.
+ * The hand-written empty states that remain, each a field-level line rather
+ * than a list or section state. Remove an entry when its site moves to
+ * `EmptyState`; never add one.
  */
-const CEILING = 13;
+const REMAINING = [
+  "components/cycle/cycle-phase-crosstab.tsx: cycle.insights.headline.empty",
+  "components/documents/episode-documents-card.tsx: documents.episodeCard.emptyLine",
+  "components/illness/episode-visits-card.tsx: encounters.episodeCard.emptyLine",
+  "components/insights/workout-detail/day-context.tsx: insights.workouts.detail.dayMoodNone",
+  "components/insights/workout-detail/day-context.tsx: insights.workouts.detail.daySleepNone",
+  "components/labs/biomarker-aliases.tsx: labs.aliases.empty",
+  "components/medications/dose-history-ledger.tsx: medications.detail.verlauf.summaryEmpty",
+  "components/medications/scheduling/dose-window-editor.tsx: medications.detail.zeitplan.window.noTimes",
+  "components/medications/sections/composition-section.tsx: medications.composition.editorEmpty",
+  "components/records/screening-hints-card.tsx: records.life.screening.noReminder",
+  "components/settings/ai/fallback-chain-card.tsx: settings.ai.providerChain.addNoneAvailable",
+  "components/settings/integrations/apple-health-card.tsx: settings.appleHealth.delivery.noSyncYet",
+  "components/settings/report-selection/scope-summary.tsx: reportSelection.scopeNone",
+  "components/timeline/selection-bar.tsx: timeline.selection.empty",
+];
 
 const ELEMENT_RE =
   /<(p|div|span)\b([^>]*?)>\s*\{t\(\s*"([a-zA-Z0-9_.]+)"[^)]*\)\}\s*<\/\1>/g;
 const EMPTY_KEY_RE =
-  /(?:^|\.)[A-Za-z0-9]*?(?:empty|Empty|none|None|noData|NoData|noResults|NoResults|notRecorded|NotRecorded|noSeries|NoSeries|noReminder|NoReminder|noMedications|noSymptoms|noTimes)[A-Za-z0-9]*$/;
+  /(?:^|\.)[A-Za-z0-9]*?(?:empty|Empty|none|None|noData|NoData|noResults|NoResults|notRecorded|NotRecorded|noSeries|NoSeries|noReminder|NoReminder|noMedications|noSymptoms|noTimes|nothing|Nothing)[A-Za-z0-9]*$|(?:^|\.)no[A-Z][A-Za-z0-9]*Yet$/;
 
 function findHandWrittenEmptyStates(
   files: { path: string; source: string }[],
@@ -68,20 +86,12 @@ describe("empty states go through EmptyState (ratchet)", () => {
     expect(files.length).toBeGreaterThan(800);
   });
 
-  it("adds no hand-written empty state", () => {
-    const hits = findHandWrittenEmptyStates(files);
+  it("adds no hand-written empty state, and lists none that moved over", () => {
+    const hits = findHandWrittenEmptyStates(files).sort();
     expect(
-      hits.length,
-      `${hits.length} hand-written empty states, ceiling ${CEILING}. Render the new one through <EmptyState variant="plain" size="compact"> (or ChartEmptyState on a chart body).\n${hits.join("\n")}`,
-    ).toBeLessThanOrEqual(CEILING);
-  });
-
-  it("has its ceiling lowered when a site moves over", () => {
-    const hits = findHandWrittenEmptyStates(files);
-    expect(
-      hits.length,
-      `Only ${hits.length} hand-written empty states remain: lower CEILING to ${hits.length}.`,
-    ).toBe(CEILING);
+      hits,
+      'A new hand-written empty state: render it through <EmptyState variant="plain" size="compact"> (or ChartEmptyState on a chart body). A site that moved over: remove its entry.',
+    ).toEqual([...REMAINING].sort());
   });
 
   it("recognises the idiom it exists to count", () => {
@@ -101,7 +111,15 @@ describe("empty states go through EmptyState (ratchet)", () => {
           path: "components/c.tsx",
           source: '<EmptyState title={t("labs.detail.emptyTitle")} />',
         },
+        {
+          path: "components/d.tsx",
+          source:
+            '<p className="text-muted-foreground text-sm">{t("insights.noAnalysisYet")}</p>',
+        },
       ]),
-    ).toEqual(["components/a.tsx: admin.aiQuality.empty"]);
+    ).toEqual([
+      "components/a.tsx: admin.aiQuality.empty",
+      "components/d.tsx: insights.noAnalysisYet",
+    ]);
   });
 });

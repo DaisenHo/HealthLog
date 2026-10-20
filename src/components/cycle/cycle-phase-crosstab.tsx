@@ -2,13 +2,13 @@
 
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
-import { useUnitDisplay, type UnitDisplay } from "@/hooks/use-unit-display";
+import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
-  applyDisplayTransform,
-  applyDisplayTransformDelta,
-  getReadingTransform,
-} from "@/lib/measurements/display-transform";
-import { MetricCrosstab } from "@/components/insights/metric-crosstab";
+  crosstabReading,
+  MetricCrosstab,
+  withUnit,
+  type CrosstabMeasure,
+} from "@/components/insights/metric-crosstab";
 
 /**
  * v1.15 — CYCLE_PHASE × vital crosstab card.
@@ -57,17 +57,25 @@ const METRIC_LABEL_KEY: Record<string, string> = {
 };
 
 /**
- * Bundle labels for the displays no preference changes. Weight, the
- * temperatures and glucose take their symbol from the reader's transform
- * (`DISPLAY_TO_TYPE` below) and have no bundle label to fall back on.
+ * The measurement each row reads (`src/lib/cycle/phase-crosstab.ts`), which
+ * is what its unit and its preference conversion come from. Mood has none.
  */
-const UNIT_KEY: Partial<Record<CyclePhaseCrosstabDisplay, string>> = {
-  hours: "cycle.insights.crosstab.unitHours",
-  steps: "cycle.insights.crosstab.unitSteps",
-  bpm: "cycle.insights.crosstab.unitBpm",
-  ms: "cycle.insights.crosstab.unitMs",
-  mood: "cycle.insights.crosstab.unitMood",
+const METRIC_TYPE: Record<string, string | null> = {
+  restingHeartRate: "RESTING_HEART_RATE",
+  heartRateVariability: "HEART_RATE_VARIABILITY",
+  sleepDuration: "SLEEP_DURATION",
+  steps: "ACTIVITY_STEPS",
+  weight: "WEIGHT",
+  basalBodyTemp: "BODY_TEMPERATURE",
+  wristTemperature: "WRIST_TEMPERATURE",
+  skinTemperature: "SKIN_TEMPERATURE",
+  bloodGlucose: "BLOOD_GLUCOSE",
+  mood: null,
 };
+
+function measureOf(row: CyclePhaseCrosstabRow): CrosstabMeasure {
+  return { type: METRIC_TYPE[row.metricKey] ?? null, display: row.display };
+}
 
 /** Whole numbers for steps; one decimal otherwise. */
 function fmt(
@@ -76,57 +84,6 @@ function fmt(
   nf: Formatters,
 ): string {
   return display === "steps" ? nf.integer(value) : nf.number(value, 1);
-}
-
-/**
- * v1.32.26 — the two displays whose values follow the metric/imperial
- * preference, mapped to the measurement type that carries the transform. Weight
- * is offset-free (kg→lb); temperature is affine (°C→°F), so an ABSOLUTE phase
- * average takes `toDisplay` while a phase DELTA takes `toDisplayDelta` (the
- * offset must never leak into a difference).
- */
-const DISPLAY_TO_TYPE: Partial<Record<CyclePhaseCrosstabDisplay, string>> = {
-  kg: "WEIGHT",
-  celsius: "BODY_TEMPERATURE",
-  glucose: "BLOOD_GLUCOSE",
-};
-
-/**
- * Unit symbol and conversions for one row, from the reader's preferences.
- * Glucose follows the glucose unit (it used to print the mg/dL label from
- * the bundle beside raw mg/dL values for every reader); weight and
- * temperature follow metric/imperial; every other display keeps its bundle
- * label and its raw value.
- */
-function rowUnits(
-  display: CyclePhaseCrosstabDisplay,
-  unitDisplay: UnitDisplay,
-  t: (key: string) => string,
-): {
-  unit: string;
-  abs: (v: number) => number;
-  delta: (v: number) => number;
-} {
-  const type = DISPLAY_TO_TYPE[display];
-  if (!type) {
-    // Defensive: an unmapped display must never pass undefined to `t`
-    // (whose resolver does `key.split(".")`). Empty unit on a miss.
-    const unitKey = UNIT_KEY[display];
-    return {
-      unit: unitKey ? t(unitKey) : "",
-      abs: (v) => v,
-      delta: (v) => v,
-    };
-  }
-  const transform = getReadingTransform(type, {
-    system: unitDisplay.preference,
-    glucoseUnit: unitDisplay.glucoseUnit,
-  });
-  return {
-    unit: transform.displayUnit,
-    abs: (v) => applyDisplayTransform(v, transform),
-    delta: (v) => applyDisplayTransformDelta(v, transform),
-  };
 }
 
 const HEADLINE_KEY: Record<string, string> = {
@@ -160,7 +117,11 @@ export function CyclePhaseHeadline({
   const metricLabel = t(
     METRIC_LABEL_KEY[headline.metricKey] ?? headline.metricKey,
   );
-  const { unit, delta: deltaConv } = rowUnits(headline.display, unitDisplay, t);
+  const { unit, delta: deltaConv } = crosstabReading(
+    measureOf(headline),
+    unitDisplay,
+    t,
+  );
   const up = headline.delta >= 0;
   const dir = t(
     up
@@ -170,8 +131,10 @@ export function CyclePhaseHeadline({
   const params = {
     metric: metricLabel,
     // A phase delta → factor-only conversion (no affine offset).
-    delta: fmt(Math.abs(deltaConv(headline.delta)), headline.display, nf),
-    unit,
+    delta: withUnit(
+      fmt(Math.abs(deltaConv(headline.delta)), headline.display, nf),
+      unit,
+    ),
     dir,
   };
   const key =
@@ -202,11 +165,12 @@ export function CyclePhaseCrosstab({
       description={t("cycle.insights.crosstab.description")}
       rows={rows.map((row) => {
         const metricLabel = t(METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey);
+        const measure = measureOf(row);
         const {
           unit,
           abs: absConv,
           delta: deltaConv,
-        } = rowUnits(row.display, unitDisplay, t);
+        } = crosstabReading(measure, unitDisplay, t);
         // `delta` = lutealAvg − follicularAvg: positive = the vital runs
         // higher in the luteal phase.
         return {
@@ -217,13 +181,18 @@ export function CyclePhaseCrosstab({
           }),
           up: row.delta >= 0,
           deltaValue: fmt(deltaConv(row.delta), row.display, nf),
-          unit,
+          measure,
           confidence: row.confidence,
           detail: t("cycle.insights.crosstab.detail", {
             metric: metricLabel,
-            lutealAvg: fmt(absConv(row.lutealAvg), row.display, nf),
-            follicularAvg: fmt(absConv(row.follicularAvg), row.display, nf),
-            unit,
+            lutealAvg: withUnit(
+              fmt(absConv(row.lutealAvg), row.display, nf),
+              unit,
+            ),
+            follicularAvg: withUnit(
+              fmt(absConv(row.follicularAvg), row.display, nf),
+              unit,
+            ),
             lutealDays: row.lutealDays,
             follicularDays: row.follicularDays,
           }),

@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
+import { formatDecimal } from "@/lib/format-locale";
 import type { MetricSignal } from "@/lib/insights/metric-signal";
 
 /**
@@ -66,16 +67,18 @@ interface FallbackCopy {
   pointer: Localized<string>;
 }
 
-function fmtValue(value: number, copy: FallbackCopy): string {
+function fmtValue(
+  value: number,
+  copy: FallbackCopy,
+  locale: InsightLocale,
+): string {
   const digits = copy.digits ?? 0;
-  // Round to the metric's precision, but never render a trailing ".0" — an
-  // integer reading (steps, a whole-number BMI day) should read as "4200",
-  // not "4200.0", while a genuine fractional value keeps its decimal.
+  // Round to the metric's precision, but never render a trailing zero — an
+  // integer reading (steps, a whole-number BMI day) reads as "4200", not
+  // "4200.0" — and print the decimal in the reader's notation ("72,5").
   const factor = 10 ** digits;
   const rounded = Math.round(value * factor) / factor;
-  const text = Number.isInteger(rounded)
-    ? String(rounded)
-    : rounded.toFixed(digits);
+  const text = formatDecimal(rounded, locale, digits);
   return copy.unit ? `${text}${copy.unit}` : text;
 }
 
@@ -255,7 +258,7 @@ function composeGroundedFallback(
   if (!signal || !Number.isFinite(signal.current)) return null;
 
   const label = capitalise(pick(locale, copy.label));
-  const current = fmtValue(signal.current, copy);
+  const current = fmtValue(signal.current, copy, locale);
 
   const sentences: string[] = [];
 
@@ -271,7 +274,7 @@ function composeGroundedFallback(
     signal.delta !== 0 &&
     Number.isFinite(signal.baseline)
   ) {
-    const baseline = fmtValue(signal.baseline, copy);
+    const baseline = fmtValue(signal.baseline, copy, locale);
     sentences.push(
       pick(locale, VALUE_VS_BASELINE)(
         label,

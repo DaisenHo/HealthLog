@@ -18,8 +18,14 @@
  *   - rounding, not display: `Number(value.toFixed(2))` stays legal — the
  *     result is a number again and is formatted wherever it is shown
  *
- * FLAGGED, in `src/components/` and `src/app/` outside `src/app/api/` (wire
- * formats are not display) and outside test files:
+ * FLAGGED, in `src/components/`, `src/app/`, `src/hooks/` and `src/lib/`
+ * outside `src/app/api/` (wire formats are not display) and outside test
+ * files. `src/lib/` is in scope because sentences for people are built
+ * there too (a correlation hypothesis, a deterministic fallback, a narrative)
+ * and the weekday correlation printed "0.8 kg" into a German sentence; a
+ * machine-read string there (a prompt for the model, an operator log line,
+ * SVG path data, a wire value a client re-formats) carries a reasoned
+ * directive like any other.
  *
  *   - `<x>.toFixed(…)` and `<x>.toPrecision(…)`, unless the call is the
  *     argument of `Number(…)` / `parseFloat(…)` / `Number.parseFloat(…)` or
@@ -52,7 +58,12 @@
 "use strict";
 
 const RULE_NAME = "healthlog/no-unlocalised-decimal";
-const ENFORCED_ROOTS = ["src/components/", "src/app/"];
+const ENFORCED_ROOTS = [
+  "src/components/",
+  "src/app/",
+  "src/hooks/",
+  "src/lib/",
+];
 const EXEMPT_ROOTS = ["src/app/api/"];
 const MIN_REASON_CHARS = 8;
 

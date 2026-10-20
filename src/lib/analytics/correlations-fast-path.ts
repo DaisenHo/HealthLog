@@ -359,6 +359,7 @@ export async function computeCorrelationHypothesesFastPath(
   const weightWeekday = correlateWeightWeekday(
     { daily: weightWeekdayPairs },
     t,
+    input.locale ?? defaultLocale,
   );
 
   annotate({
