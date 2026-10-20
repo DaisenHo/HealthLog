@@ -67,8 +67,6 @@ const widgetIdEnum = z.enum(DASHBOARD_WIDGET_CATALOGUE_IDS);
 // `/api/dashboard/widgets` and `/api/dashboard/chart-overlay-prefs` share
 // the same 60 s `(userId, action)` window.
 export { __resetAuditDedupMemoForTests } from "@/lib/audit-dedup";
-import { shouldEmitAuditRow } from "@/lib/audit-dedup";
-import { auditLog } from "@/lib/auth/audit";
 
 const layoutSchema = z.object({
   version: z.literal(1),
@@ -361,34 +359,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         zod_issues: issues,
       },
     });
-    // v1.4.43 B2 — gate the breadcrumb behind a 60 s (userId, action) dedup
-    // so a misbehaving iOS client retrying every second cannot pump
-    // thousands of identical rows into the audit ledger.
-    if (
-      shouldEmitAuditRow(
-        user.id,
-        "dashboard.widgets.validation-failed",
-        Date.now(),
-      )
-    ) {
-      // Best-effort breadcrumb — never block the 422 on a write miss.
-      // v1.4.49 — strip `message` from the audit-ledger row so Zod
-      // codes that embed the offending value in their default message
-      // (`invalid_enum_value` and similar) cannot leak user content
-      // through the audit surface. The wide-event excerpt above
-      // already carries the shape signal for operator debugging.
-      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-        stripValuesFromMessage: true,
-      });
-      // Through `auditLog()`, which files a refused attempt only when a
-      // delegate made it; the caller's own refusal stays on the wide event.
-      void auditLog("dashboard.widgets.validation-failed", {
-        userId: user.id,
-        details: { issues: auditIssues },
-      }).catch(() => {
-        /* swallow — validation response is the contract, audit row is best-effort */
-      });
-    }
+    // No audit row: this write resolves the caller (`requireAuth`), so the
+    // refusal can only ever be the caller's own, which is telemetry and
+    // lives on the wide event above. Only a delegate's refused attempt is
+    // filed (see `isRejectedAttemptAction` in `src/lib/auth/audit.ts`).
     return returnAllZodIssues(parsed.error, 422);
   }
 
