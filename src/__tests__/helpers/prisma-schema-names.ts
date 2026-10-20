@@ -41,6 +41,20 @@ export interface DeclaredField {
   physicalName: string;
 }
 
+/** The owning side of a relation: the field that carries `@relation(fields:)`. */
+export interface DeclaredRelation {
+  /** The relation field's name. */
+  name: string;
+  /** The model it points at. */
+  target: string;
+  /** Whether the relation field is optional (`Type?`). */
+  optional: boolean;
+  /** The scalar fields holding the key, by their datamodel names. */
+  fields: string[];
+  /** The declared `onDelete`, or null when Prisma's default applies. */
+  onDelete: string | null;
+}
+
 export interface DeclaredModel {
   name: string;
   mappedName: string | null;
@@ -48,6 +62,8 @@ export interface DeclaredModel {
   physicalName: string;
   /** Scalar + enum fields only — relation fields carry no column. */
   fields: DeclaredField[];
+  /** Relations this model owns the key of. */
+  relations: DeclaredRelation[];
 }
 
 export interface DeclaredSchema {
@@ -58,7 +74,9 @@ export interface DeclaredSchema {
 const BLOCK_MAP = /^\s*@@map\("([^"]+)"\)/m;
 const FIELD_MAP = /@map\("([^"]+)"\)/;
 /** `name  Type[]?  @attr…` — the two leading tokens are what matters. */
-const FIELD_LINE = /^\s*(\w+)\s+(\w+)(?:\[\])?\??\s*(.*)$/;
+const FIELD_LINE = /^\s*(\w+)\s+(\w+)(?:\[\])?(\??)\s*(.*)$/;
+const RELATION_FIELDS = /@relation\([^)]*\bfields:\s*\[([^\]]*)\]/;
+const ON_DELETE = /@relation\([^)]*\bonDelete:\s*(\w+)/;
 
 /** Drop `//` and `///` lines so prose can never read as a declaration. */
 function stripComments(block: string): string {
@@ -112,15 +130,31 @@ export function readDeclaredSchema(
   const models = rawModels.map(({ name, body }) => {
     const mappedName = BLOCK_MAP.exec(body)?.[1] ?? null;
     const fields: DeclaredField[] = [];
+    const relations: DeclaredRelation[] = [];
     for (const line of body.split("\n")) {
       if (/^\s*@@/.test(line)) continue;
       const match = FIELD_LINE.exec(line);
       if (!match) continue;
-      const [, fieldName, baseType, rest] = match;
+      const [, fieldName, baseType, optional, rest] = match;
       // A field whose type is another model is a relation, not a column. The
       // back-reference side carries no `@relation` attribute at all, so the
       // type is what decides it — keying on `@relation` would miss half.
-      if (modelNames.has(baseType)) continue;
+      if (modelNames.has(baseType)) {
+        const keys = RELATION_FIELDS.exec(rest)?.[1];
+        if (keys !== undefined) {
+          relations.push({
+            name: fieldName,
+            target: baseType,
+            optional: optional === "?",
+            fields: keys
+              .split(",")
+              .map((key) => key.trim())
+              .filter(Boolean),
+            onDelete: ON_DELETE.exec(rest)?.[1] ?? null,
+          });
+        }
+        continue;
+      }
       const fieldMapped = FIELD_MAP.exec(rest)?.[1] ?? null;
       fields.push({
         name: fieldName,
@@ -128,7 +162,13 @@ export function readDeclaredSchema(
         physicalName: fieldMapped ?? fieldName,
       });
     }
-    return { name, mappedName, physicalName: mappedName ?? name, fields };
+    return {
+      name,
+      mappedName,
+      physicalName: mappedName ?? name,
+      fields,
+      relations,
+    };
   });
 
   return { enums, models };

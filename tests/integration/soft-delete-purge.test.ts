@@ -3,10 +3,11 @@
  * retention register hands to `soft-delete-purge`.
  *
  * Proves, against the migrated schema: every table's purge statement runs; an
- * expired tombstone goes while a recent one and a live row stay; a purged
- * visit cascades its links and leaves a live vaccination that named it in
- * place; a start folded into a live cycle stays; the coach facts keep their
- * longer horizon.
+ * expired tombstone goes while a recent one and a live row stay; a tombstone
+ * a live record still points at stays (a deleted practitioner a live visit
+ * names, a deleted visit a live dose names) and goes once nothing live names
+ * it; a purged visit cascades its links; a start folded into a live cycle
+ * stays; the coach facts keep their longer horizon.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -75,34 +76,111 @@ describe("soft-delete purge", () => {
     expect(left.map((r) => r.id)).toEqual(["lab-live", "lab-recent"]);
   });
 
-  it("cascades a purged visit's links and unhooks a live vaccination", async () => {
+  it("keeps a deleted practitioner a live visit still names", async () => {
+    const practitioner = (id: string) =>
+      prisma.practitioner.create({
+        data: { id, userId: USER, name: id, deletedAt: EXPIRED },
+      });
+    await practitioner("doc-live-visit");
+    await practitioner("doc-gone-visit");
+    await practitioner("doc-unused");
     await prisma.encounter.create({
       data: {
-        id: "visit-expired",
+        id: "visit-live",
         userId: USER,
         occurredAt: new Date("2026-01-01T08:00:00.000Z"),
-        deletedAt: EXPIRED,
+        practitionerId: "doc-live-visit",
       },
     });
+    // A visit that is itself a tombstone holds nothing back.
+    await prisma.encounter.create({
+      data: {
+        id: "visit-tombstoned",
+        userId: USER,
+        occurredAt: new Date("2026-01-02T08:00:00.000Z"),
+        practitionerId: "doc-gone-visit",
+        deletedAt: RECENT,
+      },
+    });
+
+    const leg = await purgeSoftDeletedTable(prisma, "Practitioner", NOW);
+
+    expect(leg.deleted).toBe(2);
+    const left = await prisma.practitioner.findMany({ select: { id: true } });
+    expect(left.map((r) => r.id)).toEqual(["doc-live-visit"]);
+    expect(
+      await prisma.encounter.findUniqueOrThrow({
+        where: { id: "visit-live" },
+        select: { practitionerId: true },
+      }),
+    ).toEqual({ practitionerId: "doc-live-visit" });
+  });
+
+  it("purges the practitioner once the visit naming it is gone", async () => {
+    await prisma.practitioner.create({
+      data: { id: "doc", userId: USER, name: "doc", deletedAt: EXPIRED },
+    });
+    await prisma.encounter.create({
+      data: {
+        id: "visit",
+        userId: USER,
+        occurredAt: new Date("2026-01-01T08:00:00.000Z"),
+        practitionerId: "doc",
+      },
+    });
+    await purgeSoftDeletedTable(prisma, "Practitioner", NOW);
+    expect(await prisma.practitioner.count()).toBe(1);
+
+    await prisma.encounter.update({
+      where: { id: "visit" },
+      data: { deletedAt: EXPIRED },
+    });
+    // The visit goes first in the run's order, and the practitioner with it.
+    await purgeSoftDeletedRows(prisma, NOW);
+    expect(await prisma.encounter.count()).toBe(0);
+    expect(await prisma.practitioner.count()).toBe(0);
+  });
+
+  it("keeps a deleted visit a live dose names and cascades a purged visit's links", async () => {
+    const visit = (id: string) =>
+      prisma.encounter.create({
+        data: {
+          id,
+          userId: USER,
+          occurredAt: new Date("2026-01-01T08:00:00.000Z"),
+          deletedAt: EXPIRED,
+        },
+      });
+    await visit("visit-named");
+    await visit("visit-linked");
     await prisma.vaccinationRecord.create({
       data: {
         id: "vacc-live",
         userId: USER,
         occurredAt: new Date("2026-01-01T08:00:00.000Z"),
-        encounterId: "visit-expired",
+        encounterId: "visit-named",
+      },
+    });
+    await prisma.encounterVaccinationLink.create({
+      data: {
+        userId: USER,
+        encounterId: "visit-linked",
+        vaccinationId: "vacc-live",
       },
     });
 
     const leg = await purgeSoftDeletedTable(prisma, "Encounter", NOW);
 
     expect(leg.deleted).toBe(1);
-    expect(await prisma.encounter.count()).toBe(0);
+    const left = await prisma.encounter.findMany({ select: { id: true } });
+    expect(left.map((r) => r.id)).toEqual(["visit-named"]);
+    expect(await prisma.encounterVaccinationLink.count()).toBe(0);
     expect(
       await prisma.vaccinationRecord.findUniqueOrThrow({
         where: { id: "vacc-live" },
         select: { encounterId: true, deletedAt: true },
       }),
-    ).toEqual({ encounterId: null, deletedAt: null });
+    ).toEqual({ encounterId: "visit-named", deletedAt: null });
   });
 
   it("keeps a start folded into a live cycle until that cycle goes", async () => {
