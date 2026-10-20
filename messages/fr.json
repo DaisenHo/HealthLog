@@ -9191,10 +9191,7 @@
         "unitSteps": "pas",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Confiance faible",
-        "confidenceMedium": "Confiance moyenne",
-        "confidenceHigh": "Confiance élevée"
+        "unitMood": "pts"
       },
       "title": "Analyses du cycle",
       "symptomPatternsTitle": "Tendances des symptômes par phase",

@@ -3,13 +3,8 @@
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
-import { cn } from "@/lib/utils";
+import { MetricCrosstab } from "@/components/insights/metric-crosstab";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
-import {
-  PatternDismissButton,
-  PatternDismissedNotice,
-  usePatternDismissalOverrides,
-} from "@/components/insights/pattern-dismiss-action";
 
 /**
  * v1.12.0 — tag × health-metric crosstab card.
@@ -76,22 +71,6 @@ const UNIT_KEY: Record<MoodCrosstabDisplay, string> = {
   ms: "insights.mood.crosstab.unitMs",
 };
 
-const CONFIDENCE_KEY: Record<MoodInfluenceConfidence, string> = {
-  low: "insights.mood.influence.confidenceLow",
-  medium: "insights.mood.influence.confidenceMedium",
-  high: "insights.mood.influence.confidenceHigh",
-};
-
-// Confidence chips carry COLORED TEXT, so they ride the semantic feedback
-// tokens (`--info` / `--success`) — these carry the Alucard light-mode
-// overrides that clear AA on the white card. Raw `--dracula-*` stays bright
-// green/cyan in light mode and fails AA for text.
-const CONFIDENCE_CLASS: Record<MoodInfluenceConfidence, string> = {
-  low: "bg-secondary text-muted-foreground",
-  medium: "bg-info/15 text-info",
-  high: "bg-success/15 text-success",
-};
-
 /** One decimal for hours/score, whole numbers for kcal. */
 function formatValue(
   value: number,
@@ -108,103 +87,43 @@ export function MoodTagMetricCrosstab({
 }) {
   const { t } = useTranslations();
   const nf = useFormatters();
-  const dismissal = usePatternDismissalOverrides();
-  if (rows.length === 0) return null;
-
   return (
-    <div data-slot="mood-tag-metric-crosstab">
-      <p className="text-muted-foreground mb-2 text-sm">
-        {t("insights.mood.crosstab.description")}
-      </p>
-      <ul className="divide-border divide-y">
-        {rows.map((row) => {
-          const patternId = row.patternId;
-          if (
-            patternId &&
-            dismissal.isDismissed(patternId, row.dismissed === true)
-          ) {
-            return (
-              <li key={row.canonicalKey ?? patternId} className="py-2">
-                <PatternDismissedNotice
-                  compact
-                  patternId={patternId}
-                  onRestored={() => dismissal.setDismissed(patternId, false)}
-                  onSettled={() => dismissal.clearDismissed(patternId, false)}
-                />
-              </li>
-            );
-          }
-          const Icon = moodTagIcon(row.icon);
-          const tagLabel = row.label ?? t(row.labelKey);
-          const metricLabel = t(
-            METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey,
-          );
-          const pairLabel = t("insights.mood.crosstab.pairLabel", {
+    <MetricCrosstab
+      slot="mood-tag-metric-crosstab"
+      rowSlot="mood-crosstab-row"
+      description={t("insights.mood.crosstab.description")}
+      rows={rows.map((row) => {
+        const tagLabel = row.label ?? t(row.labelKey);
+        const metricLabel = t(METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey);
+        const unit = t(UNIT_KEY[row.display]);
+        return {
+          key: `${row.metricKey}:${row.tag}`,
+          metricKey: row.metricKey,
+          pairLabel: t("insights.mood.crosstab.pairLabel", {
             tag: tagLabel,
             metric: metricLabel,
-          });
-          const unit = t(UNIT_KEY[row.display]);
-          const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${formatValue(row.delta, row.display, nf)} ${unit}`;
-          return (
-            <li
-              key={`${row.metricKey}:${row.tag}`}
-              className="flex flex-col gap-1.5 py-2"
-              data-slot="mood-crosstab-row"
-              data-metric={row.metricKey}
-              data-direction={up ? "up" : "down"}
-              data-confidence={row.confidence}
-            >
-              <div className="flex items-center gap-2 text-sm">
-                {Icon && (
-                  <Icon
-                    className="text-muted-foreground h-4 w-4 shrink-0"
-                    aria-hidden="true"
-                  />
-                )}
-                <span
-                  className="text-foreground min-w-0 flex-1 truncate"
-                  title={pairLabel}
-                >
-                  {pairLabel}
-                </span>
-                <span className="text-foreground shrink-0 text-sm font-semibold tabular-nums">
-                  {deltaText}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    CONFIDENCE_CLASS[row.confidence],
-                  )}
-                >
-                  {t(CONFIDENCE_KEY[row.confidence])}
-                </span>
-                {patternId ? (
-                  <PatternDismissButton
-                    patternId={patternId}
-                    onDismissed={() => dismissal.setDismissed(patternId, true)}
-                    onSettled={() => dismissal.clearDismissed(patternId, true)}
-                    className="shrink-0"
-                  />
-                ) : null}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {t(
-                  row.mode === "nextDay"
-                    ? "insights.mood.crosstab.detailNextDay"
-                    : "insights.mood.crosstab.detailSameDay",
-                  {
-                    withAvg: formatValue(row.withAvg, row.display, nf),
-                    withoutAvg: formatValue(row.withoutAvg, row.display, nf),
-                    unit,
-                    withDays: row.withDays,
-                  },
-                )}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+          }),
+          icon: moodTagIcon(row.icon),
+          up: row.delta >= 0,
+          deltaValue: formatValue(row.delta, row.display, nf),
+          unit,
+          confidence: row.confidence,
+          detail: t(
+            row.mode === "nextDay"
+              ? "insights.mood.crosstab.detailNextDay"
+              : "insights.mood.crosstab.detailSameDay",
+            {
+              withAvg: formatValue(row.withAvg, row.display, nf),
+              withoutAvg: formatValue(row.withoutAvg, row.display, nf),
+              unit,
+              withDays: row.withDays,
+            },
+          ),
+          patternId: row.patternId,
+          canonicalKey: row.canonicalKey,
+          dismissed: row.dismissed,
+        };
+      })}
+    />
   );
 }

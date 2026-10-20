@@ -9191,10 +9191,7 @@
         "unitSteps": "걸음",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "점",
-        "confidenceLow": "신뢰도 낮음",
-        "confidenceMedium": "신뢰도 보통",
-        "confidenceHigh": "신뢰도 높음"
+        "unitMood": "점"
       },
       "title": "주기 인사이트",
       "symptomPatternsTitle": "단계별 증상 패턴",

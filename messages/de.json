@@ -9191,10 +9191,7 @@
         "unitSteps": "Schritte",
         "unitBpm": "S/min",
         "unitMs": "ms",
-        "unitMood": "Pkt.",
-        "confidenceLow": "Geringe Sicherheit",
-        "confidenceMedium": "Mittlere Sicherheit",
-        "confidenceHigh": "Hohe Sicherheit"
+        "unitMood": "Pkt."
       },
       "title": "Zyklus-Erkenntnisse",
       "symptomPatternsTitle": "Symptommuster nach Phase",

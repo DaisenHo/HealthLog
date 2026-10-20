@@ -9191,10 +9191,7 @@
         "unitSteps": "kroki",
         "unitBpm": "ud./min",
         "unitMs": "ms",
-        "unitMood": "pkt",
-        "confidenceLow": "Niska pewność",
-        "confidenceMedium": "Średnia pewność",
-        "confidenceHigh": "Wysoka pewność"
+        "unitMood": "pkt"
       },
       "title": "Analizy cyklu",
       "symptomPatternsTitle": "Wzorce objawów wg fazy",

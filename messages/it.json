@@ -9191,10 +9191,7 @@
         "unitSteps": "passi",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Affidabilità bassa",
-        "confidenceMedium": "Affidabilità media",
-        "confidenceHigh": "Affidabilità alta"
+        "unitMood": "pts"
       },
       "title": "Analisi del ciclo",
       "symptomPatternsTitle": "Pattern dei sintomi per fase",

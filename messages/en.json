@@ -9191,10 +9191,7 @@
         "unitSteps": "steps",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Low confidence",
-        "confidenceMedium": "Medium confidence",
-        "confidenceHigh": "High confidence"
+        "unitMood": "pts"
       },
       "title": "Cycle insights",
       "symptomPatternsTitle": "Symptom patterns by phase",

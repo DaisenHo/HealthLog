@@ -9191,10 +9191,7 @@
         "unitSteps": "stappen",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "pnt",
-        "confidenceLow": "Lage betrouwbaarheid",
-        "confidenceMedium": "Gemiddelde betrouwbaarheid",
-        "confidenceHigh": "Hoge betrouwbaarheid"
+        "unitMood": "pnt"
       },
       "title": "Cyclusinzichten",
       "symptomPatternsTitle": "Symptoompatronen per fase",
