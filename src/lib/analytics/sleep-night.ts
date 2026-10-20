@@ -177,7 +177,10 @@ export const ASLEEP_STAGES: readonly SleepStage[] = [
 function sawGranularStage(rows: readonly SleepStageRow[]): boolean {
   for (const r of rows) {
     const stage = r.sleepStage;
-    if (stage != null && GRANULAR_ASLEEP_STAGES.has(stage)) return true;
+    // A zero-minute granular row partitions nothing: it must not strip the
+    // bare aggregate that does carry the night.
+    if (stage != null && GRANULAR_ASLEEP_STAGES.has(stage) && r.value > 0)
+      return true;
   }
   return false;
 }
@@ -214,7 +217,7 @@ function asleepMinutesOf(rows: readonly SleepStageRow[]): number {
     const stage = seg.stage;
     if (stage != null && GRANULAR_ASLEEP_STAGES.has(stage)) {
       granular += seg.minutes;
-      sawGranular = true;
+      if (seg.minutes > 0) sawGranular = true;
     } else if (stage === "ASLEEP" || stage == null) {
       // Bare unspecified aggregate (`ASLEEP`) or a stage-less legacy/manual
       // row — only used when no granular stage carries the night.
@@ -350,12 +353,12 @@ export interface SleepStageRow {
    */
   source?: MeasurementSource | null;
   /**
-   * Device-type tag of the stage row (`Measurement.deviceType`, v1.4.25
-   * W8c). Distinguishes WRITERS behind one source: several HealthKit apps
+   * Device-type tag of the stage row (`Measurement.deviceType`, v1.4.25).
+   * Distinguishes WRITERS behind one source: several HealthKit apps
    * write sleep under `source = APPLE_HEALTH` (watch granular stages, phone
    * coarse in-bed, vendor-app re-exports), and collapsing on source alone
    * blends them. Optional — callers that don't select the column (and every
-   * row stored before W8c) collapse per source exactly as before.
+   * row stored before v1.4.25) collapse per source exactly as before.
    */
   deviceType?: string | null;
 }

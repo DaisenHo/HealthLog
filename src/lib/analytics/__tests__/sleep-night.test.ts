@@ -655,6 +655,21 @@ describe("the one nap rule", () => {
   });
 });
 
+describe("a zero-minute granular row", () => {
+  it("does not strip the bare aggregate that carries the night", () => {
+    // A writer's bare 6-hour night beside a REM row of no length: the REM
+    // row partitions nothing, so the night is the aggregate's six hours.
+    const rows: SleepStageRow[] = [
+      row("2026-06-04T06:00:00.000Z", "ASLEEP", 360),
+      row("2026-06-04T06:00:00.000Z", "REM", 0),
+    ];
+    const [session] = reconstructSleepSessions(rows, "UTC");
+    expect(session.asleepMinutes).toBe(360);
+    expect(session.stages.ASLEEP).toBe(360);
+    expect(reconstructSleepNights(rows, "UTC")[0].asleepMinutes).toBe(360);
+  });
+});
+
 describe("summarizeSleepNights", () => {
   it("summarises per-night totals, not per-stage rows", () => {
     const rows: SleepStageRow[] = [
