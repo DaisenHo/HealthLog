@@ -21,6 +21,7 @@
  * `deprecated` flag.
  */
 import { annotate } from "@/lib/logging/context";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 
 export interface DeprecationNotice {
   /** The day the route was deprecated, `YYYY-MM-DD` (UTC). */
@@ -48,11 +49,16 @@ export const DEPRECATIONS = {
 
 export type DeprecatedRoute = keyof typeof DEPRECATIONS;
 
+/**
+ * A notice day as the instant the header states. Both headers carry instants,
+ * and a deprecation published for every client has no one person's day to
+ * start from, so the day is read as UTC midnight: the label form.
+ */
 function utcDay(day: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
     throw new Error(`Deprecation date must be YYYY-MM-DD, got "${day}"`);
   }
-  return new Date(`${day}T00:00:00.000Z`);
+  return dayKeyAsUtcMidnight(day);
 }
 
 /**
