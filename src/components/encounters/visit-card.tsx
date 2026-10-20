@@ -28,6 +28,7 @@ import {
   encounterKindText,
   encounterStatusText,
 } from "./encounter-labels";
+import { TileHeader } from "@/components/insights/tile-header";
 
 /** The two statuses worth calling out on a row; the rest the section implies. */
 function isNoteworthy(status: EncounterStatus): boolean {
@@ -97,23 +98,20 @@ export function VisitCard({
     >
       <CardContent className="space-y-2">
         <Body onOpen={onOpen} encounter={encounter}>
-          <div className="flex items-start gap-2">
-            <CalendarClock
-              className="text-foreground mt-0.5 size-5 shrink-0"
-              aria-hidden
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-foreground truncate text-sm font-medium">
-                {heading}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {format.dateTime(encounter.occurredAt)}
-              </p>
-            </div>
-            <Badge variant="outline" className="shrink-0">
-              {encounterKindText(t, encounter.kind as EncounterKind)}
-            </Badge>
-          </div>
+          <TileHeader
+            size="sm"
+            icon={CalendarClock}
+            title={heading}
+            titleClassName="min-w-0 truncate"
+            right={
+              <Badge variant="outline" className="shrink-0">
+                {encounterKindText(t, encounter.kind as EncounterKind)}
+              </Badge>
+            }
+          />
+          <p className="text-muted-foreground text-xs">
+            {format.dateTime(encounter.occurredAt)}
+          </p>
 
           {reasonLine ? (
             <p className="text-foreground line-clamp-1 text-sm">{reasonLine}</p>

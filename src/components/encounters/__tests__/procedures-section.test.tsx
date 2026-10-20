@@ -164,7 +164,7 @@ describe("<ProceduresSection>", () => {
       bodySites: [],
       total: 1,
     });
-    expect(html).toMatch(/font-medium">Meniscus repair</);
+    expect(html).toMatch(/card-title"[^>]*>Meniscus repair</);
     expect(html).toContain("Sample clinic");
     expect(html.match(/Meniscus repair/g)).toHaveLength(1);
   });
