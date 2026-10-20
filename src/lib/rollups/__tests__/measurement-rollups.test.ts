@@ -496,6 +496,19 @@ describe("persistRollupRows — large path (via recomputeUserRollups)", () => {
    * instant, a different oldest bucket was corrupted on each run and nothing
    * repaired it. The window must be snapped out to whole buckets first.
    */
+  it("stops between granularities once the job's budget is spent", async () => {
+    queryRawUnsafe.mockResolvedValue([]);
+    let asked = 0;
+    const result = await recomputeUserRollups("user-1", {
+      // The budget runs out after the first granularity was folded.
+      shouldStop: () => ++asked > 1,
+    });
+    expect(result.stopped).toBe(true);
+    // The first granularity's aggregate, then nothing more.
+    expect(queryRawUnsafe).toHaveBeenCalledTimes(1);
+    queryRawUnsafe.mockReset();
+  });
+
   describe("bucket alignment of the recompute window", () => {
     it("snaps a mid-day `from` down to the start of its DAY bucket", async () => {
       queryRawUnsafe.mockResolvedValueOnce(syntheticRows(1));

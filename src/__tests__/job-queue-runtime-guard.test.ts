@@ -438,6 +438,28 @@ describe("heavy jobs share the lane", () => {
     expect(inverted).toEqual([]);
   });
 
+  it("declares every heavy queue long, so its expiry, stop and exclusivity are proven", () => {
+    // A heavy job is the one most likely to run past pg-boss's default
+    // expiry, and the retry that follows an expiry runs it a second time.
+    // `long` is the declaration the checks above hold to an explicit expiry,
+    // a stop on the budget and a lock (or a named marker). A heavy queue
+    // that is genuinely bounded far below the default may be named here
+    // with its reason instead.
+    const HEAVY_BUT_SHORT: Record<string, string> = {};
+    const notLong = (table: Readonly<Record<string, QueueRuntime>>) =>
+      Object.keys(HEAVY_QUEUES)
+        .filter((q) => table[q]?.runtime !== "long" && !(q in HEAVY_BUT_SHORT))
+        .sort();
+    expect(notLong(QUEUE_RUNTIME)).toEqual([]);
+    // The planted case: the fold as it was declared before, `short`.
+    expect(
+      notLong({
+        ...QUEUE_RUNTIME,
+        "rollup-full-backfill": { runtime: "short", why: "four statements" },
+      }),
+    ).toEqual(["rollup-full-backfill"]);
+  });
+
   it("defers only on queues where a job can go back to created", () => {
     // A deferred job returns from active to created. Under `short` (one
     // queued job per key) and `stately` (one per state) a twin already
