@@ -1,7 +1,7 @@
 import { settleWithin } from "@/lib/async/settle-within";
 import { prisma } from "@/lib/db";
 import { lookupIpGeo } from "@/lib/geo";
-import { getEvent } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 
 /**
  * v1.36.0 — the action a delegated request records against the record it read.
@@ -46,6 +46,26 @@ function actingActorFor(filedUnder: string | null): string | null {
   return filedUnder === owner ? actor : null;
 }
 
+/**
+ * A request that was refused before it did anything: `<surface>.validation-failed`.
+ *
+ * Every route that parses a body or a query files one of these when the parse
+ * fails, through `auditLog`, and until v1.43.7 every one of them became an
+ * `audit_logs` row, on the owner's own requests too. A person's app sending a
+ * malformed query is not a security event, and nothing reads those rows: the
+ * activity feed shows refusals only where somebody else acted, and the wide
+ * event already carries the refusal. They were telemetry in the audit table,
+ * a few per sync on a busy client, growing the one table a self-hoster keeps.
+ *
+ * So a refused attempt is written only where it means something to someone
+ * other than the caller: a delegated request, filed under the record it
+ * targeted, which is what the owner's activity feed reads. Everywhere else it
+ * stays on the wide event (`meta.rejected_attempt`).
+ */
+export function isRejectedAttemptAction(action: string): boolean {
+  return action.endsWith(".validation-failed");
+}
+
 export async function auditLog(
   action: string,
   opts: {
@@ -60,14 +80,17 @@ export async function auditLog(
 ) {
   const userId = opts.userId ?? null;
   const client = opts.client ?? prisma;
+  const actorUserId =
+    opts.actorUserId === undefined ? actingActorFor(userId) : opts.actorUserId;
+  if (isRejectedAttemptAction(action) && actorUserId === null) {
+    annotate({ meta: { rejected_attempt: action } });
+    return;
+  }
   const entry = await client.auditLog.create({
     data: {
       action,
       userId,
-      actorUserId:
-        opts.actorUserId === undefined
-          ? actingActorFor(userId)
-          : opts.actorUserId,
+      actorUserId,
       details: opts.details ? JSON.stringify(opts.details) : null,
       ipAddress: opts.ipAddress ?? null,
     },

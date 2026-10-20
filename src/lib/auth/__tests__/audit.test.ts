@@ -320,3 +320,51 @@ describe("auditLog", () => {
     });
   });
 });
+
+describe("auditLog — refused attempts", () => {
+  it("keeps a refusal on the caller's own record out of audit_logs and on the wide event", async () => {
+    const { WideEventBuilder } = await import("@/lib/logging/event-builder");
+    const { eventStorage } = await import("@/lib/logging/context");
+    const evt = new WideEventBuilder("http");
+    evt.setAuth({ user_id: "owner-1", auth_method: "session" });
+
+    await eventStorage.run(evt, () =>
+      auditLog("measurements.list.validation-failed", {
+        userId: "owner-1",
+        details: { issues: [] },
+      }),
+    );
+
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(
+      (evt.toJSON() as { meta?: Record<string, unknown> }).meta
+        ?.rejected_attempt,
+    ).toBe("measurements.list.validation-failed");
+  });
+
+  it("writes a delegate's refusal under the record it targeted, for the owner's feed", async () => {
+    const { WideEventBuilder } = await import("@/lib/logging/event-builder");
+    const { eventStorage } = await import("@/lib/logging/context");
+    const evt = new WideEventBuilder("http");
+    evt.setAuth({ user_id: "delegate-1", auth_method: "session" });
+    evt.setActingAs("owner-1");
+
+    await eventStorage.run(evt, () =>
+      auditLog("measurements.create.validation-failed", { userId: "owner-1" }),
+    );
+
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(prisma.auditLog.create).mock.calls[0][0].data,
+    ).toMatchObject({
+      action: "measurements.create.validation-failed",
+      userId: "owner-1",
+      actorUserId: "delegate-1",
+    });
+  });
+
+  it("still writes every other action on the caller's own record", async () => {
+    await auditLog("measurement.create", { userId: "owner-1" });
+    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+  });
+});

@@ -377,8 +377,9 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
   // v1.4.42 W2 — the route used to return only `issues[0].message`,
   // which forced one round-trip per wrong field during iOS contract
   // debugging. The route now returns every issue under `details.issues`
-  // AND writes a `dashboard.widgets.validation-failed` row to the
-  // append-only audit ledger so the operator can grep `/api/admin/audit`.
+  // and keeps the refusal on the wide event (`meta.rejected_attempt`);
+  // since v1.43.7 a refusal on the caller's own record no longer writes an
+  // audit row.
   describe("PUT 422 — multi-issue envelope (v1.4.42 W2)", () => {
     it("surfaces TWO simultaneous validation errors", async () => {
       const { userId } = await seedUser();
@@ -406,25 +407,15 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
       const paths = body.details.issues.map((i) => i.path).sort();
       expect(paths).toEqual(["version", "widgets"]);
 
-      // Audit-ledger breadcrumb. The route emits the row fire-and-forget,
-      // so poll until it materialises instead of asserting after one fixed
-      // tick — under container load the detached insert can land well past
-      // 25 ms, which made this assertion flaky. Bounded at ~2 s.
-      const deadline = Date.now() + 2_000;
-      let audit: { details: string | null } | null = null;
-      while (audit === null && Date.now() < deadline) {
-        audit = await getPrismaClient().auditLog.findFirst({
-          where: { userId, action: "dashboard.widgets.validation-failed" },
-        });
-        if (audit === null) {
-          await new Promise((r) => setTimeout(r, 50));
-        }
-      }
-      expect(audit).not.toBeNull();
-      const details = JSON.parse(audit?.details ?? "{}") as {
-        issues: Array<{ path: string }>;
-      };
-      expect(details.issues.length).toBe(2);
+      // A refusal on the caller's own record is telemetry, not an audit
+      // event: it stays on the wide event and never reaches the ledger
+      // (only a delegate's refusal is filed, for the owner's feed). Give a
+      // detached insert time to land before asserting it did not.
+      await new Promise((r) => setTimeout(r, 300));
+      const audit = await getPrismaClient().auditLog.findFirst({
+        where: { userId, action: "dashboard.widgets.validation-failed" },
+      });
+      expect(audit).toBeNull();
     });
 
     it("surfaces THREE simultaneous validation errors", async () => {

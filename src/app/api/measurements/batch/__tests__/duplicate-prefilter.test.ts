@@ -493,13 +493,14 @@ describe("a batch of duplicates only (v1.42)", () => {
     await post([weight("uuid-new", new Date(NOW - DAY))]);
     expect(enqueuePrDetection).toHaveBeenCalledTimes(1);
     expect(enqueueReminderSatisfy).toHaveBeenCalledTimes(1);
+    // The enqueue is telemetry on the wide event, never an audit row.
     expect(
       vi
         .mocked(auditLog)
         .mock.calls.some(
           ([action]) => action === "personal_records.detection_enqueued",
         ),
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 
