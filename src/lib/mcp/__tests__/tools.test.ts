@@ -1110,10 +1110,46 @@ describe("get_visits", () => {
     };
     expect(arg.where.userId).toBe("user-1");
     expect(arg.where.deletedAt).toBeNull();
-    expect(arg.take).toBe(50);
+    // One past the cap of 50: the extra row only says whether more exist.
+    expect(arg.take).toBe(51);
     // The window arg narrows the range; the injected userId body field is
     // ignored entirely.
     expect(arg.where.occurredAt).toBeDefined();
+  });
+
+  it("says when the visit list was cut at its cap, and only then", async () => {
+    const visit = (n: number) => ({
+      id: `enc-${n}`,
+      occurredAt: new Date(Date.UTC(2026, 0, 1) - n * 86_400_000),
+      status: "DONE",
+      kind: "ROUTINE",
+      reasonEncrypted: null,
+      outcomeEncrypted: null,
+      bodySiteEncrypted: null,
+      laterality: null,
+      practitioner: null,
+    });
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce(
+      Array.from({ length: 51 }, (_, n) => visit(n)) as never,
+    );
+    const cut = (await tool("get_visits").run(CTX, {})) as {
+      visits: unknown[];
+      truncated: boolean;
+      limit: number;
+    };
+    expect(cut.visits).toHaveLength(50);
+    expect(cut).toMatchObject({ truncated: true, limit: 50 });
+
+    // Exactly full is the whole list.
+    vi.mocked(prisma.encounter.findMany).mockResolvedValueOnce(
+      Array.from({ length: 50 }, (_, n) => visit(n)) as never,
+    );
+    const full = (await tool("get_visits").run(CTX, {})) as {
+      visits: unknown[];
+      truncated: boolean;
+    };
+    expect(full.visits).toHaveLength(50);
+    expect(full.truncated).toBe(false);
   });
 
   it("narrows to one practitioner by a case-insensitive name substring", async () => {
@@ -1532,6 +1568,49 @@ describe("get_intraday_pulse — v1.30 coverage review (G2)", () => {
     await tool("get_intraday_pulse").run(CTX, {});
     expect(loadIntradayPulse).toHaveBeenCalled();
     expect(isModuleEnabled).not.toHaveBeenCalledWith(CTX.userId, "insights");
+  });
+});
+
+describe("get_ecg_recordings — the list says when it was cut", () => {
+  const row = (n: number) => ({
+    id: `ecg-${n}`,
+    recordedAt: new Date(Date.UTC(2026, 6, 1) - n * 3_600_000),
+    durationSeconds: 30,
+    samplingFrequency: 512,
+    sampleCount: 15360,
+    averageHeartRate: 70,
+    lead: "LEAD_I",
+    rhythmClassification: "NOT_DETECTED",
+    source: "APPLE_HEALTH",
+  });
+
+  it("reads one past the cap and reports the cut exactly", async () => {
+    vi.mocked(prisma.ecgRecording.findMany).mockResolvedValueOnce(
+      Array.from({ length: 201 }, (_, n) => row(n)) as never,
+    );
+    const cut = (await tool("get_ecg_recordings").run(CTX, {})) as {
+      recordings: unknown[];
+      truncated: boolean;
+      limit: number;
+    };
+    const call = vi
+      .mocked(prisma.ecgRecording.findMany)
+      .mock.calls.at(-1)![0] as {
+      take: number;
+      orderBy: unknown;
+    };
+    expect(call.take).toBe(201);
+    expect(call.orderBy).toEqual([{ recordedAt: "desc" }, { id: "desc" }]);
+    expect(cut.recordings).toHaveLength(200);
+    expect(cut).toMatchObject({ truncated: true, limit: 200 });
+
+    vi.mocked(prisma.ecgRecording.findMany).mockResolvedValueOnce(
+      Array.from({ length: 200 }, (_, n) => row(n)) as never,
+    );
+    const full = (await tool("get_ecg_recordings").run(CTX, {})) as {
+      truncated: boolean;
+    };
+    expect(full.truncated).toBe(false);
   });
 });
 

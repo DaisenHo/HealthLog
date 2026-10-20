@@ -12,7 +12,24 @@
  * no rollup, no sync, no FHIR, no insights. Charts read entries LIVE.
  */
 
+import type { Prisma } from "@/generated/prisma/client";
 import { readNote } from "@/lib/crypto/note-cipher";
+
+/**
+ * The joins behind a published custom-metric row: its newest live entry and
+ * its live entry count. Every read that answers with the row — the
+ * catalogue, the single metric, the edit echo — includes these, so `latest`
+ * and `entryCount` cannot be present on one and missing on another.
+ */
+export const CUSTOM_METRIC_LATEST_INCLUDE = {
+  entries: {
+    where: { deletedAt: null },
+    orderBy: { measuredAt: "desc" },
+    take: 1,
+    select: { value: true, unit: true, measuredAt: true },
+  },
+  _count: { select: { entries: { where: { deletedAt: null } } } },
+} satisfies Prisma.CustomMetricInclude;
 
 /** A custom-metric catalog row as the API serialises it. */
 export interface CustomMetricRow {

@@ -3,6 +3,7 @@ import {
   trendSlope,
   detectAnomalies,
   summarize,
+  wireSummary,
   type DataPoint,
 } from "../trends";
 
@@ -164,5 +165,21 @@ describe("summarize", () => {
     expect(summary.min).toBe(40);
     expect(summary.max).toBe(199);
     expect(summary.latest).toBe(data[N - 1].value);
+  });
+});
+
+describe("wireSummary", () => {
+  it("drops the in-process anomaly count and keeps every published statistic", () => {
+    const data = Array.from({ length: 10 }, (_, i) => ({
+      date: new Date(Date.UTC(2026, 0, i + 1)),
+      value: i === 9 ? 400 : 70 + i,
+    }));
+    const full = summarize(data);
+    expect(full).toHaveProperty("anomalyCount");
+
+    const wire = wireSummary(full);
+    expect(wire).not.toHaveProperty("anomalyCount");
+    const { anomalyCount: _dropped, ...rest } = full;
+    expect(wire).toEqual(rest);
   });
 });

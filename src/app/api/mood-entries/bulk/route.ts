@@ -194,7 +194,10 @@ interface EntryResult {
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
 
 async function postBulk(request: NextRequest): Promise<Response> {
-  const { user } = await requireAuth();
+  // Metered by this route's own bulk bucket below, not the shared per-account
+  // write bucket: the native client syncs through here in bursts (see
+  // `meterAccountWrite`).
+  const { user } = await requireAuth(undefined, { writeBucket: "own" });
 
   const rl = await checkRateLimit(
     `mood-entries:bulk:${user.id}`,

@@ -33,6 +33,12 @@ vi.mock("@/lib/rate-limit", async (importOriginal) => ({
     resetAt: new Date(Date.now() + 60_000),
   })),
 }));
+// The real meter, so the ceiling is proven on the path it now takes: the route
+// resolves its caller, the resolver charges the bucket. The unit setup stubs
+// the meter for every other route test.
+vi.mock("@/lib/auth/write-meter", async (importOriginal) =>
+  importOriginal<typeof import("@/lib/auth/write-meter")>(),
+);
 const tzMock = vi.hoisted(() => ({ zone: "UTC" }));
 vi.mock("@/lib/tz/resolver", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tz/resolver")>()),
@@ -216,7 +222,7 @@ describe("POST /api/labs/ocr/commit dedup across the user's day", () => {
 });
 
 describe("POST /api/labs/ocr/commit write ceiling", () => {
-  it("charges the shared per-account record-write bucket", async () => {
+  it("charges the shared per-account record-write bucket where the caller is resolved", async () => {
     const res = await POST(postReq({ rows: [numericRow(95)] }));
     expect(res.status).toBe(200);
     expect(checkRecordWriteRateLimit).toHaveBeenCalledWith("user-1");

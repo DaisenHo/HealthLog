@@ -11,7 +11,10 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
-import { serialiseCustomMetric } from "@/lib/custom-metrics/custom-metric-store";
+import {
+  CUSTOM_METRIC_LATEST_INCLUDE,
+  serialiseCustomMetricWithLatest,
+} from "@/lib/custom-metrics/custom-metric-store";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { updateCustomMetricSchema } from "@/lib/validations/custom-metrics";
@@ -41,8 +44,11 @@ export const GET = apiHandler(
     const { user } = await requireRecordAuth("read", "measurements");
     const { id } = await params;
 
+    // The same joins as the list read: the published row carries the latest
+    // value and the entry count, on its own as in the catalogue.
     const row = await prisma.customMetric.findFirst({
       where: { id, deletedAt: null },
+      include: CUSTOM_METRIC_LATEST_INCLUDE,
     });
     if (!row || row.userId !== user.id) {
       return apiError("Custom metric not found", 404);
@@ -53,7 +59,13 @@ export const GET = apiHandler(
       meta: { customMetricId: id },
     });
 
-    return apiSuccess(serialiseCustomMetric(row));
+    return apiSuccess(
+      serialiseCustomMetricWithLatest({
+        ...row,
+        latest: row.entries[0] ?? null,
+        entryCount: row._count.entries,
+      }),
+    );
   },
 );
 
@@ -135,7 +147,11 @@ export const PATCH = apiHandler(
       return apiError("targetLow must not exceed targetHigh", 422);
     }
 
-    const updated = await prisma.customMetric.update({ where: { id }, data });
+    const updated = await prisma.customMetric.update({
+      where: { id },
+      data,
+      include: CUSTOM_METRIC_LATEST_INCLUDE,
+    });
 
     await auditLog("customMetric.update", {
       userId: user.id,
@@ -149,7 +165,13 @@ export const PATCH = apiHandler(
     });
     invalidateUserCorrelationPatterns(user.id);
 
-    return apiSuccess(serialiseCustomMetric(updated));
+    return apiSuccess(
+      serialiseCustomMetricWithLatest({
+        ...updated,
+        latest: updated.entries[0] ?? null,
+        entryCount: updated._count.entries,
+      }),
+    );
   },
 );
 

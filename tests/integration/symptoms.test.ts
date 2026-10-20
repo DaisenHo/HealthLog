@@ -325,6 +325,34 @@ describe("symptom occurrences", () => {
     ).toBe(0);
   });
 
+  it("says hasMore only when an occurrence past the page exists", async () => {
+    const id = await defineSymptom("Headache");
+    for (const occurredAt of [
+      "2026-09-01T09:30:00.000Z",
+      "2026-09-02T09:30:00.000Z",
+    ]) {
+      expect(
+        (await logEvent({ definitionId: id, intensity: 3, occurredAt })).status,
+      ).toBe(201);
+    }
+    const { GET } = await import("@/app/api/symptoms/events/route");
+    const page = async (limit: number) =>
+      (
+        await json<Envelope<{ events: unknown[]; hasMore: boolean }>>(
+          await call(GET, "GET", `/api/symptoms/events?limit=${limit}`),
+        )
+      ).data;
+
+    // A page that is exactly full is the whole list: no page follows it.
+    const full = await page(2);
+    expect(full.events).toHaveLength(2);
+    expect(full.hasMore).toBe(false);
+
+    const cut = await page(1);
+    expect(cut.events).toHaveLength(1);
+    expect(cut.hasMore).toBe(true);
+  });
+
   it("refuses an intensity outside 0-10 and a time in the future", async () => {
     const id = await defineSymptom("Aura");
     expect((await logEvent({ definitionId: id, intensity: 11 })).status).toBe(

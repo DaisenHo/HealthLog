@@ -39,7 +39,8 @@ import { categoryForEntry } from "@/lib/medications/side-effects/taxonomy";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { encryptNote, shapeSideEffectNotes } from "@/lib/crypto/note-cipher";
 import { withIdempotency } from "@/lib/idempotency";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -67,23 +68,24 @@ export const GET = apiHandler(
 
     const { from, to, limit } = parsed.data;
 
-    const found = await prisma.medicationSideEffect.findMany({
-      where: {
-        userId: user.id,
-        medicationId: id,
-        ...(from || to
-          ? {
-              occurredAt: {
-                ...(from ? { gte: from } : {}),
-                ...(to ? { lt: to } : {}),
-              },
-            }
-          : {}),
-      },
-      orderBy: { occurredAt: "desc" },
-      take: overfetch(limit),
-    });
-    const { rows: items, cap } = capRows(found, limit);
+    const { rows: items, cap } = await listPage(limit, (take) =>
+      prisma.medicationSideEffect.findMany({
+        where: {
+          userId: user.id,
+          medicationId: id,
+          ...(from || to
+            ? {
+                occurredAt: {
+                  ...(from ? { gte: from } : {}),
+                  ...(to ? { lt: to } : {}),
+                },
+              }
+            : {}),
+        },
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        take,
+      }),
+    );
 
     annotate({
       action: { name: "medication.sideEffect.list" },

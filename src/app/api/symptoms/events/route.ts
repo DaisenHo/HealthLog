@@ -15,6 +15,8 @@
  */
 import { NextRequest } from "next/server";
 
+import { listPage } from "@/lib/http/list-query";
+
 import { prisma } from "@/lib/db";
 import {
   apiSuccess,
@@ -65,16 +67,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (q.from) occurredAt.gte = new Date(q.from);
   if (q.to) occurredAt.lte = new Date(q.to);
 
-  const rows = await prisma.symptomEvent.findMany({
-    where: {
-      userId: user.id,
-      ...(q.from || q.to ? { occurredAt } : {}),
-      ...(q.definitionId ? { definitionId: q.definitionId } : {}),
-      ...(q.episodeId ? { episodeId: q.episodeId } : {}),
-    },
-    orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-    take: q.limit,
-  });
+  const { rows, cap } = await listPage(q.limit, (take) =>
+    prisma.symptomEvent.findMany({
+      where: {
+        userId: user.id,
+        ...(q.from || q.to ? { occurredAt } : {}),
+        ...(q.definitionId ? { definitionId: q.definitionId } : {}),
+        ...(q.episodeId ? { episodeId: q.episodeId } : {}),
+      },
+      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+      take,
+    }),
+  );
 
   annotate({
     action: { name: "symptoms.event.list" },
@@ -84,7 +88,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
   return apiSuccess({
     events: rows.map(toSymptomEventDTO),
     limit: q.limit,
-    hasMore: rows.length === q.limit,
+    // Exact: true only when a row past this page exists. `rows.length ===
+    // limit` said true on a page that was exactly full, and the client then
+    // asked for a page that held nothing.
+    hasMore: cap.truncated,
   });
 });
 

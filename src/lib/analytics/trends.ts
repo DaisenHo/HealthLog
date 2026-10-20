@@ -156,6 +156,20 @@ export interface DataSummary {
   avg30LastYear?: number | null;
 }
 
+/**
+ * A summary as `/api/analytics` publishes it: without `anomalyCount`.
+ *
+ * The SQL summaries path cannot compute the figure, so the route's published
+ * summary has not carried it since v1.37.19. Two of its summaries are still
+ * built by `summarize()` (the per-night sleep series and the glucose
+ * meal-context split), and both put it back on the wire until they were run
+ * through this.
+ */
+export function wireSummary(summary: DataSummary): DataSummary {
+  const { anomalyCount: _inProcessOnly, ...wire } = summary;
+  return wire;
+}
+
 export function summarize(data: DataPoint[]): DataSummary {
   if (data.length === 0) {
     // Empty series — return null for stats so callers can render an explicit

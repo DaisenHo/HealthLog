@@ -150,7 +150,10 @@ describe("GET /api/feature-flags", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     FIND.mockResolvedValue(null);
     const res = await GET(req());
-    expect(res.headers.get("Deprecation")).toBe("true");
+    // RFC 9745: the deprecation date as `@` and Unix seconds — 2026-09-24.
+    expect(res.headers.get("Deprecation")).toBe("@1790208000");
+    // RFC 8594: the first day it may stop answering.
+    expect(res.headers.get("Sunset")).toBe("Wed, 31 Mar 2027 00:00:00 GMT");
     expect(res.headers.get("Link")).toBe(
       '</api/auth/me>; rel="successor-version"',
     );

@@ -119,7 +119,7 @@ const symptomEventList = z
   .meta({
     id: "SymptomEventList",
     description:
-      "A page of occurrences, newest first. `hasMore` is true when the page is full; page on with `to` set to the oldest `occurredAt` seen.",
+      "A page of occurrences, newest first. `hasMore` is true exactly when an occurrence past this page exists; page on with `to` set to the oldest `occurredAt` seen.",
   });
 
 const deletedResponse = z

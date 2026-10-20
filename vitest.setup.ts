@@ -18,7 +18,7 @@
  * Server-side translation (`getServerTranslator`, `shared-resolve`) holds
  * every catalog on its own and needs no priming.
  */
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { settleBackgroundTasks } from "@/lib/logging/background-tasks";
 import { primeMessages } from "@/lib/i18n/load-locale";
 import enMessages from "./messages/en.json";
@@ -42,4 +42,20 @@ primeMessages("en", enMessages);
  */
 afterEach(async () => {
   await settleBackgroundTasks();
+});
+
+/**
+ * The shared write ceiling is charged by every identity resolver on a write
+ * (`src/lib/auth/write-meter.ts`), which is a database round-trip most route
+ * tests have no fake for: their Prisma mock carries the models the handler
+ * touches and nothing else. The meter is therefore a no-op in unit tests by
+ * default. Its own behaviour is pinned by
+ * `src/lib/auth/__tests__/write-meter.test.ts`, which loads the real module,
+ * and against Postgres by `tests/integration/write-meter.test.ts`; a route test
+ * that wants the refusal mocks `meterAccountWrite` to throw.
+ */
+vi.mock("@/lib/auth/write-meter", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/auth/write-meter")>();
+  return { ...actual, meterAccountWrite: vi.fn(async () => undefined) };
 });

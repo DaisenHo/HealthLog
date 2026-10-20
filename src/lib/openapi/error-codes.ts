@@ -392,6 +392,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     route: ["route.retired"],
     search: ["search.invalid"],
+    security_activity: ["security_activity.invalid"],
     "share-link": [
       "share-link.document.decryptFailed",
       "share-link.document.notFound",

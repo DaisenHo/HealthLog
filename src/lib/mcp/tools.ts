@@ -70,6 +70,7 @@ import {
 import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { encodeOffsetCursor, decodeOffsetCursor } from "@/lib/mcp/pagination";
+import { capFields, capped, cappedOutput } from "@/lib/mcp/capped";
 import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
 import {
   computeDisplayDue,
@@ -477,6 +478,15 @@ function searchAndFetchTools(): McpToolDefinition[] {
           }),
         ),
         nextCursor: z.string().optional(),
+        truncated: cappedOutput.truncated.describe(
+          "True when a source this search reads stopped at its scan ceiling, so older records of that kind were not searched and no cursor reaches them. An empty or short result is then not proof that nothing matches; narrow the query or use the kind's own tool.",
+        ),
+        truncatedSources: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Which sources were cut: medication, lab, visit, condition, document, vaccination.",
+          ),
       },
       async run(ctx, args) {
         const rawQuery =
@@ -526,12 +536,21 @@ function searchAndFetchTools(): McpToolDefinition[] {
           isModuleEnabled(ctx.userId, "labs"),
         ]);
 
+        // Sources whose read stopped at its ceiling, so the result can say it
+        // was assembled from part of the record instead of reading as all of
+        // it.
+        const truncatedSources: string[] = [];
         const meds = medicationsOn
-          ? await prisma.medication.findMany({
-              where: { userId: ctx.userId },
-              select: { id: true, name: true, dose: true },
-              orderBy: { createdAt: "desc" },
-              take: SEARCH_RESULT_SCAN_CAP,
+          ? await capped(SEARCH_RESULT_SCAN_CAP, (take) =>
+              prisma.medication.findMany({
+                where: { userId: ctx.userId },
+                select: { id: true, name: true, dose: true },
+                orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+                take,
+              }),
+            ).then(({ rows, cap }) => {
+              if (cap.truncated) truncatedSources.push("medication");
+              return rows;
             })
           : [];
         for (const med of meds) {
@@ -549,12 +568,18 @@ function searchAndFetchTools(): McpToolDefinition[] {
         }
 
         const labs = labsOn
-          ? await prisma.labResult.findMany({
-              where: { userId: ctx.userId, deletedAt: null },
-              select: { analyte: true },
-              distinct: ["analyte"],
-              orderBy: { analyte: "asc" },
-              take: SEARCH_RESULT_SCAN_CAP,
+          ? await capped(SEARCH_RESULT_SCAN_CAP, (take) =>
+              prisma.labResult.findMany({
+                where: { userId: ctx.userId, deletedAt: null },
+                select: { analyte: true },
+                distinct: ["analyte"],
+                // One row per analyte, so the analyte alone is a total order.
+                orderBy: { analyte: "asc" },
+                take,
+              }),
+            ).then(({ rows, cap }) => {
+              if (cap.truncated) truncatedSources.push("lab");
+              return rows;
             })
           : [];
         for (const lab of labs) {
@@ -636,7 +661,9 @@ function searchAndFetchTools(): McpToolDefinition[] {
         // v1.39.3 — visits (procedures included), conditions, documents and
         // vaccinations, each behind its own module switch.
         candidates.push(
-          ...(await loadRecordCandidates(ctx.userId, rawQuery, origin)),
+          ...(await loadRecordCandidates(ctx.userId, rawQuery, origin, {
+            onTruncated: (kind) => truncatedSources.push(kind),
+          })),
         );
 
         const results = rankCandidates(candidates, rawQuery).map(
@@ -657,6 +684,12 @@ function searchAndFetchTools(): McpToolDefinition[] {
           results: page,
           ...(hasMore
             ? { nextCursor: encodeOffsetCursor(offset + SEARCH_PAGE_SIZE) }
+            : {}),
+          // Every page says so, not only the last: the cut is in what was
+          // searched, which no cursor reaches past.
+          truncated: truncatedSources.length > 0,
+          ...(truncatedSources.length > 0
+            ? { truncatedSources: [...new Set(truncatedSources)].sort() }
             : {}),
         };
       },
@@ -1356,6 +1389,12 @@ const getPreventiveCareOutput: z.ZodRawShape = {
       }),
     )
     .optional(),
+  appointmentsTruncated: cappedOutput.truncated.describe(
+    "True when more booked appointments exist than `appointments` lists: the list was cut at `appointmentsLimit`, soonest first. Say the list is partial.",
+  ),
+  appointmentsLimit: cappedOutput.limit.describe(
+    "The most appointments this result could list.",
+  ),
 };
 
 /**
@@ -1392,6 +1431,7 @@ const getVisitsOutput: z.ZodRawShape = {
   // "module_disabled" when the illness module is off and the condition
   // labels are withheld rather than absent (v1.39.3).
   conditionsReason: z.string().optional(),
+  ...cappedOutput,
 };
 
 /** Default trailing window for `get_visits` when the caller names none. */
@@ -1529,6 +1569,7 @@ const getEcgRecordingsOutput: z.ZodRawShape = {
       }),
     )
     .optional(),
+  ...cappedOutput,
 };
 
 /** `get_labs` behind its module gate: latest-per-biomarker or a history page. */
@@ -2182,21 +2223,25 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       // Upcoming appointments ride alongside the Vorsorge due-list, read from
       // `Encounter` (a booked visit in the future). They are a NAMED field on
       // this result, not a second tool, so "what is coming up" is one answer.
-      const appointmentRows = await prisma.encounter.findMany({
-        where: {
-          userId: ctx.userId,
-          deletedAt: null,
-          status: "PLANNED",
-          occurredAt: { gt: now },
-        },
-        orderBy: { occurredAt: "asc" },
-        take: MAX_APPOINTMENTS,
-        include: {
-          practitioner: {
-            select: { name: true, specialty: true, deletedAt: true },
-          },
-        },
-      });
+      const { rows: appointmentRows, cap: appointmentCap } = await capped(
+        MAX_APPOINTMENTS,
+        (take) =>
+          prisma.encounter.findMany({
+            where: {
+              userId: ctx.userId,
+              deletedAt: null,
+              status: "PLANNED",
+              occurredAt: { gt: now },
+            },
+            orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+            take,
+            include: {
+              practitioner: {
+                select: { name: true, specialty: true, deletedAt: true },
+              },
+            },
+          }),
+      );
       const appointments = appointmentRows.map((r) => {
         const reason = decryptVisitText(r.reasonEncrypted);
         // A practitioner the person deleted is no longer named.
@@ -2288,7 +2333,15 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       return {
         present: true,
         ...(checkups.length > 0 ? { checkups } : {}),
-        ...(appointments.length > 0 ? { appointments } : {}),
+        ...(appointments.length > 0
+          ? {
+              appointments,
+              // The cap describes the appointments only; the checkups are
+              // read whole.
+              appointmentsTruncated: appointmentCap.truncated,
+              appointmentsLimit: appointmentCap.limit,
+            }
+          : {}),
       };
     },
   },
@@ -2394,25 +2447,27 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     async run(ctx) {
       // Device data, served whatever the AI switches or the AI analysis
       // opt-out say, like `GET /api/insights/ecg`.
-      const rows = await prisma.ecgRecording.findMany({
-        where: { userId: ctx.userId },
-        // Everything EXCEPT `waveformEncrypted` — mirrors `GET
-        // /api/insights/ecg`'s own select exactly; no decrypt ever happens
-        // on this path.
-        select: {
-          id: true,
-          recordedAt: true,
-          durationSeconds: true,
-          samplingFrequency: true,
-          sampleCount: true,
-          averageHeartRate: true,
-          lead: true,
-          rhythmClassification: true,
-          source: true,
-        },
-        orderBy: { recordedAt: "desc" },
-        take: MAX_ECG_RECORDINGS,
-      });
+      const { rows, cap } = await capped(MAX_ECG_RECORDINGS, (take) =>
+        prisma.ecgRecording.findMany({
+          where: { userId: ctx.userId },
+          // Everything EXCEPT `waveformEncrypted` — mirrors `GET
+          // /api/insights/ecg`'s own select exactly; no decrypt ever happens
+          // on this path.
+          select: {
+            id: true,
+            recordedAt: true,
+            durationSeconds: true,
+            samplingFrequency: true,
+            sampleCount: true,
+            averageHeartRate: true,
+            lead: true,
+            rhythmClassification: true,
+            source: true,
+          },
+          orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
+          take,
+        }),
+      );
 
       if (rows.length === 0) {
         annotate({
@@ -2444,6 +2499,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         present: true,
         classificationSource: "device" as const,
         recordings,
+        ...capFields(cap),
       };
     },
   },
@@ -2498,33 +2554,35 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       const cutoff = months === null ? null : new Date(now);
       cutoff?.setMonth(cutoff.getMonth() - (months ?? 0));
 
-      const rows = await prisma.encounter.findMany({
-        // `userId` is the resolved session's, never an argument — a visit
-        // belonging to another account is unreachable by construction.
-        where: {
-          userId: ctx.userId,
-          deletedAt: null,
-          occurredAt: { ...(cutoff ? { gte: cutoff } : {}), lte: now },
-          ...(kind ? { kind } : {}),
-          ...(practitioner
-            ? {
-                practitioner: {
-                  is: {
-                    name: { contains: practitioner, mode: "insensitive" },
-                    deletedAt: null,
+      const { rows, cap } = await capped(MAX_VISITS, (take) =>
+        prisma.encounter.findMany({
+          // `userId` is the resolved session's, never an argument — a visit
+          // belonging to another account is unreachable by construction.
+          where: {
+            userId: ctx.userId,
+            deletedAt: null,
+            occurredAt: { ...(cutoff ? { gte: cutoff } : {}), lte: now },
+            ...(kind ? { kind } : {}),
+            ...(practitioner
+              ? {
+                  practitioner: {
+                    is: {
+                      name: { contains: practitioner, mode: "insensitive" },
+                      deletedAt: null,
+                    },
                   },
-                },
-              }
-            : {}),
-        },
-        orderBy: { occurredAt: "desc" },
-        take: MAX_VISITS,
-        include: {
-          practitioner: {
-            select: { name: true, specialty: true, deletedAt: true },
+                }
+              : {}),
           },
-        },
-      });
+          orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+          take,
+          include: {
+            practitioner: {
+              select: { name: true, specialty: true, deletedAt: true },
+            },
+          },
+        }),
+      );
 
       // Absence is explicit. An empty list is { present: false } — "you have
       // never recorded a visit" — NEVER { present: true, visits: [] }, which
@@ -2590,6 +2648,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         present: true,
         windowMonths: months,
         visits,
+        ...capFields(cap),
         ...(illnessOn ? {} : { conditionsReason: "module_disabled" }),
       };
     },

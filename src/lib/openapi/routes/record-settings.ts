@@ -128,7 +128,10 @@ const profileSettings = z
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
     locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"]).nullable(),
     timezone: z.string(),
-    unitPreference: z.enum(["metric", "imperial"]),
+    unitPreference: z
+      .enum(["metric", "imperial"])
+      .nullable()
+      .describe("Null when the record never chose one: metric applies."),
     timeFormat: z.enum(["AUTO", "H12", "H24"]),
     dateFormat: z.enum(["AUTO", "DMY", "MDY", "YMD"]),
   })

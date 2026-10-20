@@ -47,7 +47,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { persistEcgRecording } from "@/lib/ecg/persist-recording";
 import { isoDateTime } from "@/lib/validations/datetime";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const dynamic = "force-dynamic";
 
@@ -134,25 +135,26 @@ export const GET = apiHandler(async () => {
   // sync.
   const { user } = await requireRecordAuth("manage", "record");
 
-  const found = await prisma.ecgRecording.findMany({
-    where: { userId: user.id },
-    // Everything EXCEPT `waveformEncrypted` — the list never touches the
-    // encrypted blob, so no decrypt happens on this path.
-    select: {
-      id: true,
-      recordedAt: true,
-      durationSeconds: true,
-      samplingFrequency: true,
-      sampleCount: true,
-      averageHeartRate: true,
-      lead: true,
-      rhythmClassification: true,
-      source: true,
-    },
-    orderBy: { recordedAt: "desc" },
-    take: overfetch(MAX_RECORDINGS),
-  });
-  const { rows, cap } = capRows(found, MAX_RECORDINGS);
+  const { rows, cap } = await listPage(MAX_RECORDINGS, (take) =>
+    prisma.ecgRecording.findMany({
+      where: { userId: user.id },
+      // Everything EXCEPT `waveformEncrypted` — the list never touches the
+      // encrypted blob, so no decrypt happens on this path.
+      select: {
+        id: true,
+        recordedAt: true,
+        durationSeconds: true,
+        samplingFrequency: true,
+        sampleCount: true,
+        averageHeartRate: true,
+        lead: true,
+        rhythmClassification: true,
+        source: true,
+      },
+      orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
+      take,
+    }),
+  );
 
   const recordings = rows.map((r) => ({
     id: r.id,
@@ -201,7 +203,10 @@ export const GET = apiHandler(async () => {
  * to the same row by construction rather than by a cached response.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  // Metered by this route's own bulk bucket below, not the shared per-account
+  // write bucket: the native client syncs through here in bursts (see
+  // `meterAccountWrite`).
+  const { user } = await requireAuth(undefined, { writeBucket: "own" });
   // A device ingest carries no model text: switching AI off, or the AI
   // analysis opt-out, must never refuse a recording.
 

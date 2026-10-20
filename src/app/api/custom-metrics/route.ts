@@ -11,7 +11,10 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
-import { serialiseCustomMetricWithLatest } from "@/lib/custom-metrics/custom-metric-store";
+import {
+  CUSTOM_METRIC_LATEST_INCLUDE,
+  serialiseCustomMetricWithLatest,
+} from "@/lib/custom-metrics/custom-metric-store";
 import { prisma } from "@/lib/db";
 import { withIdempotency } from "@/lib/idempotency";
 import { annotate } from "@/lib/logging/context";
@@ -34,15 +37,7 @@ export const GET = apiHandler(async () => {
   const rows = await prisma.customMetric.findMany({
     where: { userId: user.id, deletedAt: null },
     orderBy: { name: "asc" },
-    include: {
-      entries: {
-        where: { deletedAt: null },
-        orderBy: { measuredAt: "desc" },
-        take: 1,
-        select: { value: true, unit: true, measuredAt: true },
-      },
-      _count: { select: { entries: { where: { deletedAt: null } } } },
-    },
+    include: CUSTOM_METRIC_LATEST_INCLUDE,
   });
 
   annotate({

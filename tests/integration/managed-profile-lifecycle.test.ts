@@ -771,7 +771,18 @@ describe("managed profile lifecycle (real Postgres)", () => {
       ),
     ]);
 
-    expect([200, 404]).toContain(renounced.status);
+    // Either order is a correct serialization: the renunciation lands first
+    // (200), or the deletion ends the grant first and the renunciation finds
+    // it gone (404) or already ended (409 `sharing.renounce.already_ended`).
+    // Which one wins depends only on timing, and the write ceiling charged
+    // ahead of the renunciation shifts that timing.
+    expect([200, 404, 409]).toContain(renounced.status);
+    if (renounced.status === 409) {
+      const body = (await renounced.clone().json()) as {
+        meta?: { errorCode?: string };
+      };
+      expect(body.meta?.errorCode).toBe("sharing.renounce.already_ended");
+    }
     expect(deleted.status).toBe(200);
     await expect(
       Promise.all([
@@ -818,7 +829,18 @@ describe("managed profile lifecycle (real Postgres)", () => {
       ),
     ]);
 
-    expect([200, 404]).toContain(renounced.status);
+    // Either order is a correct serialization: the renunciation lands first
+    // (200), or the deletion ends the grant first and the renunciation finds
+    // it gone (404) or already ended (409 `sharing.renounce.already_ended`).
+    // Which one wins depends only on timing, and the write ceiling charged
+    // ahead of the renunciation shifts that timing.
+    expect([200, 404, 409]).toContain(renounced.status);
+    if (renounced.status === 409) {
+      const body = (await renounced.clone().json()) as {
+        meta?: { errorCode?: string };
+      };
+      expect(body.meta?.errorCode).toBe("sharing.renounce.already_ended");
+    }
     expect(deleted.status).toBe(200);
     await expect(
       Promise.all([

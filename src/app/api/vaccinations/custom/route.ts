@@ -31,7 +31,6 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { customVaccineCreateSchema } from "@/lib/validations/vaccinations";
 import { toCustomVaccineDTO } from "@/lib/vaccinations/dto";
 import {
@@ -57,16 +56,7 @@ export const GET = apiHandler(async () => {
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user, actor } = await requireRecordAuth("write", "profile");
-
-  // The shared per-account write ceiling, keyed on the ACTOR so a delegate
-  // spends their own allowance (`checkRecordWriteRateLimit`).
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
+  const { user } = await requireRecordAuth("write", "profile");
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 8 * 1024,

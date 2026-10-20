@@ -29,8 +29,9 @@ import {
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { withIdempotency } from "@/lib/idempotency";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
   vaccinationCreateSchema,
@@ -62,6 +63,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     from: params.get("from") ?? undefined,
     to: params.get("to") ?? undefined,
     limit: params.get("limit") ?? undefined,
+    offset: params.get("offset") ?? undefined,
   });
   if (!parsed.success) {
     return returnAllZodIssues(parsed.error, 422, {
@@ -70,29 +72,34 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const query = parsed.data;
-  // Full and bounded rather than paged: an Impfpass is a lifetime document but
-  // a small one, and the default already covers a long life.
+  // A lifetime document but a small one: the default page already covers a
+  // long life, and `meta.truncated` says when it does not.
   const take = query.limit ?? 300;
 
-  const [rows, series] = await Promise.all([
-    prisma.vaccinationRecord.findMany({
-      where: {
-        userId: user.id,
-        deletedAt: null,
-        ...(query.antigenSlug ? { antigenSlug: query.antigenSlug } : {}),
-        ...(query.from || query.to
-          ? {
-              occurredAt: {
-                ...(query.from ? { gte: new Date(query.from) } : {}),
-                ...(query.to ? { lte: new Date(query.to) } : {}),
-              },
-            }
-          : {}),
-      },
-      orderBy: { occurredAt: "desc" },
-      take,
-      include: VACCINATION_INCLUDE,
-    }),
+  const [{ rows, cap }, series] = await Promise.all([
+    listPage(take, (overTake) =>
+      prisma.vaccinationRecord.findMany({
+        where: {
+          userId: user.id,
+          deletedAt: null,
+          ...(query.antigenSlug ? { antigenSlug: query.antigenSlug } : {}),
+          ...(query.from || query.to
+            ? {
+                occurredAt: {
+                  ...(query.from ? { gte: new Date(query.from) } : {}),
+                  ...(query.to ? { lte: new Date(query.to) } : {}),
+                },
+              }
+            : {}),
+        },
+        // Two doses on one day are common (a combined appointment); the id
+        // keeps the page boundary between them stable.
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        skip: query.offset ?? 0,
+        take: overTake,
+        include: VACCINATION_INCLUDE,
+      }),
+    ),
     // Over the WHOLE live set, never over the filtered page: a position is a
     // count of what came before it, so deriving it from a window would report
     // the oldest dose in that window as the first one ever given.
@@ -135,24 +142,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     ),
     renewals,
   };
-  return apiSuccess(body);
+  return apiListSuccess(body, cap);
 });
 
 // A double-tap on "save" must not log the same dose twice.
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postVaccination));
 
 async function postVaccination(request: NextRequest): Promise<Response> {
-  const { user, actor } = await requireRecordAuth("write", "profile");
-
-  // Shared per-account write ceiling — see `checkRecordWriteRateLimit`. The
-  // batch siblings have always been capped; the per-record creates a looping
-  // client hits were not.
-  const writeRl = await checkRecordWriteRateLimit(actor.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
+  const { user } = await requireRecordAuth("write", "profile");
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 32 * 1024,
