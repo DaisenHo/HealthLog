@@ -362,8 +362,19 @@ export async function recomputeBucketsForMeasurement(
   );
 }
 
+/**
+ * UTC wall-clock literals for a `timestamp[]` parameter. `measured_at` and
+ * `bucket_start` are naive UTC timestamps, so the instants they are compared
+ * with must be too: a `timestamptz[]` parameter is converted through the
+ * session time zone, and in any zone but UTC neither the day filter nor the
+ * keyed delete matched a single day, so a refold left its buckets stale.
+ */
+function utcStamps(dates: readonly Date[]): string[] {
+  return dates.map((d) => d.toISOString().replace("Z", ""));
+}
+
 /** Keys one set-based DAY refold carries; bounds the statement's arrays. */
-const KEYED_REFOLD_CHUNK = 2_000;
+const KEYED_REFOLD_CHUNK = 500;
 
 /**
  * The set-based sibling of {@link recomputeBucketsForMeasurement}, for a write
@@ -381,7 +392,17 @@ export async function recomputeBucketsForKeys(
   userId: string,
   rows: Array<{ type: MeasurementType; measuredAt: Date }>,
 ): Promise<void> {
-  const keys = collapseToTypeDayKeys(rows);
+  // Sorted on (type, day), the order every upsert of the tier takes its row
+  // locks in (`persistRollupRows` sorts the same way), and chunked small, so
+  // a keyed refold racing the full fold or another refold holds a short,
+  // deterministic slice and waits rather than interleaving lock orders.
+  const keys = collapseToTypeDayKeys(rows).sort((a, b) =>
+    a.type !== b.type
+      ? a.type < b.type
+        ? -1
+        : 1
+      : a.measuredAt.getTime() - b.measuredAt.getTime(),
+  );
   for (let i = 0; i < keys.length; i += KEYED_REFOLD_CHUNK) {
     await refoldDayBuckets(userId, keys.slice(i, i + KEYED_REFOLD_CHUNK));
   }
@@ -441,11 +462,11 @@ async function refoldDayBuckets(
             AND granularity = 'DAY'::"measurement_rollup_granularity"
             AND (type, bucket_start) IN (
               SELECT k.t::"measurement_type", k.b
-                FROM unnest($2::text[], $3::timestamptz[]) AS k(t, b)
+                FROM unnest($2::text[], $3::timestamp[]) AS k(t, b)
             )`,
         userId,
         keys.map((k) => k.type),
-        keys.map((k) => k.measuredAt.toISOString()),
+        utcStamps(keys.map((k) => k.measuredAt)),
       );
       for (let i = 0; i < ordered.length; i += 500) {
         const { sql, params } = buildRollupUpsert(
@@ -642,9 +663,9 @@ async function runRollupAggregate(
   if (input.types && input.types.length === 0) return [];
   // Bound as the fourth parameter, never spliced.
   const dayFilter = input.days
-    ? `AND date_trunc('day', m."measured_at") = ANY($4::timestamptz[])`
+    ? `AND date_trunc('day', m."measured_at") = ANY($4::timestamp[])`
     : "";
-  const dayParams = input.days ? [input.days.map((d) => d.toISOString())] : [];
+  const dayParams = input.days ? [utcStamps(input.days)] : [];
 
   // Postgres rejects `date_trunc($1::text, m."measured_at")` in a
   // GROUP BY because the planner sees the parameterised expression
@@ -857,7 +878,7 @@ async function applyHourlyMeanDay(
           AND m."deleted_at" IS NULL
           ${
             input.days
-              ? `AND date_trunc('day', m."measured_at") = ANY($4::timestamptz[])`
+              ? `AND date_trunc('day', m."measured_at") = ANY($4::timestamp[])`
               : ""
           }
         GROUP BY m."type", m."source", date_trunc('hour', m."measured_at")
@@ -869,7 +890,7 @@ async function applyHourlyMeanDay(
     input.userId,
     input.from,
     input.to,
-    ...(input.days ? [input.days.map((d) => d.toISOString())] : []),
+    ...(input.days ? [utcStamps(input.days)] : []),
   );
   const byKey = new Map(
     means.map((m) => [

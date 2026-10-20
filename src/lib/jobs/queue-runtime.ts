@@ -190,7 +190,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "daily-briefing": short("A light cohort scan every fifteen minutes."),
 
   // ── Rollups ────────────────────────────────────────────────────────
-  "rollup-recompute": short("One bucket."),
+  "rollup-recompute": short(
+    "One type at one granularity over one bucket or a run of adjacent buckets, inside the five-year fold window.",
+  ),
   "rollup-full-backfill": {
     runtime: "long",
     expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,

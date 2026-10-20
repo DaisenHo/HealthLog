@@ -225,6 +225,23 @@ describe("codex-oauth", () => {
       expect(err.oauthError).toBeNull();
     });
 
+    it("does not read a bare 403 as a dead sign-in", async () => {
+      // An edge challenge in front of the issuer answers a valid grant so.
+      failWith(403, "<html>challenge</html>");
+      const err = await refreshError();
+      expect(err.credentialExpired).toBe(false);
+      expect(err.httpStatus).toBe(403);
+    });
+
+    it("does not read refresh_token_reused as a dead sign-in", async () => {
+      // The loser of two refreshes of one token hears this; the winner's
+      // rotated token is alive.
+      failWith(400, JSON.stringify({ error: "refresh_token_reused" }));
+      const err = await refreshError();
+      expect(err.credentialExpired).toBe(false);
+      expect(err.oauthError).toBe("refresh_token_reused");
+    });
+
     it("never quotes the response body in the message", async () => {
       failWith(
         401,
