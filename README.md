@@ -24,20 +24,16 @@
   <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a>
 </p>
 
-<img width="2434" height="1247" alt="HealthLog dashboard in dark theme: the Today overview with a lead sentence, the health score ring, Today facts and worth-a-look cards, above metric tiles with 7-day trends" src="docs/assets/dashboard-hero.jpeg" />
+<img width="2400" height="1500" alt="HealthLog dashboard in dark theme: a lead sentence on the latest vitals, today's medications, sleep and cycle, the health score ring, worth-a-look cards, and metric tiles with 7-day trends" src="docs/assets/dashboard.jpeg" />
 <p align="center">
-  <img src="docs/assets/Insights.png"
-       alt="Insights"
-       width="23%">
-  <img src="docs/assets/resting-pulse.png"
-       alt="Insights RHR"
-       width="23%">
-  <img src="docs/assets/Medications.png"
-       alt="Medications"
-       width="23%">
-  <img src="docs/assets/Coach.png"
-       alt="Coach Chat"
-       width="23%">
+  <img src="docs/assets/timeline.jpeg" alt="Timeline: life events, conditions, medications, vaccinations, labs and cycles on one time axis, above blood pressure, weight and resting heart rate" width="32%">
+  <img src="docs/assets/day-panel.jpeg" alt="Blood pressure insights with the day panel open: what was running that day, its values and scores" width="32%">
+  <img src="docs/assets/resting-heart-rate.jpeg" alt="Resting heart rate insights: summary, usual range and the full history chart" width="32%">
+</p>
+<p align="center">
+  <img src="docs/assets/medications.jpeg" alt="Medications with next and last intake, adherence and streaks" width="32%">
+  <img src="docs/assets/labs.jpeg" alt="Lab results with reference ranges and trend sparklines" width="32%">
+  <img src="docs/assets/coach.jpeg" alt="Coach: a conversation about the week's recovery, grounded in the recorded data" width="32%">
 </p>
 
 ## Why HealthLog
