@@ -642,7 +642,7 @@ function BuildingTile({
       data-state={state}
       className="gap-3"
     >
-      <TileHeader icon={icon} title={title} titleAs="h2" />
+      <TileHeader icon={icon} title={title} titleAs="h2" reserveLines={2} />
       <p className="text-muted-foreground text-sm" data-slot={messageSlot}>
         {message}
       </p>
@@ -664,9 +664,11 @@ function VitalsTileSkeleton() {
       aria-hidden="true"
       className="gap-3"
     >
-      <div className="flex items-center justify-between gap-2">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-4 w-4 rounded" />
+      {/* The same two-line reserve the tile headers keep, so the real
+          tiles drop in without moving the value row. */}
+      <div className="flex h-10 items-start justify-between gap-2">
+        <Skeleton className="mt-1 h-3 w-24" />
+        <Skeleton className="mt-0.5 h-4 w-4 rounded" />
       </div>
       <Skeleton className="h-8 w-20" />
       <Skeleton className="h-3 w-3/4" />

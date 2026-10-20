@@ -163,6 +163,7 @@ export function SparklineDeltaTile({
         icon={Icon}
         title={label}
         titleAs="h2"
+        reserveLines={2}
         className="min-w-0"
         right={
           provenance ? (

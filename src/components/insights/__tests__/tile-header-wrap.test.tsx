@@ -97,3 +97,79 @@ describe("no card title is cut", () => {
     expect(found).toHaveLength(1);
   });
 });
+
+/**
+ * A tile in a grid row reserves two title lines, so a wrapping title does not
+ * push its value and sparkline below the neighbours'. Proven on the header
+ * row's fixed height, and held for the grid tiles by a source check.
+ */
+describe("<TileHeader reserveLines>", () => {
+  function headerRow(html: string): string {
+    const match = html.match(/<div[^>]*data-slot="tile-header"[^>]*>/);
+    expect(match, "tile header not rendered").not.toBeNull();
+    return match![0];
+  }
+
+  it("gives a one-line and a two-line title the same row height", () => {
+    const short = headerRow(
+      renderToStaticMarkup(
+        <TileHeader icon={Heart} title="Puls" reserveLines={2} />,
+      ),
+    );
+    const long = headerRow(
+      renderToStaticMarkup(
+        <TileHeader
+          icon={Heart}
+          title="Herzfrequenzvariabilität im Schlaf"
+          reserveLines={2}
+        />,
+      ),
+    );
+    expect(short).toBe(long);
+    expect(short).toContain("h-10");
+    expect(short).toContain("items-start");
+    const sm = headerRow(
+      renderToStaticMarkup(
+        <TileHeader size="sm" icon={Heart} title="Puls" reserveLines={2} />,
+      ),
+    );
+    expect(sm).toContain("h-9");
+  });
+
+  it("clamps a third line and keeps the full title readable", () => {
+    const html = renderToStaticMarkup(
+      <TileHeader
+        icon={Heart}
+        title="Herzfrequenzvariabilität"
+        reserveLines={2}
+      />,
+    );
+    expect(titleClasses(html)).toContain("line-clamp-2");
+    expect(html).toContain('title="Herzfrequenzvariabilität"');
+  });
+
+  it("counter-check: without the reserve the row has no fixed height", () => {
+    const row = headerRow(
+      renderToStaticMarkup(<TileHeader icon={Heart} title="Puls" />),
+    );
+    expect(row).not.toMatch(/\bh-(9|10)\b/);
+    expect(row).toContain("items-center");
+  });
+
+  const GRID_TILES = [
+    "components/insights/derived/sparkline-delta-tile.tsx",
+    "components/insights/derived/vitals-dashboard.tsx",
+    "components/insights/device-score-tile.tsx",
+    "components/insights/recovery/resilience-tile.tsx",
+  ];
+
+  it.each(GRID_TILES)("%s reserves the title lines", (rel) => {
+    const source = stripComments(
+      readFileSync(join(process.cwd(), "src", rel), "utf8"),
+    );
+    const headers = (source.match(/<TileHeader\b/g) ?? []).length;
+    const reserved = (source.match(/\breserveLines=\{2\}/g) ?? []).length;
+    expect(headers, rel).toBeGreaterThan(0);
+    expect(reserved, rel).toBe(headers);
+  });
+});
