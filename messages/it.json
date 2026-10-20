@@ -4666,9 +4666,9 @@
       "description": "Quanto bene il tuo corpo si è ripreso: i segnali di recupero, sforzo e carico che il tuo wearable registra durante la notte.",
       "scoreCrossLink": "Vedi il punteggio di recupero composito",
       "emptyTitle": "Ancora nessun dato di recupero",
-      "empty": "Qui non c'è ancora nulla da mostrare. Questa pagina mostra i valori di ricarica, sforzo e carico che registrano WHOOP e Polar, e il livello di resilienza di Oura. La prontezza (readiness) di Oura compare come punteggio di recupero, collegato qui sopra.",
-      "emptyOuraPermission": "Oura è collegato, ma l'autorizzazione concessa non include i dati sulla salute cardiaca, da cui dipende il livello di resilienza di Oura. Ricollega Oura una volta in Impostazioni, Integrazioni e consenti l'accesso alla salute cardiaca; il livello comparirà qui con la prossima sincronizzazione. La prontezza (readiness) di Oura è già il tuo punteggio di recupero, collegato qui sopra.",
-      "emptyOuraNoResilience": "Oura è collegato, ma per questo account non è ancora arrivato alcun livello di resilienza. HealthLog lo richiede a ogni sincronizzazione, quindi comparirà qui non appena Oura ne fornirà uno. Se l'app Oura mostra un livello, la scheda Oura in Impostazioni, Integrazioni indica tutto ciò che la connessione non può fornire. La prontezza (readiness) di Oura è già il tuo punteggio di recupero, collegato qui sopra.",
+      "empty": "Questa pagina si riempie con i valori di recupero, sforzo e carico di WHOOP o Polar e con il livello di resilienza di Oura.",
+      "emptyOuraPermission": "Il livello di resilienza di Oura richiede l'accesso ai dati sulla salute del cuore, quindi ricollega Oura una volta in Integrazioni e consentilo.",
+      "emptyOuraNoResilience": "Oura è collegato e il suo livello di resilienza apparirà qui non appena Oura ne fornirà uno.",
       "emptyAction": "Apri integrazioni",
       "block": {
         "ansChargeExplainer": "Quanto è carico il tuo sistema nervoso autonomo per la giornata: una lettura di ricarica ricavata dai segnali notturni di cuore e respiro.",

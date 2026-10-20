@@ -62980,14 +62980,30 @@ components:
             - type: "null"
           description: Non-null when two writer buckets reported clearly different asleep totals for the latest night's main
             session. Observational only — the served summary stays the winning writer's totals.
+        recoveryEmpty:
+          anyOf:
+            - type: string
+              enum:
+                - general
+                - oura_permission
+                - oura_no_resilience
+            - type: "null"
+          description: "Why the recovery page has nothing to chart, resolved on the server; null when any recovery type
+            (ANS_CHARGE, DAY_STRAIN, WORKOUT_STRAIN, CARDIO_LOAD, AVERAGE_HEART_RATE, MAX_HEART_RATE,
+            ENERGY_EXPENDITURE_KJ, RESILIENCE) has a reading. `oura_permission`: Oura is connected and its grant leaves
+            out the scope the resilience level needs, one reconnect fixes it. `oura_no_resilience`: Oura is connected
+            and no level has arrived yet. `general`: anyone else. Clients render the empty note from this value and
+            never work it out from the connection status."
       required:
         - summaries
         - bmi
         - lastSeenByType
         - sleepSourceDiscrepancy
+        - recoveryEmpty
       additionalProperties: false
-      description: "What `?slice=summaries` answers: the per-type summaries and their freshness, and nothing thick. Four keys,
-        and the caller gets them from two SQL passes rather than the default slice's chain."
+      description: "What `?slice=summaries` answers: the per-type summaries and their freshness, the recovery page's empty
+        reason, and nothing thick. Five keys, and the caller gets them from two SQL passes rather than the default
+        slice's chain."
     InsightsGenerateReadEnvelope:
       type: object
       properties:

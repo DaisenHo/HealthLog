@@ -364,8 +364,12 @@ describe("GET /api/analytics", () => {
           string,
           { lastSeenAt: string; daysAgo: number } | null
         >;
+        recoveryEmpty: string | null;
       };
     };
+    // A weight-only account without Oura: the recovery page's empty reason
+    // is resolved here, not by the client.
+    expect(body.data.recoveryEmpty).toBe("general");
     // The slim slice produced WEIGHT from the SQL pass; no chunked
     // findMany was called.
     expect(prisma.measurement.findMany).not.toHaveBeenCalled();

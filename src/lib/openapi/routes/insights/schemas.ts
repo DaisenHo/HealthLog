@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { recoveryEmptySchema } from "../recovery-empty";
 import { trendSentiment, trendVerdict } from "../trend-verdict";
 import { z } from "zod/v4";
 import { measurementSourceEnum, measurementTypeEnum } from "../shared";
@@ -2032,6 +2033,7 @@ export const analyticsSummariesSliceResponse = z
       ),
     lastSeenByType: z.record(z.string(), lastSeenSlot),
     sleepSourceDiscrepancy,
+    recoveryEmpty: recoveryEmptySchema,
   })
   .meta({
     id: "AnalyticsSummariesSlice",

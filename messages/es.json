@@ -4666,9 +4666,9 @@
       "description": "Cómo se ha recuperado tu cuerpo: las señales de recuperación, esfuerzo y carga que tu wearable registra durante la noche.",
       "scoreCrossLink": "Ver la puntuación de recuperación combinada",
       "emptyTitle": "Aún no hay datos de recuperación",
-      "empty": "Aún no hay nada que mostrar aquí. Esta página muestra las lecturas de recarga, esfuerzo y carga que registran WHOOP y Polar, y el nivel de resiliencia de Oura. La preparación (readiness) de Oura aparece como tu puntuación de recuperación, enlazada arriba.",
-      "emptyOuraPermission": "Oura está conectado, pero el permiso concedido no incluye los datos de salud cardíaca, y el nivel de resiliencia de Oura depende de ellos. Vuelve a conectar Oura una vez en Ajustes, Integraciones y permite el acceso a la salud cardíaca; el nivel aparecerá aquí con la próxima sincronización. La preparación (readiness) de Oura ya es tu puntuación de recuperación, enlazada arriba.",
-      "emptyOuraNoResilience": "Oura está conectado, pero todavía no ha llegado ningún nivel de resiliencia para esta cuenta. HealthLog lo pide en cada sincronización, así que aparecerá aquí en cuanto Oura lo proporcione. Si la app de Oura muestra un nivel, la tarjeta de Oura en Ajustes, Integraciones indica todo lo que la conexión no puede entregar. La preparación (readiness) de Oura ya es tu puntuación de recuperación, enlazada arriba.",
+      "empty": "Esta página se llena con los valores de recuperación, esfuerzo y carga de WHOOP o Polar y con el nivel de resiliencia de Oura.",
+      "emptyOuraPermission": "El nivel de resiliencia de Oura necesita acceso a los datos de salud cardíaca, así que vuelve a conectar Oura una vez en Integraciones y permítelo.",
+      "emptyOuraNoResilience": "Oura está conectado y su nivel de resiliencia aparecerá aquí en cuanto Oura proporcione uno.",
       "emptyAction": "Abrir integraciones",
       "block": {
         "ansChargeExplainer": "Cuán cargado está tu sistema nervioso autónomo para el día: una lectura de recarga obtenida de tus señales nocturnas de corazón y respiración.",

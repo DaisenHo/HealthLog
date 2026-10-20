@@ -4666,9 +4666,9 @@
       "description": "Wie gut sich dein Körper erholt hat: die Erholungs-, Belastungs- und Load-Signale, die dein Wearable über Nacht aufzeichnet.",
       "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
-      "empty": "Hier ist noch nichts zu sehen. Diese Seite zeigt die Werte zu Aufladung, Belastung und Trainingslast, die WHOOP und Polar aufzeichnen, und Ouras Resilienz-Stufe. Ouras Readiness erscheint als dein Erholungs-Score, oben verlinkt.",
-      "emptyOuraPermission": "Oura ist verbunden, aber die erteilte Berechtigung umfasst keine Herzgesundheitsdaten, und genau dahinter liegt Ouras Resilienz-Stufe. Verbinde Oura unter Einstellungen, Integrationen einmal neu und erlaube den Zugriff auf Herzgesundheit; die Stufe erscheint dann mit der nächsten Synchronisierung hier. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
-      "emptyOuraNoResilience": "Oura ist verbunden, aber für dieses Konto ist noch keine Resilienz-Stufe angekommen. HealthLog fragt bei jeder Synchronisierung danach, sie erscheint hier, sobald Oura eine liefert. Zeigt die Oura-App eine Stufe, nennt die Oura-Karte unter Einstellungen, Integrationen alles, was die Verbindung nicht liefern kann. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
+      "empty": "Diese Seite füllt sich mit den Erholungs-, Belastungs- und Trainingslastwerten von WHOOP oder Polar und mit Ouras Resilienz-Stufe.",
+      "emptyOuraPermission": "Ouras Resilienz-Stufe braucht Zugriff auf Herzgesundheitsdaten, also verbinde Oura einmal neu unter Integrationen und erlaube ihn.",
+      "emptyOuraNoResilience": "Oura ist verbunden, und seine Resilienz-Stufe erscheint hier, sobald Oura eine liefert.",
       "emptyAction": "Integrationen öffnen",
       "block": {
         "ansChargeExplainer": "Wie aufgeladen dein autonomes Nervensystem in den Tag startet, ein Recharge-Wert aus deinen nächtlichen Herz- und Atemsignalen.",
