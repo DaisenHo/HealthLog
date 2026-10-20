@@ -132,6 +132,42 @@ describe("notable history cache", () => {
   });
 });
 
+describe("a write while the history is being read", () => {
+  it("is not hidden by the read that started before it", async () => {
+    // The first read is held until a write lands and invalidates the
+    // account's analytics entries, as `invalidateUserMeasurements` does.
+    const real = readLocalDailyStats.getMockImplementation()!;
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    readLocalDailyStats.mockImplementationOnce(async (args) => {
+      const before = await real(args);
+      await held;
+      return before;
+    });
+    const stale = load(SPIKE);
+    await new Promise((r) => setTimeout(r, 0));
+    // The write lowers the spike, then evicts.
+    const original = real;
+    readLocalDailyStats.mockImplementation(async (args) => {
+      const stats = (await original(args)) as Map<string, Map<string, number>>;
+      stats.get("BLOOD_PRESSURE_SYS")?.set(SPIKE, 120);
+      return stats;
+    });
+    caches.analytics.deleteByPrefix("user-1|");
+    release();
+    // The read already under way answers with what it saw.
+    expect((await stale).map((n) => n.kind)).toEqual(["extremeHigh"]);
+    // The next one reads again and sees the write.
+    expect(await load(SPIKE)).toEqual([]);
+  });
+
+  it("joins a read of the same block already under way", async () => {
+    await Promise.all([load(SPIKE), load(SPIKE)]);
+    // One read of the missing span, shared by both.
+    expect(readLocalDailyStats).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("notable history cache size", () => {
   const cached: number[] = [];
   beforeEach(() => {
