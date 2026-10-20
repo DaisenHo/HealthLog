@@ -6,6 +6,10 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import type { Prisma } from "@/generated/prisma/client";
 import { dayKeyAsUtcMidnight, dateOnlyKey } from "@/lib/tz/date-only";
+import {
+  WIPE_TRANSACTION_MAX_WAIT_MS,
+  WIPE_TRANSACTION_TIMEOUT_MS,
+} from "@/lib/data-wipe/wipe-plan";
 
 type Transaction = Prisma.TransactionClient;
 
@@ -80,6 +84,28 @@ export async function reduceManagedProfileGuardian<T>(
 }
 
 /**
+ * Budget for a transaction that ends in `user.delete`.
+ *
+ * Deleting an account row is one statement, but the cascade behind it removes
+ * every row the account owns across the whole schema — the same set the data
+ * wipe deletes model by model — so its duration grows with the record. Prisma's
+ * default interactive-transaction timeout is 5 s; an account with a few years
+ * of imported samples blew through it, the transaction rolled back, and the
+ * person was answered 500 with nothing deleted, every time they tried.
+ *
+ * Splitting the delete into batches outside the transaction is not an option:
+ * the Guardian invariant is decided under the record lock inside this
+ * transaction, and a refusal there must leave the account whole. Batches
+ * committed before the refusal would be a partial erasure the person was told
+ * did not happen. So the deletion stays atomic and gets the wipe's budget,
+ * which was sized for the same work.
+ */
+export const ACCOUNT_DELETION_TRANSACTION_OPTIONS = {
+  timeout: WIPE_TRANSACTION_TIMEOUT_MS,
+  maxWait: WIPE_TRANSACTION_MAX_WAIT_MS,
+} as const;
+
+/**
  * Keep account deletion and its Guardian checks inside the same transaction.
  * Profiles are locked in id order so an account protecting more than one
  * profile cannot deadlock with a concurrent lifecycle operation.
@@ -123,7 +149,7 @@ export async function deleteGuardianAccountWithLifecycle<T>(
     }
 
     return deleteAccount(tx);
-  });
+  }, ACCOUNT_DELETION_TRANSACTION_OPTIONS);
 }
 
 /**
@@ -217,7 +243,7 @@ export async function deleteManagedProfile(input: {
       await requestOffhostPurge(tx, profile.id, "managed_profile_deleted");
       await tx.user.delete({ where: { id: profile.id } });
     });
-  });
+  }, ACCOUNT_DELETION_TRANSACTION_OPTIONS);
   await kickOffhostPurge();
 }
 

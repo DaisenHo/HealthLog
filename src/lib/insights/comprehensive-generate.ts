@@ -115,6 +115,11 @@ import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
 import { resolveEffectiveTimeoutMs } from "@/lib/ai/effective-timeout";
 import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
 import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
+import {
+  INSIGHTS_CACHE_SELECT,
+  insightsCacheWrite,
+  openInsightsCachedText,
+} from "@/lib/insights/cached-text-cipher";
 
 // Scope invalidation + refill moved to a sibling module; re-exported so
 // every existing call site keeps importing from here.
@@ -784,7 +789,7 @@ export async function generateComprehensiveInsight(
     select: {
       insightsPrivacyMode: true,
       insightsCachedAt: true,
-      insightsCachedText: true,
+      ...INSIGHTS_CACHE_SELECT,
       insightsCachedLocale: true,
       insightsExcludeMetrics: true,
       insightsSnapshotHash: true,
@@ -807,6 +812,7 @@ export async function generateComprehensiveInsight(
       glucoseUnit: true,
     },
   });
+  const cachedText = openInsightsCachedText(dbUser);
 
   // Resolve the upstream provider timeout once from the user's setting,
   // falling back to the comprehensive budget. Every generation call in this
@@ -827,7 +833,7 @@ export async function generateComprehensiveInsight(
   if (
     !force &&
     dbUser?.insightsCachedAt &&
-    dbUser.insightsCachedText &&
+    cachedText &&
     cachedLocaleMatches &&
     Date.now() - dbUser.insightsCachedAt.getTime() < CACHE_TTL_MS
   ) {
@@ -1099,12 +1105,10 @@ export async function generateComprehensiveInsight(
   // the briefing never came back — a permanent silent hole. Treating the
   // briefingless cache as "not unchanged" re-runs the full generation
   // (bounded by the nightly budget bucket + forced-warm caps).
-  const cachedCarriesBriefing = cachedPayloadCarriesBriefing(
-    dbUser?.insightsCachedText,
-  );
+  const cachedCarriesBriefing = cachedPayloadCarriesBriefing(cachedText);
   if (
-    dbUser?.insightsCachedText &&
-    dbUser.insightsSnapshotHash === snapshotHash &&
+    cachedText &&
+    dbUser?.insightsSnapshotHash === snapshotHash &&
     !cachedCarriesBriefing
   ) {
     annotate({
@@ -1113,8 +1117,8 @@ export async function generateComprehensiveInsight(
     });
   }
   if (
-    dbUser?.insightsCachedText &&
-    dbUser.insightsSnapshotHash === snapshotHash &&
+    cachedText &&
+    dbUser?.insightsSnapshotHash === snapshotHash &&
     cachedCarriesBriefing
   ) {
     // v1.18.7 (MEDIUM-3) — findings are byte-stable, but re-roll the daily-
@@ -1124,13 +1128,13 @@ export async function generateComprehensiveInsight(
     // phrasing while the structured findings are preserved verbatim from the
     // cached payload. Any miss falls through to the plain timestamp refresh.
     const todayKey = buildRerollDateKey();
-    if (dbUser.insightsBriefingRerollDate !== todayKey) {
+    if (dbUser?.insightsBriefingRerollDate !== todayKey) {
       const rerolled = await rerollBriefingParagraph({
         userId,
         chain,
         systemPrompt,
         userPrompt,
-        cachedText: dbUser.insightsCachedText,
+        cachedText,
         locale,
         signals: features.signalsOfDay ?? null,
         features,
@@ -1150,7 +1154,7 @@ export async function generateComprehensiveInsight(
           rerolled.providerType,
           {
             insightsCachedAt: new Date(),
-            insightsCachedText: rerolled.text,
+            ...insightsCacheWrite(rerolled.text),
             insightsCachedLocale: locale,
             insightsBriefingRerollDate: todayKey,
           },
@@ -1453,12 +1457,9 @@ export async function generateComprehensiveInsight(
       // giving them anything usable. A day-old grounded briefing beats a
       // vanished one on both paths, and the next successful run replaces it.
       let fallbackBriefing: unknown = null;
-      if (dbUser?.insightsCachedText) {
+      if (cachedText) {
         try {
-          const prev = JSON.parse(dbUser.insightsCachedText) as Record<
-            string,
-            unknown
-          >;
+          const prev = JSON.parse(cachedText) as Record<string, unknown>;
           fallbackBriefing = prev.dailyBriefing ?? null;
         } catch {
           // Unparseable previous payload — nothing safe to stand in.
@@ -1617,8 +1618,8 @@ export async function generateComprehensiveInsight(
     workingProviderType,
     {
       insightsCachedAt: new Date(),
-      insightsCachedText: JSON.stringify(
-        withBriefingGeneratedAt(insights, new Date()),
+      ...insightsCacheWrite(
+        JSON.stringify(withBriefingGeneratedAt(insights, new Date())),
       ),
       insightsCachedLocale: locale,
       insightsSnapshotHash: snapshotHash,

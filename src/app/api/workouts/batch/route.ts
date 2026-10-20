@@ -881,13 +881,9 @@ async function postBatch(request: NextRequest): Promise<Response> {
     const silent = workouts.length > PR_DETECTION_SILENT_THRESHOLD;
     try {
       await enqueuePrDetection(user.id, { silent });
-      await auditLog("personal_records.detection_enqueued", {
-        userId: user.id,
-        details: {
-          source: "workout.batch",
-          batchSize: workouts.length,
-          silent,
-        },
+      // Telemetry, not an audit event: it rides the wide event.
+      annotate({
+        meta: { pr_detection_enqueued: true, pr_detection_silent: silent },
       });
     } catch (err) {
       annotate({

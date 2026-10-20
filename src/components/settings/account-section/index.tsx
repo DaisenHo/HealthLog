@@ -368,7 +368,12 @@ export function AccountSection() {
       setFieldErrors(describeRejectedProfileFields(json?.details?.issues, t));
       if (errorCode === "profile.update.nothingSaved" && field) {
         setSaveMsg({ key: "settings.profileNothingSaved", params: { field } });
-      } else if (errorCode) {
+      } else if (
+        errorCode &&
+        t(`apiErrors.${errorCode}`) !== `apiErrors.${errorCode}`
+      ) {
+        // Only a code with a sentence of its own: every refusal carries a
+        // code now, and the generic `http.*` family has no translation.
         setSaveMsg({ key: `apiErrors.${errorCode}` });
       } else {
         setSaveMsg({ key: "settings.savingError" });

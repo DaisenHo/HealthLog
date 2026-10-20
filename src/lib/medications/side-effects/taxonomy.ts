@@ -28,10 +28,12 @@
  * key to a translated label.
  */
 
+// The enums entry, not the client: the side-effects form imports this module,
+// and the client entry would pull the Prisma runtime into the browser bundle.
 import {
   MedicationSideEffectCategory,
   MedicationSideEffectEntry,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma/enums";
 
 export const SIDE_EFFECT_CATEGORIES: Record<
   MedicationSideEffectEntry,

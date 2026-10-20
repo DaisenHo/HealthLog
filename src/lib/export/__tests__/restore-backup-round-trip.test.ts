@@ -795,6 +795,7 @@ describe("backup round trip — export, wire schema, restore", () => {
       // no language, and the next write tags it afresh.
       expect(userUpdate!.data).toEqual({
         insightsCachedText: null,
+        insightsCachedTextEncrypted: null,
         insightsCachedAt: null,
         insightsCachedLocale: null,
       });

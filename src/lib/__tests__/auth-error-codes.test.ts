@@ -227,7 +227,7 @@ describe("auth failures carry a machine-readable errorCode", () => {
     expect(body.meta?.errorCode).toBe(AUTH_ERROR_CODES.missing);
   });
 
-  it("leaves an HttpError thrown without a code exactly as it was", async () => {
+  it("gives an HttpError thrown without a code the status's generic one", async () => {
     const handler = apiHandler(async (_request: Request) => {
       throw new HttpError(404, "Not found");
     });
@@ -239,7 +239,7 @@ describe("auth failures carry a machine-readable errorCode", () => {
     expect(await res.json()).toEqual({
       data: null,
       error: "Not found",
-      meta: { requestId: expect.any(String) },
+      meta: { requestId: expect.any(String), errorCode: "http.not_found" },
     });
   });
 

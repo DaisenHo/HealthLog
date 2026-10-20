@@ -62,7 +62,34 @@ export const AUTH_ERROR_CODES = {
    * the user out, which is the opposite of what the other 401 codes ask for.
    */
   mfaCode: "auth.mfa.code_invalid",
+  /**
+   * The session store could not be read, so the request is neither signed in
+   * nor signed out. 503, not 401: a client that treats this as "signed out"
+   * drops a perfectly good session because the database blinked. Retry.
+   */
+  sessionUnavailable: "auth.session.unavailable",
 } as const;
+
+/**
+ * The session lookup failed, as opposed to finding nothing.
+ *
+ * Raised by the cookie resolver in `src/lib/auth/session.ts` when the query
+ * itself throws — a dropped connection, a pool timeout, a failover. Answering
+ * that with 401 told every client to discard its credential and sign in again
+ * for a fault on the server's side, and a reload during a database restart
+ * signed the person out. The cause rides along for the wide event.
+ */
+export class SessionStoreUnavailableError extends HttpError {
+  constructor(cause: unknown) {
+    super(
+      503,
+      "Sign-in could not be checked right now. Try again shortly.",
+      AUTH_ERROR_CODES.sessionUnavailable,
+    );
+    this.name = "SessionStoreUnavailableError";
+    this.cause = cause;
+  }
+}
 
 /**
  * v1.36.0 — the two refusals the acting-account resolver can raise.

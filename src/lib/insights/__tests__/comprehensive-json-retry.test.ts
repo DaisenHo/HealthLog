@@ -93,6 +93,9 @@ vi.mock("@/lib/cache/invalidate", () => ({
 
 import { generateComprehensiveInsight } from "../comprehensive-generate";
 
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
+
 const FEATURES = { weight: { count: 12, latest: 81.4, mean30: 82.1 } };
 
 beforeEach(() => {

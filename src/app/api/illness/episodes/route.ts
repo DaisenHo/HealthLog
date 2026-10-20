@@ -32,6 +32,7 @@ import {
   illnessEpisodeListQuerySchema,
 } from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "illness");
@@ -58,7 +59,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { from, to, q, offset, sortDir } = parsed.data;
   const limit = parsed.data.limit ?? 50;
   const order = sortDir ?? "desc";
-  const rows = await prisma.illnessEpisode.findMany({
+  const found = await prisma.illnessEpisode.findMany({
     where: {
       userId: user.id,
       deletedAt: null,
@@ -75,16 +76,17 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
     // `id` breaks ties so offset paging never repeats or drops a row.
     orderBy: [{ onsetAt: order }, { id: order }],
-    take: limit,
+    take: overfetch(limit),
     skip: offset ?? 0,
   });
+  const { rows, cap } = capRows(found, limit);
 
   annotate({
     action: { name: "illness.episode.list", entity_type: "illness_episode" },
     meta: { count: rows.length },
   });
 
-  return apiSuccess(rows.map(toIllnessEpisodeDTO));
+  return apiListSuccess(rows.map(toIllnessEpisodeDTO), cap);
 });
 
 // `withIdempotency` lets an iOS retry / double-tap re-send the same

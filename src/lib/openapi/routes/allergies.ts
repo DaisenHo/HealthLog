@@ -32,6 +32,7 @@ import {
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
+  listEnvelope,
 } from "./shared";
 
 // `.meta()` CLONES in Zod 4 rather than annotating in place, so the returned
@@ -97,7 +98,7 @@ export const allergyPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The caller's allergy records.",
           content: {
             "application/json": {
-              schema: dataEnvelope(z.array(allergy), "ListAllergiesEnvelope"),
+              schema: listEnvelope(z.array(allergy), "ListAllergiesEnvelope"),
             },
           },
         },

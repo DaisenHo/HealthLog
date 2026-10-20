@@ -43,6 +43,7 @@ import {
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
+  listEnvelope,
 } from "../shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
@@ -596,7 +597,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "The entries, plus a `meta.total` that counts THIS PAGE rather than the whole log — it is the returned array's length, so it can never exceed `limit`.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 z.object({
                   items: z.array(medicationSideEffect),
                   meta: z.object({ total: z.number().int().nonnegative() }),

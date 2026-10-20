@@ -21,7 +21,10 @@ import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 import { MAX_COACH_ATTACHMENTS } from "@/lib/validations/inbound-documents";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
-import { parseUploadResponse } from "@/components/documents/vault-utils";
+import {
+  parseUploadResponse,
+  stagedAttachmentPollInterval,
+} from "@/components/documents/vault-utils";
 import {
   metricScopeLabelFallback,
   scopeSourceMetricLabelKey,
@@ -399,10 +402,11 @@ export function CoachConversation({
       queryFn: async () =>
         apiGet<InboundDocumentDetailDto>(`/api/documents/inbound/${id}`),
       staleTime: 15_000,
+      // Bounded by the upload processing window, like the vault list: a
+      // document that is never indexed stops being polled.
       refetchInterval: (query: {
         state: { data?: InboundDocumentDetailDto };
-      }) =>
-        query.state.data && !query.state.data.hasContentIndex ? 2500 : false,
+      }) => stagedAttachmentPollInterval(query.state.data),
     })),
   });
   const stagedDetailById = new Map<

@@ -98,6 +98,9 @@ import { generateComprehensiveInsight } from "../comprehensive-generate";
 import { hashInsightSnapshot } from "../snapshot-hash";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
 
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
+
 const FEATURES = { weight: { count: 12, latest: 81.4, mean30: 82.1 } };
 const FEATURES_HASH = hashInsightSnapshot({
   features: compactSections(FEATURES as unknown as Record<string, unknown>),

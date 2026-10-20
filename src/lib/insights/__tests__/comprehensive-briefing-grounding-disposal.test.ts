@@ -92,6 +92,10 @@ vi.mock("@/lib/cache/invalidate", () => ({
 }));
 
 import { generateComprehensiveInsight } from "../comprehensive-generate";
+import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
 
 /**
  * A signals block (so the gate engages at all) plus a medications block. The
@@ -164,7 +168,7 @@ function completion(content: string) {
 /** The `dailyBriefing` the generation persisted. */
 function persistedBriefing(): unknown {
   const call = userUpdate.mock.calls.at(-1);
-  const text = call?.[0]?.data?.insightsCachedText as string | undefined;
+  const text = openInsightsCachedText(call?.[0]?.data) ?? undefined;
   if (!text) return undefined;
   return (JSON.parse(text) as Record<string, unknown>).dailyBriefing;
 }

@@ -110,6 +110,11 @@ import {
   enqueueStatusRefillForUser,
 } from "@/lib/insights/comprehensive-generate";
 import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
+import {
+  INSIGHTS_CACHE_SELECT,
+  insightsCacheWrite,
+  openInsightsCachedText,
+} from "@/lib/insights/cached-text-cipher";
 
 export const dynamic = "force-dynamic";
 
@@ -176,12 +181,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     where: { id: userId },
     select: {
       insightsCachedAt: true,
-      insightsCachedText: true,
+      ...INSIGHTS_CACHE_SELECT,
       insightsCachedLocale: true,
       locale: true,
       timezone: true,
     },
   });
+  const cachedText = openInsightsCachedText(dbUser);
 
   // Resolve the locale the caller is actually reading (cookie /
   // Accept-Language fall-back when `User.locale` is unset) and validate it
@@ -211,7 +217,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // text was generated: `insightsCachedAt` also moves when an unchanged
   // warm only re-stamps yesterday's text.
   const generatedToday = generatedOnLocalToday(
-    readBriefingGeneratedAt(dbUser?.insightsCachedText ?? null),
+    readBriefingGeneratedAt(cachedText),
     timezone,
     new Date(),
   );
@@ -267,9 +273,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     revalidating = true;
   }
 
-  if (dbUser?.insightsCachedText && !languageMismatch) {
+  if (cachedText && !languageMismatch) {
     try {
-      const cached = JSON.parse(dbUser.insightsCachedText);
+      const cached = JSON.parse(cachedText);
       const legacyPayload = isLegacyInsightPayload(cached);
       annotate({
         action: { name: "insights.generate.read" },
@@ -355,7 +361,7 @@ export const POST = apiHandler((request: NextRequest) =>
       select: {
         insightsPrivacyMode: true,
         insightsCachedAt: true,
-        insightsCachedText: true,
+        ...INSIGHTS_CACHE_SELECT,
         insightsCachedLocale: true,
         timezone: true,
         // v1.4.36 W3 T3 — per-user opt-out list mirroring the Coach
@@ -378,6 +384,7 @@ export const POST = apiHandler((request: NextRequest) =>
         glucoseUnit: true,
       },
     });
+    const cachedText = openInsightsCachedText(dbUser);
     const modeAtRead = dbUser?.insightsPrivacyMode ?? "aggregated";
     // v1.34 — the commit guard below (line ~966) matches on these exact
     // columns instead of the broad `updatedAt` timestamp. Every User write
@@ -439,12 +446,12 @@ export const POST = apiHandler((request: NextRequest) =>
     if (
       !forceRefresh &&
       dbUser?.insightsCachedAt &&
-      dbUser.insightsCachedText &&
+      cachedText &&
       cachedLocaleMatches &&
       Date.now() - dbUser.insightsCachedAt.getTime() < 24 * 60 * 60 * 1000
     ) {
       try {
-        const cached = JSON.parse(dbUser.insightsCachedText);
+        const cached = JSON.parse(cachedText);
         // v1.4.16 B5c: detect legacy payloads (pre-rationale) so the UI
         // can show a "regenerate for new explainability features" CTA.
         // We don't auto-regenerate — that would burn rate-limit tokens
@@ -454,9 +461,9 @@ export const POST = apiHandler((request: NextRequest) =>
         // a briefingless cache, it does not short-circuit a provider-backed
         // account, and degrades to the cached payload on a 429 below.
         const carriesBriefing =
-          cachedPayloadCarriesBriefing(dbUser.insightsCachedText) &&
+          cachedPayloadCarriesBriefing(cachedText) &&
           generatedOnLocalToday(
-            readBriefingGeneratedAt(dbUser.insightsCachedText),
+            readBriefingGeneratedAt(cachedText),
             postTimezone,
             new Date(),
           );
@@ -1042,12 +1049,9 @@ export const POST = apiHandler((request: NextRequest) =>
       // state still fires exactly when the user really has no briefing.
       if (ungrounded.length > 0 && insights && typeof insights === "object") {
         let fallbackBriefing: unknown = null;
-        if (dbUser?.insightsCachedText) {
+        if (cachedText) {
           try {
-            const prev = JSON.parse(dbUser.insightsCachedText) as Record<
-              string,
-              unknown
-            >;
+            const prev = JSON.parse(cachedText) as Record<string, unknown>;
             fallbackBriefing = prev.dailyBriefing ?? null;
           } catch {
             // Unparseable previous payload — nothing safe to stand in.
@@ -1109,7 +1113,7 @@ export const POST = apiHandler((request: NextRequest) =>
       },
       data: {
         insightsCachedAt: new Date(),
-        insightsCachedText: JSON.stringify(stored),
+        ...insightsCacheWrite(JSON.stringify(stored)),
         insightsCachedLocale: locale,
         insightsSnapshotHash: hashInsightSnapshot({
           features: compactFeatures,

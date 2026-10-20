@@ -130,6 +130,9 @@ import { generateComprehensiveInsight } from "../comprehensive-generate";
 import { OPERATOR_COST_CAP, USER_PLAN_CAP } from "@/lib/ai/coach/budget";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
+
 const VALID = JSON.stringify({ dailyBriefing: { paragraph: "ok" } });
 
 beforeEach(() => {

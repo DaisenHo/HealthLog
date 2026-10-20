@@ -21,7 +21,12 @@ vi.mock("next/headers", () => ({
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler, HttpError } from "@/lib/api-handler";
-import { apiError, apiSuccess, withErrorRequestId } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  defaultErrorCodeForStatus,
+  withErrorEnvelopeDefaults,
+} from "@/lib/api-response";
 
 const INCOMING = "3f9a2c1b-0000-4000-8000-000000000001";
 
@@ -48,6 +53,7 @@ describe("meta.requestId on every error envelope", () => {
   it("adds it to an envelope without meta and to a hand-built one", async () => {
     const plain = await call(async () => apiError("Not found", 404));
     expect((await plain.json()).meta).toEqual({
+      errorCode: "http.not_found",
       requestId: plain.headers.get("x-request-id"),
     });
     const hand = await call(async () =>
@@ -127,7 +133,7 @@ describe("meta.requestId on every error envelope", () => {
   });
 
   it("never overwrites an id the handler set itself", async () => {
-    const res = await withErrorRequestId(
+    const res = await withErrorEnvelopeDefaults(
       NextResponse.json(
         { data: null, error: "x", meta: { requestId: "kept-by-handler" } },
         { status: 500 },
@@ -135,5 +141,64 @@ describe("meta.requestId on every error envelope", () => {
       "ignored-0000",
     );
     expect((await res.json()).meta.requestId).toBe("kept-by-handler");
+  });
+});
+
+describe("meta.errorCode on every error envelope", () => {
+  it("defaults the code from the status when the route named none", async () => {
+    const thrown = await call(async () => {
+      throw new HttpError(403, "Forbidden");
+    });
+    expect((await thrown.json()).meta.errorCode).toBe("http.forbidden");
+
+    const crash = await call(async () => {
+      throw new Error("boom");
+    });
+    expect((await crash.json()).meta.errorCode).toBe("http.internal");
+
+    const hand = await call(async () =>
+      NextResponse.json({ data: null, error: "Gone" }, { status: 410 }),
+    );
+    expect((await hand.json()).meta.errorCode).toBe("http.gone");
+
+    const bad = await call(async () => {
+      throw new SyntaxError("Unexpected token");
+    });
+    expect((await bad.json()).meta.errorCode).toBe("http.bad_request");
+  });
+
+  it("keeps a code the route named, and its other meta", async () => {
+    const res = await call(async () =>
+      apiError("Nope", 409, { errorCode: "probe.conflict", extra: 1 }),
+    );
+    const meta = (await res.json()).meta;
+    expect(meta.errorCode).toBe("probe.conflict");
+    expect(meta.extra).toBe(1);
+  });
+
+  it("falls back to the class code for an unlisted status", () => {
+    expect(defaultErrorCodeForStatus(418)).toBe("http.client_error");
+    expect(defaultErrorCodeForStatus(507)).toBe("http.server_error");
+    expect(defaultErrorCodeForStatus(422)).toBe("http.invalid");
+  });
+
+  it("adds the code even when the handler already set the id", async () => {
+    const res = await withErrorEnvelopeDefaults(
+      NextResponse.json(
+        { data: null, error: "x", meta: { requestId: "kept-by-handler" } },
+        { status: 404 },
+      ),
+      "ignored-0000",
+    );
+    expect(await res.json()).toEqual({
+      data: null,
+      error: "x",
+      meta: { requestId: "kept-by-handler", errorCode: "http.not_found" },
+    });
+  });
+
+  it("leaves a success untouched", async () => {
+    const ok = await call(async () => apiSuccess({ fine: true }));
+    expect((await ok.json()).meta).toBeUndefined();
   });
 });

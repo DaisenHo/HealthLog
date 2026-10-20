@@ -309,20 +309,69 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Put the request id into `meta.requestId` of an error envelope.
+ * The `meta.errorCode` an error envelope carries when its route named none.
+ *
+ * `meta.errorCode` is what a client is told to branch on, and roughly half of
+ * the refusals in the tree carried one: the rest answered prose alone, so a
+ * client could branch on the code for one 404 and had to fall back to the
+ * status for the next. Every error envelope now has a code. A route that names
+ * its own keeps it; one that does not gets the status's code from this table,
+ * so the generic family is predictable from the status alone and a client
+ * never has to special-case an absent field.
+ *
+ * Deliberately coarse. These say which kind of refusal it was, never why —
+ * a route that has a reason worth branching on names its own code. Statuses
+ * not listed fall back to `http.client_error` / `http.server_error`.
+ */
+export const DEFAULT_ERROR_CODES = {
+  400: "http.bad_request",
+  401: "http.unauthenticated",
+  403: "http.forbidden",
+  404: "http.not_found",
+  405: "http.method_not_allowed",
+  409: "http.conflict",
+  410: "http.gone",
+  413: "http.payload_too_large",
+  415: "http.unsupported_media_type",
+  422: "http.invalid",
+  429: "http.rate_limited",
+  500: "http.internal",
+  502: "http.bad_gateway",
+  503: "http.unavailable",
+  504: "http.gateway_timeout",
+  client: "http.client_error",
+  server: "http.server_error",
+} as const;
+
+/** The default code for an error status, see {@link DEFAULT_ERROR_CODES}. */
+export function defaultErrorCodeForStatus(status: number): string {
+  const listed = (DEFAULT_ERROR_CODES as Record<number, string | undefined>)[
+    status
+  ];
+  if (listed) return listed;
+  return status >= 500
+    ? DEFAULT_ERROR_CODES.server
+    : DEFAULT_ERROR_CODES.client;
+}
+
+/**
+ * Complete an error envelope: `meta.requestId` always, and `meta.errorCode`
+ * from the status when the route named none.
  *
  * Every 4xx and 5xx a route answers with the `{ data: null, error, meta? }`
  * envelope carries the full request id beside the `x-request-id` header, so a
  * client behind a proxy that strips headers can still show the id a person
  * reads out to the operator, who finds the event in the admin log with it.
+ * The code follows {@link DEFAULT_ERROR_CODES}.
  *
  * Applied once, by `apiHandler`, to whatever the handler answered, so a route
  * that builds its error with `apiError`, with `NextResponse.json` by hand or by
  * throwing cannot be the one that forgets it. Anything that is not a JSON
  * envelope (a redirect, a stream, a FHIR `OperationOutcome`, a body that does
- * not parse) is returned untouched, and an id the handler already set wins.
+ * not parse) is returned untouched, and an id or code the handler already set
+ * wins.
  */
-export async function withErrorRequestId(
+export async function withErrorEnvelopeDefaults(
   response: Response,
   requestId: string,
 ): Promise<Response> {
@@ -354,12 +403,23 @@ export async function withErrorRequestId(
   }
   const meta = body.meta;
   if (meta !== undefined && !isPlainObject(meta)) return response;
-  if (meta && typeof meta.requestId === "string") return response;
+  const hasId = typeof meta?.requestId === "string";
+  const hasCode = typeof meta?.errorCode === "string";
+  if (hasId && hasCode) return response;
 
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   return new NextResponse(
-    JSON.stringify({ ...body, meta: { ...(meta ?? {}), requestId } }),
+    JSON.stringify({
+      ...body,
+      meta: {
+        ...(meta ?? {}),
+        ...(hasCode
+          ? {}
+          : { errorCode: defaultErrorCodeForStatus(response.status) }),
+        ...(hasId ? {} : { requestId }),
+      },
+    }),
     { status: response.status, statusText: response.statusText, headers },
   );
 }

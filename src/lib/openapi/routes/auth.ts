@@ -48,6 +48,7 @@ import {
   errorEnvelope,
   loginPasswordSchema,
   validationIssue,
+  listEnvelope,
 } from "./shared";
 import { passkeyLoginOptionsSchema } from "@/lib/validations/auth";
 import {
@@ -1724,7 +1725,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Recent security events for the caller.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 securityActivityResponse,
                 "SecurityActivityEnvelope",
               ),

@@ -1302,13 +1302,9 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
     try {
       await enqueuePrDetection(user.id, { silent });
-      await auditLog("personal_records.detection_enqueued", {
-        userId: user.id,
-        details: {
-          source: "measurement.batch",
-          batchSize: entries.length,
-          silent,
-        },
+      // Telemetry, not an audit event: it rides the wide event.
+      annotate({
+        meta: { pr_detection_enqueued: true, pr_detection_silent: silent },
       });
     } catch (err) {
       // Enqueue failure is non-fatal — the 30-minute fallback cron

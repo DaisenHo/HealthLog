@@ -44,7 +44,12 @@ import {
 } from "@/lib/validations/managed-profile-handover";
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
-import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import {
+  dataEnvelope,
+  errorEnvelope,
+  stdResponses,
+  listEnvelope,
+} from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
@@ -877,7 +882,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The activity, and how far back it can see.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 recordActivityResponse,
                 "RecordActivityEnvelope",
               ),
@@ -900,7 +905,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Grants given and received.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 grantListResponse,
                 "AccountGrantListEnvelope",
               ),

@@ -12,6 +12,7 @@ import {
   idempotentWrite,
   recordRefusal,
   stdResponses,
+  listEnvelope,
 } from "../shared";
 import {
   aiCheckFailedResponse,
@@ -892,7 +893,7 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The ECG recording list (possibly empty).",
           content: {
             "application/json": {
-              schema: dataEnvelope(ecgListResponse, "EcgListResponseEnvelope"),
+              schema: listEnvelope(ecgListResponse, "EcgListResponseEnvelope"),
             },
           },
         },
@@ -985,7 +986,7 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The device-flagged event timeline (possibly empty).",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 rhythmEventsResponse,
                 "RhythmEventsResponseEnvelope",
               ),

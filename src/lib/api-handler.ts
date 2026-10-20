@@ -11,6 +11,7 @@ import { WideEventBuilder } from "./logging/event-builder";
 import { annotate, eventStorage, getEvent } from "./logging/context";
 import { emitIfSampled } from "./logging/transports";
 import { redactOptional, redactSecrets } from "./logging/redact";
+import { routeTemplateFor } from "./logging/route-template";
 import { getSession } from "./auth/session";
 import {
   hasSecondFactorEnrolled,
@@ -55,7 +56,7 @@ import {
 } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
 import { acceptIncomingRequestId } from "./http/request-id";
-import { withErrorRequestId } from "./api-response";
+import { withErrorEnvelopeDefaults } from "./api-response";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -241,7 +242,9 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
     evt.setHttp({
       method: safeRequestProp(request, (r) => r.method, "GET"),
       path: url.pathname,
-      route: url.pathname,
+      // The handler's template (`/api/medications/[id]`), not the concrete
+      // path: one route per handler, so dashboards can group on it.
+      route: await routeTemplateFor(url.pathname, args[1]),
       status: 200,
       user_agent:
         safeRequestProp(request, (r) => r.headers.get("user-agent"), null) ??
@@ -365,9 +368,10 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
           }
         }
         // Every error envelope names its request id in `meta.requestId`, so
-        // the id survives a proxy that strips the header (see
-        // `withErrorRequestId`).
-        const nr = (await withErrorRequestId(
+        // the id survives a proxy that strips the header, and carries a
+        // `meta.errorCode`, the status's default when the route named none
+        // (see `withErrorEnvelopeDefaults`).
+        const nr = (await withErrorEnvelopeDefaults(
           response as Response,
           evt.getRequestId(),
         )) as NextResponse;

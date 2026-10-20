@@ -7,6 +7,7 @@ import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isP2025 } from "@/lib/prisma-errors";
+import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
 
@@ -73,19 +74,28 @@ function mintSessionSecret(): string {
  * login from the deploy onward is on a secret immediately.
  */
 async function findSessionByCookie(cookieValue: string) {
-  if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
-    return prisma.session.findUnique({
-      where: { tokenHash: hashToken(cookieValue) },
+  try {
+    if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
+      return await prisma.session.findUnique({
+        where: { tokenHash: hashToken(cookieValue) },
+        include: { user: true },
+      });
+    }
+
+    const legacy = await prisma.session.findUnique({
+      where: { id: cookieValue },
       include: { user: true },
     });
+    // A row that already holds a secret has retired its id as a credential.
+    return legacy && legacy.tokenHash === null ? legacy : null;
+  } catch (error) {
+    // "No such session" and "could not look" are different answers and only
+    // the first one is null. A failed query used to be folded into null by
+    // the callers, so a database restart answered 401 and every client
+    // signed its person out. It is a 503 now, with a code a client can retry
+    // on (`auth.session.unavailable`).
+    throw new SessionStoreUnavailableError(error);
   }
-
-  const legacy = await prisma.session.findUnique({
-    where: { id: cookieValue },
-    include: { user: true },
-  });
-  // A row that already holds a secret has retired its id as a credential.
-  return legacy && legacy.tokenHash === null ? legacy : null;
 }
 
 /**
@@ -106,7 +116,7 @@ export async function validateSessionFromCookieValue(
   cookieValue: string | undefined | null,
 ): Promise<{ session: { id: string; expiresAt: Date }; user: User } | null> {
   if (!cookieValue) return null;
-  const session = await findSessionByCookie(cookieValue).catch(() => null);
+  const session = await findSessionByCookie(cookieValue);
   if (!session || session.expiresAt < new Date()) return null;
   return {
     session: { id: session.id, expiresAt: session.expiresAt },
@@ -138,7 +148,7 @@ export async function validateSessionWithCreatedAt(
   user: User;
 } | null> {
   if (!cookieValue) return null;
-  const session = await findSessionByCookie(cookieValue).catch(() => null);
+  const session = await findSessionByCookie(cookieValue);
   if (!session || session.expiresAt < new Date()) return null;
   return {
     session: {
@@ -462,7 +472,15 @@ export async function destroySession(): Promise<void> {
     // event rather than swallowing it silently, but never block the cookie
     // clear below: a transient DB fault must not leave the client logged in
     // with the cookie intact.
-    const session = await findSessionByCookie(cookieValue).catch(() => null);
+    // A lookup that fails cannot find the row to delete, but must not keep
+    // the cookie in the browser either; the warning is what tells the
+    // operator a server-side session outlived its logout.
+    const session = await findSessionByCookie(cookieValue).catch((err) => {
+      getEvent()?.addWarning(
+        `destroySession lookup failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
+    });
     if (session) {
       await prisma.session
         .delete({ where: { id: session.id } })

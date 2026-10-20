@@ -40,6 +40,7 @@ import type {
   EmergencyBloodTypeValue,
   OrganDonorStatusValue,
 } from "@/lib/validations/emergency-profile";
+import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 
 export interface ProfileBackupOptions {
   purpose?: "portable-export" | "disaster-recovery";
@@ -1002,7 +1003,7 @@ export async function restoreProfileData(
     await tx.user.update({
       where: { id: ownerId },
       data: {
-        insightsCachedText: null,
+        ...INSIGHTS_CACHE_CLEARED,
         insightsCachedAt: null,
         insightsCachedLocale: null,
       },

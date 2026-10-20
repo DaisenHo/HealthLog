@@ -122,7 +122,10 @@ describe("POST /api/settings/email/test", () => {
 
     expect(response.status).toBe(500);
     const json = await response.json();
-    expect(json.meta).toEqual({ requestId: expect.any(String) });
+    expect(json.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "http.internal",
+    });
   });
 
   it("answers a delivered test with 200", async () => {

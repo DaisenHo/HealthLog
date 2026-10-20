@@ -80,8 +80,10 @@ paths:
             403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this
             route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that
             is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a
-            password confirmation — may still answer 401 with prose and no code, so a missing `meta.errorCode` means the
-            route refused the credential it was handed, not that the response is malformed."
+            password confirmation — may answer 401 with the generic `http.unauthenticated`, which means the route
+            refused the credential it was handed. A session that could not be checked because the session store was
+            unreachable is NOT a 401: it answers 503 with `auth.session.unavailable`, and the client keeps its
+            credential and retries."
           content:
             application/json:
               schema:
@@ -36104,15 +36106,19 @@ components:
               description: "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be
                 reworded. Every code the API emits today is enumerated below, grouped by the surface that emits it; four
                 naming conventions coexist and none of them will be renamed, because a code is a wire value a shipped
-                client branches on. Treat an unlisted code the way you would treat an unlisted enum member — as a
-                refusal you do not recognise, not as a malformed response — since the list grows with the surfaces.
-                Three families are outside it on purpose: `assistant.disabled.<switch>` is built from a template so the
-                last segment is open — it is one of `coach`, `briefing`, `insightStatus`, `documentAi` and `enabled`,
-                and `assistant.disabled.coach` is the one the native client names; the integration-probe classes
-                (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `connection_failed` and the
-                per-provider additions) are enumerated in each `/test` operation instead, where the differences can be
-                stated; and a 401 raised by a route checking a credential of its own may carry no code at all. ai —
-                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
+                client branches on. Every error envelope carries a code: when the route has no reason of its own to
+                name, the code is the status's generic one from the `http` family (`http.not_found` for a 404,
+                `http.internal` for a 500, `http.client_error` / `http.server_error` for a status without its own
+                entry), so `http.*` says which kind of refusal it was and never why. Treat an unlisted code the way you
+                would treat an unlisted enum member — as a refusal you do not recognise, not as a malformed response —
+                since the list grows with the surfaces. Three families are outside it on purpose:
+                `assistant.disabled.<switch>` is built from a template so the last segment is open — it is one of
+                `coach`, `briefing`, `insightStatus`, `documentAi` and `enabled`, and `assistant.disabled.coach` is the
+                one the native client names; the integration-probe classes (`credentials_rejected`, `rate_limited`,
+                `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
+                `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
+                credential of its own carries the generic `http.unauthenticated`. ai — ai.budget.exceeded,
+                ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
                 ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
                 — ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
                 aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
@@ -36121,35 +36127,35 @@ components:
                 anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.admin.required,
                 auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
                 auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
-                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport, auth.stepup.required,
-                auth.token.expired, auth.token.invalid; backup — backup.foreign_reference, backup.key.missing,
-                backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
-                biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
-                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
-                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
-                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
-                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
-                consent — consent.ai.confirmRequired, consent.ai.required; cycle — cycle.bulk.invalid,
-                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
-                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
-                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; dawarich —
-                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
-                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
-                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
-                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
-                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
-                documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
+                auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
+                backup.foreign_reference, backup.key.missing, backup.payload.undecryptable, backup.restore.active,
+                backup.section.missing, backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site —
+                body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
+                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
+                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
+                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
+                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired,
+                consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
+                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
+                disable-coach.body.invalid_json; dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown,
+                dawarich.invalid, dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day —
+                day.invalid; demo — demo.readOnly; documents — documents.chat.conversationNotFound,
+                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
+                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
+                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
+                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
+                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -36159,18 +36165,22 @@ components:
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
                 feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
-                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
-                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
-                illness.episode.parent-not-found, illness.insights.invalid; import — import.apple_health.busy,
-                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
-                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
-                insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
-                labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
-                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed,
-                labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic,
-                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound,
-                labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                health_score_config.too_narrow; http — http.bad_gateway, http.bad_request, http.client_error,
+                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
+                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
+                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
+                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
+                import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
+                insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
+                labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
+                labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
+                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
+                labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
+                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
+                labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
+                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
@@ -36267,10 +36277,11 @@ components:
         - data
         - error
       additionalProperties: false
-      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable
-        machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue
-        validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in
-        one round-trip."
+      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` always carries a stable
+        machine code — the route's own where it names one, otherwise the status's generic `http.*` code —
+        `meta.requestId` names the request for a support conversation, and `meta` may carry further per-refusal context.
+        A 422 from the multi-issue validator additionally carries `details.issues` — every field the request got wrong,
+        so a client can fix them in one round-trip."
     ValidationIssue:
       type: object
       properties:
@@ -37255,15 +37266,32 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
+    ListCapMeta:
+      type: object
+      properties:
+        requestId:
+          type: string
+        truncated:
+          type: boolean
+          description: "True when more rows exist than this response carries: the list was cut at `limit`, newest or most relevant
+            first as the operation states. False means the list is complete. Show the person that the list is partial
+            rather than letting the last row read as the oldest there is."
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: The most rows this response could carry.
+      required:
+        - truncated
+        - limit
+      additionalProperties: false
+      description: How a capped list was cut. Present on every response of an operation that declares it.
     CycleInsightsEnvelope:
       type: object
       properties:
@@ -45176,14 +45204,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     SecurityActivityResponse:
       type: object
@@ -49458,14 +49483,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     MedicationSideEffect:
       type: object
@@ -64850,14 +64872,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     EcgListResponse:
       type: object
@@ -65120,14 +65139,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     RhythmEventsResponse:
       type: object
@@ -72836,14 +72852,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     IllnessEpisode:
       type: object
@@ -73523,14 +73536,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     ListMentalHealthAssessmentsResponse:
       type: object
@@ -73749,14 +73759,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     Allergy:
       type: object
@@ -73907,14 +73914,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     FamilyHistoryEntry:
       type: object
@@ -81311,14 +81315,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     RecordActivity:
       type: object
@@ -81402,14 +81403,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     AccountGrantList:
       type: object
@@ -83261,14 +83259,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     PersonalRecord:
       type: object

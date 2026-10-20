@@ -4,9 +4,9 @@
  * Until v1.4.41 this route returned `parsed.error.issues[0].message`,
  * which dropped every issue past the first. iOS contract debugging
  * needed one round-trip per wrong field. The route now returns every
- * issue under `details.issues` AND writes a
- * `dashboard.widgets.validation-failed` audit-ledger row so the
- * operator can grep `/api/admin/audit` for the same trail.
+ * issue under `details.issues` and keeps the refusal on the wide event.
+ * Since v1.43.7 it files no audit row: the write resolves the caller, and a
+ * caller's own refusal is telemetry, not an audit event.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -15,6 +15,10 @@ const transactionLock = vi.hoisted(() => vi.fn(async () => []));
 const transactionUser = vi.hoisted(() => ({
   findUnique: vi.fn(),
   update: vi.fn(),
+}));
+
+vi.mock("@/lib/auth/audit", () => ({
+  auditLog: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -91,6 +95,7 @@ import {
   type DashboardLayoutWithToken,
 } from "@/lib/dashboard-layout";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -191,49 +196,14 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it("writes one audit-ledger row keyed dashboard.widgets.validation-failed", async () => {
+  it("files no audit row for the caller's own refusal", async () => {
     const res = await callPut(makeReq({ version: 2, widgets: [] }));
     expect(res.status).toBe(422);
-
-    // The audit row is fire-and-forget — let the microtask queue drain.
     await new Promise((r) => setTimeout(r, 5));
-
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string; details: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("dashboard.widgets.validation-failed");
-    const details = JSON.parse(call.data.details) as {
-      issues: Array<{ path: string; code: string }>;
-    };
-    expect(details.issues.length).toBe(2);
-    for (const issue of details.issues) {
-      // v1.4.49 — audit row is the persisted surface. `message`
-      // strips here so a future Zod code that embeds the offending
-      // value cannot leak into the ledger.
-      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
-    }
-  });
-
-  it("dedups the audit-ledger write across two sequential 422s for the same user (v1.4.43 B2)", async () => {
-    // First 422 writes one row; the second 422 inside the 60 s window
-    // returns the same envelope but skips the audit insert.
-    const res1 = await callPut(makeReq({ version: 2, widgets: [] }));
-    expect(res1.status).toBe(422);
-    const res2 = await callPut(makeReq({ version: 2, widgets: [] }));
-    expect(res2.status).toBe(422);
-
-    await new Promise((r) => setTimeout(r, 5));
-
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-
-    // The full multi-issue envelope still rides on every 422 — the
-    // dedup only suppresses the breadcrumb write, never the response.
-    const body2 = (await res2.json()) as {
-      details: { issues: Array<unknown> };
-    };
-    expect(body2.details.issues.length).toBe(2);
+    // The refusal is telemetry on the wide event; the write resolves the
+    // caller, so no delegate's attempt can reach this route.
+    expect(auditLog).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("surfaces received_keys + received_shape_excerpt + zod_issues in the wide-event meta (v1.4.48 H-iOS-1)", async () => {
@@ -296,20 +266,6 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
     expect((meta.received_shape_excerpt as string).length).toBe(256);
   });
 
-  it("does not block the 422 response when the audit-row write rejects", async () => {
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
-
-    const res = await callPut(makeReq({ version: 2, widgets: [] }));
-    // The response is the contract — the audit row is best-effort.
-    expect(res.status).toBe(422);
-    const body = (await res.json()) as {
-      details: { issues: Array<unknown> };
-    };
-    expect(body.details.issues.length).toBe(2);
-  });
-
   it("redacts sensitive keys before writing the wide-event received_shape_excerpt (v1.4.49)", async () => {
     // Caller adds a credential-shaped field — must not land in the
     // wide-event excerpt verbatim. The denylist also covers nested
@@ -352,25 +308,6 @@ describe("PUT /api/dashboard/widgets — 422 multi-issue envelope (v1.4.42 W2)",
         "payload",
       ]),
     );
-  });
-
-  it("strips `message` from the audit-ledger issues row (v1.4.49)", async () => {
-    // The wide-event meta keeps full message for operator debugging,
-    // but the persisted auditLog row must only carry `path` + `code`
-    // so a future Zod code that embeds the offending value cannot
-    // leak into the ledger.
-    await callPut(makeReq({ version: 2, widgets: [] }));
-
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { details: string };
-    };
-    const parsed = JSON.parse(call.data.details) as {
-      issues: Array<Record<string, unknown>>;
-    };
-    for (const issue of parsed.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
-    }
   });
 });
 

@@ -67,7 +67,8 @@ describe("GET /api/personal-records", () => {
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
       orderBy: { achievedAt: "desc" },
-      take: 100,
+      // One row past the limit, so the response can say it was cut.
+      take: 101,
     });
   });
 
@@ -80,7 +81,8 @@ describe("GET /api/personal-records", () => {
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1", metricType: "VO2_MAX" },
       orderBy: { achievedAt: "desc" },
-      take: 100,
+      // One row past the limit, so the response can say it was cut.
+      take: 101,
     });
   });
 
@@ -113,7 +115,8 @@ describe("GET /api/personal-records", () => {
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
       orderBy: { achievedAt: "desc" },
-      take: 25,
+      // One row past the limit, so the response can say it was cut.
+      take: 26,
     });
   });
 
@@ -126,7 +129,8 @@ describe("GET /api/personal-records", () => {
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
       orderBy: { achievedAt: "desc" },
-      take: 500,
+      // One row past the limit, so the response can say it was cut.
+      take: 501,
     });
   });
 
@@ -187,6 +191,53 @@ describe("GET /api/personal-records", () => {
     expect(body.data).toHaveLength(1);
     expect(body.data[0].value).toBe(47.2);
     expect(body.data[0].metricType).toBe("VO2_MAX");
+  });
+
+  it("says when the list was cut at its limit, and not when it is exactly full", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const row = (id: string) => ({
+      id,
+      userId: "user-1",
+      metricType: "VO2_MAX",
+      metricSlot: null,
+      direction: "MAX",
+      value: 40,
+      unit: "mL/(kg·min)",
+      achievedAt: new Date("2026-05-01T07:00:00.000Z"),
+      sourceMeasurementId: null,
+      source: "APPLE_HEALTH",
+      externalId: null,
+      createdAt: new Date(),
+    });
+
+    // Three rows found for ?limit=2: one past the limit exists.
+    vi.mocked(prisma.personalRecord.findMany).mockResolvedValue([
+      row("a"),
+      row("b"),
+      row("c"),
+    ] as never);
+    const cut = await GET(req("http://localhost/api/personal-records?limit=2"));
+    const cutBody = (await cut.json()) as {
+      data: unknown[];
+      meta: { truncated: boolean; limit: number };
+    };
+    expect(cutBody.data).toHaveLength(2);
+    expect(cutBody.meta).toMatchObject({ truncated: true, limit: 2 });
+
+    // Exactly two: complete, not cut.
+    vi.mocked(prisma.personalRecord.findMany).mockResolvedValue([
+      row("a"),
+      row("b"),
+    ] as never);
+    const full = await GET(
+      req("http://localhost/api/personal-records?limit=2"),
+    );
+    const fullBody = (await full.json()) as {
+      data: unknown[];
+      meta: { truncated: boolean };
+    };
+    expect(fullBody.data).toHaveLength(2);
+    expect(fullBody.meta.truncated).toBe(false);
   });
 
   // v1.43 (ios #116 item 5) — every stored field stays, and the band for the
