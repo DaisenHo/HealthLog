@@ -32,6 +32,7 @@ import { dateKeyOfInstant } from "../day/day-url";
 import { formatMetricValue } from "./format-value";
 import type { CustomMetricEntryDto } from "./types";
 import { Segmented } from "@/components/ui/segmented";
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
 /**
  * v1.25.5 — per-custom-metric trend chart, in the dashboard's visual language.
@@ -151,9 +152,7 @@ export function CustomMetricChart({
       </div>
 
       {points.length === 0 ? (
-        <p className="text-muted-foreground py-10 text-center text-sm">
-          {t("customMetrics.chart.empty")}
-        </p>
+        <ChartEmptyState title={t("customMetrics.chart.empty")} height={160} />
       ) : (
         <div>
           <div

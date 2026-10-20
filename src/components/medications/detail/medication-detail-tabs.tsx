@@ -105,6 +105,7 @@ import { IntakeTrackingBody } from "@/components/medications/sections/intake-tra
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
 import type { RelatedLink } from "@/lib/links/related";
 import { InlineAction } from "@/components/ui/inline-action";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // v1.15.20 — Recharts stays out of the detail page's initial bundle:
 // both chart bodies load through `next/dynamic` (client-only) with the
@@ -677,9 +678,11 @@ export function MedicationDetailTabs({
                   longDays={longDays}
                 />
               ) : (
-                <p className="text-muted-foreground text-sm">
-                  {t("medications.detail.uebersicht.complianceEmpty")}
-                </p>
+                <EmptyState
+                  variant="plain"
+                  size="compact"
+                  title={t("medications.detail.uebersicht.complianceEmpty")}
+                />
               )}
             </MedicationDetailSection>
           )}

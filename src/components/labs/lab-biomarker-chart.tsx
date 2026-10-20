@@ -34,6 +34,7 @@ import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
 import { Segmented } from "@/components/ui/segmented";
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
 /**
  * v1.18.1 — per-biomarker trend chart, in the dashboard's visual language.
@@ -265,9 +266,7 @@ export function LabBiomarkerChart({
       </div>
 
       {points.length === 0 ? (
-        <p className="text-muted-foreground py-10 text-center text-sm">
-          {t("labs.chart.empty")}
-        </p>
+        <ChartEmptyState title={t("labs.chart.empty")} height={160} />
       ) : (
         <div>
           <div

@@ -27,6 +27,7 @@ import {
   describeChannelTestFailures,
   type ChannelTestResult,
 } from "./notification-test-failures";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface NotificationHealth {
   windowHours: number;
@@ -73,9 +74,11 @@ function NotificationHealthPanel() {
         )}
 
         {data && data.channels.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            {t("admin.notificationHealth.empty")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("admin.notificationHealth.empty")}
+          />
         )}
 
         {data && data.channels.length > 0 && (

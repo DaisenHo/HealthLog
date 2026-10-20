@@ -25,6 +25,7 @@ import type {
   EfficacyTargetView,
 } from "@/lib/medications/efficacy/build-efficacy";
 import { InlineAction } from "@/components/ui/inline-action";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function primaryWithDelta(
   dto: MedicationEfficacyDTO,
@@ -79,9 +80,11 @@ export function MedicationEfficacySummary({
       </CardHeader>
       <CardContent className="space-y-3">
         {rows.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t("medications.efficacy.insights.empty")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("medications.efficacy.insights.empty")}
+          />
         ) : (
           <ul className="divide-border/60 divide-y">
             {rows.map(({ med, target }) => {

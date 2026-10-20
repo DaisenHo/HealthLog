@@ -31,6 +31,7 @@ import {
 } from "@/lib/mood/dimensions";
 import { cn } from "@/lib/utils";
 import { Segmented } from "@/components/ui/segmented";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.37 — the five level-A dimensions over time.
@@ -129,9 +130,11 @@ export function MoodDimensionTrends({
 
   if (present.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        {t("insights.mood.dimensions.none")}
-      </p>
+      <EmptyState
+        variant="plain"
+        size="compact"
+        title={t("insights.mood.dimensions.none")}
+      />
     );
   }
 

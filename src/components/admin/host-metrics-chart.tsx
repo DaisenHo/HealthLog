@@ -48,6 +48,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiGet } from "@/lib/api/api-fetch";
 import { readStoredTimezone } from "@/lib/timezone-mirror";
 import { resolveIntlLocale } from "@/lib/format-locale";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface HostMetricsApiSample {
   capturedAt: string;
@@ -227,9 +228,11 @@ export function HostMetricsChart() {
             </span>
           }
         />
-        <p className="text-muted-foreground text-xs">
-          {t("admin.hostMetrics.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("admin.hostMetrics.empty")}
+        />
       </SettingsCard>
     );
   }

@@ -31,6 +31,7 @@ import type {
   InboundDocumentDto,
 } from "@/lib/validations/inbound-documents";
 import { DOCUMENT_KIND_ICONS } from "./document-kind-meta";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ListPage {
   documents: InboundDocumentDto[];
@@ -140,9 +141,11 @@ export function DocumentLinkPicker({
             onRetry={() => list.refetch()}
           />
         ) : documents.length === 0 ? (
-          <p className="text-muted-foreground py-4 text-center text-sm">
-            {t("documents.linkPicker.empty")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("documents.linkPicker.empty")}
+          />
         ) : (
           <ul className="max-h-[50vh] space-y-1.5 overflow-y-auto overscroll-contain">
             {documents.map((doc) => {

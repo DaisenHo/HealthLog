@@ -29,6 +29,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /** A picked document, carried by id + a display title (for the owner chips). */
 export interface PickedDocument {
@@ -159,9 +160,11 @@ export function ShareDocumentPicker({
             onRetry={() => list.refetch()}
           />
         ) : documents.length === 0 ? (
-          <p className="text-muted-foreground py-4 text-center text-sm">
-            {t("settings.sharing.pickerEmpty")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("settings.sharing.pickerEmpty")}
+          />
         ) : (
           <ul
             className="max-h-[50vh] space-y-1.5 overflow-y-auto overscroll-contain"

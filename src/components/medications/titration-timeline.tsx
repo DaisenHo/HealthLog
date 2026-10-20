@@ -31,6 +31,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { cn } from "@/lib/utils";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface DoseChange {
   id: string;
@@ -141,12 +142,12 @@ export function TitrationTimeline({
       dataSlot="titration-timeline"
     >
       {!hasPlan ? (
-        <p
-          className="text-muted-foreground bg-muted/40 rounded-md p-4 text-sm"
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("medications.titration.empty")}
           data-slot="titration-timeline-empty"
-        >
-          {t("medications.titration.empty")}
-        </p>
+        />
       ) : (
         <ol className="relative space-y-0" data-slot="titration-timeline-list">
           {steps.map((step, i) => (

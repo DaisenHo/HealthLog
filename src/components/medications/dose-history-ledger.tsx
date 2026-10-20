@@ -115,6 +115,7 @@ import {
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -477,9 +478,11 @@ export function DoseHistoryLedger({
       )}
 
       {data && !isLoading && groups.length === 0 && (
-        <p className="text-muted-foreground py-6 text-sm">
-          {t("medications.detail.verlauf.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("medications.detail.verlauf.empty")}
+        />
       )}
 
       {data &&

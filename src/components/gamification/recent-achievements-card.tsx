@@ -27,6 +27,7 @@ import { useAchievementsQuery } from "@/lib/queries/use-achievements-query";
 import type { AchievementProgress } from "@/lib/gamification/achievements";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -168,9 +169,11 @@ export function RecentAchievementsCard() {
           ))}
         </ul>
       ) : recent.length === 0 ? (
-        <p className="text-muted-foreground py-2 text-sm">
-          {t("achievements.dashboardCard.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("achievements.dashboardCard.empty")}
+        />
       ) : (
         <ul className="space-y-2">
           {recent.map((achievement) => {

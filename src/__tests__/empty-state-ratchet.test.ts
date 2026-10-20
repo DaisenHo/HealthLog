@@ -31,7 +31,7 @@ const SRC = join(__dirname, "..");
  * The hand-written empty states that remain. Lower it when a site moves to
  * `EmptyState`; never raise it.
  */
-const CEILING = 75;
+const CEILING = 13;
 
 const ELEMENT_RE =
   /<(p|div|span)\b([^>]*?)>\s*\{t\(\s*"([a-zA-Z0-9_.]+)"[^)]*\)\}\s*<\/\1>/g;

@@ -13,6 +13,7 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { LabHistoryList } from "./lab-history-list";
 import type { LabResultDto, LabResultListResponse } from "./types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Page size for the offset-paginated reading feed. The server caps a single
 // read at 500 (`listLabResultsSchema`); this stays well under that and keeps
@@ -77,9 +78,11 @@ export function LabValuesList({ biomarkerId }: { biomarkerId: string }) {
 
   if (readings.length === 0) {
     return (
-      <p className="text-muted-foreground py-8 text-center text-sm">
-        {t("labs.detail.emptyTitle")}
-      </p>
+      <EmptyState
+        variant="plain"
+        size="compact"
+        title={t("labs.detail.emptyTitle")}
+      />
     );
   }
 

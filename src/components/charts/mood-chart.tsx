@@ -732,9 +732,7 @@ export function MoodChart({
       height={CHART_HEIGHT_PX}
     />
   ) : !chartData?.length ? (
-    <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">
-      {t("charts.noData")}
-    </div>
+    <ChartEmptyState title={t("charts.noData")} height={192} />
   ) : chartData.length < 3 ? (
     // v1.4.16 — sparse-data placeholder consistent with the
     // BP/weight/pulse charts. Height tracks the chart strip's

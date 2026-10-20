@@ -394,11 +394,7 @@ function MedicationComplianceCalendar({
   }
 
   if (!data?.dailyCompliance) {
-    return (
-      <div className="text-muted-foreground rounded-lg border border-dashed px-3 py-4 text-xs">
-        {t("insights.complianceNoData")}
-      </div>
-    );
+    return <EmptyState size="compact" title={t("insights.complianceNoData")} />;
   }
 
   return (

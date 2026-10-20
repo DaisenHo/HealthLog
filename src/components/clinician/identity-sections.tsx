@@ -22,6 +22,7 @@ import {
   type LeafScope,
   type Translate,
 } from "./report-sections";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * Only the three stored gender values get a label. A row on a clinical
@@ -240,9 +241,11 @@ export function EmergencySection({
           {t("clinicianView.sectionUnavailable")}
         </p>
       ) : rows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {t("clinicianView.sectionEmpty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("clinicianView.sectionEmpty")}
+        />
       ) : (
         rows.map((row) => (
           <StatRow

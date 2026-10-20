@@ -53,6 +53,7 @@ import {
 import { KeyBackupCard } from "./key-backup-card";
 import { useKeyBackupStatus } from "./use-key-backup-status";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ColumnScan {
   model: string;
@@ -446,9 +447,11 @@ export function ColumnCoverage({
         {open ? (
           <>
             {shown.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                {t("admin.section.encryption.columnsNoneWithRows")}
-              </p>
+              <EmptyState
+                variant="plain"
+                size="compact"
+                title={t("admin.section.encryption.columnsNoneWithRows")}
+              />
             ) : (
               /* Focusable, named scroll region: on a phone the table scrolls
                sideways, and a keyboard user has to be able to reach it

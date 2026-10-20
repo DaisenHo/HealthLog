@@ -42,6 +42,7 @@ import type {
   MedicationEfficacyDTO,
   EfficacyTargetView,
 } from "@/lib/medications/efficacy/build-efficacy";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // v1.30 UI audit (M8) — `EfficacyChart` mounts inside `TargetCard`'s own
 // `<Card>` as a bare 220px `ResponsiveContainer` with no chrome of its own.
@@ -299,9 +300,11 @@ function TargetCard({
             />
           </div>
         ) : (
-          <p className="text-muted-foreground text-sm">
-            {t("medications.efficacy.noSeries")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("medications.efficacy.noSeries")}
+          />
         )}
 
         <BeforeAfterCard target={target} minWeeks={dto.minWeeksPerSide} />

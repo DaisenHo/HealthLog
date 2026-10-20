@@ -49,6 +49,7 @@ import {
   userDayKey,
   validTimezoneOr,
 } from "@/lib/tz/format";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface GeocodeResult {
   lat: number;
@@ -343,9 +344,11 @@ export function EnvironmentSection() {
               )}
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              {t("settings.sections.environment.home.none")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("settings.sections.environment.home.none")}
+            />
           )}
           <form
             className="flex gap-2"
@@ -378,9 +381,11 @@ export function EnvironmentSection() {
           {homeSearched &&
             !searchHome.isPending &&
             homeResults.length === 0 && (
-              <p className="text-muted-foreground text-sm">
-                {t("settings.sections.environment.noResults")}
-              </p>
+              <EmptyState
+                variant="plain"
+                size="compact"
+                title={t("settings.sections.environment.noResults")}
+              />
             )}
           {homeResults.length > 0 && (
             <ul className="divide-border divide-y rounded-md border">
@@ -467,9 +472,11 @@ export function EnvironmentSection() {
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              {t("settings.sections.environment.travel.none")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("settings.sections.environment.travel.none")}
+            />
           )}
 
           <form
@@ -505,9 +512,11 @@ export function EnvironmentSection() {
           {travelSearched &&
             !searchTravel.isPending &&
             travelResults.length === 0 && (
-              <p className="text-muted-foreground text-sm">
-                {t("settings.sections.environment.noResults")}
-              </p>
+              <EmptyState
+                variant="plain"
+                size="compact"
+                title={t("settings.sections.environment.noResults")}
+              />
             )}
           {travelResults.length > 0 && (
             <ul className="divide-border divide-y rounded-md border">

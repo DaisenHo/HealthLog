@@ -21,6 +21,7 @@ import {
   moodPairsOf,
   type CorrelationDiscoveryResponse,
 } from "./mood-discovered-relations";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.12.7 — the single "What stands out" card.
@@ -96,12 +97,12 @@ export function MoodWhatStandsOut({
           />
         ) : null}
         {!isLoading && !isError && data && !hasDiscovered ? (
-          <p
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("insights.pattern.empty")}
             data-slot="mood-discovery-empty"
-            className="text-muted-foreground text-sm"
-          >
-            {t("insights.pattern.empty")}
-          </p>
+          />
         ) : null}
         {hasDiscovered && (
           <MoodDiscoveredRelations

@@ -21,6 +21,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { CustomMetricForm } from "./custom-metric-form";
 import { formatMetricValue } from "./format-value";
 import type { CustomMetricDto, CustomMetricListResponse } from "./types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.25.5 — inline list of the user's custom metrics, mounted ON the
@@ -99,12 +100,10 @@ export function CustomMetricList() {
           onRetry={() => refetch()}
         />
       ) : metrics.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
-            <Gauge className="text-muted-foreground size-6" />
-            <p className="text-muted-foreground text-sm">
-              {t("customMetrics.emptyDescription")}
-            </p>
+        <EmptyState
+          icon={<Gauge className="size-6" />}
+          title={t("customMetrics.emptyDescription")}
+          action={
             <Button
               size="sm"
               onClick={() => setAddOpen(true)}
@@ -112,8 +111,8 @@ export function CustomMetricList() {
             >
               {t("customMetrics.add")}
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <Card>
           <CardContent className="divide-border divide-y p-0">

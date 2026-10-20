@@ -81,6 +81,7 @@ import {
   type ManageCatalog,
   type MoodTagLayoutResolved,
 } from "./use-mood-tag-manage";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.17 — group management card for `/settings/mood`. Lists every
@@ -245,12 +246,12 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
       </div>
 
       {customGroupCount === 0 && (
-        <p
-          className="text-muted-foreground text-sm"
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("mood.manage.groupEmpty")}
           data-slot="mood-groups-empty"
-        >
-          {t("mood.manage.groupEmpty")}
-        </p>
+        />
       )}
 
       <DndContext
