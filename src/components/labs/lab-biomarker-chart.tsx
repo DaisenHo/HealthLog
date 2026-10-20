@@ -14,7 +14,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@/components/ui/button";
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
@@ -34,6 +33,7 @@ import {
 import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
+import { Segmented } from "@/components/ui/segmented";
 
 /**
  * v1.18.1 — per-biomarker trend chart, in the dashboard's visual language.
@@ -251,19 +251,17 @@ export function LabBiomarkerChart({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end gap-1">
-        {RANGE_DAYS.map((r) => (
-          <Button
-            key={r.key}
-            size="sm"
-            variant={range === r.key ? "secondary" : "ghost"}
-            aria-pressed={range === r.key}
-            className="h-7 px-2 text-xs"
-            onClick={() => setRange(r.key)}
-          >
-            {t(`labs.chart.range.${r.key}`)}
-          </Button>
-        ))}
+      <div className="flex justify-end">
+        <Segmented
+          options={RANGE_DAYS.map((r) => ({
+            value: r.key,
+            label: t(`labs.chart.range.${r.key}`),
+          }))}
+          value={range}
+          onChange={setRange}
+          label={t("charts.rangeLabel")}
+          slot="lab-chart-range"
+        />
       </div>
 
       {points.length === 0 ? (

@@ -657,7 +657,7 @@ function ApiTokensCard() {
                         className="bg-muted/30 border-border space-y-2 rounded-lg border p-3"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="min-w-0 flex-1 text-sm font-medium break-all">
+                          <p className="min-w-0 flex-1 text-sm font-medium break-words">
                             {tok.name}
                           </p>
                           {isExpired ? (
@@ -803,7 +803,7 @@ function ApiTokensCard() {
                           key={tok.id}
                           className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3"
                         >
-                          <p className="text-sm font-medium break-all">
+                          <p className="text-sm font-medium break-words">
                             {tok.name}
                           </p>
                           <p className="text-muted-foreground text-xs">
