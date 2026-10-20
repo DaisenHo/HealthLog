@@ -9845,21 +9845,21 @@ model DocumentAiRun {
 model LifeEvent {
   id             String             @id @default(cuid())
   userId         String             @map("user_id")
-  /// @pending-consumer(#613) The kind of event, from a deliberately short list.
+  /// The kind of event, from a deliberately short list.
   category       LifeEventCategory
-  /// @pending-consumer(#613) First day of the event, `YYYY-MM-DD`. At MONTH or
+  /// First day of the event, `YYYY-MM-DD`. At MONTH or
   /// YEAR precision the first day of that month or year.
   startDate      String             @map("start_date")
-  /// @pending-consumer(#613) Last day, `YYYY-MM-DD`, for an event that spans a
+  /// Last day, `YYYY-MM-DD`, for an event that spans a
   /// period (parental leave, a year abroad). NULL = a single date.
   endDate        String?            @map("end_date")
-  /// @pending-consumer(#613) How much of the date is known. Applies to both
+  /// How much of the date is known. Applies to both
   /// ends.
   precision      LifeEventPrecision
-  /// @pending-consumer(#613) What happened, in the person's own words,
+  /// What happened, in the person's own words,
   /// AES-256-GCM encrypted at rest.
   titleEncrypted Bytes              @map("title_encrypted")
-  /// @pending-consumer(#613) An optional note, AES-256-GCM encrypted at rest.
+  /// An optional note, AES-256-GCM encrypted at rest.
   noteEncrypted  Bytes?             @map("note_encrypted")
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
