@@ -164,20 +164,20 @@ describe("the shared write bucket on routes without a limiter of their own", () 
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          measurements: [
+          entries: [
             {
-              type: "WEIGHT",
+              hkIdentifier: "HKQuantityTypeIdentifierBodyMass",
               value: 72.4,
               unit: "kg",
-              measuredAt: new Date(Date.now() - 3_600_000).toISOString(),
-              source: "APPLE_HEALTH",
-              externalId: "write-meter-weight-1",
+              startDate: new Date(Date.now() - 3_600_000).toISOString(),
+              endDate: new Date(Date.now() - 3_600_000).toISOString(),
+              externalId: "uuid-write-meter-weight-1",
             },
           ],
         }),
       }),
     );
-    expect(res.status).toBeLessThan(300);
+    expect(res.status, await res.clone().text()).toBeLessThan(300);
     expect(
       await getPrismaClient().measurement.count({ where: { userId: USER_ID } }),
     ).toBe(1);
