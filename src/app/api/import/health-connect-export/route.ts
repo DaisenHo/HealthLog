@@ -22,6 +22,7 @@ import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
@@ -67,12 +68,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const declaredBytes = Number(request.headers.get("content-length") ?? 0);
   if (declaredBytes > HEALTH_CONNECT_MAX_UPLOAD_BYTES) {
-    await auditLog("import.health-connect.kickoff.denied", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: {
+    emitSignal({
+      action: "import.health-connect.kickoff.denied",
+      level: "warn",
+      meta: {
         reason: "content_length_exceeded",
-        contentLength: declaredBytes,
+        content_length: declaredBytes,
       },
     });
     return apiError("Upload exceeds the 1 GB limit", 413);
@@ -94,10 +95,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "upload_failed";
-    await auditLog("import.health-connect.kickoff.denied", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: { reason: "stream_to_disk_failed" },
+    emitSignal({
+      action: "import.health-connect.kickoff.denied",
+      level: "warn",
+      meta: { reason: "stream_to_disk_failed" },
     });
     return apiError(`Multipart upload failed: ${message}`, 422);
   }
@@ -123,10 +124,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const boss = getGlobalBoss();
   if (!boss) {
-    await auditLog("import.health-connect.kickoff.denied", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: { reason: "worker_not_running" },
+    emitSignal({
+      action: "import.health-connect.kickoff.denied",
+      level: "warn",
+      meta: { reason: "worker_not_running" },
     });
     await discardStagedUpload(uploaded.filePath);
     throw new HttpError(503, "Background worker is not running");

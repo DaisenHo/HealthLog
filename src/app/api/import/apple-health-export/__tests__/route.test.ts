@@ -14,6 +14,10 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
+vi.mock("@/lib/logging/signal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/logging/signal")>()),
+  emitSignal: vi.fn(),
+}));
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
@@ -78,6 +82,8 @@ vi.mock("@/lib/db", () => ({
 
 import { POST } from "../route";
 import { getSession } from "@/lib/auth/session";
+import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -144,6 +150,18 @@ describe("POST /api/import/apple-health-export", () => {
     );
     const res = await POST(req);
     expect(res.status).toBe(413);
+    // A refused upload is an operational outcome, not an account action: a
+    // signal, never an audit row.
+    expect(auditLog).not.toHaveBeenCalledWith(
+      "import.apple-health.kickoff.denied",
+      expect.anything(),
+    );
+    expect(emitSignal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "import.apple-health.kickoff.denied",
+        meta: expect.objectContaining({ reason: "content_length_exceeded" }),
+      }),
+    );
   });
 
   it("returns 429 when the rate-limit window is exhausted", async () => {
