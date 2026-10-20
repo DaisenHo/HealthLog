@@ -21,9 +21,15 @@
  * back whole. `src/__tests__/migration-lock-timeout-guard.test.ts` holds the
  * migrations to that.
  *
- * So: on a 55P03 failure of a migration carrying the marker, mark that one
- * migration rolled back and run `migrate deploy` again after a backoff (15,
- * 30, 60, 120, 240 seconds). Any other failure, a lock timeout of a migration
+ * A deadlock (40P01) is the same failure seen from the other side: a marked
+ * migration's `DO` block holds the locks it took until it commits, and an app
+ * transaction that took two of the same tables in the other order makes
+ * Postgres cancel one of the two. When the migration is the one cancelled,
+ * its block rolled back whole, exactly as on a lock timeout.
+ *
+ * So: on a 55P03 or 40P01 failure of a migration carrying the marker, mark
+ * that one migration rolled back and run `migrate deploy` again after a
+ * backoff (15, 30, 60, 120, 240 seconds). Any other failure, a lock timeout of a migration
  * without the marker, or a fifth lock timeout in a row, ends the boot with
  * Prisma's exit code exactly as before. The failure is read from Prisma's
  * own report (`Migration name:` and `Database error code:`), or, on a boot
@@ -58,20 +64,27 @@ const DEFAULT_RETRY_DELAYS_S = [15, 30, 60, 120, 240];
 /** The line a migration carries when a lock-timeout retry is safe for it. */
 export const RETRY_MARKER = /^--\s*@retry-on-lock-timeout\s*$/m;
 
-const LOCK_TIMEOUT = "55P03";
+/** Lock timeout and deadlock: both leave a marked migration unapplied. */
+const LOCK_FAILURES = new Set(["55P03", "40P01"]);
 const TIME_ZONE_OPTION = "-c TimeZone=UTC";
 const MIGRATION_NAME = /^[A-Za-z0-9_]+$/;
 
+/** The SQLSTATE a P3018 report gives, or null. */
+export function errorCodeInReport(text) {
+  if (typeof text !== "string") return null;
+  return /^Database error code: (\S+)\s*$/m.exec(text)?.[1] ?? null;
+}
+
 /**
- * The migration a P3018 report says failed on a lock timeout, or null.
- * Prisma prints `Migration name: <name>` and `Database error code: <state>`
- * for a migration that failed to apply.
+ * The migration a P3018 report says failed on a lock (a lock timeout or a
+ * deadlock), or null. Prisma prints `Migration name: <name>` and
+ * `Database error code: <state>` for a migration that failed to apply.
  */
 export function lockTimeoutInReport(text) {
   if (typeof text !== "string") return null;
   const name = /^Migration name: (\S+)\s*$/m.exec(text)?.[1];
-  const code = /^Database error code: (\S+)\s*$/m.exec(text)?.[1];
-  return name && code === LOCK_TIMEOUT ? name : null;
+  const code = errorCodeInReport(text);
+  return name && code !== null && LOCK_FAILURES.has(code) ? name : null;
 }
 
 /** Whether Prisma refused to start because a failed migration is on record. */
@@ -89,14 +102,16 @@ function isFailedMigrationOnRecord(output) {
  *   when they were not read
  * @param {(name: string) => string | null} input.readMigration
  *   the migration's SQL, or null when the image does not ship it
- * @returns {{ retry: true, migration: string } | { retry: false, reason: string }}
+ * @returns {{ retry: true, migration: string, code: string } | { retry: false, reason: string }}
  */
 export function decideLockRetry({ output, failedRows, readMigration }) {
   let migration = lockTimeoutInReport(output);
+  let code = migration ? errorCodeInReport(output) : null;
   if (!migration && isFailedMigrationOnRecord(output) && failedRows) {
     // More than one failed row is not a state this boot can reason about.
     if (failedRows.length === 1) {
       migration = lockTimeoutInReport(failedRows[0].logs);
+      code = migration ? errorCodeInReport(failedRows[0].logs) : null;
     }
   }
   if (!migration) {
@@ -115,7 +130,7 @@ export function decideLockRetry({ output, failedRows, readMigration }) {
       reason: `${migration} timed out on a lock but is not marked safe to re-run`,
     };
   }
-  return { retry: true, migration };
+  return { retry: true, migration, code };
 }
 
 /** The backoff schedule, from the environment or the default. */
@@ -272,9 +287,13 @@ async function main({
       return deploy.code;
     }
     const delay = delays[attempt];
+    const cause =
+      decision.code === "40P01"
+        ? "was cancelled in a deadlock (40P01)"
+        : "timed out waiting for a lock (55P03)";
     console.log(
-      `HealthLog: migration ${decision.migration} timed out waiting for a lock ` +
-        `(55P03) and changed nothing; marking it rolled back and retrying in ` +
+      `HealthLog: migration ${decision.migration} ${cause} ` +
+        `and changed nothing; marking it rolled back and retrying in ` +
         `${delay}s (retry ${attempt + 1} of ${delays.length}).`,
     );
     const resolve = await runPrisma(cli, [

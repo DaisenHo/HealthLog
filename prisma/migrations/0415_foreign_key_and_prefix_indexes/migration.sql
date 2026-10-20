@@ -20,13 +20,19 @@
 --
 -- Lock wait. `CREATE INDEX` takes SHARE on its table (reads go on, writes
 -- wait while it builds; every table here is small, so the build is quick)
--- and `DROP INDEX` takes ACCESS EXCLUSIVE for the instant the catalog
--- changes. `CREATE INDEX CONCURRENTLY` cannot share a migration file with
--- any other statement (0416), so the whole set runs in one `DO` block: one
--- statement that commits or rolls back whole, with the lock wait bounded at
--- five seconds so a long reader cannot queue the tables' writes behind the
--- migration. Every statement is `IF [NOT] EXISTS`, so a lock timeout leaves
--- the file safe to apply again, which the marker declares
+-- and `DROP INDEX` takes ACCESS EXCLUSIVE. `CREATE INDEX CONCURRENTLY`
+-- cannot share a migration file with any other statement, so the whole set
+-- runs in one `DO` block: one statement that commits or rolls back whole,
+-- with each lock wait bounded at five seconds so a long reader cannot queue
+-- the tables' writes behind the migration. Inside the block every lock is
+-- held until it commits, not just while its statement runs: the SHARE locks
+-- of the builds stay through the drops, and the drops come last so their
+-- ACCESS EXCLUSIVE locks are held only for the rest of the block. An app
+-- transaction that takes two of these tables in the other order can
+-- therefore deadlock with it; Postgres cancels one side, and when that is the
+-- migration its block has rolled back whole, as on a lock timeout. Every
+-- statement is `IF [NOT] EXISTS`, so either failure leaves the file safe to
+-- apply again, which the marker declares and the boot acts on for both
 -- (docs/ops/deploy.md, "A migration that timed out on a lock").
 --
 -- @retry-on-lock-timeout
