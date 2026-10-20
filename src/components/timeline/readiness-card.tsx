@@ -41,7 +41,7 @@ export function ReadinessCard({
     : t("timeline.readiness.meter", { carrying, total });
 
   return (
-    <Card className="gap-2 py-3 md:py-4" data-slot="timeline-readiness-card">
+    <Card density="compact" data-slot="timeline-readiness-card">
       <CardHeader>
         <TileHeader
           size="sm"

@@ -101,7 +101,7 @@ export function AiSetupHint({
   }
 
   return (
-    <Card data-slot="ai-setup-hint" className="gap-2 py-3 md:py-4">
+    <Card data-slot="ai-setup-hint" density="compact">
       <CardHeader>
         <TileHeader
           icon={Sparkles}

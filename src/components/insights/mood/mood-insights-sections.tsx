@@ -205,7 +205,8 @@ export function MoodInsightsSections({
         // v1.13.1 — match the canonical `gap-2` + `pb-1` heading-to-body
         // rhythm the other assessment cards use, so the heading sits tight
         // above its body instead of floating ~16-24 px above it.
-        className="animate-insight-in gap-2 py-3 md:py-4"
+        density="compact"
+        className="animate-insight-in"
       >
         <CardHeader>
           <TileHeader

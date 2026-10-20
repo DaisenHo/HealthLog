@@ -217,8 +217,9 @@ export function DocumentCard({
       data-slot="document-card"
       data-variant={variant}
       data-document-id={document.id}
+      density="compact"
       className={cn(
-        "group relative h-full gap-2 py-3 transition-shadow md:py-4",
+        "group relative h-full transition-shadow",
         "hover:shadow-sm",
         highlighted && "ring-primary ring-2",
       )}
