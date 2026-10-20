@@ -73,7 +73,8 @@ import {
 } from "@/lib/sharing/grant-view";
 import { GrantError, inviteGrant } from "@/lib/sharing/grants";
 import { inviteGrantSchema } from "@/lib/validations/account-sharing";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { combinedCap, listPage } from "@/lib/http/list-query";
 
 /**
  * Ten invitations an hour, per account.
@@ -92,28 +93,25 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "sharing.grants.list" } });
 
-  const [givenFound, receivedFound] = await Promise.all([
-    prisma.accountGrant.findMany({
-      where: { grantorId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: overfetch(MAX_GRANTS_PER_DIRECTION),
-      include: { grantee: { select: GRANT_PARTY_SELECT } },
-    }),
-    prisma.accountGrant.findMany({
-      where: { granteeId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: overfetch(MAX_GRANTS_PER_DIRECTION),
-      include: { grantor: { select: GRANT_PARTY_SELECT } },
-    }),
-  ]);
-  const { rows: given, cap: givenCap } = capRows(
-    givenFound,
-    MAX_GRANTS_PER_DIRECTION,
-  );
-  const { rows: received, cap: receivedCap } = capRows(
-    receivedFound,
-    MAX_GRANTS_PER_DIRECTION,
-  );
+  const [{ rows: given, cap: givenCap }, { rows: received, cap: receivedCap }] =
+    await Promise.all([
+      listPage(MAX_GRANTS_PER_DIRECTION, (take) =>
+        prisma.accountGrant.findMany({
+          where: { grantorId: user.id },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take,
+          include: { grantee: { select: GRANT_PARTY_SELECT } },
+        }),
+      ),
+      listPage(MAX_GRANTS_PER_DIRECTION, (take) =>
+        prisma.accountGrant.findMany({
+          where: { granteeId: user.id },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take,
+          include: { grantor: { select: GRANT_PARTY_SELECT } },
+        }),
+      ),
+    ]);
 
   // Revoked and expired rows come back too. They are the consent record — "who
   // had access, from when to when, and who ended it" is the question the table
@@ -122,10 +120,7 @@ export const GET = apiHandler(async () => {
   const now = new Date();
   // One cap per direction, one signal: either list cut short is a partial
   // answer.
-  const cap = {
-    truncated: givenCap.truncated || receivedCap.truncated,
-    limit: MAX_GRANTS_PER_DIRECTION,
-  };
+  const cap = combinedCap(givenCap, receivedCap);
   return apiListSuccess(
     {
       given: given.map((g) => toGrantView(g, g.grantee, now)),

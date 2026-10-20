@@ -10,7 +10,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import {
   encounterDependentKeys,
   invalidateKeys,
@@ -31,15 +31,29 @@ export interface PractitionerWriteBody {
 }
 
 const BASE = "/api/practitioners";
+const PRACTITIONER_PAGE_SIZE = 200;
 
 export function usePractitioners(q?: string, enabled = true) {
   const term = q?.trim() || undefined;
   return useQuery({
     queryKey: queryKeys.practitionerList(term),
-    queryFn: () =>
-      apiGet<Practitioner[]>(
-        term ? `${BASE}?q=${encodeURIComponent(term)}` : BASE,
-      ),
+    // The route pages and says whether another page exists; the pickers and
+    // the address book read this as the whole list, so it walks to the end.
+    queryFn: async () => {
+      const all: Practitioner[] = [];
+      for (let offset = 0; ; offset += PRACTITIONER_PAGE_SIZE) {
+        const sp = new URLSearchParams({
+          limit: String(PRACTITIONER_PAGE_SIZE),
+          offset: String(offset),
+        });
+        if (term) sp.set("q", term);
+        const { data: page, cap } = await apiGetList<Practitioner[]>(
+          `/api/practitioners?${sp.toString()}`,
+        );
+        all.push(...page);
+        if (!cap?.truncated) return all;
+      }
+    },
     enabled,
   });
 }

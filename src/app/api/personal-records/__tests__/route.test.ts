@@ -66,7 +66,7 @@ describe("GET /api/personal-records", () => {
     expect(body.error).toBeNull();
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
-      orderBy: { achievedAt: "desc" },
+      orderBy: [{ achievedAt: "desc" }, { id: "desc" }],
       // One row past the limit, so the response can say it was cut.
       take: 101,
     });
@@ -80,7 +80,7 @@ describe("GET /api/personal-records", () => {
     expect(res.status).toBe(200);
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1", metricType: "VO2_MAX" },
-      orderBy: { achievedAt: "desc" },
+      orderBy: [{ achievedAt: "desc" }, { id: "desc" }],
       // One row past the limit, so the response can say it was cut.
       take: 101,
     });
@@ -114,7 +114,7 @@ describe("GET /api/personal-records", () => {
     expect(res.status).toBe(200);
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
-      orderBy: { achievedAt: "desc" },
+      orderBy: [{ achievedAt: "desc" }, { id: "desc" }],
       // One row past the limit, so the response can say it was cut.
       take: 26,
     });
@@ -128,7 +128,7 @@ describe("GET /api/personal-records", () => {
     expect(res.status).toBe(200);
     expect(prisma.personalRecord.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
-      orderBy: { achievedAt: "desc" },
+      orderBy: [{ achievedAt: "desc" }, { id: "desc" }],
       // One row past the limit, so the response can say it was cut.
       take: 501,
     });

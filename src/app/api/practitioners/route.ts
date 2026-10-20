@@ -33,6 +33,8 @@ import {
   practitionerListQuerySchema,
 } from "@/lib/validations/practitioners";
 import { toPractitionerDTO } from "@/lib/practitioners/dto";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "profile");
@@ -41,6 +43,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const parsed = practitionerListQuerySchema.safeParse({
     q: params.get("q") ?? undefined,
     limit: params.get("limit") ?? undefined,
+    offset: params.get("offset") ?? undefined,
   });
   if (!parsed.success) {
     return returnAllZodIssues(parsed.error, 422, {
@@ -48,50 +51,55 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const rows = await prisma.practitioner.findMany({
-    where: {
-      userId: user.id,
-      deletedAt: null,
-      // Three plaintext columns, because a person looks a practice up by
-      // whichever they remember: the doctor's name on the referral, the
-      // practice name on the door, or the field they need ("Zahnmedizin").
-      // Searching only name + practice made the specialty attempt return
-      // nothing and read as "not in the address book".
-      ...(parsed.data.q
-        ? {
-            OR: [
-              {
-                name: {
-                  contains: parsed.data.q,
-                  mode: "insensitive" as const,
+  const limit = parsed.data.limit ?? 100;
+  const { rows, cap } = await listPage(limit, (take) =>
+    prisma.practitioner.findMany({
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        // Three plaintext columns, because a person looks a practice up by
+        // whichever they remember: the doctor's name on the referral, the
+        // practice name on the door, or the field they need ("Zahnmedizin").
+        // Searching only name + practice made the specialty attempt return
+        // nothing and read as "not in the address book".
+        ...(parsed.data.q
+          ? {
+              OR: [
+                {
+                  name: {
+                    contains: parsed.data.q,
+                    mode: "insensitive" as const,
+                  },
                 },
-              },
-              {
-                practice: {
-                  contains: parsed.data.q,
-                  mode: "insensitive" as const,
+                {
+                  practice: {
+                    contains: parsed.data.q,
+                    mode: "insensitive" as const,
+                  },
                 },
-              },
-              {
-                specialty: {
-                  contains: parsed.data.q,
-                  mode: "insensitive" as const,
+                {
+                  specialty: {
+                    contains: parsed.data.q,
+                    mode: "insensitive" as const,
+                  },
                 },
-              },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { name: "asc" },
-    take: parsed.data.limit ?? 100,
-  });
+              ],
+            }
+          : {}),
+      },
+      // Two contacts can share a name; the id keeps the page boundary stable.
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      skip: parsed.data.offset ?? 0,
+      take,
+    }),
+  );
 
   annotate({
     action: { name: "practitioner.contact.list", entity_type: "practitioner" },
-    meta: { count: rows.length },
+    meta: { count: rows.length, truncated: cap.truncated },
   });
 
-  return apiSuccess(rows.map(toPractitionerDTO));
+  return apiListSuccess(rows.map(toPractitionerDTO), cap);
 });
 
 // A double-tap on "save" must not mint a second copy of the same practice.

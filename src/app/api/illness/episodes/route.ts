@@ -32,7 +32,8 @@ import {
   illnessEpisodeListQuerySchema,
 } from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "illness");
@@ -59,27 +60,30 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { from, to, q, offset, sortDir } = parsed.data;
   const limit = parsed.data.limit ?? 50;
   const order = sortDir ?? "desc";
-  const found = await prisma.illnessEpisode.findMany({
-    where: {
-      userId: user.id,
-      deletedAt: null,
-      ...(parsed.data.includeResolved === "false" ? { resolvedAt: null } : {}),
-      ...(from || to
-        ? {
-            onsetAt: {
-              ...(from ? { gte: new Date(from) } : {}),
-              ...(to ? { lte: new Date(to) } : {}),
-            },
-          }
-        : {}),
-      ...(q ? { label: { contains: q, mode: "insensitive" as const } } : {}),
-    },
-    // `id` breaks ties so offset paging never repeats or drops a row.
-    orderBy: [{ onsetAt: order }, { id: order }],
-    take: overfetch(limit),
-    skip: offset ?? 0,
-  });
-  const { rows, cap } = capRows(found, limit);
+  const { rows, cap } = await listPage(limit, (take) =>
+    prisma.illnessEpisode.findMany({
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        ...(parsed.data.includeResolved === "false"
+          ? { resolvedAt: null }
+          : {}),
+        ...(from || to
+          ? {
+              onsetAt: {
+                ...(from ? { gte: new Date(from) } : {}),
+                ...(to ? { lte: new Date(to) } : {}),
+              },
+            }
+          : {}),
+        ...(q ? { label: { contains: q, mode: "insensitive" as const } } : {}),
+      },
+      // `id` breaks ties so offset paging never repeats or drops a row.
+      orderBy: [{ onsetAt: order }, { id: order }],
+      take,
+      skip: offset ?? 0,
+    }),
+  );
 
   annotate({
     action: { name: "illness.episode.list", entity_type: "illness_episode" },

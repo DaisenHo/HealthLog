@@ -29,7 +29,8 @@ import {
   allergyListQuerySchema,
 } from "@/lib/validations/allergy";
 import { toAllergyDTO } from "@/lib/records/dto";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "profile");
@@ -46,16 +47,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const limit = parsed.data.limit ?? 100;
-  const found = await prisma.allergy.findMany({
-    where: {
-      userId: user.id,
-      deletedAt: null,
-      ...(parsed.data.includeInactive === "false" ? { status: "ACTIVE" } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: overfetch(limit),
-  });
-  const { rows, cap } = capRows(found, limit);
+  const { rows, cap } = await listPage(limit, (take) =>
+    prisma.allergy.findMany({
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        ...(parsed.data.includeInactive === "false"
+          ? { status: "ACTIVE" }
+          : {}),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+    }),
+  );
 
   annotate({
     action: { name: "allergy.list", entity_type: "allergy" },

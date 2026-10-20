@@ -19,7 +19,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import {
+  apiDelete,
+  apiGet,
+  apiGetList,
+  apiPatch,
+  apiPost,
+} from "@/lib/api/api-fetch";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import {
   encounterDependentKeys,
@@ -53,6 +59,7 @@ export interface EncounterWriteBody {
 }
 
 const BASE = "/api/encounters";
+const ENCOUNTER_PAGE_SIZE = 200;
 
 export function useEncounters(
   enabled = true,
@@ -73,14 +80,27 @@ export function useEncounters(
       window?.status,
       window?.episodeId,
     ),
-    queryFn: () => {
-      const sp = new URLSearchParams();
-      if (from) sp.set("from", from);
-      if (to) sp.set("to", to);
-      if (window?.status) sp.set("status", window.status);
-      if (window?.episodeId) sp.set("episodeId", window.episodeId);
-      const qs = sp.toString();
-      return apiGet<EncounterList>(qs ? `${BASE}?${qs}` : BASE);
+    // `limit` and `offset` apply to both arms and the route says whether
+    // either has rows past the page, so this reads to the end: a visit list
+    // that stopped at the first page showed an old visit as missing.
+    queryFn: async () => {
+      const list: EncounterList = { upcoming: [], past: [] };
+      for (let offset = 0; ; offset += ENCOUNTER_PAGE_SIZE) {
+        const sp = new URLSearchParams({
+          limit: String(ENCOUNTER_PAGE_SIZE),
+          offset: String(offset),
+        });
+        if (from) sp.set("from", from);
+        if (to) sp.set("to", to);
+        if (window?.status) sp.set("status", window.status);
+        if (window?.episodeId) sp.set("episodeId", window.episodeId);
+        const { data: page, cap } = await apiGetList<EncounterList>(
+          `/api/encounters?${sp.toString()}`,
+        );
+        list.upcoming.push(...page.upcoming);
+        list.past.push(...page.past);
+        if (!cap?.truncated) return list;
+      }
     },
     enabled,
   });

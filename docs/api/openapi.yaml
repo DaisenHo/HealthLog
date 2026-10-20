@@ -2969,17 +2969,17 @@ paths:
         - Auth
       summary: List recent account-security activity
       description: "v1.23 — the SHARED security-activity feed: the caller's recent auth + export + deletion audit events with
-        timestamp, resolved location, and a host-masked IP. `limit` query param caps at 100 (default 50). Reuses the
-        AuditLog store; no event detail bodies are surfaced."
+        timestamp, resolved location, and a host-masked IP. `limit` is 1-100 (default 50); a value outside that is a 422
+        naming it. Reuses the AuditLog store; no event detail bodies are surfaced."
       parameters:
         - in: query
           name: limit
           schema:
-            description: Page size; defaults to 50, clamped to 100.
+            description: Page size, 1-100; defaults to 50. Out of range is a 422.
             type: integer
             minimum: 1
             maximum: 100
-          description: Page size; defaults to 50, clamped to 100.
+          description: Page size, 1-100; defaults to 50. Out of range is a 422.
       responses:
         "200":
           description: Recent security events for the caller.
@@ -15871,8 +15871,9 @@ paths:
       tags:
         - Records
       summary: List visits
-      description: Returns the caller's live visits, split into `upcoming` and `past`. Bounded and windowed; soft-deleted
-        visits are excluded.
+      description: Returns the caller's live visits, split into `upcoming` (soonest first) and `past` (newest first). `limit`
+        and `offset` apply to each list; `meta.truncated` is true when either list has rows past this page, so a client
+        reads the next `offset` until it is false. Soft-deleted visits are excluded.
       parameters:
         - in: query
           name: from
@@ -16231,7 +16232,8 @@ paths:
       tags:
         - Records
       summary: List practitioners
-      description: Returns the caller's address book, name-ordered, with an optional case-insensitive name search.
+      description: Returns the caller's address book, name-ordered, with an optional case-insensitive search over name,
+        practice and specialty. Paged with `limit` and `offset`; `meta.truncated` says whether another page exists.
       parameters:
         - in: query
           name: q
@@ -16245,6 +16247,15 @@ paths:
             type: integer
             minimum: 1
             maximum: 200
+        - in: query
+          name: offset
+          schema:
+            description: Rows to skip, for reading the address book page by page; `meta.truncated` says whether another page exists.
+            default: 0
+            type: integer
+            minimum: 0
+            maximum: 100000
+          description: Rows to skip, for reading the address book page by page; `meta.truncated` says whether another page exists.
       responses:
         "200":
           description: The caller's address book.
@@ -16506,8 +16517,9 @@ paths:
       tags:
         - Records
       summary: List vaccinations
-      description: Returns the caller's live doses, newest first, each with its series resolved per component antigen.
-        Soft-deleted doses are excluded.
+      description: Returns the caller's live doses, newest first, each with its series resolved per component antigen over the
+        whole record, never over the page. Paged with `limit` (default 300) and `offset`; `meta.truncated` says whether
+        another page exists. Soft-deleted doses are excluded.
       parameters:
         - in: query
           name: antigenSlug
@@ -16533,6 +16545,15 @@ paths:
             type: integer
             minimum: 1
             maximum: 500
+        - in: query
+          name: offset
+          schema:
+            description: Doses to skip, for reading the log page by page; `meta.truncated` says whether another page exists.
+            default: 0
+            type: integer
+            minimum: 0
+            maximum: 100000
+          description: Doses to skip, for reading the log page by page; `meta.truncated` says whether another page exists.
       responses:
         "200":
           description: The caller's immunization history.
@@ -36236,24 +36257,24 @@ components:
                 profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
                 profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited;
                 report-selection — report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; route — route.retired; search — search.invalid; share-link —
-                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
-                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
-                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
-                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
-                tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached; vaccination —
-                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
-                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
-                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
-                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                report-selection.leaves.unknown; route — route.retired; search — search.invalid; security_activity —
+                security_activity.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
+                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
+                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
+                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
+                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
+                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached;
+                vaccination — vaccination.booster-invalid, vaccination.booster-no-antigen,
+                vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found, vaccination.custom.invalid,
+                vaccination.custom.name-taken, vaccination.custom.not-found, vaccination.encounter-not-found,
+                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
                 vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
                 workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
                 — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
@@ -71789,14 +71810,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     EncounterList:
       type: object
@@ -72524,14 +72542,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     CreatePractitionerEnvelope:
       type: object
@@ -72753,14 +72768,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     VaccinationList:
       type: object
@@ -85402,8 +85414,8 @@ components:
         - limit
         - hasMore
       additionalProperties: false
-      description: A page of occurrences, newest first. `hasMore` is true when the page is full; page on with `to` set to the
-        oldest `occurredAt` seen.
+      description: A page of occurrences, newest first. `hasMore` is true exactly when an occurrence past this page exists;
+        page on with `to` set to the oldest `occurredAt` seen.
     SymptomEvent:
       type: object
       properties:

@@ -40,7 +40,8 @@ import { prisma } from "@/lib/db";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { annotate } from "@/lib/logging/context";
 import { GRANT_PARTY_SELECT } from "@/lib/sharing/grant-view";
-import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
+import { apiListSuccess } from "@/lib/api/list-cap";
+import { listPage } from "@/lib/http/list-query";
 
 export const dynamic = "force-dynamic";
 
@@ -99,31 +100,31 @@ export const GET = apiHandler(async () => {
   const retentionDays = getAuditLogRetentionDays();
   const windowStart = new Date(Date.now() - retentionDays * 86_400_000);
 
-  const found = await prisma.auditLog.findMany({
-    where: {
-      userId: user.id,
-      actorUserId: { not: null },
-      // A switch into one's own record is not a delegation and has nothing to
-      // report. `actingActorFor` already refuses to stamp one, so this is the
-      // second end of that rule rather than its only enforcement.
-      NOT: { actorUserId: user.id },
-      // The window the copy promises. The purge job makes it true eventually;
-      // this makes it true now, which matters on an instance whose retention
-      // was shortened after rows were already written.
-      createdAt: { gte: windowStart },
-    },
-    orderBy: { createdAt: "desc" },
-    take: overfetch(MAX_ROWS),
-    select: {
-      id: true,
-      actorUserId: true,
-      action: true,
-      details: true,
-      createdAt: true,
-    },
-  });
-
-  const { rows, cap } = capRows(found, MAX_ROWS);
+  const { rows, cap } = await listPage(MAX_ROWS, (take) =>
+    prisma.auditLog.findMany({
+      where: {
+        userId: user.id,
+        actorUserId: { not: null },
+        // A switch into one's own record is not a delegation and has nothing to
+        // report. `actingActorFor` already refuses to stamp one, so this is the
+        // second end of that rule rather than its only enforcement.
+        NOT: { actorUserId: user.id },
+        // The window the copy promises. The purge job makes it true eventually;
+        // this makes it true now, which matters on an instance whose retention
+        // was shortened after rows were already written.
+        createdAt: { gte: windowStart },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      select: {
+        id: true,
+        actorUserId: true,
+        action: true,
+        details: true,
+        createdAt: true,
+      },
+    }),
+  );
 
   const actorIds = [
     ...new Set(rows.map((r) => r.actorUserId).filter((id) => id !== null)),
