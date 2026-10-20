@@ -23,6 +23,18 @@
 --
 -- `to_jsonb(row)` compares every column, so a column added later is covered
 -- without touching this function.
+--
+-- Lock wait. `CREATE TRIGGER` takes SHARE ROW EXCLUSIVE on the table and the
+-- `ALTER TABLE ... SET` SHARE UPDATE EXCLUSIVE; both wait for an autovacuum
+-- that is preventing wraparound, which does not step aside, and while they
+-- wait every write to `measurements` queues behind them, including the ones
+-- the running release still serves during a deploy. `migrate deploy` runs the
+-- whole file as one transaction, so `SET LOCAL` bounds the wait for this file
+-- alone: past ten seconds the migration fails and rolls back whole, the
+-- writes go on, and the next deploy tries again once `prisma migrate resolve
+-- --rolled-back 0412_measurement_hot_updates` has cleared the failed attempt.
+
+SET LOCAL lock_timeout = '10s';
 
 CREATE OR REPLACE FUNCTION "measurements_keep_stamps_on_noop"() RETURNS trigger
 LANGUAGE plpgsql AS $$
