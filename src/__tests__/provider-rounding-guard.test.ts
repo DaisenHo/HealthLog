@@ -14,22 +14,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { PROVIDER_DIRS } from "./helpers/provider-dirs";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const LIB = join(process.cwd(), "src", "lib");
-const PROVIDER_DIRS = [
-  "apple-health",
-  "dawarich",
-  "fitbit",
-  "google-health",
-  "nightscout",
-  "oura",
-  "polar",
-  "strava",
-  "whoop",
-  "withings",
-  "import",
-];
+/**
+ * Every provider the product connects to, plus the file importers (Health
+ * Connect, the export parsers), which are not a connection of their own.
+ */
+const ROUNDING_DIRS = [...PROVIDER_DIRS, "import"];
 const ROUNDING =
   /\.toFixed\s*\(|\b(?:function|const|let)\s+round2\b|Math\.round\s*\([^;]*\*\s*(10+)\s*\)\s*\/\s*\1\b/;
 
@@ -41,16 +34,10 @@ const ALLOWED: Record<string, string> = {
     "Prints a compression ratio into an error message.",
 };
 
-function strip(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
 describe("provider clients round through importValue", () => {
   const files = walkSourceFiles(LIB, { floor: 1000 }).filter(
     (f) =>
-      PROVIDER_DIRS.some((d) => f.startsWith(`${d}/`)) &&
+      ROUNDING_DIRS.some((d) => f.startsWith(`${d}/`)) &&
       !f.includes("__tests__") &&
       !f.endsWith(".test.ts"),
   );
@@ -63,7 +50,7 @@ describe("provider clients round through importValue", () => {
     const offenders = files.filter(
       (f) =>
         !(f in ALLOWED) &&
-        ROUNDING.test(strip(readFileSync(join(LIB, f), "utf8"))),
+        ROUNDING.test(stripComments(readFileSync(join(LIB, f), "utf8"))),
     );
     expect(offenders).toEqual([]);
   });
