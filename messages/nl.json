@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Alleen de laatste {count} worden getoond; oudere items staan hier niet.",
     "save": "Opslaan",
     "conflictReloaded": "Opnieuw geladen van de server. Voer je wijziging opnieuw uit.",
     "cancel": "Annuleren",
@@ -12327,8 +12328,7 @@
       "loadError": "De activiteit kon niet worden geladen.",
       "opened": "{name} heeft je dossier {count}× geopend",
       "acted": "{name} heeft iets gewijzigd in je dossier",
-      "deletedAccount": "Een verwijderd account",
-      "truncated": "Deze lijst toont de meest recente activiteit, niet alles."
+      "deletedAccount": "Een verwijderd account"
     },
     "delegate": {
       "addOnlyNote": "Je kunt iets toevoegen aan dit dossier. Registraties wijzigen of verwijderen kan alleen {name}."

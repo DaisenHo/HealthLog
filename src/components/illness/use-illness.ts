@@ -10,7 +10,13 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import {
+  apiDelete,
+  apiGet,
+  apiGetList,
+  apiPatch,
+  apiPost,
+} from "@/lib/api/api-fetch";
 import {
   illnessDependentKeys,
   invalidateKeys,
@@ -37,7 +43,8 @@ const EPISODE_PAGE_SIZE = 100;
  * most), and the journal, its settings and every picker read this as the
  * whole record; a single unpaged call dropped the oldest episodes once there
  * were more than one page of them, and a person then found an old condition
- * only through search. So this reads page after page until a short one.
+ * only through search. So this reads page after page until the route says
+ * nothing is left.
  */
 export function useIllnessEpisodes(includeResolved = true, enabled = true) {
   return useQuery({
@@ -46,11 +53,13 @@ export function useIllnessEpisodes(includeResolved = true, enabled = true) {
     queryFn: async () => {
       const all: IllnessEpisodeDTO[] = [];
       for (let offset = 0; ; offset += EPISODE_PAGE_SIZE) {
-        const page = await apiGet<IllnessEpisodeDTO[]>(
+        const { data: page, cap } = await apiGetList<IllnessEpisodeDTO[]>(
           `/api/illness/episodes?includeResolved=${includeResolved}&limit=${EPISODE_PAGE_SIZE}&offset=${offset}`,
         );
         all.push(...page);
-        if (page.length < EPISODE_PAGE_SIZE) return all;
+        // The route says whether a row past this page exists, so a last page
+        // that is exactly full ends the walk without one more request.
+        if (!cap?.truncated) return all;
       }
     },
   });

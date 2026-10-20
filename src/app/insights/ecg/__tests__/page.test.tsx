@@ -52,7 +52,7 @@ function render(data: { recordings: EcgRecord[]; hasRecordings: boolean }) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  client.setQueryData(queryKeys.insightsEcgList(), data);
+  client.setQueryData(queryKeys.insightsEcgList(), { data, cap: null });
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <I18nProvider initialLocale="en">

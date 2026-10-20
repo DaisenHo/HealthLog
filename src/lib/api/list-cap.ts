@@ -17,16 +17,16 @@
  * `data` keeps exactly the shape the route always had and a client that never
  * reads `meta` decodes it unchanged. `truncated` is exact: true only when a
  * row past the limit exists. The OpenAPI side is `listEnvelope` in
- * `src/lib/openapi/routes/shared.ts`.
+ * `src/lib/openapi/routes/shared.ts`. A client reads it through `apiGetList`
+ * / `apiPostList` (`src/lib/api/api-fetch.ts`) and shows it with
+ * `ListCapNotice`; `src/__tests__/list-cap-reader-guard.test.ts` binds every
+ * capped route to such a reader.
  */
 import { apiSuccessWithMeta } from "@/lib/api-response";
 
-export interface ListCap {
-  /** A row past `limit` exists and was not returned. */
-  truncated: boolean;
-  /** The most rows this response could carry. */
-  limit: number;
-}
+import type { ListCap } from "./list-cap-shape";
+
+export type { ListCap } from "./list-cap-shape";
 
 /** The `take` that lets {@link capRows} tell a full list from a cut one. */
 export function overfetch(limit: number): number {

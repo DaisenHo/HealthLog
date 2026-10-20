@@ -16,16 +16,22 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({}),
 }));
 
+const journal = vi.hoisted(() => ({ total: 230 }));
+
 vi.mock("@/lib/api/api-fetch", () => ({
-  apiGet: async (url: string) => {
+  apiGet: vi.fn(),
+  apiGetList: async (url: string) => {
     calls.push(url);
-    // The route's own paging: 50 unless asked otherwise, from offset 0.
+    // The route's own paging: 50 unless asked otherwise, from offset 0, and
+    // the cap it sends: a row past the page exists or it does not.
     const params = new URL(url, "http://x").searchParams;
     const offset = Number(params.get("offset") ?? 0);
     const limit = Number(params.get("limit") ?? 50);
-    const total = 230;
-    const count = Math.max(0, Math.min(limit, total - offset));
-    return Array.from({ length: count }, (_, i) => ({ id: `e${offset + i}` }));
+    const count = Math.max(0, Math.min(limit, journal.total - offset));
+    return {
+      data: Array.from({ length: count }, (_, i) => ({ id: `e${offset + i}` })),
+      cap: { truncated: offset + count < journal.total, limit },
+    };
   },
   apiPost: vi.fn(),
   apiPatch: vi.fn(),
@@ -46,5 +52,17 @@ describe("useIllnessEpisodes", () => {
     expect(calls.every((url) => url.includes("includeResolved=true"))).toBe(
       true,
     );
+  });
+
+  it("stops on a full last page the route says is the end", async () => {
+    calls.length = 0;
+    journal.total = 200;
+    const options = useIllnessEpisodes(true) as unknown as {
+      queryFn: () => Promise<{ id: string }[]>;
+    };
+    expect(await options.queryFn()).toHaveLength(200);
+    // Two full pages of 100, no third request for an empty one.
+    expect(calls).toHaveLength(2);
+    journal.total = 230;
   });
 });

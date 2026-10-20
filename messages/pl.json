@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Widać tylko ostatnie {count}; starsze wpisy nie są tu wymienione.",
     "save": "Zapisz",
     "conflictReloaded": "Odświeżono z serwera. Wprowadź zmianę jeszcze raz.",
     "cancel": "Anuluj",
@@ -12327,8 +12328,7 @@
       "loadError": "Nie udało się wczytać aktywności.",
       "opened": "{name} otworzył twoją kartę {count}×",
       "acted": "{name} wprowadził zmianę w twojej karcie",
-      "deletedAccount": "Usunięte konto",
-      "truncated": "Ta lista pokazuje najnowszą aktywność, a nie całą."
+      "deletedAccount": "Usunięte konto"
     },
     "delegate": {
       "addOnlyNote": "Możesz dodawać wpisy do tej karty. Zmieniać je i usuwać może tylko {name}."

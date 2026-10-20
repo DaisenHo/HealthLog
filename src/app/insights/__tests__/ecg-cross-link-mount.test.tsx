@@ -56,8 +56,11 @@ function render(node: React.ReactNode) {
   });
   // Seed the ECG list the cross-link reads so its data-availability gate opens.
   client.setQueryData(queryKeys.insightsEcgList(), {
-    recordings: [{ id: "a", classification: null }],
-    hasRecordings: true,
+    data: {
+      recordings: [{ id: "a", classification: null }],
+      hasRecordings: true,
+    },
+    cap: null,
   });
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>

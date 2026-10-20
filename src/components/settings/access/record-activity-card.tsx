@@ -13,6 +13,7 @@ import {
   useRecordActivity,
   type RecordActivityEntry,
 } from "@/lib/queries/use-account-grants";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.36.0 — when this record was opened, and by whom.
@@ -63,22 +64,12 @@ export function RecordActivityCard() {
             {t("recordSharing.activity.retention", {
               days: data.retentionDays,
             })}
-            {/* The second completeness claim. The window says how far back
-                this can see; the cap says how many rows came back, and a list
-                that stopped at its ceiling without saying so lets the oldest
-                line read as the beginning. Rendered only when the ceiling was
-                actually hit — an unconditional hedge would teach people to
-                ignore it. */}
-            {data.truncated && (
-              <>
-                {" "}
-                <span data-slot="record-activity-truncated">
-                  {t("recordSharing.activity.truncated")}
-                </span>
-              </>
-            )}
           </p>
         )}
+        {/* The second completeness claim: the window says how far back this
+            can see, the cap how many rows came back. Rendered only when the
+            ceiling was actually hit. */}
+        <ListCapNotice cap={data?.cap} />
 
         {isLoading && (
           <Loader2

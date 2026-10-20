@@ -17,6 +17,7 @@ import {
   ApiError,
   apiDelete,
   apiGet,
+  apiGetList,
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
@@ -162,11 +163,12 @@ export function useCycleRingDial(enabled: boolean): {
   };
 }
 
+/** The latest `limit` cycles, with the route's cap beside them. */
 export function useCycleHistory(limit = 24) {
   return useQuery({
     queryKey: queryKeys.cycleHistory(limit),
     queryFn: () =>
-      apiGet<CycleHistoryResponse>(`/api/cycle/cycles?limit=${limit}`),
+      apiGetList<CycleHistoryResponse>(`/api/cycle/cycles?limit=${limit}`),
     staleTime: 60_000,
   });
 }

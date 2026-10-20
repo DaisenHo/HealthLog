@@ -13,12 +13,13 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiDelete, apiGet } from "@/lib/api/api-fetch";
+import { apiDelete, apiGetList } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import { FamilyHistoryForm } from "./family-history-form";
 import type { FamilyHistoryEntryDTO } from "@/lib/records/dto";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.25 — the structured family-history manager. Renders in the
@@ -33,9 +34,15 @@ export function FamilyHistoryManager() {
   const [editing, setEditing] = useState<FamilyHistoryEntryDTO | null>(null);
   const [formFooterEl, setFormFooterEl] = useState<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.familyHistoryList(),
-    queryFn: () => apiGet<FamilyHistoryEntryDTO[]>("/api/family-history"),
+    queryFn: () => apiGetList<FamilyHistoryEntryDTO[]>("/api/family-history"),
   });
 
   const deleteMutation = useMutation({
@@ -64,7 +71,7 @@ export function FamilyHistoryManager() {
     queryClient.invalidateQueries({ queryKey: queryKeys.familyHistory() });
   }
 
-  const rows = data ?? [];
+  const rows = page?.data ?? [];
 
   function renderRow(row: FamilyHistoryEntryDTO) {
     const detail = [
@@ -130,7 +137,10 @@ export function FamilyHistoryManager() {
           }
         />
       ) : (
-        <ul className="space-y-2">{rows.map(renderRow)}</ul>
+        <>
+          <ul className="space-y-2">{rows.map(renderRow)}</ul>
+          <ListCapNotice cap={page?.cap} />
+        </>
       )}
 
       {/* The add action closes the list as the card's action row (design

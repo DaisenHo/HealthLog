@@ -19,6 +19,7 @@ import {
   useRevokeGrant,
   type GrantRow,
 } from "@/lib/queries/use-account-grants";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.36.0 — who can open this record.
@@ -87,6 +88,7 @@ export function GrantsGivenCard() {
             ))}
           </ul>
         )}
+        <ListCapNotice cap={data?.cap} />
       </div>
     </SettingsCard>
   );

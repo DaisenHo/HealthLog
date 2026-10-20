@@ -43,6 +43,7 @@ import {
   type CatalogEntry,
 } from "@/lib/insights/metric-catalog";
 import type { ManagerGroup } from "@/lib/insights/sub-page-metric";
+import { useEcgList } from "@/components/insights/use-ecg-list";
 
 /**
  * `/insights/catalog` — "what can HealthLog track" (2026-07-17
@@ -252,11 +253,7 @@ export default function MetricCatalogPage() {
     enabled: isAuthenticated && nutrientsModuleEnabled,
   });
 
-  const ecgQuery = useQuery({
-    queryKey: queryKeys.insightsEcgList(),
-    queryFn: () => apiGet<{ hasRecordings: boolean }>("/api/insights/ecg"),
-    enabled: isAuthenticated,
-  });
+  const ecgQuery = useEcgList();
 
   const availability: InsightInputs | undefined = isAuthenticated
     ? {
@@ -319,7 +316,7 @@ export default function MetricCatalogPage() {
 
   function isPresent(entry: CatalogEntry): boolean | null {
     if (entry.kind === "info") return null;
-    if (entry.id === "ecg") return ecgQuery.data?.hasRecordings === true;
+    if (entry.id === "ecg") return ecgQuery.data?.data.hasRecordings === true;
     if (!availability || !entry.metric) return false;
     return hasMetricData(entry.metric, availability);
   }

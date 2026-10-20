@@ -18,6 +18,7 @@ import { useInsightsLayoutQuery } from "@/hooks/use-insights-layout";
 import { queryKeys } from "@/lib/query-keys";
 import type { InsightInputs } from "@/lib/insights/metric-availability";
 import { apiGet } from "@/lib/api/api-fetch";
+import { useEcgList } from "@/components/insights/use-ecg-list";
 
 /**
  * v1.4.25 — client shell for `src/app/insights/layout.tsx`.
@@ -119,12 +120,8 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   // ECG page, so the flag lands once per route (dedup-shared, no extra
   // traffic). Undefined until it resolves → the pill stays off on first paint,
   // exactly like the metric pills light up as their summaries land.
-  const ecgProbe = useQuery({
-    queryKey: queryKeys.insightsEcgList(),
-    queryFn: () => apiGet<{ hasRecordings: boolean }>("/api/insights/ecg"),
-    enabled: isAuthenticated,
-  });
-  const hasEcgRecordings = ecgProbe.data?.hasRecordings === true;
+  const ecgProbe = useEcgList();
+  const hasEcgRecordings = ecgProbe.data?.data.hasRecordings === true;
 
   // v1.4.31 — memoise the `availability` prop so an unchanged
   // payload doesn't recreate the object on every cache-write of

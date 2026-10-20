@@ -54,8 +54,12 @@ function renderSection(
   data:
     { recordings: EcgRecordingListItem[]; hasRecordings: boolean } | undefined,
   props: { limit?: number } = {},
+  cap: { truncated: boolean; limit: number } | null = null,
 ) {
-  useQueryMock.mockReturnValue({ data, isLoading: false });
+  useQueryMock.mockReturnValue({
+    data: data ? { data, cap } : undefined,
+    isLoading: false,
+  });
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <EcgSection {...props} />
@@ -173,5 +177,19 @@ describe("<EcgSection>", () => {
     });
     expect(html).not.toContain('data-slot="ecg-disclaimer"');
     expect(html).not.toContain("Single-lead ECG strips");
+  });
+
+  it("says when the full list stopped at the route's ceiling, never on the teaser", () => {
+    const data = { recordings: [IRREGULAR_REC], hasRecordings: true };
+    const cap = { truncated: true, limit: 200 };
+    expect(renderSection(data, {}, cap)).toContain(
+      'data-slot="list-cap-notice"',
+    );
+    expect(renderSection(data, { limit: 3 }, cap)).not.toContain(
+      'data-slot="list-cap-notice"',
+    );
+    expect(renderSection(data, {})).not.toContain(
+      'data-slot="list-cap-notice"',
+    );
   });
 });

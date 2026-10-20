@@ -31,7 +31,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGetList, apiPost } from "@/lib/api/api-fetch";
 import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
 import { INSTRUMENTS, INSTRUMENT_ORDER } from "@/lib/mental-health/instruments";
 import { PageHeader } from "@/components/ui/page-header";
@@ -49,6 +49,7 @@ import type {
   InstrumentId,
   Phase,
 } from "./types";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 export function MentalWellbeing() {
   const { t, locale } = useTranslations();
@@ -72,7 +73,7 @@ export function MentalWellbeing() {
   // assessments was told the assessments do not exist. Error is now rendered as
   // error, loading as loading, and only a genuinely empty result as empty.
   const {
-    data: history,
+    data: historyPage,
     isPending: historyPending,
     isError: historyError,
     error: historyFailure,
@@ -80,10 +81,11 @@ export function MentalWellbeing() {
   } = useQuery({
     queryKey: queryKeys.mentalHealthAssessments(),
     queryFn: () =>
-      apiGet<{ assessments: AssessmentRow[] }>(
+      apiGetList<{ assessments: AssessmentRow[] }>(
         "/api/mental-health/assessments",
       ),
   });
+  const history = historyPage?.data;
 
   const mutation = useMutation({
     mutationFn: (body: unknown) =>
@@ -230,6 +232,7 @@ export function MentalWellbeing() {
                 onStart={() => begin(detailInstrument)}
               />
             )}
+            <ListCapNotice cap={historyPage?.cap} className="mt-3" />
           </ResponsiveSheet>
         </>
       )}

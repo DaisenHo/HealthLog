@@ -23,6 +23,7 @@ import {
   useRenounceGrant,
   type GrantRow,
 } from "@/lib/queries/use-account-grants";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.36.0 — the records this account has been offered, and the ones it holds.
@@ -110,6 +111,7 @@ export function GrantsReceivedCard() {
             ))}
           </ul>
         )}
+        <ListCapNotice cap={data?.cap} />
       </div>
     </SettingsCard>
   );

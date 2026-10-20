@@ -36,7 +36,9 @@ interface Item {
 function render(
   data: { recordings: Item[]; hasRecordings: boolean } | undefined,
 ) {
-  useQueryMock.mockReturnValue({ data });
+  useQueryMock.mockReturnValue({
+    data: data ? { data, cap: null } : undefined,
+  });
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <EcgCrossLink />
