@@ -43,12 +43,10 @@ interface TileHeaderProps {
    * The ONE sanctioned compact variant: icon `h-4 w-4`, title `text-sm` —
    * for dense correlation/stat tiles that sit several to a row where the
    * full `text-base` header visually overpowers the tile body. Everything
-   * else stays on the default; do not express a third size via
-   * `titleClassName`.
+   * else stays on the default.
    */
   size?: "default" | "sm";
   className?: string;
-  titleClassName?: string;
   /** Optional id on the `CardTitle`, e.g. for an `aria-labelledby` link. */
   id?: string;
   /**
@@ -71,14 +69,23 @@ export function TileHeader({
   right,
   size = "default",
   className,
-  titleClassName,
   id,
   titleAs,
 }: TileHeaderProps) {
   const Heading = titleAs ?? "h2";
+  // The title wraps; it never truncates. A tile title is the only thing that
+  // says what the number below it is, and German compounds
+  // ("Herzfrequenzvariabilität", "Körperfettverteilung") overrun a narrow
+  // tile in one word. `min-w-0` lets it shrink beside the icon and the
+  // `right` slot, `hyphens-auto` breaks a compound at a syllable (the
+  // document's `lang` drives the dictionary) and `break-words` is the floor
+  // for a word the dictionary does not know. `leading-tight` keeps a second
+  // line clear of the first; on one line it matches the 20 px icon box, so a
+  // single-line header is the height it was. There is no class override:
+  // every caller used one to add `truncate`.
   const titleClassNames = cn(
+    "min-w-0 leading-tight break-words hyphens-auto",
     size === "sm" ? "text-sm" : "text-base",
-    titleClassName,
   );
   return (
     <div
@@ -102,7 +109,7 @@ export function TileHeader({
         <Heading
           id={id}
           data-slot="card-title"
-          className={cn("leading-none font-semibold", titleClassNames)}
+          className={cn("font-semibold", titleClassNames)}
         >
           {title}
         </Heading>

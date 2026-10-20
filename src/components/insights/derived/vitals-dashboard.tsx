@@ -642,12 +642,7 @@ function BuildingTile({
       data-state={state}
       className="gap-3"
     >
-      <TileHeader
-        icon={icon}
-        title={title}
-        titleAs="h2"
-        titleClassName="truncate"
-      />
+      <TileHeader icon={icon} title={title} titleAs="h2" />
       <p className="text-muted-foreground text-sm" data-slot={messageSlot}>
         {message}
       </p>

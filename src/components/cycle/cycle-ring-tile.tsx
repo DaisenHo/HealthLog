@@ -108,11 +108,7 @@ export function CycleRingTile({ className }: { className?: string }) {
           className,
         )}
       >
-        <TileHeader
-          icon={Droplets}
-          title={t("cycle.wellnessRing.label")}
-          titleClassName="truncate"
-        />
+        <TileHeader icon={Droplets} title={t("cycle.wellnessRing.label")} />
         <div className="flex flex-col items-center gap-1.5">
           <CycleRing
             dayOfCycle={verdict.dayOfCycle}
