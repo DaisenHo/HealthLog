@@ -19,7 +19,8 @@
  * `reauth_required` on the `strava` ledger.
  *
  * Rate limits: 200 req / 15 min + 2000 / day per app. The walk is page-bounded
- * and the per-activity detail fetch (for `calories`, absent from the summary)
+ * (`walkPages`, which reports a walk cut off at its ceiling instead of
+ * passing it off as the whole history) and the per-activity detail fetch (for `calories`, absent from the summary)
  * is budget-capped; a 429 mid-walk records a transient failure and the next
  * cron tick resumes from the cursor.
  */
@@ -34,6 +35,7 @@ import {
   toFailureKind,
   type FailureKind,
 } from "@/lib/integrations/status";
+import { walkPages } from "@/lib/integrations/page-walk";
 import {
   fetchActivities,
   fetchActivityById,
@@ -163,58 +165,70 @@ export async function syncUserStrava(
     ? BACKFILL_DETAIL_BUDGET
     : INCREMENTAL_DETAIL_BUDGET;
 
-  const rows: StravaWorkoutRow[] = [];
+  let rows: StravaWorkoutRow[];
   let newestStart: Date | null = null;
 
   try {
-    for (let page = 1; page <= maxPages; page++) {
-      const activities = await authed((t) =>
-        fetchActivities(t, { after: afterEpoch, page, perPage: PER_PAGE }),
-      );
-      if (activities.length === 0) break;
-
-      for (const a of activities) {
-        // Fetch detail only to fill `calories` (absent from the summary), and
-        // only while the budget allows. When the summary already lacks HR we
-        // also let the detail top it up. A detail failure is non-fatal — map
-        // from the summary — but a 429 aborts the whole walk (transient).
-        let detail: StravaDetailedActivity | null = null;
-        if (detailBudget > 0) {
-          try {
-            detail = await authed((t) => fetchActivityById(t, a.id));
-            detailBudget -= 1;
-          } catch (err) {
-            if (err instanceof StravaApiError && err.httpStatus === 429) {
-              throw err;
+    // Strava pages by number; a short page is the last one. A walk that
+    // reaches its ceiling with a full page last reports itself truncated, and
+    // the backfill leaves its marker unset (`integrations/page-walk.ts`).
+    const walk = await walkPages<number, StravaWorkoutRow>(
+      "strava.activities",
+      maxPages,
+      async (cursor) => {
+        const page = cursor ?? 1;
+        const activities = await authed((t) =>
+          fetchActivities(t, { after: afterEpoch, page, perPage: PER_PAGE }),
+        );
+        const mapped: StravaWorkoutRow[] = [];
+        for (const a of activities) {
+          // Fetch detail only to fill `calories` (absent from the summary),
+          // and only while the budget allows. When the summary already lacks
+          // HR we also let the detail top it up. A detail failure is
+          // non-fatal — map from the summary — but a 429 aborts the whole
+          // walk (transient).
+          let detail: StravaDetailedActivity | null = null;
+          if (detailBudget > 0) {
+            try {
+              detail = await authed((t) => fetchActivityById(t, a.id));
+              detailBudget -= 1;
+            } catch (err) {
+              if (err instanceof StravaApiError && err.httpStatus === 429) {
+                throw err;
+              }
+              getEvent()?.addWarning(
+                `strava: activity detail fetch failed for ${a.id}: ${err}`,
+              );
+              detail = null;
             }
+          } else if (!summaryHasHeartRate(a)) {
             getEvent()?.addWarning(
-              `strava: activity detail fetch failed for ${a.id}: ${err}`,
+              `strava: detail budget exhausted; mapping activity ${a.id} from summary only`,
             );
-            detail = null;
           }
-        } else if (!summaryHasHeartRate(a)) {
-          getEvent()?.addWarning(
-            `strava: detail budget exhausted; mapping activity ${a.id} from summary only`,
-          );
-        }
 
-        const row = mapActivity(a, detail);
-        if (row) {
-          rows.push(row);
-          if (a.start_date) {
-            const d = new Date(a.start_date);
-            if (
-              !Number.isNaN(d.getTime()) &&
-              (!newestStart || d > newestStart)
-            ) {
-              newestStart = d;
+          const row = mapActivity(a, detail);
+          if (row) {
+            mapped.push(row);
+            if (a.start_date) {
+              const d = new Date(a.start_date);
+              if (
+                !Number.isNaN(d.getTime()) &&
+                (!newestStart || d > newestStart)
+              ) {
+                newestStart = d;
+              }
             }
           }
         }
-      }
-
-      if (activities.length < PER_PAGE) break;
-    }
+        return {
+          items: mapped,
+          next: activities.length < PER_PAGE ? null : page + 1,
+        };
+      },
+      1,
+    );
+    rows = walk.items;
   } catch (err) {
     await recordStravaFailure(userId, err);
     throw markSyncFailureRecorded(err);

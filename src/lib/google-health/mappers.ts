@@ -14,6 +14,7 @@
  * this file performs I/O — everything is synchronous and deterministic given a
  * payload (+ optional user timezone).
  */
+import { importValue } from "@/lib/integrations/import-value";
 import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 
@@ -216,10 +217,6 @@ export interface GoogleHealthRollupPoint {
 
 /** Millimetres → centimetres (Google `height.heightMillimeters` → `User.heightCm`). */
 const MM_TO_CM = 0.1;
-
-function round2(n: number): number {
-  return parseFloat(n.toFixed(2));
-}
 
 /**
  * Coerce a raw payload value to a finite number, or null. proto3 int64 fields
@@ -445,7 +442,7 @@ function mapSimple(
   return [
     {
       type: spec.type,
-      value: round2(value),
+      value: importValue(value),
       unit: spec.unit,
       measuredAt: resolveMeasuredAt(point, dataType, new Date(), tz),
       fieldTag: `${externalAnchor(point, dataType)}:${spec.fieldTag}`,
@@ -678,7 +675,7 @@ export function mapHeight(
   if (mm === null) return null;
   const t = readPath(point, `${dt.key}.sampleTime.physicalTime`);
   const sampledAt = typeof t === "string" ? parseLocalInstant(t) : null;
-  return { cm: round2(mm * MM_TO_CM), sampledAt };
+  return { cm: importValue(mm * MM_TO_CM), sampledAt };
 }
 
 // ─── Activity mappers: daily roll-up totals ────────────────────
@@ -732,7 +729,7 @@ function mapDailyRollup(
   return [
     {
       type: spec.type,
-      value: round2(value),
+      value: importValue(value),
       unit: spec.unit,
       measuredAt: canonicalDailyTimestamp(dayKey, tz),
       // `stats:<type-tag>:<YYYY-MM-DD>` — the sync layer reads `cumulativeDaily`
@@ -833,7 +830,7 @@ export function mapVo2Max(
   return [
     {
       type: "VO2_MAX",
-      value: round2(value),
+      value: importValue(value),
       unit: "mL/(kg·min)",
       measuredAt,
       fieldTag: `vo2_max:${externalAnchor(point, dt)}`,
@@ -1035,7 +1032,7 @@ export function mapSleepSessionDetailed(
     if (!windowEnd || end > windowEnd) windowEnd = end;
     rows.push({
       type: "SLEEP_DURATION",
-      value: round2(mins),
+      value: importValue(mins),
       unit: "minutes",
       measuredAt: end,
       fieldTag: `${anchor}:sleep:${start.toISOString()}`,
@@ -1287,7 +1284,9 @@ export function mapWorkout(
     durationSec,
     totalEnergyKcal: energyKcal !== null ? Math.round(energyKcal) : null,
     totalDistanceM:
-      distanceMm !== null && distanceMm >= 0 ? round2(distanceMm / 1000) : null,
+      distanceMm !== null && distanceMm >= 0
+        ? importValue(distanceMm / 1000)
+        : null,
     avgHeartRate: avgHr !== null && avgHr > 0 ? Math.round(avgHr) : null,
     // metricsSummary carries no maximum/minimum heart rate.
     maxHeartRate: null,

@@ -26,20 +26,37 @@ const PROVIDER_DIRS = [
   "withings",
 ];
 /**
- * Loops still counting pages on their own, with the reason. Each is bounded
- * and reports nothing at its bound; each moves to `walkPages` with the next
- * change to its file.
+ * Page loops that stay outside `walkPages` on purpose, with how many matches
+ * each file may hold and why. A file with more matches than its allowance has
+ * grown a loop of its own and fails like any other.
+ *
+ * Google Health's list walk (`forEachDataPointPage`) is bounded by progress,
+ * not by a cursor ceiling: it stops after `GOOGLE_HEALTH_NO_PROGRESS_PAGES`
+ * pages in a row that reach no further back (the same page token handed out
+ * again counts toward that, rather than ending the walk at once as
+ * `walkPages` does), streams each page to the writer instead of collecting
+ * the collection (a dense heart-rate history does not fit in the heap), stops
+ * mid-walk on the backfill slice's budget and on a rate limit it cannot wait
+ * out, passes over pages beyond the resume edge without charging them to its
+ * ceiling, and keeps its place in the list for the next slice. Its truncation
+ * reaches the backfill through the client outcome, and the backfill decides
+ * from it with its own sliced verdict (continue, wait for a retry, stuck,
+ * complete; `jobs/google-health-backfill.ts`), which `backfillVerdict`'s
+ * three outcomes cannot carry.
  */
-const PENDING: Readonly<Record<string, string>> = {
-  "google-health/client.ts":
-    "progress-bounded walk (backfill-bounds.ts); moves with the next Google Health change",
-  "strava/sync.ts":
-    "activity pages per sync; moves with the next Strava change",
+const EXCEPTIONS: Readonly<Record<string, { matches: number; why: string }>> = {
+  "google-health/client.ts": {
+    matches: 1,
+    why: "progress-bounded streaming list walk with slice budget and resume (forEachDataPointPage)",
+  },
 };
 
-/** A page counter compared against a bound, in any of the shapes used. */
+/**
+ * A page counter compared against a bound, in any of the shapes used. A
+ * literal bound of 0 or 1 is a validity check (`page > 0`), not a ceiling.
+ */
 const PAGE_LOOP =
-  /\b(?:pages?|pageCount|pagesRead|page)\s*(?:<|<=|>|>=)\s*(?:[A-Z_][A-Z0-9_]*|maxPages|\d+)\b/;
+  /\b(?:pages?|pageCount|pagesRead|page)(?:\s*-\s*[A-Za-z_]\w*)?\s*(?:<|<=|>|>=)\s*(?:[A-Z_][A-Z0-9_]*|maxPages|[2-9]|[1-9]\d+)\b/g;
 
 function strip(text: string): string {
   return text
@@ -54,19 +71,26 @@ describe("provider clients walk pages through walkPages", () => {
       !f.includes("__tests__") &&
       !f.endsWith(".test.ts"),
   );
-  const offending = (f: string) =>
-    PAGE_LOOP.test(strip(readFileSync(join(LIB, f), "utf8")));
+  const matches = (f: string) =>
+    strip(readFileSync(join(LIB, f), "utf8")).match(PAGE_LOOP)?.length ?? 0;
 
   it("walks the provider directories", () => {
     expect(files.length).toBeGreaterThanOrEqual(60);
   });
 
-  it("finds no page loop of their own outside the pending list", () => {
-    expect(files.filter((f) => !(f in PENDING) && offending(f))).toEqual([]);
+  it("finds no page loop of their own beyond the exceptions", () => {
+    const over = files
+      .map((f) => ({ f, n: matches(f), allowed: EXCEPTIONS[f]?.matches ?? 0 }))
+      .filter(({ n, allowed }) => n > allowed)
+      .map(({ f, n }) => `${f}: ${n}`);
+    expect(over).toEqual([]);
   });
 
-  it("keeps the pending list honest", () => {
-    expect(Object.keys(PENDING).filter((f) => !offending(f))).toEqual([]);
+  it("keeps the exceptions honest", () => {
+    const stale = Object.entries(EXCEPTIONS)
+      .filter(([f, { matches: allowed }]) => matches(f) !== allowed)
+      .map(([f]) => f);
+    expect(stale).toEqual([]);
   });
 
   it("catches the shapes the loops used", () => {
@@ -74,11 +98,16 @@ describe("provider clients walk pages through walkPages", () => {
       "while (pages < WORKOUT_MAX_PAGES) {",
       "if (pageCount > 1000) break;",
       "} while (nextToken && pageCount < maxPages);",
+      "} while (pageToken && pageCount - skipped < maxPages);",
+      "for (let page = 1; page <= maxPages; page++) {",
     ]) {
-      expect(PAGE_LOOP.test(planted), planted).toBe(true);
+      expect(planted.match(PAGE_LOOP), planted).not.toBeNull();
     }
-    expect(PAGE_LOOP.test("const walk = await walkPages(label, 12, f);")).toBe(
-      false,
-    );
+    for (const fine of [
+      "const walk = await walkPages(label, 12, f);",
+      "r.page > 0 ? r.page : undefined",
+    ]) {
+      expect(fine.match(PAGE_LOOP), fine).toBeNull();
+    }
   });
 });

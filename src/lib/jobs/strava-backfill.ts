@@ -18,6 +18,11 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
+import { isReauthRequired } from "@/lib/integrations/status";
+import {
+  backfillVerdict,
+  withPageWalkLedger,
+} from "@/lib/integrations/page-walk";
 import { syncUserStrava } from "@/lib/strava/sync";
 
 export const STRAVA_BACKFILL_QUEUE = "strava-backfill";
@@ -36,14 +41,46 @@ export interface StravaBackfillPayload {
 
 /**
  * Per-user backfill handler. Runs a full-history sync for one account and
- * stamps `stravaBackfillCompletedAt` so the discovery query drops it.
- * Idempotent: the `(userId, source, externalId)` workout upsert is key-stable,
- * so a re-run (e.g. a reboot mid-walk) overwrites rather than duplicating.
+ * stamps `stravaBackfillCompletedAt` only when the walk read the whole
+ * history, so the discovery query drops it. Idempotent: the
+ * `(userId, source, externalId)` workout upsert is key-stable, so a re-run
+ * (e.g. a reboot mid-walk) overwrites rather than duplicating.
+ *
+ * Verdict-gated (`backfillVerdict`, `integrations/page-walk.ts`), like the
+ * WHOOP and Fitbit backfills. A failed sync throws out of `syncUserStrava`
+ * (failure recorded first) and pg-boss retries. An activity walk that reached
+ * its page ceiling with history left is not complete: the marker stays unset
+ * without a retry, and boot discovery offers the account again. A connection
+ * parked for re-authorisation returns without stamping and without a retry,
+ * since every attempt would meet the same dead grant.
  */
 export async function runStravaBackfillForUser(
   userId: string,
 ): Promise<{ imported: number }> {
-  const imported = await syncUserStrava(userId, { fullSync: true });
+  if (await isReauthRequired(userId, "strava")) {
+    annotate({
+      action: {
+        name: "strava.backfill.skipped_reauth",
+        details: { imported: 0 },
+      },
+    });
+    return { imported: 0 };
+  }
+
+  const { result: imported, truncated } = await withPageWalkLedger(() =>
+    syncUserStrava(userId, { fullSync: true }),
+  );
+  // A failure has already thrown; what is left to decide is whether the walk
+  // reached the beginning of the history.
+  if (backfillVerdict({ failed: false, truncated }) === "incomplete") {
+    annotate({
+      action: {
+        name: "strava.backfill.truncated",
+        details: { imported, collections: truncated.join(",") },
+      },
+    });
+    return { imported };
+  }
 
   await prisma.user.update({
     where: { id: userId },

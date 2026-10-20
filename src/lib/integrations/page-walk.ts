@@ -19,11 +19,14 @@
  *   - a connection parked for re-authorisation is permanent until the person
  *     reconnects: the runner returns without stamping and without a retry.
  *
- * Google Health keeps its own progress-based walk (`google-health/
- * backfill-bounds.ts`), whose `no_progress` end is this module's runaway case
- * measured in time rather than in cursors; it moves onto this contract with
- * its next change. `src/__tests__/page-walk-guard.test.ts` keeps hand-rolled
- * page loops out of the provider directories.
+ * Google Health's dailyRollUp chunks walk through here. Its `dataPoints.list`
+ * walk (`forEachDataPointPage`) stays outside on purpose: it is bounded by
+ * progress in time rather than by a cursor ceiling (`google-health/
+ * backfill-bounds.ts`), streams pages instead of collecting them, stops on a
+ * backfill slice's budget and keeps its place for the next slice, and its
+ * backfill decides with a sliced verdict these three outcomes cannot carry.
+ * `src/__tests__/page-walk-guard.test.ts` keeps hand-rolled page loops out of
+ * the provider directories and names that one exception with its reasons.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 
