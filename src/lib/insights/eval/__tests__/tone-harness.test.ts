@@ -254,6 +254,7 @@ describe("tone harness — deterministic fallbacks", () => {
     es: /no hay ninguna valoración/,
     it: /non è disponibile alcuna valutazione/,
     pl: /nie ma (?:tu )?żadnej oceny/,
+    "pt-BR": /n[aã]o h[áa] (?:uma )?avalia[çc][aã]o/i,
     ko: /평가가 없어요/,
   };
 

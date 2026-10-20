@@ -870,6 +870,15 @@ const POPULATION_NORM_PATTERNS: Record<Locale, readonly RegExp[]> = {
   ], // No `\b` next to Hangul (it is an ASCII \w boundary), and the object sits
   // between subject and verb in Korean, so each entry allows a gap where the
   // Latin banks put \s+.
+  "pt-BR": [
+    /\bfaixa\s+(?:de\s+refer[eê]ncia|normal)\b/i,
+    /\bvalor(?:es)?\s+de\s+refer[eê]ncia\b/i,
+    /\b(?:adultos?|pessoas?)\s+saud[áa]ve(?:l|is)\b/i,
+    /\bmaioria\s+(?:dos\s+)?(?:adultos?|das\s+pessoas)\b/i,
+    /\b(?:diretrizes|guias|m[eé]dicos?|especialistas?)\b[^.?!]{0,30}\b(?:recomend(?:am|a)|suger(?:em|e)|indic(?:am|a))\b/i,
+    /\b(?:adultos?|pessoas?)\b[^.?!]{0,30}\b(?:geralmente|normalmente|em\s+geral)\b[^.?!]{0,30}\b(?:precis(?:am|a)|devem|necessit(?:am|a))\b/i,
+    /\b(?:entre|de)\s+[^.?!]{0,30}\b(?:normalmente|geralmente|em\s+geral)\b/i,
+  ],
   ko: [
     /정상\s*범위(?:는|가|를|로|의)/,
     /(?:참고|기준|권장)\s*(?:범위|치|값)/,

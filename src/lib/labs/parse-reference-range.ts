@@ -263,6 +263,30 @@ export const RANGE_PROSE: Record<Locale, RangeProse> = {
   // matchers here are prefix-anchored, so only the prefix-shaped notation is
   // listed. A postfixed Korean range still falls through to text-only, which
   // `isUnreadableRange` reports rather than hides.
+  "pt-BR": {
+    twoSided: ["a", "e"],
+    upper: [
+      "ate",
+      "menos de",
+      "abaixo de",
+      "inferior a",
+      "maximo",
+      "no maximo",
+    ],
+    lower: [
+      "a partir de",
+      "no minimo",
+      "minimo",
+      "acima de",
+      "maior que",
+      "maior de",
+    ],
+    filler: [
+      "valores de referencia",
+      "valor de referencia",
+      "faixa de referencia",
+    ],
+  },
   ko: {
     twoSided: ["에서", "부터"],
     upper: ["최대", "최고"],

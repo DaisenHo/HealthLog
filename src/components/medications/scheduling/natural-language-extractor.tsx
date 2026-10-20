@@ -41,6 +41,7 @@
  * button is the open-trigger.
  */
 
+import type { Locale } from "@/lib/i18n/config";
 import { useCallback, useId, useRef, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -72,7 +73,7 @@ export interface NaturalLanguageExtractorProps {
    * UI locale forwarded to the route as a hint. The route accepts an
    * undefined value and falls back to the resolver chain.
    */
-  locale?: "en" | "de" | "es" | "fr" | "it" | "pl" | "ko";
+  locale?: Locale;
   /**
    * Optional override of the API path so the wizard test harness can
    * point at a mock server. Defaults to the production route.
