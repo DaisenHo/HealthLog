@@ -30,8 +30,6 @@ import { capRows, overfetch, type ListCap } from "@/lib/api/list-cap";
 
 import { listLimitField, listOffsetField } from "./list-query-fields";
 
-export { listLimitField, listOffsetField } from "./list-query-fields";
-
 export interface ListQueryOptions {
   /** The limit when the request names none. */
   defaultLimit: number;
@@ -39,11 +37,6 @@ export interface ListQueryOptions {
   maxLimit: number;
   /** Whether the route pages with `offset`. */
   offset?: boolean;
-}
-
-export interface ListQuery {
-  limit: number;
-  offset: number;
 }
 
 /**
