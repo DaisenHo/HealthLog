@@ -38,9 +38,11 @@ import {
 import { GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS } from "@/lib/google-health/sync-lock";
 import {
   googleHealthSliceBudget,
+  type GoogleHealthSliceStopReason,
   runWithGoogleHealthStop,
 } from "@/lib/google-health/client";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
+import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";
 
 export const GOOGLE_HEALTH_BACKFILL_QUEUE = "google-health-backfill";
@@ -120,6 +122,21 @@ export function googleHealthBackfillRetryKey(
     data: { userId, enqueuedAt: "" },
   });
   return `${identity}|retry-${new Date(dueAt).toISOString()}`;
+}
+
+/**
+ * The pause before the next slice, by why this one stopped: longer after a
+ * rate limit, and past the waiting job's return after giving way to it, so
+ * that job takes the lane before this import does again.
+ */
+export function nextSliceDelaySeconds(
+  stopReason: GoogleHealthSliceStopReason | null,
+): number {
+  if (stopReason === "rate_limited") {
+    return GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS;
+  }
+  if (stopReason === "lane_wanted") return LANE_YIELD_DELAY_SECONDS;
+  return INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS;
 }
 
 /** Test seam: a slice's budget, when not the production one. */
@@ -240,6 +257,8 @@ export async function runGoogleHealthBackfillForUser(
   const budget = googleHealthSliceBudget(
     sliceOptions.sliceMs ?? GOOGLE_HEALTH_BACKFILL_SLICE_MS,
     sliceOptions.slicePages ?? GOOGLE_HEALTH_BACKFILL_SLICE_PAGES,
+    Date.now,
+    laneWanted,
   );
   const startedAt = Date.now();
   const {
@@ -387,9 +406,7 @@ export async function runGoogleHealthBackfillForUser(
     const progressed = finished > 0 || advanced.size > 0 || newlyParked > 0;
     if (progressed) {
       const sent = await sendNextSlice(
-        budget.stopReason === "rate_limited"
-          ? GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS
-          : INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
+        nextSliceDelaySeconds(budget.stopReason),
       );
       if (sent) {
         annotate({

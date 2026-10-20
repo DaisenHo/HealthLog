@@ -155,7 +155,7 @@ interface GoogleHealthWalkLimits {
 
 /** Why a backfill slice stopped walking. */
 export type GoogleHealthSliceStopReason =
-  "time_budget" | "page_budget" | "rate_limited" | "job_budget";
+  "time_budget" | "page_budget" | "rate_limited" | "job_budget" | "lane_wanted";
 
 /**
  * One backfill slice's share of the work: a span of wall-clock time and a
@@ -184,6 +184,14 @@ export interface GoogleHealthSliceBudget {
   skippedPages: number;
   stopReason: GoogleHealthSliceStopReason | null;
   now: () => number;
+  /**
+   * Whether another heavy job waits for the lane this slice holds
+   * (`laneWanted` in `jobs/heavy-lane.ts`). Asked where the slice's own
+   * limits are, so giving way keeps every walk's place, and only once the
+   * slice has read a page, so the slice it ends has something on disk and is
+   * continued rather than failed.
+   */
+  yieldWanted: () => boolean;
 }
 
 /** A fresh slice budget of `ms` milliseconds and `maxPages` pages. */
@@ -191,6 +199,7 @@ export function googleHealthSliceBudget(
   ms: number,
   maxPages: number,
   now: () => number = Date.now,
+  yieldWanted: () => boolean = () => false,
 ): GoogleHealthSliceBudget {
   return {
     ms,
@@ -200,6 +209,7 @@ export function googleHealthSliceBudget(
     skippedPages: 0,
     stopReason: null,
     now,
+    yieldWanted,
   };
 }
 
@@ -212,6 +222,8 @@ function sliceExhausted(slice: GoogleHealthSliceBudget): boolean {
   if (slice.now() >= slice.deadline) slice.stopReason = "time_budget";
   else if (slice.pages - slice.skippedPages >= slice.maxPages) {
     slice.stopReason = "page_budget";
+  } else if (slice.pages > 0 && slice.yieldWanted()) {
+    slice.stopReason = "lane_wanted";
   }
   return slice.stopReason !== null;
 }
