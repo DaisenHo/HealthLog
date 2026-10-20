@@ -26,6 +26,7 @@ const ALLOWED: Record<string, string> = {
   "src/lib/rollups/medication-compliance-rollups.ts":
     "computed_at is timestamptz",
   "src/lib/jobs/job-failures.ts": "pg-boss tables are timestamptz",
+  "src/lib/jobs/heavy-lane.ts": "pg-boss start_after is timestamptz",
   "src/lib/jobs/reminder/registrar-shared.ts": "pg-boss tables are timestamptz",
   "src/lib/db-compat.ts": "DDL default on a timestamptz column",
 };
