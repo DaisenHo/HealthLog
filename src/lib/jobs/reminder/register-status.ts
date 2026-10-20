@@ -104,6 +104,7 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { lockedPass, WHOLE_PASS } from "@/lib/jobs/long-pass";
+import { heavyLane } from "@/lib/jobs/heavy-lane";
 import { INSIGHT_PREGENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-pregenerate-shared";
 import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "@/lib/jobs/period-narrative-shared";
 import { getWorkerPrisma, workerLog } from "./shared";
@@ -346,7 +347,7 @@ export async function registerStatusQueues(
     lockedPass(
       GENERAL_STATUS_QUEUE,
       () => WHOLE_PASS,
-      handleGeneralStatusGenerate,
+      heavyLane(GENERAL_STATUS_QUEUE, handleGeneralStatusGenerate),
     ),
   );
   // v1.7.0 — nightly comprehensive-insight pre-generation.
@@ -372,7 +373,11 @@ export async function registerStatusQueues(
         job.data?.force && job.data.userId
           ? `user:${job.data.userId}`
           : WHOLE_PASS,
-      handleInsightPregenerateJob,
+      heavyLane(
+        INSIGHT_PREGENERATE_QUEUE,
+        handleInsightPregenerateJob,
+        (job) => !(job.data?.force && job.data.userId),
+      ),
     ),
   );
   // S4 — event-driven morning digest refresh. One forced comprehensive
@@ -703,49 +708,56 @@ export async function registerStatusQueues(
     lockedPass(
       PERIOD_NARRATIVE_QUEUE,
       (job) => (job.data?.userId ? `user:${job.data.userId}` : WHOLE_PASS),
-      async (jobs): Promise<JobOutcome> => {
-        // Two modes on one queue, so the outcome counts them separately: a
-        // non-boundary night is a scheduled pass that generated nothing, which
-        // is a success with zero counts, not an idle queue.
-        let singleUser = 0;
-        let scheduled = 0;
-        let generated = 0;
-        let failed = 0;
-        let stoppedEarly = false;
-        for (const job of jobs) {
-          try {
-            if (job.data?.userId) {
-              await warmOneNarrative(job.data);
-              singleUser++;
-            } else {
-              const summary = await runPeriodNarrativeWarm(getWorkerPrisma(), {
-                shouldStop: jobBudget(jobs),
+      heavyLane(
+        PERIOD_NARRATIVE_QUEUE,
+        async (jobs): Promise<JobOutcome> => {
+          // Two modes on one queue, so the outcome counts them separately: a
+          // non-boundary night is a scheduled pass that generated nothing, which
+          // is a success with zero counts, not an idle queue.
+          let singleUser = 0;
+          let scheduled = 0;
+          let generated = 0;
+          let failed = 0;
+          let stoppedEarly = false;
+          for (const job of jobs) {
+            try {
+              if (job.data?.userId) {
+                await warmOneNarrative(job.data);
+                singleUser++;
+              } else {
+                const summary = await runPeriodNarrativeWarm(
+                  getWorkerPrisma(),
+                  {
+                    shouldStop: jobBudget(jobs),
+                  },
+                );
+                scheduled++;
+                generated += summary.generated;
+                failed += summary.failed;
+                stoppedEarly ||= summary.stoppedEarly;
+                workerLog(
+                  "info",
+                  `[period-narrative] periods=${summary.periods.join(",") || "none"} total=${summary.total} generated=${summary.generated} cached=${summary.cached} skipped=${summary.skipped} insufficient=${summary.insufficient} failed=${summary.failed} budget=${summary.budgetBlocked}`,
+                );
+              }
+            } catch (err) {
+              recordError();
+              await reportWorkerError(PERIOD_NARRATIVE_QUEUE, err, {
+                mode: job.data?.userId ? "single-user" : "scheduled",
               });
-              scheduled++;
-              generated += summary.generated;
-              failed += summary.failed;
-              stoppedEarly ||= summary.stoppedEarly;
-              workerLog(
-                "info",
-                `[period-narrative] periods=${summary.periods.join(",") || "none"} total=${summary.total} generated=${summary.generated} cached=${summary.cached} skipped=${summary.skipped} insufficient=${summary.insufficient} failed=${summary.failed} budget=${summary.budgetBlocked}`,
-              );
+              throw err;
             }
-          } catch (err) {
-            recordError();
-            await reportWorkerError(PERIOD_NARRATIVE_QUEUE, err, {
-              mode: job.data?.userId ? "single-user" : "scheduled",
-            });
-            throw err;
           }
-        }
-        return jobDone({
-          single_user: singleUser,
-          scheduled,
-          generated,
-          failed,
-          stopped_early: stoppedEarly,
-        });
-      },
+          return jobDone({
+            single_user: singleUser,
+            scheduled,
+            generated,
+            failed,
+            stopped_early: stoppedEarly,
+          });
+        },
+        (job) => !job.data?.userId,
+      ),
     ),
   );
   // v1.11.1 — combined Coach memory refresh: rolling conversation summary +

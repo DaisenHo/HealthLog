@@ -42,6 +42,7 @@ import {
   type SourceSite,
 } from "@/lib/jobs/queue-runtime";
 import { SCHEDULED_AND_SENT_QUEUES } from "@/lib/jobs/reminder/registrar-shared";
+import { HEAVY_QUEUES } from "@/lib/jobs/heavy-lane";
 
 const SRC = join(process.cwd(), "src");
 const REGISTRARS = [
@@ -413,5 +414,48 @@ describe("a cron-fed queue polls slowly, a sent one does not", () => {
     const dynamic = dynamicallySent(source);
     expect(dynamic.has("withings-activity-sync")).toBe(true);
     expect(dynamic.has("whoop-recovery-sync")).toBe(true);
+  });
+});
+
+/** The text of the first `const NAME = …` in the tree, up to its end. */
+function constBody(texts: ReadonlyMap<string, string>, name: string): string {
+  for (const [file, raw] of texts) {
+    if (new RegExp(`\\bconst\\s+${name}\\b`).test(raw)) {
+      return bodyOf(texts, { file, fn: name }).split(/\n\n/)[0];
+    }
+  }
+  return "";
+}
+
+describe("heavy jobs share the lane", () => {
+  const all = scan(source);
+  const laned = all.bindings.filter((b) => /\bheavyLane\s*\(/.test(b.text));
+
+  it("binds every heavy queue in the lane, and nothing else", () => {
+    expect(laned.map((b) => b.queue).sort()).toEqual(
+      Object.keys(HEAVY_QUEUES).sort(),
+    );
+  });
+
+  it("holds a lockedPass outside the lane, so an expiry retry does not queue twice", () => {
+    const inverted = laned
+      .filter((b) => /\blockedPass\s*\(/.test(b.text))
+      .filter((b) => b.text.indexOf("lockedPass") > b.text.indexOf("heavyLane"))
+      .map((b) => b.queue);
+    expect(inverted).toEqual([]);
+  });
+
+  it("keeps a waiter past its expiry only where nothing retries the job", () => {
+    const problems = Object.entries(HEAVY_QUEUES)
+      .filter(([, heavy]) => heavy.oneShot)
+      .flatMap(([queue]) => {
+        const entry = QUEUE_RUNTIME[queue];
+        if (entry?.runtime !== "long") return [`${queue}: not a long queue`];
+        const noRetry = entry.expiryVia.some((v) =>
+          /\bretryLimit:\s*0\b/.test(constBody(source, v)),
+        );
+        return noRetry ? [] : [`${queue}: its send options allow a retry`];
+      });
+    expect(problems).toEqual([]);
   });
 });

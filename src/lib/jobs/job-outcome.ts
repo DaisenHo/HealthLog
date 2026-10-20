@@ -140,6 +140,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "inventory_expired_count",
   "inventory_items_migrated",
   "jobs",
+  // A heavy job pg-boss expired while it waited for the heavy lane.
+  "lane_expired",
   "legacy_rows_soft_deleted",
   "linked",
   "malformed",
