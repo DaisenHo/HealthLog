@@ -111,6 +111,7 @@ function ShareLinksCard() {
   const {
     data: links,
     isError,
+    error,
     isLoading,
     refetch,
   } = useQuery({
@@ -168,7 +169,7 @@ function ShareLinksCard() {
         {isError ? (
           // A read failure must not read as "no active links" on a clinical
           // sharing surface — that is the §6 fall-through this card must avoid.
-          <QueryErrorCard onRetry={() => refetch()} />
+          <QueryErrorCard error={error} onRetry={() => refetch()} />
         ) : isLoading ? (
           <div className="space-y-2" data-testid="share-links-loading">
             <Skeleton className="h-24 w-full rounded-lg" />

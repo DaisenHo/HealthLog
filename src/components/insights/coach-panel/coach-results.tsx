@@ -205,7 +205,7 @@ export function CoachResults({
   const expected = hasLive
     ? countResultsInSection(liveWithProvenance(live ?? [], metas), section)
     : countResultsInSection(metas, section);
-  const { ref, results, isError, refetch } = useCoachMessageResults({
+  const { ref, results, isError, error, refetch } = useCoachMessageResults({
     conversationId,
     messageId,
     enabled: !hasLive && expected > 0,
@@ -222,6 +222,7 @@ export function CoachResults({
     >
       {!hasLive && isError ? (
         <QueryErrorRow
+          error={error}
           slot="coach-results-error"
           retrySlot="coach-results-retry"
           message={t(COACH_RESULT_UI_KEYS.loadFailed)}

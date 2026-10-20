@@ -49,6 +49,7 @@ export default function MedicationDetailPage({
     data: medication,
     isLoading,
     isError,
+    error,
     refetch,
   } = useQuery<MedicationDetailSnapshot>({
     queryKey: queryKeys.medicationDetail(id),
@@ -83,6 +84,7 @@ export default function MedicationDetailPage({
         <BackLink href="/medications" label={t("medications.back")} />
         <div data-slot="medication-detail-error-card">
           <QueryErrorCard
+            error={error}
             description={t("medications.detail.shell.loadFailed")}
             onRetry={() => void refetch()}
           />

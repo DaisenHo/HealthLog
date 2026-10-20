@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
@@ -75,7 +75,7 @@ export function MoodQuickTags({
   }
   if (isError && !data) {
     return (
-      <ReadFailureRow
+      <QueryErrorRow
         error={error}
         slot="mood-quick-tags-error"
         message={t("mood.tagCatalogLoadError")}

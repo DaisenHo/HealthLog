@@ -75,6 +75,7 @@ export function MentalWellbeing() {
     data: history,
     isPending: historyPending,
     isError: historyError,
+    error: historyFailure,
     refetch: refetchHistory,
   } = useQuery({
     queryKey: queryKeys.mentalHealthAssessments(),
@@ -166,6 +167,7 @@ export function MentalWellbeing() {
             <h2 className="sr-only">{t("mentalHealth.choosePrompt")}</h2>
             {historyError ? (
               <QueryErrorCard
+                error={historyFailure}
                 title={t("mentalHealth.historyLoadError")}
                 description={t("mentalHealth.historyLoadErrorHint")}
                 onRetry={() => void refetchHistory()}

@@ -99,6 +99,7 @@ export function CoachFeedbackSection() {
         </div>
       ) : query.isError ? (
         <QueryErrorRow
+          error={query.error}
           message={t("admin.coachFeedback.loadError")}
           onRetry={() => void query.refetch()}
         />

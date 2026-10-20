@@ -18,7 +18,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import type { EncounterDTO } from "@/lib/encounters/dto";
 import { apiGet } from "@/lib/api/api-fetch";
 import type {
@@ -195,7 +195,7 @@ export function SinceLastVisit({
 
   if (window.isError && rows.length === 0) {
     return (
-      <ReadFailureRow
+      <QueryErrorRow
         error={window.error}
         slot="since-last-visit-error"
         message={t("day.sinceLastVisit.loadError")}

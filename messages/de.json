@@ -55,7 +55,9 @@
     "errorIdLabel": "Fehler-ID",
     "errorIdCopy": "Fehler-ID kopieren",
     "errorIdCopied": "Fehler-ID kopiert",
-    "readThrottled": "Gerade zu viele Anfragen. Versuch es später noch einmal."
+    "readThrottled": "Gerade zu viele Anfragen. Versuch es später noch einmal.",
+    "sessionEnded": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um weiterzumachen.",
+    "signInAgain": "Anmelden"
   },
   "apiErrors": {
     "measurement": {

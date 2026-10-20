@@ -91,7 +91,7 @@ export function RhythmEventsCard({
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsRhythmEvents(),
     queryFn: async () => {
       try {
@@ -119,6 +119,7 @@ export function RhythmEventsCard({
           title={t("insights.rhythmEvents.sectionTitle")}
         />
         <QueryErrorRow
+          error={error}
           slot="rhythm-events-error"
           message={t("insights.rhythmEvents.loadError")}
           onRetry={() => void refetch()}

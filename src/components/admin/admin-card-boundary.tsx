@@ -18,17 +18,28 @@ import { useTranslations } from "@/lib/i18n/context";
  */
 export function AdminCardBoundary({ children }: { children: ReactNode }) {
   return (
-    <Boundary renderFallback={(retry) => <AdminCardError onRetry={retry} />}>
+    <Boundary
+      renderFallback={(retry, error) => (
+        <AdminCardError error={error} onRetry={retry} />
+      )}
+    >
       {children}
     </Boundary>
   );
 }
 
 /** What a failed card paints in its place. */
-export function AdminCardError({ onRetry }: { onRetry: () => void }) {
+export function AdminCardError({
+  error,
+  onRetry,
+}: {
+  error: unknown;
+  onRetry: () => void;
+}) {
   const { t } = useTranslations();
   return (
     <QueryErrorCard
+      error={error}
       title={t("admin.cardError.title")}
       description={t("admin.cardError.description")}
       onRetry={onRetry}
@@ -37,12 +48,13 @@ export function AdminCardError({ onRetry }: { onRetry: () => void }) {
 }
 
 export interface BoundaryProps {
-  renderFallback: (retry: () => void) => ReactNode;
+  renderFallback: (retry: () => void, error: unknown) => ReactNode;
   children: ReactNode;
 }
 
 interface BoundaryState {
   failed: boolean;
+  error?: unknown;
   attempt: number;
 }
 
@@ -50,8 +62,10 @@ interface BoundaryState {
 export class Boundary extends Component<BoundaryProps, BoundaryState> {
   state: BoundaryState = { failed: false, attempt: 0 };
 
-  static getDerivedStateFromError(): Pick<BoundaryState, "failed"> {
-    return { failed: true };
+  static getDerivedStateFromError(
+    error: unknown,
+  ): Pick<BoundaryState, "failed" | "error"> {
+    return { failed: true, error };
   }
 
   componentDidCatch(error: Error): void {
@@ -64,11 +78,17 @@ export class Boundary extends Component<BoundaryProps, BoundaryState> {
   }
 
   retry = (): void => {
-    this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }));
+    this.setState((s) => ({
+      failed: false,
+      error: undefined,
+      attempt: s.attempt + 1,
+    }));
   };
 
   render(): ReactNode {
-    if (this.state.failed) return this.props.renderFallback(this.retry);
+    if (this.state.failed) {
+      return this.props.renderFallback(this.retry, this.state.error);
+    }
     // A new key on retry remounts the card, so it starts from a clean state
     // rather than re-rendering the tree that threw.
     return <Fragment key={this.state.attempt}>{this.props.children}</Fragment>;

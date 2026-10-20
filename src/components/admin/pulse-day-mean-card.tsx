@@ -125,6 +125,7 @@ export function PulseDayMeanCard() {
   if (status.isError) {
     return (
       <QueryErrorCard
+        error={status.error}
         title={t("admin.section.pulseDayMean.loadError")}
         onRetry={() => void status.refetch()}
       />

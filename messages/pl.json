@@ -55,7 +55,9 @@
     "errorIdLabel": "ID błędu",
     "errorIdCopy": "Kopiuj ID błędu",
     "errorIdCopied": "Skopiowano ID błędu",
-    "readThrottled": "Zbyt wiele zapytań w tej chwili. Spróbuj ponownie później."
+    "readThrottled": "Zbyt wiele zapytań w tej chwili. Spróbuj ponownie później.",
+    "sessionEnded": "Twoja sesja wygasła. Zaloguj się ponownie, aby kontynuować.",
+    "signInAgain": "Zaloguj się"
   },
   "apiErrors": {
     "measurement": {

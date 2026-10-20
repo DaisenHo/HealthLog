@@ -79,7 +79,10 @@ export function CoachConversationsMemoryCard({
         description={t("settings.ai.coachConversations.description")}
       />
       {history.isError ? (
-        <QueryErrorRow onRetry={() => void history.refetch()} />
+        <QueryErrorRow
+          error={history.error}
+          onRetry={() => void history.refetch()}
+        />
       ) : visible.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           {history.isLoading

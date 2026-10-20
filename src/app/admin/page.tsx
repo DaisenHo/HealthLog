@@ -24,8 +24,11 @@ export default function AdminOverviewPage() {
   // Many sub-sections share `useAdminSettings()` and render defaults
   // silently on error — the banner makes the failure visible so the
   // admin knows the toggles below aren't reflecting real state.
-  const { isError: settingsError, refetch: refetchSettings } =
-    useAdminSettings();
+  const {
+    isError: settingsError,
+    error: settingsFailure,
+    refetch: refetchSettings,
+  } = useAdminSettings();
 
   if (!user || user.role !== "ADMIN") return null;
 
@@ -36,6 +39,7 @@ export default function AdminOverviewPage() {
             now (its own grid row, so the nav lines up with the first card). */}
         {settingsError && (
           <QueryErrorRow
+            error={settingsFailure}
             message={t("admin.adminSettingsLoadError")}
             onRetry={() => void refetchSettings()}
           />

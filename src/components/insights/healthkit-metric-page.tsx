@@ -392,6 +392,7 @@ export function HealthKitMetricPage({
         explainerParams={explainerParams}
       >
         <QueryErrorRow
+          error={error}
           slot="healthkit-metric-error"
           retrySlot="healthkit-metric-retry"
           message={t("insights.subPage.loadError")}

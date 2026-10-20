@@ -45,7 +45,7 @@ export function MoodWhatStandsOut({
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsCorrelations(),
     queryFn: async () => {
       // Correlations are statistics, never gated on AI; a rejection is a
@@ -81,6 +81,7 @@ export function MoodWhatStandsOut({
         ) : null}
         {isError ? (
           <QueryErrorRow
+            error={error}
             slot="mood-discovery-error"
             message={t("insights.pattern.loadError")}
             onRetry={() => void refetch()}

@@ -154,6 +154,7 @@ export function ShareDocumentPicker({
           </div>
         ) : list.isError ? (
           <QueryErrorRow
+            error={list.error}
             message={t("documents.list.loadError")}
             onRetry={() => list.refetch()}
           />

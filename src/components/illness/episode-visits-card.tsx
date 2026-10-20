@@ -52,6 +52,7 @@ export function EpisodeVisitsCard({ episodeId }: { episodeId: string }) {
   if (list.isError) {
     return (
       <QueryErrorCard
+        error={list.error}
         title={t("encounters.loadError")}
         onRetry={() => void list.refetch()}
       />

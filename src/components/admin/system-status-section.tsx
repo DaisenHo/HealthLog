@@ -128,7 +128,7 @@ export function FailingJobsCard({
 export function SystemStatusSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { data: status, isError, refetch } = useSystemStatus();
+  const { data: status, isError, error, refetch } = useSystemStatus();
 
   return (
     <div className="space-y-6">
@@ -277,6 +277,7 @@ export function SystemStatusSection() {
           // transient 500 (rolling deploy, DB blip) doesn't require a
           // full page reload to recover.
           <QueryErrorRow
+            error={error}
             message={t("admin.systemStatusLoadError")}
             onRetry={() => void refetch()}
             retryLabel={t("admin.systemStatusRetry")}

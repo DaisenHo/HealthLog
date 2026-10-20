@@ -76,7 +76,7 @@ export function SecuritySessionsCard({
   const [keptGrants, setKeptGrants] = useState<KeptGrant[]>([]);
   const revokeGrant = useRevokeGrant();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.sessions(),
     queryFn: () => apiGet<{ sessions: SessionRow[] }>("/api/auth/me/sessions"),
     enabled: isAuthenticated,
@@ -165,6 +165,7 @@ export function SecuritySessionsCard({
 
         {isError && (
           <QueryErrorRow
+            error={error}
             message={t("settings.security.sessionsLoadError")}
             onRetry={() => refetch()}
           />

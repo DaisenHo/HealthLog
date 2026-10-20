@@ -188,6 +188,7 @@ export function CoachRemindersSection({
 
       {query.isError && (
         <QueryErrorRow
+          error={query.error}
           message={t("settings.ai.coachReminders.loadError")}
           onRetry={() => query.refetch()}
         />

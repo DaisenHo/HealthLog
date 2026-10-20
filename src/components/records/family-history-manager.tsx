@@ -33,7 +33,7 @@ export function FamilyHistoryManager() {
   const [editing, setEditing] = useState<FamilyHistoryEntryDTO | null>(null);
   const [formFooterEl, setFormFooterEl] = useState<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.familyHistoryList(),
     queryFn: () => apiGet<FamilyHistoryEntryDTO[]>("/api/family-history"),
   });
@@ -116,6 +116,7 @@ export function FamilyHistoryManager() {
         </div>
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           title={t("records.family.loadError")}
           onRetry={() => void refetch()}
         />

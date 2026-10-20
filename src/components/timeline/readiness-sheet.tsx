@@ -76,6 +76,7 @@ export function TimelineReadinessSheet({
           </div>
         ) : readiness.isError ? (
           <QueryErrorRow
+            error={readiness.error}
             message={t("timeline.readiness.loadFailed")}
             onRetry={() => void readiness.refetch()}
           />

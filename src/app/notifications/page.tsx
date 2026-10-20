@@ -48,7 +48,7 @@ export default function NotificationsPage() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.notificationsPreferences(),
     queryFn: async () => {
       return apiGet<PreferencesData>("/api/notifications/preferences");
@@ -186,6 +186,7 @@ export default function NotificationsPage() {
           description={t("notifications.subtitle")}
         />
         <QueryErrorCard
+          error={error}
           description={t("notifications.loadError")}
           onRetry={() => refetch()}
         />

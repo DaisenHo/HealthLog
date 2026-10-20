@@ -45,7 +45,7 @@ export function EcgDetail({ recordingId }: { recordingId: string }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsEcgDetail(recordingId, false),
     queryFn: async () => {
       try {
@@ -63,6 +63,7 @@ export function EcgDetail({ recordingId }: { recordingId: string }) {
     // alert is content, not muted meta — it also has to be recoverable.
     return (
       <QueryErrorCard
+        error={error}
         title={t("insights.ecg.loadError")}
         onRetry={() => refetch()}
       />

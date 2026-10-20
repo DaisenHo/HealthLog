@@ -75,7 +75,9 @@ describe("<PageHeader> — one canonical H1", () => {
 
 describe("<QueryErrorCard> — retry affordance", () => {
   it("renders a retry button when onRetry is provided", () => {
-    const html = render(<QueryErrorCard onRetry={() => {}} />);
+    const html = render(
+      <QueryErrorCard error={new Error("boom")} onRetry={() => {}} />,
+    );
     expect(html).toContain('data-slot="query-error-card"');
     expect(html).toContain('role="alert"');
     // The retry affordance is a real <button> so a failed read is
@@ -85,7 +87,7 @@ describe("<QueryErrorCard> — retry affordance", () => {
   });
 
   it("omits the retry button when no onRetry is supplied", () => {
-    const html = render(<QueryErrorCard />);
+    const html = render(<QueryErrorCard error={new Error("boom")} />);
     expect(html).toContain('data-slot="query-error-card"');
     expect(html).not.toContain("<button");
   });

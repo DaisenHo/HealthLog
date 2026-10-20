@@ -120,7 +120,7 @@ export function IntradayPulseChart({
     setSelectedDateKey(next === todayKey ? null : next);
   };
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsPulseIntraday(dateKey),
     queryFn: () =>
       apiGet<IntradayPulseDto>(`/api/insights/pulse/intraday?date=${dateKey}`),
@@ -255,6 +255,7 @@ export function IntradayPulseChart({
         <Skeleton className="h-[180px] w-full rounded-lg" />
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           onRetry={() => refetch()}
           className="border-0 bg-transparent shadow-none"
         />

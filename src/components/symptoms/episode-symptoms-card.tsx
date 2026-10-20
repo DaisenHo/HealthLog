@@ -61,6 +61,7 @@ export function EpisodeSymptomsCard({ episode }: { episode: { id: string } }) {
   if (definitions.isError || filed.isError) {
     return (
       <QueryErrorCard
+        error={definitions.error ?? filed.error}
         title={t("symptoms.section.loadError")}
         onRetry={() => {
           void definitions.refetch();

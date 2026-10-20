@@ -99,7 +99,7 @@ export default function InsightsWorkoutDetailPage({
         </div>
       ) : error ? (
         // A failed query must never read as "no data" (UI-STANDARDS §6).
-        <QueryErrorCard onRetry={() => refetch()} />
+        <QueryErrorCard error={error} onRetry={() => refetch()} />
       ) : !data ? (
         <p
           data-slot="workout-detail-error"

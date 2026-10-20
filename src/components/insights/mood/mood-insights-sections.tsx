@@ -132,7 +132,8 @@ export function MoodInsightsSections({
 } = {}) {
   const { t } = useTranslations();
 
-  const { data, isLoading, isPending, isError, refetch } = useMoodInsights();
+  const { data, isLoading, isPending, isError, error, refetch } =
+    useMoodInsights();
 
   // `isPending`, not `isLoading`: before the session resolves the read is
   // disabled rather than loading, and the frame must already be there.
@@ -161,7 +162,7 @@ export function MoodInsightsSections({
     // "rest" region (mirroring the loading convention above), rather than
     // stacking an identical row in all three regions down the page.
     return region === "rest" ? (
-      <QueryErrorRow onRetry={() => refetch()} />
+      <QueryErrorRow error={error} onRetry={() => refetch()} />
     ) : null;
   }
 

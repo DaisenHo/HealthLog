@@ -30,7 +30,7 @@ export function HydrationCard() {
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.nutrientDaily("water", WINDOW_DAYS),
     queryFn: () =>
       apiGet<NutrientDailySeries>(
@@ -39,7 +39,7 @@ export function HydrationCard() {
   });
 
   if (isError) {
-    return <QueryErrorCard onRetry={refetch} />;
+    return <QueryErrorCard error={error} onRetry={refetch} />;
   }
 
   const todayTotal = data?.days.at(-1)?.amount ?? 0;

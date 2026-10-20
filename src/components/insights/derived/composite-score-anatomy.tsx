@@ -186,6 +186,7 @@ export function CompositeScoreAnatomy({
     return (
       <div className={className}>
         <QueryErrorRow
+          error={query.error}
           slot="composite-anatomy-error"
           onRetry={() => void query.refetch()}
         />

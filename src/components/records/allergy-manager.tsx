@@ -43,7 +43,7 @@ export function AllergyManager({
   const [editing, setEditing] = useState<AllergyDTO | null>(null);
   const [formFooterEl, setFormFooterEl] = useState<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.allergyList(true),
     queryFn: () => apiGet<AllergyDTO[]>("/api/allergies"),
   });
@@ -154,6 +154,7 @@ export function AllergyManager({
         </div>
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           title={t("records.allergies.loadError")}
           onRetry={() => void refetch()}
         />

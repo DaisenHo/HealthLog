@@ -1115,7 +1115,12 @@ export function ManagedRecordSettingsSection({
   });
 
   if (query.isError) {
-    return <QueryErrorCard onRetry={() => void query.refetch()} />;
+    return (
+      <QueryErrorCard
+        error={query.error}
+        onRetry={() => void query.refetch()}
+      />
+    );
   }
 
   return (

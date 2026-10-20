@@ -39,7 +39,7 @@ import {
  */
 export function RecordActivityCard() {
   const { t } = useTranslations();
-  const { data, isLoading, isError, refetch } = useRecordActivity();
+  const { data, isLoading, isError, error, refetch } = useRecordActivity();
 
   const entries = data?.entries ?? [];
 
@@ -88,6 +88,7 @@ export function RecordActivityCard() {
         )}
         {isError && (
           <QueryErrorCard
+            error={error}
             title={t("recordSharing.activity.loadError")}
             onRetry={() => void refetch()}
           />

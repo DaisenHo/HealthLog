@@ -199,9 +199,11 @@ export function useLinkPickerPages<T extends { id: string }>({
     return mergeWindowPages(newer.data?.pages ?? [], older.data?.pages ?? []);
   }, [searching, search.data, newer.data, older.data]);
 
-  const activeError = searching
-    ? search.isError
-    : older.isError || (newerRequested && newer.isError);
+  // The failed read's error itself, not a flag: the picker's error row reads
+  // the status to tell a refusal or a spent budget from a real failure.
+  const activeError: unknown = searching
+    ? search.error
+    : (older.error ?? (newerRequested ? newer.error : null));
 
   return {
     items,

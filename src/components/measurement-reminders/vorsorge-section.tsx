@@ -243,6 +243,7 @@ export function VorsorgeSection({
     data: reminders,
     isLoading,
     isError,
+    error,
     refetch,
   } = useMeasurementReminders(enabled);
   const { create, update, remove, satisfy, skip, snooze } =
@@ -736,6 +737,7 @@ export function VorsorgeSection({
 
       {!isLoading && isError && (
         <QueryErrorRow
+          error={error}
           message={t("measurementReminders.loadError")}
           onRetry={() => void refetch()}
         />

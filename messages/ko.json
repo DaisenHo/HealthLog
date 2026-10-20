@@ -55,7 +55,9 @@
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
     "errorIdCopied": "오류 ID 복사됨",
-    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요."
+    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요.",
+    "sessionEnded": "세션이 만료되었어요. 계속하려면 다시 로그인해 주세요.",
+    "signInAgain": "로그인"
   },
   "apiErrors": {
     "measurement": {

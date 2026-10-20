@@ -1076,6 +1076,7 @@ export function DocumentsView() {
         )
       ) : list.isError ? (
         <QueryErrorCard
+          error={list.error}
           title={t("documents.list.loadError")}
           onRetry={() => void list.refetch()}
         />

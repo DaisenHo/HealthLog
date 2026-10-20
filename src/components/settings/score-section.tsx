@@ -354,6 +354,7 @@ export function ScoreSection() {
 
         {configQuery.isError ? (
           <QueryErrorCard
+            error={configQuery.error}
             title={t("settings.sections.score.loadFailed")}
             onRetry={() => void configQuery.refetch()}
           />
@@ -444,6 +445,7 @@ export function ScoreSection() {
 
               {analyticsQuery.isError ? (
                 <QueryErrorRow
+                  error={analyticsQuery.error}
                   slot="score-config-eligibility-error"
                   message={t("settings.sections.score.eligibilityFailed")}
                   onRetry={() => void analyticsQuery.refetch()}

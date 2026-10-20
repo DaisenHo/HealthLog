@@ -847,7 +847,7 @@ export function BackupsSection() {
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminBackups(),
     queryFn: async () => {
       return apiGet<BackupsList>("/api/admin/backups");
@@ -1243,6 +1243,7 @@ export function BackupsSection() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          error={error}
           message={t("admin.section.backups.loadError")}
           onRetry={() => void refetch()}
         />

@@ -365,7 +365,7 @@ function MedicationPicker({ selected, onChange, known }: PickerProps) {
       title={t("links.related.pick.medication")}
       slot="related-link-medication"
       pending={list.isPending}
-      error={list.isError}
+      error={list.error}
       errorLabel={t("links.picker.loadError")}
       onRetry={() => void list.refetch()}
       selected={selected}
@@ -403,7 +403,7 @@ function DosePicker({ selected, onChange, anchor, known }: PickerProps) {
       title={t("links.related.pick.vaccination")}
       slot="related-link-vaccination"
       pending={doses.isPending}
-      error={doses.isError}
+      error={doses.error}
       errorLabel={t("links.picker.loadError")}
       onRetry={() => void doses.refetch()}
       selected={selected}

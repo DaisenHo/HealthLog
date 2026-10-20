@@ -25,7 +25,9 @@ function markup(node: ReactNode): string {
   );
 }
 
-function boundaryWith(fallback: (retry: () => void) => ReactNode) {
+function boundaryWith(
+  fallback: (retry: () => void, error: unknown) => ReactNode,
+) {
   const boundary = new Boundary({
     renderFallback: fallback,
     children: <p>card body</p>,
@@ -53,18 +55,27 @@ describe("AdminCardBoundary", () => {
   });
 
   it("turns a thrown render into the fallback, not a page failure", () => {
-    expect(Boundary.getDerivedStateFromError()).toEqual({ failed: true });
+    const thrown = new Error("render failed");
+    expect(Boundary.getDerivedStateFromError(thrown)).toEqual({
+      failed: true,
+      error: thrown,
+    });
 
-    const fallback = vi.fn(() => <p data-slot="fallback">fallback</p>);
+    const fallback = vi.fn<(retry: () => void, error: unknown) => ReactNode>(
+      () => <p data-slot="fallback">fallback</p>,
+    );
     const boundary = boundaryWith(fallback);
-    boundary.setState(Boundary.getDerivedStateFromError());
+    boundary.setState(Boundary.getDerivedStateFromError(thrown));
 
     expect(markup(boundary.render())).toContain('data-slot="fallback"');
-    expect(fallback).toHaveBeenCalledWith(boundary.retry);
+    // The fallback is handed what was thrown, so its error card reads it.
+    expect(fallback).toHaveBeenCalledWith(boundary.retry, thrown);
   });
 
   it("paints the translated error card with a keyboard-reachable retry", () => {
-    const html = markup(<AdminCardError onRetry={() => {}} />);
+    const html = markup(
+      <AdminCardError error={new Error("render failed")} onRetry={() => {}} />,
+    );
 
     expect(html).toContain('data-slot="query-error-card"');
     expect(html).toContain('role="alert"');

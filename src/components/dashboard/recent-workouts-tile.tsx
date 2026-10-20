@@ -63,7 +63,7 @@ function renderRow(workout: WorkoutListEntry, sportName: string) {
 export function RecentWorkoutsTile() {
   const { t, locale } = useTranslations();
   const timeZone = useDisplayTimezone();
-  const { data, isError, refetch } = useWorkouts({ limit: 3 });
+  const { data, isError, error, refetch } = useWorkouts({ limit: 3 });
 
   // A query's `isLoading` is not a hydration-safe branch: TanStack reports the
   // optimistic mount fetch on the client's very first render and cannot on the
@@ -116,6 +116,7 @@ export function RecentWorkoutsTile() {
           </div>
         ) : isError ? (
           <QueryErrorCard
+            error={error}
             onRetry={() => refetch()}
             className="border-0 bg-transparent shadow-none"
           />

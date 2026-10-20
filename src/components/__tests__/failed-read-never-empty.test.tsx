@@ -26,7 +26,10 @@ import en from "../../../messages/en.json";
  * rather than by driving a real fetch.
  */
 
-vi.mock("@/lib/api/api-fetch", () => ({
+vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
+  // `ApiError` stays real: the error primitives read its status.
+  ApiError: (await importOriginal<typeof import("@/lib/api/api-fetch")>())
+    .ApiError,
   apiGet: () => new Promise(() => {}),
   apiPost: () => new Promise(() => {}),
 }));

@@ -54,7 +54,7 @@ import {
  */
 export function GrantsReceivedCard() {
   const { t } = useTranslations();
-  const { data, isLoading, isError, refetch } = useAccountGrants();
+  const { data, isLoading, isError, error, refetch } = useAccountGrants();
   const accept = useAcceptGrant();
   const renounce = useRenounceGrant();
   const switchAccount = useAccountSwitch();
@@ -80,6 +80,7 @@ export function GrantsReceivedCard() {
         )}
         {isError && (
           <QueryErrorCard
+            error={error}
             title={t("recordSharing.received.loadError")}
             onRetry={() => void refetch()}
           />

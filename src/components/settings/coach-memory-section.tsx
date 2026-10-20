@@ -326,6 +326,7 @@ export function CoachMemorySection({
 
       {query.isError && (
         <QueryErrorRow
+          error={query.error}
           message={t("settings.ai.coachMemory.loadError")}
           onRetry={() => query.refetch()}
         />

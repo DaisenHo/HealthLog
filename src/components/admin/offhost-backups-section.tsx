@@ -141,7 +141,7 @@ function AccountRow({ row }: { row: OffhostAccountRow }) {
 export function OffhostBackupsSection() {
   const { t } = useTranslations();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminBackups(),
     queryFn: async () => apiGet<BackupsList>("/api/admin/backups"),
   });
@@ -170,6 +170,7 @@ export function OffhostBackupsSection() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          error={error}
           message={t("admin.section.backups.offhost.loadError")}
           onRetry={() => void refetch()}
         />

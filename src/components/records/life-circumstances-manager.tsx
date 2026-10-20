@@ -962,6 +962,7 @@ export function LifeCircumstancesManager() {
   if (query.isError) {
     return (
       <QueryErrorCard
+        error={query.error}
         title={t("records.life.loadError")}
         onRetry={() => void query.refetch()}
       />

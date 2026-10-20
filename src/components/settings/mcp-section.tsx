@@ -93,6 +93,7 @@ function McpConnectionsCard() {
   const {
     data: connections,
     isError,
+    error,
     isLoading,
     refetch,
   } = useQuery({
@@ -134,7 +135,7 @@ function McpConnectionsCard() {
 
       <div className="space-y-4">
         {isError ? (
-          <QueryErrorCard onRetry={() => refetch()} />
+          <QueryErrorCard error={error} onRetry={() => refetch()} />
         ) : isLoading ? (
           <Skeleton className="h-24 w-full rounded-lg" />
         ) : list.length === 0 ? (
@@ -285,6 +286,7 @@ function McpTokensCard() {
   const {
     data: tokens,
     isError,
+    error,
     isLoading,
     refetch,
   } = useQuery({
@@ -457,7 +459,7 @@ function McpTokensCard() {
             {t("settings.activeTokensTitle")}
           </p>
           {isError ? (
-            <QueryErrorCard onRetry={() => refetch()} />
+            <QueryErrorCard error={error} onRetry={() => refetch()} />
           ) : isLoading ? (
             <Skeleton className="h-24 w-full rounded-lg" />
           ) : activeTokens.length === 0 ? (

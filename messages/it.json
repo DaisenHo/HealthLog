@@ -55,7 +55,9 @@
     "errorIdLabel": "ID errore",
     "errorIdCopy": "Copia ID errore",
     "errorIdCopied": "ID errore copiato",
-    "readThrottled": "Troppe richieste in questo momento. Riprova più tardi."
+    "readThrottled": "Troppe richieste in questo momento. Riprova più tardi.",
+    "sessionEnded": "La tua sessione è scaduta. Accedi di nuovo per continuare.",
+    "signInAgain": "Accedi"
   },
   "apiErrors": {
     "measurement": {

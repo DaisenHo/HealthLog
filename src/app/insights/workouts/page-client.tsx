@@ -60,6 +60,7 @@ export default function InsightsWorkoutsPageClient() {
     isLoading,
     isEmpty,
     isError,
+    error,
     isFetchNextPageError,
     isFetchingNextPage,
     hasNextPage,
@@ -111,6 +112,7 @@ export default function InsightsWorkoutsPageClient() {
           nothing to aggregate. */}
       {isError ? (
         <QueryErrorCard
+          error={error}
           title={t("insights.workouts.loadError")}
           onRetry={() => refetch()}
         />

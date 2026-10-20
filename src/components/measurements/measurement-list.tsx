@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListRow } from "@/components/ui/list-row";
 import {
@@ -606,7 +606,7 @@ export function MeasurementList({
       ? "groupBy=day"
       : "raw";
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.measurementsList({
       type: typeFilter === "ALL" ? undefined : typeFilter,
       sourceEq,
@@ -1034,7 +1034,7 @@ export function MeasurementList({
         ) : isError ? (
           // A read failure is NOT an empty list — surface the error + Retry so
           // an outage never reads as "you have no measurements".
-          <QueryErrorCard onRetry={() => void refetch()} />
+          <QueryErrorCard error={error} onRetry={() => void refetch()} />
         ) : !data?.measurements?.length ? (
           <>
             {/* v1.4.15 phase-C5: replaces the bare-text empty rectangle.
@@ -1924,7 +1924,7 @@ function DayDrillDown({
   }
   if (error) {
     return (
-      <ReadFailureRow
+      <QueryErrorRow
         error={error}
         slot="measurement-drilldown-error"
         message={t("measurements.loadError")}

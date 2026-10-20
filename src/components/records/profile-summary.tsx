@@ -140,7 +140,10 @@ export function ProfileSummaryPage() {
         </p>
       ) : null}
       {summary.isError ? (
-        <QueryErrorCard onRetry={() => void summary.refetch()} />
+        <QueryErrorCard
+          error={summary.error}
+          onRetry={() => void summary.refetch()}
+        />
       ) : null}
       {summary.data ? <ProfileSummary summary={summary.data} /> : null}
     </div>

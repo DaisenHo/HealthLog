@@ -340,7 +340,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
   const toParam = toDay || undefined;
   const sourceParam = sourceFilter === "ALL" ? undefined : sourceFilter;
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.moodEntriesList({
       mood: moodFilter === "ALL" ? undefined : moodFilter,
       source: sourceParam,
@@ -714,6 +714,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
           // A read failure is NOT an empty list — surface the error + Retry so
           // an outage never reads as "you have no mood entries".
           <QueryErrorCard
+            error={error}
             title={t("mood.loadError")}
             onRetry={() => void refetch()}
           />

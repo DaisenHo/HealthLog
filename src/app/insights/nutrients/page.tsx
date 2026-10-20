@@ -99,6 +99,7 @@ export default function InsightsNutrientsPage() {
         description={t("nutrients.page.description")}
       >
         <QueryErrorCard
+          error={overview.error}
           title={t("nutrients.page.loadError")}
           onRetry={() => void overview.refetch()}
         />
