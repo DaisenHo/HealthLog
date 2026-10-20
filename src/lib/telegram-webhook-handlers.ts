@@ -9,7 +9,7 @@ import {
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
   resolveForcedSlotForWrite,
@@ -212,8 +212,8 @@ async function findTelegramUser(chatId: string) {
       id: true,
       telegramBotToken: true,
       locale: true,
-      // v1.4.39 — pulled into the select so the post-write
-      // compliance-rollup hook can anchor the user-day bucket.
+      // Pulled into the select so the post-write dose-day refresh can
+      // anchor the user's local day.
       timezone: true,
     },
   });
@@ -428,7 +428,7 @@ async function markMedicationTaken(
   // affected day so the next read after the cache miss reflects the
   // new dose. Only fires when the write landed a row.
   if (scheduledFor) {
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId,
       medicationId: medication.id,
       scheduledFor,
@@ -690,7 +690,7 @@ export async function handleCallback(update: TelegramUpdate) {
     // event's user-day so the next read sees the (scheduled, skipped)
     // counts incremented.
     if (skippedScheduledFor) {
-      await recomputeMedicationComplianceForEvent({
+      await refreshDoseSlot({
         userId: user.id,
         medicationId: medication.id,
         scheduledFor: skippedScheduledFor,

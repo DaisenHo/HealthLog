@@ -28,7 +28,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   buildScheduleAnchoredComplianceBuckets,
   type ScheduleAnchoredComplianceBucket,
@@ -573,7 +573,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // the affected day so the next read after the cache miss returns
   // the up-to-date `(scheduled, taken, skipped)` tuple. Best-effort:
   // a populator failure annotates ops without blocking the response.
-  await recomputeMedicationComplianceForEvent({
+  await refreshDoseSlot({
     userId: user.id,
     medicationId: existing.medicationId,
     scheduledFor: existing.scheduledFor,
@@ -584,7 +584,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // source day self-corrects while the destination keeps its stale tuple.
   const movedTo = updated?.scheduledFor;
   if (movedTo && movedTo.getTime() !== existing.scheduledFor.getTime()) {
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId: user.id,
       medicationId: existing.medicationId,
       scheduledFor: movedTo,

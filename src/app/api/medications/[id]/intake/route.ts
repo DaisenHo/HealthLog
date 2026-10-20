@@ -36,7 +36,7 @@ import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake
 import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
 import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
   findPinConflict,
@@ -608,7 +608,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   // v1.4.39 — refresh the persistent compliance rollup for the
   // affected day. The hook is best-effort; failures annotate but never
   // block the user's POST response.
-  await recomputeMedicationComplianceForEvent({
+  await refreshDoseSlot({
     userId: user.id,
     medicationId: id,
     scheduledFor: event.scheduledFor,

@@ -40,7 +40,6 @@ import {
   toRevisionPayloadEntry,
   type ScheduleRevisionEntry,
 } from "@/lib/medications/scheduling/schedule-eras";
-import { enqueueUserMedicationComplianceBackfill } from "@/lib/rollups/medication-compliance-rollups";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -282,14 +281,10 @@ export const POST = apiHandler(
       },
     });
 
-    // The new era re-segments history the compliance rollups already
-    // pre-aggregated; refresh them asynchronously. Best-effort like
-    // every other rollup write-hook.
     // v1.16.9 — an era write re-segments the bands every cached payload
     // (list next-due, compliance cells, dashboard tally) was built on;
     // hard-evict so the next read reflects the new history immediately.
     invalidateUserMedications(user.id, { evict: true });
-    await enqueueUserMedicationComplianceBackfill(user.id);
 
     return apiSuccess(
       {

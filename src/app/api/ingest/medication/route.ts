@@ -23,7 +23,7 @@ import {
   unstableExternalIdShape,
 } from "@/lib/validations/external-id";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
   resolveSlotForWriteByBand,
@@ -337,7 +337,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // v1.4.39 — refresh the compliance rollup for the ingested
   // event's user-day.
-  await recomputeMedicationComplianceForEvent({
+  await refreshDoseSlot({
     userId: apiToken.userId,
     medicationId: medication.id,
     scheduledFor: event.scheduledFor,

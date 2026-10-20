@@ -75,7 +75,6 @@ export const WIPE_MODELS = [
   "MedicationSideEffect",
   "MedicationInventoryItem",
   "MedicationIntakeImportJob",
-  "MedicationComplianceRollup",
   // The account's own category names (v1.40, #1041). No child rows; the
   // medications that name one go with their own entry.
   "MedicationCategoryLabel",

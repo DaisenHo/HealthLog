@@ -85,8 +85,8 @@ import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake
 import { isP2002 } from "@/lib/prisma-errors";
 import {
   dayKeyForScheduledFor,
-  recomputeMedicationComplianceForEvent,
-} from "@/lib/rollups/medication-compliance-rollups";
+  refreshDoseSlot,
+} from "@/lib/medications/dose-day-refresh";
 import { DEFAULT_TIMEZONE, validTimezoneOr } from "@/lib/tz/format";
 import { getEvent } from "@/lib/logging/context";
 
@@ -375,7 +375,7 @@ async function autoTakeOne(
     const dayKey = dayKeyForScheduledFor(slot.at, userTz);
     if (days.has(dayKey)) continue;
     days.add(dayKey);
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId: medication.userId,
       medicationId: medication.id,
       scheduledFor: slot.at,

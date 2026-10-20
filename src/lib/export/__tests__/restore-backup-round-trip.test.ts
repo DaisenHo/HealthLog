@@ -66,7 +66,7 @@ vi.mock("@/lib/cache/invalidate", () => ({ invalidateUserData: vi.fn() }));
 vi.mock("@/lib/rollups/mood-rollups", () => ({
   recomputeUserMoodRollups: vi.fn(),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
   recomputeUserMedicationCompliance: vi.fn(),
   MEDICATION_COMPLIANCE_BACKFILL_DAYS: 30,
 }));

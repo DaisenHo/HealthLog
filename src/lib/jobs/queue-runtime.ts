@@ -203,9 +203,6 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "mood-rollup-full-backfill": short(
     "One account's mood entries, a few a day.",
   ),
-  "medication-compliance-full-backfill": short(
-    "One account's 90-day compliance window.",
-  ),
   "step-consolidation": short(
     "One account's legacy step rows, one transaction per day.",
   ),
@@ -316,6 +313,10 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     "At most 40 batches of 5 000 rows per leg.",
   ),
   "document-tombstone-purge": short("One deleteMany."),
+  "soft-delete-purge": short(
+    "At most 40 batches of 5 000 rows per table, over a few small tables.",
+  ),
+  "auth-ledger-cleanup": short("At most 40 batches of 5 000 rows per table."),
   "document-summary-reaper": short("One updateMany."),
   "cycle-prediction-refresh": short(
     "Arithmetic per eligible account, no provider call.",

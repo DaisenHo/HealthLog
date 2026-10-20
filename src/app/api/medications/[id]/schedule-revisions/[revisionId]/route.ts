@@ -45,7 +45,6 @@ import {
   toRevisionPayloadEntry,
   type ScheduleRevisionEntry,
 } from "@/lib/medications/scheduling/schedule-eras";
-import { enqueueUserMedicationComplianceBackfill } from "@/lib/rollups/medication-compliance-rollups";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -286,13 +285,10 @@ export const PATCH = apiHandler(
       },
     });
 
-    // The corrected era re-segments history; refresh the pre-aggregated
-    // compliance rollups asynchronously (best-effort).
     // v1.16.9 — an era write re-segments the bands every cached payload
     // (list next-due, compliance cells, dashboard tally) was built on;
     // hard-evict so the next read reflects the new history immediately.
     invalidateUserMedications(user.id, { evict: true });
-    await enqueueUserMedicationComplianceBackfill(user.id);
 
     return apiSuccess({
       id: outcome.revision.id,
@@ -404,13 +400,10 @@ export const DELETE = apiHandler(
       meta: { revision_id: revisionId },
     });
 
-    // History re-segments without the era; refresh the pre-aggregated
-    // compliance rollups asynchronously (best-effort).
     // v1.16.9 — an era write re-segments the bands every cached payload
     // (list next-due, compliance cells, dashboard tally) was built on;
     // hard-evict so the next read reflects the new history immediately.
     invalidateUserMedications(user.id, { evict: true });
-    await enqueueUserMedicationComplianceBackfill(user.id);
 
     return apiSuccess({ deleted: true });
   },

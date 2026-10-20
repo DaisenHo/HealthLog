@@ -106,7 +106,7 @@ describe("medication intake import job — concurrent retry", () => {
     ]);
     await processMedicationIntakeImportJob(job.id);
 
-    const [events, refreshedInventory, rollups, refreshedJob, audits] =
+    const [events, refreshedInventory, refreshedJob, audits] =
       await Promise.all([
         prisma.medicationIntakeEvent.findMany({
           where: { userId: user.id, medicationId: medication.id },
@@ -114,10 +114,6 @@ describe("medication intake import job — concurrent retry", () => {
         }),
         prisma.medicationInventoryItem.findUniqueOrThrow({
           where: { id: inventory.id },
-        }),
-        prisma.medicationComplianceRollup.findMany({
-          where: { userId: user.id, medicationId: medication.id },
-          orderBy: { day: "asc" },
         }),
         prisma.medicationIntakeImportJob.findUniqueOrThrow({
           where: { id: job.id },
@@ -144,16 +140,6 @@ describe("medication intake import job — concurrent retry", () => {
       ),
     ).toBe(true);
     expect(Number(refreshedInventory.unitsRemaining)).toBe(7);
-    expect(
-      rollups.map(({ day, scheduled, taken }) => ({
-        day,
-        scheduled,
-        taken,
-      })),
-    ).toEqual([
-      { day: "2026-07-20", scheduled: 2, taken: 2 },
-      { day: "2026-07-21", scheduled: 1, taken: 1 },
-    ]);
     expect(refreshedJob.status).toBe("done");
     // The two entries sharing an instant collapse inside the submission; that
     // is `duplicate_in_file`, and it is reported under its own name rather
@@ -168,14 +154,10 @@ describe("medication intake import job — concurrent retry", () => {
       total: 4,
       imported: 3,
       skippedByReason: { duplicate_in_file: 1 },
-      // A job can now cover a whole regimen, so a day whose rollup needs
-      // re-folding is addressed by medication AND day — two medications touched
-      // on one day are two rollup rows, which a bare day key cannot name.
-      touchedDays: [
-        `${medication.id} 2026-07-20`,
-        `${medication.id} 2026-07-21`,
-      ],
-      rollupProcessed: 2,
+      // Inert since the compliance rollup was dropped: written at admission
+      // and never advanced.
+      touchedDays: [],
+      rollupProcessed: 0,
     });
     expect(audits).toHaveLength(1);
     expect(invalidateUserMedications).toHaveBeenCalledTimes(1);
@@ -270,9 +252,6 @@ describe("medication intake import job — concurrent retry", () => {
       prisma.medicationIntakeEvent.count({
         where: { medicationId: medication.id },
       }),
-      prisma.medicationComplianceRollup.count({
-        where: { medicationId: medication.id },
-      }),
       prisma.auditLog.count({
         where: {
           userId: user.id,
@@ -285,18 +264,14 @@ describe("medication intake import job — concurrent retry", () => {
     ]);
     expect(afterFailedFinalization[0]).toBe(1);
     expect(afterFailedFinalization[1]).toBe(0);
-    expect(afterFailedFinalization[2]).toBe(0);
-    expect(afterFailedFinalization[3].status).toBe("running");
+    expect(afterFailedFinalization[2].status).toBe("running");
 
     _setMedicationIntakeImportPrismaForTests(prisma);
     await processMedicationIntakeImportJob(job.id);
     await processMedicationIntakeImportJob(job.id);
 
-    const [events, rollups, audits, completedJob] = await Promise.all([
+    const [events, audits, completedJob] = await Promise.all([
       prisma.medicationIntakeEvent.findMany({
-        where: { medicationId: medication.id },
-      }),
-      prisma.medicationComplianceRollup.findMany({
         where: { medicationId: medication.id },
       }),
       prisma.auditLog.findMany({
@@ -310,7 +285,6 @@ describe("medication intake import job — concurrent retry", () => {
       }),
     ]);
     expect(events).toHaveLength(1);
-    expect(rollups).toHaveLength(1);
     expect(audits).toHaveLength(1);
     expect(completedJob.status).toBe("done");
   });

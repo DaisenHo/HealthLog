@@ -164,16 +164,6 @@ describe("intake-slot-dedup — duplicate slot collapse", () => {
     });
     expect(eveningRow.deletedAt).toBeNull();
     expect(eveningRow.scheduledFor.toISOString()).toBe(slot1900.toISOString());
-
-    // The compliance rollup reflects the corrected counts: the 07:00 day
-    // now has scheduled=2 (07:00 taken + 19:00 pending), taken=1 — not the
-    // inflated scheduled=3 the duplicate produced.
-    const rollups = await prisma.medicationComplianceRollup.findMany({
-      where: { userId: TEST_USER_ID, medicationId: medId },
-    });
-    expect(rollups).toHaveLength(1);
-    expect(rollups[0]?.scheduled).toBe(2);
-    expect(rollups[0]?.taken).toBe(1);
   });
 
   it("never collapses a PRN med's multiple rows", async () => {

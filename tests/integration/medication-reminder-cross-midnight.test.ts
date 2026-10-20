@@ -14,9 +14,6 @@ vi.mock("@/lib/notifications/dispatcher", () => ({
     channelsSucceeded: 1,
   }),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
-}));
 
 const { dispatchNotification } = await import("@/lib/notifications/dispatcher");
 const { handleReminderCheck } =

@@ -19,7 +19,7 @@ import {
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
-import { recomputeMedicationComplianceForEvent } from "@/lib/rollups/medication-compliance-rollups";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import {
   applyCanonicalSlotWrite,
@@ -392,14 +392,14 @@ export const PUT = apiHandler(
     // scheduledFor day-keys when the dose moved across a day boundary
     // (band re-attribution can move it as well as an explicit edit); if the
     // slot is unchanged the second call collapses to a no-op upsert.
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId: user.id,
       medicationId: id,
       scheduledFor: event.scheduledFor,
       tz: user.timezone,
     });
     if (slotMoved) {
-      await recomputeMedicationComplianceForEvent({
+      await refreshDoseSlot({
         userId: user.id,
         medicationId: id,
         scheduledFor: targetScheduledFor,
@@ -488,7 +488,7 @@ export const DELETE = apiHandler(
     // v1.4.39 — refresh the rollup row for the day the deleted
     // event sat on. When that day now holds zero events the helper
     // drops the rollup row entirely.
-    await recomputeMedicationComplianceForEvent({
+    await refreshDoseSlot({
       userId: user.id,
       medicationId: id,
       scheduledFor: event.scheduledFor,

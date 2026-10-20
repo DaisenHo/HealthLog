@@ -85,7 +85,7 @@ import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import { serialiseDocument } from "@/lib/documents/store";
 import { resolveIntakeActionability } from "@/lib/medications/intake-actionable";
 import { moodDateKey } from "@/lib/mood/date-key";
-import { dayKeyForScheduledFor } from "@/lib/rollups/medication-compliance-rollups";
+import { dayKeyForScheduledFor } from "@/lib/medications/dose-day-refresh";
 import {
   dateOnlyAtNoonUtc,
   dayKeyAsUtcMidnight,

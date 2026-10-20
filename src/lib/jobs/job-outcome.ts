@@ -64,6 +64,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "budget_blocked",
   "cached",
   "candidates_scanned",
+  // The nightly sign-in ledger cleanup (`auth-ledger-cleanup`).
+  "challenges_deleted",
   "connect_tickets_deleted",
   "connections_deleted",
   "considered",
@@ -208,6 +210,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "records_oversized",
   "records_read",
   "refreshed",
+  "refresh_tokens_deleted",
   "refused",
   "reminders_due",
   "removed",
@@ -251,6 +254,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "scheduled",
   "sent",
   "served",
+  "sessions_deleted",
   "side_effects_migrated",
   // v1.42.4 — integration watchdog: sources newly flagged as silent.
   "silences_flagged",
@@ -277,6 +281,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "tls_pin_monitor_known_count",
   "tls_pin_monitor_outcome",
   "total",
+  "trusted_devices_deleted",
   "unchanged",
   "updated",
   "users",

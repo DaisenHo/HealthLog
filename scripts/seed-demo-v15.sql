@@ -37,7 +37,6 @@ END $$;
 
 -- ── Wipe per-user state ───────────────────────────────────────────
 DELETE FROM medication_intake_events       WHERE user_id IN (SELECT user_id FROM _demo);
-DELETE FROM medication_compliance_rollups  WHERE user_id IN (SELECT user_id FROM _demo);
 DELETE FROM medication_schedules           WHERE medication_id IN (
   SELECT id FROM medications WHERE user_id IN (SELECT user_id FROM _demo)
 );

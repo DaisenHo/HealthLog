@@ -1,0 +1,17 @@
+-- Drop `measurements_user_id_type_measured_at_idx`.
+--
+-- `(user_id, type, measured_at)` is the leading part of the unique key
+-- `(user_id, type, measured_at, source, sleep_stage)`, and live reads have
+-- `measurements_live_covering_idx` besides. Every query shape that used the
+-- shorter index plans the same way on the unique key, at a cost within a few
+-- percent (`tests/integration/index-hygiene.test.ts` compares the plans on a
+-- seeded table). The index cost every write to the densest table in the
+-- schema and, on a bloated instance, more space than the table itself.
+--
+-- `DROP INDEX CONCURRENTLY` takes no lock that blocks reads or writes: it
+-- waits for the transactions already using the index to finish and then
+-- removes it. It refuses to run inside a transaction block, and under
+-- `migrate deploy` it does so whenever the file holds any other statement
+-- (Prisma 7 on Postgres 16 reports 25001), so this file holds exactly this
+-- one statement. `IF EXISTS` makes a re-run a no-op.
+DROP INDEX CONCURRENTLY IF EXISTS "measurements_user_id_type_measured_at_idx";

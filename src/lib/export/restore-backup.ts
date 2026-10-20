@@ -80,10 +80,6 @@ import {
   type BackupSummary,
 } from "@/lib/validations/backup-summary";
 import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
-import {
-  recomputeUserMedicationCompliance,
-  MEDICATION_COMPLIANCE_BACKFILL_DAYS,
-} from "@/lib/rollups/medication-compliance-rollups";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { restoreCycleData } from "@/lib/cycle/backup";
 import {
@@ -3052,33 +3048,6 @@ export async function restoreBackup(
         meta: {
           mood_rollup_restore_failed: true,
           mood_rollup_restore_error:
-            err instanceof Error ? err.message : String(err),
-        },
-      });
-    }
-  }
-
-  // v1.4.39 — re-fold the medication-compliance rollup tier
-  // from the restored intake events. The medication delete inside the
-  // transaction already cascaded the existing rollup partition for
-  // this owner via the FK, so the fold mints fresh rows. Boot-time
-  // backfill is the safety net if this best-effort call fails.
-  if (payload.intakeEvents.length > 0) {
-    try {
-      const restoreUser = await prisma.user.findUnique({
-        where: { id: ownerId },
-        select: { timezone: true },
-      });
-      await recomputeUserMedicationCompliance(
-        ownerId,
-        MEDICATION_COMPLIANCE_BACKFILL_DAYS,
-        restoreUser?.timezone ?? null,
-      );
-    } catch (err) {
-      annotate({
-        meta: {
-          medication_compliance_rollup_restore_failed: true,
-          medication_compliance_rollup_restore_error:
             err instanceof Error ? err.message : String(err),
         },
       });

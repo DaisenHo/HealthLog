@@ -516,7 +516,13 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      # The entrypoint applies migrations before the server listens. A
+      # migration that waits out a held lock retries for up to about eight
+      # minutes (docs/ops/deploy.md), and failed probes in that time must not
+      # read as a dead container. The first probe that answers still ends
+      # the start period, so a normal boot is healthy within 30 seconds of
+      # listening.
+      start_period: 10m
 
   # Optional dedicated worker container — uncomment + set
   # HEALTHLOG_PROCESS_TYPE=web on `app` to split the deployment.

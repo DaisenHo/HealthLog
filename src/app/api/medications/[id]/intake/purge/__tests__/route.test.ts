@@ -2,9 +2,9 @@
  * v1.5.5 — purge route fires the medication cache bundle.
  *
  * Pins the contract the detail-page Verlauf-löschen cascade depends
- * on: dropping the rollup rows is necessary but not sufficient. The
+ * on: tombstoning the rows is necessary but not sufficient. The
  * analytics + iOS today-tally + dashboard tiles all read off cached
- * shapes that survive the rollup delete for their TTL; the bundle
+ * shapes that survive the tombstoning for their TTL; the bundle
  * invalidation forces every downstream reader to converge on the
  * post-purge counts in the same tick the user sees the toast.
  */
@@ -16,7 +16,6 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     medication: { findUnique: vi.fn() },
     medicationIntakeEvent: { updateMany: vi.fn() },
-    medicationComplianceRollup: { deleteMany: vi.fn() },
     // v1.43 — no composition, so no supplement recompute is queued.
     medicationIngredient: { findFirst: vi.fn().mockResolvedValue(null) },
   },
@@ -86,9 +85,6 @@ beforeEach(() => {
   } as never);
   vi.mocked(prisma.medicationIntakeEvent.updateMany).mockResolvedValue({
     count: 7,
-  } as never);
-  vi.mocked(prisma.medicationComplianceRollup.deleteMany).mockResolvedValue({
-    count: 5,
   } as never);
 });
 

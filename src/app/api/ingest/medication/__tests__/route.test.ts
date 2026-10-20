@@ -38,8 +38,8 @@ vi.mock("@/lib/rate-limit", () => ({
 vi.mock("@/lib/app-settings", () => ({
   isApiGloballyEnabled: vi.fn(),
 }));
-vi.mock("@/lib/rollups/medication-compliance-rollups", () => ({
-  recomputeMedicationComplianceForEvent: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/lib/medications/dose-day-refresh", () => ({
+  refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/medications/inventory/consumption", () => ({
   consumeForIntake: vi.fn().mockResolvedValue(undefined),

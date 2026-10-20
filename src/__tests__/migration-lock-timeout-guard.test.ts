@@ -89,6 +89,56 @@ function violations(name: string, sql: string): string[] {
   return found;
 }
 
+/**
+ * `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` refuse to run in a
+ * transaction block, and under `migrate deploy` they do so whenever the file
+ * holds any other statement (SQLSTATE 25001, seen against Prisma 7 and
+ * Postgres 16). Such a statement therefore stands alone in its file.
+ */
+function concurrentViolations(name: string, sql: string): string[] {
+  const statements = topLevelStatements(sql);
+  const concurrent = statements.filter((statement) =>
+    /\bCONCURRENTLY\b/i.test(statement),
+  );
+  if (concurrent.length === 0 || statements.length === 1) return [];
+  return [
+    `${name}: a CONCURRENTLY statement must be the only statement in its file`,
+  ];
+}
+
+describe("concurrent index statements", () => {
+  it("stand alone in their migration file", () => {
+    const found = migrations().flatMap(({ name, sql }) =>
+      concurrentViolations(name, sql),
+    );
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("sees the concurrent migrations there are", () => {
+    const concurrent = migrations()
+      .filter(({ sql }) =>
+        /\bCONCURRENTLY\b/i.test(topLevelStatements(sql).join(";")),
+      )
+      .map(({ name }) => name);
+    expect(concurrent).toContain("0416_drop_measurements_type_prefix_index");
+  });
+
+  it("refuses a concurrent statement beside another one", () => {
+    expect(
+      concurrentViolations(
+        "a",
+        'DROP INDEX CONCURRENTLY IF EXISTS "x";\nDROP INDEX CONCURRENTLY IF EXISTS "y";',
+      ),
+    ).toHaveLength(1);
+    expect(
+      concurrentViolations(
+        "b",
+        '-- CONCURRENTLY in a comment\nDROP INDEX CONCURRENTLY IF EXISTS "x";',
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe("migration lock waits", () => {
   it("bounds lock waits where they take effect and marks only repeatable files", () => {
     const found = migrations().flatMap(({ name, sql }) =>
@@ -97,11 +147,13 @@ describe("migration lock waits", () => {
     expect(found, found.join("\n")).toEqual([]);
   });
 
-  it("sees the one migration that bounds its wait today", () => {
+  it("sees the migrations that bound their wait", () => {
     const marked = migrations()
       .filter(({ sql }) => RETRY_MARKER.test(sql))
       .map(({ name }) => name);
     expect(marked).toContain("0412_measurement_hot_updates");
+    expect(marked).toContain("0414_drop_medication_compliance_rollups");
+    expect(marked).toContain("0415_foreign_key_and_prefix_indexes");
   });
 
   it("catches each shape it exists to refuse", () => {

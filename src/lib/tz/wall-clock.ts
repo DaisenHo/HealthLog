@@ -1,6 +1,6 @@
 /**
  * Wall-clock-in-timezone helper shared by the medication scheduling
- * + compliance-rollup paths.
+ * paths.
  *
  * Decomposes a `Date` instant into the year/month/day/hour/minute/
  * second/weekday tuple an observer in `tz` would read off a wall
@@ -12,7 +12,7 @@
  * per-user timezone work keep their original shape.
  *
  * v1.4.40 W-GHOSTS consolidated two file-local copies
- * (`compliance-rollups.ts` returning `{year,month,day}` only +
+ * (a compliance-rollup copy returning `{year,month,day}` only +
  * `scheduling/cadence.ts` returning the full tuple) into this single
  * canonical export. The cross-tz ±3 h guard hinges on these helpers
  * staying in lock-step; keeping them as separate definitions made

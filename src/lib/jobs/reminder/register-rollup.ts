@@ -39,13 +39,6 @@ import {
   type MoodRollupRecomputePayload,
 } from "@/lib/rollups/mood-rollups";
 import {
-  MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
-  MEDICATION_COMPLIANCE_BACKFILL_CONCURRENCY,
-  recomputeUserMedicationCompliance,
-  enqueueBootTimeMedicationComplianceBackfill,
-  type MedicationComplianceBackfillPayload,
-} from "@/lib/rollups/medication-compliance-rollups";
-import {
   SUPPLEMENT_NUTRIENT_RECOMPUTE_QUEUE,
   SUPPLEMENT_NUTRIENT_RECOMPUTE_CONCURRENCY,
   runSupplementNutrientRecompute,
@@ -114,6 +107,7 @@ import {
   createAndSchedule,
   createAndWork,
   cronIsTheRetry,
+  retireQueues,
   type QueuePolicyTable,
   type ScheduleEntry,
 } from "./registrar-shared";
@@ -154,10 +148,6 @@ const allQueues = [
   MOOD_ROLLUP_RECOMPUTE_QUEUE,
   // v1.4.39 — boot-time fold queue for the mood rollup tier.
   MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
-  // v1.4.39 — boot-time fold for the medication-compliance
-  // rollup tier. Discovery enqueues one job per user with intake
-  // events but no rollup coverage; idempotent across reboots.
-  MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
   // v1.5.6 — boot-time legacy step consolidation. Discovery enqueues
   // one job per user still holding live pre-v1.5.0 granular step rows.
   STEP_CONSOLIDATION_QUEUE,
@@ -248,11 +238,6 @@ const queuePolicies: QueuePolicyTable = {
     reason:
       "Per-user mood backfill; boot-discovery driven and self-converging on rollup coverage.",
   },
-  [MEDICATION_COMPLIANCE_BACKFILL_QUEUE]: {
-    policy: "exclusive",
-    reason:
-      "Per-user compliance backfill; boot-discovery driven and self-converging on rollup coverage.",
-  },
   [STEP_CONSOLIDATION_QUEUE]: {
     policy: "exclusive",
     reason:
@@ -290,6 +275,13 @@ const queuePolicies: QueuePolicyTable = {
 };
 
 /**
+ * The boot backfill of the per-day medication-compliance rollup, whose table
+ * had no reader left and was dropped. Its queue, and any job still waiting in
+ * it, is removed on an instance that still has it.
+ */
+const RETIRED_ROLLUP_QUEUES = ["medication-compliance-full-backfill"] as const;
+
+/**
  * Register every rollup / consolidation queue. Returns the queue names created
  * (for the boot-level aggregate assertion).
  */
@@ -297,6 +289,7 @@ export async function registerRollupQueues(
   boss: PgBoss,
 ): Promise<readonly string[]> {
   await createAndSchedule(boss, allQueues, schedules, queuePolicies);
+  await retireQueues(boss, RETIRED_ROLLUP_QUEUES);
 
   // v1.5.0 — persistent measurement rollup worker. Folds the
   // WEEK / MONTH / YEAR buckets that the write-path hooks enqueue;
@@ -722,44 +715,6 @@ export async function registerRollupQueues(
     },
   );
 
-  // v1.4.39 — medication-compliance boot-backfill worker. The
-  // discovery helper below sends one job per user with intake events
-  // but zero rollup coverage; this handler folds the trailing 90-day
-  // window per account. Concurrency-1 so the populator never crowds
-  // the request pool.
-  await createAndWork<MedicationComplianceBackfillPayload>(
-    boss,
-    MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
-    { localConcurrency: MEDICATION_COMPLIANCE_BACKFILL_CONCURRENCY },
-    async (jobs) => {
-      let rowsUpsertedTotal = 0;
-      for (const job of jobs) {
-        const { userId } = job.data;
-        try {
-          const { rowsUpserted, durationMs } =
-            await recomputeUserMedicationCompliance(userId);
-          rowsUpsertedTotal += rowsUpserted;
-          workerLog(
-            "info",
-            `[medication-compliance-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
-          );
-        } catch (err) {
-          recordError();
-          workerLog(
-            "error",
-            `[medication-compliance-backfill] user=${userId} failed`,
-            err,
-          );
-          throw err;
-        }
-      }
-      return jobDone({
-        users: jobs.length,
-        rows_upserted: rowsUpsertedTotal,
-      });
-    },
-  );
-
   // v1.4.37 — nightly drain worker. Walks every user × cumulative
   // type and folds per-sample APPLE_HEALTH rows older than the cutoff
   // into one `stats:…` row per calendar day. Idempotent — a second run
@@ -1134,34 +1089,6 @@ export async function enqueueRollupBootDiscovery(): Promise<void> {
     workerLog(
       "error",
       "[mood-rollup-full-backfill] boot discovery threw an unexpected error",
-      err,
-    );
-  }
-
-  // v1.4.39 — medication compliance rollup tier. Mirrors the v1.4.35.1
-  // pattern: one job per user with intake events but no rollup coverage.
-  // Idempotent across reboots and singleton-keyed inside pg-boss.
-  try {
-    // Stage 4.
-    const { enqueued, skipped, error } =
-      await enqueueBootTimeMedicationComplianceBackfill(
-        BOOT_BACKFILL_STAGGER_SECONDS * 4,
-      );
-    if (error) {
-      workerLog(
-        "error",
-        `[medication-compliance-backfill] boot discovery failed: ${error}`,
-      );
-    } else {
-      workerLog(
-        "info",
-        `[medication-compliance-backfill] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
-      );
-    }
-  } catch (err) {
-    workerLog(
-      "error",
-      "[medication-compliance-backfill] boot discovery threw an unexpected error",
       err,
     );
   }
