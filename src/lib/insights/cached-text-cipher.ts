@@ -19,7 +19,7 @@ import { Buffer } from "node:buffer";
 
 import { decryptBytes, encryptBytes } from "@/lib/crypto";
 import { INSIGHTS_CACHED_TEXT_AAD } from "@/lib/crypto/encrypted-columns";
-import { getEvent } from "@/lib/logging/context";
+import { readSealedOrLegacy, warnAndDrop } from "@/lib/crypto/sealed-or-legacy";
 
 /** The columns a reader selects to open the cache. */
 export const INSIGHTS_CACHE_SELECT = {
@@ -76,10 +76,14 @@ export const INSIGHTS_CACHE_PRESENT_WHERE = {
 /**
  * The cached payload as text, or null when there is none.
  *
- * A legacy readable value wins when one is present: from v1.43.7 on nothing
- * writes that column, so a row holding both can only come from a writer of the
- * previous release still running after the upgrade, and its value is the
- * newer one. The backfill seals it on its next pass.
+ * The ciphertext is read first, as every sealed column is read
+ * (`readSealedOrLegacy`); the readable column only when the row holds no
+ * ciphertext. A row holding both can come from a writer of the previous
+ * release still running after the upgrade; its readable value may be the
+ * newer one, and the free-text backfill seals it over the old ciphertext on
+ * its next pass. Until then the reader serves the sealed one: an older
+ * briefing for a while, never a readable value preferred over a protected
+ * one.
  *
  * A sealed value that does not open reads as an empty cache with a warning on
  * the event. It is a cache: the next warm overwrites it under the active key,
@@ -89,17 +93,13 @@ export function openInsightsCachedText(
   row: InsightsCacheColumns | null | undefined,
 ): string | null {
   if (!row) return null;
-  if (typeof row.insightsCachedText === "string") return row.insightsCachedText;
-  const sealed = row.insightsCachedTextEncrypted;
-  if (!sealed || sealed.byteLength === 0) return null;
-  try {
-    return decryptBytes(Buffer.from(sealed), INSIGHTS_CACHED_TEXT_AAD).toString(
-      "utf8",
-    );
-  } catch (err) {
-    getEvent()?.addWarning(
-      `insights cache did not open: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return null;
-  }
+  return readSealedOrLegacy({
+    sealed: row.insightsCachedTextEncrypted,
+    legacy: row.insightsCachedText,
+    open: (sealed) =>
+      decryptBytes(Buffer.from(sealed), INSIGHTS_CACHED_TEXT_AAD).toString(
+        "utf8",
+      ),
+    onUndecryptable: warnAndDrop("insights cache did not open"),
+  });
 }

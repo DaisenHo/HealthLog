@@ -9,17 +9,20 @@
  * Two modes:
  *  - `dayKey` set → drill-down: the night's stage SEGMENTS (the canonical
  *    source's per-stage spans), read exactly as the night view reads them.
- *  - no `dayKey` → one synthetic row per night, value = the main sleep's TIME
- *    ASLEEP in minutes (the canonical unit), with the per-night stage
- *    breakdown, nap count and awakenings in the row so the UI can caption the
- *    night without a second fetch.
+ *  - no `dayKey` → one synthetic row per night, value = the day's TIME ASLEEP
+ *    in minutes (the canonical unit): the main night plus that day's naps,
+ *    `daySleepMinutes`, the same total the series and the sleep score read.
+ *    The main night alone rides as `mainAsleepMinutes`, beside its stage
+ *    breakdown, nap count and awakenings, so the UI can caption the night
+ *    without a second fetch.
  *
  * The nights are paged in Postgres (`sleepNightPage`) and only the stage rows
  * of the page's nights are read. Every page night gets a row, so a page is as
  * long as its limit and `meta.total` counts exactly the rows a full walk sees.
  * A day whose only sleep is daytime naps has no main night: its row carries
- * 0 minutes asleep and its naps, as `/api/sleep/night` answers the same day
- * with `main: null` and the naps.
+ * the naps' minutes as its value and `mainAsleepMinutes: null`, as
+ * `/api/sleep/night?date=` answers the same day with `main: null` and the
+ * naps.
  */
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
@@ -27,6 +30,7 @@ import { getUnitForType } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import {
+  daySleepMinutes,
   pickMainNightAndNaps,
   reconstructSleepSessions,
   type SleepSession,
@@ -131,7 +135,8 @@ export async function sleepListResponse(
       // Synthetic id mirrors the series route's `sleep:<night>` shape.
       id: `sleep:${night}`,
       type: "SLEEP_DURATION",
-      value: main ? Math.round(main.asleepMinutes) : 0,
+      value: Math.round(daySleepMinutes({ main, naps })),
+      mainAsleepMinutes: main ? Math.round(main.asleepMinutes) : null,
       unit: dayUnit,
       source: main?.source ?? naps[0]?.source ?? "MANUAL",
       measuredAt: (main?.end ?? lastNap?.end ?? spanEnd).toISOString(),

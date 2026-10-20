@@ -33,6 +33,7 @@ import {
   useCycleInsights,
   useCycleProfile,
 } from "./use-cycle";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.15.0 — the cycle vertical's client orchestrator.
@@ -415,9 +416,13 @@ export function CycleView() {
                 <PredictionsPanel
                   prediction={calendar.data?.prediction ?? null}
                   rawChartMode={calendar.data?.profile.rawChartMode ?? false}
-                  history={history.data}
+                  history={history.data?.data}
                 />
-                <CycleHistoryChart history={history.data} animate={play} />
+                <CycleHistoryChart
+                  history={history.data?.data}
+                  animate={play}
+                />
+                <ListCapNotice cap={history.data?.cap} />
                 <BbtChart
                   days={calendar.data?.days ?? []}
                   today={today}

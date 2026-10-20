@@ -44,6 +44,7 @@
  * Privacy: the result carries counts only, per type and per app. No value,
  * no timestamp and nothing a person typed (notes, titles) leaves this module.
  */
+import { importValue } from "@/lib/integrations/import-value";
 import type {
   FlowLevel,
   GlucoseContext,
@@ -547,7 +548,7 @@ class ImportRun {
       this.stat("PULSE").read += 1;
       await sink.push({
         type: "PULSE",
-        value: Math.round(mean * 10) / 10,
+        value: importValue(mean, 1),
         valueMin: hcNumber(best.lo),
         valueMax: hcNumber(best.hi),
         // The middle of the local hour, in the record's own zone.
@@ -889,7 +890,10 @@ class ImportRun {
     const days: Array<{ dayKey: string; value: number }> = [];
     for (const day of this.dailyGroups(sql, HC_CATEGORY.ACTIVITY)) {
       this.stat(spec.type).read += 1;
-      days.push({ dayKey: day.dayKey, value: day.total * spec.factor });
+      days.push({
+        dayKey: day.dayKey,
+        value: importValue(day.total * spec.factor),
+      });
       if (days.length >= WRITE_BATCH) {
         await this.writeDayTotals(spec.type, days.splice(0));
       }
@@ -1136,7 +1140,7 @@ class ImportRun {
   ): Promise<void> {
     if (entries.length === 0) return;
     const valid = entries.filter((e) => {
-      const amount = Math.round(e.amount * 1000) / 1000;
+      const amount = importValue(e.amount, 3);
       if (amount > NUTRIENT_CATALOG[e.code].plausibleDailyMax) {
         this.nutrients.outOfRange += 1;
         this.skip("out_of_range", 1, `nutrient:${e.code}`);
@@ -1160,7 +1164,7 @@ class ImportRun {
     );
     const fresh: Prisma.NutrientIntakeDayCreateManyInput[] = [];
     for (const e of valid) {
-      const amount = Math.round(e.amount * 1000) / 1000;
+      const amount = importValue(e.amount, 3);
       const prior = existing.get(`${e.day}|${e.code}`);
       if (prior === undefined) {
         fresh.push({
@@ -1597,8 +1601,19 @@ class MeasurementSink {
     private readonly hourlyPulse = false,
   ) {}
 
+  /**
+   * Every measurement value this import writes passes here (or through
+   * `writeDayTotals`), so this is where it takes the one import rounding:
+   * a mapper's unit factor (grams to kilograms, millis to minutes) leaves
+   * binary noise that would otherwise be stored and compared as is.
+   */
   async push(row: PendingRow): Promise<void> {
-    this.rows.push(row);
+    this.rows.push({
+      ...row,
+      value: importValue(row.value),
+      valueMin: row.valueMin == null ? row.valueMin : importValue(row.valueMin),
+      valueMax: row.valueMax == null ? row.valueMax : importValue(row.valueMax),
+    });
     if (this.rows.length >= WRITE_BATCH) await this.flush();
   }
 

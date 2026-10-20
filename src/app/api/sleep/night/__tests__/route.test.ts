@@ -28,6 +28,17 @@ vi.mock("@/lib/modules/gate", () => ({
   requireModuleEnabled: vi.fn(async () => ({ enabled: true })),
 }));
 
+// The latest-night walk pages nights in SQL; its own behaviour is pinned by
+// the SQL parity integration suite. Here it is stubbed to a fixed day so the
+// route's "no date" arm can be read.
+vi.mock("@/lib/measurements/list/sleep-nights", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/lib/measurements/list/sleep-nights")
+    >();
+  return { ...actual, latestMainSleepNight: vi.fn(async () => null) };
+});
+
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
@@ -49,6 +60,7 @@ vi.mock("next/headers", () => ({
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { latestMainSleepNight } from "@/lib/measurements/list/sleep-nights";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -133,15 +145,13 @@ describe("GET /api/sleep/night", () => {
     expect(Number.isInteger(body.data.main.awakeMinutes)).toBe(true);
   });
 
-  it("defaults to the most recent scorable night when date omitted", async () => {
+  it("defaults to the latest main night when date omitted", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       stage("2026-06-02T03:00:00.000Z", "CORE", 200),
       stage("2026-06-04T03:00:00.000Z", "CORE", 300),
     ] as never);
-    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
-      measuredAt: new Date("2026-06-04T03:00:00.000Z"),
-    } as never);
+    vi.mocked(latestMainSleepNight).mockResolvedValueOnce("2026-06-04");
     const res = await GET(req(""));
     const body = await res.json();
     expect(body.data.night).toBe("2026-06-04");

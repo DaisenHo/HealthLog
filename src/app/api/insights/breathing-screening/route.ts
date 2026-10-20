@@ -48,6 +48,7 @@ export const GET = apiHandler(async () => {
   const rows = await prisma.measurement.findMany({
     where: {
       userId: user.id,
+      deletedAt: null,
       type: { in: ["BREATHING_DISTURBANCES", "BREATHING_DISTURBANCE_EVENT"] },
       measuredAt: { gte: since },
     },

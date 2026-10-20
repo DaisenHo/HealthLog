@@ -54,6 +54,7 @@ import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { moodLabelKeyForScore } from "@/lib/mood/labels";
 import { apiGet } from "@/lib/api/api-fetch";
+import { trendLineByTime } from "@/lib/stats/linear-fit";
 
 // --- Types ---
 
@@ -195,44 +196,6 @@ function movingAverageByPoints(
       value: Math.round(avg * 100) / 100,
     };
   });
-}
-
-function buildTrendLine(data: Array<{ date: Date; value: number }>): {
-  points: Array<{ date: Date; value: number }>;
-  slopePerDay: number;
-} | null {
-  if (data.length < 2) return null;
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const startTime = sorted[0].date.getTime();
-  const points = sorted.map((p) => ({
-    x: (p.date.getTime() - startTime) / 86400000,
-    y: p.value,
-  }));
-
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-
-  const denominator = n * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-
-  const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / n;
-
-  return {
-    points: sorted.map((p) => ({
-      date: p.date,
-      value:
-        Math.round(
-          (intercept + slope * ((p.date.getTime() - startTime) / 86400000)) *
-            100,
-        ) / 100,
-    })),
-    slopePerDay: slope,
-  };
 }
 
 // --- Aggregation helpers (exported for unit tests) ---
@@ -542,7 +505,7 @@ export function MoodChart({
       }));
 
       if (scoreData.length >= 2) {
-        const trend = buildTrendLine(scoreData);
+        const trend = trendLineByTime(scoreData);
         if (trend) {
           for (const point of trend.points) {
             const pointTimestamp = point.date.getTime();

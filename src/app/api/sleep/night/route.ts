@@ -17,7 +17,9 @@
  * (WHOOP) — the client renders the hypnogram but labels it an approximate
  * layout. A real-series source (Apple Health / Withings / Fitbit) is false.
  *
- * `date` omitted → the most recent night that holds sleep, however old.
+ * `date` omitted → the most recent night with a main sleep, however old; a
+ * run of nap-only days since is stepped over (each stays reachable by its
+ * `date`). An account that has only ever napped gets its latest nap day.
  *
  * Only the stage rows within a day and a half of the night are read, as the
  * list's drill-down reads them (`readNightSessions`), so any past night is
@@ -39,7 +41,7 @@ import {
   type SleepSession,
 } from "@/lib/analytics/sleep-night";
 import {
-  latestSleepNight,
+  latestMainSleepNight,
   readNightSessions,
 } from "@/lib/measurements/list/sleep-nights";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
@@ -131,7 +133,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
   ]);
 
   const targetDay =
-    date ?? (await latestSleepNight(user.id, tz, priorityJson)) ?? undefined;
+    date ??
+    (await latestMainSleepNight(user.id, tz, priorityJson)) ??
+    undefined;
   const { main, naps } = targetDay
     ? pickMainNightAndNaps(
         (await readNightSessions(user.id, targetDay, tz, priorityJson))

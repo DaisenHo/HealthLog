@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { readRecentMoodScores } from "@/lib/mood/recent-scores";
+import { readLatestReadingsPerType } from "@/lib/insights/recent-readings";
 import {
   getGeneralStatusSystemPrompt,
   getGeneralStatusUserPrompt,
@@ -52,7 +54,7 @@ import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 const MEASUREMENT_TYPES = measurementTypeEnum.options;
 
 // The general overview folds its per-type graded series in memory from a
-// single bounded read (take 5000, desc) rather than per-type rollup-tier
+// single bounded read (the latest 365 per type) rather than per-type rollup-tier
 // reads: a many-metric account would otherwise fan out ~15 metrics × 3
 // rollup round-trips per render. `degradeStatusSnapshotToBudget` already
 // caps the multi-metric snapshot, so the bounded in-memory fold is the
@@ -168,28 +170,11 @@ export async function prepareGeneralStatusForUser(
     },
   });
 
-  // v1.4.28 — cap the snapshot input. General-status pulls
-  // every supported measurement type; without a cap the read scales
-  // linearly with account density.
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        type: {
-          in: [...MEASUREMENT_TYPES],
-        },
-        // Soft-deleted rows must never reach the prompt snapshot.
-        deletedAt: null,
-      },
-      orderBy: { measuredAt: "desc" },
-      take: 5000,
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  // The latest 365 readings of each type, bounded per type so a dense
+  // stream cannot crowd the others out (`readLatestReadingsPerType`).
+  const measurements = await readLatestReadingsPerType(userId, [
+    ...MEASUREMENT_TYPES,
+  ]);
 
   const now = new Date();
 
@@ -309,14 +294,7 @@ export async function prepareGeneralStatusForUser(
 
   // Fetch mood context (optional — for enrichment only). v1.4.28
   // Cap at 90 entries.
-  const moodEntries = await prisma.moodEntry
-    .findMany({
-      where: { userId },
-      orderBy: { moodLoggedAt: "desc" },
-      take: 90,
-      select: { date: true, score: true, moodLoggedAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const moodEntries = await readRecentMoodScores(userId, 90);
 
   const moodRecords = moodEntries.map((entry) => ({
     measuredAt: entry.moodLoggedAt,

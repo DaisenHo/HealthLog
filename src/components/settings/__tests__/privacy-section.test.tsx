@@ -32,7 +32,10 @@ function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   // Seed the embedded session + trusted-device + activity reads so the
   // assembled cards paint without firing network.
   client.setQueryData(queryKeys.sessions(), { sessions: [] });
-  client.setQueryData(queryKeys.securityActivity(), { events: [] });
+  client.setQueryData(queryKeys.securityActivity(), {
+    data: { events: [] },
+    cap: null,
+  });
   // Seed a trusted device so the card paints (it hides itself when empty).
   client.setQueryData(queryKeys.trustedDevices(), {
     devices: [
@@ -80,7 +83,10 @@ describe("<PrivacySection> — assembled Data & Privacy dashboard", () => {
       },
     });
     client.setQueryData(queryKeys.sessions(), { sessions: [] });
-    client.setQueryData(queryKeys.securityActivity(), { events: [] });
+    client.setQueryData(queryKeys.securityActivity(), {
+      data: { events: [] },
+      cap: null,
+    });
     client.setQueryData(queryKeys.trustedDevices(), { devices: [] });
     const html = renderToStaticMarkup(
       <I18nProvider initialLocale="en">

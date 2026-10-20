@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Sono mostrati gli ultimi {count}; le voci più vecchie non sono elencate qui.",
     "save": "Salva",
     "conflictReloaded": "Ricaricato dal server. Applica di nuovo la tua modifica.",
     "cancel": "Annulla",
@@ -845,7 +846,7 @@
     "nextPage": "Pagina successiva",
     "dailyTotalCaption": "({count} campioni)",
     "openMetricInsights": "Apri l'analisi {type}",
-    "sleepNapCaption": "+{count} pisolino/i",
+    "sleepNapCaption": "incl. {count} pisolino/i",
     "sleepAwakeningsCaption": "{count} risveglio/i",
     "expandDay": "Mostra i campioni di questa giornata",
     "collapseDay": "Nascondi i campioni di questa giornata",
@@ -12327,8 +12328,7 @@
       "loadError": "Non è stato possibile caricare l'attività.",
       "opened": "{name} ha aperto la tua cartella {count}×",
       "acted": "{name} ha fatto una modifica nella tua cartella",
-      "deletedAccount": "Un account eliminato",
-      "truncated": "Questo elenco mostra l'attività più recente, non tutta."
+      "deletedAccount": "Un account eliminato"
     },
     "delegate": {
       "addOnlyNote": "Puoi aggiungere voci a questa cartella. Solo {name} può modificarle o eliminarle."

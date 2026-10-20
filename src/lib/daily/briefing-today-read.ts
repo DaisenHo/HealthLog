@@ -11,6 +11,7 @@
  */
 import { dailyBriefingSchema, type DailyBriefing } from "@/lib/ai/schema";
 import { prisma } from "@/lib/db";
+import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import type { Locale } from "@/lib/i18n/config";
 import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { userDayKey } from "@/lib/tz/format";
@@ -41,21 +42,17 @@ export async function readSignalLastSeen(
   userId: string,
 ): Promise<(type: string) => string | null> {
   try {
-    const rows = await prisma.measurement.groupBy({
-      by: ["type"],
-      where: {
-        userId,
-        deletedAt: null,
-        type: {
-          in: Object.values(SIGNAL_READING_TYPE) as MeasurementType[],
-        },
-      },
-      _max: { measuredAt: true },
-    });
+    // One index probe per type for its latest live reading
+    // (`readLatestEver`), rather than a grouped max over every row.
+    const rows = await readLatestEver(
+      prisma,
+      userId,
+      Object.values(SIGNAL_READING_TYPE) as MeasurementType[],
+    );
     const byType = new Map(
       rows.map((row) => [
         String(row.type),
-        row._max.measuredAt?.toISOString() ?? null,
+        new Date(row.measured_at).toISOString(),
       ]),
     );
     return (type) => byType.get(type) ?? null;

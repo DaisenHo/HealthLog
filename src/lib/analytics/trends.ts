@@ -4,6 +4,7 @@
  */
 
 import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
+import { linearFit } from "@/lib/stats/linear-fit";
 
 export interface DataPoint {
   date: Date;
@@ -48,26 +49,14 @@ export function trendSlope(
     y: p.value,
   }));
 
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-
-  const denominator = n * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-
-  const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / n;
-
-  // R² calculation
-  const meanY = sumY / n;
-  const ssTotal = points.reduce((s, p) => s + (p.y - meanY) ** 2, 0);
-  const ssResidual = points.reduce(
-    (s, p) => s + (p.y - (intercept + slope * p.x)) ** 2,
-    0,
+  const fit = linearFit(
+    points.map((p) => p.x),
+    points.map((p) => p.y),
   );
-  const rSquared = ssTotal === 0 ? 0 : 1 - ssResidual / ssTotal;
+  if (!fit) return null;
+  const { slope } = fit;
+  // No variance in y: a flat line explains nothing, as it always read.
+  const rSquared = fit.r2 ?? 0;
 
   const threshold = 0.01; // units per day threshold for "stable"
   const direction: "up" | "down" | "stable" =

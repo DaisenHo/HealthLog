@@ -20,6 +20,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -231,6 +232,29 @@ describe("Health Connect import, mapping", () => {
     // Counts only: per type, per app, never a value.
     expect(result.perApp["com.fitbit.FitbitMobile"].records).toBeGreaterThan(0);
     expect(JSON.stringify(result)).not.toContain("Evening run");
+  });
+
+  it("stores a scaled value with the import rounding, not its unit factor's noise", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("hc-round");
+    const { path } = fixtureDb("round", { days: 1, endUtc: today });
+    // Grams to kilograms: 80 345.678 g is 80.345678 kg before rounding.
+    const db = new DatabaseSync(path);
+    db.exec("UPDATE weight_record_table SET weight = 80345.678");
+    db.close();
+    await importHealthConnectExport({
+      prisma,
+      dbPath: path,
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      connectedIntegrations: [],
+    });
+    const weights = await prisma.measurement.findMany({
+      where: { userId: user.id, type: "WEIGHT", source: "HEALTH_CONNECT" },
+      select: { value: true },
+    });
+    expect(weights.length).toBeGreaterThan(0);
+    for (const w of weights) expect(w.value).toBe(80.35);
   });
 
   it("writes nothing the second time the same export comes in", async () => {

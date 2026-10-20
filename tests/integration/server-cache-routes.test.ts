@@ -85,12 +85,56 @@ async function seedSession(username: string) {
   return user;
 }
 
+/**
+ * Count the builder runs per key on a cache. The analytics bucket holds two
+ * cells per account: the thick default body (`<user>|default|<locale>`) and
+ * the summaries slice it composes (`<user>|summaries`), which the tile-strip
+ * route and the snapshot read too. The bucket-wide `misses` counter therefore
+ * reads 2 on a cold mount; coalescing is proven per key, one build each.
+ */
+function countBuildsPerKey(cache: {
+  wrap: (...args: never[]) => Promise<unknown>;
+}): Map<string, number> {
+  const builds = new Map<string, number>();
+  const original = cache.wrap.bind(cache) as unknown as (
+    key: string,
+    builder: () => Promise<unknown>,
+    ttl?: number,
+  ) => Promise<unknown>;
+  vi.spyOn(cache, "wrap").mockImplementation(((
+    key: string,
+    builder: () => Promise<unknown>,
+    ttl?: number,
+  ) =>
+    original(
+      key,
+      () => {
+        builds.set(key, (builds.get(key) ?? 0) + 1);
+        return builder();
+      },
+      ttl,
+    )) as never);
+  return builds;
+}
+
+function buildsOf(builds: Map<string, number>, userId: string) {
+  const entries = [...builds.entries()].filter(([k]) => k.startsWith(userId));
+  return {
+    defaultBody: entries
+      .filter(([k]) => k.startsWith(`${userId}|default|`))
+      .reduce((n, [, c]) => n + c, 0),
+    summaries: builds.get(`${userId}|summaries`) ?? 0,
+    keys: entries.length,
+  };
+}
+
 describe("v1.4.34 IW-G — server-cache route integration", () => {
   it("coalesces 10 concurrent /api/analytics reads into a single builder call", async () => {
-    await seedSession("cache-stampede-user");
+    const user = await seedSession("cache-stampede-user");
 
     const { GET } = await import("@/app/api/analytics/route");
     const { caches } = await import("@/lib/cache/server-cache");
+    const builds = countBuildsPerKey(caches.analytics);
 
     // Fire 10 concurrent reads against a cold cache. The first sets up
     // the `pending` promise; the other nine join it. The cache's
@@ -110,8 +154,15 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
     // microtasks — the now-warm cache (a hit). What we forbid is a
     // second miss: that would mean the single-flight join failed and a
     // duplicate builder fired.
+    // Per cell: the default body built once and the summaries slice it
+    // composes built once, nothing else. The bucket counter sums both cells.
+    expect(buildsOf(builds, user.id)).toEqual({
+      defaultBody: 1,
+      summaries: 1,
+      keys: 2,
+    });
     const stats = caches.analytics.stats();
-    expect(stats.misses).toBe(1);
+    expect(stats.misses).toBe(2);
     expect(stats.stampedes + stats.hits).toBe(9);
     // Subsequent serial reads inside the TTL hit the warm cache.
     const warm = await (GET as unknown as (req: Request) => Promise<Response>)(
@@ -129,13 +180,19 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
     const { POST: postMeasurement } =
       await import("@/app/api/measurements/route");
     const { caches } = await import("@/lib/cache/server-cache");
+    const builds = countBuildsPerKey(caches.analytics);
 
-    // Prime the cache — first read is a miss; second is a hit.
+    // Prime the cache — first read builds both cells once; second is a hit.
     const first = await (GET as unknown as (req: Request) => Promise<Response>)(
       new Request("http://localhost/api/analytics"),
     );
     expect(first.status).toBe(200);
-    expect(caches.analytics.stats().misses).toBe(1);
+    expect(buildsOf(builds, user.id)).toEqual({
+      defaultBody: 1,
+      summaries: 1,
+      keys: 2,
+    });
+    expect(caches.analytics.stats().misses).toBe(2);
     expect(caches.analytics.stats().hits).toBe(0);
 
     const second = await (
@@ -167,7 +224,13 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
       new Request("http://localhost/api/analytics"),
     );
     expect(third.status).toBe(200);
-    expect(caches.analytics.stats().misses).toBe(2);
+    // Both cells were evicted by the write and rebuilt once each.
+    expect(buildsOf(builds, user.id)).toEqual({
+      defaultBody: 2,
+      summaries: 2,
+      keys: 2,
+    });
+    expect(caches.analytics.stats().misses).toBe(4);
 
     // Sanity: the body reflects the new write.
     const body = (await third.json()) as {

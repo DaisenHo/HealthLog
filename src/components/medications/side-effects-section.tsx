@@ -48,7 +48,7 @@ import {
   severityLikertLabel,
 } from "@/lib/medications/side-effects/taxonomy";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
-import { apiDelete, apiFetchEnvelope, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGetList, apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -168,15 +168,19 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       const from = pageParam
         ? new Date(pageParam.from)
         : new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const url = `/api/medications/${medicationId}/side-effects?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&limit=${SIDE_EFFECTS_PAGE_SIZE}`;
-      const { data: payload } = await apiFetchEnvelope<{
+      const range = `from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`;
+      const { data: payload, cap } = await apiGetList<{
         items: SideEffectRow[];
         meta: { total: number };
-      }>(url);
-      return { ...payload, from: from.toISOString() };
+      }>(
+        `/api/medications/${medicationId}/side-effects?${range}&limit=${SIDE_EFFECTS_PAGE_SIZE}`,
+      );
+      return { ...payload, cap, from: from.toISOString() };
     },
     getNextPageParam: (lastPage): SideEffectPageParam | undefined => {
-      if (lastPage.items.length < SIDE_EFFECTS_PAGE_SIZE) return undefined;
+      // The route says whether a row past the page exists; a page that is
+      // exactly full is not a cut one.
+      if (!lastPage.cap?.truncated) return undefined;
       const oldest = lastPage.items[lastPage.items.length - 1];
       return {
         from: lastPage.from,

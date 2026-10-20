@@ -17,6 +17,7 @@
 import { formatInUserTz } from "./tz/format";
 import {
   reconstructSleepSessions,
+  daySleepMinutes,
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "./analytics/sleep-night";
@@ -142,9 +143,9 @@ interface ExportMeasurement {
  *
  * v1.11.5 — SLEEP_DURATION is stored one row per STAGE per night. A flat
  * export emitted a wall of per-stage minutes with no night attribution.
- * By default sleep rows are now COLLAPSED to one record per night (the
- * main session's TIME ASLEEP per the nap convention) carrying the stage
- * breakdown in `notes` so the single uniform CSV reads as one night, not
+ * By default sleep rows are now COLLAPSED to one record per wake day (the
+ * day's TIME ASLEEP, main night plus naps, `daySleepMinutes`) carrying the
+ * main night's stage breakdown and the naps in `notes` so the single uniform CSV reads as one night, not
  * many stages. Pass `granularity: "raw"` to keep the per-stage rows for
  * power users. Storage is untouched either way.
  */
@@ -224,11 +225,14 @@ export function formatMeasurementsForExport(
   const nightRecords: Array<{ at: Date; rec: ExportableRecord }> = [];
   for (const daySessions of byDay.values()) {
     const { main, naps } = pickMainNightAndNaps(daySessions);
-    if (!main) continue;
-    const stageParts = (Object.entries(main.stages) as Array<[string, number]>)
-      .filter(([, mins]) => mins > 0)
-      .map(([stage, mins]) => `${stage}=${Math.round(mins)}m`)
-      .join(" ");
+    const lead = main ?? naps.at(-1);
+    if (!lead) continue;
+    const stageParts = main
+      ? (Object.entries(main.stages) as Array<[string, number]>)
+          .filter(([, mins]) => mins > 0)
+          .map(([stage, mins]) => `${stage}=${Math.round(mins)}m`)
+          .join(" ")
+      : "";
     const napNote =
       naps.length > 0
         ? ` naps=${naps.length}(${Math.round(
@@ -236,16 +240,17 @@ export function formatMeasurementsForExport(
           )}m)`
         : "";
     const awakeningNote =
-      main.awakenings > 0 ? ` awakenings=${main.awakenings}` : "";
+      main && main.awakenings > 0 ? ` awakenings=${main.awakenings}` : "";
     nightRecords.push({
-      at: main.end,
+      at: lead.end,
       rec: {
         type: "SLEEP_DURATION",
-        // Headline value = the main night's TIME ASLEEP in minutes.
-        value: Math.round(main.asleepMinutes),
+        // Headline value = the day's TIME ASLEEP in minutes, the main night
+        // plus its naps (`daySleepMinutes`), as the list and the series read.
+        value: Math.round(daySleepMinutes({ main, naps })),
         unit: "minutes",
-        measuredAt: formatTimestamp(main.end, userTz),
-        source: main.source ?? "",
+        measuredAt: formatTimestamp(lead.end, userTz),
+        source: lead.source ?? "",
         notes: `${stageParts}${napNote}${awakeningNote}`.trim(),
         glucoseContext: "",
       },

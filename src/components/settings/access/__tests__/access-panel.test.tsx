@@ -32,7 +32,9 @@ function grantList(partial: Partial<GrantList> = {}): GrantList {
   return { given: [], received: [], retentionDays: 365, ...partial };
 }
 
-const activityRef: { value: RecordActivity | undefined } = { value: undefined };
+const activityRef: {
+  value: (RecordActivity & { cap: ListCap | null }) | undefined;
+} = { value: undefined };
 
 vi.mock("@/lib/queries/use-account-grants", async (importOriginal) => {
   const actual =
@@ -64,6 +66,7 @@ vi.mock("@/hooks/use-account-switch", () => ({
 import { GrantsGivenCard } from "../grants-given-card";
 import { GrantsReceivedCard } from "../grants-received-card";
 import { RecordActivityCard } from "../record-activity-card";
+import type { ListCap } from "@/lib/api/list-cap-shape";
 
 function render(node: React.ReactNode): string {
   return renderToStaticMarkup(
@@ -205,7 +208,7 @@ describe("when my record was opened", () => {
     // see would imply a completeness it does not have: somebody checking last
     // spring would read an empty list as "no" when the honest answer is
     // "further back than this reaches".
-    activityRef.value = { entries: [], retentionDays: 90, truncated: false };
+    activityRef.value = { entries: [], retentionDays: 90, cap: null };
     const html = render(<RecordActivityCard />);
     expect(html).toContain('data-slot="record-activity-retention"');
     expect(html).toContain("last 90 days");
@@ -215,22 +218,26 @@ describe("when my record was opened", () => {
     // The second completeness claim. The window bounds how far back; the row
     // cap bounds how many, and a list that stopped at its ceiling in silence
     // let the oldest visible line read as the beginning.
-    activityRef.value = { entries: [], retentionDays: 365, truncated: true };
+    activityRef.value = {
+      entries: [],
+      retentionDays: 365,
+      cap: { truncated: true, limit: 100 },
+    };
     const capped = render(<RecordActivityCard />);
-    expect(capped).toContain('data-slot="record-activity-truncated"');
-    expect(capped).toContain("most recent activity");
+    expect(capped).toContain('data-slot="list-cap-notice"');
+    expect(capped).toContain("Showing the latest 100");
 
     // And it is not an unconditional hedge: a caveat that is always on is one
     // people learn to skip, which would cost the sentence its meaning on the
     // one screen where it is true.
-    activityRef.value = { entries: [], retentionDays: 365, truncated: false };
+    activityRef.value = { entries: [], retentionDays: 365, cap: null };
     const whole = render(<RecordActivityCard />);
-    expect(whole).not.toContain('data-slot="record-activity-truncated"');
+    expect(whole).not.toContain('data-slot="list-cap-notice"');
     expect(whole).toContain('data-slot="record-activity-retention"');
   });
 
   it("prints the operator's window, never a compiled-in 365", () => {
-    activityRef.value = { entries: [], retentionDays: 30, truncated: false };
+    activityRef.value = { entries: [], retentionDays: 30, cap: null };
     const html = render(<RecordActivityCard />);
     expect(html).toContain("last 30 days");
     expect(html).not.toContain("365");
@@ -247,7 +254,7 @@ describe("when my record was opened", () => {
   it("counts the openings rather than listing them one by one", () => {
     activityRef.value = {
       retentionDays: 365,
-      truncated: false,
+      cap: null,
       entries: [
         {
           id: "a1",
@@ -270,7 +277,7 @@ describe("when my record was opened", () => {
     // it themselves.
     activityRef.value = {
       retentionDays: 365,
-      truncated: false,
+      cap: null,
       entries: [
         {
           id: "a2",
@@ -283,5 +290,21 @@ describe("when my record was opened", () => {
     };
     const html = render(<RecordActivityCard />);
     expect(html).toContain("A deleted account");
+  });
+});
+
+describe("grant lists at their ceiling", () => {
+  it("say so under the list, and only when the server cut it", () => {
+    grantsRef.value = {
+      ...grantList({ given: [BASE] }),
+      cap: { truncated: true, limit: 100 },
+    } as GrantList;
+    expect(render(<GrantsGivenCard />)).toContain(
+      'data-slot="list-cap-notice"',
+    );
+    grantsRef.value = grantList({ given: [BASE] });
+    expect(render(<GrantsGivenCard />)).not.toContain(
+      'data-slot="list-cap-notice"',
+    );
   });
 });

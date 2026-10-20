@@ -462,8 +462,8 @@ describe("the activity feed states its own limits", () => {
       data: {
         entries: { action: string }[];
         retentionDays: number;
-        truncated: boolean;
       };
+      meta: { truncated: boolean; limit: number };
     };
   }
 
@@ -509,7 +509,9 @@ describe("the activity feed states its own limits", () => {
     }
     const small = await feed();
     expect(small.data.entries).toHaveLength(3);
-    expect(small.data.truncated).toBe(false);
+    // The cap rides the envelope, like every capped list's.
+    expect(small.meta.truncated).toBe(false);
+    expect(small.data).not.toHaveProperty("truncated");
 
     // Over it: same shape, different claim.
     await getPrismaClient().auditLog.createMany({
@@ -522,6 +524,6 @@ describe("the activity feed states its own limits", () => {
     });
     const large = await feed();
     expect(large.data.entries).toHaveLength(100);
-    expect(large.data.truncated).toBe(true);
+    expect(large.meta).toMatchObject({ truncated: true, limit: 100 });
   });
 });

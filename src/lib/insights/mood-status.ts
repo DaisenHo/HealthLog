@@ -241,6 +241,7 @@ export async function prepareMoodStatusForUser(
     .findMany({
       where: {
         userId,
+        deletedAt: null,
       },
       orderBy: { date: "desc" },
       take: 90,

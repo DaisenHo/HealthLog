@@ -191,6 +191,7 @@ async function seed(timezone: string) {
 interface ListRow {
   dayKey: string;
   value: number;
+  mainAsleepMinutes: number | null;
   napCount: number;
   napAsleepMinutes: number;
 }
@@ -245,14 +246,48 @@ describe("sleep nights: SQL page and JS reconstruction agree", () => {
       const jsNights = [...new Set(scorable.map((s) => s.night))].sort();
       expect(page.nights.map((n) => n.night)).toEqual(jsNights);
       expect(page.total).toBe(jsNights.length);
-      // Every reconstructed session lies inside its night's SQL span.
+      // Every reconstructed session of a page night lies inside the night's
+      // SQL span, the in-bed-only ones included: the reconstruction adds
+      // their in-bed time to the night, so a chunked read must reach them.
       const span = new Map(page.nights.map((n) => [n.night, n]));
-      for (const s of scorable) {
+      const sessions = reconstructSleepSessions(rows, tz, null).filter((s) =>
+        span.has(s.night),
+      );
+      expect(sessions.length).toBeGreaterThan(scorable.length);
+      for (const s of sessions) {
         const n = span.get(s.night)!;
         expect(s.start.getTime()).toBeGreaterThanOrEqual(
           n.spanStart.getTime() - 1000,
         );
         expect(s.end.getTime()).toBeLessThanOrEqual(n.spanEnd.getTime() + 1000);
+      }
+    }, 240_000);
+
+    it(`reads the same in-bed time a night at a time and in chunks (${tz})`, async () => {
+      const user = await seed(tz);
+      const { readSleepNights, readSleepRows } =
+        await import("@/lib/measurements/list/sleep-nights");
+      const { reconstructSleepNights } =
+        await import("@/lib/analytics/sleep-night");
+      const chunked = await readSleepNights(user.id, tz, null, {
+        maxNights: 10_000,
+      });
+      const whole = new Map(
+        reconstructSleepNights(
+          await readSleepRows(
+            user.id,
+            new Date(BASE - 2 * 86_400_000),
+            new Date(BASE + (DAYS + 2) * 86_400_000),
+          ),
+          tz,
+          null,
+        ).map((n) => [n.night, n]),
+      );
+      expect(chunked.length).toBeGreaterThan(DAYS - 2);
+      for (const night of chunked) {
+        const ref = whole.get(night.night)!;
+        expect(night.inBedMinutes).toBe(ref.inBedMinutes);
+        expect(night.asleepMinutes).toBe(ref.asleepMinutes);
       }
     }, 240_000);
   }
@@ -275,8 +310,20 @@ describe("sleep nights: SQL page and JS reconstruction agree", () => {
     for (const row of rows) {
       const view = await nightView(row.dayKey);
       expect(view.data.night).toBe(row.dayKey);
-      expect(view.data.main?.asleepMinutes ?? 0).toBe(row.value);
+      // The row's value is the day's sleep, main night plus naps; the main
+      // night alone rides beside it.
+      const napMinutes = view.data.naps.reduce(
+        (sum, n) => sum + n.asleepMinutes,
+        0,
+      );
+      expect(row.value).toBe(
+        Math.round((view.data.main?.asleepMinutes ?? 0) + napMinutes),
+      );
+      expect(row.mainAsleepMinutes).toBe(
+        view.data.main ? Math.round(view.data.main.asleepMinutes) : null,
+      );
       expect(view.data.naps).toHaveLength(row.napCount);
+      if (row.napCount > 0) expect(row.value).toBeGreaterThan(0);
       if (!view.data.main) {
         napOnly += 1;
         expect(row.napCount).toBeGreaterThan(0);
@@ -285,6 +332,69 @@ describe("sleep nights: SQL page and JS reconstruction agree", () => {
     // The afternoon-nap days have no main night and still have their row.
     expect(napOnly).toBe(DAYS / 10);
   }, 480_000);
+
+  it("states the same day total in the list and the series", async () => {
+    await seed("Europe/Berlin");
+    const { GET } = await import("@/app/api/measurements/series/route");
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/measurements/series?kind=sleep&days=3650",
+      ),
+    );
+    expect(res.status).toBe(200);
+    const series = (
+      (await res.json()) as {
+        data: { points: Array<{ id: string; value: number }> };
+      }
+    ).data.points;
+    const rows = (await list("type=SLEEP_DURATION&limit=1000&sortDir=asc")).data
+      .measurements;
+    const byDay = new Map(series.map((p) => [p.id.slice("sleep:".length), p]));
+    let napDays = 0;
+    for (const row of rows) {
+      const point = byDay.get(row.dayKey);
+      expect(point, row.dayKey).toBeDefined();
+      // Hours to two places against whole minutes: within a minute.
+      expect(Math.abs(point!.value * 60 - row.value)).toBeLessThanOrEqual(1);
+      if (row.napCount > 0) napDays += 1;
+    }
+    expect(napDays).toBeGreaterThan(0);
+  }, 240_000);
+
+  it("answers the latest main night, not a later day of naps alone", async () => {
+    const user = await seed("UTC");
+    const prisma = getPrismaClient();
+    // Two afternoon naps on the two days after the last fixture day.
+    const after = BASE + DAYS * 86_400_000;
+    await prisma.measurement.createMany({
+      data: [0, 1].map((d) => ({
+        userId: user.id,
+        type: "SLEEP_DURATION" as const,
+        value: 40,
+        unit: "minutes",
+        source: "APPLE_HEALTH" as const,
+        measuredAt: new Date(after + d * 86_400_000 + 14 * 3_600_000),
+        externalId: `late-nap-${d}`,
+        sleepStage: "CORE" as const,
+      })),
+    });
+    const { GET } = await import("@/app/api/sleep/night/route");
+    const res = await GET(new NextRequest("http://localhost/api/sleep/night"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { night: string; main: unknown; naps: unknown[] };
+    };
+    expect(body.data.main).not.toBeNull();
+    // The answer is a fixture night, before the naps.
+    expect(body.data.night < new Date(after).toISOString().slice(0, 10)).toBe(
+      true,
+    );
+    // The nap days stay reachable by date.
+    const napDay = new Date(after + 86_400_000).toISOString().slice(0, 10);
+    const nap = await nightView(napDay);
+    expect(nap.data.main).toBeNull();
+    expect(nap.data.naps).toHaveLength(1);
+  }, 240_000);
 
   it("reaches the oldest night from the series' All range", async () => {
     await seed("Europe/Berlin");

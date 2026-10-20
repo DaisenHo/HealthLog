@@ -24,6 +24,7 @@
  * when there is NO ciphertext (a legacy row not yet covered by the backfill).
  */
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { readSealedOrLegacy } from "@/lib/crypto/sealed-or-legacy";
 
 /**
  * Encrypt a free-text note for the `Bytes` ciphertext column. Returns `null`
@@ -51,10 +52,12 @@ export function readNote(
   ciphertext: Uint8Array | null | undefined,
   plaintextFallback: string | null | undefined,
 ): string | null {
-  if (ciphertext && ciphertext.byteLength > 0) {
-    return decryptFromBytes(ciphertext);
-  }
-  return plaintextFallback ?? null;
+  return readSealedOrLegacy({
+    sealed: ciphertext,
+    legacy: plaintextFallback,
+    open: decryptFromBytes,
+    onUndecryptable: "throw",
+  });
 }
 
 /**

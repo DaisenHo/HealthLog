@@ -43,7 +43,8 @@ function withProviders(node: React.ReactNode): string {
   // settled empty result. The failed and in-flight states are covered in
   // `failed-read-never-empty.test.tsx`.
   queryClient.setQueryData(queryKeys.mentalHealthAssessments(), {
-    assessments: [],
+    data: { assessments: [] },
+    cap: null,
   });
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>

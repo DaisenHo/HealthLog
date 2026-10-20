@@ -18,8 +18,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
+import { apiGetList } from "@/lib/api/api-fetch";
 import { cn } from "@/lib/utils";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 interface ActivityRow {
   action: string;
@@ -68,14 +69,20 @@ export function SecurityActivityCard({
   const [open, setOpen] = useState(false);
   const regionId = useId();
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.securityActivity(),
     queryFn: () =>
-      apiGet<{ events: ActivityRow[] }>("/api/auth/me/security-activity"),
+      apiGetList<{ events: ActivityRow[] }>("/api/auth/me/security-activity"),
     enabled: isAuthenticated,
   });
 
-  const events = data?.events ?? [];
+  const events = page?.data.events ?? [];
 
   return (
     <SettingsCard data-slot="settings-security-activity-card">
@@ -152,6 +159,7 @@ export function SecurityActivityCard({
             ))}
           </ul>
         )}
+        <ListCapNotice cap={page?.cap} />
       </div>
     </SettingsCard>
   );

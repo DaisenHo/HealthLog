@@ -42,7 +42,10 @@ interface RhythmEvent {
 function renderWith(
   data: { events: RhythmEvent[]; hasEvents: boolean } | undefined,
 ) {
-  useQueryMock.mockReturnValue({ data, isLoading: false });
+  useQueryMock.mockReturnValue({
+    data: data ? { data, cap: null } : undefined,
+    isLoading: false,
+  });
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <RhythmEventsCard />

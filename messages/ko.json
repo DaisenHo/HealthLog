@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "최근 {count}개만 표시되며, 이전 항목은 여기에 나오지 않습니다.",
     "save": "저장",
     "conflictReloaded": "서버에서 다시 불러왔어요. 변경 내용을 다시 입력해 주세요.",
     "cancel": "취소",
@@ -845,7 +846,7 @@
     "nextPage": "다음 쪽",
     "dailyTotalCaption": "({count}개 샘플)",
     "openMetricInsights": "{type} 인사이트 열기",
-    "sleepNapCaption": "+낮잠 {count}회",
+    "sleepNapCaption": "낮잠 {count}회 포함",
     "sleepAwakeningsCaption": "깬 횟수 {count}회",
     "expandDay": "이 날의 샘플 보기",
     "collapseDay": "이 날의 샘플 숨기기",
@@ -12327,8 +12328,7 @@
       "loadError": "활동 내역을 불러오지 못했어요.",
       "opened": "{name} 님이 내 기록을 {count}번 열었어요",
       "acted": "{name} 님이 내 기록을 수정했어요",
-      "deletedAccount": "삭제된 계정",
-      "truncated": "이 목록은 최근 활동만 보여줘요. 전부는 아니에요."
+      "deletedAccount": "삭제된 계정"
     },
     "delegate": {
       "addOnlyNote": "이 기록에 추가할 수 있어요. 수정과 삭제는 {name} 님만 할 수 있어요."

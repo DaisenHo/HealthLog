@@ -103,16 +103,19 @@ import {
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
 import {
-  summarizeSleepNights,
+  summarizeNights,
   type SleepSourceDiscrepancy,
-  type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { userDayKey } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { canonicalRowsOfDay } from "@/lib/mood/linked-context";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** No account holds this many nights; the walk is uncapped in practice. */
+const ALL_NIGHTS = 100_000;
 
 /**
  * v1.18.10 — upper bound on the cold-fallback `allTime` aggregate's
@@ -459,9 +462,10 @@ async function withLatestDayValues(
  * summary with one computed over per-night asleep totals (one DataPoint
  * per night). The unit stays MINUTES (canonical), so existing consumers
  * that already treat the summary as minutes keep working — they now
- * average nights instead of stages, which is strictly more correct. The
- * read is bounded to a year (~5 rows/night) and is skipped entirely when
- * the user has logged no sleep.
+ * average nights instead of stages, which is strictly more correct. It
+ * covers the whole history, like every other type here (a year's cut left
+ * `avg30LastYear` and the all-time count and range short), and is skipped
+ * entirely when the user has logged no sleep.
  */
 async function withSleepNightTotals(
   userId: string,
@@ -471,32 +475,18 @@ async function withSleepNightTotals(
   // No sleep data at all → nothing to recompute (the empty summary stays).
   if (!existing || existing.count === 0) return slice;
 
-  const since = new Date(Date.now() - 365 * DAY_MS);
-  const rows = (await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: "SLEEP_DURATION",
-      deletedAt: null,
-      measuredAt: { gte: since },
-    },
-    orderBy: { measuredAt: "asc" },
-    // `deviceType` feeds the writer-level collapse: two HealthKit apps
-    // behind one source (watch stages vs phone in-bed) must not blend.
-    select: {
-      value: true,
-      measuredAt: true,
-      sleepStage: true,
-      source: true,
-      deviceType: true,
-    },
-  })) as SleepStageRow[];
-  if (rows.length === 0) return slice;
-
   const [tz, priorityJson] = await Promise.all([
     resolveUserTimezone(userId),
     loadUserSourcePriority(userId),
   ]);
-  const { summary, latestNight } = summarizeSleepNights(rows, tz, priorityJson);
+  // The whole history, as every other type in the slice: the walk names the
+  // nights in Postgres and reconstructs them ninety at a time, so the heap
+  // holds a chunk's rows however long the history is.
+  const nights = await readSleepNights(userId, tz, priorityJson, {
+    maxNights: ALL_NIGHTS,
+  });
+  if (nights.length === 0) return slice;
+  const { summary, latestNight } = summarizeNights(nights);
   // Preserve the slope tuples the night summary doesn't compute (the
   // dashboard tile reads slope30); recompute them off the night series is
   // out of scope here — the per-night `summarize()` already fills slope7 /

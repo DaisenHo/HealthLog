@@ -1989,9 +1989,9 @@ function DayDrillDown({
 }
 
 /**
- * v1.11.5 — sub-caption for a per-night sleep row: surfaces the nap count
- * (naps are separate from the main night per the nap convention) and the
- * night's mid-sleep awakenings when present.
+ * Sub-caption for a per-night sleep row: the row's value is the day's sleep,
+ * main night plus naps, so the caption says how many naps it includes, and
+ * the night's mid-sleep awakenings when present.
  */
 function SleepNightCaption({ m }: { m: Measurement }) {
   const { t } = useTranslations();

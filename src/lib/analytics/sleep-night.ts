@@ -1282,6 +1282,24 @@ export function separateNightsAndNaps(
   return days.sort((a, b) => a.night.localeCompare(b.night));
 }
 
+/**
+ * A wake day's sleep total, the one definition every reader states: the main
+ * night plus every nap of the day. It equals `SleepNight.asleepMinutes` for
+ * the same rows (both sum each session's canonical-writer asleep minutes),
+ * which is what the series, the sleep score and the composition read; the
+ * main night alone stays available as `main.asleepMinutes` /
+ * `SleepNight.mainSession`. A day of naps alone totals its naps, not 0.
+ */
+export function daySleepMinutes(day: {
+  main: SleepSession | null;
+  naps: readonly SleepSession[];
+}): number {
+  return (
+    (day.main?.asleepMinutes ?? 0) +
+    day.naps.reduce((sum, nap) => sum + nap.asleepMinutes, 0)
+  );
+}
+
 export interface SleepNightSummary {
   /**
    * A `DataSummary` whose every value is a per-night TIME-ASLEEP total
@@ -1306,9 +1324,16 @@ export function summarizeSleepNights(
   tz: string,
   priorityJson: unknown = null,
 ): SleepNightSummary {
-  const nights = reconstructSleepNights(rows, tz, priorityJson).filter(
-    (n) => n.asleepMinutes > 0,
-  );
+  return summarizeNights(reconstructSleepNights(rows, tz, priorityJson));
+}
+
+/**
+ * `summarizeSleepNights` over nights already reconstructed, for a reader
+ * that gets them from the chunked Postgres walk (`readSleepNights`) instead
+ * of holding the stage rows itself.
+ */
+export function summarizeNights(all: readonly SleepNight[]): SleepNightSummary {
+  const nights = all.filter((n) => n.asleepMinutes > 0);
   const dataPoints = nights.map((n) => ({
     date: n.measuredAt,
     value: n.asleepMinutes,

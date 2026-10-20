@@ -15,6 +15,7 @@ import {
   SESSION_GAP_MS,
   reconstructSleepNights,
   reconstructSleepSessions,
+  separateNightsAndNaps,
   type SleepNight,
   type SleepSession,
 } from "@/lib/analytics/sleep-night";
@@ -117,38 +118,44 @@ export async function readNightSessions(
   return { sessions, rows };
 }
 
+/** How many nights one step of the latest-night walk reads. */
+const LATEST_WALK_STEP = 14;
+
 /**
- * The wake day of the most recent night that holds sleep, or null. Found
- * from the latest asleep row: the night holding it is the newest one, and
- * its sessions lie within the one-night reach of that row.
+ * The wake day of the most recent night with a main sleep, or, on an account
+ * that has only ever recorded naps, the most recent day of naps; null with no
+ * sleep at all. A day of naps alone is a real day of sleep, but it is not
+ * "last night": answering it would leave a hypnogram with no night to draw.
+ * Postgres names the nights newest first and the walk reconstructs them a
+ * step at a time until one holds a main sleep, so a run of nap-only days
+ * however long is stepped over and the heap holds a step's rows.
  */
-export async function latestSleepNight(
+export async function latestMainSleepNight(
   userId: string,
   tz: string,
   priorityJson: unknown,
 ): Promise<string | null> {
-  const latest = await prisma.measurement.findFirst({
-    where: {
-      userId,
-      type: "SLEEP_DURATION",
-      deletedAt: null,
-      value: { gt: 0 },
-      OR: [{ sleepStage: null }, { sleepStage: { in: [...ASLEEP_STAGES] } }],
-    },
-    orderBy: { measuredAt: "desc" },
-    select: { measuredAt: true },
-  });
-  if (!latest) return null;
-  const at = latest.measuredAt.getTime();
-  const rows = await readSleepRows(
-    userId,
-    new Date(at - NIGHT_READ_REACH_MS),
-    new Date(at + NIGHT_READ_REACH_MS),
-  );
-  const scorable = reconstructSleepSessions(rows, tz, priorityJson).filter(
-    (s) => s.asleepMinutes > 0,
-  );
-  return scorable.at(-1)?.night ?? null;
+  let latestNapDay: string | null = null;
+  for (let offset = 0; ; offset += LATEST_WALK_STEP) {
+    const page = await sleepNightPage(userId, tz, {
+      sortDir: "desc",
+      limit: LATEST_WALK_STEP,
+      offset,
+    });
+    if (page.nights.length === 0) return latestNapDay;
+    const keys = new Set(page.nights.map((n) => n.night));
+    const rows = await readNightSpanRows(userId, page.nights);
+    const days = separateNightsAndNaps(
+      reconstructSleepSessions(rows, tz, priorityJson).filter((s) =>
+        keys.has(s.night),
+      ),
+    );
+    for (let i = days.length - 1; i >= 0; i -= 1) {
+      if (days[i].main) return days[i].night;
+      latestNapDay ??= days[i].night;
+    }
+    if (page.nights.length < LATEST_WALK_STEP) return latestNapDay;
+  }
 }
 
 /** One night of a page: its wake day and the span its sessions cover. */
@@ -164,13 +171,16 @@ export interface SleepNightSpan {
  * The stage rows are cut into sessions the way `reconstructSleepSessions`
  * cuts them: ordered by start (`measured_at` minus the minutes), a new
  * session wherever a row starts more than `SESSION_GAP_MS` after every
- * earlier row has ended. A session counts when it holds an asleep row (an
- * `ASLEEP_STAGES` stage, or a stage-less row, with minutes), and its night is
- * the local day its last row ends on: the reconstruction's own rule, so a
- * page night and a reconstructed night name the same day. Nights are grouped,
- * sorted and cut by `limit` / `offset`; `total` counts the whole filtered set.
- * `spanStart` / `spanEnd` bound the night's counting sessions, so the caller
- * reads exactly their rows.
+ * earlier row has ended. A session's night is the local day its last row
+ * ends on: the reconstruction's own rule, so a page night and a
+ * reconstructed night name the same day. A night counts when one of its
+ * sessions holds an asleep row (an `ASLEEP_STAGES` stage, or a stage-less
+ * row, with minutes). Nights are grouped, sorted and cut by `limit` /
+ * `offset`; `total` counts the whole filtered set. `spanStart` / `spanEnd`
+ * bound every session of the night, the in-bed-only ones included, because
+ * the reconstruction adds their in-bed time to the night: a span over the
+ * asleep sessions alone left an evening's in-bed block out of a chunked read
+ * that the one-night read, reaching a day and a half, counted.
  *
  * Before the cut, rows are folded into hour buckets by their end: min start,
  * max end, any asleep. That cannot move a session boundary. Two rows whose
@@ -218,10 +228,9 @@ export async function sleepNightPage(
       ) OVER (ORDER BY s, e ROWS UNBOUNDED PRECEDING) AS sid
       FROM o
     ), sess AS (
-      SELECT MIN(s) AS s, MAX(e) AS e
+      SELECT MIN(s) AS s, MAX(e) AS e, BOOL_OR(asleep) AS asleep
       FROM g
       GROUP BY sid
-      HAVING BOOL_OR(asleep)
     ), nights AS (
       SELECT
         to_char((e AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD') AS night,
@@ -229,6 +238,7 @@ export async function sleepNightPage(
         MAX(e) AS span_end
       FROM sess
       GROUP BY 1
+      HAVING BOOL_OR(asleep)
     )
   `;
   const { rows, total } = await pageWithWindowTotal(

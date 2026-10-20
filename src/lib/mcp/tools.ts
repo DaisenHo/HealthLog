@@ -20,6 +20,7 @@
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
+import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { annotate } from "@/lib/logging/context";
 import { getDayArgsSchema } from "@/lib/ai/coach/tools/definitions";
@@ -584,14 +585,13 @@ function searchAndFetchTools(): McpToolDefinition[] {
         // v1.41.2 — live rows only: a deleted reading is not a signal the
         // record holds, and the filter lets the probe use the live-rows
         // partial index instead of walking the tombstones.
-        const discoverablePresent = await prisma.measurement.groupBy({
-          by: ["type"],
-          where: {
-            userId: ctx.userId,
-            type: { in: discoverableSignals.map((s) => s.measurementType) },
-            deletedAt: null,
-          },
-        });
+        // A presence probe is one index lookup per type (`readLatestEver`
+        // drops a type with no live reading), not a grouping of every row.
+        const discoverablePresent = await readLatestEver(
+          prisma,
+          ctx.userId,
+          discoverableSignals.map((s) => s.measurementType),
+        );
         const presentTypes = new Set(discoverablePresent.map((r) => r.type));
         for (const sig of discoverableSignals) {
           if (!presentTypes.has(sig.measurementType)) continue;

@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Hier stehen die letzten {count}; ältere Einträge sind nicht aufgeführt.",
     "save": "Speichern",
     "conflictReloaded": "Vom Server neu geladen. Bitte nimm deine Änderung noch einmal vor.",
     "cancel": "Abbrechen",
@@ -845,7 +846,7 @@
     "nextPage": "Nächste Seite",
     "dailyTotalCaption": "({count} Einzelwerte)",
     "openMetricInsights": "{type}-Auswertung öffnen",
-    "sleepNapCaption": "+{count} Nickerchen",
+    "sleepNapCaption": "inkl. {count} Nickerchen",
     "sleepAwakeningsCaption": "{count} Wachphasen",
     "expandDay": "Einzelwerte dieses Tages anzeigen",
     "collapseDay": "Einzelwerte dieses Tages ausblenden",
@@ -12327,8 +12328,7 @@
       "loadError": "Die Aktivität konnte nicht geladen werden.",
       "opened": "{name} hat deine Akte {count}× geöffnet",
       "acted": "{name} hat etwas in deiner Akte geändert",
-      "deletedAccount": "Ein gelöschtes Konto",
-      "truncated": "Diese Liste zeigt die neueste Aktivität, nicht die gesamte."
+      "deletedAccount": "Ein gelöschtes Konto"
     },
     "delegate": {
       "addOnlyNote": "Du kannst zu dieser Akte etwas hinzufügen. Einträge ändern oder löschen kann nur {name}."

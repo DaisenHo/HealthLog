@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Seuls les {count} derniers sont affichés ; les entrées plus anciennes ne figurent pas ici.",
     "save": "Enregistrer",
     "conflictReloaded": "Rechargé depuis le serveur. Refais ta modification.",
     "cancel": "Annuler",
@@ -845,7 +846,7 @@
     "nextPage": "Page suivante",
     "dailyTotalCaption": "({count} échantillons)",
     "openMetricInsights": "Ouvrir l'analyse {type}",
-    "sleepNapCaption": "+{count} sieste(s)",
+    "sleepNapCaption": "dont {count} sieste(s)",
     "sleepAwakeningsCaption": "{count} réveil(s)",
     "expandDay": "Afficher les échantillons de ce jour",
     "collapseDay": "Masquer les échantillons de ce jour",
@@ -12327,8 +12328,7 @@
       "loadError": "L'activité n'a pas pu être chargée.",
       "opened": "{name} a ouvert votre dossier {count}×",
       "acted": "{name} a fait une modification dans votre dossier",
-      "deletedAccount": "Un compte supprimé",
-      "truncated": "Cette liste montre l'activité la plus récente, pas la totalité."
+      "deletedAccount": "Un compte supprimé"
     },
     "delegate": {
       "addOnlyNote": "Vous pouvez ajouter des éléments à ce dossier. Seul {name} peut modifier ou supprimer des entrées."

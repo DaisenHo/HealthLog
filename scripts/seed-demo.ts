@@ -88,6 +88,7 @@ import {
   getKeyFingerprint,
 } from "../src/lib/crypto";
 import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
+import { sealInsightsCachedText } from "../src/lib/insights/cached-text-cipher";
 import {
   DEFAULT_DASHBOARD_LAYOUT,
   serializeDashboardLayout,
@@ -3343,7 +3344,8 @@ async function seed() {
     const bakedProvider = "anthropic";
 
     // ── Comprehensive insight + daily briefing ──
-    // Stored on users.insights_cached_text (JSON). The GET read parses it and
+    // Stored sealed on users.insights_cached_text_encrypted (JSON). The GET
+    // read opens and parses it and
     // returns it as-is; setting insights_cached_at = NOW() keeps it inside the
     // 24 h freshness window for the dashboard-snapshot briefing path. The shape
     // is the union of insightResultSchema (summary / findings / correlations /
@@ -3527,14 +3529,19 @@ async function seed() {
 
     await client.query(
       `UPDATE users
-         SET insights_cached_text = $2,
+         SET insights_cached_text_encrypted = $2,
+             insights_cached_text = NULL,
              insights_cached_at = NOW(),
              insights_snapshot_hash = $3,
              insights_briefing_reroll_date = $4
        WHERE id = $1`,
       [
         userId,
-        JSON.stringify(comprehensiveInsight),
+        // Sealed like every write since v1.43.7; the app never reads the
+        // readable column while a ciphertext is there.
+        Buffer.from(
+          sealInsightsCachedText(JSON.stringify(comprehensiveInsight)),
+        ),
         // A stable fingerprint. The 24 h cache window keeps the row fresh on
         // its own; this value just has to be present + non-null so a
         // hypothetical regeneration would treat the snapshot as known. The

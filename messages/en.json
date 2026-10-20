@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Showing the latest {count}; older entries are not listed here.",
     "save": "Save",
     "conflictReloaded": "Reloaded from the server. Please make your change again.",
     "cancel": "Cancel",
@@ -845,7 +846,7 @@
     "nextPage": "Next page",
     "dailyTotalCaption": "({count} samples)",
     "openMetricInsights": "Open {type} insights",
-    "sleepNapCaption": "+{count} nap(s)",
+    "sleepNapCaption": "incl. {count} nap(s)",
     "sleepAwakeningsCaption": "{count} awakening(s)",
     "expandDay": "Show samples for this day",
     "collapseDay": "Hide samples for this day",
@@ -12327,8 +12328,7 @@
       "loadError": "The activity could not be loaded.",
       "opened": "{name} opened your record {count}×",
       "acted": "{name} made a change in your record",
-      "deletedAccount": "A deleted account",
-      "truncated": "This list shows the most recent activity, not all of it."
+      "deletedAccount": "A deleted account"
     },
     "delegate": {
       "addOnlyNote": "You can add to this record. Changing or removing entries is something only {name} can do."

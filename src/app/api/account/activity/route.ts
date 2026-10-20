@@ -142,13 +142,9 @@ export const GET = apiHandler(async () => {
     createdAt: row.createdAt.toISOString(),
   }));
 
-  // Exact: one row past the cap was asked for, so a list that is exactly
-  // full no longer reads as cut.
-  const truncated = cap.truncated;
-
   annotate({
     action: { name: "sharing.activity.list" },
-    meta: { entry_count: entries.length, truncated },
+    meta: { entry_count: entries.length, truncated: cap.truncated },
   });
 
   return apiListSuccess(
@@ -157,11 +153,9 @@ export const GET = apiHandler(async () => {
       // The bound the view states out loud. Resolved here so the UI never has to
       // hardcode a number the operator can change.
       retentionDays,
-      // Whether the list is everything inside that window, or its most recent
-      // hundred rows. The view says which; silence would let the oldest line
-      // read as the beginning.
-      truncated,
     },
+    // Whether the list is everything inside that window, or its most recent
+    // hundred rows, rides the envelope like every capped list's (`meta`).
     cap,
   );
 });

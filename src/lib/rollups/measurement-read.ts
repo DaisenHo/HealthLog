@@ -38,6 +38,7 @@ import {
   getSourceLadder,
   parseSourcePriority,
 } from "@/lib/validations/source-priority";
+import { fitFromSums } from "@/lib/stats/linear-fit";
 
 /**
  * v1.11.1 — load a user's source-priority blob for the rollup collapse.
@@ -217,18 +218,12 @@ export function composeRegression(
 
   if (n < 2) return MISS;
 
-  // Mean-centered (corrected-sum) identities. Sxx/Sxy/Syy are the determinant
-  // terms divided by n — algebraically identical to `n·Σxx − Σx²` etc., but
-  // they subtract `Σx²/n` from `Σxx` at matched scale, avoiding the
-  // catastrophic cancellation the determinant form suffers on the ~1e10
-  // epoch-day x-axis. See the function header for the full rationale.
-  const sxx = sumXx - (sumX * sumX) / n;
+  // The centred fit over the accumulators (`fitFromSums`), the same
+  // arithmetic every point fit uses. No x variance: no slope, no r².
+  const fit = fitFromSums({ n, sumX, sumY, sumXx, sumXy, sumYy });
+  const slope = fit ? fit.slope : null;
+  const r2 = fit ? fit.r2 : null;
   const syy = sumYy - (sumY * sumY) / n;
-  const sxy = sumXy - (sumX * sumY) / n;
-
-  const slope = sxx === 0 ? null : sxy / sxx;
-  // REGR_R2 is null when either variance is zero (matches Postgres).
-  const r2 = sxx === 0 || syy === 0 ? null : (sxy * sxy) / (sxx * syy);
 
   // Population variance: Syy/n = Σyy/n − (Σy/n)². Clamp tiny negative values
   // float rounding can produce when the variance is effectively zero.

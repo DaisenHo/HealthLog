@@ -1021,7 +1021,7 @@ async function readMoodFeature(
   //
   // Coverage-fallback: when raw entries exist but the rollup tier is
   // still empty (legacy account before boot-time backfill caught up),
-  // we fall back to a bounded 1-year raw walk and fire the warm-up so
+  // we fall back to a raw walk over the same window and fire the warm-up so
   // the next request lands on the rollup tier. Same posture as
   // `/api/mood/analytics`.
   void ensureUserMoodRollupsFresh(userId);
@@ -1062,15 +1062,13 @@ async function readMoodFeature(
     });
     moodLatestScore = latestEntry?.score ?? null;
   } else {
-    // Coverage-fallback. Bounded 1-year walk (instead of the legacy
-    // unbounded `findMany`) so even a cache miss is capped.
-    const oneYearAgo = laterDate(
-      new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-      historyFloor,
-    );
+    // Coverage-fallback over the same window the rollup read covers
+    // (`moodSince`, five years). A one-year fallback answered the same
+    // question with a different history while the tier was warming up;
+    // mood entries are a few a day, so five years stays a bounded read.
     const moodEntriesRaw = await prisma.moodEntry.findMany({
       // v1.7.0 sync — exclude tombstoned rows.
-      where: { userId, deletedAt: null, moodLoggedAt: { gte: oneYearAgo } },
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: moodSince } },
       orderBy: { moodLoggedAt: "asc" },
       select: { score: true, moodLoggedAt: true, date: true },
     });

@@ -41,13 +41,25 @@ describe("cached insights payload at rest", () => {
     ).toBe(PAYLOAD);
   });
 
-  it("prefers a readable value over a sealed one, since only an older writer can have put it there", () => {
+  // This used to prefer the readable column, the one sealed column read
+  // that way. Every sealed column now reads the ciphertext first.
+  it("reads a sealed value before a readable one beside it", () => {
     expect(
       openInsightsCachedText({
-        insightsCachedText: "newer, from the previous release",
-        insightsCachedTextEncrypted: sealInsightsCachedText("older"),
+        insightsCachedText: "readable",
+        insightsCachedTextEncrypted: sealInsightsCachedText("sealed"),
       }),
-    ).toBe("newer, from the previous release");
+    ).toBe("sealed");
+  });
+
+  it("never serves the readable value in place of a sealed one that does not open", () => {
+    const foreign = encryptBytes(Buffer.from(PAYLOAD, "utf8"), "other/v1");
+    expect(
+      openInsightsCachedText({
+        insightsCachedText: "readable",
+        insightsCachedTextEncrypted: new Uint8Array(foreign),
+      }),
+    ).toBeNull();
   });
 
   it("does not open a value sealed for another purpose", () => {

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({
-    data: mocks.rows,
+    data: { data: mocks.rows, cap: null },
     isLoading: false,
     isError: false,
     refetch: vi.fn(),
@@ -18,6 +18,7 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@/lib/api/api-fetch", () => ({
   apiDelete: vi.fn(),
   apiGet: vi.fn(),
+  apiGetList: vi.fn(),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/components/ui/responsive-sheet", () => ({

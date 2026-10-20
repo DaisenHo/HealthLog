@@ -9,20 +9,27 @@
  * also mis-rounds on halves (`(1.005).toFixed(2)` is `"1.00"`, because the
  * double below 1.005 is what gets rounded).
  *
- * Two decimals, rounded half away from zero on the decimal the value prints
- * as, so the result is the double nearest to a two-place decimal and prints
- * cleanly. Two places is the precision every provider client already stored;
- * this keeps it. `src/__tests__/provider-rounding-guard.test.ts` keeps
- * `toFixed` out of the provider directories.
+ * Two decimals by default, rounded half away from zero on the decimal the
+ * value prints as, so the result is the double nearest to a short decimal
+ * and prints cleanly. Two places is the precision every provider client
+ * already stored; this keeps it. A source whose values need another
+ * precision (a nutrient in grams to the milligram) passes `places` rather
+ * than rounding privately. `src/__tests__/provider-rounding-guard.test.ts`
+ * keeps `toFixed` and hand-rolled `Math.round(x * 10^n) / 10^n` out of the
+ * provider and import directories.
  */
-export function importValue(n: number): number {
+export function importValue(n: number, places = 2): number {
   if (!Number.isFinite(n)) return n;
+  if (!Number.isInteger(places) || places < 0 || places > 6) {
+    throw new RangeError(`importValue: places must be 0..6, got ${places}`);
+  }
   const magnitude = Math.abs(n);
   const text = String(magnitude);
+  const scale = 10 ** places;
   // A value printed in exponent form is below a millionth or beyond 1e21;
   // shifting its text would not parse, and plain arithmetic is exact enough.
-  const hundredths = text.includes("e")
-    ? Math.round(magnitude * 100)
-    : Math.round(Number(`${text}e2`));
-  return (Math.sign(n) * hundredths) / 100 || 0;
+  const units = text.includes("e")
+    ? Math.round(magnitude * scale)
+    : Math.round(Number(`${text}e${places}`));
+  return (Math.sign(n) * units) / scale || 0;
 }
