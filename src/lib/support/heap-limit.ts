@@ -14,9 +14,14 @@ import { getHeapStatistics } from "node:v8";
 /** Below this, the heap is flagged. Between the 1g (524) and 1536m (792) heaps. */
 export const LOW_HEAP_LIMIT_MB = 700;
 
+/** Bytes as whole megabytes (MiB), the unit every heap figure is shown in. */
+export function megabytes(bytes: number): number {
+  return Math.round(bytes / 1024 / 1024);
+}
+
 /** V8's heap limit for this process, in megabytes. */
 export function heapLimitMb(): number {
-  return Math.round(getHeapStatistics().heap_size_limit / 1024 / 1024);
+  return megabytes(getHeapStatistics().heap_size_limit);
 }
 
 export function isHeapLimitLow(limitMb: number): boolean {

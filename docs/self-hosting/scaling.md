@@ -79,8 +79,12 @@ Raise the limit on the container that runs the worker and re-upload:
 services:
   app:
     environment:
-      NODE_OPTIONS: --max-old-space-size=1024
+      NODE_OPTIONS: --max-old-space-size=1024 --report-on-fatalerror --report-filename=stderr --report-exclude-env --report-exclude-network
 ```
+
+Your `NODE_OPTIONS` replaces the image's, so carry the four `--report-*`
+flags over: they make an out-of-memory exit leave a diagnostic report in
+the container log (see `docs/ops/heap-diagnostics.md`).
 
 An import interrupted by a container restart or an out-of-memory kill
 does not stay stuck: the worker reconciles non-terminal import jobs at

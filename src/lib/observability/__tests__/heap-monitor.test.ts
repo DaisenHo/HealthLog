@@ -23,7 +23,9 @@ import { walkSourceFiles } from "@/__tests__/helpers/source-files";
 
 import {
   HEAP_CHECK_INTERVAL_MS,
+  HEAP_CRITICAL_RATIO,
   HEAP_PRESSURE_COOLDOWN_MS,
+  HEAP_PRESSURE_RATIO,
   HEAP_PRESSURE_LIST_MAX,
   HEAP_SAMPLE_INTERVAL_ELEVATED_MS,
   HEAP_SAMPLE_INTERVAL_MS,
@@ -173,6 +175,41 @@ describe("heap pressure report", () => {
     h.state.used = 900;
     h.run(HEAP_CHECK_INTERVAL_MS);
     expect(h.named(HEAP_TASK_NAMES.pressure)).toHaveLength(2);
+  });
+
+  it("reports again at 95 % inside the cooldown, once per climb", () => {
+    const h = harness();
+    h.state.used = 900;
+    h.run(60_000);
+    // Ten minutes later, well inside the cooldown, the heap nears its limit.
+    h.state.used = 800;
+    h.run(10 * 60_000);
+    h.state.used = 960;
+    h.run(60_000);
+    const pressure = h.named(HEAP_TASK_NAMES.pressure);
+    expect(pressure.map((p) => p.meta.pressure_ratio)).toEqual([
+      HEAP_PRESSURE_RATIO,
+      HEAP_CRITICAL_RATIO,
+    ]);
+    expect(pressure[1].meta).toHaveProperty("in_flight_oldest");
+
+    // Hovering at 95 % writes nothing more; back under 85 % re-arms it.
+    h.run(5 * 60_000);
+    expect(h.named(HEAP_TASK_NAMES.pressure)).toHaveLength(2);
+    h.state.used = 840;
+    h.run(HEAP_CHECK_INTERVAL_MS);
+    h.state.used = 970;
+    h.run(HEAP_CHECK_INTERVAL_MS);
+    expect(h.named(HEAP_TASK_NAMES.pressure)).toHaveLength(3);
+  });
+
+  it("writes one report at the tier a sudden jump reaches", () => {
+    const h = harness();
+    h.state.used = 990;
+    h.run(60_000);
+    const pressure = h.named(HEAP_TASK_NAMES.pressure);
+    expect(pressure).toHaveLength(1);
+    expect(pressure[0].meta.pressure_ratio).toBe(HEAP_CRITICAL_RATIO);
   });
 
   it("writes no snapshot unless opted in, and at most one when it is", () => {

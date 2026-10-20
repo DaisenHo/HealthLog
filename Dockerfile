@@ -76,6 +76,15 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV TZ=Europe/Berlin
 
+# When the heap runs out, Node writes a diagnostic report (the JavaScript
+# and native stacks, heap spaces, libuv handles) to stderr, where
+# `docker compose logs` and Loki keep it; without it the log holds one
+# line. Environment variables and network interfaces are left out, so no
+# key, password or address from the environment reaches the log. An
+# operator who sets NODE_OPTIONS replaces this value and should carry these
+# flags over (docs/ops/heap-diagnostics.md).
+ENV NODE_OPTIONS="--report-on-fatalerror --report-filename=stderr --report-exclude-env --report-exclude-network"
+
 # v1.4.43 B11 — forward NEXT_PUBLIC_APP_VERSION from the builder stage
 # into the runner so /api/version reads the build-arg value instead of
 # the package.json fallback. The variable is keyed to the CI tag ref
