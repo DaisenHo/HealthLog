@@ -21,7 +21,7 @@ vi.mock("@/lib/notifications/dispatcher", () => ({
   dispatchNotification: vi.fn().mockResolvedValue(undefined),
 }));
 
-// v1.4.27 F21 — the deploy-webhook route now wraps every admin alert
+// v1.4.27 — the deploy-webhook route now wraps every admin alert
 // in `dispatchLocalisedNotification`, which delegates to the base
 // dispatcher. Mock the localised helper so the route-level tests stay
 // hermetic and we can assert recipient-specific calls directly.
@@ -186,7 +186,7 @@ describe("POST /api/internal/deploy-webhook", () => {
       }),
     );
 
-    // v1.4.27 F21 — the route now wraps every admin alert in
+    // v1.4.27 — the route now wraps every admin alert in
     // `dispatchLocalisedNotification`, which composes the title and
     // body from translation keys against the admin's locale before
     // delegating to the base dispatcher. The test asserts the per-admin

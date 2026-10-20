@@ -335,8 +335,11 @@ describe("a refused invitation keeps what was typed", () => {
     expect(inviteErrorKey(new TypeError("Failed to fetch"))).toBe(
       "recordSharing.invite.errorOffline",
     );
-    expect(inviteErrorKey(apiError(404))).toBe(
+    expect(inviteErrorKey(apiError(404, "sharing.invite.no_account"))).toBe(
       "recordSharing.invite.errorNoAccount",
+    );
+    expect(inviteErrorKey(apiError(404, "http.not_found"))).toBe(
+      "recordSharing.invite.errorFailed",
     );
     expect(inviteErrorKey(apiError(409, "sharing.invite.duplicate"))).toBe(
       "recordSharing.invite.errorDuplicate",

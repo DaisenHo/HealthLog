@@ -175,7 +175,7 @@ export function GettingStartedChecklist() {
   const [dismissedAll, setDismissedAll] = useState<boolean>(() =>
     readDismissedAll(),
   );
-  // v1.4.15 phase-A3 fix #3 — collapsed by default. The card used to
+  // v1.4.15 #3 — collapsed by default. The card used to
   // render expanded on every load, pushing actual dashboard tiles below
   // the fold. The collapsed shell still surfaces the progress meter +
   // CTA-row count via `gettingStarted.progress`, so users see at a
@@ -268,13 +268,13 @@ export function GettingStartedChecklist() {
   // sign-in or the operator's shared key). No request of its own.
   const aiProvider = useAiProviderState();
 
-  // v1.5 perf audit: skip these two fetches once the card can't render at
+  // v1.5: skip these two fetches once the card can't render at
   // all (`checklistRelevant`, same gate the meds/AI queries above use).
   // withings/status and notifications/preferences are unique to this
   // component and were burning ~950 ms of network on every dashboard load
   // for established users. See docs/audit/v15-performance.md.
   //
-  // 2026-07-17 UX audit M1 — this used to read a separate `onboardingPending`
+  // This used to read a separate `onboardingPending`
   // (`onboardingCompletedAt == null`) instead of `checklistRelevant`, so a
   // user who finished the wizard but still had under 5 measurements kept
   // seeing the card (`shouldShowChecklist` allows that) while these two
@@ -301,7 +301,7 @@ export function GettingStartedChecklist() {
     enabled: checklistRelevant,
   });
 
-  // v1.39 (C2) — the "prepare the visit" row, only for the answer that asked
+  // v1.39 — the "prepare the visit" row, only for the answer that asked
   // for it: a visit within a month. Reads the visits list's own meta count so
   // the row flips done the moment one is on the calendar.
   // Answers given for somebody else's record (Q1 "someone I look after") are
@@ -355,7 +355,7 @@ export function GettingStartedChecklist() {
         dismissedIds,
         upcomingVisitCount: upcomingVisitCount ?? 0,
         managedProfileCount,
-        // v1.39 (C1) — the setup answers order these rows: medication first
+        // v1.39 — the setup answers order these rows: medication first
         // for somebody who said they take one daily, the data-source row first
         // for somebody who named a wearable. The payload resolves them for the
         // ACTIVE record, which is the same record the counts above describe.
@@ -388,13 +388,13 @@ export function GettingStartedChecklist() {
     measurementCount,
     dismissedAll,
     items,
-    // v1.39 (C1) — five readings are not evidence the setup finished. While a
+    // v1.39 — five readings are not evidence the setup finished. While a
     // step is still pending, the answers were never confirmed, or the one task
     // the flow offered never produced its result, the list stays.
     onboarding: user?.onboarding ?? null,
   });
 
-  // v1.4.15 phase-A3 fix #3 — flicker guard. Until BOTH the auth user
+  // v1.4.15 #3 — flicker guard. Until BOTH the auth user
   // AND the snapshot query have resolved we render NOTHING. The
   // previous version rendered a default-true `show` branch while
   // `measurementCount` was still 0 (because the data hadn't returned),
@@ -416,7 +416,7 @@ export function GettingStartedChecklist() {
       aria-labelledby="getting-started-title"
       className="bg-card border-border space-y-4 rounded-xl border p-4 md:p-6"
     >
-      {/* v1.4.27 MB7 / CF-44 — `flex-wrap` on the header lets the
+      {/* v1.4.27 — `flex-wrap` on the header lets the
           dismiss button drop to its own row when the German title +
           subtitle overflow the visible width on Galaxy Fold / Pixel 5
           (the previous `flex` layout collided the dismiss caption
@@ -429,7 +429,7 @@ export function GettingStartedChecklist() {
           onClick={() => setExpanded((prev) => !prev)}
           aria-expanded={expanded}
           aria-controls="getting-started-body"
-          // v1.4.37 W-CI — lift the toggle to clear the WCAG 2.5.5 mobile
+          // v1.4.37 — lift the toggle to clear the WCAG 2.5.5 mobile
           // tap-target floor on Pixel-5 (the maintainer's iOS-textarea-zoom sweep
           // pinned the floor at 44 px; the previous `p-1` padding left
           // the toggle at 32 px). `sm:min-h-10` returns to the desktop
@@ -461,14 +461,14 @@ export function GettingStartedChecklist() {
         <Button
           type="button"
           variant="ghost"
-          // v1.4.37 W-CI — the shadcn `default` Button is `h-10` (40 px)
+          // v1.4.37 — the shadcn `default` Button is `h-10` (40 px)
           // across breakpoints; lift to 44 px on mobile to clear the
           // WCAG 2.5.5 floor that the rest of the input primitives
           // follow via `h-11 sm:h-10`. The dismiss CTA is one of the
           // few primary buttons rendered above the fold on the
           // onboarded-user dashboard so the regression was visible to
           // the touch-target spec.
-          // v1.4.38 W-D P3-3 — align the desktop floor with the
+          // v1.4.38 — align the desktop floor with the
           // dashboard +Hinzufügen pattern (`sm:min-h-9`); the
           // `sm:min-h-10` here was a no-op against the Button default
           // of `h-10`.

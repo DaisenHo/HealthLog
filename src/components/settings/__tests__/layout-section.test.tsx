@@ -34,6 +34,9 @@ vi.mock("@/hooks/use-mounted", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { LayoutSection } from "../layout-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(modules?: Record<string, boolean>, locale: "en" | "de" = "en") {
   authRef.modules = modules;

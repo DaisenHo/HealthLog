@@ -139,7 +139,7 @@ export interface MeasurementReminderSummary {
   skippedOutsideWindow: number;
   skippedModuleDisabled: number;
   skippedNoChannel: number;
-  /** v1.37.19 (A6-7) — slot already claimed for this local day (racing worker or crash-recovery replay). */
+  /** v1.37.19 — slot already claimed for this local day (racing worker or crash-recovery replay). */
   skippedAlreadyClaimed: number;
   /** v1.39.2 — open check-up already reminded for this slot within the week. */
   skippedRepeatHeld: number;
@@ -448,7 +448,7 @@ export async function runMeasurementReminderTick(
       // user was filed as handled and vanished from the card and the digest.
       // Now, when nothing delivers, the no-channel branch below leaves the
       // reminder overdue and visible.
-      // v1.37.19 (A6-7) — claim the slot BEFORE provider egress, the
+      // v1.37.19 — claim the slot BEFORE provider egress, the
       // documented claim-first pattern from `reminder-dedup.ts`. The old
       // order (dispatch, then advance `nextDueAt`) double-sent when the
       // worker crashed between the two; the claim is the durable record

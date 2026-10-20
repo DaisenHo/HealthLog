@@ -42,7 +42,7 @@ export interface PayloadForCoverage {
 }
 
 /**
- * v1.4.16 phase B5a — citation-coverage post-validation.
+ * v1.4.16 — citation-coverage post-validation.
  *
  * After the schema parse + cross-citation check pass, the wrapper
  * counts how many recommendations make a normative claim
@@ -140,6 +140,16 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
     "zakres normy",
     "powyzej",
     "ponizej",
+  ],
+  nl: [
+    "doel",
+    "streefwaarde",
+    "zou moeten",
+    "hoort",
+    "normaalwaarde",
+    "normaal bereik",
+    "boven de",
+    "onder de",
   ],
   ko: [
     "목표",

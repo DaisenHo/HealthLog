@@ -8,11 +8,11 @@
  * provider form, plus the chain / runtime cards). This file only owns
  * the section frame and the card order; behaviour lives in the parts.
  *
- * v1.18.0 (S5) — the Coach preference cards (disable toggle, preferences,
+ * v1.18.0 — the Coach preference cards (disable toggle, preferences,
  * memory) moved out to the dedicated Coach section. The AI section keeps
  * only provider / model / BYOK configuration.
  *
- * v1.18.1 (D8) — the "About me" context moved to Settings → Account (under
+ * v1.18.1 — the "About me" context moved to Settings → Account (under
  * Profil, before Zyklus-Tracking). It is personal medical context the daily
  * briefing reads too, so it belongs with the account profile rather than the
  * provider-configuration screen.
@@ -38,7 +38,7 @@ export function AiSection() {
   const mounted = useMounted();
   const authed = mounted && isAuthenticated;
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the single provider
   // card. (The "About me" context moved to Settings → Account in v1.18.1 D8.)
   //

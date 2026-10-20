@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W7-B3 — typed-classification regression suite.
+ * v1.4.43 — typed-classification regression suite.
  *
  * Pins that both `syncUserActivity` and `syncUserSleep` route their
  * catch-block through `recordWithingsSyncFailure` (the shared helper in

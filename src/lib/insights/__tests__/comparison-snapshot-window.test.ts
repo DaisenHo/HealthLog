@@ -1,5 +1,5 @@
 /**
- * v1.20.1 perf — the comparison-snapshot builder must bound its per-type
+ * v1.20.1 — the comparison-snapshot builder must bound its per-type
  * measurement read instead of scanning a user's entire history. v1.28.46
  * perf — it now computes the two means it actually reads (avg30 + one
  * baseline mean) as DB-side AVG aggregates over the exact windows, instead

@@ -1,5 +1,5 @@
 /**
- * v1.4.48 M3 — unit-level coverage for the atomic nonce-consumption
+ * v1.4.48 — unit-level coverage for the atomic nonce-consumption
  * branch.
  *
  * The integration tests in `tests/integration/withings-oauth*.test.ts`
@@ -181,10 +181,10 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
   });
 
   it("non-P2025 delete failure (e.g. connection drop) surfaces a Wide-Event warning carrying err.name only, and bounces to the error page", async () => {
-    // M7 — a real infra failure on the consume-delete must not be
+    // A real infra failure on the consume-delete must not be
     // silently swallowed.
     //
-    // v1.4.49 QA-2 — the warning template now interpolates `err.name`
+    // v1.4.49 — the warning template now interpolates `err.name`
     // rather than `${err}`. A Prisma error whose `message` echoes the
     // offending value (e.g. the raw nonce) into the wide-event log
     // would otherwise leak it.

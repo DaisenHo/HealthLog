@@ -33,7 +33,7 @@ import {
  * `DEFAULT_INSIGHTS_LAYOUT` and a "Fertig" save would PUT defaults over their
  * real saved layout.
  *
- * v1.32.21 (R5a, B-3) — the resolver rebuilds a FIXED `InsightsLayout` shape
+ * v1.32.21 — the resolver rebuilds a FIXED `InsightsLayout` shape
  * and would DROP the server's `updatedAt` optimistic-concurrency token. If it
  * did, every insights-layout write would fall back to the server's compat
  * (unconditional) arm and the #581-class guard would be dead on arrival. So we

@@ -1,4 +1,4 @@
-// v1.4.43 W5-H5 — single source of truth for `behavior` on the four
+// v1.4.43 — single source of truth for `behavior` on the four
 // programmatic `scrollIntoView` / `scrollTo` call-sites in the app.
 // `prefers-reduced-motion: reduce` users were previously animated against
 // their OS-level preference, which is a WCAG 2.3.3 violation. The helper

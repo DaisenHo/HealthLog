@@ -55,7 +55,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 
 /**
- * v1.4.20 phase B2b — TanStack Query + SSE client for the AI Coach
+ * v1.4.20 — TanStack Query + SSE client for the AI Coach
  * drawer.
  *
  * The shape mirrors the backend wire format from `phase-B2a-report.md`:
@@ -221,7 +221,7 @@ export interface UseCoachConversationHistoryOptions {
 }
 
 /**
- * v1.30.2 (QoL H1) — the full, paginated + server-searched conversation
+ * v1.30.2 — the full, paginated + server-searched conversation
  * history. Replaces the old "first page only, client-side substring
  * filter" behaviour: `useInfiniteQuery` walks the cursor chain
  * (`nextCursor`) so every conversation the caller has ever had is
@@ -270,6 +270,7 @@ export function useCoachConversationHistory(
     conversations,
     isLoading: query.isLoading,
     isError: query.isError,
+    error: query.error,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
     fetchNextPage: query.fetchNextPage,
@@ -359,7 +360,7 @@ export function deleteCoachConversationRequest(id: string): Promise<unknown> {
   });
 }
 
-// v1.30.1 M5 — delayed-commit delete window, in milliseconds. Long
+// v1.30.1 — delayed-commit delete window, in milliseconds. Long
 // enough to read + tap Undo, short enough that the eventual DELETE
 // isn't a surprise days later.
 export const CONVERSATION_DELETE_UNDO_MS = 6000;
@@ -483,7 +484,7 @@ export function commitCoachConversationDelete(
 }
 
 /**
- * v1.30.1 M5 — one tap hides the row and schedules the real
+ * v1.30.1 — one tap hides the row and schedules the real
  * `DELETE /api/insights/chat/[id]` after `CONVERSATION_DELETE_UNDO_MS`;
  * `undoDelete` within that window cancels it. `pendingDeleteIds` is the
  * hide filter every surface subtracts from what it renders.
@@ -711,12 +712,12 @@ export interface CoachStreamingMessage {
   /** Provenance frame — populated once the server emits it. */
   metricSource: CoachProvenance | null;
   /**
-   * v1.18.1 (Workstream C) — cadence suggestion from the additive
+   * v1.18.1 — cadence suggestion from the additive
    * `suggestion` frame, if the turn carried one. Null otherwise.
    */
   suggestion: CoachSuggestion | null;
   /**
-   * v1.22 (W7/W6) — generalised confirm-card action from the additive
+   * v1.22 — generalised confirm-card action from the additive
    * `suggestedAction` frame (mirrors `suggestion`). Persisted messages carry it
    * on `metricSource.suggestedAction` instead. Null otherwise.
    */
@@ -764,7 +765,7 @@ export interface CoachStreamingMessage {
 }
 
 /**
- * v1.4.25 W5 — optimistic user bubble surfaced by the send hook so the
+ * v1.4.25 — optimistic user bubble surfaced by the send hook so the
  * thread paints the user's message immediately, before the assistant's
  * "Thinking…" placeholder. The server persists the user message before
  * the stream starts (see `appendMessage` in
@@ -1041,7 +1042,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
   const queryClient = useQueryClient();
   const [streaming, setStreaming] =
     useState<CoachStreamingMessage>(EMPTY_STREAMING);
-  // v1.4.25 W5 — optimistic user bubble. Mounts the user's message in
+  // v1.4.25 — optimistic user bubble. Mounts the user's message in
   // the thread immediately so the chronological render order matches
   // the user's mental model (send → my message → coach "Thinking…" →
   // reply). Cleared once the persisted twin lands via the invalidate-
@@ -1135,7 +1136,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
       };
       activeSendRef.current = sendMarker;
       try {
-        // v1.4.25 W5 — surface the user's message in the thread BEFORE
+        // v1.4.25 — surface the user's message in the thread BEFORE
         // the "Thinking…" placeholder paints. Without this the send hook
         // only exposed the streaming assistant bubble, so the first
         // thing the user saw was the placeholder followed by their own
@@ -1148,7 +1149,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
         });
         setStreaming({ ...EMPTY_STREAMING, inProgress: true });
 
-        // v1.4.47 W8 — pre-check navigator.onLine so an airplane-mode
+        // v1.4.47 — pre-check navigator.onLine so an airplane-mode
         // user gets the offline-specific copy immediately rather than
         // waiting for the fetch to fail with a generic network error.
         if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -1204,7 +1205,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           .toLowerCase()
           .startsWith("text/event-stream");
         if (!response.ok && !isEventStream) {
-          // v1.4.25 W5 — for JSON errors the apiHandler envelope carries
+          // v1.4.25 — for JSON errors the apiHandler envelope carries
           // a structured `error` code (e.g. `coach.budget.exceeded`).
           // Surface the structured code directly so the drawer can show
           // the right copy + toast variant; fall back to the generic
@@ -1441,7 +1442,7 @@ export function useSendCoachMessage(opts: UseSendCoachMessageOptions = {}) {
           }
           optsRef.current.onDone?.(resolvedConversationId);
         }
-        // v1.4.25 W5 — drop the optimistic user bubble; the persisted
+        // v1.4.25 — drop the optimistic user bubble; the persisted
         // twin is on its way via the invalidate-refetch above.
         // v1.16.4 — but only when a twin IS coming (the turn resolved a
         // conversation) or the turn succeeded outright. An errored turn

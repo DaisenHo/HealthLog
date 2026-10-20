@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.8.5 W5 — `<TargetStatusPill>` extracted from `target-card.tsx`.
+ * v1.8.5 — `<TargetStatusPill>` extracted from `target-card.tsx`.
  *
  * The verbal status pill ("Optimal", "Slightly elevated", localized)
  * is now a shared primitive so both the Targets card and the Insights

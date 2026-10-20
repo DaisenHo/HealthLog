@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.43 W11 — motion-reduce sweep guard.
+ * v1.4.43 — motion-reduce sweep guard.
  *
  * Every `animate-spin` site in component / app code must also carry
  * `motion-reduce:animate-none` so that motion-sensitive users see a

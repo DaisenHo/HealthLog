@@ -13,7 +13,7 @@ import {
   insufficientPillar,
   mean,
   okPillar,
-  standardDeviation,
+  readingSpread,
 } from "./shared";
 
 export const SLEEP_WINDOW_DAYS = 28;
@@ -62,8 +62,11 @@ export function computeSleepPillar(
   const midpoints = nights
     .map((night) => night.midpoint)
     .filter((midpoint): midpoint is number => midpoint != null);
+  // The floor is on the nights that have a place on the clock: a day whose
+  // only sleep was a nap counts toward the level but carries no midpoint, so
+  // 21 nights could hold far fewer midpoints than the floor asks for.
   const regularity =
-    nights.length >= SLEEP_REGULARITY_MIN_NIGHTS
+    midpoints.length >= SLEEP_REGULARITY_MIN_NIGHTS
       ? scoreConsistency(midpoints)
       : null;
   // These are the existing Sleep Score's own declared sub-score weights,
@@ -75,7 +78,7 @@ export function computeSleepPillar(
       : Math.round(sufficiency * 0.6 + regularity * 0.4);
   const noiseFloor = Math.max(
     1,
-    Math.round(((0.5 * standardDeviation(asleepValues)) / need) * 100),
+    Math.round(((0.5 * readingSpread(asleepValues)) / need) * 100),
   );
   const latest = nights.at(-1)!;
 

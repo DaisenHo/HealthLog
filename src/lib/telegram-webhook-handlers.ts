@@ -20,7 +20,7 @@ import {
   consumeForIntake,
   restoreForIntake,
 } from "@/lib/medications/inventory/consumption";
-import { localHmAsUtc } from "@/lib/tz/local-day";
+import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
@@ -212,7 +212,7 @@ async function findTelegramUser(chatId: string) {
       id: true,
       telegramBotToken: true,
       locale: true,
-      // v1.4.39 W-MED — pulled into the select so the post-write
+      // v1.4.39 — pulled into the select so the post-write
       // compliance-rollup hook can anchor the user-day bucket.
       timezone: true,
     },
@@ -424,7 +424,7 @@ async function markMedicationTaken(
     invalidateUserMedications(userId, { evict: true });
   }
 
-  // v1.4.39 W-MED — refresh the compliance rollup for the
+  // v1.4.39 — refresh the compliance rollup for the
   // affected day so the next read after the cache miss reflects the
   // new dose. Only fires when the write landed a row.
   if (scheduledFor) {
@@ -597,10 +597,12 @@ export async function handleCallback(update: TelegramUpdate) {
 
     let skippedScheduledFor: Date | null = null;
     if (!existing) {
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
       const skipMoment = new Date();
       const tz = user.timezone || DEFAULT_TIMEZONE;
+      // The rest of the person's own day, not of the server's: the process
+      // runs in UTC, so a Berlin skip after 01:00 used to snooze the next
+      // local morning's reminders as well.
+      const endOfDay = getUserTodayBounds(skipMoment, tz).end;
 
       // v1.16.9 — a Telegram skip answers a specific dose prompt, so it
       // must converge onto the slot's pending row like a take does. The
@@ -684,7 +686,7 @@ export async function handleCallback(update: TelegramUpdate) {
       invalidateUserMedications(user.id, { evict: true });
     }
 
-    // v1.4.39 W-MED — refresh the compliance rollup for the skipped
+    // v1.4.39 — refresh the compliance rollup for the skipped
     // event's user-day so the next read sees the (scheduled, skipped)
     // counts incremented.
     if (skippedScheduledFor) {

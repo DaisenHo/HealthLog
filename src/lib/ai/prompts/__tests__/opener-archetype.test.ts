@@ -1,5 +1,5 @@
 /**
- * v1.22 (W6) — opener-archetype rotation + hash helpers.
+ * v1.22 — opener-archetype rotation + hash helpers.
  *
  * The whole point is variety WITHOUT randomness: the choice must be stable for a
  * key (reproducible, testable) yet differ across keys (anti-sameness). These

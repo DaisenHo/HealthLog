@@ -4,7 +4,7 @@ import { useContext } from "react";
 import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 
 /**
- * v1.4.48 M4 — shared SSR-safety helper for hooks that delegate to
+ * v1.4.48 — shared SSR-safety helper for hooks that delegate to
  * React Query under a `<QueryClientProvider>`.
  *
  * Several presentational components (`<HeroStrip>`, `<SuggestedPrompts>`,

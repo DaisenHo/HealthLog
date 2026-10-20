@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "최근 {count}개만 표시되며, 이전 항목은 여기에 나오지 않습니다.",
     "save": "저장",
     "conflictReloaded": "서버에서 다시 불러왔어요. 변경 내용을 다시 입력해 주세요.",
     "cancel": "취소",
@@ -55,7 +56,9 @@
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
     "errorIdCopied": "오류 ID 복사됨",
-    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요."
+    "readThrottled": "지금은 요청이 너무 많으니 나중에 다시 시도해 주세요.",
+    "sessionEnded": "세션이 만료되었으니 계속하려면 다시 로그인해 주세요.",
+    "signIn": "로그인"
   },
   "apiErrors": {
     "measurement": {
@@ -843,7 +846,7 @@
     "nextPage": "다음 쪽",
     "dailyTotalCaption": "({count}개 샘플)",
     "openMetricInsights": "{type} 인사이트 열기",
-    "sleepNapCaption": "+낮잠 {count}회",
+    "sleepNapCaption": "낮잠 {count}회 포함",
     "sleepAwakeningsCaption": "깬 횟수 {count}회",
     "expandDay": "이 날의 샘플 보기",
     "collapseDay": "이 날의 샘플 숨기기",
@@ -4395,8 +4398,8 @@
             "composition": "구성"
           },
           "gap": {
-            "fewNights": "아직 밤이 부족함 ({count}/3)",
-            "noMainSleep": "최근 하루는 낮잠만 있음"
+            "fewNights": "아직 밤이 부족해요 ({needed}일 중 {count}일)",
+            "noMainSleep": "최근 하루는 낮잠만 있었어요"
           }
         },
         "READINESS": {
@@ -4664,9 +4667,9 @@
       "description": "몸이 얼마나 회복했는지: 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
-      "empty": "아직 여기에 표시할 내용이 없어요. 이 페이지는 WHOOP과 Polar가 기록하는 충전, 부하, 운동량 값과 Oura의 회복 탄력성 단계를 보여줘요. Oura의 준비도(Readiness)는 위에 연결된 회복 점수에 표시돼요.",
-      "emptyOuraPermission": "Oura는 연결되어 있지만 허용된 권한에 심장 건강 데이터가 빠져 있어요. Oura의 회복 탄력성 단계는 바로 이 데이터에 속해요. 설정, 통합에서 Oura를 한 번 다시 연결하고 심장 건강 접근을 허용하면 다음 동기화 때 여기에 단계가 표시돼요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
-      "emptyOuraNoResilience": "Oura가 연결되어 있지만 이 계정의 회복 탄력성 단계가 아직 도착하지 않았어요. HealthLog는 동기화할 때마다 요청하므로 Oura가 보내는 즉시 여기에 표시돼요. Oura 앱에 단계가 보인다면 설정, 통합의 Oura 카드에서 이 연결이 가져올 수 없는 항목을 확인할 수 있어요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
+      "empty": "이 페이지에는 WHOOP 또는 Polar의 회복, 부하, 훈련 부하 값과 Oura의 회복탄력성 수준이 표시돼요.",
+      "emptyOuraPermission": "Oura의 회복탄력성 수준에는 심장 건강 데이터 접근 권한이 필요하니, 연동에서 Oura를 한 번 다시 연결하고 허용해 주세요.",
+      "emptyOuraNoResilience": "Oura가 연결되어 있으며, Oura가 회복탄력성 수준을 제공하는 즉시 여기에 표시돼요.",
       "emptyAction": "통합 열기",
       "block": {
         "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요. 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",
@@ -4676,7 +4679,8 @@
         "averageHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 평균 심박수예요.",
         "maxHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 최고 심박수예요.",
         "energyExpenditureKjExplainer": "기기가 자체 단위로 보고한, 하루 동안 몸이 쓴 에너지예요(킬로줄)."
-      }
+      },
+      "loadError": "회복 값을 불러오지 못했어요."
     },
     "bodyTempDeviation": {
       "title": "체온 편차",
@@ -7275,7 +7279,8 @@
         "lastNewValue": "마지막 새 값 {relative}",
         "lastBackground": "마지막 백그라운드 수신 {relative}",
         "never": "아직 수신되지 않음",
-        "lastBackfill": "기록 보충 {relative}"
+        "lastBackfill": "기록 보충 {relative}",
+        "lastEnteredHere": "여기에서 마지막 입력 {relative}"
       }
     },
     "garminInfo": {
@@ -11903,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)"
+      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)",
+      "loadError": "수분을 불러오지 못했어요."
     },
     "caffeine": {
       "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)",
@@ -12324,8 +12330,7 @@
       "loadError": "활동 내역을 불러오지 못했어요.",
       "opened": "{name} 님이 내 기록을 {count}번 열었어요",
       "acted": "{name} 님이 내 기록을 수정했어요",
-      "deletedAccount": "삭제된 계정",
-      "truncated": "이 목록은 최근 활동만 보여줘요. 전부는 아니에요."
+      "deletedAccount": "삭제된 계정"
     },
     "delegate": {
       "addOnlyNote": "이 기록에 추가할 수 있어요. 수정과 삭제는 {name} 님만 할 수 있어요."

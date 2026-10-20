@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.15 phase-B4 — /achievements navigation smoke.
+ * v1.4.15 — /achievements navigation smoke.
  *
  * The page itself has unit-test coverage for the locked-vs-unlocked
  * card render; this spec answers the higher-level "can the user reach

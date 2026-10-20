@@ -42,7 +42,7 @@ describe("createMoodEntrySchema — note + structured tagKeys (v1.8.5)", () => {
     if (r.success) expect(r.data.tagKeys).toBeNull();
   });
 
-  // v1.17 W1b — shared `validateEntryInstant` plausibility bound.
+  // v1.17 — shared `validateEntryInstant` plausibility bound.
   it("rejects a future-dated mood entry", () => {
     const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     expect(

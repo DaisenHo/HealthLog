@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.43.6
+  version: 1.43.7
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -80,8 +80,10 @@ paths:
             403 refusals carry `auth.scope.insufficient` (the credential is valid but its scope does not reach this
             route, including any Bearer token against an admin surface) and `auth.admin.required` (a cookie session that
             is not an admin's). A route that checks a credential of its own — sign-in, the MFA challenge exchange, a
-            password confirmation — may still answer 401 with prose and no code, so a missing `meta.errorCode` means the
-            route refused the credential it was handed, not that the response is malformed."
+            password confirmation — may answer 401 with the generic `http.unauthenticated`, which means the route
+            refused the credential it was handed. A session that could not be checked because the session store was
+            unreachable is NOT a 401: it answers 503 with `auth.session.unavailable`, and the client keeps its
+            credential and retries."
           content:
             application/json:
               schema:
@@ -3514,9 +3516,10 @@ paths:
                 $ref: "#/components/schemas/ApiTokenRevokeEnvelope"
         "401": *a1
         "403":
-          description: The operator has switched the API off instance-wide (`AppSettings.apiGlobal`). No `meta.errorCode`; nothing
-            was revoked. The sibling list is deliberately not gated this way — a token stays live while the switch is
-            off, so its owner can still see it here even though this call will not kill it.
+          description: The operator has switched the API off instance-wide (`AppSettings.apiGlobal`). `meta.errorCode` is the
+            status default `http.forbidden`; nothing was revoked. The sibling list is deliberately not gated this way —
+            a token stays live while the switch is off, so its owner can still see it here even though this call will
+            not kill it.
           content:
             application/json:
               schema:
@@ -4203,8 +4206,13 @@ paths:
 
 
         With `groupBy=day` on a cumulative type the rows are one sum per local day, and `limit` / `offset` page over
-        those days; every returned day is complete. `type=SLEEP_DURATION` returns one row per night, paged the same way
-        over nights. On both, `meta.total` counts the days or nights in the filtered window. A day-sum page takes
+        those days; every returned day is complete, which is why `valueMin` / `valueMax` (a filter on single readings)
+        are refused with 422 beside `groupBy=day`. `type=SLEEP_DURATION` returns one row per night, paged the same way
+        over nights; every night of the page has a row, and `value` is the day's time asleep, the main night plus its
+        naps (the same total `/api/measurements/series?kind=sleep` and the sleep score read), with the main night alone
+        in `mainAsleepMinutes` and the naps in `napCount` / `napAsleepMinutes`; a day whose only sleep is daytime naps
+        carries the naps' minutes and `mainAsleepMinutes: null`. Its `dayKey` is the same day `/api/sleep/night?date=`
+        answers for. On both, `meta.total` counts the days or nights in the filtered window. A day-sum page takes
         `limit` as asked (up to the list's 5000); a sleep page holds at most 1000 nights, and `meta.limit` echoes the
         value applied.
       parameters:
@@ -4727,16 +4735,18 @@ paths:
         source's stage segments (each with an absolute start/end), the per-stage breakdown, asleep/in-bed/awake totals,
         the mid-sleep awakenings count, and same-wake-day naps surfaced separately. Session-clustered, keyed by the
         local wake day, collapsed to one source via the sleep priority ladder so two sources never overlay. `date`
-        omitted returns the most recent night. A read-only view over existing per-stage SLEEP_DURATION rows — no schema,
-        no new measurement type."
+        omitted returns the most recent night with a main sleep, however old; later days of naps alone are stepped over
+        and stay reachable by `date`. An account that has only ever napped gets its latest day of naps. Any past date is
+        answered, with no window cut. A read-only view over existing per-stage SLEEP_DURATION rows — no schema, no new
+        measurement type."
       parameters:
         - in: query
           name: date
           schema:
-            description: Wake-day key (YYYY-MM-DD). Omit for the most recent night.
+            description: Wake-day key (YYYY-MM-DD). Omit for the most recent night with a main sleep.
             type: string
             pattern: ^\d{4}-\d{2}-\d{2}$
-          description: Wake-day key (YYYY-MM-DD). Omit for the most recent night.
+          description: Wake-day key (YYYY-MM-DD). Omit for the most recent night with a main sleep.
       responses:
         "200":
           description: Reconstructed night.
@@ -7701,7 +7711,7 @@ paths:
             `health_score_config.invalid` — the body failed validation, with the per-issue list under `details.issues`;
             `invalid_base_updated_at` — `baseUpdatedAt` was present but unparseable, `null` included, which is rejected
             rather than falling back to the unconditional write. A body that is not JSON at all returns the bare message
-            `health-score-config.body.invalid_json` with no errorCode."
+            `health-score-config.body.invalid_json` with the status default `meta.errorCode: http.invalid`."
           content:
             application/json:
               schema:
@@ -21427,7 +21437,9 @@ paths:
         per day with a count, rather than one per request. `retentionDays` rides the response because audit history is
         purged on a schedule the operator configures: a view that showed the rows without the window would imply a
         completeness it does not have, and clients must state the number the server sends rather than assume the 365-day
-        default. Not delegable: a grant is not an introduction to the other people in the household."
+        default. Whether the list stopped at its row ceiling is `meta.truncated`; the `truncated` field in `data`
+        carries the same value and is deprecated. Not delegable: a grant is not an introduction to the other people in
+        the household."
       responses:
         "200":
           description: The activity, and how far back it can see.
@@ -21514,7 +21526,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: No account on this instance carries that identifier.
+          description: "No account on this instance carries that identifier (`meta.errorCode: sharing.invite.no_account`)."
           content:
             application/json:
               schema:
@@ -21705,8 +21717,8 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429":
-          description: More than ten profiles from one caller within the hour. No error code — rate-limit refusals carry none
-            anywhere in this API; branch on the status. Nothing was created.
+          description: "More than ten profiles from one caller within the hour (`meta.errorCode: http.rate_limited`, the status
+            default; a 429 has one meaning here, so the status alone is enough to branch on). Nothing was created."
           content:
             application/json:
               schema:
@@ -21789,8 +21801,9 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429":
-          description: More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch
-            on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.
+          description: "More than ten edits from one caller within the hour — the ceiling creation carries. `meta.errorCode:
+            http.rate_limited`, the status default. Nothing was changed, and the refusal lands before the record named
+            in the path is looked at."
           content:
             application/json:
               schema:
@@ -21875,11 +21888,10 @@ paths:
       summary: Invite another Guardian
       description: "Offers somebody else a share in looking after this profile, at MANAGE over the whole record. Cookie-only
         and step-up gated, like every act in this family — the read beside it is not. **Resolve refusals on
-        `meta.errorCode` first and fall back to the status only for the two arms that carry none**, because this route
-        answers 404 twice and the codeless one is the less serious of the two: an identifier that matches no account
-        carries no code, while `managed_profile.not_found` means the caller is not a Guardian of that profile at all. A
-        client branching on the status first would tell somebody to check a spelling when the real answer is that the
-        record is no longer theirs to administer."
+        `meta.errorCode`, not on the status**, because this route answers 404 twice and the two need different next
+        steps: `sharing.invite.no_account` means no account carries that identifier, while `managed_profile.not_found`
+        means the caller is not a Guardian of that profile at all. A client branching on the status would tell somebody
+        to check a spelling when the real answer is that the record is no longer theirs to administer."
       parameters:
         - in: path
           name: id
@@ -21906,11 +21918,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: "Two refusals share this status and only one carries a code. **No `meta.errorCode`**: no account on this
-            instance carries that identifier — the same deliberate disclosure to an authenticated caller that `POST
-            /api/account/grants` makes, and codeless there too, so this family does not answer one way here and another
-            way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the caller is
-            not one of its Guardians."
+          description: "Two refusals share this status, each with its own code. `meta.errorCode: sharing.invite.no_account`: no
+            account on this instance carries that identifier — the same deliberate disclosure to an authenticated caller
+            that `POST /api/account/grants` makes, with the same code, so this family does not answer one way here and
+            another way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the
+            caller is not one of its Guardians."
           content:
             application/json:
               schema:
@@ -21933,7 +21945,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429":
-          description: More than ten invitations from one caller within the hour. No error code, as above; branch on the status.
+          description: "More than ten invitations from one caller within the hour (`meta.errorCode: http.rate_limited`, the status
+            default)."
           content:
             application/json:
               schema:
@@ -25902,6 +25915,7 @@ components:
             - it
             - pl
             - ko
+            - nl
         practiceName:
           type: string
           maxLength: 120
@@ -28360,6 +28374,7 @@ components:
             - it
             - pl
             - ko
+            - nl
         today:
           description: "Optional override of the reference date used to resolve relative phrases (\"tomorrow\", \"next Monday\").
             Format: `YYYY-MM-DD`. Defaults to the account's own day in its time zone."
@@ -29310,6 +29325,7 @@ components:
             - it
             - pl
             - ko
+            - nl
           description: One of the interface locales this build ships.
       required:
         - locale
@@ -34599,6 +34615,7 @@ components:
             - it
             - pl
             - ko
+            - nl
         timezone:
           type: string
           minLength: 1
@@ -34653,6 +34670,7 @@ components:
             - it
             - pl
             - ko
+            - nl
         timezone:
           type: string
           minLength: 1
@@ -34870,6 +34888,7 @@ components:
                 - it
                 - pl
                 - ko
+                - nl
             - type: "null"
         timezone:
           type: string
@@ -36095,15 +36114,19 @@ components:
               description: "Stable machine code for this refusal. Branch on it rather than on `error`, which is prose and may be
                 reworded. Every code the API emits today is enumerated below, grouped by the surface that emits it; four
                 naming conventions coexist and none of them will be renamed, because a code is a wire value a shipped
-                client branches on. Treat an unlisted code the way you would treat an unlisted enum member — as a
-                refusal you do not recognise, not as a malformed response — since the list grows with the surfaces.
-                Three families are outside it on purpose: `assistant.disabled.<switch>` is built from a template so the
-                last segment is open — it is one of `coach`, `briefing`, `insightStatus`, `documentAi` and `enabled`,
-                and `assistant.disabled.coach` is the one the native client names; the integration-probe classes
-                (`credentials_rejected`, `rate_limited`, `upstream_error`, `timeout`, `connection_failed` and the
-                per-provider additions) are enumerated in each `/test` operation instead, where the differences can be
-                stated; and a 401 raised by a route checking a credential of its own may carry no code at all. ai —
-                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
+                client branches on. Every error envelope carries a code: when the route has no reason of its own to
+                name, the code is the status's generic one from the `http` family (`http.not_found` for a 404,
+                `http.internal` for a 500, `http.client_error` / `http.server_error` for a status without its own
+                entry), so `http.*` says which kind of refusal it was and never why. Treat an unlisted code the way you
+                would treat an unlisted enum member — as a refusal you do not recognise, not as a malformed response —
+                since the list grows with the surfaces. Three families are outside it on purpose:
+                `assistant.disabled.<switch>` is built from a template so the last segment is open — it is one of
+                `coach`, `briefing`, `insightStatus`, `documentAi` and `enabled`, and `assistant.disabled.coach` is the
+                one the native client names; the integration-probe classes (`credentials_rejected`, `rate_limited`,
+                `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
+                `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
+                credential of its own carries the generic `http.unauthenticated`. ai — ai.budget.exceeded,
+                ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
                 ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
                 — ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
                 aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
@@ -36112,35 +36135,35 @@ components:
                 anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.admin.required,
                 auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
                 auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
-                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport, auth.stepup.required,
-                auth.token.expired, auth.token.invalid; backup — backup.foreign_reference, backup.key.missing,
-                backup.payload.undecryptable, backup.restore.active, backup.section.missing, backup.upload.too_large;
-                biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
-                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
-                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
-                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
-                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
-                consent — consent.ai.confirmRequired, consent.ai.required; cycle — cycle.bulk.invalid,
-                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
-                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
-                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
-                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; dawarich —
-                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
-                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notFound, documents.inbound.notIndexed,
-                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
-                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
-                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
-                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
-                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
-                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
-                documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
+                auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
+                backup.foreign_reference, backup.key.missing, backup.payload.undecryptable, backup.restore.active,
+                backup.section.missing, backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site —
+                body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
+                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
+                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
+                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
+                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired,
+                consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
+                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
+                disable-coach.body.invalid_json; dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown,
+                dawarich.invalid, dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day —
+                day.invalid; demo — demo.readOnly; documents — documents.chat.conversationNotFound,
+                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
+                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
+                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
+                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
+                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
+                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -36150,18 +36173,22 @@ components:
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
                 feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
-                health_score_config.too_narrow; illness — illness.day-log.invalid, illness.disabled,
-                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
-                illness.episode.parent-not-found, illness.insights.invalid; import — import.apple_health.busy,
-                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
-                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
-                insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
-                labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
-                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed,
-                labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic,
-                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound,
-                labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                health_score_config.too_narrow; http — http.bad_gateway, http.bad_request, http.client_error,
+                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
+                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
+                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
+                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
+                import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
+                insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
+                labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
+                labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
+                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
+                labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
+                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
+                labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
+                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
@@ -36208,9 +36235,9 @@ components:
                 share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
                 sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
                 sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.refused, sharing.invite.self, sharing.not_permitted,
-                sharing.renounce.already_ended, sharing.renounce.not_found, sharing.revoke.already_ended,
-                sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
                 symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
@@ -36258,10 +36285,11 @@ components:
         - data
         - error
       additionalProperties: false
-      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` carries the stable
-        machine code where one exists, and `meta` may carry further per-refusal context. A 422 from the multi-issue
-        validator additionally carries `details.issues` — every field the request got wrong, so a client can fix them in
-        one round-trip."
+      description: "Standard error response: `data` is null, `error` is human prose. `meta.errorCode` always carries a stable
+        machine code — the route's own where it names one, otherwise the status's generic `http.*` code —
+        `meta.requestId` names the request for a support conversation, and `meta` may carry further per-refusal context.
+        A 422 from the multi-issue validator additionally carries `details.issues` — every field the request got wrong,
+        so a client can fix them in one round-trip."
     ValidationIssue:
       type: object
       properties:
@@ -37246,15 +37274,32 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
+    ListCapMeta:
+      type: object
+      properties:
+        requestId:
+          type: string
+        truncated:
+          type: boolean
+          description: "True when more rows exist than this response carries: the list was cut at `limit`, newest or most relevant
+            first as the operation states. False means the list is complete. Show the person that the list is partial
+            rather than letting the last row read as the oldest there is."
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: The most rows this response could carry.
+      required:
+        - truncated
+        - limit
+      additionalProperties: false
+      description: How a capped list was cut. Present on every response of an operation that declares it.
     CycleInsightsEnvelope:
       type: object
       properties:
@@ -45167,14 +45212,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     SecurityActivityResponse:
       type: object
@@ -46250,6 +46292,23 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
+        mainAsleepMinutes:
+          description: The main night's own time asleep in minutes; null on a day of naps alone. On a sleep row `value` is the
+            day's total, the main night plus its naps.
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        napCount:
+          description: Naps on the same wake day.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        napAsleepMinutes:
+          description: Time asleep across those naps, in minutes.
+          type: number
+          minimum: 0
       required:
         - id
         - type
@@ -47074,6 +47133,23 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
+        mainAsleepMinutes:
+          description: The main night's own time asleep in minutes; null on a day of naps alone. On a sleep row `value` is the
+            day's total, the main night plus its naps.
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        napCount:
+          description: Naps on the same wake day.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        napAsleepMinutes:
+          description: Time asleep across those naps, in minutes.
+          type: number
+          minimum: 0
       required:
         - id
         - type
@@ -47255,6 +47331,23 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
+        mainAsleepMinutes:
+          description: The main night's own time asleep in minutes; null on a day of naps alone. On a sleep row `value` is the
+            day's total, the main night plus its naps.
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        napCount:
+          description: Naps on the same wake day.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        napAsleepMinutes:
+          description: Time asleep across those naps, in minutes.
+          type: number
+          minimum: 0
         status:
           type: string
           enum:
@@ -47890,7 +47983,9 @@ components:
         - naps
       additionalProperties: false
       description: "One reconstructed sleep night: the main session's hypnogram segments + breakdown, plus same-wake-day naps
-        surfaced separately."
+        surfaced separately. A session is a nap when it holds under three hours asleep centred between 10:00 and 20:00
+        local time; the main session is the longest session that is not a nap. A day whose only sleep is naps has `main:
+        null` and its naps."
     SleepRhythmResponse:
       type: object
       properties:
@@ -49447,14 +49542,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     MedicationSideEffect:
       type: object
@@ -55782,6 +55874,7 @@ components:
                 - it
                 - pl
                 - ko
+                - nl
           required:
             - locale
           additionalProperties: false
@@ -62980,14 +63073,30 @@ components:
             - type: "null"
           description: Non-null when two writer buckets reported clearly different asleep totals for the latest night's main
             session. Observational only — the served summary stays the winning writer's totals.
+        recoveryEmpty:
+          anyOf:
+            - type: string
+              enum:
+                - general
+                - oura_permission
+                - oura_no_resilience
+            - type: "null"
+          description: "Why the recovery page has nothing to chart, resolved on the server; null when any recovery type
+            (ANS_CHARGE, DAY_STRAIN, WORKOUT_STRAIN, CARDIO_LOAD, AVERAGE_HEART_RATE, MAX_HEART_RATE,
+            ENERGY_EXPENDITURE_KJ, RESILIENCE) has a reading. `oura_permission`: Oura is connected and its grant leaves
+            out the scope the resilience level needs, one reconnect fixes it. `oura_no_resilience`: Oura is connected
+            and no level has arrived yet. `general`: anyone else. Clients render the empty note from this value and
+            never work it out from the connection status."
       required:
         - summaries
         - bmi
         - lastSeenByType
         - sleepSourceDiscrepancy
+        - recoveryEmpty
       additionalProperties: false
-      description: "What `?slice=summaries` answers: the per-type summaries and their freshness, and nothing thick. Four keys,
-        and the caller gets them from two SQL passes rather than the default slice's chain."
+      description: "What `?slice=summaries` answers: the per-type summaries and their freshness, the recovery page's empty
+        reason, and nothing thick. Five keys, and the caller gets them from two SQL passes rather than the default
+        slice's chain."
     InsightsGenerateReadEnvelope:
       type: object
       properties:
@@ -64822,14 +64931,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     EcgListResponse:
       type: object
@@ -65092,14 +65198,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     RhythmEventsResponse:
       type: object
@@ -72808,14 +72911,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     IllnessEpisode:
       type: object
@@ -73495,14 +73595,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     ListMentalHealthAssessmentsResponse:
       type: object
@@ -73721,14 +73818,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     Allergy:
       type: object
@@ -73879,14 +73973,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     FamilyHistoryEntry:
       type: object
@@ -76523,6 +76614,17 @@ components:
           description: 'v1.43 — when a batch with `syncTrigger: "backfill"` last carried this type. A backfill moves only this and
             `syncProgress`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt` or the account-level sync stamps,
             so catching up history does not read as a run of healthy daily syncs. Absent on older servers.'
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lastEnteredHereAt:
+          description: "v1.43.7 — present only on a type the app writes back to Apple Health (weight, blood pressure, blood
+            glucose while their entry is `bidirectional` or `writeOnly` and enabled): when the newest reading of the
+            type was entered here rather than arriving from Apple Health, or null when none was. Such readings go to the
+            phone and never come back as an arrival, so `stale` already counts them: the type is quiet only when both
+            this and `lastSeenAt` are. Show it as the server sends it; do not recompute `stale`."
           anyOf:
             - type: string
               format: date-time
@@ -81272,14 +81374,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     RecordActivity:
       type: object
@@ -81297,9 +81396,9 @@ components:
             bounded to this window, so it is the real limit of the list and not only a caption. Show it beside the rows.
         truncated:
           type: boolean
-          description: True when the read reached its row ceiling, so `entries` is the most recent activity inside the window
-            rather than all of it. A client must say so — a list that stops at its own cap in silence lets the oldest
-            row read as the beginning. False means the list is everything inside the window.
+          deprecated: true
+          description: "Deprecated: read `meta.truncated`, which carries the same value. Whether the list stopped at its row
+            ceiling; kept in `data` for clients built against v1.43.6 and earlier."
       required:
         - entries
         - retentionDays
@@ -81363,14 +81462,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     AccountGrantList:
       type: object
@@ -82785,6 +82881,7 @@ components:
                 - it
                 - pl
                 - ko
+                - nl
             - type: "null"
         timezone:
           type: string
@@ -83221,14 +83318,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     PersonalRecord:
       type: object
@@ -88238,9 +88332,9 @@ components:
                 type: number
                 description: Effective weight after redistributing missing sub-scores.
               gap:
-                description: "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than three nights in the
-                  window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had
-                  only a daytime nap. Absent otherwise."
+                description: "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than `rhythmMinNights`
+                  nights in the window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the
+                  latest day had only a daytime nap. Absent otherwise."
                 type: string
                 enum:
                   - few_nights
@@ -88262,6 +88356,12 @@ components:
           maximum: 9007199254740991
           description: Nights in the window with a main sleep placed on the clock — what consistency and timing are computed from.
             A daytime nap is not one; a short night is.
+        rhythmMinNights:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: 'How many `rhythmNights` consistency and timing need before they are scored; below it they carry `gap:
+            "few_nights"`.'
         series:
           type: array
           items:
@@ -88276,6 +88376,7 @@ components:
         - subScores
         - windowNights
         - rhythmNights
+        - rhythmMinNights
         - series
       additionalProperties: false
   parameters:

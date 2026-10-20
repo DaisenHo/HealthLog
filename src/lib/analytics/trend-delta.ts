@@ -14,7 +14,7 @@
  * The trend-card then paints the delta with metric-aware sentiment
  * colour (up-good vs up-bad).
  *
- * v1.4.16 Fix A4: fall back to slope30 (projected onto 7 days) when
+ * v1.4.16: fall back to slope30 (projected onto 7 days) when
  * slope7 is unavailable. Some metrics (mood, sleep) have <2 entries
  * within the trailing 7-day window for users who don't log daily,
  * which used to surface as a missing delta on the dashboard tile —

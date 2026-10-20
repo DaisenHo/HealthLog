@@ -254,7 +254,7 @@ describe("PATCH /api/auth/me/modules", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     primeUser();
 
-    // v1.18.1 (D3) — medications graduated to a toggleable module, so only
+    // v1.18.1 — medications graduated to a toggleable module, so only
     // weight / blood pressure / pulse stay refused as core domains.
     for (const core of ["weight", "bloodPressure", "pulse"]) {
       const res = await (PATCH as (r: Request) => Promise<Response>)(
@@ -371,7 +371,7 @@ describe("PATCH /api/auth/me/modules — the score caches", () => {
 });
 
 /**
- * v1.32.22 (M3) — optimistic concurrency. The base token is stripped BEFORE
+ * v1.32.22 — optimistic concurrency. The base token is stripped BEFORE
  * the `.strict()` schema parse, so it never trips strict validation; a stale
  * token 409s and writes nothing; a tokenless PATCH keeps the unconditional
  * write.

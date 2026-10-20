@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W16c — PR detection enqueue coverage for
+ * v1.4.25 — PR detection enqueue coverage for
  * `POST /api/measurements/batch`. The full per-entry envelope is
  * exercised by the integration suite; this file checks the hook fires
  * with the right `silent` flag for the small / large batch cases and

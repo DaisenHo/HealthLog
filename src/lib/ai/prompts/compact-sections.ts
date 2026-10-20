@@ -1,5 +1,5 @@
 /**
- * v1.4.36 W3 T4 — `compactSections` helper for the AI prompt body.
+ * v1.4.36 — `compactSections` helper for the AI prompt body.
  *
  * The features payload (and the Coach snapshot, transitively) carries
  * conditionally-populated blocks: `medications`, `bucketedMeasurements`,

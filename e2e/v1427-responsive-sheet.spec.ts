@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.27 R3d MB1 — `<ResponsiveSheet>` primitive branch coverage.
+ * v1.4.27 — `<ResponsiveSheet>` primitive branch coverage.
  *
  * The primitive renders as a bottom-anchored `<Sheet>` on `<md` (768
  * px) viewports and as a centred `<Dialog>` on `>=md`. Every primary

@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W14 — POST /api/integrations/withings/resume
+ * v1.4.43 — POST /api/integrations/withings/resume
  *
  * Three pins:
  *   1. Happy path: a parked row resumes, response carries

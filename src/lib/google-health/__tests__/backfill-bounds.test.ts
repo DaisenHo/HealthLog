@@ -9,9 +9,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { prismaMock, safeFetchMock } = vi.hoisted(() => ({
+const { prismaMock, safeFetchMock, annotateMock } = vi.hoisted(() => ({
   prismaMock: { googleHealthConnection: { update: vi.fn() } },
   safeFetchMock: vi.fn(),
+  annotateMock: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 vi.mock("@/lib/safe-fetch", async (importOriginal) => ({
@@ -19,7 +20,7 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => ({
   safeFetch: safeFetchMock,
 }));
 vi.mock("@/lib/logging/context", () => ({
-  annotate: () => {},
+  annotate: annotateMock,
   getEvent: () => null,
 }));
 
@@ -32,14 +33,16 @@ import {
   type GoogleHealthBackfillEnd,
 } from "../backfill-bounds";
 import {
-  googleHealthBackfillEndedList,
-  googleHealthBackfillProgressAfterCompletion,
-  googleHealthBackfillRetryPending,
-  readGoogleHealthBackfillEnded,
   recordGoogleHealthBackfillEnd,
   runGoogleHealthCollection,
   runWithGoogleHealthBackfillResume,
 } from "../sync-core";
+import {
+  googleHealthBackfillEndedList,
+  googleHealthBackfillProgressAfterCompletion,
+  googleHealthBackfillRetryPending,
+  readGoogleHealthBackfillProgress,
+} from "../backfill-progress";
 import {
   forEachDataPointPage,
   GOOGLE_HEALTH_DATA_TYPES,
@@ -312,11 +315,29 @@ describe("a collection ended short", () => {
       -1,
     )![0].data.backfillProgress as unknown;
     expect(
-      readGoogleHealthBackfillEnded(written).get("fetchHeartRate"),
+      readGoogleHealthBackfillProgress(written).ended.get("fetchHeartRate"),
     ).toEqual(note);
     // Waiting for another try is not where the history ends.
     expect(googleHealthBackfillEndedList(written)).toEqual([]);
     expect(googleHealthBackfillProgressAfterCompletion(ended)).toBeNull();
+  });
+
+  it("annotates an end in one fixed shape", async () => {
+    await slice(stalls, new Map([["fetchWeight", HORIZON_END]]));
+    const notes = annotateMock.mock.calls
+      .map(([fields]) => fields.meta?.["googleHealth.backfill.ended"])
+      .filter(Boolean);
+    expect(notes).toEqual([
+      {
+        collection: "fetchHeartRate",
+        type: "PULSE",
+        reason: "no_progress",
+        final: false,
+        endedCount: 2,
+        finalCount: 1,
+        types: ["PULSE", "WEIGHT"],
+      },
+    ]);
   });
 
   it("is not walked again before its day is up", async () => {
@@ -349,6 +370,31 @@ describe("a collection ended short", () => {
     expect(
       googleHealthBackfillProgressAfterCompletion(ended)!.ended.fetchHeartRate,
     ).toMatchObject({ ...END, attempts: 2 });
+  });
+
+  it("starts the count over when the retry got further back before it stalled again", async () => {
+    const further = { ...END, at: "2023-01-02T00:00:00.000Z" };
+    const done = new Set<string>();
+    const { ended, collections } = await slice(
+      async () => {
+        noteGoogleHealthDeferred();
+        await recordGoogleHealthBackfillEnd("fetchHeartRate", further);
+        return 4;
+      },
+      new Map<string, GoogleHealthBackfillEnd>([
+        ["fetchHeartRate", parked(1, 25)],
+      ]),
+      done,
+    );
+    // Progress, then a new stall: parked again, not final.
+    expect(ended.get("fetchHeartRate")).toMatchObject({
+      ...further,
+      attempts: 1,
+    });
+    expect(done.has("fetchHeartRate")).toBe(false);
+    expect(collections).toEqual([
+      expect.objectContaining({ key: "fetchHeartRate", status: "stopped" }),
+    ]);
   });
 
   it("goes back to an ordinary walk when the second attempt gets somewhere", async () => {

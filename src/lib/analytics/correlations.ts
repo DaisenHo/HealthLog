@@ -72,54 +72,18 @@ export function pairByTimestamp(
 }
 
 /**
- * Pearson correlation coefficient.
- * Returns null if fewer than minPairs data points.
- */
-export function pearsonCorrelation(
-  pairs: PairedPoint[],
-  minPairs: number = 5,
-): CorrelationResult | null {
-  if (pairs.length < minPairs) return null;
-
-  const n = pairs.length;
-  const sumA = pairs.reduce((s, p) => s + p.a, 0);
-  const sumB = pairs.reduce((s, p) => s + p.b, 0);
-  const sumAB = pairs.reduce((s, p) => s + p.a * p.b, 0);
-  const sumAA = pairs.reduce((s, p) => s + p.a * p.a, 0);
-  const sumBB = pairs.reduce((s, p) => s + p.b * p.b, 0);
-
-  const denominator = Math.sqrt(
-    (n * sumAA - sumA * sumA) * (n * sumBB - sumB * sumB),
-  );
-
-  if (denominator === 0) return { r: 0, strength: "keine", n };
-
-  const r = Math.round(((n * sumAB - sumA * sumB) / denominator) * 1000) / 1000;
-  const absR = Math.abs(r);
-
-  let strength: CorrelationResult["strength"];
-  if (absR >= 0.7) strength = "stark";
-  else if (absR >= 0.4) strength = "moderat";
-  else if (absR >= 0.2) strength = "schwach";
-  else strength = "keine";
-
-  return { r, strength, n };
-}
-
-/**
- * v1.2.5 (M-CS3) — significance-gated Pearson for USER-FACING surfaces.
+ * v1.2.5 — significance-gated Pearson, the one correlation every
+ * surface reports.
  *
- * The plain `pearsonCorrelation` above assigns a strength band from |r|
- * alone with no significance test and a default floor of only 5 pairs —
- * so a 5-point r ≈ 0.7 fluke surfaces as a "stark" correlation. Every
- * surfaced insight-card / status-snapshot correlation must instead clear
- * the same rigorous bar the `/insights` correlation engine enforces:
+ * A strength band read from |r| alone, above a floor of five pairs, let a
+ * 5-point r ≈ 0.7 fluke surface as a "stark" correlation. Every reported
+ * correlation clears the bar the `/insights` correlation engine enforces:
  *
  *   - n >= 20 paired points (the engine's `MIN_PAIRED_N`), AND
  *   - a two-sided Student-t p-value < 0.05 (`MAX_P_VALUE`).
  *
  * Below either bar this returns `null` so the caller suppresses the
- * correlation exactly as it already does for the < minPairs case — no
+ * correlation — no
  * call-site shape change. The returned `{ r, strength, n }` keeps the
  * legacy shape (German strength band) so the snapshot byte-shape is
  * unchanged on the happy path.

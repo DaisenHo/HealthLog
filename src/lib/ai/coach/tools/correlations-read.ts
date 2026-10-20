@@ -1,5 +1,5 @@
 /**
- * v1.21.0 (C3) — Coach correlations reader.
+ * v1.21.0 — Coach correlations reader.
  *
  * Surfaces the deterministic insight engine's cross-metric intelligence to the
  * Coach via the `get_correlations` tool. Two read-only sources, both already
@@ -263,7 +263,7 @@ export async function readCoachCorrelations(
     ]);
     const { series, diagnostics } = matrix;
 
-    // QA F1 — surfaces when a dense account's window exceeded the read cap,
+    // Surfaces when a dense account's window exceeded the read cap,
     // mirroring the route's identical annotation. The cap now falls on the
     // OLDEST rows (desc + take), so a capped read still covers the recent
     // window the emerging-correlations pass below needs.

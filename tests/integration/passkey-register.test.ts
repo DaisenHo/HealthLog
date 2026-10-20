@@ -1,5 +1,5 @@
 /**
- * SEC-05 / SEC-08 — primary-passkey enrollment security boundary.
+ * Primary-passkey enrollment security boundary.
  *
  * These are deliberately RED contracts for v1.34.1. A registration ceremony
  * is not authorized by possession of an ambient cookie or any Bearer token.

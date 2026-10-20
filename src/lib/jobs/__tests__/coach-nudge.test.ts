@@ -60,7 +60,7 @@ vi.mock("@/lib/ai/coach/bytes-codec", () => ({
 vi.mock("@/lib/rollups/measurement-read", () => ({
   loadUserSourcePriority: vi.fn(async () => null),
 }));
-// v1.18.1 P4 — Rest Mode pause. Default: not in Rest Mode (every existing
+// v1.18.1 — Rest Mode pause. Default: not in Rest Mode (every existing
 // gate/trigger test stays unaffected). The pause test overrides it active.
 const restModeMock = vi.hoisted(() => ({
   resolveRestMode: vi.fn(async () => ({

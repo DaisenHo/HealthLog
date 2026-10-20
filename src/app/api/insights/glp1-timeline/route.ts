@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W4d — GLP-1 therapy-timeline aggregator.
+ * v1.4.25 — GLP-1 therapy-timeline aggregator.
  *
  * Returns a chronological merge of every GLP-1-relevant event the user
  * has logged: dose changes, injections (with site if recorded),

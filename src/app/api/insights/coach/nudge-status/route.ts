@@ -2,7 +2,7 @@
  * GET /api/insights/coach/nudge-status — is there an unread Coach
  * message the caller has not opened yet?
  *
- * v1.18.6 (CCH-03) — the proactive Coach nudge now lands as a real
+ * v1.18.6 — the proactive Coach nudge now lands as a real
  * ASSISTANT message in the conversation rail (CCH-02), not as a
  * notification-only dispatch. The unread signal moved with it: instead
  * of anchoring on the `push_attempts` ledger (which is empty when no

@@ -1,5 +1,5 @@
 /**
- * v1.4.22 W5 reconcile (Sr-H2) — shared `ReadableStream` constructor
+ * v1.4.22 — shared `ReadableStream` constructor
  * for Server-Sent-Events handlers.
  *
  * The Coach chat route used to construct three separate
@@ -21,7 +21,7 @@
 export interface SseController<T = Uint8Array> {
   enqueue: (chunk: T) => void;
   /**
-   * v1.18.10 (A-2) — aborts when the consumer cancels the stream (client
+   * v1.18.10 — aborts when the consumer cancels the stream (client
    * disconnect, navigation away, `Response.body.cancel()`). The `emit`
    * callback should check `signal.aborted` between frames and stop producing,
    * and pass `signal` to any in-flight provider fetch so a mid-stream
@@ -36,7 +36,7 @@ export interface SseController<T = Uint8Array> {
  * controller. Use the returned stream with the standard SSE response
  * headers (`Content-Type: text/event-stream`, `Cache-Control: no-cache`).
  *
- * v1.18.10 (A-2) — the stream now wires a `cancel` handler: when the consumer
+ * v1.18.10 — the stream now wires a `cancel` handler: when the consumer
  * cancels (client disconnect), the shared `AbortController` fires, so the
  * `emit` callback's `signal` flips to aborted and any provider fetch wired to
  * it is torn down. Without this the emit loop kept enqueuing frames (and an

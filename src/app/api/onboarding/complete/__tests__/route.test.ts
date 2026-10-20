@@ -8,7 +8,7 @@ vi.mock("@/lib/db", async (importOriginal) => {
     prisma: {
       user: { update: vi.fn(), findUnique: vi.fn() },
       auditLog: { create: vi.fn() },
-      // v1.39 (C1) — the needs half of the route looks for a setup row before
+      // v1.39 — the needs half of the route looks for a setup row before
       // it does anything. These cases are the LEGACY caller, which has none,
       // so the lookup answers null and the route falls straight through to the
       // acknowledgement it always returned.

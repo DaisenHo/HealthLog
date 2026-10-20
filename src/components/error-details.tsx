@@ -73,7 +73,7 @@ export function ErrorDetails({
   }
 
   return (
-    // v1.4.27 MB6 — `min-h-dvh flex flex-col justify-center` makes
+    // v1.4.27 — `min-h-dvh flex flex-col justify-center` makes
     // the error panel anchor in the middle of the available viewport
     // even when this component is mounted at the root layout. Without
     // it the panel hugged the top edge under the notch on

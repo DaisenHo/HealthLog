@@ -78,7 +78,7 @@ import { EnvironmentChip } from "@/components/dashboard/environment-chip";
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 
-// v1.4.40 W-RSC — module-scope so the option object is stable across
+// v1.4.40 — module-scope so the option object is stable across
 // renders (audit-M2). Pre-fix the same literal was declared inside the
 // component body, so every render created a fresh `{}` reference;
 // TanStack does a shallow compare and shrugs at the equivalent values,
@@ -237,7 +237,7 @@ export default function DashboardPageClient({
   const [quickEntryDialog, setQuickEntryDialog] =
     useState<QuickEntryDialog>(null);
 
-  // v1.30.1 M12 — pull-to-refresh parity for the dashboard, named as one
+  // v1.30.1 — pull-to-refresh parity for the dashboard, named as one
   // of the sharpest PWA-resume-staleness surfaces in the audit (it
   // already opts back into `refetchOnWindowFocus`, but a PWA resumed
   // from the home screen/app-switcher, not a browser tab focus event,
@@ -250,13 +250,13 @@ export default function DashboardPageClient({
     [queryClient],
   );
   const pull = usePullToRefresh({ onRefresh: refreshDashboard });
-  // v1.4.29 M5 — the three inline dashboard queries default to a
+  // v1.4.29 — the three inline dashboard queries default to a
   // 0-ms `staleTime`, so a tab-focus-and-return triggered a refetch
   // storm. None of these are real-time data; minute-scale staleness
   // is fine and the dashboard's chart queries already match this
   // cadence.
   //
-  // v1.4.40 W-RSC — `DASHBOARD_QUERY_OPTS` hoisted to module scope
+  // v1.4.40 — `DASHBOARD_QUERY_OPTS` hoisted to module scope
   // (audit-M2 — stable reference across renders).
 
   // v1.4.39.2 — split the dashboard's analytics consumption so the
@@ -288,7 +288,7 @@ export default function DashboardPageClient({
   const snapshotEnabled = isDashboardSnapshotEnabled();
   const snapshotQuery = useDashboardSnapshot(snapshotEnabled);
 
-  // S2 — the Today hero reads the unified daily digest (the S1 DTO) from
+  // The Today hero reads the unified daily digest (the S1 DTO) from
   // its own cached route. It is the day's data, so no module owns it: the
   // `insights` key means AI analysis, and the digest leaves its model-written
   // lead out on its own when that is off. Gated on auth only.
@@ -307,7 +307,7 @@ export default function DashboardPageClient({
     enabled: !snapshotEnabled && isAuthenticated,
   });
   const data = useMemo<AnalyticsData | undefined>(() => {
-    // v1.7.0 W6 — snapshot path: assemble the same `AnalyticsData`
+    // v1.7.0 — snapshot path: assemble the same `AnalyticsData`
     // shape from the single snapshot cell so every downstream tile
     // reads unchanged. `extras` is null on a rollup-coverage miss
     // (two-phase contract) → the BD-Zielbereich + glucose fields stay
@@ -425,7 +425,7 @@ export default function DashboardPageClient({
       : undefined
     : moodDataLegacy;
 
-  // v1.4.27 B1 — the dashboard's `<InsightsCardPreview>` retired (it
+  // v1.4.27 — the dashboard's `<InsightsCardPreview>` retired (it
   // duplicated the much-richer `/insights` advisor surface). The advisor
   // query lives on `/insights` directly; the dashboard no longer needs
   // its own hook subscription, so the local `useInsightsAdvisorQuery`
@@ -441,7 +441,7 @@ export default function DashboardPageClient({
   const sys = data?.summaries?.BLOOD_PRESSURE_SYS;
   const dia = data?.summaries?.BLOOD_PRESSURE_DIA;
   const p = data?.summaries?.PULSE;
-  // v1.15.12 A2 — the resting-pulse target band is judged against the
+  // v1.15.12 — the resting-pulse target band is judged against the
   // RESTING_HEART_RATE series (Apple's clean daily resting figure), not
   // raw PULSE which mixes in workout HR. When the user has resting rows,
   // the pulse tile shows the resting figure + the resting-band colour;
@@ -475,7 +475,7 @@ export default function DashboardPageClient({
     ? toHoursSummary(sleepSummary)
     : undefined;
   const stepsSummary = data?.summaries?.ACTIVITY_STEPS;
-  // v1.4.25 W8d — VO2 max secondary-metric tile. /api/analytics
+  // v1.4.25 — VO2 max secondary-metric tile. /api/analytics
   // auto-populates this summary because the route iterates over the
   // full measurementTypeEnum.options list; no backend change needed.
   const vo2Summary = data?.summaries?.VO2_MAX;
@@ -513,14 +513,14 @@ export default function DashboardPageClient({
     (layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS).length <
     PRIORITY_ITEM_KINDS.length;
   /**
-   * v1.4.16 phase B8 — comparison baseline (Vormonat / Vorjahr) read
+   * v1.4.16 — comparison baseline (Vormonat / Vorjahr) read
    * from the resolved layout so every chart + tile on the dashboard
    * receives the same value. "none" = comparison off (pre-B8 default).
    */
   const compareBaseline = layout.comparisonBaseline ?? "none";
 
   /**
-   * v1.4.16 phase B8 — derive the tile-delta value (current 30d avg
+   * v1.4.16 — derive the tile-delta value (current 30d avg
    * minus prior-period 30d avg) for any DataSummary. Returns null
    * when comparison is off OR either side is missing data so the
    * tile can suppress the callout cleanly.
@@ -539,7 +539,7 @@ export default function DashboardPageClient({
   };
 
   /**
-   * v1.4.34 IW-B — read the per-type freshness map and surface the
+   * v1.4.34 — read the per-type freshness map and surface the
    * `daysAgo` value when the metric is older than a week. The
    * tile-strip below forwards the result to `<TrendCard staleDays>`
    * which picks the bucket-aware copy (Xd / X weeks / X months) and
@@ -558,7 +558,7 @@ export default function DashboardPageClient({
   const isChartVisible = (id: string) =>
     layout.widgets.find((widget) => widget.id === id)?.visible ?? false;
   /**
-   * v1.4.15 Fix 5 — whether the widget's *tile* in the strip shows.
+   * v1.4.15 — whether the widget's *tile* in the strip shows.
    * Independent of the chart visibility so the user can hide chart but
    * keep the tile (or vice versa) from Settings → Dashboard. Falls back
    * to chart visibility for layouts saved before v1.4.15.
@@ -576,7 +576,7 @@ export default function DashboardPageClient({
   // Data-floor gates (widget shows iff visible AND has data)
   const hasWeight = (w?.count ?? 0) > 0;
   const hasBp = (sys?.count ?? 0) > 0 || (dia?.count ?? 0) > 0;
-  // v1.15.12 A2 — the pulse tile shows resting HR when available, else
+  // v1.15.12 — the pulse tile shows resting HR when available, else
   // raw PULSE; either signal having data shows the tile.
   const hasPulse = (p?.count ?? 0) > 0 || (rhr?.count ?? 0) > 0;
   const hasBodyFat = (bf?.count ?? 0) > 0;
@@ -595,7 +595,7 @@ export default function DashboardPageClient({
   // v1.29 — data floor for the fluid-intake strip tile.
   const hasWaterIntake = (waterIntakeSummary?.count ?? 0) > 0;
   /**
-   * v1.4.33 F4 — gate the BD-Zielbereich tile so a literal "0,0 %"
+   * v1.4.33 — gate the BD-Zielbereich tile so a literal "0,0 %"
    * placeholder doesn't ride on the dashboard when none of the user's
    * paired readings sit inside the target band. The historical
    * behaviour (`!= null`) painted the tile whenever the analytics
@@ -626,7 +626,7 @@ export default function DashboardPageClient({
   const showBodyFatTile = isTileVisible("bodyFat") && hasBodyFat;
   const showMoodTile = isTileVisible("mood") && hasMood;
   const showSleepTile = isTileVisible("sleep") && hasSleep;
-  // v1.18.0 B1 — steps are activity data tied to the workouts module
+  // v1.18.0 — steps are activity data tied to the workouts module
   // surface; AND the resolved module flag (fail-open: only an explicit
   // `false` hides it) so a disabled-workouts account drops the tile.
   const showStepsTile =
@@ -669,7 +669,7 @@ export default function DashboardPageClient({
   // data floor; the achievements + recent-workouts cards have no floor,
   // so wait for the real layout before committing them.
   const layoutResolved = layoutData != null;
-  // v1.4.15 phase-B4 — recent unlocks dashboard surface. The card itself
+  // v1.4.15 — recent unlocks dashboard surface. The card itself
   // self-handles the loading skeleton + empty state (CTA → /achievements),
   // so we only need the layout-toggle gate here. No data-floor check (the
   // empty card is intentional — the maintainer wants the user to discover
@@ -955,7 +955,7 @@ export default function DashboardPageClient({
           dashboard is this account's own day; a permanent block about other
           people's records sat above it and pushed it down. */}
 
-      {/* S2 — the Today hero, promoted above the tile strip (MARC sign-off
+      {/* The Today hero, promoted above the tile strip (MARC sign-off
           decision 1). Renders the S1 daily digest: the day's read, the
           honest score/freshness face, and the worth-a-look rail. Shimmer
           skeleton while the cached digest loads; a genuinely empty account
@@ -998,7 +998,10 @@ export default function DashboardPageClient({
         ) : !mounted || digestQuery.isLoading ? (
           <TodayHeroSkeleton />
         ) : digestQuery.isError ? (
-          <QueryErrorCard onRetry={() => digestQuery.refetch()} />
+          <QueryErrorCard
+            error={digestQuery.error}
+            onRetry={() => digestQuery.refetch()}
+          />
         ) : null
       }
 
@@ -1303,7 +1306,7 @@ export default function DashboardPageClient({
             ),
           });
         }
-        // v1.4.25 W8d — VO2 max trend tile. Self-gates on the
+        // v1.4.25 — VO2 max trend tile. Self-gates on the
         // `vo2Max` widget being enabled (Settings → Dashboard) AND
         // the analytics summary carrying at least one sample. Higher
         // VO2 max is better, so the directionSentiment is up-good and
@@ -1570,7 +1573,7 @@ export default function DashboardPageClient({
           });
         }
         if (showBpInTargetTile) {
-          /* v1.4.22 A2 — feature parity with every other tile.
+          /* v1.4.22 — feature parity with every other tile.
              Synthesise a slope from the difference between the 7-day
              and 30-day in-target shares: when the recent week is
              above the recent month, the metric is improving (up-good
@@ -1584,7 +1587,7 @@ export default function DashboardPageClient({
              tile (no DataSummary) so the prior-period delta uses
              `bpInTargetPctAllTime` as the long-arc baseline — when
              comparison is off the field stays null. */
-          // v1.4.28 FB-C1 + FB-C2 — rewrite the BD-Zielbereich tile
+          // v1.4.28 — rewrite the BD-Zielbereich tile
           // against the shared `<TrendCard>` primitive so it matches
           // the Weight / BP / Pulse sibling tiles exactly. The
           // synthetic `bpSlope30 = bpTrendDelta / 30` block produced a
@@ -1615,7 +1618,7 @@ export default function DashboardPageClient({
             bpComparePrior === null
               ? null
               : Math.round((bp30 - bpComparePrior) * 10) / 10;
-          // v1.17 W1b — thin-data gate + dynamic span label. Below the
+          // v1.17 — thin-data gate + dynamic span label. Below the
           // confidence floor the tile narrates "collecting data" instead of
           // a hard percentage, and the label names the EFFECTIVE span
           // ("· 23 T" until ~90 days of history exist) rather than a
@@ -1636,11 +1639,11 @@ export default function DashboardPageClient({
             node: (
               <TrendCard
                 key="bpInTarget"
-                // v1.17 W1d — the headline is the trailing-90-day in-target
+                // v1.17 — the headline is the trailing-90-day in-target
                 // rate; the label names the window so the tile never
                 // narrates an unlabelled scope. The `30T:` caption below
                 // still surfaces the 30-day figure for short-horizon context.
-                // v1.17 W1b — span is dynamic until ~90 days of history exist.
+                // v1.17 — span is dynamic until ~90 days of history exist.
                 label={bpLabel}
                 latest={bpSufficient ? (data?.bpInTargetPct ?? null) : null}
                 emptyHint={
@@ -1837,7 +1840,7 @@ export default function DashboardPageClient({
                 preloadedSeries={preloadedSeries}
                 preloadedCoverageDays={BATCH_COVERAGE_DAYS}
                 chartKey="pulse"
-                // v1.15.12 A2 — chart the RESTING series against the
+                // v1.15.12 — chart the RESTING series against the
                 // resting band when available; otherwise chart raw heart
                 // rate WITHOUT the resting-band overlay (it would mark
                 // expected-high workout HR as "outside target").
@@ -1941,7 +1944,7 @@ export default function DashboardPageClient({
           });
         }
         if (showMedicationsCard) {
-          // v1.4.15 Fix 2: the toggle existed since v1.1 but the dashboard
+          // v1.4.15: the toggle existed since v1.1 but the dashboard
           // slot only rendered a static placeholder (icon + title), so
           // flipping the layout switch on did nothing visible. Wire the
           // real chart that consumes
@@ -1973,7 +1976,7 @@ export default function DashboardPageClient({
           });
         }
         if (showAchievementsCard) {
-          // v1.4.15 phase-B4 — slotted at the user's chosen position via
+          // v1.4.15 — slotted at the user's chosen position via
           // the layout `order`. Default order from
           // `DEFAULT_DASHBOARD_LAYOUT` puts it last (below the chart row)
           // which matches the maintainer's brief "below the chart row".
@@ -1995,7 +1998,7 @@ export default function DashboardPageClient({
 
         charts.sort((a, b) => a.order - b.order);
 
-        // v1.4.43 W11-M5 — tile-strip skeleton during slow slim-analytics
+        // v1.4.43 — tile-strip skeleton during slow slim-analytics
         // fetches.
         //
         // `trendCards` only fills once the slim `/api/analytics` slice
@@ -2053,7 +2056,7 @@ export default function DashboardPageClient({
             primaryLoading,
           });
 
-        // v1.4.15 phase-C5: dashboard fully-empty state. When no tile
+        // v1.4.15: dashboard fully-empty state. When no tile
         // and no chart has data the dashboard would otherwise paint a
         // 0-px tile strip with the welcome banner above it — visually
         // looked like a half-broken page. Render an EmptyState that
@@ -2064,7 +2067,7 @@ export default function DashboardPageClient({
         // case where the checklist has been dismissed but no data was
         // logged afterwards.
         //
-        // v1.4.43 W11 — the empty-state only fires once the slim slice
+        // v1.4.43 — the empty-state only fires once the slim slice
         // resolves with no tiles to show. While slim is in flight the
         // skeleton strip below carries the layout footprint.
         if (showEmptyState) {
@@ -2103,7 +2106,7 @@ export default function DashboardPageClient({
              * makes the scroll feel deliberate rather than arbitrary on
              * touch.
              */}
-            {/* v1.4.16 Fix A5: hide the strip entirely when the user
+            {/* v1.4.16: hide the strip entirely when the user
                 turned off every tile. Until v1.4.15 the wrapper rendered
                 an empty grid even with zero tiles — visually a thin gap
                 the maintainer described as "awkward". Charts below still render so
@@ -2115,7 +2118,7 @@ export default function DashboardPageClient({
                 height for any non-zero count. */}
             {showTileStripSkeleton && (
               <div
-                // v1.4.43 W11-M5 — tile-strip skeleton mirrors the real
+                // v1.4.43 — tile-strip skeleton mirrors the real
                 // grid track (`auto-fit minmax(min(100%,11rem),1fr)`) so
                 // the layout footprint is reserved while slim-analytics
                 // is in flight. Cards are keyed off the user's
@@ -2225,7 +2228,7 @@ export default function DashboardPageClient({
             {charts.map((entry) => (
               <div key={entry.id} className="space-y-2">
                 {/*
-                 * v1.4.40 W-RSC — per-tile `<Suspense>` boundary so each
+                 * v1.4.40 — per-tile `<Suspense>` boundary so each
                  * chart paints independently rather than the row blocking
                  * on the slowest fetch (audit-H2 + brief C1). The
                  * `next/dynamic({ ssr: false })` lazy-load contract on

@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Oura Cloud API v2 client for OAuth + data fetching.
+ * v1.17.0 — Oura Cloud API v2 client for OAuth + data fetching.
  * Docs: https://cloud.ouraring.com/v2/docs (re-verify at build).
  *
  * Mirrors the WHOOP / Polar client structure: hand-rolled fetch over
@@ -21,6 +21,8 @@ import { dayDiff } from "@/lib/cycle/day-math";
 import { safeFetch } from "@/lib/safe-fetch";
 import { OuraApiError, classifyOuraResponse } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
+import { importValue } from "@/lib/integrations/import-value";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 const OURA_API_BASE = "https://api.ouraring.com";
 const OURA_OAUTH_AUTH_URL = "https://cloud.ouraring.com/oauth/authorize";
@@ -475,51 +477,48 @@ async function fetchCollection<T>(
   verb: string,
   query: DateRangeQuery,
 ): Promise<T[]> {
-  const records: T[] = [];
-  let nextToken: string | null | undefined;
-  let pageCount = 0;
-  const maxPages = query.maxPages ?? 100;
-
-  do {
-    const params = new URLSearchParams({
-      start_date: query.startDate,
-      end_date: query.endDate,
-    });
-    if (nextToken) params.set("next_token", nextToken);
-
-    const pageStart = performance.now();
-    const res = await safeFetch(`${OURA_API_BASE}${path}?${params}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-      },
-    });
-    const json = (await res
-      .json()
-      .catch(() => null)) as OuraCollection<T> | null;
-    const verdict = classifyOuraResponse(res.status);
-    getEvent()?.addExternalCall({
-      service: "oura",
-      method: `${verb}(page=${pageCount})`,
-      duration_ms: Math.round(performance.now() - pageStart),
-      status: res.status,
-      error: verdict.classification === "success" ? undefined : verdict.reason,
-    });
-    if (verdict.classification !== "success") {
-      throw new OuraApiError({
-        verb,
-        classification: verdict.classification,
-        httpStatus: verdict.httpStatus,
-        reason: verdict.reason,
+  const walk = await walkPages<string, T>(
+    `oura.${verb}`,
+    query.maxPages ?? 100,
+    async (nextToken, page) => {
+      const params = new URLSearchParams({
+        start_date: query.startDate,
+        end_date: query.endDate,
       });
-    }
-    for (const r of json?.data ?? []) records.push(r);
-    nextToken = json?.next_token ?? null;
-    pageCount += 1;
-  } while (nextToken && pageCount < maxPages);
+      if (nextToken) params.set("next_token", nextToken);
 
-  return records;
+      const pageStart = performance.now();
+      const res = await safeFetch(`${OURA_API_BASE}${path}?${params}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+      });
+      const json = (await res
+        .json()
+        .catch(() => null)) as OuraCollection<T> | null;
+      const verdict = classifyOuraResponse(res.status);
+      getEvent()?.addExternalCall({
+        service: "oura",
+        method: `${verb}(page=${page})`,
+        duration_ms: Math.round(performance.now() - pageStart),
+        status: res.status,
+        error:
+          verdict.classification === "success" ? undefined : verdict.reason,
+      });
+      if (verdict.classification !== "success") {
+        throw new OuraApiError({
+          verb,
+          classification: verdict.classification,
+          httpStatus: verdict.httpStatus,
+          reason: verdict.reason,
+        });
+      }
+      return { items: json?.data ?? [], next: json?.next_token ?? null };
+    },
+  );
+  return walk.items;
 }
 
 export function fetchSleep(
@@ -642,10 +641,6 @@ export function fetchDailyCyclePhases(
 
 const SEC_TO_MIN = 1 / 60;
 
-function round2(n: number): number {
-  return parseFloat(n.toFixed(2));
-}
-
 export interface MappedMeasurement {
   type: string;
   value: number;
@@ -704,7 +699,7 @@ export function mapReadiness(
   if (typeof r.score === "number") {
     out.push({
       type: "RECOVERY_SCORE",
-      value: round2(r.score),
+      value: importValue(r.score),
       unit: "score",
       measuredAt,
       fieldTag: "recovery",
@@ -713,7 +708,7 @@ export function mapReadiness(
   if (typeof r.temperature_deviation === "number") {
     out.push({
       type: "BODY_TEMPERATURE_DEVIATION",
-      value: round2(r.temperature_deviation),
+      value: importValue(r.temperature_deviation),
       unit: "celsius",
       measuredAt,
       fieldTag: "temp_deviation",
@@ -784,7 +779,7 @@ function mapSleepTimeline(s: OuraSleep): MappedMeasurement[] | null {
       const fieldTag = `seg:${new Date(segStartMs).toISOString()}`;
       out.push({
         type: "SLEEP_DURATION",
-        value: round2(run * HYPNOGRAM_INTERVAL_MIN),
+        value: importValue(run * HYPNOGRAM_INTERVAL_MIN),
         unit: "minutes",
         measuredAt: new Date(segEndMs),
         fieldTag,
@@ -850,7 +845,7 @@ export function mapSleep(s: OuraSleep, tz?: string): MappedMeasurement[] {
       if (typeof sec === "number" && sec >= 0) {
         out.push({
           type: "SLEEP_DURATION",
-          value: round2(sec * SEC_TO_MIN),
+          value: importValue(sec * SEC_TO_MIN),
           unit: "minutes",
           measuredAt,
           fieldTag,
@@ -868,7 +863,7 @@ export function mapSleep(s: OuraSleep, tz?: string): MappedMeasurement[] {
   if (typeof s.efficiency === "number") {
     out.push({
       type: "SLEEP_EFFICIENCY",
-      value: round2(s.efficiency),
+      value: importValue(s.efficiency),
       unit: "%",
       measuredAt,
       fieldTag: "sleep_eff",
@@ -878,7 +873,7 @@ export function mapSleep(s: OuraSleep, tz?: string): MappedMeasurement[] {
   if (typeof s.average_hrv === "number" && s.average_hrv > 0) {
     out.push({
       type: "HRV_RMSSD",
-      value: round2(s.average_hrv),
+      value: importValue(s.average_hrv),
       unit: "ms",
       measuredAt,
       fieldTag: "hrv_rmssd",
@@ -898,7 +893,7 @@ export function mapSleep(s: OuraSleep, tz?: string): MappedMeasurement[] {
   if (typeof s.average_breath === "number" && s.average_breath > 0) {
     out.push({
       type: "RESPIRATORY_RATE",
-      value: round2(s.average_breath),
+      value: importValue(s.average_breath),
       unit: "breaths/min",
       measuredAt,
       fieldTag: "resp_rate",
@@ -919,7 +914,7 @@ export function mapDailySleep(
   return [
     {
       type: "SLEEP_SCORE",
-      value: round2(d.score),
+      value: importValue(d.score),
       unit: "score",
       measuredAt,
       fieldTag: "sleep_score",
@@ -941,7 +936,7 @@ export function mapDailySpo2(
   return [
     {
       type: "OXYGEN_SATURATION",
-      value: round2(avg),
+      value: importValue(avg),
       unit: "%",
       measuredAt,
       fieldTag: "spo2",
@@ -970,7 +965,7 @@ export function mapDailyActivity(
   if (typeof a.active_calories === "number" && a.active_calories >= 0) {
     out.push({
       type: "ACTIVE_ENERGY_BURNED",
-      value: round2(a.active_calories),
+      value: importValue(a.active_calories),
       unit: "kcal",
       measuredAt,
       fieldTag: "active_energy",
@@ -984,7 +979,7 @@ export function mapDailyActivity(
       type: "WALKING_RUNNING_DISTANCE",
       // Oura reports the equivalent walking distance in metres — the canonical
       // WALKING_RUNNING_DISTANCE unit (no conversion).
-      value: round2(a.equivalent_walking_distance),
+      value: importValue(a.equivalent_walking_distance),
       unit: "m",
       measuredAt,
       fieldTag: "distance",
@@ -1005,7 +1000,7 @@ export function mapVo2Max(v: OuraVo2Max, tz?: string): MappedMeasurement[] {
   return [
     {
       type: "VO2_MAX",
-      value: round2(v.vo2_max),
+      value: importValue(v.vo2_max),
       unit: "mL/(kg·min)",
       measuredAt,
       fieldTag: "vo2_max",
@@ -1029,7 +1024,7 @@ export function mapCardiovascularAge(
   return [
     {
       type: "VASCULAR_AGE",
-      value: round2(c.vascular_age),
+      value: importValue(c.vascular_age),
       unit: "years",
       measuredAt,
       fieldTag: "vascular_age",

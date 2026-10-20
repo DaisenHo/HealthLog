@@ -1,5 +1,5 @@
 /**
- * S5 — the daily briefing push (§2.2).
+ * The daily briefing push (§2.2).
  *
  * A CALM, once-per-day morning nudge that rides the EXISTING notification
  * cascade (`dispatchNotification` → APNs → Telegram → ntfy → Webhook → Email →

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.1 P3 — the cross-episode retrospective summary card ("Your illness
+ * v1.18.1 — the cross-episode retrospective summary card ("Your illness
  * history"): how many episodes in the window, and — on demand — the typical
  * recovery gap. Retrospective only — a count of the past, never a forecast.
  *
@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { useIllnessInsights } from "./use-illness";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 export function IllnessInsightsCard({
   windowDays = 365,
@@ -55,6 +56,13 @@ export function IllnessInsightsCard({
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-4 w-1/2" />
           </div>
+        ) : counts.isError && !data ? (
+          <QueryErrorRow
+            inset
+            error={counts.error}
+            slot="illness-insights-error"
+            onRetry={() => void counts.refetch()}
+          />
         ) : !hasEpisodes ? (
           <p className="text-muted-foreground text-sm">
             {t("illness.insights.none")}
@@ -83,11 +91,14 @@ export function IllnessInsightsCard({
               <div className="space-y-2">
                 <Skeleton className="h-4 w-1/2" />
               </div>
-            ) : gap.isError || !gap.data ? (
-              <p className="text-muted-foreground">
-                {t("illness.insights.typicalGapLearning")}
-              </p>
-            ) : gap.data.typicalRecoveryGapDays === null ? (
+            ) : gap.isError && !gap.data ? (
+              <QueryErrorRow
+                inset
+                error={gap.error}
+                slot="illness-insights-gap-error"
+                onRetry={() => void gap.refetch()}
+              />
+            ) : !gap.data || gap.data.typicalRecoveryGapDays === null ? (
               <p className="text-muted-foreground">
                 {t("illness.insights.typicalGapLearning")}
               </p>

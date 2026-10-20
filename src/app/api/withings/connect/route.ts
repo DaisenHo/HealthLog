@@ -16,7 +16,7 @@ import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 /**
  * Redirects the user to Withings OAuth authorization page.
  *
- * v1.4.47 W6 — state is now a fully-random 22-character base64url
+ * v1.4.47 — state is now a fully-random 22-character base64url
  * nonce backed by a 10-minute `WithingsOAuthState` row, rather than
  * the legacy `${user.id}:${random16}` shape. The cookie carries JUST
  * the nonce (no user id), the OAuth state URL param carries JUST the
@@ -24,7 +24,7 @@ import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
  * column. Closes the v1.4.43 security audit L-1 finding where the
  * user id was recoverable from log entries / network captures.
  *
- * v1.4.48 L5 + L14 — endpoint is now rate-limited per-user (10 calls
+ * v1.4.48 — endpoint is now rate-limited per-user (10 calls
  * per 60 s) so a logged-in user with valid creds can't spam ledger
  * rows for the full 10-min TTL window. The row-create call is wrapped
  * in try/catch; a transient DB glitch now lands on the existing

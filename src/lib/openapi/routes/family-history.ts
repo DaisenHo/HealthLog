@@ -28,6 +28,7 @@ import {
   idempotentWrite,
   recordRefusal,
   stdResponses,
+  listEnvelope,
 } from "./shared";
 
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
@@ -88,7 +89,7 @@ export const familyHistoryPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The caller's family-history entries.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 z.array(familyHistoryEntry),
                 "ListFamilyHistoryEnvelope",
               ),

@@ -28,6 +28,9 @@ import {
   type ScheduleRevisionRow,
 } from "@/components/medications/scheduling/schedule-history-timeline";
 import { queryKeys } from "@/lib/query-keys";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const MED_ID = "med-1";
 

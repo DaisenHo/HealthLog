@@ -172,7 +172,7 @@ async function notifyAdminsOfFailure(event: NormalizedEvent): Promise<void> {
     return;
   }
 
-  // v1.4.27 F21 — each admin sees the alert in their own User.locale.
+  // v1.4.27 — each admin sees the alert in their own User.locale.
   // The body is composed inside `dispatchLocalisedNotification` from
   // translation keys; the static "Error:" / "Deployment:" / "Logs:"
   // labels are emitted as a single param-substituted body key so all

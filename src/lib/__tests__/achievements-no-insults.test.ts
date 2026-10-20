@@ -4,7 +4,7 @@ import deMessages from "../../../messages/de.json";
 import enMessages from "../../../messages/en.json";
 
 /**
- * v1.4.19 A8 / F-03 — `achievements.list.overIntake1.title === "Idiot"` and
+ * v1.4.19 — `achievements.list.overIntake1.title === "Idiot"` and
  * `achievements.list.skippedIntake1.title === "Lazy Boy"` were shipping in
  * both EN and DE bundles. For a personal health app that translates to a
  * literal insult any time the user double-doses (e.g. forgot they already

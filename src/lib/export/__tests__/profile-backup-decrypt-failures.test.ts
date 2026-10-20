@@ -1,5 +1,5 @@
 /**
- * v1.37.19 (A6-9) — the portable export's decryptFailures manifest.
+ * v1.37.19 — the portable export's decryptFailures manifest.
  *
  * Watched red: with the collector dropped from `decryptProfileFieldSoft`
  * (the pre-fix fail-soft that only nulled the field), the first case fails

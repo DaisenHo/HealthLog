@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Oura poll-cohort sync handler.
+ * v1.17.0 — Oura poll-cohort sync handler.
  *
  * Poll-only: one hourly cron tick (no `userId`) iterates every user with a
  * stored Oura token and re-syncs each via `syncUserOura`. One user's revoked

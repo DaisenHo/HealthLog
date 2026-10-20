@@ -464,6 +464,7 @@ export function TimelineView() {
         </Card>
       ) : timeline.isError ? (
         <QueryErrorCard
+          error={timeline.error}
           description={t("timeline.loadFailed")}
           onRetry={() => void timeline.refetch()}
         />

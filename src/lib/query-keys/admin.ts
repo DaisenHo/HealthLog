@@ -68,7 +68,7 @@ export const adminKeys = {
   adminAuditActions: () => ["admin", "audit-log", "actions"] as const,
   adminAuditOverview: () => ["admin", "audit-log", "overview-preview"] as const,
   /**
-   * v1.4.42 W3-QUERYKEY-LONGTAIL — paginated + filtered audit-log
+   * v1.4.42 — paginated + filtered audit-log
    * read used by the login-overview admin section. The `filtered`
    * discriminator at index 2 keeps the no-arg `adminAuditLog(filter)`
    * cache slot byte-distinct so its consumers don't collide.

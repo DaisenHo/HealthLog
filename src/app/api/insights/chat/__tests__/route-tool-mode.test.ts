@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * v1.20.0 (F1) — Coach tool-retrieval routing contract.
+ * v1.20.0 — Coach tool-retrieval routing contract.
  *
  *  - When every provider in the chain supports tools, the route runs the tool
  *    loop with a base context (DATA INVENTORY, NOT the snapshot figures), and

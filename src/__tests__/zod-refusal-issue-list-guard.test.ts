@@ -188,7 +188,7 @@ const TOKEN_IN_ERROR_422: Record<string, string> = {
   "src/app/api/auth/me/health-score-config/route.ts health-score-config.body.invalid_json":
     "The published 422 description spells this exact body out as what a non-JSON request earns. It is the one operation whose contract promises the token, so the token is what it answers with.",
   "src/app/api/coach/reminder-suggestions/route.ts coach.suggestion.unknownCadence":
-    "Predates this sweep and carries no `meta.errorCode` yet; the Coach reminder surfaces move as one piece or not at all.",
+    "Predates this sweep and carries only the status default code; the Coach reminder surfaces move as one piece or not at all.",
   "src/app/api/coach/reminders/route.ts coach.reminder.invalidWhen":
     "Predates this sweep, same surface.",
   "src/app/api/coach/reminders/[id]/route.ts coach.reminder.invalidWhen":

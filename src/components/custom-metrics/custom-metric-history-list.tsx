@@ -88,7 +88,7 @@ export function CustomMetricHistoryList({
     });
   }
 
-  // v1.37.20 (A3-11) — undo parity with every peer entry surface: the
+  // v1.37.20 — undo parity with every peer entry surface: the
   // delete tombstones server-side and the toast offers the restore.
   async function restoreEntry(id: string) {
     try {

@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — Coach retrieval tool executor: dispatch, grounding, and the
+ * v1.20.0 — Coach retrieval tool executor: dispatch, grounding, and the
  * gate-preservation contract. The executor must NEVER throw and must return a
  * structured `{ present: false }` for an absent domain — the hallucination
  * audit asserts the model can always tell "no data" from "data".
@@ -471,7 +471,7 @@ describe("executeCoachTool", () => {
   });
 });
 
-// v1.21.0 (D5-1) — ONE snapshot per turn. When the route threads the shared
+// v1.21.0 — ONE snapshot per turn. When the route threads the shared
 // full-source scope (the inventory's probe scope) and the tool's window
 // matches, the tool must read under the SHARED scope key so every per-tool read
 // lands the inventory's already-built 60s LRU entry — rather than rebuilding a

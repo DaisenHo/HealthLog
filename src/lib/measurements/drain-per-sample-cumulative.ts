@@ -154,7 +154,7 @@ export interface DrainOptions {
   /** Logger sink — defaults to `console.log`. */
   log?: (line: string) => void;
   /**
-   * v1.4.37 W7c — protect recent per-sample rows from collapse so late
+   * v1.4.37 — protect recent per-sample rows from collapse so late
    * watch syncs still surface in real time before the list view shows
    * the day's total. When set, rows whose `measuredAt` is newer than
    * `now() - cutoffHours` are excluded from the scan; the drain only
@@ -243,7 +243,7 @@ export async function drainPerSampleCumulative(
     dailyStatsExternalId,
     statsPrefix: DAILY_STATS_PREFIX,
     reduce: sumBucketValues,
-    // v1.4.37 W7c — exclude rows inside the grace window so the nightly
+    // v1.4.37 — exclude rows inside the grace window so the nightly
     // scheduled drain never collapses today's still-in-flight watch syncs.
     // `deletedAt: null` pins the scan to LIVE rows — matching the three
     // sibling drains (daily-mean :234, dense-intraday :464, legacy-steps

@@ -133,9 +133,12 @@ vi.mock("@/hooks/use-auth", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { SettingsSectionFrame } from "./section-frame-harness";
 import { MoodSection } from "../mood-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en"): string {
-  // v1.18.6 (W9) — the visible heading (with the historic id) comes from the
+  // v1.18.6 — the visible heading (with the historic id) comes from the
   // shared frame the route wraps the section in.
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>
@@ -153,7 +156,7 @@ beforeEach(() => {
 
 describe("<MoodSection> — SSR smoke", () => {
   it("renders the section heading via i18n (no raw keys)", () => {
-    // v1.18.1 (D0) — the section blurb was dropped; the sr-only heading + the
+    // v1.18.1 — the section blurb was dropped; the sr-only heading + the
     // card content carry the meaning.
     const html = render();
     expect(html).toContain("settings-section-mood-title");

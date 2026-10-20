@@ -8,7 +8,7 @@ import {
 import { aiInsightResponseSchema } from "../schema";
 
 /**
- * Phase C1 — scope-hardened system prompt assertions.
+ * Scope-hardened system prompt assertions.
  *
  * These tests verify three pillars:
  *

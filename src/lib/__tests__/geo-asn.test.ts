@@ -16,7 +16,7 @@ vi.mock("undici", async (importOriginal) => {
 });
 
 /**
- * v1.4.27 B3 — ASN + carrier lookup tests.
+ * v1.4.27 — ASN + carrier lookup tests.
  *
  * The MaxMind GeoLite2-ASN MMDB is too large for the test fixtures
  * directory (~10 MB) and shipping it would bloat git history. These

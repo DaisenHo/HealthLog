@@ -7,7 +7,7 @@ import {
 } from "../schema";
 
 /**
- * Phase C1 — citation-from-data hard requirement.
+ * Citation-from-data hard requirement.
  *
  * The maintainer, verbatim 2026-05-09: "es muss sich halt irgendwie stützen auf
  * medizinische Dinge."  ("It must ground on medical facts / user data.")

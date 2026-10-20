@@ -144,7 +144,7 @@ describe("buildComprehensiveAggregate", () => {
           avg7: 81.9,
           avg30: 82.1,
           avg30_last_month: 83.0,
-          // v1.20.0 F6 — slope / r² no longer ride the narrow aggregate;
+          // v1.20.0 — slope / r² no longer ride the narrow aggregate;
           // they compose from the accumulator buckets below.
         },
       ]).mockResolvedValueOnce([
@@ -158,7 +158,7 @@ describe("buildComprehensiveAggregate", () => {
       // `collapseRollupRowsBySource` can resolve dual-source days; with
       // a single source per day every bucket passes through unchanged.
       //
-      // v1.20.0 F6 — buckets are placed on the two most-recent UTC days so
+      // v1.20.0 — buckets are placed on the two most-recent UTC days so
       // they fall inside the 7-day slope window, and carry the regression
       // accumulators the windowed slope / r² compose from. Each bucket
       // models its `count` readings as all landing at the bucket's day
@@ -213,7 +213,7 @@ describe("buildComprehensiveAggregate", () => {
       const since7 = startOfUtcDay(new Date(Date.now() - 7 * 86_400_000));
       const expectedReg7 = composeWindowedRegression(accBuckets, since7);
 
-      // v1.18.10 I-1 — bpRawRows now reads source-collapsed rows via
+      // v1.18.10 — bpRawRows now reads source-collapsed rows via
       // `$queryRawUnsafe` (3rd UNSAFE call: narrow, latests, bpRaw). Empty
       // here since the rollup-fresh fixture doesn't exercise BP pairing.
       UNSAFE.mockResolvedValueOnce([]);
@@ -235,7 +235,7 @@ describe("buildComprehensiveAggregate", () => {
       expect(weight.avg30).toBe(82.1);
       expect(weight.avg30LastMonth).toBe(83.0);
       expect(weight.anomalyCount).toBe(3);
-      // v1.20.0 F6 — slope7 composes from the accumulator buckets. The two
+      // v1.20.0 — slope7 composes from the accumulator buckets. The two
       // recent buckets (means 81 → 83 one day apart) yield a positive,
       // perfect-fit slope; assert against the closed form the reader uses.
       expect(expectedReg7.slope).not.toBeNull();
@@ -258,7 +258,7 @@ describe("buildComprehensiveAggregate", () => {
       // DISTINCT-ON latest moved to `$queryRawUnsafe` (2 calls). Neither
       // path runs the legacy heavy COUNT/MIN/MAX/AVG query.
       expect(RAW).toHaveBeenCalledTimes(2);
-      // v1.18.10 I-1 — narrow + latests + bpRaw all run on `$queryRawUnsafe`.
+      // v1.18.10 — narrow + latests + bpRaw all run on `$queryRawUnsafe`.
       expect(UNSAFE).toHaveBeenCalledTimes(3);
       // bpRawRows no longer uses `measurement.findMany`.
       expect(FIND_MANY).not.toHaveBeenCalled();
@@ -289,7 +289,7 @@ describe("buildComprehensiveAggregate", () => {
       expect(result.firstMeasurementAt).toBeNull();
       expect(result.totalMeasurements).toBe(0);
       expect(RAW).toHaveBeenCalledTimes(1);
-      // v1.18.10 I-1 — heavy + latests + bpRaw all on `$queryRawUnsafe`.
+      // v1.18.10 — heavy + latests + bpRaw all on `$queryRawUnsafe`.
       expect(UNSAFE).toHaveBeenCalledTimes(3);
       expect(FIND_MANY).not.toHaveBeenCalled();
       // The cold path's rollup.findMany still fires (in case some
@@ -332,7 +332,7 @@ describe("buildComprehensiveAggregate", () => {
         .mockResolvedValueOnce([
           { type: "WEIGHT", value: 81.4, measured_at: now },
         ])
-        // v1.18.10 I-1 — bpRaw (empty) is the 3rd UNSAFE call.
+        // v1.18.10 — bpRaw (empty) is the 3rd UNSAFE call.
         .mockResolvedValueOnce([]);
 
       const result = await buildComprehensiveAggregate("user-cold");
@@ -402,7 +402,7 @@ describe("buildComprehensiveAggregate", () => {
           measured_at: measuredAt,
         },
       ])
-      // v1.18.10 I-1 — bpRaw runs on `$queryRawUnsafe` through the
+      // v1.18.10 — bpRaw runs on `$queryRawUnsafe` through the
       // source-collapsed canonical subquery. The query returns the
       // already-collapsed sys + dia rows in raw SQL snake_case shape; the
       // aggregator partitions by type in JS so the bpRawRows.sys / .dia

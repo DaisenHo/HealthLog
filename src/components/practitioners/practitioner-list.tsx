@@ -129,6 +129,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
 
       {list.isError ? (
         <QueryErrorCard
+          error={list.error}
           title={t("practitioners.loadError")}
           onRetry={() => void list.refetch()}
         />

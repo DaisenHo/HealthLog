@@ -132,7 +132,7 @@ describe("measurement validation", () => {
       expect(parsed.success).toBe(false);
     });
 
-    // v1.17 W1b — shared `validateEntryInstant` plausibility bound.
+    // v1.17 — shared `validateEntryInstant` plausibility bound.
     it("rejects a future-dated measurement", () => {
       const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       const parsed = createMeasurementSchema.safeParse({
@@ -165,7 +165,7 @@ describe("measurement validation", () => {
       expect(parsed.success).toBe(false);
     });
 
-    // v1.4.25 W10 reconcile (code-review M4): `deviceType` was a
+    // v1.4.25 (code-review M4): `deviceType` was a
     // batch-only field; the single-entry schema silently dropped it.
     // Now it parses through so the column is populated whether the
     // client posts one row or many.
@@ -228,7 +228,7 @@ describe("measurement validation", () => {
     });
   });
 
-  // v1.4.37 W7c — list-view "one row per day" mode for cumulative
+  // v1.4.37 — list-view "one row per day" mode for cumulative
   // types. The schema pins the optional `groupBy` enum + `dayKey`
   // shape; the route gates each branch on whether the resolved type
   // is in `CUMULATIVE_HK_TYPES`. Tests below pin the parser surface.
@@ -445,7 +445,7 @@ describe("measurement validation", () => {
     });
 
     it("rejects every non-writable source on a client write", () => {
-      // v1.10.0 QA — the single-POST validates `source` against the
+      // v1.10.0 — the single-POST validates `source` against the
       // client-writable subset {MANUAL, APPLE_HEALTH}. COMPUTED (server
       // scores), WITHINGS (the Withings webhook), and IMPORT (the CSV
       // importer) are all server-owned and must be rejected so a client

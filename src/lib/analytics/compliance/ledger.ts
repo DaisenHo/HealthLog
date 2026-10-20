@@ -201,7 +201,7 @@ export function buildComplianceLedgerRows(
   // mints phantom misses (#1028).
   const rows = reconstructDoseHistory(bands, intakes, now, ctx.createdAt);
 
-  // v1.25 H-MED1 — drop expected dose slots whose anchor falls inside a
+  // v1.25 — drop expected dose slots whose anchor falls inside a
   // pause interval. While a medication is paused no dose is expected, so a
   // slot minted across the paused window must never count as "missed" (the
   // denominator-inflating status). Only `slot` rows are dropped, and only
@@ -305,6 +305,41 @@ export function tallyLedgerRows(
  * cadence-scaled display rows / 90-day heatmap) is a suffix of it.
  */
 export const COMPLIANCE_LEDGER_WINDOW_DAYS = 365;
+
+/**
+ * The ledger over the trailing {@link COMPLIANCE_LEDGER_WINDOW_DAYS} ending at
+ * `now`: the one set of dose rows every per-medication compliance figure is
+ * tallied from. A slot before the medication's creation stays in it only when
+ * a recorded dose claims it (#1028).
+ */
+export function trailingComplianceLedger(
+  events: IntakeEvent[],
+  schedules: ComplianceSchedule[],
+  ctx: ComplianceMedicationContext,
+  now: Date,
+): DoseHistoryRow[] {
+  if (schedules.length === 0) return [];
+  const from = new Date(
+    now.getTime() - COMPLIANCE_LEDGER_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+  return buildComplianceLedgerRows(events, schedules, ctx, from, now, now);
+}
+
+/**
+ * The tally of the trailing `days` ending at `now`, carved out of
+ * {@link trailingComplianceLedger}: the same rows, so the same window reads
+ * the same rate on every surface.
+ */
+export function trailingComplianceTally(
+  ledger: DoseHistoryRow[],
+  days: number,
+  now: Date,
+): LedgerComplianceTally {
+  return tallyLedgerRows(ledger, {
+    from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000),
+    to: now,
+  });
+}
 
 /**
  * One day of the cadence-aware compliance series: the day's compliance %

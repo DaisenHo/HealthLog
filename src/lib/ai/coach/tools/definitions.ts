@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — Coach retrieval tool catalogue.
+ * v1.20.0 — Coach retrieval tool catalogue.
  *
  * Replaces snapshot-stuffing with on-demand retrieval: the model is handed a
  * tiny DATA INVENTORY in the base context and pulls only the domains it needs

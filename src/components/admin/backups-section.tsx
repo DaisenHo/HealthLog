@@ -847,7 +847,7 @@ export function BackupsSection() {
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminBackups(),
     queryFn: async () => {
       return apiGet<BackupsList>("/api/admin/backups");
@@ -1132,7 +1132,7 @@ export function BackupsSection() {
   return (
     <SettingsCard>
       {recentProof.dialog}
-      {/* v1.18.1 E3 — the snapshot count leads (numbers first) and the
+      {/* v1.18.1 — the snapshot count leads (numbers first) and the
           "Run now" button follows. */}
       <SettingsCardHeader
         icon={Database}
@@ -1243,11 +1243,13 @@ export function BackupsSection() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          inset
+          error={error}
           message={t("admin.section.backups.loadError")}
           onRetry={() => void refetch()}
         />
       ) : rows.length === 0 ? (
-        // v1.4.15 phase-C5: replace bare text with the EmptyState
+        // v1.4.15: replace bare text with the EmptyState
         // primitive. The header already exposes "Backup now" but a
         // brand-new admin lands inside the card and benefits from a
         // duplicate CTA right next to the explanation.

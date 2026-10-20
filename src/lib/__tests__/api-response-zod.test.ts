@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod/v4";
 import { returnAllZodIssues, sanitiseZodIssues } from "../api-response";
 
-// v1.4.42 W2 — every Zod-validated route historically returned
+// v1.4.42 — every Zod-validated route historically returned
 // `parsed.error.issues[0].message`, dropping every issue past the first.
 // `returnAllZodIssues` is the additive replacement: clients that only
 // read `error` keep working, new callers branch on `details.issues`.

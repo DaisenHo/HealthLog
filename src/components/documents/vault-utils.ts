@@ -168,6 +168,26 @@ export function isDocumentProcessing(
 }
 
 /**
+ * How often the Coach polls a staged attachment for its content index.
+ *
+ * The same "still processing" question the vault list asks, so the same
+ * bounded window answers it: a document that will never be indexed (an
+ * unsupported format, indexing disabled) used to be polled every 2.5 s for as
+ * long as the Coach stayed open. `false` once the index exists or the window
+ * has passed.
+ */
+export const STAGED_ATTACHMENT_POLL_MS = 2_500;
+
+export function stagedAttachmentPollInterval(
+  doc: Pick<InboundDocumentDto, "createdAt" | "hasContentIndex"> | undefined,
+  now: number = Date.now(),
+): number | false {
+  return doc && isDocumentProcessing(doc, now)
+    ? STAGED_ATTACHMENT_POLL_MS
+    : false;
+}
+
+/**
  * Whether ANY document in the list is still inside its processing window —
  * drives the vault list query's poll-while-indexing `refetchInterval`.
  */

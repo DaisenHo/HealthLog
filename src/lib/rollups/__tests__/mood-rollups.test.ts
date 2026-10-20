@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MOOD — unit tests for the persistent mood-rollup
+ * v1.4.39 — unit tests for the persistent mood-rollup
  * populator.
  *
  * `prisma` is mocked at the module level so we can pin:
@@ -136,7 +136,7 @@ describe("recomputeMoodBucketsForEntry", () => {
       ),
     ).toBe(true);
 
-    // QA F-H-03 — the enqueue is fire-and-forget; the response path
+    // The enqueue is fire-and-forget; the response path
     // never awaits the boss.send call. Wait a tick for the
     // floating promise to flush before asserting.
     await new Promise((r) => setImmediate(r));

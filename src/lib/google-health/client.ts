@@ -55,6 +55,7 @@ import {
   googleHealthWalkProgress,
   noteGoogleHealthWalkPage,
 } from "./backfill-bounds";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 export * from "./mappers";
 
@@ -154,7 +155,7 @@ interface GoogleHealthWalkLimits {
 
 /** Why a backfill slice stopped walking. */
 export type GoogleHealthSliceStopReason =
-  "time_budget" | "page_budget" | "rate_limited" | "job_budget";
+  "time_budget" | "page_budget" | "rate_limited" | "job_budget" | "lane_wanted";
 
 /**
  * One backfill slice's share of the work: a span of wall-clock time and a
@@ -183,6 +184,14 @@ export interface GoogleHealthSliceBudget {
   skippedPages: number;
   stopReason: GoogleHealthSliceStopReason | null;
   now: () => number;
+  /**
+   * Whether another heavy job waits for the lane this slice holds
+   * (`laneWanted` in `jobs/heavy-lane.ts`). Asked where the slice's own
+   * limits are, so giving way keeps every walk's place, and only once the
+   * slice has read a page, so the slice it ends has something on disk and is
+   * continued rather than failed.
+   */
+  yieldWanted: () => boolean;
 }
 
 /** A fresh slice budget of `ms` milliseconds and `maxPages` pages. */
@@ -190,6 +199,7 @@ export function googleHealthSliceBudget(
   ms: number,
   maxPages: number,
   now: () => number = Date.now,
+  yieldWanted: () => boolean = () => false,
 ): GoogleHealthSliceBudget {
   return {
     ms,
@@ -199,6 +209,7 @@ export function googleHealthSliceBudget(
     skippedPages: 0,
     stopReason: null,
     now,
+    yieldWanted,
   };
 }
 
@@ -211,6 +222,8 @@ function sliceExhausted(slice: GoogleHealthSliceBudget): boolean {
   if (slice.now() >= slice.deadline) slice.stopReason = "time_budget";
   else if (slice.pages - slice.skippedPages >= slice.maxPages) {
     slice.stopReason = "page_budget";
+  } else if (slice.pages > 0 && slice.yieldWanted()) {
+    slice.stopReason = "lane_wanted";
   }
   return slice.stopReason !== null;
 }
@@ -1605,6 +1618,13 @@ export const GOOGLE_HEALTH_ROLLUP_FALLBACK_RANGE_DAYS = 14;
  */
 export const GOOGLE_HEALTH_ROLLUP_BACKFILL_DAYS = 5 * 365;
 
+/**
+ * Page ceiling for one dailyRollUp chunk. A chunk of at most 90 daily windows
+ * fits on one page of the documented default size, so a chunk that pages at
+ * all is unusual and one that reaches this is a runaway token.
+ */
+const GOOGLE_HEALTH_ROLLUP_MAX_PAGES = 100;
+
 /** A civil calendar date (1-based month), the dailyRollUp range unit. */
 export interface GoogleHealthCivilDate {
   year: number;
@@ -1778,56 +1798,61 @@ export async function fetchDailyRollUp(
         truncated = true;
         break;
       }
-      let pageToken: string | null | undefined;
-      let pageCount = 0;
-      do {
-        const body = buildDailyRollUpBody(chunk, pageToken ?? undefined);
+      const index = chunkIndex;
+      const chunkWalk = await walkPages<string, GoogleHealthRollupPoint>(
+        `google_health.rollup.${dataType.path}`,
+        GOOGLE_HEALTH_ROLLUP_MAX_PAGES,
+        async (pageToken, pageCount) => {
+          const body = buildDailyRollUpBody(chunk, pageToken);
 
-        requestCount += 1;
-        const { json, verdict, apiErrorDetail } =
-          await googleHealthDataRequest<GoogleHealthRollupPage>(
-            accessToken,
-            `${verb}(chunk=${chunkIndex},page=${pageCount})`,
-            (token) =>
-              safeFetch(
-                `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints:dailyRollUp`,
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
+          requestCount += 1;
+          const { json, verdict, apiErrorDetail } =
+            await googleHealthDataRequest<GoogleHealthRollupPage>(
+              accessToken,
+              `${verb}(chunk=${index},page=${pageCount})`,
+              (token) =>
+                safeFetch(
+                  `${GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/${dataType.path}/dataPoints:dailyRollUp`,
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(body),
                   },
-                  body: JSON.stringify(body),
-                },
-              ),
-          );
-        if (verdict.classification !== "success") {
-          throw new GoogleHealthApiError({
-            verb,
-            classification: verdict.classification,
-            httpStatus: verdict.httpStatus,
-            reason: verdict.reason,
-            upstreamError: apiErrorDetail,
-          });
-        }
+                ),
+            );
+          if (verdict.classification !== "success") {
+            throw new GoogleHealthApiError({
+              verb,
+              classification: verdict.classification,
+              httpStatus: verdict.httpStatus,
+              reason: verdict.reason,
+              upstreamError: apiErrorDetail,
+            });
+          }
 
-        // Surface the raw envelope key names of the very first page (names
-        // only, never values) — see `RollupQuery.onEnvelopeKeys`.
-        if (
-          chunkIndex === 0 &&
-          pageCount === 0 &&
-          json &&
-          typeof json === "object"
-        ) {
-          query.onEnvelopeKeys?.(Object.keys(json));
-        }
-        for (const p of json?.rollupDataPoints ?? []) points.push(p);
-        pageToken = json?.nextPageToken ?? null;
-        pageCount += 1;
-        noteSlicePage();
-      } while (pageToken && pageCount < 100);
-      totalPages += pageCount;
-      truncated ||= Boolean(pageToken);
+          // Surface the raw envelope key names of the very first page (names
+          // only, never values) — see `RollupQuery.onEnvelopeKeys`.
+          if (
+            index === 0 &&
+            pageCount === 0 &&
+            json &&
+            typeof json === "object"
+          ) {
+            query.onEnvelopeKeys?.(Object.keys(json));
+          }
+          noteSlicePage();
+          return {
+            items: json?.rollupDataPoints ?? [],
+            next: json?.nextPageToken || null,
+          };
+        },
+      );
+      for (const p of chunkWalk.items) points.push(p);
+      totalPages += chunkWalk.pages;
+      truncated ||= chunkWalk.truncated;
       chunkIndex += 1;
     }
     notePagination(totalPages, points.length, truncated);

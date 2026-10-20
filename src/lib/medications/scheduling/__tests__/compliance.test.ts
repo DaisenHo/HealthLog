@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19e — compliance chip aggregator tests.
+ * v1.4.25 — compliance chip aggregator tests.
  *
  * The chips feed the GLP-1 detail page. Tests cover the four chip
  * values plus the no-doses-expected null path.
@@ -8,14 +8,27 @@
 import { describe, expect, it } from "vitest";
 import { complianceChips, streaksFromTimeline } from "../compliance";
 import { buildCadenceTimeline } from "../cadence";
-import type {
-  CadenceEngineContext,
-  IntakeEventLike,
-  ScheduleLike,
-} from "../cadence";
+import type { IntakeEventLike, ScheduleLike } from "../cadence";
+import type { ComplianceMedicationContext } from "@/lib/analytics/compliance/types";
+import { buildMedicationComplianceBundle } from "@/lib/analytics/compliance/display";
 
 function d(iso: string): Date {
   return new Date(iso);
+}
+
+/** The medication context the chips read; UTC unless a test says otherwise. */
+function ctx(
+  over?: Partial<ComplianceMedicationContext>,
+): ComplianceMedicationContext {
+  return {
+    startsOn: null,
+    endsOn: null,
+    oneShot: false,
+    createdAt: d("2025-05-01T00:00:00Z"),
+    lastIntakeAt: null,
+    timeZone: "UTC",
+    ...over,
+  };
 }
 
 const DAILY_8AM: ScheduleLike = {
@@ -27,7 +40,7 @@ const DAILY_8AM: ScheduleLike = {
 describe("complianceChips", () => {
   it("returns null adherence when no doses are expected in the window", () => {
     const NOW = d("2025-06-10T12:00:00");
-    const result = complianceChips([], [], NOW, 30);
+    const result = complianceChips([], [], ctx(), NOW, 30);
     expect(result.adherenceRate).toBeNull();
     expect(result.missedLast30).toBe(0);
   });
@@ -44,14 +57,14 @@ describe("complianceChips", () => {
     }
     // 5-day window: 5 expected, 5 taken, 0 missed (today's slot is upcoming
     // because NOW is 12:00 and window is 08:00-09:00... actually past today)
-    const result = complianceChips([DAILY_8AM], events, NOW, 5);
+    const result = complianceChips([DAILY_8AM], events, ctx(), NOW, 5);
     expect(result.adherenceRate).toBeGreaterThanOrEqual(80);
     expect(result.missedLast30).toBeLessThanOrEqual(1);
   });
 
   it("computes 0% adherence when no events match any past slot", () => {
     const NOW = d("2025-06-10T12:00:00");
-    const result = complianceChips([DAILY_8AM], [], NOW, 5);
+    const result = complianceChips([DAILY_8AM], [], ctx(), NOW, 5);
     expect(result.adherenceRate).toBe(0);
     expect(result.missedLast30).toBeGreaterThan(0);
   });
@@ -60,25 +73,25 @@ describe("complianceChips", () => {
     const NOW = d("2025-06-10T12:00:00");
     // Window: NOW - 3d = 2025-06-07T12:00 → past slots: 08, 09, 10
     // Provide one taken + one skipped + one taken for the three slots so
-    // the denominator excludes the skipped one.
+    // the denominator excludes the skipped one. A skip names its slot.
     const events: IntakeEventLike[] = [
       {
-        scheduledFor: d("2025-06-08T08:30:00"),
+        scheduledFor: d("2025-06-08T08:00:00"),
         takenAt: d("2025-06-08T08:35:00"),
         skipped: false,
       },
       {
-        scheduledFor: d("2025-06-09T08:30:00"),
+        scheduledFor: d("2025-06-09T08:00:00"),
         takenAt: null,
         skipped: true,
       },
       {
-        scheduledFor: d("2025-06-10T08:30:00"),
+        scheduledFor: d("2025-06-10T08:00:00"),
         takenAt: d("2025-06-10T08:35:00"),
         skipped: false,
       },
     ];
-    const result = complianceChips([DAILY_8AM], events, NOW, 3);
+    const result = complianceChips([DAILY_8AM], events, ctx(), NOW, 3);
     // 2 taken / (2 taken + 0 missed) = 100, skipped excluded.
     expect(result.adherenceRate).toBe(100);
   });
@@ -97,7 +110,7 @@ describe("complianceChips", () => {
         skipped: false,
       });
     }
-    const result = complianceChips([DAILY_8AM], events, NOW, 14);
+    const result = complianceChips([DAILY_8AM], events, ctx(), NOW, 14);
     expect(result.currentStreak).toBeGreaterThanOrEqual(4);
   });
 
@@ -132,7 +145,7 @@ describe("complianceChips", () => {
         skipped: false,
       },
     ];
-    const result = complianceChips([DAILY_8AM], events, NOW, 7);
+    const result = complianceChips([DAILY_8AM], events, ctx(), NOW, 7);
     // Streak ending at today = day 9 + day 10 = 2 (day 8 missed broke it).
     expect(result.currentStreak).toBeLessThanOrEqual(2);
     // Longest streak in window = max(3 from 5..7, 2 from 9..10) = 3.
@@ -158,7 +171,7 @@ describe("complianceChips", () => {
         skipped: false,
       },
     ];
-    const result = complianceChips([weekly], events, NOW, 14);
+    const result = complianceChips([weekly], events, ctx(), NOW, 14);
     expect(result.adherenceRate).toBe(100);
     expect(result.missedLast30).toBe(0);
   });
@@ -170,13 +183,13 @@ describe("complianceChips", () => {
       daysOfWeek: "1", // Monday only
     };
     const NOW = d("2025-06-10T12:00:00"); // Tuesday
-    const result = complianceChips([weekly], [], NOW, 14);
+    const result = complianceChips([weekly], [], ctx(), NOW, 14);
     expect(result.adherenceRate).toBe(0);
     expect(result.missedLast30).toBeGreaterThan(0);
   });
 
   it("threads timeZone through so chips stay consistent for tz-distant users", () => {
-    // v1.4.25 W21 Fix-O — passing an IANA zone must not lose any
+    // v1.4.25 — passing an IANA zone must not lose any
     // expected slots vs the no-tz default. Two users with the same
     // intake stream — one resolved through Berlin, one through
     // Tokyo — must see the same adherence rate when the events
@@ -199,18 +212,16 @@ describe("complianceChips", () => {
     const berlin = complianceChips(
       [sched],
       events,
+      ctx({ timeZone: "Europe/Berlin" }),
       NOW,
       7,
-      undefined,
-      "Europe/Berlin",
     );
     const tokyo = complianceChips(
       [sched],
       events,
+      ctx({ timeZone: "Asia/Tokyo" }),
       NOW,
       7,
-      undefined,
-      "Asia/Tokyo",
     );
 
     // Both must compute a finite adherence rate (the schedule has
@@ -226,23 +237,10 @@ describe("complianceChips", () => {
 });
 
 describe("complianceChips — canonical-engine delegation (v1.7.0 SB-SCHED-2)", () => {
-  function engineCtx(
-    over?: Partial<CadenceEngineContext>,
-  ): CadenceEngineContext {
-    return {
-      startsOn: null,
-      endsOn: null,
-      oneShot: false,
-      createdAt: d("2025-05-01T00:00:00Z"),
-      lastIntakeAt: null,
-      timeZone: "Europe/Berlin",
-      ...over,
-    };
-  }
+  const engineCtx = (over?: Partial<ComplianceMedicationContext>) =>
+    ctx({ timeZone: "Europe/Berlin", ...over });
 
-  it("RRULE weekly Monday: legacy walker counts every day missed, engine counts only Mondays", () => {
-    // `daysOfWeek = null` reads as every-day to the legacy walker, so an
-    // RRULE-weekly schedule over-counts expected doses without the engine.
+  it("RRULE weekly Monday: only the Mondays in the window are expected", () => {
     const rruleWeekly: ScheduleLike = {
       windowStart: "08:00",
       windowEnd: "09:00",
@@ -250,25 +248,15 @@ describe("complianceChips — canonical-engine delegation (v1.7.0 SB-SCHED-2)", 
       rrule: "FREQ=WEEKLY;BYDAY=MO",
       timesOfDay: ["08:00"],
     };
-    const NOW = d("2025-06-10T12:00:00Z"); // Tuesday
+    // Saturday: both Mondays in the window are past a weekly dose's late tail.
+    const NOW = d("2025-06-14T12:00:00Z");
 
-    // Legacy path (no engineCtx) expands daily → many missed days.
-    const legacy = complianceChips([rruleWeekly], [], NOW, 14);
-    // Canonical path (engineCtx) expands only Mondays in the window.
-    const engine = complianceChips(
-      [rruleWeekly],
-      [],
-      NOW,
-      14,
-      undefined,
-      "Europe/Berlin",
-      engineCtx(),
-    );
+    const engine = complianceChips([rruleWeekly], [], engineCtx(), NOW, 14);
 
-    // The engine path expects far fewer doses (only the Mondays in a
-    // 14-day window: 2) than the daily legacy expansion (~13).
-    expect(engine.missedLast30).toBeLessThan(legacy.missedLast30);
-    expect(engine.missedLast30).toBeLessThanOrEqual(2);
+    // Two Mondays in a 14-day window, both missed; `daysOfWeek = null`
+    // must not read as every day.
+    expect(engine.missedLast30).toBe(2);
+    expect(engine.adherenceRate).toBe(0);
   });
 
   it("PRN: engine short-circuits to zero expected doses (no adherence, no missed)", () => {
@@ -281,15 +269,7 @@ describe("complianceChips — canonical-engine delegation (v1.7.0 SB-SCHED-2)", 
     };
     const NOW = d("2025-06-10T12:00:00Z");
 
-    const engine = complianceChips(
-      [prn],
-      [],
-      NOW,
-      30,
-      undefined,
-      "Europe/Berlin",
-      engineCtx(),
-    );
+    const engine = complianceChips([prn], [], engineCtx(), NOW, 30);
 
     // PRN is as-needed — never projected, reminded, or counted in
     // compliance-expected. No expected slots → null adherence, zero missed.
@@ -315,20 +295,16 @@ describe("complianceChips — canonical-engine delegation (v1.7.0 SB-SCHED-2)", 
     const engine = complianceChips(
       [cyclic],
       [],
+      engineCtx({ startsOn: d("2025-05-01T00:00:00Z") }),
       NOW,
       14,
-      undefined,
-      "Europe/Berlin",
-      engineCtx({ startsOn: d("2025-05-01T00:00:00Z") }),
     );
     const everyDay = complianceChips(
       [{ ...cyclic, scheduleType: "SCHEDULED" }],
       [],
+      engineCtx({ startsOn: d("2025-05-01T00:00:00Z") }),
       NOW,
       14,
-      undefined,
-      "Europe/Berlin",
-      engineCtx({ startsOn: d("2025-05-01T00:00:00Z") }),
     );
 
     // The cyclic gate must drop the off-week's doses, so fewer missed
@@ -443,5 +419,45 @@ describe("streaksFromTimeline — DST-correct day walk", () => {
     );
     const { current } = streaksFromTimeline(timeline, NOW, windowDays, tz);
     expect(current).toBe(7);
+  });
+});
+
+describe("complianceChips — the detail page's rate", () => {
+  it("drops a pause from the chips exactly as the compliance payload does", () => {
+    // Daily 08:00, paused from 10 days ago to 3 days ago, every other dose
+    // taken. The chips used to tally the paused week as seven missed doses
+    // (77 %) while the detail page, reading the compliance ledger, said 100.
+    const NOW = d("2025-06-30T12:00:00Z");
+    const day = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
+    const pausedAt = day(10);
+    const resumedAt = day(3);
+    const events: IntakeEventLike[] = [];
+    for (let n = 1; n <= 30; n++) {
+      const slot = new Date(day(n).setUTCHours(8, 0, 0, 0));
+      if (slot >= pausedAt && slot < resumedAt) continue;
+      events.push({ scheduledFor: slot, takenAt: slot, skipped: false });
+    }
+    const daily: ScheduleLike = {
+      windowStart: "08:00",
+      windowEnd: "09:00",
+      daysOfWeek: null,
+      timesOfDay: ["08:00"],
+    };
+    const context = ctx({
+      createdAt: d("2025-01-01T00:00:00Z"),
+      pauseEras: [{ pausedAt, resumedAt }],
+    });
+
+    const chips = complianceChips([daily], events, context, NOW, 30);
+    const bundle = buildMedicationComplianceBundle(
+      events,
+      [daily],
+      context,
+      NOW,
+    );
+
+    expect(chips.missedLast30).toBe(0);
+    expect(chips.adherenceRate).toBe(100);
+    expect(chips.adherenceRate).toBe(bundle.compliance30.rate);
   });
 });

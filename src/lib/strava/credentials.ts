@@ -70,6 +70,22 @@ export async function clearStravaClientCredentials(
   });
 }
 
+/**
+ * The `User` columns a removed Strava connection leaves behind: no tokens, no
+ * athlete, and no backfill state. The backfill markers belong to the account
+ * that was connected. Left standing, a later connection inherited them: a
+ * completed marker kept its history from ever being read, and a resume point
+ * made its first run start below the old account's oldest activity, so
+ * everything newer was never asked for.
+ */
+export const STRAVA_DISCONNECTED = {
+  stravaAccessTokenEncrypted: null,
+  stravaRefreshTokenEncrypted: null,
+  stravaAthleteId: null,
+  stravaBackfillCompletedAt: null,
+  stravaBackfillResumeBefore: null,
+} as const;
+
 export interface StravaConnection {
   accessToken: string;
   refreshToken: string;

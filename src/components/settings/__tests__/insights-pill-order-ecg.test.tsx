@@ -1,5 +1,5 @@
 /**
- * v1.30 (UX/IA audit H1) — the ECG row in the Insights sub-page manager.
+ * v1.30 — the ECG row in the Insights sub-page manager.
  *
  * ECG has no `MeasurementType` and therefore no sub-page tile; its overview
  * presence is the `"ecg"` SECTION. The manager surfaces it as a Heart-group

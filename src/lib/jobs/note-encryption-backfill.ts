@@ -202,7 +202,7 @@ export async function enqueueBootTimeNoteEncryptionBackfill(
   }
 
   try {
-    // v1.28.46 perf (H4) — DB-level SELECT DISTINCT, not Prisma `distinct`.
+    // v1.28.46 — DB-level SELECT DISTINCT, not Prisma `distinct`.
     // Prisma `distinct` fetches EVERY matching row then de-dupes in JS; on the
     // densest table (`measurements`) that is a full un-migrated-partition scan
     // materialised into the worker at boot. `SELECT DISTINCT user_id` de-dupes

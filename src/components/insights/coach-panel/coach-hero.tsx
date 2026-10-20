@@ -20,7 +20,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * send/stop control, and the guided-question placeholder all behave
  * exactly as in the docked composer.
  *
- * v1.18.10 (W4) — the starter-question suggestion chips below the composer
+ * v1.18.10 — the starter-question suggestion chips below the composer
  * are removed (maintainer feedback): the hero is greeting + composer only,
  * matching the reference ChatGPT/Claude new-chat surface.
  *

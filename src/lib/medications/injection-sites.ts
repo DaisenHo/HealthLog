@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W4d — injection-site rotation logic.
+ * v1.4.25 — injection-site rotation logic.
  *
  * The 8-zone enum maps to the Prisma `InjectionSite` enum exactly so
  * the snapshot, the picker, the card variant, and the doctor-report

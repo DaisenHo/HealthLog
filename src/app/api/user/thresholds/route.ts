@@ -91,7 +91,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = thresholdsUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 

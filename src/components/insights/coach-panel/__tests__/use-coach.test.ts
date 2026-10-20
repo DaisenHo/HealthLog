@@ -4,7 +4,7 @@ import { parseSseChunk } from "../use-coach";
 import type { CoachStreamEvent } from "@/lib/ai/coach/types";
 
 /**
- * v1.4.20 phase B2b — SSE parser unit tests.
+ * v1.4.20 — SSE parser unit tests.
  *
  * The streaming hook is a thin wrapper around `parseSseChunk` plus a
  * `fetch` reader. We test the parser exhaustively here and rely on

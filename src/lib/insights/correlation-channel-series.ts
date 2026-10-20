@@ -20,6 +20,7 @@
  * fabricating a constant.
  */
 import { prisma } from "@/lib/db";
+import { triggersRestMode } from "@/lib/illness/rest-mode";
 import {
   buildComplianceMedicationContext,
   COURSES_COMPLIANCE_SELECT,
@@ -57,6 +58,7 @@ import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import {
   reconstructSleepSessions,
+  daySleepMinutes,
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
@@ -96,7 +98,7 @@ export async function fetchComplianceSeries(
     include: {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
@@ -149,12 +151,14 @@ export async function fetchComplianceSeries(
 }
 
 /**
- * v1.21.0 (FDREXTEND) — build the user's SYMPTOM_SEVERITY daily series in the
- * `outcome` role (callers that need the behaviour role re-tag the returned
- * series — the points are role-invariant). Reads every in-window illness episode
- * + its day-logs; the builder zero-fills healthy days ONLY across real episode
- * spans, so a user with no episodes yields an empty series that degrades to
- * absent.
+ * Build the user's SYMPTOM_SEVERITY daily series in the `outcome` role
+ * (callers that need the behaviour role re-tag the returned series — the
+ * points are role-invariant). Reads every in-window illness episode and its
+ * day-logs. Only episodes that can put the account into Rest Mode zero-fill
+ * their span: a chronic condition has no end, so its span would fill every
+ * day of the window and hand the engine a near-constant series. Its logged
+ * days still count, as real readings. No episode and no log yields an empty
+ * series that degrades to absent.
  */
 export async function fetchSymptomSeries(
   userId: string,
@@ -171,7 +175,7 @@ export async function fetchSymptomSeries(
       onsetAt: { lte: now },
       OR: [{ resolvedAt: null }, { resolvedAt: { gte: since } }],
     },
-    select: { id: true, onsetAt: true, resolvedAt: true },
+    select: { id: true, onsetAt: true, resolvedAt: true, lifecycle: true },
   });
   if (episodes.length === 0) {
     return { key: SYMPTOM_SEVERITY_CHANNEL_KEY, role: "outcome", points: [] };
@@ -210,10 +214,9 @@ export async function fetchSymptomSeries(
       dayLogs.push({ day: row.date, impact: maxSeverity });
   }
 
-  const spans: SymptomEpisodeSpan[] = episodes.map((e) => ({
-    onsetAt: e.onsetAt,
-    resolvedAt: e.resolvedAt,
-  }));
+  const spans: SymptomEpisodeSpan[] = episodes
+    .filter(triggersRestMode)
+    .map((e) => ({ onsetAt: e.onsetAt, resolvedAt: e.resolvedAt }));
 
   return buildSymptomSeverityDailySeries({
     dayLogs,
@@ -226,7 +229,7 @@ export async function fetchSymptomSeries(
 }
 
 /**
- * v1.25 (W-ENV) — build the user's environmental-exposure BEHAVIOUR channels.
+ * v1.25 — build the user's environmental-exposure BEHAVIOUR channels.
  *
  * One {@link NamedSeries} per registered env field (temperature, daylight,
  * sunshine, precipitation, pressure mean + intraday swing), read from the daily
@@ -502,7 +505,7 @@ export interface MeasurementWindowFetch {
 }
 
 /**
- * v1.30.3 (QA F1/F2/F3) — shared measurement-window fetch for every
+ * v1.30.3 — shared measurement-window fetch for every
  * correlation-adjacent surface: the `/api/insights/correlations` route, the
  * Coach `get_correlations` tool, the per-metric assessment card, and the
  * period narrative. Hoisted here so a fourth independently-maintained copy
@@ -569,7 +572,7 @@ export interface MoodWindowFetch {
 }
 
 /**
- * v1.30.3 (QA F1/F2/F3) — shared mood-window fetch, same desc+cap+resort
+ * v1.30.3 — shared mood-window fetch, same desc+cap+resort
  * discipline as {@link fetchMeasurementWindowSeries}. This helper covers the
  * plain-score case; the RATED-factor variant that also reads each entry's
  * tag-links is {@link fetchMoodFactorWindowSeries}, which carries the same
@@ -829,11 +832,13 @@ function buildSleepDailySeries(
     byNight.set(s.night, list);
   }
 
+  // A day's sleep is the main night plus its naps (`daySleepMinutes`), the
+  // total the series route and the sleep score read.
   const points: DailySeriesPoint[] = [];
   for (const [night, nightSessions] of byNight) {
-    const { main } = pickMainNightAndNaps(nightSessions);
-    if (!main) continue;
-    points.push({ day: night, value: main.asleepMinutes });
+    const day = pickMainNightAndNaps(nightSessions);
+    if (!day.main && day.naps.length === 0) continue;
+    points.push({ day: night, value: daySleepMinutes(day) });
   }
   return points.sort((a, b) => (a.day < b.day ? -1 : 1));
 }

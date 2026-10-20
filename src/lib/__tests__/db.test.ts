@@ -70,7 +70,7 @@ describe("per-process database connection budget", () => {
   });
 });
 
-// A-1 — a per-session statement timeout so a single stuck query can't hold a
+// A per-session statement timeout so a single stuck query can't hold a
 // pool slot forever and starve every DB-backed route.
 describe("getStatementTimeoutMs", () => {
   const originalEnv = process.env.DATABASE_STATEMENT_TIMEOUT_MS;

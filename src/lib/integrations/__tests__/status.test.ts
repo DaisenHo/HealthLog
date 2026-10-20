@@ -1,5 +1,5 @@
 /**
- * v1.4.15 Phase B2 — IntegrationStatus helper tests.
+ * v1.4.15 — IntegrationStatus helper tests.
  *
  * The persistence path is exercised by the integration suite under
  * `tests/integration/integration-status.test.ts` (real Postgres so the
@@ -36,6 +36,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: vi.fn(),
+  logCaught: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -66,6 +71,7 @@ import {
 } from "../status";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 beforeEach(() => {
@@ -116,9 +122,9 @@ describe("recordSyncSuccess", () => {
       lastSuccessAt: expect.any(Date),
       lastAttemptAt: expect.any(Date),
       lastError: null,
-      // v1.4.43 W14 — success clears every per-kind bucket so the
+      // v1.4.43 — success clears every per-kind bucket so the
       // next failure starts from zero in its own bucket.
-      // v1.4.47 W1 — the legacy `consecutiveFailures` column was
+      // v1.4.47 — the legacy `consecutiveFailures` column was
       // dropped (migration 0077); the bucket reset is the only
       // counter write now.
       consecutiveFailuresByKind: {
@@ -148,17 +154,24 @@ describe("recordSyncFailure — under threshold", () => {
     });
 
     expect(prisma.integrationStatus.upsert).toHaveBeenCalledOnce();
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        userId: "u1",
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           integration: "withings",
-          attemptNumber: 1,
+          attempt_number: 1,
           state: "error_transient",
         }),
       }),
     );
+    // A provider failure is not something a person did to the account: no
+    // audit row, and the provider's message stays sealed on the status row.
+    expect(auditLog).not.toHaveBeenCalledWith(
+      "integrations.sync.failed",
+      expect.anything(),
+    );
+    const [signal] = vi.mocked(emitSignal).mock.calls[0]!;
+    expect(JSON.stringify(signal)).not.toContain("upstream");
     expect(dispatchNotification).not.toHaveBeenCalled();
   });
 });
@@ -209,7 +222,7 @@ describe("recordSyncFailure — at threshold", () => {
   });
 
   it("dispatches an admin Telegram alert when failure count reaches default threshold (3)", async () => {
-    // v1.4.47 W1 — the alert ladder reads Math.max(...buckets) so the
+    // v1.4.47 — the alert ladder reads Math.max(...buckets) so the
     // existing row must seed the bucket at N-1 before the in-memory
     // increment produces alertSignal = N.
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
@@ -456,12 +469,12 @@ describe("recordSyncFailure — reauth_required", () => {
     const upsertArgs = vi.mocked(prisma.integrationStatus.upsert).mock
       .calls[0][0];
     expect(upsertArgs.update).toMatchObject({ state: "error_reauth" });
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "reauth_required",
-          errorCode: "100",
+          error_code: "100",
         }),
       }),
     );
@@ -489,12 +502,12 @@ describe("recordSyncFailure — persistent (v1.4.42 W6)", () => {
     const upsertArgs = vi.mocked(prisma.integrationStatus.upsert).mock
       .calls[0][0];
     expect(upsertArgs.update).toMatchObject({ state: "error_transient" });
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "persistent",
-          errorCode: "293",
+          error_code: "293",
         }),
       }),
     );
@@ -631,8 +644,8 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
     expect(args.update).toEqual({
       state: "disconnected",
       lastError: null,
-      // v1.4.43 W14 — disconnect must clear the per-kind buckets too.
-      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // v1.4.43 — disconnect must clear the per-kind buckets too.
+      // v1.4.47 — legacy `consecutiveFailures` column dropped
       // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
@@ -655,9 +668,9 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
     expect(args.update).toEqual({
       state: "connected",
       lastError: null,
-      // v1.4.43 W14 — reconnect clears the per-kind buckets so the
+      // v1.4.43 — reconnect clears the per-kind buckets so the
       // next sync starts on a clean slate.
-      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // v1.4.47 — legacy `consecutiveFailures` column dropped
       // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
@@ -841,7 +854,7 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   });
 
   it("seeds a fresh zero envelope when the row has no bucket payload yet", async () => {
-    // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+    // v1.4.47 — the legacy `consecutiveFailures` column was dropped
     // (migration 0077). A row that has never written a bucket payload
     // (`consecutiveFailuresByKind: null`) starts from a zero envelope
     // on the next failure; the matching bucket ticks to 1 in a single
@@ -976,7 +989,7 @@ describe("resumeIntegrationFromPark", () => {
     expect(upsertArgs.update).toEqual({
       state: "connected",
       lastError: null,
-      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // v1.4.47 — legacy `consecutiveFailures` column dropped
       // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
@@ -1089,12 +1102,12 @@ describe("transient-streak escalation", () => {
       persistent: 1,
     });
     expect(upsertUpdate().persistentFailureStartedAt).toBeInstanceOf(Date);
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "persistent",
-          escalatedFrom: "transient",
+          escalated_from: "transient",
         }),
       }),
     );
@@ -1116,12 +1129,12 @@ describe("transient-streak escalation", () => {
       persistent: 0,
     });
     expect(upsertUpdate().persistentFailureStartedAt).toBeNull();
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "transient",
-          escalatedFrom: null,
+          escalated_from: null,
         }),
       }),
     );

@@ -86,7 +86,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Radio,
     group: "system",
   },
-  // v1.4.36 W4e — About / version / update check folded into Admin.
+  // v1.4.36 — About / version / update check folded into Admin.
   {
     slug: "about",
     titleKey: "admin.section.about.title",
@@ -114,7 +114,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Sparkles,
     group: "ai",
   },
-  // v1.18.6 (W9) — server-wide module availability split out of Coach into
+  // v1.18.6 — server-wide module availability split out of Coach into
   // its own entry, sitting next to it.
   {
     slug: "module-availability",
@@ -210,7 +210,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
   // never leave a group heading without an allowed destination below it.
   const visibleSections = isConfirmedAdmin ? ADMIN_SECTIONS : [];
 
-  // v1.4.34 IW-G — mirror the settings-shell auto-scroll pattern so
+  // v1.4.34 — mirror the settings-shell auto-scroll pattern so
   // the active chip stays in view when the user lands on a deeper
   // admin route. Without it the 16-chip strip stays scrolled to the
   // left and the active chip lives off-screen, reading as a broken nav.
@@ -265,7 +265,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
     />
   );
 
-  // v1.4.25 W8 — AuthShell wraps the page in `px-4 py-6 md:px-6`
+  // v1.4.25 — AuthShell wraps the page in `px-4 py-6 md:px-6`
   // already, so this inner shell only carries the wider max-width.
   // Previously the duplicate `px-4 py-6 md:px-6 md:py-8` here was
   // producing visibly more top/bottom whitespace on Settings/Admin
@@ -284,7 +284,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
           would render an always-on scrollbar that the maintainer kept
           mis-attributing to the api-tokens table below it.
 
-          v1.4.34 IW-G — `snap-x snap-mandatory` plus per-chip
+          v1.4.34 — `snap-x snap-mandatory` plus per-chip
           `snap-start` lets a swipe-flick land on the next chip's
           leading edge instead of the in-between dead zone, matching
           the settings-shell polish. */}
@@ -299,7 +299,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
               href="/admin"
               aria-current={activeSlug === null ? "page" : undefined}
               className={cn(
-                // v1.4.25 W8 — chip strip is the primary mobile-admin
+                // v1.4.25 — chip strip is the primary mobile-admin
                 // navigation surface. Pad to WCAG 2.5.5 44 px so the
                 // chips can be tapped without zoom on a Pixel-5.
                 "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
@@ -333,7 +333,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
                     href={`/admin/${section.slug}`}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      // v1.4.25 W8 — chip strip is the primary mobile-admin
+                      // v1.4.25 — chip strip is the primary mobile-admin
                       // navigation surface. Pad to WCAG 2.5.5 44 px so the
                       // chips can be tapped without zoom on a Pixel-5.
                       "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",

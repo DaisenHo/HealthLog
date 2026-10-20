@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on POST /api/auth/register.
+ * v1.4.43 — multi-issue 422 envelope on POST /api/auth/register.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -14,7 +14,7 @@ vi.mock("@/lib/db", () => ({
     appSettings: {
       findUnique: vi.fn().mockResolvedValue({ registrationEnabled: true }),
     },
-    // v1.28.42 (M1) — the first-admin count+insert now runs inside a
+    // v1.28.42 — the first-admin count+insert now runs inside a
     // transaction-scoped advisory lock. Default `$transaction` to run the
     // callback with the same prisma mock as its `tx` handle.
     $transaction: vi.fn(),
@@ -150,7 +150,7 @@ async function postPathThrough(body: unknown): Promise<Response> {
   return POST(postReq(body));
 }
 
-// v1.28.42 (M1 + L4) — first-admin race + duplicate-under-race status code.
+// v1.28.42 — first-admin race + duplicate-under-race status code.
 describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
   beforeEach(() => {
     // Happy-path setup: reach the create call deterministically.

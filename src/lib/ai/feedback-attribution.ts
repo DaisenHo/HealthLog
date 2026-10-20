@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B5e — server-side resolver for the provider/prompt
+ * v1.4.16 — server-side resolver for the provider/prompt
  * attribution that gets stamped on every `RecommendationFeedback` row.
  *
  * The client cannot supply these fields — that would let any user
@@ -83,7 +83,7 @@ export async function resolveFeedbackAttribution(
 }
 
 /**
- * v1.4.23 H7 — attribution shape for a Coach assistant-message
+ * v1.4.23 — attribution shape for a Coach assistant-message
  * thumbs row. The polymorphic `RecommendationFeedback` table reuses
  * its existing slots for Coach rows:
  *   - `recommendationId` carries the Coach message id

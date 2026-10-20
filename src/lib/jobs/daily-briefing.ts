@@ -1,5 +1,5 @@
 /**
- * S5 — the daily-briefing fallback cron.
+ * The daily-briefing fallback cron.
  *
  * The PRIMARY trigger for the morning push is event-driven: the S4
  * morning-refresh worker dispatches it the instant last night's sleep lands and

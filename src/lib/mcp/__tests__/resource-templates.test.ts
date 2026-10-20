@@ -5,7 +5,7 @@ vi.mock("@/lib/db", () => ({
     medication: { findMany: vi.fn(), findFirst: vi.fn() },
     labResult: { findMany: vi.fn() },
     biomarker: { findMany: vi.fn(async () => []) },
-    // v1.30 (G1) — the nutrients pipeline.
+    // v1.30 — the nutrients pipeline.
     nutrientIntakeDay: {
       findMany: vi.fn(async () => []),
       groupBy: vi.fn(async () => []),

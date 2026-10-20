@@ -127,7 +127,7 @@ describe("handleWithingsEcgSync", () => {
   });
 
   it("a payload-less cron tick walks the connection cohort with the default window", async () => {
-    // W-1 — the catch-net that lets a watch-only account (no scale, appli 54
+    // The catch-net that lets a watch-only account (no scale, appli 54
     // unsubscribed) pull its ECG strips: no userId → iterate every connection
     // with `syncUserEcg(userId)` (default trailing-30-day window).
     ecgFindMany.mockResolvedValue([{ userId: "a" }, { userId: "b" }]);

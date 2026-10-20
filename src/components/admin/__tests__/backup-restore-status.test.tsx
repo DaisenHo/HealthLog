@@ -27,6 +27,9 @@ import {
   visibleRestoreJobs,
 } from "@/components/admin/backup-restore-status";
 import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

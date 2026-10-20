@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 /**
- * v1.4.16 phase B3: serve the host-load chart that sits above
+ * v1.4.16: serve the host-load chart that sits above
  * `/admin/system-status`. The pg-boss `host-metric-sample` worker writes
  * one row per minute; this endpoint returns the last `?since=` window
  * (default 2h, max 24h) ordered by `capturedAt` ascending so the chart

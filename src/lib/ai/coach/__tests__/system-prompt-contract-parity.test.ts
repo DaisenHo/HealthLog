@@ -5,7 +5,7 @@ import { loadSafetyContracts } from "@/lib/ai/prompts/safety-contracts";
 import type { Locale } from "@/lib/i18n/config";
 
 /**
- * v1.18.10 (MEDIUM-1) — resolved-Coach-prompt contract parity.
+ * v1.18.10 — resolved-Coach-prompt contract parity.
  *
  * `safety-contracts-parity.test.ts` asserts every ground-rule BODY in the
  * matrix is non-empty per locale. This file goes one step further and asserts
@@ -24,7 +24,7 @@ import type { Locale } from "@/lib/i18n/config";
  *    translated) and only ever appears inside the dose-safety contract.
  */
 
-const ALL_LOCALES: Locale[] = ["de", "en", "fr", "es", "it", "pl", "ko"];
+const ALL_LOCALES: Locale[] = ["de", "en", "fr", "es", "it", "pl", "ko", "nl"];
 
 describe("resolved Coach system prompt — grounding + GLP-1 per locale", () => {
   for (const locale of ALL_LOCALES) {

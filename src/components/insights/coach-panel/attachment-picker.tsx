@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 
 import { DOCUMENT_KIND_ICONS } from "@/components/documents/document-kind-meta";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 /**
  * v1.29.x (S7) — the "Choose from documents" picker for attaching stored vault
@@ -181,9 +182,13 @@ export function AttachmentPicker({
             ))}
           </div>
         ) : list.isError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {t("documents.list.loadError")}
-          </p>
+          <QueryErrorRow
+            inset
+            error={list.error}
+            slot="coach-attachment-picker-error"
+            message={t("documents.list.loadError")}
+            onRetry={() => void list.refetch()}
+          />
         ) : documents.length === 0 ? (
           <p className="text-muted-foreground py-6 text-center text-sm">
             {t("insights.coach.attach.pickerEmpty")}

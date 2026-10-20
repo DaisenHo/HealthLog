@@ -112,7 +112,7 @@ export const GET = apiHandler(async () => {
     tokenExpired,
     tokenRefreshFailed,
     tokenExpiresAt,
-    // v1.4.25 W5d — `scope` is the comma-separated OAuth scope string
+    // v1.4.25 — `scope` is the comma-separated OAuth scope string
     // returned during the auth flow; `hasActivityScope` is the
     // pre-computed convenience flag the Settings reconnect banner
     // reads. Null `scope` means a legacy v1.4.24 connection that's

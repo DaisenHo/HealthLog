@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { AboutSection, UpdateBadge } from "../about-section";
 
 /**
- * v1.4.36 W4f — AboutSection update-badge contract.
+ * v1.4.36 — AboutSection update-badge contract.
  *
  * The dedicated "Updates" card with the manual "Check for updates"
  * button is gone. The 24 h auto-check still runs on mount and

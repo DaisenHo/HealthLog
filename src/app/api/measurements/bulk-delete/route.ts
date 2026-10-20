@@ -109,13 +109,13 @@ async function postBulkDelete(request: NextRequest): Promise<Response> {
   });
 
   if (count > 0) {
-    // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+    // v1.4.34 — bust per-user analytics + achievements + workouts
     // caches so subsequent reads reflect the deletions. Interactive
     // multi-select delete from the management list — hard-evict so the
     // SWR readers don't serve the pre-delete body.
     invalidateUserMeasurements(user.id, { evict: true });
 
-    // v1.37.19 (C2-F1) — shared post-mutation tail (identities were
+    // v1.37.19 — shared post-mutation tail (identities were
     // collected BEFORE the destructive statement, while readable).
     await afterMeasurementMutation(
       user.id,

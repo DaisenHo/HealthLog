@@ -15,7 +15,7 @@ import type { SleepRhythmDto } from "../use-sleep-rhythm";
  *   - a settled DTO renders the sleep-debt card
  * `useAuth` + `useSleepRhythm` are mocked so each branch is deterministic.
  *
- * v1.18.7 W-D — the chronotype card moved out to `<ChronotypeSection>` (the
+ * v1.18.7 — the chronotype card moved out to `<ChronotypeSection>` (the
  * prominent bottom block); this section now owns the sleep-debt headline alone.
  */
 

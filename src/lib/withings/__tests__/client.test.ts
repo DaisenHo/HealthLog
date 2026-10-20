@@ -143,7 +143,7 @@ describe("WITHINGS_OAUTH_SCOPE + scope helpers", () => {
 
 describe("WITHINGS_NOTIFY_APPLIS", () => {
   it("subscribes to weight + temperature + pressure + activity + sleep categories", () => {
-    // v1.4.25 W17b/c — activity (16) + sleep v2 (44) join the
+    // v1.4.25 — activity (16) + sleep v2 (44) join the
     // webhook-primary set so the new sync routines fire in seconds
     // rather than waiting for the hourly cron fallback.
     expect(WITHINGS_NOTIFY_APPLIS).toEqual([1, 2, 4, 16, 44]);

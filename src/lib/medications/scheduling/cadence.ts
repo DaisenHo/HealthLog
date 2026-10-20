@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19e — pure cadence helpers for the medication detail page.
+ * v1.4.25 — pure cadence helpers for the medication detail page.
  *
  * Reads existing `MedicationSchedule` rows (`windowStart`, `windowEnd`,
  * `daysOfWeek` encoded via `serializeScheduleRecurrence`) plus the
@@ -16,7 +16,7 @@
  * the API JSON that drives the Compliance chips. Sharing one pure
  * module keeps the two surfaces from drifting.
  *
- * v1.4.25 W21 Fix-O — the local-day boundary helpers accept an
+ * v1.4.25 — the local-day boundary helpers accept an
  * optional IANA `timeZone` argument (`Europe/Berlin`, `Asia/Tokyo`,
  * …). When supplied, every day/week boundary and every `HH:mm`
  * window-application is interpreted in the user's zone via
@@ -84,7 +84,7 @@ export interface ScheduleLike {
   /** Encoded recurrence string per `serializeScheduleRecurrence`. */
   daysOfWeek: string | null;
   /**
-   * v1.7.0 SB-SCHED-2 — canonical-engine fields. As of v1.7.3 (B15),
+   * v1.7.0 — canonical-engine fields. As of v1.7.3 (B15),
    * `expandScheduleSlots` delegates the expected-slot grid to the
    * canonical recurrence engine (`occurrencesBetween`) for EVERY schedule
    * shape whenever the caller supplies a `CadenceEngineContext` — these
@@ -119,7 +119,7 @@ export interface ScheduleLike {
 }
 
 /**
- * v1.7.0 SB-SCHED-2 — medication-level context the canonical engine
+ * v1.7.0 — medication-level context the canonical engine
  * needs to expand a schedule's expected slots. Passed once per
  * medication into the cadence helpers; threaded down to
  * `expandScheduleSlots`. When omitted, every schedule falls back to the
@@ -403,7 +403,7 @@ export function expandScheduleSlots(
 ): ExpectedDose[] {
   if (to <= from) return [];
 
-  // v1.7.3 B15 — canonical-engine delegation. When the caller supplies a
+  // v1.7.3 — canonical-engine delegation. When the caller supplies a
   // medication context, expand the expected-slot grid through the
   // canonical engine for EVERY schedule shape (rrule / rolling / one-shot
   // / PRN / cyclic AND plain legacy `daysOfWeek`). The engine's
@@ -500,7 +500,7 @@ export function expandScheduleSlots(
       }
     }
 
-    // v1.7.3 B15 — defence-in-depth for the context-less legacy path. A
+    // v1.7.3 — defence-in-depth for the context-less legacy path. A
     // schedule carrying multiple `timesOfDay` must emit one slot per time
     // per qualifying day, mirroring the engine's `expandLegacy`. Pre-fix
     // this walker only ever emitted a single `windowStart..windowEnd`

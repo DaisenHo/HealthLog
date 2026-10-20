@@ -39,13 +39,13 @@ import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advi
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { useDashboardDerived } from "@/components/insights/derived/use-dashboard-derived";
-// v1.4.41 W-ORG — shared shape lives in `src/types/analytics.ts` as
+// v1.4.41 — shared shape lives in `src/types/analytics.ts` as
 // `InsightsAnalyticsData`; aliased back to the local name to keep the
 // rest of this file readable.
 import type { InsightsAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 /**
- * v1.4.33 IW2 — defer the below-the-fold mother-page blocks behind
+ * v1.4.33 — defer the below-the-fold mother-page blocks behind
  * `next/dynamic`. `<HeroStrip>` (the only above-the-fold piece) stays an
  * eager import so the initial paint shows the greeting and health-score
  * badge without a flash; the briefing, correlation row and trends row
@@ -252,7 +252,7 @@ const CycleRingTile = dynamic(
 const EAGER_OVERVIEW_SECTIONS = 3;
 
 /**
- * v1.4.25 W4d — Insights mother page.
+ * v1.4.25 — Insights mother page.
  *
  * The page used to be a single 1.8k-LOC monolith that scroll-anchored
  * six per-metric sections beneath the hero. W4a/c carved those out
@@ -289,7 +289,7 @@ export default function InsightsPageClient() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
-  // v1.30.1 M12 — the overview fans out into ~6 independent queries
+  // v1.30.1 — the overview fans out into ~6 independent queries
   // (comprehensive / advisor / analytics / snapshot / derived batch /
   // layout) mounted by different hooks below, so there's no single
   // `refetch()` that covers the page. Refetching every currently-mounted
@@ -302,7 +302,7 @@ export default function InsightsPageClient() {
   );
   const pull = usePullToRefresh({ onRefresh: refreshInsights });
 
-  // v1.4.33 IW9 — scroll-to-top on route mount centralised in the
+  // v1.4.33 — scroll-to-top on route mount centralised in the
   // shared `useScrollResetOnRoute()` hook. The mother page + the
   // `<SubPageShell>` both consume the same hook; the legacy duplicate
   // RAF that lived here pre-v1.4.33 produced a visible double-snap on
@@ -316,7 +316,7 @@ export default function InsightsPageClient() {
   // on this page is data and never waits on it.
   const briefing = useAiCapability("briefing");
 
-  // v1.4.36 W1 — drop the page-level `isLoading` gate that used to
+  // v1.4.36 — drop the page-level `isLoading` gate that used to
   // block the entire shell on `/api/insights/comprehensive`. The
   // comprehensive payload still feeds the empty-state decision but
   // every other section now mounts in parallel under its own
@@ -327,13 +327,7 @@ export default function InsightsPageClient() {
   // the regular shell and the tiles fill in as their data lands.
   const { data, isLoading, isFetched, isError } = useQuery({
     queryKey: queryKeys.insightsComprehensive(),
-    queryFn: async () => {
-      try {
-        return await apiGet<ComprehensiveData>("/api/insights/comprehensive");
-      } catch {
-        throw new Error(t("insights.loadError"));
-      }
-    },
+    queryFn: () => apiGet<ComprehensiveData>("/api/insights/comprehensive"),
     enabled: isAuthenticated,
   });
 
@@ -342,7 +336,7 @@ export default function InsightsPageClient() {
   // beyond the React-state subscription.
   const advisor = useInsightsAdvisorQuery(isAuthenticated);
 
-  // v1.4.33 IW2 — the mother page reads `healthScore` (a thick-only
+  // v1.4.33 — the mother page reads `healthScore` (a thick-only
   // field) for the hero score card, so it stays on the default thick
   // slice. The shared hook still centralises the cache settings so the
   // consumer dedups with the sub-page mounts that ride the slim slice
@@ -351,7 +345,7 @@ export default function InsightsPageClient() {
   const analyticsQuery = useAnalyticsQuery();
   const analytics = analyticsQuery.data as AnalyticsData | undefined;
 
-  // v1.21.2 (A5 / A6) — the dashboard snapshot is the single server source
+  // v1.21.2 — the dashboard snapshot is the single server source
   // for the ambient narrative the hero surfaces: the Tension Verdict and
   // return-to-baseline ride its `healthScore`. The hero score number itself
   // stays on the analytics payload (unchanged). Reads the same shared
@@ -369,7 +363,7 @@ export default function InsightsPageClient() {
   // single query instance, so the wellness lift adds no second request.
   const dashboardDerived = useDashboardDerived(isAuthenticated);
 
-  // v1.15.11 W2 — the resolved overview layout (sections + tiles). Drives
+  // v1.15.11 — the resolved overview layout (sections + tiles). Drives
   // both the section render order/visibility below and the Vitals grid's
   // per-tile order/visibility (passed into <VitalsDashboard>). Defaults to
   // the canonical layout while in-flight so the first paint matches the
@@ -438,7 +432,7 @@ export default function InsightsPageClient() {
   const modules = user?.modules;
   const heroStripUpdatedAt = advisor.payload?.cachedAt ?? null;
 
-  // v1.4.36 QA C2 — no `<Suspense>` wrappers below. The mother page is
+  // v1.4.36 — no `<Suspense>` wrappers below. The mother page is
   // `"use client"`, the below-the-fold blocks load via `next/dynamic`
   // with `{ ssr: false }` (no Promise-throw on hydrate), and the
   // TanStack Query hooks each return their own loading state without
@@ -471,7 +465,7 @@ export default function InsightsPageClient() {
   // removed in v1.12.4 — the tab-strip regenerate button is the single
   // affordance. The generic disclaimer lives once in the layout-shell footer.
 
-  // v1.15.11 W2 — decouple the section render order from the JSX. Each section
+  // v1.15.11 — decouple the section render order from the JSX. Each section
   // id maps to its existing node here; the customizable region below renders
   // `orderedVisibleSectionIds(layout)` against this registry. Every existing
   // feature/data gate is preserved INSIDE each entry: a section the layout
@@ -485,6 +479,7 @@ export default function InsightsPageClient() {
         read={dashboardDerived.read}
         isLoading={dashboardDerived.isLoading || cycleRing.pending}
         isError={dashboardDerived.isError}
+        error={dashboardDerived.error}
         refetch={dashboardDerived.refetch}
         // v1.15.3 — the cycle ring rides the scores strip as a gated sibling
         // tile, only for a cycle-tracking account, so its calendar read never
@@ -570,7 +565,7 @@ export default function InsightsPageClient() {
   );
 
   return (
-    // v1.12.7 (L3) — one consistent vertical rhythm down the overview. The
+    // v1.12.7 — one consistent vertical rhythm down the overview. The
     // page used `space-y-8` (32 px) between top-level blocks while the vitals
     // wrap used `space-y-6` (24 px), so the overview read as two tiers. Unify
     // to `space-y-6` — it matches the vitals wrap and tightens the overview in
@@ -599,7 +594,7 @@ export default function InsightsPageClient() {
         // `isPending` settles false on success AND error, so a no-score
         // account drops the reserve exactly once.
         scorePending={analyticsQuery.isPending && !analytics}
-        // v1.21.2 (A5 / A6) — server-resolved Tension Verdict + return-to-
+        // v1.21.2 — server-resolved Tension Verdict + return-to-
         // baseline off the dashboard snapshot. The panel localises the keys;
         // null leaves it quiet.
         tension={heroTension}
@@ -639,7 +634,7 @@ export default function InsightsPageClient() {
           }
         />
       ) : (
-        /* v1.15.11 W2 — the customizable region: sections render in the
+        /* v1.15.11 — the customizable region: sections render in the
            resolved layout order, skipping any the user has hidden. A
            layout-visible-but-gate-off section resolves to `null` from the
            registry, so the `space-y-6` rhythm closes the gap with no hole.

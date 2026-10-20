@@ -1,5 +1,5 @@
 /**
- * v1.30.1 (M3 QoL fix) — remember the last manually-saved measurement
+ * v1.30.1 — remember the last manually-saved measurement
  * type so the add form doesn't default to BLOOD_PRESSURE for a daily
  * weight/glucose logger. Client-only convenience persisted in
  * `localStorage`, mirroring the `mood/recent-tags.ts` MRU pattern: it

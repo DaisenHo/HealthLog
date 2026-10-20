@@ -14,7 +14,7 @@
 // and triggers an SW-unregister + cache-wipe + hard reload when the
 // server moves ahead of the running shell.
 //
-// v1.4.43 QoL (L3) — read the active version from `self.__APP_VERSION__`,
+// v1.4.43 — read the active version from `self.__APP_VERSION__`,
 // which the build step writes to `/public/sw-version.js` (loaded
 // synchronously below via `importScripts`). Pre-fix the literal was
 // hand-bumped per release and quietly drifted four releases stale, so
@@ -36,7 +36,7 @@ try {
 // v1.4.38.4 → v1.4.42. Do not hand-edit; bump `package.json` and rebuild.
 const CACHE_VERSION =
   (typeof self !== "undefined" && self.__APP_VERSION__) ||
-  /* @sw-version-fallback */ "v1.43.6";
+  /* @sw-version-fallback */ "v1.43.7";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 // v1.18.6 — read-only data cache for a curated allowlist of safe GET `/api/*`

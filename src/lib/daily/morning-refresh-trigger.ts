@@ -1,5 +1,5 @@
 /**
- * S4 — the sleep-arrival trigger for the morning digest refresh.
+ * The sleep-arrival trigger for the morning digest refresh.
  *
  * The nightly insight pre-pass (`insight-pregenerate`, 04:30) runs before last
  * night's sleep has synced, so the morning digest + health score reference the

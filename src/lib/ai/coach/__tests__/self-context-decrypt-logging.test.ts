@@ -1,5 +1,5 @@
 /**
- * F-CRYPTO-4 — an undecryptable Coach self-context field (allergies /
+ * An undecryptable Coach self-context field (allergies /
  * conditions) must NOT vanish silently. It still fails closed per field (never
  * surfaces ciphertext, never throws into prompt assembly), but a swallowed
  * decrypt now emits a wide-event so a key-rotation gap surfaces instead of

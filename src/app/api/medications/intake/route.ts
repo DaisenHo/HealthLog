@@ -72,7 +72,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422 + audit breadcrumb keyed
+    // v1.4.43 — multi-issue 422 + audit breadcrumb keyed
     // `medications.intake.list.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
     annotate({
@@ -99,7 +99,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const { scope, days } = parsed.data;
 
-  // v1.4.25 W7b — anchor "today" and per-day compliance buckets to the
+  // v1.4.25 — anchor "today" and per-day compliance buckets to the
   // user's display timezone so a 23:30 reading in Pacific/Auckland lands
   // in today's bucket rather than yesterday's Berlin one.
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
@@ -108,7 +108,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const todayStart = startOfLocalDayInTz(new Date(), userTz);
     const todayEnd = new Date(todayStart.getTime() + 86_400_000);
 
-    // v1.4.39 W-SERVER-FIX — project pending intake rows for every
+    // v1.4.39 — project pending intake rows for every
     // active schedule whose window opens today, then idempotently
     // backfill any missing rows. Pre-fix the endpoint returned `[]`
     // for daily meds (`schedule.daysOfWeek = null` in the DB) until
@@ -172,7 +172,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  // v1.4.34 IW-G — compliance: per-day scheduled vs taken for the last
+  // v1.4.34 — compliance: per-day scheduled vs taken for the last
   // N days. Cached at a 15-minute TTL because daily compliance buckets
   // are slow-moving (intake events trickle in, yesterday's row doesn't
   // move). Cache key carries the userTz so a user who changes timezone
@@ -229,7 +229,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = intakeStatusUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — intake-event update hot path; multi-issue 422 +
+    // v1.4.43 — intake-event update hot path; multi-issue 422 +
     // audit breadcrumb keyed `medications.intake.update.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
     annotate({
@@ -565,11 +565,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     meta: { intakeId, status },
   });
 
-  // v1.4.34 IW-G — bust the medications + compliance + achievement
+  // v1.4.34 — bust the medications + compliance + achievement
   // caches for this user so the next read reflects the dose change.
   invalidateUserMedications(user.id, { evict: true });
 
-  // v1.4.39 W-MED — refresh the persistent compliance rollup row for
+  // v1.4.39 — refresh the persistent compliance rollup row for
   // the affected day so the next read after the cache miss returns
   // the up-to-date `(scheduled, taken, skipped)` tuple. Best-effort:
   // a populator failure annotates ops without blocking the response.

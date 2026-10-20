@@ -1,5 +1,5 @@
 /**
- * v1.18.10 (HIGH-1 / MEDIUM-3) — Daily-Briefing number-grounding cross-check.
+ * v1.18.10 — Daily-Briefing number-grounding cross-check.
  *
  * The comprehensive-insight schema validates that `dailyBriefing.paragraph`,
  * `signalsOfDay[]` and `keyFindings[]` are well-shaped (non-empty strings,

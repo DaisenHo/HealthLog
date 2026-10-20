@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { canLogWorkout } from "@/lib/workouts/manual-entry";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * v1.4.32 — `/insights/workouts`.
@@ -60,6 +61,7 @@ export default function InsightsWorkoutsPageClient() {
     isLoading,
     isEmpty,
     isError,
+    error,
     isFetchNextPageError,
     isFetchingNextPage,
     hasNextPage,
@@ -81,9 +83,7 @@ export default function InsightsWorkoutsPageClient() {
   const sportLabel = (sport: string) => {
     // A sport enum the bundle has no copy for renders as its canonical
     // string rather than a raw key — same fallback the list rows use.
-    const key = `insights.workouts.sport.${sport}`;
-    const label = t(key);
-    return label === key ? sport : label;
+    return translateOrNull(t, `insights.workouts.sport.${sport}`) ?? sport;
   };
 
   return (
@@ -111,6 +111,7 @@ export default function InsightsWorkoutsPageClient() {
           nothing to aggregate. */}
       {isError ? (
         <QueryErrorCard
+          error={error}
           title={t("insights.workouts.loadError")}
           onRetry={() => refetch()}
         />

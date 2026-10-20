@@ -22,6 +22,10 @@
  * column holds a JSON null rather than SQL NULL has nothing to seal; it is set
  * to SQL NULL so discovery stops finding it.
  *
+ * v1.43.7 adds the cached AI insights payload on the user row:
+ * `User.insightsCachedText` -> `insightsCachedTextEncrypted` (the model's
+ * briefing, per-domain readings and recommendations about the account).
+ *
  * v1.42 (#615) added the environment module's coarse locations (home, dated
  * location periods, stored days). v1.43 dropped their readable columns
  * (migration 0409, which refuses to run while one still holds a value), so
@@ -67,6 +71,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 export const FREE_TEXT_ENCRYPTION_BACKFILL_QUEUE =
   "free-text-encryption-backfill";
@@ -94,6 +99,8 @@ export interface FreeTextEncryptionBackfillSummary {
   appointmentAddressesCleared: number;
   /** v1.39.4 — edit audit rows whose old phone number / address was removed. */
   contactAuditRowsScrubbed: number;
+  /** v1.43.7 — cached AI insights payloads sealed (0 or 1 per account). */
+  insightsCachesMigrated: number;
 }
 
 /** The audit action whose older rows carried contact values. */
@@ -292,6 +299,42 @@ async function migrateRouteGeometry(id: string): Promise<boolean> {
 }
 
 /**
+ * Seal one account's cached AI insights payload into
+ * `insightsCachedTextEncrypted` and null the readable column, atomically and
+ * idempotently. The update is guarded on the readable value it read: a warm
+ * that lands meanwhile writes the ciphertext and nulls the readable column, so
+ * the guard misses and the newer payload is left as it is.
+ */
+async function migrateInsightsCache(id: string): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const fresh = await tx.user.findUnique({
+      where: { id },
+      select: { insightsCachedText: true, updatedAt: true },
+    });
+    if (!fresh || fresh.insightsCachedText === null) return false;
+    // FAIL-CLOSED: a key error throws here and rolls the tx back. A cache
+    // move is storage, not activity, so `updatedAt` is carried: the profile
+    // forms use it as their optimistic-concurrency token. Matching on it too
+    // means an edit that lands meanwhile wins; the row is retried next pass.
+    const { count } = await tx.user.updateMany({
+      where: {
+        id,
+        updatedAt: fresh.updatedAt,
+        insightsCachedText: fresh.insightsCachedText,
+      },
+      data: {
+        insightsCachedTextEncrypted: sealInsightsCachedText(
+          fresh.insightsCachedText,
+        ),
+        insightsCachedText: null,
+        updatedAt: fresh.updatedAt,
+      },
+    });
+    return count === 1;
+  });
+}
+
+/**
  * Walk one kind of row page by page, migrating each. `page` returns the ids
  * still holding a readable value; each migration clears it, so a migrated row
  * drops out of the next page. A page where nothing moved (every row taken by
@@ -385,6 +428,18 @@ export async function runFreeTextEncryptionBackfillForUser(
     once,
   );
 
+  // One row at most: the cache is a single slot on the user row.
+  const insightsCachesMigrated = await drain(
+    () =>
+      prisma.user.findMany({
+        where: { id: userId, insightsCachedText: { not: null } },
+        select: { id: true },
+        take: 1,
+      }),
+    migrateInsightsCache,
+    once,
+  );
+
   // An appointment reminder's address is resolved from the practitioner when
   // it fires; the readable copy earlier releases wrote here goes.
   const appointmentAddressesCleared = (
@@ -408,6 +463,7 @@ export async function runFreeTextEncryptionBackfillForUser(
         route_geometries_migrated: routeGeometriesMigrated,
         appointment_addresses_cleared: appointmentAddressesCleared,
         contact_audit_rows_scrubbed: contactAuditRowsScrubbed,
+        insights_caches_migrated: insightsCachesMigrated,
       },
     },
   });
@@ -419,6 +475,7 @@ export async function runFreeTextEncryptionBackfillForUser(
     routeGeometriesMigrated,
     appointmentAddressesCleared,
     contactAuditRowsScrubbed,
+    insightsCachesMigrated,
   };
 }
 
@@ -473,6 +530,10 @@ export async function enqueueBootTimeFreeTextEncryptionBackfill(
         WHERE action = ${CONTACT_AUDIT_ACTION}
           AND user_id IS NOT NULL
           AND (details LIKE '%"location":%' OR details LIKE '%"phone":%')`,
+      // The 0411 partial index matches this predicate.
+      prisma.$queryRaw<{ user_id: string }[]>`
+        SELECT id AS user_id FROM users
+        WHERE insights_cached_text IS NOT NULL`,
     ]);
 
     const userIds = new Set<string>();

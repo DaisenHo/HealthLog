@@ -1,5 +1,5 @@
 /**
- * v1.4.23 Sr-H1 — chunked-paged measurement reads in `GET /api/analytics`.
+ * v1.4.23 — chunked-paged measurement reads in `GET /api/analytics`.
  *
  * The senior-dev review (W6) flagged the analytics route as fanning
  * out 17+ unbounded `findMany` queries per request, each pulling the
@@ -113,7 +113,7 @@ describe("GET /api/analytics — chunked per-type reads (Sr-H1)", () => {
     // sequence that `summarize()` consumes the same way it would have
     // consumed a single-shot read.
     //
-    // v1.4.39 W-SINCE — the route caps the live-fallback per-type read
+    // v1.4.39 — the route caps the live-fallback per-type read
     // at the trailing 425 days. The seed packs 6 000 rows × 15 min ≈
     // 62.5 days backwards from a fixed anchor; QA F-M-04 (v1.4.39):
     // re-anchor the youngest row to `nowMs - 30 * 86_400_000` so the

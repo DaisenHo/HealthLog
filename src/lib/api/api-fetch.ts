@@ -56,6 +56,7 @@ import {
   validateResponseContext,
   withRecordFenceHeaders,
 } from "./record-fence";
+import { readListCap, type ListCap } from "@/lib/api/list-cap-shape";
 
 /** HTTP-level failure from an `/api/...` route — non-OK status. */
 export class ApiError extends Error {
@@ -212,6 +213,22 @@ function withJsonBody(
     merged.body = JSON.stringify(body);
   }
   return merged;
+}
+
+/**
+ * GET a capped list — resolves with `data` and the envelope's list cap
+ * (`meta.truncated` / `meta.limit`), null when the route sent none. The one
+ * client reader of the cap; pair it with `ListCapNotice`.
+ */
+export async function apiGetList<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<{ data: T; cap: ListCap | null }> {
+  const { data, meta } = await apiFetchEnvelope<T>(path, {
+    ...init,
+    method: "GET",
+  });
+  return { data, cap: readListCap(meta) };
 }
 
 /** GET — resolves with the unwrapped `data` payload. */

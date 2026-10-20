@@ -25,10 +25,13 @@
  * thousands of background samples, which says little as an extreme and
  * costs a scan of every one of them over two years.
  */
+import { createHash } from "node:crypto";
+
 import type { MeasurementType } from "@/generated/prisma/enums";
 
 import type { DayNotable } from "@/lib/day/contract";
 import { readLocalDailyStats, type DailyStats } from "@/lib/day/daily-stats";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
@@ -185,6 +188,157 @@ export async function readFirstReadings(
 }
 
 /**
+ * The history is cached in fixed blocks of local days counted from the
+ * epoch, so neighbouring days share them and a block's size never grows.
+ */
+const HISTORY_BLOCK_DAYS = 90;
+const HISTORY_EPOCH = "1970-01-01";
+/** Measurement writes sweep the cells; the TTL only bounds an idle one. */
+const HISTORY_TTL_MS = 15 * 60_000;
+
+/** The first day of the block holding `day`. */
+function blockStartOf(day: string): string {
+  const offset = daysBetweenDateKeys(HISTORY_EPOCH, day);
+  return shiftDateKey(
+    HISTORY_EPOCH,
+    Math.floor(offset / HISTORY_BLOCK_DAYS) * HISTORY_BLOCK_DAYS,
+  );
+}
+
+/**
+ * The daily series behind the extremes, for the local days `[from, to]`.
+ *
+ * Every day view compares its day with the two years before it, so paging
+ * from one day to the next read the same two years again. The history is
+ * cached per record, zone, source ladder and readable type set in blocks of
+ * {@link HISTORY_BLOCK_DAYS} days, and a window is put together from the
+ * blocks it touches: a day's value does not depend on the window around it,
+ * so a slice cut at local day keys is exactly what the live read would see.
+ * A block that ends before today is the same whatever day it is read on; the
+ * block holding today ends at today and carries today in its key. Each cell
+ * therefore holds at most one block of days per type, paging back reuses the
+ * blocks it already has instead of caching a near-full copy of the two years
+ * per block boundary, and a cold day long ago reads its own two years, not
+ * everything from there to today. The blocks a window misses are read in one
+ * query. A type the record's modules switch off is never read. A lookback
+ * floor inside the window, or a window that reaches past today, reads live.
+ */
+async function readExtremeHistory(args: {
+  userId: string;
+  readable: readonly MeasurementType[];
+  from: string;
+  to: string;
+  tz: string;
+  priorityJson: unknown;
+  floor: Date | null;
+}): Promise<DailyStats> {
+  const fromInstant = startOfLocalDayKey(args.from, args.tz);
+  const today = userDayKey(new Date(), args.tz);
+  const read = (from: Date, lastDay: string) =>
+    readLocalDailyStats({
+      userId: args.userId,
+      types: args.readable,
+      from,
+      to: startOfLocalDayKey(shiftDateKey(lastDay, 1), args.tz),
+      tz: args.tz,
+      priorityJson: args.priorityJson,
+    });
+  if (args.floor && args.floor > fromInstant) return read(args.floor, args.to);
+  if (args.to > today) return read(fromInstant, args.to);
+
+  const ladder = createHash("sha256")
+    .update(JSON.stringify(args.priorityJson ?? null))
+    .digest("base64url")
+    .slice(0, 16);
+  const prefix = [
+    args.userId,
+    "notable-history",
+    args.tz,
+    ladder,
+    [...args.readable].sort().join(","),
+  ].join("|");
+  const cache = caches.analytics as ServerCache<DailyStats>;
+
+  const blocks: Array<{ start: string; end: string; key: string }> = [];
+  for (
+    let start = blockStartOf(args.from);
+    start <= args.to;
+    start = shiftDateKey(start, HISTORY_BLOCK_DAYS)
+  ) {
+    const last = shiftDateKey(start, HISTORY_BLOCK_DAYS - 1);
+    const open = last >= today;
+    blocks.push({
+      start,
+      end: open ? today : last,
+      key: `${prefix}|${start}|${open ? today : "closed"}`,
+    });
+  }
+
+  // Every block goes through `wrap`, so a build is coalesced with a
+  // concurrent read of the same block and, above all, is fenced: a write
+  // that invalidates the account's analytics entries while the read is in
+  // flight stops the result from being cached, instead of the pre-write
+  // days being served for the block's whole TTL. The blocks missing right
+  // now still share one read of their contiguous span.
+  const missing = blocks.filter((block) => cache.get(block.key) === null);
+  let span: Promise<DailyStats> | null = null;
+  const readSpan = (): Promise<DailyStats> => {
+    span ??= read(
+      startOfLocalDayKey(missing[0]!.start, args.tz),
+      missing[missing.length - 1]!.end,
+    );
+    return span;
+  };
+  const inSpan = (block: { start: string; end: string }) =>
+    missing.length > 0 &&
+    block.start >= missing[0]!.start &&
+    block.end <= missing[missing.length - 1]!.end;
+  const cells = await Promise.all(
+    blocks.map(async (block) => {
+      const { value } = await cache.wrap(
+        block.key,
+        async () =>
+          sliceDays(
+            inSpan(block)
+              ? await readSpan()
+              : await read(startOfLocalDayKey(block.start, args.tz), block.end),
+            block.start,
+            block.end,
+          ),
+        HISTORY_TTL_MS,
+      );
+      return [block.key, value] as const;
+    }),
+  );
+  const found = new Map<string, DailyStats>(cells);
+
+  const out: DailyStats = new Map();
+  for (const block of blocks) {
+    for (const [type, days] of found.get(block.key) ?? new Map()) {
+      const into = out.get(type) ?? new Map<string, number>();
+      for (const [day, value] of days) {
+        if (day >= args.from && day <= args.to) into.set(day, value);
+      }
+      out.set(type, into);
+    }
+  }
+  return out;
+}
+
+/** The days of `stats` inside `[from, to]`, a copy. */
+function sliceDays(stats: DailyStats, from: string, to: string): DailyStats {
+  const out: DailyStats = new Map();
+  for (const [type, days] of stats) {
+    const kept = new Map<string, number>();
+    for (const [day, value] of days) {
+      if (day >= from && day <= to) kept.set(day, value);
+    }
+    out.set(type, kept);
+  }
+  return out;
+}
+
+/**
  * The observations for a window of local days `[from, to]`.
  *
  * `typeVisible` is the module mask; a switched-off type is never read.
@@ -212,20 +366,18 @@ export async function loadNotableRange(args: {
     (t) => args.typeVisible(t) && (wanted === null || wanted.has(t)),
   );
   const firstTypes = (args.firstValueTypes ?? types).filter(args.typeVisible);
-  let historyFrom = startOfLocalDayKey(
-    shiftDateKey(args.from, -NOTABLE_LOOKBACK_DAYS),
-    args.tz,
-  );
-  if (args.floor && args.floor > historyFrom) historyFrom = args.floor;
   const [stats, firsts] = await Promise.all([
-    readLocalDailyStats({
-      userId: args.userId,
-      types,
-      from: historyFrom,
-      to: startOfLocalDayKey(shiftDateKey(args.to, 1), args.tz),
-      tz: args.tz,
-      priorityJson: args.priorityJson,
-    }),
+    types.length === 0
+      ? new Map()
+      : readExtremeHistory({
+          userId: args.userId,
+          readable: NOTABLE_EXTREME_TYPES.filter(args.typeVisible),
+          from: shiftDateKey(args.from, -NOTABLE_LOOKBACK_DAYS),
+          to: args.to,
+          tz: args.tz,
+          priorityJson: args.priorityJson,
+          floor: args.floor ?? null,
+        }),
     readFirstReadings(args.userId, firstTypes),
   ]);
 

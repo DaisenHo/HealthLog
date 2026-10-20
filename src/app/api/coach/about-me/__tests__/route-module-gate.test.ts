@@ -227,6 +227,7 @@ describe("about-me module gate", () => {
       data: {
         insightsCachedAt: null,
         insightsCachedText: null,
+        insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
     });

@@ -718,16 +718,17 @@ describe("every call the managed-profile card can make", () => {
     );
   });
 
-  it("answers an unknown identifier with a 404 carrying NO error code", async () => {
-    // The asymmetry the client has to branch on status for. Four arms of this
-    // route publish a code; this one and the rate limit do not.
+  it("answers an unknown identifier with a 404 that names itself", async () => {
+    // This route has a second 404 (`managed_profile.not_found`) with a
+    // different next step, so the unknown name carries its own code and a
+    // client never has to tell the two apart by status.
     const { creator, profile } = await profileWithPendingSecondGuardian();
     signIn(creator);
     const response = await inviteGuardian(profile.id, {
       identifier: "nobody-here",
     });
     expect(response.status).toBe(404);
-    expect(await errorCodeOf(response)).toBeUndefined();
+    expect(await errorCodeOf(response)).toBe("sharing.invite.no_account");
   });
 
   it("refuses an invitation from somebody who is not a Guardian", async () => {
@@ -947,9 +948,9 @@ describe("how many profiles one account may create in an hour", () => {
       timezone: "UTC",
     });
     expect(refused.status).toBe(429);
-    // No error code, like every other rate-limit refusal in this family — the
-    // client branches on status, which is recorded in the findings.
-    expect(await errorCodeOf(refused)).toBeUndefined();
+    // The status default. A 429 has one meaning in this family (wait), so the
+    // client branches on the status and needs no code of its own.
+    expect(await errorCodeOf(refused)).toBe("http.rate_limited");
     // And nothing was created by the refused call.
     expect(
       await getPrismaClient().user.count({

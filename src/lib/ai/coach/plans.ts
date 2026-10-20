@@ -1,5 +1,5 @@
 /**
- * v1.21.3 (B1) — durable goal / if-then implementation-plan memory.
+ * v1.21.3 — durable goal / if-then implementation-plan memory.
  *
  * The Coach learns the concrete PLANS a user agrees to in a conversation —
  * an implementation intention of the form "IF <cue> THEN <action>" attached
@@ -403,7 +403,7 @@ export async function extractAndStorePlanProposals(
 }
 
 // ---------------------------------------------------------------------------
-// v1.22 (W9, C2) — n-of-1 experiment outcome read-back block
+// v1.22 — n-of-1 experiment outcome read-back block
 // ---------------------------------------------------------------------------
 
 /** How recent a reviewed experiment stays in the snapshot read-back block. */
@@ -465,7 +465,7 @@ export async function buildExperimentOutcomeBlock(
 }
 
 // ---------------------------------------------------------------------------
-// v1.22 (B2/B3) — episodic reminder recall sub-block
+// v1.22 — episodic reminder recall sub-block
 // ---------------------------------------------------------------------------
 
 /**

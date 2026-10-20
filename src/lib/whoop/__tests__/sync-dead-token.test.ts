@@ -1,5 +1,5 @@
 /**
- * WH-1 — pins the dead-token verdict for WHOOP, the parity mirror of
+ * Pins the dead-token verdict for WHOOP, the parity mirror of
  * `fitbit/__tests__/sync-dead-token.test.ts`.
  *
  * `getValidToken`'s three null-return paths (credentials missing, refresh

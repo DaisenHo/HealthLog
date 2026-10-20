@@ -19,6 +19,9 @@ import {
   pillarObservedText,
   type Translate,
 } from "../health-score-pillar-detail";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 let mockAuthUser: {
   unitPreference: string;

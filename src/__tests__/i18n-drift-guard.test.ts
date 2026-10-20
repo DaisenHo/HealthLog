@@ -1,5 +1,5 @@
 /**
- * v1.4.27 B6 / BL-P4-8 — i18n drift-guard.
+ * v1.4.27 — i18n drift-guard.
  *
  * Locks down the bundled key sets that ship across all six locales so
  * a future copy-paste regression can't silently drop a translation
@@ -103,7 +103,7 @@ const REQUIRED_KEY_SETS: Array<{
       "notifications.admin.reminderCheckMissedBody",
       "notifications.admin.reminderCheckOverdueTitle",
       "notifications.admin.reminderCheckOverdueBody",
-      // v1.4.27 R5 — offline-geo fallback notifications.
+      // v1.4.27 — offline-geo fallback notifications.
       "notifications.admin.offlineGeoUnavailableTitle",
       "notifications.admin.offlineGeoUnavailableBody",
     ],

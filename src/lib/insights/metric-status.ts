@@ -22,6 +22,7 @@
  * the card's insufficient-data state.
  */
 import { prisma } from "@/lib/db";
+import { readRecentReadings } from "@/lib/insights/recent-readings";
 import {
   getMetricArchetypeSystemPrompt,
   getMetricArchetypeUserPrompt,
@@ -71,10 +72,7 @@ import {
   summarizeSeries,
 } from "@/lib/insights/status-shared";
 import { runStatusCompletion } from "@/lib/insights/status-provider";
-import {
-  reconstructSleepNights,
-  type SleepStageRow,
-} from "@/lib/analytics/sleep-night";
+import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import {
@@ -163,7 +161,7 @@ export async function generateMetricStatus(args: {
   const readOnly = args.readOnly === true;
   const scope = metricStatusScope(meta.id);
   const cacheAction = statusCacheAction(scope, locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -288,56 +286,31 @@ export async function generateMetricStatus(args: {
   // to SLEEP_DURATION only so no other metric's status path changes.
   const isSleep = meta.measurementType === "SLEEP_DURATION";
 
-  // v1.2.5 (M-TZ3) — the day bucketing below keys on the user's own
+  // v1.2.5 — the day bucketing below keys on the user's own
   // calendar regardless of branch. `userTz` was already resolved above for
   // the cache day-key.
 
   const points: Array<{ measuredAt: Date; value: number }> = [];
   let measurements: Array<{ measuredAt: Date }> = [];
   if (isSleep) {
-    const [priorityJson, sleepRows] = await Promise.all([
-      loadUserSourcePriority(args.userId),
-      prisma.measurement.findMany({
-        where: {
-          userId: args.userId,
-          type: "SLEEP_DURATION",
-          deletedAt: null,
-        },
-        orderBy: { measuredAt: "desc" },
-        take: 365 * 6, // ≈ 5 stage rows/night × source-count for a year
-        // Writer-level collapse: two HealthKit apps behind one source
-        // (watch stages vs phone in-bed) must not blend into one night.
-        select: {
-          value: true,
-          measuredAt: true,
-          sleepStage: true,
-          source: true,
-          deviceType: true,
-        },
-      }),
-    ]);
-    const nights = reconstructSleepNights(
-      sleepRows as SleepStageRow[],
-      userTz,
-      priorityJson,
+    // The latest 365 nights, the sleep twin of the 365 latest readings the
+    // other types read (`readRecentReadings`). A cut on stage rows instead (2190 of them) reached
+    // back a few weeks on a stage-rich watch and began mid-night.
+    const nights = (
+      await readSleepNights(
+        args.userId,
+        userTz,
+        await loadUserSourcePriority(args.userId),
+        { maxNights: 365, newest: true },
+      )
     ).filter((n) => n.asleepMinutes > 0);
     for (const n of nights) {
       points.push({ measuredAt: n.measuredAt, value: n.asleepMinutes });
     }
     measurements = nights.map((n) => ({ measuredAt: n.measuredAt }));
   } else {
-    const rows = await prisma.measurement
-      .findMany({
-        where: {
-          userId: args.userId,
-          type: meta.measurementType,
-          deletedAt: null,
-        },
-        orderBy: { measuredAt: "desc" },
-        take: 365,
-        select: { value: true, measuredAt: true },
-      })
-      .then((r) => r.reverse());
+    // The latest 365 readings, never less than the last 30 days.
+    const rows = await readRecentReadings(args.userId, meta.measurementType);
     for (const m of rows) {
       points.push({
         measuredAt: m.measuredAt,
@@ -388,7 +361,7 @@ export async function generateMetricStatus(args: {
   const ageYears = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
   const sex = binaryReferenceSex(user?.gender);
 
-  // v1.10.0 F1 — sharpen the coarse registry `normalRange` with the
+  // v1.10.0 — sharpen the coarse registry `normalRange` with the
   // age/sex reference-range enabler when one is available for this
   // metric + profile; otherwise keep the existing flat anchor (strictly
   // additive, never a regression). Age + sex only — no ancestry/region.
@@ -527,7 +500,7 @@ export async function generateMetricStatus(args: {
     locale,
   );
 
-  // v1.27.13 (Welle J) — the guideline interpretation block for metrics the
+  // v1.27.13 — the guideline interpretation block for metrics the
   // knowledge base covers (visceral fat, resting HR, SpO₂, respiratory rate,
   // body temperature, sleep duration, waist, PWV). The band position is
   // computed from the signal's current value (or the latest day when no signal
@@ -580,7 +553,7 @@ export async function generateMetricStatus(args: {
       interpretationBlock,
       openerHint,
     ),
-    // v1.12.1 (D1) — the phrasing task benefits from a touch more sampling
+    // v1.12.1 — the phrasing task benefits from a touch more sampling
     // entropy while the FACTS stay pinned by the snapshot + the
     // forbidden-phrase guards. 0.3 was conservative for a 2-4 sentence prose
     // task; 0.45 varies cadence without loosening grounding. The pair used to

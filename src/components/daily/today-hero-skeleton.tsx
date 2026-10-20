@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * S2 — loading silhouette for the Today hero.
+ * Loading silhouette for the Today hero.
  *
  * Mirrors the real `<TodayHero>` footprint — the same plain `bg-card`
  * shell (border + radius + `p-4 md:p-6`), the two-column read/ring split

@@ -125,7 +125,7 @@ export async function sendViaTelegram(
   const scheduleId = payload.metadata?.scheduleId as string | undefined;
   const phase = payload.metadata?.phase as string | undefined;
   const date = payload.metadata?.date as string | undefined;
-  // v1.7.0 SB-SCHED-4 — per-slot dedup. Empty string for a legacy
+  // v1.7.0 — per-slot dedup. Empty string for a legacy
   // single-window schedule (byte-stable against pre-v1.7 rows).
   const timeOfDay = (payload.metadata?.timeOfDay as string | undefined) ?? "";
   const replyMarkup = payload.metadata?.replyMarkup as

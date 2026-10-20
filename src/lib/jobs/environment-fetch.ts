@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — nightly environmental-context fetch.
+ * v1.25 — nightly environmental-context fetch.
  *
  * For every account with the environmental-context module enabled AND a home
  * location set, fetch the daily weather/daylight for the recent uncovered days
@@ -39,8 +39,9 @@ import {
   ENVIRONMENT_MAX_BACKFILL_DAYS,
   fetchAndStoreEnvironment,
   fillAirQualityGaps,
-  utcDayKey,
 } from "@/lib/environment/service";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { enumerateDayCount } from "@/lib/environment/day-span";
 import { recordError } from "@/lib/jobs/worker-status";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -54,8 +55,6 @@ export const ENVIRONMENT_FETCH_CRON = "10 2 * * *";
 
 export const ENVIRONMENT_FETCH_CONCURRENCY = 1;
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 /**
  * Per-user fetch payload. An empty payload (no `userId`) is the daily discovery
  * tick. `startDate`/`endDate` (YYYY-MM-DD) drive the on-demand backfill; omitted
@@ -67,18 +66,23 @@ export interface EnvironmentFetchPayload {
   endDate?: string;
 }
 
-/** Resolve the date range for a per-user run (explicit range, else lookback). */
-function resolveRange(payload: EnvironmentFetchPayload): {
-  startDate: string;
-  endDate: string;
-} {
-  const today = new Date();
-  const endDate = payload.endDate ?? utcDayKey(today);
+/**
+ * Resolve the date range for a per-user run (explicit range, else lookback).
+ *
+ * The lookback ends on the person's today, in the zone the service keys the
+ * stored days in, not on the UTC date: east of UTC the local day starts up to
+ * fourteen hours before the UTC one, and a window ending on the UTC date left
+ * the local today out until the next night's run.
+ */
+export function resolveRange(
+  payload: EnvironmentFetchPayload,
+  tz: string,
+  now: Date = new Date(),
+): { startDate: string; endDate: string } {
+  const today = userDayKey(now, tz);
+  const endDate = payload.endDate ?? today;
   const startDate =
-    payload.startDate ??
-    utcDayKey(
-      new Date(today.getTime() - ENVIRONMENT_LOOKBACK_DAYS * MS_PER_DAY),
-    );
+    payload.startDate ?? shiftDateKey(today, -ENVIRONMENT_LOOKBACK_DAYS);
   return { startDate, endDate };
 }
 
@@ -208,7 +212,10 @@ export async function handleEnvironmentFetch(
     return jobDone({ skipped: "environment_module_disabled" });
   }
 
-  const { startDate, endDate } = resolveRange(payload);
+  const { startDate, endDate } = resolveRange(
+    payload,
+    await resolveUserTimezone(userId),
+  );
   // Clamp the span so a crafted backfill can never fan out an unbounded range.
   const span = enumerateDayCount(startDate, endDate);
   if (span > ENVIRONMENT_MAX_BACKFILL_DAYS) {

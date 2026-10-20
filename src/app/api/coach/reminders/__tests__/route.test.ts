@@ -1,5 +1,5 @@
 /**
- * v1.22 (B2/B6) — `/api/coach/reminders` (+ `/[id]`) routes.
+ * v1.22 — `/api/coach/reminders` (+ `/[id]`) routes.
  *
  * Covers:
  *   - GET lists the caller's reminders decrypted, scoped to the user; an

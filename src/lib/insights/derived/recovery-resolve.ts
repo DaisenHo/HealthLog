@@ -142,7 +142,7 @@ export function resolveCanonicalRecovery(
 }
 
 /**
- * v1.22 (W9, C3) — which-signal-to-trust narration support.
+ * v1.22 — which-signal-to-trust narration support.
  *
  * When two sources of recovery diverge for the SAME physiological night (e.g.
  * the WHOOP-native band vs the COMPUTED proxy), the Coach should narrate WHICH

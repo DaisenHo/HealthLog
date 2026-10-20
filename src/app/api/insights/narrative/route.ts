@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W3 — period-narrative read route (Pillar P1).
+ * v1.11.0 — period-narrative read route (Pillar P1).
  *
  * `GET /api/insights/narrative?period=week|month` serves the latest generated
  * period summary for the calling user. Read-only by construction (the v1.8.3

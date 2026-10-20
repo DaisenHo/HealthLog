@@ -417,7 +417,7 @@ export function DocumentsView() {
   // persisted per user and changed behind the wrench.
   const { layout, isLayoutLoading } = useDocumentsLayout(moduleEnabled);
 
-  // v1.30.1 M12 — pull-to-refresh parity with labs/checkups/mood/
+  // v1.30.1 — pull-to-refresh parity with labs/checkups/mood/
   // measurements/medications. The vault is one of the sharpest PWA-resume-
   // staleness surfaces named in the audit: a document indexed server-side
   // while the tab was backgrounded (auto-index / AI summary) otherwise
@@ -1076,6 +1076,7 @@ export function DocumentsView() {
         )
       ) : list.isError ? (
         <QueryErrorCard
+          error={list.error}
           title={t("documents.list.loadError")}
           onRetry={() => void list.refetch()}
         />

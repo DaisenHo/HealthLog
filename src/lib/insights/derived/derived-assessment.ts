@@ -283,7 +283,7 @@ function contributorPointer(key: string, locale: Locale): string | null {
 }
 
 /**
- * v1.22 (W6) — band → "what it means for today" interpretation. A CLOSED
+ * v1.22 — band → "what it means for today" interpretation. A CLOSED
  * deterministic table (so the read can never hallucinate a verdict) keyed by
  * metric + band, mirroring the WHOOP/Oura forward read: a strong readiness /
  * recovery / sleep score is a day to take on a little more; a soft one is a
@@ -434,7 +434,7 @@ export function buildDeterministicScoreAssessment(
           ? `Am stärksten gedämpft durch ${joined}.`
           : `Held back most by ${joined}.`,
       );
-      // v1.21.0 (MEDIUM-2) — close with ONE grounded next step drawn from the
+      // v1.21.0 — close with ONE grounded next step drawn from the
       // weakest contributor, but only when it is behaviourally addressable.
       // When the weakest driver is physiology-only, no step is manufactured.
       const pointer = contributorPointer(ranked[0].key, locale);

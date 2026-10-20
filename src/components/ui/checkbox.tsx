@@ -7,7 +7,7 @@ import { Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * v1.4.27 R3d MB4 / CF-40 — shadcn-style `<Checkbox>` primitive backed
+ * v1.4.27 — shadcn-style `<Checkbox>` primitive backed
  * by `radix-ui`'s `Checkbox` namespace. Brought in so the Coach
  * sources-rail can drop its raw `<input type="checkbox">` for a
  * keyboard + touch accessible control that ships proper focus rings

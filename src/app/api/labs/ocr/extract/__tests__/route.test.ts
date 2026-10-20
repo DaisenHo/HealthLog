@@ -140,7 +140,7 @@ describe("POST /api/labs/ocr/extract — text mode budget", () => {
       "user-1",
       AI_BUDGETS.ocrExtractText.maxTokens,
       "2026-06-26",
-      // F1 — the provider-aware daily cap (mocked) is threaded as the 4th arg.
+      // The provider-aware daily cap (mocked) is threaded as the 4th arg.
       200_000,
       // ...the cost owner that cap is enforced against as the 5th...
       "operator",

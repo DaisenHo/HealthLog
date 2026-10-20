@@ -31,8 +31,8 @@ import {
   MAXMIND_DOWNLOAD_BASE,
 } from "@/lib/geo/geolite2-fetch";
 
-const CITY_BYTES = Buffer.from("CITY-MMDB-CONTENT-");
-const ASN_BYTES = Buffer.from("ASN-MMDB-CONTENT-");
+const CITY_BYTES = Buffer.from("CITY-MMDB-CONTENT-\x01\x02\x03");
+const ASN_BYTES = Buffer.from("ASN-MMDB-CONTENT-\x04\x05\x06");
 
 /** Build a MaxMind-shaped tar.gz: `<Edition>_<date>/<Edition>.mmdb`. */
 function buildEditionTarball(

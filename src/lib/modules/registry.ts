@@ -108,7 +108,7 @@ export const MODULE_KEYS = [
   "achievements",
   "coach",
   "insights",
-  // v1.18.1 (D3) — medications graduated from the always-on CORE set to a
+  // v1.18.1 — medications graduated from the always-on CORE set to a
   // toggleable module. Weight / blood pressure / pulse stay CORE (the
   // measurement engine is never disableable); medications is now an opt-out
   // domain so an account that does not track meds can hide the surface.
@@ -118,7 +118,7 @@ export const MODULE_KEYS = [
   // re-enabling finds the rows intact.
   "medications",
   "doctorReport",
-  // v1.25.0 (W-ENV) — environmental-context module. Default-on since v1.29.1
+  // v1.25.0 — environmental-context module. Default-on since v1.29.1
   // (a fresh install is usable without a per-module opt-in); the outbound
   // weather fetch only runs once the user configures a home / travel location
   // on the Environment settings surface, so default-on carries no silent
@@ -132,7 +132,7 @@ export const MODULE_KEYS = [
   // (operator-availability layer, PATCH plumbing, the Modules hub toggle)
   // reuses the existing module machinery unchanged.
   "mcp",
-  // v1.25.0 (W-DOCS-IN) — inbound clinical documents (`/documents/inbound`).
+  // v1.25.0 — inbound clinical documents (`/documents/inbound`).
   // Default-on since v1.29.1: a fresh install can store + organise documents
   // in the vault out of the box. The AI READ of a document (the egress to the
   // OCR/vision provider) stays a SEPARATE per-user opt-in
@@ -457,7 +457,7 @@ export function isOptInModule(key: ModuleKey): boolean {
 /* ─── Needs-based onboarding: the areas a person names → the modules ───────── */
 
 /**
- * v1.39 (C1) — the nine areas the needs questionnaire offers (design spec
+ * v1.39 — the nine areas the needs questionnaire offers (design spec
  * §"The questions", Q2), as stable slugs.
  *
  * They live here rather than in the flow because the answer only means

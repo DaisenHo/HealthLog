@@ -224,7 +224,7 @@ export interface CoincidentDeviationValue {
   /** The day the flag was evaluated (YYYY-MM-DD). */
   day: string;
   /**
-   * v1.18.1 P4 — Rest Mode reframe. True when the flag fired AND an
+   * v1.18.1 — Rest Mode reframe. True when the flag fired AND an
    * illness/condition episode is active: the deviations have a known
    * explanation (the user is unwell), so the surface frames them as
    * illness-explained — "your vitals are off because you're ill" — instead of
@@ -269,7 +269,7 @@ export interface CoincidentDeviationOpts {
   now?: Date;
   coverage?: RollupCoverageMap;
   /**
-   * D2-8 — IANA timezone the "today" grouping is keyed in. A 23:30-local
+   * IANA timezone the "today" grouping is keyed in. A 23:30-local
    * reading must land on the user's local "today", not UTC's; mirrors
    * `readiness.ts`. Defaults to `DEFAULT_TIMEZONE` when the caller has no tz.
    */
@@ -280,7 +280,7 @@ export interface CoincidentDeviationOpts {
  * The most recent DAY mean for a type within the window, plus its day key.
  * Bounded raw read; null when no reading in the window.
  *
- * D2-8 — day keys are minted in the user's timezone (`userDayKey`), not UTC
+ * Day keys are minted in the user's timezone (`userDayKey`), not UTC
  * (`toISOString().slice(0,10)`), so a late-evening / early-morning reading for
  * a non-UTC user is grouped under the right calendar "today" — the same
  * tz-aware basis `readiness.ts` already uses. Without this, the fired
@@ -460,7 +460,7 @@ export async function computeCoincidentDeviation(
   );
   const fired = contributing.length >= COINCIDENT_FIRE_THRESHOLD;
 
-  // v1.18.1 P4 — when the flag fired, reframe it as illness-explained if an
+  // v1.18.1 — when the flag fired, reframe it as illness-explained if an
   // episode is active. Only resolved when the flag fired (no read on the
   // common quiet day). Annotation only — the vital deviations are unchanged.
   // Any active episode counts, a chronic condition included: it explains a
@@ -474,7 +474,7 @@ export async function computeCoincidentDeviation(
     // The coverage axis is "how many vitals could have coincided".
     requiredInputs: vitals.length,
     presentInputs: vitals.length,
-    // v1.10.0 QA: the REAL distinct-history-days backing the deepest
+    // v1.10.0: the REAL distinct-history-days backing the deepest
     // contributing vital, not the constant `windowDays` (which pinned
     // `historyFraction` to 1 so a 7-day and a 30-day blend reported the same
     // confidence). The composite is at least as well-backed as its

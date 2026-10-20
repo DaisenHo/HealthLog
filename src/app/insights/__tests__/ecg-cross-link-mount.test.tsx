@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.30 (UX/IA audit H1) — `<EcgCrossLink>` now mounts on the resting-pulse
+ * v1.30 — `<EcgCrossLink>` now mounts on the resting-pulse
  * and HRV sub-pages (previously only on `/insights/pulse`), threaded through
  * `<HealthKitMetricPage afterAssessment>`. The pointer self-gates on
  * recordings, so the shared `insightsEcgList` cache is pre-seeded with one
@@ -56,8 +56,11 @@ function render(node: React.ReactNode) {
   });
   // Seed the ECG list the cross-link reads so its data-availability gate opens.
   client.setQueryData(queryKeys.insightsEcgList(), {
-    recordings: [{ id: "a", classification: null }],
-    hasRecordings: true,
+    data: {
+      recordings: [{ id: "a", classification: null }],
+      hasRecordings: true,
+    },
+    cap: null,
   });
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>

@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B8 — comparison overlay helper.
+ * v1.4.16 — comparison overlay helper.
  *
  * The dashboard charts already fetch every measurement for the active
  * type set (paged through `/api/measurements`). When the comparison

@@ -1,7 +1,7 @@
 /**
  * GET /api/personal-records
  *
- * v1.4.25 W8d — schema-only release of the PersonalRecord feature.
+ * v1.4.25 — schema-only release of the PersonalRecord feature.
  * The detection worker that actually populates rows lands in a later
  * release (v1.4.26 or v1.5 — TBD). This route exists today so the
  * v1.5 iOS-Swift app can build its query path against a stable
@@ -19,8 +19,8 @@
  * returned more rows than the caller asked for and nothing said so. The 500
  * ceiling refuses rather than clamps, for the same reason.
  *
- * Response envelope (matches the project-wide `apiSuccess` contract):
- *   { data: PersonalRecord[], error: null }
+ * Response envelope (the capped-list contract, `src/lib/api/list-cap.ts`):
+ *   { data: PersonalRecord[], error: null, meta: { truncated, limit } }
  *
  * v1.43 (ios #116 item 5) — the route projects each row instead of passing the
  * Prisma result through. Every stored field stays on the wire, and each row
@@ -31,13 +31,14 @@ import { prisma } from "@/lib/db";
 import type { NextRequest } from "next/server";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
+import { returnAllZodIssues } from "@/lib/api-response";
 import { listPersonalRecordsSchema } from "@/lib/validations/measurement";
 import {
   mayCarryBenchmark,
   resolveRecordBenchmark,
 } from "@/lib/personal-records/record-benchmark";
 import { toProfileSex } from "@/lib/profile/sex";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 export const dynamic = "force-dynamic";
 
@@ -62,14 +63,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const { metricType, limit } = parsed.data;
 
-  const records = await prisma.personalRecord.findMany({
+  const found = await prisma.personalRecord.findMany({
     where: {
       userId: user.id,
       ...(metricType ? { metricType } : {}),
     },
     orderBy: { achievedAt: "desc" },
-    take: limit,
+    take: overfetch(limit),
   });
+  const { rows: records, cap } = capRows(found, limit);
 
   const wantsBand = records.some((r) => mayCarryBenchmark(r.metricType));
   const profile = wantsBand
@@ -94,7 +96,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     weightKg: weight?.value ?? null,
   };
 
-  return apiSuccess(
+  return apiListSuccess(
     records.map((r) => ({
       id: r.id,
       userId: r.userId,
@@ -110,5 +112,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
       createdAt: r.createdAt,
       benchmark: profile ? resolveRecordBenchmark(r, benchmarkProfile) : null,
     })),
+    cap,
   );
 });

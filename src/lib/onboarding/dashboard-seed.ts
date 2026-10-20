@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the dashboard tile order the setup answers imply.
+ * v1.39 — the dashboard tile order the setup answers imply.
  *
  * "Enables the matching modules and orders the dashboard" (design spec §The
  * questions, Q2): the module half lives in the registry's derivation, this

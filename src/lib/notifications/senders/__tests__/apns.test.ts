@@ -827,7 +827,7 @@ describe("sendViaApns — dispatcher fan-out", () => {
   });
 
   it("MEDICATION_REMINDER sets interruption-level=time-sensitive + priority=10", async () => {
-    // SB-5 v1.4.40 — medication reminders are the one category the user
+    // v1.4.40 — medication reminders are the one category the user
     // explicitly opts into Focus-bypass for. The aps payload must carry
     // BOTH `interruption-level: time-sensitive` AND `apns-priority: 10`
     // per Apple's push best-practices doc; otherwise APNs may downgrade

@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W4b — shared current-window status helper for medication
+ * v1.4.37 — shared current-window status helper for medication
  * detail cards.
  *
  * Both the generic `<MedicationCard>` and the GLP-1 variant

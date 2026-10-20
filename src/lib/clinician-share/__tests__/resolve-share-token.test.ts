@@ -1,5 +1,5 @@
 /**
- * v1.11.0 (Epic C, C3) — share-token resolver, the security core.
+ * v1.11.0 — share-token resolver, the security core.
  *
  * Asserts the load-bearing properties:
  *   - a valid, live token resolves to a ShareContext carrying ONLY the owner

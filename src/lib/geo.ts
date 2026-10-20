@@ -64,7 +64,7 @@
  * does not hammer ipwho.is — the cache holds both hits and misses
  * (negative caching) for a bounded TTL.
  *
- * v1.4.16 A8a: the online-fallback body is decoded as UTF-8 explicitly
+ * v1.4.16: the online-fallback body is decoded as UTF-8 explicitly
  * via `TextDecoder('utf-8')` instead of `Response.json()`, and an
  * `Accept-Language: de, en;q=0.5` hint is sent so providers return
  * native city names ("Nürnberg") rather than ASCII folds ("Nuremberg").
@@ -72,7 +72,7 @@
  * maintainer-flagged login row that rendered as "Nrnberg" in
  * /admin/login-overview — see `docs/audit/v1416-summary.md`.
  *
- * v1.4.27 R5: the build no longer hard-fails on a missing
+ * v1.4.27: the build no longer hard-fails on a missing
  * `MAXMIND_LICENSE_KEY` secret — the CI workflow drops an `.empty`
  * marker into the geo asset directory when the key is unset.
  * `offlineGeoReady()` is the canonical check used by `/api/version`
@@ -205,7 +205,7 @@ export function geoLiteDir(): string {
 
 // ── Per-IP location cache ────────────────────────────────────────────
 //
-// v1.15.12 E1: the online tier is now the baseline path, so a burst of
+// v1.15.12: the online tier is now the baseline path, so a burst of
 // audit events from the same address must not fan out one ipwho.is
 // request each. We cache the resolved "City, CC" string per IP for a
 // bounded TTL and also negative-cache misses (stored as null) so a
@@ -565,13 +565,13 @@ async function lookupIpOnline(ip: string): Promise<GeoResolved | null> {
       // v1.11.2 — the lookup URL comes from the operator IP_GEO_LOOKUP_URL env;
       // pin the connect-time DNS check so it can't be pointed at a private /
       // metadata address (SSRF/rebinding).
-      // v1.15.12 E1 — keep the online timeout below the audit-log 3 s race
+      // v1.15.12 — keep the online timeout below the audit-log 3 s race
       // window so a slow-but-successful lookup still lands before the race
       // resolves null and drops the location (the "—" symptom on apps01).
       { timeoutMs: 2_500, requirePublicHost: true },
     );
     if (!res.ok) {
-      // v1.18.11 (W3) — a non-ok response (403 free-plan/CORS rejection,
+      // v1.18.11 — a non-ok response (403 free-plan/CORS rejection,
       // 429 rate-limit, 5xx) is not a clean "this IP has no location": it is
       // a provider-level failure that, left silent, renders as "—" with no
       // signal anywhere. Surface it on the wide event so the next provider

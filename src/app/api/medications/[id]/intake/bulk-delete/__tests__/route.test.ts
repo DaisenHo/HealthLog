@@ -25,7 +25,7 @@ vi.mock("@/lib/db", () => ({
     medication: { findUnique: vi.fn() },
     medicationIntakeEvent: {
       findMany: vi.fn(),
-      // v1.15.18 LOW-6 — bulk delete is now a soft-delete updateMany.
+      // v1.15.18 — bulk delete is now a soft-delete updateMany.
       updateMany: vi.fn(),
     },
     auditLog: { create: vi.fn() },
@@ -219,7 +219,7 @@ describe("POST /api/medications/[id]/intake/bulk-delete", () => {
 
     await POST(postWithBody({ eventIds: ["evt-a"] }), ROUTE_PARAMS);
 
-    // v1.15.18 LOW-6 — a bulk delete is a soft-delete updateMany: scoped by
+    // v1.15.18 — a bulk delete is a soft-delete updateMany: scoped by
     // (id IN, user, medication, deletedAt:null) so a re-post counts zero, and
     // the data sets deletedAt + bumps syncVersion for the iOS tombstone feed.
     const call = vi.mocked(prisma.medicationIntakeEvent.updateMany).mock

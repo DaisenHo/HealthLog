@@ -1,5 +1,5 @@
 /**
- * P3 — `buildDailyDigest`, the ONE data spine of the daily-value system.
+ * `buildDailyDigest`, the ONE data spine of the daily-value system.
  *
  * A pure, deterministic composer that assembles the day's read from data that
  * ALREADY EXISTS — the nightly `insight-pregenerate` output lifted read-only
@@ -201,7 +201,7 @@ export interface DailyDigestUpcomingVisit {
 }
 
 /**
- * S11 — a confident elevated-at-rest ("tension") window for the day, already
+ * A confident elevated-at-rest ("tension") window for the day, already
  * detected server-side (`loadIntradayPulse`) under its full confidence gate.
  * The builder only formats it; the signal correctness lives in the analytics
  * layer, and a null here means the honest "no window" — nothing is emitted.
@@ -212,7 +212,7 @@ export interface DailyDigestTensionWindow {
 }
 
 /**
- * S10 — the latest ECG recording, for the `ecg_new_recording` rail item. Only
+ * The latest ECG recording, for the `ecg_new_recording` rail item. Only
  * ever the DEVICE's verdict + when it was recorded — NEVER the waveform (the
  * DTO carries no samples). The builder decides "new" from `recordedAt`; the
  * card attributes any verdict to the recording device.
@@ -358,13 +358,13 @@ export interface DailyDigestInput {
   /** Standing coach plans (active + reviewed) — check-in candidates (§2.3). */
   coachPlans: DailyDigestCoachPlan[];
   /**
-   * S12 — the single freshly-reached durable milestone for today, or null. The
+   * The single freshly-reached durable milestone for today, or null. The
    * IO seam gathers candidates from the existing streak / personal-record
    * engines and applies the reached-once gate (`selectFreshMilestone`), so the
    * builder only ever sees a milestone worth celebrating today.
    */
   milestone?: Milestone | null;
-  /** S11 — the day's detected elevated-at-rest window, or null (honest-absent). */
+  /** The day's detected elevated-at-rest window, or null (honest-absent). */
   tensionWindow: DailyDigestTensionWindow | null;
   /**
    * v1.34.0 — today's cumulative-activity read against this person's own
@@ -374,7 +374,7 @@ export interface DailyDigestInput {
    */
   sameTime?: DailyDigestSameTime | null;
   /**
-   * S10 — the freshest ECG recording (device verdict + recordedAt only), or
+   * The freshest ECG recording (device verdict + recordedAt only), or
    * null. Optional so consumers that predate the ECG weave stay valid; the
    * builder treats a missing value as "no recent recording".
    */
@@ -753,7 +753,7 @@ function capWithPinned(
 }
 
 /**
- * S12 — the calm reward card. Emits ONE `milestone` PriorityItem when a durable
+ * The calm reward card. Emits ONE `milestone` PriorityItem when a durable
  * state was reached TODAY (the IO seam already applied the reached-once gate).
  * Data, not AI: no module gate beyond the metric's own (applied by the IO
  * seam). Celebratory-but-quiet: `success` status, a single "view" action into the
@@ -784,7 +784,7 @@ function buildMilestoneItem(
 }
 
 /**
- * S11 — the elevated-at-rest ("tension") card. Emitted at most once per day
+ * The elevated-at-rest ("tension") card. Emitted at most once per day
  * (the window is already the day's single most confident stretch), gated on
  * a non-null window (the analytics layer stays silent unless every confidence
  * gate holds). Pulse is a core vital, so no module gates it. Cautious, non-diagnostic copy:
@@ -955,7 +955,7 @@ function buildCoachCheckinItem(
 }
 
 /**
- * S10 — how recently an ECG recording must have landed to count as "new" for
+ * How recently an ECG recording must have landed to count as "new" for
  * the rail (§3.5.3). A calendar-day window: a recording synced within the last
  * day surfaces once, then retires on its own (no persisted "seen" marker, no
  * migration). The 24h window is itself the one/day cap — at most one recording
@@ -1199,7 +1199,7 @@ export function buildDailyDigest(
       visits.today,
     ].filter((item): item is PriorityItem => item !== null),
   );
-  // S11 — the calm, informational tension marker sits last: it is context, not
+  // The calm, informational tension marker sits last: it is context, not
   // an action that expires, so a time-sensitive dose / sync / check-in wins the
   // bounded rail ahead of it.
   const tension = buildTensionWindowItem(

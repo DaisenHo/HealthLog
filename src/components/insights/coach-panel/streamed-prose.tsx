@@ -21,7 +21,7 @@ import {
  * fades + drifts up on mount, giving the reply a "thinking out loud"
  * cadence rather than a hard dump of word groups.
  *
- * v1.22 (W5) — paragraph-aware + SSE-safe. The reply now renders as real
+ * v1.22 — paragraph-aware + SSE-safe. The reply now renders as real
  * `<p>` blocks (shared `ProseBlocks`), so a model that emits blank-line
  * paragraph breaks reads as paragraphs, not one run-on block — consistent
  * with the daily briefing + insight cards. Under streaming, every COMPLETE

@@ -37,14 +37,14 @@ export const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   achievements: Award,
   coach: MessageCircleHeart,
   insights: Sparkles,
-  // v1.18.1 (D3) — medications graduated from CORE to a toggleable module.
+  // v1.18.1 — medications graduated from CORE to a toggleable module.
   medications: Pill,
   doctorReport: FileText,
   // v1.25.0 — the environmental-context module (opt-in weather/daylight feed).
   environment: CloudSun,
   // v1.22.0 — the remote MCP endpoint (opt-in connectivity module).
   mcp: Plug,
-  // v1.25.0 (W-DOCS-IN) — inbound clinical documents (opt-in).
+  // v1.25.0 — inbound clinical documents (opt-in).
   inboundDocuments: FileScan,
   // v1.25.0 — opt-in mental-health screeners (PHQ-9 / GAD-7).
   mentalHealth: Brain,

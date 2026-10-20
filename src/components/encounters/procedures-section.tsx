@@ -96,6 +96,7 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
 
       {list.isError ? (
         <QueryErrorCard
+          error={list.error}
           title={t("encounters.procedures.loadError")}
           onRetry={() => void list.refetch()}
         />

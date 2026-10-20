@@ -1,5 +1,5 @@
 /**
- * v1.12.1 (D3) — feed FDR-surviving cross-metric correlations into the
+ * v1.12.1 — feed FDR-surviving cross-metric correlations into the
  * per-metric assessment card.
  *
  * The discovery engine (`correlation-discovery.ts`) already computes, with

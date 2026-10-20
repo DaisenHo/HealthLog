@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.25 W8b — `/admin/login-overview` no longer renders a Collapse
+ * v1.4.25 — `/admin/login-overview` no longer renders a Collapse
  * / Expand toggle. The toggle was a leftover from the v1.4 shared
  * admin page where 13 sections lived on one route; collapsing the
  * only card on the dedicated login-overview route hid the entire

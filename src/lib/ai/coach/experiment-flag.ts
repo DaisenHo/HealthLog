@@ -1,5 +1,5 @@
 /**
- * v1.22 (W9, C2) — gate for the user-visible n-of-1 experiment read-back.
+ * v1.22 — gate for the user-visible n-of-1 experiment read-back.
  *
  * The substrate (the `outcomeEncrypted` column, the review worker that writes
  * the grounded read-back, the snapshot read block) all ship in v1.22, but the

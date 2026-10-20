@@ -57,7 +57,7 @@ export type DerivedMetricId =
   | "SIX_MINUTE_WALK_BAND"
   /** Versioned cardiometabolic reference composite. */
   | "HEALTH_SCORE"
-  /** v1.11.0 (Epic B): short-horizon OLS projection with a widening prediction band. */
+  /** v1.11.0: short-horizon OLS projection with a widening prediction band. */
   | "TRAJECTORY"
   /** v1.34.0: today's running total for a cumulative metric vs this person's own typical total at the same local hour. */
   | "SAME_TIME_BASELINE";

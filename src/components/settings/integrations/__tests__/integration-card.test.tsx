@@ -39,6 +39,9 @@ import {
 } from "../oauth-integration-card";
 import type { IntegrationStatusViewModel } from "../shared";
 import { healthFixture } from "./health-fixture";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // "Last data: today" only holds when the fixture's hours-ago stays on the same
 // local day, so the clock is pinned to midday rather than the wall clock.

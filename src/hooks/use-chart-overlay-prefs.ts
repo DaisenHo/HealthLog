@@ -22,7 +22,7 @@ import { apiGet, apiPut } from "@/lib/api/api-fetch";
  * dashboard doesn't fire a second network request — the layout
  * already lands once on initial dashboard render.
  *
- * v1.4.29 C4 — share the same `queryKeys.dashboardWidgets()` slot
+ * v1.4.29 — share the same `queryKeys.dashboardWidgets()` slot
  * the dashboard page + Settings → Dashboard already consume.
  * Pre-fix the hook keyed under `["dashboard-layout"]`, splitting the
  * cache into two slots for the same endpoint and firing

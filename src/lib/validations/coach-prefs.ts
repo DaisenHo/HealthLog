@@ -1,5 +1,5 @@
 /**
- * v1.4.23 H4 — per-user Coach prompt-tuning preferences.
+ * v1.4.23 — per-user Coach prompt-tuning preferences.
  *
  * Persisted as a Json blob on `User.coachPrefsJson`. Null = legacy
  * defaults (tone="warm", verbosity="default", no metrics excluded,
@@ -8,7 +8,7 @@
  * `excludeMetrics` BEFORE landing in the system prompt so the model
  * never sees data the user opted out of.
  *
- * v1.4.25 W5 — extended with `defaultWindow`, since then made the
+ * v1.4.25 — extended with `defaultWindow`, since then made the
  * Coach's lookback limit: a per-conversation window can narrow it, never
  * widen it (`src/lib/ai/coach/history-reach.ts`).
  */
@@ -59,7 +59,7 @@ export const coachExcludeMetricEnum = z.enum([
   "sleep",
   "resting_hr",
   "steps",
-  // v1.4.36 W3 T2 — optional context blocks the user can opt out of.
+  // v1.4.36 — optional context blocks the user can opt out of.
   // `medications` covers the snapshot's compliance + GLP-1 weeklyContext;
   // `anthropometrics` covers height / age / gender on `context`. Each
   // gates a single labelled block at the snapshot/feature layer, so an
@@ -131,7 +131,7 @@ export const DEFAULT_COACH_CLUSTERS: ReadonlyArray<CoachDataCluster> = [
 ];
 
 /**
- * v1.18.1 (Workstream C) — Coach cadence-suggestion state. Persisted
+ * v1.18.1 — Coach cadence-suggestion state. Persisted
  * inside the same `coachPrefsJson` blob so the suggestion engine has a
  * single, atomic place for the non-naggy machinery:
  *
@@ -185,7 +185,7 @@ export const coachPrefsSchema = z.object({
   // — an empty array means "the user turned everything off", which is a
   // distinct, valid state from "never picked".
   dataClusters: z.array(coachDataClusterEnum).max(10).optional(),
-  // v1.18.1 (Workstream C) — cadence-suggestion state. Optional with NO
+  // v1.18.1 — cadence-suggestion state. Optional with NO
   // top-level default so a legacy blob (and `parse({})`) stays byte-
   // identical: an absent key reads as `undefined`, and call sites fall
   // back to `DEFAULT_REMINDER_SUGGESTION_PREFS`. When the key IS present,

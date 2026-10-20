@@ -201,7 +201,7 @@ export const MEASUREMENT_TYPES = [
   },
 ] as const;
 
-// v1.4.34 IW-G — single source of truth for the `/measurements?add=<TYPE>`
+// v1.4.34 — single source of truth for the `/measurements?add=<TYPE>`
 // deep link the Insights empty-state CTAs ship. Derived from the form's
 // MEASUREMENT_TYPES so a new row in the form is immediately usable as
 // a deep-link target.
@@ -270,7 +270,7 @@ interface MeasurementFormProps {
    */
   defaultDate?: string;
   /**
-   * v1.4.27 R4 RC2 — when the form is mounted inside a
+   * v1.4.27 — when the form is mounted inside a
    * `<ResponsiveSheet>` the caller passes the sheet's footer slot
    * element here. The form's action-row (kebab + Cancel + Save) is
    * portalled into that slot so the bottom-sheet branch can
@@ -339,7 +339,7 @@ export function MeasurementForm({
       ? "BLOOD_PRESSURE"
       : defaultType;
 
-  // v1.30.1 M3 — an explicit deep-link default always wins; absent one,
+  // v1.30.1 — an explicit deep-link default always wins; absent one,
   // seed from the last type the user actually saved rather than always
   // landing on BLOOD_PRESSURE. Lazy initializer so the localStorage read
   // happens once, at mount, not on every render.
@@ -369,14 +369,14 @@ export function MeasurementForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // v1.4.27 MB3 — wire `aria-describedby` on every required field so
+  // v1.4.27 — wire `aria-describedby` on every required field so
   // screen readers announce the form-level error banner the moment it
   // surfaces. The banner already carries `role="alert"`, so the
   // descriptor relationship is purely additive.
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
 
-  // v1.4.27 R4 RC2 — stable id so the portalled Save button can keep
+  // v1.4.27 — stable id so the portalled Save button can keep
   // its `<form>` association via the HTML `form` attribute.
   const formId = useId();
 
@@ -494,7 +494,7 @@ export function MeasurementForm({
         });
       }
 
-      // v1.30.1 M3 — remember this type as the next mount's smart
+      // v1.30.1 — remember this type as the next mount's smart
       // default (deep links still override it).
       setLastUsedMeasurementType(type);
 
@@ -760,7 +760,7 @@ export function MeasurementForm({
           id="measuredAt"
           value={measuredAt}
           onChange={setMeasuredAt}
-          // v1.17 W1b — mirror the server-side plausibility bound: the
+          // v1.17 — mirror the server-side plausibility bound: the
           // picker cannot select a future instant. Matches the
           // `validateEntryInstant` refine on `measuredAt`.
           max={getDefaultMeasuredAtValue()}

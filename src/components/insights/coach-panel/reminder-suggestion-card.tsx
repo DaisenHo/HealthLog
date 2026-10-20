@@ -12,7 +12,7 @@ import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import type { CoachSuggestion } from "@/lib/ai/coach/types";
 
 /**
- * v1.18.1 (Workstream C) — the one-tap cadence-suggestion action card.
+ * v1.18.1 — the one-tap cadence-suggestion action card.
  *
  * Rendered under an assistant bubble when the turn carried a `suggestion`
  * (live from the SSE frame, or persisted on the message provenance). Three

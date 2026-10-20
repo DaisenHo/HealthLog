@@ -184,7 +184,7 @@ export async function buildMedicationsList(
       entry._max.takenAt ? entry._max.takenAt.toISOString() : null,
     ]),
   );
-  // v1.7.0 SB-SCHED-3 — Date-typed last-intake map for the engine
+  // v1.7.0 — Date-typed last-intake map for the engine
   // (rolling cadences re-anchor on it). Same groupBy as the ISO map.
   const lastTakenAtDateByMedicationId = Object.fromEntries(
     latestIntakes.map((entry) => [entry.medicationId, entry._max.takenAt]),
@@ -216,7 +216,7 @@ export async function buildMedicationsList(
     getEvent()?.addWarning("Medication categories could not be loaded");
   }
 
-  // v1.7.0 SB-SCHED-3 — server-computed next due instant. Time-derived;
+  // v1.7.0 — server-computed next due instant. Time-derived;
   // the list GET is cached 60 s on userId, so a 60 s staleness window is
   // accepted here as it already is for `todayEventCount`.
   const now = new Date();

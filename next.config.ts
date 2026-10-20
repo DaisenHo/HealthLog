@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: PKG_VERSION,
     NEXT_PUBLIC_I18N_CATALOG_VERSION: catalogVersion(),
   },
-  // v1.4.33 IW2 — strip `console.*` calls from the production bundle
+  // v1.4.33 — strip `console.*` calls from the production bundle
   // (keep `console.error` + `console.warn` so the GlitchTip reporter
   // and prod-side debug rails still surface). The Lighthouse audit
   // flagged ~211 KiB of bundled JS as "unminified" — Turbopack already
@@ -60,7 +60,7 @@ const nextConfig: NextConfig = {
         ? { exclude: ["error", "warn"] }
         : false,
   },
-  // v1.4.33 IW2 — bfcache hygiene. `Permissions-Policy: unload=()`
+  // v1.4.33 — bfcache hygiene. `Permissions-Policy: unload=()`
   // tells the browser the page does not need the `unload` event,
   // which Chromium uses as a hint to admit the page to the
   // back/forward cache on navigation away. Pair with the absence of
@@ -69,7 +69,7 @@ const nextConfig: NextConfig = {
   // headers already live on the response via the standalone runtime;
   // we add only the bfcache hint here.
   //
-  // v1.4.34 IW-A — second rule layers the bfcache-friendly
+  // v1.4.34 — second rule layers the bfcache-friendly
   // `Cache-Control` directive onto every authenticated HTML page
   // response (the source negative-lookahead excludes `/api/*` and
   // `/_next/*` so static assets keep their immutable caching and API
@@ -151,10 +151,10 @@ const nextConfig: NextConfig = {
         destination: "/coach",
         permanent: true,
       },
-      // v1.18.1 (D4) — Sources is a standalone `/settings/sources` route again
+      // v1.18.1 — Sources is a standalone `/settings/sources` route again
       // (split back out of the Integrations sub-tabs), so the v1.18.0 redirect
       // to `/settings/integrations` was dropped.
-      // v1.18.0 (S4) — the standalone "Erinnerungen" hub at
+      // v1.18.0 — the standalone "Erinnerungen" hub at
       // `/settings/reminders` was a link-only page that duplicated the
       // canonical editors. Reminder TYPES now live in Notifications, each
       // gated on its module. 301-redirect so bookmarks, the PWA's cached
@@ -275,7 +275,7 @@ const nextConfig: NextConfig = {
     "pdfjs-dist",
     "@napi-rs/canvas",
   ],
-  // v1.4.25 Fix-G — `src/lib/ai/prompts/safety-contracts.ts` reads its
+  // v1.4.25 — `src/lib/ai/prompts/safety-contracts.ts` reads its
   // sibling YAML files at runtime via `__dirname + readFileSync`. The
   // standalone bundler ships the JS but not the YAML, so the build
   // crashed during page-data collection with ENOENT once the Turbopack
@@ -309,7 +309,7 @@ const nextConfig: NextConfig = {
       "./node_modules/.pnpm/@napi-rs+canvas-linux-arm64-musl@*/node_modules/@napi-rs/canvas-linux-arm64-musl/**",
     ],
   },
-  // v1.4.34 IW-A — silence the Turbopack NFT trace warnings emitted
+  // v1.4.34 — silence the Turbopack NFT trace warnings emitted
   // during `next build`. The tracer follows the `MAXMIND_LICENSE_KEY`
   // env access in `src/lib/geo.ts` back into the config file, then
   // emits "cannot be traced" warnings for paths it tried to walk
@@ -336,7 +336,7 @@ const nextConfig: NextConfig = {
 };
 
 /**
- * v1.4.28 R3d — opt-in bundle analyzer behind `ANALYZE=1`.
+ * v1.4.28 — opt-in bundle analyzer behind `ANALYZE=1`.
  *
  * `pnpm analyze` (defined in `package.json`) sets the env var and
  * runs `next build`; the analyzer writes static HTML reports to

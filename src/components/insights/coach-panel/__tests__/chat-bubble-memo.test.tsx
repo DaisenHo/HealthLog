@@ -1,5 +1,5 @@
 /**
- * v1.28.46 perf (M3) — ChatBubble is wrapped in React.memo so a streamed
+ * v1.28.46 — ChatBubble is wrapped in React.memo so a streamed
  * token (which grows the live turn's content and re-runs the thread's
  * messages.map) does not re-render every settled bubble. These tests pin the
  * memo comparator contract:

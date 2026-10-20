@@ -38,6 +38,7 @@ import {
   recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
+  listEnvelope,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
@@ -954,7 +955,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Cycle history.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 cycleHistoryResponse,
                 "CycleHistoryEnvelope",
               ),

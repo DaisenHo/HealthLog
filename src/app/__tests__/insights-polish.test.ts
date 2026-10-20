@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.19 A3 — guards for the polish pass on `/insights` and the
+ * v1.4.19 — guards for the polish pass on `/insights` and the
  * dashboard:
  *
  *   1. The dashboard page does NOT mount `<CompareToggle />`. The
@@ -59,7 +59,7 @@ describe("v1.4.19 A3 — dashboard polish", () => {
 });
 
 describe("v1.4.27 R3d MB4 — the layout mounts the Coach drawer", () => {
-  // v1.4.34 IW-B — `<CoachLaunchProvider>` + `<LayoutCoachMount>` moved
+  // v1.4.34 — `<CoachLaunchProvider>` + `<LayoutCoachMount>` moved
   // up to the global `<AuthShell>` so the dashboard hero (and every
   // other authed surface) can call `askCoach()` from the same context.
   // The insights layout keeps the FAB but no longer wraps the provider
@@ -113,7 +113,7 @@ describe("v1.4.19 A3 — /insights polish", () => {
   });
 
   it("tab strip owns the always-visible page-level refresh affordance (v1.4.25 W4)", () => {
-    // v1.4.25 W4 — the regenerate handler moved out of the mother page
+    // v1.4.25 — the regenerate handler moved out of the mother page
     // body entirely and now lives on the layout-mounted
     // `<InsightsLayoutShell>` (which renders `<InsightsTabStrip>` with
     // the advisor query's regenerate wired in). The mother-page hero

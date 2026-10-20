@@ -115,7 +115,7 @@ export const listIntakeEventsSchema = z.object({
     .default("scheduledFor"),
   sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
   /**
-   * v1.4.37 W3 — server-side status filter so the medication detail
+   * v1.4.37 — server-side status filter so the medication detail
    * page (IntakeHistoryListV2) can hide unconfirmed / planned rows.
    *
    *  - "all" (default): every event, preserves the byte-stable contract

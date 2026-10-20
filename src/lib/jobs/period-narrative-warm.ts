@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W3 — nightly period-narrative warm cron + single-user dispatch.
+ * v1.11.0 — nightly period-narrative warm cron + single-user dispatch.
  *
  * The nightly tick warms the latest week/month narrative for data-bearing,
  * coach-enabled users so the Insights overview renders the summary instantly

@@ -9,6 +9,9 @@ import type { PriorityItem } from "@/lib/daily/priority-item";
 import type { TodayFact } from "@/lib/daily/today-overview";
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
 import { DIGEST_AI_AVAILABLE } from "@/__tests__/helpers/ai-capability-fixtures";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // The hero now wires the coach check-in card's keep / let-go taps through
 // `useCoachCheckinAction`, so it needs a QueryClient in the tree.

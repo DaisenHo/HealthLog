@@ -1,5 +1,5 @@
 /**
- * v1.22 (W9, C1) — in-repo changepoint engine over DAY-bucket means.
+ * v1.22 — in-repo changepoint engine over DAY-bucket means.
  *
  * Replaces the vague "lately" with a dated, sustained LEVEL SHIFT:
  * "your resting heart rate stepped up around <date> and has held higher since".

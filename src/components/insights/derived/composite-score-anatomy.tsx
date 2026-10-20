@@ -59,7 +59,7 @@ export interface CompositeScoreAnatomyProps {
 }
 
 /**
- * v1.15.12 F1 — each anatomy metric maps to the same ring hue its dashboard
+ * v1.15.12 — each anatomy metric maps to the same ring hue its dashboard
  * tile wears, so the detail card carries the matching tint + the ring arc
  * leans the same colour (continuity from the tile tap). Mirrors the per-metric
  * `hue` the wellness strip passes its `RingTile`s.
@@ -186,6 +186,7 @@ export function CompositeScoreAnatomy({
     return (
       <div className={className}>
         <QueryErrorRow
+          error={query.error}
           slot="composite-anatomy-error"
           onRetry={() => void query.refetch()}
         />
@@ -242,6 +243,7 @@ export function CompositeScoreAnatomy({
             s.gap === "few_nights"
               ? t("insights.derived.composite.SLEEP_SCORE.gap.fewNights", {
                   count: v.rhythmNights ?? 0,
+                  needed: v.rhythmMinNights,
                 })
               : s.gap === "no_main_sleep"
                 ? t("insights.derived.composite.SLEEP_SCORE.gap.noMainSleep")
@@ -291,7 +293,7 @@ export function CompositeScoreAnatomy({
     }
   }
 
-  // v1.15.12 B3 — the per-score AI assessment ("why is this score what it is")
+  // v1.15.12 — the per-score AI assessment ("why is this score what it is")
   // already rides the single `/api/insights/derived` route as `data.assessment`
   // (shipped to iOS in v1.13.2); the web simply discarded it. Render it BELOW
   // the anatomy card, reusing the same `<InsightStatusCard>` the metric

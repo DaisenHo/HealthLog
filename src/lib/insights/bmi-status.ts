@@ -84,7 +84,7 @@ export async function generateBmiStatusForUser(
 }
 
 /**
- * v1.18.7 (HIGH-1) — everything up to (not including) the provider call.
+ * v1.18.7 — everything up to (not including) the provider call.
  * Returns a finished `served` result for every path that never needed the
  * LLM, or a `pending` descriptor the single-card path and the batch path
  * both drive. See `status-card-generation.ts` for the contract.
@@ -102,7 +102,7 @@ export async function prepareBmiStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("bmi", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -184,7 +184,7 @@ export async function prepareBmiStatusForUser(
     };
   }
 
-  // v1.18.11 (P6) — input gate for this slow-moving metric. The snapshot
+  // v1.18.11 — input gate for this slow-moving metric. The snapshot
   // derives from WEIGHT rows and the profile heightCm; a cheap probe over
   // both fingerprints the inputs, so a non-forced unchanged week re-stamps
   // the cached assessment and skips the whole build (findMany + BMI series +
@@ -216,7 +216,7 @@ export async function prepareBmiStatusForUser(
     }
   }
 
-  // v1.4.28 FB-D2 — cap the snapshot input (weight runs at most once
+  // v1.4.28 — cap the snapshot input (weight runs at most once
   // per day for typical users; 365 covers a full year while the
   // downstream payload budget trims further).
   const measurements = await prisma.measurement
@@ -237,7 +237,7 @@ export async function prepareBmiStatusForUser(
     .then((rows) => rows.reverse());
 
   const now = new Date();
-  // v1.2.5 (M-TZ3) — bucket day windows on the user's own calendar so a
+  // v1.2.5 — bucket day windows on the user's own calendar so a
   // near-midnight reading lands on the user's day for non-Berlin self-hosters.
   // `userTz` was already resolved above for the cache day-key.
   const heightFactor = (user.heightCm / 100) ** 2;
@@ -289,7 +289,7 @@ export async function prepareBmiStatusForUser(
       )
     : null;
 
-  // v1.18.10 (HIGH-4) — hand the model the finished recent-vs-baseline
+  // v1.18.10 — hand the model the finished recent-vs-baseline
   // comparison + normal-swing verdict instead of asking it to derive them.
   // BMI reads against the WHO healthy band; "target-band" framing.
   const bmiSignal = buildMetricSignal({
@@ -464,7 +464,7 @@ export async function prepareBmiStatusForUser(
         todayKey,
         text: summary,
         snapshotHash,
-        // v1.18.11 (P6) — persist the input fingerprint for tomorrow's gate.
+        // v1.18.11 — persist the input fingerprint for tomorrow's gate.
         inputHash,
       });
       return {

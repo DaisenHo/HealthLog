@@ -3,16 +3,9 @@
 import { useState, type ComponentType } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import {
-  Activity,
-  Flame,
-  Gauge,
-  HeartPulse,
-  Moon,
-  RefreshCw,
-} from "lucide-react";
+import { Activity, Flame, Gauge, HeartPulse, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -65,6 +58,8 @@ interface ScoreStripProps {
    * Vitals slot).
    */
   isError?: boolean;
+  /** The batch query's error, which decides what the error row offers. */
+  error?: unknown;
   /** Refetch the one shared batch query. Recovers both strips at once. */
   refetch?: () => void;
   /**
@@ -273,6 +268,7 @@ export function WellnessScores({
   read,
   isLoading,
   isError = false,
+  error = null,
   refetch,
   extraTile,
   hideStrain = false,
@@ -351,24 +347,13 @@ export function WellnessScores({
           title={t("insights.derived.scores.sectionTitle")}
           subtitle={t("insights.derived.scores.sectionSubtitle")}
         />
-        <div
-          data-slot="wellness-scores-error"
-          role="alert"
-          className="bg-card border-border text-muted-foreground flex flex-col items-start gap-3 rounded-xl border p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
-        >
-          <span>{t("insights.derived.scores.loadError")}</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => refetch?.()}
-            data-slot="wellness-scores-retry"
-            className="gap-1.5"
-          >
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{t("common.retry")}</span>
-          </Button>
-        </div>
+        <QueryErrorRow
+          error={error}
+          slot="wellness-scores-error"
+          retrySlot="wellness-scores-retry"
+          message={t("insights.derived.scores.loadError")}
+          onRetry={() => refetch?.()}
+        />
       </section>
     );
   }

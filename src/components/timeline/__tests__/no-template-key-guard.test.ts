@@ -24,8 +24,12 @@ import {
 
 const ROOTS = ["src/components/timeline", "src/components/day"] as const;
 
-/** `t(` or `tCount(` whose key is a template literal, across line breaks. */
-const TEMPLATE_KEY = /(?<![\w.])(?:t|tCount)\(\s*`/g;
+/**
+ * `t(`, `tCount(` or the catalogue probe `translateOrNull(t, ` whose key is
+ * a template literal, across line breaks.
+ */
+const TEMPLATE_KEY =
+  /(?<![\w.])(?:t|tCount)\(\s*`|(?<![\w.])translateOrNull\(\s*t\s*,\s*`/g;
 
 const ALLOWED: Readonly<Record<string, { count: number; why: string }>> = {
   "src/components/timeline/readiness-inventory.tsx": {

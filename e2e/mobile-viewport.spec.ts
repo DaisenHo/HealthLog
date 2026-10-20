@@ -41,7 +41,7 @@ test.describe("mobile-viewport smoke", () => {
     // mocks below stay for the reversible `=false` path.
     await mockDashboardSnapshot(page, { summaries: WEIGHT_ONLY_SUMMARIES });
 
-    // v1.4.37 W-CI — match `/api/analytics` AND any sliced variant
+    // v1.4.37 — match `/api/analytics` AND any sliced variant
     // (`?slice=summaries`). The previous string glob `**/api/analytics`
     // didn't match the query-string form so the IW1 slim-slice fetch
     // landed on the unmocked real route in CI.
@@ -149,7 +149,7 @@ test.describe("mobile-viewport smoke", () => {
       // scroll to interact, which is its own UX problem the design
       // review handles.
       if (box.y < 0 || box.y > viewportH) continue;
-      // v1.4.37 W-CI — enforce the WCAG 2.5.5 height floor only.
+      // v1.4.37 — enforce the WCAG 2.5.5 height floor only.
       // The original `width < 44 || height < 44` check flagged
       // grouped compact controls (chart-range tabs like "7T"/"30T"
       // /"90T" sitting at 44 px tall but ~30-40 px wide) as

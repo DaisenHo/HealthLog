@@ -10,7 +10,7 @@ import {
 } from "../../coach-metric-scope";
 
 /**
- * v1.21.0 (C4 H1/H4) — the Coach launch scope is now live. These tests pin
+ * v1.21.0 — the Coach launch scope is now live. These tests pin
  * the conversion from the UI launch scope to the chat route's wire
  * `CoachScope`, plus the two metric→source resolvers that feed it.
  */
@@ -47,7 +47,7 @@ describe("metricScopeFromExplainer", () => {
   it("resolves a mapped explainer token to a scope + opener", () => {
     const resolved = metricScopeFromExplainer("bloodPressure");
     expect(resolved?.metric).toBe("bp");
-    // v1.22 (W6) — `question` is now an i18n key (resolved by the consumer).
+    // v1.22 — `question` is now an i18n key (resolved by the consumer).
     expect(resolved?.question).toBe("insights.coach.seed.bloodPressure");
   });
 

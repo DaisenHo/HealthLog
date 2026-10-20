@@ -9,7 +9,7 @@ import {
 } from "../coach-prefs";
 
 /**
- * v1.4.23 H4 — per-user Coach prompt-tuning preferences.
+ * v1.4.23 — per-user Coach prompt-tuning preferences.
  */
 describe("coachPrefsSchema", () => {
   it("accepts an empty object and fills in defaults", () => {
@@ -29,7 +29,7 @@ describe("coachPrefsSchema", () => {
     expect(out).toEqual(input);
   });
 
-  // v1.4.25 W5 — defaultWindow added. Missing key → fallback to
+  // v1.4.25 — defaultWindow added. Missing key → fallback to
   // "allTime" so the legacy persisted shape stays representative.
   it("fills in defaultWindow=allTime when the key is missing", () => {
     const out = coachPrefsSchema.parse({});
@@ -59,7 +59,7 @@ describe("coachPrefsSchema", () => {
   });
 
   it("caps excludeMetrics at 11 entries", () => {
-    // v1.4.36 W3 T2 — cap raised from 9 to 11 to admit the two new
+    // v1.4.36 — cap raised from 9 to 11 to admit the two new
     // optional-context toggles (medications, anthropometrics).
     const result = coachPrefsSchema.safeParse({
       excludeMetrics: [
@@ -190,7 +190,7 @@ describe("parseCoachPrefs", () => {
     ]);
   });
 
-  // v1.18.1 (Workstream C) — reminder-suggestion sub-shape.
+  // v1.18.1 — reminder-suggestion sub-shape.
   it("a legacy blob (no reminderSuggestions) parses with the key absent", () => {
     const out = parseCoachPrefs({ tone: "warm" });
     expect(out.reminderSuggestions).toBeUndefined();

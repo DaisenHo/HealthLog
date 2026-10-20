@@ -22,7 +22,7 @@ import { apiGet, apiPost } from "@/lib/api/api-fetch";
  * by `/api/insights/coach/nudge-status`) paints a small unread dot on
  * its corner instead of toggling the whole button.
  *
- * v1.18.6 (CCH-02/CCH-03) — the proactive nudge now lands as a real
+ * v1.18.6 — the proactive nudge now lands as a real
  * ASSISTANT message in the conversation rail, not a notification-only
  * dispatch, so the unread signal moved onto the server-authoritative
  * `User.coachLastSeenAt` stamp: `status.unread` is true while a Coach
@@ -49,7 +49,7 @@ export interface CoachNudgeStatus {
   nudgedAt: string | null;
   unread: boolean;
   /**
-   * v1.22 (W5) — the conversation holding the newest assistant message, so
+   * v1.22 — the conversation holding the newest assistant message, so
    * the FAB can deep-link into the proactive thread on the unread path
    * instead of opening a blank new chat. Null when no Coach reply exists.
    */
@@ -106,7 +106,7 @@ export function LayoutCoachFab() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // v1.18.6 (CCH-03) — stamp `coachLastSeenAt` server-side when the user
+  // v1.18.6 — stamp `coachLastSeenAt` server-side when the user
   // opens the Coach so the dot clears across every device. Fire-and-
   // forget from the UI's perspective (the local seen-stamp already
   // suppressed the dot); on success the status query refetches so the
@@ -197,11 +197,11 @@ export function LayoutCoachFab() {
         // Best effort — see above.
       }
     }
-    // v1.18.6 (CCH-03) — stamp the server so the dot clears on every
+    // v1.18.6 — stamp the server so the dot clears on every
     // device, not just this one. The local stamp above already hid the
     // dot for an instant paint; the mutation makes it durable.
     if (unread) markSeen.mutate();
-    // v1.22 (W5) — when the Coach has written an UNREAD proactive message,
+    // v1.22 — when the Coach has written an UNREAD proactive message,
     // deep-link straight into that conversation (`/coach?c=<id>`) so the
     // user lands on what the Coach said, rather than opening a blank new
     // chat in the drawer. The full page honours `?c=` →
@@ -235,7 +235,7 @@ export function LayoutCoachFab() {
           // safe-area inset on mobile; plain bottom offset once the
           // bottom-nav hides (`md:hidden` on the nav, so `md:` here —
           // not `lg:` — keeps the FAB from floating mid-air 768-1023px).
-          // v1.18.1 (W-COACH-UI C5) — corner inset: on desktop the right and
+          // v1.18.1 — corner inset: on desktop the right and
           // bottom insets match (`md:right-8` / `md:bottom-8`) so the FAB
           // sits symmetrically in the corner. On mobile the right inset is
           // `right-6` but the bottom is deliberately larger — it clears the
@@ -282,7 +282,7 @@ export function LayoutCoachFab() {
       >
         <Sparkles className="text-background size-6" aria-hidden="true" />
         {showDot ? (
-          // v1.18.6 (CCH-03) — discreet "the Coach said something" dot.
+          // v1.18.6 — discreet "the Coach said something" dot.
           // Deliberately NOT an alarming red (the medication-card rule:
           // status via calm signal, never an alarm tint): a small cyan
           // dot ringed against the FAB background reads as informative,

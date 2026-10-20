@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W3 — GET /api/medications/[id]/intake `status` filter tests.
+ * v1.4.37 — GET /api/medications/[id]/intake `status` filter tests.
  *
  * Pins the contract added to fix the v1.4.36 regression where
  * `IntakeHistoryListV2` rendered rows with `takenAt:null AND
@@ -49,7 +49,7 @@ vi.mock("@/lib/db", () => ({
       findFirst: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
-      // v1.8.2 reconcile — the shared slot upsert updates in place.
+      // v1.8.2 — the shared slot upsert updates in place.
       update: vi.fn(),
     },
     auditLog: { create: vi.fn() },
@@ -148,7 +148,7 @@ beforeEach(() => {
     [] as never,
   );
   vi.mocked(prisma.medicationIntakeEvent.count).mockResolvedValue(0);
-  // v1.4.43 W6 — default the audit-row write to resolve.
+  // v1.4.43 — default the audit-row write to resolve.
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
@@ -420,7 +420,7 @@ describe("POST /api/medications/[id]/intake — one-shot lifecycle", () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
-// v1.8.2 reconcile — slot-snap upsert invariants through the route
+// v1.8.2 — slot-snap upsert invariants through the route
 // ────────────────────────────────────────────────────────────────────
 
 describe("POST /api/medications/[id]/intake — v1.8.2 reconcile (M2 inventory)", () => {

@@ -41,7 +41,7 @@ import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marke
 import { InsightSectionCard } from "./insight-section-card";
 
 /**
- * v1.4.27 MB7 / CF-68 — per-metric routing target for the briefing
+ * v1.4.27 — per-metric routing target for the briefing
  * key findings. Maps the schema's `sourceMetric` discriminator to the
  * sub-page slug that owns the deeper view. Metrics that don't have a
  * dedicated routed sub-page yet (hrv, resting_hr, steps, …) fall
@@ -81,7 +81,7 @@ export const METRIC_HREF: Record<
 };
 
 /**
- * v1.4.20 phase B1 — full-width Daily Briefing card.
+ * v1.4.20 — full-width Daily Briefing card.
  *
  * Renders the narrative paragraph + 0-5 key-finding rows synthesised
  * by the AI insight pipeline. Lives directly below the hero strip on
@@ -284,7 +284,7 @@ function BriefingRow({
   );
 }
 
-// v1.4.27 MB7 / CF-68 — the whole row is tappable on mobile (wrapped in a
+// v1.4.27 — the whole row is tappable on mobile (wrapped in a
 // `<Link>` by `BriefingRow`) so the user need not hit the small headline text.
 function KeyFindingRow({ finding }: { finding: DailyBriefingKeyFinding }) {
   return (
@@ -419,7 +419,7 @@ export function DailyBriefing({
                   memory read as a second briefing paragraph above the
                   structured list and pulled the card down; the server
                   still resolves `briefingMemory` for other consumers. */}
-            {/* v1.4.27 B1 — the leading narrative paragraph dropped.
+            {/* v1.4.27 — the leading narrative paragraph dropped.
                 The hero strip subtitle on `/insights` already renders
                 the same `briefing.paragraph` text directly above this
                 card, so the user used to read the same string twice
@@ -537,7 +537,7 @@ export function DailyBriefing({
             }
             action={
               onRegenerate ? (
-                // v1.4.28 BK-M2 — switch the empty-state CTA from
+                // v1.4.28 — switch the empty-state CTA from
                 // `variant="outline"` to the default (filled) variant
                 // so the briefing card matches the dashboard
                 // empty-state CTA shape. Empty-state actions on a card

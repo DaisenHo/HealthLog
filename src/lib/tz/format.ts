@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W7 — pure timezone helpers (no Prisma, no Node-only modules).
+ * v1.4.25 — pure timezone helpers (no Prisma, no Node-only modules).
  *
  * Split out from `./resolver` in v1.4.25 Fix-G so client components can
  * import constants and formatters without dragging `node:module` (via
@@ -144,7 +144,7 @@ export function detectBrowserTimezone(): string {
 }
 
 /**
- * v1.4.38 W-A — cross-tz fast-path runtime guard.
+ * v1.4.38 — cross-tz fast-path runtime guard.
  *
  * Returns `true` when the supplied IANA zone is within ±3 hours of UTC
  * at the supplied instant. Used by the analytics fast-paths

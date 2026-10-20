@@ -1,5 +1,5 @@
 /**
- * v1.10.0 QA — shared score-row helpers.
+ * v1.10.0 — shared score-row helpers.
  *
  * Pins the "score the PREVIOUS UTC day" contract (the cron fires ~03 UTC, so
  * scoring the current UTC day would miss a just-completed day's data), the

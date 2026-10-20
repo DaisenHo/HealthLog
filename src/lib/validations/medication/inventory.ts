@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
- * v1.4.25 W19b — inventory (pen / vial) CRUD validators.
+ * v1.4.25 — inventory (pen / vial) CRUD validators.
  *
  * The Prisma model carries a 4-state enum
  * (ACTIVE | IN_USE | EXPIRED | USED_UP); the API surface only lets
@@ -152,7 +152,7 @@ export type UpdateInventoryItemInput = z.infer<
 >;
 
 /**
- * v1.4.25 W21 Fix-K — `POST /api/medications/[id]/glp1` body validators.
+ * v1.4.25 — `POST /api/medications/[id]/glp1` body validators.
  *
  * The convenience route accepts either a `doseChange` or an `inventory`
  * payload (the route picks one). Both branches were hand-rolled

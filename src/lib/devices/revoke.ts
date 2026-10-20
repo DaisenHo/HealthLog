@@ -1,5 +1,5 @@
 /**
- * v1.4.23 W6 (HIGH 6 / S-01) — shared device-revoke cascade.
+ * v1.4.23 (HIGH 6 / S-01) — shared device-revoke cascade.
  *
  * Both `DELETE /api/auth/me/devices/[id]` and `DELETE /api/devices/[id]`
  * historically performed the same four-write cascade (refresh-token

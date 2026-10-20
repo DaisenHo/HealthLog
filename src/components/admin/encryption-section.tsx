@@ -52,6 +52,7 @@ import {
 } from "@/components/settings/security-section/use-recent-proof";
 import { KeyBackupCard } from "./key-backup-card";
 import { useKeyBackupStatus } from "./use-key-backup-status";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 interface ColumnScan {
   model: string;
@@ -182,9 +183,15 @@ export function EncryptionSection() {
             {t("admin.section.encryption.coverageDetail")}
           </p>
 
-          <p role="alert" className="text-destructive text-sm">
-            {t("admin.section.encryption.loadError")}
-          </p>
+          {statusQuery.isError ? (
+            <QueryErrorRow
+              inset
+              error={statusQuery.error}
+              slot="encryption-status-error"
+              message={t("admin.section.encryption.loadError")}
+              onRetry={() => void statusQuery.refetch()}
+            />
+          ) : null}
         </SettingsCard>
       </div>
     );

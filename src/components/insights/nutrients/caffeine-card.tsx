@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Coffee } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { TileHeader } from "@/components/insights/tile-header";
 import { NutrientDailyBarChartDynamic } from "@/components/charts/nutrient-daily-bar-chart-dynamic";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -41,14 +41,24 @@ export function CaffeineCard() {
     staleTime: 60_000,
   });
 
+  // The card keeps its frame and title on a failed read, like the hydration
+  // card beside it.
   if (isError && !data) {
     return (
-      <ReadFailureRow
-        error={error}
-        slot="nutrients-caffeine-error"
-        message={t("nutrients.caffeine.loadError")}
-        onRetry={() => void refetch()}
-      />
+      <Card data-slot="nutrients-caffeine-card">
+        <CardHeader>
+          <TileHeader icon={Coffee} title={t("nutrients.names.caffeine")} />
+        </CardHeader>
+        <CardContent>
+          <QueryErrorRow
+            inset
+            error={error}
+            slot="nutrients-caffeine-error"
+            message={t("nutrients.caffeine.loadError")}
+            onRetry={() => void refetch()}
+          />
+        </CardContent>
+      </Card>
     );
   }
 

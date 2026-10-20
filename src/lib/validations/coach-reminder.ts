@@ -1,5 +1,5 @@
 /**
- * v1.22 (B2/B6/F6) — request schemas for the Coach episodic-reminder surface
+ * v1.22 — request schemas for the Coach episodic-reminder surface
  * (`/api/coach/reminders` + `/[id]`) and the generalised confirm-card endpoint
  * (`/api/coach/suggested-actions`).
  *

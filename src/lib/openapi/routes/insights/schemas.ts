@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { recoveryEmptySchema } from "../recovery-empty";
 import { trendSentiment, trendVerdict } from "../trend-verdict";
 import { z } from "zod/v4";
 import { measurementSourceEnum, measurementTypeEnum } from "../shared";
@@ -324,7 +325,7 @@ export const sleepScoreValue = z
             .enum(["few_nights", "no_main_sleep"])
             .optional()
             .describe(
-              "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than three nights in the window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had only a daytime nap. Absent otherwise.",
+              "Only on a null `consistency` / `timing`: why it is withheld. `few_nights` — fewer than `rhythmMinNights` nights in the window have a main sleep on the clock (count in `rhythmNights`); `no_main_sleep` — the latest day had only a daytime nap. Absent otherwise.",
             ),
         }),
       )
@@ -335,6 +336,12 @@ export const sleepScoreValue = z
       .int()
       .describe(
         "Nights in the window with a main sleep placed on the clock — what consistency and timing are computed from. A daytime nap is not one; a short night is.",
+      ),
+    rhythmMinNights: z
+      .number()
+      .int()
+      .describe(
+        'How many `rhythmNights` consistency and timing need before they are scored; below it they carry `gap: "few_nights"`.',
       ),
     series: z
       .array(z.number())
@@ -1487,7 +1494,7 @@ export const dashboardSnapshotResponse = z
           })
           .nullable()
           .optional(),
-        // v1.21.2 (A5) — the Tension Verdict, locale-agnostic. Fires only
+        // v1.21.2 — the Tension Verdict, locale-agnostic. Fires only
         // when the readiness composite's contributors disagree (>=1
         // strongly favourable AND >=1 strongly unfavourable); suppressed
         // (null) under a clinical red-flag so that path dominates.
@@ -1506,7 +1513,7 @@ export const dashboardSnapshotResponse = z
           .describe(
             "Locale-agnostic tension verdict: present only when the readiness composite's contributors disagree. `positive`/`negative` carry readiness contributor keys the client maps to localised labels. Null on a coherent day or when a clinical red-flag suppresses it. Optional so older cached snapshots without the field stay valid.",
           ),
-        // v1.21.2 (A6) — return-to-baseline, locale-agnostic. Present only
+        // v1.21.2 — return-to-baseline, locale-agnostic. Present only
         // when a salient metric has come back inside the user's own
         // personal range after a prior out-of-band run; at most one.
         returnToBand: z
@@ -1554,7 +1561,7 @@ export const dashboardSnapshotResponse = z
         "User-selected hero score rings (max 3, `selectedScoreRings` on the dashboard layout), resolved server-side: READINESS / RECOVERY_SCORE / SLEEP_SCORE via the derived engines (module-gated like `/api/insights/derived`); MED_COMPLIANCE is TODAY's dose progress off the snapshot's medsToday tally — `score` is the rounded 0..100 progress, `doses` carries the taken/scheduled pair, the band is progress semantics (green once every scheduled dose is taken, yellow while doses remain, never red), and the ring is absent when no dose is scheduled today. Only rings with data appear, in selection order — a missing entry means no data or a disabled module, never zero. Clients render what arrives and never recompute.",
       ),
     briefing: z.record(z.string(), z.unknown()).nullable(),
-    // v1.21.2 (A4) — server-resolved recall + forward-look for the
+    // v1.21.2 — server-resolved recall + forward-look for the
     // briefing card, rides the snapshot DTO so iOS reads the same
     // already-localised block the web card renders verbatim.
     briefingMemory: z
@@ -2032,6 +2039,7 @@ export const analyticsSummariesSliceResponse = z
       ),
     lastSeenByType: z.record(z.string(), lastSeenSlot),
     sleepSourceDiscrepancy,
+    recoveryEmpty: recoveryEmptySchema,
   })
   .meta({
     id: "AnalyticsSummariesSlice",

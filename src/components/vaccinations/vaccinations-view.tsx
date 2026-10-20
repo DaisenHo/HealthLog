@@ -48,7 +48,7 @@ export function VaccinationsView() {
   // measurements section rather than this one. A grant that opened only the
   // health background is refused there, so the offer is not made.
   const canPlanBooster = canWriteDomain("measurements");
-  const { data, isLoading, isError, refetch } = useVaccinations();
+  const { data, isLoading, isError, error, refetch } = useVaccinations();
   const records = data?.vaccinations ?? [];
   // v1.42 (#1005) — the record's own definitions, listed below the log once
   // there is one. A failed read leaves the section out rather than claiming
@@ -139,6 +139,7 @@ export function VaccinationsView() {
         // A read failure is not an empty Impfpass — surface the error + Retry so
         // an outage never reads as "nothing logged yet".
         <QueryErrorCard
+          error={error}
           title={t("vaccinations.listLoadError")}
           onRetry={() => void refetch()}
         />

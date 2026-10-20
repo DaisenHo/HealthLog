@@ -218,7 +218,7 @@ export function LogIntakeDialog({
         t,
         queryClient,
         recordName,
-        // v1.30.1 M7 — a backdated/manual intake now gets the same
+        // v1.30.1 — a backdated/manual intake now gets the same
         // Undo affordance the card's take/skip path already has.
         undoIntake: (eventId) =>
           runUndoIntake({

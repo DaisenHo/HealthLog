@@ -57,6 +57,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "assessments_warmed",
   "auto_resolved",
   "backed",
+  // The nightly measurements check: heap size over what the live rows need.
+  "bloat_factor",
   "buckets_collapsed",
   "buckets_recomputed",
   "budget_blocked",
@@ -78,6 +80,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "days_skipped",
   "days_skipped_no_tombstones",
   "days_stored",
+  "dead_rows",
   // Tombstone purge: accounts left for the next run because a restore of
   // the account was running.
   "deferred_accounts",
@@ -140,6 +143,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "inventory_expired_count",
   "inventory_items_migrated",
   "jobs",
+  // Heavy jobs that found the lane taken and went back to their queue.
+  "lane_deferred",
   "legacy_rows_soft_deleted",
   "linked",
   "malformed",
@@ -168,7 +173,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "module_off",
   "mood_entries_migrated",
   "mood_pruned",
-  // v1.37.19 (A3-6) — ignored Coach reminders auto-dismissed at the nag cap.
+  // v1.37.19 — ignored Coach reminders auto-dismissed at the nag cap.
   "nag_dismissed",
   "notifications_dispatched",
   "notifications_failed",
@@ -264,7 +269,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "stored",
   "subscription_repair_failed",
   "summaries_enqueued",
-  // v1.37.19 (A7-4) — stale-PENDING summary rows the hourly reaper healed.
+  // v1.37.19 — stale-PENDING summary rows the hourly reaper healed.
   "summary_pending_healed",
   "suppressed_client_managed",
   "suppressed_discreet",

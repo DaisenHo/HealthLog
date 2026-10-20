@@ -1,38 +1,33 @@
 /**
- * v1.4.25 W19e — pure compliance chip aggregator.
+ * v1.4.25 — pure compliance chip aggregator.
  *
  * Reuses `buildCadenceTimeline` to count taken vs missed slots over a
  * rolling window. The W19e detail page surfaces four chips: adherence
  * rate, current streak (days), longest streak (days), missed in last
  * 30 days. Each chip is monochrome — maintainer note: no gamified badges.
  *
- * Distinct from `src/lib/analytics/compliance.ts.calculateCompliance`:
- * that helper computes against expected counts (schedules-per-day ×
- * days) and is used by the existing /api/medications/[id]/compliance
- * route. This module computes against the pair-matched timeline so
- * the chips and the cadence chart agree on every single dose.
+ * Adherence and missed doses come from the compliance ledger the
+ * /api/medications/[id]/compliance route reads, so the chips and the
+ * detail page's rate agree; the streaks walk the pair-matched timeline
+ * the cadence chart draws.
  *
- * v1.4.25 W21 Fix-O — accepts an optional IANA `timeZone` argument
- * forwarded into the timeline + streak math so a user in Tokyo gets
- * the same chip values as a user in Berlin even when the host's
- * system time is set differently. Omitting the argument keeps the
- * legacy system-local behaviour the W19e tests pin.
+ * The timeline and streak math run in the context's IANA zone, so a user
+ * in Tokyo gets the same chip values as a user in Berlin whatever the
+ * host's system time is.
  */
 
-import type { SlotBand } from "./attribution";
-import { type BandMinterMedication } from "./band-minter";
-import { buildBandsForSchedulesWithEras } from "./schedule-eras";
 import {
   buildCadenceTimeline,
   startOfLocalDay,
-  type CadenceEngineContext,
   type IntakeEventLike,
   type PairedDose,
   type ScheduleLike,
 } from "./cadence";
-import { reconstructDoseHistory, type HistoryIntake } from "./dose-history";
-import { type CanonicalSchedule, type RecurrenceContext } from "./recurrence";
-import { normaliseDoseWindows } from "./worker-helpers";
+import {
+  trailingComplianceLedger,
+  trailingComplianceTally,
+} from "@/lib/analytics/compliance/ledger";
+import type { ComplianceMedicationContext } from "@/lib/analytics/compliance/types";
 import { userDayKey } from "@/lib/tz/resolver";
 
 export interface ComplianceChips {
@@ -146,134 +141,19 @@ export function streaksFromTimeline(
 }
 
 /**
- * v1.15.18 — band-ledger tally counts for the detail-page chips.
- *
- * When the route threads an engine context (RRULE / rolling / cyclic /
- * one-shot / PRN / legacy) the adherence rate + missed count come from the
- * SAME unified dose-history ledger the compliance % and the history view
- * read — so the chips can never contradict either. The streak still walks
- * the cadence timeline (its day-grain "every dose taken or skipped" rule is
- * orthogonal to per-dose attribution). Returns null when there is no engine
- * context (a pure-math caller) — the caller then falls back to the legacy
- * timeline tally.
+ * The four chips: adherence and missed doses from the compliance ledger the
+ * detail page's rate reads (`trailingComplianceTally`, with the medication's
+ * pause eras and courses), the streaks from the cadence timeline (a
+ * day-grain "every dose taken or skipped" rule, orthogonal to per-dose
+ * attribution).
  */
-function ledgerChipCounts(
-  schedules: ScheduleLike[],
-  events: IntakeEventLike[],
-  asOf: Date,
-  windowDays: number,
-  timeZone: string | undefined,
-  engineCtx: CadenceEngineContext | undefined,
-): { taken: number; missed: number } | null {
-  if (!engineCtx) return null;
-  const DAY_MS = 24 * 60 * 60 * 1000;
-  const from = new Date(asOf.getTime() - windowDays * DAY_MS);
-  const userTz = engineCtx.timeZone || timeZone || "UTC";
-
-  const medication: BandMinterMedication = {
-    id: "chips-tally",
-    startsOn: engineCtx.startsOn,
-    endsOn: engineCtx.endsOn,
-    oneShot: engineCtx.oneShot,
-    createdAt: engineCtx.createdAt,
-  };
-  const recurrenceCtx: RecurrenceContext = {
-    medication: {
-      id: "chips-tally",
-      startsOn: engineCtx.startsOn,
-      endsOn: engineCtx.endsOn,
-      oneShot: engineCtx.oneShot,
-      createdAt: engineCtx.createdAt,
-    },
-    timeZone: userTz,
-    lastIntakeAt: engineCtx.lastIntakeAt,
-    // v1.40 (#1024) — a medication: `startsOn` is a course start.
-    rollingAnchor: "courseStart",
-  };
-  const canonicalSchedules: CanonicalSchedule[] = schedules.map((s, i) => {
-    const base: CanonicalSchedule = {
-      id: s.id ?? `chips-${i}`,
-      rrule: s.rrule ?? null,
-      rollingIntervalDays: s.rollingIntervalDays ?? null,
-      timesOfDay: s.timesOfDay ?? [],
-      daysOfWeek: s.daysOfWeek ?? null,
-      windowStart: s.windowStart,
-      windowEnd: s.windowEnd,
-      reminderGraceMinutes: s.reminderGraceMinutes ?? null,
-      scheduleType: s.scheduleType ?? "SCHEDULED",
-      cyclicOnWeeks: s.cyclicOnWeeks ?? null,
-      cyclicOffWeeks: s.cyclicOffWeeks ?? null,
-      doseWindows: normaliseDoseWindows(s.doseWindows),
-    };
-    // Surface windowStart as the single time-of-day for a legacy daily row
-    // so the band minter's cadence gate mints its daily band (see the
-    // analytics/compliance tally for the same normalisation).
-    if (
-      base.timesOfDay.length === 0 &&
-      base.rrule === null &&
-      base.rollingIntervalDays === null &&
-      base.scheduleType !== "PRN" &&
-      !engineCtx.oneShot
-    ) {
-      return { ...base, timesOfDay: [base.windowStart] };
-    }
-    return base;
-  });
-
-  const intakeInstants = events
-    .filter((e) => !e.skipped && e.takenAt !== null && e.takenAt <= asOf)
-    .map((e) => e.takenAt as Date)
-    .sort((a, b) => a.getTime() - b.getTime());
-
-  const groups = buildBandsForSchedulesWithEras({
-    medication,
-    schedules: canonicalSchedules,
-    revisions: engineCtx.scheduleRevisions ?? [],
-    ctx: recurrenceCtx,
-    userTz,
-    range: { from, to: asOf },
-    now: asOf,
-    intakeInstants,
-  });
-  const bands: SlotBand[] = [];
-  for (const g of groups) {
-    if (g.hasExpectedSlots) bands.push(...g.bands);
-  }
-
-  const intakes: HistoryIntake[] = events
-    .filter((e) => e.scheduledFor >= from && e.scheduledFor <= asOf)
-    .map((e) => ({
-      scheduledFor: e.scheduledFor,
-      takenAt: e.takenAt,
-      skipped: e.skipped,
-      autoMissed: e.autoMissed ?? false,
-      // v1.15.20 — pinned takes bind by anchor (taken-late, slot served).
-      pinned: e.attributionSource === "USER_PIN",
-    }));
-
-  const rows = reconstructDoseHistory(
-    bands,
-    intakes,
-    asOf,
-    engineCtx.createdAt,
-  );
-  let taken = 0;
-  let missed = 0;
-  for (const row of rows) {
-    if (row.status === "taken_on_time" || row.status === "taken_late") taken++;
-    else if (row.status === "missed") missed++;
-  }
-  return { taken, missed };
-}
-
 export function complianceChips(
   schedules: ScheduleLike[],
   events: IntakeEventLike[],
+  ctx: ComplianceMedicationContext,
   asOf: Date,
   windowDays = 30,
   anchor?: Date,
-  timeZone?: string,
-  engineCtx?: CadenceEngineContext,
 ): ComplianceChips {
   const timeline = buildCadenceTimeline(
     schedules,
@@ -281,33 +161,21 @@ export function complianceChips(
     asOf,
     windowDays,
     anchor,
-    timeZone,
-    engineCtx,
+    ctx.timeZone,
+    ctx,
   );
-  // v1.15.18 — adherence + missed come from the unified band ledger when an
-  // engine context is present (so the chips agree with the % and the history
-  // view); the legacy timeline tally is the fallback for pure-math callers.
-  const ledger = ledgerChipCounts(
-    schedules,
-    events,
-    asOf,
+  const { taken, missed } = trailingComplianceTally(
+    trailingComplianceLedger(events, schedules, ctx, asOf),
     windowDays,
-    timeZone,
-    engineCtx,
+    asOf,
   );
-  const taken = ledger
-    ? ledger.taken
-    : timeline.filter((d) => d.status === "taken").length;
-  const missed = ledger
-    ? ledger.missed
-    : timeline.filter((d) => d.status === "missed").length;
   const denom = taken + missed;
   const adherenceRate = denom === 0 ? null : Math.round((taken / denom) * 100);
   const { current, longest } = streaksFromTimeline(
     timeline,
     asOf,
     windowDays,
-    timeZone,
+    ctx.timeZone,
   );
   return {
     adherenceRate,

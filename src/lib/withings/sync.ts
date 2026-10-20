@@ -370,7 +370,7 @@ export async function syncUserMeasurements(
   for (const m of measures) {
     const measType = m.type as MeasurementType;
     try {
-      // v1.4.25 W17b/c — Migration 0055 added `sleepStage` to the
+      // v1.4.25 — Migration 0055 added `sleepStage` to the
       // composite unique with `NULLS NOT DISTINCT`, so a non-sleep
       // upsert keyed on (userId, type, measuredAt, source) with
       // sleepStage IS NULL is still safe. But Prisma's typed compound
@@ -631,7 +631,7 @@ export function classificationToFailureKind(
  * The error message format from `refreshAccessToken()` is
  * "Withings refresh error: <status> - <error>".
  *
- * v1.4.42 W6 — superseded for new code paths by
+ * v1.4.42 — superseded for new code paths by
  * `classifyError`/`classifyWithingsResponse` in `response-classifier.ts`.
  * Kept for the W17b/c sync-activity + sync-sleep catch-blocks that
  * haven't yet been migrated; both paths now also benefit from the

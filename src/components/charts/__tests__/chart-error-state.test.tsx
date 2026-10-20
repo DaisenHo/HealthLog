@@ -130,15 +130,31 @@ describe("<ChartErrorState> — announcement, sizing, accessible name", () => {
     props: Partial<import("../chart-error-state").ChartErrorStateProps> = {},
   ) {
     const { ChartErrorState } = await import("../chart-error-state");
+    const { I18nProvider } = await import("@/lib/i18n/context");
     return renderToStaticMarkup(
-      <ChartErrorState
-        title="Data could not be loaded"
-        actionLabel="Retry"
-        onAction={() => undefined}
-        {...props}
-      />,
+      <I18nProvider initialLocale="en">
+        <ChartErrorState
+          error={new Error("boom")}
+          title="Data could not be loaded"
+          actionLabel="Retry"
+          onAction={() => undefined}
+          {...props}
+        />
+      </I18nProvider>,
     );
   }
+
+  it("decides from the error, like the other read-failure primitives", async () => {
+    const { ApiError } = await import("@/lib/api/api-fetch");
+    // A refused read draws nothing, not a retry that cannot help.
+    expect(await renderState({ error: new ApiError("x", 403) })).toBe("");
+    const ended = await renderState({ error: new ApiError("x", 401) });
+    expect(ended).toContain('data-slot="query-error-sign-in"');
+    expect(ended).not.toContain("Retry");
+    const throttled = await renderState({ error: new ApiError("x", 429) });
+    expect(throttled).not.toContain("<button");
+    expect(await renderState()).toContain("Retry");
+  });
 
   it("announces the failure as a status by default", async () => {
     const html = await renderState();

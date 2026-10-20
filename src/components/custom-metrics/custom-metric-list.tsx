@@ -45,7 +45,7 @@ export function CustomMetricList() {
   const [addOpen, setAddOpen] = useState(false);
   const [addFooterEl, setAddFooterEl] = useState<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.customMetrics(),
     queryFn: () => apiGet<CustomMetricListResponse>("/api/custom-metrics"),
   });
@@ -93,6 +93,7 @@ export function CustomMetricList() {
         </Card>
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           description={t("customMetrics.loadError")}
           onRetry={() => refetch()}
         />

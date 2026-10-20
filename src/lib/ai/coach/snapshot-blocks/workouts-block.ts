@@ -11,7 +11,7 @@
  * read plus the shared accumulators, so the emitted shape and ordering
  * are unchanged.
  *
- * v1.30.4 (C1) — `GET /api/workouts` collapses cross-source duplicate
+ * v1.30.4 — `GET /api/workouts` collapses cross-source duplicate
  * sessions (e.g. Apple Watch + WHOOP recording the same run) with
  * `pickCanonicalWorkoutRows()` before the UI ever sees them; this block
  * read `prisma.workout.findMany` raw, so a dual-source user's Coach
@@ -53,7 +53,7 @@ interface WorkoutsBlockContext {
     maxHeartRate: number | null;
     source: MeasurementSource;
   }>;
-  // v1.30.4 (C1) — the user's own source-priority blob, same shape
+  // v1.30.4 — the user's own source-priority blob, same shape
   // `pickCanonicalWorkoutRows` and the sleep block already consume.
   // `null` falls back to the canonical default ladder.
   sourcePriorityJson: unknown;

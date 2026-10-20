@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { isCodexOAuthConfigured } from "@/lib/ai/codex-oauth";
+import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -76,7 +77,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     }
     data.insightsPrivacyMode = mode;
     data.insightsCachedAt = null;
-    data.insightsCachedText = null;
+    Object.assign(data, INSIGHTS_CACHE_CLEARED);
     data.insightsCachedLocale = null;
   }
 

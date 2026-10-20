@@ -18,7 +18,7 @@ import { isReasoningProviderType } from "@/lib/ai/reasoning-effort";
 import { providerChainPutSchema } from "@/lib/validations/ai-provider";
 
 /**
- * v1.4.16 phase B5b — read-only chain summary for the Settings → AI
+ * v1.4.16 — read-only chain summary for the Settings → AI
  * section. Returns:
  *   - `activeProvider`: first entry in the resolved chain (priority
  *     order). Null when the user has no providers configured at all.
@@ -43,7 +43,7 @@ import { providerChainPutSchema } from "@/lib/validations/ai-provider";
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
 
-  // v1.4.16 phase D reconcile (code-review H2) — the GET response used
+  // v1.4.16 (code-review H2) — the GET response used
   // to surface the resolveProviderChain()-filtered list, which DROPS
   // disabled entries. The Settings UI seeded `enabled: true` for every
   // returned row, so disabling an entry made it disappear from the

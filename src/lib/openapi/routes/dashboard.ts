@@ -2,7 +2,7 @@
  * OpenAPI route table — dashboard widget layout (`/api/dashboard/widgets`)
  * and the native-client aggregator (`/api/dashboard/summary`).
  *
- * v1.32.21 (R5a) — this endpoint was ENTIRELY absent from the registry
+ * v1.32.21 — this endpoint was ENTIRELY absent from the registry
  * even though it is the reference implementation for the optimistic-
  * concurrency token contract the native client is being asked to adopt
  * (issue #581, shipped v1.32.16). Documenting it here closes that gap: the

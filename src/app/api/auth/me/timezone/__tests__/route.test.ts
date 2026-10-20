@@ -23,7 +23,7 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
-// v1.37.19 (A6-12) — the zone change enqueues a compliance re-fold.
+// v1.37.19 — the zone change enqueues a compliance re-fold.
 const refoldMock = vi.hoisted(() =>
   vi.fn(async () => ({ enqueued: true, error: null })),
 );

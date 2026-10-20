@@ -115,7 +115,7 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
   // ref) keeps the reseed render-safe and idempotent while leaving in-flight
   // drag edits untouched: the baseline only advances when the *server* order
   // differs from what we last seeded from.
-  // v1.30 (UX/IA audit H1) — ECG has no `MeasurementType` and therefore no
+  // v1.30 — ECG has no `MeasurementType` and therefore no
   // sub-page tile; its overview presence is the `"ecg"` SECTION. Surface it
   // here as a Heart-group row so hiding the ECG surface is reversible from the
   // same place the user manages every other Heart detail page. The eye toggles
@@ -161,7 +161,7 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
               s.id === "ecg" ? { ...s, visible: ecgVisibleDraft } : s,
             )
           : layout.sections;
-      // v1.32.21 (R5a) — echo the base token so a concurrent insights write
+      // v1.32.21 — echo the base token so a concurrent insights write
       // (the overview edit mode, or another tab) 409s instead of clobbering.
       return apiPut<InsightsLayoutWithToken>(
         "/api/insights/layout",
@@ -179,7 +179,7 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
       toast.success(t("insights.pillOrder.saveSuccess"));
     },
     onError: (err) => {
-      // v1.32.21 (R5a) — explicit-Save disposition: on a 409 refetch so the
+      // v1.32.21 — explicit-Save disposition: on a 409 refetch so the
       // token advances, KEEP the draft so the user can re-save, nudge gently.
       if (isConflict(err)) {
         void queryClient.invalidateQueries({
@@ -319,7 +319,7 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
                   </div>
                 </SortableContext>
               </DndContext>
-              {/* v1.30 (H1) — ECG rides the Heart group as a non-sortable row:
+              {/* v1.30 — ECG rides the Heart group as a non-sortable row:
                   it has no `MeasurementType` and no tile order, so there is
                   nothing to drag. The eye toggles the `"ecg"` overview section
                   (see the draft plumbing above). */}
@@ -364,7 +364,7 @@ const EYE_TOGGLE_CLASS =
   "text-muted-foreground hover:text-foreground focus-visible:ring-ring focus-visible:ring-offset-background inline-flex h-11 w-11 shrink-0 items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:h-9 sm:w-9";
 
 /**
- * v1.30 (H1) — the ECG row in the Heart group. Unlike {@link SortablePillRow}
+ * v1.30 — the ECG row in the Heart group. Unlike {@link SortablePillRow}
  * it is not draggable (ECG has no tile order), so it carries an aligned spacer
  * where the drag handle sits on its siblings and only the eye toggle. The eye
  * flips the `"ecg"` overview section's visibility.

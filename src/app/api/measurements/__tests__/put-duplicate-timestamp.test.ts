@@ -122,7 +122,7 @@ describe("PUT /api/measurements/[id] — duplicate-timestamp handling", () => {
   });
 
   it("returns 409 on a sport-style measurement edit (FB-B1)", async () => {
-    // v1.4.28 FB-B1 — the maintainer's "Sport edit + save → error"
+    // v1.4.28 — the maintainer's "Sport edit + save → error"
     // report maps onto measurement-typed sport rows (Apple Health
     // ingests workouts as ACTIVE_ENERGY_BURNED / FLIGHTS_CLIMBED /
     // WALKING_RUNNING_DISTANCE samples, all of which route through

@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — the needs-based onboarding's server state, as data.
+ * v1.39 — the needs-based onboarding's server state, as data.
  *
  * The design spec (`.planning/2026-09-09-onboarding-design-spec.md`) asks five
  * questions, saves each answer as it is given, and derives the record's module
@@ -107,7 +107,7 @@ export const ONBOARDING_SOURCE_KEYS = [
 
 export type OnboardingSourceKey = (typeof ONBOARDING_SOURCE_KEYS)[number];
 
-/** Q5 — a doctor's visit coming up. */
+/** A doctor's visit coming up. */
 export const ONBOARDING_VISIT_ANSWERS = [
   "within-a-month",
   "later",
@@ -131,7 +131,7 @@ export type OnboardingFirstResultTask =
   (typeof ONBOARDING_FIRST_RESULT_TASKS)[number];
 
 /**
- * Q6 — the unit answers, recorded as given.
+ * The unit answers, recorded as given.
  *
  * These are NOT the source of truth for how a value is displayed:
  * `User.glucoseUnit` and `User.unitPreference` are, and the answers step

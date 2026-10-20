@@ -10,7 +10,7 @@ import type { DataSummary } from "@/lib/analytics/trends";
 import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 
 /**
- * v1.4.33 IW2 — single TanStack-Query wrapper for `/api/analytics`.
+ * v1.4.33 — single TanStack-Query wrapper for `/api/analytics`.
  *
  * Pre-fix, seven mount sites each declared `useQuery({ queryKey:
  * ["analytics"], … })` with inconsistent `staleTime` / `enabled` /
@@ -85,7 +85,7 @@ export interface AnalyticsRawPayload {
   healthScore?: unknown;
   sleepStages?: unknown;
   /**
-   * v1.4.34 IW-B — per-type freshness map. The dashboard's tile strip
+   * v1.4.34 — per-type freshness map. The dashboard's tile strip
    * reads `lastSeenByType[type]?.daysAgo` and forwards it to each
    * `<TrendCard>` so a stale tile renders an "Letzter Wert vor Xd"
    * caption instead of disappearing. Present on both the thick default

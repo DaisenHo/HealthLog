@@ -23,7 +23,7 @@ import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-// v1.5.5 F-1 H-6 — match the glp1 POST shape so a caller firing
+// v1.5.5 — match the glp1 POST shape so a caller firing
 // repeated 500-id bulk deletes cannot pin the per-dayKey recompute
 // path. 30/min/user is generous for a hand-driven multi-select and
 // tight enough to cut off the spam case.
@@ -67,7 +67,7 @@ export const POST = apiHandler(
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
-    // v1.5.5 F-1 H-6 — per-caller cap matches the glp1 POST so a caller
+    // v1.5.5 — per-caller cap matches the glp1 POST so a caller
     // firing repeated 500-id bulk deletes cannot pin the per-dayKey
     // recompute path.
     //
@@ -138,7 +138,7 @@ export const POST = apiHandler(
       }
     }
 
-    // v1.15.18 LOW-6 — soft-delete to match the single-event DELETE handler
+    // v1.15.18 — soft-delete to match the single-event DELETE handler
     // and the iOS tombstone contract: an intake is an immutable fact, so a
     // bulk "delete" sets `deletedAt` (+ bumps `syncVersion`) so the
     // `/api/sync/changes` feed surfaces each removal as a tombstone keyed on

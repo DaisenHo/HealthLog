@@ -62,7 +62,7 @@ const tileIdEnum = z.enum(ACCEPTED_INSIGHTS_TILE_IDS);
 const sectionIdEnum = z.enum(INSIGHTS_SECTION_IDS);
 
 const layoutSchema = z.object({
-  // v1.15.11 QA C1 — accept BOTH version 1 and 2 on input. The live iOS
+  // v1.15.11 — accept BOTH version 1 and 2 on input. The live iOS
   // client still PUTs `version: 1`; `serializeInsightsLayout` hardcodes the
   // stored version to the canonical `INSIGHTS_LAYOUT_VERSION` (2) regardless,
   // so accepting a v1 body writes a canonical v2 blob with zero downside.
@@ -105,7 +105,7 @@ async function buildInsightsLayout(
 ): Promise<InsightsLayoutWithToken> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    // v1.32.21 (R5a) — `updatedAt` rides the cached layout so GET hands the
+    // v1.32.21 — `updatedAt` rides the cached layout so GET hands the
     // client the optimistic-concurrency token alongside the layout it applies
     // to. Cached together (and busted on every write) so the (layout, token)
     // pair a client reads is always consistent — the widgets precedent.
@@ -140,7 +140,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
   if (jsonError) return jsonError;
 
-  // v1.32.21 (R5a) — pull the optimistic-concurrency base token off the body
+  // v1.32.21 — pull the optimistic-concurrency base token off the body
   // BEFORE the Zod parse so the domain schema stays pure (issue #581 family).
   const taken = takeBaseToken(rawBody);
   if ("invalid" in taken) return invalidBaseTokenError();
@@ -200,7 +200,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const previous = await buildInsightsLayout(user.id);
   const normalized = serializeInsightsLayout(parsed.data, previous);
 
-  // v1.32.21 (R5a) — guard the write on the client's base token. A stale base
+  // v1.32.21 — guard the write on the client's base token. A stale base
   // 409s and writes NOTHING (so an interleaved edit-mode Save can't be
   // reverted by a Settings pill-order Save that started from an older read,
   // and vice versa); a tokenless request keeps the prior unconditional write.

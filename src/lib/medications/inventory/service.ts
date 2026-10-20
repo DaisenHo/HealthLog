@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19b — inventory persistence helpers.
+ * v1.4.25 — inventory persistence helpers.
  *
  * Thin layer on top of Prisma that the route handlers compose. Keeps
  * the state-machine math (pure) separate from the I/O (here), so unit

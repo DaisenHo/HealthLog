@@ -1,5 +1,5 @@
 /**
- * v1.18.0 (S4) — module-gated per-type visibility on the consolidated
+ * v1.18.0 — module-gated per-type visibility on the consolidated
  * "Benachrichtigungen" reminder-types home.
  *
  * The mood reminder shows only when the `mood` module is enabled. Low-stock
@@ -7,7 +7,7 @@
  * fails OPEN, so a `/me` payload without a module map keeps every card
  * visible.
  *
- * v1.18.6 (W9) — the proactive Coach nudge card moved to Settings → Coach, so
+ * v1.18.6 — the proactive Coach nudge card moved to Settings → Coach, so
  * it no longer appears on this screen.
  */
 import { describe, expect, it, vi } from "vitest";
@@ -54,7 +54,7 @@ describe("<NotificationsSection> module-gated reminder types", () => {
     const html = render(undefined);
     expect(html).toContain('id="mood-reminder"');
     expect(html).toContain('id="low-stock"');
-    // v1.18.6 (W9) — the coach nudge moved to Settings → Coach.
+    // v1.18.6 — the coach nudge moved to Settings → Coach.
     expect(html).not.toContain('id="coach-nudge"');
   });
 
@@ -73,7 +73,7 @@ describe("<NotificationsSection> module-gated reminder types", () => {
   });
 
   it("drops the channels / inbox cross-links and the Vorsorge block (D5)", () => {
-    // v1.18.1 (D5) — the page is lean: no section blurb, no channels/inbox
+    // v1.18.1 — the page is lean: no section blurb, no channels/inbox
     // cross-links, and no embedded Vorsorge editor (it has its own page).
     const html = render({});
     expect(html).not.toContain('data-slot="notifications-channels-cross-link"');

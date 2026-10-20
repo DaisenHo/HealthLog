@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W5a — Coach rolling-profile memory block (Pillar P2 2a).
+ * v1.11.0 — Coach rolling-profile memory block (Pillar P2 2a).
  *
  * A ZERO-LLM, machine-derived "what was true recently + what the Coach
  * already noted" block folded into the Coach snapshot. It carries no raw

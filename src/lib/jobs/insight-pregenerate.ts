@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — nightly insight pre-generation cron.
+ * v1.7.0 — nightly insight pre-generation cron.
  *
  * Closes the gap the R-firstpaint audit surfaced: before this cron,
  * every daily briefing was generated lazily on the first `/insights`
@@ -373,7 +373,7 @@ async function warmPerStatusCaches(
 }
 
 /**
- * v1.18.7 (HIGH-1) — the production warm for the seven specialised status
+ * v1.18.7 — the production warm for the seven specialised status
  * cards. `generateStatusBatchForUser` builds the seven per-metric snapshots
  * once and issues ONE provider call for the metrics still needing the LLM,
  * fanning the response back into the same per-metric cache rows the
@@ -603,7 +603,7 @@ export async function runInsightPregenerate(
   const generate = options.generate ?? generateComprehensiveInsight;
   const enqueueRetry = options.enqueueRetry ?? enqueuePregenerateFailureRetry;
   const reportRun = options.reportRun ?? reportJobRun;
-  // v1.18.7 (HIGH-1) — when the caller injects its own `statusGenerators`
+  // v1.18.7 — when the caller injects its own `statusGenerators`
   // (the unit tests do), keep the per-card warm so those assertions hold;
   // production injects nothing, so the seven warm calls collapse into ONE
   // batched generation. The injected per-card path stays the test seam.
@@ -749,7 +749,7 @@ export async function runInsightPregenerate(
     // (`insights:${userId}`), so this never starves a user's manual
     // regenerate quota. The gate bounds the comprehensive cost only: a
     // blocked user still gets the refill-only status warm below, because
-    // the 02:xx status crons already skipped every pregenerate candidate
+    // the 02:00 status batch already skipped every pregenerate candidate
     // on the assumption that THIS pass warms their cards — exiting early
     // here left those cards cold until the first on-visit generation.
     const budget = briefing.available
@@ -906,7 +906,7 @@ export async function runInsightPregenerate(
     // generator's content-hash gate turns a same-data regeneration into a
     // timestamp refresh with no provider call. The warm runs on every
     // comprehensive outcome (budget-blocked, failed, timed-out,
-    // consent-skipped included) because the 02:xx status crons skip every
+    // consent-skipped included) because the 02:00 status batch skips every
     // pregenerate candidate on the assumption that THIS pass covers them.
     //
     // Nothing to warm when the status notes themselves are unavailable.
@@ -1007,12 +1007,12 @@ export async function forceWarmUser(
     today?: boolean;
   } = {},
 ): Promise<ForceWarmResult> {
-  // v1.18.11 P3 — one feature-cache scope for the whole forced warm of this
+  // v1.18.11 — one feature-cache scope for the whole forced warm of this
   // user, so the comprehensive briefing's bounded feature read is computed
   // once and reused by any sibling consumer in the same warm.
   return withFeatureCacheScope(async () => {
     const generate = options.generate ?? generateComprehensiveInsight;
-    // v1.18.7 (HIGH-1) — batch the seven status warms into ONE provider call
+    // v1.18.7 — batch the seven status warms into ONE provider call
     // in production; keep the per-card path when a test injects generators.
     const injectedStatusGenerators = options.statusGenerators;
     const warmStatus = (

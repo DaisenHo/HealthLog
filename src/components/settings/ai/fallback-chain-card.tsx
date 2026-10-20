@@ -66,7 +66,7 @@ export function FallbackChainCard({
   // Local working copy. Server-confirmed values arrive via `chain`
   // prop; we keep our own state so the user can shuffle multiple rows
   // before clicking "Save chain order".
-  // v1.4.16 phase D reconcile (code-review H2) — `enabled` from the
+  // v1.4.16 (code-review H2) — `enabled` from the
   // wire is now the canonical state. The GET endpoint surfaces the
   // raw persisted chain so a disabled entry survives the round-trip.
   const seededKey = chain

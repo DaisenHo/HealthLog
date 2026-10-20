@@ -162,7 +162,7 @@ async function postWater(request: NextRequest): Promise<Response> {
   await auditLog("nutrient.water.write", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    // C4 — the day total that was there before. A `set` replaces it outright
+    // The day total that was there before. A `set` replaces it outright
     // and no per-entry ledger exists to reconstruct it from.
     details: {
       day,

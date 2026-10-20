@@ -323,7 +323,7 @@ export function normaliseDateRange(
 }
 
 /**
- * v1.17 W1a — doctor-report medication adherence through the dose-ledger
+ * v1.17 — doctor-report medication adherence through the dose-ledger
  * authority.
  *
  * The previous implementation tallied RAW intake rows: `taken = takenAt != null`,

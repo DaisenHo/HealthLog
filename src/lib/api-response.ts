@@ -2,6 +2,8 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import type { ZodError, ZodIssue } from "zod/v4";
 
+import { defaultErrorCodeForStatus } from "@/lib/api/default-error-codes";
+
 export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ data, error: null }, { status });
 }
@@ -106,7 +108,7 @@ export interface SanitiseZodIssueOptions {
 }
 
 /**
- * v1.4.42 W2 — multi-issue Zod error envelope.
+ * v1.4.42 — multi-issue Zod error envelope.
  *
  * Historic pattern was `apiError(parsed.error.issues[0].message, 422)`
  * which dropped every issue past the first. The iOS contract debug
@@ -291,7 +293,7 @@ export function apiValidationError(
  * via `t("settings.testConnection.errors." + errorCode)` instead of
  * displaying the server's English fallback.
  *
- * v1.4.25 W21 Fix-N — the third argument may also carry a `headers`
+ * v1.4.25 — the third argument may also carry a `headers`
  * record (e.g. `{ headers: rateLimitHeaders(rl) }`) so 429 responses
  * can attach the `X-RateLimit-*` triple in the same call. The `headers`
  * key is *not* echoed into the JSON body — it is consumed by the
@@ -309,20 +311,23 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Put the request id into `meta.requestId` of an error envelope.
+ * Complete an error envelope: `meta.requestId` always, and `meta.errorCode`
+ * from the status when the route named none.
  *
  * Every 4xx and 5xx a route answers with the `{ data: null, error, meta? }`
  * envelope carries the full request id beside the `x-request-id` header, so a
  * client behind a proxy that strips headers can still show the id a person
  * reads out to the operator, who finds the event in the admin log with it.
+ * The code follows `DEFAULT_ERROR_CODES` (`src/lib/api/default-error-codes.ts`).
  *
  * Applied once, by `apiHandler`, to whatever the handler answered, so a route
  * that builds its error with `apiError`, with `NextResponse.json` by hand or by
  * throwing cannot be the one that forgets it. Anything that is not a JSON
  * envelope (a redirect, a stream, a FHIR `OperationOutcome`, a body that does
- * not parse) is returned untouched, and an id the handler already set wins.
+ * not parse) is returned untouched, and an id or code the handler already set
+ * wins.
  */
-export async function withErrorRequestId(
+export async function withErrorEnvelopeDefaults(
   response: Response,
   requestId: string,
 ): Promise<Response> {
@@ -354,12 +359,23 @@ export async function withErrorRequestId(
   }
   const meta = body.meta;
   if (meta !== undefined && !isPlainObject(meta)) return response;
-  if (meta && typeof meta.requestId === "string") return response;
+  const hasId = typeof meta?.requestId === "string";
+  const hasCode = typeof meta?.errorCode === "string";
+  if (hasId && hasCode) return response;
 
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   return new NextResponse(
-    JSON.stringify({ ...body, meta: { ...(meta ?? {}), requestId } }),
+    JSON.stringify({
+      ...body,
+      meta: {
+        ...(meta ?? {}),
+        ...(hasCode
+          ? {}
+          : { errorCode: defaultErrorCodeForStatus(response.status) }),
+        ...(hasId ? {} : { requestId }),
+      },
+    }),
     { status: response.status, statusText: response.statusText, headers },
   );
 }

@@ -19,7 +19,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommendation-feedback";
 
 /**
- * v1.4.16 phase B5e — POST /api/insights/feedback.
+ * v1.4.16 — POST /api/insights/feedback.
  *
  * Per-recommendation thumbs-up / thumbs-down. The body contains the
  * rec id + snapshot text + severity + metric-source attributes the
@@ -38,7 +38,7 @@ import { recommendationFeedbackRequestSchema } from "@/lib/validations/recommend
 async function handlePost(request: NextRequest) {
   const { user } = await requireAuth();
 
-  // v1.4.16 phase D reconcile (code-review H5 / security M1) — bound
+  // v1.4.16 (code-review H5 / security M1) — bound
   // the per-user write rate. Without this, a single client can
   // distort the daily aggregator's bucket slice by varying
   // recommendationId/text per request (the unique index only catches

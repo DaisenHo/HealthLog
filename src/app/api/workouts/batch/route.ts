@@ -91,20 +91,20 @@ import {
   UNSTABLE_EXTERNAL_ID_REASON,
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
-import { dedupeWorkoutBatch } from "@/lib/workouts/canonical-rows";
+import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
 import { WORKOUTS_WRITE_SCOPE } from "@/lib/workouts/scopes";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
 import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
 
-// v1.4.25 W16c — push-suppression threshold for workout PRs. A batch
+// v1.4.25 — push-suppression threshold for workout PRs. A batch
 // larger than this fires the detection job with `silent: true` so a
 // multi-year HKWorkout backfill doesn't spam the user with hundreds of
 // pushes. Matches the measurements-batch threshold so behaviour stays
 // uniform across both ingest paths.
 const PR_DETECTION_SILENT_THRESHOLD = 50;
 
-// v1.4.25 W10 reconcile (security H-2 parity): cap batch ingest at 60
+// v1.4.25 (security H-2 parity): cap batch ingest at 60
 // batches per user per minute. Healthy iOS sync drains its HealthKit
 // observer queue in well under one batch per minute (the observer
 // pattern coalesces); 60/min × 100 workouts/batch = 6 000 workouts/
@@ -246,7 +246,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // its rows is resolved from the credential below rather than from the body.
   const scoped = isScopedCredential(auth);
 
-  // v1.4.43 W9 — resolve the per-user source-priority blob once at
+  // v1.4.43 — resolve the per-user source-priority blob once at
   // the start of the handler so the write-time canonical-row picker
   // walks the SAME ladder the read-time picker walks. Without this
   // lookup a user who customised Settings → Sources (e.g. MANUAL >
@@ -283,7 +283,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }
   }
 
-  // v1.4.25 W10 reconcile (security H-2 parity): per-user rate limit.
+  // v1.4.25 (security H-2 parity): per-user rate limit.
   // Without it, a leaked wildcard iOS token can sustain unbounded
   // writes (100 workouts/batch × N batches/sec) and degrade the
   // database for every other user on the host. 60 batches/min/user is
@@ -494,41 +494,29 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
   }
 
-  // v1.4.42 W5 — write-time cross-source dedup. The v1.5 iOS app
-  // drains a HealthKit observer queue that frequently carries the
-  // SAME logical workout from two paired sensors (Apple Watch +
-  // Withings ScanWatch). Without this pass, both rows persist (their
-  // `externalId`s differ → the `(userId, source, externalId)` unique
-  // index never fires) and the read-time canonical-picker has to
-  // carry the duplicate forward on every dashboard render.
-  //
-  // The helper is pure (no Prisma, no user lookups). It groups by
-  // `(userId, activityType, startedAt ± 90 s)`, prefers the canonical
-  // source ladder (APPLE_HEALTH > WITHINGS > MANUAL > IMPORT), and
-  // breaks ties on calories > earliest createdAt > input order. Rows
-  // dropped here surface to the iOS client as `duplicate` so the
-  // sync cursor advances past them identically to the externalId
-  // case below.
-  const canonicalPrepared = dedupeWorkoutBatch(
+  // Write-time cross-source dedup through the one workout picker the reads
+  // use, with the same source ladder: one logical workout from two sources
+  // in one batch (or one HealthKit session re-sent under a new id) lands
+  // once. Rows the picker hides surface to the client as `duplicate`, so
+  // the sync cursor advances past them like the externalId case below.
+  const canonicalPrepared = pickCanonicalWorkoutRows(
     prepared.map((p) => ({
+      index: p.index,
       userId: p.row.userId,
-      activityType: p.row.sportType,
+      sportType: p.row.sportType,
       startedAt: p.row.startedAt as Date,
+      durationSec: p.row.durationSec,
       // Zod's `measurementSourceEnum.optional().default("MANUAL")`
       // guarantees `source` is set post-parse, but Prisma's
-      // `WorkoutCreateManyInput` types it optional. Default through
-      // the same fallback the validator uses so the picker's source
-      // ladder still resolves on the rare row where TypeScript
-      // can't prove the union.
+      // `WorkoutCreateManyInput` types it optional.
       source: (p.row.source ?? "MANUAL") as MeasurementSource,
-      caloriesKcal: p.row.totalEnergyKcal ?? null,
-      // No createdAt yet — the row is pre-insert; the tie-breaker
-      // falls through to input order via the `index` field below.
-      index: p.index,
+      avgHeartRate: p.row.avgHeartRate ?? null,
+      maxHeartRate: p.row.maxHeartRate ?? null,
+      metadata: p.row.metadata ?? null,
     })),
     userPriority?.sourcePriorityJson ?? null,
   );
-  const survivingIndices = new Set(canonicalPrepared.map((r) => r.index ?? -1));
+  const survivingIndices = new Set(canonicalPrepared.map((r) => r.index));
   const droppedByWriteDedup: number[] = [];
   for (const p of prepared) {
     if (!survivingIndices.has(p.index)) {
@@ -546,7 +534,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const overwrittenIdByIndex = new Map<number, string>();
 
   if (survivors.length > 0) {
-    // v1.4.42 W5 — only the write-time dedup survivors are probed
+    // v1.4.42 — only the write-time dedup survivors are probed
     // against existing rows; the dropped twins already carry a
     // `duplicate` status and never reach the DB.
     const dedupCandidates = survivors
@@ -883,7 +871,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.25 W16c — kick off PR detection for this user. Suppress push
+  // v1.4.25 — kick off PR detection for this user. Suppress push
   // notifications for historical-backfill batches so a multi-year
   // HKWorkout import doesn't fire hundreds of pushes during initial
   // sync. The detector also scans Measurement history on the same
@@ -893,13 +881,9 @@ async function postBatch(request: NextRequest): Promise<Response> {
     const silent = workouts.length > PR_DETECTION_SILENT_THRESHOLD;
     try {
       await enqueuePrDetection(user.id, { silent });
-      await auditLog("personal_records.detection_enqueued", {
-        userId: user.id,
-        details: {
-          source: "workout.batch",
-          batchSize: workouts.length,
-          silent,
-        },
+      // Telemetry, not an audit event: it rides the wide event.
+      annotate({
+        meta: { pr_detection_enqueued: true, pr_detection_silent: silent },
       });
     } catch (err) {
       annotate({
@@ -922,7 +906,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // v1.4.34 — bust per-user analytics + achievements + workouts
   // caches when at least one row landed. Workouts ride on the
   // measurements bucket because achievements / analytics also touch
   // workout-derived metrics.

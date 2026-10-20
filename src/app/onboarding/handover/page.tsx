@@ -58,6 +58,7 @@ export default function HandoverDecisionPage() {
 
       {decision.isError ? (
         <QueryErrorCard
+          error={decision.error}
           title={t("recordSharing.handoverDecision.loadError")}
           onRetry={() => void decision.refetch()}
         />

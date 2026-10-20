@@ -1,5 +1,5 @@
 /**
- * v1.11.0 (Epic C, C4) — owner clinician-share-link lifecycle.
+ * v1.11.0 — owner clinician-share-link lifecycle.
  *
  * Asserts the security-load-bearing properties: create returns the raw token
  * exactly once and persists ONLY its hash; the expiry cap is enforced; revoke

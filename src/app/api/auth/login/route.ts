@@ -39,7 +39,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  // v1.4.43 W13 M-4 — `checkAuthSurfaceRateLimit` swaps to a tighter
+  // v1.4.43 — `checkAuthSurfaceRateLimit` swaps to a tighter
   // global bucket when the trust chain is misconfigured; otherwise it
   // is byte-equivalent to the previous per-IP `auth:login:{ip}` key.
   const rl = await checkAuthSurfaceRateLimit(
@@ -154,7 +154,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   if (!user || !user.passwordHash) {
     await attempt.failed();
-    // v1.4.43 W3-SECURITY (H-1): never write the typed identifier into
+    // v1.4.43: never write the typed identifier into
     // the audit row — `reason` already tells the operator what
     // happened, and PII must not land in operator artefacts. The
     // HMAC anchor below is one-way — recoverable only with the HMAC

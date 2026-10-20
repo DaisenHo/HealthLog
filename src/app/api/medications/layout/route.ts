@@ -63,7 +63,7 @@ async function buildMedicationListLayout(
 ): Promise<MedicationListLayoutWithToken> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    // v1.32.21 (R5a) — `updatedAt` rides the cached blob so GET hands the
+    // v1.32.21 — `updatedAt` rides the cached blob so GET hands the
     // client the optimistic-concurrency token alongside the presentation it
     // applies to (busted on every write, so the pair stays consistent).
     select: { medicationListLayoutJson: true, updatedAt: true },
@@ -114,7 +114,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
   if (jsonError) return jsonError;
 
-  // v1.32.21 (R5a) — pull the optimistic-concurrency base token off the body
+  // v1.32.21 — pull the optimistic-concurrency base token off the body
   // BEFORE the Zod parse so the domain schema stays pure (issue #581 family).
   // BOTH writers (view toggle, order save) route through here, so the token
   // guards either against a stale interleave of the other.
@@ -181,7 +181,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     order: mergedOrder,
   });
 
-  // v1.32.21 (R5a) — guard the write on the client's base token. A stale base
+  // v1.32.21 — guard the write on the client's base token. A stale base
   // 409s and writes NOTHING, so a view toggle can't resurrect an order the
   // reorder Save just committed (or vice versa); a tokenless request keeps the
   // prior unconditional write.

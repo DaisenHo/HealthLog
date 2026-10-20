@@ -297,7 +297,7 @@ export const PUT = apiHandler(
     await auditLog("labResult.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the replaced result. The note is named and never quoted: it is
+      // The replaced result. The note is named and never quoted: it is
       // encrypted on the row.
       details: {
         labResultId: id,

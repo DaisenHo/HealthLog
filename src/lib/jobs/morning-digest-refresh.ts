@@ -1,5 +1,5 @@
 /**
- * S4 — the `morning-digest-refresh` worker.
+ * The `morning-digest-refresh` worker.
  *
  * Runs ONE extra insight generation per user per local morning, event-driven
  * off the arrival of last night's sleep (never warm-on-mount, never per page

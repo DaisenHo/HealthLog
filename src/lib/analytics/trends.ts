@@ -3,6 +3,9 @@
  * All functions are pure and work on sorted arrays of {date, value} pairs.
  */
 
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
+import { linearFit } from "@/lib/stats/linear-fit";
+
 export interface DataPoint {
   date: Date;
   value: number;
@@ -46,26 +49,14 @@ export function trendSlope(
     y: p.value,
   }));
 
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-
-  const denominator = n * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-
-  const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / n;
-
-  // R² calculation
-  const meanY = sumY / n;
-  const ssTotal = points.reduce((s, p) => s + (p.y - meanY) ** 2, 0);
-  const ssResidual = points.reduce(
-    (s, p) => s + (p.y - (intercept + slope * p.x)) ** 2,
-    0,
+  const fit = linearFit(
+    points.map((p) => p.x),
+    points.map((p) => p.y),
   );
-  const rSquared = ssTotal === 0 ? 0 : 1 - ssResidual / ssTotal;
+  if (!fit) return null;
+  const { slope } = fit;
+  // No variance in y: a flat line explains nothing, as it always read.
+  const rSquared = fit.r2 ?? 0;
 
   const threshold = 0.01; // units per day threshold for "stable"
   const direction: "up" | "down" | "stable" =
@@ -95,9 +86,7 @@ export function detectAnomalies(data: DataPoint[], threshold = 2.0): Anomaly[] {
 
   const values = data.map((p) => p.value);
   const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance =
-    values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
-  const stdDev = Math.sqrt(variance);
+  const stdDev = standardDeviation(values, READING_SPREAD) ?? 0;
 
   if (stdDev === 0) return [];
 
@@ -153,14 +142,14 @@ export interface DataSummary {
    */
   anomalyCount?: number;
   /**
-   * v1.4.16 phase B8 — average value over the 30-day window starting
+   * v1.4.16 — average value over the 30-day window starting
    * 30 days before today, i.e. the "last month" prior period the
    * dashboard tile delta callout compares against. Null when the
    * window has no data.
    */
   avg30LastMonth?: number | null;
   /**
-   * v1.4.16 phase B8 — average value over the 30-day window starting
+   * v1.4.16 — average value over the 30-day window starting
    * 365 days before today (one calendar year ago). Null when the
    * window has no data.
    */
@@ -191,7 +180,7 @@ export function summarize(data: DataPoint[]): DataSummary {
 
   const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
   const values = sorted.map((p) => p.value);
-  // v1.4.33 P0 — single-pass fold for sum/min/max replaces the previous
+  // v1.4.33 — single-pass fold for sum/min/max replaces the previous
   // `Math.min(...values)` / `Math.max(...values)` spread. V8 caps
   // function arity at ~125k-130k; Apple-Health-synced PULSE series for
   // a multi-year power user routinely exceed that, and the spread
@@ -232,7 +221,7 @@ export function summarize(data: DataPoint[]): DataSummary {
   const last7 = sorted.filter((p) => now - p.date.getTime() < 7 * DAY);
   const last30 = sorted.filter((p) => now - p.date.getTime() < 30 * DAY);
 
-  // v1.4.16 phase B8 — prior-period 30-day means powering the tile
+  // v1.4.16 — prior-period 30-day means powering the tile
   // delta callout. The lastMonth window is days [30, 60) ago; the
   // lastYear window is days [365, 395) ago. Both align to the 30-day
   // shift the chart overlay uses so the tile delta and the chart

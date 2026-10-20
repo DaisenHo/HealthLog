@@ -8,7 +8,7 @@ import {
 } from "../medical-references";
 
 /**
- * v1.4.16 phase B5a — curated medical-reference bundle.
+ * v1.4.16 — curated medical-reference bundle.
  *
  * The bundle is the single source of truth for any normative claim the
  * AI surface makes ("target < 140/90", "BMI 18.5-24.9", "≥ 7h sleep").

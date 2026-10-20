@@ -25,6 +25,7 @@ import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { ILLNESS_SYMPTOM_CATALOG } from "./symptom-catalog";
 import { useIllnessDayLogList } from "./use-illness";
 import type { IllnessDayLogDTO } from "./types";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 function symptomLabelKey(key: string): string | null {
   return ILLNESS_SYMPTOM_CATALOG.find((s) => s.key === key)?.labelKey ?? null;
@@ -106,7 +107,10 @@ export function IllnessDayTimeline({
   // v1.36.x — logging a day is not a delegated verb.
   const { canManageDomain } = useRecordCapabilities();
   const canManageIllness = canManageDomain("illness");
-  const { data, isLoading, isError } = useIllnessDayLogList(episodeId, "desc");
+  const { data, isLoading, isError, error, refetch } = useIllnessDayLogList(
+    episodeId,
+    "desc",
+  );
 
   const dayLogs = data?.dayLogs ?? [];
 
@@ -122,9 +126,13 @@ export function IllnessDayTimeline({
             <Skeleton className="h-4 w-2/3" />
           </div>
         ) : isError ? (
-          <p className="text-muted-foreground text-sm">
-            {t("illness.timeline.error")}
-          </p>
+          <QueryErrorRow
+            inset
+            error={error}
+            slot="illness-timeline-error"
+            message={t("illness.timeline.error")}
+            onRetry={() => void refetch()}
+          />
         ) : dayLogs.length === 0 ? (
           <div className="space-y-3">
             <p className="text-muted-foreground text-sm">

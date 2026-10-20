@@ -18,7 +18,7 @@ import { importWithRetry } from "@/lib/retry-import";
 import type { SleepStageBreakdown } from "./sleep-stage-stacked-bar";
 import { SleepDurationChart } from "./sleep-duration-chart";
 
-// v1.18.11 (W5 perf) — the stage stacked bar is the only recharts consumer
+// v1.18.11 — the stage stacked bar is the only recharts consumer
 // on this page (the duration chart already routes through
 // `health-chart-dynamic`). Defer it through `next/dynamic` so recharts is
 // off `/insights/sleep`'s first-load JS; the `<ChartSkeleton>` loading shell
@@ -43,7 +43,7 @@ function SleepStageStackedBar(
 }
 
 /**
- * v1.4.25 W4c — Sleep insights composition.
+ * v1.4.25 — Sleep insights composition.
  *
  * Pulls the analytics `sleepStages` aggregate (added in v1.4.23 W2)
  * plus the SLEEP_DURATION trend series via `<SleepDurationChart>` and
@@ -58,7 +58,7 @@ function SleepStageStackedBar(
  * the shared sleep-rhythm grid row directly below, so the top card only
  * duplicated it.
  *
- * v1.18.7 W-D — the single-night "Last night" hypnogram card was removed:
+ * v1.18.7 — the single-night "Last night" hypnogram card was removed:
  * its per-stage breakdown (time + %) duplicated the phase distribution the
  * stage stacked bar already shows directly below it. The `/api/sleep/night`
  * route stays (the dashboard still reads it); only this redundant surface is
@@ -90,7 +90,7 @@ export function SleepOverview() {
   const { t } = useTranslations();
   const { compareBaseline } = useInsightsLayoutPrefs(isAuthenticated);
 
-  // v1.4.33 IW2 — sleep overview reads `sleepStages` (a thick-only
+  // v1.4.33 — sleep overview reads `sleepStages` (a thick-only
   // field) alongside `summaries.SLEEP_DURATION`, so it stays on the
   // default thick slice. The shared hook still centralises the cache
   // settings (60s staleTime, no refetch on mount / window focus) so

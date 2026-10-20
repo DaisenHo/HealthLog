@@ -1,5 +1,5 @@
 /**
- * v1.22 (W6) — `formatUpdatedLabel`: time only for today, no time for
+ * v1.22 — `formatUpdatedLabel`: time only for today, no time for
  * yesterday, locale date for older (honouring the passed formatter).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";

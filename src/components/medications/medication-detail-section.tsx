@@ -3,7 +3,7 @@
 import { type ReactNode } from "react";
 
 /**
- * v1.4.25 W21 Fix-N — section wrapper for the medication-detail panels
+ * v1.4.25 — section wrapper for the medication-detail panels
  * (Titration, Scheduling, SideEffects, DrugLevelChart). The earlier
  * sections hand-rolled the same chrome — border + header row + dotted
  * divider + body padding — and drifted on padding, border opacity, and

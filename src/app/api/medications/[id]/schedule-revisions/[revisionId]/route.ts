@@ -246,7 +246,7 @@ export const PATCH = apiHandler(
     await auditLog("medication.schedule_revision.updated", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the era boundaries the correction replaced. An era is a window
+      // The era boundaries the correction replaced. An era is a window
       // the compliance engine reads months of history through; moving it
       // silently re-scores days nobody looked at again.
       details: {
@@ -379,7 +379,7 @@ export const DELETE = apiHandler(
     await auditLog("medication.schedule_revision.deleted", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C3 — the era's dates and its dosing summary. Without them the feed
+      // The era's dates and its dosing summary. Without them the feed
       // says an era was deleted and the compliance history it explained
       // becomes unexplainable.
       details: {

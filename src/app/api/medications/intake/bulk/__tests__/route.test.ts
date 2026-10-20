@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on POST /api/medications/intake/bulk.
+ * v1.4.43 — multi-issue 422 envelope on POST /api/medications/intake/bulk.
  * Preserves the `medications.intake.bulk.invalid` errorCode meta passthrough.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
     medicationIntakeEvent: {
       create: vi.fn(),
       findUnique: vi.fn(),
-      // v1.8.2 reconcile — shared slot upsert reads + updates in place.
+      // v1.8.2 — shared slot upsert reads + updates in place.
       findMany: vi.fn(),
       update: vi.fn(),
       // v1.15.19 — resolver-null convergence probe before standalone insert.
@@ -197,7 +197,7 @@ describe("POST /api/medications/intake/bulk — 422 multi-issue (v1.4.43 W6)", (
 });
 
 // ────────────────────────────────────────────────────────────────────
-// v1.8.2 reconcile — bulk slot-snap upsert invariants (C2 + C1)
+// v1.8.2 — bulk slot-snap upsert invariants (C2 + C1)
 // ────────────────────────────────────────────────────────────────────
 
 describe("POST /api/medications/intake/bulk — v1.8.2 reconcile", () => {

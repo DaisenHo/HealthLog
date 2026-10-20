@@ -1,5 +1,151 @@
 # Changelog
 
+## [1.43.7] — 2026-10-20
+
+### Added
+
+- **Dutch.** HealthLog speaks Dutch now, the eighth language, translated and
+  contributed by @robdegraaf (#1246). Friends in the Netherlands are always
+  welcome here. Cheers with a Grolsch! 🍺
+- **Readings you enter here count for Apple Health freshness.** Weight, blood
+  pressure and glucose are no longer called quiet while you keep entering them
+  in HealthLog for the phone to pick up, and the card shows when you last did
+  (`lastEnteredHereAt`, Refs #1247).
+
+### Fixed
+
+- **Error states say what happened.** When a session has ended, a card offers
+  to sign in again instead of a retry that cannot work; when there were too
+  many requests just now, it says so without a pointless retry; a section you
+  are not allowed to see on a shared record stays quiet. Some thirty cards that
+  used to show a bare red line, a "still learning" note, an endless skeleton
+  or nothing at all when their data failed to load now say so and offer a
+  retry, and charts follow the same rule. Every read failure goes through the
+  same row, card and chart state, deciding by the error code first and the
+  status second.
+- **A short database outage no longer signs you out.** A session that could not
+  be checked because the database was unreachable, out of connections or
+  otherwise failing answers 503 (`auth.session.unavailable`) and the client
+  keeps its credential and tries again. A malformed session cookie is treated
+  as signed out (401) without a database lookup.
+- **A nap is not a night, but it is sleep.** A day whose only sleep is a short
+  daytime nap has no main night (`main: null` on `/api/sleep/night`). A day's
+  sleep in the list, the export and the correlations counts its naps, the same
+  total the chart and the sleep score show; the main night alone is
+  `mainAsleepMinutes`. The night view opened without a date shows the last
+  night with main sleep. The sleep list, the night view, the chart and the
+  sleep score name the same day for every night. A REM segment of zero minutes
+  no longer drops the night around it.
+- **Deleted entries stay deleted for the AI.** Deleted mood entries and
+  readings no longer shape the status texts written about you, and the general
+  overview looks at every metric again instead of the newest few thousand rows
+  of the densest one.
+- **Days logged for a chronic condition count** in the symptom correlations.
+- **Inviting someone whose name or e-mail matches no account** says so
+  (`sharing.invite.no_account`) and is never confused with a profile you no
+  longer look after.
+- **Old nights open, and "All" means all.** The night view answers any date,
+  however old, and the sleep series reaches back to the first night. The sleep
+  status read the last few weeks of stages; it now reads the last year of
+  nights.
+- **Days are your days.** The dashboard streak and the day a dose counts for
+  were placed on the wrong side of midnight for readings close to it; both
+  follow the profile timezone now. Skipping a dose from Telegram snoozes until
+  the end of your own day, not the server's.
+- **One number for one thing.** The spread of a series is the same in the app,
+  the API, MCP and AI tools. Correlations on the insights overview and in AI
+  data appear only when they are statistically sound (at least 20 pairs,
+  p < 0.05), as everywhere else; below that the value is `null`. A chronic
+  condition no longer fills the symptom series with zeros.
+- **Medication adherence on the cadence chips** counts pauses, courses and
+  missed doses like the detail page; a week's pause read 77 % instead of 100 %.
+- **A workout Apple Health sends twice is stored once,** and every workout
+  reader uses the same source order.
+- **Provider histories do not end early without saying so.** A WHOOP, Oura,
+  Withings, Fitbit or Strava history that stops at its page limit is no longer
+  marked as fully imported. A Strava history of more than about 4,000
+  activities imports in stages from where the last stage stopped, one stage per
+  rate window, instead of re-reading the newest activities after every
+  restart. WHOOP and Oura no longer read the first page twice when a list ends
+  with an empty page token. Imported values from every provider and from
+  Health Connect are rounded the same way, with halves rounded up (a weight of
+  72.345 kg now stores as 72.35, not 72.34).
+- **A long Google Health backfill keeps its place.** Only attempts that end at
+  the same edge count toward the final end, and a restart during the 24-hour
+  wait no longer starts a second chain.
+- **The recovery page** says in one sentence why it is still empty, decided on
+  the server (`recoveryEmpty`), and always links to the integrations.
+- **Lists that stop at a limit say so** (`meta.truncated`, `meta.limit`) instead
+  of passing the oldest loaded entry off as the beginning, and the web shows a
+  note under each such list. The activity feed keeps its `data.truncated` for
+  existing clients; it is deprecated in favour of `meta.truncated`.
+- Reconnecting Strava, even to a different account, reads that account's full
+  history again instead of continuing where the previous one stopped.
+- The day view's "highest since" notes pick up a new or corrected reading right
+  away.
+- **Old days and long histories are read whole.** The sleep summary covers the
+  whole history, the pulse assessment reads at least a month of pulse instead
+  of a few hours of a dense stream, and the mood fallback reads the same five
+  years as the rollup path.
+- The coach's daily limit on follow-up questions resets at your own midnight,
+  and the weather and air-quality refresh includes today east of UTC.
+- **Deleting a large account** no longer aborts after five seconds.
+- Workout dates follow your date format in the list, the detail and the
+  dashboard tile. "Not enough nights yet" names the number actually needed.
+  `groupBy=day` together with `valueMin`/`valueMax` answers 422 instead of
+  ignoring the filter.
+
+### Changed
+
+- **Faster reads.** The latest value per type is read through one bounded query
+  instead of a sort over every reading (about 60 ms down to 1 to 2 ms on a large
+  account), the dashboard summaries share one cache cell, and paging through the
+  day view computes the two-year comparison once.
+- **One heavy job at a time per process.** Imports, restores, backups, rollup
+  backfills, provider backfills and the nightly runs queue behind each other
+  instead of stacking up in one heap. A job that finds the lane busy goes back
+  to the queue and starts once it is free, so a backup waiting behind a large
+  import no longer runs out of time while it waits. A long Google Health
+  backfill makes room at its next slice boundary for a job waiting behind it,
+  and a job that waits more than two hours is reported as a warning
+  (`job.heavy_lane.waiting_long`). Building rollups for a large account no
+  longer runs a second time when it takes longer than fifteen minutes. The six per-metric status
+  crons are gone (the nightly batch already covers them), and a queue fed only
+  by its cron polls every 30 seconds.
+- **`measurements` stays small.** An update that changes nothing keeps its
+  timestamps, so it stays on its page and is not sent to the phone again; the
+  table leaves room on each page and autovacuum starts at 5 % dead rows. A
+  nightly check warns when dead rows or bloat grow past that (see
+  `docs/ops/measurement-maintenance.md`).
+- **Migrations that wait for a lock no longer hold writers back or stop the
+  boot.** `prisma migrate deploy` runs a migration file statement by
+  statement, not in one transaction, so the lock-sensitive part of migration
+  0412 runs as one block that gives up after ten seconds when another process
+  holds `measurements`. The container then retries a migration marked safe to
+  re-run, with a growing pause, instead of stopping at boot; any other
+  migration failure still stops the boot. See "A migration that timed out on a
+  lock" in `docs/ops/deploy.md`.
+- The day view's "highest since" notes cache fixed 90-day blocks and use less
+  memory when paging back through older days.
+- An insights card whose refresh keeps failing stops polling after its usual
+  number of attempts.
+- Failed provider syncs and refused uploads are logged as signals instead of
+  audit entries; a provider's error text no longer lands in the audit log in
+  plain text.
+- **The cached AI health report is encrypted at rest,** existing rows included.
+- Every API error carries a stable `meta.errorCode`; a route without its own
+  code gets an `http.*` code from the status.
+- Logs group requests by route template (`/api/medications/[id]`) instead of by
+  concrete path.
+- Failed inputs no longer fill the audit log; only attempts by someone with a
+  grant appear there.
+- The browser bundle no longer pulls in server modules, and a test keeps it
+  that way.
+- The Coach stops polling a document that will never be indexed.
+- On an out-of-memory crash the process writes a diagnostic report to stderr
+  (`--report-on-fatalerror`, without environment or network details), and the
+  heap monitor adds a 95 % tier.
+
 ## [1.43.6] — 2026-10-19
 
 ### Fixed

@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { pickCanonicalSourceRows } from "../source-priority";
 
 /**
- * v1.4.25 W5e — cross-source canonical-row picker tests.
- * v1.4.25 W8c — two-axis picker (source + device-type) tests.
+ * v1.4.25 — cross-source canonical-row picker tests.
+ * v1.4.25 — two-axis picker (source + device-type) tests.
  *
  * Coverage focuses on the cumulative-metric use case where two
  * sources record the same day's value and one must win.
@@ -360,7 +360,7 @@ describe("pickCanonicalSourceRows — v1.4.25 W8c two-axis device-type picker", 
   });
 
   it("resolves the device-type ladder per row when the bucket carries mixed MeasurementTypes", () => {
-    // v1.4.25 W10 reconcile (Sr-H2) — when a caller batches more than
+    // v1.4.25 — when a caller batches more than
     // one MeasurementType through a single picker call (Coach evidence
     // rollup, doctor-PDF section, correlations engine), each row-type
     // must resolve against its OWN ladder. The pre-W10 picker pinned

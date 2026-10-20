@@ -140,7 +140,7 @@ export interface OcrExtractedRowDto {
   markerAnalyteKey: string | null;
   duplicateOf: string | null;
   /**
-   * v1.43 (D1223) — the marker the row was matched to automatically: by its
+   * v1.43 — the marker the row was matched to automatically: by its
    * name, an alias of the account, or a catalog abbreviation. Null when none.
    */
   biomarkerId: string | null;
@@ -205,7 +205,7 @@ export const ocrCommitRowSchema = z
       .or(z.literal("").transform(() => undefined)),
     takenAt: takenAtField,
     /**
-     * v1.43 (D1223) — the marker the person chose for this row on the review
+     * v1.43 — the marker the person chose for this row on the review
      * screen. The row is written under it whatever `analyte` says; an id that
      * is not one of the record's markers skips the row (`unknown_biomarker`).
      */
@@ -247,7 +247,7 @@ export type OcrCommitRow = z.infer<typeof ocrCommitRowSchema>;
 export const ocrCommitSchema = z.object({
   rows: z.array(ocrCommitRowSchema).min(1).max(OCR_MAX_ROWS),
   /**
-   * S9 — the vault document the client filed the scanned bytes into (kind
+   * The vault document the client filed the scanned bytes into (kind
    * LAB_RESULT), so the committed labs can be cross-linked back to their source
    * (`inboundDocuments` module on). Optional: text-mode scans keep the image
    * on-device and file nothing, and a module-off account never files. Ownership

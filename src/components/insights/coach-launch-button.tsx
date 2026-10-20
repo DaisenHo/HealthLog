@@ -12,7 +12,7 @@ import { useAiCapability } from "@/hooks/use-ai-capability";
 /**
  * Inline desktop Coach launch button.
  *
- * v1.4.28 R3c — the legacy implementation rendered BOTH a sticky FAB
+ * v1.4.28 — the legacy implementation rendered BOTH a sticky FAB
  * (visible `<lg`) and the inline pill (`lg+`) from the same component.
  * Every sub-page that mounted `<CoachLaunchButton>` therefore painted a
  * second FAB into the DOM, collapsing to one visible button only

@@ -465,7 +465,7 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
   });
 
   it("consumes the mood-rollup tier and skips the raw findMany when DAY rows exist", async () => {
-    // v1.4.40 W-INSIGHTS — rollup-tier read swap parity. Three DAY rows
+    // v1.4.40 — rollup-tier read swap parity. Three DAY rows
     // populated → the route reads them directly and never touches the
     // raw `moodEntry.findMany`. `moodSummary` is computed over per-day
     // mean DataPoints, matching the rollup-tier convention shipped by
@@ -525,7 +525,7 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
   });
 
   it("falls back to the bounded live walk when the rollup tier is empty but raw mood entries exist", async () => {
-    // v1.4.40 W-INSIGHTS — coverage-fallback parity. Legacy account
+    // v1.4.40 — coverage-fallback parity. Legacy account
     // with raw entries but no rollup coverage yet. The route runs the
     // legacy bounded walk once; the warm-up helper (stubbed) is
     // supposed to fire fire-and-forget so the next request lands on
@@ -569,16 +569,10 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
     expect(body.data.moodSummary?.count).toBe(2);
   });
 
-  it("derives weight × BP scatter from daily-bucketed series", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    // Five day-aligned pairs (n >= 5 unlocks pearsonCorrelation).
-    const days = [
-      "2026-05-01",
-      "2026-05-02",
-      "2026-05-03",
-      "2026-05-04",
-      "2026-05-05",
-    ];
+  function mockWeightBpDays(count: number) {
+    const days = Array.from({ length: count }, (_, i) =>
+      new Date(Date.UTC(2026, 4, 1 + i)).toISOString().slice(0, 10),
+    );
     (buildComprehensiveAggregate as ReturnType<typeof vi.fn>).mockResolvedValue(
       {
         summaries: {},
@@ -592,22 +586,41 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
           })),
         },
         firstMeasurementAt: new Date(),
-        totalMeasurements: 10,
+        totalMeasurements: count * 2,
       },
     );
+  }
+
+  type WeightBpBody = {
+    data: {
+      scatterData: Array<{ weight: number; sysBP: number }>;
+      weightBpCorrelation: { r: number; n: number } | null;
+    };
+  };
+
+  it("derives weight × BP scatter from daily-bucketed series", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    mockWeightBpDays(25);
 
     const res = await callGet(makeReq());
-    const body = (await res.json()) as {
-      data: {
-        scatterData: Array<{ weight: number; sysBP: number }>;
-        weightBpCorrelation: { r: number; n: number } | null;
-      };
-    };
-    expect(body.data.scatterData).toHaveLength(5);
+    const body = (await res.json()) as WeightBpBody;
+    expect(body.data.scatterData).toHaveLength(25);
     expect(body.data.scatterData[0]).toEqual({ weight: 80, sysBP: 120 });
-    // Perfect linear relationship → r === 1.
+    // Perfect linear relationship over 25 days → r === 1.
     expect(body.data.weightBpCorrelation?.r).toBe(1);
-    expect(body.data.weightBpCorrelation?.n).toBe(5);
+    expect(body.data.weightBpCorrelation?.n).toBe(25);
+  });
+
+  it("reports no correlation below the significance bar every surface uses", async () => {
+    // Five perfectly aligned days: the scatter shows them, but five points
+    // cannot carry a correlation (n >= 20 and p < 0.05).
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    mockWeightBpDays(5);
+
+    const res = await callGet(makeReq());
+    const body = (await res.json()) as WeightBpBody;
+    expect(body.data.scatterData).toHaveLength(5);
+    expect(body.data.weightBpCorrelation).toBeNull();
   });
 });
 
@@ -673,7 +686,7 @@ describe("GET /api/insights/comprehensive — stale-while-revalidate marker", ()
   });
 });
 
-// v1.32.17 (R1) — mood × metric correlations must pair on the LOCAL
+// v1.32.17 — mood × metric correlations must pair on the LOCAL
 // logging day. The mood series has been local-day-keyed since v1.32.12;
 // the three metric partners (sys BP, weight, resting pulse) were still
 // UTC-keyed, so for non-UTC users an evening reading landed a day off and
@@ -849,13 +862,10 @@ describe("GET /api/insights/comprehensive — mood × metric local-day pairing (
     // tier in R12. Both read the UTC `dailyByType` / UTC `scheduledFor`
     // slice, so their output must be invariant to the caller's timezone.
     // Run the SAME fixture under UTC then America/New_York and deep-equal.
-    const days = [
-      "2026-05-01",
-      "2026-05-02",
-      "2026-05-03",
-      "2026-05-04",
-      "2026-05-05",
-    ];
+    // 25 days: a correlation has to clear n >= 20 and p < 0.05 to exist.
+    const days = Array.from({ length: 25 }, (_, i) =>
+      new Date(Date.UTC(2026, 4, 1 + i)).toISOString().slice(0, 10),
+    );
     const aggregate = {
       summaries: {},
       bpRawRows: { sys: [], dia: [] },
@@ -896,20 +906,20 @@ describe("GET /api/insights/comprehensive — mood × metric local-day pairing (
       scheduleRevisions: [],
       pauseEras: [],
     };
-    // Intake taken on the first three days, logged as skipped on the last
-    // two → a non-degenerate continuity series. The skips used to be absent
+    // Intake taken on the first fifteen days, logged as skipped on the
+    // last ten → a non-degenerate continuity series. The skips used to be absent
     // rows: a day with no record read as a measured 0 % continuity, which is
     // the fabrication the route no longer makes, and a fixture that relies on
     // it would be pinning the defect rather than the timezone question this
-    // test asks. Recording the two days as skips keeps five paired days AND
+    // test asks. Recording the days as skips keeps every day paired AND
     // keeps every one of them a thing the person actually logged.
     const intakeEvents = days.map((d, i) => ({
       medicationId: "med-bp",
       userId: "user-comp-1",
       deletedAt: null,
       scheduledFor: new Date(`${d}T07:00:00Z`),
-      takenAt: i < 3 ? new Date(`${d}T07:05:00Z`) : null,
-      skipped: i >= 3,
+      takenAt: i < 15 ? new Date(`${d}T07:05:00Z`) : null,
+      skipped: i >= 15,
     }));
 
     function primeMocks() {
@@ -948,7 +958,8 @@ describe("GET /api/insights/comprehensive — mood × metric local-day pairing (
     );
     // And the guard is meaningful only if these joins actually produced
     // output to compare.
-    expect(utcBody.data.scatterData).toHaveLength(5);
+    expect(utcBody.data.scatterData).toHaveLength(25);
+    expect(utcBody.data.weightBpCorrelation).not.toBeNull();
     expect(utcBody.data.bpMedicationCorrelation).not.toBeNull();
   });
 });

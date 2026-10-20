@@ -52,7 +52,7 @@ interface NavLink {
 // the existing measurement / medication / mood quick-entry surfaces
 // (see `<CapturePicker>`).
 //
-// v1.17.1 (F-1) — the two always-visible flanking anchors and the "More"
+// v1.17.1 — the two always-visible flanking anchors and the "More"
 // hub are now BOTH derived from the one shared destination model
 // (`nav-model.ts`), the same ordered list the desktop sidebar renders.
 // The bar keeps its ergonomic 5-slot shape, but the hub is computed by the
@@ -104,7 +104,7 @@ export function BottomNav() {
     visibleCaptureKinds(capabilities, CAPTURE_KIND_ORDER, user?.modules)
       .length > 0;
 
-  // v1.17.1 (F-1) — the More hub is the model-computed hub: every visible
+  // v1.17.1 — the More hub is the model-computed hub: every visible
   // feature destination that isn't a primary slot, plus the shared utility
   // tail. Cycle is gated by the same flag the sidebar uses, so the two
   // surfaces gate identically and cannot drift.
@@ -193,7 +193,7 @@ export function BottomNav() {
 
   return (
     <>
-      {/* v1.4.33 F14 — bar height and safe-area defence so the bar can
+      {/* v1.4.33 — bar height and safe-area defence so the bar can
           never overlap the last viewport line of scrollable page content.
           `min-h-16` floors the bar at 64px; `pb-[env(safe-area-inset-bottom)]`
           reserves the home-indicator inset on iOS / iPadOS PWA installs;
@@ -309,7 +309,7 @@ export function BottomNav() {
                   )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                  {/* v1.18.10 (W10) — show the FULL label, never an ellipsis
+                  {/* v1.18.10 — show the FULL label, never an ellipsis
                       that hides meaning. The W7 `truncate` clipped long words
                       ("Benachrichtigungen" → "Benachrichtigun…"); the goal is a
                       readable label, not a balanced tile. Shrink the type to

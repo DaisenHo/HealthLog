@@ -41,7 +41,7 @@ vi.mock("@tanstack/react-query", () => ({
     getQueryData: vi.fn(),
     invalidateQueries: vi.fn(),
   }),
-  // v1.18.0 (S5) — the gathered injection-sites card uses `useMutation`.
+  // v1.18.0 — the gathered injection-sites card uses `useMutation`.
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
@@ -53,7 +53,7 @@ vi.mock("@/lib/charts/reduced-motion", () => ({
   prefersReducedMotion: () => true,
 }));
 
-// v1.18.0 (S5) — the section now reads `useAuth()` to gate the
+// v1.18.0 — the section now reads `useAuth()` to gate the
 // injection-sites card it gathered from the account profile.
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
@@ -67,9 +67,12 @@ vi.mock("@/hooks/use-auth", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { SettingsSectionFrame } from "./section-frame-harness";
 import { MedicationsSection } from "../medications-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en"): string {
-  // v1.18.6 (W9) — the visible heading (with the historic id) comes from the
+  // v1.18.6 — the visible heading (with the historic id) comes from the
   // shared frame the route wraps the section in.
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>
@@ -86,7 +89,7 @@ beforeEach(() => {
 
 describe("<MedicationsSection> — SSR smoke", () => {
   it("renders the section heading via i18n (no raw keys)", () => {
-    // v1.18.1 (D0) — the section blurb was dropped; the sr-only heading + the
+    // v1.18.1 — the section blurb was dropped; the sr-only heading + the
     // card content carry the meaning.
     const html = render();
     expect(html).toContain("settings-section-medications-title");
@@ -135,7 +138,7 @@ describe("<MedicationsSection> — SSR smoke", () => {
   });
 
   it("gathers the injection-sites card (moved from the account profile)", () => {
-    // v1.18.0 (S5) — injection-site exclusions are a medication setting and
+    // v1.18.0 — injection-site exclusions are a medication setting and
     // now live on this screen alongside the list view + order.
     const html = render();
     expect(html).toContain("Globally excluded injection sites");

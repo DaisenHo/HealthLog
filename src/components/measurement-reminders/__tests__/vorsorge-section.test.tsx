@@ -64,7 +64,7 @@ function noonOnDisplayDay(offsetDays: number): Date {
 }
 
 function render(node: React.ReactNode) {
-  // v1.18.7 (Wave E) — a measurement-linked card now mounts the 7-day
+  // v1.18.7 — a measurement-linked card now mounts the 7-day
   // trend strip, which reads via TanStack Query; wrap in a client so the
   // static-markup render resolves (the query stays idle on the server).
   const queryClient = new QueryClient({
@@ -135,7 +135,7 @@ describe("<VorsorgeSection> loading + empty", () => {
 
   it("renders a 'Measure now' action for a measurement-linked reminder", () => {
     // v1.18.2 — a typed reminder's primary action opens the value-entry form.
-    // v1.18.6 (MOD-06) — surfaced as a green "Measure now" button (a
+    // v1.18.6 — surfaced as a green "Measure now" button (a
     // measurement is not an intake), not a silent checkmark.
     const reminder: MeasurementReminder = {
       id: "linked",

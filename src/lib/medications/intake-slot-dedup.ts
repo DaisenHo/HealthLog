@@ -242,7 +242,7 @@ export async function dedupeUserIntakeSlots(
   // recompute after the collapse. Deduped so a busy day folds once.
   const daysToRecompute = new Set<string>();
 
-  // v1.20.2 F4 — batch the per-medication reads. The pre-v1.20.2 shape
+  // v1.20.2 — batch the per-medication reads. The pre-v1.20.2 shape
   // issued a `findFirst` (latest takenAt) + a `findMany` (all live rows)
   // PER medication → 2N round-trips (20 meds = 40). Pull every live row
   // for the user's medication set in ONE ordered `findMany`, group in

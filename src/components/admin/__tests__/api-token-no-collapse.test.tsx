@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.19 phase A7 — `/admin/api-tokens` no longer renders a Collapse
+ * v1.4.19 — `/admin/api-tokens` no longer renders a Collapse
  * / Expand toggle. The toggle existed as an escape hatch from the
  * v1.4 shared-admin page where 13 sections lived on one route; in
  * v1.5 every section has its own dedicated route, so collapsing the

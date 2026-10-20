@@ -3,7 +3,7 @@ import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
 import { iconForAuthProvider, providerForAction } from "../_shared";
 
 /**
- * v1.4.25 W8b — Provider column for the admin Login-Übersicht.
+ * v1.4.25 — Provider column for the admin Login-Übersicht.
  *
  * The audit-log entries don't carry a dedicated "provider" field — the
  * action name itself is the source of truth. These tests pin the

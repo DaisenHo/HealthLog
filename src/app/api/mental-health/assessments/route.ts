@@ -57,6 +57,7 @@ import type {
   MeasurementType,
   MeasurementSource,
 } from "@/generated/prisma/client";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 function shapeRow(row: {
   id: string;
@@ -118,7 +119,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
   const { instrument, limit, offset } = parsed.data;
-  const rows = await prisma.mentalHealthAssessment.findMany({
+  const pageSize = limit ?? 100;
+  const found = await prisma.mentalHealthAssessment.findMany({
     where: {
       userId: user.id,
       deletedAt: null,
@@ -129,7 +131,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Unique tiebreaker — `takenAt` is day-resolution and two instruments
     // taken in one sitting tie.
     orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-    take: limit ?? 100,
+    take: overfetch(pageSize),
     skip: offset ?? 0,
     select: {
       id: true,
@@ -144,11 +146,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
       createdAt: true,
     },
   });
+  const { rows, cap } = capRows(found, pageSize);
   annotate({
     action: { name: "mental-health.list" },
     meta: { count: rows.length },
   });
-  return apiSuccess({ assessments: rows.map(shapeRow) });
+  return apiListSuccess({ assessments: rows.map(shapeRow) }, cap);
 });
 
 // `withIdempotency` lets a double-tap / retry re-send the same
@@ -274,7 +277,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   const total = scoreTotal(id, items);
   const band = severityBand(id, total);
   const flagged = isSafetyFlagged(id, items);
-  // C2 — the locale of the person holding the phone, not of the record.
+  // The locale of the person holding the phone, not of the record.
   // `presentedLocale` is used twice: it is stored on the row as what was
   // shown, and it selects the crisis-resource copy returned on a positive
   // item 9. Under a switch the reader is the MANAGER, and crisis resources in
@@ -381,7 +384,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   });
   invalidateUserHealthScore(user.id);
 
-  // v1.37.19 (A6-13) — the projection row is a Measurement like any other:
+  // v1.37.19 — the projection row is a Measurement like any other:
   // route it through the shared post-mutation tail so the (type, day)
   // rollup bucket and the cached status assessment converge without
   // waiting for a nightly discovery pass.

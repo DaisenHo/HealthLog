@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the five chip questions, as data.
+ * v1.39 — the five chip questions, as data.
  *
  * Which step asks what, with which answers, whether one answer or many, and
  * whether it may be skipped — and the two pure translations the screen needs:
@@ -156,7 +156,7 @@ export function questionSkipBody(
 }
 
 /**
- * Q6 — which of the two unit questions this flow asks. Glucose needs a
+ * Which of the two unit questions this flow asks. Glucose needs a
  * glucose unit, weight needs the metric/imperial preference; an area not
  * ticked is not asked about, so a person who chose only glucose never sees
  * "kg or lb".

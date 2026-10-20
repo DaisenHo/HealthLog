@@ -31,6 +31,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: vi.fn(),
+  logCaught: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -52,6 +57,7 @@ vi.mock("@/lib/crypto", () => ({
 import { formatAdminAlertPayload, parkIntegrationAtReauth } from "../status";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 beforeEach(() => {
@@ -222,7 +228,7 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
       lastError: "enc(Withings connection is missing the user.activity scope.)",
     });
     // The whole point of the helper: counter is not in the update set.
-    // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+    // v1.4.47 — the legacy `consecutiveFailures` column was dropped
     // (migration 0077); the per-kind bucket is the live counter now.
     // Neither field appears in the update payload — the existing
     // bucket values are preserved exactly.
@@ -246,9 +252,8 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
         }),
       }),
     );
-    expect(auditLog).not.toHaveBeenCalledWith(
-      "integrations.sync.failed",
-      expect.anything(),
+    expect(emitSignal).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: "integrations.sync.failed" }),
     );
   });
 
@@ -281,7 +286,7 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
     // First-ever sync attempt on a legacy connection: no row in the
     // table. Helper must create the row at counter=0 so a later
     // genuine transient burst still has the full 3-strike runway.
-    // v1.4.47 W1 — counter is now the per-kind bucket payload (the
+    // v1.4.47 — counter is now the per-kind bucket payload (the
     // legacy `consecutiveFailures` column was dropped in migration
     // 0077); a zero envelope is the equivalent seed.
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce(null);

@@ -1,5 +1,5 @@
 /**
- * v1.22 (M4) — daily Coach-reminder sweep.
+ * v1.22 — daily Coach-reminder sweep.
  *
  * Covers: a passed CoachPlan reviewDate mints a one-off reminder from the
  * plan's own cue→action text and clears the reviewDate (activating the dangling

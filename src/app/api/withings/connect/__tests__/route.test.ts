@@ -1,5 +1,5 @@
 /**
- * v1.4.48 L5 + L14 — GET /api/withings/connect
+ * v1.4.48 — GET /api/withings/connect
  *
  * Pins:
  *   1. Happy path: mints a nonce, creates a `WithingsOAuthState` row,

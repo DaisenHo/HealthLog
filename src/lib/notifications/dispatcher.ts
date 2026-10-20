@@ -216,7 +216,7 @@ export async function dispatchNotification(
     channels.sort((a, b) => channelPriority(a.type) - channelPriority(b.type));
 
     const now = new Date();
-    // v1.4.25 W16c — per-event default policy. Most events stay
+    // v1.4.25 — per-event default policy. Most events stay
     // opt-out (no row = enabled); PERSONAL_RECORD flips to opt-in
     // (no row = disabled) so the iOS backfill doesn't saturate the
     // lock-screen on first launch. The user enables it explicitly

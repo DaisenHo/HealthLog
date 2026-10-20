@@ -169,7 +169,7 @@ export const insightRetryOptions = {
 } as const;
 
 /**
- * Send options for a nightly AI pass over every account (the status crons).
+ * Send options for a nightly AI pass over every account (the status batch).
  *
  * The retries of `insightRetryOptions`, plus a two-hour expiry. Each pass
  * makes a provider call per account, and on a large instance that outlasted
@@ -287,6 +287,57 @@ async function reconcileVolumeQueueRetention(
 }
 
 /**
+ * The idle poll of a queue only its cron feeds. pg-boss polls every two
+ * seconds by default, per worker slot, so the hundred-odd bindings asked the
+ * database for work about fifty times a second while nearly all of them wait
+ * for one tick a day. A cron job a few seconds late costs nothing.
+ */
+export const CRON_FED_POLL_SECONDS = 30;
+
+/**
+ * Scheduled queues that also take sends of their own: a per-account job, a
+ * webhook, a fan-out from the tick itself, a manual run. They keep pg-boss's
+ * two-second poll, because with one job per fetch a worker waits a full poll
+ * interval after every job, and a burst of sends would drain at one job per
+ * interval. `job-queue-runtime-guard.test.ts` holds this list to the send
+ * sites in the tree.
+ */
+export const SCHEDULED_AND_SENT_QUEUES: ReadonlySet<string> = new Set([
+  "data-backup",
+  "dawarich-sync",
+  "drain-per-sample-cumulative",
+  "environment-aq-history",
+  "environment-fetch",
+  "free-text-encryption-backfill",
+  "geolite2-fetch",
+  "insight-pregenerate",
+  "intake-slot-dedup",
+  "measurement-maintenance",
+  "med-notes-encryption-backfill",
+  "nightscout-sync",
+  "note-encryption-backfill",
+  "offhost-backup-purge",
+  "oura-sync",
+  "period-narrative-warm",
+  "polar-sync",
+  "pr-detection",
+  "whoop-recovery-sync",
+  "whoop-sleep-sync",
+  "whoop-workout-sync",
+  "withings-activity-sync",
+  "withings-ecg-sync",
+  "withings-sleep-sync",
+]);
+
+/** Queues a registrar scheduled that nothing else sends to. */
+const cronFedQueues = new Set<string>();
+
+/** The poll `createAndWork` gives `queue` when its binding names none. */
+export function defaultPollingSeconds(queue: string): number | undefined {
+  return cronFedQueues.has(queue) ? CRON_FED_POLL_SECONDS : undefined;
+}
+
+/**
  * Create every queue in `queues`, then schedule every cron in `schedules`.
  * Centralised so each registrar provisions before it schedules in the exact
  * order the monolith did, and the `Europe/Berlin` tz default stays in one
@@ -321,6 +372,7 @@ export async function createAndSchedule(
     ...(schedules.length > 0 ? [PG_BOSS_SEND_IT_QUEUE] : []),
   ]);
   for (const [name, cron, sendOptions] of schedules) {
+    if (!SCHEDULED_AND_SENT_QUEUES.has(name)) cronFedQueues.add(name);
     await boss.schedule(
       name,
       cron,
@@ -330,6 +382,26 @@ export async function createAndSchedule(
         ...(sendOptions ?? {}),
       },
     );
+  }
+}
+
+/**
+ * Remove queues the tree no longer declares: their schedule first, so the
+ * timekeeper stops minting jobs nobody works, then the queue with whatever it
+ * still holds. A queue that is already gone is a no-op, so every boot after
+ * the first does nothing. Never fails a boot.
+ */
+export async function retireQueues(
+  boss: PgBoss,
+  queues: readonly string[],
+): Promise<void> {
+  for (const name of queues) {
+    try {
+      await boss.unschedule(name);
+      await boss.deleteQueue(name);
+    } catch (err) {
+      workerLog("error", `[queue-retire] failed to retire ${name}`, err);
+    }
   }
 }
 
@@ -346,6 +418,10 @@ export async function createAndSchedule(
  *
  * Argument order matches `boss.work(queue, options, handler)` so a binding
  * reads the same as it did before, with `boss` moved to the front.
+ *
+ * A queue only its cron feeds polls at `CRON_FED_POLL_SECONDS` unless the
+ * binding names a poll; the registrar schedules before it binds, so the
+ * queue is known by then.
  */
 export async function createAndWork<T>(
   boss: PgBoss,
@@ -368,5 +444,13 @@ export async function createAndWork<T>(
   // `JobWithMetadata<T>` extends `Job<T>`, so the metadata handler accepts
   // everything the plain one does; the overloads above are what keeps the
   // call sites honest about which shape they asked pg-boss for.
-  await boss.work<T>(queue, options, runJob(queue, handler as JobHandler<T>));
+  const pollingIntervalSeconds =
+    options.pollingIntervalSeconds ?? defaultPollingSeconds(queue);
+  await boss.work<T>(
+    queue,
+    pollingIntervalSeconds === undefined
+      ? options
+      : { ...options, pollingIntervalSeconds },
+    runJob(queue, handler as JobHandler<T>),
+  );
 }

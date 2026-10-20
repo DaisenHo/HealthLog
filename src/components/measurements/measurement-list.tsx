@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListRow } from "@/components/ui/list-row";
 import {
@@ -126,7 +126,7 @@ import {
 import { formatDurationMinutes } from "@/lib/i18n/duration";
 
 /**
- * v1.4.37 W7c — cumulative HK types whose list view collapses to one
+ * v1.4.37 — cumulative HK types whose list view collapses to one
  * row per user-TZ day with an expand-chevron drill-down to the
  * per-sample chunks. Mirrors the server-side
  * `CUMULATIVE_DAY_SUM_TYPES` so the route's `groupBy=day` branch and
@@ -147,7 +147,7 @@ interface Measurement {
   measuredAt: string;
   notes: string | null;
   /**
-   * v1.4.37 W7c — present only on collapsed daily rows returned by
+   * v1.4.37 — present only on collapsed daily rows returned by
    * `?type=…&groupBy=day`. Drives the expand chevron + the drill-down
    * fetch keyed by the user's calendar day.
    */
@@ -190,7 +190,7 @@ function sleepStageLabel(
 interface MeasurementListProps {
   onEdit?: (m: Measurement) => void;
   /**
-   * v1.4.15 phase-C5: optional callback wired by the parent page so
+   * v1.4.15: optional callback wired by the parent page so
    * the empty-state's "Add your first measurement" CTA opens the same
    * dialog the header button does. When undefined we hide the button
    * (fallback to the header CTA) instead of crashing.
@@ -376,7 +376,7 @@ export function MeasurementList({
     }),
     [rowDisplay],
   );
-  // v1.28.42 (H3) — the desktop table and the mobile card list used to BOTH
+  // v1.28.42 — the desktop table and the mobile card list used to BOTH
   // render (only CSS `display` hid one), so a dense cumulative (up to ~5000
   // rows) or sleep page built every row subtree twice — double the DOM, double
   // the per-row `Intl` work. Gate on the SSR-safe `useIsMobile` so only the
@@ -459,7 +459,7 @@ export function MeasurementList({
   // page-bounded (≤ PAGE_SIZE) and well under the server's 200 cap.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
-  // v1.4.37 W7c — set of dayKeys whose drill-down is currently
+  // v1.4.37 — set of dayKeys whose drill-down is currently
   // expanded. Each key maps to a one-shot query that lazy-fetches
   // the per-sample rows for that calendar day on first open.
   const [expandedDayKeys, setExpandedDayKeys] = useState<Set<string>>(
@@ -485,12 +485,12 @@ export function MeasurementList({
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
-  // v1.4.27 MB3 — link the edit dialog error banner to the inputs via
+  // v1.4.27 — link the edit dialog error banner to the inputs via
   // `aria-describedby` so screen readers announce the validation
   // failure when the user submits an invalid value or timestamp.
   const editErrorId = useId();
   const editErrorDescriptor = editError ? editErrorId : undefined;
-  // v1.4.27 R4 RC2 — Sheet-branch sticky-pinned footer slot.
+  // v1.4.27 — Sheet-branch sticky-pinned footer slot.
   const editFormId = useId();
   const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(null);
 
@@ -570,7 +570,7 @@ export function MeasurementList({
     clearSelection();
   }
 
-  // v1.4.37 W7c — when the type filter is a cumulative HK type
+  // v1.4.37 — when the type filter is a cumulative HK type
   // (steps, active energy, distance, flights, daylight) the list
   // collapses to one row per user-TZ day via the route's
   // `groupBy=day` mode. The chevron in the row drills back into the
@@ -606,7 +606,7 @@ export function MeasurementList({
       ? "groupBy=day"
       : "raw";
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.measurementsList({
       type: typeFilter === "ALL" ? undefined : typeFilter,
       sourceEq,
@@ -785,7 +785,7 @@ export function MeasurementList({
       dismissEdit();
     },
     onError: (err) => {
-      // v1.4.28 FB-B1 — the PUT route returns a 409 with
+      // v1.4.28 — the PUT route returns a 409 with
       // `meta.errorCode === "measurement.duplicate_timestamp"` when the
       // edit collides with an existing row's
       // `(type, measuredAt, source, sleepStage)` tuple. ApiError carries
@@ -1034,10 +1034,10 @@ export function MeasurementList({
         ) : isError ? (
           // A read failure is NOT an empty list — surface the error + Retry so
           // an outage never reads as "you have no measurements".
-          <QueryErrorCard onRetry={() => void refetch()} />
+          <QueryErrorCard error={error} onRetry={() => void refetch()} />
         ) : !data?.measurements?.length ? (
           <>
-            {/* v1.4.15 phase-C5: replaces the bare-text empty rectangle.
+            {/* v1.4.15: replaces the bare-text empty rectangle.
                 Filter-aware copy distinguishes brand-new accounts ("no
                 measurements yet") from filtered-out lists ("no measurements
                 match this filter") and exposes the right CTA for each case. */}
@@ -1172,7 +1172,7 @@ export function MeasurementList({
                       const isExpanded = isGrouped
                         ? expandedDayKeys.has(m.dayKey as string)
                         : false;
-                      // v1.4.38 W-D P1-1 — stable drill-down id so the
+                      // v1.4.38 — stable drill-down id so the
                       // disclosure chevron can thread aria-controls to the
                       // expanded panel. dayKey is unique per row when
                       // grouped; fall back to m.id otherwise.
@@ -1276,7 +1276,7 @@ export function MeasurementList({
                               )}
                             </TableCell>
                             {/*
-                            v1.4.43 QoL (L8) — `formatDateOrRelative`
+                            v1.4.43 — `formatDateOrRelative`
                             renders timestamps inside the last 24 h
                             as "vor 3 min" so a fresh entry visible
                             on the dashboard briefing and on the
@@ -1400,7 +1400,7 @@ export function MeasurementList({
                   const isExpanded = isGrouped
                     ? expandedDayKeys.has(m.dayKey as string)
                     : false;
-                  // v1.4.38 W-D P1-1 — see desktop counterpart.
+                  // v1.4.38 — see desktop counterpart.
                   const drilldownId = `drilldown-mobile-${m.dayKey ?? m.id}`;
                   const isSelected = selectedIds.has(m.id);
                   return (
@@ -1505,7 +1505,7 @@ export function MeasurementList({
                               opens and the source beside it. */}
                             <p className="text-muted-foreground text-xs">
                               {/*
-                              v1.4.43 QoL (L8) — see desktop
+                              v1.4.43 — see desktop
                               counterpart at the same `measuredAt`
                               site. Relative under 24 h, absolute
                               older.
@@ -1727,7 +1727,7 @@ export function MeasurementList({
                 id="edit-measuredAt"
                 value={editMeasuredAt}
                 onChange={setEditMeasuredAt}
-                // v1.17 W1b — match the server bound: no future instant.
+                // v1.17 — match the server bound: no future instant.
                 max={toDateTimeLocalValue(new Date().toISOString())}
                 required
                 aria-required="true"
@@ -1794,7 +1794,7 @@ export function MeasurementList({
                     </DropdownMenu>
 
                     {/*
-                        v1.4.43 QoL (L7) — `[Cancel] [Save]` order is
+                        v1.4.43 — `[Cancel] [Save]` order is
                         iOS-first intentional per Apple HIG, which
                         puts the primary / confirmation action
                         rightmost. iOS is the load-bearing mobile
@@ -1877,7 +1877,7 @@ export function MeasurementList({
 }
 
 /**
- * v1.4.37 W7c — lazy drill-down for a collapsed cumulative-type day.
+ * v1.4.37 — lazy drill-down for a collapsed cumulative-type day.
  * Fires a separate `GET /api/measurements?type=…&dayKey=…` only when
  * the row is expanded; the result is rendered as a nested list of the
  * per-sample chunks that summed into the parent row's daily total.
@@ -1924,7 +1924,7 @@ function DayDrillDown({
   }
   if (error) {
     return (
-      <ReadFailureRow
+      <QueryErrorRow
         error={error}
         slot="measurement-drilldown-error"
         message={t("measurements.loadError")}
@@ -1989,9 +1989,9 @@ function DayDrillDown({
 }
 
 /**
- * v1.11.5 — sub-caption for a per-night sleep row: surfaces the nap count
- * (naps are separate from the main night per the nap convention) and the
- * night's mid-sleep awakenings when present.
+ * Sub-caption for a per-night sleep row: the row's value is the day's sleep,
+ * main night plus naps, so the caption says how many naps it includes, and
+ * the night's mid-sleep awakenings when present.
  */
 function SleepNightCaption({ m }: { m: Measurement }) {
   const { t } = useTranslations();

@@ -14,7 +14,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 /**
- * v1.4.19 phase A5 — single status pill rendered top-right of every
+ * v1.4.19 — single status pill rendered top-right of every
  * integration card (Withings, Mood Log, Apple Health…). It replaces
  * the three- to four-fold redundant status surface the maintainer spotted in
  * v1.4.18:

@@ -1,5 +1,5 @@
 /**
- * v1.21.3 (B1) — `/api/coach/plans` (+ `/[id]`) routes.
+ * v1.21.3 — `/api/coach/plans` (+ `/[id]`) routes.
  *
  * The management + confirm surface for the durable Coach goal / if-then plans.
  * Covers:

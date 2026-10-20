@@ -274,7 +274,7 @@ function MetricRow({
     seedString(override?.max ?? effective?.default?.greenMax, bounds.max),
   );
 
-  // v1.30.1 M9 — the row is keyed on the stable `metric`, so a per-row
+  // v1.30.1 — the row is keyed on the stable `metric`, so a per-row
   // reset (or "reset all") that lands a NEW `override` (typically
   // `null`) never re-runs the `useState` initializers above: the
   // component instance survives the refetch. Pre-fix the switch and
@@ -330,7 +330,7 @@ function MetricRow({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/* v1.4.33 F17 — the switch label used to flip between
+          {/* v1.4.33 — the switch label used to flip between
               "Auto" and "Überschrieben" with the current state. The
               maintainer's audit caught that as confusing: a user
               looking at a row with "Auto" + the toggle off reads it

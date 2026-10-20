@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.19 A8 / F-02 — `/admin/login-overview` was rendering insights events
+ * v1.4.19 — `/admin/login-overview` was rendering insights events
  * (`insights.weight-status.en`, `insights.bmi-status.en`, …) because the
  * underlying fetch never restricted the `audit-log` API to authentication
  * actions. The page subtitle promises "authentication and admin events" so

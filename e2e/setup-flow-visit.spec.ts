@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the setup flow, path 3: a doctor's visit within a month, with
+ * v1.39 — the setup flow, path 3: a doctor's visit within a month, with
  * lab results.
  *
  * The visit answer is what switches the doctor report on and puts "prepare

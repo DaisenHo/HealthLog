@@ -15,6 +15,9 @@ import {
 } from "@/lib/mood/icon-catalog";
 import { isMoodTagIconName } from "../mood-tag-icons";
 import { MoodTagIconPicker, filterIconCatalog } from "../mood-tag-icon-picker";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "es", "fr", "it", "pl");
 
 describe("filterIconCatalog", () => {
   it("returns the full drawable catalog for an empty query", () => {

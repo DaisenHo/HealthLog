@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.4.15 Phase B5 — onboarding spotlight tour.
+ * v1.4.15 — onboarding spotlight tour.
  *
  * After a new user finishes the wizard at `/onboarding` and lands on
  * the dashboard, this overlay walks them through 4–5 key features
@@ -553,7 +553,7 @@ export function OnboardingTour({
   const asSheet =
     viewportWidth < SHEET_BREAKPOINT || tooltipPos.placement === "sheet";
 
-  // v1.4.33 F2 — onboarding overlay was a single full-viewport `<button>`
+  // v1.4.33 — onboarding overlay was a single full-viewport `<button>`
   // with a `clip-path` punching a hole around the spotlight. The clip-path
   // only changed PAINT — the button's hit-box still covered every pixel,
   // so every click on the underlying page (Hinzufügen, sidebar links,

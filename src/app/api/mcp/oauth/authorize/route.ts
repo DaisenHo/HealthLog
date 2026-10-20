@@ -266,7 +266,7 @@ async function validate(
     };
   }
 
-  // L1 — the VERIFIED origin. For CIMD the `client_id` IS the document URL, so
+  // The VERIFIED origin. For CIMD the `client_id` IS the document URL, so
   // its host is cryptographically tied to the fetched-and-matched document; for
   // DCR there is no verified origin (anyone can self-register), so the consent
   // screen labels it unverified rather than trusting the self-asserted name.
@@ -298,7 +298,7 @@ async function validate(
 }
 
 /**
- * L3 — same-origin assertion for the consent POST. A non-browser caller sends
+ * Same-origin assertion for the consent POST. A non-browser caller sends
  * neither `Origin` nor `Sec-Fetch-Site`, so their absence is allowed; a present
  * `Origin` that is not our own origin, or a `Sec-Fetch-Site` that is not
  * `same-origin`, is refused. Mirrors the `/mcp` DNS-rebinding posture.
@@ -414,7 +414,7 @@ async function authorizeGet(request: NextRequest): Promise<Response> {
     // Consent screen — a plain POST form (no inline script/style, CSP-safe).
     const hidden = (name: string, value: string) =>
       `<input type="hidden" name="${name}" value="${htmlEscape(value)}">`;
-    // L1 — show the VERIFIED origin (or an explicit "unverified" label for DCR)
+    // Show the VERIFIED origin (or an explicit "unverified" label for DCR)
     // next to the self-asserted name so the user authorizes who, not just what.
     const provenance =
       v.clientSource === "cimd"
@@ -469,7 +469,7 @@ async function authorizePost(request: NextRequest): Promise<Response> {
       );
     }
 
-    // L3 — defence-in-depth same-origin assertion on the consent decision. The
+    // Defence-in-depth same-origin assertion on the consent decision. The
     // session cookie is already SameSite=Lax (a cross-site POST carries none),
     // but reject an explicit cross-origin Origin / Sec-Fetch-Site outright so a
     // forged "allow" cannot ride a present session.

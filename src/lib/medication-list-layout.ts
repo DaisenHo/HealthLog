@@ -39,7 +39,7 @@ export interface MedicationListLayout {
  * this many entries the tail falls back to the alphabetical default.
  */
 /**
- * v1.32.21 (R5a) — the resolved presentation plus the server-stamped
+ * v1.32.21 — the resolved presentation plus the server-stamped
  * `updatedAt` optimistic-concurrency token (mirrors `User.updatedAt`, never
  * persisted inside the blob). GET and every write response carry it; the
  * client echoes it back as `baseUpdatedAt` on the next write. Mirrors

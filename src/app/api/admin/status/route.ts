@@ -48,7 +48,7 @@ export const GET = apiHandler(async () => {
     appSettings,
   ] = await Promise.all([
     prisma.user.count(),
-    // v1.4.41 W-DELETED-2 — exclude soft-deleted measurements from the
+    // v1.4.41 — exclude soft-deleted measurements from the
     // admin status count so the dashboard tile reflects live data only.
     prisma.measurement.count({ where: { deletedAt: null } }),
     prisma.medication.count(),

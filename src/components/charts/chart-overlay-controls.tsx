@@ -72,7 +72,7 @@ export interface ChartOverlayControlsProps {
    */
   triggerClassName?: string;
   /**
-   * v1.4.25 W3f — when the parent chart already knows the prior period
+   * v1.4.25 — when the parent chart already knows the prior period
    * carries no overlay-able rows, it threads `hasComparisonData=false`
    * here so the comparison-baseline buttons render in a visibly
    * disabled state (reduced opacity + `aria-disabled` + tooltip)
@@ -134,7 +134,7 @@ export function ChartOverlayControls({
 }
 
 /**
- * v1.4.25 W3f — the dropdown body is extracted so unit tests can render
+ * v1.4.25 — the dropdown body is extracted so unit tests can render
  * it without spinning up Radix's portalled popover (which is invisible
  * to `renderToStaticMarkup`). Production callers always go through
  * `<ChartOverlayControls>` above; the body export is purely a test
@@ -156,7 +156,7 @@ export function ChartOverlayControlsBody({
   const trendArrowId = useId();
   const targetRangeId = useId();
 
-  // v1.4.25 W3f — when the underlying prior-period series is empty for
+  // v1.4.25 — when the underlying prior-period series is empty for
   // BOTH lastMonth and lastYear (we only know about the currently
   // selected baseline), grey out the non-"none" buttons. We can only
   // verify the active baseline truthfully, so the disabled state is

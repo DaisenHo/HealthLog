@@ -1,5 +1,5 @@
 /**
- * v1.4.40 W-DELETED — soft-delete invisibility across every reader tier.
+ * v1.4.40 — soft-delete invisibility across every reader tier.
  *
  * `Measurement.deletedAt` was set by the iOS sync path but ignored by
  * every read path (Senior Infra+DB audit Critical Finding #3 in

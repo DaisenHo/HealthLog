@@ -56,7 +56,7 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateUserSchema.safeParse(body);
     if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422.
+      // v1.4.43 — multi-issue 422.
       return returnAllZodIssues(parsed.error, 422);
     }
 

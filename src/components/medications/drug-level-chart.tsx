@@ -241,7 +241,7 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
   // previously threaded a window-length override retired with FB-A2.
   const stepHours = pickSampleStepHours(WINDOW_HOURS_BEFORE);
 
-  // UI-H1 — the chart mounts inside the shared
+  // The chart mounts inside the shared
   // `<MedicationDetailSection>` chrome alongside Titration / Scheduling
   // / SideEffects so the `/medications/[id]/history` page reads on one
   // section recipe. The drug-INN qualifier rides the headerExtras slot
@@ -260,7 +260,7 @@ export function DrugLevelChart({ medication, asOf }: DrugLevelChartProps) {
   const body = !drugId ? (
     <GatedUnknownDrug medicationName={medication.name} />
   ) : isLoading ? (
-    // v1.4.43 W11-L6 — match the loaded chart height (240 px) so the
+    // v1.4.43 — match the loaded chart height (240 px) so the
     // dashboard tile doesn't reflow when the levels render.
     <div
       className="flex h-[240px] min-h-[240px] items-center justify-center"
@@ -453,7 +453,7 @@ function ChartBody({
               stroke="var(--border)"
               opacity={0.5}
             />
-            {/* v1.4.27 MB6 CF-16 — dropped a stray empty `<text>` child
+            {/* v1.4.27 — dropped a stray empty `<text>` child
               that previously declared no content and rendered an
               invisible SVG node beneath the x-axis. */}
             <XAxis
@@ -470,7 +470,7 @@ function ChartBody({
               and the axis line entirely; the human-readable label sits
               outside the chart frame, above. The `tick={false}` flag
               suppresses the textual ticks per Recharts. v1.4.27 MB6
-              CF-16 — the duplicate Recharts `label={…}` prop dropped
+              The duplicate Recharts `label={…}` prop dropped
               here painted the same caption inside the SVG behind the
               `width={1}` axis, where it could never be read. The
               external `<p>` above the chart is the single source of
@@ -516,7 +516,7 @@ function ChartBody({
  * Re-export the shared parser so the component-test file
  * (which historically imported `parseDoseMg` from this surface)
  * keeps working without coupling to the helper module path. v1.4.25
- * W21 Fix-N — single implementation now lives in
+ * Single implementation now lives in
  * `src/lib/medications/dose-string.ts`.
  */
 export { parseDoseMg };

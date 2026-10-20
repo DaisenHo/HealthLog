@@ -96,7 +96,7 @@ export function EfficacyTab({
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.medicationEfficacy(medicationId),
     queryFn: () =>
       apiGet<MedicationEfficacyDTO>(
@@ -128,7 +128,7 @@ export function EfficacyTab({
         title={t("medications.efficacy.title")}
         dataSlot="medication-wirkung-section"
       >
-        <QueryErrorCard onRetry={() => refetch()} />
+        <QueryErrorCard error={error} onRetry={() => refetch()} />
       </MedicationDetailSection>
     );
   }

@@ -143,7 +143,7 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // v1.28 — the unified daily digest (P3 spine; appended, spread order is
   // load-bearing).
   ...dailyPaths,
-  // v1.32.21 (R5a) — dashboard widget layout: previously absent from the
+  // v1.32.21 — dashboard widget layout: previously absent from the
   // registry entirely, now documented as the reference optimistic-concurrency
   // contract (appended, spread order is load-bearing).
   ...dashboardWidgetPaths,

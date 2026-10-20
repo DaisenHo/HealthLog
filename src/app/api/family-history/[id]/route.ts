@@ -108,7 +108,7 @@ export const PATCH = apiHandler(
     await auditLog("family-history.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the replaced fields; the note is named and never quoted.
+      // The replaced fields; the note is named and never quoted.
       details: {
         entryId: id,
         ...overwriteDetails({

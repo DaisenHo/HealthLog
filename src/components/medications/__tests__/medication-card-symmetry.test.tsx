@@ -10,12 +10,12 @@ import {
 } from "@/components/medications/glp1-medication-card";
 
 /**
- * v1.4.37 W4b — symmetry contract between the generic medication card
+ * v1.4.37 — symmetry contract between the generic medication card
  * (Ramipril/non-GLP-1) and the GLP-1 variant (Mounjaro). The two cards
  * must read as the same row shape. These tests pin the load-bearing
  * structural seams so a future refactor can't quietly regress parity.
  *
- * v1.7.2 W3 — the four former header icon-buttons (open / edit / history
+ * v1.7.2 — the four former header icon-buttons (open / edit / history
  * / advanced) collapsed into a SINGLE overflow kebab on both cards; the
  * card header itself links to the detail page (the former chevron
  * target). The GLP-1 card folds its "Log side effect" item into the same
@@ -179,7 +179,7 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
       [ramiprilHtml, `/medications/${ramipril.id}`],
       [mounjaroHtml, `/medications/${mounjaro.id}`],
     ] as const) {
-      // v1.7.2 W3 — exactly one overflow kebab; the four former icon
+      // v1.7.2 — exactly one overflow kebab; the four former icon
       // buttons (chevron / pencil / history / sliders) are gone from the
       // header. The menu items render on open (portalled), not in SSR.
       expect(html).toContain('aria-label="More options"');

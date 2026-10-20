@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { resolveVerticalMarkerPositions } from "../health-chart";
 
 /**
- * v1.4.25 W6 — GLP-1 injection-day vertical-marker pinning.
+ * v1.4.25 — GLP-1 injection-day vertical-marker pinning.
  *
  * The helper maps incoming `{date, label?, color?}[]` markers onto the
  * bucketed chart series, returning the pointIndex of every match plus

@@ -1,3 +1,5 @@
+import { DEFAULT_ERROR_CODES } from "@/lib/api/default-error-codes";
+
 /**
  * Every `meta.errorCode` the API emits, grouped by the surface that emits it.
  *
@@ -81,6 +83,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.reproof.too_weak",
       "auth.scope.insufficient",
       "auth.session.insecure_transport",
+      "auth.session.unavailable",
       "auth.stepup.required",
       "auth.token.expired",
       "auth.token.invalid",
@@ -210,6 +213,9 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "health_score_config.invalid",
       "health_score_config.too_narrow",
     ],
+    // The status defaults, derived from the table `apiHandler` applies so the
+    // two cannot drift apart.
+    http: [...new Set(Object.values(DEFAULT_ERROR_CODES))].sort(),
     illness: [
       "illness.day-log.invalid",
       "illness.disabled",
@@ -406,6 +412,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "sharing.invite.invalid",
       "sharing.invite.invalid_scope",
       "sharing.invite.manage_browser_only",
+      "sharing.invite.no_account",
       "sharing.invite.refused",
       "sharing.invite.self",
       "sharing.not_permitted",

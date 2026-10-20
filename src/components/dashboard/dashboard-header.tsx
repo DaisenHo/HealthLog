@@ -174,7 +174,7 @@ export function DashboardHeader({
           {canAddAnything && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                {/* v1.4.33 maintainer-item-7 — restore proportional sizing
+                {/* v1.4.33 — restore proportional sizing
                   across viewports. The v1.4.27 fix pinned a `size="sm"
                   min-h-11` combo to hit WCAG 2.5.5's 44 px touch-target
                   contract on mobile, but `size="sm"` is h-8 (32 px) and
@@ -212,7 +212,7 @@ export function DashboardHeader({
                     {t("dashboard.quickAddMeasurement")}
                   </DropdownMenuItem>
                 )}
-                {/* v1.4.37 W7b — third quick-add row: medication intake.
+                {/* v1.4.37 — third quick-add row: medication intake.
                   Same Sheet-on-mobile / Dialog-on-desktop primitive as
                   the other two; the menu label is a self-contained
                   verb-phrase so it doesn't collide with the trigger or

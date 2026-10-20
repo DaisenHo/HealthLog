@@ -83,7 +83,7 @@ export function buildMedicationMoodWellnessSection(
             }),
       );
     const compRows = complianceEntries.map(([id, c]) => {
-      // v1.17 W1a — `total` is the ledger rate denominator (taken + missed,
+      // v1.17 — `total` is the ledger rate denominator (taken + missed,
       // deliberate skips excluded), so `taken / total` matches the app's
       // detail-page adherence %. The column is labelled "Expected" rather
       // than "Total" so the row stays internally coherent: Taken + Missed =
@@ -140,7 +140,7 @@ export function buildMedicationMoodWellnessSection(
         .finalY + 8;
   }
 
-  // v1.4.25 W4d — GLP-1 therapy section. Only renders when the data
+  // v1.4.25 — GLP-1 therapy section. Only renders when the data
   // aggregator emitted a non-null `glp1` block (user has at least one
   // active GLP-1 medication and the compliance toggle is on). Lists
   // current drug + dose, full titration history, weight curve over

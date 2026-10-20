@@ -5,7 +5,7 @@ import { useQueryClientMounted } from "@/hooks/_internal/use-query-client-safe";
 import type { ModuleKey } from "@/lib/modules/registry";
 
 /**
- * v1.18.0 R4 — SSR-safe accessor for a per-account module flag.
+ * v1.18.0 — SSR-safe accessor for a per-account module flag.
  *
  * `useAuth()` calls `useQuery` directly and
  * crashes when a legacy presentational component (`<HeroStrip>`, the

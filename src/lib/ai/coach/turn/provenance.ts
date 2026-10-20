@@ -204,13 +204,13 @@ export function buildTurnProvenance(args: {
   const enrichedProvenance: CoachProvenance = {
     ...snapshotProvenance,
     ...(surfacedAction ? { suggestedAction: surfacedAction } : {}),
-    // v1.18.10 (HIGH-2) — a blocked turn carries the fallback prose, so the
+    // v1.18.10 — a blocked turn carries the fallback prose, so the
     // key-values from the discarded reply must not ride along as provenance.
     ...(!outboundBlocked && sentinel.keyValues.length > 0
       ? { keyValues: sentinel.keyValues }
       : {}),
     ...(surfacedSuggestion ? { suggestion: surfacedSuggestion } : {}),
-    // v1.20.0 (F1) — persist the retrieval-tool trace (which tools ran +
+    // v1.20.0 — persist the retrieval-tool trace (which tools ran +
     // whether each found data) so a reload can show "what I looked at" and the
     // audit can replay grounding. Metadata only.
     ...(toolTrace.length > 0

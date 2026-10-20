@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.7.2 W3 — shared medication-card overflow menu.
+ * v1.7.2 — shared medication-card overflow menu.
  *
  * Both the generic `<MedicationCard>` and the `<Glp1MedicationCard>`
  * collapsed their former four header icon-buttons (open / edit / history

@@ -1,5 +1,5 @@
 /**
- * v1.18.1 (Workstream C) — Coach cadence suggestions.
+ * v1.18.1 — Coach cadence suggestions.
  *
  * The Coach can append a `---SUGGEST-REMINDER---` … `---END---` sentinel
  * block to its reply when an evidence-based measurement cadence is worth

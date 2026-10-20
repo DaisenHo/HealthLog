@@ -19,6 +19,7 @@ import {
   useRevokeGrant,
   type GrantRow,
 } from "@/lib/queries/use-account-grants";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.36.0 — who can open this record.
@@ -40,7 +41,7 @@ import {
 
 export function GrantsGivenCard() {
   const { t } = useTranslations();
-  const { data, isLoading, isError, refetch } = useAccountGrants();
+  const { data, isLoading, isError, error, refetch } = useAccountGrants();
   const revoke = useRevokeGrant();
 
   const given = data?.given ?? [];
@@ -62,6 +63,7 @@ export function GrantsGivenCard() {
         )}
         {isError && (
           <QueryErrorCard
+            error={error}
             title={t("recordSharing.given.loadError")}
             onRetry={() => void refetch()}
           />
@@ -86,6 +88,7 @@ export function GrantsGivenCard() {
             ))}
           </ul>
         )}
+        <ListCapNotice cap={data?.cap} />
       </div>
     </SettingsCard>
   );

@@ -4,7 +4,7 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
 import { mockDashboardSnapshot } from "./utils/mock-dashboard-snapshot";
 
 /**
- * v1.4.19 A2 — mobile-viewport regression spec for chart cards.
+ * v1.4.19 — mobile-viewport regression spec for chart cards.
  *
  * Two assertions per chart visible in the dashboard's initial paint:
  *

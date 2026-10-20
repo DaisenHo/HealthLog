@@ -20,6 +20,7 @@ import {
   type LifeFactValue,
   type StoredFactKind,
 } from "@/lib/validations/life-circumstances";
+import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 
 export interface HealthProfileFactRevisionDto {
   id: string;
@@ -68,7 +69,7 @@ export async function invalidateHealthProfileFactConsumers(
     where: { id: userId },
     data: {
       insightsCachedAt: null,
-      insightsCachedText: null,
+      ...INSIGHTS_CACHE_CLEARED,
       insightsCachedLocale: null,
     },
   });

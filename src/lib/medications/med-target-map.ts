@@ -1,5 +1,5 @@
 /**
- * v1.22 (W9, B5) — closed medication-class → target-vital map.
+ * v1.22 — closed medication-class → target-vital map.
  *
  * The adherence→symptom storyline needs to know which VITAL a medication is
  * meant to move, so the Coach can say "the vital this drug targets drifted",

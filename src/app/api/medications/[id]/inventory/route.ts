@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19b — pen / vial inventory CRUD.
+ * v1.4.25 — pen / vial inventory CRUD.
  *
  *   GET  /api/medications/[id]/inventory  — list (user-scoped, all states)
  *   POST /api/medications/[id]/inventory  — register a new pen / vial
@@ -137,7 +137,7 @@ async function postInventoryItem(
 
   const parsed = createInventoryItemSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 

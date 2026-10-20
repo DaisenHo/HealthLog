@@ -33,14 +33,14 @@ import { coachScopeSourceSchema } from "@/lib/ai/coach/types";
  * operator's master flag is off or the user opted out, the page redirects
  * back to `/insights` rather than painting a dead chat shell.
  *
- * v1.18.10 (W4) — the page is now a single full-bleed conversation
+ * v1.18.10 — the page is now a single full-bleed conversation
  * surface: the inner panel chrome (the bordered/rounded card) is gone so
  * the chat is no longer a window-inside-a-window, and the top "back to the
  * drawer" minimize control is removed (pointless on the dedicated page —
  * the separate bottom-right FAB drawer is the compact surface). The chat
  * claims the full content width and the viewport height below the top bar.
  *
- * v1.18.11 (W11) — ChatGPT-style IA: the page drops its own header bar
+ * v1.18.11 — ChatGPT-style IA: the page drops its own header bar
  * AND the top conversation-history strip entirely. The composer is the
  * single control hub (leading `+` actions menu = new chat + open
  * conversations, settings deep-link, mic, send); conversation history is a
@@ -49,7 +49,7 @@ import { coachScopeSourceSchema } from "@/lib/ai/coach/types";
  * the active conversation. All of that lives in `<CoachConversation>`'s
  * page branch, so the page stays a thin gating + sizing wrapper.
  *
- * v1.19.1 (C1/C5) — the Coach now DEFAULTS to the new-chat hero, reversing
+ * v1.19.1 — the Coach now DEFAULTS to the new-chat hero, reversing
  * the v1.19.0 (W7) "always resume most-recent" default the maintainer
  * disliked. Resolution order on mount:
  *   - `?c=<id>` → open that specific thread (explicit deep-link, unchanged).

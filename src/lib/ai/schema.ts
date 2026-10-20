@@ -78,7 +78,7 @@ const MEDICAL_REFERENCE_ID_SET: ReadonlySet<string> = new Set(
 );
 
 /**
- * v1.4.16 phase B5c — per-recommendation explainability rationale.
+ * v1.4.16 — per-recommendation explainability rationale.
  *
  * Each rec carries a 3-field rationale that powers the Oura-style
  * "Contributors" expand-card:
@@ -135,7 +135,7 @@ export const aiRecommendationSchema = z
     /** Severity — generic for v1.4.15, clinically-keyed in v1.4.16. */
     severity: recommendationSeveritySchema,
     /**
-     * v1.4.16 phase B5c — per-recommendation explainability rationale.
+     * v1.4.16 — per-recommendation explainability rationale.
      * Required on every rec so the UI's expand-card always has WHY +
      * WINDOW + COMPARED-TO content to render. The strict parser
      * rejects a legacy (pre-B5c) payload that omits it.
@@ -154,7 +154,7 @@ export const aiRecommendationSchema = z
      */
     referenceId: z.string().optional(),
     /**
-     * v1.4.16 phase B5d — deterministic confidence score (0-100).
+     * v1.4.16 — deterministic confidence score (0-100).
      *
      * Optional at parse-time:
      *   - The LLM may emit a value (we accept it so the payload round-
@@ -201,7 +201,7 @@ export const aiWarningSchema = z.object({
 });
 
 /**
- * v1.4.20 phase B1 — Daily Briefing block.
+ * v1.4.20 — Daily Briefing block.
  *
  * The Insights redesign hero strip + full-width briefing card render a
  * narrative paragraph synthesised from the day's data plus up to five
@@ -355,7 +355,7 @@ export const dailyBriefingSchema = z.object({
 export type DailyBriefing = z.infer<typeof dailyBriefingSchema>;
 
 /**
- * v1.4.20 phase B3 — optional one-sentence Trend Annotations.
+ * v1.4.20 — optional one-sentence Trend Annotations.
  *
  * The Trends row on `/insights` renders three small charts (BP / weight /
  * mood). Each chart can carry a one-sentence AI-authored annotation
@@ -419,7 +419,7 @@ export const trendAnnotationsSchema = z.object({
 export type TrendAnnotations = z.infer<typeof trendAnnotationsSchema>;
 
 /**
- * v1.4.20 phase B4 — Storyboard annotations.
+ * v1.4.20 — Storyboard annotations.
  *
  * The 90-day BP timeline on `/insights` overlays factual events the user
  * logged ("started medication X", "first sustained dip below 140") onto
@@ -481,19 +481,19 @@ export const aiInsightResponseSchema = z
     /** Guideline-flagged values (e.g. BP > 140/90). May be empty. */
     warnings: z.array(aiWarningSchema),
     /**
-     * v1.4.20 phase B1 — optional Daily Briefing payload. Nullable +
+     * v1.4.20 — optional Daily Briefing payload. Nullable +
      * optional so legacy cached payloads (from before PROMPT_VERSION
      * 4.20.0) round-trip without forcing a regenerate.
      */
     dailyBriefing: dailyBriefingSchema.nullable().optional(),
     /**
-     * v1.4.20 phase B3 — optional Trend Annotations block. Each metric
+     * v1.4.20 — optional Trend Annotations block. Each metric
      * is independently optional; the wrapping object is nullable so
      * legacy 4.20.0 caches round-trip.
      */
     trendAnnotations: trendAnnotationsSchema.nullable().optional(),
     /**
-     * v1.4.20 phase B4 — optional storyboard annotations. Each entry
+     * v1.4.20 — optional storyboard annotations. Each entry
      * pins a vertical reference line + chapter card to a date on the
      * 90-day BP timeline. Optional so legacy caches round-trip.
      */

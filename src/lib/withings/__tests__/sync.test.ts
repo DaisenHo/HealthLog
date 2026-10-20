@@ -5,7 +5,7 @@ import {
 } from "../sync";
 
 /**
- * F-SYNC-5 — the incremental overlap must stay comfortably wider than the old
+ * The incremental overlap must stay comfortably wider than the old
  * 60s so a backdated Withings reading landing just before the next cycle's
  * `now()` is not missed (compounded by `lastSyncedAt` advancing on a healthy
  * 200-with-0 cycle). The upserts are idempotent, so a wider overlap is safe.
@@ -18,7 +18,7 @@ describe("WITHINGS_INCREMENTAL_OVERLAP_MS", () => {
 });
 
 /**
- * v1.4.25 W17a — Withings webhook callback URL must put the shared
+ * v1.4.25 — Withings webhook callback URL must put the shared
  * secret in the PATH (not the `?secret=` query parameter) so that the
  * value never lands in a reverse-proxy `query_string` access-log
  * column. Withings preserves the full URL on every notification, so

@@ -23,7 +23,7 @@ import { stripChartTokens } from "@/lib/insights/chart-tokens";
  */
 
 /**
- * v1.22 (W5) — feature-detect the browser Speech Synthesis API SSR-safe.
+ * v1.22 — feature-detect the browser Speech Synthesis API SSR-safe.
  * `useSyncExternalStore` returns false on the server + first client paint
  * (so the read-aloud button is absent in markup) and resolves to the real
  * capability after hydration, mirroring the mic button's detection pattern
@@ -126,7 +126,7 @@ export function pickSpeechVoice(
 }
 
 /**
- * v1.22 (W5) — read the assistant prose aloud via the browser's
+ * v1.22 — read the assistant prose aloud via the browser's
  * `SpeechSynthesis`. Client-only, no dependency, no egress, CSP-clean. A
  * single in-flight utterance: a new `speak` cancels any prior one; `toggle`
  * stops while speaking.
@@ -238,7 +238,7 @@ export const COACH_ICON_BUTTON = cn(
 );
 
 /**
- * v1.22 (W5) — read-aloud toggle for a settled assistant turn. Hidden when
+ * v1.22 — read-aloud toggle for a settled assistant turn. Hidden when
  * the browser has no Speech Synthesis support. Speaks `stripChartTokens`
  * (the same text the prose shows), so stray tokens are never voiced.
  */

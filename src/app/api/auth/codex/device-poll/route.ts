@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { getClientIp, apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 
 /**
  * v1.4.7.1: Device-code flow polling endpoint.
@@ -81,7 +82,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       codexConnectedAt: new Date(),
       codexConnectionStatus: "connected",
       insightsCachedAt: null,
-      insightsCachedText: null,
+      ...INSIGHTS_CACHE_CLEARED,
       insightsCachedLocale: null,
     },
   });

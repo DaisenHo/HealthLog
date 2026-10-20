@@ -3,9 +3,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { CoachDrawerBody } from "../coach-drawer-body";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
- * v1.4.20 phase B4 — Coach drawer rail-tray strip.
+ * v1.4.20 — Coach drawer rail-tray strip.
  *
  * v1.16.1 — the body lost its inline xl+ sources column (the sources
  * rail is tray-only on every viewport, hidden until toggled) and the
@@ -122,7 +125,7 @@ describe("<CoachDrawerBody> — rail-tray strip", () => {
   });
 
   it("renders the rail triggers in a sub-header strip above the thread", () => {
-    // v1.4.27 R3d MB2 — the triggers were lifted out of the absolute
+    // v1.4.27 — the triggers were lifted out of the absolute
     // overlay into a sub-header strip so they sit at a 44 px tap
     // target and never overlay the first message bubble.
     const html = render(<CoachDrawerBody {...baseProps} />);

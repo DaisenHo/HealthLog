@@ -108,7 +108,7 @@ describe("<ImportPanel> — SSR smoke", () => {
 });
 
 describe("<AppleHealthEstimateWarning>", () => {
-  it.each(["en", "de", "es", "fr", "it", "pl", "ko"] as const)(
+  it.each(["en", "de", "es", "fr", "it", "pl", "ko", "nl"] as const)(
     "renders localized estimate disclosure for %s",
     (locale) => {
       const html = render(<AppleHealthEstimateWarning days={3} />, locale);

@@ -70,7 +70,7 @@ export function AchievementUnlockNotifier({
   const localStateReadyRef = useRef(false);
   const hasSnapshotRef = useRef(false);
 
-  // v1.4.34 IW-F-Perf — the notifier and `<RecentAchievementsCard>`
+  // v1.4.34 — the notifier and `<RecentAchievementsCard>`
   // both ride the shared `["gamification", "achievements"]` cache cell.
   // Before, the notifier carried a per-user discriminator on its key,
   // which made TanStack treat it as a fresh cell and fire a second

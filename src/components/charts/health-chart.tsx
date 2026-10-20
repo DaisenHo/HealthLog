@@ -89,6 +89,8 @@ import {
   DEFAULT_CHART_RANGE,
   rangeWindowDays,
 } from "./chart-range-tabs";
+import { trendLineByTime } from "@/lib/stats/linear-fit";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 // The range tabs (7 / 30 / 90 / All, a calendar-day window ending now) and
 // the "All" tab's ten-year fetch span live with the shared
@@ -120,7 +122,7 @@ interface HealthChartProps {
     lineOpacity?: number;
   }>;
   /**
-   * v1.4.16 phase B5c — compact chart mode used by the Oura-style
+   * v1.4.16 — compact chart mode used by the Oura-style
    * rationale card. Drops the range tabs, the moving-average / trend
    * / target-band toggle row, and shrinks padding. Tooltip + gradient
    * + personal-baseline behaviour stay intact so the small chart
@@ -128,13 +130,13 @@ interface HealthChartProps {
    */
   mini?: boolean;
   /**
-   * v1.4.16 phase B5c — pin the chart to a specific rationale data
+   * v1.4.16 — pin the chart to a specific rationale data
    * window regardless of any parent UI state. Used by the rec-card's
    * mini-chart so it always renders the window the rec is based on.
    */
   windowOverride?: DataWindow;
   /**
-   * v1.4.16 phase B8 — when set to "lastMonth" / "lastYear", paint a
+   * v1.4.16 — when set to "lastMonth" / "lastYear", paint a
    * dimmed prior-period overlay beneath the current series. The chart
    * already fetches the full measurement history; the overlay is
    * computed by `shiftDailySeriesForward` so the prior-period day at
@@ -161,7 +163,7 @@ interface HealthChartProps {
    */
   overlayControls?: boolean;
   /**
-   * v1.4.20 phase B4 — additive storyboard annotations.
+   * v1.4.20 — additive storyboard annotations.
    *
    * Each entry pins a vertical reference line + label to the data point
    * whose Berlin-day key matches `date` (`YYYY-MM-DD`). The chart line
@@ -175,7 +177,7 @@ interface HealthChartProps {
    */
   annotations?: Array<{ date: string; label: string; color: string }>;
   /**
-   * v1.4.25 W6 — vertical injection-day markers.
+   * v1.4.25 — vertical injection-day markers.
    *
    * Each entry pins a thin dashed vertical reference line on the chart
    * at the data point whose Berlin/user-tz day-key matches `date`
@@ -197,7 +199,7 @@ interface HealthChartProps {
    */
   verticalMarkers?: Array<{ date: string; label?: string; color?: string }>;
   /**
-   * v1.4.25 W7b — per-user display timezone. When passed (mount sites
+   * v1.4.25 — per-user display timezone. When passed (mount sites
    * thread `useAuth().user?.timezone`), x-axis tick labels and the
    * per-day bucket keys both render in the user's zone. When a mount
    * passes none, the chart uses the signed-in account's zone (which
@@ -332,7 +334,7 @@ interface MeasurementApiRow {
   // like an absent value.
   minValue?: number | null;
   maxValue?: number | null;
-  // v1.4.43 W2-CHART-GATE — the rollup / daily-aggregate paths return
+  // v1.4.43 — the rollup / daily-aggregate paths return
   // the underlying raw-row count per bucket. Used downstream to gate
   // the "more days needed" empty-state copy on the actual measurement
   // count rather than the number of distinct calendar days. Optional
@@ -399,8 +401,7 @@ function getTypeLabel(
   const key = BASE_TYPE_LABEL_KEYS[type];
   if (key) return t(key);
   const measurementKey = measurementLabelKey(type);
-  const label = t(measurementKey);
-  return label === measurementKey ? type : label;
+  return translateOrNull(t, measurementKey) ?? type;
 }
 
 /**
@@ -456,7 +457,7 @@ function movingAverageByPoints(
 }
 
 /**
- * v1.4.16 B1a — personal-baseline helper.
+ * v1.4.16 — personal-baseline helper.
  *
  * Computes the median (50th-percentile) value of a daily-aggregated
  * series, capped at the most-recent 90 daily points (Apple Health uses
@@ -481,7 +482,7 @@ export function computePersonalBaseline(
 }
 
 /**
- * v1.4.20 phase B4 — pure helper that maps storyboard annotations to
+ * v1.4.20 — pure helper that maps storyboard annotations to
  * visible chart pointIndex positions. Exported so the unit suite can
  * pin behaviour without rendering Recharts. Returns the subset of
  * annotations that fall on (or within 7 days of) a visible bucketed
@@ -495,7 +496,7 @@ export interface ResolvedAnnotation {
 }
 
 /**
- * v1.4.25 W6 — pure helper for the GLP-1 injection-day vertical
+ * v1.4.25 — pure helper for the GLP-1 injection-day vertical
  * markers. Exported so the unit suite can pin behaviour without
  * spinning Recharts. The shape mirrors `resolveAnnotationPositions`
  * minus the truncated-label slot.
@@ -585,44 +586,6 @@ export function resolveAnnotationPositions(
   return out;
 }
 
-function buildTrendSeriesByTime(data: Array<{ date: Date; value: number }>): {
-  points: Array<{ date: Date; value: number }>;
-  slopePerDay: number;
-} | null {
-  if (data.length < 2) return null;
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const startTime = sorted[0].date.getTime();
-  const points = sorted.map((p) => ({
-    x: (p.date.getTime() - startTime) / 86400000,
-    y: p.value,
-  }));
-
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-
-  const denominator = n * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-
-  const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / n;
-
-  return {
-    points: sorted.map((p) => ({
-      date: p.date,
-      value:
-        Math.round(
-          (intercept + slope * ((p.date.getTime() - startTime) / 86400000)) *
-            100,
-        ) / 100,
-    })),
-    slopePerDay: slope,
-  };
-}
-
 export function HealthChart({
   types,
   title,
@@ -673,14 +636,14 @@ export function HealthChart({
     () => makeBucketLabelFormatters(locale, dateFormat),
     [locale, dateFormat],
   );
-  // v1.4.25 W7b — per-row day-key formatter used to bucket measurement
+  // v1.4.25 — per-row day-key formatter used to bucket measurement
   // rows by the user's local calendar day. Memoised on userTimezone so
   // the inner per-row loop reuses a single Intl.DateTimeFormat.
   const dayKeyFormatter = useMemo(
     () => makeDayKeyFormatter(userTimezone),
     [userTimezone],
   );
-  // v1.4.16 B5c: when a windowOverride is supplied, seed the range
+  // v1.4.16: when a windowOverride is supplied, seed the range
   // state from it so the chart pins to that window. Mini mode also
   // hides the range tabs, so the user can't change it.
   const initialRangePoints = windowOverride
@@ -701,7 +664,7 @@ export function HealthChart({
     ? overlayPrefs.prefs.comparisonBaseline
     : compareBaseline;
 
-  // v1.30.1 M2 — hydrate the range tab from the persisted prefs once
+  // v1.30.1 — hydrate the range tab from the persisted prefs once
   // they arrive, mirroring the overlay toggles above. A plain
   // `useState(30)` initializer can't see the persisted value because
   // the dashboard-layout query resolves after mount; `rangePoints` also
@@ -727,7 +690,7 @@ export function HealthChart({
     setRangePoints(overlayPrefs.prefs.rangePoints);
   }
 
-  // v1.4.19 A2 — viewport-aware tick density. Recharts' default is one
+  // v1.4.19 — viewport-aware tick density. Recharts' default is one
   // tick per data point; the helper caps that at 4-10 visible labels
   // depending on viewport width so the X-axis reads consistently across
   // every chart card.
@@ -751,7 +714,7 @@ export function HealthChart({
       ? (user.heightCm / 100) ** 2
       : null;
 
-  // v1.4.28 FB-D2 (R1.2 H0) — derive a bounded date window from the
+  // v1.4.28 (R1.2 H0) — derive a bounded date window from the
   // active range selector so the chart fetches only what it will
   // actually render. The legacy `while (true)` paginated walk pulled
   // tens of thousands of pulse rows on every visit; the bounded
@@ -820,14 +783,14 @@ export function HealthChart({
     );
   }, [preloadedSeries, preloadedCoverageDays, fetchWindow.windowDays, types]);
 
-  const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery({
+  const chartQuery = useQuery({
     // A range-tab change re-keys the query; without placeholder data every
     // switch dropped the painted chart to a skeleton for the fetch round-trip.
     // Keeping the previous range's series visible is only honest because the
     // render below pairs it with a visual dimming while `isPlaceholderData`
     // is true — the old range must never masquerade as the new one.
     placeholderData: keepPreviousData,
-    // v1.4.40 W-RSC — route the chart-data key through `queryKeys.chartData`
+    // v1.4.40 — route the chart-data key through `queryKeys.chartData`
     // so the `["chart-data"]` prefix lands in `measurementDependentKeys`
     // and a fresh measurement evicts every per-chart daily cache in one
     // pass (audit C2). The factory-packed tuple is byte-identical with
@@ -843,11 +806,11 @@ export function HealthChart({
       types.join(","),
       "raw",
       "no-bmi",
-      // v1.4.25 W7b — bucket keys + tick labels depend on the active
+      // v1.4.25 — bucket keys + tick labels depend on the active
       // user timezone, so re-key the cache when it changes. Without
       // this, a tz change inside a session would render stale buckets.
       userTimezone,
-      // v1.4.28 FB-D2 — bound the cache by the active fetch window so
+      // v1.4.28 — bound the cache by the active fetch window so
       // a range-tab change re-fetches the right slice rather than
       // re-running the unbounded walk.
       fetchWindow.from,
@@ -864,7 +827,7 @@ export function HealthChart({
       // a range-tab change drops batched coverage, re-fetching cleanly.
       preloadedSeries ? (usePreloaded ? "preloaded" : "fetch") : "",
     ),
-    // v1.4.28 FB-D2 — cache the bounded window for a minute so tab
+    // v1.4.28 — cache the bounded window for a minute so tab
     // navigation between insights sub-pages does not re-fire every
     // chart's fetch. `gcTime` keeps the inactive cache for five
     // minutes so a quick back-and-forth doesn't repay the cost.
@@ -1096,6 +1059,8 @@ export function HealthChart({
     ),
     enabled: isAuthenticated,
   });
+  const { data, isLoading, isError, error, isPlaceholderData, refetch } =
+    chartQuery;
 
   // v1.16.0 — report the settled data query to the dashboard's shared
   // reveal gate. `isLoading` only covers the INITIAL fetch (a later
@@ -1235,7 +1200,7 @@ export function HealthChart({
           }));
 
         if (typeData.length >= 2) {
-          const trend = buildTrendSeriesByTime(typeData);
+          const trend = trendLineByTime(typeData);
           if (trend) {
             for (const point of trend.points) {
               const pointTimestamp = point.date.getTime();
@@ -1288,7 +1253,7 @@ export function HealthChart({
     onVisibleStats?.(isError ? null : visibleStatsByType);
   }, [mini, isLoading, isError, visibleStatsByType, onVisibleStats]);
 
-  // v1.4.16 phase B8 — comparison overlay.
+  // v1.4.16 — comparison overlay.
   //
   // When the toggle is active, derive a prior-period series from the
   // ALREADY-FETCHED daily aggregates (`data`), shift the timestamps
@@ -1345,7 +1310,7 @@ export function HealthChart({
   }, [chartData, effectiveCompareBaseline, data, types, tzFmt]);
 
   /**
-   * v1.4.16 phase B8 — true when at least one visible day has a prior-
+   * v1.4.16 — true when at least one visible day has a prior-
    * period value to overlay. Drives the "Comparison unavailable" caption
    * fallback in the chart header. Empty input → false → caption shows;
    * a partial overlay (some days have prior data, some don't) is treated
@@ -1381,7 +1346,7 @@ export function HealthChart({
     const keys = [...types];
     if (showMA) keys.push(...types.map((type) => `${type}_ma`));
     if (showTrend) keys.push(...types.map((type) => `${type}_trend`));
-    // v1.4.16 phase B8 — extend the y-domain to fit the prior-period
+    // v1.4.16 — extend the y-domain to fit the prior-period
     // overlay. Without this the dimmed line can clip outside the
     // visible range when last-month / last-year had a different scale.
     if (effectiveCompareBaseline !== "none") {
@@ -1484,7 +1449,7 @@ export function HealthChart({
     return zones;
   }, [showBands, targetZones, yDomain]);
 
-  // v1.4.33 F10 — preserve one decimal when the visible Y-domain span is
+  // v1.4.33 — preserve one decimal when the visible Y-domain span is
   // narrow enough that two distinct gridlines would otherwise round to
   // the same integer (e.g. weight at 82.8 vs 83.5 both rendering as
   // "83 kg"). The threshold matches the body-composition cluster: any
@@ -1597,7 +1562,7 @@ export function HealthChart({
           (point) => point[`${type}_trend`] as number,
         );
 
-        // v1.4.16 Fix A8b — delegate to the pure helper so the long-
+        // v1.4.16 — delegate to the pure helper so the long-
         // window split-half delta gets a unit-test that doesn't depend
         // on Recharts. See `src/lib/analytics/window-trend.ts`.
         const computed = computeWindowTrend({
@@ -1615,7 +1580,7 @@ export function HealthChart({
             : null;
         const unitSuffix = unit ? ` ${unit}` : "";
 
-        // v1.4.16 Fix A8b: when the visible window is long (e.g. "All"
+        // v1.4.16: when the visible window is long (e.g. "All"
         // on a multi-year account), the per-week delta becomes vanishingly
         // small and rounds to ±0.0 in the formatter — the maintainer's complaint
         // "Wenn ich alle anklicke, dann wird einfach Null Veränderung
@@ -1654,7 +1619,7 @@ export function HealthChart({
       .filter((entry): entry is string => entry !== null);
   }, [chartData, showTrend, types, unit, valueMode, t, fmt]);
 
-  // v1.4.16 B1a — personal baseline (90-day rolling median) per type.
+  // v1.4.16 — personal baseline (90-day rolling median) per type.
   // Painted as a faint dashed reference line labelled "Your normal" so
   // the user can read each point against their own baseline, not an
   // absolute value the chart axis happens to render.
@@ -1671,7 +1636,7 @@ export function HealthChart({
     return map;
   }, [chartData, types]);
 
-  // v1.4.43 W11-M6 — keep the card shell mounted even when the loaded
+  // v1.4.43 — keep the card shell mounted even when the loaded
   // payload is empty. Pre-fix the early `return null` here erased the
   // whole widget (header + range tabs + chart) and the user saw an
   // unexplained gap on the dashboard. The in-card render branch below
@@ -1682,7 +1647,7 @@ export function HealthChart({
 
   const maxPointIndex = Math.max(0, (chartData?.length ?? 1) - 1);
 
-  // v1.4.20 phase B4 — derive visible annotations via the pure helper
+  // v1.4.20 — derive visible annotations via the pure helper
   // (`resolveAnnotationPositions`). Drops anything outside the
   // visible window so the chart line + tooltip stay untouched.
   const annotationPositions = resolveAnnotationPositions(
@@ -1690,7 +1655,7 @@ export function HealthChart({
     chartData,
   );
 
-  // v1.4.25 W6 — GLP-1 injection-day vertical markers. Pure-helper
+  // v1.4.25 — GLP-1 injection-day vertical markers. Pure-helper
   // pattern lets the chart-tests pin the marker resolution without
   // mounting Recharts. Off-window markers silently drop here so the
   // <ReferenceLine> below never paints a line for an out-of-range
@@ -1741,14 +1706,14 @@ export function HealthChart({
   const showContextDetails = showMA || showTrend || showBands;
   const animationsEnabled = !prefersReducedMotion();
 
-  // v1.4.16 B5c — mini mode tunes padding + margins so the chart fits
+  // v1.4.16 — mini mode tunes padding + margins so the chart fits
   // inside the rationale card without overwhelming the surrounding
   // rows. Range tabs + toggle row are suppressed entirely; the chart
   // pins to `windowOverride` (or the default 30pt) instead.
   const containerClass = mini
     ? "bg-card border-border rounded-md border p-2"
     : "bg-card border-border rounded-xl border p-4 md:p-6";
-  // v1.4.27 MB7 / CF-43 — chart height now reads from a CSS variable
+  // v1.4.27 — chart height now reads from a CSS variable
   // (`--chart-height`) so consumers can override the default per-mount
   // without re-styling the component. The `mini` branch keeps the
   // 140 px contract; the regular branch defaults to 240 px on mobile
@@ -1761,7 +1726,7 @@ export function HealthChart({
   return (
     <div className={containerClass} data-slot={mini ? "chart-mini" : undefined}>
       {!mini && (
-        /* v1.4.19 A2 — mobile-first header layout.
+        /* v1.4.19 — mobile-first header layout.
 
            Pre-fix: title + bucket chip + comparison chip + 4 range tabs +
            cog all sat on a single justify-between flex row. On Pixel 5
@@ -1811,13 +1776,13 @@ export function HealthChart({
                 {t(bucketCaption)}
               </span>
             )}
-            {/* v1.4.16 phase B8 — comparison caption. Inline with the
+            {/* v1.4.16 — comparison caption. Inline with the
                 bucket-aggregation chip so the user reads "what window
                 am I looking at" + "what comparison is overlaid" in one
                 glance. The "Comparison unavailable" fallback uses
                 neutral muted styling so it doesn't read as an error.
 
-                v1.4.19 A2 — hidden on mobile to free up the title row. */}
+                v1.4.19 — hidden on mobile to free up the title row. */}
             {effectiveCompareBaseline !== "none" && hasComparisonData && (
               <span
                 className="text-dose-accent bg-dose-accent/10 text-2xs hidden rounded-md border border-current/30 px-1.5 py-0.5 font-medium tracking-wide uppercase sm:inline-flex"
@@ -1859,7 +1824,7 @@ export function HealthChart({
                 // the stat strip follows automatically.
                 setRangeHydrated(true);
                 setRangePoints(days);
-                // v1.30.1 M2 — persist the pick per chart, same model
+                // v1.30.1 — persist the pick per chart, same model
                 // as the overlay toggles, so the range survives a
                 // remount instead of resetting to 30 d every visit.
                 if (chartKey && !windowOverride) {
@@ -1921,13 +1886,14 @@ export function HealthChart({
         // Pre-fix `isError` fell through to the empty branch and an
         // outage read as "you have no measurements".
         <ChartErrorState
+          error={error}
           title={t("charts.errorTitle")}
           actionLabel={t("common.retry")}
           actionContext={title}
           onAction={() => void refetch()}
         />
       ) : !chartData?.length ? (
-        // v1.4.43 W11-M6 — empty-window state.
+        // v1.4.43 — empty-window state.
         //
         // The chart only withholds rendering when the selected range
         // holds zero daily points. Any real data — even a single day —
@@ -1953,7 +1919,7 @@ export function HealthChart({
             }`}
           >
             {visibleBands.length > 0 ? (
-              // v1.4.27 R3d MB2 — band overlay positioning fix. The
+              // v1.4.27 — band overlay positioning fix. The
               // overlay used to inset `right: 18px` while the chart
               // margin is `right: 8`, so the band rectangle drifted left
               // of the plotted line by 10 px on every viewport. Pin the
@@ -2097,7 +2063,7 @@ export function HealthChart({
                       }
                     />
                   ))}
-                  {/* v1.4.20 phase B4 — storyboard annotations.
+                  {/* v1.4.20 — storyboard annotations.
                     Vertical reference lines pinned to a specific
                     visible pointIndex; the label sits above with a
                     short truncation on `<sm` (24 chars) and the full
@@ -2124,7 +2090,7 @@ export function HealthChart({
                       }}
                     />
                   ))}
-                  {/* v1.4.25 W6 — GLP-1 injection-day vertical markers.
+                  {/* v1.4.25 — GLP-1 injection-day vertical markers.
                     Thin dashed line + a small filled dot at the x-axis
                     intersection so a row of markers reads as "injection
                     cadence" without crowding the canvas. Optional label
@@ -2285,7 +2251,7 @@ export function HealthChart({
                           continue;
                         const baseline = personalBaselines.get(dataKey);
                         let delta: string | undefined;
-                        // v1.4.16 phase B8 — prefer the comparison delta
+                        // v1.4.16 — prefer the comparison delta
                         // ("Δ −7 vs. last month") over the personal
                         // baseline delta when comparison is active and we
                         // have a prior value for this day. Otherwise fall
@@ -2346,7 +2312,7 @@ export function HealthChart({
                           color: item.color ?? "var(--dracula-purple)",
                           delta,
                         });
-                        // v1.4.16 phase B8 — also surface the prior-period
+                        // v1.4.16 — also surface the prior-period
                         // value as its own row so the user reads both
                         // numbers (current AND last-month / last-year)
                         // alongside the delta.
@@ -2466,7 +2432,7 @@ export function HealthChart({
                         connectNulls
                       />
                     ))}
-                  {/* v1.4.16 phase B8 — comparison overlay.
+                  {/* v1.4.16 — comparison overlay.
                     A dimmed dashed line per type for the prior period
                     (lastMonth / lastYear), painted BENEATH the current
                     series via Recharts' source-order layering. Same

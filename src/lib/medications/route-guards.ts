@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W21 Fix-N — shared medication-route ownership guard.
+ * v1.4.25 — shared medication-route ownership guard.
  *
  * Eleven medication sub-routes (titration, side-effects, inventory,
  * cadence, intake, compliance, phase-config, api-endpoint, glp1, plus

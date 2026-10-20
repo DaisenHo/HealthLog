@@ -1,5 +1,5 @@
 /**
- * v1.32.22 (M4) — `PUT /api/auth/me/coach-prefs` optimistic concurrency.
+ * v1.32.22 — `PUT /api/auth/me/coach-prefs` optimistic concurrency.
  *
  * A full-replace endpoint hydrated from a stale GET (two tabs / two devices)
  * clobbers silently; the base token 409s that. The guarded write covers BOTH

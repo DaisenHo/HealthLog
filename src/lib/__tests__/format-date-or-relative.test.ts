@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (L8) — `formatDateOrRelative()` boundary cases.
+ * v1.4.43 — `formatDateOrRelative()` boundary cases.
  *
  * The helper switches between relative ("vor 12 min") and absolute
  * ("21.05.2026, 14:32") rendering based on a 24h cutoff, so two

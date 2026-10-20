@@ -112,3 +112,10 @@ export function toGrantView(
     revokedBy: grant.revokedBy,
   };
 }
+
+/**
+ * The 404 both invitation routes answer when no account carries the typed
+ * name or e-mail. Its own code, because each route has a second 404 that
+ * needs a different next step.
+ */
+export const INVITE_NO_ACCOUNT_CODE = "sharing.invite.no_account";

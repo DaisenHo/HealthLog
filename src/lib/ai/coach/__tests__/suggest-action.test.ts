@@ -1,5 +1,5 @@
 /**
- * v1.22 (F6) — generalised confirm-card sentinel parse.
+ * v1.22 — generalised confirm-card sentinel parse.
  *
  * Covers the CLOSED allowlist (checkup.create / reminder.note), the
  * field-by-field resolution, and the safety property that an unknown action

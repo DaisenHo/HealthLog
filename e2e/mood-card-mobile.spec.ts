@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.15 phase-A3 fix #2 — mood-list mobile card was rendering the score
+ * v1.4.15 #2 — mood-list mobile card was rendering the score
  * twice: once in the left badge (large bold digit) and once in the title
  * line as "{score} ({label})". On desktop the table view only ever showed
  * one. The fix collapses the title line down to just the localized label

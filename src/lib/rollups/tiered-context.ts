@@ -43,6 +43,7 @@ import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { Prisma } from "@/generated/prisma/client";
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -203,9 +204,8 @@ function windowStats(buckets: RollupBucket[]): {
   const means = usable.map((b) => b.mean);
   const mean = means.reduce((s, m) => s + m, 0) / means.length;
   if (means.length < 2) return { mean: round(mean), sd: null, n };
-  const variance =
-    means.reduce((s, m) => s + (m - mean) ** 2, 0) / means.length;
-  return { mean: round(mean), sd: round(Math.sqrt(variance)), n };
+  const sd = standardDeviation(means, READING_SPREAD) ?? 0;
+  return { mean: round(mean), sd: round(sd), n };
 }
 
 /**
@@ -298,7 +298,7 @@ const BAND_TRUNC_UNIT: Record<
 };
 
 /**
- * v1.37.19 (A6-11) — LIVE aggregate for one band, the fallback the module
+ * v1.37.19 — LIVE aggregate for one band, the fallback the module
  * doc has promised since v1.18.7 but `readBand` never had: a coverage
  * miss (or a >5y account whose YEAR partition was never folded) used to
  * hand the AI an empty MONTH/YEAR band as if the history did not exist.
@@ -489,7 +489,7 @@ async function readBand(
 ): Promise<RollupBucket[]> {
   const from = new Date(now - fromDaysAgo * DAY_MS);
   const to = new Date(now - toDaysAgo * DAY_MS);
-  // v1.37.19 (A6-11) — the far-from-UTC guard the correlation readers
+  // v1.37.19 — the far-from-UTC guard the correlation readers
   // carry (v1.4.38 W-A class): DAY rollup buckets group by UTC day, which
   // diverges from the user's local calendar for most of the day outside
   // the ±3 h near-UTC band. For those users the day-grain band goes

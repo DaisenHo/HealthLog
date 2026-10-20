@@ -1,5 +1,5 @@
 /**
- * v1.20.0 F6 — `composeRegression` closed-form parity (container-free).
+ * v1.20.0 — `composeRegression` closed-form parity (container-free).
  *
  * The DB-backed proof that the accumulator compose equals Postgres
  * `REGR_SLOPE` / `REGR_R2` / `STDDEV_POP` lives in

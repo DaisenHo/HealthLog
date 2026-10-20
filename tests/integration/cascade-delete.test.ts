@@ -97,7 +97,7 @@ describe("user.delete cascades to all personal-data tables", () => {
       },
     });
 
-    // v1.4.16 phase B5e: rec-feedback rows must follow the user on
+    // v1.4.16: rec-feedback rows must follow the user on
     // erasure (provider attribution makes them personal data).
     await prisma.recommendationFeedback.create({
       data: {

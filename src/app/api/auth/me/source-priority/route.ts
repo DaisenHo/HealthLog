@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W5e — per-user, per-metric-class source priority.
+ * v1.4.25 — per-user, per-metric-class source priority.
  *
  *  GET  /api/auth/me/source-priority  — returns the fully-defaulted
  *                                       shape (missing keys filled
@@ -87,7 +87,7 @@ export const PUT = apiHandler(async (req: Request) => {
     );
   }
 
-  // v1.4.25 W10 reconcile (security M-3): capture the previous shape
+  // v1.4.25 (security M-3): capture the previous shape
   // before overwriting so the audit-log entry records the actual
   // delta. Source-priority drives every aggregator's source pick,
   // so a silent compromise (or accidental client write) was

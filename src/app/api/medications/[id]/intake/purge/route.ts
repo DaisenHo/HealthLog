@@ -22,7 +22,7 @@ export const DELETE = apiHandler(
     const { user } = await requireRecordAuth("manage", "medications");
 
     const { id } = await params;
-    // v1.5.5 C-E3-3 — route purge through the same ownership predicate
+    // v1.5.5 — route purge through the same ownership predicate
     // every other `src/app/api/medications/[id]/**` handler uses. The
     // hand-rolled `findUnique + userId !== id ? 404` block returned the
     // medication row only to read its name for the audit details. The
@@ -60,7 +60,7 @@ export const DELETE = apiHandler(
       data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
     });
 
-    // v1.4.39 W-MED — drop every rollup row for this medication so the
+    // v1.4.39 — drop every rollup row for this medication so the
     // next compliance read returns zero-filled buckets rather than the
     // last-known scheduled / taken totals for now-deleted events.
     await prisma.medicationComplianceRollup.deleteMany({
@@ -91,7 +91,7 @@ export const DELETE = apiHandler(
       meta: { purged_count: count },
     });
 
-    // v1.5.5 F-1 C-3 — drop the per-user medication caches so the
+    // v1.5.5 — drop the per-user medication caches so the
     // analytics + iOS today-tally + dashboard tiles converge on the
     // post-purge counts rather than reading stale values for the
     // TTL of each cache. Matches the sibling routes (POST intake,

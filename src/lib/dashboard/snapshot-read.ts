@@ -41,6 +41,7 @@ import { briefingForToday } from "@/lib/daily/briefing-today";
 import { requestTodayBriefingWarm } from "@/lib/daily/briefing-today-warm";
 import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { userDayKey } from "@/lib/tz/format";
+import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 /**
  * Per-key TTL for the snapshot cache entry. Strictly greater than the
@@ -122,6 +123,7 @@ export async function readDashboardSnapshotCached(
   options: SnapshotReadOptions = {},
 ): Promise<SnapshotReadResult> {
   // `User` row is already in hand at both call sites — no extra round-trip.
+  const cachedText = openInsightsCachedText(user);
   const snapshotUser: SnapshotUserInput = {
     id: user.id,
     username: user.username,
@@ -132,7 +134,7 @@ export async function readDashboardSnapshotCached(
     gender: user.gender,
     glucoseUnit: user.glucoseUnit,
     onboardingTourCompleted: user.onboardingTourCompleted,
-    insightsCachedText: user.insightsCachedText,
+    insightsCachedText: cachedText,
     insightsCachedAt: user.insightsCachedAt,
     insightsCachedLocale: user.insightsCachedLocale,
     dashboardWidgetsJson: user.dashboardWidgetsJson,
@@ -141,7 +143,7 @@ export async function readDashboardSnapshotCached(
     healthScoreConfigJson: user.healthScoreConfigJson,
   };
 
-  // v1.21.2 (A4) — the briefing recall + forward-look is locale-specific
+  // v1.21.2 — the briefing recall + forward-look is locale-specific
   // prose, so the snapshot cache key carries the resolved locale: an EN and
   // a DE session never share a snapshot cell (and never see each other's
   // memory wording). The `${user.id}|` prefix still covers the key under
@@ -177,7 +179,7 @@ export async function readDashboardSnapshotCached(
   // the cached body. The record's own state decides, whoever is reading, so a
   // delegate sees the owner's briefing exactly when the owner would.
   const now = options.now ?? new Date();
-  const generatedAt = readBriefingGeneratedAt(user.insightsCachedText);
+  const generatedAt = readBriefingGeneratedAt(cachedText);
   const body = applyBriefingForToday(
     applyBriefingCapability(cached, briefingAi),
     { generatedAt, timezone: user.timezone, language: locale, now },

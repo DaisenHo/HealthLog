@@ -166,7 +166,7 @@ describe("runSaveMedicationListOrder", () => {
 });
 
 /**
- * v1.32.21 (R5a) — optimistic-concurrency token echo + 409 handling.
+ * v1.32.21 — optimistic-concurrency token echo + 409 handling.
  */
 describe("medications layout — optimistic concurrency (client)", () => {
   it("echoes the cached base token as baseUpdatedAt on the view PUT", async () => {

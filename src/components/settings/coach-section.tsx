@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.0 (S5) — Settings → Coach.
+ * v1.18.0 — Settings → Coach.
  *
  * The Coach preference cards moved out of the AI / Assistant section into
  * their own dedicated entry so the AI section owns only provider / model /
@@ -30,7 +30,7 @@
  * The "about me" context lives in the AI section, not here — the daily
  * briefing reads it too, so it is not a Coach-only setting.
  *
- * v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+ * v1.18.6 — the visible heading + subtitle now come from the shared
  * `<SettingsSectionFrame>` in the route; this body is the Coach cards only.
  */
 

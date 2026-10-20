@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * S9 — cross-link OCR-committed labs to their source vault document. Pins the
+ * Cross-link OCR-committed labs to their source vault document. Pins the
  * module gate + ownership fail-closed (both directions), the APPROVED
  * OBSERVATION provenance fact per inserted lab (committedRecordId/Type), the
  * supersede-PENDING + mark-CONFIRMED transition, and idempotency (an empty

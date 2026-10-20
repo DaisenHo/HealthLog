@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — environmental-context resolution + fetch/upsert service.
+ * v1.25 — environmental-context resolution + fetch/upsert service.
  *
  * Owns the location-precedence logic and the per-day upsert into
  * `EnvironmentContext`. Both the nightly job and the on-demand backfill route

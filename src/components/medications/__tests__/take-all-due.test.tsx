@@ -14,6 +14,9 @@ import {
   type DueDerivationMedication,
   type DueMedication,
 } from "@/components/medications/take-all-due";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.16.11 (#316) — "take all due at once" coverage.

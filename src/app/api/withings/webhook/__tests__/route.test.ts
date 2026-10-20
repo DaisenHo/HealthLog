@@ -17,7 +17,7 @@ vi.mock("@/lib/withings/sync", () => ({
   syncUserMeasurements: vi.fn(),
 }));
 
-// v1.4.25 W17b/c — activity / sleep paths dispatch through pg-boss.
+// v1.4.25 — activity / sleep paths dispatch through pg-boss.
 // Mock the boss-instance accessor to return a fake boss for the
 // appli=16 / 44 tests and `null` otherwise.
 vi.mock("@/lib/jobs/boss-instance", () => ({

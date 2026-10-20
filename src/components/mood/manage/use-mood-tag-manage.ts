@@ -63,7 +63,7 @@ export interface ManageCatalog {
 }
 
 /**
- * v1.32.22 (R5b) — the resolved `GET/PUT /api/mood/tags/layout` response.
+ * v1.32.22 — the resolved `GET/PUT /api/mood/tags/layout` response.
  * `updatedAt` is the optimistic-concurrency token the two management cards
  * echo on their next write; no active query reads this key (it is only ever
  * invalidated), so the token is seeded straight from each write response into

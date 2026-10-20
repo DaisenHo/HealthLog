@@ -1,5 +1,5 @@
 /**
- * F-CRYPTO-3 — an undecryptable allergy reaction must be distinguishable from a
+ * An undecryptable allergy reaction must be distinguishable from a
  * genuinely-unset one on a clinician-facing export. The builder used to fail
  * SOFT (→ null, silently omitted) where a sibling dose-change note fails CLOSED,
  * so a reaction that existed but was unreadable rendered as a blank "—" that a

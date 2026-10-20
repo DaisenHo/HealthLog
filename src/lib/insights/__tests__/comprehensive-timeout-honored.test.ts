@@ -31,7 +31,7 @@ vi.mock("@/lib/db", () => ({
     user: {
       findUnique: (...a: unknown[]) => findUnique(...a),
       update: (...a: unknown[]) => userUpdate(...a),
-      // v1.32.22 (M6) — the cache commit is now a privacy-mode-guarded
+      // v1.32.22 — the cache commit is now a privacy-mode-guarded
       // updateMany; record it on the same spy but return a matched count so the
       // guard proceeds (mode unchanged in these tests).
       updateMany: (...a: unknown[]) => {
@@ -97,6 +97,9 @@ vi.mock("@/lib/insights/briefing-failure-marker", () => ({
 }));
 
 import { generateComprehensiveInsight } from "../comprehensive-generate";
+
+// The cached payload is sealed at rest, so its writes need a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
 
 const FEATURES = { weight: { count: 12, latest: 81.4, mean30: 82.1 } };
 const VALID = JSON.stringify({ dailyBriefing: { paragraph: "ok" } });

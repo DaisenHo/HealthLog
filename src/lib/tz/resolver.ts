@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W7 — per-user timezone resolver (server-only).
+ * v1.4.25 — per-user timezone resolver (server-only).
  *
  * HealthLog historically pinned every display surface to the
  * `DEFAULT_TIMEZONE` constant ("Europe/Berlin"). The per-user

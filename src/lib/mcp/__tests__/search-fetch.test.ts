@@ -34,12 +34,19 @@ vi.mock("@/lib/db", () => ({
     labResult: { findMany: vi.fn() },
     // v1.25 — `search` probes the clinical-signal measurement types.
     measurement: { groupBy: vi.fn(async () => []) },
-    // v1.30 (G1) — the nutrients pipeline.
+    // v1.30 — the nutrients pipeline.
     nutrientIntakeDay: {
       findMany: vi.fn(async () => []),
       groupBy: vi.fn(async () => []),
     },
   },
+}));
+
+// The search presence probe is one index lookup per type in Postgres; the
+// suite states which types hold a live reading through this stub.
+vi.mock("@/lib/dashboard/summary-reads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/dashboard/summary-reads")>()),
+  readLatestEver: vi.fn(async () => []),
 }));
 
 import { MCP_TOOLS } from "../tools";

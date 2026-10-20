@@ -26,6 +26,8 @@ export function useCoachMessageResults(args: {
   results: CoachResultEntry[] | undefined;
   isLoading: boolean;
   isError: boolean;
+  /** The failed read's error, for the error row to read. */
+  error: unknown;
   /** Read again after a failure. */
   refetch: () => void;
 } {
@@ -72,6 +74,7 @@ export function useCoachMessageResults(args: {
     results: query.data,
     isLoading: query.isLoading,
     isError: query.isError,
+    error: query.error,
     refetch: () => void query.refetch(),
   };
 }

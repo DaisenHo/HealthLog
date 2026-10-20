@@ -35,7 +35,7 @@ export interface OcrReviewRow {
   /** Non-null when the server flagged a likely duplicate of a live reading. */
   duplicateOf: string | null;
   /**
-   * v1.43 (D1223) — the marker the server matched the name to (its name, an
+   * v1.43 — the marker the server matched the name to (its name, an
    * alias, or a catalog abbreviation), and how; null when nothing matched.
    */
   biomarkerId: string | null;

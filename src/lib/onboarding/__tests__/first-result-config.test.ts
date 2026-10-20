@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — every Q2 area and every connectable Q4 source has a target
+ * v1.39 — every Q2 area and every connectable Q4 source has a target
  * on a surface that exists, so the first-result screen can never be handed
  * a task it cannot render.
  */
@@ -186,8 +186,8 @@ describe("connect-source state copy", () => {
       ) as Record<string, never>,
     }));
 
-  it("covers all seven locales", () => {
-    expect(LOCALES.length).toBe(7);
+  it("covers all eight locales", () => {
+    expect(LOCALES.length).toBe(8);
   });
 
   it.each(LOCALES)(

@@ -344,7 +344,7 @@ export function MoodHeatmap({
                 // mood band reads clearly; only the no-entry cells stay the
                 // quiet `--secondary` empty-state tint.
                 fillOpacity={1}
-                // 2026-07-17 a11y audit (M2) — the per-day values reach
+                // The per-day values reach
                 // assistive tech through the data table below the grid, not
                 // through the rects: a cell subtree nested under the SVG's
                 // `role="img"` is pruned from the a11y tree, and per-cell tab

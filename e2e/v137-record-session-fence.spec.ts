@@ -396,7 +396,7 @@ test.describe.serial("FENCE record-session fence in the browser", () => {
       const held = deferred();
       // The commit is observable: flag once the server round-trip inside the
       // route handler finishes, and poll for it instead of a fixed sleep
-      // (C3) — the tab must close AFTER the write landed, and this waits
+      // The tab must close AFTER the write landed, and this waits
       // exactly that long.
       let switchCommitted = false;
       await initiator.route("**/api/account/switch", async (route) => {

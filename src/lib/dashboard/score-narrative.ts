@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A5 / A6) — the score-card narrative block for the dashboard /
+ * v1.21.2 — the score-card narrative block for the dashboard /
  * insights hero.
  *
  * Two server-resolved, DTO-only signals the `HealthScoreCard` renders but never

@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on POST /api/ingest/medication.
+ * v1.4.43 — multi-issue 422 envelope on POST /api/ingest/medication.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";

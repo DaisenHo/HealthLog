@@ -155,7 +155,7 @@ export async function generateMoodStatusForUser(
 }
 
 /**
- * v1.18.7 (HIGH-1) — everything up to (not including) the provider call.
+ * v1.18.7 — everything up to (not including) the provider call.
  * Returns a finished `served` result for every path that never needed the
  * LLM, or a `pending` descriptor the single-card path and the batch path
  * both drive. See `status-card-generation.ts` for the contract.
@@ -173,7 +173,7 @@ export async function prepareMoodStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("mood", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -233,7 +233,7 @@ export async function prepareMoodStatusForUser(
     };
   }
 
-  // v1.4.28 FB-D2 — cap at 90 entries (~3 months) for the mood
+  // v1.4.28 — cap at 90 entries (~3 months) for the mood
   // surface. The downstream `applyPayloadBudget` slims further.
   // Order desc + reverse so the per-row consumers downstream (which
   // expect oldest-first) see the same shape.
@@ -241,6 +241,7 @@ export async function prepareMoodStatusForUser(
     .findMany({
       where: {
         userId,
+        deletedAt: null,
       },
       orderBy: { date: "desc" },
       take: 90,
@@ -320,7 +321,7 @@ export async function prepareMoodStatusForUser(
 
   const now = new Date();
 
-  // v1.2.5 (M-TZ3) — every day-bucketing pass below keys on the user's own
+  // v1.2.5 — every day-bucketing pass below keys on the user's own
   // calendar day. `userTz` was already resolved above for the cache day-key.
 
   const moodPoints = entries.map((entry) => ({
@@ -468,7 +469,7 @@ export async function prepareMoodStatusForUser(
   const tagSummary = computeTagSummary(entries, now);
   const structuredTagSummary = computeStructuredTagSummary(entries, now);
 
-  // v1.11.5 (F1/F2) — tag "Influence on Mood" + the unified "better days"
+  // v1.11.5 — tag "Influence on Mood" + the unified "better days"
   // board, computed from the same aggregates the visible mood page shows so
   // the model's prose never contradicts the on-screen relations. The
   // snapshot fetches only weight / systolic / pulse cross-metrics, so the
@@ -539,7 +540,7 @@ export async function prepareMoodStatusForUser(
     tz: userTz,
   });
 
-  // v1.18.10 (HIGH-4) — hand the model the finished recent-vs-baseline
+  // v1.18.10 — hand the model the finished recent-vs-baseline
   // comparison + normal-swing verdict instead of asking it to derive them.
   // Mood reads higher-better against the green band.
   const moodSignal = buildMetricSignal({
@@ -582,7 +583,7 @@ export async function prepareMoodStatusForUser(
         inTargetPctLast30DailyPoints,
       },
       tags: tagSummary.length > 0 ? tagSummary : null,
-      // v1.11.5 (F1) — with-vs-without tag influence (only the populated
+      // v1.11.5 — with-vs-without tag influence (only the populated
       // axes are emitted so the prompt stays compact).
       tagInfluence:
         tagInfluence.flat.length > 0 || tagInfluence.structured.length > 0
@@ -597,7 +598,7 @@ export async function prepareMoodStatusForUser(
                   : null,
             }
           : null,
-      // v1.11.5 (F2) — the ranked "better days" board the user sees, so the
+      // v1.11.5 — the ranked "better days" board the user sees, so the
       // model's relations prose matches the on-screen list (shown == sent).
       betterDays: betterDays.length > 0 ? betterDays : null,
       // v1.14.0 — RATED-factor → vital deviation rows (low-vs-high-day Welch

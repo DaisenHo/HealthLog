@@ -6,7 +6,7 @@ import {
 } from "@/lib/ai/prompts/insight-system-prompt";
 
 /**
- * v1.4.16 phase B8 — comparison context block in the user prompt.
+ * v1.4.16 — comparison context block in the user prompt.
  *
  * When the dashboard's comparison toggle is active, the route layer
  * passes a `ComparisonSnapshot` to `buildUserPrompt()` so the LLM has

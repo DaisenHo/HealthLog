@@ -121,7 +121,7 @@ function conditionClinicalStatus(resolved: boolean): FhirCodeableConcept {
 }
 
 /**
- * v1.18.1 P4 — emit one `Condition` per illness/condition episode plus a
+ * v1.18.1 — emit one `Condition` per illness/condition episode plus a
  * bounding `Encounter`. Absent unless the illness module is enabled AND the
  * window held an episode (the aggregator only populates `illnessEpisodes`
  * then). Ids run `condition-1..N` / `encounter-1..N`; the Encounter references

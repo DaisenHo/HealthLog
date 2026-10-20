@@ -121,7 +121,7 @@ Contributors: branch off `main`; PRs target `main`.
 
 ## Translations
 
-HealthLog ships with English (`en`) and German (`de`) maintained by the project, plus French (`fr`), Spanish (`es`), Italian (`it`), Polish (`pl`), and Korean (`ko`) that are **AI-initial, community-maintained**. The maintained locales are reviewed line-by-line; the community-maintained ones surface a small banner inviting users to improve them.
+HealthLog ships with English (`en`) and German (`de`) maintained by the project, plus French (`fr`), Spanish (`es`), Italian (`it`), Polish (`pl`), Korean (`ko`), and Dutch (`nl`) that are **AI-initial, community-maintained**. The maintained locales are reviewed line-by-line; the community-maintained ones surface a small banner inviting users to improve them.
 
 ### Improving an existing locale
 
@@ -136,7 +136,7 @@ To suggest a fix or improvement:
 
 ### Adding a new locale
 
-If you want to introduce a locale that isn't shipped (e.g. `nl`, `pt-BR`, `cs`):
+If you want to introduce a locale that isn't shipped (e.g. `pt-BR`, `cs`):
 
 1. Open an issue first using the **Translation request** template. We'll confirm the locale is in scope and decide whether it joins the AI-initial-community-maintained tier or the maintained tier.
 2. Copy `messages/en.json` to `messages/<locale>.json`.

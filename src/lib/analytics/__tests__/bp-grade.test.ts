@@ -1,5 +1,5 @@
 /**
- * v1.15.12 A1 — unit pins for the graded BP pillar score.
+ * v1.15.12 — unit pins for the graded BP pillar score.
  *
  * The maintainer's apps01 profile (under-65 ceiling 129/79, avg 134/87)
  * is the canonical regression: the binary all-time in-target rate read
@@ -510,7 +510,7 @@ describe("the scale the popover quotes", () => {
     ).toBeLessThan(100);
   });
 
-  it.each(["en", "de", "fr", "es", "it", "pl", "ko"])(
+  it.each(["en", "de", "fr", "es", "it", "pl", "ko", "nl"])(
     "quotes those same two numbers in %s",
     (locale) => {
       const bundle = JSON.parse(

@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — off-response classifier for Oura Cloud API v2 replies.
+ * v1.17.0 — off-response classifier for Oura Cloud API v2 replies.
  * HTTP-status-driven; the shared core lives in
  * `src/lib/integrations/http-status-classifier.ts` and is re-exported here
  * under the Oura-specific names callers already use.

@@ -143,7 +143,7 @@ export interface DoctorReportRenderOptions {
    */
   now?: Date;
   /**
-   * v1.4.25 W7 — per-user display timezone. When omitted the report
+   * v1.4.25 — per-user display timezone. When omitted the report
    * renders timestamps in Europe/Berlin (legacy contract). Server
    * callers pass `resolveUserTimezone(user.id)`; client callers pass
    * the value from auth context so a US user's PDF carries

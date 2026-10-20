@@ -37,7 +37,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        // v1.4.34 IW-G — `size=default` floors at 44 px on mobile to
+        // v1.4.34 — `size=default` floors at 44 px on mobile to
         // clear WCAG 2.5.5 and shrinks to 40 px on sm+ to match the
         // desktop input rhythm. `size=sm` (filter chips) intentionally
         // keeps the 32 px footprint.

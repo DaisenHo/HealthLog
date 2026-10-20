@@ -1,5 +1,5 @@
 /**
- * v1.15.12 A2 — resting-pulse estimation.
+ * v1.15.12 — resting-pulse estimation.
  *
  * Apple Health maps two distinct signals onto two distinct measurement
  * types:

@@ -5,6 +5,7 @@ import {
   type RejectedProfileField,
 } from "@/lib/profile/rejected-fields";
 import { toProfileSex } from "@/lib/profile/sex";
+import { translateCode } from "@/lib/i18n/translate-code";
 
 /**
  * Reading the answer to the onboarding baseline step's profile write.
@@ -181,10 +182,5 @@ function localizedCode(
   errorCode: string | undefined,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string {
-  if (errorCode) {
-    const key = `apiErrors.${errorCode}`;
-    const translated = t(key);
-    if (translated !== key) return translated;
-  }
-  return t("onboarding.errorGeneric");
+  return translateCode(t, "apiErrors", errorCode, "onboarding.errorGeneric");
 }

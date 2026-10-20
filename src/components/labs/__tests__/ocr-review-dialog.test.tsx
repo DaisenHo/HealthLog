@@ -15,6 +15,9 @@ import {
   OcrReviewDialog,
   unitSkippedAnalytes,
 } from "../ocr-review-dialog";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const hookState = vi.hoisted(() => ({
   extractPending: false,

@@ -23,6 +23,9 @@ import {
   pillarDetailLines,
   type Translate,
 } from "../health-score-pillar-detail";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function translator(locale: Locale = "en"): Translate {
   let captured: Translate | null = null;

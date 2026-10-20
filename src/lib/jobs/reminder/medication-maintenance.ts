@@ -21,7 +21,7 @@ import { expireStaleInUseItems } from "@/lib/medications/inventory/service";
 import { getWorkerPrisma } from "./shared";
 
 /**
- * v1.4.25 W19b — daily expire-stale pass for `MedicationInventoryItem`
+ * v1.4.25 — daily expire-stale pass for `MedicationInventoryItem`
  * rows. Flips IN_USE pens whose 30-day window has lapsed to EXPIRED
  * via the pure state-machine evaluator.
  */

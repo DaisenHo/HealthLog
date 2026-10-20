@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W14c — Native locale-specific Coach + Insights system prompts.
+ * v1.4.25 — Native locale-specific Coach + Insights system prompts.
  *
  * Replaces the W9e "REPLY LANGUAGE footer" approach for FR / ES / IT /
  * PL. Each locale gets a hand-curated persona / examples / output-format

@@ -30,6 +30,9 @@ import {
   type LatestMessagesLoader,
 } from "@/lib/ai/coach/latest-messages";
 import { prisma } from "@/lib/db";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
+import { userDayKey } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveIntlLocale } from "@/lib/format-locale";
@@ -704,6 +707,8 @@ export async function clarificationAllowed(args: {
   userId: string;
   conversationId: string;
   now?: Date;
+  /** The person's zone; resolved from the account when absent. */
+  tz?: string;
 }): Promise<boolean> {
   const now = args.now ?? new Date();
   try {
@@ -726,9 +731,11 @@ export async function clarificationAllowed(args: {
     ) {
       return false;
     }
-    const dayStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
+    // The person's day, not the server's: a limit that reset at UTC
+    // midnight reset at one or two in the morning in Berlin and in the
+    // afternoon in the Pacific.
+    const tz = args.tz ?? (await resolveUserTimezone(args.userId));
+    const dayStart = startOfLocalDayKey(userDayKey(now, tz), tz);
     const today = await prisma.coachMessage.count({
       where: {
         conversation: { userId: args.userId },

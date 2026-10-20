@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.7.2 W3 — compact, non-editable medication-detail header.
+ * v1.7.2 — compact, non-editable medication-detail header.
  *
  * Supersedes the v1.7.0 `<MedicationDetailHeader>` (Edit / History /
  * Advanced action row) and the `<CadenceSummaryRow>` "Rhythmus" block.

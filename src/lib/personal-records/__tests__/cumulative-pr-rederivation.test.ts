@@ -1,5 +1,5 @@
 /**
- * v1.30.3 (QA F4) — the one-shot repair for the pre-fix inflated
+ * v1.30.3 — the one-shot repair for the pre-fix inflated
  * cumulative-type PersonalRecord rows: deletes the suspect row(s) for a
  * user and re-runs detection silently so the honest re-derived best takes
  * its place, plus the boot-discovery enqueue that finds affected accounts.

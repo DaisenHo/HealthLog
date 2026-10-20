@@ -206,7 +206,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const refusal = refuseOAuthOnKeyMismatch();
     if (refusal) return refusal;
 
-    // M1 — fail closed without a pinned origin; M4 — honour the operator's
+    // Fail closed without a pinned origin; M4 — honour the operator's
     // global API kill-switch. Either off and the bridge mints no tokens.
     if (!isMcpOriginConfigured() || !(await isApiGloballyEnabled())) {
       return oauthError(

@@ -343,7 +343,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   });
 
   if (inserted + updated > 0) {
-    // v1.30.3 (QA F9) — a landed row changes the dashboard's water/nutrient
+    // v1.30.3 — a landed row changes the dashboard's water/nutrient
     // tile; without this the snapshot kept serving the pre-sync figure
     // until the analytics fresh TTL lapsed (~3 min). Mirrors the manual
     // water POST's own hard-evict (`nutrients/water/route.ts`) so an

@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W2 — probe-gated BP-in-target windowing.
+ * v1.4.37 — probe-gated BP-in-target windowing.
  *
  * The `/api/analytics` default slice computes six BP-in-target
  * percentages (7 days, 30 days, all-time, prior month, prior year)
@@ -85,13 +85,13 @@ export interface BpInTargetEnvelope {
   last7Days: { pct: number; pairs: number } | null;
   last30Days: { pct: number; pairs: number } | null;
   /**
-   * v1.17 W1d — trailing-90-day window. Canonical window for the
+   * v1.17 — trailing-90-day window. Canonical window for the
    * BD-Zielbereich headline, the Health-Score BP pillar and the coach
    * grounding number. See `computeBpInTargetWindows` for the rationale.
    */
   last90Days: { pct: number; pairs: number } | null;
   /**
-   * v1.17 W1b — oldest accepted pair inside the trailing-90-day window
+   * v1.17 — oldest accepted pair inside the trailing-90-day window
    * (or `null` when empty). Feeds `computeWindowConfidence` so the
    * BD-Zielbereich tile labels the effective span rather than a static
    * "· 90 T". On the rollup path this is the oldest in-window DAY bucket.
@@ -109,7 +109,7 @@ export interface BpInTargetEnvelope {
    */
   rowCount: number;
   /**
-   * v1.15.12 A1 — graded clinical-proximity BP score (0..100) from a
+   * v1.15.12 — graded clinical-proximity BP score (0..100) from a
    * recency-weighted representative reading over the trailing window.
    * Feeds the Health-Score BP pillar value, replacing the binary
    * in-target rate AS THE SCORE. `null` when no pairs formed.
@@ -157,7 +157,7 @@ export async function computeBpInTargetFastPath(input: {
   now: Date;
   coverage?: RollupCoverageMap;
   /**
-   * v1.4.38 W-A — optional user timezone for the cross-tz runtime
+   * v1.4.38 — optional user timezone for the cross-tz runtime
    * guard. When omitted (legacy callers) the guard defaults to
    * "near-utc" because the canonical Berlin tenant lives at +1/+2 and
    * the rollup-path is safe; new callers (analytics route) pass it
@@ -171,7 +171,7 @@ export async function computeBpInTargetFastPath(input: {
   const sysCovered = coverage.get("BLOOD_PRESSURE_SYS") === true;
   const diaCovered = coverage.get("BLOOD_PRESSURE_DIA") === true;
 
-  // v1.4.38 W-A — cross-tz runtime guard. The rollup path keys rows on
+  // v1.4.38 — cross-tz runtime guard. The rollup path keys rows on
   // `d.toISOString().slice(0, 10)` (UTC slice) and compares them
   // against `now - N*DAY_MS` boundaries. For a user inside the +-3h
   // band around UTC the day-key on the rollup row lines up with the
@@ -216,7 +216,7 @@ async function computeFromRollups(
   now: Date,
   tzGuard: "near-utc" | "non-utc-live-fallback",
 ): Promise<BpInTargetEnvelope> {
-  // v1.4.22 W5 reconcile (Code-H2) — the priorYear window starts 395
+  // v1.4.22 — the priorYear window starts 395
   // days ago. We read one extra day so the boundary day rolls cleanly
   // into the prior-year bucket without being dropped.
   //
@@ -313,9 +313,9 @@ async function computeFromRollups(
 
   const last7 = bucketWindow(pairsByDay, sevenDaysAgo, now, targets);
   const last30 = bucketWindow(pairsByDay, thirtyDaysAgo, now, targets);
-  // v1.17 W1d — canonical headline / score / coach window.
+  // v1.17 — canonical headline / score / coach window.
   const last90 = bucketWindow(pairsByDay, ninetyDaysAgo, now, targets);
-  // v1.17 W1b — oldest in-window DAY bucket for the effective-span label.
+  // v1.17 — oldest in-window DAY bucket for the effective-span label.
   const ninetyDaysAgoMs = ninetyDaysAgo.getTime();
   const nowMs = now.getTime();
   let last90EarliestAt: Date | null = null;
@@ -360,7 +360,7 @@ async function computeFromRollups(
           sys_rows: sysBuckets.reduce((s, b) => s + b.count, 0),
           dia_rows: diaBuckets.reduce((s, b) => s + b.count, 0),
           path: "rollup",
-          // v1.4.38 W-A — surfaces the cross-tz guard decision so
+          // v1.4.38 — surfaces the cross-tz guard decision so
           // ops logs can prove which branch fired and why.
           tz_guard: tzGuard,
         },
@@ -368,13 +368,13 @@ async function computeFromRollups(
     },
   });
 
-  // v1.15.12 A1 — graded BP pillar score from a recency-weighted
+  // v1.15.12 — graded BP pillar score from a recency-weighted
   // representative reading. Each per-day pair (the day's MEAN sys/dia)
   // contributes weighted by its age; recent readings dominate so genuine
   // improvement surfaces in the score instead of being diluted by years
   // of older readings.
   //
-  // v1.15.12 (audit HIGH-2) — pass `perDayPairCount` as the per-point
+  // v1.15.12 — pass `perDayPairCount` as the per-point
   // `count` weight so a high-variance day weighs N× (matching the live
   // per-event grade) instead of 1×. Without it the rollup and live paths
   // produced different graded scores for the same data depending on
@@ -484,7 +484,7 @@ async function computeFromLive(
   now: Date,
   tzGuard: "near-utc" | "non-utc-live-fallback",
   /**
-   * v1.30.3 (QA F7) — the user's own IANA tz, threaded into the pairing
+   * v1.30.3 — the user's own IANA tz, threaded into the pairing
    * fallback (`computeBpInTargetWindows` / `collectBpPairs`). This is
    * exactly the guard's protected population: a non-near-UTC user gets
    * force-routed HERE specifically so their pairs are computed correctly
@@ -496,7 +496,7 @@ async function computeFromLive(
   const DAY_MS = 24 * 60 * 60 * 1000;
   const bpInTargetSince = new Date(now.getTime() - 365 * DAY_MS);
 
-  // v1.18.10 I-1 — collapse overlapping sources before windowing. BP is a
+  // v1.18.10 — collapse overlapping sources before windowing. BP is a
   // multi-source metric (a Withings reading mirrored into Apple Health is two
   // rows for one event). Without the collapse the live/cold path double-counts
   // the shared reading in both the in-target denominator and the
@@ -534,7 +534,7 @@ async function computeFromLive(
           sys_rows: sysData.length,
           dia_rows: diaData.length,
           path: "live",
-          // v1.4.38 W-A — surfaces the cross-tz guard decision so
+          // v1.4.38 — surfaces the cross-tz guard decision so
           // ops logs can attribute live-fallbacks to coverage vs tz.
           tz_guard: tzGuard,
         },
@@ -542,7 +542,7 @@ async function computeFromLive(
     },
   });
 
-  // v1.30.3 (QA F7) — `undefined` falls through to each helper's own
+  // v1.30.3 — `undefined` falls through to each helper's own
   // Berlin default (unchanged behaviour for legacy callers that never
   // pass a userTz); a real tz here overrides it.
   const windows = computeBpInTargetWindows(
@@ -552,7 +552,7 @@ async function computeFromLive(
     now,
     userTz,
   );
-  // v1.15.12 A1 — graded BP pillar score from the recency-weighted
+  // v1.15.12 — graded BP pillar score from the recency-weighted
   // representative of every accepted per-event pair over the read window.
   const scorePairs = collectBpPairs(sysData, diaData, userTz).filter(
     (pair) => pair.at >= new Date(now.getTime() - 90 * DAY_MS) && pair.at < now,
@@ -588,7 +588,7 @@ async function computeFromLive(
 /**
  * Source-collapsed read of one BP type over the trailing 365 days.
  *
- * v1.18.10 I-1 — routes through `canonicalMeasurementsFrom` so a reading that
+ * v1.18.10 — routes through `canonicalMeasurementsFrom` so a reading that
  * exists under two sources (Withings + its Apple-Health mirror) is counted
  * once per (type, day), matching the rollup fast-path. Pruned to the two
  * fields the in-target helper consumes (`measuredAt` + `value`). Per-event

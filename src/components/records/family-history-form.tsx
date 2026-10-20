@@ -34,7 +34,7 @@ interface FamilyHistoryFormProps {
 }
 
 /**
- * v1.25 (W-RECORDS) — create or edit a structured family-history entry (one
+ * v1.25 — create or edit a structured family-history entry (one
  * condition for one relative). `condition` is the queryable label; the
  * free-text note is encrypted server-side. Patient-reported.
  */

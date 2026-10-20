@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MED — unit tests for the medication-compliance rollup tier.
+ * v1.4.39 — unit tests for the medication-compliance rollup tier.
  *
  * `prisma` is mocked at the module boundary so the test can pin the
  * intake-event fan-out + the rollup upsert / read shape without
@@ -50,8 +50,6 @@ import {
   dayKeyForScheduledFor,
   recomputeMedicationComplianceForDay,
   recomputeMedicationComplianceForEvent,
-  readMedicationCompliance,
-  hasMedicationComplianceCoverage,
   recomputeUserMedicationCompliance,
   enqueueBootTimeMedicationComplianceBackfill,
   enqueueUserMedicationComplianceBackfill,
@@ -314,107 +312,6 @@ describe("recomputeMedicationComplianceForEvent", () => {
         tz: "Europe/Berlin",
       }),
     ).resolves.toBeUndefined();
-  });
-});
-
-describe("readMedicationCompliance", () => {
-  it("returns a trailing-window zero-filled bucket array", async () => {
-    rollupFindMany.mockResolvedValue([
-      { day: "2026-05-18", scheduled: 2, taken: 1, skipped: 1 },
-    ]);
-
-    const now = new Date("2026-05-18T12:00:00.000Z");
-    const buckets = await readMedicationCompliance(
-      "user-1",
-      3,
-      "Europe/Berlin",
-      now,
-    );
-
-    expect(buckets).toHaveLength(3);
-    expect(buckets[buckets.length - 1]).toEqual({
-      date: "2026-05-18",
-      scheduled: 2,
-      taken: 1,
-    });
-    expect(buckets[0].scheduled).toBe(0);
-    expect(buckets[0].taken).toBe(0);
-    expect(buckets.map((b) => b.date)).toEqual([
-      "2026-05-16",
-      "2026-05-17",
-      "2026-05-18",
-    ]);
-  });
-
-  it("folds per-medication rows into one per-day total", async () => {
-    rollupFindMany.mockResolvedValue([
-      { day: "2026-05-18", scheduled: 1, taken: 1, skipped: 0 },
-      { day: "2026-05-18", scheduled: 2, taken: 0, skipped: 1 },
-    ]);
-    const now = new Date("2026-05-18T12:00:00.000Z");
-    const buckets = await readMedicationCompliance(
-      "user-1",
-      1,
-      "Europe/Berlin",
-      now,
-    );
-    expect(buckets[0].scheduled).toBe(3);
-    expect(buckets[0].taken).toBe(1);
-  });
-});
-
-describe("hasMedicationComplianceCoverage", () => {
-  it("returns true when rolled-day count meets the event-day count in window", async () => {
-    queryRaw.mockResolvedValue([
-      { rolled_days: BigInt(7), event_days: BigInt(7) },
-    ]);
-    await expect(
-      hasMedicationComplianceCoverage(
-        "user-1",
-        7,
-        "Europe/Berlin",
-        new Date("2026-05-18T12:00:00.000Z"),
-      ),
-    ).resolves.toBe(true);
-  });
-
-  it("returns true when the user has zero events in window (trivially covered)", async () => {
-    // Zero events → the read path returns a trailing-window zero-fill
-    // from an empty rollup table; covered semantically.
-    queryRaw.mockResolvedValue([
-      { rolled_days: BigInt(0), event_days: BigInt(0) },
-    ]);
-    await expect(
-      hasMedicationComplianceCoverage("user-1", 7, "Europe/Berlin"),
-    ).resolves.toBe(true);
-  });
-
-  it("returns false on partial coverage (boot backfill mid-fold)", async () => {
-    // QA F-H-01 (v1.4.39): the legacy "any row exists" probe would
-    // flip true here and serve zero-filled buckets for days N..days-1
-    // that the backfill hasn't reached yet. With the tightened probe
-    // partial coverage forces the route into the legacy aggregator
-    // until the fold completes.
-    queryRaw.mockResolvedValue([
-      { rolled_days: BigInt(2), event_days: BigInt(7) },
-    ]);
-    await expect(
-      hasMedicationComplianceCoverage(
-        "user-1",
-        7,
-        "Europe/Berlin",
-        new Date("2026-05-18T12:00:00.000Z"),
-      ),
-    ).resolves.toBe(false);
-  });
-
-  it("returns false on zero rollups when events exist (legacy account cold start)", async () => {
-    queryRaw.mockResolvedValue([
-      { rolled_days: BigInt(0), event_days: BigInt(7) },
-    ]);
-    await expect(
-      hasMedicationComplianceCoverage("user-1", 7, "Europe/Berlin"),
-    ).resolves.toBe(false);
   });
 });
 

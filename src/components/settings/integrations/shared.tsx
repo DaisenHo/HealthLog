@@ -10,6 +10,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiGet } from "@/lib/api/api-fetch";
+import type { GoogleHealthBackfillEndedEntry } from "@/lib/google-health/backfill-progress";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import type { MetricFreshnessEntry } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
@@ -58,11 +59,7 @@ export interface IntegrationStatusViewModel {
    * Google Health: data types whose history backfill ended before the start
    * of their history, with where and why.
    */
-  backfillEnded?: Array<{
-    type: string;
-    endsAt: string;
-    reason: "horizon" | "no_progress";
-  }>;
+  backfillEnded?: GoogleHealthBackfillEndedEntry[];
   /**
    * Polar / Oura / Strava: usable credentials resolve (BYO or the shared
    * app). Greys out "Connect" when false.

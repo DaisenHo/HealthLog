@@ -1,5 +1,5 @@
 /**
- * S5 — daily-briefing push decision seam + composer.
+ * Daily-briefing push decision seam + composer.
  *
  * Pins the once-per-day, opt-in-only, morning-window, non-alert contract of
  * `maybeDispatchDailyBriefing` and the floor/lead composition of

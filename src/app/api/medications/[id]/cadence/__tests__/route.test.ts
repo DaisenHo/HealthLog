@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19e — cadence + compliance API route tests.
+ * v1.4.25 — cadence + compliance API route tests.
  *
  * Mirrors the W19d side-effect test fixture pattern: external
  * dependencies are mocked at module boundaries (Prisma, session,

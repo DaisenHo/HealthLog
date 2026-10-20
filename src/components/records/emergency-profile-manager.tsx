@@ -91,6 +91,7 @@ export function EmergencyProfileManager() {
   if (query.isError) {
     return (
       <QueryErrorCard
+        error={query.error}
         title={t("records.emergency.loadError")}
         onRetry={() => void query.refetch()}
       />

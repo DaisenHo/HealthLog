@@ -21,7 +21,10 @@ import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 import { MAX_COACH_ATTACHMENTS } from "@/lib/validations/inbound-documents";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
-import { parseUploadResponse } from "@/components/documents/vault-utils";
+import {
+  parseUploadResponse,
+  stagedAttachmentPollInterval,
+} from "@/components/documents/vault-utils";
 import {
   metricScopeLabelFallback,
   scopeSourceMetricLabelKey,
@@ -64,6 +67,7 @@ import {
   useDetachCoachDocument,
   useSendCoachMessage,
 } from "./use-coach";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * v1.12.0 (Coach v2 #6) — shared chat surface for both the Coach drawer
@@ -88,7 +92,7 @@ import {
  */
 
 /**
- * v1.21.0 (C4 H1/H4) — collapse a UI launch scope ({ metric, also,
+ * v1.21.0 — collapse a UI launch scope ({ metric, also,
  * window }) into the chat route's wire scope ({ sources, window }).
  * Returns undefined when there is nothing to narrow, so the request
  * falls back to the route's default all-source snapshot. Exported for
@@ -133,7 +137,7 @@ export interface CoachConversationProps {
    */
   prefill?: string | null;
   /**
-   * v1.21.0 (C4 H1/H4) — optional launch scope so a conversation opened
+   * v1.21.0 — optional launch scope so a conversation opened
    * from a metric surface or insight card narrows its snapshot to the
    * relevant source(s) + window. Converted to the chat route's
    * `CoachScope` and attached to the FIRST turn of a fresh conversation
@@ -194,7 +198,7 @@ export interface CoachConversationProps {
   /** data-variant on the root, surfaced for e2e + styling hooks. */
   surface: "drawer" | "page";
   /**
-   * v1.18.11 (W11, #67) — open a specific conversation on mount. The page
+   * v1.18.11 (#67) — open a specific conversation on mount. The page
    * surface reads it from the `?c=` deep-link the dashboard Coach entry
    * carries, so a tap lands the user directly in that thread instead of a
    * blank new chat. Seeds the same `currentConversationId` the history
@@ -204,7 +208,7 @@ export interface CoachConversationProps {
    */
   initialConversationId?: string | null;
   /**
-   * v1.18.11 (W11, #67) — when no `initialConversationId` is given, open
+   * v1.18.11 (#67) — when no `initialConversationId` is given, open
    * the user's MOST-RECENT conversation once the shared rail list resolves.
    * This is what makes the dashboard Coach entry land the user IN their
    * conversation cross-device: "most recent" is the server-authoritative
@@ -399,10 +403,11 @@ export function CoachConversation({
       queryFn: async () =>
         apiGet<InboundDocumentDetailDto>(`/api/documents/inbound/${id}`),
       staleTime: 15_000,
+      // Bounded by the upload processing window, like the vault list: a
+      // document that is never indexed stops being polled.
       refetchInterval: (query: {
         state: { data?: InboundDocumentDetailDto };
-      }) =>
-        query.state.data && !query.state.data.hasContentIndex ? 2500 : false,
+      }) => stagedAttachmentPollInterval(query.state.data),
     })),
   });
   const stagedDetailById = new Map<
@@ -590,7 +595,7 @@ export function CoachConversation({
     }
   }
 
-  // v1.18.11 (W11, #67) — auto-open the most-recent conversation when the
+  // v1.18.11 (#67) — auto-open the most-recent conversation when the
   // surface mounts with no explicit selection. Only fetches the rail list
   // when the behaviour is requested AND no deep-linked id was supplied, so
   // the drawer's default new-chat mount pays nothing for it.
@@ -722,7 +727,7 @@ export function CoachConversation({
       dismissQuestions.mutate(guidedQuestion);
     }
     setInputValue("");
-    // v1.21.0 (C4 H1/H4) — attach the launch scope to the FIRST turn of a
+    // v1.21.0 — attach the launch scope to the FIRST turn of a
     // fresh conversation so a chat opened from a metric surface / insight
     // card reads a snapshot narrowed to the relevant source(s). A continued
     // thread (existing id) keeps its own established scope, so we omit it.
@@ -983,11 +988,8 @@ export function CoachConversation({
   // from a metric surface names the metric there until its first turn.
   const a2Metric = launchScope?.metric ?? null;
 
-  // `t()` returns the key string itself when a key is missing, so the only
-  // reliable "is this key defined" signal is `t(key) !== key`.
   function tOrNull(key: string): string | null {
-    const resolved = t(key);
-    return resolved === key ? null : resolved;
+    return translateOrNull(t, key);
   }
 
   // The resolved metric label: prefers a per-source i18n key, falls back to
@@ -1001,7 +1003,7 @@ export function CoachConversation({
       a2Metric)
     : null;
 
-  // v1.18.11 (W11) — the docked composer column: the quiet adopt offer and
+  // v1.18.11 — the docked composer column: the quiet adopt offer and
   // the guided-questions entry card stack above the live composer. Shared by
   // the drawer body (via `CoachDrawerBody`) and the page surface (rendered
   // directly), so the two surfaces stay byte-identical above the composer.
@@ -1176,7 +1178,7 @@ export function CoachConversation({
     >
       <header
         data-slot="coach-conversation-header"
-        // v1.18.1 (W-COACH-UI C2/C4) — the header used to crowd a bare
+        // v1.18.1 — the header used to crowd a bare
         // leading ghost-icon flush against the avatar (the "minimal"
         // element the maintainer disliked). The surface-toggle now sits
         // in its own leading cluster separated by a hairline divider, the
@@ -1260,7 +1262,7 @@ export function CoachConversation({
         onSourcesOpenChange={setSourcesTrayOpen}
         sourcesRail={
           <SourcesRail
-            // v1.21.2 (A2) — surface the launch scope on the drawer surface;
+            // v1.21.2 — surface the launch scope on the drawer surface;
             // only set for a fresh, scoped, not-yet-sent conversation so a
             // continued thread (its own established scope) shows no stale line.
             activeScopeLabel={

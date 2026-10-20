@@ -19,6 +19,9 @@ import { queryKeys } from "@/lib/query-keys";
 import { KeyBackupCard } from "@/components/admin/key-backup-card";
 import { KeyBackupBanner } from "@/components/dashboard/key-backup-banner";
 import type { KeyBackupStatus } from "@/components/admin/use-key-backup-status";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

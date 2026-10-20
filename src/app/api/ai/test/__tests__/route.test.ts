@@ -238,7 +238,7 @@ describe("POST /api/ai/test — provider error leak guard + non-5xx contract", (
   });
 });
 
-// v1.4 fix: the dropdown in /settings was not honoured — the test always
+// v1.4: the dropdown in /settings was not honoured — the test always
 // ran against the SAVED provider (the maintainer reported "wirft was Komisches raus").
 // The route now accepts a JSON override body and forwards the user's
 // unsaved selection to resolveProviderForTest().

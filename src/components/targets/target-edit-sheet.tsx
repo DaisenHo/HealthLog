@@ -110,7 +110,7 @@ export function TargetEditSheet(props: TargetEditSheetProps) {
   // QueryClientProvider, and the hooks only execute once the user
   // actually opens the editor.
   //
-  // v1.4.27 R4 RC2 — migrated raw <Dialog> → <ResponsiveSheet> so the
+  // v1.4.27 — migrated raw <Dialog> → <ResponsiveSheet> so the
   // bottom-sheet branch sticky-pins reset + cancel + save above the
   // soft keyboard on phones. The lazy-mount toggle stays at this layer
   // so closed renders never instantiate the TanStack Query hooks.
@@ -218,7 +218,7 @@ function TargetEditSheetBody({
 
   // Focus management — the first input gets focus when the sheet
   // opens, matching the Dashboard chart cog's open-on-focus pattern.
-  // v1.4.27 R4 RC2 — under the ResponsiveSheet primitive we no longer
+  // v1.4.27 — under the ResponsiveSheet primitive we no longer
   // hook Radix's `onOpenAutoFocus`; a mount effect lands focus on the
   // primary input as soon as the portal paints.
   const firstInputRef = useRef<HTMLInputElement | null>(null);
@@ -402,7 +402,7 @@ function TargetEditSheetBody({
       ? Boolean(thresholdsData?.overrides?.[metric])
       : false;
 
-  // v1.4.27 R4 RC2 — focus the first numeric input on mount instead of
+  // v1.4.27 — focus the first numeric input on mount instead of
   // relying on Radix's <Dialog>-specific onOpenAutoFocus. The body
   // only mounts once `open=true` (lazy mount above), so the effect
   // runs exactly when the surface comes into view.

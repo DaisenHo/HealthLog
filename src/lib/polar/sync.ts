@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Polar AccessLink sync.
+ * v1.17.0 — Polar AccessLink sync.
  *
  * Pulls Nightly Recharge (→ RECOVERY_SCORE / ANS_CHARGE / HRV / RHR /
  * respiratory rate), sleep (per-stage durations on a reconstructed END-instant
@@ -274,7 +274,7 @@ export async function syncUserPolar(userId: string): Promise<SyncWriteResult> {
     },
   });
 
-  // S4 — trigger the debounced morning refresh on a last-night segment landing
+  // Trigger the debounced morning refresh on a last-night segment landing
   // (mirrors the Withings / WHOOP / Apple seams). Fires whether or not a
   // sibling collection failed, since the sleep readings were still imported.
   void maybeEnqueueMorningRefresh(userId, insertedSleepMeasuredAts).catch(

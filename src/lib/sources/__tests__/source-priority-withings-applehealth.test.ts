@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b/c — cross-source priority verification when both
+ * v1.4.25 — cross-source priority verification when both
  * Withings (activity + sleep v2 ingest) AND Apple Health (iOS
  * passthrough, v1.5) populate the same metric for the same day.
  *

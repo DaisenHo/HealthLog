@@ -159,7 +159,7 @@ describe("GET /api/insights/comprehensive — server cache", () => {
 
     // A tight fixture: 5 paired BP readings + 5 weight rows + 5 mood
     // entries spread across 5 distinct days. Enough to populate every
-    // correlation block (n >= 5 is the pearsonCorrelation gate).
+    // correlation key (each is null below the significance bar).
     const now = Date.now();
     const DAY_MS = 24 * 60 * 60 * 1000;
     const dayDates = Array.from(

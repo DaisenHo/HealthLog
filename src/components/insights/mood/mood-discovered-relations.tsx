@@ -9,7 +9,7 @@ import {
 } from "@/components/insights/pattern-dismiss-action";
 
 /**
- * v1.11.5 (F3) — FDR-controlled discovered mood relations.
+ * v1.11.5 — FDR-controlled discovered mood relations.
  *
  * Surfaces the slice of the all-pairs correlation-discovery engine
  * (`/api/insights/correlations`) that involves mood — both
@@ -64,7 +64,7 @@ const CHANNEL_LABEL_KEY: Record<string, string> = {
   HEART_RATE_VARIABILITY: "measurements.typeHeartRateVariability",
   RESTING_HEART_RATE: "measurements.typeRestingHeartRate",
   WEIGHT: "measurements.typeWeight",
-  // v1.25 (W-ENV) — environmental-exposure channels, so a "daylight → mood"
+  // v1.25 — environmental-exposure channels, so a "daylight → mood"
   // relation reads with its descriptive label instead of the raw ENV_ key.
   ENV_TEMP_MEAN: "environment.fields.tempMean",
   ENV_TEMP_MIN: "environment.fields.tempMin",

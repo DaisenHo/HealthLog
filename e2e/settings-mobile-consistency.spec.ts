@@ -6,7 +6,7 @@ import {
   WEIGHT_ONLY_SUMMARIES,
 } from "./utils/mock-dashboard-snapshot";
 /**
- * v1.4.19 A6 — Settings consistency snapshot at Pixel-5 (393 CSS px).
+ * v1.4.19 — Settings consistency snapshot at Pixel-5 (393 CSS px).
  * v1.4.27 — input height floor lifted from 36 px (`h-9`) to 40 px
  * (`h-10`) on `Input`, `Select` trigger, and the native `<select>`
  * primitives per the WCAG 2.5.5 tap-target sweep (MB2). The

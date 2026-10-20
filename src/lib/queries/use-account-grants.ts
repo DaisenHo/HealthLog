@@ -24,9 +24,10 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGetList, apiPost } from "@/lib/api/api-fetch";
 import { grantDependentKeys, queryKeys } from "@/lib/query-keys";
 import type { ShareDomain } from "@/lib/sharing/scope";
+import type { ListCap } from "@/lib/api/list-cap-shape";
 
 /** The other party to a grant, as far as anyone is told about them. */
 export interface GrantParty {
@@ -93,21 +94,26 @@ export interface RecordActivity {
    * the list is everything that ever happened.
    */
   retentionDays: number;
-  /**
-   * True when the read hit its row ceiling, so the list is the most recent
-   * activity inside the window rather than all of it.
-   *
-   * Two different completeness claims, and both have to be stated: the window
-   * bounds how far back, this bounds how many. A list that silently stopped at
-   * its own cap would let the oldest line read as the beginning.
-   */
-  truncated: boolean;
 }
+
+/** A capped list as its hook hands it out: the payload and the route's cap. */
+type WithCap<T> = T & {
+  /**
+   * The route's list cap (`meta` on the envelope), null when it sent none.
+   * Shown with `ListCapNotice`: the retention window bounds how far back the
+   * feed sees, the cap how many rows came back, and a list that stopped at
+   * its ceiling in silence would let its oldest line read as the beginning.
+   */
+  cap: ListCap | null;
+};
 
 export function useAccountGrants(enabled = true) {
   return useQuery({
     queryKey: queryKeys.accountGrants(),
-    queryFn: () => apiGet<GrantList>("/api/account/grants"),
+    queryFn: async (): Promise<WithCap<GrantList>> => {
+      const { data, cap } = await apiGetList<GrantList>("/api/account/grants");
+      return { ...data, cap };
+    },
     enabled,
   });
 }
@@ -115,7 +121,12 @@ export function useAccountGrants(enabled = true) {
 export function useRecordActivity(enabled = true) {
   return useQuery({
     queryKey: queryKeys.accountActivity(),
-    queryFn: () => apiGet<RecordActivity>("/api/account/activity"),
+    queryFn: async (): Promise<WithCap<RecordActivity>> => {
+      const { data, cap } = await apiGetList<RecordActivity>(
+        "/api/account/activity",
+      );
+      return { ...data, cap };
+    },
     enabled,
   });
 }

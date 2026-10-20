@@ -98,6 +98,7 @@ import type {
   TodaySleep,
   TodayVital,
 } from "@/lib/daily/today-overview";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
 const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
@@ -132,7 +133,7 @@ const MILESTONE_STREAK_WINDOW_DAYS = 30;
 const MILESTONE_RECORD_LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
- * S12 — gather today's single freshly-reached milestone (or null) from the
+ * Gather today's single freshly-reached milestone (or null) from the
  * engines that ALREADY exist. Two cheap, fail-soft reads reused verbatim:
  *   - `detectStreak` over the salient vitals' day-mean series (the exact
  *     `score-narrative` pattern) → return-to-range + sustained-in-range states;
@@ -397,7 +398,7 @@ async function loadDailyDigestExtrasCached(
     caches.analytics as ServerCache<DailyDigestExtras>,
     digestExtrasCacheKey(userId, todayLocalDate),
     async () => {
-      // S11 / S12 — independent reads, hoisted into one Promise.all (a prior
+      // Independent reads, hoisted into one Promise.all (a prior
       // revision ran them sequentially). Each is already fault-isolated
       // internally (a milestone read-hiccup or a tension-read failure leaves
       // its own field quiet rather than breaking the other).
@@ -446,7 +447,7 @@ async function loadDailyDigestExtrasCached(
   );
 }
 
-/** S10 — how recently an ECG recording counts as "new" for the rail read. */
+/** How recently an ECG recording counts as "new" for the rail read. */
 const ECG_NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 interface CoachPlanRow {
@@ -637,7 +638,7 @@ export async function loadDailyDigest(
       orderBy: { updatedAt: "desc" },
       take: CHECKIN_PLAN_READ_LIMIT,
     }),
-    // S10 — the freshest ECG recording within the last-day window, for the
+    // The freshest ECG recording within the last-day window, for the
     // `ecg_new_recording` rail item. Descriptors only (verdict + recordedAt) —
     // the encrypted waveform is never selected, so no decrypt and no trace
     // crosses into the digest. The builder gates on the `insights` module.
@@ -809,7 +810,7 @@ export async function loadDailyDigest(
         }
       : null;
 
-  // S10 — the freshest ECG recording (device verdict + recordedAt only). The
+  // The freshest ECG recording (device verdict + recordedAt only). The
   // builder decides "new" and gates on the `insights` module. An ECG row only
   // ever carries an AFib-screening verdict; the shared enum's other members
   // (walking-steadiness / event codes) never apply, so anything else maps to
@@ -833,7 +834,7 @@ export async function loadDailyDigest(
     ? planRows.map((row) => toCoachPlanCandidate(row as CoachPlanRow))
     : [];
 
-  // S12 — the calm reward layer. S11 — the day's elevated-at-rest window,
+  // The calm reward layer. S11 — the day's elevated-at-rest window,
   // computed on demand from raw for TODAY only (read-swap, one bounded
   // day-read; never persisted), fault-isolated: a tension-read failure must
   // never break the digest (a hot, must-not-fail path), it just omits the calm
@@ -907,8 +908,7 @@ export async function loadDailyDigest(
     if (!staysDue && row.nextDueAt.getTime() > now.getTime()) continue;
     let label = row.label;
     if (row.origin === "COACH") {
-      const translated = t(row.label);
-      if (translated !== row.label) label = translated;
+      label = translateOrNull(t, row.label) ?? label;
     }
     preventiveDue.push({ label, staysDue });
   }

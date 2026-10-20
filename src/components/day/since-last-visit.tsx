@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { TileHeader } from "@/components/insights/tile-header";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import type { EncounterDTO } from "@/lib/encounters/dto";
 import { apiGet } from "@/lib/api/api-fetch";
 import type {
@@ -35,7 +36,7 @@ import {
 import { getUnitForType } from "@/lib/measurements/unit-map";
 import { queryKeys } from "@/lib/query-keys";
 
-import { DAY_SECTION_LABEL, dayTitle, useNotableText } from "./day-sections";
+import { dayTitle, useNotableText } from "./day-sections";
 import { DayLink } from "./day-link";
 import { dateKeyOfInstant } from "./day-url";
 import { tileKeyOf } from "./day-values-model";
@@ -193,14 +194,31 @@ export function SinceLastVisit({
       })
     : [];
 
+  const lastLabel = fmt.dateShortSmartCalendar(lastDay);
+
+  // A failed read keeps the card and its title, so the page does not jump
+  // and the reader still sees what could not be loaded.
   if (window.isError && rows.length === 0) {
     return (
-      <ReadFailureRow
-        error={window.error}
-        slot="since-last-visit-error"
-        message={t("day.sinceLastVisit.loadError")}
-        onRetry={() => void window.refetch()}
-      />
+      <Card className="gap-2 py-3 md:py-4">
+        <CardHeader>
+          <TileHeader
+            size="sm"
+            icon={Stethoscope}
+            titleAs="h3"
+            title={t("day.sinceLastVisit.title", { date: lastLabel })}
+          />
+        </CardHeader>
+        <CardContent>
+          <QueryErrorRow
+            inset
+            error={window.error}
+            slot="since-last-visit-error"
+            message={t("day.sinceLastVisit.loadError")}
+            onRetry={() => void window.refetch()}
+          />
+        </CardContent>
+      </Card>
     );
   }
   // Nothing to show is nothing drawn: still loading, or a quiet window. The
@@ -208,28 +226,30 @@ export function SinceLastVisit({
   if (rows.length === 0) return null;
 
   const visible = showAll ? rows : rows.slice(0, VISIBLE_ROWS);
-  const lastLabel = fmt.dateShortSmartCalendar(lastDay);
   const nextDay = dateKeyOfInstant(next.occurredAt, timeZone);
 
   return (
-    <Card className="gap-3 py-3 md:gap-3 md:py-4">
+    <Card className="gap-2 py-3 md:py-4">
+      <CardHeader>
+        <TileHeader
+          size="sm"
+          icon={Stethoscope}
+          id={`since-last-visit-${next.id}`}
+          titleAs="h3"
+          title={t("day.sinceLastVisit.title", { date: lastLabel })}
+          right={
+            <span className="text-muted-foreground text-xs">
+              {tCount("day.sinceLastVisit.count", rows.length)}
+            </span>
+          }
+        />
+      </CardHeader>
       <CardContent>
         <section
           data-slot="since-last-visit"
           aria-labelledby={`since-last-visit-${next.id}`}
           className="space-y-2"
         >
-          <div className="flex items-baseline justify-between gap-3">
-            <h3
-              id={`since-last-visit-${next.id}`}
-              className={DAY_SECTION_LABEL}
-            >
-              {t("day.sinceLastVisit.title", { date: lastLabel })}
-            </h3>
-            <span className="text-muted-foreground shrink-0 text-xs">
-              {tCount("day.sinceLastVisit.count", rows.length)}
-            </span>
-          </div>
           <ul className="border-border divide-border divide-y rounded-lg border px-3.5">
             {visible.map((row) => (
               <li

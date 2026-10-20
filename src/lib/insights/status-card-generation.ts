@@ -1,5 +1,5 @@
 /**
- * v1.18.7 (HIGH-1) — the shared "prepare → run → finalize" contract for the
+ * v1.18.7 — the shared "prepare → run → finalize" contract for the
  * seven specialised per-metric status cards.
  *
  * Before this, every `*-status.ts` generator was a single monolithic

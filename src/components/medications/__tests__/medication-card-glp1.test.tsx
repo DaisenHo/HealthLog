@@ -8,9 +8,12 @@ import {
   type Glp1Medication,
 } from "@/components/medications/glp1-medication-card";
 import { MedicationCard } from "@/components/medications/medication-card";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
- * v1.4.25 W4d-tests — RTL-style component coverage for the GLP-1
+ * v1.4.25 — RTL-style component coverage for the GLP-1
  * medication-card variant deferred by phase W4d.
  *
  * The project never installed `@testing-library/react`; the convention
@@ -187,7 +190,7 @@ afterEach(() => {
 
 describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
   it("renders the GLP-1 variant when treatmentClass === 'GLP1' is active", () => {
-    // v1.4.37 W4b — the category-label slot now mirrors the generic
+    // v1.4.37 — the category-label slot now mirrors the generic
     // card (real `medication.category` lookup) so Ramipril and
     // Mounjaro share the same row shape. The variant differentiator
     // moved into the GLP-1-specific rows below the header (last/next
@@ -210,14 +213,14 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     // Category is OTHER → "Other" badge wins.
     expect(html).toContain("Other");
     expect(html).not.toContain("GLP-1 injection");
-    // v1.4.28 FB-G1 — the Syringe glyph + middle-dot separator on the
+    // v1.4.28 — the Syringe glyph + middle-dot separator on the
     // list row are gone. The list row reads as the canonical two-line
     // shape: `{name} {dose}` on line 1, class label on line 2.
     expect(html).not.toMatch(/lucide-syringe/i);
   });
 
   it("collapses edit / history into a single overflow kebab + navigable header", () => {
-    // v1.7.2 W3 — the former header icon-buttons collapse into one
+    // v1.7.2 — the former header icon-buttons collapse into one
     // kebab; the card header links to the detail page. The menu items
     // (edit / history) render inside the portalled dropdown content, so
     // SSR markup carries only the kebab trigger + the header link, not
@@ -299,7 +302,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
 
     expect(html).toContain("Mounjaro");
     expect(html).toContain("7.5 mg");
-    // FB-G1 — the GLP-1 row drops the middle-dot separator; the dose now
+    // The GLP-1 row drops the middle-dot separator; the dose now
     // rides its OWN muted line under the name (the shared
     // `<MedicationCardHeader>` primitive), localised via `formatDose`.
     expect(html).toContain('data-slot="medication-card-header-dose"');
@@ -463,7 +466,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
   });
 
   it("folds the side-effect quick-log into the same overflow kebab", () => {
-    // v1.7.2 W3 — the side-effect quick-log folds into the SAME overflow
+    // v1.7.2 — the side-effect quick-log folds into the SAME overflow
     // menu as edit / history / advanced, so the GLP-1 header carries one
     // kebab whether or not the hand-off is wired (parity with the generic
     // card). SSR doesn't open Radix Portal content, so we assert the
@@ -501,7 +504,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
   });
 
   it("still renders the single kebab when onLogSideEffect is not supplied", () => {
-    // v1.7.2 W3 — the kebab is unconditional now (it always carries edit
+    // v1.7.2 — the kebab is unconditional now (it always carries edit
     // / history / advanced); the side-effect item is the only opt-in
     // part. Mounjaro and Ramipril therefore share the same one-kebab
     // header shape regardless of the hand-off prop.
@@ -598,7 +601,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
       "de",
     );
 
-    // v1.4.37 W4b — the German category badge now comes from the
+    // v1.4.37 — the German category badge now comes from the
     // shared category-label lookup (Sonstiges for OTHER) instead of
     // the hard-coded "GLP-1-Injektion" label, so the GLP-1 card stays
     // visually symmetric with the generic card on the medications list.

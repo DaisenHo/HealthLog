@@ -4,9 +4,12 @@ import { Activity, Smile } from "lucide-react";
 
 import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
- * v1.4.15 Fix 4 — "7-Tage-Schnitt" → "7-Tage-Trend".
+ * v1.4.15 — "7-Tage-Schnitt" → "7-Tage-Trend".
  *
  * The avg7 line on every dashboard tile used to read "7d: 80.5" /
  * "7T: 80,5" — visually an *average*. the maintainer wanted it to convey

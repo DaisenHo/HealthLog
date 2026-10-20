@@ -59,7 +59,7 @@ export async function runSetMedicationListView(deps: {
     view,
   });
   try {
-    // v1.32.21 (R5a) — echo the base token so a concurrent order Save can't be
+    // v1.32.21 — echo the base token so a concurrent order Save can't be
     // resurrected by this view toggle (and vice versa).
     const saved = await apiPut<MedicationListLayoutWithToken>(
       "/api/medications/layout",
@@ -93,7 +93,7 @@ export async function runSaveMedicationListOrder(deps: {
   const { order, queryClient, t } = deps;
   const key = queryKeys.medicationListLayout();
   try {
-    // v1.32.21 (R5a) — echo the base token so this order Save 409s rather than
+    // v1.32.21 — echo the base token so this order Save 409s rather than
     // clobbering a view toggle that committed since the dialog opened.
     const saved = await apiPut<MedicationListLayoutWithToken>(
       "/api/medications/layout",

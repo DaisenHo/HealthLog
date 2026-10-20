@@ -60,6 +60,7 @@ import {
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { userDayKey } from "@/lib/tz/format";
+import { linearFit } from "@/lib/stats/linear-fit";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -205,21 +206,11 @@ function foldInto(map: Map<string, Agg>, key: string, value: number): void {
  * over the order the readings landed.
  */
 function leastSquaresSlope(values: number[]): number | null {
-  const n = values.length;
-  if (n < 2) return null;
-  let sumX = 0;
-  let sumY = 0;
-  let sumXY = 0;
-  let sumXX = 0;
-  for (let i = 0; i < n; i++) {
-    sumX += i;
-    sumY += values[i];
-    sumXY += i * values[i];
-    sumXX += i * i;
-  }
-  const denom = n * sumXX - sumX * sumX;
-  if (denom === 0) return null;
-  return round((n * sumXY - sumX * sumY) / denom, 4);
+  const fit = linearFit(
+    values.map((_, i) => i),
+    values,
+  );
+  return fit ? round(fit.slope, 4) : null;
 }
 
 /**

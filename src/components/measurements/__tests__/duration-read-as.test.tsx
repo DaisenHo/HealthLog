@@ -6,6 +6,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import { parseDurationEntry } from "@/lib/measurements/parse-duration";
 import { DurationReadAs } from "../duration-read-as";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "ko");
 
 /**
  * The hint under a duration field says how the entry was read, so "7.5",

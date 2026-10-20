@@ -154,7 +154,7 @@ async function handleTextExtract(
   // a vision call, so it reserves the proportionate text ceiling rather than
   // the vision budget. Over-charging the vision rate for a text call would
   // exhaust the day budget against spend that never happened.
-  // v1.21.0 (F1) — the operator-cost cap applies only when the picked provider
+  // v1.21.0 — the operator-cost cap applies only when the picked provider
   // egresses on the operator's own key; a BYOK / Codex / local pick runs on the
   // user's own plan and gets the generous user-plan ceiling.
   const dateKey = await buildDateKey(userId);
@@ -215,7 +215,7 @@ async function handleVisionExtract(
   }
 
   // 4. Reserve the day's budget BEFORE the provider call (atomic, TOCTOU-safe).
-  // v1.21.0 (F1) — the operator-cost cap applies only when the picked vision
+  // v1.21.0 — the operator-cost cap applies only when the picked vision
   // provider egresses on the operator's own key; a BYOK / Codex pick runs on
   // the user's own plan and gets the generous user-plan ceiling.
   const dateKey = await buildDateKey(userId);

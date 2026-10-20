@@ -21,7 +21,7 @@ const INSIGHT_METRIC_RETURN_PATHS: Readonly<Record<string, true>> =
     SUB_PAGE_SLUGS.map((slug) => [`/insights/${slug}`, true] as const),
   );
 /**
- * v1.4.25 W4 — common visual frame for each metric sub-page.
+ * v1.4.25 — common visual frame for each metric sub-page.
  *
  * Each sub-page renders:
  *   - a calm header (title + optional status badge),
@@ -76,7 +76,7 @@ export interface SubPageShellProps {
    */
   explainerParams?: Record<string, string>;
   /**
-   * v1.4.27 MB7 / CF-35 — opt-in programmatic focus on mount.
+   * v1.4.27 — opt-in programmatic focus on mount.
    *
    * The legacy default-on `focus()` call moved screen-reader focus to
    * the heading but on mobile it also fought the soft-keyboard: a
@@ -101,7 +101,7 @@ export interface SubPageShellProps {
    */
   statStrip?: ReactNode;
   /**
-   * v1.21.2 (A1) — the "Coach read" strip, mounted between the stat strip and
+   * v1.21.2 — the "Coach read" strip, mounted between the stat strip and
    * the chart. A compact two-line own-baseline + lagged-association read that
    * makes the metric feel seen-in-context. Self-gating (renders nothing until
    * its server read lands, and nothing at all when there is no baseline and no
@@ -110,7 +110,7 @@ export interface SubPageShellProps {
    */
   coachReadStrip?: ReactNode;
   /**
-   * v1.8.5 W4b — measurement-diversity nudge.
+   * v1.8.5 — measurement-diversity nudge.
    *
    * v1.8.6 — relocated from an inline block under the stat strip to a
    * `Lightbulb` glyph beside the heading (a hover / focus Tooltip carries
@@ -122,12 +122,12 @@ export interface SubPageShellProps {
   /**
    * v1.8.6 — opt-in Coach launch in the page header.
    *
-   * v1.18.6 (CCH-04) — RETIRED as a rendered control. With the Coach FAB
+   * v1.18.6 — RETIRED as a rendered control. With the Coach FAB
    * anchored bottom-right on every authenticated page, the per-metric
    * Coach icon was a redundant second entry point, so the shell no longer
    * paints anything for it.
    *
-   * v1.21.0 (C4 H1) — re-purposed without re-adding any control. When set
+   * v1.21.0 — re-purposed without re-adding any control. When set
    * (and `explainerMetric` maps to a Coach source), the shell registers
    * the page's metric as the launch context's ambient scope while it is
    * mounted. The global FAB then opens a conversation pre-scoped to this
@@ -142,7 +142,7 @@ export interface SubPageShellProps {
    */
   captureType?: string;
   /**
-   * v1.8.5 W4b — a "show all readings" entry linking to the dedicated
+   * v1.8.5 — a "show all readings" entry linking to the dedicated
    * `/insights/values/<type>` subpage. Sub-pages pass the metric's
    * `MeasurementType`.
    *
@@ -231,7 +231,7 @@ export function SubPageShell({
   statStrip,
   coachReadStrip,
   diversityNudge,
-  // v1.21.0 (C4 H1) — `coachLaunch` no longer renders a control (CCH-04
+  // v1.21.0 — `coachLaunch` no longer renders a control (CCH-04
   // stands) but now gates whether the page registers its metric as the
   // Coach launch context's ambient scope, so the FAB opens contextual.
   coachLaunch = false,
@@ -261,7 +261,7 @@ export function SubPageShell({
   // CF-35 made the focus call opt-in via `focusOnMount` — the
   // default-on version stole focus from soft-keyboards on mobile.
   //
-  // v1.4.33 IW9 — the scroll-to-top affordance moved into the shared
+  // v1.4.33 — the scroll-to-top affordance moved into the shared
   // `useScrollResetOnRoute()` hook so the mother page + sub-page can't
   // both fire (which produced a visible double-snap when the chart
   // skeleton inflated between the two RAF callbacks). The hook itself
@@ -277,7 +277,7 @@ export function SubPageShell({
     return () => window.cancelAnimationFrame(handle);
   }, [focusOnMount]);
 
-  // v1.21.0 (C4 H1) — register the page's metric as the Coach launch
+  // v1.21.0 — register the page's metric as the Coach launch
   // context's ambient scope while the sub-page is mounted, so the global
   // FAB opens a conversation pre-scoped to this metric with a data-aware
   // seed question. Only when the page opted in (`coachLaunch`) and its
@@ -295,7 +295,7 @@ export function SubPageShell({
         also: resolved.also,
         window: resolved.window,
       },
-      // v1.22 (W6) — `question` is now an i18n key; resolve it so the composer
+      // v1.22 — `question` is now an i18n key; resolve it so the composer
       // seed reads in the user's language.
       t(resolved.question),
     );
@@ -411,7 +411,7 @@ export function SubPageShell({
                 </Button>
               ) : null}
               <TargetAdjustButton />
-              {/* v1.18.6 (CCH-04) — the per-metric Coach launch icon is
+              {/* v1.18.6 — the per-metric Coach launch icon is
                 gone. With the Coach FAB anchored bottom-right on every
                 authenticated page, a second Coach affordance in each
                 metric header was redundant. The `coachLaunch` prop is
@@ -426,7 +426,7 @@ export function SubPageShell({
             // v1.8.4 — surface the metric's static definition inline,
             // directly beneath the heading.
             //
-            // v1.8.5 W4a — render the explainer body as the *single* caption
+            // v1.8.5 — render the explainer body as the *single* caption
             // under the heading. Pre-v1.8.5 both this paragraph and the
             // `description` below it stacked, so every metric page opened
             // with two near-duplicative muted captions before any data — the
@@ -464,7 +464,7 @@ export function SubPageShell({
           strip so the numbers always reflect the range the chart paints. No
           drag, no pill — the range tab is the single selector. */}
         {statStrip}
-        {/* v1.21.2 (A1) — the "Coach read" strip sits between the numbers-first
+        {/* v1.21.2 — the "Coach read" strip sits between the numbers-first
           stat strip and the chart, so the spine reads intro → numbers → Coach
           read → chart → target → assessment. Self-gating, so the rhythm holds
           when the strip has nothing to say. */}

@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (L1) — pin the tightened 404 / global-error copy so a
+ * v1.4.43 — pin the tightened 404 / global-error copy so a
  * future translator does not re-introduce the v1.4.27 marketing
  * paragraph. The 404 page now ships with i18n keys (`notFound.*`)
  * across all six locales; the global-error boundary remains static
@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = join(__dirname, "../../..");
-const LOCALES = ["en", "de", "fr", "es", "it", "pl", "ko"] as const;
+const LOCALES = ["en", "de", "fr", "es", "it", "pl", "ko", "nl"] as const;
 
 interface Messages {
   notFound: {

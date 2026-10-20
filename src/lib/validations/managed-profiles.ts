@@ -32,7 +32,7 @@ const managedProfileGenderSchema = z.enum(["MALE", "FEMALE", "OTHER"]);
 const managedProfileFields = {
   displayName: z.string().trim().min(1).max(80),
   dateOfBirth: z.iso.date().nullable(),
-  locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko"]),
+  locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"]),
   timezone: z
     .string()
     .min(1)

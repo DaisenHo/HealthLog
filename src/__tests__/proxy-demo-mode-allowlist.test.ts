@@ -59,7 +59,7 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
   });
 
   it("permits the three setup-flow writes so the demo can finish onboarding", () => {
-    // v1.39 (C1) — the design spec requires the demo to complete the same flow
+    // v1.39 — the design spec requires the demo to complete the same flow
     // with preset answers, and none of the three creates health data: closed
     // enum answers, the step ledger, and the module map derived from them.
     for (const [path, method] of [
@@ -86,7 +86,7 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
   });
 
   it("admits every mutating onboarding route, read off the route files", () => {
-    // v1.39 (C2) — the demo has to be able to walk the whole flow, and the
+    // v1.39 — the demo has to be able to walk the whole flow, and the
     // flow's welcome and exit make writes the C1 allowlist did not carry: the
     // disclaimer acknowledgment (both welcome buttons await it) and the tour
     // checkpoint. A hand-kept list of three paths could not see the other

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.43 (D1223) — merge markers that are one analyte written two ways.
+ * v1.43 — merge markers that are one analyte written two ways.
  *
  * Three steps in one sheet: pick the markers, pick the one that stays, read
  * the preview, then confirm. The preview is the server's own dry run

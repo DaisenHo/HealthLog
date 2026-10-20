@@ -25,7 +25,7 @@ import { gradeVoice } from "@/lib/ai/coach/eval/grade-voice";
 import { DEFAULT_COACH_PREFS } from "@/lib/validations/coach-prefs";
 import type { Locale } from "@/lib/i18n/config";
 
-const LOCALES: Locale[] = ["de", "en", "fr", "es", "it", "pl", "ko"];
+const LOCALES: Locale[] = ["de", "en", "fr", "es", "it", "pl", "ko", "nl"];
 
 /** The rules a voice section must state; `[]` when it states them all. */
 function missingVoiceRules(prompt: string, lang: "de" | "en"): string[] {

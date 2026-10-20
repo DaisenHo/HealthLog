@@ -57,7 +57,7 @@ export async function reconcileImportJobsAtBoot(): Promise<void> {
 }
 
 /**
- * v1.4.48 M1 — boot probe for legacy `integration_statuses` rows that still
+ * v1.4.48 — boot probe for legacy `integration_statuses` rows that still
  * carry `consecutive_failures_by_kind = NULL`. After v1.4.47 dropped the
  * single-column fallback, such rows alert two strikes later than they did
  * pre-upgrade. The probe is a single count query + Wide-Event warning if any

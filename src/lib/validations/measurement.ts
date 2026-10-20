@@ -184,7 +184,7 @@ export const measurementSourceEnum = z.enum(MEASUREMENT_SOURCES);
 export const WRITABLE_MEASUREMENT_SOURCES = ["MANUAL", "APPLE_HEALTH"] as const;
 
 /**
- * v1.10.0 QA — the Zod enum the single-entry POST validates `source` against.
+ * v1.10.0 — the Zod enum the single-entry POST validates `source` against.
  * Built from `WRITABLE_MEASUREMENT_SOURCES` so the allowlist has one source of
  * truth. A client may only attribute a row it actually owns: `MANUAL` (a
  * hand-entered reading) or `APPLE_HEALTH` (the HealthKit batch's per-row
@@ -467,7 +467,7 @@ export const createMeasurementSchema = z
   .object({
     type: measurementTypeEnum,
     value: z.number(),
-    // v1.17 W1b — plausibility bound (shared `validateEntryInstant`): no
+    // v1.17 — plausibility bound (shared `validateEntryInstant`): no
     // future instants beyond a 5-min clock-skew tolerance, no instant before
     // 1900. Closes the data-portability gap where a hand-rolled POST could
     // backdate or forward-date a reading arbitrarily.
@@ -475,7 +475,7 @@ export const createMeasurementSchema = z
       isoDateTime().transform((s) => new Date(s)),
     ),
     notes: z.string().max(MEASUREMENT_NOTES_MAX_LENGTH).optional(),
-    // v1.10.0 QA — validate against the client-writable subset, not the full
+    // v1.10.0 — validate against the client-writable subset, not the full
     // `MeasurementSource` enum. A client may attribute only `MANUAL` or
     // `APPLE_HEALTH`; `WITHINGS` / `IMPORT` / `COMPUTED` are server-owned and
     // forging them would pollute the per-source canonical picker.
@@ -485,7 +485,7 @@ export const createMeasurementSchema = z
     // 0274). The "required on a glucose row" half below is a rule of THIS
     // schema only — see the refine.
     glucoseContext: glucoseContextEnum.optional(),
-    // v1.4.25 W10 reconcile (code-review M4): the single-entry POST
+    // v1.4.25 (code-review M4): the single-entry POST
     // dropped `deviceType` silently because the column existed on
     // `Measurement` and was accepted by the batch route, but never
     // declared in this schema. iOS clients that POST one row at a
@@ -529,7 +529,7 @@ export const updateMeasurementSchema = z.object({
   // it). The former `min(0)` also blocked legitimate edits of the signed
   // types (ANS_CHARGE, BODY_TEMPERATURE_DEVIATION).
   value: z.number().optional(),
-  // v1.17 W1b — same plausibility bound on the edit path; an edit cannot
+  // v1.17 — same plausibility bound on the edit path; an edit cannot
   // forward-date a reading into the future nor before 1900.
   measuredAt: validateEntryInstant(
     isoDateTime().transform((s) => new Date(s)),
@@ -572,7 +572,7 @@ export const listMeasurementsSchema = z
     to: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
-    // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the
+    // v1.4.28 — when the chart sends an explicit from/to window the
     // payload is already bounded; lift the per-request ceiling to 5000
     // (still cheaper than the legacy unbounded `while (true)` walk).
     // Callers that omit from/to keep the historical 500-row cap.
@@ -583,13 +583,13 @@ export const listMeasurementsSchema = z
       .optional()
       .default("measuredAt"),
     sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
-    // v1.4.28 FB-D2 — bucket hint for range-aware queries. When set the
+    // v1.4.28 — bucket hint for range-aware queries. When set the
     // GET handler runs a server-side `date_trunc` aggregation and returns
     // one row per bucket per type rather than the raw measurement rows.
     // Omitting `aggregate` keeps the raw wire shape (iOS contract); the
     // chart-data client must opt in explicitly.
     aggregate: z.enum(["raw", "daily", "weekly", "monthly"]).optional(),
-    // v1.4.36 W1 — opt-in source switch for daily-aggregate reads. When
+    // v1.4.36 — opt-in source switch for daily-aggregate reads. When
     // `source=rollup` + `aggregate=daily`, the route reads from the
     // persistent `measurement_rollups` DAY buckets instead of running a
     // live `date_trunc` GROUP BY scan over the raw `measurements` table.
@@ -612,7 +612,7 @@ export const listMeasurementsSchema = z
     // `value: { gte, lte }` range. Server-authoritative; validated min<=max.
     valueMin: z.coerce.number().finite().optional(),
     valueMax: z.coerce.number().finite().optional(),
-    // v1.4.37 W7c — list-view "one row per day" mode for cumulative
+    // v1.4.37 — list-view "one row per day" mode for cumulative
     // types (steps, active energy, distance, flights, daylight). When
     // `groupBy=day` is set and `type` is a cumulative HK type, the route
     // returns one synthesised row per user-TZ day with `value` = SUM
@@ -623,18 +623,18 @@ export const listMeasurementsSchema = z
     // picks the page's local days in Postgres and reports the distinct-day
     // count as `meta.total` (#1245).
     groupBy: z.enum(["day"]).optional(),
-    // v1.4.37 W7c — drill-down to per-sample rows for a single day in
+    // v1.4.37 — drill-down to per-sample rows for a single day in
     // the user's IANA timezone. Format `YYYY-MM-DD`; the route resolves
     // the day boundary against the user's `User.timezone`. Used by the
     // expandable list row to reveal the chunks that contributed to the
     // collapsed daily total.
     //
-    // v1.4.37 W10 — a drill-down returns one bounded page rather than a
+    // v1.4.37 — a drill-down returns one bounded page rather than a
     // cursor, so it refuses a non-zero `offset`.
     dayKey: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey must be YYYY-MM-DD")
-      // v1.4.37 W10 — a `YYYY-MM-DD` string can satisfy the regex while
+      // v1.4.37 — a `YYYY-MM-DD` string can satisfy the regex while
       // still being an impossible calendar date (`2026-02-30`,
       // `2026-13-01`). `new Date("2026-02-30T00:00:00Z")` silently
       // overflows to March 2, so the drill-down would return rows from
@@ -665,6 +665,19 @@ export const listMeasurementsSchema = z
       "limit must be <= 1000 when dayKey is set; drill-down responses are capped at 1000 rows",
     path: ["limit"],
   })
+  // A value range filters single readings, and a day-grouped row is the sum
+  // of a whole day: filtering its readings would return partial days summed
+  // as if they were whole. The combination has no honest answer, so it is
+  // refused rather than served.
+  .refine(
+    ({ groupBy, valueMin, valueMax }) =>
+      groupBy !== "day" || (valueMin == null && valueMax == null),
+    {
+      message:
+        "valueMin / valueMax filter single readings and cannot be combined with groupBy=day",
+      path: ["groupBy"],
+    },
+  )
   // v1.18.5 — an inverted value range (`valueMin > valueMax`) is a client
   // bug, not an empty result set; reject it at the validator with a 422 so
   // the filter UI can surface the mismatch instead of silently returning

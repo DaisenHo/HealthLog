@@ -1,5 +1,5 @@
 /**
- * v1.22 (B2/B6) — Coach episodic reminder memory: capture + grammar.
+ * v1.22 — Coach episodic reminder memory: capture + grammar.
  *
  * The missing memory type between `CoachFact` (durable traits) and `CoachPlan`
  * (standing if-then habits): a time-anchored "bring this back later" intent the

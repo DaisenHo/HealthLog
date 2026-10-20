@@ -1,12 +1,12 @@
 name: Translation feedback
-description: Report a wording, grammar, or register problem in HealthLog's AI-initial locales (FR / ES / IT / PL).
+description: Report a wording, grammar, or register problem in HealthLog's AI-initial locales (FR / ES / IT / PL / KO / NL).
 title: "[Translation] "
 labels: ["i18n", "translation-feedback"]
 body:
   - type: markdown
     attributes:
       value: |
-        HealthLog ships German and English as maintainer-curated translations. French, Spanish, Italian, and Polish ship as **AI-initial translations** — the prose passes the locale-integrity test (full key parity, no empty values) but has not been hand-reviewed for register or regional vocabulary.
+        HealthLog ships German and English as maintainer-curated translations. French, Spanish, Italian, Polish, Korean, and Dutch ship as **AI-initial translations** — the prose passes the locale-integrity test (full key parity, no empty values) but has not been hand-reviewed for register or regional vocabulary.
 
         This template captures concrete fixes you would like to see. Phrasing nuance, regional vocabulary (e.g. "Tú" vs "Usted"), gendered forms, and domain-specific health terms are all in scope. The maintainer applies fixes during the regular release cycle.
 
@@ -20,6 +20,8 @@ body:
         - Spanish (es)
         - Italian (it)
         - Polish (pl)
+        - Korean (ko)
+        - Dutch (nl)
         - Other (specify under "Surface")
     validations:
       required: true

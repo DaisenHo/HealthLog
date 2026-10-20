@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import deMessages from "../../../../messages/de.json";
 
 /**
- * v1.4.43 W11-M6 — chart empty-window state.
+ * v1.4.43 — chart empty-window state.
  *
  * Pre-fix the chart returned `null` when the loaded data array was
  * empty in the selected range, erasing the entire card (header +

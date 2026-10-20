@@ -1,5 +1,5 @@
 /**
- * v1.22 (B2/M4) — daily Coach-reminder sweep.
+ * v1.22 — daily Coach-reminder sweep.
  *
  * The active scheduler the "remind me" complaint needs: a single indexed query
  * per tick that brings a reminder back at its chosen moment. Two sources:

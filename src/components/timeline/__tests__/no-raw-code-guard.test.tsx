@@ -44,6 +44,9 @@ import { TimelineChronicle } from "../timeline-chronicle";
 import { layoutTimeline } from "../timeline-geometry";
 import { useSeriesValueFormat } from "../use-series-value-format";
 import { TODAY, item, wordsIn } from "./timeline-fixture";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 type Locale = "de" | "en";
 

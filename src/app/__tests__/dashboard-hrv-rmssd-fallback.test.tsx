@@ -232,8 +232,7 @@ describe("the tile the user actually sees", () => {
 
   it("names both HRV label keys in every locale bundle", () => {
     // A key that resolves in `en` and nowhere else paints the raw key
-    // string to everyone else. Both series' keys must exist in all seven.
-    const locales = ["de", "en", "es", "fr", "it", "ko", "pl"];
+    // string to everyone else. Both series' keys must exist in every locale.
     for (const locale of locales) {
       const bundle = JSON.parse(
         readFileSync(join(process.cwd(), `messages/${locale}.json`), "utf8"),
@@ -340,12 +339,12 @@ describe("both HRV label keys are translated everywhere", () => {
     ) as Record<string, Record<string, string>>,
   }));
 
-  it("covers every key the tile can ask for, in all seven locales", () => {
+  it("covers every key the tile can ask for, in every locale", () => {
     const keys = Object.values(HRV_LABEL_KEY);
     // Anchor the count: an empty map would satisfy every assertion below by
     // matching nothing, which is the failure mode this project keeps finding.
     expect(keys.length).toBeGreaterThanOrEqual(2);
-    expect(bundles).toHaveLength(7);
+    expect(bundles.length).toBeGreaterThanOrEqual(7);
 
     for (const { locale, messages } of bundles) {
       for (const key of keys) {

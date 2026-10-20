@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MOOD — integration coverage for the rollup-tier read swap
+ * v1.4.39 — integration coverage for the rollup-tier read swap
  * in `/api/mood/analytics`.
  *
  * Pins the parity contract the audit at

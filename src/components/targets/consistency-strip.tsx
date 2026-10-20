@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.25 W3e — 7-day consistency strip.
+ * v1.4.25 — 7-day consistency strip.
  *
  * Renders one dot per Berlin-tz day in `days` (oldest → newest, index 6
  * is today). Each dot's appearance encodes both whether the day was

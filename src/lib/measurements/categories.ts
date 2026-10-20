@@ -98,7 +98,7 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["WALKING_ASYMMETRY", "activity"],
   ["WALKING_DOUBLE_SUPPORT", "activity"],
   ["WALKING_HEART_RATE_AVERAGE", "activity"],
-  // v1.5.5 follow-up — gait raw-SI pair join the same Mobility cluster.
+  // v1.5.5 — gait raw-SI pair join the same Mobility cluster.
   ["WALKING_STEP_LENGTH", "activity"],
   ["WALKING_SPEED", "activity"],
 

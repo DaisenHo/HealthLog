@@ -6,7 +6,10 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { markDisconnected } from "@/lib/integrations/status";
 import { deauthorize } from "@/lib/strava/client";
-import { getStravaConnection } from "@/lib/strava/credentials";
+import {
+  getStravaConnection,
+  STRAVA_DISCONNECTED,
+} from "@/lib/strava/credentials";
 
 /**
  * v1.28.x — disconnect Strava for the current user.
@@ -42,11 +45,7 @@ export const POST = apiHandler(async () => {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: {
-      stravaAccessTokenEncrypted: null,
-      stravaRefreshTokenEncrypted: null,
-      stravaAthleteId: null,
-    },
+    data: STRAVA_DISCONNECTED,
   });
 
   await auditLog("strava.disconnect", { userId: user.id });

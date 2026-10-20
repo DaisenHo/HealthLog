@@ -1,5 +1,5 @@
 /**
- * v1.22 (W9, B5) — adherence → target-vital storyline.
+ * v1.22 — adherence → target-vital storyline.
  *
  * When a user's medication adherence dips AND the vital that medication targets
  * drifts over the same span, the Coach surfaces the connection in ONE
@@ -204,7 +204,7 @@ export async function buildAdherenceStoryline(
 
   // 2. Overall recent adherence — schedule-anchored + cadence-aware, the SAME
   //    engine the dashboard tile reads (`buildScheduleAnchoredComplianceBuckets`).
-  //    v1.26.0 SEAM-N3 — this replaced `readMedicationCompliance`, whose
+  //    v1.26.0 — this replaced `readMedicationCompliance`, whose
   //    `scheduled` was a RAW coverage count of LOGGED intake slots: a user who
   //    logs only the doses they took (never minting `takenAt:null` reminder
   //    rows for missed ones) read ~100% adherence, and the dip gate below

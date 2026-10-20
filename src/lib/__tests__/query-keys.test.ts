@@ -26,7 +26,7 @@ describe("queryKeys factory", () => {
     ]);
   });
 
-  // v1.4.33 IW2 — slice param routes the slim consumer onto its own
+  // v1.4.33 — slice param routes the slim consumer onto its own
   // cache slot but leaves `["analytics"]` (the root) as a prefix so
   // mutation invalidations sweep both shapes.
   it("exposes the unified dashboard-snapshot key", () => {
@@ -78,7 +78,7 @@ describe("queryKeys factory", () => {
     expect(queryKeys.analytics(undefined)).toEqual(["analytics"]);
   });
 
-  // v1.4.40 W-RSC — the four new factory entries from this wave each
+  // v1.4.40 — the four new factory entries from this wave each
   // need a byte-stable contract so the audit-cited drift cases stay
   // pinned. A future rename of any of these literals would land a
   // matching test failure rather than silently breaking cache layout.
@@ -90,7 +90,7 @@ describe("queryKeys factory", () => {
     expect(queryKeys.userThresholds()).toEqual(["user", "thresholds"]);
   });
 
-  // v1.4.41 W-FRONTEND-FACTORY — pin the shapes that auth/login + the
+  // v1.4.41 — pin the shapes that auth/login + the
   // notifications surface migrated to so a future rename can't drift
   // the cache layout silently.
   it("exposes auth + notifications keys for the factory-migrated surfaces", () => {
@@ -160,7 +160,7 @@ describe("queryKeys factory", () => {
     );
   });
 
-  // v1.4.42 W3-QUERYKEY-LONGTAIL — pin the shapes of the new factory
+  // v1.4.42 — pin the shapes of the new factory
   // entries so a future rename can't drift the cache layout silently.
   it("exposes the per-medication sub-keys under the medications prefix", () => {
     expect(queryKeys.medicationCompliance("med1")).toEqual([
@@ -254,7 +254,7 @@ describe("dependent-key bundles", () => {
     );
   });
 
-  // v1.4.40 W-RSC — chart-data prefix now lives in the bundle so a
+  // v1.4.40 — chart-data prefix now lives in the bundle so a
   // fresh measurement evicts every per-chart daily-aggregate cache.
   // Pre-fix the chart row stayed 60 s stale after a measurement save
   // (audit-C2). Pin the bundle membership so a refactor of the chart
@@ -290,7 +290,7 @@ describe("dependent-key bundles", () => {
     expect(keyStrings).toContain(JSON.stringify(["insights"]));
   });
 
-  // v1.28.42 (M2) — the dashboard snapshot embeds a mood block + feeds the
+  // v1.28.42 — the dashboard snapshot embeds a mood block + feeds the
   // score ring, but a mood write only invalidated the mood bundle, leaving the
   // Startseite tile / score stale for up to ~120 s. Mirror the measurement
   // (v1.18.9) and medication (v1.16.11) bundles. Pin the membership so a future
@@ -316,7 +316,7 @@ describe("dependent-key bundles", () => {
     );
   });
 
-  // v1.4.40 W-RSC — dashboard-medication-compliance prefix now lives in
+  // v1.4.40 — dashboard-medication-compliance prefix now lives in
   // the bundle so an intake POST refreshes the dashboard chart in
   // lockstep with the per-medication compliance-chart-inline tile
   // (audit-L4).

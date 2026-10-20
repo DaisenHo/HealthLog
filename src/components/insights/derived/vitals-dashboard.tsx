@@ -72,7 +72,7 @@ interface DashboardProps {
    */
   batch: DashboardDerived;
   /**
-   * v1.15.11 W2c — the resolved insights layout, passed down from the page
+   * v1.15.11 — the resolved insights layout, passed down from the page
    * (which already mounts `useInsightsLayoutQuery()`) so this grid honours the
    * user's per-tile order + visibility without a second fetch. Each grid tile
    * maps to a layout tile id (see `VITAL_TILE_LAYOUT_ID` /
@@ -87,7 +87,7 @@ interface DashboardProps {
 }
 
 /**
- * v1.15.11 W2c — the dashboard's vitals-grid tile concepts mapped onto their
+ * v1.15.11 — the dashboard's vitals-grid tile concepts mapped onto their
  * layout tile id (the routed sub-page slug). The four derived re-frames map to
  * the slug of the metric they re-frame; the per-vital baseline tiles map by
  * their `MeasurementType`. A tile concept absent from this map (none today)
@@ -124,7 +124,7 @@ const CUMULATIVE_TILE_LAYOUT_ID: Record<string, string> = {
 };
 
 /**
- * v1.15.11 W2c — `true` when the layout marks this tile id visible (or the
+ * v1.15.11 — `true` when the layout marks this tile id visible (or the
  * layout does not enumerate the id, in which case the tile is always-on). A
  * `null` layout (caller passed none) is treated as everything-visible so the
  * default behaviour is unchanged.
@@ -138,7 +138,7 @@ function tileVisible(
 }
 
 /**
- * v1.15.11 W2c — the layout `order` for a tile id, used to sort the grid.
+ * v1.15.11 — the layout `order` for a tile id, used to sort the grid.
  * Falls back to `MAX_SAFE_INTEGER` (render last) for an unenumerated id and to
  * a stable 0 when no layout is present (callers keep their source order).
  */
@@ -773,7 +773,7 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
   const refetch = batch.refetch;
   const tileProps: TileProps = { read, isLoading };
 
-  // v1.15.11 W2c — the vitals-grid tiles in resolved layout order, dropping
+  // v1.15.11 — the vitals-grid tiles in resolved layout order, dropping
   // any the user has hidden. Each tile is `{ id, order, node }`; the tile's
   // own component still self-gates on data, so a visible tile with no readings
   // still renders nothing. The four derived re-frames map to the slug of the
@@ -891,6 +891,7 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
             subtitle={t("insights.derived.vitals.sectionSubtitle")}
           />
           <QueryErrorRow
+            error={batch.error}
             slot="vitals-dashboard-error"
             retrySlot="vitals-dashboard-retry"
             message={t("insights.derived.vitals.loadError")}

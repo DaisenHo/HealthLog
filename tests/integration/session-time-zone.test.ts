@@ -23,6 +23,7 @@ import {
 } from "vitest";
 
 import { PrismaClient } from "@/generated/prisma/client";
+import { fixtureSessionSecret } from "@/__tests__/helpers/session-secret";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const ZONE = "Europe/Berlin";
@@ -167,17 +168,19 @@ describe("on a database whose default zone is Europe/Berlin", () => {
     const { validateSessionFromCookieValue } =
       await import("@/lib/auth/session");
     const { hashToken } = await import("@/lib/auth/hmac");
+    const liveSecret = fixtureSessionSecret();
+    const expiredSecret = fixtureSessionSecret();
     const live = await getPrismaClient().session.create({
       data: {
         userId: USER_ID,
-        tokenHash: hashToken("hls_live-secret"),
+        tokenHash: hashToken(liveSecret),
         expiresAt: new Date(Date.now() + 60 * 60_000),
       },
     });
     await getPrismaClient().session.create({
       data: {
         userId: USER_ID,
-        tokenHash: hashToken("hls_expired-secret"),
+        tokenHash: hashToken(expiredSecret),
         expiresAt: new Date(Date.now() - 60_000),
       },
     });
@@ -185,10 +188,10 @@ describe("on a database whose default zone is Europe/Berlin", () => {
       60_000,
     );
     await expect(
-      validateSessionFromCookieValue("hls_live-secret"),
+      validateSessionFromCookieValue(liveSecret),
     ).resolves.not.toBeNull();
     await expect(
-      validateSessionFromCookieValue("hls_expired-secret"),
+      validateSessionFromCookieValue(expiredSecret),
     ).resolves.toBeNull();
   });
 

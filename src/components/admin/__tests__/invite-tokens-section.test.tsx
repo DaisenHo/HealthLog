@@ -21,6 +21,9 @@ import {
   clampMaxUses,
 } from "@/components/admin/invite-tokens-section";
 import { queryKeys } from "@/lib/query-keys";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const FUTURE = new Date(Date.now() + 7 * 86_400_000).toISOString();
 const PAST = new Date(Date.now() - 86_400_000).toISOString();

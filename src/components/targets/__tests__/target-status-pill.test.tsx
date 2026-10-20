@@ -8,7 +8,7 @@ import {
 } from "../target-status-pill";
 
 /**
- * v1.8.5 W5 — `<TargetStatusPill>` was extracted from `target-card.tsx`
+ * v1.8.5 — `<TargetStatusPill>` was extracted from `target-card.tsx`
  * so the Targets card and the Insights reference panel render the
  * identical pill from the same server-emitted classification category.
  * These tests pin the category → semantic-group mapping (which drives

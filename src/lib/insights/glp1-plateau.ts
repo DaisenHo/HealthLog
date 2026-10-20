@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W4d — GLP-1 plateau-detection rule.
+ * v1.4.25 — GLP-1 plateau-detection rule.
  *
  * Server-side detector that flags weight plateau when a user on an
  * active GLP-1 medication has been on a stable dose for ≥21 days AND
@@ -133,7 +133,7 @@ export function buildGlp1PlateauPrompt(
 ): string {
   const mass = getDisplayTransform("WEIGHT", system);
   const weightDelta = `${applyDisplayTransformDelta(ctx.weightDeltaKg, mass)} ${mass.displayUnit}`;
-  // v1.4.25 W10 reconcile (security H-1): sanitize every user-controlled
+  // v1.4.25 (security H-1): sanitize every user-controlled
   // string before interpolating into the LLM prompt. `Medication.name`
   // and `MedicationDoseChange.doseUnit` are free-text columns the user
   // edits; without sanitisation, a malicious name such as

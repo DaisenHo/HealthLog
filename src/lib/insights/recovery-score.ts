@@ -82,7 +82,7 @@ export interface RecoveryComputeResult {
   /** The 0..100 score to persist, or null when the blend was insufficient. */
   score: number | null;
   /**
-   * v1.18.1 P4 — Rest Mode context as of the scored day. ANNOTATES, never
+   * v1.18.1 — Rest Mode context as of the scored day. ANNOTATES, never
    * penalises: the `score` above is the raw recovery blend, unchanged when an
    * illness episode is active. This context lets the recovery surface frame a
    * low recovery score as "expected while you're unwell" rather than reading

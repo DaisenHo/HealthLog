@@ -17,7 +17,7 @@
  * new definition can be added from it without leaving the form.
  *
  * Follows the encounter form's controlled-draft shape rather than a
- * react-hook-form instance — the sibling surface this plan cites as its
+ * form-library instance — the sibling surface this plan cites as its
  * precedent uses a draft, and the server's Zod schema is the validation
  * authority either way. The client guard is for the two properties a person
  * feels immediately: a date is present, and the vaccine is named somehow.

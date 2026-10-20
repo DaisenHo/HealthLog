@@ -31,19 +31,24 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 /**
  * Bare formatter sites that are correct as they stand. Keep this short: it is
- * an inventory of exceptions, not a parking space. Every entry says why.
+ * an inventory of exceptions, not a parking space. Every entry says why, and
+ * how many bare sites the file holds: an exception covers those sites, not
+ * whatever lands in the same file next.
  */
-const ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
+const ALLOWLIST: ReadonlyArray<{ file: string; hits: number; why: string }> = [
   {
     file: "src/components/ui/calendar.tsx",
+    hits: 1,
     why: "A `data-day` attribute on a calendar cell, derived from the grid's own arithmetic. It identifies a cell, it does not render a recorded moment.",
   },
   {
     file: "src/components/cycle/cycle-calendar.tsx",
+    hits: 2,
     why: "Weekday headers walked from a fixed local date, and a month label built from a month anchor. Both are calendar arithmetic with no instant behind them.",
   },
   {
     file: "src/lib/intl/formatter-cache.ts",
+    hits: 2,
     why: "The shared cache itself. Its options come from the caller, so the timezone is the caller's to supply and the guard should be asking them, not this.",
   },
 ];
@@ -171,9 +176,13 @@ describe("date formatters name the calendar they render in", () => {
   });
 
   it("has no unexplained formatter without an explicit timeZone", () => {
-    const unexplained = hits.filter(
-      (h) => !ALLOWLIST.some((a) => a.file === h.file),
-    );
+    const unexplained = hits.filter((h) => {
+      const entry = ALLOWLIST.find((a) => a.file === h.file);
+      return (
+        !entry ||
+        hits.filter((other) => other.file === h.file).length > entry.hits
+      );
+    });
     if (unexplained.length > 0) {
       throw new Error(
         `${unexplained.length} formatter call(s) render a date without naming a timezone:\n\n` +
@@ -182,7 +191,7 @@ describe("date formatters name the calendar they render in", () => {
           "profile timezone (`readStoredTimezone() || DEFAULT_TIMEZONE` on the client, " +
           "`resolveUserTimezone(userId)` on the server), or use the shared helpers in " +
           "@/lib/format. If the value is calendar arithmetic rather than a recorded " +
-          "instant, add the file to ALLOWLIST in this test with the reason.",
+          "instant, add the file to ALLOWLIST in this test with the reason and its count.",
       );
     }
   });
@@ -209,10 +218,82 @@ describe("date formatters name the calendar they render in", () => {
     // that has moved on, and it quietly covers whatever lands in that file next.
     for (const entry of ALLOWLIST) {
       expect(
-        hits.some((h) => h.file === entry.file),
-        `stale allowlist entry — ${entry.file} no longer has a bare formatter`,
-      ).toBe(true);
+        hits.filter((h) => h.file === entry.file).length,
+        `stale allowlist entry — ${entry.file} holds a different number of bare formatters`,
+      ).toBe(entry.hits);
     }
+  });
+});
+
+/**
+ * A component renders dates through `useFormatters()`, never through the
+ * shared cache directly.
+ *
+ * The two-argument `getDateTimeFormat(locale, options)` from
+ * `@/lib/intl/formatter-cache` can name a zone and still be wrong: it takes
+ * the locale and the hour cycle from wherever the caller found them and
+ * knows nothing of the reader's date-order preference. The workout surfaces
+ * rebuilt their own formatters this way and showed "Dec 16" to a reader who
+ * had chosen YYYY-MM-DD. The three-argument `(locale, timeZone, options)`
+ * form from `@/lib/tz/intl-cache` builds day keys and clock parts, not
+ * display text, and stays allowed.
+ */
+describe("components format dates through useFormatters", () => {
+  const CALL = /\bgetDateTimeFormat\s*\(/g;
+
+  function scan() {
+    const files = execFileSync(
+      "grep",
+      [
+        "-rlE",
+        "getDateTimeFormat\\s*\\(",
+        "src/components",
+        "--include=*.ts",
+        "--include=*.tsx",
+      ],
+      { cwd: REPO_ROOT, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .filter((f) => !f.includes("__tests__"));
+    const offenders: string[] = [];
+    let calls = 0;
+    for (const file of files) {
+      const source = readFileSync(resolve(REPO_ROOT, file), "utf8");
+      CALL.lastIndex = 0;
+      for (let m = CALL.exec(source); m; m = CALL.exec(source)) {
+        const lineStart = source.lastIndexOf("\n", m.index) + 1;
+        if (/^\s*(?:\/\/|\*|\/\*)/.test(source.slice(lineStart, m.index)))
+          continue;
+        calls += 1;
+        const args = argumentList(source, m.index + m[0].length - 1);
+        if (topLevelArgCount(args) < 3) {
+          offenders.push(
+            `${file}:${source.slice(0, m.index).split("\n").length}`,
+          );
+        }
+      }
+    }
+    return { offenders, calls };
+  }
+
+  it("still sees the cache's calls in components (the matcher matches)", () => {
+    expect(scan().calls).toBeGreaterThanOrEqual(1);
+  });
+
+  it("has no two-argument getDateTimeFormat in src/components", () => {
+    expect(scan().offenders).toEqual([]);
+  });
+
+  it("the matcher flags the two-argument form across lines", () => {
+    const source =
+      'getDateTimeFormat(\n  locale,\n  { timeZone, month: "short" },\n)';
+    CALL.lastIndex = 0;
+    const m = CALL.exec(source)!;
+    expect(
+      topLevelArgCount(argumentList(source, m.index + m[0].length - 1)),
+    ).toBe(2);
   });
 });
 

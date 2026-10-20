@@ -1,5 +1,5 @@
 /**
- * v1.18.1 P4 — illness / condition context block for the Coach snapshot.
+ * v1.18.1 — illness / condition context block for the Coach snapshot.
  *
  * Gives the Coach the FACT that the user has (or recently had) a condition so
  * its replies are grounded: it should not push a "measure more often" cadence

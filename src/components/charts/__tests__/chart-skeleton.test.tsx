@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { ChartSkeleton } from "../chart-skeleton";
 
 /**
- * v1.4.36 W2 — `<ChartSkeleton>` carries two variants so the loading
+ * v1.4.36 — `<ChartSkeleton>` carries two variants so the loading
  * shell occupies the same visible footprint as the chart that lands
  * after `next/dynamic` resolves.
  *
@@ -51,7 +51,7 @@ describe("<ChartSkeleton>", () => {
     expect(html).toMatch(/h-\[140px\]/);
   });
 
-  // v1.4.43 QoL (L4) — slow-hint caption appears after a 3 s grace.
+  // v1.4.43 — slow-hint caption appears after a 3 s grace.
   // SSR markup never paints the caption because `useEffect` does not
   // run server-side; this also keeps hydration mismatch-free.
   it("does NOT paint the slow-hint caption in the initial SSR markup", () => {

@@ -132,11 +132,15 @@ async function runAdmitted(
       return;
     }
     case "strava-backfill": {
-      const { imported } = await runStravaBackfillForUser(userId);
+      const { imported, continued } = await runStravaBackfillForUser(
+        userId,
+        data.slice ?? 0,
+      );
       totals.imported += imported;
+      if (continued) totals.continued += 1;
       workerLog(
         "info",
-        `[strava-backfill] user=${userId} imported=${imported}`,
+        `[strava-backfill] user=${userId} imported=${imported}${continued ? " continued" : ""}`,
       );
       return;
     }

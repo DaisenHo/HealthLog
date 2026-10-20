@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B6 — settings i18n parity.
+ * v1.4.16 — settings i18n parity.
  *
  * Every slug declared in `SETTINGS_SECTION_SLUGS` MUST have a
  * `settings.sections.<slug>.title` AND a `settings.sections.<slug>.subtitle`

@@ -12,6 +12,7 @@ import { markDisconnected } from "@/lib/integrations/status";
 import {
   storeStravaClientCredentials,
   clearStravaClientCredentials,
+  STRAVA_DISCONNECTED,
 } from "@/lib/strava/credentials";
 import { stravaCredentialsSchema } from "@/lib/validations/strava";
 import { NextRequest } from "next/server";
@@ -98,11 +99,7 @@ export const DELETE = apiHandler(async () => {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: {
-      stravaAccessTokenEncrypted: null,
-      stravaRefreshTokenEncrypted: null,
-      stravaAthleteId: null,
-    },
+    data: STRAVA_DISCONNECTED,
   });
   await clearStravaClientCredentials(user.id);
 

@@ -114,6 +114,7 @@ import {
   type AccumulatorBucketRow,
 } from "@/lib/rollups/measurement-read";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
+import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   SESSION_DAY_FRAME,
   dayWeightedRows,
@@ -193,16 +194,14 @@ interface NarrowAggregateRow {
   avg7: number | null;
   avg30: number | null;
   avg30_last_month: number | null;
-  // v1.20.0 F6 — the slope7/30/90 + r2_7/30/90 columns have moved off this
+  // v1.20.0 — the slope7/30/90 + r2_7/30/90 columns have moved off this
   // live query onto the rollup accumulators (composeWindowedRegression);
   // they no longer scan the raw measurements partition on the warm path.
 }
 
-/** Latest raw value per type (DISTINCT ON over the 90-day window). */
-interface LatestRow {
-  type: string;
-  value: number;
-  measured_at: Date;
+/** The latest canonical reading per type is read only inside the 90-day window. */
+function latestFloor(): Date {
+  return new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 }
 
 /**
@@ -283,13 +282,13 @@ export async function buildComprehensiveAggregate(
 ): Promise<ComprehensiveAggregate> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  // v1.4.38 W-F — per-sub-query wall-clock timing. Emitted under
+  // v1.4.38 — per-sub-query wall-clock timing. Emitted under
   // `meta.insights.sub_*_ms` so the next perf-verify can attribute
   // a regression to a specific aggregate (narrow, latests, day-buckets,
   // bp-raw, first-at, coverage-probe) without re-instrumenting.
   const timings: Record<string, number> = {};
 
-  // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
+  // v1.4.37.1 — fire-and-forget. See `src/app/api/analytics/route.ts`
   // for the full rationale: awaiting this on the read path can stall
   // the event loop for 30–60 s on power-user accounts whose iOS step
   // samples keep the 90-day window slightly stale. The downstream
@@ -298,7 +297,7 @@ export async function buildComprehensiveAggregate(
   // for the background refresh.
   void ensureUserRollupsFresh(userId);
 
-  // v1.4.36 QA C1 — per-type coverage probe. The legacy global COUNT
+  // v1.4.36 — per-type coverage probe. The legacy global COUNT
   // returned true as soon as any one type had a DAY bucket, which made
   // the bucket-derived path swallow a brand-new type's all-time history
   // (the per-write hook upserts a single bucket for the new type, the
@@ -321,7 +320,7 @@ export async function buildComprehensiveAggregate(
 }
 
 /**
- * v1.4.38 W-F — tiny timing helper. Wraps a promise-returning sub-query
+ * v1.4.38 — tiny timing helper. Wraps a promise-returning sub-query
  * builder so each Promise.all slot lands a wall-clock observation under
  * `meta.insights.sub_<label>_ms`. The helper itself never throws — the
  * builder's rejection propagates unchanged so the existing error
@@ -346,10 +345,10 @@ interface BpRawRow {
 }
 
 /**
- * v1.4.38 W-F — fetch the trailing-90d sys + dia raw rows in a single
+ * v1.4.38 — fetch the trailing-90d sys + dia raw rows in a single
  * round-trip rather than two parallel queries.
  *
- * v1.18.10 I-1 — collapse overlapping sources before returning. BP is a
+ * v1.18.10 — collapse overlapping sources before returning. BP is a
  * multi-source metric (a Withings reading mirrored into Apple Health is two
  * rows for one event). The legacy `findMany` returned every source's row, so
  * `computeBpInTargetPct` and the recency-weighted grade double-counted the
@@ -422,12 +421,11 @@ async function buildFromRollups(
   ninetyDaysAgo: Date,
   timings: Record<string, number>,
 ): Promise<ComprehensiveAggregate> {
-  // v1.4.38 W-F — bp sys + dia consolidated into one `findMany`
+  // v1.4.38 — bp sys + dia consolidated into one `findMany`
   // (`type: { in: [...] }`) plus per-sub-query wall-clock timings.
   // v1.11.1 — collapse overlapping sources to the ladder-canonical reading per
   // (type, day) before aggregating. `rankUnqualified` ranks the inner
-  // canonical-source subquery; `rankM` ranks the latest read's `m.`-aliased
-  // columns. The window_stats CTE + the main narrow both read from the
+  // canonical-source subquery. The window_stats CTE + the main narrow both read from the
   // canonical-source-filtered set so a dual-source vital isn't blended.
   const priorityJson = await loadUserSourcePriority(userId);
   const rankUnqualified = buildSourceRankCase(
@@ -435,7 +433,6 @@ async function buildFromRollups(
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
 
   const [narrows, latests, dayBuckets, bpRawRows, firstRows] =
     await Promise.all([
@@ -484,20 +481,7 @@ async function buildFromRollups(
         ),
       ),
       timeSubquery(timings, "latests", () =>
-        prisma.$queryRawUnsafe<LatestRow[]>(
-          `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days'
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-          userId,
-        ),
+        readLatestCanonical(userId, priorityJson, latestFloor()),
       ),
       // v1.4.35 — DAY rollup buckets for the trailing 90 days, every
       // type. Drives both the per-type `count / min / max / mean`
@@ -515,7 +499,7 @@ async function buildFromRollups(
           orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
         }),
       ),
-      // v1.4.38 W-F — bp sys + dia merged into one round-trip. Halves
+      // v1.4.38 — bp sys + dia merged into one round-trip. Halves
       // the bp-raw cost on accounts whose iOS Health source spams BP
       // readings; the per-type partition in `fetchBpRawRows` preserves
       // the legacy `bpRawRows.sys` / `bpRawRows.dia` byte-shape.
@@ -551,14 +535,14 @@ async function buildFromRollups(
 
   const summaries: Record<string, DataSummary> = {};
   let totalMeasurements = 0;
-  // v1.20.0 F6 — day-aligned 7/30/90-day window anchors, matching the
+  // v1.20.0 — day-aligned 7/30/90-day window anchors, matching the
   // DAY-rollup grain. `startOfUtcDay(now − N days)` is the day-aligned
   // equivalent of the live `measured_at >= NOW() - INTERVAL 'N days'`.
   const now = Date.now();
   const since7 = startOfUtcDay(new Date(now - 7 * 24 * 60 * 60 * 1000));
   const since30 = startOfUtcDay(new Date(now - 30 * 24 * 60 * 60 * 1000));
   const since90 = startOfUtcDay(new Date(now - 90 * 24 * 60 * 60 * 1000));
-  // v1.20.0 P3 M-1 — set once any in-window bucket carries a NULL
+  // v1.20.0 — set once any in-window bucket carries a NULL
   // accumulator (pre-0190 row, or boot re-fold pending). The slope stays
   // null then — it converges after backfill — but the miss must be
   // observable per the "no silent cap" rule, so it surfaces in the
@@ -621,7 +605,7 @@ async function buildFromRollups(
     ? new Date(firstRows[0].first_at)
     : null;
 
-  // v1.20.0 F6 — observability: slope / r² / sd now compose from the rollup
+  // v1.20.0 — observability: slope / r² / sd now compose from the rollup
   // accumulators (no raw-partition REGR_* scan); the anomaly count stays on
   // a live FILTER (per-reading |z|>2 is non-composable). The "no silent
   // cap" rule wants both sources visible so a regression to the heavy path
@@ -631,7 +615,7 @@ async function buildFromRollups(
       insights: {
         slope_source: "rollup",
         anomaly_source: "live",
-        // v1.20.0 P3 M-1 — when a NULL accumulator (pre-0190 row, or boot
+        // v1.20.0 — when a NULL accumulator (pre-0190 row, or boot
         // re-fold pending) forced a slope miss, the read intentionally
         // returns null without a live-SQL fallback (the design avoids the
         // heavy scan). Surface the gap so the silent null is observable; it
@@ -665,7 +649,7 @@ async function buildFromLiveAggregate(
   ninetyDaysAgo: Date,
   timings: Record<string, number>,
 ): Promise<ComprehensiveAggregate> {
-  // v1.4.38 W-F — same sub-query timing + consolidated bp-raw read as
+  // v1.4.38 — same sub-query timing + consolidated bp-raw read as
   // the rollup-fresh path so the prod observability covers cold mounts
   // too.
   // v1.11.1 — same source-aware collapse as the rollup-fresh path so the cold
@@ -676,7 +660,6 @@ async function buildFromLiveAggregate(
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
 
   const [aggregates, latests, dayBuckets, bpRawRows] = await Promise.all([
     timeSubquery(timings, "heavy", () =>
@@ -760,20 +743,7 @@ async function buildFromLiveAggregate(
       ),
     ),
     timeSubquery(timings, "latests", () =>
-      prisma.$queryRawUnsafe<LatestRow[]>(
-        `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days'
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-        userId,
-      ),
+      readLatestCanonical(userId, priorityJson, latestFloor()),
     ),
     // Buckets may exist for some types even when the COUNT probe came
     // back zero (race window between the probe and a sibling
@@ -789,7 +759,7 @@ async function buildFromLiveAggregate(
         orderBy: [{ type: "asc" }, { bucketStart: "asc" }],
       }),
     ),
-    // v1.4.38 W-F — bp sys + dia in one round-trip (see `fetchBpRawRows`).
+    // v1.4.38 — bp sys + dia in one round-trip (see `fetchBpRawRows`).
     timeSubquery(timings, "bpRaw", () =>
       fetchBpRawRows(userId, ninetyDaysAgo, rankUnqualified),
     ),
@@ -866,7 +836,7 @@ async function buildFromLiveAggregate(
  * builder can replay them as the correlation feed.
  */
 /**
- * v1.20.0 F6 — a partitioned DAY bucket carrying the composable stats plus
+ * v1.20.0 — a partitioned DAY bucket carrying the composable stats plus
  * the regression accumulators the windowed slope / r² / sd compose from.
  */
 interface PartitionedBucket {
@@ -900,7 +870,7 @@ function partitionBucketsByType(
   // v1.11.1 — rollup rows are per source. Group by type, then collapse each
   // type's buckets to the ladder-canonical source per day before composing,
   // so a dual-source vital is not double-counted in count/mean/dailyByType.
-  // v1.20.0 F6 — the collapse runs BEFORE the regression accumulators are
+  // v1.20.0 — the collapse runs BEFORE the regression accumulators are
   // consumed, so a dual-source day contributes only the canonical source's
   // accumulators to the windowed slope / r² / sd (no cross-source sum).
   const byType = new Map<string, Array<(typeof rows)[number]>>();

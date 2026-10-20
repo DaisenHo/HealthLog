@@ -124,7 +124,7 @@ export async function runCoachMemoryRefresh(
     });
   }
 
-  // v1.21.3 (B1) — durable goal / if-then plan proposals. Same worker pass
+  // v1.21.3 — durable goal / if-then plan proposals. Same worker pass
   // (no separate pg-boss queue), fault-isolated like the facts step: a failure
   // or no-provider here never sinks the summary / facts work or the job. Plans
   // are written as `proposed`; the user confirms them through the PATCH route.

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.28 R3a FB-D2 (R1.2 H0) — assert the HealthChart fetcher passes
+ * v1.4.28 (R1.2 H0) — assert the HealthChart fetcher passes
  * a bounded `from` / `to` window to `/api/measurements` instead of
  * walking the full history with a `while (true)` loop.
  *
@@ -87,7 +87,7 @@ describe("<HealthChart> — bounded range fetch", () => {
     expect(measurementsUrl!).toMatch(/type=PULSE/);
     // Guard against the legacy unbounded paginator returning.
     expect(measurementsUrl!).not.toMatch(/offset=/);
-    // v1.4.29 C3 — the default 30-day window must request server-
+    // v1.4.29 — the default 30-day window must request server-
     // side daily aggregation so the client doesn't pay for ~5000
     // raw pulse rows on every range-tab change.
     expect(measurementsUrl!).toMatch(/aggregate=daily/);

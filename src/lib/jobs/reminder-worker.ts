@@ -40,7 +40,7 @@ import {
 } from "./reminder/register-maintenance";
 
 export async function startReminderWorker() {
-  // v1.4 G3: refuse to boot if the operator marked this container as
+  // v1.4: refuse to boot if the operator marked this container as
   // web-only via HEALTHLOG_PROCESS_TYPE.
   assertSubsystemEnabled("worker");
 
@@ -88,7 +88,7 @@ export async function startReminderWorker() {
   // worker last shut down, flipping orphaned rows to `failed`.
   await reconcileImportJobsAtBoot();
 
-  // v1.4.48 M1 — boot probe for legacy `integration_statuses` rows that still
+  // v1.4.48 — boot probe for legacy `integration_statuses` rows that still
   // carry `consecutive_failures_by_kind = NULL`.
   await probeIntegrationStatusAtBoot();
 

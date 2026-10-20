@@ -29,7 +29,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { COACH_COMPOSER_ID } from "./composer-focus";
 
 /**
- * v1.4.20 phase B2b — Coach composer.
+ * v1.4.20 — Coach composer.
  *
  * `<textarea>` wrapped in a Dracula-styled card with a send button.
  * Submit fires on:
@@ -41,7 +41,7 @@ import { COACH_COMPOSER_ID } from "./composer-focus";
  * the drawer. `disabled` flips during a streamed reply so we never
  * fire two requests in parallel.
  *
- * v1.4.22 B4: the disclaimer ("Coach replies are generated …") moved
+ * v1.4.22: the disclaimer ("Coach replies are generated …") moved
  * out of the composer and into the sources rail footer. DISC-01
  * (v1.18.6) later dropped that per-page copy too, in favour of the
  * one-time onboarding acknowledgment; the only in-surface "not medical
@@ -75,7 +75,7 @@ export interface CoachInputProps {
   /** Optional textarea ref so the parent can focus on drawer open. */
   inputId?: string;
   /**
-   * v1.4.27 MB3 / CF-30 — when set, focuses the composer textarea once
+   * v1.4.27 — when set, focuses the composer textarea once
    * on mount. The drawer flips this to `true` when the drawer becomes
    * the freshly-opened surface so the user can start typing
    * immediately. It must stay opt-in (lazy): on every re-render of an
@@ -110,7 +110,7 @@ export interface CoachInputProps {
 }
 
 /**
- * v1.4.25 W5 — Claude-web-style auto-grow.
+ * v1.4.25 — Claude-web-style auto-grow.
  *
  * The composer textarea starts at 1 line (≈44 px including padding,
  * matching the disclaimer text height on the sources rail) and grows
@@ -162,7 +162,7 @@ export function CoachInput({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const attachFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // v1.4.27 MB3 / CF-30 — focus the textarea once on mount when the
+  // v1.4.27 — focus the textarea once on mount when the
   // parent flags this surface as the freshly-opened one. The empty
   // dependency array keeps this from re-firing on every value change
   // (the auto-grow effect handles those). We bail when disabled so we
@@ -180,7 +180,7 @@ export function CoachInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount
   }, []);
 
-  // v1.4.25 W5 — auto-grow side effect. Runs on every value change
+  // v1.4.25 — auto-grow side effect. Runs on every value change
   // (the controlled `value` prop is the source of truth) plus on mount
   // so the initial paint already shows the 1-line height even when the
   // value arrives prefilled. We reset `style.height` to "auto" first so

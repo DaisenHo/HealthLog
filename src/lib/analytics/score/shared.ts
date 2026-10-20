@@ -11,6 +11,7 @@ import type {
 } from "@/lib/insights/derived/types";
 
 import type { PillarValue, ScoreBand, ScorePillarId } from "./types";
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 
 export const DAY_MS = 86_400_000;
 
@@ -88,11 +89,9 @@ export function median(values: readonly number[]): number {
     : ordered[middle];
 }
 
-export function standardDeviation(values: readonly number[]): number {
+export function readingSpread(values: readonly number[]): number {
   if (values.length < 2) return 0;
-  const center = mean(values);
-  const variance = mean(values.map((value) => (value - center) ** 2));
-  return Math.sqrt(variance);
+  return standardDeviation(values, READING_SPREAD) ?? 0;
 }
 
 export function uniqueSources(values: readonly string[]): string[] {

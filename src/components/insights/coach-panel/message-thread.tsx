@@ -42,6 +42,7 @@ import {
   COACH_MEMORY_KEYS,
   COACH_PLAN_KEYS,
 } from "@/lib/ai/coach/memory/shared";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 // v1.28.26 file-size split (pure code motion): the bubble renderer +
 // per-message actions live in `chat-bubble.tsx`, the read-aloud stack in
@@ -54,7 +55,7 @@ export {
 } from "./chat-bubble";
 
 /**
- * v1.4.20 phase B2b — message-thread renderer.
+ * v1.4.20 — message-thread renderer.
  *
  * Mounted inside the centre column of the Coach drawer. Renders the
  * persisted message history (decrypted server-side and delivered as
@@ -78,7 +79,7 @@ export interface MessageThreadProps {
   /** Optional in-flight bubble from `useSendCoachMessage()`. */
   streaming?: CoachStreamingMessage;
   /**
-   * v1.4.25 W5 — optimistic user message surfaced by the send hook so
+   * v1.4.25 — optimistic user message surfaced by the send hook so
    * the user sees their own bubble before the "Thinking…" placeholder.
    * Cleared by the hook once the SSE `done` frame fires (the persisted
    * twin lands via the invalidate-refetch). When the persisted twin is
@@ -215,8 +216,7 @@ export function decisionReplies(
       ]
     : choices;
   for (const choice of ordered.slice(0, 4)) {
-    const local = t(choice.labelKey);
-    const label = local === choice.labelKey ? choice.label : local;
+    const label = translateOrNull(t, choice.labelKey) ?? choice.label;
     out.push({
       id: `clarify-${choice.id}`,
       label,
@@ -456,7 +456,7 @@ export function MessageThread({
     !streamingPersisted &&
     (!!streaming?.inProgress || !!streaming?.content || !!streaming?.errorCode);
 
-  // v1.4.25 W5 — render the optimistic user bubble only when the
+  // v1.4.25 — render the optimistic user bubble only when the
   // persisted twin hasn't landed yet. We match on (role=user, content
   // equality, no later persisted user message). The server is the
   // source of truth — once the persisted user message lands (via the
@@ -583,7 +583,7 @@ export function MessageThread({
     const el = scrollerRef.current;
     if (!el) return;
     if (wasPinnedRef.current) {
-      // v1.4.43 W5-H5 — respect `prefers-reduced-motion`.
+      // v1.4.43 — respect `prefers-reduced-motion`.
       el.scrollTo({ top: el.scrollHeight, behavior: scrollBehaviorForUser() });
     }
   }, [
@@ -593,7 +593,7 @@ export function MessageThread({
     interleavedItems.length,
   ]);
 
-  // v1.4.27 R3d MB4 / CF-74 — re-pin to the bottom when the
+  // v1.4.27 — re-pin to the bottom when the
   // visual viewport shrinks (typically the soft keyboard opening on
   // a phone). Without this the last bubble drifts behind the keyboard
   // because the scroller's `scrollHeight` references the layout
@@ -656,7 +656,7 @@ export function MessageThread({
             // bottom breathing room so the conversation reads like a document,
             // not a chat log packed against the chrome.
             "flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6",
-            // v1.18.6 (CCH-01) / v1.18.7 — on the wide page surface an edge-to-
+            // v1.18.6 v1.18.7 — on the wide page surface an edge-to-
             // edge thread sprawled the prose past a readable measure. Centre the
             // content on a narrower, calmer Claude/ChatGPT-like column
             // (`max-w-2xl`) via an `mx-auto` inner gutter; the scrollbar still
@@ -743,7 +743,7 @@ export function MessageThread({
             ...placement.beforeOptimistic.map((i) => (
               <Fragment key={i.key}>{i.node}</Fragment>
             )),
-            // v1.4.25 W5 — the optimistic user bubble sits between the
+            // v1.4.25 — the optimistic user bubble sits between the
             // persisted history and the streaming assistant placeholder, so
             // the visible order matches the person's mental model. The send
             // hook drops it once the persisted twin lands.

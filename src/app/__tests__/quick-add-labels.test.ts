@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.15 phase-A3 fix #1 — the dashboard "Hinzufügen" / "Add" dropdown used
+ * v1.4.15 #1 — the dashboard "Hinzufügen" / "Add" dropdown used
  * to render two menu items whose visible labels both resolved to the bare
  * verb ("Hinzufügen" in DE, "Add" in EN). The dropdown trigger ALSO says
  * "Hinzufügen", so a screen-reader user heard "Hinzufügen, Hinzufügen,
@@ -34,7 +34,7 @@ interface Messages {
     quickAddMeasurement: string;
     quickAddMood: string;
     /**
-     * v1.4.37 W7b — third quick-add row: medication intake. Same
+     * v1.4.37 — third quick-add row: medication intake. Same
      * contract as the other two: distinct from siblings and from the
      * trigger label, otherwise the screen-reader hears "Hinzufügen,
      * Hinzufügen, Hinzufügen, Hinzufügen" with no way to discriminate.
@@ -48,7 +48,7 @@ function load(path: string): Messages {
 }
 
 describe("dashboard quick-add submenu labels", () => {
-  // v1.4.38 W-D P1-4 — extend the collision guard from en+de to all
+  // v1.4.38 — extend the collision guard from en+de to all
   // six locales so a future translation that accidentally reuses the
   // trigger word (or a sibling row's verb) is caught before shipping.
   // es/fr/it/pl currently still hold the literal English block; the

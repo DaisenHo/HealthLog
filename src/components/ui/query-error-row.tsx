@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "@/lib/i18n/context";
+import { useReadFailure } from "@/hooks/use-read-failure";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,19 +23,32 @@ import { cn } from "@/lib/utils";
  *    `QueryErrorRow`
  *  - chart body → `ChartErrorState`
  *
- * One deliberate change from the copies it replaces: the message renders in
- * `text-foreground`. An alert IS the content of a failed surface, and §3
- * reserves muted for meta — both copies had it muted.
+ * The row reads the failure itself (`error`): a refusal draws `refused`
+ * (nothing by default), a spent budget says so without a retry, an ended
+ * session offers sign-in, and only a real failure offers `onRetry`.
+ *
+ * The message renders in `text-foreground`: an alert IS the content of a
+ * failed surface, and §3 reserves muted for meta.
+ *
+ * `inset` drops the row's own frame for a failure inside a card or tile body
+ * that already draws one; a framed row there would be a card inside a card.
  */
 export function QueryErrorRow({
+  error,
+  refused = null,
   message,
   onRetry,
   retryLabel,
   slot,
   retrySlot,
+  inset = false,
   className,
 }: {
-  /** The failure line. Defaults to the generic `common.loadFailed`. */
+  /** The query's error. It decides what the row offers. */
+  error: unknown;
+  /** What a refused (403) read draws instead of the row. */
+  refused?: ReactNode;
+  /** The line for a real failure. Defaults to `common.loadFailed`. */
   message?: ReactNode;
   onRetry?: () => void;
   retryLabel?: string;
@@ -47,15 +60,20 @@ export function QueryErrorRow({
   slot?: string;
   /** Same, for the Retry button's own `data-slot`. */
   retrySlot?: string;
+  /** Inside a card or tile body: no frame of its own. */
+  inset?: boolean;
   className?: string;
 }) {
-  const { t } = useTranslations();
+  const failure = useReadFailure(error, { message, onRetry });
+  if (!failure) return <>{refused}</>;
+  const { action } = failure;
   return (
     <div
       data-slot={slot ?? "query-error-row"}
       role="alert"
       className={cn(
-        "bg-card border-border text-foreground flex flex-col items-start gap-3 rounded-xl border p-4 text-sm sm:flex-row sm:items-center sm:justify-between",
+        "text-foreground flex flex-col items-start gap-3 text-sm sm:flex-row sm:items-center sm:justify-between",
+        !inset && "bg-card border-border rounded-xl border p-4 md:p-6",
         className,
       )}
     >
@@ -64,19 +82,29 @@ export function QueryErrorRow({
           className="text-muted-foreground mt-0.5 size-4 shrink-0 sm:mt-0"
           aria-hidden="true"
         />
-        <span>{message ?? t("common.loadFailed")}</span>
+        <span>{failure.message}</span>
       </span>
-      {onRetry ? (
+      {action?.kind === "retry" ? (
         <Button
           type="button"
           size="sm"
           variant="outline"
-          onClick={onRetry}
+          onClick={action.onClick}
           data-slot={retrySlot ?? "query-error-row-retry"}
           className="gap-1.5"
         >
           <RotateCw className="size-3.5" aria-hidden="true" />
-          <span>{retryLabel ?? t("common.retry")}</span>
+          <span>{retryLabel ?? action.label}</span>
+        </Button>
+      ) : action ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={action.onClick}
+          data-slot="query-error-sign-in"
+        >
+          {action.label}
         </Button>
       ) : null}
     </div>

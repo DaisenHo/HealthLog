@@ -1,5 +1,5 @@
 /**
- * v1.4.42 W6 — Withings off-response classifier.
+ * v1.4.42 — Withings off-response classifier.
  *
  * The classifier turns a `(httpStatus, body)` pair into a verdict of
  * `success / transient / reauth_required / persistent`. Every other
@@ -175,7 +175,7 @@ describe("WithingsApiError", () => {
     expect(err.message).toBe("Withings subscribe error: 293");
   });
 
-  // v1.4.43 W3-SECURITY (H-2, v1.4.42 L-1 carry-over) — the constructor
+  // v1.4.43 (H-2, v1.4.42 L-1 carry-over) — the constructor
   // caps the message at 1024 chars so a misbehaving upstream cannot
   // bloat an `AuditLog.details` row through any downstream wrapper.
   it("caps the message at 1024 chars when upstreamError is unbounded", () => {

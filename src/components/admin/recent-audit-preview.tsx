@@ -38,7 +38,7 @@ interface AuditLogResponse {
 export function RecentAuditPreview() {
   const { t } = useTranslations();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminAuditOverview(),
     queryFn: async () => {
       return apiGet<AuditLogResponse>(
@@ -84,11 +84,13 @@ export function RecentAuditPreview() {
           </div>
         ) : isError ? (
           <QueryErrorRow
+            inset
+            error={error}
             message={t("admin.overview.auditLoadError")}
             onRetry={() => void refetch()}
           />
         ) : entries.length === 0 ? (
-          // v1.4.15 phase-C5: compact + plain so it nests inside the
+          // v1.4.15: compact + plain so it nests inside the
           // overview card without doubling the dashed border. Reuses
           // the existing audit-empty string.
           <EmptyState

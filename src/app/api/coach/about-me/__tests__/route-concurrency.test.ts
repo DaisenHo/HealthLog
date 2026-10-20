@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * v1.32.21 (R5a) — optimistic concurrency on `PUT /api/coach/about-me`
+ * v1.32.21 — optimistic concurrency on `PUT /api/coach/about-me`
  * (issue #581 family). The write guards on `UserHealthProfile.updatedAt`:
  *
  *   - a stale base token → 409 `about_me_conflict`, no write;

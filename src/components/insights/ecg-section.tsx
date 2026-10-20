@@ -1,15 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
 import { Activity, ChevronRight, HeartPulse } from "lucide-react";
 
-import { useAuth } from "@/hooks/use-auth";
-import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import {
   ecgResultLabel,
   type EcgClassification,
@@ -18,6 +15,8 @@ import { ECG_OVERVIEW_LIMIT } from "@/lib/insights/ecg-overview-limit";
 import { DayLinkAt } from "@/components/day/day-link";
 
 import { InsightSectionCard } from "./insight-section-card";
+import { useEcgList } from "./use-ecg-list";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 // Re-exported so the tests (and any teaser call site) can keep importing the
 // overview cap from the component they are exercising; the value itself lives
@@ -59,11 +58,6 @@ export interface EcgRecordingListItem {
   hasWaveform: boolean;
 }
 
-interface EcgListResponse {
-  recordings: EcgRecordingListItem[];
-  hasRecordings: boolean;
-}
-
 interface EcgSectionProps {
   enabled?: boolean;
   className?: string;
@@ -89,21 +83,43 @@ export function EcgSection({
   hideHeading = false,
   limit,
 }: EcgSectionProps) {
-  const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.insightsEcgList(),
-    queryFn: async () => {
-      try {
-        return await apiGet<EcgListResponse>("/api/insights/ecg");
-      } catch {
-        throw new Error(t("insights.ecg.loadError"));
-      }
-    },
-    enabled: enabled && isAuthenticated,
-  });
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useEcgList(enabled);
+  const data = page?.data;
+
+  // A failed read is said, never swallowed into the empty gate below: on the
+  // dedicated page this list is the whole content.
+  if (isError && !data) {
+    return (
+      <section
+        id="ecg"
+        data-slot="ecg-section"
+        aria-label={t("insights.ecg.sectionTitle")}
+        className={cn("scroll-mt-24 space-y-3", className)}
+      >
+        {!hideHeading && (
+          <SectionHeading
+            icon={Activity}
+            title={t("insights.ecg.sectionTitle")}
+          />
+        )}
+        <QueryErrorRow
+          error={error}
+          slot="ecg-section-error"
+          message={t("insights.ecg.loadError")}
+          onRetry={() => void refetch()}
+        />
+      </section>
+    );
+  }
 
   // Data-availability gate — never paint an empty card.
   if (isLoading || !data || !data.hasRecordings) return null;
@@ -205,6 +221,9 @@ export function EcgSection({
             );
           })}
         </ol>
+        {/* The teaser keeps its newest few on purpose; the full list says
+            when the server stopped short of the history. */}
+        {limit == null && <ListCapNotice cap={page?.cap} />}
       </InsightSectionCard>
     </section>
   );

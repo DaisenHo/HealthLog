@@ -23,11 +23,13 @@ import { auditLog } from "@/lib/auth/audit";
 import { getAppleHealthSyncProgress } from "@/lib/integrations/apple-health-progress";
 import {
   getHealthKitTypeArrivals,
+  healthKitWriteBackTypes,
   newestAppleHealthDataAt,
   withHealthKitArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
 import {
   getAppleHealthDoseFreshness,
+  getEnteredHereAt,
   getSourceFreshness,
 } from "@/lib/integrations/metric-freshness";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
@@ -183,14 +185,27 @@ export const GET = apiHandler(async () => {
   // v1.42.4 — Apple Health doses join the list as `MEDICATION_DOSE`, so the
   // phone can read when doses last arrived from the same entries as every
   // other type. Fail-soft on its own: a failed dose read drops that one entry.
-  const [measurementSamples, doseSample, arrivals, syncProgress, health] =
-    await Promise.all([
-      getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
-      getAppleHealthDoseFreshness(user.id).catch(() => null),
-      getHealthKitTypeArrivals(user.id).catch(() => null),
-      getAppleHealthSyncProgress(user.id).catch(() => null),
-      loadOneConnectionHealth(user.id, "apple-health").catch(() => null),
-    ]);
+  // #1247 — the types the app writes back to the phone: what is entered here
+  // goes to Apple Health and never arrives back, so each of them also carries
+  // the newest reading entered here, and is quiet only when both are. Fail-
+  // soft to undefined, which leaves the list as it was before.
+  const [
+    measurementSamples,
+    doseSample,
+    arrivals,
+    syncProgress,
+    health,
+    enteredHere,
+  ] = await Promise.all([
+    getSourceFreshness(user.id, "APPLE_HEALTH").catch(() => []),
+    getAppleHealthDoseFreshness(user.id).catch(() => null),
+    getHealthKitTypeArrivals(user.id).catch(() => null),
+    getAppleHealthSyncProgress(user.id).catch(() => null),
+    loadOneConnectionHealth(user.id, "apple-health").catch(() => null),
+    getEnteredHereAt(user.id, healthKitWriteBackTypes(entries)).catch(
+      () => undefined,
+    ),
+  ]);
   const samples = doseSample
     ? [...measurementSamples, doseSample].sort((a, b) =>
         a.type.localeCompare(b.type),
@@ -216,7 +231,12 @@ export const GET = apiHandler(async () => {
     lastBackgroundSyncAt,
     syncHealth,
     metricFreshness: withHealthKitArrivals(
-      classifyMetricFreshness(samples, syncHealth.verdict),
+      classifyMetricFreshness(
+        samples,
+        syncHealth.verdict,
+        Date.now(),
+        enteredHere,
+      ),
       arrivals,
     ),
     syncProgress,
@@ -234,7 +254,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — iOS HealthKit ingest is a hot path. Multi-issue
+    // v1.4.43 — iOS HealthKit ingest is a hot path. Multi-issue
     // 422 + audit breadcrumb so the iOS Sync engine sees the full
     // diff and stops iterating one field at a time.
     const issues = sanitiseZodIssues(parsed.error.issues);

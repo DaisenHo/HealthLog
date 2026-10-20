@@ -249,7 +249,7 @@ describe("glp1-plateau", () => {
       expect(prompt).toContain("week 4");
     });
 
-    // v1.4.25 W10 reconcile (security H-1) — patient-safety regression
+    // v1.4.25 (security H-1) — patient-safety regression
     // guard: a malicious medication name must not be able to inject a
     // multi-line break that lets the LLM read the trailing text as a
     // new instruction block.

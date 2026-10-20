@@ -6,7 +6,7 @@ import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.25 W20a — regression coverage for the dashboard top-tile polish.
+ * v1.4.25 — regression coverage for the dashboard top-tile polish.
  *
  * Maintainer directive 2026-05-14 named three issues with the 5-tile top row:
  *
@@ -202,7 +202,7 @@ describe("dashboard.*Short keys exist across all six locales", () => {
 
   // Resolved at test time so the assertion runs against the current
   // bundle, not a stale cached snapshot.
-  const locales = ["en", "de", "fr", "es", "it", "pl", "ko"] as const;
+  const locales = ["en", "de", "fr", "es", "it", "pl", "ko", "nl"] as const;
 
   it.each(locales)("%s carries every dashboard.*Short key", async (locale) => {
     const messages = (await import(`../../../../messages/${locale}.json`))

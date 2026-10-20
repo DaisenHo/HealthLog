@@ -18,9 +18,10 @@ import { AskCoachIconButton } from "@/components/insights/ask-coach-action";
 import { ProseBlocks } from "@/components/insights/prose-blocks";
 import { apiGet } from "@/lib/api/api-fetch";
 import { InsightSectionCard } from "./insight-section-card";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 /**
- * v1.11.0 W3 — period-narrative card (Pillar P1).
+ * v1.11.0 — period-narrative card (Pillar P1).
  *
  * A calm, top-of-overview summary of the user's last week / month, drawn from
  * the read-only `GET /api/insights/narrative` route. The route is
@@ -121,13 +122,33 @@ export function PeriodNarrativeCard({
     );
   }
 
-  // The route never errors the page; on a fetch error or whenever there is no
-  // real generated narrative yet (empty account, or a first warm still in
-  // flight) the card un-mounts itself rather than showing an error, a
-  // "preparing" husk, or the methodology framing. The query stays mounted and
-  // polls in the background, so the card appears the moment a narrative lands.
+  // A failed read is said, with a retry: hiding it would look exactly like
+  // "no narrative yet". Whenever there is no real generated narrative yet
+  // (empty account, the capability off, or a first warm still in flight) the
+  // card un-mounts itself rather than showing a "preparing" husk or the
+  // methodology framing. The query stays mounted and polls in the background,
+  // so the card appears the moment a narrative lands.
+  if (query.isError && !query.data) {
+    return (
+      <section
+        data-slot="period-narrative-section"
+        aria-label={t("insights.narrativeTitle")}
+        className={cn("space-y-3", className)}
+      >
+        <SectionHeading
+          icon={CalendarRange}
+          title={t("insights.narrativeTitle")}
+        />
+        <QueryErrorRow
+          error={query.error}
+          slot="period-narrative-error"
+          onRetry={() => void query.refetch()}
+        />
+      </section>
+    );
+  }
   const narrative = query.data?.narrative ?? null;
-  if (query.isError || !narrative) {
+  if (!narrative) {
     return null;
   }
 
@@ -187,7 +208,7 @@ export function PeriodNarrativeCard({
           />
         </div>
 
-        {/* v1.22 (W6) — real paragraphs via the shared ProseBlocks helper
+        {/* v1.22 — real paragraphs via the shared ProseBlocks helper
             (still plain text children — NO markdown renderer, XSS posture). */}
         <div className="text-foreground text-sm">
           <ProseBlocks text={narrative.text} />

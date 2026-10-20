@@ -78,6 +78,13 @@ export const ENVIRONMENT_LOCATION_AAD = "healthlog/environment-location/v1";
 export const DAWARICH_PREFS_AAD = "healthlog/dawarich-prefs/v1";
 export const DAWARICH_DAY_COUNTRY_AAD = "healthlog/dawarich-day-country/v1";
 
+/**
+ * The associated-data label the cached AI insights payload is sealed with
+ * (v1.43.7): the briefing, the per-domain readings and the recommendations the
+ * model wrote about one account, kept on the user row between warms.
+ */
+export const INSIGHTS_CACHED_TEXT_AAD = "healthlog/insights-cached-text/v1";
+
 export interface EncryptedColumn {
   /** Prisma model name (PascalCase, as declared in schema.prisma). */
   readonly model: string;
@@ -259,13 +266,13 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.39.3 — the title: the opening words of the first message, or a rename.
   { model: "CoachConversation", field: "titleEncrypted", kind: "bytes" },
   { model: "CoachFact", field: "factEncrypted", kind: "bytes" },
-  // v1.21.3 (B1) — Coach goal / if-then plan free-text columns.
+  // v1.21.3 — Coach goal / if-then plan free-text columns.
   { model: "CoachPlan", field: "ifCueEncrypted", kind: "bytes" },
   { model: "CoachPlan", field: "thenActionEncrypted", kind: "bytes" },
   { model: "CoachPlan", field: "targetEncrypted", kind: "bytes" },
-  // v1.22 (W9, C2) — n-of-1 experiment outcome read-back prose.
+  // v1.22 — n-of-1 experiment outcome read-back prose.
   { model: "CoachPlan", field: "outcomeEncrypted", kind: "bytes" },
-  // v1.22 (B2/B6) — Coach episodic reminder free-text note.
+  // v1.22 — Coach episodic reminder free-text note.
   { model: "CoachReminder", field: "noteEncrypted", kind: "bytes" },
 
   // ───── User health profile (Bytes columns) ─────
@@ -462,6 +469,19 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     kind: "bytes",
     codec: "binary2",
     aad: DAWARICH_DAY_COUNTRY_AAD,
+  },
+
+  // ───── v1.43.7 cached AI insights payload (Bytes, binary2) ─────
+  // The model's briefing and readings about the account, cached on the user
+  // row between warms. NULL on a row the free-text backfill has not reached
+  // yet (its payload is still in the legacy readable column) and on a row
+  // with no cache, which the walk skips.
+  {
+    model: "User",
+    field: "insightsCachedTextEncrypted",
+    kind: "bytes",
+    codec: "binary2",
+    aad: INSIGHTS_CACHED_TEXT_AAD,
   },
 
   // ───── v1.38.0 dose free text (Bytes column) ─────

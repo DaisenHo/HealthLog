@@ -55,13 +55,31 @@
 
 import { RRule } from "rrule";
 
-import { annotate } from "@/lib/logging/context";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 import { tzOffsetMinutes } from "@/lib/tz/format";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import { hhmmToMinutesOrNull } from "@/lib/medications/scheduling/hhmm";
+
+/**
+ * Where a recurrence rule that does not parse is reported.
+ *
+ * This module runs in the browser too (the medication wizard previews a
+ * schedule with it), so it must not import the logging context: that pulls
+ * `node:async_hooks` and the wide-event builder into the client bundle. The
+ * server wires the observer when the logging context loads, the same
+ * bundle-safe registration the source-priority parser uses; the browser
+ * leaves it a no-op.
+ */
+type RecurrenceParseErrorObserver = (rrule: string) => void;
+let recurrenceParseErrorObserver: RecurrenceParseErrorObserver = () => {};
+
+export function registerRecurrenceParseErrorObserver(
+  observer: RecurrenceParseErrorObserver,
+): void {
+  recurrenceParseErrorObserver = observer;
+}
 
 /**
  * v1.7.0 — schedule-type discriminator on the canonical schedule.
@@ -794,10 +812,7 @@ function expandRrule(
   try {
     rule = RRule.fromString(full);
   } catch {
-    annotate({
-      action: { name: "medication.recurrence.parse_error" },
-      meta: { rrule: rruleStr },
-    });
+    recurrenceParseErrorObserver(rruleStr);
     return [];
   }
 

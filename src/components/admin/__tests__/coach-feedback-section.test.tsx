@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.23 H7 — admin Coach feedback section.
+ * v1.4.23 — admin Coach feedback section.
  *
  * Three render paths matter:
  *   1. Loading — spinner + "Loading Coach feedback summary..."

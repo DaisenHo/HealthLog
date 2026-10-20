@@ -18,7 +18,7 @@ vi.mock("@/lib/db", () => ({
     // The operator switches are read by nothing on this route any more; the
     // mock stays so a test can prove a switch-off changes nothing.
     appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
-    // v1.28 perf — PULSE now reads through the DAY-rollup read-swap
+    // v1.28 — PULSE now reads through the DAY-rollup read-swap
     // (`probeRollupCoverage` + `readDayMeanSeries`). An empty coverage
     // probe sends every test down the live-fallback branch, which itself
     // reads via the already-mocked `measurement.findMany` — no rollup
@@ -79,7 +79,7 @@ beforeEach(() => {
     dateOfBirth: null,
   } as never);
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
-  // v1.28 perf — empty coverage probe routes PULSE through the
+  // v1.28 — empty coverage probe routes PULSE through the
   // live-fallback branch of `readDayMeanSeries`, which reads via the
   // already-mocked `measurement.findMany` above.
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);

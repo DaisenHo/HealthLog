@@ -1,5 +1,5 @@
 /**
- * v1.30.3 (QA F4) — one-shot repair for the `PersonalRecord` rows the
+ * v1.30.3 — one-shot repair for the `PersonalRecord` rows the
  * pre-fix cumulative-day picker double-counted.
  *
  * Background: before `8902d3985` (v1.29.6), `findBestCumulativeDay`

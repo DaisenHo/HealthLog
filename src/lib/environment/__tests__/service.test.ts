@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — conservative location resolution.
+ * v1.25 — conservative location resolution.
  *
  * Pins the precedence (explicit period → [DEVICE, reserved] → home-on/after-
  * effective-from → SKIP) and the conservative default backfill range. The whole

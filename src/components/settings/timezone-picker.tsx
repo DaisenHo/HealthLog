@@ -29,7 +29,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { listSupportedTimezones, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useTranslations } from "@/lib/i18n/context";
 
-// v1.4.27 MB7 / CF-52 — the in-file `NATIVE_SELECT_CLASS` constant
+// v1.4.27 — the in-file `NATIVE_SELECT_CLASS` constant
 // retired; the shared `<NativeSelect>` primitive owns the visual
 // contract now. The select spans the full width of its grid cell so it
 // lines up with the fields above it rather than sitting narrower.

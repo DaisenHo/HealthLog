@@ -13,6 +13,8 @@
  * unique-constraint code.
  */
 
+import { classifyRestoreFailure } from "@/lib/export/restore-failure-cause";
+
 /** Narrow a thrown Prisma error to a specific known-request code. */
 function hasPrismaCode(err: unknown, code: string): boolean {
   return (
@@ -36,4 +38,49 @@ export function isP2002(err: unknown): boolean {
  */
 export function isP2025(err: unknown): boolean {
   return hasPrismaCode(err, "P2025");
+}
+
+/**
+ * Prisma's own codes for a query it refused because of the value it was given:
+ * a value too long for its column (P2000), an invalid value or type for a
+ * field (P2006, P2007, P2023), and a query that failed validation (P2009,
+ * P2012, P2019, P2020).
+ */
+const PRISMA_INPUT_CODES = new Set([
+  "P2000",
+  "P2006",
+  "P2007",
+  "P2009",
+  "P2012",
+  "P2019",
+  "P2020",
+  "P2023",
+]);
+
+/**
+ * Whether a query failed because of the value it was asked about, rather than
+ * because of the store it asked. Deliberately a short allowlist: Postgres'
+ * data-exception class (SQLSTATE 22, an encoding or a cast it will not accept)
+ * and Prisma's validation refusals. Everything else, including failures with
+ * no recognisable code at all, is not an answer about the input.
+ *
+ * The allowlist runs this way round because the other direction cannot be
+ * closed: the pool's own "timeout exceeded when trying to connect" carries no
+ * code, nor do half the ways a connection ends, and a resource SQLSTATE
+ * (53300 too many connections, 53200 out of memory, 55P03 a lock timeout) says
+ * nothing about the value either. A denylist of "the database is down" signals
+ * folded each of those into "this value matches nothing".
+ */
+export function isInputRefusal(err: unknown): boolean {
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { name?: unknown }).name === "PrismaClientValidationError"
+  ) {
+    return true;
+  }
+  const { code } = classifyRestoreFailure(err);
+  if (code === null) return false;
+  if (PRISMA_INPUT_CODES.has(code)) return true;
+  return /^22[0-9A-Z]{3}$/.test(code);
 }

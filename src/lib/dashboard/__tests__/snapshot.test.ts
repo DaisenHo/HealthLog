@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — unit tests for `buildDashboardSnapshot`.
+ * v1.7.0 — unit tests for `buildDashboardSnapshot`.
  *
  * The builder is tested in isolation with every sub-helper mocked so
  * the assertions pin the assembly contract without a live DB / LLM:
@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const computeSummariesSlice = vi.fn();
+const readSummariesSlice = vi.fn();
 const probeRollupCoverage = vi.fn();
 const isFullyCovered = vi.fn();
 const readMoodDayRollups = vi.fn();
@@ -24,7 +24,7 @@ const buildMedsTodayBlock = vi.fn();
 const computeUserHealthScoreMock = vi.fn();
 
 vi.mock("@/lib/analytics/summaries-slice", () => ({
-  computeSummariesSlice: (...a: unknown[]) => computeSummariesSlice(...a),
+  readSummariesSlice: (...a: unknown[]) => readSummariesSlice(...a),
 }));
 vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: (...a: unknown[]) => probeRollupCoverage(...a),
@@ -210,7 +210,7 @@ function baseUser(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  computeSummariesSlice.mockResolvedValue({
+  readSummariesSlice.mockResolvedValue({
     summaries: { WEIGHT: { ...emptySummary, count: 3, latest: 80 } },
     lastSeenByType: {
       WEIGHT: { lastSeenAt: new Date().toISOString() },
@@ -301,7 +301,31 @@ describe("buildDashboardSnapshot — envelope shape", () => {
     expect(probeRollupCoverage).toHaveBeenCalledTimes(1);
     // The already-probed map is passed as the slice's second argument so
     // it reuses it instead of probing again.
-    expect(computeSummariesSlice).toHaveBeenCalledWith("user-1", coverageMap);
+    expect(readSummariesSlice).toHaveBeenCalledWith("user-1", {
+      coverage: coverageMap,
+    });
+  });
+});
+
+describe("buildDashboardSnapshot — the shared summaries cell", () => {
+  it("folds the water tile into a copy, never into the cached slice", async () => {
+    probeRollupCoverage.mockResolvedValue(new Map([["WEIGHT", false]]));
+    isFullyCovered.mockReturnValue(false);
+    const cached = {
+      summaries: { WEIGHT: { ...emptySummary, count: 3, latest: 80 } },
+      lastSeenByType: { WEIGHT: { lastSeenAt: new Date().toISOString() } },
+      bmi: null,
+    };
+    readSummariesSlice.mockResolvedValue(cached);
+    fakePrisma.nutrientIntakeDay.findMany.mockResolvedValue([
+      { day: new Date().toISOString().slice(0, 10), amount: 1500 },
+    ]);
+
+    const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
+
+    expect(snap.tiles.summaries.NUTRIENT_WATER).toBeDefined();
+    expect(Object.keys(cached.summaries)).toEqual(["WEIGHT"]);
+    expect(Object.keys(cached.lastSeenByType)).toEqual(["WEIGHT"]);
   });
 });
 
@@ -428,7 +452,7 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
-      // v1.21.2 (A5 / A6) — additive narrative fields, null absent a
+      // v1.21.2 — additive narrative fields, null absent a
       // disagreeing readiness set / a returned metric (the fake derived
       // engines resolve nothing here).
       tension: null,
@@ -542,8 +566,8 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
     computeBpInTargetFastPath.mockResolvedValue({
       last7Days: { pct: 70, pairs: 6 },
       last30Days: { pct: 80, pairs: 12 },
-      // v1.17 W1d — the BP pillar reads this 90-day window, NOT last30Days.
-      // v1.17 W1b — `pairs` above the confidence floor so the pillar grades
+      // v1.17 — the BP pillar reads this 90-day window, NOT last30Days.
+      // v1.17 — `pairs` above the confidence floor so the pillar grades
       // the 90-day rate rather than falling back to all-time.
       last90Days: { pct: 77, pairs: 30 },
       last90EarliestAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -574,7 +598,7 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
-      // v1.21.2 (A5 / A6) — additive narrative fields, null here.
+      // v1.21.2 — additive narrative fields, null here.
       tension: null,
       returnToBand: null,
     });
@@ -891,7 +915,7 @@ describe("buildDashboardSnapshot — metricStates (iOS cold-launch seed)", () =>
 
   it("keys each entry by the iOS MetricKind raw value (incl. the non-obvious raws)", async () => {
     const now = new Date().toISOString();
-    computeSummariesSlice.mockResolvedValue({
+    readSummariesSlice.mockResolvedValue({
       summaries: {
         WEIGHT: { ...emptySummary, count: 1, latest: 80 },
         OXYGEN_SATURATION: { ...emptySummary, count: 1, latest: 98 },
@@ -948,7 +972,7 @@ describe("buildDashboardSnapshot — metricStates (iOS cold-launch seed)", () =>
   });
 
   it("omits metrics with no latest value or no timestamp", async () => {
-    computeSummariesSlice.mockResolvedValue({
+    readSummariesSlice.mockResolvedValue({
       summaries: {
         WEIGHT: { ...emptySummary, count: 0, latest: null },
         PULSE: { ...emptySummary, count: 1, latest: 60 },
@@ -1069,7 +1093,7 @@ describe("module gating maps — every toggleable-domain widget is mapped (v1.18
     "glucose",
     "achievements",
     "recentWorkouts",
-    // v1.18.1 (D3) — medications graduated from CORE to a toggleable module.
+    // v1.18.1 — medications graduated from CORE to a toggleable module.
     "medications",
     "cardioRecovery",
     "sixMinuteWalk",
@@ -1162,7 +1186,7 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
       priorMonth: { pct: 60 },
       priorYear: { pct: 50 },
     });
-    computeSummariesSlice.mockResolvedValue({
+    readSummariesSlice.mockResolvedValue({
       summaries: {
         WEIGHT: { ...emptySummary, count: 3, latest: 80 },
         SLEEP_DURATION: { ...emptySummary, count: 5, latest: 420 },
@@ -1332,7 +1356,7 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
   });
 });
 
-// v1.21.2 (A4 / A5 / A6) — the ambient-narrative wire. The Tension Verdict +
+// v1.21.2 — the ambient-narrative wire. The Tension Verdict +
 // return-to-baseline ride the warm-phase healthScore; the briefing recall +
 // forward-look rides `briefingMemory`. The resolvers themselves are pinned in
 // `score-narrative.test.ts`; here only the THREADING through the snapshot DTO is

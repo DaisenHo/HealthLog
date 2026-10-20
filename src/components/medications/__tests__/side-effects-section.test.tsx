@@ -40,9 +40,12 @@ vi.mock("@/components/ui/query-error-card", async () => {
 });
 
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
- * v1.4.25 W19d — SideEffectsSection SSR smoke tests.
+ * v1.4.25 — SideEffectsSection SSR smoke tests.
  *
  * The project never installed `@testing-library/react`; the
  * convention is `renderToStaticMarkup` + assertions against the SSR
@@ -263,7 +266,7 @@ describe("<SideEffectsSection> — surface render", () => {
     seedSideEffects(client, "med-1", []);
     const html = render(<SideEffectsSection medicationId="med-1" />, client);
     expect(html).toContain("Side effects");
-    // v1.4.28 FB-F1 — the CTA dropped its qualifier so the chip stops
+    // v1.4.28 — the CTA dropped its qualifier so the chip stops
     // overflowing the side-effects card on narrow viewports. The
     // section title carries the context.
     expect(html).toContain(">Log<");
@@ -441,6 +444,7 @@ describe("<SideEffectsSection> — timeline rows", () => {
 describe("<SideEffectsSection> — paging", () => {
   function sideEffectsResponse(
     items: Array<{ id: string; occurredAt: string }>,
+    truncated = false,
   ): Response {
     return new Response(
       JSON.stringify({
@@ -455,12 +459,32 @@ describe("<SideEffectsSection> — paging", () => {
           meta: { total: items.length },
         },
         error: null,
+        // The route's cap on the envelope: a row past this page exists.
+        meta: { truncated, limit: 50 },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  it("offers a next page after a full one and asks for the entries before it", async () => {
+  it("offers no next page after an exactly full one the route says is complete", async () => {
+    const base = Date.parse("2026-05-20T12:00:00.000Z");
+    const fullPage = Array.from({ length: 50 }, (_, i) => ({
+      id: `se-full-${i}`,
+      occurredAt: new Date(base - i * 60_000).toISOString(),
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(sideEffectsResponse(fullPage, false)),
+    );
+    const client = makeClient();
+    render(<SideEffectsSection medicationId="med-full" />, client);
+    await executeSideEffectsQuery(client, "med-full");
+    await waitForQueryStatus(client, "med-full", "success");
+    const html = render(<SideEffectsSection medicationId="med-full" />, client);
+    expect(html).not.toContain(en.medications.sideEffects.loadMore);
+  });
+
+  it("offers a next page when the route says one exists, and asks for the entries before it", async () => {
     const base = Date.parse("2026-05-20T12:00:00.000Z");
     const firstPage = Array.from({ length: 50 }, (_, i) => ({
       id: `se-${i}`,
@@ -469,7 +493,7 @@ describe("<SideEffectsSection> — paging", () => {
     const oldest = firstPage[firstPage.length - 1];
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(sideEffectsResponse(firstPage))
+      .mockResolvedValueOnce(sideEffectsResponse(firstPage, true))
       // The boundary entry comes back once more and is shown once.
       .mockResolvedValueOnce(
         sideEffectsResponse([

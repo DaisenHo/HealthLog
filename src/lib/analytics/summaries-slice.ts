@@ -30,7 +30,7 @@
  *      windowed columns (`avg7`, `avg30`, and the slope tuples). The
  *      heavy COUNT/MIN/MAX/AVG columns are NOT projected.
  *
- *   3. **`DISTINCT ON (type)` latest read** — most-recent `(type,
+ *   3. **Latest read** (`readLatestCanonical`) — most-recent `(type,
  *      value, measured_at)` triplet per type for the `latest` field
  *      and the `lastSeenByType` freshness map.
  *
@@ -77,6 +77,7 @@ import {
 import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import {
   ensureUserRollupsFresh,
   readRollupBuckets,
@@ -95,25 +96,29 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsCte,
 } from "@/lib/analytics/source-rank-sql";
+import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   isFullyCovered,
   probeRollupCoverage,
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
 import {
-  summarizeSleepNights,
+  summarizeNights,
   type SleepSourceDiscrepancy,
-  type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { userDayKey } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { canonicalRowsOfDay } from "@/lib/mood/linked-context";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** No account holds this many nights; the walk is uncapped in practice. */
+const ALL_NIGHTS = 100_000;
+
 /**
- * v1.18.10 P-7 — upper bound on the cold-fallback `allTime` aggregate's
+ * v1.18.10 — upper bound on the cold-fallback `allTime` aggregate's
  * scan window. Sits far beyond any real account's history (the earliest prod
  * measurements are < 10 years old) so it never changes a real all-time
  * count / min / max / mean; it exists purely so a coverage-miss cold read
@@ -205,14 +210,14 @@ interface NarrowAggregateRow {
    */
   median: number | null;
   avg30_last_month: number | null;
-  // v1.20.0 F6 — slope7/30/90 + r2_7/30/90 have moved off this live query
+  // v1.20.0 — slope7/30/90 + r2_7/30/90 have moved off this live query
   // onto the rollup accumulators (composeWindowedRegression); they no longer
   // scan the raw measurements partition on the warm path. `median` stays
   // live (PERCENTILE_CONT is non-composable across buckets).
 }
 
 /**
- * v1.20.0 F6 — cold-fallback windowed row. The coverage-miss path keeps the
+ * v1.20.0 — cold-fallback windowed row. The coverage-miss path keeps the
  * live REGR_* regression (no rollup accumulators to compose from yet), so it
  * carries the slope / r² columns the warm `NarrowAggregateRow` dropped.
  */
@@ -221,19 +226,6 @@ interface WindowedAggregateRow extends NarrowAggregateRow {
   r2_7: number | null;
   slope30: number | null;
   r2_30: number | null;
-}
-
-interface LatestRow {
-  type: string;
-  value: number;
-  /**
-   * v1.4.34 IW-B — per-type freshness timestamp. The DISTINCT ON pass
-   * already orders by `measured_at DESC` to pick the latest row's
-   * value; surfacing `measured_at` from the same row costs zero extra
-   * round-trips and feeds the dashboard tile-strip's stale-data
-   * caption (driven via `<TrendCard staleDays>`).
-   */
-  measured_at: Date;
 }
 
 /** Same threshold/rounding contract as `trendSlope()` in `trends.ts`. */
@@ -284,7 +276,7 @@ export interface SummariesSlice {
    */
   bmi: null;
   /**
-   * v1.4.34 IW-B — per-type freshness map matching the default-slice
+   * v1.4.34 — per-type freshness map matching the default-slice
    * shape so the dashboard tile strip can render a "Letzter Wert vor
    * Xd" caption on stale tiles regardless of which slice the client
    * read from. Types the user has never logged report `null`.
@@ -309,7 +301,7 @@ export interface SummariesSlice {
 export async function computeSummariesSlice(
   userId: string,
   /**
-   * v1.12.7 A5 — optional pre-probed coverage map. The dashboard
+   * v1.12.7 — optional pre-probed coverage map. The dashboard
    * snapshot already calls `probeRollupCoverage` up front to decide
    * whether to run the thick `extras` phase, then called this slice
    * which re-probed the identical query. Threading the map in lets the
@@ -319,7 +311,7 @@ export async function computeSummariesSlice(
    */
   precomputedCoverage?: RollupCoverageMap,
 ): Promise<SummariesSlice> {
-  // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
+  // v1.4.37.1 — fire-and-forget. See `src/app/api/analytics/route.ts`
   // for the full rationale: awaiting this on the read path can stall
   // the event loop for tens of seconds on tenants with large iOS step
   // sample sets that keep the 90-day window slightly stale. The downstream
@@ -328,7 +320,7 @@ export async function computeSummariesSlice(
   // for the background refresh.
   void ensureUserRollupsFresh(userId);
 
-  // v1.4.36 QA C1 — per-type coverage probe replaces the legacy global
+  // v1.4.36 — per-type coverage probe replaces the legacy global
   // COUNT. The previous gate returned true as soon as ANY type had at
   // least one DAY bucket. Pathology: a user with BP fully rolled up
   // logs their first WEIGHT measurement → the sync write-hook upserts
@@ -371,6 +363,35 @@ export async function computeSummariesSlice(
     userId,
     await withSleepNightTotals(userId, await computeFromLiveAggregate(userId)),
   );
+}
+
+/**
+ * The one cache cell of the summaries slice. The tile-strip route, the thick
+ * analytics body and the dashboard snapshot all read the slice; each used to
+ * compute it inside its own cell, so one dashboard mount built it up to three
+ * times over the same rows.
+ *
+ * `serveStale` is for the caller that answers the client with the slice
+ * itself. The composing callers are stale-while-revalidate cells of their
+ * own and read fresh-only: a background refresh after a write must not
+ * compose the pre-write slice and cache it again as fresh.
+ */
+export async function readSummariesSlice(
+  userId: string,
+  options: { coverage?: RollupCoverageMap; serveStale?: boolean } = {},
+): Promise<SummariesSlice> {
+  const cache = caches.analytics as ServerCache<SummariesSlice>;
+  const key = summariesSliceCacheKey(userId);
+  const build = () => computeSummariesSlice(userId, options.coverage);
+  const { value, outcome } = options.serveStale
+    ? await cache.wrapSwr(key, build)
+    : await cache.wrap(key, build);
+  annotate({ meta: { "cache.summaries_slice.outcome": outcome } });
+  return value;
+}
+
+export function summariesSliceCacheKey(userId: string): string {
+  return `${userId}|summaries`;
 }
 
 /**
@@ -441,9 +462,10 @@ async function withLatestDayValues(
  * summary with one computed over per-night asleep totals (one DataPoint
  * per night). The unit stays MINUTES (canonical), so existing consumers
  * that already treat the summary as minutes keep working — they now
- * average nights instead of stages, which is strictly more correct. The
- * read is bounded to a year (~5 rows/night) and is skipped entirely when
- * the user has logged no sleep.
+ * average nights instead of stages, which is strictly more correct. It
+ * covers the whole history, like every other type here (a year's cut left
+ * `avg30LastYear` and the all-time count and range short), and is skipped
+ * entirely when the user has logged no sleep.
  */
 async function withSleepNightTotals(
   userId: string,
@@ -453,32 +475,18 @@ async function withSleepNightTotals(
   // No sleep data at all → nothing to recompute (the empty summary stays).
   if (!existing || existing.count === 0) return slice;
 
-  const since = new Date(Date.now() - 365 * DAY_MS);
-  const rows = (await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: "SLEEP_DURATION",
-      deletedAt: null,
-      measuredAt: { gte: since },
-    },
-    orderBy: { measuredAt: "asc" },
-    // `deviceType` feeds the writer-level collapse: two HealthKit apps
-    // behind one source (watch stages vs phone in-bed) must not blend.
-    select: {
-      value: true,
-      measuredAt: true,
-      sleepStage: true,
-      source: true,
-      deviceType: true,
-    },
-  })) as SleepStageRow[];
-  if (rows.length === 0) return slice;
-
   const [tz, priorityJson] = await Promise.all([
     resolveUserTimezone(userId),
     loadUserSourcePriority(userId),
   ]);
-  const { summary, latestNight } = summarizeSleepNights(rows, tz, priorityJson);
+  // The whole history, as every other type in the slice: the walk names the
+  // nights in Postgres and reconstructs them ninety at a time, so the heap
+  // holds a chunk's rows however long the history is.
+  const nights = await readSleepNights(userId, tz, priorityJson, {
+    maxNights: ALL_NIGHTS,
+  });
+  if (nights.length === 0) return slice;
+  const { summary, latestNight } = summarizeNights(nights);
   // Preserve the slope tuples the night summary doesn't compute (the
   // dashboard tile reads slope30); recompute them off the night series is
   // out of scope here — the per-night `summarize()` already fills slope7 /
@@ -559,22 +567,20 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   // v1.11.1 — resolve the user's source-priority ladders once, then build the
   // rank CASE expressions used to collapse overlapping sources to the canonical
   // reading per (type, day) inside each query. `"type"`/`"source"` variants for
-  // the unqualified rollup + inner-subquery columns, `m."…"` for the latest
-  // read's outer alias.
+  // the unqualified rollup + inner-subquery columns.
   const priorityJson = await loadUserSourcePriority(userId);
   const rankUnqualified = buildSourceRankCase(
     priorityJson,
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
   const rankPerSource = buildSourceRankCase(
     priorityJson,
     'p."type"',
     'p."source"',
   );
 
-  // v1.37.19 (A6-10) — where the fold window starts. DAY rollup buckets
+  // v1.37.19 — where the fold window starts. DAY rollup buckets
   // only exist inside the trailing `ROLLUP_FOLD_WINDOW_MS` (5 y), so the
   // rollup-composed "all-time" figures silently truncated to that window
   // for accounts with older history, while the cold live path reported
@@ -618,23 +624,8 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     `,
         userId,
       ),
-      // v1.11.1 — the latest tile reflects the canonical source for the latest
-      // day, matching the chart: order by latest day first, then the ladder rank
-      // (canonical source wins), then the latest reading of that source.
-      prisma.$queryRawUnsafe<LatestRow[]>(
-        `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-        userId,
-      ),
-      // v1.4.37.2 hotfix — the v1.4.35 implementation read EVERY DAY
+      readLatestCanonical(userId, priorityJson),
+      // v1.4.37.2 — the v1.4.35 implementation read EVERY DAY
       // rollup bucket for the user (`findMany` without a `bucketStart`
       // window) and then composed `count / min / max / mean` in JS.
       // On tenants with large measurement partitions that materialised
@@ -685,7 +676,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         userId,
         foldSplit,
       ),
-      // v1.20.0 F6 — trailing 90-day DAY rollup rows carrying the per-bucket
+      // v1.20.0 — trailing 90-day DAY rollup rows carrying the per-bucket
       // regression accumulators. The windowed slope / r² / sd compose from
       // these (composeWindowedRegression) instead of the live REGR_* scan the
       // narrow query used to run. Rows are per source; collapsed per type
@@ -713,7 +704,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           sumYy: true,
         },
       }),
-      // v1.37.19 (A6-10) — all-time remainder OLDER than the fold window,
+      // v1.37.19 — all-time remainder OLDER than the fold window,
       // spliced into the per-type figures below so "all-time" means all time
       // on the rollup path too (empty for any account younger than the
       // window). It keeps one source per (type, day) the way the rollup half
@@ -796,7 +787,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     });
   }
 
-  // v1.20.0 F6 — collapse the 90-day accumulator rows to the canonical
+  // v1.20.0 — collapse the 90-day accumulator rows to the canonical
   // source per (type, day), then build a per-type accumulator-bucket list so
   // the windowed slope / r² / sd compose from the canonical source only.
   const accBucketsByType = new Map<string, AccumulatorBucketRow[]>();
@@ -836,7 +827,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   const since90 = startOfUtcDay(new Date(nowMs - 90 * DAY_MS));
 
   const latestByType = new Map<string, number>();
-  // v1.4.34 IW-B — capture the per-type `measured_at` alongside the
+  // v1.4.34 — capture the per-type `measured_at` alongside the
   // value so we can surface the freshness map on the slim slice
   // without an extra round-trip.
   const lastSeenAtByType = new Map<string, Date>();
@@ -871,7 +862,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     };
   }
 
-  // v1.4.37.2 hotfix — the rollup aggregate is now shaped server-side
+  // v1.4.37.2 — the rollup aggregate is now shaped server-side
   // (one row per type with count / min / max / mean already computed),
   // so we map straight through instead of partitioning + composing in
   // JS. The narrows query feeds the windowed avgs + slope columns the
@@ -884,7 +875,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   let totalRows = 0;
   let typeCount = 0;
   const typesWithData: string[] = [];
-  // v1.20.0 P3 M-1 — set once any in-window bucket carries a NULL
+  // v1.20.0 — set once any in-window bucket carries a NULL
   // accumulator (pre-0190 row, or boot re-fold pending). The slope stays
   // null then — honest, it converges after backfill — but the miss must be
   // observable per the "no silent cap" rule, so it surfaces in the
@@ -897,7 +888,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     typesWithData.push(row.type);
     const narrow = narrowByType.get(row.type);
     const latest = latestByType.get(row.type) ?? null;
-    // v1.20.0 F6 — windowed slope / r² compose from the per-bucket
+    // v1.20.0 — windowed slope / r² compose from the per-bucket
     // accumulators (canonical-source-collapsed above) rather than the live
     // REGR_* scan. A full miss (NULL accumulators pre-backfill, or < 2
     // readings) yields a null slope, the same shape the empty REGR_* FILTER
@@ -911,7 +902,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     }
     const reg7 = composeWindowedRegression(accBuckets, since7);
     const reg30 = composeWindowedRegression(accBuckets, since30);
-    // v1.37.19 (A6-10) — splice the pre-fold remainder into the all-time
+    // v1.37.19 — splice the pre-fold remainder into the all-time
     // figures: the rollup tier only covers the trailing fold window, so
     // count / min / max / mean composed from it alone truncated "all
     // time" to 5 y. Windowed fields (avg7/30, median, slopes) are
@@ -945,7 +936,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     if (pre) totalRows += pre.count;
   }
 
-  // v1.37.19 (A6-10) — a type whose ONLY rows are older than the fold
+  // v1.37.19 — a type whose ONLY rows are older than the fold
   // window has no DAY bucket at all; without this arm it read as "never
   // logged" on the rollup path while the live path reported its history.
   for (const [type, pre] of preFoldByType) {
@@ -992,13 +983,13 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           type_count: typeCount,
           path: "rollup",
           year_over_year_types: yearOverYearTypeCount,
-          // v1.20.0 F6 — slope / r² now compose from the rollup
+          // v1.20.0 — slope / r² now compose from the rollup
           // accumulators (no live REGR_* scan). The median stays live
           // (PERCENTILE_CONT is non-composable); both sources are logged
           // per the "no silent cap" rule so a regression is observable.
           slope_source: "rollup",
           median_source: "live",
-          // v1.20.0 P3 M-1 — when a NULL accumulator (pre-0190 row, or boot
+          // v1.20.0 — when a NULL accumulator (pre-0190 row, or boot
           // re-fold pending) forced a slope miss, the read intentionally
           // returns null without a live-SQL fallback (the design avoids the
           // heavy scan). Surface the gap so the silent null is observable;
@@ -1055,7 +1046,6 @@ async function computeFromLiveAggregate(
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
 
   const [allTime, windowed, latests] = await Promise.all([
     prisma.$queryRawUnsafe<AllTimeAggregateRow[]>(
@@ -1129,19 +1119,7 @@ async function computeFromLiveAggregate(
     `,
       userId,
     ),
-    prisma.$queryRawUnsafe<LatestRow[]>(
-      `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-      userId,
-    ),
+    readLatestCanonical(userId, priorityJson),
   ]);
 
   const latestByType = new Map<string, number>();
@@ -1284,7 +1262,7 @@ async function computeAvg30LastYearForType(
 }
 
 /**
- * v1.4.40 W-WMY-WIRE — fan out `computeAvg30LastYearForType` across
+ * v1.4.40 — fan out `computeAvg30LastYearForType` across
  * the types the caller actually surfaces. Runs the per-type rollup reads
  * in parallel so the long-tail of types doesn't serialise into a
  * per-type round-trip stack.

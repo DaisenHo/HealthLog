@@ -1,5 +1,5 @@
 /**
- * v1.11.0 (Epic C, C8) — clinician-view scoped data load guarantees.
+ * v1.11.0 — clinician-view scoped data load guarantees.
  *
  * The public clinician view aggregates ONLY the data the owner froze into the
  * link, and it must NEVER surface the insurance number (KVNR). KVNR is

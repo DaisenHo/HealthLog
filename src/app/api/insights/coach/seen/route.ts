@@ -1,7 +1,7 @@
 /**
  * POST /api/insights/coach/seen — mark every Coach message as read.
  *
- * v1.18.6 (CCH-03) — opening the Coach (drawer or full page) clears the
+ * v1.18.6 — opening the Coach (drawer or full page) clears the
  * unread dot on the FAB. The open stamps `User.coachLastSeenAt = now`;
  * the FAB's `GET /api/insights/coach/nudge-status` then reads no
  * assistant message newer than the stamp and drops the dot. Server-

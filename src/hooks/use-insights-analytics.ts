@@ -9,7 +9,7 @@ import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import type { SubPageAnalyticsData } from "@/types/analytics";
 
 /**
- * v1.4.28 R3d (BK-F-H1) — shared React-Query wrapper for the analytics
+ * v1.4.28 — shared React-Query wrapper for the analytics
  * payload behind every insights sub-page.
  *
  * The five hard-data sub-pages (`puls`, `blutdruck`, `gewicht`, `bmi`,
@@ -61,7 +61,7 @@ export function useInsightsAnalytics(
   metric: InsightMetric,
 ): UseInsightsAnalyticsResult {
   const { isAuthenticated } = useAuth();
-  // v1.4.33 IW2 — sub-pages only read `summaries[METRIC].count` for the
+  // v1.4.33 — sub-pages only read `summaries[METRIC].count` for the
   // gating short-circuit, so they ride on the slim slice. The mother
   // page keeps the default thick slice for `correlations` /
   // `healthScore` / `bpInTargetPct*`; both consumers live in the same

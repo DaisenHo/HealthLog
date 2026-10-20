@@ -464,6 +464,7 @@ describe("the activity feed states its own limits", () => {
         retentionDays: number;
         truncated: boolean;
       };
+      meta: { truncated: boolean; limit: number };
     };
   }
 
@@ -509,6 +510,10 @@ describe("the activity feed states its own limits", () => {
     }
     const small = await feed();
     expect(small.data.entries).toHaveLength(3);
+    // The cap rides the envelope, like every capped list's.
+    expect(small.meta.truncated).toBe(false);
+    // The field v1.43.6 shipped in `data` stays, deprecated, with the same
+    // value.
     expect(small.data.truncated).toBe(false);
 
     // Over it: same shape, different claim.
@@ -522,6 +527,7 @@ describe("the activity feed states its own limits", () => {
     });
     const large = await feed();
     expect(large.data.entries).toHaveLength(100);
+    expect(large.meta).toMatchObject({ truncated: true, limit: 100 });
     expect(large.data.truncated).toBe(true);
   });
 });

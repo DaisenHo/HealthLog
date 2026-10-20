@@ -202,7 +202,7 @@ describe("HK_QUANTITY_TYPE_DEFERRED", () => {
     }
   });
 
-  // v1.4.25 W16a — explicit coverage gate for the iOS-17 + iOS-18
+  // v1.4.25 — explicit coverage gate for the iOS-17 + iOS-18
   // long-tail. The brief flagged these as "the iOS app may emit them
   // when the user has the relevant HealthKit category enabled"; the
   // deferred set means the batch endpoint treats them as

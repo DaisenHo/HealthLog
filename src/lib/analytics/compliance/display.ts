@@ -29,9 +29,9 @@ import {
 } from "./windows";
 import {
   COMPLIANCE_LEDGER_WINDOW_DAYS,
-  buildComplianceLedgerRows,
   tallyComplianceFromLedger,
-  tallyLedgerRows,
+  trailingComplianceLedger,
+  trailingComplianceTally,
 } from "./ledger";
 import { buildCurrentCycle, type CurrentCycle } from "./cycle";
 import { rollingIntakeInstants } from "./adapters";
@@ -357,7 +357,7 @@ export function calculateCompliance(
     windowStart: s.windowStart,
     windowEnd: s.windowEnd,
     daysOfWeek: s.daysOfWeek ?? null,
-    // v1.7.0 SB-SCHED-2 — thread the canonical-engine fields so the
+    // v1.7.0 — thread the canonical-engine fields so the
     // cadence expander can delegate to `occurrencesBetween` when a
     // medication context is supplied. Undefined fields collapse to the
     // legacy weekday path inside `expandScheduleSlots`.
@@ -370,7 +370,7 @@ export function calculateCompliance(
     cyclicOffWeeks: s.cyclicOffWeeks ?? null,
   }));
 
-  // v1.7.0 SB-SCHED-2 — build the engine context once per medication.
+  // v1.7.0 — build the engine context once per medication.
   // When the caller supplies it, the timeline routes through the
   // canonical engine (RRULE / rolling / one-shot / PRN / cyclic);
   // otherwise the legacy weekday walker stays in force.
@@ -564,9 +564,7 @@ export function buildMedicationComplianceBundle(
       : ledgerPeriodStart;
 
   const hasSchedules = schedules.length > 0;
-  const ledgerRows = hasSchedules
-    ? buildComplianceLedgerRows(events, schedules, ctx, ledgerFrom, now, now)
-    : [];
+  const ledgerRows = trailingComplianceLedger(events, schedules, ctx, now);
 
   // ONE cadence timeline over the full ledger window. Each per-window
   // streak below walks only its own trailing `effectiveDays`, so sharing
@@ -607,10 +605,7 @@ export function buildMedicationComplianceBundle(
       1,
       Math.ceil((now.getTime() - effectiveStart.getTime()) / ONE_DAY_MS),
     );
-    const tally = tallyLedgerRows(ledgerRows, {
-      from: periodStart,
-      to: now,
-    });
+    const tally = trailingComplianceTally(ledgerRows, days, now);
     const { current: streak } = streaksFromTimeline(
       timeline,
       now,

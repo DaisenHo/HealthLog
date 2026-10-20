@@ -45,6 +45,7 @@ import { GET } from "../route";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { mintNativeHandoff } from "@/lib/auth/native-handoff";
 import { prisma } from "@/lib/db";
+import { fixtureSessionSecret } from "@/__tests__/helpers/session-secret";
 import {
   NATIVE_HANDOFF_STATE_COOKIE,
   encodeNativeHandoffState,
@@ -71,7 +72,7 @@ function makeRequest(opts: {
     );
   }
   if (opts.withSession !== false) {
-    r.cookies.set("healthlog_session", "hls_sessionsecret");
+    r.cookies.set("healthlog_session", fixtureSessionSecret());
   }
   return r;
 }

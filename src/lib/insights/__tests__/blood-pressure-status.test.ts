@@ -143,7 +143,7 @@ describe("generateBloodPressureStatusForUser — graded payload", () => {
     expect(sys).toHaveProperty("recent");
     expect(sys).toHaveProperty("weekly");
     expect(sys).toHaveProperty("monthly");
-    // v1.18.10 (HIGH-4) — the per-channel SIGNAL block (the finished
+    // v1.18.10 — the per-channel SIGNAL block (the finished
     // recent-vs-baseline comparison) now rides the snapshot so the model
     // states the trend rather than re-deriving it.
     expect(snapshot.bloodPressure.systolic.signal).toHaveProperty("current");

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * S8 — auto-stage lab facts after the auto-index job. Pins the sign-off
+ * Auto-stage lab facts after the auto-index job. Pins the sign-off
  * (auto-STAGE, never auto-COMMIT), the double module gate, the reuse of the
  * auto-index consent gate, the "looks like a lab" heuristic, idempotency (a
  * non-STORED or already-staged document is left alone), and the guarded

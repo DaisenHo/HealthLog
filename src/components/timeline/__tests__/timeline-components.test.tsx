@@ -30,6 +30,9 @@ import { TimelineChronicle } from "../timeline-chronicle";
 import { layoutTimeline } from "../timeline-geometry";
 import { useSeriesValueFormat } from "../use-series-value-format";
 import { TODAY, fullTimeline, readiness, wordsIn } from "./timeline-fixture";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactElement, locale: "de" | "en" = "de") {
   // A fresh client with no account answer: the unit preference resolves to

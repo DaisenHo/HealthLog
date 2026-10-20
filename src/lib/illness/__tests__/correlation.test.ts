@@ -1,5 +1,5 @@
 /**
- * v1.18.1 P3 — illness correlation engine (the pure math).
+ * v1.18.1 — illness correlation engine (the pure math).
  *
  * The reliability battery for `computeIllnessCorrelation`:
  *   - golden-fixture recovery-gap math (felt-better vs physiological return)

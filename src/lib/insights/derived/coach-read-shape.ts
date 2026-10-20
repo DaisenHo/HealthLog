@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A1) — "Coach read" strip: shared shapes + pure selection logic.
+ * v1.21.2 — "Coach read" strip: shared shapes + pure selection logic.
  *
  * Client-safe (no `server-only`, no Prisma): the DTO shapes the route returns
  * and the strip renders, plus the two pure decisions the strip turns on —

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — side-effect API route tests.
+ * v1.4.25 — side-effect API route tests.
  *
  * Mirrors the inventory route test fixture pattern: every external
  * dependency is mocked at module boundaries (Prisma, session, audit,
@@ -159,7 +159,8 @@ describe("GET /api/medications/[id]/side-effects", () => {
         medicationId: "med-1",
         occurredAt: { gte: new Date(from), lt: new Date(to) },
       },
-      take: 10,
+      // One row past the limit, so the response can say it was cut.
+      take: 11,
     });
   });
 });

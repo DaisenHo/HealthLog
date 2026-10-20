@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * v1.12.4 (C3/C4) — compact explainer for the mood surface.
+ * v1.12.4 — compact explainer for the mood surface.
  *
  * v1.22 — the round info glyph that hid the statistical caveat behind a
  * hover/focus tooltip is gone. The maintainer wants the trailing "i"

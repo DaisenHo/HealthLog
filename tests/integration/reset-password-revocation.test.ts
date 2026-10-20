@@ -1,5 +1,5 @@
 /**
- * SEC-07 / SEC-08 — operator password-reset recovery contract.
+ * Operator password-reset recovery contract.
  *
  * The production `.mjs` CLI is executed as a real child process against the
  * PostgreSQL Testcontainer. Success must be one credential-family event:

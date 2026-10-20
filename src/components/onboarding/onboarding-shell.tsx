@@ -13,7 +13,7 @@ import {
 } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.39 (C2) — the chrome around every setup screen.
+ * v1.39 — the chrome around every setup screen.
  *
  * Logo, the "Step 2 of 6" counter, the step list, and the body slot. The
  * counter and the list are both read off the step machine, so the shell

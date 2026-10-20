@@ -51,14 +51,21 @@ vi.mock("@/lib/db", () => ({
     // v1.38 — the visit history read + the appointments folded into
     // get_preventive_care both read the Encounter table.
     encounter: { findMany: vi.fn(async () => []) },
-    // v1.30 (G1) — the nutrients pipeline.
+    // v1.30 — the nutrients pipeline.
     nutrientIntakeDay: {
       findMany: vi.fn(async () => []),
       groupBy: vi.fn(async () => []),
     },
-    // v1.30 (G3) — ECG recording metadata.
+    // v1.30 — ECG recording metadata.
     ecgRecording: { findMany: vi.fn(async () => []) },
   },
+}));
+
+// The search presence probe is one index lookup per type in Postgres; the
+// suite states which types hold a live reading through this stub.
+vi.mock("@/lib/dashboard/summary-reads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/dashboard/summary-reads")>()),
+  readLatestEver: vi.fn(async () => []),
 }));
 // v1.24 — the operational reads delegate to existing server-authoritative
 // engines; stub them so the registry-wide loops never reach a real engine.
@@ -90,7 +97,7 @@ vi.mock("@/lib/ai/coach/bytes-codec", () => ({
     Buffer.from(buf).toString("utf8"),
   ),
 }));
-// v1.30 (G1) — `get_nutrients` delegates to the nutrients-read engine; stub
+// v1.30 — `get_nutrients` delegates to the nutrients-read engine; stub
 // only the DB-touching entry point so the tool-wiring tests below never reach
 // a real engine. `NUTRIENT_LABELS` / `resolveNutrientCode` stay real (pure,
 // no DB) so the search/fetch id + label wiring is exercised for real; the
@@ -99,7 +106,7 @@ vi.mock("@/lib/mcp/nutrients-read", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../nutrients-read")>();
   return { ...actual, getNutrients: vi.fn(async () => ({ present: true })) };
 });
-// v1.30 (G2) — `get_intraday_pulse` delegates to the shared IO seam; stub it
+// v1.30 — `get_intraday_pulse` delegates to the shared IO seam; stub it
 // so the tool-wiring tests below never reach a real DB read. The engine's own
 // logic (dense-90d + hourly fallback + tension) is covered elsewhere.
 vi.mock("@/lib/analytics/intraday-pulse-io", () => ({
@@ -114,7 +121,7 @@ vi.mock("@/lib/analytics/intraday-pulse-io", () => ({
     resolution: "tenMin",
   })),
 }));
-// Phase 4 — the deep-value reads delegate to the rich-reads engines; stub them
+// The deep-value reads delegate to the rich-reads engines; stub them
 // so the registry-wide loops (surface / annotation / no-verdict) never reach a
 // real engine. Their own logic is covered in `rich-reads.test.ts`.
 vi.mock("../rich-reads", () => ({
@@ -132,7 +139,7 @@ vi.mock("../rich-reads", () => ({
       label: "Grip strength",
     },
   ],
-  // v1.30 (G5/C4) — the metric-status-only discovery allowlist.
+  // v1.30 — the metric-status-only discovery allowlist.
   MCP_METRIC_STATUS_DISCOVERY: [
     {
       key: "WRIST_TEMPERATURE",
@@ -157,6 +164,7 @@ import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { listTargetsBySource } from "@/lib/links";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import type { McpAuthContext } from "../auth";
+import { readLatestEver } from "@/lib/dashboard/summary-reads";
 
 const CTX: McpAuthContext = {
   userId: "user-1",
@@ -189,7 +197,7 @@ describe("MCP tool registry — surface", () => {
         // v1.22.0 — the ChatGPT default-mode retrieval pair.
         "search",
         "fetch",
-        // Phase 4 — deep-value reads.
+        // Deep-value reads.
         "get_correlation",
         "compare_metric",
         "get_metric_baseline",
@@ -1078,7 +1086,7 @@ describe("get_visits", () => {
     expect(v.conditions).toEqual(["Hypertension"]);
   });
 
-  // WR-10 — the absence contract, the check that must never be decorative. An
+  // The absence contract, the check that must never be decorative. An
   // empty list is honest absence, not empty success. { present: true,
   // visits: [] } would tell the model "you have no visits" when the truth is
   // "you have never recorded one".
@@ -1229,8 +1237,8 @@ describe("v1.25 clinical signals on the MCP surface", () => {
   });
 
   it("search surfaces a present clinical signal as metric:<KEY>", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
-      { type: "GRIP_STRENGTH" },
+    vi.mocked(readLatestEver).mockResolvedValue([
+      { type: "GRIP_STRENGTH", value: 1, measured_at: new Date() },
     ] as never);
     const result = (await tool("search").run(CTX, { query: "grip" })) as {
       results: Array<{ id: string; title: string; url: string }>;
@@ -1242,7 +1250,7 @@ describe("v1.25 clinical signals on the MCP surface", () => {
   });
 
   it("search omits a clinical signal with no recorded data", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
     const result = (await tool("search").run(CTX, { query: "grip" })) as {
       results: Array<{ id: string }>;
     };
@@ -1250,7 +1258,7 @@ describe("v1.25 clinical signals on the MCP surface", () => {
   });
 
   it("fetch hydrates a clinical signal via the baseline read (not the Coach path)", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
     vi.mocked(getMetricBaseline).mockResolvedValue({
       present: true,
       metric: "Grip strength",
@@ -1292,8 +1300,8 @@ describe("metric-status-only discovery on search/fetch (v1.30 coverage review G5
   });
 
   it("search surfaces a present metric-status-only id (undiscoverable before this wave)", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
-      { type: "WRIST_TEMPERATURE" },
+    vi.mocked(readLatestEver).mockResolvedValue([
+      { type: "WRIST_TEMPERATURE", value: 1, measured_at: new Date() },
     ] as never);
     const result = (await tool("search").run(CTX, { query: "wrist" })) as {
       results: Array<{ id: string; title: string }>;
@@ -1303,7 +1311,7 @@ describe("metric-status-only discovery on search/fetch (v1.30 coverage review G5
   });
 
   it("fetch hydrates a metric-status-only id via the baseline read", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
     vi.mocked(getMetricBaseline).mockResolvedValue({
       present: true,
       metric: "Wrist skin temperature",
@@ -1387,7 +1395,7 @@ describe("nutrients on search / fetch (v1.30 coverage review G1)", () => {
     } as never);
     vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
     vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
   });
 
   it("search resolves 'water' to nutrient:water when the user has logged it", async () => {

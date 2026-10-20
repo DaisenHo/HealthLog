@@ -1,5 +1,5 @@
 /**
- * v1.4.34 IW-G — in-process LRU + single-flight server cache.
+ * v1.4.34 — in-process LRU + single-flight server cache.
  *
  * Generalises the v1.4.33 Coach snapshot cache shape
  * (`src/lib/ai/coach/snapshot.ts:292-336`, commit `af17db5d`) into a
@@ -535,7 +535,7 @@ function createServerCaches() {
       staleTtlMs: 600_000,
     }),
     /**
-     * v1.18.11 (W5 perf) — stale-while-revalidate window. The
+     * v1.18.11 — stale-while-revalidate window. The
      * `AchievementUnlockNotifier` is mounted on every authenticated page and
      * polls this endpoint every 2 minutes. Against a 60 s hard-TTL bucket
      * that poll always landed on an expired entry, firing a cold ~400 ms
@@ -637,7 +637,7 @@ function createServerCaches() {
       staleTtlMs: 600_000,
     }),
     /**
-     * v1.4.36 W1 — `/api/insights/targets` is read on every Insights
+     * v1.4.36 — `/api/insights/targets` is read on every Insights
      * mount and runs >1 s cold (it pulls 30-day measurements for every
      * type + medications + intakes + mood + glucose). 60 s TTL matches
      * the analytics cache so multiple sub-page mounts inside a minute

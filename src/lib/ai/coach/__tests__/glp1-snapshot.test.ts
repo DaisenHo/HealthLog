@@ -62,7 +62,7 @@ describe("buildGlp1SnapshotBlock", () => {
     });
   });
 
-  // v1.4.25 W10 reconcile (security H-1) — the snapshot JSON ships
+  // v1.4.25 (security H-1) — the snapshot JSON ships
   // verbatim inside the Coach user prompt. A malicious medication
   // name must not be able to inject control sequences or override
   // the dose-prescription guardrail.
@@ -175,7 +175,7 @@ describe("buildGlp1SnapshotBlock", () => {
     expect(out?.medications[0].nextInjection).toBeNull();
   });
 
-  // W1 — ledger-only accounts (the pre-item delta writer) keep their
+  // Ledger-only accounts (the pre-item delta writer) keep their
   // pen count in the Coach prompt instead of a silent omission.
   it("falls back to the legacy ledger when the medication has zero items", async () => {
     prismaMock.medication.findMany.mockResolvedValue([

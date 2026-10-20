@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.43 (D1223) — the other spellings a marker answers to.
+ * v1.43 — the other spellings a marker answers to.
  *
  * Shown as chips on the marker; with the labs manage right they can be added
  * and removed. Every change sends the whole set (`PUT /api/biomarkers/{id}`

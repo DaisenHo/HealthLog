@@ -43,7 +43,7 @@ vi.mock("../measurement-coverage", () => ({
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: mocks.measurementFindMany },
-    // v1.37.19 (A6-11) — the live band fallback.
+    // v1.37.19 — the live band fallback.
     $queryRaw: mocks.queryRaw,
   },
 }));
@@ -256,7 +256,7 @@ describe("buildTieredSeries", () => {
   });
 });
 
-// v1.37.19 (A6-11) — the live fallback the module doc promised from day
+// v1.37.19 — the live fallback the module doc promised from day
 // one, and the far-from-UTC day-grain guard.
 //
 // Watched red: with the `readBandLive` fallback removed from `readBand`

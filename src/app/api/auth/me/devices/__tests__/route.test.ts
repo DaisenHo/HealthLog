@@ -157,7 +157,7 @@ describe("GET /api/auth/me/devices", () => {
     expect(where).toEqual({ userId: "user-1" });
   });
 
-  // v1.4.23 W6 reconcile (Sr-MED-5) — a forged X-Device-Id header
+  // v1.4.23 — a forged X-Device-Id header
   // pointing at a device the caller doesn't actually hold a credential
   // for must NOT flip `isCurrent: true`. The route now cross-checks the
   // header against an unrevoked RefreshToken row owned by the same

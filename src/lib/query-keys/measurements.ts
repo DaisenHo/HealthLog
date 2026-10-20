@@ -58,7 +58,7 @@ export const measurementKeys = {
   sleepRhythm: () => ["sleep-rhythm"] as const,
 
   /**
-   * v1.4.40 W-RSC — per-chart daily-aggregate fetch from the dashboard
+   * v1.4.40 — per-chart daily-aggregate fetch from the dashboard
    * + insights chart row. Pre-fix the key was bare `["chart-data", …]`
    * across the codebase, which excluded it from
    * `measurementDependentKeys` and left chart caches stale for up to

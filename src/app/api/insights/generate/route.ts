@@ -110,6 +110,11 @@ import {
   enqueueStatusRefillForUser,
 } from "@/lib/insights/comprehensive-generate";
 import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
+import {
+  INSIGHTS_CACHE_SELECT,
+  insightsCacheWrite,
+  openInsightsCachedText,
+} from "@/lib/insights/cached-text-cipher";
 
 export const dynamic = "force-dynamic";
 
@@ -176,12 +181,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     where: { id: userId },
     select: {
       insightsCachedAt: true,
-      insightsCachedText: true,
+      ...INSIGHTS_CACHE_SELECT,
       insightsCachedLocale: true,
       locale: true,
       timezone: true,
     },
   });
+  const cachedText = openInsightsCachedText(dbUser);
 
   // Resolve the locale the caller is actually reading (cookie /
   // Accept-Language fall-back when `User.locale` is unset) and validate it
@@ -211,7 +217,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // text was generated: `insightsCachedAt` also moves when an unchanged
   // warm only re-stamps yesterday's text.
   const generatedToday = generatedOnLocalToday(
-    readBriefingGeneratedAt(dbUser?.insightsCachedText ?? null),
+    readBriefingGeneratedAt(cachedText),
     timezone,
     new Date(),
   );
@@ -267,9 +273,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     revalidating = true;
   }
 
-  if (dbUser?.insightsCachedText && !languageMismatch) {
+  if (cachedText && !languageMismatch) {
     try {
-      const cached = JSON.parse(dbUser.insightsCachedText);
+      const cached = JSON.parse(cachedText);
       const legacyPayload = isLegacyInsightPayload(cached);
       annotate({
         action: { name: "insights.generate.read" },
@@ -339,7 +345,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 });
 
 export const POST = apiHandler((request: NextRequest) =>
-  // v1.18.11 P3 — open a request-scoped feature cache so the bounded feature
+  // v1.18.11 — open a request-scoped feature cache so the bounded feature
   // read is computed once and reused across the downgrade ladder (and any
   // sibling consumer) for this request.
   withFeatureCacheScope(async () => {
@@ -355,10 +361,10 @@ export const POST = apiHandler((request: NextRequest) =>
       select: {
         insightsPrivacyMode: true,
         insightsCachedAt: true,
-        insightsCachedText: true,
+        ...INSIGHTS_CACHE_SELECT,
         insightsCachedLocale: true,
         timezone: true,
-        // v1.4.36 W3 T3 — per-user opt-out list mirroring the Coach
+        // v1.4.36 — per-user opt-out list mirroring the Coach
         // settings. Filtered off `features` before serialisation so the
         // LLM never sees the excluded blocks.
         insightsExcludeMetrics: true,
@@ -367,7 +373,7 @@ export const POST = apiHandler((request: NextRequest) =>
         dateOfBirth: true,
         gender: true,
         heightCm: true,
-        // v1.22 (W6) — first name for the sparse, hash-gated briefing opener.
+        // v1.22 — first name for the sparse, hash-gated briefing opener.
         displayName: true,
         // v1.25 — per-user response-timeout (seconds), threaded onto the
         // generation calls so a slow self-hosted backend honours the setting.
@@ -378,6 +384,7 @@ export const POST = apiHandler((request: NextRequest) =>
         glucoseUnit: true,
       },
     });
+    const cachedText = openInsightsCachedText(dbUser);
     const modeAtRead = dbUser?.insightsPrivacyMode ?? "aggregated";
     // v1.34 — the commit guard below (line ~966) matches on these exact
     // columns instead of the broad `updatedAt` timestamp. Every User write
@@ -439,13 +446,13 @@ export const POST = apiHandler((request: NextRequest) =>
     if (
       !forceRefresh &&
       dbUser?.insightsCachedAt &&
-      dbUser.insightsCachedText &&
+      cachedText &&
       cachedLocaleMatches &&
       Date.now() - dbUser.insightsCachedAt.getTime() < 24 * 60 * 60 * 1000
     ) {
       try {
-        const cached = JSON.parse(dbUser.insightsCachedText);
-        // v1.4.16 B5c: detect legacy payloads (pre-rationale) so the UI
+        const cached = JSON.parse(cachedText);
+        // v1.4.16: detect legacy payloads (pre-rationale) so the UI
         // can show a "regenerate for new explainability features" CTA.
         // We don't auto-regenerate — that would burn rate-limit tokens
         // on a cache-hit silently. User-initiated only.
@@ -454,9 +461,9 @@ export const POST = apiHandler((request: NextRequest) =>
         // a briefingless cache, it does not short-circuit a provider-backed
         // account, and degrades to the cached payload on a 429 below.
         const carriesBriefing =
-          cachedPayloadCarriesBriefing(dbUser.insightsCachedText) &&
+          cachedPayloadCarriesBriefing(cachedText) &&
           generatedOnLocalToday(
-            readBriefingGeneratedAt(dbUser.insightsCachedText),
+            readBriefingGeneratedAt(cachedText),
             postTimezone,
             new Date(),
           );
@@ -499,7 +506,7 @@ export const POST = apiHandler((request: NextRequest) =>
     // noisy reload loop on the dashboard would lock out real refreshes
     // for an hour for no benefit.
     //
-    // v1.4.16 A7: limit raised from 2 → 10 per hour (env-configurable via
+    // v1.4.16: limit raised from 2 → 10 per hour (env-configurable via
     // `INSIGHTS_RATE_LIMIT_PER_HOUR`). The 2/hour limit triggered too
     // aggressively when a user iterated on settings or regenerated after
     // adding a few measurements; 10/hour still cleanly bounds cost while
@@ -533,7 +540,7 @@ export const POST = apiHandler((request: NextRequest) =>
       return apiError(`Maximum ${limit} insight generations per hour.`, 429);
     }
 
-    // v1.4.16 phase B5b: resolve the user's full provider chain so a hard
+    // v1.4.16: resolve the user's full provider chain so a hard
     // failure on the primary (401, 5xx, network) cascades to the next
     // configured fallback rather than surfacing a 503/422 to the
     // dashboard. Falls back to the single-provider resolution when the
@@ -562,7 +569,7 @@ export const POST = apiHandler((request: NextRequest) =>
     await assertConsentForChain({ userId, chain, surface: "insights" });
 
     const includeRaw = dbUser?.insightsPrivacyMode === "raw";
-    // v1.4.36 W3 T1 — `extractFeatures` enforces a 5 MB ceiling on the
+    // v1.4.36 — `extractFeatures` enforces a 5 MB ceiling on the
     // serialised payload. If the raw (bucketed) shape ever blows past
     // it (regression watch — the v1.4.35 rawMeasurements shape hit
     // 25.9 MB on the largest tenant), the helper throws
@@ -573,7 +580,7 @@ export const POST = apiHandler((request: NextRequest) =>
     let features: Awaited<ReturnType<typeof extractFeatures>>;
     let payloadDowngraded = false;
     let payloadOversizeBytes: number | null = null;
-    // v1.4.36 QA H1 — extra fallback when even the aggregated shape
+    // v1.4.36 — extra fallback when even the aggregated shape
     // crosses the 5 MB ceiling (very large medication history + multi-
     // year context). Strips anthropometrics + medications + every other
     // exclude-token-mapped block and tries one more time. On a third
@@ -589,12 +596,12 @@ export const POST = apiHandler((request: NextRequest) =>
       "resting_hr",
     ];
     let payloadHardDowngraded = false;
-    // v1.18.11 P1 — bound the briefing's bulk feature read to a recent window
+    // v1.18.11 — bound the briefing's bulk feature read to a recent window
     // (all-time extremes are sourced separately, see features.ts). The downgrade
     // ladder below stays as the safety net for the rare oversize payload.
     const featureWindow = { sinceDays: BRIEFING_FEATURE_WINDOW_DAYS };
     try {
-      // v1.18.11 P3 — compute-once-per-request: the scope opened around this
+      // v1.18.11 — compute-once-per-request: the scope opened around this
       // handler shares the bounded feature read across the downgrade ladder.
       features = await getCachedFeatures({
         userId,
@@ -657,7 +664,7 @@ export const POST = apiHandler((request: NextRequest) =>
         throw err;
       }
     }
-    // v1.4.36 W3 T3 — apply the user's exclude-metrics opt-out list
+    // v1.4.36 — apply the user's exclude-metrics opt-out list
     // BEFORE serialisation so the model never sees the dropped blocks.
     const excludeList = dbUser?.insightsExcludeMetrics ?? [];
     features = applyInsightsExcludeFilter(features, excludeList);
@@ -668,7 +675,7 @@ export const POST = apiHandler((request: NextRequest) =>
       glucoseUnit: dbUser?.glucoseUnit,
     });
     features = featuresInReaderUnits(features, units);
-    // v1.4.36 W3 T4 — drop zero-row blocks so the prompt never carries
+    // v1.4.36 — drop zero-row blocks so the prompt never carries
     // labelled-empty sections (`"sleep": []`, `"medications": []`,
     // etc.). Prevents the model from narrating "there are no
     // medications in your data" when the user explicitly excluded the
@@ -689,14 +696,14 @@ export const POST = apiHandler((request: NextRequest) =>
       });
     }
 
-    // v1.4.16 phase B8 — pick up the user's persisted comparison toggle
+    // v1.4.16 — pick up the user's persisted comparison toggle
     // and, when active, build a compact prior-period snapshot from the
     // `features` summaries that already include `avg30LastMonth` /
     // `avg30LastYear` (added in the analytics summarize() helper). The
     // narrative is default-on whenever the toggle is on per research §7
     // Q4 — the pulldown is the single affordance.
     const comparisonSnapshot = await buildComparisonSnapshotForUser(userId);
-    // v1.4.25 W4d — GLP-1 plateau detector. Appends a SYSTEM CONTEXT
+    // v1.4.25 — GLP-1 plateau detector. Appends a SYSTEM CONTEXT
     // block to the user prompt when the active GLP-1 medication has been
     // on a stable dose for ≥21 days with weight delta within ±0.5 kg.
     // The block instructs the model to emit a glp1_plateau keyFinding
@@ -737,7 +744,7 @@ export const POST = apiHandler((request: NextRequest) =>
       userPrompt += buildDerivedBriefingPrompt(derivedBriefing, locale);
     }
 
-    // v1.18.11 P5 — fold illness-episode + cycle state into the briefing so a
+    // v1.18.11 — fold illness-episode + cycle state into the briefing so a
     // mid-illness or mid-cycle user gets context-aware prose. Reuses the same
     // server-authoritative builders the Coach assembles; both are module-gated
     // and short-circuit to null (zero token cost) for users without them.
@@ -750,7 +757,7 @@ export const POST = apiHandler((request: NextRequest) =>
       userPrompt += buildBriefingIllnessCyclePrompt(illnessCycleCtx, locale);
     }
 
-    // v1.22 (W6) — opener-archetype rotation + sparse first-name personalization
+    // v1.22 — opener-archetype rotation + sparse first-name personalization
     // (deterministic per user+day; omitted for unnamed accounts).
     userPrompt += buildBriefingPersonalisationBlock(
       userId,
@@ -763,7 +770,7 @@ export const POST = apiHandler((request: NextRequest) =>
     const briefingForm = await briefingFormForRecord(userId);
     userPrompt += buildBriefingShortFormBlock(locale, briefingForm);
 
-    // v1.12.7 (B5) — inject the curated SOURCES block for the metric sections
+    // v1.12.7 — inject the curated SOURCES block for the metric sections
     // this briefing actually carries, so a normative claim can cite a real
     // `referenceId` the schema + UI footnote already support. Returns the plain
     // prompt unchanged when no applicable metric section is present.
@@ -964,7 +971,7 @@ export const POST = apiHandler((request: NextRequest) =>
       return apiError("AI response was not valid JSON", 422);
     }
 
-    // v1.18.10 (HIGH-1) — daily-briefing number-grounding gate, mirroring the
+    // v1.18.10 — daily-briefing number-grounding gate, mirroring the
     // recommendations citation cross-check next door. The schema only checks the
     // briefing's SHAPE; this asserts every number the briefing prose restates
     // traces to a `features.signalsOfDay` figure. On a miss: one corrective
@@ -1042,12 +1049,9 @@ export const POST = apiHandler((request: NextRequest) =>
       // state still fires exactly when the user really has no briefing.
       if (ungrounded.length > 0 && insights && typeof insights === "object") {
         let fallbackBriefing: unknown = null;
-        if (dbUser?.insightsCachedText) {
+        if (cachedText) {
           try {
-            const prev = JSON.parse(dbUser.insightsCachedText) as Record<
-              string,
-              unknown
-            >;
+            const prev = JSON.parse(cachedText) as Record<string, unknown>;
             fallbackBriefing = prev.dailyBriefing ?? null;
           } catch {
             // Unparseable previous payload — nothing safe to stand in.
@@ -1109,7 +1113,7 @@ export const POST = apiHandler((request: NextRequest) =>
       },
       data: {
         insightsCachedAt: new Date(),
-        insightsCachedText: JSON.stringify(stored),
+        ...insightsCacheWrite(JSON.stringify(stored)),
         insightsCachedLocale: locale,
         insightsSnapshotHash: hashInsightSnapshot({
           features: compactFeatures,
@@ -1159,7 +1163,7 @@ export const POST = apiHandler((request: NextRequest) =>
       meta: { scopes: refillScopes },
     });
 
-    // v1.7.0 W6 — the dashboard snapshot embeds the pre-generated daily
+    // v1.7.0 — the dashboard snapshot embeds the pre-generated daily
     // briefing read-only; drop it so the next snapshot carries the fresh
     // briefing instead of the stale one.
     invalidateUserInsights(userId);

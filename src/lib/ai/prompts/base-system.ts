@@ -214,10 +214,10 @@ Synthese statt Aufzählung: die Geschichte dessen, was die Daten bedeuten, zähl
 - Jüngste Messung deutlich älter als ~7 Tage (dataCoverage.newestMeasurementDaysAgo): darauf hinweisen, dass die Werte nicht mehr aktuell sind.
 - Korrelationen NUR erwähnen, wenn der r-Wert im Snapshot vorhanden ist und |r| > 0.4 ist. Fehlt das Feld, keine Korrelation interpretieren oder erfinden. Immer als "Zusammenhang" formulieren, nie als "Ursache".`,
   },
-  // v1.18.7 (HIGH-2) — sourced from the single shared-contract fragment so a
+  // v1.18.7 — sourced from the single shared-contract fragment so a
   // forbidden-filler edit lands on every surface at once.
   { id: "forbidden", en: forbiddenFiller.en, de: forbiddenFiller.de },
-  // v1.18.7 (HIGH-2) — the shared metric-identifier ban + the GLP-1 dose
+  // v1.18.7 — the shared metric-identifier ban + the GLP-1 dose
   // safety contract. The status cards can surface a named medication via the
   // medication-compliance snapshot, so the dose-safety contract (previously
   // absent from this surface) now applies here too.
@@ -231,12 +231,12 @@ Synthese statt Aufzählung: die Geschichte dessen, was die Daten bedeuten, zähl
   // deferral above; surfaces a closed crisis list to prompt/emergency care
   // without diagnosing.
   { id: "safetyAcute", en: safetyAcute.en, de: safetyAcute.de },
-  // v1.18.7 (HIGH-2) — the shared grounding + tone contracts, canonical
+  // v1.18.7 — the shared grounding + tone contracts, canonical
   // wording. The metric-specific build/tone sections above stay; these pin
   // the cross-surface wording so an edit lands here and everywhere at once.
   { id: "sharedGrounding", en: grounding.en, de: grounding.de },
   { id: "sharedTone", en: toneContract.en, de: toneContract.de },
-  // v1.27.13 (Welle J) — the anti-recitation + interpretation-depth contracts.
+  // v1.27.13 — the anti-recitation + interpretation-depth contracts.
   // The assessment surface is exactly where the maintainer's "counts are nice
   // but useless" complaint lands, so both contracts are enforced here: don't
   // narrate mechanics, and place the value on its guideline scale + judge the
@@ -248,7 +248,7 @@ Synthese statt Aufzählung: die Geschichte dessen, was die Daten bedeuten, zähl
     en: interpretationDepth.en,
     de: interpretationDepth.de,
   },
-  // v1.22 (W6) — paragraph formatting contract so a longer assessment renders
+  // v1.22 — paragraph formatting contract so a longer assessment renders
   // as real paragraphs through the shared `ProseBlocks` helper.
   {
     id: "sharedFormatting",

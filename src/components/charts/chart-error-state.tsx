@@ -4,6 +4,7 @@ import { Component, type ReactElement, type ReactNode } from "react";
 import { AlertTriangle, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useReadFailure } from "@/hooks/use-read-failure";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +23,18 @@ import { cn } from "@/lib/utils";
  * reflows — with a compact action button. `<ChartErrorBoundary>` wraps
  * each lazy chart mount so a failed chunk degrades to one card with a
  * reload affordance instead of taking the page down.
+ *
+ * Like `QueryErrorCard` and `QueryErrorRow`, the card reads the failure
+ * itself (`error`): a refusal draws `refused` (nothing by default), a spent
+ * budget says so without an action, an ended session offers sign-in, and only
+ * a real failure offers `onAction`.
  */
 
 export interface ChartErrorStateProps {
+  /** The failure. It decides what the card offers. */
+  error: unknown;
+  /** What a refused (403) read draws instead of the card. */
+  refused?: ReactNode;
   /** Translated headline, e.g. "Data could not be loaded". */
   title: string;
   /** Translated action-button label, e.g. "Retry". */
@@ -54,6 +64,8 @@ export interface ChartErrorStateProps {
 }
 
 export function ChartErrorState({
+  error,
+  refused = null,
   title,
   actionLabel,
   onAction,
@@ -61,6 +73,10 @@ export function ChartErrorState({
   actionContext,
   role = "status",
 }: ChartErrorStateProps): ReactElement {
+  const failure = useReadFailure(error, { message: title, onRetry: onAction });
+  if (!failure) return <>{refused}</>;
+  const { action } = failure;
+  const label = action?.kind === "retry" ? actionLabel : action?.label;
   return (
     <div
       data-slot="chart-error-state"
@@ -73,42 +89,48 @@ export function ChartErrorState({
       style={height === undefined ? undefined : { height }}
     >
       <AlertTriangle
-        className="text-muted-foreground h-8 w-8"
+        className="text-muted-foreground size-6"
         aria-hidden="true"
       />
-      <p className="text-sm font-medium">{title}</p>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onAction}
-        aria-label={
-          actionContext ? `${actionLabel}: ${actionContext}` : undefined
-        }
-      >
-        <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
-        {actionLabel}
-      </Button>
+      <p className="text-sm font-medium">{failure.message}</p>
+      {action ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={action.onClick}
+          data-slot={
+            action.kind === "signIn" ? "query-error-sign-in" : undefined
+          }
+          aria-label={actionContext ? `${label}: ${actionContext}` : undefined}
+        >
+          {action.kind === "retry" ? (
+            <RotateCw className="size-3.5" aria-hidden="true" />
+          ) : null}
+          {label}
+        </Button>
+      ) : null}
     </div>
   );
 }
 
 interface BoundaryProps {
-  fallback: ReactNode;
+  /** Drawn once caught; a function receives the caught error. */
+  fallback: ReactNode | ((error: Error) => ReactNode);
   children: ReactNode;
   /** Called once the boundary has caught, after the fallback commits. */
   onError?: (error: Error) => void;
 }
 
 interface BoundaryState {
-  failed: boolean;
+  error: Error | null;
 }
 
 /** Exported for its unit test; mount `<ChartErrorBoundary>` instead. */
 export class ChartBoundary extends Component<BoundaryProps, BoundaryState> {
-  state: BoundaryState = { failed: false };
+  state: BoundaryState = { error: null };
 
-  static getDerivedStateFromError(): BoundaryState {
-    return { failed: true };
+  static getDerivedStateFromError(error: Error): BoundaryState {
+    return { error };
   }
 
   componentDidCatch(error: Error): void {
@@ -125,7 +147,10 @@ export class ChartBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 
   render(): ReactNode {
-    return this.state.failed ? this.props.fallback : this.props.children;
+    const { error } = this.state;
+    if (!error) return this.props.children;
+    const { fallback } = this.props;
+    return typeof fallback === "function" ? fallback(error) : fallback;
   }
 }
 
@@ -152,7 +177,7 @@ export function ChartErrorBoundary({
   return (
     <ChartBoundary
       onError={onError}
-      fallback={
+      fallback={(error) => (
         // Wrapped in the chart-card shell so a chunk failure renders
         // as one solid card among the other cards, not a bare dashed
         // box; `role="alert"` because the whole chart is gone, not
@@ -162,13 +187,14 @@ export function ChartErrorBoundary({
           className="bg-card border-border rounded-xl border p-4 md:p-6"
         >
           <ChartErrorState
+            error={error}
             title={t("charts.loadErrorTitle")}
             actionLabel={t("charts.loadErrorReload")}
             onAction={() => window.location.reload()}
             role="alert"
           />
         </div>
-      }
+      )}
     >
       {children}
     </ChartBoundary>

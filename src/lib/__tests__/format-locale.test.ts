@@ -31,7 +31,7 @@ describe("parseLocaleFromAcceptLanguage", () => {
     expect(parseLocaleFromAcceptLanguage("*")).toBe("en");
   });
 
-  // v1.4.25 W9e — the four AI-initial locales added in this release.
+  // v1.4.25 — the four AI-initial locales added in this release.
   // Each maps via the same primary-tag prefix match the DE branch uses.
   it("returns the matching tag for FR / ES / IT / PL", () => {
     expect(parseLocaleFromAcceptLanguage("fr-FR,fr;q=0.9")).toBe("fr");
@@ -117,7 +117,7 @@ describe("makeFormatters", () => {
     });
   });
 
-  // v1.4.25 W7 — formatters accept a per-user timezone override.
+  // v1.4.25 — formatters accept a per-user timezone override.
   it("renders time in the user's tz when userTz is passed", () => {
     const tokyo = makeFormatters("en", "Asia/Tokyo", "H24", "AUTO");
     // 14:30 UTC = 23:30 Tokyo

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19a — GLP-1 EMA drug knowledge layer.
+ * v1.4.25 — GLP-1 EMA drug knowledge layer.
  *
  * Read-only static reference data for the five EMA-approved GLP-1
  * receptor agonists (and one dual GIP/GLP-1 agonist). Values are

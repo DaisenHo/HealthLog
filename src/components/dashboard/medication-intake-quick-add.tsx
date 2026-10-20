@@ -36,7 +36,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-thresholds";
 
 /**
- * v1.4.37 W7b — dashboard "Hinzufügen" → "Medikamenteneinnahme" quick-add.
+ * v1.4.37 — dashboard "Hinzufügen" → "Medikamenteneinnahme" quick-add.
  *
  * The maintainer's brief: the dashboard's top-right "Hinzufügen" menu logs
  * measurements and mood entries; add a medication-intake action so a
@@ -222,7 +222,7 @@ export function MedicationIntakeQuickAdd({
       const doseDeviates =
         trimmedDose.length > 0 &&
         trimmedDose !== (selectedMedication?.dose ?? "").trim();
-      // v1.30.1 M7 — the route returns the created event
+      // v1.30.1 — the route returns the created event
       // (`apiSuccess(event, 201)`), same shape the card's take/skip path
       // already reads; the id drives the new Undo action below.
       const created = await apiPost<{ id?: string } | undefined>(
@@ -319,7 +319,7 @@ export function MedicationIntakeQuickAdd({
   // form itself is suppressed so we don't ship an unusable Save
   // button.
   //
-  // v1.4.38 W-D P2-1 — symmetry fix. The previous shape rendered the
+  // v1.4.38 — symmetry fix. The previous shape rendered the
   // CTA in the body and a footer with only the Close button, which
   // read as the dialog losing a save button. Now the body carries the
   // hint and the footer carries `<Cancel> <Link asChild>Medikament

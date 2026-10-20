@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { SleepRhythmDto } from "../use-sleep-rhythm";
 
 /**
- * v1.18.7 W-D — chronotype SECTION states (the prominent bottom block).
+ * v1.18.7 — chronotype SECTION states (the prominent bottom block).
  *
  * Mirrors the sleep-rhythm section guard: error → quiet inline notice,
  * loading → skeleton, settled → the large band treatment. `useAuth` +

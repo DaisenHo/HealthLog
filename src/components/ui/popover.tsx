@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * Popover primitive — Radix `Popover` wrapped with the same Dracula
  * surface tokens the rest of the shadcn primitives use.
  *
- * v1.4.27 MB3 — introduced so the Coach composer hint can swap off
+ * v1.4.27 — introduced so the Coach composer hint can swap off
  * the `<Tooltip>` primitive. Radix tooltips never tap-toggle reliably
  * on touch surfaces; popovers do. The mouse-hover preview that the
  * tooltip used to provide on desktop is dropped intentionally —

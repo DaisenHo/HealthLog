@@ -308,18 +308,12 @@ export function ManagedProfileGuardians({
 /**
  * The message for a refused Guardian invitation.
  *
- * Six refusals, and **two of them carry no `errorCode`** — the rate limit
- * (`guardians/route.ts`, before the body is even read) and the unknown-account
- * 404. That asymmetry is the route's actual shape, not laziness here: the
- * other four arms publish a stable code and are matched on it, and these two
- * have to be told apart by status because there is nothing else to branch on.
- * Recorded in `02-13.1-CONTRACT-FINDINGS.md` so whoever freezes the contract
- * decides deliberately whether to close it.
- *
- * The code switch runs FIRST, and the order matters: `managed_profile.not_found`
- * is a 404 WITH a code, and an unknown account is a 404 without one. Branching
- * on status first would tell somebody to check the spelling of a name when the
- * real answer is that they are not a Guardian of that profile any more.
+ * Six refusals, matched on their code. The route answers 404 twice, and the
+ * two need different next steps: `sharing.invite.no_account` asks somebody to
+ * check the spelling of a name, `managed_profile.not_found` says they are not
+ * a Guardian of that profile any more. Branching on the status would collapse
+ * them, so only the statuses with a single meaning fall back to the status: a
+ * 429 (wait, whatever the code) and a 401 (the step-up gate).
  */
 export function guardianInviteErrorKey(err: unknown): string {
   if (!(err instanceof ApiError)) return "recordSharing.managed.errorOffline";
@@ -340,14 +334,13 @@ export function guardianInviteErrorKey(err: unknown): string {
       return "recordSharing.managed.guardianErrorManagedInvitee";
     case "managed_profile.not_found":
       return "recordSharing.actionError.profileNotFound";
+    case "sharing.invite.no_account":
+      return "recordSharing.managed.guardianErrorNoAccount";
     default:
       break;
   }
 
-  // The two codeless arms. Waiting is the recovery for one and correcting the
-  // identifier is the recovery for the other, so they must not collapse.
   if (err.status === 429) return "recordSharing.managed.guardianErrorRateLimit";
-  if (err.status === 404) return "recordSharing.managed.guardianErrorNoAccount";
   // The step-up gate this whole family carries. Not a failure — and it comes
   // in two shapes, because an account with no factor enrolled cannot clear it.
   if (err.status === 401) return stepUpErrorKey(err);

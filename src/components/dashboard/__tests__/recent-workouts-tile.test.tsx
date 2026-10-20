@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { makeFormatters } from "@/lib/format-locale";
 import type { WorkoutListEntry } from "@/hooks/use-workouts";
 
 /**
@@ -15,6 +16,13 @@ import type { WorkoutListEntry } from "@/hooks/use-workouts";
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
+}));
+
+// The day label follows the reader's date order through `useFormatters()`.
+const READER_FORMATTERS = makeFormatters("en", "UTC", "H24", "YMD");
+vi.mock("@/lib/i18n/context", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/i18n/context")>()),
+  useFormatters: () => READER_FORMATTERS,
 }));
 
 let mockResult: {
@@ -83,10 +91,12 @@ describe("<RecentWorkoutsTile>", () => {
     expect(html).toContain('data-slot="skeleton"');
   });
 
-  it("renders a retry card instead of the empty state on a failed fetch", () => {
+  it("renders a retry row instead of the empty state on a failed fetch", () => {
     mockResult.isError = true;
     const html = render();
-    expect(html).toContain('data-slot="query-error-card"');
+    // A row without a frame of its own: the tile is already the card.
+    expect(html).toContain('data-slot="recent-workouts-error"');
+    expect(html).not.toContain('data-slot="query-error-card"');
     // A failed fetch must never read as the honest "no workouts yet"
     // empty state — that would misreport an outage as an empty account.
     expect(html).not.toContain('data-slot="recent-workouts-empty"');
@@ -100,7 +110,7 @@ describe("<RecentWorkoutsTile>", () => {
     const html = render();
     expect(html).toContain('data-slot="recent-workouts-empty"');
     expect(html).toContain("No workouts yet");
-    // v1.37.19 (A1-7) — the CTA no longer assumes an iPhone with Apple
+    // v1.37.19 — the CTA no longer assumes an iPhone with Apple
     // Health; WHOOP/Polar/Oura/Withings users get the same honest cue.
     expect(html).toContain("Connect a data source in Settings");
     expect(html).not.toContain("Apple Health");
@@ -147,5 +157,8 @@ describe("<RecentWorkoutsTile>", () => {
     expect(html).toContain("Cycling");
     expect(html).toContain("30m");
     expect(html).toContain("1h 0m");
+    expect(html).toContain(
+      READER_FORMATTERS.dateWithWeekdaySmart("2026-05-15T07:00:00Z"),
+    );
   });
 });

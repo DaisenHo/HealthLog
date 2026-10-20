@@ -1,5 +1,5 @@
 /**
- * v1.4.28 R3a FB-D2 (R1.2 H0) — server-side range aggregation for the
+ * v1.4.28 (R1.2 H0) — server-side range aggregation for the
  * health-chart pipeline.
  *
  * Before: every chart navigation issued an unbounded `while (true)`
@@ -68,77 +68,4 @@ export function pickAggregateGrain(
 export function rangeLengthDays(from: Date, to: Date): number {
   const ms = to.getTime() - from.getTime();
   return Math.max(1, Math.ceil(ms / 86_400_000));
-}
-
-export interface AggregatedRow {
-  bucketStart: Date;
-  type: string;
-  avg: number;
-  count: number;
-}
-
-interface RawRow {
-  type: string;
-  value: number;
-  measuredAt: Date;
-}
-
-/**
- * In-memory daily / weekly / monthly aggregation. Used by the route's
- * fallback path and by the test harness — the production path runs the
- * `aggregateRowsSql` query so the take cap never applies before
- * bucketising (v1.4.28 R4-CODE-C1).
- */
-export function aggregateRows(
-  rows: RawRow[],
-  grain: "daily" | "weekly" | "monthly",
-): AggregatedRow[] {
-  const buckets = new Map<
-    string,
-    { bucketStart: Date; type: string; sum: number; count: number }
-  >();
-
-  for (const row of rows) {
-    const bucketStart = bucketStartFor(row.measuredAt, grain);
-    const key = `${row.type}@${bucketStart.getTime()}`;
-    const slot = buckets.get(key);
-    if (slot) {
-      slot.sum += row.value;
-      slot.count += 1;
-    } else {
-      buckets.set(key, {
-        bucketStart,
-        type: row.type,
-        sum: row.value,
-        count: 1,
-      });
-    }
-  }
-
-  return Array.from(buckets.values())
-    .map((s) => ({
-      bucketStart: s.bucketStart,
-      type: s.type,
-      avg: s.sum / s.count,
-      count: s.count,
-    }))
-    .sort((a, b) => a.bucketStart.getTime() - b.bucketStart.getTime());
-}
-
-function bucketStartFor(d: Date, grain: "daily" | "weekly" | "monthly"): Date {
-  if (grain === "daily") {
-    return new Date(
-      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-    );
-  }
-  if (grain === "monthly") {
-    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-  }
-  // Weekly — anchor to the start of the ISO week (Monday) in UTC.
-  const day = d.getUTCDay() || 7; // Sunday → 7
-  const monday = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
-  monday.setUTCDate(monday.getUTCDate() - (day - 1));
-  return monday;
 }

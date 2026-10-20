@@ -14,7 +14,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import type { CoachScopeSource, CoachScopeWindow } from "@/lib/ai/coach/types";
 
 /**
- * v1.4.27 R3d MB4 — Coach launch context.
+ * v1.4.27 — Coach launch context.
  *
  * Until v1.4.27 the Coach drawer was mounted inline on
  * `/insights/page.tsx` body, which meant navigating to a routed
@@ -38,13 +38,13 @@ export interface CoachLaunchScope {
   /**
    * Optional metric the user is looking at when they open the Coach.
    *
-   * v1.4.28 R3c (BK-MED-2 / BK-F-M4) — narrowed from `string` to the
+   * v1.4.28 — narrowed from `string` to the
    * `CoachScopeSource` union so call sites cannot drift to a free-form
    * label that the sources rail then silently ignores. Adding a new
    * Apple-Health source to the rail (the union already covers the
    * v1.4.23 additions) automatically widens the allowed values here.
    *
-   * v1.21.0 (C4 H1/H4) — now LIVE: the scope threads through the drawer
+   * v1.21.0 — now LIVE: the scope threads through the drawer
    * into the chat request so a conversation opened from a metric surface
    * or an insight card is pre-narrowed to the relevant source(s). The
    * `void scope` discard is gone.
@@ -120,7 +120,7 @@ interface CoachLaunchValue {
     workoutId?: string | null,
   ) => void;
   /**
-   * v1.21.0 (C4 H1) — register the metric surface the user is currently
+   * v1.21.0 — register the metric surface the user is currently
    * looking at so the global FAB (which calls `askCoach()` with no args)
    * still opens the Coach pre-scoped to that page. The optional
    * `seedPrefill` is the composer opener the FAB seeds when it inherits
@@ -243,7 +243,7 @@ export function CoachLaunchProvider({ children }: CoachLaunchProviderProps) {
       nextDocumentId?: string | null,
       nextWorkoutId?: string | null,
     ) => {
-      // v1.21.0 (C4 H1/H4) — scope is live; v1.28.52 — document scope threads
+      // v1.21.0 — scope is live; v1.28.52 — document scope threads
       // through so the vault "Ask the Coach" action opens the drawer scoped to
       // the document instead of a full-page nav. Precedence lives in the pure
       // `resolveLaunchState` helper so the rules stay unit-testable.

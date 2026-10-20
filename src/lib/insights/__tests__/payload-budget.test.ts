@@ -28,7 +28,7 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       updateMany: vi.fn(),
     },
-    // v1.18.11 (P6) — the slow-mover input gate probes salient inputs.
+    // v1.18.11 — the slow-mover input gate probes salient inputs.
     measurement: { findMany: vi.fn(), groupBy: vi.fn() },
     measurementRollup: { findMany: vi.fn() },
     // Weekly / monthly / yearly buckets are folded from the DAY tier in SQL.
@@ -112,7 +112,7 @@ beforeEach(() => {
   );
   vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
-  // v1.18.11 (P6) — input-gate probe: empty groups + zero mood so the gate
+  // v1.18.11 — input-gate probe: empty groups + zero mood so the gate
   // misses (no cached inputHash) and every fixture builds normally.
   vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
   vi.mocked(prisma.moodEntry.aggregate).mockResolvedValue({

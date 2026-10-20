@@ -1,5 +1,5 @@
 /**
- * v1.4.34 IW-B — auth-shell hoist contract.
+ * v1.4.34 — auth-shell hoist contract.
  *
  * The Coach launch provider used to live on `app/insights/layout.tsx`,
  * which meant the drawer was only reachable from `/insights/**`. The

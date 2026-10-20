@@ -70,7 +70,7 @@ export default function MoodPageClient() {
   // The list's empty state carries the add action while there is nothing
   // to list, so the header drops its own then.
   const [listEmpty, setListEmpty] = useState(false);
-  // v1.4.27 R4 RC2 — DOM-ref handle the form portals its action row
+  // v1.4.27 — DOM-ref handle the form portals its action row
   // into. The ref lives on the `<ResponsiveSheet>` footer slot so the
   // Sheet branch can sticky-pin Save / Cancel above the keyboard.
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
@@ -191,7 +191,7 @@ export default function MoodPageClient() {
         onEmptyChange={setListEmpty}
       />
 
-      {/* 2026-07-17 UX/IA audit M9 — mood tracking, the mental-wellbeing
+      {/* Mood tracking, the mental-wellbeing
           screeners, and the mood insights page form one mental-health
           domain but used to be three unconnected islands. A quiet pointer
           here (module-gated — no nav change) rather than a merge: capture

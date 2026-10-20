@@ -1,5 +1,5 @@
 /**
- * v1.4.23 H7 — Coach assistant-message thumbs feedback route.
+ * v1.4.23 — Coach assistant-message thumbs feedback route.
  *
  * Round-trip: seed a session + a coach conversation + an assistant
  * message, POST a thumbs rating, assert a `RecommendationFeedback` row

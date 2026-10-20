@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * v1.4.33 IW9 — single source of truth for the "scroll to top on
+ * v1.4.33 — single source of truth for the "scroll to top on
  * route mount" affordance.
  *
  * The pre-v1.4.33 wiring had `<SubPageShell>` AND the insights mother

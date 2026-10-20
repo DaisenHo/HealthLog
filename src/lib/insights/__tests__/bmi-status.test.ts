@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       updateMany: vi.fn(),
     },
-    // v1.18.11 (P6) — the input gate probes salient inputs via groupBy.
+    // v1.18.11 — the input gate probes salient inputs via groupBy.
     measurement: { findMany: vi.fn(), groupBy: vi.fn() },
     measurementRollup: { findMany: vi.fn() },
     // Weekly / monthly / yearly buckets are folded from the DAY tier in SQL.
@@ -90,7 +90,7 @@ beforeEach(() => {
   // folds from the full-history `measurement.findMany` fallback on a miss.
   vi.mocked(prisma.measurementRollup.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
-  // v1.18.11 (P6) — input-gate probe default: empty groups so the fingerprint
+  // v1.18.11 — input-gate probe default: empty groups so the fingerprint
   // is computed but, with no cached `inputHash`, the gate misses and fixtures
   // build normally. The forced fixtures skip the gate entirely.
   vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);

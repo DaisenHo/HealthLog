@@ -1064,7 +1064,7 @@ export const medicationExtractRequest = z
         "Free-text medication description (any locale). Up to 2 000 characters. The model never echoes the text back into another tenant — it is only used to produce the structured fields.",
       ),
     locale: z
-      .enum(["en", "de", "es", "fr", "it", "pl", "ko"])
+      .enum(["en", "de", "es", "fr", "it", "pl", "ko", "nl"])
       .optional()
       .describe("Optional UI locale hint for the model."),
     today: z
@@ -1220,7 +1220,7 @@ export const medicationListLayoutSchema = z
       "Per-user /medications presentation: the card/table view choice plus the manual medication order shared by both views. Mirrors the dashboard-widgets / insights-layout contract.",
   });
 
-// v1.32.21 (R5a) — the PUT body additionally carries the optional
+// v1.32.21 — the PUT body additionally carries the optional
 // optimistic-concurrency base token (stripped pre-Zod at runtime by
 // `takeBaseToken`); GET / PUT responses echo the fresh `updatedAt` token.
 export const medicationListLayoutPutBody = medicationListLayoutSchema

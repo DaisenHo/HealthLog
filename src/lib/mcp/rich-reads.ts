@@ -1,5 +1,5 @@
 /**
- * Phase 4 — deep-value MCP read tools (engine glue).
+ * Deep-value MCP read tools (engine glue).
  *
  * Four "bring data into relation" reads, each a THIN re-export of an existing
  * server-authoritative engine — no new statistics, no new business logic
@@ -63,6 +63,7 @@ import { sanitizeValueText } from "@/lib/ai/coach/labs-snapshot";
 import { scrubFenceMarkers } from "@/lib/ai/coach/data-fence";
 import { encodeOffsetCursor } from "@/lib/mcp/pagination";
 import type { CoachScopeWindow } from "@/lib/ai/coach/types";
+import { standardDeviation } from "@/lib/stats/spread";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -215,7 +216,7 @@ const ALIASES: Record<string, string> = {
 function fromRegistry(id: string): RichMetric | null {
   const meta = getMetricStatusMeta(id);
   if (!meta) return null;
-  // v1.30.4 (C2) — the signal registry's `surfaces.mcp` flag is documented as
+  // v1.30.4 — the signal registry's `surfaces.mcp` flag is documented as
   // the SINGLE source of truth for MCP exposure, but the metric-status
   // registry (this function's own source) carries no `surfaces` facet of its
   // own, so an id the signal registry marks `mcp:false` (e.g.
@@ -1158,11 +1159,9 @@ function mean(xs: number[]): number {
   return xs.reduce((s, x) => s + x, 0) / xs.length;
 }
 
+/** The CUSUM threshold estimates the series' noise, so it is the sample SD. */
 function stdDev(xs: number[]): number {
-  if (xs.length < 2) return 0;
-  const m = mean(xs);
-  const variance = xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1);
-  return Math.sqrt(variance);
+  return standardDeviation(xs, "sample") ?? 0;
 }
 
 /**

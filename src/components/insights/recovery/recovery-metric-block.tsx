@@ -14,7 +14,7 @@ import { MetricStatStrip } from "@/components/insights/metric-stat-strip";
 import { MetricStatusCard } from "@/components/insights/metric-status-card";
 
 /**
- * v1.18.1 (B1 / B2) — one canonical chart block on `/insights/recovery`.
+ * v1.18.1 — one canonical chart block on `/insights/recovery`.
  *
  * The rebuilt recovery page reads exactly like every other metric page
  * (blood pressure, pulse, the HealthKit scaffold): each present device

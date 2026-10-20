@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — the stored onboarding state: reading it back, and applying one
+ * v1.39 — the stored onboarding state: reading it back, and applying one
  * answered step to it.
  *
  * The two claims worth pinning here are the ones the route promises on the

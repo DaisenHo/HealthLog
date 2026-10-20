@@ -33,7 +33,7 @@ export function windowToDays(window: CoachScopeWindow): number {
     case "last90days":
       return 90;
     case "lastYear":
-      // v1.4.27 B7 / BL-P6-4 — year-in-review window. Same 365-day
+      // v1.4.27 — year-in-review window. Same 365-day
       // ceiling as the historical `allTime` cap so the prompt budget
       // stays bounded, but with explicit semantics — the Coach knows
       // the user is asking about a long-horizon view rather than the
@@ -428,7 +428,7 @@ export function buildDailyBpRows(
 }
 
 /**
- * v1.22 (W6) — the user's own usual range for one BP component, computed from
+ * v1.22 — the user's own usual range for one BP component, computed from
  * the rows already fetched for the snapshot (no extra DB read) using the SAME
  * median ± k·MAD statistic as the baseline engine. Returns null below the
  * engine's 7-day history floor so the Coach never quotes a fabricated band.

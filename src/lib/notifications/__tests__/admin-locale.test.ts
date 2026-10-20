@@ -1,5 +1,5 @@
 /**
- * v1.4.27 F21 — translator-aware dispatch helper.
+ * v1.4.27 — translator-aware dispatch helper.
  *
  * Drives `dispatchLocalisedNotification` through the three locale
  * resolution paths plus the missing-key fallback. The dispatcher and

@@ -1,5 +1,5 @@
 /**
- * v1.11.1 (Epic B, B-W5b) — Coach conversation-summary COMPUTE module.
+ * v1.11.1 — Coach conversation-summary COMPUTE module.
  *
  * A rolling, encrypted natural-language summary of the turns BEFORE the most
  * recent `RECENT_HISTORY` window. When a conversation grows past `TURN_CAP`

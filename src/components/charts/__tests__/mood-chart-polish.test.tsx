@@ -83,7 +83,7 @@ describe("<MoodChart> v1.4.18 clean-line revert", () => {
   });
 
   it("paints the rounded-md mini shell so the trends row shares one radius", async () => {
-    // D-H5 — the mood-chart mini sits next to two HealthChart mini
+    // The mood-chart mini sits next to two HealthChart mini
     // tiles on `/insights`. HealthChart mini paints
     // `bg-card border-border rounded-md border p-2`; mood mini rode
     // the shadcn `<Card>` default `rounded-xl`, so the trends row

@@ -128,7 +128,7 @@ export async function generateBiomarkerStatus(args: {
   const readOnly = args.readOnly === true;
   const scope = biomarkerStatusScope(marker.id);
   const cacheAction = statusCacheAction(scope, locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path).

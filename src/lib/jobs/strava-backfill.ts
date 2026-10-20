@@ -17,8 +17,16 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
-import { syncUserStrava } from "@/lib/strava/sync";
+import {
+  enqueueIntegrationBackfillAdmission,
+  integrationBackfillSourceOptions,
+} from "@/lib/jobs/integration-backfill-admission";
+import { isReauthRequired } from "@/lib/integrations/status";
+import {
+  backfillVerdict,
+  withPageWalkLedger,
+} from "@/lib/integrations/page-walk";
+import { syncStravaHistory } from "@/lib/strava/sync";
 
 export const STRAVA_BACKFILL_QUEUE = "strava-backfill";
 
@@ -35,19 +43,95 @@ export interface StravaBackfillPayload {
 }
 
 /**
- * Per-user backfill handler. Runs a full-history sync for one account and
- * stamps `stravaBackfillCompletedAt` so the discovery query drops it.
- * Idempotent: the `(userId, source, externalId)` workout upsert is key-stable,
- * so a re-run (e.g. a reboot mid-walk) overwrites rather than duplicating.
+ * The pause before the next run of an unfinished backfill: Strava's
+ * short-term rate window. One run spends up to forty page reads and 150
+ * detail reads of the 200 the app may make in fifteen minutes, so the next
+ * run waits for a fresh window rather than opening on a 429 or starving the
+ * hourly syncs.
+ */
+export const STRAVA_BACKFILL_CONTINUATION_DELAY_SECONDS = 15 * 60;
+
+/**
+ * Per-user backfill handler. Runs one stretch of the full-history walk for
+ * one account and stamps `stravaBackfillCompletedAt` only when the walk read
+ * to the start of the history, so the discovery query drops it. Idempotent:
+ * the `(userId, source, externalId)` workout upsert is key-stable, so a re-run
+ * (e.g. a reboot mid-walk) overwrites rather than duplicating.
+ *
+ * Verdict-gated (`backfillVerdict`, `integrations/page-walk.ts`), like the
+ * WHOOP and Fitbit backfills. A failed sync throws out of the walk (failure
+ * recorded first) and pg-boss retries. A walk that reached its page ceiling
+ * with history left is not complete: it records where it got to
+ * (`stravaBackfillResumeBefore`, the start of the oldest activity it read)
+ * and sends the next run for after the rate window, which asks for the
+ * activities before that point. Without the note every run began again at
+ * the newest page, read the same forty pages and never reached the rest. A
+ * run that got no further than the last one records nothing and sends
+ * nothing, and the next boot offers the account again. A connection parked
+ * for re-authorisation returns without stamping and without a retry, since
+ * every attempt would meet the same dead grant.
  */
 export async function runStravaBackfillForUser(
   userId: string,
-): Promise<{ imported: number }> {
-  const imported = await syncUserStrava(userId, { fullSync: true });
+  slice: number = 0,
+): Promise<{ imported: number; continued: boolean }> {
+  if (await isReauthRequired(userId, "strava")) {
+    annotate({
+      action: {
+        name: "strava.backfill.skipped_reauth",
+        details: { imported: 0 },
+      },
+    });
+    return { imported: 0, continued: false };
+  }
+
+  const stored = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { stravaBackfillResumeBefore: true },
+  });
+  const before = stored?.stravaBackfillResumeBefore ?? undefined;
+  const { result, truncated } = await withPageWalkLedger(() =>
+    syncStravaHistory(userId, before),
+  );
+  const { imported, oldestStart } = result;
+  // A failure has already thrown; what is left to decide is whether the walk
+  // reached the beginning of the history.
+  if (backfillVerdict({ failed: false, truncated }) === "incomplete") {
+    // One second past the oldest start, so an activity that shares it is
+    // read again rather than skipped; the upsert makes the overlap free.
+    const resumeBefore = oldestStart
+      ? new Date(oldestStart.getTime() + 1000)
+      : null;
+    const progressed =
+      resumeBefore !== null &&
+      (before === undefined || resumeBefore.getTime() < before.getTime());
+    if (progressed) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { stravaBackfillResumeBefore: resumeBefore },
+      });
+    }
+    const continued = progressed && (await sendNextRun(userId, slice));
+    annotate({
+      action: {
+        name: "strava.backfill.truncated",
+        details: {
+          imported,
+          collections: truncated.join(","),
+          progressed,
+          continued,
+        },
+      },
+    });
+    return { imported, continued };
+  }
 
   await prisma.user.update({
     where: { id: userId },
-    data: { stravaBackfillCompletedAt: new Date() },
+    data: {
+      stravaBackfillCompletedAt: new Date(),
+      stravaBackfillResumeBefore: null,
+    },
   });
 
   annotate({
@@ -56,7 +140,21 @@ export async function runStravaBackfillForUser(
       details: { imported },
     },
   });
-  return { imported };
+  return { imported, continued: false };
+}
+
+async function sendNextRun(userId: string, slice: number): Promise<boolean> {
+  const boss = getGlobalBoss();
+  if (!boss) return false;
+  const sent = await enqueueIntegrationBackfillAdmission(
+    boss,
+    {
+      kind: "strava-backfill",
+      data: { userId, enqueuedAt: new Date().toISOString(), slice: slice + 1 },
+    },
+    STRAVA_BACKFILL_CONTINUATION_DELAY_SECONDS,
+  );
+  return Boolean(sent);
 }
 
 /**

@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Sono mostrati gli ultimi {count}; le voci più vecchie non sono elencate qui.",
     "save": "Salva",
     "conflictReloaded": "Ricaricato dal server. Applica di nuovo la tua modifica.",
     "cancel": "Annulla",
@@ -55,7 +56,9 @@
     "errorIdLabel": "ID errore",
     "errorIdCopy": "Copia ID errore",
     "errorIdCopied": "ID errore copiato",
-    "readThrottled": "Troppe richieste in questo momento. Riprova più tardi."
+    "readThrottled": "Ci sono troppe richieste in questo momento, quindi riprova più tardi.",
+    "sessionEnded": "La tua sessione è scaduta, quindi accedi di nuovo per continuare.",
+    "signIn": "Accedi"
   },
   "apiErrors": {
     "measurement": {
@@ -843,7 +846,7 @@
     "nextPage": "Pagina successiva",
     "dailyTotalCaption": "({count} campioni)",
     "openMetricInsights": "Apri l'analisi {type}",
-    "sleepNapCaption": "+{count} pisolino/i",
+    "sleepNapCaption": "incl. {count} pisolino/i",
     "sleepAwakeningsCaption": "{count} risveglio/i",
     "expandDay": "Mostra i campioni di questa giornata",
     "collapseDay": "Nascondi i campioni di questa giornata",
@@ -4395,7 +4398,7 @@
             "composition": "Composizione"
           },
           "gap": {
-            "fewNights": "notti ancora insufficienti ({count} su 3)",
+            "fewNights": "notti ancora insufficienti ({count} su {needed})",
             "noMainSleep": "l'ultimo giorno solo un pisolino"
           }
         },
@@ -4664,9 +4667,9 @@
       "description": "Quanto bene il tuo corpo si è ripreso: i segnali di recupero, sforzo e carico che il tuo wearable registra durante la notte.",
       "scoreCrossLink": "Vedi il punteggio di recupero composito",
       "emptyTitle": "Ancora nessun dato di recupero",
-      "empty": "Qui non c'è ancora nulla da mostrare. Questa pagina mostra i valori di ricarica, sforzo e carico che registrano WHOOP e Polar, e il livello di resilienza di Oura. La prontezza (readiness) di Oura compare come punteggio di recupero, collegato qui sopra.",
-      "emptyOuraPermission": "Oura è collegato, ma l'autorizzazione concessa non include i dati sulla salute cardiaca, da cui dipende il livello di resilienza di Oura. Ricollega Oura una volta in Impostazioni, Integrazioni e consenti l'accesso alla salute cardiaca; il livello comparirà qui con la prossima sincronizzazione. La prontezza (readiness) di Oura è già il tuo punteggio di recupero, collegato qui sopra.",
-      "emptyOuraNoResilience": "Oura è collegato, ma per questo account non è ancora arrivato alcun livello di resilienza. HealthLog lo richiede a ogni sincronizzazione, quindi comparirà qui non appena Oura ne fornirà uno. Se l'app Oura mostra un livello, la scheda Oura in Impostazioni, Integrazioni indica tutto ciò che la connessione non può fornire. La prontezza (readiness) di Oura è già il tuo punteggio di recupero, collegato qui sopra.",
+      "empty": "Questa pagina si riempie con i valori di recupero, sforzo e carico di WHOOP o Polar e con il livello di resilienza di Oura.",
+      "emptyOuraPermission": "Il livello di resilienza di Oura richiede l'accesso ai dati sulla salute del cuore, quindi ricollega Oura una volta in Integrazioni e consentilo.",
+      "emptyOuraNoResilience": "Oura è collegato e il suo livello di resilienza apparirà qui non appena Oura ne fornirà uno.",
       "emptyAction": "Apri integrazioni",
       "block": {
         "ansChargeExplainer": "Quanto è carico il tuo sistema nervoso autonomo per la giornata: una lettura di ricarica ricavata dai segnali notturni di cuore e respiro.",
@@ -4676,7 +4679,8 @@
         "averageHeartRateExplainer": "La tua frequenza cardiaca media nell'arco dell'intera giornata o ciclo, come riportata dal tuo wearable.",
         "maxHeartRateExplainer": "La tua frequenza cardiaca massima nell'arco dell'intera giornata o ciclo, come riportata dal tuo wearable.",
         "energyExpenditureKjExplainer": "L'energia che il tuo corpo ha consumato nella giornata, in kilojoule, come la riporta nativamente il tuo dispositivo."
-      }
+      },
+      "loadError": "Non è stato possibile caricare i tuoi valori di recupero."
     },
     "bodyTempDeviation": {
       "title": "Deviazione della temperatura corporea",
@@ -7275,7 +7279,8 @@
         "lastNewValue": "Ultimo nuovo valore {relative}",
         "lastBackground": "Ultima volta in background {relative}",
         "never": "Non ancora ricevuto",
-        "lastBackfill": "Storico recuperato {relative}"
+        "lastBackfill": "Storico recuperato {relative}",
+        "lastEnteredHere": "Ultimo inserimento qui {relative}"
       }
     },
     "garminInfo": {
@@ -11903,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Apporto di riferimento {value} {unit}/giorno (EFSA)"
+      "referenceMeta": "Apporto di riferimento {value} {unit}/giorno (EFSA)",
+      "loadError": "Impossibile caricare l'acqua."
     },
     "caffeine": {
       "ceilingMeta": "Limite di sicurezza {value} {unit}/giorno (EFSA)",
@@ -12324,8 +12330,7 @@
       "loadError": "Non è stato possibile caricare l'attività.",
       "opened": "{name} ha aperto la tua cartella {count}×",
       "acted": "{name} ha fatto una modifica nella tua cartella",
-      "deletedAccount": "Un account eliminato",
-      "truncated": "Questo elenco mostra l'attività più recente, non tutta."
+      "deletedAccount": "Un account eliminato"
     },
     "delegate": {
       "addOnlyNote": "Puoi aggiungere voci a questa cartella. Solo {name} può modificarle o eliminarle."

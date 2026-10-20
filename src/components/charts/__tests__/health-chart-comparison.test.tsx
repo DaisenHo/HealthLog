@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.16 phase B8 — HealthChart comparison overlay contract.
+ * v1.4.16 — HealthChart comparison overlay contract.
  *
  * Asserts the SSR-discoverable surface markers when a comparison
  * baseline is supplied:

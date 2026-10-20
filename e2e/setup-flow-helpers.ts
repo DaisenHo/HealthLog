@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — driving the setup flow in a browser, shared by its journeys.
+ * v1.39 — driving the setup flow in a browser, shared by its journeys.
  *
  * Everything here addresses stable `data-slot` / `data-*` attributes, never
  * viewport text: the copy is i18n-driven and one of the specs runs every

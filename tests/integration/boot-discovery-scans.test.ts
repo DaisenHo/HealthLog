@@ -1,5 +1,5 @@
 /**
- * v1.28.46 perf (H4) — the boot-time converging-backfill discovery scans now
+ * v1.28.46 — the boot-time converging-backfill discovery scans now
  * run a DB-level `SELECT DISTINCT user_id` (with a join / anti-join where the
  * owner is not a direct column) instead of Prisma's in-memory `distinct`, and
  * ride the migration-0243 partial indexes. This suite runs the REAL discovery

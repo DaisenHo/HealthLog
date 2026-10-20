@@ -90,12 +90,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       );
     }
 
-    // M4 — the operator API kill-switch covers the OAuth surface too.
+    // The operator API kill-switch covers the OAuth surface too.
     if (!(await isApiGloballyEnabled())) {
       return oauthError("temporarily_unavailable", "API is disabled", 503);
     }
 
-    // M3 — enforce the cap WHILE reading the (unauthenticated) registration
+    // Enforce the cap WHILE reading the (unauthenticated) registration
     // body so a hostile client cannot buffer an oversized payload first.
     const read = await readBodyCapped(request, MAX_BODY_BYTES);
     if (!read.ok) {

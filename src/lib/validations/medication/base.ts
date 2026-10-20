@@ -150,7 +150,7 @@ export const updateMedicationCategoryLabelSchema = z
   );
 
 /**
- * v1.4.25 W4d — Prisma-level treatment class. Orthogonal to
+ * v1.4.25 — Prisma-level treatment class. Orthogonal to
  * `MEDICATION_CATEGORY_VALUES` (the clinical taxonomy that lives in the
  * `medication_categories` side-table). GLP1 turns on the GLP-1
  * specialist surfaces — injection-site picker, titration history, pen
@@ -239,7 +239,7 @@ export const TAKEN_AT_MAX_AGE_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 /**
  * ISO `takenAt` → `Date` with the plausibility bounds applied.
  *
- * v1.17 W1b — delegates to the shared `validateEntryInstant` helper (the
+ * v1.17 — delegates to the shared `validateEntryInstant` helper (the
  * same bound now guarding `measuredAt` + `moodLoggedAt`), passing the
  * five-year window so a stale backdated dose is rejected well before the
  * 1900 floor. The 5-min clock-skew tolerance is the shared default.

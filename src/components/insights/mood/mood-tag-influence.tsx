@@ -5,7 +5,7 @@ import { moodTagIcon } from "@/components/mood/mood-tag-icons";
 import { cn } from "@/lib/utils";
 
 /**
- * v1.11.5 (F1) — tag "Influence on Mood".
+ * v1.11.5 — tag "Influence on Mood".
  *
  * For each frequent flat / structured tag, the average daily mood on days
  * the tag is PRESENT vs the counterfactual baseline of days it is ABSENT,

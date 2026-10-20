@@ -147,7 +147,7 @@ export function RangeBar({
         : t("targets.aboveTarget", { delta: fmt.number(delta, 1), unit })
       : t("targets.inTarget");
 
-  // 2026-07-17 a11y audit (M1) — the marker's value + range live only in a
+  // The marker's value + range live only in a
   // hover-only Radix tooltip on a non-focusable `<div>`. Reusing the same
   // three strings the tooltip already shows as one text alternative closes
   // 1.1.1 (no separate copy to drift) — `tabIndex` below makes the trigger

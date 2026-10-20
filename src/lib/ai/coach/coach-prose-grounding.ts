@@ -1,5 +1,5 @@
 /**
- * v1.21.0 (P6 / C2-5) — post-hoc numeric verifier for Coach prose.
+ * v1.21.0 — post-hoc numeric verifier for Coach prose.
  * v1.32.7 (Coach Guard I / G1) — typed tokenizer + normal-form reconciler.
  * v1.32.9 (Coach Guard II / G2+G3) — the typed Grounding Ledger + the
  *   four-rung action ladder (the reference-sentence exemption in particular).
@@ -624,6 +624,8 @@ const MONTHS = [
   "gennaio|febbraio|aprile|maggio|giugno|luglio|settembre|ottobre|dicembre",
   // pl — genitive, as a date spells it
   "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|wrzesnia|października|pazdziernika|listopada|grudnia",
+  // nl
+  "januari|februari|maart|mei|augustus",
 ].join("|");
 
 /** Parse a raw number token honouring the reply language's separators. */
@@ -633,7 +635,8 @@ function parseLocaleNumber(raw: string, locale: Locale): number | null {
     // EN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
-    // DE / fr / es / it / pl: "." groups thousands, "," is the decimal point.
+    // DE / fr / es / it / pl / nl: "." groups thousands, "," is the decimal
+    // point.
     normalised = raw.replace(/\./g, "").replace(/,/g, ".");
   }
   const value = Number.parseFloat(normalised);
@@ -867,6 +870,16 @@ const POPULATION_NORM_PATTERNS: Record<Locale, readonly RegExp[]> = {
     /\bdoros(?:li|łych)\s+(?:zazwyczaj|zwykle|na\s+ogół)\s+(?:potrzebują|wymagają)\b/i,
     /\b(?:zakres|przedział)\s+(?:referencyjny|normy|prawidłowy|zalecany)\b/i,
     /\b(?:wynosi|mieści\s+się)\s+(?:zazwyczaj|zwykle|na\s+ogół)\s+(?:od|między|około)\b/i,
+  ],
+  nl: [
+    /\bhet\s+normale\s+(?:bereik|niveau)\b/i,
+    /\b(?:normale?|gezonde)\s+(?:rust)?(?:hartslag|pols|waarde|waarden|bereik)\b/i,
+    /\b(?:gezonde|de\s+meeste|de\s+gemiddelde)\s+(?:volwassenen|mensen|volwassene)\b/i,
+    /\bde\s+algemene\s+bevolking\b/i,
+    /\b(?:richtlijnen|artsen|experts?|deskundigen)\s+(?:zeggen|adviseren|raden|bevelen)\b/i,
+    /\b(?:volwassenen|mensen)\s+(?:hebben\s+)?(?:meestal|doorgaans|gewoonlijk|normaal\s+gesproken|over\s+het\s+algemeen)\s+(?:nodig|hebben)\b/i,
+    /\b(?:referentie|normaal|aanbevolen)\w*\s*(?:bereik|waarden?)\b/i,
+    /\bligt\s+(?:normaal\s+gesproken|meestal|doorgaans|gewoonlijk)\s+(?:tussen|rond|op)\b/i,
   ], // No `\b` next to Hangul (it is an ASCII \w boundary), and the object sits
   // between subject and verb in Korean, so each entry allows a gap where the
   // Latin banks put \s+.

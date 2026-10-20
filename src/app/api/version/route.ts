@@ -3,7 +3,7 @@ import { apiSuccess } from "@/lib/api-response";
 import { offlineGeoReady, resolveGeoProviderHost } from "@/lib/geo";
 import packageJson from "../../../../package.json";
 
-// v1.4.27 R5 — `offlineGeoEnabled` reads from the same source the geo
+// v1.4.27 — `offlineGeoEnabled` reads from the same source the geo
 // resolver uses for the runtime fallback gate, so the public state and
 // the runtime behaviour cannot disagree. The check hits the filesystem
 // (`existsSync` on the `.empty` marker + the City MMDB) which forces
@@ -42,7 +42,7 @@ export const dynamic = "force-dynamic";
  * `/api/admin/status`, so it adds nothing to tell instances apart by.
  */
 export const GET = apiHandler(async () => {
-  // v1.4.43 B11 — prefer the build-arg-injected env var so the runtime
+  // v1.4.43 — prefer the build-arg-injected env var so the runtime
   // version cannot drift from the CI release tag. The Dockerfile takes
   // `NEXT_PUBLIC_APP_VERSION` as a build arg from the docker-publish
   // workflow (`build-args: NEXT_PUBLIC_APP_VERSION=${{ github.ref_name

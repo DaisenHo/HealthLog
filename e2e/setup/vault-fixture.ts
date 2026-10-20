@@ -199,7 +199,7 @@ export const CONTENT_DOC_ID = "e2evaultcontent00000001";
 export const CONTENT_BODY_WORD = "pneumothorax";
 
 /**
- * v1.28 (Phase 3) — a fixed trio the clinician-share e2e attaches to a link and
+ * v1.28 — a fixed trio the clinician-share e2e attaches to a link and
  * serves through the public `/c/<token>/d/<id>` route:
  *   - a PDF (Class A, inline preview via <iframe>),
  *   - a JPEG carrying an Exif GPS marker (Class A image, inline <img>; the

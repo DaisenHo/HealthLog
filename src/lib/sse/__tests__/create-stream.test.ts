@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createSseStream } from "../create-stream";
 
 /**
- * v1.4.22 W5 reconcile (Sr-H2) — extracted SSE-stream constructor.
+ * v1.4.22 — extracted SSE-stream constructor.
  *
  * Pin the contract: emit can be sync or async, the controller is
  * always closed (success or thrown), and the resulting stream reads

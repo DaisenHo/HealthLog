@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (M3 + L5) — `<AdvancedSection>` danger-zone shaping.
+ * v1.4.43 — `<AdvancedSection>` danger-zone shaping.
  *
  *   M3: a separate "Delete account entirely" destructive card
  *       (`AccountDeleteCard`) sits beside the existing `DataResetCard`
@@ -30,6 +30,9 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 import { AdvancedSection } from "../advanced-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

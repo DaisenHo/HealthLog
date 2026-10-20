@@ -57,7 +57,7 @@ describe("<ScoreAnatomyView>", () => {
     expect(html).toContain('data-present="false"');
     expect(html).toContain('data-slot="provenance-explainer-method"');
     expect(html).toContain("A blend of deviation components.");
-    // v1.15.12 F4 — the "keine klinische Bewertung" footer line is removed;
+    // v1.15.12 — the "keine klinische Bewertung" footer line is removed;
     // the non-clinical framing now lives in the inline provenance method.
     expect(html).not.toContain('data-slot="score-anatomy-disclaimer"');
     // Regression guard: `ProvenanceExplainer` renders its full method body

@@ -88,7 +88,7 @@ export function admittedQuickEntry(
 }
 
 /**
- * v1.11.3 F3 — guard the quick-entry sheets against an accidental
+ * v1.11.3 — guard the quick-entry sheets against an accidental
  * dismiss (overlay tap, Esc, mobile swipe-down) discarding a partly
  * filled form. The forms live behind a stable `ResponsiveSheet` body
  * slot and don't expose their dirty state, so we read it from the DOM
@@ -162,12 +162,12 @@ export function QuickEntrySheets({
   // Re-derived on every render, never latched: the answer can arrive after the
   // sheet is already open. See `admittedQuickEntry`.
   const openSheet = admittedQuickEntry(open, capabilities);
-  // v1.4.27 R4 RC2 — DOM handles for the form action-row portal target
+  // v1.4.27 — DOM handles for the form action-row portal target
   // on each quick-entry sheet. The Sheet branch sticky-pins this slot.
   const [measurementFooterEl, setMeasurementFooterEl] =
     useState<HTMLDivElement | null>(null);
   const [moodFooterEl, setMoodFooterEl] = useState<HTMLDivElement | null>(null);
-  // v1.4.37 W7b — medication-intake quick-add lives on the same Sheet
+  // v1.4.37 — medication-intake quick-add lives on the same Sheet
   // primitive as the other two quick-entries; the form's action row is
   // portalled into this slot so Save / Cancel stay reachable above the
   // mobile soft keyboard.
@@ -181,7 +181,7 @@ export function QuickEntrySheets({
   );
   const [lifeEventFooterEl, setLifeEventFooterEl] =
     useState<HTMLDivElement | null>(null);
-  // v1.11.3 F3 — when an open quick-entry sheet is dismissed with
+  // v1.11.3 — when an open quick-entry sheet is dismissed with
   // unsaved input, hold the close in this flag and surface a confirm
   // instead of nulling the dialog outright. Cleared once the user
   // confirms (close) or keeps editing (dismiss the confirm).
@@ -224,7 +224,7 @@ export function QuickEntrySheets({
           footerSlot={moodFooterEl}
         />
       </ResponsiveSheet>
-      {/* v1.4.37 W7b — third Sheet: medication intake. Same
+      {/* v1.4.37 — third Sheet: medication intake. Same
           ResponsiveSheet contract as the two above; the form's footer
           (Cancel + Save) portals into the sticky-pinned slot so it
           stays reachable above the soft keyboard on mobile. */}
@@ -297,7 +297,7 @@ export function QuickEntrySheets({
         )}
       </ResponsiveSheet>
 
-      {/* v1.11.3 F3 — confirm before discarding a partly-filled
+      {/* v1.11.3 — confirm before discarding a partly-filled
           quick-entry form when the sheet is dismissed by an overlay
           tap, Escape, or a mobile swipe-down. Keeps the sheet open
           until the user decides. */}

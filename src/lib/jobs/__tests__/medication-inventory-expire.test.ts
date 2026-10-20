@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19b — module-shape contract for the
+ * v1.4.25 — module-shape contract for the
  * medication-inventory-expire job. The actual sweep logic lives in
  * `expireStaleInUseItems` (covered by
  * `src/lib/medications/inventory/__tests__/service.test.ts`); this

@@ -87,6 +87,7 @@ export function CustomMetricDetail({
   const {
     data: metric,
     isError: metricError,
+    error: metricFailure,
     refetch: refetchMetric,
   } = useQuery({
     queryKey: queryKeys.customMetricDetail(customMetricId),
@@ -98,6 +99,7 @@ export function CustomMetricDetail({
     data: list,
     isLoading,
     isError: listError,
+    error: listFailure,
     refetch: refetchList,
   } = useInfiniteQuery({
     queryKey: queryKeys.customMetricEntries({
@@ -179,6 +181,7 @@ export function CustomMetricDetail({
           description={description}
         />
         <QueryErrorCard
+          error={metricError ? metricFailure : listFailure}
           description={t("customMetrics.loadError")}
           onRetry={() => {
             if (metricError) void refetchMetric();

@@ -273,7 +273,7 @@ export function AppLogPreviewSection() {
           description={t("admin.section.app-logs.emptyDescription")}
         />
       ) : (
-        // v1.4.27 MB5 — keep the table scroll container, but lift the
+        // v1.4.27 — keep the table scroll container, but lift the
         // "showing X of Y" summary line out into a sibling `<div>` so
         // the meta info stays reachable on narrow viewports even when
         // the table is scrolled horizontally. The refresh control was

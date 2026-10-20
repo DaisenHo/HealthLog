@@ -64,7 +64,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  // v1.4.43 W13 M-4 — tighten to a global bucket when the trust chain
+  // v1.4.43 — tighten to a global bucket when the trust chain
   // is misconfigured; otherwise byte-equivalent per-IP semantics.
   const rl = await checkAuthSurfaceRateLimit(
     request,
@@ -108,7 +108,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const parsed = registerSchema.safeParse(body);
 
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 
@@ -128,7 +128,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Registration is disabled", 403);
   }
 
-  // v1.4.25 W7 — accept a browser-detected timezone from the
+  // v1.4.25 — accept a browser-detected timezone from the
   // registration form. Validate against the runtime IANA list; on
   // any invalid value (or absence), fall back to the admin-
   // configured server default. The `User.timezone` column has a
@@ -215,7 +215,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  // v1.28.42 (M1) — the first registered user becomes ADMIN. Deriving that
+  // v1.28.42 — the first registered user becomes ADMIN. Deriving that
   // role from the early `userCount` (read at the top, before all the
   // validation above) and then creating without coordination is a
   // check-then-act race: on a freshly-exposed instance two registrations
@@ -227,7 +227,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // argon2 hash / HIBP / invite work above runs under it. Mirrors the
   // advisory-lock single-flight in `drain-per-sample-cumulative.ts`.
   //
-  // v1.28.42 (L4) — a concurrent same-email/username signup (both passed the
+  // v1.28.42 — a concurrent same-email/username signup (both passed the
   // findUnique probe above before either committed) surfaces the unique
   // violation as `P2002`; map it to the unified 409 rather than an unhandled
   // 500. The DB unique index is the real guard against duplicate accounts;

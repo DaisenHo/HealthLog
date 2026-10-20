@@ -5,7 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * v1.4.27 MB7 / CF-52 — shared `<select>` primitive.
+ * v1.4.27 — shared `<select>` primitive.
  *
  * Three settings/admin surfaces (`AccountSection`, `TimezonePicker`,
  * `GeneralSettingsSection`) each declared a local `NATIVE_SELECT_CLASS`
@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
  * uniform with the rest of the form's `<Input>` + `<SelectTrigger>`
  * rows.
  */
-// v1.4.34 IW-G — floor at 44 px on mobile to clear WCAG 2.5.5; shrink
+// v1.4.34 — floor at 44 px on mobile to clear WCAG 2.5.5; shrink
 // to 40 px on sm+ where the pointer precision is higher.
 //
 // Chevron symmetry: `appearance-none` drops the browser-drawn dropdown arrow,

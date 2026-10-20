@@ -222,6 +222,7 @@ export function SymptomEntryForm({
           // A failed read is not an empty list: the empty hint would invite
           // the person to define a symptom they may already have.
           <QueryErrorRow
+            error={definitions.error}
             message={t("symptoms.section.loadError")}
             onRetry={() => void definitions.refetch()}
           />

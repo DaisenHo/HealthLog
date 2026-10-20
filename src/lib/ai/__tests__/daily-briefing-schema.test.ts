@@ -8,7 +8,7 @@ import {
 import { PROMPT_VERSION } from "../prompts/insight-generator";
 
 /**
- * v1.4.20 phase B1 — Daily Briefing schema validation.
+ * v1.4.20 — Daily Briefing schema validation.
  *
  * The Insights redesign hero strip + briefing card render a narrative
  * paragraph + 0-5 key findings. The schema is `nullable().optional()`

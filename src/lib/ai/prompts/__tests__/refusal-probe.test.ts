@@ -10,7 +10,7 @@ import {
 import type { Locale } from "@/lib/i18n/config";
 
 /**
- * v1.4.25 W14c — cross-locale refusal-probe matrix.
+ * v1.4.25 — cross-locale refusal-probe matrix.
  *
  * The maintainer cannot review the FR/ES/IT/PL safety-critical translations
  * himself. Automated coverage is the only safety net, so this test

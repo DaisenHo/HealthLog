@@ -12,7 +12,7 @@ import {
 import { DISCLAIMER_VERSION } from "@/lib/onboarding/disclaimer";
 
 /**
- * v1.18.6 (DISC-02) — one-time medical-disclaimer acknowledgment.
+ * v1.18.6 — one-time medical-disclaimer acknowledgment.
  *
  *   POST { version: string }
  *     → stamps `users.disclaimer_acknowledged_at = now()` +

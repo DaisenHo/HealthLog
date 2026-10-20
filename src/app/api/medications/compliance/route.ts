@@ -85,7 +85,7 @@ export const GET = apiHandler(async (request: Request) => {
       schedules: true,
       // v1.16.3 — archived schedule eras for era-aware compliance.
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,

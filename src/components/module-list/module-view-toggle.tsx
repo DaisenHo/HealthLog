@@ -7,7 +7,7 @@ import { ViewToggle } from "@/components/ui/view-toggle";
 import type { ModuleListView } from "@/lib/module-list-prefs";
 
 /**
- * v1.18.6 (W8 / MOD-03) — icon-only card/list view toggle shared by the
+ * v1.18.6 — icon-only card/list view toggle shared by the
  * Vorsorge / Illness / Labs settings pages. Thin wrapper over the shared
  * `ViewToggle` primitive (mirrors the medication module's
  * `MedicationViewToggle`, which is the same wrapper switching between a

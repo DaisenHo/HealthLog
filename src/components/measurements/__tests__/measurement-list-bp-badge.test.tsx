@@ -66,7 +66,7 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
-// v1.28.42 (H3) — the list now mounts only the active layout, so drive the
+// v1.28.42 — the list now mounts only the active layout, so drive the
 // breakpoint hook to assert the badge in each branch independently.
 vi.mock("@/hooks/use-is-mobile", () => ({
   useIsMobile: vi.fn(() => false),
@@ -95,7 +95,7 @@ function countOccurrences(haystack: string, needle: string): number {
 }
 
 describe("MeasurementList — Sys/Dia disambiguation badge (mobile list)", () => {
-  // v1.28.42 (H3) — only the active layout mounts now (previously both the
+  // v1.28.42 — only the active layout mounts now (previously both the
   // desktop table and the mobile card list rendered, CSS-hidden). Assert each
   // label appears exactly once per branch so the mobile-enum regression this
   // guard was written for (badge silently absent on mobile) still fails loudly.

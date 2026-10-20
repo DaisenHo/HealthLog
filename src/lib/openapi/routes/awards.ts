@@ -21,6 +21,7 @@ import {
   measurementTypeEnum,
   recordRefusal,
   stdResponses,
+  listEnvelope,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
@@ -190,7 +191,7 @@ export const awardsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The record's personal bests, newest first.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 z.array(personalRecord),
                 "ListPersonalRecordsEnvelope",
               ),

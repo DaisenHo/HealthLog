@@ -64,7 +64,7 @@ export function useModuleToggle(options?: {
       }
       // DISABLED allowlist: send only the single key the user flipped.
       //
-      // v1.32.22 (R5b) — echo the optimistic-concurrency token so an
+      // v1.32.22 — echo the optimistic-concurrency token so an
       // interleaved modules PATCH (another tab, the iOS client) 409s instead of
       // clobbering. The token rides on `User.updatedAt`; the module map itself
       // rides on `/auth/me`, and no dedicated GET populates the token, so it is
@@ -97,7 +97,7 @@ export function useModuleToggle(options?: {
       options?.onToggled?.(vars);
     },
     onError: (err) => {
-      // v1.32.22 (R5b) — a 409 means the module map advanced since this
+      // v1.32.22 — a 409 means the module map advanced since this
       // switch was based (another tab / the iOS client wrote in between).
       // Drop the now-stale seeded token and refetch /auth/me so the switch
       // snaps back to server truth, then nudge — nothing was clobbered.

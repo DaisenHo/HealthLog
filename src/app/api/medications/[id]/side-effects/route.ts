@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — GLP-1 side-effect log CRUD (collection).
+ * v1.4.25 — GLP-1 side-effect log CRUD (collection).
  *
  *   GET  /api/medications/[id]/side-effects?from=ISO&to=ISO&limit=50
  *     - returns the user's logs for this medication, newest first,
@@ -39,6 +39,7 @@ import { categoryForEntry } from "@/lib/medications/side-effects/taxonomy";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { encryptNote, shapeSideEffectNotes } from "@/lib/crypto/note-cipher";
 import { withIdempotency } from "@/lib/idempotency";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -60,13 +61,13 @@ export const GET = apiHandler(
       limit: url.searchParams.get("limit") ?? undefined,
     });
     if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422.
+      // v1.4.43 — multi-issue 422.
       return returnAllZodIssues(parsed.error, 422);
     }
 
     const { from, to, limit } = parsed.data;
 
-    const items = await prisma.medicationSideEffect.findMany({
+    const found = await prisma.medicationSideEffect.findMany({
       where: {
         userId: user.id,
         medicationId: id,
@@ -80,8 +81,9 @@ export const GET = apiHandler(
           : {}),
       },
       orderBy: { occurredAt: "desc" },
-      take: limit,
+      take: overfetch(limit),
     });
+    const { rows: items, cap } = capRows(found, limit);
 
     annotate({
       action: { name: "medication.sideEffect.list" },
@@ -90,10 +92,13 @@ export const GET = apiHandler(
 
     // Decrypt each note and strip the raw `notesEncrypted` ciphertext so it
     // never leaves the server.
-    return apiSuccess({
-      items: items.map(shapeSideEffectNotes),
-      meta: { total: items.length },
-    });
+    return apiListSuccess(
+      {
+        items: items.map(shapeSideEffectNotes),
+        meta: { total: items.length },
+      },
+      cap,
+    );
   },
 );
 
@@ -149,13 +154,13 @@ async function postSideEffect(
 
   const parsed = createSideEffectSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 
   const { entry, severity, occurredAt, notes } = parsed.data;
 
-  // v1.4.25 W21 Fix-N (code-M6) — category is derived server-side
+  // v1.4.25 (code-M6) — category is derived server-side
   // from the entry via the authoritative taxonomy mapping. The wire
   // schema no longer accepts `category`; older clients that still
   // send it now have it ignored by Zod's strict drop, and the row

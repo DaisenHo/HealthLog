@@ -35,6 +35,7 @@ import { prisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 import {
   dispatchNotification,
   type DispatchOutcome,
@@ -212,7 +213,7 @@ export function getPersistentFailureThreshold(): number {
  */
 
 /**
- * v1.4.43 W14 — once a `persistent` failure streak has been running
+ * v1.4.43 — once a `persistent` failure streak has been running
  * for this long without a single intervening success, flip the
  * integration to `parked`. 24h matches the same window the alert
  * ladder uses for re-paging and gives the operator a full business
@@ -288,7 +289,7 @@ export interface IntegrationStatusSnapshot {
   lastSuccessAt: string | null;
   lastAttemptAt: string | null;
   lastError: string | null;
-  /** v1.4.43 W14 — per-kind bucketed counters; `null` for rows
+  /** v1.4.43 — per-kind bucketed counters; `null` for rows
    *  that have never recorded a write yet. v1.4.47 W1 — sole source
    *  of truth now that the legacy `consecutiveFailures` column is
    *  gone. */
@@ -304,7 +305,7 @@ export interface IntegrationStatusSnapshot {
 
 /**
  * Bucketed consecutive-failure counters keyed by `FailureKind`.
- * v1.4.43 W14 — exposed so the response shape stays explicit and
+ * v1.4.43 — exposed so the response shape stays explicit and
  * tests can pin the bucket increments.
  */
 export type ConsecutiveFailuresByKind = Record<FailureKind, number>;
@@ -386,7 +387,7 @@ export async function getIntegrationStatus(
  * Read the current `state` cheaply — used by the sync entry-points
  * to short-circuit when reauth is required.
  *
- * v1.4.43 W14 — `parked` is treated as "reauth required" for the
+ * v1.4.43 — `parked` is treated as "reauth required" for the
  * purpose of sync short-circuit: the user has to call `/resume` (or
  * complete the OAuth flow again) before any further sync work
  * happens. Returning `true` for both states means existing call sites
@@ -504,9 +505,9 @@ export async function recordSyncSuccess(
     }
   }
 
-  // v1.4.43 W14 — a success resets ALL per-kind buckets back to zero
+  // v1.4.43 — a success resets ALL per-kind buckets back to zero
   // and clears the persistent-streak start timestamp.
-  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // v1.4.47 — the legacy `consecutiveFailures` column was dropped
   // (migration 0077), so the bucket reset is the only counter write.
   await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
@@ -558,7 +559,7 @@ export interface RecordSyncFailureInput {
  * Record a sync failure. Always:
  *   - increments the per-kind bucket in `consecutiveFailuresByKind`
  *   - persists the encrypted error message
- *   - writes one `AuditLog` row with `integrations.sync.failed`
+ *   - emits one `integrations.sync.failed` signal (not an audit row)
  *
  * If `kind === "reauth_required"` the row is parked at `error_reauth`
  * so the next scheduled sync skips. If `kind === "persistent"` and
@@ -572,10 +573,10 @@ export interface RecordSyncFailureInput {
  * admins. Failures here are best-effort: a failed dispatch DOES NOT
  * swallow the audit log.
  *
- * v1.4.43 W14 — per-kind counter migration. Each failure increments
+ * v1.4.43 — per-kind counter migration. Each failure increments
  * ONLY its own bucket; a transient hiccup followed by a persistent
  * failure no longer masks the persistent streak's true age.
- * v1.4.47 W1 — the legacy single-column `consecutiveFailures` integer
+ * v1.4.47 — the legacy single-column `consecutiveFailures` integer
  * was dropped (migration 0077); the bucket is now the sole counter
  * and the back-fill branch is gone.
  *
@@ -746,39 +747,36 @@ export async function recordSyncFailure(
     errorCode: errorCode ?? null,
   });
 
-  // Audit log entry — fire-and-await so an integration test can assert
-  // it. The auth/audit helper is its own DB write so it's safe to call
-  // serially without bloating latency in the success path (which never
-  // calls this).
+  // One signal per failed sync, not an audit row. The audit log is the
+  // trail of what a person or an admin did to an account; a provider that
+  // answered 503 is neither, and one row per failed sync drowned that trail
+  // (and kept the provider's message there in plain text, while the status
+  // row seals it). The signal carries the same counts to the log store, and
+  // the status row keeps the current streak and the sealed message.
   //
-  // v1.4.47 W1 — `attemptNumber` is now sourced from the bucket sum
-  // (the legacy `consecutiveFailures` column was dropped). The sum
-  // matches the legacy column's value for any row written after
-  // v1.4.43: a transient burst followed by a single persistent failure
-  // shows `attemptNumber = transient + persistent`, which is the same
-  // running total the legacy integer carried.
+  // `attempt_number` is the sum of the buckets, the running total the
+  // dropped `consecutiveFailures` column carried; the alert below uses the
+  // largest single bucket (docs/ops/attempt-number-semantics.md).
   const bucketTotal =
     buckets.transient + buckets.reauth_required + buckets.persistent;
-  await auditLog("integrations.sync.failed", {
-    userId,
-    details: {
+  emitSignal({
+    action: "integrations.sync.failed",
+    level: "warn",
+    meta: {
       integration,
       kind: effectiveKind,
-      // Non-null only when the clock overrode the classifier, so an operator
-      // reading the trail can tell "the upstream said this was permanent" from
-      // "we concluded it was after a day of retrying".
-      escalatedFrom: escalatedFromTransient ? kind : null,
-      failingLeg: leg,
-      // Every leg the row currently holds an error for, not just this one —
-      // the audit trail is where an operator reconstructs an overlapping
-      // outage, and one leg per row was never enough to do it.
-      failingLegs,
-      failingSinceAt: failingSinceAt.toISOString(),
-      streakAgeMs,
-      errorCode: errorCode ?? null,
-      message,
-      attemptNumber: bucketTotal,
-      bucketCount: buckets[effectiveKind],
+      // Non-null only when the clock overrode the classifier: "the upstream
+      // said this was permanent" against "a day of retrying concluded it".
+      escalated_from: escalatedFromTransient ? kind : null,
+      failing_leg: leg,
+      // Every leg the row holds an error for, to reconstruct an overlapping
+      // outage.
+      failing_legs: failingLegs,
+      failing_since_at: failingSinceAt.toISOString(),
+      streak_age_ms: streakAgeMs,
+      error_code: errorCode ?? null,
+      attempt_number: bucketTotal,
+      bucket_count: buckets[effectiveKind],
       state: newState,
     },
   });
@@ -791,10 +789,10 @@ export async function recordSyncFailure(
   // prevents loops where a flapping integration that fails once an
   // hour pages every hour.
   //
-  // v1.4.43 W14 — the threshold check reads `Math.max(...buckets)` so
+  // v1.4.43 — the threshold check reads `Math.max(...buckets)` so
   // a row with a 3-deep persistent streak still pages even when the
   // transient bucket sat at 0.
-  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // v1.4.47 — the legacy `consecutiveFailures` column was dropped
   // (migration 0077); the bucket max is now the sole alert signal.
   const threshold = getPersistentFailureThreshold();
   const alertSignal = Math.max(...Object.values(buckets));
@@ -885,7 +883,7 @@ export async function recordSyncFailure(
 }
 
 /**
- * v1.4.43 W14 — clear a `parked` integration so the next scheduled
+ * v1.4.43 — clear a `parked` integration so the next scheduled
  * sync runs again. Used by `/api/integrations/withings/resume` and
  * the OAuth-callback path. The state moves to `connected`; all
  * per-kind buckets reset to zero; the persistent-streak anchor
@@ -941,7 +939,7 @@ export async function resumeIntegrationFromPark(
  * short-circuit. Unlike `recordSyncFailure`, this helper:
  *
  *   1. does NOT increment the per-kind failure buckets.
- *   2. does NOT write an `integrations.sync.failed` audit row through
+ *   2. does NOT emit the `integrations.sync.failed` signal of
  *      `recordSyncFailure`. A standalone `integrations.reauth_required`
  *      row is written instead so the operations trail still shows the
  *      park event.
@@ -1054,7 +1052,7 @@ export async function markReauthRequired(
     select: { failingSinceAt: true },
   });
 
-  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // v1.4.47 — the legacy `consecutiveFailures` column was dropped
   // (migration 0077). Out-of-band reauth detection (proactive token
   // refresh) seeds the `reauth_required` bucket at 1 on a first-ever
   // row so subsequent reauth detections accumulate against the same

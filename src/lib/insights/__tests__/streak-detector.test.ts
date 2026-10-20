@@ -7,7 +7,7 @@ import {
 } from "@/lib/insights/streak-detector";
 
 /**
- * v1.21.2 (A6) — determinism pins for the streak / return-to-baseline detector.
+ * v1.21.2 — determinism pins for the streak / return-to-baseline detector.
  *
  * The PROSE the Coach narrates is not tested; the FLAGS are. These assert:
  *   - an in-band streak counts consecutive in-band days,

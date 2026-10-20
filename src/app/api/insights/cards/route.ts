@@ -117,7 +117,7 @@ export const GET = apiHandler(async () => {
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
           // v1.16.3 — archived schedule eras for era-aware expected counts.
           scheduleRevisions: { orderBy: { validFrom: "asc" } },
-          // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+          // v1.25 — pause eras so paused days drop out of the denominator.
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
           // v1.40 (#1024) — the courses, so a gap between two expects nothing.
           courses: COURSES_COMPLIANCE_SELECT,
@@ -126,7 +126,7 @@ export const GET = apiHandler(async () => {
       probeRollupCoverage(user.id),
     ]);
 
-  // v1.28 perf — PULSE reads the DAY-rollup tier (read-swap; falls back to a
+  // v1.28 — PULSE reads the DAY-rollup tier (read-swap; falls back to a
   // bounded per-day-grouped live read on a coverage miss) instead of pulling
   // every raw sample into JS. `pulseAvg30` / `pulseAnomalyCount` derive from
   // the resulting day-mean series, so a dense wearable account's anomaly
@@ -174,7 +174,7 @@ export const GET = apiHandler(async () => {
     const diaData = byType("BLOOD_PRESSURE_DIA");
     const pairs = pairByTimestamp(sysData, diaData, 5 * 60_000);
     if (pairs.length > 0) {
-      // v1.4.16 A2 — one-sided ceiling semantics with hypotension
+      // v1.4.16 — one-sided ceiling semantics with hypotension
       // floor. See lib/analytics/bp-in-target.ts.
       const inTarget = pairs.filter((p) =>
         isBpReadingInTarget(p.a, p.b, bpTargets),
@@ -229,7 +229,7 @@ export const GET = apiHandler(async () => {
         skipped: e.skipped,
         scheduledFor: e.scheduledFor,
       }));
-      // v1.7.0 SB-SCHED-2 — engine-routed denominator.
+      // v1.7.0 — engine-routed denominator.
       const medicationContext = buildComplianceMedicationContext(
         med,
         lastNonSkippedTakenAt(mapped),

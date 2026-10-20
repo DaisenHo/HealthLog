@@ -17,7 +17,7 @@ import { MetricTargetSummary } from "@/components/insights/metric-target-summary
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 
 /**
- * v1.4.25 W4 — `/insights/bmi`.
+ * v1.4.25 — `/insights/bmi`.
  *
  * Routed BMI sub-page. BMI is derived from `WEIGHT / (height/100)^2`,
  * so the chart sets `valueMode="bmi"` on `<HealthChartDynamic>` and the
@@ -25,7 +25,7 @@ import { SubPageShell } from "@/components/insights/sub-page-shell";
  * the chart can't compute; we surface the same plain empty-state the
  * mother page used.
  *
- * v1.4.28 R3d (BK-F-H1 + BK-F-M1) — analytics fetch + the
+ * v1.4.28 — analytics fetch + the
  * weight-not-logged-yet branch consume the shared hook + primitive.
  * The "height not set" branch keeps its bespoke `<EmptyState>` because
  * the CTA targets `/settings/account`, not the measurement onboarding.
@@ -45,7 +45,7 @@ export default function InsightsBmiPage() {
 
   const { isEmpty } = useInsightsAnalytics("BMI");
 
-  // v1.4.27 F17 — BMI is derived from WEIGHT. When no weight readings
+  // v1.4.27 — BMI is derived from WEIGHT. When no weight readings
   // exist yet, the existing "set your height" branch can never compute
   // anything useful either; surface the empty-state CTA pointing at
   // `/measurements?add=WEIGHT` instead so the user logs the weight

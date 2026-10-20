@@ -9,7 +9,7 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       updateMany: vi.fn(),
     },
-    // v1.30.3 (QA F5) — `resolveUserTimezone` reads this directly.
+    // v1.30.3 — `resolveUserTimezone` reads this directly.
     user: { findUnique: vi.fn() },
   },
 }));

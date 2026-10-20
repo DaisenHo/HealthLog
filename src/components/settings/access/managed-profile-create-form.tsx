@@ -85,7 +85,7 @@ export function ManagedProfileCreateForm({
   /** The button's label when the form sits somewhere other than the panel. */
   submitLabel?: string;
   /**
-   * v1.39 (C2) — fired after a successful creation, with the record. The
+   * v1.39 — fired after a successful creation, with the record. The
    * setup flow's confirm screen mounts this form and continues from here;
    * the sharing panel leaves it unset and shows the confirmation line.
    */

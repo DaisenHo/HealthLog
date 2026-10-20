@@ -1,5 +1,5 @@
 /**
- * v1.4.47 W5 — onboarding chain gate.
+ * v1.4.47 — onboarding chain gate.
  *
  * `<WelcomeCarousel>` (gated on `users.onboardingCompletedAt`) and
  * `<TourLauncher>` (gated on `users.onboardingTourCompleted`) used to

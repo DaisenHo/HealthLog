@@ -921,7 +921,7 @@ const customMetricEntryBackupSchema = z
     /// v1.39.3 — the note's ciphertext, DR payloads only.
     noteEncrypted: base64BytesSchema.nullable().optional(),
     createdAt: isoDateTime.optional(),
-    /// v1.37.20 (A3-11) — the entry tombstone rides DR payloads so a restore
+    /// v1.37.20 — the entry tombstone rides DR payloads so a restore
     /// brings the account back exactly as it stood, undo affordance included.
     deletedAt: isoDateTime.nullable().optional(),
   })
@@ -1042,7 +1042,7 @@ const healthScoreRecordBackupSchema = z
   .passthrough();
 
 /**
- * v1.39 (C1) — the needs-based setup state. One row per record.
+ * v1.39 — the needs-based setup state. One row per record.
  *
  * The three answer objects are validated loosely on purpose: the closed
  * vocabularies live in `src/lib/onboarding/needs.ts`, and the restore reads
@@ -1191,7 +1191,7 @@ const biomarkerBackupSchema = z
     // v1.42 (#1095) — the catalogue analyte the marker resolves to.
     analyteKey: z.string().nullable().optional(),
     context: z.string().nullable().optional(),
-    // v1.43 (D1223) — the other spellings the marker answers to. Absent on
+    // v1.43 — the other spellings the marker answers to. Absent on
     // files written before them.
     aliases: z
       .array(
@@ -1210,7 +1210,7 @@ const biomarkerBackupSchema = z
   })
   .passthrough();
 
-// v1.43 (D1223) — the ledger of markers merged into others.
+// v1.43 — the ledger of markers merged into others.
 const biomarkerMergeBackupSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -2342,7 +2342,7 @@ export const backupPayloadSchema = z
     // account whose watch has never taken one writes [].
     ecgRecordings: z.array(ecgRecordingBackupSchema).default([]),
     manifest: backupManifestSchema.nullable().default(null),
-    // v1.37.19 (A6-9) — field paths a PORTABLE export could not decrypt
+    // v1.37.19 — field paths a PORTABLE export could not decrypt
     // (fail-soft nulls). Disclosed in the file so a nulled field is
     // distinguishable from one never written. Empty/absent on DR payloads.
     decryptFailures: z.array(z.string()).default([]),

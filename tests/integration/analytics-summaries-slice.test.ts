@@ -1,5 +1,5 @@
 /**
- * v1.4.33 C1 — `?slice=summaries` integration coverage.
+ * v1.4.33 — `?slice=summaries` integration coverage.
  *
  * Pins the slim summaries slice against the real Postgres + the real
  * `regr_slope` / `regr_r2` functions, not a unit-level `$queryRaw`
@@ -183,6 +183,37 @@ describe("GET /api/analytics?slice=summaries (C1)", () => {
 
     // Sanity-check: PULSE is empty on this fixture.
     expect(envelope.data.summaries.PULSE.count).toBe(0);
+  });
+
+  it("summarises sleep over the whole history, not the last year", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedSession("slim-sleep-history");
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const morning = new Date();
+    morning.setUTCHours(6, 0, 0, 0);
+    // One 7 h night every third day for two years.
+    const nights = Array.from({ length: 244 }, (_, i) => ({
+      userId: user.id,
+      type: "SLEEP_DURATION" as const,
+      value: 420,
+      unit: "minutes",
+      source: "APPLE_HEALTH" as const,
+      measuredAt: new Date(morning.getTime() - i * 3 * DAY_MS),
+      externalId: `uuid-slice-night-${i}`,
+      sleepStage: "CORE" as const,
+    }));
+    await prisma.measurement.createMany({ data: nights });
+
+    const { GET } = await import("@/app/api/analytics/route");
+    const response = await (
+      GET as unknown as (req: Request) => Promise<Response>
+    )(new Request("http://localhost/api/analytics?slice=summaries"));
+    expect(response.status).toBe(200);
+    const sleep = ((await response.json()) as SlimEnvelope).data.summaries
+      .SLEEP_DURATION;
+    // Every night counts, and the window a year back has nights in it.
+    expect(sleep.count).toBe(244);
+    expect(sleep.avg30LastYear).toBe(420);
   });
 
   it("default slice still carries the thick envelope (additive contract)", async () => {

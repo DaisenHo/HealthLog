@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
   getBloodPressureSystemPrompt,
   getBloodPressureUserPrompt,
@@ -147,7 +148,7 @@ export async function generateBloodPressureStatusForUser(
 }
 
 /**
- * v1.18.7 (HIGH-1) — everything up to (not including) the provider call.
+ * v1.18.7 — everything up to (not including) the provider call.
  * See `status-card-generation.ts` for the prepare/run/finalize contract.
  */
 export async function prepareBloodPressureStatusForUser(
@@ -163,7 +164,7 @@ export async function prepareBloodPressureStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("blood-pressure", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -230,7 +231,7 @@ export async function prepareBloodPressureStatusForUser(
     },
   });
 
-  // v1.4.28 FB-D2 — cap the snapshot input. The downstream
+  // v1.4.28 — cap the snapshot input. The downstream
   // `applyPayloadBudget` trims further; this `take` keeps the read
   // bounded for Apple-Health-rich accounts. BP captures three types
   // per reading day so 1095 = 365 d × 3 channels.
@@ -238,6 +239,7 @@ export async function prepareBloodPressureStatusForUser(
     .findMany({
       where: {
         userId,
+        deletedAt: null,
         type: {
           in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
         },
@@ -254,7 +256,7 @@ export async function prepareBloodPressureStatusForUser(
 
   const now = new Date();
 
-  // v1.7.0 SB-SCHED-2 / v1.2.5 (M-TZ3) — BOTH the BP-status compliance gate
+  // v1.7.0 v1.2.5 — BOTH the BP-status compliance gate
   // AND every day-bucketing pass below (applyPayloadBudget, pairDailyBuckets,
   // the continuity series) key on the user's own calendar day, not Berlin's.
   // `userTz` was already resolved above for the cache day-key.
@@ -302,7 +304,7 @@ export async function prepareBloodPressureStatusForUser(
     inTarget:
       bpTargets == null
         ? null
-        : // v1.4.16 A2 — one-sided "at or below ceiling" semantics with a
+        : // v1.4.16 — one-sided "at or below ceiling" semantics with a
           // clinical hypotension floor. See lib/analytics/bp-in-target.ts.
           isBpReadingInTarget(entry.a, entry.b, bpTargets),
   }));
@@ -338,7 +340,7 @@ export async function prepareBloodPressureStatusForUser(
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware compliance.
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
@@ -455,16 +457,9 @@ export async function prepareBloodPressureStatusForUser(
   });
 
   // Fetch mood context (optional — for enrichment only). v1.4.28
-  // FB-D2 — cap at 90 entries (~3 months) so power users don't pull
+  // Cap at 90 entries (~3 months) so power users don't pull
   // unbounded rows before the bucket-series budget runs.
-  const moodEntries = await prisma.moodEntry
-    .findMany({
-      where: { userId },
-      orderBy: { moodLoggedAt: "desc" },
-      take: 90,
-      select: { date: true, score: true, moodLoggedAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const moodEntries = await readRecentMoodScores(userId, 90);
 
   const moodSeries = applyPayloadBudget(
     moodEntries.map((entry) => ({
@@ -538,7 +533,7 @@ export async function prepareBloodPressureStatusForUser(
       )
     : null;
 
-  // v1.18.10 (HIGH-4) — hand the model the finished recent-vs-baseline
+  // v1.18.10 — hand the model the finished recent-vs-baseline
   // comparison + normal-swing verdict per channel instead of asking it to
   // derive them. BP needs two signals; the user's own targets are the coarse
   // band anchor when present.

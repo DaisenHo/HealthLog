@@ -563,7 +563,7 @@ async function readBoundSettings(userId: string): Promise<{
 }
 
 /**
- * v1.4.16 phase B5b — resolve a chain of providers in priority order
+ * v1.4.16 — resolve a chain of providers in priority order
  * for the multi-provider fallback runner. Each entry pairs a logical
  * `providerType` with a constructed `AIProvider` instance ready to
  * accept `generateCompletion()` calls.

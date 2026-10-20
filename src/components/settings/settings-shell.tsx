@@ -71,7 +71,7 @@ export {
 };
 
 /**
- * 2026-07-17 UX/IA audit (M6) — the sidebar's 19 entries render under one
+ * The sidebar's 19 entries render under one
  * of these seven non-interactive group headers instead of as one flat
  * list. Presentation only: no slug, route, or redirect changes. Order
  * below is the render order of the groups themselves.
@@ -104,7 +104,7 @@ interface SettingsSection {
   /** i18n key under `settings.sections.<slug>.title`. */
   titleKey: string;
   icon: LucideIcon;
-  /** 2026-07-17 UX/IA audit (M6) — which sidebar group this entry renders under. */
+  /** Which sidebar group this entry renders under. */
   group: SettingsSectionGroup;
 }
 
@@ -112,7 +112,7 @@ interface SettingsSection {
  * Source of truth for the section list that the settings shell renders
  * in its sidebar + mobile chip-strip.
  *
- * 2026-07-17 UX/IA audit (M6) — the list used to render in a single flat
+ * The list used to render in a single flat
  * order with no visual structure (19 entries deep, the AI cluster and the
  * programmatic-access cluster interleaved, the health-profile pair split
  * across the list). It is now clustered into the seven
@@ -178,7 +178,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: Link2,
     group: "yourData",
   },
-  // v1.18.1 (D4) — Quellen (source weighting): which connection wins when
+  // v1.18.1 — Quellen (source weighting): which connection wins when
   // two report the same metric. v1.25.3 — Kanäle (delivery channels) folded
   // back into Notifications as an in-page group;
   // `/settings/channels` 301-redirects to `/settings/notifications#channels`.
@@ -188,7 +188,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: Layers,
     group: "yourData",
   },
-  // v1.18.0 (S5) — the full health record (PDF + FHIR R4 + zip package).
+  // v1.18.0 — the full health record (PDF + FHIR R4 + zip package).
   // v1.18.6.1 — NOT module-gated: the health record is a flagship export
   // capability; gating its only entry-point on the `doctorReport` opt-out
   // meant a stray toggle in the Modules hub made the whole section vanish
@@ -209,7 +209,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "yourData",
   },
   // ── Display ──
-  // v1.17.1 (F-2) — one nav entry replaces the four scattered Dashboard /
+  // v1.17.1 — one nav entry replaces the four scattered Dashboard /
   // Insights / Medications / Mood "arrange" entries; those routes still
   // resolve, reached through this hub. v1.25.3 — renamed to "Appearance" /
   // "Darstellung" and widened into the index for every module's
@@ -231,7 +231,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: SlidersHorizontal,
     group: "display",
   },
-  // v1.18.0 (S4) — "Benachrichtigungen" is the single module-gated
+  // v1.18.0 — "Benachrichtigungen" is the single module-gated
   // reminder-types home; the standalone "Erinnerungen" hub is gone.
   {
     slug: "notifications",
@@ -249,7 +249,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: Gauge,
     group: "healthProfile",
   },
-  // v1.25 (W-RECORDS) — Anamnese (medical history): the structured-record
+  // v1.25 — Anamnese (medical history): the structured-record
   // home for allergies + family history. NOT module-gated (like Vorsorge) —
   // these are foundational health-profile records, always available.
   {
@@ -258,7 +258,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: ClipboardList,
     group: "healthProfile",
   },
-  // v1.25 (W-ENV) — Environmental context: home location, travel overrides,
+  // v1.25 — Environmental context: home location, travel overrides,
   // and the weather/daylight backfill. Module-gated on the opt-in
   // `environment` module (`settings:environment` in the surface map), so the
   // entry only appears once the user turns it on.
@@ -275,7 +275,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: Sparkles,
     group: "ai",
   },
-  // v1.18.0 (S5) — Coach: the Coach preference cards get their own entry,
+  // v1.18.0 — Coach: the Coach preference cards get their own entry,
   // shown only when the coach module is enabled (`settings:coach` in the
   // surface map). The AI entry above keeps
   // provider / model / BYOK configuration.
@@ -348,12 +348,12 @@ export interface SettingsShellProps {
   children: React.ReactNode;
 }
 
-// v1.17.1 (F-2) — the personalization editors live under the Layout
+// v1.17.1 — the personalization editors live under the Layout
 // hub. They keep their own routes but are NOT standalone nav entries, so
 // when the user is on one of them the Layout nav entry is the one that
 // reads active.
 //
-// v1.18.0 (S5) — `mood` (Stimmung) and `medications` (Medikamente)
+// v1.18.0 — `mood` (Stimmung) and `medications` (Medikamente)
 // graduated to their own nav entries, so they are no longer Layout-hub
 // children for highlighting purposes.
 const LAYOUT_CHILD_SLUGS: ReadonlySet<string> = new Set([
@@ -399,7 +399,7 @@ export function SettingsShell({
   const { user } = useAuth();
   const activeSlug = deriveActiveSlug(pathname, active);
 
-  // v1.18.0 (S5) — per-submodule entries are listed only when their module
+  // v1.18.0 — per-submodule entries are listed only when their module
   // is enabled. Read from the resolved `useAuth().user.modules` map (the
   // same map the Module hub, nav, and Insights pills gate off). Fail OPEN
   // (`!== false`): a missing key, or a not-yet-resolved `/me` payload,
@@ -453,7 +453,7 @@ export function SettingsShell({
     (section) => section.slug === activeSlug,
   );
 
-  // v1.4.33 IW4 — keep the active chip in view inside the horizontal
+  // v1.4.33 — keep the active chip in view inside the horizontal
   // mobile strip. On a 393 CSS px viewport the strip is wider than the
   // viewport and the rightmost chips sit off-screen; a user who tapped
   // one of those chips lands on the new route with the strip still
@@ -531,7 +531,7 @@ export function SettingsShell({
       />
     ) : null;
 
-  // v1.4.25 W8 — AuthShell wraps the page in `px-4 py-6 md:px-6`
+  // v1.4.25 — AuthShell wraps the page in `px-4 py-6 md:px-6`
   // already, so this inner shell only carries the wider max-width.
   // Previously the duplicate `px-4 py-6 md:px-6 md:py-8` here was
   // producing visibly more top/bottom whitespace on Settings/Admin
@@ -557,7 +557,7 @@ export function SettingsShell({
           page, which makes the page feel like every section card has
           an overflow problem.
 
-          v1.4.33 IW7 — `snap-x snap-mandatory` lets a swipe-flick land
+          v1.4.33 — `snap-x snap-mandatory` lets a swipe-flick land
           on the next chip's leading edge instead of the in-between
           dead zone. The auto `scrollIntoView({inline: "center"})`
           effect above stays the canonical positioner for the active
@@ -572,7 +572,7 @@ export function SettingsShell({
           {visibleSections.map((section, index) => {
             const isActive = section.slug === activeSlug;
             const Icon = section.icon;
-            // 2026-07-17 UX/IA audit (M6) — a quiet vertical divider marks a
+            // A quiet vertical divider marks a
             // group boundary in the horizontal strip (the desktop sidebar
             // carries the full text header for the same grouping).
             const startsNewGroup =
@@ -589,7 +589,7 @@ export function SettingsShell({
                     href={`/settings/${section.slug}`}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      // v1.4.25 W8 — chip strip is the primary mobile-settings
+                      // v1.4.25 — chip strip is the primary mobile-settings
                       // navigation surface. Pad to WCAG 2.5.5 44 px so the
                       // chips can be tapped without zoom on a Pixel-5.
                       "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
@@ -652,7 +652,7 @@ export function SettingsShell({
             {visibleSections.map((section, index) => {
               const isActive = section.slug === activeSlug;
               const Icon = section.icon;
-              // 2026-07-17 UX/IA audit (M6) — a non-interactive header
+              // A non-interactive header
               // precedes the first VISIBLE entry of each group so a
               // module-gated entry never leaves an orphan header above an
               // empty cluster.

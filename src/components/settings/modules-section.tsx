@@ -73,7 +73,7 @@ export function ModulesSection() {
   });
   const isEnabled = useModuleEnabledState();
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` (the former muted-`<p>` intro folded into the
   // frame's standard subtitle). The "Module immer aktiv" core-domains card
   // was removed: a domain that can't be turned off doesn't need to be listed.

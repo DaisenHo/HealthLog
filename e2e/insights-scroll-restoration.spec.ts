@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.28 R3a FB-D3 — `/insights` scroll restoration + tab-strip
+ * v1.4.28 — `/insights` scroll restoration + tab-strip
  * gesture handling.
  *
  * Two regressions the maintainer hit walking through v1.4.27:

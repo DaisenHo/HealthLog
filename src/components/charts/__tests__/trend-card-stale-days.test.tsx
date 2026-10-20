@@ -4,9 +4,12 @@ import { Activity } from "lucide-react";
 
 import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
- * v1.4.34 IW-B — pin the bucket-aware stale-hint copy on `<TrendCard>`.
+ * v1.4.34 — pin the bucket-aware stale-hint copy on `<TrendCard>`.
  *
  * The tile shows a "Letzter Wert vor …" caption when the metric has not
  * been logged in a while, so the tile stays on the dashboard with an

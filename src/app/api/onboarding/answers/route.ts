@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — `PATCH /api/onboarding/answers`.
+ * v1.39 — `PATCH /api/onboarding/answers`.
  *
  * One step at a time, saved the moment it is answered, so leaving the flow and
  * coming back resumes where it stopped (design spec §Principles 4). The body

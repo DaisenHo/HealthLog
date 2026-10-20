@@ -1,5 +1,5 @@
 /**
- * v1.18.1 P3 — illness retrospective summary aggregation.
+ * v1.18.1 — illness retrospective summary aggregation.
  *
  * Asserts the count/byMonth/byType tallies, the CHRONIC_ONGOING gap exclusion,
  * and the v1.18.9 signal-density gates: the "typical recovery gap" is WITHHELD

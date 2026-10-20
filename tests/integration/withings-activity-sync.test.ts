@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b — Withings activity-sync end-to-end.
+ * v1.4.25 — Withings activity-sync end-to-end.
  *
  * Drives `syncUserActivity` against a mocked Withings response and the
  * real Postgres testcontainer. Asserts:

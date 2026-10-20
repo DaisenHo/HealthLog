@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on PATCH
+ * v1.4.43 — multi-issue 422 envelope on PATCH
  * /api/medications/[id]/inventory/[itemId].
  *
  * v1.16.1 — stock-correction contract: `unitsRemaining` sets the count
@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => {
-  // v1.32.22 (M5) — the PATCH / DELETE now run inside `prisma.$transaction`
+  // v1.32.22 — the PATCH / DELETE now run inside `prisma.$transaction`
   // that takes the per-medication advisory lock. The mock transaction runs the
   // callback with the base client as the tx, so the existing model mocks apply
   // inside the transaction and `$queryRaw` (the advisory lock) is observable.
@@ -263,7 +263,7 @@ describe("PATCH /api/medications/[id]/inventory/[itemId] — carton labelling", 
 });
 
 /**
- * v1.32.22 (M5) — the stock-correction PATCH and the DELETE route their
+ * v1.32.22 — the stock-correction PATCH and the DELETE route their
  * read-compose-write through the SAME per-medication advisory lock that
  * `consumeForIntake` takes, so an absolute stock write can no longer clobber a
  * concurrent dose decrement. These pin the routing: the write runs inside a

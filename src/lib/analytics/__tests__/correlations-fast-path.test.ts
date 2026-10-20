@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W2 — unit pin for the probe-gated correlation runner.
+ * v1.4.37 — unit pin for the probe-gated correlation runner.
  *
  * Mocks Prisma + the rollup-coverage probe so the path-selection
  * contract is verifiable without a Postgres container. Real-data
@@ -100,7 +100,7 @@ describe("computeCorrelationHypothesesFastPath", () => {
       expect(result.path).toBe("rollup");
       expect(result.windowDays).toBe(28);
       expect(result.degraded).toBe(false);
-      // v1.2.5 (M-CS2) — SYS + WEIGHT ride the rollup tier; PULSE no
+      // v1.2.5 — SYS + WEIGHT ride the rollup tier; PULSE no
       // longer does. The mood × resting-pulse hypothesis instead reads the
       // RESTING_HEART_RATE rows (and, only when absent, RAW PULSE for the
       // low-percentile proxy) from `measurements`, so the rollup count

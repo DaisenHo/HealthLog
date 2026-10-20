@@ -5,7 +5,7 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 /**
- * v1.4.33 IW9 — loading-state convention.
+ * v1.4.33 — loading-state convention.
  *
  * Callers driving a transient loading state on a button must SWAP the
  * leading icon for `<Loader2 />` rather than APPENDING the spinner

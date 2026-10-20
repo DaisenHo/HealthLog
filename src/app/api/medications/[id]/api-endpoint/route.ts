@@ -23,7 +23,7 @@ export const GET = apiHandler(
     }
 
     const { id } = await params;
-    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    // v1.4.25 — privacy gate hoisted to the shared helper.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
@@ -63,7 +63,7 @@ export const PUT = apiHandler(
     }
 
     const { id } = await params;
-    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    // v1.4.25 — privacy gate hoisted to the shared helper.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 

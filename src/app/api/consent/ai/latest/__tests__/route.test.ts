@@ -418,7 +418,7 @@ describe("DELETE /api/consent/ai/latest — purge of regenerable AI text", () =>
 
 describe("append-only invariant", () => {
   /**
-   * v1.4.40 SB-10 — the receipts table is the legal audit trail.
+   * v1.4.40 — the receipts table is the legal audit trail.
    * Revoking + re-granting must leave the original row in place
    * (just with `revokedAt` set) and mint a fresh row for the new
    * grant. The latest active receipt after the cycle is the newest

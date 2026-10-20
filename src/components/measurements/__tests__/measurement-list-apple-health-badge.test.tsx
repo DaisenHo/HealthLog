@@ -53,7 +53,7 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
-// v1.28.42 (H3) — the list now mounts only the active layout (desktop table
+// v1.28.42 — the list now mounts only the active layout (desktop table
 // OR mobile card list), not both CSS-hidden copies. Drive the breakpoint hook
 // so each branch can be asserted independently.
 vi.mock("@/hooks/use-is-mobile", () => ({
@@ -103,7 +103,7 @@ describe("MeasurementList — APPLE_HEALTH badge", () => {
     // duplicate hand-entries on top of synced rows. Both layouts must
     // carry the badge so the surface is honest at every viewport.
     //
-    // v1.28.42 (H3) — only the active layout mounts now, so assert the
+    // v1.28.42 — only the active layout mounts now, so assert the
     // badge appears once in each branch (rather than twice in one render).
     vi.mocked(useIsMobile).mockReturnValue(false);
     const desktop = render("en").match(

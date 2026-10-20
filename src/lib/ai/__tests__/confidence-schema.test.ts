@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { aiInsightResponseSchema, aiRecommendationSchema } from "../schema";
 
 /**
- * v1.4.16 phase B5d — `recommendation.confidence` schema field.
+ * v1.4.16 — `recommendation.confidence` schema field.
  *
  * The wrapper overrides the model's confidence with a deterministic
  * value the model emits, but the schema needs

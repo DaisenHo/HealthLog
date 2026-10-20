@@ -75,7 +75,7 @@ export function MedicationsSection() {
     ),
   ].map((m) => ({ id: m.id, name: m.name, dose: m.dose, active: m.active }));
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the medication cards.
   return (
     <div className="space-y-6">
@@ -121,7 +121,7 @@ export function MedicationsSection() {
         )}
       </SettingsCard>
 
-      {/* v1.18.0 (S5) — injection-site exclusions are a medication setting;
+      {/* v1.18.0 — injection-site exclusions are a medication setting;
           they moved here from the account profile so all medication-specific
           preferences live in one place. */}
       <InjectionSitesCard isAuthenticated={isAuthenticated} />

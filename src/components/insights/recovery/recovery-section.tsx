@@ -16,12 +16,12 @@ import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useTranslations } from "@/lib/i18n/context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  pickStatus,
-  useIntegrationStatuses,
-  type IntegrationStatusViewModel,
-} from "@/components/settings/integrations/shared";
+import type {
+  RECOVERY_SUMMARY_TYPES,
+  RecoveryEmptyReason,
+} from "@/lib/insights/recovery-empty";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { RestModeBanner } from "@/components/insights/rest-mode-banner";
 import type { RestModeAnnotation } from "@/lib/analytics/score/types";
 import type { ChartOverlayKey } from "@/lib/dashboard-layout";
@@ -30,7 +30,8 @@ import { RecoveryMetricBlock } from "@/components/insights/recovery/recovery-met
 import { ResilienceTile } from "@/components/insights/recovery/resilience-tile";
 
 interface BlockSpec {
-  type: string;
+  /** One of the types the server's empty decision counts, by construction. */
+  type: (typeof RECOVERY_SUMMARY_TYPES)[number];
   chartKey: ChartOverlayKey;
   statusMetric: MetricStatusMetricId;
   title: string;
@@ -47,32 +48,14 @@ interface BlockGroup {
 }
 
 /**
- * Why this account's recovery page is empty, from the server's view of its
- * Oura connection. An Oura ring feeds this page through its resilience level
- * alone. When the server records that the grant leaves resilience out, the
- * note asks for one reconnect. Otherwise it says only that no level has
- * arrived: the server cannot tell "the grant covers it" from "not recorded
- * yet" (the scope note is cleared on every reconnect and written only by a
- * sync that reached Oura), so the note never claims coverage. Everyone else
- * gets the general note naming what fills the page.
+ * The empty note per server-resolved reason (`recoveryEmpty` on the
+ * analytics slice). The page never works the reason out itself.
  */
-type RecoveryEmptyCase = "general" | "oura-permission" | "oura-no-resilience";
-
 const EMPTY_COPY = {
   general: "insights.recovery.empty",
-  "oura-permission": "insights.recovery.emptyOuraPermission",
-  "oura-no-resilience": "insights.recovery.emptyOuraNoResilience",
-} as const satisfies Record<RecoveryEmptyCase, string>;
-
-function recoveryEmptyCase(
-  oura: IntegrationStatusViewModel | undefined,
-): RecoveryEmptyCase {
-  if (!oura?.connected) return "general";
-  const withheld = oura.health?.unavailable.some(
-    (u) => u.item === "resilience" && u.cause === "permission",
-  );
-  return withheld ? "oura-permission" : "oura-no-resilience";
-}
+  oura_permission: "insights.recovery.emptyOuraPermission",
+  oura_no_resilience: "insights.recovery.emptyOuraNoResilience",
+} as const satisfies Record<RecoveryEmptyReason, string>;
 
 /**
  * v1.17.1 → rebuilt v1.18.1 (B1–B3) — body of the `/insights/recovery`
@@ -97,7 +80,8 @@ function recoveryEmptyCase(
  */
 export function RecoverySection() {
   const { t } = useTranslations();
-  const { data, isLoading } = useInsightsAnalytics("SLEEP_DURATION");
+  const { data, isLoading, error, refetch } =
+    useInsightsAnalytics("SLEEP_DURATION");
   // v1.18.1 — Rest Mode parity. The annotation rides the thick analytics
   // payload's `healthScore` block (server-authoritative; iOS mirrors it). We
   // read it off the same `["analytics"]` cache the insights mother page
@@ -204,28 +188,22 @@ export function RecoverySection() {
     },
   ];
 
-  // v1.19.2 — resilience is an ordinal band (limited … exceptional), surfaced
-  // as a calm dedicated tile rather than a chart block, so it counts toward the
-  // data gate independently of `groups` (a chart-block list).
-  const hasResilience = (summaries?.["RESILIENCE"]?.count ?? 0) > 0;
+  // Whether the page has anything to show, and why not, is the server's
+  // answer (`recoveryEmpty`), so web and iOS read one decision.
+  const emptyReason = data?.recoveryEmpty ?? null;
 
-  const hasAny =
-    summaries != null &&
-    (hasResilience ||
-      groups.some((group) =>
-        group.blocks.some((block) => (summaries[block.type]?.count ?? 0) > 0),
-      ));
+  // A failed read is said, never left as a skeleton that loads forever.
+  if (error && summaries == null) {
+    return (
+      <QueryErrorCard
+        error={error}
+        title={t("insights.recovery.loadError")}
+        onRetry={refetch}
+      />
+    );
+  }
 
-  // Only an empty page asks which connection could fill it, so a page with
-  // data never pays for the integrations read.
-  const statuses = useIntegrationStatuses(
-    !isLoading && summaries != null && !hasAny,
-  );
-  const emptyCase = recoveryEmptyCase(pickStatus(statuses.data, "oura"));
-
-  // The empty note waits for the connection status, so it never reads as
-  // the general note first and then changes under the reader.
-  if (isLoading || summaries == null || (!hasAny && statuses.isPending)) {
+  if (isLoading || summaries == null) {
     return (
       <div className="space-y-3" data-slot="recovery-loading">
         <ChartSkeleton />
@@ -233,22 +211,24 @@ export function RecoverySection() {
     );
   }
 
-  if (!hasAny) {
+  if (emptyReason) {
     return (
       <EmptyState
         data-slot="recovery-empty"
-        data-empty-case={emptyCase}
+        data-empty-case={emptyReason}
         icon={<Heart className="size-6" />}
         title={t("insights.recovery.emptyTitle")}
-        description={t(EMPTY_COPY[emptyCase])}
+        description={t(EMPTY_COPY[emptyReason])}
         action={
-          emptyCase === "oura-permission" ? (
+          // Waiting for a first resilience level has nothing to open: the
+          // connection is fine, the level simply has not arrived.
+          emptyReason === "oura_no_resilience" ? undefined : (
             <Button size="sm" variant="outline" asChild>
               <Link href="/settings/integrations">
                 {t("insights.recovery.emptyAction")}
               </Link>
             </Button>
-          ) : undefined
+          )
         }
       />
     );

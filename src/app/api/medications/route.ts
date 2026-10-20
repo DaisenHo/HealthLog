@@ -161,7 +161,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
         meta: unstableExternalIdMeta("medication.create", [shape]),
       });
     }
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 
@@ -325,7 +325,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
         userId: user.id,
         name,
         dose,
-        // v1.4.25 W4d — treatmentClass + dosesPerUnit are optional in the
+        // v1.4.25 — treatmentClass + dosesPerUnit are optional in the
         // wire schema; Prisma fills the default GENERIC when omitted.
         ...(treatmentClass !== undefined && { treatmentClass }),
         ...(dosesPerUnit !== undefined && { dosesPerUnit }),
@@ -508,7 +508,7 @@ async function postMedication(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+  // v1.4.34 — bust per-user medications + compliance + achievement
   // caches so the next read reflects the new schedule.
   invalidateUserMedications(user.id, { evict: true });
 

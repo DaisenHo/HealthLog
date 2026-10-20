@@ -1,5 +1,5 @@
 /**
- * v1.43 (D1223) — merging biomarkers. `{id}` in the path is the marker that
+ * v1.43 — merging biomarkers. `{id}` in the path is the marker that
  * stays; `sourceIds` are folded into it. That the target is not among the
  * sources is checked by the route, which knows the path id.
  */

@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B2 — AI provider settings UX (dropdown-driven).
+ * v1.4.16 — AI provider settings UX (dropdown-driven).
  *
  * The new section replaces the v1.4.15-vintage top/bottom split (the maintainer's
  * `feedback_settings_no_split.md`): a single Select picks the active
@@ -126,6 +126,9 @@ vi.mock("@tanstack/react-query", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { AiSection } from "../ai-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
@@ -211,7 +214,7 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     const html = render("de");
     expect(html).toContain("Mit ChatGPT verbinden");
     expect(html).toContain("ChatGPT-Account (Codex)");
-    // v1.4.33 IW7 — the active-provider heading and the parent section
+    // v1.4.33 — the active-provider heading and the parent section
     // both ship without the "KI"/"AI" prefix per the project-voice rule
     // ("Aktiver KI-Provider" → "Aktiver Provider"). The heading and the
     // chain summary now share the same phrase, so we assert against the
@@ -221,7 +224,7 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     expect(html).toContain("Primärer Provider");
   });
 
-  // v1.18.0 (S5) — the Coach preference cards (disable toggle, preferences,
+  // v1.18.0 — the Coach preference cards (disable toggle, preferences,
   // memory) moved out to the dedicated Coach section; the AI section keeps
   // only provider / model / BYOK plus the "about me" context.
   it("no longer mounts the Coach cards (moved to the Coach section)", () => {

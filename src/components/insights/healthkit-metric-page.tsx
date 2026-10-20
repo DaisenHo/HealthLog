@@ -167,7 +167,7 @@ export interface HealthKitMetricPageProps {
   /** Interpolation values for the explainer sentence (`SubPageShell`). */
   explainerParams?: Record<string, string>;
   /**
-   * v1.8.5 W5 — when set, renders `<MetricTargetSummary slug=…>` beneath
+   * v1.8.5 — when set, renders `<MetricTargetSummary slug=…>` beneath
    * the chart. Used by blood glucose, whose per-context ADA / DDG bands
    * live on the targets wire but whose page rides this generic scaffold
    * rather than a bespoke module. Omit it for metrics without a target.
@@ -212,7 +212,7 @@ export interface HealthKitMetricPageProps {
    */
   afterChart?: ReactNode;
   /**
-   * v1.30 (UX/IA audit H1) — optional content rendered at the very foot of the
+   * v1.30 — optional content rendered at the very foot of the
    * data-bearing spine, AFTER the metric-status assessment card. The
    * resting-pulse + HRV pages mount `<EcgCrossLink>` here so the ECG pointer
    * trails the assessment, matching the placement it has on `/insights/pulse`.
@@ -392,6 +392,7 @@ export function HealthKitMetricPage({
         explainerParams={explainerParams}
       >
         <QueryErrorRow
+          error={error}
           slot="healthkit-metric-error"
           retrySlot="healthkit-metric-retry"
           message={t("insights.subPage.loadError")}
@@ -534,7 +535,7 @@ export function HealthKitMetricPage({
           enabled={!isEmpty}
         />
       ) : null}
-      {/* v1.30 (H1) — foot-of-spine slot, after the assessment card. The
+      {/* v1.30 — foot-of-spine slot, after the assessment card. The
           resting-pulse + HRV pages mount the ECG cross-link here. */}
       {afterAssessment}
     </SubPageShell>

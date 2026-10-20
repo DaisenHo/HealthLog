@@ -108,7 +108,7 @@ function maxDate(a: Date, b: Date): Date {
 }
 
 /**
- * v1.18.1 P4 — every local day key covered by an illness episode (onset day
+ * v1.18.1 — every local day key covered by an illness episode (onset day
  * through the resolved day, or through `now` while ongoing), inclusive on
  * both ends. These are the days a streak is allowed to lapse across without
  * breaking (the Rest Mode freeze). Uses the same `tz` day anchoring every
@@ -355,7 +355,7 @@ function getOnTimePerfectDaySeries(
         { tz },
       );
 
-      // v1.4.34 IW-C — `early` is also a compliant bucket (dose taken
+      // v1.4.34 — `early` is also a compliant bucket (dose taken
       // within the 3h pre-window grace), so it preserves a perfect day.
       if (timing !== "on_time" && timing !== "early") {
         isPerfectDay = false;
@@ -425,11 +425,11 @@ function getCompliance80DaySeries(
 }
 
 /**
- * v1.4.34 IW-G — pulled out of the GET handler so `cached()` can wrap
+ * v1.4.34 — pulled out of the GET handler so `cached()` can wrap
  * the heavy aggregation. Returns the locale-agnostic web payload; the
  * iOS-format transform runs in the handler after the cache read.
  *
- * v1.18.0 B5 — this builder NO LONGER writes. It computes the not-yet-
+ * v1.18.0 — this builder NO LONGER writes. It computes the not-yet-
  * persisted unlocks and returns them as `pendingUnlocks`; the handler
  * performs the idempotent `createMany({ skipDuplicates: true })` on every
  * request after the cache read. That keeps the persistence off the cached
@@ -610,7 +610,7 @@ export async function buildAchievementsResult(
         updatedAt: true,
       },
     }),
-    // v1.18.1 P4 — illness episodes over the window, for the streak-freeze.
+    // v1.18.1 — illness episodes over the window, for the streak-freeze.
     // Gated on the illness module so a non-illness account does no read and
     // never freezes anything. Both ongoing and already-resolved episodes are
     // read: a past illness should not retroactively break a historical
@@ -633,7 +633,7 @@ export async function buildAchievementsResult(
       : Promise.resolve([]),
   ]);
 
-  // v1.18.1 P4 — Rest Mode streak-freeze. Build the set of local-day keys
+  // v1.18.1 — Rest Mode streak-freeze. Build the set of local-day keys
   // covered by an illness episode (onset → resolved, or → now while
   // ongoing). A day-streak that lapses only across these days is bridged
   // rather than broken (see `bridgeFrozenStreakGaps`): being unwell pauses a
@@ -741,7 +741,7 @@ export async function buildAchievementsResult(
 
   const metrics = {
     totalTakenIntakes: takenIntakeDates.length,
-    // v1.18.1 P4 — every day-streak runs through `freeze(...)` so an active
+    // v1.18.1 — every day-streak runs through `freeze(...)` so an active
     // or past illness episode bridges (does not break) the run across the
     // days the user was unwell.
     bmiGreenStreak: calculateLongestStreak(freeze(healthSeries.bmi.dayKeys)),
@@ -930,7 +930,7 @@ export async function buildAchievementsResult(
     mergedDates,
   );
 
-  // v1.18.0 B5 — drop badges whose owning module is disabled BEFORE both
+  // v1.18.0 — drop badges whose owning module is disabled BEFORE both
   // unlock-persistence and serialisation. A sleep badge must never unlock
   // (or render) while the sleep module is off; same for mood badges when
   // mood is off, etc. Core-domain and account-wide badges return a null
@@ -941,7 +941,7 @@ export async function buildAchievementsResult(
     return moduleMap[owner as ModuleKey] !== false;
   });
 
-  // v1.18.0 B5 — compute the newly unlocked rows here but DON'T write them
+  // v1.18.0 — compute the newly unlocked rows here but DON'T write them
   // inside the cached factory: a write must not be a side effect of a
   // cached GET (a cache hit would silently skip it, a concurrent miss
   // could duplicate it). The handler performs the idempotent
@@ -981,7 +981,7 @@ export async function buildAchievementsResult(
       .filter((a) => !a.unlocked && !a.isHidden)
       .sort((a, b) => b.progressPercent - a.progressPercent)[0] ?? null;
 
-  // v1.4.18 reconcile — redact hidden+locked entries before serialising
+  // v1.4.18 — redact hidden+locked entries before serialising
   // so a curious user opening DevTools/Network can't read the trigger
   // semantics from `metric`, `titleKey`, `descriptionKey`, `icon`,
   // `target`, `current`, or `progressPercent`. The DOM render path
@@ -1015,7 +1015,7 @@ export async function buildAchievementsResult(
     },
     achievements: redactedAchievements,
     metrics: redactedMetrics,
-    // v1.18.0 B5 — carried out of the cached factory so the handler can
+    // v1.18.0 — carried out of the cached factory so the handler can
     // persist them on every read (idempotent), not as a write side effect
     // that a cache hit would skip. NOT part of the serialised payload.
     pendingUnlocks,
@@ -1024,7 +1024,7 @@ export async function buildAchievementsResult(
   return result;
 }
 
-/** v1.18.0 B5 — a not-yet-persisted unlock the handler writes after the cache read. */
+/** v1.18.0 — a not-yet-persisted unlock the handler writes after the cache read. */
 interface PendingUnlock {
   achievementId: string;
   unlockedAt: string;

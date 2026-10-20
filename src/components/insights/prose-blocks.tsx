@@ -8,7 +8,7 @@ import { learnUrl } from "@/lib/learn-links";
 import { InlineLearnLink } from "@/components/ui/learn-more-link";
 
 /**
- * v1.22 (W5) — shared paragraph renderer for every trusted-as-text AI
+ * v1.22 — shared paragraph renderer for every trusted-as-text AI
  * narrative surface (the Coach, the daily briefing, the per-metric /
  * score insight cards, the period narrative).
  *

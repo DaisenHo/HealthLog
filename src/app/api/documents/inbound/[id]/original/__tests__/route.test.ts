@@ -3,7 +3,7 @@ import { Buffer } from "node:buffer";
 import { NextRequest } from "next/server";
 
 /**
- * v1.25.1 (W-DOCS-IN) — `GET /api/documents/inbound/[id]/original`.
+ * v1.25.1 — `GET /api/documents/inbound/[id]/original`.
  *
  * The route decrypts and serves the raw uploaded document. Load-bearing
  * behaviour under test: it is owner-scoped (the query narrows on the session

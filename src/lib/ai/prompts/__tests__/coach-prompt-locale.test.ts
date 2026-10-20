@@ -18,7 +18,7 @@ import { loadSafetyContracts } from "@/lib/ai/prompts/safety-contracts";
 const NATIVE_LOCALES = ["fr", "es", "it", "pl"] as const;
 
 /**
- * v1.4.25 W14c — each AI-initial locale (FR / ES / IT / PL) now gets a
+ * v1.4.25 — each AI-initial locale (FR / ES / IT / PL) now gets a
  * native system prompt assembled from the safety-contract matrix
  * instead of riding the EN body with a one-line footer.
  *

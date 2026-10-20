@@ -204,7 +204,7 @@ describe("<SidebarNav> shared utility tail (v1.17.1 N-1 parity guard)", () => {
 });
 
 describe("<SidebarNav> admin entry mirrors Settings (no sub-item expansion)", () => {
-  // v1.4.16 A1: the maintainer reported the global sidebar expanding admin
+  // v1.4.16: the maintainer reported the global sidebar expanding admin
   // sub-items on `/admin/*` was unwanted UX — the in-shell `<AdminShell>`
   // already provides per-section nav inside the page. The Admin entry
   // must behave EXACTLY like the Settings entry: a single link with no

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.19 A7 — `/admin/api-tokens` 4th-attempt scrollbar fix.
+ * v1.4.19 — `/admin/api-tokens` 4th-attempt scrollbar fix.
  *
  * The maintainer reported a "minimaler Scrollbar" still painting at the
  * bottom-right of the api-tokens page, even after the v1.4.18 phase

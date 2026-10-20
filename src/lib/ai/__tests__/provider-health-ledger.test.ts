@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W1 — provider-health ledger.
+ * v1.11.0 — provider-health ledger.
  *
  * Two layers covered here:
  *   1. The Postgres ledger's classification + atomic-upsert SQL shape

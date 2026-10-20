@@ -103,7 +103,7 @@ describe("listConversations — filter + DTO", () => {
     expect(where.attachments).toEqual({ some: { documentId: "doc-9" } });
   });
 
-  // v1.30.2 (QoL H1) — server-side title search for the full-history rail.
+  // v1.30.2 — server-side title search for the full-history rail.
   it("keeps the title out of SQL when q is given (it is encrypted) and stays owner-scoped", async () => {
     findMany.mockResolvedValue([]);
     await listConversations({ userId: "user-1", q: "blood pressure" });

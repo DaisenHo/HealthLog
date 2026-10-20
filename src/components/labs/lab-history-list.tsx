@@ -368,7 +368,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         <Button
           size="icon"
           variant="ghost"
-          // v1.18.10 (W10) — 44px touch target on mobile (WCAG
+          // v1.18.10 — 44px touch target on mobile (WCAG
           // 2.5.5), compact 36px on desktop.
           className="size-11 sm:size-9"
           onClick={() => void openEdit(r)}

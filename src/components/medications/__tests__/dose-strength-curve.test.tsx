@@ -1,5 +1,5 @@
 /**
- * v1.8.6 W4c — dose-strength (titration) curve tests.
+ * v1.8.6 — dose-strength (titration) curve tests.
  *
  * Pins the three honest data states and the pure point-builder:
  *   - 0 dose-change rows → empty state, current-dose absent.

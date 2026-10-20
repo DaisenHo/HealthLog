@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17c — Withings Sleep v2 sync unit tests.
+ * v1.4.25 — Withings Sleep v2 sync unit tests.
  *
  * Coverage focuses on the state → SleepStage enum mapping, the
  * unix-seconds vs minutes conversion (easy regression trap), and the
@@ -141,7 +141,7 @@ afterEach(() => {
 });
 
 /**
- * v1.18.10 P0 — fetch mock that returns the per-segment series on the first
+ * v1.18.10 — fetch mock that returns the per-segment series on the first
  * call (`action=get`) and the per-night summary series on the second
  * (`action=getsummary`). Lets the sync exercise both the stage path and the
  * nightly-vital path in one round-trip.

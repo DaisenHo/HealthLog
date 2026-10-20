@@ -1,5 +1,5 @@
 /**
- * v1.18.1 P4 — Rest Mode resolver.
+ * v1.18.1 — Rest Mode resolver.
  *
  * Rest Mode ANNOTATES, never penalises. These tests pin the resolver
  * contract: module-gated (a disabled / opted-out account is never in Rest

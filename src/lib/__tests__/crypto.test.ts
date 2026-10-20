@@ -74,7 +74,7 @@ describe("crypto (AES-256-GCM, key versioning)", () => {
   });
 
   it("rotation: rows encrypted under old key still decrypt after switching active id", () => {
-    // Phase 1 — write under v1
+    // Write under v1
     vi.stubEnv("ENCRYPTION_KEYS", JSON.stringify({ v1: KEY_V1 }));
     vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "v1");
     vi.stubEnv("ENCRYPTION_KEY", "");
@@ -82,7 +82,7 @@ describe("crypto (AES-256-GCM, key versioning)", () => {
     const oldRow = encrypt("rotate-me");
     expect(oldRow.startsWith("v1.")).toBe(true);
 
-    // Phase 2 — add v2 and rotate active to v2; old row still decrypts
+    // Add v2 and rotate active to v2; old row still decrypts
     vi.stubEnv("ENCRYPTION_KEYS", JSON.stringify({ v1: KEY_V1, v2: KEY_V2 }));
     vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "v2");
     _resetCryptoCacheForTests();

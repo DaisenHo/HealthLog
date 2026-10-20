@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.27 MB6 — `/measurements?add=<TYPE>` consumer.
+ * v1.4.27 — `/measurements?add=<TYPE>` consumer.
  *
  * Insight metric actions link here with `?add=<TYPE>` and an optional,
  * allowlisted `returnTo`. The page opens the responsive capture primitive,

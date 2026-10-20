@@ -102,7 +102,7 @@ async function loadEventStatuses(
  * Notifications page paints into "Active / Auto-disabled / Sending paused"
  * badges + last-send / last-failure timestamps.
  *
- * SB-6 v1.4.40 — additionally returns a per-event-type `events` map so
+ * v1.4.40 — additionally returns a per-event-type `events` map so
  * the iOS NotificationsScreen can render "last delivered X h ago" per
  * category. `events[category].lastDeliveredAt` is null when the user
  * has never received that event-type (or no ledger source exists yet).

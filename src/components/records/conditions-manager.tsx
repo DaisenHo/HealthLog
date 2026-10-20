@@ -125,6 +125,7 @@ export function ConditionsManager() {
     <div className="space-y-4" data-slot="conditions-manager">
       {query.isError ? (
         <QueryErrorCard
+          error={query.error}
           title={t("records.conditions.loadError")}
           onRetry={() => void query.refetch()}
         />

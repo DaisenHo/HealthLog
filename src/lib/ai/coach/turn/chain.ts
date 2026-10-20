@@ -16,7 +16,7 @@ export async function resolveTurnChain(
   | { ok: true; chain: TurnChain; toolMode: boolean }
   | { ok: false; response: Response }
 > {
-  // v1.20.0 (F1) — provider capabilities select tool retrieval or the legacy
+  // v1.20.0 — provider capabilities select tool retrieval or the legacy
   // snapshot-stuffing path.
   const chain = await resolveProviderChain(userId);
   if (chain.length === 0) {
@@ -43,7 +43,7 @@ export async function resolveTurnChain(
   // ConsentRequiredError → apiHandler returns 403 + `consent.ai.required`.
   await assertConsentForChain({ userId, chain, surface: "coach" });
 
-  // v1.20.0 (F1) — tool mode is on only when EVERY provider in the chain
+  // v1.20.0 — tool mode is on only when EVERY provider in the chain
   // supports tool-calling, so whichever hop the fallback runner lands on can
   // still serve tools. A chain that includes a no-tools provider (local /
   // Ollama) falls back to the legacy snapshot-stuffing path verbatim, exactly

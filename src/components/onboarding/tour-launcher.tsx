@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.4.15 Phase B5 — onboarding-tour launcher.
+ * v1.4.15 — onboarding-tour launcher.
  *
  * Decides *when* to start the spotlight tour. Mounted on the
  * dashboard; opens the tour exactly once for new users and never
@@ -52,7 +52,7 @@ import { OnboardingTour } from "./tour";
 const POST_WIZARD_GRACE_MS = 1500;
 
 /**
- * v1.4.47 W5 — auto-launch only kicks in 24 h after the wizard
+ * v1.4.47 — auto-launch only kicks in 24 h after the wizard
  * finished. The first visit is owned by the WelcomeCarousel; the
  * tour becomes "the second-visit thing".
  */
@@ -110,7 +110,7 @@ export function shouldAutoLaunchTour(args: {
 }
 
 /**
- * v1.18.0 B5 — whether the achievements tour stop should be included.
+ * v1.18.0 — whether the achievements tour stop should be included.
  * Reads the per-user module map with the standard client default-on
  * convention (`modules?.achievements !== false`): only an explicit
  * `false` drops the stop. Pure + exported so the rule is unit-pinned
@@ -122,7 +122,7 @@ export function tourIncludesAchievements(
   return modules?.achievements !== false;
 }
 
-// v1.4.15 H4 — sessionStorage keys are now scoped by user id so an
+// v1.4.15 — sessionStorage keys are now scoped by user id so an
 // admin impersonating a second user does not inherit the first user's
 // "tour dismissed for this session" state. The previous global keys
 // (`healthlog-tour-session-dismissed`, `healthlog-tour-referrer`)
@@ -241,7 +241,7 @@ export function TourLauncher({ ready = true }: TourLauncherProps) {
     userId: string;
     flag: boolean;
   } | null>(null);
-  // v1.4.47 W5 — clock reading for the 24 h auto-launch gate. The
+  // v1.4.47 — clock reading for the 24 h auto-launch gate. The
   // useState lazy-initialiser runs once at mount; subsequent re-renders
   // reuse the same value. This keeps the render path pure (React's
   // purity linter rejects a bare `Date.now()` reference in render) and
@@ -283,7 +283,7 @@ export function TourLauncher({ ready = true }: TourLauncherProps) {
     // browser shared by two HealthLog users (admin impersonation,
     // family laptop, etc.) keeps each user's tour state independent.
     //
-    // v1.4.47 W5 — the 24 h auto-launch gate. The mount-time clock is
+    // v1.4.47 — the 24 h auto-launch gate. The mount-time clock is
     // captured into `mountedAtMs` via a useState lazy initialiser so
     // the render-phase decision stays pure (no Date.now() in the
     // render body). The `decidedFor` tuple above further guarantees

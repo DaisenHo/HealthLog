@@ -12,7 +12,7 @@ import {
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { NATIVE_ONLY_WIDGET_LABEL_KEYS } from "@/lib/dashboard/widget-modules";
 
-// v1.11.2 HIGH-1 — the web Settings list renders one row per WRITABLE id
+// v1.11.2 — the web Settings list renders one row per WRITABLE id
 // (`DASHBOARD_WIDGET_IDS`) MINUS the `IOS_PIN_ONLY_WIDGET_IDS` (writable so
 // the iOS pin PUT validates, but with no web render path). The default
 // layout still carries all 24 writable widgets; only this subset renders.
@@ -27,14 +27,14 @@ const queryState: { layout: DashboardLayout } = {
 };
 
 /**
- * v1.4.15 Fix 5 — independent strip-tile + chart toggles.
+ * v1.4.15 — independent strip-tile + chart toggles.
  *
  * The settings section grew a SECOND switch column for the upper-row
  * tile, distinct from the existing chart switch. SSR smoke tests are
  * sufficient here; full state-mutation testing would require a DOM
  * runtime which the rest of the settings suite doesn't pull in.
  *
- * v1.4.47 W4 — drag-and-drop reorder via @dnd-kit. The SSR markup picks
+ * v1.4.47 — drag-and-drop reorder via @dnd-kit. The SSR markup picks
  * up the new drag handle, the shared describedby hint paragraph, and
  * keeps the legacy arrow buttons + switches. The reorder contract is
  * exercised via the exported `reorderWidgets` helper so we pin the
@@ -85,6 +85,9 @@ import {
   reorderWidgets,
   setHeroItemKindEnabled,
 } from "../dashboard-layout-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactElement, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
@@ -135,7 +138,7 @@ describe("<DashboardLayoutSection> — tile + chart split", () => {
 });
 
 /**
- * v1.4.47 W4 — drag-and-drop reorder surface.
+ * v1.4.47 — drag-and-drop reorder surface.
  *
  * The audit (v1.4.43 QoL M1) asked for drag-to-reorder while keeping the
  * arrow-button keyboard fallback. Tests pin (a) the visual surface
@@ -184,7 +187,7 @@ describe("<DashboardLayoutSection> — drag-and-drop reorder", () => {
 
   it("hint string localises to German", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
-    // v1.4.48 L9 — copy trimmed to ~12 words so screen readers do
+    // v1.4.48 — copy trimmed to ~12 words so screen readers do
     // not spend ~6 s reading the hint on focus. Anchor on the
     // shortened phrase.
     expect(html).toContain("Pfeiltasten Hoch/Runter");
@@ -245,7 +248,7 @@ describe("reorderWidgets — pure mutation contract", () => {
 });
 
 /**
- * v1.7.0 W1 — the stored layout round-trips the iOS-only widget ids. The
+ * v1.7.0 — the stored layout round-trips the iOS-only widget ids. The
  * web tile/chart LIST still has no surface for them (no drag handle, no
  * reorder, no web render path), so the sortable list must skip them.
  *
@@ -406,7 +409,7 @@ describe("<DashboardLayoutSection> — native-only widget group (issue #581)", (
 });
 
 /**
- * v1.11.2 HIGH-1 — the 8 B5 ids are WRITABLE (in DASHBOARD_WIDGET_IDS so the
+ * v1.11.2 — the 8 B5 ids are WRITABLE (in DASHBOARD_WIDGET_IDS so the
  * iOS pin PUT validates them) but have NO web render path, so the web
  * Settings list must NOT offer a dead toggle for them.
  */

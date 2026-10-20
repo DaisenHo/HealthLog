@@ -1,5 +1,5 @@
 /**
- * v1.27.13 (Welle J) — the per-metric INTERPRETATION CONTEXT block.
+ * v1.27.13 — the per-metric INTERPRETATION CONTEXT block.
  *
  * Renders the guideline band table + the server-computed band position for one
  * value into the assessment user prompt, so the model can say what the value

@@ -1,7 +1,7 @@
 /**
  * Server-side message-bundle map + re-export of the shared key resolver.
  *
- * v1.4.27 B7 / BL-P4-11-S10 — client and server previously each carried
+ * v1.4.27 — client and server previously each carried
  * their own private copy of `allMessages` plus a near-identical
  * `resolveKey` helper; pinning both to one import stopped the maps
  * drifting when a locale was added.
@@ -21,6 +21,7 @@ import esMessages from "../../../messages/es.json";
 import itMessages from "../../../messages/it.json";
 import plMessages from "../../../messages/pl.json";
 import koMessages from "../../../messages/ko.json";
+import nlMessages from "../../../messages/nl.json";
 import { locales, type Locale } from "./config";
 import { resolveKey } from "./resolve-key";
 
@@ -38,6 +39,7 @@ export const allMessages: Record<Locale, Record<string, unknown>> = {
   it: itMessages,
   pl: plMessages,
   ko: koMessages,
+  nl: nlMessages,
 };
 
 /**

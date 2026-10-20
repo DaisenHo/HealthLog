@@ -96,7 +96,7 @@ export async function assembleTurnContext(args: {
   // system-prompt prefix; the snapshot builder reads the same prefs
   // separately so excluded metrics never even leave the DB.
   //
-  // v1.4.25 W5 — `coachPrefs.defaultWindow` is the user's saved
+  // v1.4.25 — `coachPrefs.defaultWindow` is the user's saved
   // analysis-window preference, merged into the snapshot scope when the
   // client didn't supply a per-conversation window.
   const prefsRow = await prisma.user.findUnique({
@@ -141,12 +141,12 @@ export async function assembleTurnContext(args: {
   // keeps the Guard I phrase-anchored dose behaviour.
   const scheduleDoses = await getScheduledDoseValues(userId).catch(() => []);
   const medicationNames = await getMedicationNames(userId).catch(() => []);
-  // v1.22 (B2/F6) — the canonical system-prompt module is owned elsewhere, so
+  // v1.22 — the canonical system-prompt module is owned elsewhere, so
   // the two memory/action clauses are appended at assembly time here: one
   // teaches the model to emit `---REMEMBER---` (durable "remind me" capture),
   // one teaches the closed `---SUGGEST-ACTION---` confirm-card allowlist. Both
   // are provider-neutral sentinels stripped from the prose before it streams.
-  // v1.22 (W6) — per-turn personalization: a sparse, hash-gated first name and
+  // v1.22 — per-turn personalization: a sparse, hash-gated first name and
   // an opener-archetype hint so multi-turn sessions vary. The turn index is the
   // count of prior turns, so the name surfaces on ~1-in-3 turns, varied and
   // never on a fixed cadence; both omit cleanly when no display name is set.

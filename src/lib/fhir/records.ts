@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-RECORDS) — FHIR R4 emitters for the structured health records.
+ * v1.25 — FHIR R4 emitters for the structured health records.
  *
  * Pure functions over the server-authoritative DTOs (`@/lib/records/dto`):
  *   - Allergy            → `AllergyIntolerance`

@@ -1,5 +1,5 @@
 /**
- * v1.27.13 (Welle J) — the interpretation-context registry.
+ * v1.27.13 — the interpretation-context registry.
  *
  * The per-metric assessment prompt used to hand the model a coarse
  * single-edge `normalRange` and the personal baseline, and nothing that says

@@ -41,6 +41,8 @@ import {
   type QueueRuntime,
   type SourceSite,
 } from "@/lib/jobs/queue-runtime";
+import { SCHEDULED_AND_SENT_QUEUES } from "@/lib/jobs/reminder/registrar-shared";
+import { HEAVY_QUEUES } from "@/lib/jobs/heavy-lane";
 
 const SRC = join(process.cwd(), "src");
 const REGISTRARS = [
@@ -369,3 +371,134 @@ describe("every queue declares its runtime", () => {
     ).toEqual(["planted-long: expiry 900s out of range"]);
   });
 });
+
+/**
+ * Queues a file sends to through a variable (`boss.send(queueName, …)`): every
+ * known queue name the file spells out, as a constant or a map value, counts
+ * as sent, because the matcher above cannot tell which one the variable holds.
+ */
+function dynamicallySent(texts: ReadonlyMap<string, string>): Set<string> {
+  const out = new Set<string>();
+  for (const [, raw] of texts) {
+    const text = code(raw);
+    if (
+      !/\b(?:boss|getGlobalBoss\(\)\??)\s*\.\s*send\s*(?:<[^(]*?>)?\(\s*[a-z]/.test(
+        text,
+      )
+    ) {
+      continue;
+    }
+    for (const m of text.matchAll(/"([a-z0-9-]+)"/g)) {
+      if (m[1] in QUEUE_RUNTIME) out.add(m[1]);
+    }
+  }
+  return out;
+}
+
+describe("a cron-fed queue polls slowly, a sent one does not", () => {
+  const all = scan(source);
+  const scheduled = new Set(all.schedules.map((s) => s.queue));
+  const sent = new Set([
+    ...all.sends.map((s) => s.queue),
+    ...dynamicallySent(source),
+  ]);
+
+  it("lists exactly the scheduled queues that also take sends", () => {
+    const expected = [...scheduled].filter((q) => sent.has(q)).sort();
+    expect([...SCHEDULED_AND_SENT_QUEUES].sort()).toEqual(expected);
+    // Most scheduled queues are fed by their cron alone.
+    expect(scheduled.size - expected.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it("counts a send through a variable as a send to every queue the file names", () => {
+    const dynamic = dynamicallySent(source);
+    expect(dynamic.has("withings-activity-sync")).toBe(true);
+    expect(dynamic.has("whoop-recovery-sync")).toBe(true);
+  });
+});
+
+describe("heavy jobs share the lane", () => {
+  const all = scan(source);
+  const laned = all.bindings.filter((b) => /\bheavyLane\s*\(/.test(b.text));
+
+  it("binds every heavy queue in the lane, and nothing else", () => {
+    expect(laned.map((b) => b.queue).sort()).toEqual(
+      Object.keys(HEAVY_QUEUES).sort(),
+    );
+  });
+
+  it("holds a lockedPass outside the lane, so an expiry retry finds the run going", () => {
+    // Outside, a retry pg-boss starts while the expired run still holds the
+    // lane finds the lock and settles; inside, the lane would defer it and
+    // run the job a second time once the first is done.
+    const inverted = laned
+      .filter((b) => /\blockedPass\s*\(/.test(b.text))
+      .filter((b) => b.text.indexOf("lockedPass") > b.text.indexOf("heavyLane"))
+      .map((b) => b.queue);
+    expect(inverted).toEqual([]);
+  });
+
+  it("declares every heavy queue long, so its expiry, stop and exclusivity are proven", () => {
+    // A heavy job is the one most likely to run past pg-boss's default
+    // expiry, and the retry that follows an expiry runs it a second time.
+    // `long` is the declaration the checks above hold to an explicit expiry,
+    // a stop on the budget and a lock (or a named marker). A heavy queue
+    // that is genuinely bounded far below the default may be named here
+    // with its reason instead.
+    const HEAVY_BUT_SHORT: Record<string, string> = {};
+    const notLong = (table: Readonly<Record<string, QueueRuntime>>) =>
+      Object.keys(HEAVY_QUEUES)
+        .filter((q) => table[q]?.runtime !== "long" && !(q in HEAVY_BUT_SHORT))
+        .sort();
+    expect(notLong(QUEUE_RUNTIME)).toEqual([]);
+    // The planted case: the fold as it was declared before, `short`.
+    expect(
+      notLong({
+        ...QUEUE_RUNTIME,
+        "rollup-full-backfill": { runtime: "short", why: "four statements" },
+      }),
+    ).toEqual(["rollup-full-backfill"]);
+  });
+
+  it("defers only on queues where a job can go back to created", () => {
+    // A deferred job returns from active to created. Under `short` (one
+    // queued job per key) and `stately` (one per state) a twin already
+    // queued would refuse it, and the job would fail instead of waiting.
+    const policies = policiesOf(source);
+    expect(policies.size).toBeGreaterThanOrEqual(40);
+    const refused = Object.keys(HEAVY_QUEUES)
+      .filter((queue) => /^(?:short|stately)$/.test(policies.get(queue) ?? ""))
+      .sort();
+    expect(refused).toEqual([]);
+    // The planted case: the same check over a table that declares one.
+    const planted = new Map(source);
+    const file = REGISTRARS[2];
+    planted.set(
+      file,
+      `const DATA_BACKUP_QUEUE = "data-backup";\nconst queuePolicies: QueuePolicyTable = {\n  [DATA_BACKUP_QUEUE]: { policy: "short", reason: "x" },\n};\n`,
+    );
+    expect(policiesOf(planted).get("data-backup")).toBe("short");
+  });
+});
+
+/** Every `[QUEUE]: { policy: "…" }` in a registrar's `queuePolicies`. */
+function policiesOf(texts: ReadonlyMap<string, string>): Map<string, string> {
+  const definitions = definitionsOf(texts);
+  const out = new Map<string, string>();
+  for (const file of REGISTRARS) {
+    const text = code(texts.get(file) ?? "");
+    const m = /const\s+queuePolicies\s*:\s*QueuePolicyTable\s*=\s*\{/.exec(
+      text,
+    );
+    if (!m) continue;
+    const open = m.index + m[0].length - 1;
+    const body = text.slice(open, closeOf(text, open));
+    for (const entry of body.matchAll(
+      /\[\s*([A-Z][A-Z0-9_]*)\s*\]\s*:\s*\{\s*policy\s*:\s*"([a-z]+)"/g,
+    )) {
+      const queue = resolve(definitions, file, entry[1]);
+      if (queue) out.set(queue, entry[2]);
+    }
+  }
+  return out;
+}

@@ -6,7 +6,8 @@ import { hashToken } from "@/lib/auth/hmac";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
-import { isP2025 } from "@/lib/prisma-errors";
+import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
+import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
 
@@ -39,6 +40,19 @@ const SESSION_SECRET_BYTES = 32;
 function mintSessionSecret(): string {
   return `${SESSION_TOKEN_PREFIX}${randomBytes(SESSION_SECRET_BYTES).toString("hex")}`;
 }
+
+/** Exactly what `mintSessionSecret` produces. */
+const SESSION_SECRET_SHAPE = new RegExp(
+  `^${SESSION_TOKEN_PREFIX}[0-9a-f]{${SESSION_SECRET_BYTES * 2}}$`,
+);
+
+/**
+ * What a legacy cookie (a `Session.id`, a cuid) can look like. Deliberately a
+ * character class rather than the cuid grammar: it exists to keep a value that
+ * cannot be an id away from the query, where a NUL byte or invalid UTF-8 makes
+ * Postgres raise instead of finding nothing.
+ */
+const LEGACY_SESSION_ID_SHAPE = /^[A-Za-z0-9_-]{1,64}$/;
 
 /**
  * Resolve the session row a cookie value refers to, or null.
@@ -73,19 +87,49 @@ function mintSessionSecret(): string {
  * login from the deploy onward is on a secret immediately.
  */
 async function findSessionByCookie(cookieValue: string) {
+  // A malformed value matches no session: it is answered as one, before the
+  // database is asked, so an anonymous caller cannot turn a crafted cookie into
+  // a query error.
   if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
-    return prisma.session.findUnique({
-      where: { tokenHash: hashToken(cookieValue) },
+    if (!SESSION_SECRET_SHAPE.test(cookieValue)) return null;
+  } else if (!LEGACY_SESSION_ID_SHAPE.test(cookieValue)) {
+    return null;
+  }
+  try {
+    if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
+      return await prisma.session.findUnique({
+        where: { tokenHash: hashToken(cookieValue) },
+        include: { user: true },
+      });
+    }
+
+    const legacy = await prisma.session.findUnique({
+      where: { id: cookieValue },
       include: { user: true },
     });
+    // A row that already holds a secret has retired its id as a credential.
+    return legacy && legacy.tokenHash === null ? legacy : null;
+  } catch (error) {
+    // "No such session" and "could not look" are different answers and only
+    // the first one is null. A failed query used to be folded into null by
+    // the callers, so a database restart answered 401 and every client
+    // signed its person out. It is a 503 now, with a code a client can retry
+    // on (`auth.session.unavailable`).
+    //
+    // The shape check above already refused every crafted value before the
+    // query, so a failure here is about the store, not the caller: the pool
+    // had no connection free, the server ran out of connections or memory, a
+    // lock wait ran out. All of those are a 503. Only a refusal that names
+    // the value itself (a data exception, a Prisma validation error) is
+    // answered like a value that matches nothing.
+    if (!isInputRefusal(error)) {
+      throw new SessionStoreUnavailableError(error);
+    }
+    getEvent()?.addWarning(
+      `session lookup refused the value: ${error instanceof Error ? error.name : "unknown"}`,
+    );
+    return null;
   }
-
-  const legacy = await prisma.session.findUnique({
-    where: { id: cookieValue },
-    include: { user: true },
-  });
-  // A row that already holds a secret has retired its id as a credential.
-  return legacy && legacy.tokenHash === null ? legacy : null;
 }
 
 /**
@@ -106,7 +150,7 @@ export async function validateSessionFromCookieValue(
   cookieValue: string | undefined | null,
 ): Promise<{ session: { id: string; expiresAt: Date }; user: User } | null> {
   if (!cookieValue) return null;
-  const session = await findSessionByCookie(cookieValue).catch(() => null);
+  const session = await findSessionByCookie(cookieValue);
   if (!session || session.expiresAt < new Date()) return null;
   return {
     session: { id: session.id, expiresAt: session.expiresAt },
@@ -138,7 +182,7 @@ export async function validateSessionWithCreatedAt(
   user: User;
 } | null> {
   if (!cookieValue) return null;
-  const session = await findSessionByCookie(cookieValue).catch(() => null);
+  const session = await findSessionByCookie(cookieValue);
   if (!session || session.expiresAt < new Date()) return null;
   return {
     session: {
@@ -157,7 +201,7 @@ export async function validateSessionWithCreatedAt(
 const LAST_ACTIVE_THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * v1.4.22 C4 — flag cookie mirroring the user's `onboardingCompletedAt`
+ * v1.4.22 — flag cookie mirroring the user's `onboardingCompletedAt`
  * status. Set to `"pending"` while the field is null and cleared once
  * onboarding completes. The proxy reads this cookie to short-circuit
  * the post-hydration redirect that previously caused a dashboard flash
@@ -178,7 +222,7 @@ export async function setOnboardingPendingCookie(
     cookieStore.set(ONBOARDING_COOKIE, "pending", {
       httpOnly: false,
       secure: shouldEmitSecureCookie(),
-      // v1.4.22 W5 reconcile (Sec-MED-1) — Strict (not Lax) because
+      // v1.4.22 — Strict (not Lax) because
       // no cross-site redirect flow ever depends on this cookie. The
       // sibling `healthlog_session` cookie stays Lax because the
       // Withings OAuth callback arrives via top-level cross-site
@@ -193,7 +237,7 @@ export async function setOnboardingPendingCookie(
 }
 
 /**
- * v1.4.22 W5 reconcile (Sr-H1) — `onboardingPending` is required
+ * v1.4.22 — `onboardingPending` is required
  * (not optional) so issuing a session without anchoring the
  * onboarding cookie is type-impossible. Every auth surface (login,
  * passkey-verify, register, password-reset) must thread the user's
@@ -462,7 +506,15 @@ export async function destroySession(): Promise<void> {
     // event rather than swallowing it silently, but never block the cookie
     // clear below: a transient DB fault must not leave the client logged in
     // with the cookie intact.
-    const session = await findSessionByCookie(cookieValue).catch(() => null);
+    // A lookup that fails cannot find the row to delete, but must not keep
+    // the cookie in the browser either; the warning is what tells the
+    // operator a server-side session outlived its logout.
+    const session = await findSessionByCookie(cookieValue).catch((err) => {
+      getEvent()?.addWarning(
+        `destroySession lookup failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
+    });
     if (session) {
       await prisma.session
         .delete({ where: { id: session.id } })

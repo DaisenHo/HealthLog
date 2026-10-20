@@ -229,6 +229,7 @@ function ManagedProfileRow({
           shows no destructive control for it. */}
       {guardians.isError && (
         <QueryErrorCard
+          error={guardians.error}
           title={t("recordSharing.managed.rosterLoadError")}
           onRetry={() => void guardians.refetch()}
         />

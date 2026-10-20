@@ -58,6 +58,7 @@ import {
 import { AvatarSection } from "./avatar-section";
 import { SetupCard } from "./setup-card";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 export { resolveInitialTimezone } from "./account-section-utils";
 
@@ -368,7 +369,9 @@ export function AccountSection() {
       setFieldErrors(describeRejectedProfileFields(json?.details?.issues, t));
       if (errorCode === "profile.update.nothingSaved" && field) {
         setSaveMsg({ key: "settings.profileNothingSaved", params: { field } });
-      } else if (errorCode) {
+      } else if (translateCodeOrNull(t, "apiErrors", errorCode) !== null) {
+        // Only a code with a sentence of its own: every refusal carries a
+        // code now, and the generic `http.*` family has no translation.
         setSaveMsg({ key: `apiErrors.${errorCode}` });
       } else {
         setSaveMsg({ key: "settings.savingError" });
@@ -400,7 +403,7 @@ export function AccountSection() {
 
   if (!user) return null;
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the profile cards.
   return (
     <div className="space-y-6">
@@ -408,7 +411,7 @@ export function AccountSection() {
       {/* Profile photo card */}
       <AvatarSection />
 
-      {/* v1.39 (C2) — the way back into the first-run experience: the setup
+      {/* v1.39 — the way back into the first-run experience: the setup
           questions again, and the dashboard checklist this browser hid. */}
       <SetupCard />
 
@@ -421,7 +424,7 @@ export function AccountSection() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="username">{t("settings.username")}</Label>
-              {/* v1.4.33 F13 — `disabled` adds `opacity-50` to the input
+              {/* v1.4.33 — `disabled` adds `opacity-50` to the input
                   primitive, which the maintainer's mobile pass read as
                   "empty placeholder text" because the username then
                   matches the muted-foreground colour exactly. Username
@@ -669,7 +672,7 @@ export function AccountSection() {
 
       <DisplayPreferencesCard isAuthenticated={isAuthenticated} />
 
-      {/* v1.18.0 (S5) — injection-site exclusions moved to the dedicated
+      {/* v1.18.0 — injection-site exclusions moved to the dedicated
           Medikamente settings section, where every medication-specific
           preference now lives. */}
 
@@ -689,7 +692,7 @@ export function AccountSection() {
           live only under Settings → Data & Privacy now; the duplicate cards
           that used to sit here were removed so each surfaces in one place. */}
 
-      {/* v1.18.1 (D1) — the "Tour neu starten" card moved to Settings →
+      {/* v1.18.1 — the "Tour neu starten" card moved to Settings →
           Erweitert. It is a maintenance / reset action, not a profile or
           security control, so it sits beside Research Mode + the danger zone. */}
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.16 phase A3 — `/admin/api-tokens` no horizontal overflow on
+ * v1.4.16 — `/admin/api-tokens` no horizontal overflow on
  * Pixel-5-class viewports (393 CSS px).
  *
  * The v1.4.15 fix tried hiding columns + tightening padding, but a

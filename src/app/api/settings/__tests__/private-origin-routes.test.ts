@@ -187,7 +187,11 @@ describe("PUT /api/settings/webhook — private targets", () => {
     expect(response.status).toBe(422);
     const json = await response.json();
     expect(json.error).toBe("Invalid data");
-    expect(json.meta).toEqual({ requestId: expect.any(String) });
+    // No private-origin code: only the status's generic one.
+    expect(json.meta).toEqual({
+      requestId: expect.any(String),
+      errorCode: "http.invalid",
+    });
   });
 
   it("saves a listed loopback target and refuses an unlisted one with the listable code", async () => {
@@ -476,7 +480,10 @@ describe("POST /api/settings/{webhook,ntfy}/test — the refusal names itself", 
 
       expect(response.status).toBe(500);
       const json = await response.json();
-      expect(json.meta).toEqual({ requestId: expect.any(String) });
+      expect(json.meta).toEqual({
+        requestId: expect.any(String),
+        errorCode: "http.internal",
+      });
       expect(emitIfSampledMock).toHaveBeenCalledWith(
         expect.objectContaining({ level: "error" }),
       );

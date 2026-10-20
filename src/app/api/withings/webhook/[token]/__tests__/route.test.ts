@@ -17,7 +17,7 @@ vi.mock("@/lib/withings/sync", () => ({
   syncUserMeasurements: vi.fn(),
 }));
 
-// v1.4.25 W17b/c — activity / sleep paths dispatch through pg-boss.
+// v1.4.25 — activity / sleep paths dispatch through pg-boss.
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(),
 }));

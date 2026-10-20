@@ -1,5 +1,5 @@
 /**
- * v1.22 (W9, C3) — which-signal-to-trust snapshot block.
+ * v1.22 — which-signal-to-trust snapshot block.
  *
  * Reads the recent `RECOVERY_SCORE` rows (all sources) and, when two sources
  * materially diverge for the most recent night, surfaces the canonical pick +

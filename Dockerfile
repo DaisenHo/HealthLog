@@ -76,6 +76,15 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV TZ=Europe/Berlin
 
+# When the heap runs out, Node writes a diagnostic report (the JavaScript
+# and native stacks, heap spaces, libuv handles) to stderr, where
+# `docker compose logs` and Loki keep it; without it the log holds one
+# line. Environment variables and network interfaces are left out, so no
+# key, password or address from the environment reaches the log. An
+# operator who sets NODE_OPTIONS replaces this value and should carry these
+# flags over (docs/ops/heap-diagnostics.md).
+ENV NODE_OPTIONS="--report-on-fatalerror --report-filename=stderr --report-exclude-env --report-exclude-network"
+
 # v1.4.43 B11 — forward NEXT_PUBLIC_APP_VERSION from the builder stage
 # into the runner so /api/version reads the build-arg value instead of
 # the package.json fallback. The variable is keyed to the CI tag ref
@@ -203,11 +212,13 @@ COPY --from=builder /app/src/generated ./src/generated
 # application graph (`@/…`, the generated Prisma client) run from a source
 # checkout instead. `src/__tests__/container-scripts-ship-guard.test.ts` holds
 # the runbooks and the entrypoint against this list. `pending-migrations.mjs`
-# is the entrypoint's own: it logs the pending migration count before
-# `migrate deploy`. Root-owned on purpose: the app user can run them but not
+# and `migrate-deploy.mjs` are the entrypoint's own: the first logs the
+# pending migration count, the second runs `migrate deploy` with its
+# lock-timeout retry. Root-owned on purpose: the app user can run them but not
 # rewrite them.
 COPY --from=builder /app/scripts/reset-password.mjs ./scripts/reset-password.mjs
 COPY --from=builder /app/scripts/pending-migrations.mjs ./scripts/pending-migrations.mjs
+COPY --from=builder /app/scripts/migrate-deploy.mjs ./scripts/migrate-deploy.mjs
 COPY --from=builder /app/src/lib/auth/argon2-params.mjs ./src/lib/auth/argon2-params.mjs
 COPY --from=builder /app/scripts/repair-intake-anomalies.ts ./scripts/repair-intake-anomalies.ts
 # Prove the reset CLI's imports resolve in this tree: with every import found
@@ -215,7 +226,8 @@ COPY --from=builder /app/scripts/repair-intake-anomalies.ts ./scripts/repair-int
 RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"
 # The boot notice parses, and the `pg` it loads on a real boot resolves here.
 RUN env -u DATABASE_URL node scripts/pending-migrations.mjs && \
-    node --input-type=module -e "await import('pg')"
+    node --input-type=module -e "await import('pg')" && \
+    node --input-type=module -e "await import('./scripts/migrate-deploy.mjs')"
 
 # Install the migration CLI, its config dependency, and a pinned launcher for
 # the maintenance scripts already shipped in the standalone tree. The Prisma

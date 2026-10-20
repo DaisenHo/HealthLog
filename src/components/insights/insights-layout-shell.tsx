@@ -13,14 +13,16 @@ import {
   nextAdvisorPollInterval,
   useInsightsAdvisorQuery,
 } from "@/components/insights/use-insights-advisor";
+import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useInsightsLayoutQuery } from "@/hooks/use-insights-layout";
 import { queryKeys } from "@/lib/query-keys";
 import type { InsightInputs } from "@/lib/insights/metric-availability";
 import { apiGet } from "@/lib/api/api-fetch";
+import { useEcgList } from "@/components/insights/use-ecg-list";
 
 /**
- * v1.4.25 W4 — client shell for `src/app/insights/layout.tsx`.
+ * v1.4.25 — client shell for `src/app/insights/layout.tsx`.
  *
  * Owns the advisor query so the regenerate button on the sticky tab
  * strip works from every Insights surface (mother + the seven sub-
@@ -29,7 +31,7 @@ import { apiGet } from "@/lib/api/api-fetch";
  * `queryKeys.insightsAdvisor()` key, so the two consumers reuse the
  * same cache entry without extra network traffic.
  *
- * v1.4.27 F19 — also owns the analytics + comprehensive reads that
+ * v1.4.27 — also owns the analytics + comprehensive reads that
  * power the tab-strip availability gate. The analytics consumer goes
  * through the shared `useAnalyticsQuery({ slice: "summaries" })` hook
  * (v1.4.33 IW2); the comprehensive consumer still owns its bespoke
@@ -89,7 +91,7 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
     refetchInterval: (query) =>
       nextAdvisorPollInterval(
         query.state.data?.revalidating,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
       ),
   });
 
@@ -112,19 +114,15 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   // degrades from "enable" → "no rows yet" → the three-card spine.
   const nutrientsEnabled = user?.modules?.nutrients === true;
 
-  // v1.30 (UX/IA audit H1) — ECG recording presence for the Heart-group ECG
+  // v1.30 — ECG recording presence for the Heart-group ECG
   // pill. ECG carries no `MeasurementType`, so the metric `availability`
   // model can't gate it; it rides its own `hasRecordings` probe instead. The
   // query shares `queryKeys.insightsEcgList()` with `<EcgSection>` and the
   // ECG page, so the flag lands once per route (dedup-shared, no extra
   // traffic). Undefined until it resolves → the pill stays off on first paint,
   // exactly like the metric pills light up as their summaries land.
-  const ecgProbe = useQuery({
-    queryKey: queryKeys.insightsEcgList(),
-    queryFn: () => apiGet<{ hasRecordings: boolean }>("/api/insights/ecg"),
-    enabled: isAuthenticated,
-  });
-  const hasEcgRecordings = ecgProbe.data?.hasRecordings === true;
+  const ecgProbe = useEcgList();
+  const hasEcgRecordings = ecgProbe.data?.data.hasRecordings === true;
 
   // v1.4.31 — memoise the `availability` prop so an unchanged
   // payload doesn't recreate the object on every cache-write of
@@ -150,7 +148,7 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
     hasNutrients,
   ]);
 
-  // v1.15.14 W2 — couple the tab strip to the saved insights layout.
+  // v1.15.14 — couple the tab strip to the saved insights layout.
   // A sub-page pill now shows iff its metric has data AND its slug is
   // layout-`visible`; the strip orders pills by the saved `order`. We
   // pass the derived visibility set + order map only once the GET has

@@ -31,6 +31,7 @@ const INTL_LOCALE_MAP: Record<Locale, string> = {
   it: "it-IT",
   pl: "pl-PL",
   ko: "ko-KR",
+  nl: "nl-NL",
 };
 
 export function resolveIntlLocale(locale: Locale): string {
@@ -211,7 +212,7 @@ export function makeFormatters(
   // so axis month names follow the UI language, not the date-order pin.
   const dateLocale = dateOrderLocale(dateFormat, intlLocale);
 
-  // v1.28.42 (H2) — the returned closures used to construct a fresh
+  // v1.28.42 — the returned closures used to construct a fresh
   // `Intl.NumberFormat` / `Intl.DateTimeFormat` on every call. `makeFormatters`
   // is memoised per (locale, tz, timeFormat, dateFormat) on the client, but a
   // dense history list still calls these closures thousands of times per
@@ -350,5 +351,6 @@ export function parseLocaleFromAcceptLanguage(header: string | null): Locale {
   if (primary.startsWith("it")) return "it";
   if (primary.startsWith("pl")) return "pl";
   if (primary.startsWith("ko")) return "ko";
+  if (primary.startsWith("nl")) return "nl";
   return "en";
 }

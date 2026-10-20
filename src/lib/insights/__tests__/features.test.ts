@@ -682,3 +682,43 @@ describe("extractFeatures — a day of pulse is the mean of its hours' means", (
     expect(f.historicalComparison?.pulse?.current7dAvg).toBe(71.25);
   });
 });
+
+describe("extractFeatures — blood-pressure spread", () => {
+  it("reports the same population spread the series API shows", async () => {
+    // 120 / 130 / 140 over the last three days: population SD 8.165, the
+    // sample SD (the old rule here) would be 10.
+    const day = 24 * 60 * 60 * 1000;
+    const rows = [120, 130, 140].map((value, i) => ({
+      type: "BLOOD_PRESSURE_SYS",
+      value,
+      measuredAt: new Date(Date.now() - (i + 1) * day),
+      sleepStage: null,
+      source: "MANUAL",
+      deviceType: null,
+    }));
+    prismaMock.measurement.findMany.mockResolvedValue(rows);
+
+    const features = await extractFeatures("user-1", false);
+
+    expect(features.bloodPressure?.sdSys30).toBe(8.2);
+  });
+});
+
+describe("extractFeatures — mood fallback window", () => {
+  it("reads the raw fallback over the rollup's five years, not one", async () => {
+    // Empty rollup tier: the raw fallback answers.
+    prismaMock.moodEntryRollup.findMany.mockResolvedValue([]);
+    await extractFeatures("user-mood-window", false, {
+      only: new Set(["mood"]),
+    });
+    const call = prismaMock.moodEntry.findMany.mock.calls.find(
+      ([args]) =>
+        (args as { where?: { moodLoggedAt?: unknown } })?.where?.moodLoggedAt,
+    );
+    expect(call).toBeDefined();
+    const since = (call![0] as { where: { moodLoggedAt: { gte: Date } } }).where
+      .moodLoggedAt.gte;
+    const years = (Date.now() - since.getTime()) / (365 * dayMs);
+    expect(years).toBeGreaterThan(4.9);
+  });
+});

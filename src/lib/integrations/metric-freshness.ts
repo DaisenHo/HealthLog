@@ -215,6 +215,44 @@ export async function getAppleHealthDoseFreshness(
 }
 
 /**
+ * The newest reading entered here, not arrived from Apple Health, for each of
+ * `types` (#1247): the readings the app writes back to the phone. Every
+ * requested type has a key, null when there is none, so a write-back type is
+ * recognisable on the wire even before its first entry.
+ */
+export async function getEnteredHereAt(
+  userId: string,
+  types: readonly MeasurementType[],
+): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>(types.map((t) => [t, null]));
+  if (types.length === 0) return out;
+  // One `LIMIT 1` per type down the (user, type, measured_at) index; the
+  // enum casts are literal SQL, everything else is bound.
+  const rows = await prisma.$queryRaw<
+    Array<{ type: string; last_seen: Date | null }>
+  >`
+    SELECT wanted."type"::text AS "type",
+      (
+        SELECT m."measured_at"
+        FROM "measurements" m
+        WHERE m."user_id" = ${userId}
+          AND m."type" = wanted."type"
+          AND m."deleted_at" IS NULL
+          AND m."source" <> 'APPLE_HEALTH'::"measurement_source"
+        ORDER BY m."measured_at" DESC
+        LIMIT 1
+      ) AS "last_seen"
+    FROM unnest(${[...types]}::"measurement_type"[]) AS wanted("type")
+  `;
+  for (const row of rows) {
+    if (row.last_seen && out.has(row.type)) {
+      out.set(row.type, new Date(row.last_seen).toISOString());
+    }
+  }
+  return out;
+}
+
+/**
  * Compute per-`(integration, type)` last-value timestamps for the sync
  * integrations, keyed by `IntegrationKey`. Two grouped queries (measurements +
  * workouts); a source with no rows simply has no entry.

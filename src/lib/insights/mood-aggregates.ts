@@ -428,9 +428,9 @@ export interface MoodMetricCorrelation {
  *
  * This routes through `significantPearsonCorrelation` — n >= 20 AND
  * p < 0.05 — for the same reason the weight, blood-pressure and
- * mood-status surfaces do: the plain `pearsonCorrelation` bands from |r|
- * alone above a floor of five pairs, so five days of noise sloping the
- * right way arrive at the reader labelled "strong". A mood page is where
+ * mood-status surfaces do: a band read from |r| alone above a floor of
+ * five pairs lets five days of noise sloping the right way arrive at the
+ * reader labelled "strong". A mood page is where
  * that costs the most, because the reader is looking for something to
  * change about their week.
  */
@@ -535,12 +535,12 @@ export interface MoodAggregates {
   /** v1.8.5 — structured-tag breakdown from the taxonomy join. */
   structuredTags: StructuredTagRow[];
   /**
-   * v1.11.5 (F1) — tag "Influence on Mood": with-vs-without daily-mean
+   * v1.11.5 — tag "Influence on Mood": with-vs-without daily-mean
    * delta + Welch confidence band for each frequent flat / structured tag.
    */
   tagInfluence: TagInfluence;
   /**
-   * v1.11.5 (F2) — unified "what's associated with your better days" board
+   * v1.11.5 — unified "what's associated with your better days" board
    * folding the F1 tag deltas and the mood × health-metric correlations
    * into one effect-size-ranked, confidence-gated, observational list.
    */
@@ -586,7 +586,7 @@ export function computeMoodAggregates(args: {
    */
   userPriorityJson?: unknown;
   /**
-   * v1.2.5 (M-TZ3) — the user's IANA timezone. Threaded into every day
+   * v1.2.5 — the user's IANA timezone. Threaded into every day
    * bucketing pass so a near-midnight reading lands on the user's own
    * calendar day. Defaults to Berlin for legacy / test callers.
    */

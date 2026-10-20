@@ -121,7 +121,7 @@ describe("selectTrendCharts", () => {
   });
 
   it("every chart-bearing sourceMetric carries a standard caption key", () => {
-    // v1.8.6 W8 — a tile without an advisor annotation used to paint
+    // v1.8.6 — a tile without an advisor annotation used to paint
     // empty space below the chart. Every chart config now carries a
     // `captionKey` so the renderer can always surface a caption. This
     // guard keeps a future metric addition from re-opening the gap.

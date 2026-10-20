@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W7 — per-user-timezone end-to-end guard.
+ * v1.4.25 — per-user-timezone end-to-end guard.
  *
  * Creates a Pacific/Auckland user (UTC+12 in May, UTC+13 with DST
  * later in the year), inserts a measurement at a UTC instant that
@@ -360,7 +360,7 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
   });
 
   it("dashboard streak counts the Auckland-day for a 23:50 NZST reading", async () => {
-    // v1.4.25 W7b — surface 1. A Pacific/Auckland user logs a
+    // v1.4.25 — surface 1. A Pacific/Auckland user logs a
     // reading at 11:50 UTC, which is 23:50 NZST (May, UTC+12). In
     // Berlin that's 13:50, well clear of midnight either way — but
     // the test pins the principle: streak day-keys honour the user's
@@ -465,7 +465,7 @@ describe("per-user timezone — Pacific/Auckland end-to-end", () => {
   });
 
   it("coach snapshot anchors timeline.recent to the user's tz", async () => {
-    // v1.4.25 W7b — surface 3. A reading at HH:13:00 UTC sits at
+    // v1.4.25 — surface 3. A reading at HH:13:00 UTC sits at
     // 01:00 NZST on the *next* Auckland day (NZST = UTC+12 in May).
     // The snapshot must pin the reading to the Auckland day, not the
     // (incidentally-equal) UTC day a Berlin user would see.

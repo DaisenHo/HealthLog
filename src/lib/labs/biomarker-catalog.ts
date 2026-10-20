@@ -217,7 +217,7 @@ export const BIOMARKER_CATALOG: readonly BiomarkerSeed[] = [
     lowerBound: null,
     upperBound: 55,
   },
-  // v1.43 (D1223) — the two markers a report most often prints in shorthand
+  // v1.43 — the two markers a report most often prints in shorthand
   // ("Alk.P", "T.Bili"). Adult reference windows per MedlinePlus: ALP 44-147
   // IU/L, total bilirubin 0.1-1.2 mg/dL. Editable defaults like every seed.
   {
@@ -353,7 +353,7 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "glycosylated hemoglobin",
       "glykohamoglobin",
       "hamoglobin a1c",
-      // v1.43 (D1223) — MedlinePlus, Lab Tests Online (es, it, pl), Medics
+      // v1.43 — MedlinePlus, Lab Tests Online (es, it, pl), Medics
       // Labor, CHU de Lille, IUCPQ / CHUM, Asan Medical Center.
       "hba1c",
       "glycohemoglobin",
@@ -510,7 +510,7 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
       "bilirrubina",
       "bilirubine",
       "bilirubina",
-      // v1.43 (D1223) — "Alk.P" / "T.Bili" are how the reports in the
+      // v1.43 — "Alk.P" / "T.Bili" are how the reports in the
       // discussion print them; the rest are MedlinePlus, testing.com, Labor
       // Limbach, Medics Labor, Lab Tests Online (es, it), Dimedic (pl) and
       // Asan Medical Center. The bare "BIL" is left out: lower case it is the
@@ -531,7 +531,7 @@ export const ANALYTE_ALIASES: readonly AnalyteAliases[] = [
 ];
 
 /**
- * v1.43 (D1223) — other names for analytes, for recognising that two
+ * v1.43 — other names for analytes, for recognising that two
  * spellings on two reports are one marker. Same shape and fold as
  * `ANALYTE_ALIASES`, and read together with it by `catalogNameIndex`, but
  * with no conversion attached: an analyte here may have no entry in the

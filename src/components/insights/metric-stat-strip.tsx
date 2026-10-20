@@ -29,7 +29,7 @@ import type { MetricWindowStats } from "@/lib/charts/window-stats";
  * reach parity with the bespoke pages — a rich numeric header even where
  * there is no target band or AI assessment.
  *
- * v1.12.7 follow-up — two render modes:
+ * v1.12.7 — two render modes:
  *   - single-series (default): one Card, one `<TileHeader>` + 4-stat grid.
  *   - multi-series (`series=[…]`): ONE Card with the series side by side
  *     (two columns on desktop, stacking on narrow mobile). Blood pressure

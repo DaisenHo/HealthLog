@@ -48,6 +48,9 @@ import {
   CAPTURE_KIND_ORDER,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function renderSSR(node: React.ReactElement, locale: "en" | "de" = "de") {
   return renderToStaticMarkup(
@@ -69,7 +72,7 @@ describe("<DashboardHeader> — greeting", () => {
     expect(html).toContain("Dashboard");
   });
 
-  // 2026-07-17 a11y audit (M4) — the dashboard is the app's landing surface
+  // The dashboard is the app's landing surface
   // and must expose a page-level `<h1>`. It comes from the shared
   // `PageHeader` the header renders, so a screen-reader user navigating by
   // heading lands on a real page anchor (not the Today hero's muted `<h2>`

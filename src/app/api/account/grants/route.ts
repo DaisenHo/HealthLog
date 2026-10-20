@@ -66,9 +66,14 @@ import { prisma } from "@/lib/db";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { GRANT_PARTY_SELECT, toGrantView } from "@/lib/sharing/grant-view";
+import {
+  GRANT_PARTY_SELECT,
+  INVITE_NO_ACCOUNT_CODE,
+  toGrantView,
+} from "@/lib/sharing/grant-view";
 import { GrantError, inviteGrant } from "@/lib/sharing/grants";
 import { inviteGrantSchema } from "@/lib/validations/account-sharing";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 /**
  * Ten invitations an hour, per account.
@@ -87,45 +92,62 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "sharing.grants.list" } });
 
-  const [given, received] = await Promise.all([
+  const [givenFound, receivedFound] = await Promise.all([
     prisma.accountGrant.findMany({
       where: { grantorId: user.id },
       orderBy: { createdAt: "desc" },
-      take: MAX_GRANTS_PER_DIRECTION,
+      take: overfetch(MAX_GRANTS_PER_DIRECTION),
       include: { grantee: { select: GRANT_PARTY_SELECT } },
     }),
     prisma.accountGrant.findMany({
       where: { granteeId: user.id },
       orderBy: { createdAt: "desc" },
-      take: MAX_GRANTS_PER_DIRECTION,
+      take: overfetch(MAX_GRANTS_PER_DIRECTION),
       include: { grantor: { select: GRANT_PARTY_SELECT } },
     }),
   ]);
+  const { rows: given, cap: givenCap } = capRows(
+    givenFound,
+    MAX_GRANTS_PER_DIRECTION,
+  );
+  const { rows: received, cap: receivedCap } = capRows(
+    receivedFound,
+    MAX_GRANTS_PER_DIRECTION,
+  );
 
   // Revoked and expired rows come back too. They are the consent record — "who
   // had access, from when to when, and who ended it" is the question the table
   // exists to answer, and a list that quietly dropped the ended rows would
   // leave the panel unable to answer it. `state` says which are live.
   const now = new Date();
-  return apiSuccess({
-    given: given.map((g) => toGrantView(g, g.grantee, now)),
-    received: received.map((g) => toGrantView(g, g.grantor, now)),
-    // v1.37.0 — the audit window, on the payload that carries the rows.
-    //
-    // The revoke dialog tells the owner how long "who entered what" stays
-    // answerable after the access ends, and it can only say that with the
-    // number the operator configured. It used to read that number off the
-    // activity feed, a second and independent request, so whether the sentence
-    // appeared depended on which of two reads finished first — and an owner
-    // who clicked quickly ended a manage grant having been told less than one
-    // who clicked slowly, with nothing on screen to say a sentence was
-    // missing. Riding it here removes the race by construction: a client
-    // holding a grant to revoke is holding the window it must disclose.
-    //
-    // Same resolver as `/api/account/activity` and as the purge job, so the
-    // two surfaces cannot state different numbers.
-    retentionDays: getAuditLogRetentionDays(),
-  });
+  // One cap per direction, one signal: either list cut short is a partial
+  // answer.
+  const cap = {
+    truncated: givenCap.truncated || receivedCap.truncated,
+    limit: MAX_GRANTS_PER_DIRECTION,
+  };
+  return apiListSuccess(
+    {
+      given: given.map((g) => toGrantView(g, g.grantee, now)),
+      received: received.map((g) => toGrantView(g, g.grantor, now)),
+      // v1.37.0 — the audit window, on the payload that carries the rows.
+      //
+      // The revoke dialog tells the owner how long "who entered what" stays
+      // answerable after the access ends, and it can only say that with the
+      // number the operator configured. It used to read that number off the
+      // activity feed, a second and independent request, so whether the sentence
+      // appeared depended on which of two reads finished first — and an owner
+      // who clicked quickly ended a manage grant having been told less than one
+      // who clicked slowly, with nothing on screen to say a sentence was
+      // missing. Riding it here removes the race by construction: a client
+      // holding a grant to revoke is holding the window it must disclose.
+      //
+      // Same resolver as `/api/account/activity` and as the purge job, so the
+      // two surfaces cannot state different numbers.
+      retentionDays: getAuditLogRetentionDays(),
+    },
+    cap,
+  );
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -203,7 +225,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     select: GRANT_PARTY_SELECT,
   });
   if (!invitee) {
-    return apiError("No account with that name or e-mail", 404);
+    return apiError("No account with that name or e-mail", 404, {
+      errorCode: INVITE_NO_ACCOUNT_CODE,
+    });
   }
 
   await auth.commitElevation();

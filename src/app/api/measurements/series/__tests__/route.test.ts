@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// The breadcrumb's contract is the call; whether `auditLog` writes a row
+// (only for a delegate's request) is tested in its own suite.
+vi.mock("@/lib/auth/audit", () => ({
+  auditLog: vi.fn(async () => undefined),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn(), count: vi.fn() },
@@ -58,6 +64,7 @@ import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { annotate } from "@/lib/logging/context";
+import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -341,8 +348,17 @@ describe("GET /api/measurements/series", () => {
   it("collapses sleep stage rows into one night point in hours (v1.11.4)", async () => {
     // SLEEP_DURATION is stored one row per STAGE per night (minutes). The
     // series must return ONE point per night carrying the TIME-ASLEEP
-    // total in hours, not a point per stage.
+    // total in hours, not a point per stage. Postgres names the night and
+    // its span; the stage rows of that span are reconstructed.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      {
+        night: "2026-06-04",
+        span_start: new Date("2026-06-03T15:00:00.000Z"),
+        span_end: new Date("2026-06-04T05:00:00.000Z"),
+        total: 1,
+      },
+    ] as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       {
         id: "s1",
@@ -1014,17 +1030,18 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
     expect(body.details.issues.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("writes a measurements.series.validation-failed audit row", async () => {
+  it("files a measurements.series.validation-failed breadcrumb through auditLog", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const res = await GET(req("kind=garbage&days=0"));
     expect(res.status).toBe(422);
     await new Promise((r) => setTimeout(r, 5));
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("measurements.series.validation-failed");
+    expect(auditLog).toHaveBeenCalledTimes(1);
+    const [action, opts] = vi.mocked(auditLog).mock.calls[0] as unknown as [
+      string,
+      { userId: string },
+    ];
+    expect(opts.userId).toBe("user-1");
+    expect(action).toBe("measurements.series.validation-failed");
   });
 
   it("surfaces received_keys + received_shape_excerpt + zod_issues in the wide-event meta (v1.4.48 H-iOS-2)", async () => {
@@ -1077,9 +1094,7 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
 
   it("does not block the 422 when the audit-row write rejects", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
+    vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
     const res = await GET(req("kind=garbage&days=0"));
     expect(res.status).toBe(422);
   });
@@ -1117,13 +1132,13 @@ describe("GET /api/measurements/series — 422 multi-issue (v1.4.43 W6)", () => 
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     await GET(req("kind=garbage&days=0"));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { details: string };
-    };
-    const parsed = JSON.parse(call.data.details) as {
-      issues: Array<Record<string, unknown>>;
-    };
+    expect(auditLog).toHaveBeenCalledTimes(1);
+    const parsed = (
+      vi.mocked(auditLog).mock.calls[0] as unknown as [
+        string,
+        { details: { issues: Array<Record<string, unknown>> } },
+      ]
+    )[1].details;
     for (const issue of parsed.issues) {
       expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
     }

@@ -2,7 +2,7 @@
  * PATCH  /api/coach/plans/[id] — confirm / update a Coach plan's lifecycle.
  * DELETE /api/coach/plans/[id] — soft-delete one Coach plan.
  *
- * v1.21.3 (B1) — the user-confirm + management surface for the durable Coach
+ * v1.21.3 — the user-confirm + management surface for the durable Coach
  * plans. Coach-proposes-then-user-confirms: the extractor writes a plan as
  * `status: "proposed"`; this PATCH is the ONLY path that activates it
  * (proposed → active), or marks it met / abandoned, or sets a review date.

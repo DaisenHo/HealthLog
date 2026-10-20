@@ -159,7 +159,7 @@ export function MicronutrientsCard() {
   // its "no micronutrient data" EmptyState — the same output as an account that
   // genuinely logs no nutrients. The sibling hydration card already routes
   // through QueryErrorCard; this one now matches it.
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.nutrientIntake(WINDOW_DAYS),
     queryFn: () =>
       apiGet<NutrientIntakeOverview>(`/api/nutrients?days=${WINDOW_DAYS}`),
@@ -180,6 +180,7 @@ export function MicronutrientsCard() {
       <CardContent className="space-y-3">
         {isError ? (
           <QueryErrorCard
+            error={error}
             title={t("nutrients.micronutrients.loadError")}
             onRetry={() => void refetch()}
           />

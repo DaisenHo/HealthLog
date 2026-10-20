@@ -74,7 +74,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        // v1.4.37 W4a item 2 — `whitespace-nowrap` keeps every
+        // v1.4.37 — `whitespace-nowrap` keeps every
         // dropdown row on a single line (the sidebar 3-dot menu's
         // "Benachrichtigungs-Center" otherwise wrapped at the
         // hyphen on sub-pixel rounding inside the legacy w-56

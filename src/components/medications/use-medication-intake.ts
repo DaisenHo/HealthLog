@@ -171,7 +171,7 @@ export async function runRecordIntake(deps: {
     // identified the displayed dose's slot — otherwise omit so the
     // PRN / unscheduled now-snap path is preserved.
     //
-    // v1.11.3 C1 — a failed POST used to clear the spinner silently, so the
+    // v1.11.3 — a failed POST used to clear the spinner silently, so the
     // user believed the dose was logged when it was not. apiPost throws on
     // non-OK, so the catch below surfaces the failure and the success
     // confirmation never shows in that case.
@@ -186,7 +186,7 @@ export async function runRecordIntake(deps: {
         : { skipped },
     );
     const eventId: string | undefined = created?.id;
-    // v1.11.3 C2 — the success toast carries an Undo action so a misclicked
+    // v1.11.3 — the success toast carries an Undo action so a misclicked
     // take / skip no longer needs a history dive to correct.
     toast.success(
       t(
@@ -249,7 +249,7 @@ export async function runLogIntake(deps: {
   t: Translator;
   queryClient: QueryClient;
   /**
-   * v1.30.1 M7 — reverse the just-logged intake. Optional so existing
+   * v1.30.1 — reverse the just-logged intake. Optional so existing
    * unit tests that don't care about Undo can omit it; the toast simply
    * carries no action when it's absent.
    */
@@ -273,7 +273,7 @@ export async function runLogIntake(deps: {
     if (!skipped) body.takenAt = takenAt;
     if (scheduledFor) body.scheduledFor = scheduledFor;
     if (!skipped && doseTaken) body.doseTaken = doseTaken;
-    // v1.30.1 M7 — the route returns the created event
+    // v1.30.1 — the route returns the created event
     // (`apiSuccess(event, 201)`, same as the card's `runRecordIntake`);
     // its id drives the Undo action below.
     const created = await apiPost<{ id?: string } | undefined>(
@@ -288,7 +288,7 @@ export async function runLogIntake(deps: {
         : "medications.intakeToastTaken",
       { name: medication.name },
     );
-    // v1.30.1 M7 — only pass a second `toast.success` argument when there's
+    // v1.30.1 — only pass a second `toast.success` argument when there's
     // a real Undo action to attach; keeps the no-undo call signature
     // identical to the pre-fix behaviour (existing unit tests assert the
     // single-argument call).

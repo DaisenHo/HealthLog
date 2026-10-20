@@ -101,6 +101,7 @@ import {
   verifyIdToken,
 } from "@/lib/auth/oidc";
 import { mintNativeHandoff } from "@/lib/auth/oidc-native-handoff";
+import { fixtureSessionSecret } from "@/__tests__/helpers/session-secret";
 
 const CONFIG = {
   issuerUrl: "https://idp.example.com",
@@ -616,7 +617,8 @@ describe("GET /api/auth/oidc/callback — duplicate-callback idempotency", () =>
     const req = new NextRequest(
       "http://localhost/api/auth/oidc/callback?code=abc&state=STATE",
     );
-    if (withSession) req.cookies.set("healthlog_session", "hls_valid_secret");
+    if (withSession)
+      req.cookies.set("healthlog_session", fixtureSessionSecret());
     return req;
   }
 

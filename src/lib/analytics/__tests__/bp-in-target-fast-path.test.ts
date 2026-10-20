@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W2 — unit pin for the probe-gated bp_in_target helper.
+ * v1.4.37 — unit pin for the probe-gated bp_in_target helper.
  *
  * Mocks Prisma + the rollup-coverage probe so the path-selection
  * contract is verifiable without a Postgres container. Real-rollup
@@ -15,7 +15,7 @@ vi.mock("@/lib/db", () => ({
     // v1.11.1 — readRollupBuckets lazy-loads the source-priority blob; null
     // (default findUnique) falls back to the default ladders.
     user: { findUnique: vi.fn() },
-    // v1.18.10 I-1 — the live BP fallback now reads source-collapsed rows via
+    // v1.18.10 — the live BP fallback now reads source-collapsed rows via
     // `$queryRawUnsafe` (`canonicalMeasurementsFrom`) instead of a chunked
     // `findMany`, so cold == warm. Mock it to feed the SYS / DIA series.
     $queryRawUnsafe: vi.fn(),
@@ -422,7 +422,7 @@ describe("computeBpInTargetFastPath", () => {
       expect(ROLLUP_FIND_MANY).not.toHaveBeenCalled();
     });
 
-    // v1.30.3 (QA F7) — the guard force-routes a non-near-UTC user to the
+    // v1.30.3 — the guard force-routes a non-near-UTC user to the
     // live path specifically so their pairing is computed correctly; before
     // this fix the live path's same-day fallback still hardcoded the Berlin
     // day, undoing exactly the protection the guard exists to provide.

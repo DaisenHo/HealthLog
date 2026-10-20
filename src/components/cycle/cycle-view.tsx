@@ -33,6 +33,7 @@ import {
   useCycleInsights,
   useCycleProfile,
 } from "./use-cycle";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.15.0 — the cycle vertical's client orchestrator.
@@ -362,9 +363,10 @@ export function CycleView() {
                   // Inside the calendar card already — a borderless row keeps
                   // it in line with the plain loading line above it (§3/§6).
                   <QueryErrorRow
+                    inset
+                    error={calendar.error}
                     message={t("cycle.loadError")}
                     onRetry={() => void calendar.refetch()}
-                    className="border-0 bg-transparent p-0"
                   />
                 ) : (
                   <>
@@ -405,6 +407,7 @@ export function CycleView() {
           <TabsContent value="predictions" className="mt-4 space-y-4">
             {calendarError ? (
               <QueryErrorCard
+                error={calendar.error}
                 title={t("cycle.loadError")}
                 onRetry={() => void calendar.refetch()}
               />
@@ -413,9 +416,13 @@ export function CycleView() {
                 <PredictionsPanel
                   prediction={calendar.data?.prediction ?? null}
                   rawChartMode={calendar.data?.profile.rawChartMode ?? false}
-                  history={history.data}
+                  history={history.data?.data}
                 />
-                <CycleHistoryChart history={history.data} animate={play} />
+                <CycleHistoryChart
+                  history={history.data?.data}
+                  animate={play}
+                />
+                <ListCapNotice cap={history.data?.cap} />
                 <BbtChart
                   days={calendar.data?.days ?? []}
                   today={today}
@@ -435,6 +442,7 @@ export function CycleView() {
           <TabsContent value="insights" className="mt-4 space-y-4">
             {insights.isError ? (
               <QueryErrorCard
+                error={insights.error}
                 title={t("cycle.loadError")}
                 onRetry={() => void insights.refetch()}
               />
@@ -454,6 +462,7 @@ export function CycleView() {
           <TabsContent value="settings" className="mt-4">
             {profileQuery.isError ? (
               <QueryErrorCard
+                error={profileQuery.error}
                 title={t("cycle.loadError")}
                 onRetry={() => void profileQuery.refetch()}
               />

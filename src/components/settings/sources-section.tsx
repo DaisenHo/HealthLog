@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.4.25 W5e — Settings → Sources.
+ * v1.4.25 — Settings → Sources.
  *
  * Per-metric-class source priority. When more than one ingest source
  * records the same metric for the same day, the analytics aggregator
@@ -16,7 +16,7 @@
  * drops onto a known foundation — every user's preferences carry
  * straight into iOS-era analytics without an extra migration step.
  *
- * v1.4.25 W8c — two-axis extension. The same screen now hosts three
+ * v1.4.25 — two-axis extension. The same screen now hosts three
  * vertically-stacked sections (the maintainer no-split directive):
  *   1. Global default ladder per metric class (existing).
  *   2. Per-metric override expander — collapsed by default; an
@@ -125,7 +125,7 @@ const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
   skinTemperature: "settings.sections.sources.metrics.skinTemperature",
   respiratoryRate: "settings.sections.sources.metrics.respiratoryRate",
   recovery: "settings.sections.sources.metrics.recovery",
-  // v1.18.10 I-5 — native-vs-derived stress ladder.
+  // v1.18.10 — native-vs-derived stress ladder.
   stress: "settings.sections.sources.metrics.stress",
   // v1.25.0 — native-vs-computed sleep-debt ladder.
   sleepDebt: "settings.sections.sources.metrics.sleepDebt",
@@ -144,7 +144,7 @@ const DEVICE_TYPE_LABEL_KEYS: Record<DeviceType, string> = {
 /**
  * `<SourcesSection>` — the per-metric source-priority + device-type ladders.
  *
- * v1.18.1 (D4) — Sources is a standalone `/settings/sources` left-side entry
+ * v1.18.1 — Sources is a standalone `/settings/sources` left-side entry
  * again (split back out of the Integrations sub-tabs). It renders its own
  * section header + the cross-link back to Integrationen.
  */
@@ -361,7 +361,7 @@ export function SourcesSection() {
     return Object.keys(priority.deviceTypePriority).length;
   }, [priority]);
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` (the off-style muted intro folded into the
   // standard subtitle). The quiet cross-link back to Integrationen — where
   // the sources this ladder ranks are added / removed — stays inside the
@@ -628,7 +628,7 @@ export function SourcesSection() {
                         <span className="flex-1 text-sm">
                           {t(DEVICE_TYPE_LABEL_KEYS[deviceType])}
                         </span>
-                        {/* v1.4.27 R3d MB2 — same stacked-on-mobile shape
+                        {/* v1.4.27 — same stacked-on-mobile shape
                           as the metric source rows above. */}
                         <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
                           <Button
@@ -666,7 +666,7 @@ export function SourcesSection() {
           </div>
         )}
 
-        {/* v1.18.6 (W9) — quiet pointer back to Integrationen, where the
+        {/* v1.18.6 — quiet pointer back to Integrationen, where the
             sources this ladder ranks are connected / removed. Above the
             action row: nothing follows a card's actions. */}
         <p className="text-muted-foreground border-border border-t pt-3 text-xs">

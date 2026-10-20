@@ -144,7 +144,7 @@ export function HostMetricsChart() {
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminHostMetrics("2h"),
     queryFn: async () => {
       return apiGet<HostMetricsApiResponse>("/api/admin/host-metrics?since=2h");
@@ -198,6 +198,8 @@ export function HostMetricsChart() {
           }
         />
         <QueryErrorRow
+          inset
+          error={error}
           message={t("admin.hostMetrics.loadError")}
           onRetry={() => void refetch()}
         />

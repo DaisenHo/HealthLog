@@ -44,6 +44,7 @@ import {
   useMeasurementReminderMutations,
   type MeasurementReminder,
 } from "@/hooks/use-measurement-reminders";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 const SUMMARY_LIMIT = 3;
 
@@ -61,8 +62,7 @@ function resolveLabel(
   t: (key: string) => string,
 ): string {
   if (reminder.origin === "COACH") {
-    const translated = t(reminder.label);
-    return translated === reminder.label ? reminder.label : translated;
+    return translateOrNull(t, reminder.label) ?? reminder.label;
   }
   return reminder.label;
 }
@@ -81,7 +81,12 @@ export function VorsorgeDashboardCard() {
   // tell that this row had never been asked.
   const { canManageDomain } = useRecordCapabilities();
   const canManageMeasurements = canManageDomain("measurements");
-  const { data: reminders, isError, refetch } = useMeasurementReminders();
+  const {
+    data: reminders,
+    isError,
+    error,
+    refetch,
+  } = useMeasurementReminders();
 
   // A query's `isLoading` is not a hydration-safe branch: TanStack reports the
   // optimistic mount fetch on the client's very first render and cannot on the
@@ -161,7 +166,7 @@ export function VorsorgeDashboardCard() {
         ) : isError ? (
           // A read failure must not read as "no upcoming reminders" — a missed
           // checkup is the harm behind that fall-through (§6).
-          <QueryErrorRow onRetry={() => refetch()} />
+          <QueryErrorRow inset error={error} onRetry={() => refetch()} />
         ) : upcoming.length === 0 ? (
           <div className="space-y-2">
             <p className="text-muted-foreground text-sm">

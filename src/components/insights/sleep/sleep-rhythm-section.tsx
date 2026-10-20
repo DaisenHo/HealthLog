@@ -13,7 +13,7 @@ import { SleepDebtCard } from "./sleep-debt-card";
  * fetches. The values are identical to what the iOS client renders (one server
  * computation).
  *
- * v1.18.7 W-D — the chronotype card moved out to `<ChronotypeSection>`, the
+ * v1.18.7 — the chronotype card moved out to `<ChronotypeSection>`, the
  * prominent bottom treatment of the Sleep view; this section now owns the
  * sleep-debt headline alone. Both read the same `["sleep-rhythm"]` cache.
  *

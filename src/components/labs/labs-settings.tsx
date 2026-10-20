@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.6 (W8 / MOD-03 + MOD-04) — the Labs module's own settings page body.
+ * v1.18.6 — the Labs module's own settings page body.
  *
  * Reached from the wrench beside the page's "hinzufügen" button. Lets the
  * user:

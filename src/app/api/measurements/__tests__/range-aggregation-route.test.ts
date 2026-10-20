@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 /**
- * v1.4.28 R4-CODE-C1 / C2 — the `/api/measurements` route must
+ * v1.4.28 — the `/api/measurements` route must
  * aggregate via Postgres `date_trunc` BEFORE applying the bucket cap.
  * The legacy code path `findMany({ take: limit })` then in-memory
  * bucketised — a 1-year `aggregate=daily` window would silently truncate
@@ -144,7 +144,7 @@ describe("GET /api/measurements — aggregation gate (C2)", () => {
     };
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     expect(prisma.measurement.findMany).not.toHaveBeenCalled();
-    // C1 — the response carries one bucket per calendar day, NOT
+    // The response carries one bucket per calendar day, NOT
     // `min(limit, count)/grain`. The raw-data density (1440 rows/day)
     // is summarised in the `count` field.
     expect(json.data.measurements.length).toBe(365);

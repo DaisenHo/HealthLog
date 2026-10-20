@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Plug, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { translateCode } from "@/lib/i18n/translate-code";
 
 /**
  * Shared "Test connection" UX for the settings integrations + notifications
@@ -151,13 +152,12 @@ export function TestConnectionButton({
   }
 
   function describeError(errorCode: string): string {
-    const key = `settings.testConnection.errors.${errorCode}`;
-    const translated = t(key);
-    // `t()` returns the raw key when missing — fall back to generic.
-    if (translated === key) {
-      return t("settings.testConnection.errors.generic");
-    }
-    return translated;
+    return translateCode(
+      t,
+      "settings.testConnection.errors",
+      errorCode,
+      "settings.testConnection.errors.generic",
+    );
   }
 
   return (

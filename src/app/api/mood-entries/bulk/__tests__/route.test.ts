@@ -1,8 +1,8 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on POST /api/mood-entries/bulk.
+ * v1.4.43 — multi-issue 422 envelope on POST /api/mood-entries/bulk.
  * Preserves the `mood.bulk.invalid` errorCode meta passthrough.
  *
- * v1.29 perf fix — the per-entry `findUnique` probe was replaced by one
+ * v1.29 — the per-entry `findUnique` probe was replaced by one
  * batched `findMany` existence read (a single indexed OR query); every
  * entry still resolves its own "inserted" / "duplicate" state through the
  * exact key its dedup contract uses (externalId when carried, else the
@@ -22,7 +22,7 @@ const { moodEntryMock, txClient } = vi.hoisted(() => {
   const moodEntryMock = {
     findMany: vi.fn(),
     upsert: vi.fn(),
-    // v1.37.19 (A6-18) — the P2002-race arm resolves the winning row.
+    // v1.37.19 — the P2002-race arm resolves the winning row.
     findFirst: vi.fn(),
   };
   return {

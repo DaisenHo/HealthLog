@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { formatPeriod, parsePeriodQuery } from "../period-query";
 
 const NOW = new Date("2026-10-15T12:00:00.000Z");
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
 
 function window(term: string, locale: string) {
   const parsed = parsePeriodQuery(term, locale, NOW);

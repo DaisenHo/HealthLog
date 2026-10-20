@@ -104,6 +104,8 @@ export function AiQualitySection() {
         </div>
       ) : query.isError ? (
         <QueryErrorRow
+          inset
+          error={query.error}
           message={t("admin.aiQuality.loadError")}
           onRetry={() => void query.refetch()}
         />

@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W13 L-3 — Zod-narrowed `verifyAuthentication` boundary.
+ * v1.4.43 — Zod-narrowed `verifyAuthentication` boundary.
  *
  * Before the fix, the route passed a parsed JSON body through a raw
  * `as AuthenticationResponseJSON` cast straight into

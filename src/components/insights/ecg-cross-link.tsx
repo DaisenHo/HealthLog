@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { ArrowRight, HeartPulse } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 
-import { useAuth } from "@/hooks/use-auth";
-import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { TileHeader } from "@/components/insights/tile-header";
+import { useEcgList } from "./use-ecg-list";
 
 /**
- * S10 — ECG cross-link, the pointer from the resting-HR / pulse context into
+ * ECG cross-link, the pointer from the resting-HR / pulse context into
  * the ECG viewer (`/insights/ecg`). Points at the routed sub-page, which
  * always mounts, rather than the overview `#ecg` fragment, which is absent
  * until the overview section's own fetch resolves (UX-flows finding F1-1).
@@ -29,18 +26,6 @@ import { TileHeader } from "@/components/insights/tile-header";
  * surfaces share one cache entry with an identical response shape.
  */
 
-type EcgClassification = "IRREGULAR" | "NOT_DETECTED" | "INCONCLUSIVE" | null;
-
-interface EcgRecordingListItem {
-  id: string;
-  classification: EcgClassification;
-}
-
-interface EcgListResponse {
-  recordings: EcgRecordingListItem[];
-  hasRecordings: boolean;
-}
-
 /** The device verdict, surfaced verbatim and attributed to the device. */
 const RESULT_LABEL_KEYS: Record<string, string> = {
   IRREGULAR: "insights.ecg.result.irregular",
@@ -54,20 +39,9 @@ interface EcgCrossLinkProps {
 }
 
 export function EcgCrossLink({ enabled = true, className }: EcgCrossLinkProps) {
-  const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
 
-  const { data } = useQuery({
-    queryKey: queryKeys.insightsEcgList(),
-    queryFn: async () => {
-      try {
-        return await apiGet<EcgListResponse>("/api/insights/ecg");
-      } catch {
-        throw new Error(t("insights.ecg.loadError"));
-      }
-    },
-    enabled: enabled && isAuthenticated,
-  });
+  const data = useEcgList(enabled).data?.data;
 
   // Data-availability gate — never paint an empty pointer.
   if (!data || !data.hasRecordings || data.recordings.length === 0) return null;

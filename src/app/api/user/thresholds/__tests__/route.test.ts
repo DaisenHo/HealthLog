@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on PUT /api/user/thresholds.
+ * v1.4.43 — multi-issue 422 envelope on PUT /api/user/thresholds.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";

@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — Coach retrieval-tool barrel.
+ * v1.20.0 — Coach retrieval-tool barrel.
  *
  * The on-demand retrieval slice that replaces snapshot-stuffing: a tiny DATA
  * INVENTORY in the base context, six read-only tools the model calls to fetch

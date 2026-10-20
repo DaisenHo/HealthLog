@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.43 W11 — correlation-card scatter skeleton class guard.
+ * v1.4.43 — correlation-card scatter skeleton class guard.
  *
  * The skeleton must mirror the loaded chart's responsive aspect-
  * ratio classes (`scatter-correlation-chart.tsx:100`) so the

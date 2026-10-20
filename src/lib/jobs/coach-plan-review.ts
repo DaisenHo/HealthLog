@@ -1,5 +1,5 @@
 /**
- * v1.22 (W9, C2) — n-of-1 experiment review worker.
+ * v1.22 — n-of-1 experiment review worker.
  *
  * The genuinely-missing half of the n-of-1 loop. The review SURFACE already
  * exists: `coach-reminder-sweep` finds a CoachPlan whose `reviewDate` has passed

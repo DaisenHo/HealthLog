@@ -45,7 +45,7 @@ export interface ReminderScheduleInput {
   lastSatisfiedAt: Date | null;
   createdAt: Date;
   /**
-   * v1.18.1 (Workstream C) — optional course-window end. NULL ⇒ open-ended
+   * v1.18.1 — optional course-window end. NULL ⇒ open-ended
    * (the existing behaviour). Non-NULL bounds a finite cadence: the
    * recurrence engine stops producing occurrences past this instant, so a
    * Coach-suggested time-boxed protocol (ESH/AHA 7-day BP) self-expires.

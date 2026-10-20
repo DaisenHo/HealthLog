@@ -1,5 +1,5 @@
 /**
- * v1.18.1 (V3) — the Vorsorge measurement-type allow-list. Widened from
+ * v1.18.1 — the Vorsorge measurement-type allow-list. Widened from
  * the original 7 to the ~15 active-measurement set (vitals + the
  * body-composition family). App-layer only — the DB column is the full
  * MeasurementType enum, so this is the gate, not a migration.

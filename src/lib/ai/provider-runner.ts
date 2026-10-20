@@ -26,7 +26,7 @@ import {
 const NEVER_SKIP: ReadonlySet<ProviderChainType> = new Set(["local"]);
 
 /**
- * v1.4.16 phase B5b — multi-provider redundancy runner.
+ * v1.4.16 — multi-provider redundancy runner.
  *
  * The chain runner wraps a provider completion with a hard-failure
  * walkthrough across an ordered list of providers. The motivation is
@@ -55,7 +55,7 @@ const NEVER_SKIP: ReadonlySet<ProviderChainType> = new Set(["local"]);
  * v1.4.16 the per-worker cache is enough to absorb the typical
  * "polling reload" pattern.
  *
- * v1.18.7 (LOW-8) — DECISION: the volatile per-worker hint is left
+ * v1.18.7 — DECISION: the volatile per-worker hint is left
  * in-process and NOT folded into the durable Postgres health ledger. The
  * ledger already shares the load-bearing signal across workers (the
  * skip-hint reorder in `resolveChainOrder` pushes a dead-credential /
@@ -185,7 +185,7 @@ export class AllProvidersFailedError extends Error {
   readonly httpStatus: number;
   readonly attempts: FallbackHop[];
   /**
-   * v1.11.0 W1 — true when the FIRST (highest-priority) chain entry
+   * v1.11.0 — true when the FIRST (highest-priority) chain entry
    * failed with an auth-class status (401/403). That is the signal a
    * user's primary credential is dead and should be surfaced as
    * `credential_expired` ("reconnect ChatGPT") rather than a generic
@@ -497,7 +497,7 @@ async function runRawChain(
 
   for (let i = 0; i < ordered.length; i += 1) {
     const candidate = ordered[i];
-    // v1.37.19 (A7-2) — hop-time operator-cost guard. A request whose
+    // v1.37.19 — hop-time operator-cost guard. A request whose
     // primary provider runs on the USER's own key reserves its budget
     // under the generous user-plan ceiling; when the chain then falls
     // back onto an operator-funded `admin-*` entry (or the health-ledger

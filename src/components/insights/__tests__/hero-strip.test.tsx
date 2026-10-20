@@ -9,6 +9,9 @@ import type {
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // The "generated" freshness line reads the profile timezone via `useAuth`; stub
 // it so the SSR render does not reach for a QueryClient the test omits.
@@ -334,7 +337,7 @@ describe("<HeroStrip>", () => {
     expect(html).not.toContain('data-slot="insights-hero-strip-action-coach"');
   });
 
-  // v1.4.25 W3 — the regenerate button moved from the hero action row
+  // v1.4.25 — the regenerate button moved from the hero action row
   // to the dedicated `<InsightsTabStrip>` component. The hero strip no
   // longer renders the rerun slot under any prop combination.
   it("does NOT render a regenerate button in the hero action row", () => {
@@ -509,7 +512,7 @@ describe("<HeroStrip>", () => {
   });
 
   it("does not render any Ask-the-Coach affordance in the hero band", () => {
-    // v1.4.27 F8 — the inline HSC Ask-the-Coach button was retired.
+    // v1.4.27 — the inline HSC Ask-the-Coach button was retired.
     // v1.18.7 — the hero action-row coach button was removed too; the
     // Coach is the bottom-right drawer, not a hero affordance.
     const html = render(<HeroStrip briefing={null} now={morningLocal} />);

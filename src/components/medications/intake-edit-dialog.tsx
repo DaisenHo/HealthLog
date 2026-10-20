@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.5.5 F-1 C-2 — per-row Bearbeiten dialog on the detail-page
+ * v1.5.5 — per-row Bearbeiten dialog on the detail-page
  * intake-history preview.
  *
  * Restores the row-level edit affordance the v1.5.4 flat-form
@@ -12,7 +12,7 @@
  * medication cache bundle so the inline compliance tile + dashboard
  * chart converge in the same tick.
  *
- * v1.15.19 (audit P0-4) — date-typo guardrails on the edit path:
+ * v1.15.19 — date-typo guardrails on the edit path:
  * the picker is capped at "now" (mirrors the add dialog), the row's
  * scheduled slot renders under the input so the user sees what they
  * are editing against, and a non-blocking hint appears when the

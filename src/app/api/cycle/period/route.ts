@@ -170,7 +170,7 @@ async function postPeriod(request: NextRequest): Promise<Response> {
   await auditLog("cycle.period.boundary", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    // C4 — the dates this boundary moved on the neighbouring cycles. They are
+    // The dates this boundary moved on the neighbouring cycles. They are
     // the only unrecoverable part of the write: the day log it upserts is a
     // row, the re-anchoring is an overwrite of two columns on somebody else's
     // cycle history.

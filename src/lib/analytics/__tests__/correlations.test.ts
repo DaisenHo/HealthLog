@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import type { DataPoint } from "../trends";
 import {
   pairByTimestamp,
-  pearsonCorrelation,
   significantPearsonCorrelation,
 } from "../correlations";
 import type { PairedPoint } from "../correlations";
@@ -52,62 +51,6 @@ describe("pairByTimestamp", () => {
   });
 });
 
-describe("pearsonCorrelation", () => {
-  it("returns null for fewer than minPairs", () => {
-    const pairs = [
-      { a: 1, b: 2, date: new Date() },
-      { a: 2, b: 4, date: new Date() },
-    ];
-    expect(pearsonCorrelation(pairs)).toBeNull();
-  });
-
-  it("detects perfect positive correlation", () => {
-    const pairs = Array.from({ length: 10 }, (_, i) => ({
-      a: i,
-      b: i * 2,
-      date: new Date(),
-    }));
-    const result = pearsonCorrelation(pairs)!;
-    expect(result.r).toBe(1);
-    expect(result.strength).toBe("stark");
-    expect(result.n).toBe(10);
-  });
-
-  it("detects perfect negative correlation", () => {
-    const pairs = Array.from({ length: 10 }, (_, i) => ({
-      a: i,
-      b: 100 - i * 2,
-      date: new Date(),
-    }));
-    const result = pearsonCorrelation(pairs)!;
-    expect(result.r).toBe(-1);
-    expect(result.strength).toBe("stark");
-  });
-
-  it("detects no correlation for random-like data", () => {
-    const pairs = [
-      { a: 1, b: 5, date: new Date() },
-      { a: 2, b: 3, date: new Date() },
-      { a: 3, b: 7, date: new Date() },
-      { a: 4, b: 2, date: new Date() },
-      { a: 5, b: 6, date: new Date() },
-    ];
-    const result = pearsonCorrelation(pairs)!;
-    expect(Math.abs(result.r)).toBeLessThan(0.4);
-  });
-
-  it("returns keine for constant values", () => {
-    const pairs = Array.from({ length: 5 }, () => ({
-      a: 5,
-      b: 5,
-      date: new Date(),
-    }));
-    const result = pearsonCorrelation(pairs)!;
-    expect(result.r).toBe(0);
-    expect(result.strength).toBe("keine");
-  });
-});
-
 describe("significantPearsonCorrelation (M-CS3 — n>=20 AND p<0.05)", () => {
   const mk = (a: number, b: number): PairedPoint => ({
     a,
@@ -116,14 +59,9 @@ describe("significantPearsonCorrelation (M-CS3 — n>=20 AND p<0.05)", () => {
   });
 
   it("suppresses a 5-pair r≈0.7 dataset (below the n>=20 floor)", () => {
-    // Five points with a strong-looking slope — exactly the small-n fluke the
-    // plain `pearsonCorrelation` would surface as a "stark" correlation.
+    // Five points with a strong-looking slope: the small-n fluke an
+    // ungated band would call a "stark" correlation.
     const pairs = [mk(1, 1), mk(2, 2), mk(3, 2), mk(4, 4), mk(5, 3)];
-    // Sanity-check the legacy path WOULD have surfaced it (non-null, n=5).
-    const legacy = pearsonCorrelation(pairs);
-    expect(legacy).not.toBeNull();
-    expect(legacy!.n).toBe(5);
-    // The gated path refuses it — too few pairs.
     expect(significantPearsonCorrelation(pairs)).toBeNull();
   });
 

@@ -250,7 +250,7 @@ export interface FhirComposition {
 }
 
 /**
- * v1.18.1 P4 — R4 `Condition`. Carries the illness/condition episode the
+ * v1.18.1 — R4 `Condition`. Carries the illness/condition episode the
  * journal records: a `code` (SNOMED 64572001 "Disease" as the safe non-
  * diagnostic root + a `.text` label), the clinical + verification status, an
  * onset, and (when resolved) an `abatementDateTime`. HealthLog does NOT assert
@@ -294,7 +294,7 @@ export interface FhirBodyStructure {
 }
 
 /**
- * v1.18.1 P4 — R4 `Encounter`. Emitted alongside a resolved episode to bound
+ * v1.18.1 — R4 `Encounter`. Emitted alongside a resolved episode to bound
  * the period of care (onset → resolution) so a clinician sees the episode as a
  * time-boxed event. `status` is `finished` for a resolved episode and
  * `in-progress` for an ongoing one; `class` is the ambulatory code.
@@ -310,7 +310,7 @@ export interface FhirEncounter {
 }
 
 /**
- * v1.25 (W-RECORDS) — R4 `AllergyIntolerance`. A self-recorded allergy /
+ * v1.25 — R4 `AllergyIntolerance`. A self-recorded allergy /
  * intolerance. `clinicalStatus`/`verificationStatus` carry "what the user
  * asserts" (verification is always `unconfirmed` — patient-reported, not a
  * clinician-confirmed diagnosis). The substance rides `code.text` (no
@@ -335,7 +335,7 @@ export interface FhirAllergyIntolerance {
 }
 
 /**
- * v1.25 (W-RECORDS) — R4 `FamilyMemberHistory`. One relative's condition as
+ * v1.25 — R4 `FamilyMemberHistory`. One relative's condition as
  * recorded by the user. `relationship` carries the SNOMED family-member
  * concept; the condition rides `condition[].code.text` (no machine-guessed
  * code). `status: "completed"` marks the record as captured. Patient-reported.

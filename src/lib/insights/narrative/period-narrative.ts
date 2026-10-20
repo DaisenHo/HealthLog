@@ -586,7 +586,7 @@ export async function buildPeriodNarrativeContext(
   // the types only this surface's other beats need (the period deltas and the
   // banded vitals), so the delta beat costs no second round-trip.
   //
-  // v1.30.3 (QA F2/F3) — the fetch + desc/cap/resort discipline AND the
+  // v1.30.3 — the fetch + desc/cap/resort discipline AND the
   // per-type grain resolution (source-collapse sum for cumulative types,
   // per-night reconstruction for sleep — not a blind per-row MEAN) live in
   // `correlation-channel-series.ts`, which the assembler reads through. Before
@@ -616,7 +616,7 @@ export async function buildPeriodNarrativeContext(
     ),
   });
 
-  // QA F2 — surfaces when a dense account's window exceeded the read cap,
+  // Surfaces when a dense account's window exceeded the read cap,
   // mirroring the route's identical annotation. The cap now falls on the
   // OLDEST rows (desc + take), so a capped read still covers the CURRENT
   // period this current-vs-prior surface needs.

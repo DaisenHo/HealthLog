@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A5 / A6) — unit pins for the score-card narrative resolver.
+ * v1.21.2 — unit pins for the score-card narrative resolver.
  *
  * The PROSE is not tested; the FLAGS the card renders are:
  *   - tension fires on a DISAGREEING readiness component set and carries the

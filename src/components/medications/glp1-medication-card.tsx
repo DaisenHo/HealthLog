@@ -44,7 +44,7 @@ import { useMedicationComplianceSummary } from "@/lib/queries/use-medication-com
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 /**
- * v1.4.25 W4d — GLP-1 medication card variant.
+ * v1.4.25 — GLP-1 medication card variant.
  *
  * Maintainer directive 2026-05-14: NO chart on the medication card. The card
  * stays text-rich (drug name + current dose, last/next injection,
@@ -263,7 +263,7 @@ export function Glp1MedicationCard({
     refetch: refetchCompliance,
   } = useMedicationComplianceSummary(medication.id);
 
-  // v1.4.37 W4b — same reminder-thresholds source as the generic
+  // v1.4.37 — same reminder-thresholds source as the generic
   // medication card so the take-now / overdue / very-overdue pill
   // tiers identically on both surfaces.
   const { data: thresholds } = useQuery({
@@ -348,7 +348,7 @@ export function Glp1MedicationCard({
   // verbatim with the generic card. Defaults to "upcoming" (calm).
   const doseStatus = display?.currentDose.status ?? "upcoming";
 
-  // v1.4.37 W4b — symmetric take-now / overdue pill with the generic
+  // v1.4.37 — symmetric take-now / overdue pill with the generic
   // card. Sort schedules by `windowStart` so the most-actionable
   // earliest window wins when multiple GLP-1 windows overlap (rare
   // today; the parity is what matters).

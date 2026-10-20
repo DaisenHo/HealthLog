@@ -36,7 +36,7 @@ export default function InsightsRecoveryPage() {
       explainerMetric="recoveryPage"
       coachLaunch
     >
-      {/* 2026-07-17 UX/IA audit M4 — reverse direction of the cross-link added
+      {/* Reverse direction of the cross-link added
           to the score-anatomy page: this composite wearable page shares the
           "Recovery" nav label with the RECOVERY_SCORE anatomy view at
           `/insights/scores/recovery`, so a user who arrived here looking for

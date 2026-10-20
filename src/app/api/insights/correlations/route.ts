@@ -238,7 +238,7 @@ async function buildCorrelationsResponse(
       emerging_window_days: emerging.windowDays,
       lab_draws: labDraws.length,
       lab_correlations: labCorrelations.discovered.length,
-      // v1.25 (W-ENV) — env channel reach (sum of stored daily points across
+      // v1.25 — env channel reach (sum of stored daily points across
       // the exposure channels) so a dashboard can see whether weather was
       // available for the scan.
       environment_days: diagnostics.environmentDays,

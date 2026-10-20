@@ -68,7 +68,7 @@ vi.mock("@/lib/jobs/job-failures", () => ({
   readFailingQueues: vi.fn(),
 }));
 
-// v1.4.25 W21 Fix-K — `/api/admin/status` now reads the legacy-form
+// v1.4.25 — `/api/admin/status` now reads the legacy-form
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { requireAdmin, HttpError } from "@/lib/api-handler";

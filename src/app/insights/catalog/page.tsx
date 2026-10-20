@@ -43,6 +43,7 @@ import {
   type CatalogEntry,
 } from "@/lib/insights/metric-catalog";
 import type { ManagerGroup } from "@/lib/insights/sub-page-metric";
+import { useEcgList } from "@/components/insights/use-ecg-list";
 
 /**
  * `/insights/catalog` — "what can HealthLog track" (2026-07-17
@@ -252,11 +253,7 @@ export default function MetricCatalogPage() {
     enabled: isAuthenticated && nutrientsModuleEnabled,
   });
 
-  const ecgQuery = useQuery({
-    queryKey: queryKeys.insightsEcgList(),
-    queryFn: () => apiGet<{ hasRecordings: boolean }>("/api/insights/ecg"),
-    enabled: isAuthenticated,
-  });
+  const ecgQuery = useEcgList();
 
   const availability: InsightInputs | undefined = isAuthenticated
     ? {
@@ -278,38 +275,48 @@ export default function MetricCatalogPage() {
   // the whole page, and never reads as an honest "Not tracked yet".
   const probes: Record<
     ProbeId,
-    { isLoading: boolean; isError: boolean; retry: () => void }
+    {
+      isLoading: boolean;
+      isError: boolean;
+      error: unknown;
+      retry: () => void;
+    }
   > = {
     analytics: {
       isLoading: analyticsQuery.isLoading,
       isError: analyticsQuery.isError,
+      error: analyticsQuery.error,
       retry: () => void analyticsQuery.refetch(),
     },
     comprehensive: {
       isLoading: comprehensiveQuery.isLoading,
       isError: comprehensiveQuery.isError,
+      error: comprehensiveQuery.error,
       retry: () => void comprehensiveQuery.refetch(),
     },
     workouts: {
       isLoading: workoutsProbe.isLoading,
       isError: workoutsProbe.isError,
+      error: workoutsProbe.error,
       retry: () => workoutsProbe.refetch(),
     },
     nutrients: {
       isLoading: nutrientsModuleEnabled && nutrientsProbe.isLoading,
       isError: nutrientsModuleEnabled && nutrientsProbe.isError,
+      error: nutrientsProbe.error,
       retry: () => void nutrientsProbe.refetch(),
     },
     ecg: {
       isLoading: ecgQuery.isLoading,
       isError: ecgQuery.isError,
+      error: ecgQuery.error,
       retry: () => void ecgQuery.refetch(),
     },
   };
 
   function isPresent(entry: CatalogEntry): boolean | null {
     if (entry.kind === "info") return null;
-    if (entry.id === "ecg") return ecgQuery.data?.hasRecordings === true;
+    if (entry.id === "ecg") return ecgQuery.data?.data.hasRecordings === true;
     if (!availability || !entry.metric) return false;
     return hasMetricData(entry.metric, availability);
   }
@@ -358,6 +365,8 @@ export default function MetricCatalogPage() {
               <CardContent className="space-y-2">
                 {failed.length > 0 ? (
                   <QueryErrorRow
+                    inset
+                    error={probes[failed[0]].error}
                     slot="catalog-group-error"
                     message={t("metricCatalog.loadError")}
                     onRetry={() => failed.forEach((id) => probes[id].retry())}

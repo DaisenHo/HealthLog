@@ -36,6 +36,7 @@ import {
   idempotentWrite,
   recordRefusal,
   stdResponses,
+  listEnvelope,
 } from "./shared";
 
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
@@ -298,7 +299,7 @@ export const illnessPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "The caller's illness episodes.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 z.array(illnessEpisode),
                 "ListIllnessEpisodesEnvelope",
               ),

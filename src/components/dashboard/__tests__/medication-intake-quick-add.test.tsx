@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W7b — `<MedicationIntakeQuickAdd>` contract suite.
+ * v1.4.37 — `<MedicationIntakeQuickAdd>` contract suite.
  *
  * Project convention is SSR-only tests (vitest runs in `node`
  * environment; `@testing-library/react` is not installed). The
@@ -61,6 +61,9 @@ import {
   type MedicationOption,
 } from "../medication-intake-quick-add";
 import { pickDefaultMedicationId } from "@/lib/medications/default-medication";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function makeMed(
   id: string,
@@ -248,7 +251,7 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     expect(html).not.toContain(
       'data-testid="medication-intake-quick-add-form"',
     );
-    // v1.4.37 W10 — the empty-state CTA must clear the 44 px touch
+    // v1.4.37 — the empty-state CTA must clear the 44 px touch
     // floor that W-CI raised on the onboarding checklist. The
     // `size="sm"` default would land at 32 px without an explicit
     // `min-h-11 sm:min-h-9` override.

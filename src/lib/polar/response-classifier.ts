@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — off-response classifier for Polar AccessLink replies.
+ * v1.17.0 — off-response classifier for Polar AccessLink replies.
  *
  * Polar signals failure through the HTTP status code, so the classification is
  * status-driven. The shared core lives in

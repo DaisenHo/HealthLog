@@ -14,7 +14,6 @@ import { MedicationCardBody } from "@/components/medications/card-parts/medicati
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatDateTime, formatTime } from "@/lib/format";
-import { getDateTimeFormat } from "@/lib/intl/formatter-cache";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
@@ -38,7 +37,7 @@ import { LogInjectionSiteDialog } from "@/components/medications/log-injection-s
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import { useAuth } from "@/hooks/use-auth";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 interface Schedule {
   id: string;
@@ -70,7 +69,7 @@ interface Medication {
   /** v1.40 — the label of a custom category; null for a built-in one. */
   categoryLabel?: string | null;
   /**
-   * v1.4.25 W4d — Prisma treatment-class discriminator. When set to
+   * v1.4.25 — Prisma treatment-class discriminator. When set to
    * "GLP1" the parent should render the {@link Glp1MedicationCard}
    * variant instead of this generic card. The field is optional for
    * backwards compatibility with mocks.
@@ -381,22 +380,16 @@ export function MedicationCard({
       : null;
 
   function formatLastTakenAt(value: string): string {
-    // Intentionally en-CA: gives YYYY-MM-DD which is locale-independent and
-    // string-comparable for the today / yesterday / older bucketing below.
-    // The actual user-facing display goes through formatTime / formatDateTime.
-    const dayFormatter = getDateTimeFormat("en-CA", {
-      timeZone: userTz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
+    // Day keys (YYYY-MM-DD) in the profile zone, string-comparable for the
+    // today / yesterday / older bucketing below. The user-facing display goes
+    // through formatTime / formatDateTime.
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const intakeDay = dayFormatter.format(new Date(value));
-    const todayDay = dayFormatter.format(now);
-    const yesterdayDay = dayFormatter.format(yesterday);
+    const intakeDay = userDayKey(new Date(value), userTz);
+    const todayDay = userDayKey(now, userTz);
+    const yesterdayDay = userDayKey(yesterday, userTz);
     const time = formatTime(value);
 
     if (intakeDay === todayDay) return `${t("medications.today")}, ${time}`;
@@ -418,7 +411,7 @@ export function MedicationCard({
     />
   );
 
-  // v1.7.2 W3 — the four former header icon-buttons (open / edit /
+  // v1.7.2 — the four former header icon-buttons (open / edit /
   // history / advanced) collapse into a single overflow kebab. The card
   // header itself links to the detail page (the former chevron target).
   const headerActions = (

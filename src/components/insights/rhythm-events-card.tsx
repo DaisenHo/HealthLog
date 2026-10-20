@@ -6,7 +6,8 @@ import type { LucideIcon } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
+import { apiGetList } from "@/lib/api/api-fetch";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -91,19 +92,21 @@ export function RhythmEventsCard({
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.insightsRhythmEvents(),
-    queryFn: async () => {
-      try {
-        return await apiGet<RhythmEventsResponse>(
-          "/api/insights/rhythm-events",
-        );
-      } catch {
-        throw new Error(t("insights.rhythmEvents.loadError"));
-      }
-    },
+    // The ApiError passes through untouched: the error row reads its status
+    // to tell an ended session from a real failure.
+    queryFn: () =>
+      apiGetList<RhythmEventsResponse>("/api/insights/rhythm-events"),
     enabled: enabled && isAuthenticated,
   });
+  const data = page?.data;
 
   // A failed read is said, never swallowed: this card carries health alerts,
   // and silently rendering nothing on an error would hide them.
@@ -119,6 +122,7 @@ export function RhythmEventsCard({
           title={t("insights.rhythmEvents.sectionTitle")}
         />
         <QueryErrorRow
+          error={error}
           slot="rhythm-events-error"
           message={t("insights.rhythmEvents.loadError")}
           onRetry={() => void refetch()}
@@ -185,6 +189,7 @@ export function RhythmEventsCard({
             );
           })}
         </ol>
+        <ListCapNotice cap={page?.cap} />
 
         {/* Load-bearing regulatory disclaimer — permanent, non-dismissible.
           Plain React text children (no markdown library — XSS rule). */}

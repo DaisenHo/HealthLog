@@ -1,5 +1,5 @@
 /**
- * v1.27.13 (Welle J) — the interpretation registry is the guideline source of
+ * v1.27.13 — the interpretation registry is the guideline source of
  * truth for the assessment prompt's band placement. These guards PIN the band
  * edges against the knowledge base's stated thresholds, so a silent edit to a
  * clinical number breaks a test rather than shipping. They also lock the

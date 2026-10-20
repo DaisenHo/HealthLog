@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (M8) — pin the widened cookie / localStorage decoder in
+ * v1.4.43 — pin the widened cookie / localStorage decoder in
  * `src/lib/format.ts`. Pre-fix a French user reading the dashboard saw
  * "12/24/2025, 2:30 PM" via the silent `en` fallback; the formatter
  * now honours every supported locale via the full `Locale` union.

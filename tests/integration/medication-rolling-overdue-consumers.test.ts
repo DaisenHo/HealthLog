@@ -1,5 +1,5 @@
 /**
- * v1.34.1 (#664 follow-up) — one persisted rolling occurrence must have
+ * v1.34.1 (#664) — one persisted rolling occurrence must have
  * one identity across every medication consumer.
  *
  * This is intentionally a RED contract for the diagnosed Mounjaro defect:

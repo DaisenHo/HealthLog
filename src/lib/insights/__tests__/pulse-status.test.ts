@@ -185,8 +185,11 @@ describe("generatePulseStatusForUser — A2 resting-target in-target %", () => {
       dateOfBirth: null,
       gender: null,
     } as never);
-    // pulse-status reads PULSE first, then RESTING_HEART_RATE.
+    // pulse-status reads PULSE first, then RESTING_HEART_RATE. The latest
+    // 365 PULSE readings reach back less than 30 days here, so the PULSE
+    // read takes the 30-day window as a second query.
     vi.mocked(prisma.measurement.findMany)
+      .mockResolvedValueOnce(pulseRecords as never)
       .mockResolvedValueOnce(pulseRecords as never)
       .mockResolvedValueOnce(restingRecords as never)
       .mockResolvedValue([] as never);

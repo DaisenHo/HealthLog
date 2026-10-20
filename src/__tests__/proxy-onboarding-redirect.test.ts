@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 /**
- * v1.4.22 C4 — onboarding redirect moved from `<AuthShell>` useEffect
+ * v1.4.22 — onboarding redirect moved from `<AuthShell>` useEffect
  * to `src/proxy.ts` so it lands on the first server response instead
  * of post-hydration. The previous client-side approach caused a brief
  * dashboard flash for users with `onboardingCompletedAt === null`.
@@ -101,7 +101,7 @@ describe("proxy.ts onboarding redirect (v1.4.22 C4)", () => {
   });
 
   /**
-   * v1.4.22 W5 reconcile (Sec-MED-2) — exact-match `/onboarding`
+   * v1.4.22 — exact-match `/onboarding`
    * plus subroutes. A hypothetical `/onboarding-export` route must
    * NOT inherit the public-pass-through that the literal
    * `/onboarding` carries.

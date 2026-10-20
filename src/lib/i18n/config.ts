@@ -1,4 +1,13 @@
-export const locales = ["de", "en", "fr", "es", "it", "pl", "ko"] as const;
+export const locales = [
+  "de",
+  "en",
+  "fr",
+  "es",
+  "it",
+  "pl",
+  "ko",
+  "nl",
+] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = "en";
@@ -33,6 +42,7 @@ export const localeLanguageNames: Record<Locale, string> = {
   it: "Italian",
   pl: "Polish",
   ko: "Korean",
+  nl: "Dutch",
 };
 
 export const localeLabels: Record<Locale, string> = {
@@ -43,10 +53,11 @@ export const localeLabels: Record<Locale, string> = {
   it: "Italiano",
   pl: "Polski",
   ko: "한국어",
+  nl: "Nederlands",
 };
 
 /**
- * v1.4.25 W9e — locales actively maintained by the project owner.
+ * v1.4.25 — locales actively maintained by the project owner.
  * Locales outside this set are AI-initial translations and surface a
  * <MaintainershipBanner> notice at the top of the auth shell so users
  * know to expect rough edges and where to contribute fixes. Promoting

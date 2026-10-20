@@ -29,6 +29,8 @@
  * the regression runs over the days that exist and nothing is imputed.
  */
 
+import { variance as varianceOf } from "@/lib/stats/spread";
+
 /** Span (first to last paired day, inclusive) below which only the trend is removed. */
 export const SEASONAL_MIN_SPAN_DAYS = 120;
 
@@ -205,10 +207,11 @@ function densify(
     dense[days[i] - lo] = values[i];
     sum += values[i];
   }
-  const mean = sum / values.length;
-  let ss = 0;
-  for (const v of values) ss += (v - mean) ** 2;
-  return { dense, mean, variance: ss / values.length };
+  return {
+    dense,
+    mean: sum / values.length,
+    variance: varianceOf(values, "population") ?? 0,
+  };
 }
 
 /**

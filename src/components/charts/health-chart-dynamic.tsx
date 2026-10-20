@@ -8,7 +8,7 @@ import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { importWithRetry } from "@/lib/retry-import";
 
 /**
- * v1.4.28 (BK-F-M2) — single `next/dynamic` boundary for the
+ * v1.4.28 — single `next/dynamic` boundary for the
  * canonical `<HealthChart>` component.
  *
  * Pre-fix, eight call sites (`src/app/page.tsx`, five insights
@@ -81,7 +81,7 @@ export function HealthChartDynamic(
 }
 
 /**
- * v1.4.36 W2 — mini variant for the trends-row 140 px chart slot. Same
+ * v1.4.36 — mini variant for the trends-row 140 px chart slot. Same
  * underlying `<HealthChart>` import, but the loading shell renders the
  * `mini` `<ChartSkeleton>` so the loading box matches the painted
  * chart's footprint instead of inflating past the row contract.

@@ -40,7 +40,7 @@ export function TrustedDevicesCard({
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.trustedDevices(),
     queryFn: () =>
       apiGet<{ devices: TrustedDeviceRow[] }>("/api/auth/me/trusted-devices"),
@@ -105,6 +105,8 @@ export function TrustedDevicesCard({
 
         {isError && (
           <QueryErrorRow
+            inset
+            error={error}
             message={t("settings.security.trustedDevices.loadError")}
             onRetry={() => refetch()}
           />

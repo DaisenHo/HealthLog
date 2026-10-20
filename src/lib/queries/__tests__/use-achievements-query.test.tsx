@@ -1,5 +1,5 @@
 /**
- * v1.4.34 IW-F-Perf — consumer-collapse contract.
+ * v1.4.34 — consumer-collapse contract.
  *
  * Three independent consumers
  * (`<RecentAchievementsCard>`, `/achievements` mother page,

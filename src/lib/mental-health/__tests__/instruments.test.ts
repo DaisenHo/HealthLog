@@ -200,6 +200,10 @@ describe("mental-health instruments", () => {
         expect(hasValidatedItems("WHO5", locale)).toBe(true);
         expect(hasValidatedItems("PHQ9", locale)).toBe(true);
       }
+      // The Dutch wording has not been read against the published forms yet.
+      expect(hasValidatedItems("PHQ9", "nl")).toBe(false);
+      expect(hasValidatedItems("GAD7", "nl")).toBe(false);
+      expect(hasValidatedItems("WHO5", "nl")).toBe(false);
       expect(hasValidatedItems("SCI", "en")).toBe(true);
       expect(hasValidatedItems("SCI", "en-GB")).toBe(true);
       expect(hasValidatedItems("SCI", "de")).toBe(false);

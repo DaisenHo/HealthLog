@@ -19,6 +19,9 @@ import {
   describeBaselineSaveOutcome,
   putBaselineProfile,
 } from "../baseline-form-utils";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /** A `t` backed by the shipped bundle — no stand-in strings. */
 function translator(locale: "en" | "de") {

@@ -242,7 +242,10 @@ export function MedicationCategoriesSheet({
     >
       <div className="space-y-2" data-slot="medication-categories-sheet">
         {categories.isError ? (
-          <QueryErrorRow onRetry={() => void categories.refetch()} />
+          <QueryErrorRow
+            error={categories.error}
+            onRetry={() => void categories.refetch()}
+          />
         ) : (
           (categories.data ?? []).map((category) => (
             <CategoryRow

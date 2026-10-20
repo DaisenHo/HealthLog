@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.1 P3 — the per-episode retrospective correlation card ("How it
+ * v1.18.1 — the per-episode retrospective correlation card ("How it
  * unfolded"). Server-authoritative + coverage-gated: it pattern-matches the
  * `Derived<T>` `status` and renders "still learning" when the signal is thin,
  * NEVER a fabricated number. Retrospective only — never a prediction or a
@@ -18,6 +18,7 @@ import { useTranslations } from "@/lib/i18n/context";
 
 import { useIllnessCorrelation } from "./use-illness";
 import type { IllnessCorrelationValue, IllnessVitalDeviation } from "./types";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 /** Translate a MeasurementType to its illness-surface label. */
 function useVitalLabel() {
@@ -168,7 +169,8 @@ function CorrelationBody({ value }: { value: IllnessCorrelationValue }) {
 
 export function IllnessCorrelationCard({ episodeId }: { episodeId: string }) {
   const { t } = useTranslations();
-  const { data, isLoading, isError } = useIllnessCorrelation(episodeId);
+  const { data, isLoading, isError, error, refetch } =
+    useIllnessCorrelation(episodeId);
 
   return (
     <Card>
@@ -186,7 +188,15 @@ export function IllnessCorrelationCard({ episodeId }: { episodeId: string }) {
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-2/3" />
           </div>
-        ) : isError || !data || data.status !== "ok" || !data.value ? (
+        ) : isError && !data ? (
+          // A failed read is not "still learning": it says so and can retry.
+          <QueryErrorRow
+            inset
+            error={error}
+            slot="illness-correlation-error"
+            onRetry={() => void refetch()}
+          />
+        ) : !data || data.status !== "ok" || !data.value ? (
           <p className="text-muted-foreground text-sm">
             {t("illness.correlation.learning")}
           </p>

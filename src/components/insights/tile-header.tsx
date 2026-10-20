@@ -58,9 +58,11 @@ interface TileHeaderProps {
    * owning block (the recovery blocks) or a grid of sibling tiles (dashboard
    * tiles, insights overview grids) both nest correctly as `h1 → h2, h2, …`;
    * just don't nest a `titleAs="h2"` tile inside another heading's own
-   * subsection. Default (unset) keeps every other tile a plain CardTitle.
+   * subsection. `"h3"` is the same for a card that sits inside a section
+   * which already owns an `h2` (the since-last-visit card under the visits
+   * section). Default (unset) keeps every other tile a plain CardTitle.
    */
-  titleAs?: "h2";
+  titleAs?: "h2" | "h3";
 }
 
 export function TileHeader({
@@ -73,6 +75,7 @@ export function TileHeader({
   id,
   titleAs,
 }: TileHeaderProps) {
+  const Heading = titleAs ?? "h2";
   const titleClassNames = cn(
     size === "sm" ? "text-sm" : "text-base",
     titleClassName,
@@ -93,16 +96,16 @@ export function TileHeader({
           aria-hidden="true"
         />
       ) : null}
-      {titleAs === "h2" ? (
+      {titleAs ? (
         // Heading semantics with the exact CardTitle visual treatment so the
-        // tile can carry a real `<h2>` where it owns the subpage's heading.
-        <h2
+        // tile can carry a real heading where it owns one.
+        <Heading
           id={id}
           data-slot="card-title"
           className={cn("leading-none font-semibold", titleClassNames)}
         >
           {title}
-        </h2>
+        </Heading>
       ) : (
         <CardTitle id={id} className={titleClassNames}>
           {title}

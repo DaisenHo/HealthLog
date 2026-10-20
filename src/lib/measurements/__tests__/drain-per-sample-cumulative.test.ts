@@ -80,7 +80,7 @@ describe("canonicalDailyTimestamp", () => {
 });
 
 describe("localStartOfDay", () => {
-  // v1.4.37 W10 — local 00:00 resolution for any IANA zone. Used by
+  // v1.4.37 — local 00:00 resolution for any IANA zone. Used by
   // the W7c drill-down to anchor the per-day UTC window.
 
   it("returns Berlin 00:00 CET in winter (UTC+1)", () => {
@@ -108,7 +108,7 @@ describe("localStartOfDay", () => {
 });
 
 describe("localDayWindow — DST-aware [dayStart, dayEnd) drill-down bounds", () => {
-  // v1.4.37 W10 H-1 — the previous `canonicalDailyTimestamp ± 12h`
+  // v1.4.37 — the previous `canonicalDailyTimestamp ± 12h`
   // shape silently leaked or hid an hour of samples on the two days
   // per year when Europe/Berlin (and every other DST-observing IANA
   // zone) transitions. `localDayWindow` walks the day's true local
@@ -280,7 +280,7 @@ describe("sumBucketValues", () => {
   });
 });
 
-// v1.4.37 W7c — the scheduled nightly drain passes a 36 h grace
+// v1.4.37 — the scheduled nightly drain passes a 36 h grace
 // window so today + the trailing watch-sync reconciliation period
 // stay per-sample for the list view. The test below pins that the
 // cutoffHours option filters by `measuredAt: { lt: cutoff }` rather
@@ -409,14 +409,14 @@ describe("drainPerSampleCumulative — late-sync fold into existing total", () =
     const update = vi.fn().mockResolvedValue({ id: "stats-row" });
     const create = vi.fn().mockResolvedValue({ id: "stats-row-new" });
     const deleteMany = vi.fn().mockResolvedValue({ count: 2 });
-    // v1.28.39 F2 — the in-tx re-read of the still-live per-sample contributors
+    // v1.28.39 — the in-tx re-read of the still-live per-sample contributors
     // (only fires when an index-A `stats:` total already exists). Returns the
     // two late rows so `liveIncrement` sums to the same 500 the pre-scan did on
     // a clean single run.
     const findMany = vi
       .fn()
       .mockResolvedValue([{ value: 300 }, { value: 200 }]);
-    // v1.28.39 F2 — the per-bucket advisory lock (`pg_advisory_xact_lock`).
+    // v1.28.39 — the per-bucket advisory lock (`pg_advisory_xact_lock`).
     const $queryRaw = vi.fn().mockResolvedValue([{ locked: 1 }]);
 
     // `findFirst` serves three roles inside `writeDay`:
@@ -684,7 +684,7 @@ describe("drainPerSampleCumulative — colliding day does not abort the walk", (
   });
 });
 
-// v1.28.39 F1 — the cumulative drain was the ONLY one of the four consolidation
+// v1.28.39 — the cumulative drain was the ONLY one of the four consolidation
 // drains whose scan `where` omitted `deletedAt: null`, so a soft-deleted
 // non-`stats:` APPLE_HEALTH sample was re-summed into the day total AND
 // hard-deleted (resurrecting a user-deleted grace-window sample and erasing the
@@ -723,7 +723,7 @@ describe("drainPerSampleCumulative — scan excludes soft-deleted rows (F1)", ()
   });
 });
 
-// v1.28.39 F2 — the additive late-fold merge (`eidRow.value + <increment>`)
+// v1.28.39 — the additive late-fold merge (`eidRow.value + <increment>`)
 // double-counted under two overlapping runs of the same (user, type, day): both
 // scan the same live per-sample rows, the winner mints+hard-deletes, and the
 // loser re-added its now-stale scan sum onto the winner's committed total → a

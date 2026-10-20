@@ -278,7 +278,7 @@ export const PATCH = apiHandler(
     await auditLog("measurementReminder.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — what the edit replaced. A cadence change moves when somebody's
+      // What the edit replaced. A cadence change moves when somebody's
       // phone rings; the feed has to be able to say what it used to be.
       details: {
         reminderId: id,
@@ -349,7 +349,7 @@ export const DELETE = apiHandler(
     await auditLog("measurementReminder.delete", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C3 — a hard delete, so the details carry the identity of what went:
+      // A hard delete, so the details carry the identity of what went:
       // the label the owner wrote, what it watched, when it was next due. An
       // id alone would say a preventive-care recall disappeared and never say
       // what it was for.

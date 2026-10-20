@@ -126,7 +126,7 @@ const profileSettings = z
       .nullable()
       .describe("Calendar date (`YYYY-MM-DD`), not an instant."),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
-    locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko"]).nullable(),
+    locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"]).nullable(),
     timezone: z.string(),
     unitPreference: z.enum(["metric", "imperial"]),
     timeFormat: z.enum(["AUTO", "H12", "H24"]),

@@ -173,10 +173,8 @@ export function CoincidentDeviationCard({
   className,
 }: CoincidentDeviationCardProps) {
   const { t } = useTranslations();
-  const { data, isError, refetch } = useDerivedMetric<CoincidentDeviationValue>(
-    COINCIDENT_METRIC,
-    { enabled },
-  );
+  const { data, isError, error, refetch } =
+    useDerivedMetric<CoincidentDeviationValue>(COINCIDENT_METRIC, { enabled });
 
   // A failed read says so with a retry. Without this branch the card sat on
   // its skeleton forever, which read as "still loading" rather than failed.
@@ -192,6 +190,7 @@ export function CoincidentDeviationCard({
           title={t("insights.derived.coincident.cardTitle")}
         />
         <QueryErrorRow
+          error={error}
           slot="coincident-deviation-error"
           onRetry={() => void refetch()}
         />
@@ -300,7 +299,7 @@ export function CoincidentDeviationCard({
         className="text-muted-foreground text-xs leading-snug"
         data-slot="coincident-factors"
       >
-        {/* v1.18.1 P4 — Rest Mode reframe. When an illness episode is active
+        {/* v1.18.1 — Rest Mode reframe. When an illness episode is active
             the deviations have a known explanation, so the card states it
             plainly instead of leaving "possible factors" open. Neutral copy,
             no extra colour. */}

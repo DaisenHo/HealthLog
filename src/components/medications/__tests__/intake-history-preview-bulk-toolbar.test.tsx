@@ -1,5 +1,5 @@
 /**
- * v1.5.5 F-1 C-2 — `<IntakeHistoryPreview>` smoke tests.
+ * v1.5.5 — `<IntakeHistoryPreview>` smoke tests.
  *
  * The preview mounts in SSR with an empty selection so the bulk-
  * delete toolbar stays hidden by default. Selection / dialog flips

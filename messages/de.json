@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Hier stehen die letzten {count}; ältere Einträge sind nicht aufgeführt.",
     "save": "Speichern",
     "conflictReloaded": "Vom Server neu geladen. Bitte nimm deine Änderung noch einmal vor.",
     "cancel": "Abbrechen",
@@ -55,7 +56,9 @@
     "errorIdLabel": "Fehler-ID",
     "errorIdCopy": "Fehler-ID kopieren",
     "errorIdCopied": "Fehler-ID kopiert",
-    "readThrottled": "Gerade zu viele Anfragen. Versuch es später noch einmal."
+    "readThrottled": "Gerade gibt es zu viele Anfragen, versuch es später noch einmal.",
+    "sessionEnded": "Deine Sitzung ist abgelaufen, melde dich erneut an, um weiterzumachen.",
+    "signIn": "Anmelden"
   },
   "apiErrors": {
     "measurement": {
@@ -843,7 +846,7 @@
     "nextPage": "Nächste Seite",
     "dailyTotalCaption": "({count} Einzelwerte)",
     "openMetricInsights": "{type}-Auswertung öffnen",
-    "sleepNapCaption": "+{count} Nickerchen",
+    "sleepNapCaption": "inkl. {count} Nickerchen",
     "sleepAwakeningsCaption": "{count} Wachphasen",
     "expandDay": "Einzelwerte dieses Tages anzeigen",
     "collapseDay": "Einzelwerte dieses Tages ausblenden",
@@ -4395,7 +4398,7 @@
             "composition": "Zusammensetzung"
           },
           "gap": {
-            "fewNights": "noch nicht genug Nächte ({count} von 3)",
+            "fewNights": "noch nicht genug Nächte ({count} von {needed})",
             "noMainSleep": "letzter Tag nur mit Nickerchen"
           }
         },
@@ -4664,9 +4667,9 @@
       "description": "Wie gut sich dein Körper erholt hat: die Erholungs-, Belastungs- und Load-Signale, die dein Wearable über Nacht aufzeichnet.",
       "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
-      "empty": "Hier ist noch nichts zu sehen. Diese Seite zeigt die Werte zu Aufladung, Belastung und Trainingslast, die WHOOP und Polar aufzeichnen, und Ouras Resilienz-Stufe. Ouras Readiness erscheint als dein Erholungs-Score, oben verlinkt.",
-      "emptyOuraPermission": "Oura ist verbunden, aber die erteilte Berechtigung umfasst keine Herzgesundheitsdaten, und genau dahinter liegt Ouras Resilienz-Stufe. Verbinde Oura unter Einstellungen, Integrationen einmal neu und erlaube den Zugriff auf Herzgesundheit; die Stufe erscheint dann mit der nächsten Synchronisierung hier. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
-      "emptyOuraNoResilience": "Oura ist verbunden, aber für dieses Konto ist noch keine Resilienz-Stufe angekommen. HealthLog fragt bei jeder Synchronisierung danach, sie erscheint hier, sobald Oura eine liefert. Zeigt die Oura-App eine Stufe, nennt die Oura-Karte unter Einstellungen, Integrationen alles, was die Verbindung nicht liefern kann. Ouras Readiness ist bereits dein Erholungs-Score, oben verlinkt.",
+      "empty": "Diese Seite füllt sich mit den Erholungs-, Belastungs- und Trainingslastwerten von WHOOP oder Polar und mit Ouras Resilienz-Stufe.",
+      "emptyOuraPermission": "Ouras Resilienz-Stufe braucht Zugriff auf Herzgesundheitsdaten, also verbinde Oura einmal neu unter Integrationen und erlaube ihn.",
+      "emptyOuraNoResilience": "Oura ist verbunden, und seine Resilienz-Stufe erscheint hier, sobald Oura eine liefert.",
       "emptyAction": "Integrationen öffnen",
       "block": {
         "ansChargeExplainer": "Wie aufgeladen dein autonomes Nervensystem in den Tag startet, ein Recharge-Wert aus deinen nächtlichen Herz- und Atemsignalen.",
@@ -4676,7 +4679,8 @@
         "averageHeartRateExplainer": "Deine durchschnittliche Herzfrequenz über den ganzen Tag bzw. Zyklus, wie dein Wearable sie meldet.",
         "maxHeartRateExplainer": "Deine höchste Herzfrequenz über den ganzen Tag bzw. Zyklus, wie dein Wearable sie meldet.",
         "energyExpenditureKjExplainer": "Die Energie, die dein Körper über den Tag verbraucht hat, in Kilojoule, wie dein Gerät sie nativ meldet."
-      }
+      },
+      "loadError": "Deine Erholungswerte konnten nicht geladen werden."
     },
     "bodyTempDeviation": {
       "title": "Körpertemperatur-Abweichung",
@@ -7275,7 +7279,8 @@
         "lastNewValue": "Letzter neuer Wert {relative}",
         "lastBackground": "Zuletzt im Hintergrund {relative}",
         "never": "Noch nicht empfangen",
-        "lastBackfill": "Verlauf nachgeladen {relative}"
+        "lastBackfill": "Verlauf nachgeladen {relative}",
+        "lastEnteredHere": "Zuletzt hier eingetragen {relative}"
       }
     },
     "garminInfo": {
@@ -11903,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)"
+      "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)",
+      "loadError": "Wasser konnte nicht geladen werden."
     },
     "caffeine": {
       "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)",
@@ -12324,8 +12330,7 @@
       "loadError": "Die Aktivität konnte nicht geladen werden.",
       "opened": "{name} hat deine Akte {count}× geöffnet",
       "acted": "{name} hat etwas in deiner Akte geändert",
-      "deletedAccount": "Ein gelöschtes Konto",
-      "truncated": "Diese Liste zeigt die neueste Aktivität, nicht die gesamte."
+      "deletedAccount": "Ein gelöschtes Konto"
     },
     "delegate": {
       "addOnlyNote": "Du kannst zu dieser Akte etwas hinzufügen. Einträge ändern oder löschen kann nur {name}."

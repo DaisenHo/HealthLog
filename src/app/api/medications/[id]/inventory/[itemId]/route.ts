@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19b — per-pen inventory item operations.
+ * v1.4.25 — per-pen inventory item operations.
  *
  *   PATCH  /api/medications/[id]/inventory/[itemId]
  *     - set or clear the opening date (`markAsFirstUseAt`); for a pen
@@ -60,7 +60,7 @@ export const PATCH = apiHandler(
 
     const parsed = updateInventoryItemSchema.safeParse(body);
     if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422.
+      // v1.4.43 — multi-issue 422.
       return returnAllZodIssues(parsed.error, 422);
     }
 
@@ -92,7 +92,7 @@ export const PATCH = apiHandler(
     if (manufacturer !== undefined) labellingData.manufacturer = manufacturer;
     if (doseStrength !== undefined) labellingData.doseStrength = doseStrength;
 
-    // v1.32.22 (M5) — the stock correction writes an ABSOLUTE `unitsRemaining`
+    // v1.32.22 — the stock correction writes an ABSOLUTE `unitsRemaining`
     // composed from a prior read. `consumeForIntake` decrements the same rows
     // under a per-medication advisory lock; without taking that SAME lock the
     // correction's read-compose-write could clobber a concurrent decrement (or
@@ -217,7 +217,7 @@ export const PATCH = apiHandler(
     await auditLog("medication.inventory.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the counts and dates this edit replaced, beside the state
+      // The counts and dates this edit replaced, beside the state
       // transition the row already carried.
       details: {
         medicationId: id,
@@ -267,7 +267,7 @@ export const DELETE = apiHandler(
     const { user } = await requireRecordAuth("manage", "medications");
     const { id, itemId } = await params;
 
-    // v1.32.22 (M5) — take the same per-medication advisory lock the intake
+    // v1.32.22 — take the same per-medication advisory lock the intake
     // consumption hook takes, so a delete that interleaves a `consumeForIntake`
     // serializes against it: the consume either fully applies before the row
     // vanishes or blocks until the delete commits and then finds nothing to
@@ -288,7 +288,7 @@ export const DELETE = apiHandler(
     await auditLog("medication.inventory.delete", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C3 — the container's own identity: its label, its expiry, what it
+      // The container's own identity: its label, its expiry, what it
       // held. The row is gone; this is what is left of it.
       details: {
         medicationId: id,

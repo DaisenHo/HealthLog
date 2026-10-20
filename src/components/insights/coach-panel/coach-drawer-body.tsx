@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.20 phase B4 — pure presentational body for `<CoachDrawer>`.
+ * v1.4.20 — pure presentational body for `<CoachDrawer>`.
  *
  * The drawer's outer Radix `<Sheet>` does not surface in SSR (its
  * portal is client-only), so the unit suite couldn't pin the
@@ -139,7 +139,7 @@ export function CoachDrawerBody({
               </Button>
             )}
           </div>
-          {/* v1.18.6 (CCH-01) — `<HistoryRail>` is itself a `flex h-full
+          {/* v1.18.6 — `<HistoryRail>` is itself a `flex h-full
               flex-col` with its OWN `overflow-y-auto` list, so a single
               bounded flex track here is all it needs; do not nest a
               second scroll container. */}
@@ -152,7 +152,7 @@ export function CoachDrawerBody({
         data-slot="coach-drawer-thread"
         className="flex h-full min-h-0 min-w-0 flex-col"
       >
-        {/* v1.4.27 R3d MB2 — rail-tray triggers lifted out of the
+        {/* v1.4.27 — rail-tray triggers lifted out of the
             absolute overlay into a sub-header strip so the buttons
             sit at a 44 px tap target and never overlay the first
             message bubble.

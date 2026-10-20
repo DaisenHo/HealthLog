@@ -67,7 +67,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = prefsSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — sibling of `/api/dashboard/widgets`; the per-chart
+    // v1.4.43 — sibling of `/api/dashboard/widgets`; the per-chart
     // overlay popover hits this on every toggle so the multi-issue
     // envelope matches widgets exactly. Audit breadcrumb keyed
     // `dashboard.chart-overlay.validation-failed`, deduped via the

@@ -8,7 +8,7 @@ import { isOnboardingSettled } from "@/lib/onboarding/needs";
 import { resumeScreen } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.39 (C2) — the setup flow's front door.
+ * v1.39 — the setup flow's front door.
  *
  * The proxy lands every account still pending its first run here, and
  * Settings → "Set up again" does too. What is shown depends on where the

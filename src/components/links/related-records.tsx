@@ -63,6 +63,7 @@ import type { EncounterDTO } from "@/lib/encounters/dto";
 import type { IllnessEpisodeDTO } from "@/lib/illness/dto";
 import type { RelatedLink } from "@/lib/links/related";
 import type { EncounterKind } from "@/generated/prisma/client";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 type RelatedKind = RelatedLink["kind"];
@@ -114,9 +115,8 @@ function rowLabel(t: Translate, row: RelatedLink): string {
   // A dose without a written name arrives as its catalogue slug ("tetanus"),
   // named here from the reader's bundle the way the dose picker names it.
   if (row.kind === "vaccination" && /^[a-z0-9_-]+$/.test(row.label)) {
-    const key = `vaccinations.catalog.${row.label}`;
-    const name = t(key);
-    if (name !== key) return name;
+    const name = translateOrNull(t, `vaccinations.catalog.${row.label}`);
+    if (name !== null) return name;
   }
   return row.label;
 }
@@ -365,7 +365,7 @@ function MedicationPicker({ selected, onChange, known }: PickerProps) {
       title={t("links.related.pick.medication")}
       slot="related-link-medication"
       pending={list.isPending}
-      error={list.isError}
+      error={list.error}
       errorLabel={t("links.picker.loadError")}
       onRetry={() => void list.refetch()}
       selected={selected}
@@ -403,7 +403,7 @@ function DosePicker({ selected, onChange, anchor, known }: PickerProps) {
       title={t("links.related.pick.vaccination")}
       slot="related-link-vaccination"
       pending={doses.isPending}
-      error={doses.isError}
+      error={doses.error}
       errorLabel={t("links.picker.loadError")}
       onRetry={() => void doses.refetch()}
       selected={selected}

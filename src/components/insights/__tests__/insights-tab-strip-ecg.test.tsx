@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.30 (UX/IA audit H1) — the ECG entry in the Heart-group tab strip.
+ * v1.30 — the ECG entry in the Heart-group tab strip.
  *
  * ECG carries no `MeasurementType`, so it can't ride the metric
  * `availability` model; the strip gates it on the dedicated

@@ -529,7 +529,7 @@ describe("BP-in-target % — windowed (7-day + 30-day) — production data shape
 });
 
 /**
- * v1.17 W1d — re-anchor the headline to the trailing 90 days.
+ * v1.17 — re-anchor the headline to the trailing 90 days.
  *
  * Up to v1.4.19 the headline was the all-time figure (slowest-moving
  * aggregate possible); v1.4.22 swung it to the trailing 30 days (recency
@@ -659,7 +659,7 @@ describe("GET /api/analytics — BP-in-target headline (v1.17 W1d)", () => {
   });
 
   /**
-   * v1.4.23 H2 — the analytics route paged the BP series through a
+   * v1.4.23 — the analytics route paged the BP series through a
    * 5 000-row chunked fetch to bound the working set for power-user
    * accounts. Seed a synthetic 6 000-row dataset (3 000 sys + 3 000
    * dia, each chunk crosses the page boundary) and assert the

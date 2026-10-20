@@ -95,7 +95,7 @@ export async function resolveTurnConversation(args: {
     m.metricSource?.groundedFigures ? [...m.metricSource.groundedFigures] : [],
   );
 
-  // v1.4.43 W13 M-3 — replay-injection guard. `detectRefusal` runs
+  // v1.4.43 — replay-injection guard. `detectRefusal` runs
   // only on the inbound `message` per turn, so an injection that
   // slipped past the regex bank on a previous turn would re-enter
   // the prompt every reply. Re-run the detector against every

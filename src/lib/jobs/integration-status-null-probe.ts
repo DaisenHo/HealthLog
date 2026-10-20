@@ -1,5 +1,5 @@
 /**
- * v1.4.48 M1 — boot-time probe for legacy `IntegrationStatus` rows that
+ * v1.4.48 — boot-time probe for legacy `IntegrationStatus` rows that
  * still carry `consecutiveFailuresByKind: NULL`.
  *
  * v1.4.47 W1 dropped the single-column `consecutiveFailures` integer in

@@ -9,7 +9,7 @@ import { z } from "zod/v4";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
- * v1.4.16 phase B4: parse the union of legacy + new query params. Legacy
+ * v1.4.16: parse the union of legacy + new query params. Legacy
  * `limit`/`offset`/`filter` keys still work so the existing
  * `<RecentAuditPreview>` and `<LoginOverviewSection>` callers don't break;
  * new `page`/`perPage`/`actor`/`action`/`target`/`since`/`until` drive
@@ -152,7 +152,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         action: true,
         ipAddress: true,
         location: true,
-        // v1.4.27 B3 — surface the carrier chip data alongside the
+        // v1.4.27 — surface the carrier chip data alongside the
         // existing location string. Both nullable so older rows render
         // with the same dash that `location` falls back to.
         asn: true,
@@ -167,7 +167,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     prisma.auditLog.count({ where }),
   ]);
 
-  // v1.4.16 phase D reconcile (security H2) — `details` is a JSON string
+  // v1.4.16 (security H2) — `details` is a JSON string
   // column written by `auditLog()` calls across the app. A user-controlled
   // value can land in here (e.g. `auth.login.failed → details.identifier`)
   // and a typo'd "Bearer hlk_..." in a username field would otherwise be

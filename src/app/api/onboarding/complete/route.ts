@@ -54,7 +54,7 @@ import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
  * /api/onboarding/restart` clears that marker when the person asks for the
  * questions again.
  *
- * v1.39 (C2) — the dashboard order joins the derivation. The five-step
+ * v1.39 — the dashboard order joins the derivation. The five-step
  * wizard's goal slugs used to seed it from their own route; the answers now
  * carry both halves of Q2 — which modules are on, and what is on top — and
  * the seed keeps the wizard's one contract: only while the layout column is
@@ -129,7 +129,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     data,
   });
 
-  // v1.4.22 C4 — clear the proxy-readable onboarding cookie so the
+  // v1.4.22 — clear the proxy-readable onboarding cookie so the
   // next navigation drops the /onboarding redirect immediately.
   await setOnboardingPendingCookie(false);
 

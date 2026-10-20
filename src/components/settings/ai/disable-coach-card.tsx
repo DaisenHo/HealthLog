@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * v1.4.47 W3 — Coach activation toggle card.
+ * v1.4.47 — Coach activation toggle card.
  *
- * v1.18.0 (S5) — moved out of Settings → AI into the dedicated Coach
+ * v1.18.0 — moved out of Settings → AI into the dedicated Coach
  * section; its `<section>` id namespace is `settings-coach-activate-*`
  * accordingly. (The file path stays under `ai/` as pre-existing drift.)
  *
- * v1.18.1 (D7) — polarity flip. The card now reads "Activate Coach" with the
+ * v1.18.1 — polarity flip. The card now reads "Activate Coach" with the
  * Switch ON by default (the Coach is on for everyone unless the user opts
  * out). The persisted state is still the single `User.disableCoach` field —
  * one source of truth — so the Switch's `checked` is `!disableCoach` and a
@@ -58,7 +58,7 @@ export function DisableCoachCard({
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
-  // v1.4.48 M2 — auto-clear the inline `<p role="status">` line 3 s
+  // v1.4.48 — auto-clear the inline `<p role="status">` line 3 s
   // after the mutation settles so a Settings card the user scrolled
   // past minutes earlier doesn't keep echoing a stale "Coach hidden"
   // banner. The ref tracks the in-flight timer so we can clear it on

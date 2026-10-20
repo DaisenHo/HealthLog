@@ -1,5 +1,6 @@
 {
   "common": {
+    "listCapped": "Widać tylko ostatnie {count}; starsze wpisy nie są tu wymienione.",
     "save": "Zapisz",
     "conflictReloaded": "Odświeżono z serwera. Wprowadź zmianę jeszcze raz.",
     "cancel": "Anuluj",
@@ -55,7 +56,9 @@
     "errorIdLabel": "ID błędu",
     "errorIdCopy": "Kopiuj ID błędu",
     "errorIdCopied": "Skopiowano ID błędu",
-    "readThrottled": "Zbyt wiele zapytań w tej chwili. Spróbuj ponownie później."
+    "readThrottled": "W tej chwili jest zbyt wiele zapytań, więc spróbuj ponownie później.",
+    "sessionEnded": "Twoja sesja wygasła, więc zaloguj się ponownie, aby kontynuować.",
+    "signIn": "Zaloguj się"
   },
   "apiErrors": {
     "measurement": {
@@ -843,7 +846,7 @@
     "nextPage": "Następna strona",
     "dailyTotalCaption": "({count} pomiarów)",
     "openMetricInsights": "Otwórz analizę {type}",
-    "sleepNapCaption": "+{count} drzemka/i",
+    "sleepNapCaption": "w tym {count} drzemka/i",
     "sleepAwakeningsCaption": "{count} przebudzenia",
     "expandDay": "Pokaż pomiary z tego dnia",
     "collapseDay": "Ukryj pomiary z tego dnia",
@@ -4395,7 +4398,7 @@
             "composition": "Struktura"
           },
           "gap": {
-            "fewNights": "za mało nocy ({count} z 3)",
+            "fewNights": "za mało nocy ({count} z {needed})",
             "noMainSleep": "ostatni dzień tylko z drzemką"
           }
         },
@@ -4664,9 +4667,9 @@
       "description": "Jak dobrze Twój organizm się zregenerował: sygnały regeneracji, obciążenia i load, które Twoje urządzenie rejestruje w nocy.",
       "scoreCrossLink": "Zobacz łączny wynik regeneracji",
       "emptyTitle": "Brak danych o regeneracji",
-      "empty": "Na razie nie ma tu nic do pokazania. Ta strona pokazuje odczyty ładowania, wysiłku i obciążenia, które rejestrują WHOOP i Polar, oraz poziom odporności z Oura. Gotowość (readiness) z Oura pojawia się jako wynik regeneracji, link powyżej.",
-      "emptyOuraPermission": "Oura jest połączona, ale udzielone uprawnienie nie obejmuje danych o zdrowiu serca, od których zależy poziom odporności z Oura. Połącz Oura ponownie raz w Ustawieniach, Integracjach i zezwól na dostęp do zdrowia serca; poziom pojawi się tutaj przy następnej synchronizacji. Gotowość (readiness) z Oura jest już Twoim wynikiem regeneracji, link powyżej.",
-      "emptyOuraNoResilience": "Oura jest połączona, ale dla tego konta nie dotarł jeszcze żaden poziom odporności. HealthLog pyta o niego przy każdej synchronizacji, więc pojawi się tutaj, gdy tylko Oura go dostarczy. Jeśli aplikacja Oura pokazuje poziom, karta Oura w Ustawieniach, Integracjach wymienia wszystko, czego połączenie nie może dostarczyć. Gotowość (readiness) z Oura jest już Twoim wynikiem regeneracji, link powyżej.",
+      "empty": "Ta strona wypełnia się wartościami regeneracji, obciążenia i obciążenia treningowego z WHOOP lub Polar oraz poziomem odporności z Oura.",
+      "emptyOuraPermission": "Poziom odporności Oura wymaga dostępu do danych o zdrowiu serca, więc połącz Oura ponownie raz w Integracjach i zezwól na niego.",
+      "emptyOuraNoResilience": "Oura jest połączona, a jej poziom odporności pojawi się tutaj, gdy tylko Oura go dostarczy.",
       "emptyAction": "Otwórz integracje",
       "block": {
         "ansChargeExplainer": "Jak naładowany jest Twój autonomiczny układ nerwowy na dany dzień: odczyt regeneracji oparty na nocnych sygnałach serca i oddechu.",
@@ -4676,7 +4679,8 @@
         "averageHeartRateExplainer": "Twoje średnie tętno w ciągu całego dnia lub cyklu, zgodnie z odczytem Twojego urządzenia.",
         "maxHeartRateExplainer": "Twoje maksymalne tętno w ciągu całego dnia lub cyklu, zgodnie z odczytem Twojego urządzenia.",
         "energyExpenditureKjExplainer": "Energia, którą Twój organizm wydatkował w ciągu dnia, w kilodżulach, zgodnie z natywnym odczytem urządzenia."
-      }
+      },
+      "loadError": "Nie udało się załadować Twoich wartości regeneracji."
     },
     "bodyTempDeviation": {
       "title": "Odchylenie temperatury ciała",
@@ -7275,7 +7279,8 @@
         "lastNewValue": "Ostatnia nowa wartość {relative}",
         "lastBackground": "Ostatnio w tle {relative}",
         "never": "Jeszcze nie odebrano",
-        "lastBackfill": "Historia uzupełniona {relative}"
+        "lastBackfill": "Historia uzupełniona {relative}",
+        "lastEnteredHere": "Ostatni wpis tutaj {relative}"
       }
     },
     "garminInfo": {
@@ -11903,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Zalecane spożycie {value} {unit}/dzień (EFSA)"
+      "referenceMeta": "Zalecane spożycie {value} {unit}/dzień (EFSA)",
+      "loadError": "Nie udało się załadować wody."
     },
     "caffeine": {
       "ceilingMeta": "Bezpieczny limit {value} {unit}/dzień (EFSA)",
@@ -12324,8 +12330,7 @@
       "loadError": "Nie udało się wczytać aktywności.",
       "opened": "{name} otworzył twoją kartę {count}×",
       "acted": "{name} wprowadził zmianę w twojej karcie",
-      "deletedAccount": "Usunięte konto",
-      "truncated": "Ta lista pokazuje najnowszą aktywność, a nie całą."
+      "deletedAccount": "Usunięte konto"
     },
     "delegate": {
       "addOnlyNote": "Możesz dodawać wpisy do tej karty. Zmieniać je i usuwać może tylko {name}."

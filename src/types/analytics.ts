@@ -33,6 +33,7 @@
  * surface. Three named shapes capture the contract; one swiss-army
  * shape loses it.
  */
+import type { RecoveryEmptyReason } from "@/lib/insights/recovery-empty";
 import type { DataSummary } from "@/lib/analytics/trends";
 import type { SleepSourceDiscrepancy } from "@/lib/analytics/sleep-night";
 import type { CorrelationResult } from "@/lib/insights/correlations";
@@ -53,6 +54,11 @@ export interface SubPageAnalyticsData {
     string,
     { lastSeenAt: string; daysAgo: number } | null
   >;
+  /**
+   * Why the recovery page has nothing to chart, resolved on the server
+   * (`resolveRecoveryEmpty`); null when it has. Slim slice only.
+   */
+  recoveryEmpty?: RecoveryEmptyReason | null;
 }
 
 /**
@@ -66,7 +72,7 @@ export interface DashboardAnalyticsData {
   summaries: Record<string, DataSummary>;
   bpInTargetPct: number | null;
   /**
-   * v1.4.18 A1 — share of paired BP readings inside target over the
+   * v1.4.18 — share of paired BP readings inside target over the
    * last 7 / 30 days. Drive the BD-Zielbereich tile's `7T:` / `30T:`
    * sub-values; render "—" when the field is null (no paired readings
    * in the window).
@@ -74,13 +80,13 @@ export interface DashboardAnalyticsData {
   bpInTargetPct7d?: number | null;
   bpInTargetPct30d?: number | null;
   /**
-   * v1.4.22 A1 — long-arc all-time aggregate. After the headline
+   * v1.4.22 — long-arc all-time aggregate. After the headline
    * re-anchor to last-30-days the all-time number lives as a sub-value
    * on the BD-Zielbereich tile (alongside `7d` and `30d`).
    */
   bpInTargetPctAllTime?: number | null;
   /**
-   * v1.4.22 W5 reconcile (Code-H2) — period-aligned prior-window
+   * v1.4.22 — period-aligned prior-window
    * pcts. The BD-Zielbereich tile's comparison-overlay caption picks
    * `priorMonth` for `comparisonBaseline === "lastMonth"` and
    * `priorYear` for `lastYear` so the rendered "Δ X% vs. last month"
@@ -89,7 +95,7 @@ export interface DashboardAnalyticsData {
   bpInTargetPctPriorMonth?: number | null;
   bpInTargetPctPriorYear?: number | null;
   /**
-   * v1.17 W1b — paired BP readings inside the trailing-90-day window, and
+   * v1.17 — paired BP readings inside the trailing-90-day window, and
    * the EFFECTIVE label span (real calendar span capped at 90 days). The
    * BD-Zielbereich tile compares the count against the confidence floor to
    * decide between a percentage and a "collecting data" placeholder, and
@@ -99,7 +105,7 @@ export interface DashboardAnalyticsData {
   bpInTargetSpanDays90?: number | null;
   glucoseByContext?: Record<string, DataSummary>;
   /**
-   * v1.4.34 IW-B — per-type freshness map from `/api/analytics`. The
+   * v1.4.34 — per-type freshness map from `/api/analytics`. The
    * tile-strip helper reads `lastSeenByType[type]?.daysAgo` and forwards
    * it to each `<TrendCard staleDays>` so a metric the user hasn't
    * logged in a while keeps its tile visible (with an explicit

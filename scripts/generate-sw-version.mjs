@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * v1.4.43 QoL (L3) — write the active package.json version into
+ * v1.4.43 — write the active package.json version into
  * `public/sw-version.js`. The Service Worker (`public/sw.js`) loads
  * this file via `importScripts('/sw-version.js')` and reads
  * `self.__APP_VERSION__` to key its `CACHE_VERSION`.

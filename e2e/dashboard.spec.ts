@@ -98,7 +98,7 @@ test.describe("authenticated dashboard render", () => {
       }),
     );
 
-    // S2 — the Today hero reads the unified daily digest from
+    // The Today hero reads the unified daily digest from
     // `/api/daily/digest`. Mock it with a deterministic digest (a score +
     // one worth-a-look item) so the hero paints without reaching the real
     // route, and so a slow/absent digest can never hang the render or
@@ -276,7 +276,7 @@ test.describe("authenticated dashboard render", () => {
     const tileCount = Number(await strip.getAttribute("data-tile-count"));
     expect(tileCount).toBeGreaterThan(0);
 
-    // S2 — the Today hero paints above the tile strip from the mocked
+    // The Today hero paints above the tile strip from the mocked
     // digest: its score ring and its worth-a-look rail render.
     const todayHero = page.locator('[data-slot="today-hero"]');
     await expect(todayHero).toBeVisible({ timeout: 10_000 });

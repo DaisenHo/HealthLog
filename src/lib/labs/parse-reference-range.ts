@@ -259,6 +259,36 @@ export const RANGE_PROSE: Record<Locale, RangeProse> = {
       "wartosci referencyjne",
       "normy laboratoryjne",
     ],
+  },
+  nl: {
+    twoSided: ["tot"],
+    upper: [
+      "tot",
+      "onder",
+      "kleiner dan",
+      "minder dan",
+      "hoogstens",
+      "maximaal",
+      "max.",
+      "max",
+    ],
+    lower: [
+      "vanaf",
+      "boven",
+      "groter dan",
+      "meer dan",
+      "minstens",
+      "ten minste",
+      "minimaal",
+    ],
+    filler: [
+      "van",
+      "tussen",
+      "referentiewaarden",
+      "referentiewaarde",
+      "normaalwaarden",
+      "normaalwaarde",
+    ],
   }, // Korean marks a bound with a POSTPOSITION — "5.0 이하", "3.5 이상" — and the
   // matchers here are prefix-anchored, so only the prefix-shaped notation is
   // listed. A postfixed Korean range still falls through to text-only, which

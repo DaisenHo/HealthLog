@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — taxonomy pure-module tests.
+ * v1.4.25 — taxonomy pure-module tests.
  *
  * The taxonomy is a contract the API validator, the picker UI, and
  * the Coach snapshot all depend on. These tests pin the shape:

@@ -60,6 +60,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 interface RevisionEntrySummary {
   timesOfDay: string[];
@@ -116,7 +117,7 @@ export function ScheduleHistoryTimeline({
     null,
   );
 
-  const { data, isError } = useQuery({
+  const { data, isError, error, refetch } = useQuery({
     queryKey: queryKeys.medicationScheduleRevisions(medicationId),
     queryFn: async () =>
       apiGet<ScheduleRevisionsResponse>(
@@ -151,11 +152,15 @@ export function ScheduleHistoryTimeline({
     },
   });
 
-  if (isError) {
+  if (isError && !data) {
     return (
-      <p className="text-muted-foreground text-sm" data-slot="zeitplan-history">
-        {t("medications.detail.zeitplan.history.loadError")}
-      </p>
+      <QueryErrorRow
+        inset
+        error={error}
+        slot="zeitplan-history"
+        message={t("medications.detail.zeitplan.history.loadError")}
+        onRetry={() => void refetch()}
+      />
     );
   }
   if (!data) return null;

@@ -29,7 +29,7 @@ import { annotate } from "@/lib/logging/context";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
-import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
+import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
@@ -54,13 +54,7 @@ import {
 import { resolveSeriesReferenceLines } from "@/lib/measurements/series-reference-lines";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
-
-/**
- * v1.11.4 — sleep is read row-per-stage (not from the day rollup), so its
- * window is capped to one year even when the client requests the 3650-day
- * "Alle" range. Matches the slim slice's `withSleepNightTotals` sleep read.
- */
-const SLEEP_SERIES_MAX_DAYS = 365;
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 
 /**
  * v1.28.25 — sample-dense kinds read raw rows only up to this window.
@@ -209,10 +203,8 @@ interface SeriesPoint {
 
 function stdDev(values: number[]): number {
   if (values.length < 2) return 0;
-  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-  const variance =
-    values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
-  return Math.round(Math.sqrt(variance) * 100) / 100;
+  const sd = standardDeviation(values, READING_SPREAD) ?? 0;
+  return Math.round(sd * 100) / 100;
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -221,7 +213,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const rawQuery = Object.fromEntries(request.nextUrl.searchParams);
   const parsed = querySchema.safeParse(rawQuery);
   if (!parsed.success) {
-    // v1.4.43 W6 — iOS chart loader hot path; multi-issue 422 +
+    // v1.4.43 — iOS chart loader hot path; multi-issue 422 +
     // audit breadcrumb keyed `measurements.series.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
     // v1.4.48 H-iOS-2 — surface the iOS-sent query shape alongside
@@ -295,42 +287,21 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // dual-source night to one canonical source via the user's `sleep`
     // priority ladder.
     //
-    // v1.11.4 — sleep is the one kind read row-per-stage (≈5 rows/night ×
-    // source-count) rather than from the day-bucketed rollup, so an
-    // unbounded "Alle" (days = 3650) request on a multi-year dual-source
-    // account would walk a six-figure row set into JS. Cap the sleep read
-    // at SLEEP_SERIES_MAX_DAYS (365 d) — the same one-year bound the slim
-    // slice's `withSleepNightTotals` uses — so the window stays small
-    // regardless of the requested range. Other kinds read from the rollup
-    // tier and keep the full 3650-day range.
-    const sleepSince = new Date(
-      Date.now() - Math.min(days, SLEEP_SERIES_MAX_DAYS) * 86_400_000,
-    );
+    // Sleep is the one kind read row-per-stage rather than from the rollup
+    // tier, so the nights are named in Postgres and reconstructed a chunk at
+    // a time (`readSleepNights`): "All" reaches as far back as the history
+    // does, and the stage rows in the heap stay a chunk's worth.
     const [tz, priorityJson] = await Promise.all([
       resolveUserTimezone(user.id),
       loadUserSourcePriority(user.id),
     ]);
-    const rows = await prisma.measurement.findMany({
-      where: {
-        userId: user.id,
-        type: "SLEEP_DURATION",
-        measuredAt: { gte: sleepSince },
-        deletedAt: null,
-      },
-      orderBy: { measuredAt: "asc" },
-      select: {
-        id: true,
-        value: true,
-        measuredAt: true,
-        sleepStage: true,
-        source: true,
-        // Writer-level collapse: two HealthKit apps behind one source
-        // (watch stages vs phone in-bed) must not blend into one night.
-        deviceType: true,
-      },
+    const nights = await readSleepNights(user.id, tz, priorityJson, {
+      from: since,
+      // A window of `days` days holds at most one night more than that.
+      maxNights: days + 1,
     });
     unit = "h";
-    points = reconstructSleepNights(rows, tz, priorityJson)
+    points = nights
       .filter((n) => n.asleepMinutes > 0)
       .map((n) => {
         const stageHours = Object.fromEntries(

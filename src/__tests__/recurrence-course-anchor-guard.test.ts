@@ -31,7 +31,6 @@ const ROOT = resolve(SRC, "..");
 const MEDICATION_BUILDERS = [
   "src/lib/analytics/compliance/adapters.ts",
   "src/lib/medications/scheduling/cadence.ts",
-  "src/lib/medications/scheduling/compliance.ts",
   "src/lib/medications/scheduling/worker-helpers.ts",
 ];
 
@@ -91,7 +90,7 @@ function builders(): Builder[] {
 describe("the rolling course anchor is opt-in", () => {
   it("finds the builders it judges (no vacuous pass)", () => {
     const found = builders();
-    expect(found.length).toBeGreaterThanOrEqual(6);
+    expect(found.length).toBeGreaterThanOrEqual(5);
     // The matcher sees an annotated literal and a typed return.
     expect([
       ...`const c: RecurrenceContext = { a: 1 };\nfunction f(): RecurrenceContext {\n return {};\n}`.matchAll(

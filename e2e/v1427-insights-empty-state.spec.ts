@@ -4,7 +4,7 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
 import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 
 /**
- * v1.4.27 F17 — insights metric-availability gating.
+ * v1.4.27 — insights metric-availability gating.
  *
  * When a metric has zero observations the routed sub-page early-
  * returns an empty-state component with TWO mandatory affordances:

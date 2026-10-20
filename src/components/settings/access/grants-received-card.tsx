@@ -23,6 +23,7 @@ import {
   useRenounceGrant,
   type GrantRow,
 } from "@/lib/queries/use-account-grants";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
  * v1.36.0 — the records this account has been offered, and the ones it holds.
@@ -54,7 +55,7 @@ import {
  */
 export function GrantsReceivedCard() {
   const { t } = useTranslations();
-  const { data, isLoading, isError, refetch } = useAccountGrants();
+  const { data, isLoading, isError, error, refetch } = useAccountGrants();
   const accept = useAcceptGrant();
   const renounce = useRenounceGrant();
   const switchAccount = useAccountSwitch();
@@ -80,6 +81,7 @@ export function GrantsReceivedCard() {
         )}
         {isError && (
           <QueryErrorCard
+            error={error}
             title={t("recordSharing.received.loadError")}
             onRetry={() => void refetch()}
           />
@@ -109,6 +111,7 @@ export function GrantsReceivedCard() {
             ))}
           </ul>
         )}
+        <ListCapNotice cap={data?.cap} />
       </div>
     </SettingsCard>
   );

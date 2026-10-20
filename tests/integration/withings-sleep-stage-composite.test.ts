@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b/c — Migration 0055 composite-uniqueness contract.
+ * v1.4.25 — Migration 0055 composite-uniqueness contract.
  *
  * The Withings Sleep v2 sync writes one Measurement row per stage
  * segment (AWAKE | CORE | DEEP | REM) for the same night, sharing

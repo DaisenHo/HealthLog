@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MED — persistent medication-compliance rollup tier.
+ * v1.4.39 — persistent medication-compliance rollup tier.
  *
  * Replaces the unbounded `MedicationIntakeEvent.findMany` walk on
  * `/api/medications/intake?scope=compliance` with a ledger keyed
@@ -9,10 +9,11 @@
  * Write hooks fire from every `MedicationIntakeEvent` mutation site
  * (create / update / delete / bulk import) plus the reminder-worker's
  * mint path that creates `takenAt:null` rows on RED-phase reminders.
- * Reads collapse the trailing N-day window into a single bounded
- * `findMany` against `medication_compliance_rollups`; the route-level
- * coverage probe falls back to live + fires a boot backfill when a
- * user has intake events but zero rollup rows.
+ * The dashboard tile it was built for reads the schedule-anchored
+ * compliance (`src/lib/analytics/schedule-anchored-compliance.ts`) since
+ * v1.26, and the per-day recompute below is now what keeps a day's
+ * supplement nutrients in step with its doses; the table itself has no
+ * reader left.
  *
  * v1.15.18 DESIGN DECISION — this tier stays a RAW per-day COVERAGE count,
  * NOT the band-attributed compliance %. It aggregates, across ALL of a
@@ -77,14 +78,6 @@ export interface MedicationComplianceBackfillPayload {
   enqueuedAt: string;
 }
 
-/** Reader-result row shape — matches `buildComplianceBuckets` output. */
-export interface ComplianceBucket {
-  /** YYYY-MM-DD in the user's tz. */
-  date: string;
-  scheduled: number;
-  taken: number;
-}
-
 /**
  * Resolve a safe tz string — fall back to the server default when the
  * supplied value is missing or not an IANA zone the host recognises.
@@ -131,7 +124,7 @@ export async function recomputeMedicationComplianceForDay(
   // The local day's own bounds: 23, 24 or 25 hours on DST days.
   const { dayStart: start, dayEnd: windowEnd } = localDayWindow(dayKey, safeTz);
 
-  // v1.4.39 hotfix (QA F-H-02): atomic upsert closes the race window
+  // v1.4.39: atomic upsert closes the race window
   // between the prior `SELECT … aggregate then UPSERT` pattern. Two
   // concurrent writes for the same (user, medication, day) used to
   // interleave A-SELECT → B-SELECT → B-UPSERT (correct) → A-UPSERT
@@ -255,138 +248,6 @@ export async function recomputeMedicationComplianceForEvent(input: {
 }
 
 /**
- * Read trailing `days` of compliance buckets for the user, oldest day
- * first. Returns the same `{date, scheduled, taken}` shape the legacy
- * `buildComplianceBuckets` helper produced so the route swap is
- * byte-identical.
- *
- * Days without a rollup row land as zero-filled buckets. The caller's
- * cache wrapper carries the user-tz in its key so a tz change forces
- * a fresh read.
- */
-export async function readMedicationCompliance(
-  userId: string,
-  days: number,
-  tz: string | null | undefined,
-  now: Date = new Date(),
-): Promise<ComplianceBucket[]> {
-  const safeTz = safeTimezone(tz);
-
-  // Build the expected day-key window oldest → newest so the response
-  // is sorted and zero-filled regardless of which days hold rollups.
-  const todayKey = userDayKey(now, safeTz);
-  const expectedKeys: string[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const probe = new Date(now.getTime() - i * 86_400_000);
-    expectedKeys.push(userDayKey(probe, safeTz));
-  }
-  // Guard against a DST day-of-the-year landing the loop on the same
-  // dayKey twice — dedup by Map insertion order.
-  const dedup = new Set<string>();
-  const orderedKeys: string[] = [];
-  for (const key of expectedKeys) {
-    if (!dedup.has(key)) {
-      dedup.add(key);
-      orderedKeys.push(key);
-    }
-  }
-  // Always include today even if the trailing window dropped it (e.g.
-  // days===1 on a DST boundary). Cheap defensive insert.
-  if (!dedup.has(todayKey)) {
-    orderedKeys.push(todayKey);
-  }
-
-  const oldestKey = orderedKeys[0];
-  const newestKey = orderedKeys[orderedKeys.length - 1];
-
-  const rows = await prisma.medicationComplianceRollup.findMany({
-    where: {
-      userId,
-      day: { gte: oldestKey, lte: newestKey },
-    },
-    select: { day: true, scheduled: true, taken: true, skipped: true },
-  });
-
-  // Fold per-medication rows into one per-day total. The legacy route
-  // shape was aggregated across all the user's medications; preserving
-  // that surface keeps the front-end byte-stable.
-  const totals = new Map<string, { scheduled: number; taken: number }>();
-  for (const key of orderedKeys) {
-    totals.set(key, { scheduled: 0, taken: 0 });
-  }
-  for (const row of rows) {
-    const bucket = totals.get(row.day);
-    if (!bucket) continue;
-    bucket.scheduled += row.scheduled;
-    bucket.taken += row.taken;
-  }
-
-  return orderedKeys.map((date) => {
-    const bucket = totals.get(date) ?? { scheduled: 0, taken: 0 };
-    return { date, scheduled: bucket.scheduled, taken: bucket.taken };
-  });
-}
-
-/**
- * Returns true when the rollup tier covers every day inside the
- * trailing `days` window that has at least one intake event. Coverage
- * is full when the count of DISTINCT rolled days equals the count of
- * DISTINCT days that hold a `medication_intake_events` row in window —
- * partial coverage (boot backfill mid-fold on a multi-medication
- * account) returns false so the route falls through to the legacy
- * aggregator instead of serving zero-filled tiles for un-rolled days.
- *
- * v1.4.39 hotfix (QA F-H-01): the previous "any row exists" probe
- * could short-circuit to the rollup path while only the first few days
- * had been backfilled, exposing zero-filled tiles for the un-rolled
- * days until the boot fold completed.
- */
-export async function hasMedicationComplianceCoverage(
-  userId: string,
-  days: number,
-  tz: string | null | undefined,
-  now: Date = new Date(),
-): Promise<boolean> {
-  const safeTz = safeTimezone(tz);
-  const oldestKey = userDayKey(
-    new Date(now.getTime() - (days - 1) * 86_400_000),
-    safeTz,
-  );
-  const oldestStart = startOfLocalDayKey(oldestKey, safeTz);
-
-  // Single SQL aggregate: count DISTINCT rolled days vs DISTINCT
-  // event-days in window. The event side is anchored on the same
-  // user-tz day-key (`to_char(... AT TIME ZONE $tz, 'YYYY-MM-DD')`) so
-  // the comparison stays apples-to-apples even on DST boundaries.
-  const result = await prisma.$queryRaw<
-    Array<{ rolled_days: bigint; event_days: bigint }>
-  >`
-    SELECT
-      (
-        SELECT COUNT(DISTINCT "day")::bigint
-        FROM "medication_compliance_rollups"
-        WHERE "user_id" = ${userId}
-          AND "day" >= ${oldestKey}
-      ) AS rolled_days,
-      (
-        SELECT COUNT(DISTINCT to_char("scheduled_for" AT TIME ZONE ${safeTz}, 'YYYY-MM-DD'))::bigint
-        FROM "medication_intake_events"
-        WHERE "user_id" = ${userId}
-          AND "deleted_at" IS NULL
-          AND "scheduled_for" >= ${oldestStart}
-      ) AS event_days
-  `;
-  if (result.length === 0) return true;
-  const { rolled_days, event_days } = result[0];
-  const rolled = Number(rolled_days);
-  const events = Number(event_days);
-  // Zero events in window → trivially covered (the read path produces
-  // a zero-filled trailing window from the empty rollup table).
-  if (events === 0) return true;
-  return rolled >= events;
-}
-
-/**
  * Full-fold helper. Walks every `(medicationId, day)` pair the user
  * has logged across the trailing `days` window and upserts each
  * rollup row. The boot-time backfill worker calls this once per
@@ -395,7 +256,7 @@ export async function hasMedicationComplianceCoverage(
  *
  * Bounded SQL: one `DISTINCT (medicationId, dayKey)` $queryRaw scan
  * over the trailing window, then one upsert per row. The dayKey is
- * computed in Postgres via `to_char(... AT TIME ZONE $tz)` so we
+ * computed in Postgres in the user's zone so we
  * don't have to ship millions of rows back to Node.
  */
 export async function recomputeUserMedicationCompliance(
@@ -414,14 +275,20 @@ export async function recomputeUserMedicationCompliance(
   const oldestStart = startOfLocalDayKey(oldestKey, safeTz);
 
   // Distinct (medication_id, dayKey) pairs the user has any intake
-  // event for inside the trailing window. `to_char(... AT TIME ZONE
-  // $tz)` keeps the day-bucket on the user's wall-clock.
+  // event for inside the trailing window. `scheduled_for` is a naive UTC
+  // timestamp: it is read as UTC first and only then shifted into the
+  // user's zone. A single `AT TIME ZONE $tz` reads it as local time and
+  // shifts it the wrong way, which keyed every slot within the zone's
+  // offset of midnight onto the neighbouring day.
   const pairs = await prisma.$queryRaw<
     Array<{ medication_id: string; day: string }>
   >`
     SELECT DISTINCT
       "medication_id",
-      to_char("scheduled_for" AT TIME ZONE ${safeTz}, 'YYYY-MM-DD') AS "day"
+      to_char(
+        ("scheduled_for" AT TIME ZONE 'UTC') AT TIME ZONE ${safeTz},
+        'YYYY-MM-DD'
+      ) AS "day"
     FROM "medication_intake_events"
     WHERE "user_id" = ${userId}
       AND "deleted_at" IS NULL
@@ -443,7 +310,7 @@ export async function recomputeUserMedicationCompliance(
 }
 
 /**
- * v1.4.39 hotfix (QA F-SEC-M-01) — user-scoped enqueue helper for the
+ * v1.4.39 — user-scoped enqueue helper for the
  * request-path coverage-miss fallback.
  *
  * Mirrors `ensureUserMoodRollupsFresh`: the route fires this when its

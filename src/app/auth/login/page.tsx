@@ -74,7 +74,7 @@ export default function LoginPage() {
   } | null>(null);
   // Guards the conditional-UI passkey autofill so it starts at most once.
   const autofillStarted = useRef(false);
-  // v1.4.27 MB3 — explicit error-region id so the email + password
+  // v1.4.27 — explicit error-region id so the email + password
   // inputs reference the banner via `aria-describedby`. Screen readers
   // pair the error with the field instead of announcing it as a
   // standalone alert detached from the form.
@@ -382,7 +382,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">
-      {/* v1.4.27 MB7 / CF-61 — drop `p-8` to `p-6 sm:p-8` so the
+      {/* v1.4.27 — drop `p-8` to `p-6 sm:p-8` so the
           auth card breathes on Galaxy Fold / Pixel 5 without stealing
           half the visible viewport with padding. Tablet+ keeps the
           generous 32 px padding. */}

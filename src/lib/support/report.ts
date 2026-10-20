@@ -25,6 +25,7 @@ import {
   heapLimitMb,
   isHeapLimitLow,
   lowHeapLimitAdvice,
+  megabytes,
 } from "@/lib/support/heap-limit";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isOidcConfigured, isOidcOnly } from "@/lib/auth/oidc";
@@ -692,8 +693,8 @@ function or(value: string | number | null | undefined, fallback = "unknown") {
     : String(value);
 }
 
-function megabytes(bytes: number | null): string {
-  return bytes === null ? "unknown" : `${Math.round(bytes / 1024 / 1024)} MB`;
+function sizeLine(bytes: number | null): string {
+  return bytes === null ? "unknown" : `${megabytes(bytes)} MB`;
 }
 
 function runLine(run: QueueRunFact | null): string {
@@ -741,7 +742,7 @@ export function renderSupportReport(facts: SupportReportFacts): string {
   section("Database");
   row("PostgreSQL", facts.database.version);
   row("Server time zone", facts.database.timezone);
-  row("Size", megabytes(facts.database.sizeBytes));
+  row("Size", sizeLine(facts.database.sizeBytes));
   row(
     "Last migration",
     facts.database.lastMigration

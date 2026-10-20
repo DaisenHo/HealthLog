@@ -38,6 +38,7 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("@/lib/integrations/status", () => ({
   recordSyncFailure: mocks.recordSyncFailure,
   recordSyncSuccess: mocks.recordSyncSuccess,
+  isReauthRequired: vi.fn(async () => false),
   toFailureKind: vi.fn(() => "transient"),
   markSyncFailureRecorded: <T>(err: T) => err,
 }));
@@ -181,6 +182,7 @@ describe("syncUserStrava cursor durability", () => {
   it("advances the backfill watermark after every workout is persisted", async () => {
     await expect(runStravaBackfillForUser("user-1")).resolves.toEqual({
       imported: 3,
+      continued: false,
     });
 
     expect(workouts.size).toBe(3);

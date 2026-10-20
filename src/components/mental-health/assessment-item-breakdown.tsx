@@ -27,6 +27,7 @@ import {
 } from "@/lib/mental-health/instruments";
 
 import type { AssessmentDetail, InstrumentId } from "./types";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 export function AssessmentItemBreakdown({
   assessmentId,
@@ -38,7 +39,7 @@ export function AssessmentItemBreakdown({
   const { t } = useTranslations();
   const def = INSTRUMENTS[instrument];
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.mentalHealthAssessmentDetail(assessmentId),
     queryFn: () =>
       apiGet<{ assessment: AssessmentDetail }>(
@@ -62,13 +63,13 @@ export function AssessmentItemBreakdown({
 
   if (isError || !data) {
     return (
-      <p
-        className="text-destructive text-sm"
-        role="alert"
-        data-slot="assessment-item-breakdown"
-      >
-        {t("mentalHealth.error")}
-      </p>
+      <QueryErrorRow
+        inset
+        error={error}
+        slot="assessment-item-breakdown"
+        message={t("mentalHealth.error")}
+        onRetry={() => void refetch()}
+      />
     );
   }
 

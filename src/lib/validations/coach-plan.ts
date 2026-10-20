@@ -1,5 +1,5 @@
 /**
- * v1.21.3 (B1) — request schemas for the Coach goal / if-then plan surface
+ * v1.21.3 — request schemas for the Coach goal / if-then plan surface
  * (`/api/coach/plans` + `/api/coach/plans/[id]`).
  *
  * Lives outside the route files so the OpenAPI registry can import it without

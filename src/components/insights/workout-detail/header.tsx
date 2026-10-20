@@ -1,16 +1,13 @@
 "use client";
 
-import {
-  useDisplayTimezone,
-  useTimeFormatPreference,
-  useTranslations,
-} from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { MEASUREMENT_SOURCE_LIST_LABEL_KEYS } from "@/lib/i18n/source-labels";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import type { WorkoutDetailPayload } from "@/hooks/use-workouts";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 
-import { formatDuration, formatDistance, formatDateRange } from "./format";
+import { formatDuration, formatDistance } from "./format";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * Hero header — the at-a-glance verdict row. Sport icon badge, source
@@ -35,13 +32,10 @@ function renderSportIconBadge(sportType: string) {
 
 export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
   const { t, locale } = useTranslations();
-  const timeFormat = useTimeFormatPreference();
-  const timeZone = useDisplayTimezone();
+  const fmt = useFormatters();
   const { preference } = useUnitDisplay();
   const sportLabelKey = `insights.workouts.sport.${workout.sportType}`;
-  const sportLabel = t(sportLabelKey);
-  const sportName =
-    sportLabel === sportLabelKey ? workout.sportType : sportLabel;
+  const sportName = translateOrNull(t, sportLabelKey) ?? workout.sportType;
 
   return (
     <header
@@ -68,13 +62,7 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
             {sportName}
           </h2>
           <p className="text-muted-foreground text-sm">
-            {formatDateRange(
-              workout.startedAt,
-              workout.endedAt,
-              locale,
-              timeFormat,
-              timeZone,
-            )}
+            {`${fmt.dateWithWeekdaySmart(workout.startedAt)}, ${fmt.time(workout.startedAt)}–${fmt.time(workout.endedAt)}`}
           </p>
         </div>
       </div>

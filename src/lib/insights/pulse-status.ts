@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { readRecentMoodScores } from "@/lib/mood/recent-scores";
+import { readRecentReadings } from "@/lib/insights/recent-readings";
 import {
   getPulseSystemPrompt,
   getPulseUserPrompt,
@@ -91,7 +93,7 @@ export async function generatePulseStatusForUser(
 }
 
 /**
- * v1.18.7 (HIGH-1) — everything up to (not including) the provider call.
+ * v1.18.7 — everything up to (not including) the provider call.
  * Returns a finished `served` result for every path that never needed the
  * LLM, or a `pending` descriptor the single-card path and the batch path
  * both drive. See `status-card-generation.ts` for the contract.
@@ -109,7 +111,7 @@ export async function preparePulseStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("pulse", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. This has to
   // happen ahead of the cache read below (the earliest possible return path),
   // not just the later day-bucketing reads.
@@ -177,34 +179,18 @@ export async function preparePulseStatusForUser(
     },
   });
 
-  // v1.15.12 (audit LOW-2) — bucket the resting-pulse proxy on the user's
+  // v1.15.12 — bucket the resting-pulse proxy on the user's
   // own day boundary so this surface aligns with the targets route, which
   // passes `userDayKey(d, userTz)`. Without it the proxy bucketed on
   // Berlin-day here and on the user's TZ there, drifting the resting
   // estimate for non-Berlin users. `userTz` was already resolved above for
   // the cache day-key.
 
-  // v1.4.28 FB-D2 — cap the snapshot input. The downstream
-  // `applyPayloadBudget` trims further but the unbounded findMany was
-  // pulling tens of thousands of rows for Apple-Health-rich accounts
-  // before the budget call even started.
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        type: "PULSE",
-        deletedAt: null,
-      },
-      orderBy: { measuredAt: "desc" },
-      take: 365,
-      select: {
-        value: true,
-        measuredAt: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  // The latest 365 readings, and never less than the last 30 days: a dense
+  // pulse stream holds 365 readings in a few hours (`readRecentReadings`).
+  const measurements = await readRecentReadings(userId, "PULSE");
 
-  // v1.15.12 A2 — the RESTING band is judged against the RESTING series,
+  // v1.15.12 — the RESTING band is judged against the RESTING series,
   // not the raw PULSE stream (Apple fills PULSE with workout HR). Pull
   // RESTING_HEART_RATE rows; the resolver falls back to a low-percentile
   // PULSE proxy when the user has none.
@@ -252,14 +238,7 @@ export async function preparePulseStatusForUser(
   // Fetch mood context (optional — for enrichment only). Cap at 90
   // entries (~3 months); the bucket-series budget then summarises
   // further. v1.4.28 FB-D2 — prevent unbounded reads for power users.
-  const moodEntries = await prisma.moodEntry
-    .findMany({
-      where: { userId },
-      orderBy: { moodLoggedAt: "desc" },
-      take: 90,
-      select: { date: true, score: true, moodLoggedAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const moodEntries = await readRecentMoodScores(userId, 90);
 
   const moodPoints = moodEntries.map((entry) => ({
     measuredAt: entry.moodLoggedAt,
@@ -278,7 +257,7 @@ export async function preparePulseStatusForUser(
     binaryReferenceSex(user?.gender),
   );
 
-  // v1.15.12 A2 — resting-target in-target % over the RESTING series
+  // v1.15.12 — resting-target in-target % over the RESTING series
   // (preferring RESTING_HEART_RATE, else the low-percentile PULSE proxy),
   // NOT the raw PULSE daily buckets which mix in workout HR. Scoring the
   // raw stream against a resting band counted a workout day as "over
@@ -335,7 +314,7 @@ export async function preparePulseStatusForUser(
       )
     : null;
 
-  // v1.18.10 (HIGH-4) — feed the model the finished recent-vs-baseline
+  // v1.18.10 — feed the model the finished recent-vs-baseline
   // comparison + normal-swing verdict instead of asking it to derive them from
   // the raw buckets (the "model computes a number" pattern the mandate bans).
   // Resting pulse reads lower-better; the green band is the coarse anchor.

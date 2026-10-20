@@ -40,6 +40,7 @@
  */
 
 import { GLUCOSE_TIR_CUT_POINTS } from "@/lib/glucose";
+import { standardDeviation } from "@/lib/stats/spread";
 
 // ── Inputs ───────────────────────────────────────────────
 
@@ -236,15 +237,7 @@ function mean(values: number[]): number {
  * Returns null for n < 2 (undefined sample SD).
  */
 export function glucoseSD(values: number[]): number | null {
-  const n = values.length;
-  if (n < 2) return null;
-  const m = mean(values);
-  let ss = 0;
-  for (const v of values) {
-    const d = v - m;
-    ss += d * d;
-  }
-  return Math.sqrt(ss / (n - 1));
+  return standardDeviation(values, "sample");
 }
 
 /**

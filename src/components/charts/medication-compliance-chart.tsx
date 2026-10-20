@@ -12,7 +12,7 @@
  * range chips in the header, ReferenceLine target at 100 % goal +
  * 80 % minimum-acceptable threshold).
  *
- * v1.4.16 A6 — feature-parity with the other charts:
+ * v1.4.16 — feature-parity with the other charts:
  *   - Computes a 7-day trend chip in the header (signed delta, metric-
  *     aware sentiment colour: rising compliance → green, falling →
  *     orange).
@@ -110,7 +110,7 @@ type RangeDays = (typeof RANGE_DAYS)[number];
  *
  * Pure & deterministic so the unit test pins exact rates.
  *
- * v1.4.25 W7b — the `dateFormatter` argument lets the chart pass a
+ * v1.4.25 — the `dateFormatter` argument lets the chart pass a
  * tz-aware formatter so a Pacific/Auckland user's X-axis tick label
  * for "2026-05-15" reads as 15.05. in their tz. Default keeps the
  * legacy `formatDateShort` so the existing unit test (which calls the
@@ -131,7 +131,7 @@ export function aggregateMedicationCompliance(
       const ts = Date.UTC(y, m - 1, d, 12);
       const rate = Math.min(100, Math.round((p.taken / p.scheduled) * 100));
       return {
-        // v1.4.25 W3b — short-form day label ("10.05." / "10. May") so
+        // v1.4.25 — short-form day label ("10.05." / "10. May") so
         // the X-axis ticks read cleanly on mobile even when the tick
         // density helper steps to every-7th or every-14th day. The
         // tooltip below still derives its label from `timestamp` with
@@ -192,7 +192,7 @@ interface MedicationComplianceChartProps {
   /** Override the visible label, primarily for tests. */
   title?: string;
   /**
-   * v1.4.16 phase D reconcile (H4 design) — when the user toggles the
+   * v1.4.16 (H4 design) — when the user toggles the
    * dashboard comparison overlay, every other chart paints a dimmed
    * prior-period line. Compliance is a percentage-of-doses metric whose
    * "prior month" overlay would need a second window of intake events
@@ -203,7 +203,7 @@ interface MedicationComplianceChartProps {
    */
   compareBaseline?: "none" | "lastMonth" | "lastYear";
   /**
-   * v1.4.25 W7b — per-user display timezone for x-axis tick + tooltip
+   * v1.4.25 — per-user display timezone for x-axis tick + tooltip
    * date strings. Defaults to "Europe/Berlin" so older callers stay
    * byte-identical.
    */
@@ -229,7 +229,7 @@ export function MedicationComplianceChart({
   onDataReady,
   dayLinks = false,
 }: MedicationComplianceChartProps) {
-  // v1.4.27 R4 RC3 — the prop is accepted so the dashboard can pass
+  // v1.4.27 — the prop is accepted so the dashboard can pass
   // `compareBaseline={compareBaseline}` uniformly across every chart.
   // The comparison overlay itself is deferred: medication compliance is
   // a percentage-of-doses metric whose prior-period overlay needs a
@@ -240,7 +240,7 @@ export function MedicationComplianceChart({
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const [days, setDays] = useState<RangeDays>(30);
-  // v1.4.25 W7b — tz-aware date formatter for the x-axis labels and
+  // v1.4.25 — tz-aware date formatter for the x-axis labels and
   // the tooltip's `dateLabel`. Same pattern as health-chart + mood-chart.
   // Issue #922 — the axis labels and the tooltip date follow the profile's
   // date order. The hour cycle is AUTO on purpose: this formatter renders
@@ -259,18 +259,18 @@ export function MedicationComplianceChart({
   const showTargetRange = overlayPrefs.prefs.showTargetRange;
   const effectiveCompareBaseline = overlayPrefs.prefs.comparisonBaseline;
 
-  // v1.4.19 A2 — universal tick-density helper. Pre-fix the medication
+  // v1.4.19 — universal tick-density helper. Pre-fix the medication
   // chart drew ONE tick per day, so a 30-day Pixel-5 window painted 30
   // overlapping labels into a 393 px gutter. The helper caps visible
   // ticks at 6 on Pixel 5 / 4 on Fold, matching the visual breathing
   // room of the weight / BMI charts.
   const viewportWidth = useViewportWidth();
 
-  // v1.4.40 W-RSC — factory-routed key so the prefix
+  // v1.4.40 — factory-routed key so the prefix
   // `["dashboard-medication-compliance"]` lands in
   // `medicationDependentKeys` and an intake POST refreshes the chart
   // immediately rather than waiting for `staleTime` (audit L4).
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.dashboardMedicationCompliance(days),
     queryFn: async (): Promise<DailyCompliancePoint[]> => {
       return apiGet<DailyCompliancePoint[]>(
@@ -330,7 +330,7 @@ export function MedicationComplianceChart({
     [data, tzFmt],
   );
 
-  // v1.4.43 W2-CHART-GATE — raw scheduled-dose count across every day
+  // v1.4.43 — raw scheduled-dose count across every day
   // in the window. The chart bucket aggregates per-day compliance, so
   // a user with 20 scheduled doses on 2 calendar days collapses to
   // `chartData.length = 2`. Sum the `scheduled` field across the raw
@@ -345,13 +345,13 @@ export function MedicationComplianceChart({
     );
   }, [data]);
 
-  // v1.4.16 A6 — 7-day trend chip. Computed off the *full* range so a
+  // v1.4.16 — 7-day trend chip. Computed off the *full* range so a
   // user toggled to "7 days" still sees a trend (which would otherwise
   // be empty if we only used the visible window). The 14-day cap inside
   // computeMedicationTrend7d() bounds the comparison window.
   const trend = useMemo(() => computeMedicationTrend7d(chartData), [chartData]);
 
-  // v1.4.16 A6 — metric-aware sentiment for medication compliance:
+  // v1.4.16 — metric-aware sentiment for medication compliance:
   // up-good (rising compliance is the desired direction). Mirrors the
   // `directionSentiment="up-good"` rule used by the trend-card pulse +
   // mood tiles.
@@ -451,7 +451,7 @@ export function MedicationComplianceChart({
       data-slot="medication-compliance-chart"
       data-latest-rate={latestRate ?? undefined}
     >
-      {/* v1.4.19 A2 — header layout split into title row + controls
+      {/* v1.4.19 — header layout split into title row + controls
           row on small screens. Pre-fix the trend chip + 4 range tabs +
           cog dropdown all sat on a single justify-between row, which
           caused the tabs to wrap mid-row on Pixel 5 (header doubled in
@@ -508,7 +508,7 @@ export function MedicationComplianceChart({
           ))}
           {/* v1.4.18 — overlay-controls dropdown next to the range
               tabs.
-              v1.4.25 W3f — the compliance card never paints a
+              v1.4.25 — the compliance card never paints a
               prior-period overlay (the heatmap doesn't support it),
               so the comparison buttons grey out when a baseline is
               already selected to signal "this metric has no
@@ -521,7 +521,7 @@ export function MedicationComplianceChart({
         </div>
       </div>
 
-      {/* v1.4.16 phase D reconcile (H4 design) — explicit "comparison
+      {/* v1.4.16 (H4 design) — explicit "comparison
           N/A" caption when the global toggle is on. The compliance
           heatmap doesn't render a prior-period overlay (deferred to
           v1.4.17 when the underlying intake-event window comparison
@@ -548,6 +548,7 @@ export function MedicationComplianceChart({
         // through to the empty branch (data undefined → hasData false)
         // and an outage read as "no doses tracked".
         <ChartErrorState
+          error={error}
           title={t("charts.errorTitle")}
           actionLabel={t("common.retry")}
           actionContext={displayTitle}
@@ -576,10 +577,10 @@ export function MedicationComplianceChart({
           {t("charts.noData")}
         </div>
       ) : chartData.length < 3 ? (
-        // v1.4.16 B1a — sparse-data placeholder consistent with the
+        // v1.4.16 — sparse-data placeholder consistent with the
         // BP/weight/pulse/mood charts.
         //
-        // v1.4.43 W2-CHART-GATE — split the copy on the raw scheduled-
+        // v1.4.43 — split the copy on the raw scheduled-
         // dose count. A user with 20 scheduled doses on 2 calendar
         // days has `chartData.length = 2`; the legacy "log more" hint
         // misled — they logged plenty, just on too few days. Surface

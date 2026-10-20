@@ -54,7 +54,7 @@ import type { NextRequest } from "next/server";
 // root-cause: `achievements` was absent so every save against the
 // default layout was rejected.
 //
-// v1.7.0 W1 — widened from the 16 web-known ids to the full 27-id
+// v1.7.0 — widened from the 16 web-known ids to the full 27-id
 // catalogue (16 web + 11 iOS-only). The native client materialises the
 // 11 HK-completeness tiles in its own default layout and PUTs the union;
 // accepting + persisting all 27 lets iOS drop its local merge
@@ -63,11 +63,10 @@ import type { NextRequest } from "next/server";
 // 11 untouched in the stored blob.
 const widgetIdEnum = z.enum(DASHBOARD_WIDGET_CATALOGUE_IDS);
 
-// v1.4.43 B2 — dedup helper extracted to `src/lib/audit-dedup.ts` so both
+// v1.4.43 — dedup helper extracted to `src/lib/audit-dedup.ts` so both
 // `/api/dashboard/widgets` and `/api/dashboard/chart-overlay-prefs` share
 // the same 60 s `(userId, action)` window.
 export { __resetAuditDedupMemoForTests } from "@/lib/audit-dedup";
-import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 
 const layoutSchema = z.object({
   version: z.literal(1),
@@ -76,7 +75,7 @@ const layoutSchema = z.object({
       z.object({
         id: widgetIdEnum,
         visible: z.boolean(),
-        // v1.4.15 Fix 5 — independent strip-tile visibility. Optional
+        // v1.4.15 — independent strip-tile visibility. Optional
         // for back-compat with v1.4.14 clients that haven't been
         // updated; the resolver mirrors `visible` when omitted.
         tileVisible: z.boolean().optional(),
@@ -85,7 +84,7 @@ const layoutSchema = z.object({
     )
     .min(1)
     .max(50)
-    // v1.11.2 B5 — raised to 40 so the full catalogue PUT (24 writable +
+    // v1.11.2 — raised to 40 so the full catalogue PUT (24 writable +
     // 11 iOS-only = 35) fits with headroom after the v1.10 additive
     // HealthKit signals became pinnable; the enum still bounds each id to
     // one of the catalogue ids.
@@ -98,7 +97,7 @@ const layoutSchema = z.object({
     // field without resending a potentially stale widget catalogue; a normal
     // dashboard-layout Save still sends `widgets`.
     .optional(),
-  // v1.4.16 phase B8 — comparison baseline (Vormonat / Vorjahr) rides
+  // v1.4.16 — comparison baseline (Vormonat / Vorjahr) rides
   // on the layout blob per research §7 Q3 (no Prisma migration). Optional
   // so v1.4.15 clients that don't know the field can still PUT.
   comparisonBaseline: z.enum(COMPARISON_BASELINES).optional(),
@@ -106,7 +105,7 @@ const layoutSchema = z.object({
   // Optional so older clients that don't know the field can still PUT;
   // the resolver coerces malformed values away from the layout blob.
   //
-  // v1.4.25 W6 — switched from `z.record(enum, …)` to `z.partialRecord(…)`
+  // v1.4.25 — switched from `z.record(enum, …)` to `z.partialRecord(…)`
   // because Zod v4 changed the semantics of `z.record(enum, …)`: it now
   // requires every enum key to be present (a breaking change from
   // Zod v3 which behaved like a partial record). With the strict variant
@@ -246,7 +245,11 @@ export const GET = apiHandler(async () => {
   let hasSdnn = true;
   if (!recoveryEnabled) {
     const sdnnRow = await prisma.measurement.findFirst({
-      where: { userId: user.id, type: "HEART_RATE_VARIABILITY" },
+      where: {
+        userId: user.id,
+        type: "HEART_RATE_VARIABILITY",
+        deletedAt: null,
+      },
       select: { id: true },
     });
     hasSdnn = sdnnRow !== null;
@@ -281,7 +284,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
   if (jsonError) return jsonError;
 
-  // v1.32.21 (R5a) — pull the optimistic-concurrency base token off the body
+  // v1.32.21 — pull the optimistic-concurrency base token off the body
   // BEFORE anything else touches it (issue #581). A malformed token 422s
   // without a write; an absent token takes the unconditional backward-compat
   // arm inside `guardedUserUpdate` below.
@@ -290,7 +293,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const base = taken.base;
   const body = taken.rest;
 
-  // v1.7.0 W1 — accept-and-ignore widget ids OUTSIDE the 27-id catalogue
+  // v1.7.0 — accept-and-ignore widget ids OUTSIDE the 27-id catalogue
   // on write. The 27 ids (16 web + 11 iOS-only) all validate + persist;
   // only a genuinely-unknown id (a retired tile, or a typo) is filtered
   // out here BEFORE Zod so it can't 422 the whole blob. The strict enum
@@ -332,7 +335,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   const parsed = layoutSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.42 W2 — the legacy `issues[0].message` envelope dropped
+    // v1.4.42 — the legacy `issues[0].message` envelope dropped
     // every issue past the first. iOS contract debugging hit one
     // round-trip per wrong field; the new helper surfaces every
     // issue under `details.issues`. We additionally emit an
@@ -360,37 +363,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         zod_issues: issues,
       },
     });
-    // v1.4.43 B2 — gate the breadcrumb behind a 60 s (userId, action) dedup
-    // so a misbehaving iOS client retrying every second cannot pump
-    // thousands of identical rows into the audit ledger.
-    if (
-      shouldEmitAuditRow(
-        user.id,
-        "dashboard.widgets.validation-failed",
-        Date.now(),
-      )
-    ) {
-      // Best-effort breadcrumb — never block the 422 on a write miss.
-      // v1.4.49 — strip `message` from the audit-ledger row so Zod
-      // codes that embed the offending value in their default message
-      // (`invalid_enum_value` and similar) cannot leak user content
-      // through the audit surface. The wide-event excerpt above
-      // already carries the shape signal for operator debugging.
-      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-        stripValuesFromMessage: true,
-      });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "dashboard.widgets.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {
-          /* swallow — validation response is the contract, audit row is best-effort */
-        });
-    }
+    // No audit row: this write resolves the caller (`requireAuth`), so the
+    // refusal can only ever be the caller's own, which is telemetry and
+    // lives on the wide event above. Only a delegate's refused attempt is
+    // filed (see `isRejectedAttemptAction` in `src/lib/auth/audit.ts`).
     return returnAllZodIssues(parsed.error, 422);
   }
 
@@ -478,7 +454,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     meta: { visible_count: normalized.widgets.filter((w) => w.visible).length },
   });
 
-  // v1.4.34 IW-G — bust the per-user dashboard-widgets cache so the
+  // v1.4.34 — bust the per-user dashboard-widgets cache so the
   // next dashboard mount paints the new layout.
   invalidateUserDashboardWidgets(user.id);
 
@@ -524,7 +500,7 @@ export const DELETE = apiHandler(async () => {
 
   annotate({ action: { name: "dashboard.widgets.reset" } });
 
-  // v1.4.34 IW-G — bust the per-user dashboard-widgets cache so the
+  // v1.4.34 — bust the per-user dashboard-widgets cache so the
   // next dashboard mount paints the reset (default) layout.
   invalidateUserDashboardWidgets(user.id);
 

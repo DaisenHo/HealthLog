@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 /**
- * v1.4.40 W-PRIVACY (SB-3) — Bilingual public privacy policy.
+ * v1.4.40 — Bilingual public privacy policy.
  *
  * Requirements driving this page:
  *
@@ -213,7 +213,7 @@ export default function PrivacyPage() {
       </header>
 
       {/*
-        v1.4.33 IW9 — `max-w-3xl` (768 px) is intentional. The legal /
+        v1.4.33 — `max-w-3xl` (768 px) is intentional. The legal /
         long-form column reads better at 70-80 chars per line; widening
         to the app shell's `max-w-screen-xl` would push line lengths to
         ~120 chars on a 1440 px laptop and degrade legibility. The same

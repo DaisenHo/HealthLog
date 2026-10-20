@@ -31,7 +31,7 @@ import { useKeyBackupStatus } from "./use-key-backup-status";
 
 export function SystemStatusSummary() {
   const { t } = useTranslations();
-  const { data: status, isError, refetch } = useSystemStatus();
+  const { data: status, isError, error, refetch } = useSystemStatus();
   const { data: keyBackup } = useKeyBackupStatus();
 
   return (
@@ -85,7 +85,7 @@ export function SystemStatusSummary() {
               tone={keyBackup.due ? "warning" : "success"}
             />
           )}
-          {/* v1.4.27 R5 — surface the offline-geo state so the maintainer
+          {/* v1.4.27 — surface the offline-geo state so the maintainer
               spots the missing GeoLite2 databases without crawling logs.
               Read from the admin status, not the public /api/version. */}
           <StatusItem
@@ -110,6 +110,8 @@ export function SystemStatusSummary() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          inset
+          error={error}
           message={t("admin.overview.snapshotLoadError")}
           onRetry={() => void refetch()}
         />

@@ -73,7 +73,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "measurements");
   annotate({ action: { name: "workouts.list" } });
 
-  // v1.18.0 B1 — the workouts surface is a toggleable module. A disabled
+  // v1.18.0 — the workouts surface is a toggleable module. A disabled
   // account must not be able to read the list even with a valid Bearer
   // token. The batch INGEST route stays ungated so synced data still
   // lands while the surface is hidden.

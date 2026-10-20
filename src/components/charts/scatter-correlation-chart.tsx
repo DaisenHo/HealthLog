@@ -99,7 +99,7 @@ export function ScatterCorrelationChart<T extends Record<string, number>>({
           xLabel: xAxis.name,
           yLabel: yAxis.name,
         });
-  // v1.4.27 MB7 / CF-37 — drop the fixed pixel height in favour of a
+  // v1.4.27 — drop the fixed pixel height in favour of a
   // responsive aspect-ratio on mobile so the chart never compresses
   // below readable axes. The `aspect-square` ratio at `<sm` keeps the
   // plot area as a centred square (matches Apple Health correlation

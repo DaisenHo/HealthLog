@@ -6,11 +6,11 @@ import {
   type CompletionResult,
 } from "../types";
 
-// v1.11.0 W1 — the runner now defaults to the Postgres-backed
+// v1.11.0 — the runner now defaults to the Postgres-backed
 // provider-health ledger. These pure chain tests do not stand up a DB,
 // so swap the default for a no-op; the dedicated ledger-aware cases
 // below inject an in-memory ledger explicitly.
-// v1.37.19 (A7-2) — the runner consults the day's recorded spend before an
+// v1.37.19 — the runner consults the day's recorded spend before an
 // operator-funded hop. These pure chain tests do not stand up a DB, so the
 // ledger read is swapped for a controllable in-memory figure.
 const budgetState = vi.hoisted(() => ({ spent: 0, operatorSpent: 0 }));
@@ -721,7 +721,7 @@ describe("runStreamingRawCompletionWithFallback", () => {
   });
 });
 
-// v1.37.19 (A7-2) — hop-time operator-cost guard.
+// v1.37.19 — hop-time operator-cost guard.
 //
 // Watched red: with the `isOperatorFundedProvider` check removed from
 // `runRawChain` (the pre-fix walker), the exhausted-cap case below fails —

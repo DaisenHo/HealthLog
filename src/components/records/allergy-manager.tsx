@@ -14,15 +14,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiDelete, apiGet } from "@/lib/api/api-fetch";
+import { apiDelete, apiGetList } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import { AllergyForm } from "./allergy-form";
 import type { AllergyDTO } from "@/lib/records/dto";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
 /**
- * v1.25 (W-RECORDS) — the structured allergy/intolerance manager. Renders in
+ * v1.25 — the structured allergy/intolerance manager. Renders in
  * the Settings → Anamnese section: a list of records with add / edit / delete.
  * Patient-reported reference data, not a clinical diagnosis.
  *
@@ -43,9 +44,15 @@ export function AllergyManager({
   const [editing, setEditing] = useState<AllergyDTO | null>(null);
   const [formFooterEl, setFormFooterEl] = useState<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.allergyList(true),
-    queryFn: () => apiGet<AllergyDTO[]>("/api/allergies"),
+    queryFn: () => apiGetList<AllergyDTO[]>("/api/allergies"),
   });
 
   const deleteMutation = useMutation({
@@ -74,7 +81,7 @@ export function AllergyManager({
     queryClient.invalidateQueries({ queryKey: queryKeys.allergies() });
   }
 
-  const rows = data ?? [];
+  const rows = page?.data ?? [];
 
   function renderRow(row: AllergyDTO) {
     const detail = [
@@ -154,6 +161,7 @@ export function AllergyManager({
         </div>
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           title={t("records.allergies.loadError")}
           onRetry={() => void refetch()}
         />
@@ -167,7 +175,10 @@ export function AllergyManager({
           }
         />
       ) : (
-        <ul className="space-y-2">{rows.map(renderRow)}</ul>
+        <>
+          <ul className="space-y-2">{rows.map(renderRow)}</ul>
+          <ListCapNotice cap={page?.cap} />
+        </>
       )}
 
       {/* The add action closes the list (design standards §12); an empty

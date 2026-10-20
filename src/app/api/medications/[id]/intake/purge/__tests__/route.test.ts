@@ -1,5 +1,5 @@
 /**
- * v1.5.5 F-1 C-3 — purge route fires the medication cache bundle.
+ * v1.5.5 — purge route fires the medication cache bundle.
  *
  * Pins the contract the detail-page Verlauf-löschen cascade depends
  * on: dropping the rollup rows is necessary but not sufficient. The

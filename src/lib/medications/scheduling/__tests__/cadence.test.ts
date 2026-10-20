@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19e — pure cadence helper tests.
+ * v1.4.25 — pure cadence helper tests.
  *
  * The cadence module is the contract the chart, the chips and the
  * /api/medications/[id]/cadence route all read. These tests pin:
@@ -438,7 +438,7 @@ describe("computeNextDose", () => {
 });
 
 describe("expandScheduleSlots — timeZone threading", () => {
-  // v1.4.25 W21 Fix-O — pure cadence helpers now accept an IANA
+  // v1.4.25 — pure cadence helpers now accept an IANA
   // timezone argument. Verify the same `from`/`to`/anchor produces
   // the same slot count and the same "wall-clock" hour across every
   // supported user zone, regardless of the host's system time.

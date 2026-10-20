@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — GLP-1 side-effect taxonomy (pure module).
+ * v1.4.25 — GLP-1 side-effect taxonomy (pure module).
  *
  * Single source of truth for the entry → category mapping the picker
  * UI, the API validator, and the Coach snapshot all read. Derived
@@ -28,10 +28,12 @@
  * key to a translated label.
  */
 
+// The enums entry, not the client: the side-effects form imports this module,
+// and the client entry would pull the Prisma runtime into the browser bundle.
 import {
   MedicationSideEffectCategory,
   MedicationSideEffectEntry,
-} from "@/generated/prisma/client";
+} from "@/generated/prisma/enums";
 
 export const SIDE_EFFECT_CATEGORIES: Record<
   MedicationSideEffectEntry,

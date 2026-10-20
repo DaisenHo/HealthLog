@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
  * deep-link open mechanism. Reuses the SAME `/coach?c=<id>` open
  * mechanism the rail uses.
  *
- * v1.30.2 (QoL H1) — the page is a thin read over
+ * v1.30.2 — the page is a thin read over
  * `useCoachConversationHistory()` (cursor-paginated + server-searched, see
  * the route's doc comment), which the drawer's `<HistoryRail>` also
  * consumes — the two surfaces can no longer drift onto different
@@ -62,13 +62,14 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const router = useRouter();
   const [filter, setFilter] = useState<string>("");
-  // v1.30.2 (QoL H1) — search now drives the server-side title query;
+  // v1.30.2 — search now drives the server-side title query;
   // debounce the keystroke draft instead of re-issuing a request per key.
   const debouncedFilter = useDebouncedValue(filter, 200);
   const {
     conversations,
     isLoading,
     isError,
+    error,
     refetch,
     hasNextPage,
     isFetchingNextPage,
@@ -108,7 +109,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
     router.push(`/coach?c=${id}`);
   }
 
-  // v1.30.1 M5 — one tap deletes (with an Undo toast); see
+  // v1.30.1 — one tap deletes (with an Undo toast); see
   // `use-coach.ts`'s `useDeleteCoachConversationWithUndo` for the
   // rationale — this mirrors the rail's identical fix.
   function handleDeleteRequest(id: string) {
@@ -182,7 +183,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
           // A load failure must not masquerade as "no conversations yet" —
           // that reads as a data-loss scare and offers no way back. Mirror
           // /coach/plans and surface a retry.
-          <QueryErrorCard onRetry={() => refetch()} />
+          <QueryErrorCard error={error} onRetry={() => refetch()} />
         ) : groups.length === 0 ? (
           <div
             data-slot="coach-conversations-empty"
@@ -281,7 +282,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
             </section>
           ))
         )}
-        {/* v1.30.2 (QoL H1) — same IntersectionObserver sentinel as the
+        {/* v1.30.2 — same IntersectionObserver sentinel as the
             drawer rail: scrolling this div into view pulls the next cursor
             page. Empty + aria-hidden; the status row below is the a11y
             signal. */}

@@ -150,7 +150,7 @@ export async function annotateRow(
   const takenAt = normaliseDate(row.takenAt) ?? reportDate;
   const printed = parseReferenceRange(row.referenceText, row.unit);
 
-  // v1.43 (D1223) — the marker this name resolves to (name, alias, catalog),
+  // v1.43 — the marker this name resolves to (name, alias, catalog),
   // exactly as the commit resolves it, or up to three to choose from.
   const index = markerIndex ?? (await loadMarkerIndex(prisma, userId));
   const { match, suggestions } = matchForReview(index, analyte, row.unit);

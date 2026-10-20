@@ -1218,7 +1218,7 @@ export function buildCoachVoiceBlock(locale: Locale): string {
 }
 
 /**
- * v1.4.25 W14c — native locale-specific Coach system prompts.
+ * v1.4.25 — native locale-specific Coach system prompts.
  *
  * Previously (W9e) the FR / ES / IT / PL locales rode the EN system
  * prompt with a one-line "REPLY LANGUAGE" footer. The 2025-12 Welo
@@ -1244,11 +1244,12 @@ const LOCALE_REPLY_FOOTER_FALLBACK: Record<
   es: "\n\nREPLY LANGUAGE: respond in Spanish. Mirror the user's register; use natural Spanish health vocabulary.",
   it: "\n\nREPLY LANGUAGE: respond in Italian. Mirror the user's register; use natural Italian health vocabulary.",
   pl: "\n\nREPLY LANGUAGE: respond in Polish. Mirror the user's register (formal Pan/Pani for medical-adjacent topics); use natural Polish health vocabulary.",
+  nl: "\n\nREPLY LANGUAGE: respond in Dutch. Use the informal je/jij register throughout (never formal u); use natural Dutch health vocabulary.",
   ko: "\n\nREPLY LANGUAGE: respond in Korean. Use the 해요체 register throughout (never 합쇼체 or plain 한다체); use natural Korean health vocabulary.",
 };
 
 /**
- * v1.22 (W6) — per-turn personalization passed by the chat route. All fields
+ * v1.22 — per-turn personalization passed by the chat route. All fields
  * are optional and the notes are empty when none apply.
  *
  * v1.43 (#1217) — these lines change every turn, so they no longer ride the
@@ -1282,9 +1283,10 @@ export function getCoachSystemPrompt(
     base = COACH_PROMPT_DE;
   } else if (locale === "en") {
     base = COACH_PROMPT_EN;
-  } else if (locale === "ko") {
-    // ko ships no safety-contract matrix, so it is not a NativeCoachLocale.
-    base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER_FALLBACK.ko;
+  } else if (locale === "ko" || locale === "nl") {
+    // ko and nl ship no safety-contract matrix, so they are not a
+    // NativeCoachLocale.
+    base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER_FALLBACK[locale];
   } else {
     try {
       base = buildNativeCoachPrompt(locale, PROMPT_VERSION);
@@ -1298,7 +1300,7 @@ export function getCoachSystemPrompt(
   }
   // v1.41 — the voice and answer shape, on every locale's body.
   base = `${base}\n\n${buildCoachVoiceBlock(locale)}`;
-  // v1.18.7 (HIGH-2) — append the shared cross-surface contracts (canonical
+  // v1.18.7 — append the shared cross-surface contracts (canonical
   // wording, single source of truth in `shared-contracts.ts`) for the
   // hand-composed de/en bodies. The native FR/ES/IT/PL bodies carry their own
   // per-locale safety wording from the contract matrix, so they are left as-is.
@@ -1322,7 +1324,7 @@ export function getCoachSystemPrompt(
   // block is locale-independent (English topic labels + URLs) and the model
   // may only link a slug it lists, so a fabricated /learn URL is impossible.
   const withLearn = `${withPrefix}\n\n${learnCatalogPromptBlock()}`;
-  // v1.22 (W6) — the narrative-quality addendum: the context-layer rule, the
+  // v1.22 — the narrative-quality addendum: the context-layer rule, the
   // single-chart-token exception, the BP usual-range verbatim clause. Composed
   // after the shared contracts so the chart-token exception can carve out the
   // one place a `metric:<TYPE>` token is permitted. The per-turn opener hint
@@ -1335,7 +1337,7 @@ export function getCoachSystemPrompt(
 }
 
 /**
- * v1.22 (W6) — narrative-quality + personalization addendum for the Coach.
+ * v1.22 — narrative-quality + personalization addendum for the Coach.
  *
  * EN/DE are hand-composed; every other locale rides the EN body (these are
  * internal instructions, not user-facing prose). Each clause is additive and
@@ -1498,7 +1500,7 @@ INTERPRETATION RULES (outside the self-report):
 }
 
 /**
- * v1.4.23 H4 — convert non-default Coach prefs into a one-paragraph
+ * v1.4.23 — convert non-default Coach prefs into a one-paragraph
  * prefix the system prompt prepends. Defaults produce an empty prefix
  * so legacy users see the unchanged v1.4.22 prompt verbatim.
  *

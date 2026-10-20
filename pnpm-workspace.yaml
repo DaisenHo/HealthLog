@@ -78,9 +78,8 @@ overrides:
   # override is the only way through. It runs on the config-loading and CLI
   # path, not under a request, but a red audit blocks the whole release train.
   "deepmerge-ts@<8.0.0": "^8.0.0"
-  # CVE-2026-59952. Two copies arrive, neither of them ours to call: an
-  # optional peer of `@hookform/resolvers` (this app validates with zod) and
-  # prisma's local dev server. Mirrored for /opt/prisma-cli in the Dockerfile,
+  # CVE-2026-59952. The copy arrives through prisma's local dev server, not
+  # ours to call. Mirrored for /opt/prisma-cli in the Dockerfile,
   # where the flagged 1.2.0 landed. 1.4.2 is the same major, so no consumer is
   # dragged onto a new one.
   "valibot@<1.4.2": "^1.4.2"

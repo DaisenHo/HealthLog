@@ -23,7 +23,7 @@ import { userDayKey, shiftDateKey, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { TileHeader } from "@/components/insights/tile-header";
 import { DayLink } from "@/components/day/day-link";
 import { Button } from "@/components/ui/button";
-import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { axisUnitSuffix } from "@/lib/charts/axis-unit";
 import {
@@ -54,7 +54,7 @@ function minuteLabel(minute: number): string {
 const AXIS_TICKS = [0, 360, 720, 1080, 1440];
 
 /**
- * S11 — the intraday pulse "shape of the day" layer inside the pulse insight.
+ * The intraday pulse "shape of the day" layer inside the pulse insight.
  *
  * Charts one local day's 10-minute mean heart rate (computed on demand from
  * raw), with the personal resting baseline drawn as a reference line and any
@@ -77,7 +77,7 @@ const AXIS_TICKS = [0, 360, 720, 1080, 1440];
  * coarser hourly grain instead of an empty chart — `resolution` on the DTO
  * tells the caption which, and the tension read is always absent on an
  * hourly day (it needs per-sample resolution to stay honest). A failed fetch
- * renders `<QueryErrorCard>` with a retry action instead of falling through
+ * renders `<QueryErrorRow>` with a retry action instead of falling through
  * to the empty-day copy.
  *
  * `initialDateKey` pins the first day shown, for callers that already know
@@ -120,7 +120,7 @@ export function IntradayPulseChart({
     setSelectedDateKey(next === todayKey ? null : next);
   };
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsPulseIntraday(dateKey),
     queryFn: () =>
       apiGet<IntradayPulseDto>(`/api/insights/pulse/intraday?date=${dateKey}`),
@@ -254,9 +254,11 @@ export function IntradayPulseChart({
       {isLoading ? (
         <Skeleton className="h-[180px] w-full rounded-lg" />
       ) : isError ? (
-        <QueryErrorCard
-          onRetry={() => refetch()}
-          className="border-0 bg-transparent shadow-none"
+        <QueryErrorRow
+          inset
+          error={error}
+          slot="intraday-pulse-error"
+          onRetry={() => void refetch()}
         />
       ) : (data?.series?.length ?? 0) < MIN_BUCKETS_FOR_COURSE ? (
         // A lone reading or two on a 24-hour axis drew a dot in an empty

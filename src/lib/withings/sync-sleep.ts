@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17c — Withings Sleep v2 sync.
+ * v1.4.25 — Withings Sleep v2 sync.
  *
  * Pulls per-stage sleep segments from `POST /v2/sleep?action=get` and
  * writes one Measurement row per segment, tagged with the appropriate
@@ -90,7 +90,7 @@ import {
 const WITHINGS_SLEEP_URL = "https://wbsapi.withings.net/v2/sleep";
 
 /**
- * v1.18.10 P0 — nightly sleep vitals from `action=getsummary`.
+ * v1.18.10 — nightly sleep vitals from `action=getsummary`.
  *
  * The per-segment `action=get` series carries only the stage timeline; the
  * per-night summary carries the physiological vitals (average HR, respiratory
@@ -282,7 +282,7 @@ export async function fetchWithingsSleep(
 }
 
 /**
- * v1.18.10 P0 — fetch the per-night sleep summaries (with vitals) for the
+ * v1.18.10 — fetch the per-night sleep summaries (with vitals) for the
  * given window. `action=getsummary` keys by `lastupdate`/`startdateymd`; we
  * use the same unix-second window the segment fetch uses, expressed as the
  * `YYYY-MM-DD` form the summary endpoint expects. Returns the raw summaries
@@ -410,7 +410,7 @@ export async function syncUserSleep(
       await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_SLEEP });
       return 0;
     }
-    // v1.4.43 W7-B3 — typed-classification path (see sync-activity.ts
+    // v1.4.43 — typed-classification path (see sync-activity.ts
     // for the full rationale). The thrown `WithingsApiError` carries
     // the classification verdict; `recordWithingsSyncFailure` routes
     // it through `classifyError`, which falls back to the legacy regex
@@ -449,7 +449,7 @@ export async function syncUserSleep(
   // history, not just this fetch).
   const freshBySession = new Map<number, string[]>();
 
-  // W-3 — a reconcile throw out of either sleep transaction propagated past the
+  // A reconcile throw out of either sleep transaction propagated past the
   // success stamp and both callers (cron + webhook) swallowed it: neither
   // success NOR failure was recorded, so `lastAttemptAt` sat quietly stale
   // during a persistent write failure. Record a transient failure at the source
@@ -536,7 +536,7 @@ export async function syncUserSleep(
   );
   await sweepStaleSleepSegments(userId, "WITHINGS", sweeps);
 
-  // v1.18.10 P0 — nightly sleep vitals (avg HR / respiratory rate / SDNN HRV
+  // v1.18.10 — nightly sleep vitals (avg HR / respiratory rate / SDNN HRV
   // / avg SpO2 / sleep score) from the per-night summary. Fetch failure stays
   // isolated from the stage writes; database failures are hard sync failures.
   //
@@ -650,7 +650,7 @@ export async function syncUserSleep(
     );
   }
 
-  // S4 — if a stage segment for last night just landed, kick the debounced
+  // If a stage segment for last night just landed, kick the debounced
   // morning refresh so the digest/score finalise with the current sleep. The
   // trigger judges "last night" in the user's profile tz and no-ops on a
   // backfill; fire-and-forget so a freshness enqueue never fails the sync.

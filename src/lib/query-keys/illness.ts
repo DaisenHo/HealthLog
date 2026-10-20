@@ -35,13 +35,13 @@ export const illnessKeys = {
   illnessDayLogList: (episodeId: string, sortDir: string) =>
     ["illness", "day-log-list", episodeId, sortDir] as const,
   /**
-   * v1.18.1 P3 — the per-episode retrospective correlation findings
+   * v1.18.1 — the per-episode retrospective correlation findings
    * (pre-onset scan, nadir, recovery-gap). Server-authoritative; the read
    * is gated, so the surface pattern-matches `status` rather than recomputing.
    */
   illnessCorrelation: (id: string) => ["illness", "correlation", id] as const,
   /**
-   * v1.18.1 P3 — the cross-episode retrospective summary ("sick N times ·
+   * v1.18.1 — the cross-episode retrospective summary ("sick N times ·
    * typical recovery gap X days") over a trailing window in days.
    *
    * v1.18.9 — `includeRecoveryGap` is part of the key: the lightweight

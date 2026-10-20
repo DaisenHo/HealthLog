@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.28 R3d (R1.2 H4) — layout-stable loading shell for every
+ * v1.4.28 (R1.2 H4) — layout-stable loading shell for every
  * `next/dynamic` chart import on the dashboard and the insights
  * sub-pages.
  *
@@ -25,7 +25,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * The cumulative box matches the loaded chart's height to within a
  * pixel so the page does not jump on hydration.
  *
- * v1.4.36 W2 — `mini` variant for the trends-row 140 px chart slot.
+ * v1.4.36 — `mini` variant for the trends-row 140 px chart slot.
  * The default skeleton's rounded-xl border + p-4/p-6 padding inflated
  * past the 140 px wrapper and pushed the row taller than the loaded
  * chart, re-introducing the very layout shift the wrapper now
@@ -33,7 +33,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * `rounded-md p-2` and pins the inner band at 140 px so the loading
  * shell occupies the same visible box as the painted chart.
  *
- * v1.4.43 QoL (L4) — when the skeleton is still painted three seconds
+ * v1.4.43 — when the skeleton is still painted three seconds
  * in, surface a small caption ("Computing analytics — this can take
  * a moment") so the user understands the chart is being computed
  * rather than broken. Today the `/api/analytics` correlations branch
@@ -101,7 +101,7 @@ export function ChartSkeleton({
   mini?: boolean;
 }) {
   const { t } = useTranslations();
-  // v1.4.43 QoL (L4) — `showSlowHint` flips true 3 s into the load so
+  // v1.4.43 — `showSlowHint` flips true 3 s into the load so
   // the caption only appears for genuinely slow renders. Using a
   // `useEffect` keeps the SSR markup identical (caption absent) so
   // hydration never mismatches; the timer kicks in client-side once
@@ -139,7 +139,7 @@ export function ChartSkeleton({
         className,
       )}
     >
-      {/* v1.4.34 IW-G — sr-only announcement now reads the locale's
+      {/* v1.4.34 — sr-only announcement now reads the locale's
           `charts.loadingLabel` key instead of literal English. */}
       <span className="sr-only">{t("charts.loadingLabel")}</span>
 

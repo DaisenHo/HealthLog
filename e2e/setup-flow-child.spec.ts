@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the setup flow, path 4: a child's managed profile.
+ * v1.39 — the setup flow, path 4: a child's managed profile.
  *
  * Q1 "someone I look after" keeps the questions in the guardian's own record
  * and creates the profile on the confirm screen, after the questions — the

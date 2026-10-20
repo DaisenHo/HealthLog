@@ -30,7 +30,7 @@ import {
   type FailingQueue,
 } from "./_shared";
 
-// v1.4.16 phase B3: Recharts is ~108 KiB Brotli — defer-load the host
+// v1.4.16: Recharts is ~108 KiB Brotli — defer-load the host
 // metrics chart so the system-status page only ships it when an admin
 // actually opens this view. Splitting at the wrapper boundary (instead
 // of per-primitive) keeps Recharts' `findAllByType` reconciliation
@@ -128,7 +128,7 @@ export function FailingJobsCard({
 export function SystemStatusSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { data: status, isError, refetch } = useSystemStatus();
+  const { data: status, isError, error, refetch } = useSystemStatus();
 
   return (
     <div className="space-y-6">
@@ -247,7 +247,7 @@ export function SystemStatusSection() {
                 tone="success"
               />
             )}
-            {/* v1.4.27 R5 — offline GeoLite2 availability, read from the
+            {/* v1.4.27 — offline GeoLite2 availability, read from the
                 admin status rather than the public /api/version. */}
             <StatusItem
               icon={Map}
@@ -277,6 +277,8 @@ export function SystemStatusSection() {
           // transient 500 (rolling deploy, DB blip) doesn't require a
           // full page reload to recover.
           <QueryErrorRow
+            inset
+            error={error}
             message={t("admin.systemStatusLoadError")}
             onRetry={() => void refetch()}
             retryLabel={t("admin.systemStatusRetry")}

@@ -50,12 +50,6 @@ const subsystemSurface = {
 
   // register-status.ts
   "insights-general-status": { audience: "system" },
-  "insights-blood-pressure-status": { audience: "system" },
-  "insights-weight-status": { audience: "system" },
-  "insights-pulse-status": { audience: "system" },
-  "insights-bmi-status": { audience: "system" },
-  "insights-mood-status": { audience: "system" },
-  "insights-medication-compliance-status": { audience: "system" },
   "insight-pregenerate": { audience: "system" },
   "insight-status-generate": { audience: "system" },
   "morning-digest-refresh": { audience: "system" },
@@ -142,7 +136,7 @@ const subsystemSurface = {
   "med-notes-encryption-backfill": { audience: "system" },
   "free-text-encryption-backfill": { audience: "system" },
   "document-tombstone-purge": { audience: "system" },
-  // v1.37.19 (A7-4) — hourly heal of summary rows stuck on PENDING.
+  // v1.37.19 — hourly heal of summary rows stuck on PENDING.
   "document-summary-reaper": { audience: "system" },
   "document-content-index-backfill": { audience: "account" },
   "document-index": { audience: "account" },

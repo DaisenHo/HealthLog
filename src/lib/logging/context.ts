@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { WideEvent } from "./types";
 import { WideEventBuilder } from "./event-builder";
 import { registerSourcePriorityParseObserver } from "@/lib/validations/source-priority";
+import { registerRecurrenceParseErrorObserver } from "@/lib/medications/scheduling/recurrence";
 import {
   DATETIME_NO_SECONDS_COUNTER,
   registerDatetimeNoSecondsObserver,
@@ -33,13 +34,22 @@ export function annotate(fields: {
   }
 }
 
-// v1.4.25 Fix-G — wire the schema-parser breadcrumb into the
+// v1.4.25 — wire the schema-parser breadcrumb into the
 // AsyncLocalStorage-backed `annotate()` only on the server. The
 // validations module stays bundle-safe for client imports; this side
 // effect runs the first time any server module imports the logging
 // context.
 registerSourcePriorityParseObserver((fields) => {
   annotate(fields);
+});
+
+// A medication recurrence rule that does not parse. Same bundle-safe
+// registration: the scheduling module also runs in the browser.
+registerRecurrenceParseErrorObserver((rrule) => {
+  annotate({
+    action: { name: "medication.recurrence.parse_error" },
+    meta: { rrule },
+  });
 });
 
 // v1.43 — count every request instant refused for lacking seconds, per wide

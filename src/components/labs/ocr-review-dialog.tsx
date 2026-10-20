@@ -152,7 +152,7 @@ export function OcrReviewDialog({
   const pickerId = useId();
   const [stage, setStage] = useState<Stage>("pick");
   const [rows, setRows] = useState<OcrReviewRow[]>([]);
-  // S9 — in vision mode the picked file is retained so, on commit, it can be
+  // In vision mode the picked file is retained so, on commit, it can be
   // filed into the Documents vault and cross-linked to the committed labs. Text
   // mode keeps the image on-device, so nothing is retained there.
   const [pickedFile, setPickedFile] = useState<File | null>(null);

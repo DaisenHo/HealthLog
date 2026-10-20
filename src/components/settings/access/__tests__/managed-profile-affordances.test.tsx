@@ -285,12 +285,12 @@ describe("the managed-profile card, in the shared-access section", () => {
     }
     // The timezone control is the shared picker, which labels itself.
     expect(html).toContain('id="managed-profile-timezone"');
-    // Six languages offered, which is the route's enum exactly.
+    // Eight languages offered, which is the route's enum exactly.
     const options =
       /<select[^>]*data-slot="managed-profile-locale"[\s\S]*?<\/select>/
         .exec(html)?.[0]
         .match(/<option/g) ?? [];
-    expect(options).toHaveLength(7);
+    expect(options).toHaveLength(8);
     // Four sex options, and the first is the empty one: null is a real answer
     // ("not recorded") rather than an absent field, and a form offering only
     // the three enum members would make it unsayable.
@@ -837,14 +837,16 @@ describe("what a refused guardian invitation says", () => {
       why: "a 404 WITH a code — not the same as an unknown identifier",
     },
     {
-      err: new ApiError("refused", 404),
+      err: new ApiError("refused", 404, {
+        errorCode: "sharing.invite.no_account",
+      }),
       key: "recordSharing.managed.guardianErrorNoAccount",
-      why: "the codeless 404: no account carries that name or e-mail",
+      why: "the other 404: no account carries that name or e-mail",
     },
     {
-      err: new ApiError("refused", 429),
+      err: new ApiError("refused", 429, { errorCode: "http.rate_limited" }),
       key: "recordSharing.managed.guardianErrorRateLimit",
-      why: "the other codeless arm, where waiting is the whole recovery",
+      why: "a 429 has one meaning, where waiting is the whole recovery",
     },
     {
       err: new ApiError("refused", 401, {
@@ -872,16 +874,28 @@ describe("what a refused guardian invitation says", () => {
   }
 
   it("tells the two 404s apart, which is the whole reason for the order", () => {
-    // The route publishes a code on one 404 and not on the other. Branching on
-    // status first would tell somebody to check a spelling when the real
-    // answer is that they are no longer a Guardian of that profile.
+    // Each 404 names itself. Branching on the status would tell somebody to
+    // check a spelling when the real answer is that they are no longer a
+    // Guardian of that profile, and a 404 that names neither is not an
+    // unknown name either.
     expect(
       guardianInviteErrorKey(
         new ApiError("refused", 404, {
           errorCode: "managed_profile.not_found",
         }),
       ),
-    ).not.toBe(guardianInviteErrorKey(new ApiError("refused", 404)));
+    ).not.toBe(
+      guardianInviteErrorKey(
+        new ApiError("refused", 404, {
+          errorCode: "sharing.invite.no_account",
+        }),
+      ),
+    );
+    expect(
+      guardianInviteErrorKey(
+        new ApiError("refused", 404, { errorCode: "http.not_found" }),
+      ),
+    ).toBe("recordSharing.managed.guardianErrorFailed");
     // And all nine cases above resolve to distinct sentences rather than one:
     // the failure this table is written against is one message for everything.
     expect(

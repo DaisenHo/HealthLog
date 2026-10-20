@@ -24,7 +24,7 @@ import { apiGet } from "@/lib/api/api-fetch";
  * Wraps a string in `truncate` + tooltip so a long token name /
  * username / permission cannot push the row past its bounds.
  *
- * v1.4.19 phase A7 (4th attempt) — earlier fixes (column-hide,
+ * v1.4.19 (4th attempt) — earlier fixes (column-hide,
  * mobile card-list, mobile-strip `no-scrollbar`) cleared every
  * scrollbar the maintainer reported except a residual painted bar they kept
  * seeing at the bottom-right. Production probe confirmed no
@@ -62,7 +62,7 @@ function TruncatedCell({
 }
 
 /**
- * v1.4.22 W5 reconcile (S-03) — the revoked / isExpired / active
+ * v1.4.22 — the revoked / isExpired / active
  * 3-way ternary is identical between the desktop table and the
  * mobile card list; the only difference is `text-xs` vs `text-2xs`.
  * Centralise so the two surfaces stay in lock-step.
@@ -107,7 +107,7 @@ function TokenStatusBadge({
  * "iOS auto-login · 05.05.2026 19:46" while leaving any non-ISO suffix
  * (manual names, device fingerprints, etc.) untouched.
  */
-// v1.4.22 D / D-CR-M-03 — broaden the ISO match to include non-Z
+// v1.4.22 — broaden the ISO match to include non-Z
 // offsets (e.g. `+02:00`, `-05:30`). The previous regex only matched
 // UTC (`Z`), so a token name carrying a local-tz timestamp slipped
 // through unformatted and rendered the raw `2026-05-05T19:46:20.603+02:00`
@@ -139,7 +139,7 @@ function formatTokenName(name: string, fmt: Formatters): string {
 export function ApiTokenOverviewSection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  // v1.4.19 phase A7 — `/admin/api-tokens` is a dedicated single-
+  // v1.4.19 — `/admin/api-tokens` is a dedicated single-
   // section route. The previous pattern carried a "Collapse / Expand"
   // toggle as an escape hatch from the v1.4 shared admin page where
   // 13 sections lived together, but on a route that only renders this
@@ -166,7 +166,7 @@ export function ApiTokenOverviewSection() {
             <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !tokens?.length ? (
-          // v1.4.15 phase-C5: empty state explains where tokens come
+          // v1.4.15: empty state explains where tokens come
           // from (native client sign-in / Settings → Account) so a
           // fresh admin doesn't think they need to create them here.
           <EmptyState
@@ -253,7 +253,7 @@ export function ApiTokenOverviewSection() {
                         <td className="px-3 py-2 text-right">
                           <TokenStatusBadge token={token} size="sm" />
                         </td>
-                        {/* v1.4.22 C2 (5th attempt) — drop
+                        {/* v1.4.22 (5th attempt) — drop
                             `whitespace-nowrap` on the date cells. The
                             v1.4.19 A7 probe confirmed `formatDateTime`
                             renders "05.05.2026, 21:46" (~110px) which

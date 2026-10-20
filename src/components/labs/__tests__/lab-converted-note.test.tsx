@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest";
 import { I18nProvider } from "@/lib/i18n/context";
 
 import { LabConvertedNote } from "../lab-converted-note";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(
   reading: Parameters<typeof LabConvertedNote>[0]["reading"],

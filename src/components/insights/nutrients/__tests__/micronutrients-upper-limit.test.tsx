@@ -22,6 +22,9 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { MicronutrientsCard } from "../micronutrients-card";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(rows: NutrientOverviewRow[], locale: "en" | "de" = "en") {
   state.rows = rows;

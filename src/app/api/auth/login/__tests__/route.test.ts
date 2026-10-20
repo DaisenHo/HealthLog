@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W3-SECURITY (H-1) — `auth.login.failed` audit row must not
+ * v1.4.43 — `auth.login.failed` audit row must not
  * leak the typed identifier (email / username) into operator
  * artefacts. Per the v1.4.20 PII directive, the `reason` field is the
  * only signal operators need; the identifier itself is PII and stays

@@ -243,7 +243,7 @@ export function EntityLinkPicker({
   onChange,
   searchPlaceholder,
   emptyLabel,
-  error = false,
+  error = null,
   errorLabel,
   onRetry,
   extraAction,
@@ -263,9 +263,11 @@ export function EntityLinkPicker({
   /**
    * The option read failed. Renders an error row with Retry instead of the
    * empty label: a failed read must never pass for "nothing to link", which
-   * is exactly how a refused page size once hid a whole vault.
+   * is exactly how a refused page size once hid a whole vault. Pass the
+   * failed read's error (or any truthy value for a failure without one); the
+   * row reads its status.
    */
-  error?: boolean;
+  error?: unknown;
   errorLabel?: string;
   onRetry?: () => void;
   /**
@@ -369,6 +371,7 @@ export function EntityLinkPicker({
         <Skeleton className="h-9 w-full rounded-md" />
       ) : error ? (
         <QueryErrorRow
+          error={error}
           message={errorLabel}
           onRetry={onRetry}
           slot={`${slot}-error`}

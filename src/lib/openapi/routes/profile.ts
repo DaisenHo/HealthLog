@@ -70,7 +70,7 @@ import { isoDateTime } from "@/lib/validations/datetime";
 // `disableCoach` + operator master flag, the rest read the per-user
 // disabled-allowlist. The map is the single thing a client needs to gate
 // every secondary domain end-to-end.
-// v1.32.22 (M3) — the doc request extends the strict runtime schema with the
+// v1.32.22 — the doc request extends the strict runtime schema with the
 // optimistic-concurrency `baseUpdatedAt` token. The runtime strips it pre-Zod
 // (`takeBaseToken`) BEFORE the strict parse, so the runtime schema alone would
 // under-document the wire; documenting it here keeps the contract complete.
@@ -309,7 +309,7 @@ const diabetesFlag = z
 // is the REAL runtime validator (`notificationPrefsSchema` — every
 // category and field optional, deep-merged server-side); the response
 // is the fully-resolved shape with the documented defaults filled in.
-// v1.32.22 (M1) — the doc request extends the runtime validator with the
+// v1.32.22 — the doc request extends the runtime validator with the
 // optimistic-concurrency `baseUpdatedAt` token (stripped pre-Zod at runtime).
 const notificationPrefsPatchRequest = notificationPrefsSchema
   .extend({ baseUpdatedAt: baseUpdatedAtField })
@@ -398,13 +398,13 @@ const notificationPrefsResolved = z
       "Fully-resolved per-user notification preferences. Every key is present — a null / drifted persisted row resolves to the documented defaults.",
   });
 
-// v1.32.22 (M1) — GET / PATCH responses carry the optimistic-concurrency token
+// v1.32.22 — GET / PATCH responses carry the optimistic-concurrency token
 // as an additive sibling key next to the resolved categories.
 const notificationPrefsResponse = notificationPrefsResolved
   .extend({ updatedAt: updatedAtTokenField })
   .meta({ id: "NotificationPrefsResponse" });
 
-// v1.32.22 (M4) — coach-prefs GET / PUT responses carry the token; the PUT
+// v1.32.22 — coach-prefs GET / PUT responses carry the token; the PUT
 // request extends the runtime validator with the base token.
 const coachPrefsResponse = coachPrefsSchema
   .extend({ updatedAt: updatedAtTokenField })
@@ -1426,7 +1426,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         // quietly omits the refusal a person actually hits.
         "422": {
           description:
-            "The write was refused and nothing was stored. `meta.errorCode` distinguishes the cases: `health_score_config.too_narrow` — the selection cannot produce a score (`meta.reason` is `no_pillars_selected`, and the `error` string is the sentence to show the person). Since v1.38 the empty selection is the ONLY one refused: two areas of health, or one, now save and produce a score that labels its own breadth, so a client must not pre-empt the write with a three-area rule of its own. `health_score_config.invalid` — the body failed validation, with the per-issue list under `details.issues`; `invalid_base_updated_at` — `baseUpdatedAt` was present but unparseable, `null` included, which is rejected rather than falling back to the unconditional write. A body that is not JSON at all returns the bare message `health-score-config.body.invalid_json` with no errorCode.",
+            "The write was refused and nothing was stored. `meta.errorCode` distinguishes the cases: `health_score_config.too_narrow` — the selection cannot produce a score (`meta.reason` is `no_pillars_selected`, and the `error` string is the sentence to show the person). Since v1.38 the empty selection is the ONLY one refused: two areas of health, or one, now save and produce a score that labels its own breadth, so a client must not pre-empt the write with a three-area rule of its own. `health_score_config.invalid` — the body failed validation, with the per-issue list under `details.issues`; `invalid_base_updated_at` — `baseUpdatedAt` was present but unparseable, `null` included, which is rejected rather than falling back to the unconditional write. A body that is not JSON at all returns the bare message `health-score-config.body.invalid_json` with the status default `meta.errorCode: http.invalid`.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

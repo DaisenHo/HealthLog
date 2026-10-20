@@ -2,7 +2,7 @@
  * GET  /api/coach/reminders — list the caller's Coach episodic reminders.
  * POST /api/coach/reminders — create one manually (the ledger "+ add" path).
  *
- * v1.22 (B2/B6) — the management + in-app-surface read for the durable
+ * v1.22 — the management + in-app-surface read for the durable
  * "remind me about X" memory the Coach captures inline via the `---REMEMBER---`
  * sentinel. The note free-text is decrypted on the fly; an undecryptable row (a
  * key rotated out of the map) is skipped rather than 500ing the whole list.

@@ -1,5 +1,5 @@
 /**
- * S5 — daily-briefing fallback cron: tz slot-gating + result accounting, plus
+ * Daily-briefing fallback cron: tz slot-gating + result accounting, plus
  * the dead-queue wiring guard (imported / in allQueues / scheduled / worked).
  */
 import { readFileSync } from "node:fs";

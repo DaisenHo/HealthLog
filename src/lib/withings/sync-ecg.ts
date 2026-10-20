@@ -80,6 +80,8 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import { walkPages } from "@/lib/integrations/page-walk";
+import { WITHINGS_MAX_PAGES, withingsNextOffset } from "./client";
 
 const WITHINGS_HEART_URL = "https://wbsapi.withings.net/v2/heart";
 
@@ -139,60 +141,55 @@ export async function fetchWithingsHeartList(
   startdate: number,
   enddate: number,
 ): Promise<WithingsHeartEntry[]> {
-  const results: WithingsHeartEntry[] = [];
-  let offset = 0;
-  let pageCount = 0;
-
-  while (true) {
-    const params = new URLSearchParams({
-      action: "list",
-      startdate: String(startdate),
-      enddate: String(enddate),
-      offset: String(offset),
-    });
-
-    const pageStart = performance.now();
-    const res = await safeFetch(WITHINGS_HEART_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: params.toString(),
-    });
-    const json = await res.json();
-    const verdict = classifyWithingsResponse(res.status, json);
-    getEvent()?.addExternalCall({
-      service: "withings",
-      method: `fetchWithingsHeartList(page=${pageCount})`,
-      duration_ms: Math.round(performance.now() - pageStart),
-      status: res.status,
-      error: verdict.classification === "success" ? undefined : verdict.reason,
-    });
-    if (verdict.classification !== "success") {
-      throw new WithingsApiError({
-        verb: "heart",
-        classification: verdict.classification,
-        withingsStatus: verdict.withingsStatus,
-        reason: verdict.reason,
-        upstreamError: typeof json?.error === "string" ? json.error : undefined,
+  const walk = await walkPages<number, WithingsHeartEntry>(
+    "withings.heart",
+    WITHINGS_MAX_PAGES,
+    async (cursor, page) => {
+      const offset = cursor ?? 0;
+      const params = new URLSearchParams({
+        action: "list",
+        startdate: String(startdate),
+        enddate: String(enddate),
+        offset: String(offset),
       });
-    }
 
-    const body = json.body ?? {};
-    const series: WithingsHeartEntry[] = body.series ?? [];
-    results.push(...series);
+      const pageStart = performance.now();
+      const res = await safeFetch(WITHINGS_HEART_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: params.toString(),
+      });
+      const json = await res.json();
+      const verdict = classifyWithingsResponse(res.status, json);
+      getEvent()?.addExternalCall({
+        service: "withings",
+        method: `fetchWithingsHeartList(page=${page})`,
+        duration_ms: Math.round(performance.now() - pageStart),
+        status: res.status,
+        error:
+          verdict.classification === "success" ? undefined : verdict.reason,
+      });
+      if (verdict.classification !== "success") {
+        throw new WithingsApiError({
+          verb: "heart",
+          classification: verdict.classification,
+          withingsStatus: verdict.withingsStatus,
+          reason: verdict.reason,
+          upstreamError:
+            typeof json?.error === "string" ? json.error : undefined,
+        });
+      }
 
-    const hasMore = body.more === true || body.more === 1;
-    if (!hasMore) break;
-    const nextOffset = Number(body.offset);
-    if (!Number.isFinite(nextOffset) || nextOffset <= offset) break;
-    offset = nextOffset;
-    pageCount += 1;
-    if (pageCount > 1000) break;
-  }
-
-  return results;
+      const body = json.body ?? {};
+      const series: WithingsHeartEntry[] = body.series ?? [];
+      return { items: series, next: withingsNextOffset(body, offset) };
+    },
+    0,
+  );
+  return walk.items;
 }
 
 /**

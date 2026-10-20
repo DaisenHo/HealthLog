@@ -7,6 +7,7 @@ import { Loader2, Pill } from "lucide-react";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { nextStatusPollInterval } from "@/hooks/use-insight-status";
+import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 
 /**
- * v1.4.25 W4 — `/insights/medications`.
+ * v1.4.25 — `/insights/medications`.
  *
  * Routed Medication-Compliance sub-page. Mirrors the per-medication
  * grid from the v1.4.24 mother page (compliance bars + heatmap +
@@ -106,6 +107,7 @@ export default function InsightsMedikamentePage() {
     data: comprehensive,
     isLoading: isComprehensiveLoading,
     isError: isComprehensiveError,
+    error: comprehensiveError,
     refetch: refetchComprehensive,
   } = useQuery({
     queryKey: queryKeys.insightsComprehensive(),
@@ -141,7 +143,7 @@ export default function InsightsMedikamentePage() {
     refetchInterval: (query) =>
       nextStatusPollInterval(
         query.state.data?.preparing,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
         query.state.data?.revalidating,
       ),
   });
@@ -179,6 +181,7 @@ export default function InsightsMedikamentePage() {
         explainerMetric="medications"
       >
         <QueryErrorCard
+          error={comprehensiveError}
           description={t("insights.loadError")}
           onRetry={() => refetchComprehensive()}
         />
@@ -187,7 +190,7 @@ export default function InsightsMedikamentePage() {
   }
 
   if (medications.length === 0) {
-    // v1.4.27 F17 — medication compliance is event-driven so the
+    // v1.4.27 — medication compliance is event-driven so the
     // gate reads `medications.length > 0`. CTA targets `/medications`
     // (the dedicated medication-management surface).
     return (
@@ -270,7 +273,7 @@ export default function InsightsMedikamentePage() {
                     <span>{t("insights.compliance7d")}</span>
                     <span className="font-medium">{med.compliance7}%</span>
                   </div>
-                  {/* v1.4.33 IW9 — aria-label so the bar has an
+                  {/* v1.4.33 — aria-label so the bar has an
                       accessible name (Lighthouse a11y 91/94). */}
                   <Progress
                     value={med.compliance7}

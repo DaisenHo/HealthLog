@@ -1,8 +1,8 @@
 /**
  * Status / insight / computed-score queue registrar.
  *
- * Owns the nightly per-metric insight-status ladder (general / BP / weight /
- * pulse / BMI / mood / medication-compliance), the comprehensive-insight
+ * Owns the nightly status batch (every per-metric status card, one provider
+ * call per account), the comprehensive-insight
  * pre-generation, the on-demand per-metric status generation, the nightly
  * computed scores (recovery / stress / strain), the proactive Coach nudge, the
  * Coach memory refresh, the period-narrative warm, and the medication
@@ -104,6 +104,7 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { lockedPass, WHOLE_PASS } from "@/lib/jobs/long-pass";
+import { heavyLane } from "@/lib/jobs/heavy-lane";
 import { INSIGHT_PREGENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-pregenerate-shared";
 import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "@/lib/jobs/period-narrative-shared";
 import { getWorkerPrisma, workerLog } from "./shared";
@@ -112,24 +113,13 @@ import {
   createAndWork,
   insightRetryOptions,
   nightlyInsightPassOptions,
+  retireQueues,
   type QueuePolicyTable,
   type ScheduleEntry,
 } from "./registrar-shared";
 import {
   GeneralStatusPayload,
-  BloodPressureStatusPayload,
-  WeightStatusPayload,
-  PulseStatusPayload,
-  BmiStatusPayload,
-  MoodStatusPayload,
-  MedicationComplianceStatusPayload,
   handleGeneralStatusGenerate,
-  handleBloodPressureStatusGenerate,
-  handleWeightStatusGenerate,
-  handlePulseStatusGenerate,
-  handleBmiStatusGenerate,
-  handleMoodStatusGenerate,
-  handleMedicationComplianceStatusGenerate,
   handleInsightPregenerateJob,
   handleInsightStatusGenerate,
 } from "./insights-handlers";
@@ -138,45 +128,25 @@ const GENERAL_STATUS_QUEUE = "insights-general-status";
 
 const GENERAL_STATUS_CRON = "0 2 * * *"; // daily at 02:00
 
-const BLOOD_PRESSURE_STATUS_QUEUE = "insights-blood-pressure-status";
-
-const BLOOD_PRESSURE_STATUS_CRON = "5 2 * * *"; // daily at 02:05
-
-const WEIGHT_STATUS_QUEUE = "insights-weight-status";
-
-const WEIGHT_STATUS_CRON = "10 2 * * *"; // daily at 02:10
-
-const PULSE_STATUS_QUEUE = "insights-pulse-status";
-
-const PULSE_STATUS_CRON = "15 2 * * *"; // daily at 02:15
-
-const BMI_STATUS_QUEUE = "insights-bmi-status";
-
-const BMI_STATUS_CRON = "20 2 * * *"; // daily at 02:20
-// v1.15.20 — mood joins the nightly per-metric status ladder. Same gate +
-// discovery as the six older crons (see status-cron-candidates.ts); 02:30
-// continues the 5-minute stagger after BMI (02:20) and compliance (02:25).
-
-const MOOD_STATUS_QUEUE = "insights-mood-status";
-
-const MOOD_STATUS_CRON = "30 2 * * *"; // daily at 02:30
-
-const MEDICATION_COMPLIANCE_STATUS_QUEUE =
-  "insights-medication-compliance-status";
-
-const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
+/**
+ * The six per-metric status crons that followed the 02:00 batch (02:05 to
+ * 02:30). The batch builds every card and falls each metric it could not
+ * cover back to that card's own path, so they only re-read cards the batch
+ * had just written; a user who joins later is warmed by the visit or the next
+ * night. Their schedules and queues are removed on an instance that still has
+ * them.
+ */
+const RETIRED_STATUS_QUEUES = [
+  "insights-blood-pressure-status",
+  "insights-weight-status",
+  "insights-pulse-status",
+  "insights-bmi-status",
+  "insights-mood-status",
+  "insights-medication-compliance-status",
+] as const;
 
 const allQueues = [
   GENERAL_STATUS_QUEUE,
-  BLOOD_PRESSURE_STATUS_QUEUE,
-  WEIGHT_STATUS_QUEUE,
-  PULSE_STATUS_QUEUE,
-  BMI_STATUS_QUEUE,
-  // v1.15.20 — mood joins the nightly status ladder. The queue MUST be
-  // registered here or pg-boss never provisions it and the 02:30 schedule
-  // silently no-ops (the v1.4.37 dead-queue class).
-  MOOD_STATUS_QUEUE,
-  MEDICATION_COMPLIANCE_STATUS_QUEUE,
   // v1.7.0 — nightly comprehensive-insight pre-generation so the daily
   // briefing is warm before the user opens /insights or the dashboard
   // snapshot. Without this entry the 04:30 schedule silently no-ops.
@@ -186,7 +156,7 @@ const allQueues = [
   // provisions the queue and the enqueue silently drops. No cron schedule —
   // a send-only queue driven by navigation.
   INSIGHT_STATUS_GENERATE_QUEUE,
-  // S4 — event-driven morning digest refresh, enqueued by the sleep-arrival
+  // Event-driven morning digest refresh, enqueued by the sleep-arrival
   // trigger when last night's completed sleep lands. No cron schedule — a
   // send-only queue driven by sleep ingest; without this entry pg-boss never
   // provisions the queue and every enqueue silently drops.
@@ -220,16 +190,16 @@ const allQueues = [
   // v1.15.20 — proactive Coach nudge. Without this entry the daily 05:15
   // schedule silently no-ops and no nudge ever fires.
   COACH_NUDGE_QUEUE,
-  // v1.22 (M4) — daily Coach-reminder sweep. Without this entry the 05:20
+  // v1.22 — daily Coach-reminder sweep. Without this entry the 05:20
   // schedule silently no-ops and no "remind me" reminder ever surfaces.
   COACH_REMINDER_SWEEP_QUEUE,
-  // v1.22 (W9, C2) — daily n-of-1 experiment review worker. Without this entry
+  // v1.22 — daily n-of-1 experiment review worker. Without this entry
   // the 05:25 schedule silently no-ops and no experiment read-back is written.
   COACH_PLAN_REVIEW_QUEUE,
   // v1.16.11 — daily medication low-stock pass. Without this entry the 09:00
   // schedule silently no-ops and no low-stock alert ever fires.
   MEDICATION_LOW_STOCK_QUEUE,
-  // S5 — daily-briefing fallback cron. The primary morning push rides the
+  // Daily-briefing fallback cron. The primary morning push rides the
   // sleep-arrival finalisation hook below; this queue is the fixed local-morning
   // slot for the no-sleep-arrived case. Without this entry the every-15-min
   // schedule silently no-ops and the fallback push never fires.
@@ -238,21 +208,6 @@ const allQueues = [
 
 const schedules: ScheduleEntry[] = [
   [GENERAL_STATUS_QUEUE, GENERAL_STATUS_CRON, nightlyInsightPassOptions],
-  [
-    BLOOD_PRESSURE_STATUS_QUEUE,
-    BLOOD_PRESSURE_STATUS_CRON,
-    nightlyInsightPassOptions,
-  ],
-  [WEIGHT_STATUS_QUEUE, WEIGHT_STATUS_CRON, nightlyInsightPassOptions],
-  [PULSE_STATUS_QUEUE, PULSE_STATUS_CRON, nightlyInsightPassOptions],
-  [BMI_STATUS_QUEUE, BMI_STATUS_CRON, nightlyInsightPassOptions],
-  // v1.15.20 — mood status nightly, continuing the 02:xx ladder.
-  [MOOD_STATUS_QUEUE, MOOD_STATUS_CRON, nightlyInsightPassOptions],
-  [
-    MEDICATION_COMPLIANCE_STATUS_QUEUE,
-    MEDICATION_COMPLIANCE_STATUS_CRON,
-    nightlyInsightPassOptions,
-  ],
   // v1.7.0 — nightly 04:30 Europe/Berlin comprehensive-insight
   // pre-generation. Budget-gated per user inside the handler.
   [
@@ -290,11 +245,11 @@ const schedules: ScheduleEntry[] = [
   // the 04:45–04:55 score crons so the recovery-score trigger reads
   // settled rows. Deterministic triggers only — no AI call on this path.
   [COACH_NUDGE_QUEUE, COACH_NUDGE_CRON],
-  // v1.22 (M4) — daily 05:20 Europe/Berlin Coach-reminder sweep, just after
+  // v1.22 — daily 05:20 Europe/Berlin Coach-reminder sweep, just after
   // the nudge tick. Flips overdue reminders to `due` + mints plan-review
   // reminders from passed CoachPlan.reviewDate. In-app surface only; no push.
   [COACH_REMINDER_SWEEP_QUEUE, COACH_REMINDER_SWEEP_CRON],
-  // v1.22 (W9, C2) — daily 05:25 Europe/Berlin n-of-1 experiment review, just
+  // v1.22 — daily 05:25 Europe/Berlin n-of-1 experiment review, just
   // after the reminder sweep mints the plan-review reminders this worker reads.
   // Writes the grounded before/after read-back; no provider call, no push.
   [COACH_PLAN_REVIEW_QUEUE, COACH_PLAN_REVIEW_CRON],
@@ -303,7 +258,7 @@ const schedules: ScheduleEntry[] = [
   // can act on it. Once daily; the per-medication stamp keeps it at
   // one push per threshold crossing.
   [MEDICATION_LOW_STOCK_QUEUE, MEDICATION_LOW_STOCK_CRON],
-  // S5 — daily-briefing fallback slot. Ticks every 15 min; the per-user
+  // Daily-briefing fallback slot. Ticks every 15 min; the per-user
   // local-hour gate inside the tick selects each user's fixed morning slot, so
   // one UTC cron serves every timezone. The `push_attempts` cap suppresses it
   // when the sleep-arrival finalisation push already fired this morning.
@@ -383,6 +338,7 @@ export async function registerStatusQueues(
   boss: PgBoss,
 ): Promise<readonly string[]> {
   await createAndSchedule(boss, allQueues, schedules, queuePolicies);
+  await retireQueues(boss, RETIRED_STATUS_QUEUES);
 
   await createAndWork<GeneralStatusPayload>(
     boss,
@@ -391,55 +347,7 @@ export async function registerStatusQueues(
     lockedPass(
       GENERAL_STATUS_QUEUE,
       () => WHOLE_PASS,
-      handleGeneralStatusGenerate,
-    ),
-  );
-  await createAndWork<BloodPressureStatusPayload>(
-    boss,
-    BLOOD_PRESSURE_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(
-      BLOOD_PRESSURE_STATUS_QUEUE,
-      () => WHOLE_PASS,
-      handleBloodPressureStatusGenerate,
-    ),
-  );
-  await createAndWork<WeightStatusPayload>(
-    boss,
-    WEIGHT_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(
-      WEIGHT_STATUS_QUEUE,
-      () => WHOLE_PASS,
-      handleWeightStatusGenerate,
-    ),
-  );
-  await createAndWork<PulseStatusPayload>(
-    boss,
-    PULSE_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(PULSE_STATUS_QUEUE, () => WHOLE_PASS, handlePulseStatusGenerate),
-  );
-  await createAndWork<BmiStatusPayload>(
-    boss,
-    BMI_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(BMI_STATUS_QUEUE, () => WHOLE_PASS, handleBmiStatusGenerate),
-  );
-  await createAndWork<MoodStatusPayload>(
-    boss,
-    MOOD_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(MOOD_STATUS_QUEUE, () => WHOLE_PASS, handleMoodStatusGenerate),
-  );
-  await createAndWork<MedicationComplianceStatusPayload>(
-    boss,
-    MEDICATION_COMPLIANCE_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(
-      MEDICATION_COMPLIANCE_STATUS_QUEUE,
-      () => WHOLE_PASS,
-      handleMedicationComplianceStatusGenerate,
+      heavyLane(GENERAL_STATUS_QUEUE, handleGeneralStatusGenerate),
     ),
   );
   // v1.7.0 — nightly comprehensive-insight pre-generation.
@@ -465,10 +373,14 @@ export async function registerStatusQueues(
         job.data?.force && job.data.userId
           ? `user:${job.data.userId}`
           : WHOLE_PASS,
-      handleInsightPregenerateJob,
+      heavyLane(
+        INSIGHT_PREGENERATE_QUEUE,
+        handleInsightPregenerateJob,
+        (job) => !(job.data?.force && job.data.userId),
+      ),
     ),
   );
-  // S4 — event-driven morning digest refresh. One forced comprehensive
+  // Event-driven morning digest refresh. One forced comprehensive
   // regeneration per user per local morning, enqueued by the sleep-arrival
   // trigger. Single-flight: the enqueue-side singletonKey already collapses a
   // night's samples into one job, and the handler's marker re-check makes a
@@ -495,7 +407,7 @@ export async function registerStatusQueues(
               "morning_refresh",
               `${result.status}:${result.comprehensive ?? "none"}`,
             );
-            // S5 — the day just finalised (last night's sleep folded in), so
+            // The day just finalised (last night's sleep folded in), so
             // this is the natural, event-driven moment to fire the calm morning
             // push carrying the FINAL digest. Fully fault-isolated inside the
             // seam; the opt-in / morning-window / once-per-day gates all live
@@ -682,7 +594,7 @@ export async function registerStatusQueues(
     { localConcurrency: WORKOUT_INSIGHT_GENERATE_CONCURRENCY },
     handleWorkoutInsightGenerate,
   );
-  // S5 — daily-briefing fallback slot. Single-flight; the `push_attempts`
+  // Daily-briefing fallback slot. Single-flight; the `push_attempts`
   // frequency cap makes an overlapping tick a no-op (a second same-day attempt
   // is suppressed), and the tick only loads a digest for opted-in users at
   // their exact local fallback hour. No provider call — it reads the cached
@@ -796,49 +708,56 @@ export async function registerStatusQueues(
     lockedPass(
       PERIOD_NARRATIVE_QUEUE,
       (job) => (job.data?.userId ? `user:${job.data.userId}` : WHOLE_PASS),
-      async (jobs): Promise<JobOutcome> => {
-        // Two modes on one queue, so the outcome counts them separately: a
-        // non-boundary night is a scheduled pass that generated nothing, which
-        // is a success with zero counts, not an idle queue.
-        let singleUser = 0;
-        let scheduled = 0;
-        let generated = 0;
-        let failed = 0;
-        let stoppedEarly = false;
-        for (const job of jobs) {
-          try {
-            if (job.data?.userId) {
-              await warmOneNarrative(job.data);
-              singleUser++;
-            } else {
-              const summary = await runPeriodNarrativeWarm(getWorkerPrisma(), {
-                shouldStop: jobBudget(jobs),
+      heavyLane(
+        PERIOD_NARRATIVE_QUEUE,
+        async (jobs): Promise<JobOutcome> => {
+          // Two modes on one queue, so the outcome counts them separately: a
+          // non-boundary night is a scheduled pass that generated nothing, which
+          // is a success with zero counts, not an idle queue.
+          let singleUser = 0;
+          let scheduled = 0;
+          let generated = 0;
+          let failed = 0;
+          let stoppedEarly = false;
+          for (const job of jobs) {
+            try {
+              if (job.data?.userId) {
+                await warmOneNarrative(job.data);
+                singleUser++;
+              } else {
+                const summary = await runPeriodNarrativeWarm(
+                  getWorkerPrisma(),
+                  {
+                    shouldStop: jobBudget(jobs),
+                  },
+                );
+                scheduled++;
+                generated += summary.generated;
+                failed += summary.failed;
+                stoppedEarly ||= summary.stoppedEarly;
+                workerLog(
+                  "info",
+                  `[period-narrative] periods=${summary.periods.join(",") || "none"} total=${summary.total} generated=${summary.generated} cached=${summary.cached} skipped=${summary.skipped} insufficient=${summary.insufficient} failed=${summary.failed} budget=${summary.budgetBlocked}`,
+                );
+              }
+            } catch (err) {
+              recordError();
+              await reportWorkerError(PERIOD_NARRATIVE_QUEUE, err, {
+                mode: job.data?.userId ? "single-user" : "scheduled",
               });
-              scheduled++;
-              generated += summary.generated;
-              failed += summary.failed;
-              stoppedEarly ||= summary.stoppedEarly;
-              workerLog(
-                "info",
-                `[period-narrative] periods=${summary.periods.join(",") || "none"} total=${summary.total} generated=${summary.generated} cached=${summary.cached} skipped=${summary.skipped} insufficient=${summary.insufficient} failed=${summary.failed} budget=${summary.budgetBlocked}`,
-              );
+              throw err;
             }
-          } catch (err) {
-            recordError();
-            await reportWorkerError(PERIOD_NARRATIVE_QUEUE, err, {
-              mode: job.data?.userId ? "single-user" : "scheduled",
-            });
-            throw err;
           }
-        }
-        return jobDone({
-          single_user: singleUser,
-          scheduled,
-          generated,
-          failed,
-          stopped_early: stoppedEarly,
-        });
-      },
+          return jobDone({
+            single_user: singleUser,
+            scheduled,
+            generated,
+            failed,
+            stopped_early: stoppedEarly,
+          });
+        },
+        (job) => !job.data?.userId,
+      ),
     ),
   );
   // v1.11.1 — combined Coach memory refresh: rolling conversation summary +
@@ -875,7 +794,7 @@ export async function registerStatusQueues(
     },
   );
 
-  // v1.22 (M4) — daily Coach-reminder sweep. Single-flight; surfacing an
+  // v1.22 — daily Coach-reminder sweep. Single-flight; surfacing an
   // overdue reminder into the user's Coach thread and minting plan-review
   // reminders are both idempotent across re-fires (an already-surfaced
   // reminder is not re-written; a plan whose reviewDate was cleared is not
@@ -918,7 +837,7 @@ export async function registerStatusQueues(
     },
   );
 
-  // v1.22 (W9, C2) — n-of-1 experiment review worker: reads the plan-review
+  // v1.22 — n-of-1 experiment review worker: reads the plan-review
   // reminders the sweep minted and writes the grounded before/after read-back
   // into the plan's encrypted outcome column, flipping it to `reviewed`.
   // Idempotent (a reviewed plan is not re-processed). No provider call, no push.

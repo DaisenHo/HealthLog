@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import { DailyBriefing } from "../daily-briefing";
 import type { DailyBriefing as DailyBriefingPayload } from "@/lib/ai/schema";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // The updated-at footer reads the profile timezone via `useAuth`; stub it so the
 // SSR render does not reach for a QueryClient the static-markup test omits.
@@ -15,7 +18,7 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 /**
- * v1.4.20 phase B1 — full-width Daily Briefing card.
+ * v1.4.20 — full-width Daily Briefing card.
  *
  * The card sits below the hero strip on `/insights` and renders the
  * narrative paragraph + 0-5 key-finding rows produced by the AI
@@ -174,7 +177,7 @@ describe("<DailyBriefing>", () => {
   });
 
   it("renders the 'Updated today, <time>' caption when updatedAt is supplied", () => {
-    // v1.22 (W6) — the footer now uses `formatUpdatedLabel`: a same-day
+    // v1.22 — the footer now uses `formatUpdatedLabel`: a same-day
     // timestamp reads "Updated today, HH:MM". The label derives "today" from the
     // real clock in the profile timezone (Europe/Berlin), so freeze the clock to
     // a fixed mid-day instant and base `updatedAt` on it — otherwise a run that
@@ -205,7 +208,7 @@ describe("<DailyBriefing>", () => {
   });
 
   it("hides the keyFindings section when the array is empty", () => {
-    // v1.4.27 B1 — the leading paragraph dropped; the card now renders
+    // v1.4.27 — the leading paragraph dropped; the card now renders
     // only the header + (when present) the findings list. With both
     // gone the populated branch produces no body content, which the
     // hero strip already covers.
@@ -268,7 +271,7 @@ describe("<DailyBriefing>", () => {
     expect(html).not.toContain('data-slot="daily-briefing-meta-slot"');
   });
 
-  // v1.39 (J1) — the card has no "no provider" state of its own any more.
+  // v1.39 — the card has no "no provider" state of its own any more.
   // It only mounts while the briefing capability is available, which
   // implies a provider; a missing provider is said once by the setup hint on
   // the overview. The empty state therefore always offers the regenerate CTA.

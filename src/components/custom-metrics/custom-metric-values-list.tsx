@@ -42,6 +42,7 @@ export function CustomMetricValuesList({
     data: list,
     isLoading,
     isError,
+    error,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -76,6 +77,7 @@ export function CustomMetricValuesList({
   if (isError) {
     return (
       <QueryErrorCard
+        error={error}
         description={t("customMetrics.loadError")}
         onRetry={() => void refetch()}
       />

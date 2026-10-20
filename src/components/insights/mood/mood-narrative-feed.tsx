@@ -65,7 +65,7 @@ export function MoodNarrativeFeed({ items }: { items: MoodNarrativeItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    // v1.12.4 (C2) — the takeaways are short one-liners, so a single
+    // v1.12.4 — the takeaways are short one-liners, so a single
     // full-width column wasted horizontal space and stacked into a long
     // ladder. Lay them two-up on anything wider than a phone; a lone
     // takeaway still spans the row rather than orphaning half of it.

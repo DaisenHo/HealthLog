@@ -34,6 +34,8 @@ export interface UseMoodDayResult {
    *  carried no entry. */
   entries: MoodDayEntry[] | undefined;
   isError: boolean;
+  /** The failed read's error, for the error row to read. */
+  error: unknown;
   refetch: () => void;
 }
 
@@ -48,7 +50,7 @@ export function useMoodDay(
   date: string | undefined,
   enabled: boolean,
 ): UseMoodDayResult {
-  const { data, isError, refetch } = useQuery({
+  const { data, isError, error, refetch } = useQuery({
     queryKey: queryKeys.moodEntriesDay(date ?? ""),
     queryFn: () => {
       const params = new URLSearchParams({
@@ -66,6 +68,7 @@ export function useMoodDay(
   return {
     entries: data?.entries,
     isError,
+    error,
     refetch: () => void refetch(),
   };
 }

@@ -178,7 +178,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
       className="w-60"
       sideOffset={8}
     >
-      {/* R20 — the user header is the direct route into the account
+      {/* The user header is the direct route into the account
           settings. Clicking the avatar / name jumps straight to
           `/settings/account` rather than making the user hunt for a
           separate "Settings" entry. */}
@@ -295,7 +295,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="border-sidebar-border border-t p-3">
       <div className="flex items-center gap-3 px-2 py-1">
-        {/* R20 — the avatar + name in the expanded footer routes straight
+        {/* The avatar + name in the expanded footer routes straight
             into the account settings; the kebab to the right still opens
             the rest of the user menu. */}
         <FooterIdentity
@@ -501,7 +501,7 @@ export function SidebarNav() {
   // with no sub-item expansion in the global sidebar — `<AdminShell>`
   // renders its own per-section nav inside the page itself.
   const onAdminPage = pathname === "/admin" || pathname.startsWith("/admin/");
-  // v1.17.1 (F-1) — the sidebar renders the one shared destination model
+  // v1.17.1 — the sidebar renders the one shared destination model
   // (`nav-model.ts`), the same ordered list the mobile bottom-nav derives
   // its "More" hub from. v1.18.0 — entries are filtered by the account's
   // resolved module map (mood, cycle, labs, coach, achievements …); cycle +

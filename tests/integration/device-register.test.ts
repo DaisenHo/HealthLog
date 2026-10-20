@@ -1,5 +1,5 @@
 /**
- * v1.4.23 W6 follow-up — `POST /api/devices` integration test.
+ * v1.4.23 — `POST /api/devices` integration test.
  *
  * Locks in three guarantees:
  *

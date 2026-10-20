@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const OWNER = {
   accountId: "acct-owner",
@@ -172,7 +175,7 @@ describe("<ChartOverlayControls>", () => {
   });
 
   /**
-   * v1.4.25 W3f — comparison-baseline grey-out when the parent chart
+   * v1.4.25 — comparison-baseline grey-out when the parent chart
    * reports `hasComparisonData=false`. The disabled state communicates
    * "you selected a comparison but there's no prior-period series to
    * paint" instead of silently hiding the overlay.

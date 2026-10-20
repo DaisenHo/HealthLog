@@ -6,7 +6,7 @@ import { useReportWebVitals } from "next/web-vitals";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 
 /**
- * v1.4.28 R3d — client-side mount that pipes Web Vitals measurements
+ * v1.4.28 — client-side mount that pipes Web Vitals measurements
  * to `/api/internal/web-vitals`.
  *
  * Next 16 ships `useReportWebVitals` as the supported hook for
@@ -14,7 +14,7 @@ import { apiFetchRaw } from "@/lib/api/api-fetch";
  * navigation. The hook fires once per metric per page load, so a
  * heavy navigation can produce up to six beacons per route change.
  *
- * v1.4.33 F19 — the reporter previously posted EVERY measurement on
+ * v1.4.33 — the reporter previously posted EVERY measurement on
  * EVERY page-load. In production the runtime audit captured
  * `POST /api/internal/web-vitals 429` for almost every metric after
  * the first navigation: six beacons × N navigations burned through

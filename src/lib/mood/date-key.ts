@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W7b — per-row timezone attribution for MoodEntry rows.
+ * v1.4.25 — per-row timezone attribution for MoodEntry rows.
  *
  * Background. Up to v1.4.24 the mood-entries POST handler computed
  * `MoodEntry.date` (YYYY-MM-DD) by formatting `moodLoggedAt` in

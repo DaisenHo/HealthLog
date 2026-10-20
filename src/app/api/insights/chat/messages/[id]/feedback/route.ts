@@ -1,5 +1,5 @@
 /**
- * v1.4.23 H7 — Coach assistant-message helpful/unhelpful feedback.
+ * v1.4.23 — Coach assistant-message helpful/unhelpful feedback.
  *
  * POST /api/insights/chat/messages/:id/feedback
  *   Body: { rating: "helpful" | "unhelpful", reason?: string }
@@ -129,7 +129,7 @@ async function handlePost(request: NextRequest, ctx: RouteContext) {
       data: {
         userId: user.id,
         recommendationId: messageId,
-        // v1.4.23 reconcile (Sr-H3): no plaintext prose. The FK
+        // v1.4.23: no plaintext prose. The FK
         // resolves the message at read-time when (and only when) a
         // future surface needs to render it.
         coachMessageId: messageId,

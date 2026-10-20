@@ -114,7 +114,7 @@ async function postRestore(request: NextRequest): Promise<Response> {
     // hard-evict so the SWR readers don't serve the pre-restore body.
     invalidateUserMeasurements(user.id, { evict: true });
 
-    // v1.37.19 (C2-F1) — shared post-mutation tail; mirrors the
+    // v1.37.19 — shared post-mutation tail; mirrors the
     // bulk-delete path.
     await afterMeasurementMutation(
       user.id,

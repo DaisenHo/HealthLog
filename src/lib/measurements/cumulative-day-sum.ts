@@ -1,5 +1,5 @@
 /**
- * v1.4.36 W4c — Pure day-bucket sum picker for cumulative metrics.
+ * v1.4.36 — Pure day-bucket sum picker for cumulative metrics.
  *
  * SLEEP_DURATION already runs this shape inline in
  * `src/app/api/analytics/route.ts` lines 198-225: pick a single
@@ -67,7 +67,7 @@ import type { SourcePriorityMetricKey } from "@/lib/validations/source-priority"
 import { CUMULATIVE_HK_TYPES } from "./apple-health-mapping";
 
 /**
- * v1.4.36 W4c / v1.4.37 W10 — Canonical list of cumulative metric
+ * v1.4.36 v1.4.37 — Canonical list of cumulative metric
  * types whose dashboard tile should read the *day's sum* and not the
  * latest slice.
  *
@@ -99,7 +99,7 @@ export function isCumulativeDaySumType(
 }
 
 /**
- * v1.4.36 W4c / v1.4.37 W10 — cumulative MeasurementType →
+ * v1.4.36 v1.4.37 — cumulative MeasurementType →
  * SourcePriorityMetricKey lookup for `pickCanonicalSourceRows`.
  *
  * Returns `null` for types without a dedicated priority ladder
@@ -178,7 +178,7 @@ export function metricKeyForType(
     case "RECOVERY_SCORE":
       return "recovery";
     case "STRESS_SCORE":
-      // v1.18.10 I-5 — ladder the COMPUTED-vs-device stress producer so the
+      // v1.18.10 — ladder the COMPUTED-vs-device stress producer so the
       // rollup source collapse is deterministic the instant a second producer
       // (Oura `daily_stress`) is enabled, rather than falling to the
       // alphabetical rank-90 tiebreak in `collapseRollupRowsBySource`.

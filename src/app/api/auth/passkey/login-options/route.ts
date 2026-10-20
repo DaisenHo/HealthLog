@@ -15,7 +15,7 @@ export const POST = apiHandler(async (request: Request) => {
     });
   }
 
-  // v1.4.43 W13 M-4 — tighter shared bucket on trust-chain misconfig.
+  // v1.4.43 — tighter shared bucket on trust-chain misconfig.
   const rl = await checkAuthSurfaceRateLimit(
     request,
     "auth:passkey-login-options",

@@ -199,7 +199,7 @@ async function commitOcrRows(request: NextRequest) {
 
   const inserted: ReturnType<typeof serialiseLabResult>[] = [];
   const skipped: OcrSkippedRowDto[] = [];
-  // S9 — the rows actually written, kept for the vault cross-link so a re-commit
+  // The rows actually written, kept for the vault cross-link so a re-commit
   // (every row a duplicate → nothing inserted) links nothing new.
   const linkable: InsertedLabForLink[] = [];
   // Tracks the keys already written in THIS request so an in-document duplicate
@@ -209,7 +209,7 @@ async function commitOcrRows(request: NextRequest) {
   const writtenInBatch = new Set<string>();
 
   const tz = await resolveUserTimezone(user.id);
-  // v1.43 (D1223) — the account's markers and aliases, loaded once: every row
+  // v1.43 — the account's markers and aliases, loaded once: every row
   // resolves its name against them (name, alias, catalog abbreviation) the
   // way the review did, and a marker minted for one row is found by the next.
   const markerIndex = await loadMarkerIndex(prisma, user.id);
@@ -361,7 +361,7 @@ async function commitOcrRows(request: NextRequest) {
   }
   if (inserted.length > 0) invalidateUserHealthScore(user.id);
 
-  // S9 — cross-link the freshly inserted labs to the vault document the client
+  // Cross-link the freshly inserted labs to the vault document the client
   // filed the scanned bytes into. Best-effort: the labs are the authoritative
   // write, so a link failure (module off, foreign / missing document) never
   // fails the commit. Owner + module checks live inside the linker.

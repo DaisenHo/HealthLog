@@ -5,7 +5,7 @@ import { DEFAULT_COACH_PREFS } from "@/lib/validations/coach-prefs";
 import { getCoachSystemPrompt } from "../system-prompt";
 
 /**
- * v1.4.22 Wave 3 B1 — pins the Coach system prompt rewrite.
+ * v1.4.22 — pins the Coach system prompt rewrite.
  *
  * Asserts that:
  *   1. PROMPT_VERSION sits on the v1.4.22 train.
@@ -57,7 +57,7 @@ describe("getCoachSystemPrompt — EN", () => {
     expect(prompt).toMatch(/5\. Motivational-interviewing micro-moves\./);
     expect(prompt).toMatch(/6\. Redirect off-topic input gracefully\./);
     expect(prompt).toMatch(/7\. Ground every number in the SNAPSHOT\./);
-    // v1.4.25 W5b — GROUND RULE 8 added on the Coach side: bans the
+    // v1.4.25 — GROUND RULE 8 added on the Coach side: bans the
     // raw enum identifiers from the user-facing reply text and from
     // the evidence-block labels.
     expect(prompt).toMatch(/8\. Internal metric identifiers/);
@@ -186,7 +186,7 @@ describe("getCoachSystemPrompt — DE", () => {
     );
     expect(prompt).toMatch(/6\. Off-topic-Eingaben elegant umlenken\./);
     expect(prompt).toMatch(/7\. Verankere jede Zahl im SNAPSHOT\./);
-    // v1.4.25 W5b — GROUND RULE 8 on the German Coach side.
+    // v1.4.25 — GROUND RULE 8 on the German Coach side.
     expect(prompt).toMatch(/8\. Interne Metrik-Identifier/);
   });
 
@@ -241,7 +241,7 @@ describe("getCoachSystemPrompt — DE", () => {
 });
 
 /**
- * v1.4.23 H4 — per-user prompt-tuning prefix. Default prefs leave the
+ * v1.4.23 — per-user prompt-tuning prefix. Default prefs leave the
  * prompt unchanged so the v1.4.22 train stays in place; non-default
  * tone / verbosity selections prepend a short OVERRIDE paragraph.
  */

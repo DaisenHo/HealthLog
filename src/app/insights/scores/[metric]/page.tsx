@@ -34,7 +34,7 @@ const SLUG_TO_METRIC: Record<string, AnatomyMetricId> = {
 };
 
 /**
- * v1.15.12 B1 — the explainer-body key suffix per score, feeding
+ * v1.15.12 — the explainer-body key suffix per score, feeding
  * `insights.subPage.explainer.<suffix>Body` through `SubPageShell`'s
  * `explainerMetric` prop (mirrors the metric sub-pages). `SLEEP_SCORE`
  * uses a distinct `sleepScore` suffix so it never collides with the
@@ -96,7 +96,7 @@ export default function CompositeScorePage() {
       }
       coachLaunch
     >
-      {/* 2026-07-17 UX/IA audit M4 — this anatomy view and the `/insights/recovery`
+      {/* This anatomy view and the `/insights/recovery`
           composite-wearable page both used to render as plain "Recovery", a
           same-name/different-content trap: the score ring here promised one
           thing, the nav pill led somewhere else with no pointer back. The

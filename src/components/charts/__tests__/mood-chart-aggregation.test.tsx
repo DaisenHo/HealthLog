@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.15 Fix 3: the mood chart used to render raw daily points only
+ * v1.4.15: the mood chart used to render raw daily points only
  * regardless of window length, while every other dashboard chart
  * (BP, weight, pulse) auto-aggregated to weekly / monthly when the
  * visible range got long. The aggregation helpers + chip are

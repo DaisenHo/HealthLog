@@ -1,5 +1,5 @@
 /**
- * v1.4.23 H4 — per-user Coach prompt-tuning preferences route.
+ * v1.4.23 — per-user Coach prompt-tuning preferences route.
  *
  * Round-trips through GET → PUT → GET and asserts that:
  *   - the GET returns the documented defaults when the row is null
@@ -104,7 +104,7 @@ describe("PUT /api/auth/me/coach-prefs", () => {
       }),
     );
     expect(putRes.status).toBe(200);
-    // v1.32.22 (M4) — the write echoes the fresh optimistic-concurrency
+    // v1.32.22 — the write echoes the fresh optimistic-concurrency
     // `updatedAt` token alongside the canonical prefs.
     const putEnv = (await putRes.json()) as {
       data: typeof expected & { updatedAt?: string };

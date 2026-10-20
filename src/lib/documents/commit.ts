@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — commit an APPROVED staged fact into a structured store.
+ * v1.25 — commit an APPROVED staged fact into a structured store.
  *
  * The only write path out of the staging area. Each approved fact is routed to
  * its existing structured store through the same field-by-field create the
@@ -72,7 +72,7 @@ function statedDateOrNow(date: string | null): Date {
 }
 
 /**
- * v1.43 (D1223) — the marker the person picked for an OBSERVATION on the
+ * v1.43 — the marker the person picked for an OBSERVATION on the
  * review screen, and whether to remember the label as its alias.
  */
 export interface ObservationChoice {

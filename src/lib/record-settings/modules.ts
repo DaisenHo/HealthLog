@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — the one write path for a record's module state.
+ * v1.39 — the one write path for a record's module state.
  *
  * Two surfaces decide a record's modules and they must not disagree about how
  * the decision is stored. `PATCH /api/record-settings/modules` (v1.38.15) is a

@@ -7,7 +7,7 @@ import {
 } from "../schema";
 
 /**
- * v1.4.16 phase B5c — `recommendation.rationale` validation.
+ * v1.4.16 — `recommendation.rationale` validation.
  *
  * The Oura-style explainability card is fed by a per-recommendation
  * `rationale` object that records:

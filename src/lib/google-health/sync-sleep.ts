@@ -147,7 +147,7 @@ async function syncSleepSessions(
   );
   // `markSynced` is owned by the orchestrator (`syncUserGoogleHealth`).
 
-  // S4 — trigger the debounced morning refresh on a last-night segment landing
+  // Trigger the debounced morning refresh on a last-night segment landing
   // (mirrors the Withings / WHOOP / Apple seams). Google Health is a first-
   // class sleep transport, so without this a Google-Health user's morning
   // refresh never fired and their day stayed stuck at the 04:30 pre-pass.

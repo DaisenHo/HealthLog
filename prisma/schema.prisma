@@ -136,7 +136,18 @@ model User {
   useCentralCodex            Boolean   @default(false) @map("use_central_codex")
   insightsPrivacyMode        String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
   insightsCachedAt           DateTime? @map("insights_cached_at")
-  insightsCachedText         String?   @map("insights_cached_text") // cached JSON output
+  /// @internal: legacy plaintext cache of the AI insights payload, read only
+  /// as a fallback for rows the free-text encryption backfill has not reached
+  /// yet (v1.43.7). Every write since then goes to `insightsCachedTextEncrypted`
+  /// and leaves this NULL; the backfill seals and nulls it on the old rows.
+  /// DROP this column in a later release, once the backfill reports zero
+  /// remaining rows on every instance.
+  insightsCachedText         String?   @map("insights_cached_text")
+  /// v1.43.7 — the cached AI insights payload (briefing, per-domain readings,
+  /// recommendations; JSON), AES-256-GCM binary layout under
+  /// `INSIGHTS_CACHED_TEXT_AAD`. Read and written only through
+  /// `src/lib/insights/cached-text-cipher.ts`.
+  insightsCachedTextEncrypted Bytes?   @map("insights_cached_text_encrypted")
   // Language the cached text was generated in. The cache is one slot per
   // user, so a reader in another language must not be served it: the
   // snapshot briefing lift and the advisor read treat a tag that differs
@@ -305,6 +316,11 @@ model User {
   // First-connect full-history backfill marker (self-converging discovery
   // predicate `strava_backfill_completed_at IS NULL`), mirroring WHOOP/Fitbit.
   stravaBackfillCompletedAt   DateTime? @map("strava_backfill_completed_at")
+  // Where an unfinished backfill picks up: the start of the oldest activity
+  // the last run read. A history longer than one run's page ceiling is read
+  // in runs that each walk further back from here, instead of every run
+  // starting again at the newest page. Cleared when the backfill completes.
+  stravaBackfillResumeBefore  DateTime? @map("strava_backfill_resume_before")
 
   // Locale (null = use system/admin default)
   locale String? @map("locale") // "de" | "en" | null
@@ -2094,6 +2110,11 @@ model Measurement {
   // limit+1`. Without this index Postgres filters by `userId` then sorts
   // the user's entire measurement set per page; the delta drain allows
   // 120 pulls/min/user. See migration 0096.
+  // Because `updatedAt` is indexed here, an update that moves it can never
+  // be heap-only. The trigger `measurements_noop_update_keeps_stamps`
+  // (migration 0412) keeps `updatedAt` and `syncVersion` on an update that
+  // changes nothing else, so those stay HOT; the table also carries
+  // `fillfactor = 85` and a 5 % autovacuum threshold from the same migration.
   @@index([userId, updatedAt, id])
   // `measurements_legacy_step_consolidation_idx` is a partial index
   // over `type = 'ACTIVITY_STEPS' AND deleted_at IS NULL` — see

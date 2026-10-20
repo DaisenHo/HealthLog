@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b — Withings Activity sync.
+ * v1.4.25 — Withings Activity sync.
  *
  * Pulls daily aggregates from `POST /v2/measure?action=getactivity`
  * and writes one Measurement row per (date, metric). The webhook
@@ -49,7 +49,11 @@ import {
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 
-import { hasActivityScope } from "./client";
+import {
+  hasActivityScope,
+  WITHINGS_MAX_PAGES,
+  withingsNextOffset,
+} from "./client";
 import {
   WithingsApiError,
   classifyWithingsResponse,
@@ -66,6 +70,7 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 const WITHINGS_MEASURE_URL = "https://wbsapi.withings.net/v2/measure";
 
@@ -145,57 +150,51 @@ export async function fetchWithingsActivity(
     data_fields: "steps,distance,calories",
   };
 
-  const results: WithingsActivityEntry[] = [];
-  let offset = 0;
-  let pageCount = 0;
-  while (true) {
-    const params = new URLSearchParams({
-      ...baseParams,
-      offset: String(offset),
-    });
-    const pageStart = performance.now();
-    const res = await safeFetch(WITHINGS_MEASURE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: params.toString(),
-    });
-    const json = await res.json();
-    const verdict = classifyWithingsResponse(res.status, json);
-    getEvent()?.addExternalCall({
-      service: "withings",
-      method: `fetchWithingsActivity(page=${pageCount})`,
-      duration_ms: Math.round(performance.now() - pageStart),
-      status: res.status,
-      error: verdict.classification === "success" ? undefined : verdict.reason,
-    });
-    if (verdict.classification !== "success") {
-      throw new WithingsApiError({
-        verb: "activity",
-        classification: verdict.classification,
-        withingsStatus: verdict.withingsStatus,
-        reason: verdict.reason,
-        upstreamError: typeof json?.error === "string" ? json.error : undefined,
+  const walk = await walkPages<number, WithingsActivityEntry>(
+    "withings.activity",
+    WITHINGS_MAX_PAGES,
+    async (cursor, page) => {
+      const offset = cursor ?? 0;
+      const params = new URLSearchParams({
+        ...baseParams,
+        offset: String(offset),
       });
-    }
-
-    const body = json.body ?? {};
-    const activities: WithingsActivityEntry[] = body.activities ?? [];
-    for (const entry of activities) {
-      results.push(entry);
-    }
-
-    const hasMore = body.more === true || body.more === 1;
-    if (!hasMore) break;
-    const nextOffset = Number(body.offset);
-    if (!Number.isFinite(nextOffset) || nextOffset <= offset) break;
-    offset = nextOffset;
-    pageCount += 1;
-    if (pageCount > 1000) break;
-  }
-  return results;
+      const pageStart = performance.now();
+      const res = await safeFetch(WITHINGS_MEASURE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: params.toString(),
+      });
+      const json = await res.json();
+      const verdict = classifyWithingsResponse(res.status, json);
+      getEvent()?.addExternalCall({
+        service: "withings",
+        method: `fetchWithingsActivity(page=${page})`,
+        duration_ms: Math.round(performance.now() - pageStart),
+        status: res.status,
+        error:
+          verdict.classification === "success" ? undefined : verdict.reason,
+      });
+      if (verdict.classification !== "success") {
+        throw new WithingsApiError({
+          verb: "activity",
+          classification: verdict.classification,
+          withingsStatus: verdict.withingsStatus,
+          reason: verdict.reason,
+          upstreamError:
+            typeof json?.error === "string" ? json.error : undefined,
+        });
+      }
+      const body = json.body ?? {};
+      const activities: WithingsActivityEntry[] = body.activities ?? [];
+      return { items: activities, next: withingsNextOffset(body, offset) };
+    },
+    0,
+  );
+  return walk.items;
 }
 
 /**
@@ -281,7 +280,7 @@ export async function syncUserActivity(
       today,
     );
   } catch (err) {
-    // v1.4.43 W7-B3 — typed-classification path. The thrown
+    // v1.4.43 — typed-classification path. The thrown
     // `WithingsApiError` from `fetchWithingsActivity` carries the
     // verdict + `withingsStatus` directly; `recordWithingsSyncFailure`
     // routes it through `classifyError`, which falls back to the regex
@@ -330,7 +329,7 @@ export async function syncUserActivity(
   }
 
   let imported = 0;
-  // W-2 — a swallowed batch-write must not read as a clean sync. The catch
+  // A swallowed batch-write must not read as a clean sync. The catch
   // below sets this so the tail stamps success ONLY when the write landed; a
   // persistent write bug then accrues strikes instead of being reset by its
   // own success stamp every tick.
@@ -341,7 +340,7 @@ export async function syncUserActivity(
   // `source=rollup` fast-path otherwise misses Withings activity days.
   const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
 
-  // v1.20.2 F3 — flatten (entry × field) into the concrete rows the sync
+  // v1.20.2 — flatten (entry × field) into the concrete rows the sync
   // wants to land, then batch the reads + writes. The pre-v1.20.2 shape
   // ran a per-(entry, field) `findFirst` + `update`/`create`, i.e.
   // ~entries × 3 × 2 round-trips (≈ 2,190 on a 365-day backfill). The
@@ -562,7 +561,7 @@ export async function syncUserActivity(
     );
   }
 
-  // W-2 — only a clean write stamps success. A swallowed batch-write left the
+  // Only a clean write stamps success. A swallowed batch-write left the
   // ledger honest via the transient failure recorded above.
   if (!writeFailed) {
     await recordSyncSuccess(userId, "withings", {

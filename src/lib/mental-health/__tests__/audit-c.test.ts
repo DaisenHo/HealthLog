@@ -80,7 +80,7 @@ describe("AUDIT-C instrument", () => {
   });
 
   it("carries a standard-drink sentence for every app language", () => {
-    for (const locale of ["de", "en", "es", "fr", "it", "pl", "ko"]) {
+    for (const locale of ["de", "en", "es", "fr", "it", "pl", "ko", "nl"]) {
       expect(AUDIT_C_STANDARD_DRINK[locale]?.length).toBeGreaterThan(20);
     }
   });

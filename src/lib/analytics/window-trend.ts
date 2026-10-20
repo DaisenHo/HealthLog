@@ -12,7 +12,7 @@
  *                         for long ("All") ranges where the per-week rate
  *                         rounds to ±0 in the 1-decimal formatter.
  *
- * v1.4.16 Fix A8b — the maintainer reported the chart trend overlay reads
+ * v1.4.16 — the maintainer reported the chart trend overlay reads
  * "+0.0 kg/Woche" on the All filter, even when their weight clearly
  * shifted across years. Root cause: `weeklyDelta = (last − first) / days
  * × 7` is mathematically correct but visually rounds to zero whenever

@@ -105,7 +105,7 @@ export const POST = apiHandler(
     const { user, actor } = await requireRecordAuth("manage", "medications");
 
     const { id } = await params;
-    // v1.5.5 C-E3-3 — route ownership through the shared helper so the
+    // v1.5.5 — route ownership through the shared helper so the
     // 404 leak shape stays identical across every `[id]/**` handler.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
@@ -136,7 +136,7 @@ export const POST = apiHandler(
 
     const parsed = validatedImportSchema.safeParse(payload);
     if (!parsed.success) {
-      // v1.4.43 W6 — CSV import; preserve the `Invalid format:` prefix
+      // v1.4.43 — CSV import; preserve the `Invalid format:` prefix
       // semantics for the existing client-side branch by setting the
       // `errorCode: "medication.intake.import.invalid_format"` meta.
       // The client UI can now branch on `meta.errorCode` while every

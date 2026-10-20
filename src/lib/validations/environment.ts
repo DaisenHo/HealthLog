@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — environmental-context request validation.
+ * v1.25 — environmental-context request validation.
  *
  * The home location, the travel overrides, and the backfill span. Coordinates
  * are bounded to valid lat/lon; the labels are length-capped plaintext (a city

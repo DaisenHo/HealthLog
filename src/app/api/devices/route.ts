@@ -120,7 +120,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = deviceSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — iOS device-registration multi-issue 422 + audit
+    // v1.4.43 — iOS device-registration multi-issue 422 + audit
     // breadcrumb. APNs-token + bundleId + environment + model + locale
     // can all fail simultaneously on a misconfigured client build.
     const issues = sanitiseZodIssues(parsed.error.issues);

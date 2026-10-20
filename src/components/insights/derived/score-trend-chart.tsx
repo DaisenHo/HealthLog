@@ -203,6 +203,7 @@ export function ScoreTrendChart({
         <Skeleton className={`w-full ${heightClass}`} />
       ) : query.isError ? (
         <ChartErrorState
+          error={query.error}
           title={t("charts.errorTitle")}
           actionLabel={t("common.retry")}
           actionContext={label}

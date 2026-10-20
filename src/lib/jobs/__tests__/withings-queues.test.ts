@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b/c — pg-boss queue registration for Withings activity +
+ * v1.4.25 — pg-boss queue registration for Withings activity +
  * sleep v2 syncs.
  *
  * The reminder-worker imports heavy infrastructure (pg-boss, Prisma

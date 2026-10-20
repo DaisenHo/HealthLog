@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 /**
- * v1.4.15 phase-C5 — `/admin/backups` empty state.
+ * v1.4.15 — `/admin/backups` empty state.
  *
  * The previous build rendered a single-line `<p>No backups recorded
  * yet.</p>` inside the card. Brand-new admins didn't realise the "Run
@@ -83,6 +83,9 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { BackupsSection } from "../backups-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   mocks.queryData = {

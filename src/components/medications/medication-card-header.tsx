@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
- * v1.4.28 FB-G1 — shared medication-list row header.
+ * v1.4.28 — shared medication-list row header.
  *
  * The generic `<MedicationCard>` and the `<Glp1MedicationCard>` carry
  * the same two-line row shape on the medications list page. Both rows
@@ -24,7 +24,7 @@ import { CardHeader, CardTitle } from "@/components/ui/card";
  * ride on line 2 alongside the class label so a narrow viewport keeps a
  * single inline run.
  *
- * v1.7.2 W3 — when `href` is set the name + dose + category region
+ * v1.7.2 — when `href` is set the name + dose + category region
  * becomes a Link to the medication detail page (the former chevron
  * target). The kebab in `actions` is a sibling outside the Link so
  * opening the menu never also navigates.
@@ -57,7 +57,7 @@ export interface MedicationCardHeaderProps {
   stateBadges?: ReactNode;
   actions?: ReactNode;
   /**
-   * v1.7.2 W3 — when set, the name + dose + category region links to the
+   * v1.7.2 — when set, the name + dose + category region links to the
    * medication detail page so the card body is tappable/navigable. The
    * `actions` kebab stays a sibling outside the Link.
    */
@@ -91,7 +91,7 @@ export function MedicationCardHeader({
           Vorsorge / lab-list rows pass `dose=""` and get only the category
           badge. The unit is already localised by `formatDose` at the call site
           (the raw `Medication.dose` carries the English unit key).
-          D-H6 — state badges (without-notification, paused-since, inactive)
+          State badges (without-notification, paused-since, inactive)
           ride their OWN row below (see `stateBadges`) so the canonical row
           stays two lines at 320 px even for a drug carrying a state badge. */}
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">

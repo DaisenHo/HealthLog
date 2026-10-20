@@ -1,5 +1,5 @@
 /**
- * v1.5.5 F-1 H-1 — pin the split title ids on the notifications row.
+ * v1.5.5 — pin the split title ids on the notifications row.
  *
  * The earlier single `TITLE_ID` constant landed on both the section
  * heading (`<MedicationDetailSection titleId={…}>`) and the inner

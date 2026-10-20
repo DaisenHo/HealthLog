@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { TargetEditSheet } from "../target-edit-sheet";
 
 /**
- * v1.4.25 W3f — target-edit dialog. SSR-style assertions because the
+ * v1.4.25 — target-edit dialog. SSR-style assertions because the
  * Radix Dialog body is portalled at runtime; we only check the
  * outer Dialog wiring + the body-mount toggle.
  *
@@ -200,7 +200,7 @@ describe("<TargetEditSheet>", () => {
   });
 
   /**
-   * v1.4.25 W3f — focus-management contract. The dialog's
+   * v1.4.25 — focus-management contract. The dialog's
    * `onOpenAutoFocus` handler must steal focus from Radix's default
    * (the close X button) and place it on the first numeric input so a
    * keyboard user lands on the editable field. We verify the handler

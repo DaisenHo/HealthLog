@@ -1,5 +1,5 @@
 /**
- * v1.4.19 phase A5 — IntegrationStatusPill
+ * v1.4.19 — IntegrationStatusPill
  *
  * The single tag rendered top-right of every integration card. The
  * pill is the ONLY place a connection status surfaces — the maintainer was
@@ -21,6 +21,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { IntegrationStatusPill } from "../integration-status-pill";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(
@@ -95,7 +98,7 @@ describe("IntegrationStatusPill", () => {
     expect(html).toMatch(/just\s+now/i);
   });
 
-  // v1.4.43 W14 — parked-state copy.
+  // v1.4.43 — parked-state copy.
   // Distinct from `error` (red reconnect pill) because the user can
   // resume the integration without redoing the OAuth dance; distinct
   // from `warning` because the persistent streak survived the alert

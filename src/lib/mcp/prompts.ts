@@ -1,5 +1,5 @@
 /**
- * Phase 4 — MCP prompts (user-controlled templated workflows).
+ * MCP prompts (user-controlled templated workflows).
  *
  * Prompts are the slash-command surface a host exposes to the user. Unlike
  * tools (model-controlled), a prompt is picked by the user and returns a set of

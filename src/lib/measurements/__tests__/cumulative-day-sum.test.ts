@@ -12,7 +12,7 @@ import {
 import { RANKED_TYPES } from "@/lib/analytics/source-rank-sql";
 
 /**
- * v1.4.36 W4c — pickCumulativeDaySum unit tests.
+ * v1.4.36 — pickCumulativeDaySum unit tests.
  *
  * The helper bucket-and-sums a series of cumulative samples per
  * `dayKey(measuredAt)`. Tested in pure ISO-date space so the
@@ -112,7 +112,7 @@ describe("isCumulativeDaySumType", () => {
 });
 
 describe("CUMULATIVE_DAY_SUM_TYPES / CUMULATIVE_HK_TYPES parity", () => {
-  // v1.4.37 W10 — single source of truth. The day-sum array is derived
+  // v1.4.37 — single source of truth. The day-sum array is derived
   // from `CUMULATIVE_HK_TYPES` so adding a sixth cumulative HK type to
   // the mapping module automatically flows through every downstream
   // consumer (analytics route, exports, chart). The set equivalence
@@ -125,7 +125,7 @@ describe("CUMULATIVE_DAY_SUM_TYPES / CUMULATIVE_HK_TYPES parity", () => {
 });
 
 describe("cumulativeMetricKey", () => {
-  // v1.4.37 W10 — pinned mapping from MeasurementType →
+  // v1.4.37 — pinned mapping from MeasurementType →
   // SourcePriorityMetricKey for the cumulative analytics fast-path.
   // Every member of CUMULATIVE_HK_TYPES must resolve either to a real
   // SourcePriorityMetricKey (so the canonical-source picker fires) or

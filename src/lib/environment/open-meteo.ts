@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — Open-Meteo client (keyless historical weather + geocoding).
+ * v1.25 — Open-Meteo client (keyless historical weather + geocoding).
  *
  * The single outbound egress for the environmental-context module. Open-Meteo's
  * Historical (Archive) API is keyless, free for non-commercial use, and offers

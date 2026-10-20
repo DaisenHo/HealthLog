@@ -10,7 +10,7 @@ import {
   median,
   okPillar,
   scoreReferenceBand,
-  standardDeviation,
+  readingSpread,
   uniqueSources,
   withinWindow,
 } from "./shared";
@@ -126,7 +126,7 @@ export function computeGlycaemiaPillar(
   const observed = median(values);
   // The behavioural/device noise convention from the design is one half of
   // within-person SD, translated onto this pillar's proportional score scale.
-  const halfSd = standardDeviation(values) * 0.5;
+  const halfSd = readingSpread(values) * 0.5;
   const floorScore = scoreReferenceBand(
     Math.max(0, observed - halfSd),
     FASTING_GLUCOSE_REFERENCE.low,

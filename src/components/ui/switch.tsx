@@ -17,7 +17,7 @@ function Switch({
       data-slot="switch"
       data-size={size}
       className={cn(
-        // v1.4.43 W5-H1 — extend the WCAG 2.5.5 hit target to 44×44 px via
+        // v1.4.43 — extend the WCAG 2.5.5 hit target to 44×44 px via
         // a `::before` pseudo-element while leaving the visual track at
         // 18×32 px. The same trick is used on Input (v1.4.34 IW-G). The
         // wrapping `relative` and `before:absolute … before:inset-[-13px]`

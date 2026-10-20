@@ -83,7 +83,7 @@ export function LifecycleManageBody({
     const previous = paused;
     setPaused(pauseNext);
     try {
-      // v1.5.5 C-E3-2 — body carries `{ active }` only; server derives
+      // v1.5.5 — body carries `{ active }` only; server derives
       // pausedAt. No client-side pausedAt literal.
       await apiPut(`/api/medications/${medicationId}`, { active: !pauseNext });
       await invalidateMedicationReads(queryClient);

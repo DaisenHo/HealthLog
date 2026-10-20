@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W5e — per-user, per-metric-class source priority. When more
+ * v1.4.25 — per-user, per-metric-class source priority. When more
  * than one ingest source ships the same metric for the same day, the
  * analytics aggregator consults this map to pick ONE canonical source
  * per day (so cumulative metrics like steps don't double-count) or to
@@ -14,7 +14,7 @@
  * Persisted as `User.sourcePriorityJson` (nullable Jsonb). Null = use
  * `DEFAULT_SOURCE_PRIORITY` verbatim.
  *
- * v1.4.25 W8c — two-axis extension. The original (W5e) shape carried a
+ * v1.4.25 — two-axis extension. The original (W5e) shape carried a
  * per-metric ladder at the top level (e.g. `weight: ["WITHINGS", …]`).
  * W8c adds two optional containers ON TOP of that:
  *   - `metricPriority`     — the per-metric ladder, identical in shape
@@ -39,7 +39,7 @@ import {
   measurementTypeEnum,
 } from "@/lib/validations/measurement";
 
-// v1.4.25 Fix-G — `annotate` from `@/lib/logging/context` was the
+// v1.4.25 — `annotate` from `@/lib/logging/context` was the
 // canonical breadcrumb for a parse failure, but the helper pulls
 // `node:async_hooks` via `AsyncLocalStorage`. Any client component that
 // reaches for a type-only export here (e.g.
@@ -135,7 +135,7 @@ export const SOURCE_PRIORITY_METRIC_KEYS = [
   // `RECOVERY_SCORE` rows distinguished by source — this ladder lets the
   // same picker resolve native-above-proxy without a second engine.
   "recovery",
-  // v1.18.10 I-5 — native-vs-derived stress. HealthLog computes a COMPUTED
+  // v1.18.10 — native-vs-derived stress. HealthLog computes a COMPUTED
   // HRV-derived `STRESS_SCORE` proxy; a device-native producer (Oura
   // `daily_stress`) is the deferred second source. Laddering it now makes the
   // picker deterministic the instant a second producer is enabled, instead of
@@ -157,7 +157,7 @@ export const SOURCE_PRIORITY_METRIC_KEYS = [
 export type SourcePriorityMetricKey =
   (typeof SOURCE_PRIORITY_METRIC_KEYS)[number];
 
-// v1.4.27 B7 / BL-P4-11-S1 — derive the metric-priority schema shape
+// v1.4.27 — derive the metric-priority schema shape
 // from `SOURCE_PRIORITY_METRIC_KEYS` so the schema and the enum cannot
 // drift. Adding a new metric class is now a single-line constant edit
 // instead of a two-place change that the lint chain doesn't enforce.
@@ -171,7 +171,7 @@ const metricPriorityShape: Record<
 const metricPriorityObjectSchema = z.object(metricPriorityShape).partial();
 
 /**
- * v1.4.25 W8c — device-type ladder per metric class. Walked by
+ * v1.4.25 — device-type ladder per metric class. Walked by
  * `pickCanonicalSource()` AFTER the source axis has narrowed the
  * candidate row down to the winning source.
  *
@@ -206,7 +206,7 @@ const deviceTypePrioritySchema = z
 export const sourcePrioritySchema = z
   .object({
     // ── v1.4.25 W5e flat shape (backward-compat) ──
-    // v1.4.27 B7 — derived from the shared metric-priority shape so the
+    // v1.4.27 — derived from the shared metric-priority shape so the
     // flat keys cannot drift from the nested `metricPriority` schema.
     ...metricPriorityShape,
     // ── v1.4.25 W8c additions ──
@@ -393,7 +393,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // fallback for users without a strap. v1.17.0 — Oura readiness + Polar
   // nightly recovery slot below WHOOP and above the computed proxy.
   recovery: ["WHOOP", "OURA", "POLAR", "COMPUTED"],
-  // v1.18.10 I-5 — native-vs-derived stress. Oura's device-native
+  // v1.18.10 — native-vs-derived stress. Oura's device-native
   // `daily_stress` (the deferred second producer) outranks HealthLog's
   // COMPUTED HRV-derived proxy; the proxy is the fallback for users without a
   // device-native stress signal. Single-producer today.
@@ -409,7 +409,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
 };
 
 /**
- * v1.4.25 W8c — default device-type ladder. Open-wearables' research
+ * v1.4.25 — default device-type ladder. Open-wearables' research
  * recommendation: watch first (highest fidelity for cumulative + HR
  * metrics), then ring/band (wrist-adjacent), then phone (fallback
  * cumulative when wearables are off-wrist), then scale (only writes
@@ -468,7 +468,7 @@ export function parseSourcePriority(raw: unknown): ResolvedSourcePriority {
 
   const parsed = sourcePrioritySchema.safeParse(raw);
   if (!parsed.success) {
-    // v1.4.25 W10 reconcile (Sr-M2) — emit a wide-event tag so a future
+    // v1.4.25 — emit a wide-event tag so a future
     // schema-tightening regression that silently nukes a user's saved
     // ladder surfaces in ops dashboards rather than as a "why did my
     // priorities reset?" user report. `annotate()` is a no-op outside a
@@ -539,7 +539,7 @@ function buildResolved(
     metricPriority: merged,
     deviceTypePriority,
   };
-  // v1.4.25 W10 reconcile (Code-M1) — deep-freeze the resolved blob so
+  // v1.4.25 — deep-freeze the resolved blob so
   // a caller who mutates `resolved.metricPriority.weight = …` after
   // parseSourcePriority() returns trips at runtime instead of silently
   // desyncing the two views (the top-level flat keys share their
@@ -586,7 +586,7 @@ export function resolveSleepDebtSource(
 }
 
 /**
- * v1.4.25 W8c — runtime device-type checker for ingest paths. Returns
+ * v1.4.25 — runtime device-type checker for ingest paths. Returns
  * a `DeviceType` for any input the iOS app or Withings webhook might
  * supply; falls back to `"unknown"` when the value isn't part of the
  * canonical enum. Keeps the picker on the happy path even when a
@@ -610,7 +610,7 @@ export function getSourceLadder(
 }
 
 /**
- * v1.4.25 W8c — resolve the device-type ladder for a given metric.
+ * v1.4.25 — resolve the device-type ladder for a given metric.
  * Lookup order:
  *   1. `deviceTypePriority[metricType]` — per-metric override.
  *   2. `deviceTypePriority.default`     — global fallback the user set.

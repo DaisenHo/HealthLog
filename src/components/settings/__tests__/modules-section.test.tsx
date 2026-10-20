@@ -40,7 +40,7 @@ const invalidateSpy = vi.fn();
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({
     invalidateQueries: invalidateSpy,
-    // v1.32.22 (M3) — the writer reads/seeds the optimistic-concurrency token
+    // v1.32.22 — the writer reads/seeds the optimistic-concurrency token
     // via the query cache; no token seeded → tokenless (unconditional) write.
     getQueryData: () => undefined,
     setQueryData: vi.fn(),
@@ -139,7 +139,7 @@ afterEach(() => {
 
 describe("<ModulesSection>", () => {
   it("renders a live Switch for every toggleable module, including the delegated ones", () => {
-    // v1.18.6 (W9) — the "Always on" core-domains card was removed (a domain
+    // v1.18.6 — the "Always on" core-domains card was removed (a domain
     // that can't be turned off doesn't need listing), so this section now
     // only renders the toggleable modules.
     const html = render();
@@ -177,7 +177,7 @@ describe("<ModulesSection>", () => {
   });
 
   it("no longer renders the 'Always on' core-domains card", () => {
-    // v1.18.6 (W9) — the read-only core card (weight / BP / pulse) was
+    // v1.18.6 — the read-only core card (weight / BP / pulse) was
     // removed; the core domains are always active regardless.
     const html = render();
     for (const key of ["weight", "bloodPressure", "pulse"]) {

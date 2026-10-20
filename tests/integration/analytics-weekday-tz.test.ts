@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W10 reconcile (Code-H1) — weight-weekday correlator honours
+ * v1.4.25 — weight-weekday correlator honours
  * the user's display timezone.
  *
  * Before W10 the analytics route's `berlinIsoWeekday()` helper was

@@ -4,7 +4,7 @@ import { hasMetricData } from "../metric-availability";
 import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
- * v1.4.27 F17/F18/F19 — gating helper unit cover.
+ * v1.4.27 — gating helper unit cover.
  *
  * The matrix covers each metric × {has data, no data, missing
  * summary entry, undefined summaries}. The `MOOD` and `MEDICATION`

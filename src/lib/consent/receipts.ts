@@ -1,5 +1,5 @@
 /**
- * v1.4.40 SB-10 — AI consent receipts CRUD helper.
+ * v1.4.40 — AI consent receipts CRUD helper.
  *
  * Append-only audit trail. Every grant + revoke mints a fresh row;
  * no updates, no deletes outside of cascade-on-user-delete. A

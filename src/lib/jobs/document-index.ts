@@ -56,7 +56,7 @@ export async function runDocumentIndex(
       : { documentId, indexed: false, reason: outcome.reason },
   });
 
-  // S8 — once the document is indexed, auto-stage lab facts for a lab-looking
+  // Once the document is indexed, auto-stage lab facts for a lab-looking
   // document (both modules on + the auto-AI-read consent gate). Facts land
   // PENDING for the existing human review; nothing is committed. Fully gated +
   // idempotent inside; a failure here must never fail the index job, so it is

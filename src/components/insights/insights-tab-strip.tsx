@@ -41,7 +41,7 @@ import type { ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 
 /**
- * v1.4.25 W4 — routed tab strip for `/insights`.
+ * v1.4.25 — routed tab strip for `/insights`.
  *
  * Behaviour evolved from the v1.4.25 W3 scroll-anchor version: each pill
  * is now a `<Link>` to a routed sub-page (`/insights/blood-pressure` …),
@@ -107,14 +107,14 @@ export interface InsightsTabStripProps {
    */
   regenerateSettling?: boolean;
   /**
-   * v1.4.27 F19 — analytics + event-driven availability inputs the
+   * v1.4.27 — analytics + event-driven availability inputs the
    * gating helper reads. When omitted the strip falls back to its
    * pre-v1.4.27 behaviour (every pill renders) so legacy mounts
    * stay backward-compatible.
    */
   availability?: InsightInputs;
   /**
-   * v1.15.14 W2 — the set of sub-page slugs the user's saved insights
+   * v1.15.14 — the set of sub-page slugs the user's saved insights
    * layout marks `visible`. A pill shows iff its metric has data AND its
    * slug is in this set, so hiding a sub-page in "Anpassen" removes its
    * nav pill. `undefined` (layout not yet loaded) falls back to the
@@ -123,7 +123,7 @@ export interface InsightsTabStripProps {
    */
   visibleTileIds?: ReadonlySet<string>;
   /**
-   * v1.15.14 W2 — slug → saved-layout `order`. When present the strip
+   * v1.15.14 — slug → saved-layout `order`. When present the strip
    * orders flat pills, group parent pills (by first member), and group
    * children by this order; absent, it falls back to the natural
    * `SUB_PAGE_SLUGS` / `SUB_PAGE_GROUP_ORDER` order.
@@ -140,7 +140,7 @@ export interface InsightsTabStripProps {
    */
   modules?: InsightsModuleMap;
   /**
-   * v1.30 (UX/IA audit H1) — true when the account has at least one ECG
+   * v1.30 — true when the account has at least one ECG
    * recording. ECG carries NO `MeasurementType`, so it can't ride the
    * `availability` / `SUB_PAGE_METRIC` model like every metric pill; it is
    * threaded here as a dedicated data-only signal instead. When true, an
@@ -156,7 +156,7 @@ export interface InsightsTabStripProps {
 }
 
 /**
- * v1.4.34 IW-D — a strip entry is either a flat `<Link>` pill or a
+ * v1.4.34 — a strip entry is either a flat `<Link>` pill or a
  * group "parent" pill that opens a popover containing the sub-pages
  * in the group. The discriminated union keeps the renderer branch-
  * exhaustive and lets future groups land with one new variant.
@@ -187,7 +187,7 @@ type TabEntry =
     };
 
 /**
- * v1.30 (UX/IA audit H1) — the ECG entry injected into the Heart group's
+ * v1.30 — the ECG entry injected into the Heart group's
  * popover when the account has recordings. Not a `SubPageSlug`: ECG carries no
  * `MeasurementType`, so it lives on its own routed page (`/insights/ecg`) and
  * is gated on `hasEcgRecordings`, never on the metric-availability model.
@@ -203,7 +203,7 @@ const ECG_TAB_CHILD = {
  * stay in sync from a single source of truth — adding a sub-page is
  * one row.
  */
-// v1.4.33 F9 — label + gating-metric for every routed sub-page. Pill
+// v1.4.33 — label + gating-metric for every routed sub-page. Pill
 // ORDER is owned by `SUB_PAGE_SLUGS` (which iterates the keys of
 // `SUB_PAGE_METRIC`) so adding a new metric is one row in
 // `sub-page-metric.ts` and the strip picks it up automatically.
@@ -420,7 +420,7 @@ function isSlugModuleEnabled(
 }
 
 /**
- * v1.4.34 IW-D — group metadata (label + popover header) keyed by
+ * v1.4.34 — group metadata (label + popover header) keyed by
  * `SubPageGroup`. The strip renders one parent pill per group. v1.7.0
  * adds the body / activity / hearing / environment / metabolic clusters
  * as the previously-orphan metrics each get a sub-page; collapsing them
@@ -470,7 +470,7 @@ function buildTabs(
   modules: InsightsModuleMap | undefined,
   hasEcgRecordings: boolean | undefined,
 ): TabEntry[] {
-  // v1.4.36 W4d — strict gating contract: a sub-page only surfaces a
+  // v1.4.36 — strict gating contract: a sub-page only surfaces a
   // pill when the availability inputs CONFIRM the metric has at
   // least one observation in the 90-day window. The legacy
   // `if (!availability) return true` fallback rendered every pill
@@ -482,7 +482,7 @@ function buildTabs(
   // flips from 0 to ≥1 — exactly the auto-light-up behaviour
   // described in `metric-availability.ts` line 26.
   //
-  // v1.15.14 W2 — the saved insights layout is now a SECOND gate on top
+  // v1.15.14 — the saved insights layout is now a SECOND gate on top
   // of data availability. A pill shows iff its metric has data AND its
   // slug is layout-`visible`. Data availability stays the FLOOR (a
   // layout-visible metric with zero data still gets no pill). When the
@@ -506,7 +506,7 @@ function buildTabs(
 
   const visibleSet = new Set(visibleSlugs);
 
-  // v1.15.14 W2 — order the strip by the saved layout when present. The
+  // v1.15.14 — order the strip by the saved layout when present. The
   // top-level iteration order decides where each flat pill and each group
   // parent pill land; a group parent appears at the position of its
   // first (lowest-order) visible member. Falling back to the natural
@@ -541,7 +541,7 @@ function buildTabs(
     });
   }
 
-  // v1.4.34 IW-D — track which groups have already been emitted so the
+  // v1.4.34 — track which groups have already been emitted so the
   // first encountered group-member triggers the parent pill at the
   // same strip position (preserving categorical order).
   const emittedGroups = new Set<SubPageGroup>();
@@ -578,7 +578,7 @@ function buildTabs(
           href: `${INSIGHTS_OVERVIEW_PATH}/${childSlug}`,
           labelKey: SUB_PAGE_TABS[childSlug].labelKey,
         }));
-      // v1.30 (H1) — ECG is a non-metric child of the Heart group, gated on
+      // v1.30 — ECG is a non-metric child of the Heart group, gated on
       // its own `hasEcgRecordings` signal (ECG has no `MeasurementType`).
       if (group === "heart" && hasEcgRecordings) {
         children.push({ ...ECG_TAB_CHILD });
@@ -600,7 +600,7 @@ function buildTabs(
     });
   }
 
-  // v1.30 (H1) — an ECG-only device (a recording, but no pulse / resting-HR /
+  // v1.30 — an ECG-only device (a recording, but no pulse / resting-HR /
   // HRV rows) never lit up any Heart-group member above, so the loop never
   // emitted the group. Emit it now with ECG as its sole child so the user
   // still has a nav home for their recordings. Positioned after the metric
@@ -682,7 +682,7 @@ function InsightsTabStripImpl({
   // availability changed. Per
   // `.planning/research/v15-insights-blocking-bug.md` fix 2.
   //
-  // v1.15.14 W2 — the saved-layout visibility set + order map join the
+  // v1.15.14 — the saved-layout visibility set + order map join the
   // deps so the strip re-derives when the user toggles a sub-page in
   // "Anpassen". The shell memoises both props so an unchanged layout
   // doesn't churn the array.
@@ -802,7 +802,7 @@ function InsightsTabStripImpl({
       data-tour-id="insights-hero"
       data-hydrated={mounted ? "true" : undefined}
       aria-label={t("insights.navAriaLabel")}
-      // v1.4.28 FB-D3 — `touch-action: pan-y` lets vertical swipes that
+      // v1.4.28 — `touch-action: pan-y` lets vertical swipes that
       // begin on the sticky strip scroll the page through it. The
       // legacy `overflow-x-auto` on the outer `<nav>` claimed the
       // entire touch surface as a horizontal scroll container, so
@@ -812,7 +812,7 @@ function InsightsTabStripImpl({
       // owns the gesture.
       style={{ touchAction: "pan-y" }}
       className={cn(
-        // v1.4.27 MB7 / CF-72 — relative wrapper hosts the right-edge
+        // v1.4.27 — relative wrapper hosts the right-edge
         // fade overlay below so the user reads "there's more to
         // scroll" when the pill row overflows. The fade is a tiny
         // pointer-events-none pseudo-strip painted onto the inner
@@ -899,7 +899,7 @@ function InsightsTabStripImpl({
                 </Link>
               );
             }
-            // v1.4.34 IW-D — group parent pill. Renders as a popover
+            // v1.4.34 — group parent pill. Renders as a popover
             // trigger so desktop hover (`onMouseEnter` falls through to
             // Radix click semantics — tap-to-open is the same gesture
             // on every device, matching the `<Popover>` MB3 decision).
@@ -994,7 +994,7 @@ function InsightsTabStripImpl({
         >
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>
-        {/* v1.4.27 MB7 / CF-72 — right-edge fade. The gradient
+        {/* v1.4.27 — right-edge fade. The gradient
             absolute-positions over the rightmost ~24 px of the strip
             so the last visible pill softly fades into the background
             colour, signalling "scroll for more" without a scrollbar.

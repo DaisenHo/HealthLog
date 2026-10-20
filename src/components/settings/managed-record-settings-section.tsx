@@ -411,7 +411,7 @@ function ProfileSettingsForm({
           <option value="">
             {t("settings.sharedRecord.managedSettings.profile.systemDefault")}
           </option>
-          {["de", "en", "es", "fr", "it", "pl", "ko"].map((locale) => (
+          {["de", "en", "es", "fr", "it", "pl", "ko", "nl"].map((locale) => (
             <option key={locale} value={locale}>
               {locale}
             </option>
@@ -1115,7 +1115,12 @@ export function ManagedRecordSettingsSection({
   });
 
   if (query.isError) {
-    return <QueryErrorCard onRetry={() => void query.refetch()} />;
+    return (
+      <QueryErrorCard
+        error={query.error}
+        onRetry={() => void query.refetch()}
+      />
+    );
   }
 
   return (

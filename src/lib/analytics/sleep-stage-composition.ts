@@ -73,6 +73,8 @@ export function buildSleepStageComposition(
   const perNight: SleepStageCompositionNight[] = [];
 
   for (const { night, main, naps } of days) {
+    // A day of naps alone has no night to compose.
+    if (!main) continue;
     const nightStages: Record<string, number> = {};
     for (const [stage, mins] of Object.entries(main.stages)) {
       if (mins == null) continue;

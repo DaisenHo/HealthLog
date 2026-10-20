@@ -251,7 +251,7 @@ export default defineConfig({
         // through stable attributes and the account's own API, not a mobile
         // layout, so it runs in one project.
         "notification-dispatch-journey.spec.ts",
-        // v1.39 (C2) — the setup-flow journeys each own one account and walk
+        // v1.39 — the setup-flow journeys each own one account and walk
         // it from the welcome screen to the dashboard, resetting it first. A
         // second project would walk the same account from a second browser
         // and each would find the other's answers. The two sweeps set their

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.7.0 W6 — unified dashboard first-paint snapshot hook.
+ * v1.7.0 — unified dashboard first-paint snapshot hook.
  *
  * One client cell against `GET /api/dashboard/snapshot` that hydrates
  * every above-the-fold tile, replacing the legacy four-cell waterfall

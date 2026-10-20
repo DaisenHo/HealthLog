@@ -108,7 +108,7 @@ describe("session lifecycle (real Postgres)", () => {
   });
 
   /**
-   * v1.4.22 W5 reconcile (Sr-H1) — `createSession` now anchors the
+   * v1.4.22 — `createSession` now anchors the
    * `hl_onboarding` cookie itself so issuing a session without it is
    * type-impossible. Pin the contract so a future auth surface added
    * without the helper can never reintroduce the dashboard flash.

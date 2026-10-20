@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MOOD — persistent mood-rollup populator.
+ * v1.4.39 — persistent mood-rollup populator.
  *
  * Sits behind the 60-s `caches.moodAnalytics` LRU as the second cache
  * tier on `/api/mood/analytics`. One row per

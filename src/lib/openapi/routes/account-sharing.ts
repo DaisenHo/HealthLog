@@ -44,7 +44,12 @@ import {
 } from "@/lib/validations/managed-profile-handover";
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
-import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import {
+  dataEnvelope,
+  errorEnvelope,
+  stdResponses,
+  listEnvelope,
+} from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
@@ -349,11 +354,11 @@ const recordActivityResponse = z
       .describe(
         "How far back this feed can see, in days. Resolved from the instance's audit retention setting (365 by default, operator-configurable), NOT a constant — an instance running a 90-day window sends 90. The query is bounded to this window, so it is the real limit of the list and not only a caption. Show it beside the rows.",
       ),
-    truncated: z
-      .boolean()
-      .describe(
-        "True when the read reached its row ceiling, so `entries` is the most recent activity inside the window rather than all of it. A client must say so — a list that stops at its own cap in silence lets the oldest row read as the beginning. False means the list is everything inside the window.",
-      ),
+    truncated: z.boolean().meta({
+      deprecated: true,
+      description:
+        "Deprecated: read `meta.truncated`, which carries the same value. Whether the list stopped at its row ceiling; kept in `data` for clients built against v1.43.6 and earlier.",
+    }),
   })
   .meta({
     id: "RecordActivity",
@@ -569,7 +574,7 @@ const accountPayload = z
     notificationPrefs: z.looseObject({
       medication: z.looseObject({ clientManaged: z.boolean() }),
     }),
-    // v1.39 (C1) — enumerated for the same reason `notificationPrefs` is: a
+    // v1.39 — enumerated for the same reason `notificationPrefs` is: a
     // client DECIDES on it. The getting-started checklist orders its rows from
     // `needs` and stays on screen while the flow is unfinished, and a future
     // native client renders the steps it knows. Always present, and resolved
@@ -870,14 +875,14 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Who opened this record, and when",
       description:
-        "Every audit row filed under this account that somebody else performed, newest first — one row per delegate per day with a count, rather than one per request. `retentionDays` rides the response because audit history is purged on a schedule the operator configures: a view that showed the rows without the window would imply a completeness it does not have, and clients must state the number the server sends rather than assume the 365-day default. Not delegable: a grant is not an introduction to the other people in the household.",
+        "Every audit row filed under this account that somebody else performed, newest first — one row per delegate per day with a count, rather than one per request. `retentionDays` rides the response because audit history is purged on a schedule the operator configures: a view that showed the rows without the window would imply a completeness it does not have, and clients must state the number the server sends rather than assume the 365-day default. Whether the list stopped at its row ceiling is `meta.truncated`; the `truncated` field in `data` carries the same value and is deprecated. Not delegable: a grant is not an introduction to the other people in the household.",
       responses: {
         ...stdResponses,
         "200": {
           description: "The activity, and how far back it can see.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 recordActivityResponse,
                 "RecordActivityEnvelope",
               ),
@@ -900,7 +905,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Grants given and received.",
           content: {
             "application/json": {
-              schema: dataEnvelope(
+              schema: listEnvelope(
                 grantListResponse,
                 "AccountGrantListEnvelope",
               ),
@@ -940,7 +945,8 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {
-          description: "No account on this instance carries that identifier.",
+          description:
+            "No account on this instance carries that identifier (`meta.errorCode: sharing.invite.no_account`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "409": {
@@ -1094,7 +1100,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than ten profiles from one caller within the hour. No error code — rate-limit refusals carry none anywhere in this API; branch on the status. Nothing was created.",
+            "More than ten profiles from one caller within the hour (`meta.errorCode: http.rate_limited`, the status default; a 429 has one meaning here, so the status alone is enough to branch on). Nothing was created.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -1162,7 +1168,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.",
+            "More than ten edits from one caller within the hour — the ceiling creation carries. `meta.errorCode: http.rate_limited`, the status default. Nothing was changed, and the refusal lands before the record named in the path is looked at.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -1234,7 +1240,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Invite another Guardian",
       description:
-        "Offers somebody else a share in looking after this profile, at MANAGE over the whole record. Cookie-only and step-up gated, like every act in this family — the read beside it is not. **Resolve refusals on `meta.errorCode` first and fall back to the status only for the two arms that carry none**, because this route answers 404 twice and the codeless one is the less serious of the two: an identifier that matches no account carries no code, while `managed_profile.not_found` means the caller is not a Guardian of that profile at all. A client branching on the status first would tell somebody to check a spelling when the real answer is that the record is no longer theirs to administer.",
+        "Offers somebody else a share in looking after this profile, at MANAGE over the whole record. Cookie-only and step-up gated, like every act in this family — the read beside it is not. **Resolve refusals on `meta.errorCode`, not on the status**, because this route answers 404 twice and the two need different next steps: `sharing.invite.no_account` means no account carries that identifier, while `managed_profile.not_found` means the caller is not a Guardian of that profile at all. A client branching on the status would tell somebody to check a spelling when the real answer is that the record is no longer theirs to administer.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
@@ -1267,7 +1273,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "404": {
           description:
-            "Two refusals share this status and only one carries a code. **No `meta.errorCode`**: no account on this instance carries that identifier — the same deliberate disclosure to an authenticated caller that `POST /api/account/grants` makes, and codeless there too, so this family does not answer one way here and another way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the caller is not one of its Guardians.",
+            "Two refusals share this status, each with its own code. `meta.errorCode: sharing.invite.no_account`: no account on this instance carries that identifier — the same deliberate disclosure to an authenticated caller that `POST /api/account/grants` makes, with the same code, so this family does not answer one way here and another way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the caller is not one of its Guardians.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "409": {
@@ -1282,7 +1288,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than ten invitations from one caller within the hour. No error code, as above; branch on the status.",
+            "More than ten invitations from one caller within the hour (`meta.errorCode: http.rate_limited`, the status default).",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

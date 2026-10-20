@@ -20,7 +20,10 @@ import {
 } from "@/lib/managed-profiles/guardian-list";
 import { ManagedProfileLifecycleError } from "@/lib/managed-profiles/lifecycle";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { GRANT_PARTY_SELECT } from "@/lib/sharing/grant-view";
+import {
+  GRANT_PARTY_SELECT,
+  INVITE_NO_ACCOUNT_CODE,
+} from "@/lib/sharing/grant-view";
 import { GrantError, inviteManagedProfileGuardian } from "@/lib/sharing/grants";
 import { inviteManagedProfileGuardianSchema } from "@/lib/validations/managed-profiles";
 
@@ -106,16 +109,16 @@ export const POST = apiHandler(
       },
       select: GRANT_PARTY_SELECT,
     });
-    // No `errorCode`, deliberately, and the same for the 429 above. Rate-limit
-    // refusals carry none anywhere in this application, and the sibling
-    // invitation route (`POST /api/account/grants`) answers an unknown
-    // identifier with a bare 404 too. A code here would make one route in the
-    // family unlike both. The published contract says so, and says that a
-    // client resolves on `meta.errorCode` FIRST: this route's other 404 —
-    // "you are not a Guardian of that profile" — does carry one, and branching
-    // on the status would tell somebody to check a spelling when the real
-    // answer is that the profile is no longer theirs to administer.
-    if (!invitee) return apiError("No account with that name or e-mail", 404);
+    // The same code the sibling invitation route (`POST /api/account/grants`)
+    // answers an unknown identifier with. This route has a second 404 — "you
+    // are not a Guardian of that profile", `managed_profile.not_found` — and
+    // the two need different next steps, so each names itself and a client
+    // never has to tell them apart by status.
+    if (!invitee) {
+      return apiError("No account with that name or e-mail", 404, {
+        errorCode: INVITE_NO_ACCOUNT_CODE,
+      });
+    }
 
     try {
       const grant = await inviteManagedProfileGuardian({

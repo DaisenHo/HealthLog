@@ -71,7 +71,7 @@ describe("reorderById", () => {
 });
 
 describe("rebuildTilesWithReorderedVitals", () => {
-  // v1.15.11 QA M2 — the inline edit mode reorders only the Vitals subset; the
+  // v1.15.11 — the inline edit mode reorders only the Vitals subset; the
   // non-Vitals sub-page strip must keep its relative order. The full list is
   // interleaved: overview (non-vitals), then vitals tiles, then a couple of
   // sub-page slugs (non-vitals).

@@ -84,7 +84,7 @@ describe("base-system assessment prompt — V2: few-shot examples present", () =
   it("English: carries a GOOD grounded example and a BAD banned-filler counter-example", () => {
     const p = getBaseSystemPrompt("en");
     expect(p).toMatch(/EXAMPLES/);
-    // v1.22 (W6) — the examples now illustrate DIFFERENT shapes (verdict-led,
+    // v1.22 — the examples now illustrate DIFFERENT shapes (verdict-led,
     // trend-led, one-liner) instead of a single "GOOD" shape.
     expect(p).toMatch(/VERDICT-LED/);
     expect(p).toMatch(/ONE-LINER/);

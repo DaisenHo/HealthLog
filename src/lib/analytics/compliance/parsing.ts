@@ -16,28 +16,18 @@ function parseHHmm(time: string): { hours: number; minutes: number } {
 }
 
 /**
- * Build the UTC instant of local "HH:mm" on the calendar day `day` falls on.
- *
- * When `tz` is supplied the window `HH:mm` is interpreted in the user's zone
- * (via {@link localHmAsUtc}) on the local day of `day` — so an "08:00" slot is
- * 08:00 LOCAL, not 08:00 UTC. Without `tz` it keeps the legacy UTC anchoring
- * (`setUTCHours`), which is only correct for a UTC user; a caller far from UTC
- * must pass its zone or the punctuality band is offset by the zone's offset.
+ * Build the UTC instant of local "HH:mm" in `tz` on the local day of `day`
+ * (via {@link localHmAsUtc}), so an "08:00" slot is 08:00 LOCAL.
  */
-function toDateOnDay(time: string, day: Date, tz?: string): Date {
+function toDateOnDay(time: string, day: Date, tz: string): Date {
   const { hours, minutes } = parseHHmm(time);
-  if (tz) {
-    return localHmAsUtc(day, tz, hours, minutes);
-  }
-  const d = new Date(day);
-  d.setUTCHours(hours, minutes, 0, 0);
-  return d;
+  return localHmAsUtc(day, tz, hours, minutes);
 }
 
 /**
  * Classify how punctual an intake was relative to a schedule window.
  *
- * v1.4.34 IW-C — widened pre-window grace from 1h to 3h and introduced
+ * v1.4.34 — widened pre-window grace from 1h to 3h and introduced
  * a dedicated `early` bucket so a proactive logger (e.g. 10 min before
  * the window) no longer gets flushed into `very_late`. The post-window
  * grace likewise grew to 3h so a "20 minutes late" dose stays `on_time`.
@@ -56,21 +46,21 @@ function toDateOnDay(time: string, day: Date, tz?: string): Date {
  * @param options.lateMinutes Width of the `late` band beyond the 3-hour
  *   on-time tolerance, in minutes. Defaults to 120. Doses past this
  *   tail land in `very_late`.
- * @param options.tz IANA zone the window `HH:mm` is interpreted in. Supply
- *   the user's zone so an "08:00" slot means 08:00 LOCAL; omitting it keeps
- *   the legacy UTC interpretation (correct only for a UTC user).
+ * @param options.tz IANA zone the window `HH:mm` is interpreted in, so an
+ *   "08:00" slot means 08:00 LOCAL. Required: a UTC fallback was right only
+ *   for a UTC user and no caller relied on it.
  */
 export function classifyIntakeTiming(
   takenAt: Date | null,
   windowStart: string, // "HH:mm"
   windowEnd: string, // "HH:mm"
   scheduledDate: Date, // the date this was scheduled
-  options?: { lateMinutes?: number; tz?: string },
+  options: { lateMinutes?: number; tz: string },
 ): IntakeTimingClass {
   if (takenAt === null) return "missed";
 
-  let start = toDateOnDay(windowStart, scheduledDate, options?.tz);
-  let end = toDateOnDay(windowEnd, scheduledDate, options?.tz);
+  let start = toDateOnDay(windowStart, scheduledDate, options.tz);
+  let end = toDateOnDay(windowEnd, scheduledDate, options.tz);
 
   // A degenerate POINT window (`windowStart === windowEnd` — a single dose time
   // echoed into both fields, a real shape on legacy rows) used to fall into the
@@ -94,7 +84,7 @@ export function classifyIntakeTiming(
   // 3h post-window grace: doses up to here are still `on_time`.
   const onTimeEnd = new Date(end.getTime() + 3 * HOUR_MS);
   // Configurable `late` tail past the on-time grace (default 120 min).
-  const lateTolerance = (options?.lateMinutes ?? 120) * 60 * 1000;
+  const lateTolerance = (options.lateMinutes ?? 120) * 60 * 1000;
   const lateEnd = new Date(onTimeEnd.getTime() + lateTolerance);
 
   const t = takenAt.getTime();

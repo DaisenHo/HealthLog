@@ -1,5 +1,5 @@
 /**
- * F-CRYPTO-5 — an undecryptable custom mood label fails soft (the caller falls
+ * An undecryptable custom mood label fails soft (the caller falls
  * back to the generic i18n label) but must NOT be entirely silent: a swallowed
  * decrypt now emits a wide-event so the loss of a user-renamed tag surfaces.
  */

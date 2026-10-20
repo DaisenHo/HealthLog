@@ -3,7 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
-import { googleHealthBackfillEndedList } from "@/lib/google-health/sync-core";
+import { googleHealthBackfillEndedList } from "@/lib/google-health/backfill-progress";
 
 /**
  * Get Google Health connection status for the current user (v1.26.0).

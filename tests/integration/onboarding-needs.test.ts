@@ -643,7 +643,7 @@ describe("POST /api/onboarding/complete for somebody else's record", () => {
   });
 
   it("answers 404 for a record the caller does not guard, and touches nothing", async () => {
-    // M7 — a record addressed by id answers 404 for missing, not managed and
+    // A record addressed by id answers 404 for missing, not managed and
     // not guarded alike, as `GET /api/managed-profiles/{id}` does through
     // the same helper: one answer, no existence oracle. This asserted 403
     // once; the id-addressed convention is 404.

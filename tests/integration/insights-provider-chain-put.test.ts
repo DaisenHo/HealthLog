@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B2 — integration coverage for the new PUT
+ * v1.4.16 — integration coverage for the new PUT
  * `/api/insights/provider-chain` endpoint.
  *
  * Two scenarios pinned end-to-end against the postgres testcontainer:

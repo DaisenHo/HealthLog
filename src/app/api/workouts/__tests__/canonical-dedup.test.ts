@@ -1,7 +1,7 @@
 /**
  * Unit suite for `GET /api/workouts` — the canonical-dedup contract.
  *
- * v1.4.27 B7 / BL-P2-3 — original wiring with `pickCanonicalWorkout()`.
+ * v1.4.27 — original wiring with `pickCanonicalWorkout()`.
  * v1.4.32 — swap to `pickCanonicalWorkoutRows()` (v1.4.30) so the
  * per-user source-priority ladder governs the canonical pick. The
  * test pins:

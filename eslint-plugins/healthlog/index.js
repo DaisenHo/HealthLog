@@ -14,6 +14,8 @@
  *                              src/lib/tz/format, never written out.
  *   - `no-utc-day-key`       — a day is cut through the tz module, not by
  *                              slicing an ISO string or parsing UTC midnight.
+ *   - `no-planning-tags`     — no planning-note identifier at the head of a
+ *                              comment line.
  */
 
 "use strict";
@@ -26,6 +28,7 @@ const spacingScale = require("./spacing-scale.js");
 const jobHandlerOutcome = require("./job-handler-outcome.js");
 const noDefaultZoneLiteral = require("./no-default-zone-literal.js");
 const noUtcDayKey = require("./no-utc-day-key.js");
+const noPlanningTags = require("./no-planning-tags.js");
 
 module.exports = {
   rules: {
@@ -42,5 +45,6 @@ module.exports = {
     "job-handler-outcome": jobHandlerOutcome,
     "no-default-zone-literal": noDefaultZoneLiteral,
     "no-utc-day-key": noUtcDayKey,
+    "no-planning-tags": noPlanningTags,
   },
 };

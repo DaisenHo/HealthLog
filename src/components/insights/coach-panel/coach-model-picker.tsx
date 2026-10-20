@@ -24,6 +24,7 @@ import {
   invalidateKeys,
   queryKeys,
 } from "@/lib/query-keys";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 /**
  * The quick model choice in the Coach's settings overlay: which provider
@@ -195,21 +196,15 @@ export function CoachModelPicker() {
 
   if (chainQuery.isError || providerQuery.isError) {
     return (
-      <div className="flex flex-col items-start gap-2 text-sm">
-        <p role="alert" className="text-destructive">
-          {t("common.loadFailed")}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            void chainQuery.refetch();
-            void providerQuery.refetch();
-          }}
-        >
-          {t("common.retry")}
-        </Button>
-      </div>
+      <QueryErrorRow
+        inset
+        error={chainQuery.error ?? providerQuery.error}
+        slot="coach-model-picker-error"
+        onRetry={() => {
+          void chainQuery.refetch();
+          void providerQuery.refetch();
+        }}
+      />
     );
   }
 

@@ -31,8 +31,13 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
+  READING_SPREAD,
+  standardDeviation,
+  type VarianceKind,
+} from "@/lib/stats/spread";
+import {
   pairByTimestamp,
-  pearsonCorrelation,
+  significantPearsonCorrelation,
   type CorrelationResult,
 } from "@/lib/analytics/correlations";
 import { getMedicationCategories } from "@/lib/medication-category";
@@ -789,7 +794,7 @@ export interface AggregatedFeatures {
     } | null;
   };
   /**
-   * S10 — ECG recording descriptor (device-verdict only, NON-DIAGNOSTIC). A
+   * ECG recording descriptor (device-verdict only, NON-DIAGNOSTIC). A
    * bounded, existence-and-count read of the user's on-device ECG recordings so
    * the nightly narrative can reference them FACTUALLY and attributed to the
    * device. `deviceVerdicts` / `latestDeviceVerdict` are the RECORDING DEVICE's
@@ -846,7 +851,7 @@ export interface RawFeatures extends AggregatedFeatures {
 }
 
 /**
- * v1.4.36 W3 T1 — payload size ceiling. The Codex provider rejects
+ * v1.4.36 — payload size ceiling. The Codex provider rejects
  * any prompt-string above 10 MB; the features payload is roughly half
  * the eventual prompt (the JSON dump plus the system + comparison
  * blocks), so a 5 MB feature payload sits comfortably below the
@@ -857,7 +862,7 @@ export interface RawFeatures extends AggregatedFeatures {
 export const FEATURES_MAX_BYTES = 5 * 1024 * 1024;
 
 /**
- * v1.18.11 P1 — default bounded read window for the comprehensive briefing.
+ * v1.18.11 — default bounded read window for the comprehensive briefing.
  *
  * The briefing's prose only ever cites 7 / 30 / 90-day windows plus all-time
  * extremes; the unbounded `measurement.findMany` it used to run materialised
@@ -894,12 +899,17 @@ export class FeaturesPayloadTooLargeError extends Error {
   }
 }
 
-export function stdDev(values: number[]): number | null {
+/**
+ * A spread rounded to the payload's one decimal, `null` below two values: a
+ * single reading has no spread to report, not a spread of zero.
+ */
+export function roundedSpread(
+  values: readonly number[],
+  kind: VarianceKind,
+): number | null {
   if (values.length < 2) return null;
-  const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance =
-    values.reduce((s, v) => s + (v - mean) ** 2, 0) / (values.length - 1);
-  return Math.round(Math.sqrt(variance) * 10) / 10;
+  const sd = standardDeviation(values, kind);
+  return sd === null ? null : Math.round(sd * 10) / 10;
 }
 
 export function toDataPoints(
@@ -1011,7 +1021,7 @@ async function readMoodFeature(
   //
   // Coverage-fallback: when raw entries exist but the rollup tier is
   // still empty (legacy account before boot-time backfill caught up),
-  // we fall back to a bounded 1-year raw walk and fire the warm-up so
+  // we fall back to a raw walk over the same window and fire the warm-up so
   // the next request lands on the rollup tier. Same posture as
   // `/api/mood/analytics`.
   void ensureUserMoodRollupsFresh(userId);
@@ -1052,15 +1062,13 @@ async function readMoodFeature(
     });
     moodLatestScore = latestEntry?.score ?? null;
   } else {
-    // Coverage-fallback. Bounded 1-year walk (instead of the legacy
-    // unbounded `findMany`) so even a cache miss is capped.
-    const oneYearAgo = laterDate(
-      new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-      historyFloor,
-    );
+    // Coverage-fallback over the same window the rollup read covers
+    // (`moodSince`, five years). A one-year fallback answered the same
+    // question with a different history while the tier was warming up;
+    // mood entries are a few a day, so five years stays a bounded read.
     const moodEntriesRaw = await prisma.moodEntry.findMany({
       // v1.7.0 sync — exclude tombstoned rows.
-      where: { userId, deletedAt: null, moodLoggedAt: { gte: oneYearAgo } },
+      where: { userId, deletedAt: null, moodLoggedAt: { gte: moodSince } },
       orderBy: { moodLoggedAt: "asc" },
       select: { score: true, moodLoggedAt: true, date: true },
     });
@@ -1276,7 +1284,7 @@ export async function extractFeatures(
         // BP pairing, sleep reconstruction) see the same shape as before the cap.
         .then((rows) => rows.reverse());
 
-  // v1.18.11 P1 — when the bulk read is bounded to a recent window, the
+  // v1.18.11 — when the bulk read is bounded to a recent window, the
   // windowed `summarize()` no longer covers the full history, so the `allTime*`
   // fields would silently become "last `sinceDays` days" extremes. Source the
   // genuine full-history min / max / mean from one grouped aggregation (no row
@@ -1364,7 +1372,7 @@ export async function extractFeatures(
       avg7: summary.avg7,
       avg30: summary.avg30,
       avg90: avgInWindow(weightData, now, 90),
-      // v1.18.11 P1 — full-history extremes from the grouped aggregation when
+      // v1.18.11 — full-history extremes from the grouped aggregation when
       // the bulk read is windowed; the in-window summary otherwise.
       allTimeAvg: allTimeExtremes
         ? roundMean(allTimeExtremes.get("WEIGHT")?.mean ?? null)
@@ -1413,7 +1421,7 @@ export async function extractFeatures(
         const sysVal = sysByTime.get(dia.measuredAt.getTime());
         if (sysVal === undefined) continue;
         pairedCount++;
-        // v1.4.16 A2 — one-sided ceiling semantics with hypotension
+        // v1.4.16 — one-sided ceiling semantics with hypotension
         // floor. See lib/analytics/bp-in-target.ts.
         if (isBpReadingInTarget(sysVal, dia.value, bpTargets)) {
           inTargetCount++;
@@ -1430,7 +1438,7 @@ export async function extractFeatures(
       avgDia30: diaSummary?.avg30 ?? null,
       avgSys90: sysData.length > 0 ? avgInWindow(sysData, now, 90) : null,
       avgDia90: diaData.length > 0 ? avgInWindow(diaData, now, 90) : null,
-      // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
+      // v1.18.11 — full-history extremes when the bulk read is windowed.
       allTimeAvgSys: allTimeExtremes
         ? roundMean(allTimeExtremes.get("BLOOD_PRESSURE_SYS")?.mean ?? null)
         : sysSummary?.count
@@ -1468,14 +1476,14 @@ export async function extractFeatures(
         const vals = sysData
           .filter((m) => m.measuredAt.getTime() >= fromMs)
           .map((m) => m.value);
-        return stdDev(vals);
+        return roundedSpread(vals, READING_SPREAD);
       })(),
       sdDia30: (() => {
         const fromMs = now - 30 * 24 * 60 * 60 * 1000;
         const vals = diaData
           .filter((m) => m.measuredAt.getTime() >= fromMs)
           .map((m) => m.value);
-        return stdDev(vals);
+        return roundedSpread(vals, READING_SPREAD);
       })(),
       pulsePressure30: (() => {
         const avgSys = sysSummary?.avg30 ?? null;
@@ -1508,7 +1516,7 @@ export async function extractFeatures(
       avg7: pulseMean(7),
       avg30: pulseMean(30),
       avg90: pulseMean(90),
-      // v1.18.11 P1 — full-history extremes when the bulk read is windowed.
+      // v1.18.11 — full-history extremes when the bulk read is windowed.
       allTimeAvg: allTimeExtremes
         ? roundMean(allTimeExtremes.get("PULSE")?.mean ?? null)
         : allPulse === null
@@ -1656,7 +1664,7 @@ export async function extractFeatures(
   }));
 
   const computeCorr = (a: DataPoint[], b: DataPoint[]) =>
-    pearsonCorrelation(pairByTimestamp(a, b));
+    significantPearsonCorrelation(pairByTimestamp(a, b));
 
   const sleepPoints = toDataPoints(sleepData);
 
@@ -1794,7 +1802,7 @@ export async function extractFeatures(
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware compliance.
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
@@ -1845,7 +1853,7 @@ export async function extractFeatures(
       eventsByMed.set(e.medicationId, list);
     }
 
-    // v1.7.0 SB-SCHED-2 — resolve the user timezone once so every
+    // v1.7.0 — resolve the user timezone once so every
     // per-med compliance call can route its denominator through the
     // canonical engine (RRULE / rolling / one-shot / PRN / cyclic).
     const userTz = await resolveUserTimezone(userId);
@@ -1953,7 +1961,7 @@ export async function extractFeatures(
       readLabsBriefingBlock(userId, now),
       readPreventiveCareBlock(userId, now, preventiveTz),
       readWorkoutsBlock(userId, now),
-      // S10 — ECG device-verdict descriptor (never the waveform). Weaves the
+      // ECG device-verdict descriptor (never the waveform). Weaves the
       // ECG silo into the narrative; the model may reference it, attributed to
       // the device, but never interprets the trace (it never sees one).
       readEcgBriefingBlock(userId, now),
@@ -1964,7 +1972,7 @@ export async function extractFeatures(
     if (ecg) features.ecg = ecg;
   }
 
-  // v1.4.36 W3 T1 — "raw" mode no longer dumps every measurement row
+  // v1.4.36 — "raw" mode no longer dumps every measurement row
   // into the prompt. Instead we attach DAY / WEEK / MONTH bucket means
   // from `measurement_rollups` so the model gets the same temporal
   // shape (granular near-term, coarser deep history) at O(buckets)

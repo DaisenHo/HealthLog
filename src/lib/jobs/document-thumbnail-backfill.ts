@@ -167,7 +167,7 @@ export async function enqueueBootTimeThumbnailBackfill(): Promise<{
   // would only churn the queue — every generation no-ops behind the gate.
   if (!nativeCanvasSupported()) return { enqueued: 0 };
 
-  // v1.28.46 perf (H4) — DB-level SELECT DISTINCT with an anti-join to the
+  // v1.28.46 — DB-level SELECT DISTINCT with an anti-join to the
   // thumbnail side table, not Prisma `distinct` (which fetches every matching
   // row then de-dupes in JS at boot). The migration-0243 partial index over
   // `(user_id, mime_type) WHERE deleted_at IS NULL` bounds the document-side

@@ -42,7 +42,7 @@ export async function persistAssistantReply(args: {
     // v1.18.9 — persist the per-turn token count + model so the quiet
     // token footer survives a conversation reload. The live turn paints
     // from the `done.usage` SSE frame; reloads read these columns.
-    // v1.20.0 (F1) — the summed cost across every tool round, so the footer
+    // v1.20.0 — the summed cost across every tool round, so the footer
     // reflects the true turn cost on the tool path too.
     tokensUsed: totalTokensSpent || null,
     model: model.result.model ?? null,
@@ -61,18 +61,18 @@ export async function persistAssistantReply(args: {
     action: { name: "insights.coach.replied" },
     meta: {
       provider: workingProviderType,
-      // v1.20.0 (F1) — summed tokens across every tool round (the loop) or the
+      // v1.20.0 — summed tokens across every tool round (the loop) or the
       // single call (no-tools path), so the dashboards see the true turn cost.
       tokens: totalTokensSpent,
       promptVersion: PROMPT_VERSION,
       conversationId,
       historyTurns: ctx.turnContext.window.length,
-      // v1.20.0 (F1) — whether this turn ran the tool-retrieval path, and how
+      // v1.20.0 — whether this turn ran the tool-retrieval path, and how
       // many tools it fetched, so the dashboards can correlate the token delta
       // with the new path vs the legacy snapshot path.
       toolMode,
       toolsCalled: model.toolTrace.length,
-      // v1.19.1 (C4) — whether the full SNAPSHOT block rode this turn (the
+      // v1.19.1 — whether the full SNAPSHOT block rode this turn (the
       // expensive prefix) vs the cheap pointer. On the tool path the snapshot
       // never rides the prompt, so this is the legacy-path signal only.
       snapshotSent: !toolMode && ctx.turnContext.includeFullSnapshot,

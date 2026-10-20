@@ -145,7 +145,7 @@ describe("redactSecrets", () => {
     );
   });
 
-  // v1.4.25 W21 Fix-J: `WITHINGS_WEBHOOK_SECRET` travels as the trailing
+  // v1.4.25: `WITHINGS_WEBHOOK_SECRET` travels as the trailing
   // path segment on `/api/withings/webhook/<secret>`. The Wide Event
   // builder feeds `http.path` and `http.route` through `redactSecrets`,
   // so the path-segment rule must rewrite the secret to `[REDACTED]`
@@ -215,7 +215,7 @@ describe("redactSecrets", () => {
       );
     });
 
-    // v1.11.0 (Epic C, C6) — the raw `hls_` clinician share token rides as
+    // v1.11.0 — the raw `hls_` clinician share token rides as
     // the trailing path segment of `/c/<token>`. It must be scrubbed from
     // `http.path` / `http.route` before the Wide Event leaves the process.
     // v1.42 (#959) — the handover link `/claim/<hlp_token>`.

@@ -6,7 +6,7 @@ import {
 } from "@/lib/charts/comparison-shift";
 
 /**
- * v1.4.25 W6 — edge-case end-to-end pinning for the `comparisonBaseline`
+ * v1.4.25 — edge-case end-to-end pinning for the `comparisonBaseline`
  * overlay.
  *
  * The basic shift suite (`comparison-shift.test.ts`) already pins the

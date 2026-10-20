@@ -1,5 +1,5 @@
 /**
- * v1.4.40 SB-10 — AI consent receipts.
+ * v1.4.40 — AI consent receipts.
  *
  *   POST /api/consent/ai
  *     Body: { kind, artefact, signedAt, confirm: true }
@@ -57,7 +57,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const parsed = consentPostBody.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 400 (consent routes use 400 not 422).
+    // v1.4.43 — multi-issue 400 (consent routes use 400 not 422).
     return returnAllZodIssues(parsed.error, 400);
   }
 

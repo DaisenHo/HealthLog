@@ -106,7 +106,7 @@ async function postBulkDelete(request: NextRequest): Promise<Response> {
   });
 
   if (count > 0) {
-    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    // v1.4.34 — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
 
     // v1.32.12 — collapse the deleted rows to the unique set of `date`

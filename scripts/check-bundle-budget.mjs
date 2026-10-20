@@ -144,6 +144,7 @@ let totalGz = 0;
 let rechartsChunks = 0;
 let catalogChunks = 0;
 let catalogGz = 0;
+let largestCatalog = { file: "-", gz: 0 };
 let largest = { file: "-", gz: 0 };
 for (const f of readdirSync(chunkDir)) {
   if (!f.endsWith(".js")) continue;
@@ -153,6 +154,7 @@ for (const f of readdirSync(chunkDir)) {
   if (info.catalog) {
     catalogChunks += 1;
     catalogGz += info.gz;
+    if (info.gz > largestCatalog.gz) largestCatalog = { file: f, gz: info.gz };
   }
   if (info.gz > largest.gz) largest = { file: f, gz: info.gz };
 }
@@ -169,6 +171,9 @@ console.log(
   `  lazy message catalogs:         ${fmt(catalogGz)} gz  (${catalogChunks} chunks)`,
 );
 console.log(`  other client chunks:           ${fmt(totalGz - catalogGz)} gz`);
+console.log(
+  `  largest message catalog:       ${fmt(largestCatalog.gz)} gz  (${largestCatalog.file})`,
+);
 console.log(
   `largest chunk:                   ${fmt(largest.gz)} gz  ${largest.file}`,
 );
@@ -235,9 +240,19 @@ for (const [route, baselineKb] of Object.entries(baselines)) {
     );
   }
 }
-if (budget.totalClientKbGz && kb(totalGz) > budget.totalClientKbGz) {
+// The aggregate leaves the lazy message catalogs out. A reader downloads one
+// catalog, the one for their language, so counting all of them made every new
+// interface language look like a regression. Each catalog is held to its own
+// ceiling instead.
+const nonCatalogGz = totalGz - catalogGz;
+if (budget.totalClientKbGz && kb(nonCatalogGz) > budget.totalClientKbGz) {
   failures.push(
-    `total client JS ${fmt(totalGz)} gz exceeds the ${budget.totalClientKbGz} KB budget`,
+    `client JS without the lazy catalogs ${fmt(nonCatalogGz)} gz exceeds the ${budget.totalClientKbGz} KB budget`,
+  );
+}
+if (budget.maxCatalogKbGz && kb(largestCatalog.gz) > budget.maxCatalogKbGz) {
+  failures.push(
+    `message catalog ${largestCatalog.file} ${fmt(largestCatalog.gz)} gz exceeds the ${budget.maxCatalogKbGz} KB per-catalog budget`,
   );
 }
 if (

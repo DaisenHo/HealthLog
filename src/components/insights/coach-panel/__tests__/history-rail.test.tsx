@@ -6,10 +6,13 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { HistoryRail } from "../history-rail";
 import type { CoachConversationsPage } from "@/lib/ai/coach/types";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
- * v1.4.20 phase B2b — history-rail render snapshot.
- * v1.30.2 (QoL H1) — the rail now reads `useCoachConversationHistory`
+ * v1.4.20 — history-rail render snapshot.
+ * v1.30.2 — the rail now reads `useCoachConversationHistory`
  * (`useInfiniteQuery`), so the seeded cache shape moved from a single
  * `CoachConversationsPage` under the flat `coachConversations()` key to the
  * `{ pages, pageParams }` infinite-query shape under
@@ -208,7 +211,7 @@ describe("<HistoryRail>", () => {
     expect(html).toMatch(/<h3[^>]*>Earlier<\/h3>/);
   });
 
-  // v1.30.2 (QoL H1) — infinite history: reachability beyond the first page.
+  // v1.30.2 — infinite history: reachability beyond the first page.
   it("renders every conversation across multiple cached pages (not just page one)", () => {
     const client = makeClientWithPages([
       samplePage,

@@ -12,7 +12,7 @@ import {
 import { NextResponse } from "next/server";
 
 /**
- * v1.17.0 (F4) — redirect the user to the Oura consent screen.
+ * v1.17.0 — redirect the user to the Oura consent screen.
  *
  * Credentials resolve DB-first then env (`getOuraClientCredentials`): a user's
  * BYO Oura client id/secret wins, falling back to the shared env app

@@ -1,5 +1,5 @@
 /**
- * v1.18.7 (HIGH-1) — batched per-metric status generation.
+ * v1.18.7 — batched per-metric status generation.
  *
  * A warm cycle on a fully instrumented account used to fire SEVEN
  * specialised `runStatusCompletion` calls — blood-pressure / weight / pulse /

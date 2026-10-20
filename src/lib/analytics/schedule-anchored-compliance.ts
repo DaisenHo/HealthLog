@@ -1,5 +1,5 @@
 /**
- * v1.26.0 SEAM-N3 — the ONE schedule-anchored, cadence-aware daily
+ * v1.26.0 — the ONE schedule-anchored, cadence-aware daily
  * compliance computation.
  *
  * Extracted verbatim from the `GET /api/medications/intake?scope=compliance`
@@ -69,7 +69,7 @@ export async function buildScheduleAnchoredComplianceBuckets(
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware expected counts.
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,

@@ -20,7 +20,7 @@ import { delegatedGenerationSuppressed } from "@/lib/sharing/delegated-generatio
 import type { SupportedLocale } from "@/lib/insights/status-shared";
 
 /**
- * v1.18.11 (P6-tighten) — the measurement types the FDR correlation-discovery
+ * v1.18.11 — the measurement types the FDR correlation-discovery
  * matrix scans (`correlation-discovery.ts`). A status card whose prompt folds
  * the surviving cross-metric correlations (`getRelevantCorrelationsForMetric`)
  * can have a NEW correlation surface purely because one of these channels
@@ -403,7 +403,7 @@ export async function refreshUnchangedStatusItems(args: {
 }
 
 /**
- * v1.18.11 (P6) — cheap input fingerprint for the slow-moving status
+ * v1.18.11 — cheap input fingerprint for the slow-moving status
  * metrics (weight / BMI).
  *
  * The post-build content-hash gate (`refreshUnchangedStatusInsight`)
@@ -424,14 +424,14 @@ export async function computeStatusInputFingerprint(args: {
   userId: string;
   types: readonly MeasurementType[];
   /**
-   * v1.18.11 (P6) — include the mood-entry table in the fingerprint. The
+   * v1.18.11 — include the mood-entry table in the fingerprint. The
    * weight snapshot folds a mood-context block, so a mood change must flip
    * the input hash or the gate would skip a build whose prose could have
    * moved. Omit for metrics that don't read mood.
    */
   includeMood?: boolean;
   /**
-   * v1.18.11 (P6-tighten) — include the FDR correlation-discovery channels
+   * v1.18.11 — include the FDR correlation-discovery channels
    * (`CORRELATION_CHANNEL_TYPES`) in the fingerprint. A card that folds the
    * surviving cross-metric correlations (via `getRelevantCorrelationsForMetric`)
    * can surface a NEW relation purely because a discovery channel — steps,
@@ -445,7 +445,7 @@ export async function computeStatusInputFingerprint(args: {
    */
   includeCorrelationChannels?: boolean;
   /**
-   * v1.18.11 (P6) — extra non-measurement inputs the snapshot derives from
+   * v1.18.11 — extra non-measurement inputs the snapshot derives from
    * (e.g. BMI reads the profile `heightCm`). Folded into the hash so a
    * change to one of them flips the gate. Values must be JSON-stable.
    */

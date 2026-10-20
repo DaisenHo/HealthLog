@@ -5,7 +5,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 
 /**
- * v1.4.25 W4c — nightly TIME-ASLEEP over time.
+ * v1.4.25 — nightly TIME-ASLEEP over time.
  *
  * Thin wrapper around `<HealthChartDynamic>` so the sleep sub-page gets
  * the same chart-cog parity (`chartKey="sleep"`) as the dashboard chart
@@ -23,7 +23,7 @@ import type { ComparisonBaseline } from "@/lib/dashboard-layout";
  * returns and the `<SleepOverview>` headline shows — so the axis reads e.g.
  * "8 h", not the inflated per-stage minutes the legacy path surfaced.
  *
- * v1.4.28 R3d (BK-F-M2) — the inline `dynamic()` call site was retired
+ * v1.4.28 — the inline `dynamic()` call site was retired
  * in favour of the shared `<HealthChartDynamic>` re-export so the
  * `<ChartSkeleton>` + `ssr: false` configuration stays in one place.
  */

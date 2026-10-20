@@ -14,7 +14,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * register) can share the same UX without duplicating the
  * visibility-toggle plumbing.
  *
- * v1.4.27 R3d MB2 — the icon-only toggle wraps in an `inline-flex h-11
+ * v1.4.27 — the icon-only toggle wraps in an `inline-flex h-11
  * w-11` hit area so the 44 px WCAG 2.5.5 floor is honoured on touch.
  * The icon stays at 16 px; the surrounding padding does the work. The
  * input itself gets `pr-12` so user input never collides with the

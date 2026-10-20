@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { ApiError } from "@/lib/api/api-fetch";
 import { I18nProvider } from "@/lib/i18n/context";
 import { QueryErrorRow } from "../query-error-row";
+
+/** A real read failure; the status-specific shapes live in query-error-primitives. */
+const failed = new ApiError("Boom", 500);
 
 function ssr(node: React.ReactNode) {
   return renderToStaticMarkup(
@@ -12,7 +16,9 @@ function ssr(node: React.ReactNode) {
 
 describe("<QueryErrorRow>", () => {
   it("renders the compact alert row with foreground message text", () => {
-    const html = ssr(<QueryErrorRow message="Could not load vitals" />);
+    const html = ssr(
+      <QueryErrorRow error={failed} message="Could not load vitals" />,
+    );
     expect(html).toContain('role="alert"');
     expect(html).toContain('data-slot="query-error-row"');
     expect(html).toContain("Could not load vitals");
@@ -25,13 +31,17 @@ describe("<QueryErrorRow>", () => {
   });
 
   it("falls back to the generic load-failed copy", () => {
-    expect(ssr(<QueryErrorRow />)).toContain("Could not load");
+    expect(ssr(<QueryErrorRow error={failed} />)).toContain("Could not load");
   });
 
   it("only renders the retry affordance when a handler is wired", () => {
-    expect(ssr(<QueryErrorRow message="boom" />)).not.toContain("<button");
+    expect(ssr(<QueryErrorRow error={failed} message="boom" />)).not.toContain(
+      "<button",
+    );
 
-    const withRetry = ssr(<QueryErrorRow message="boom" onRetry={() => {}} />);
+    const withRetry = ssr(
+      <QueryErrorRow error={failed} message="boom" onRetry={() => {}} />,
+    );
     expect(withRetry).toContain("<button");
     expect(withRetry).toContain("Retry");
     expect(withRetry).toContain('data-slot="query-error-row-retry"');
@@ -40,6 +50,7 @@ describe("<QueryErrorRow>", () => {
   it("honours the slot overrides the converted surfaces depend on", () => {
     const html = ssr(
       <QueryErrorRow
+        error={failed}
         message="boom"
         onRetry={() => {}}
         slot="healthkit-metric-error"
@@ -54,7 +65,12 @@ describe("<QueryErrorRow>", () => {
   it("takes a custom retry label", () => {
     expect(
       ssr(
-        <QueryErrorRow message="boom" onRetry={() => {}} retryLabel="Again" />,
+        <QueryErrorRow
+          error={failed}
+          message="boom"
+          onRetry={() => {}}
+          retryLabel="Again"
+        />,
       ),
     ).toContain("Again");
   });

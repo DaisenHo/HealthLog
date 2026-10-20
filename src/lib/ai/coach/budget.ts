@@ -38,7 +38,7 @@ export type BudgetExecutor = Pick<typeof prisma, "$queryRaw" | "$executeRaw">;
  * server's own OpenAI key, where every token the user spends lands on the
  * operator's invoice.
  *
- * v1.21.0 (F1/F2) — raised from the historical 25_000. That figure was sized
+ * v1.21.0 — raised from the historical 25_000. That figure was sized
  * for a single non-reasoning ~600-token chat reply (~20 turns/day). With the
  * v1.20 tool loop charging the Responses-API gross `total_tokens` of a `gpt-5.x`
  * reasoning turn (re-sent system prompt + inventory + 7 tool defs per round +
@@ -50,7 +50,7 @@ export type BudgetExecutor = Pick<typeof prisma, "$queryRaw" | "$executeRaw">;
 export const OPERATOR_COST_CAP = 200_000;
 
 /**
- * v1.21.0 (F1) — the daily ceiling for a chain whose egress runs on the
+ * v1.21.0 — the daily ceiling for a chain whose egress runs on the
  * USER's own plan / key (ChatGPT-OAuth/Codex, BYOK OpenAI/Anthropic, or a
  * self-hosted local model). The operator pays nothing for these, so the
  * operator-cost cap is a category error here — gating them on it locks a user
@@ -61,7 +61,7 @@ export const OPERATOR_COST_CAP = 200_000;
 export const USER_PLAN_CAP = 2_000_000;
 
 /**
- * v1.21.0 (F1) — classify a resolved provider chain's cost owner and return
+ * v1.21.0 — classify a resolved provider chain's cost owner and return
  * the daily cap that applies.
  *
  * The chain is a fallback list; the FIRST entry is the provider that will be
@@ -163,7 +163,7 @@ export function resolveTotalCapFor(surface: BudgetSurface): number {
 }
 
 /**
- * v1.37.19 (A7-2) — does this provider spend the OPERATOR's money?
+ * v1.37.19 — does this provider spend the OPERATOR's money?
  * `admin-openai` (the server's own API key) and `admin-codex` (the
  * server's shared ChatGPT account) do; everything else is the user's own
  * egress. One predicate so `resolveDailyCap` and the chain walker's
@@ -196,7 +196,7 @@ export function resolveCostOwner(
 }
 
 /**
- * v1.37.19 (A7-2) — the day's recorded spend for one user (0 when no row).
+ * v1.37.19 — the day's recorded spend for one user (0 when no row).
  *
  * Read by the chain walker's hop-time operator-cap guard: a request whose
  * PRIMARY provider runs on the user's own key reserves under the generous
@@ -464,7 +464,7 @@ export async function reserveBudget(
  * sentinel / refusal replies, whose upstream tokens were still burned
  * (SENIOR-DEV MEDIUM: spend undercount).
  *
- * v1.21.0 (F3) — `cachedTokens` (the Responses-API `cached_tokens` count) is
+ * v1.21.0 — `cachedTokens` (the Responses-API `cached_tokens` count) is
  * subtracted from the charged amount. The gross `total_tokens` a reasoning
  * provider reports still includes the full input even when prompt-caching
  * served most of it cheaply / free; charging the user's daily meter for input

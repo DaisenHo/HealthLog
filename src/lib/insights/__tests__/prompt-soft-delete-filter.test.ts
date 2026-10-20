@@ -19,9 +19,10 @@ function read(rel: string): string {
 
 describe("prompt reads exclude tombstoned rows", () => {
   it("general-status filters its measurement read", () => {
-    const src = read("../general-status.ts");
-    expect(src).toMatch(
-      /measurement\s*\n?\s*\.findMany\(\{\s*where:\s*\{[\s\S]{0,300}?\bdeletedAt:\s*null/,
+    // The overview reads through the per-type latest-readings query.
+    expect(read("../general-status.ts")).toMatch(/readLatestReadingsPerType\(/);
+    expect(read("../recent-readings.ts")).toMatch(
+      /readLatestReadingsPerType[\s\S]*?m\."deleted_at" IS NULL/,
     );
   });
 

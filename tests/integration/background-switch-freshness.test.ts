@@ -4,16 +4,17 @@
  * Reads inside one request are memoised on the request's wide event, so a
  * page that resolves the AI capabilities five times reads the settings row
  * once. A background job opens one wide event for its whole run, and the
- * status crons loop over every candidate inside it: memoising there meant the
+ * status batch loops over every candidate inside it: memoising there meant the
  * switches, the modules and the consent kinds were read once at the start of
  * the run and served to every later user, and the wire re-check read the same
  * cached answer. Turning the Assistant off at 02:05 did not stop the 02:00
  * pass.
  *
- * Driven here over the real loop, the real capability loader and Postgres:
- * the first user's generation turns the switch off, and the remaining users
- * must not reach a generator, while the wire re-check inside the first user's
- * own run must see the change too.
+ * Driven here over the real loop, the real capability loader and Postgres.
+ * The batch is stubbed past its first step, the `statusText` capability it
+ * resolves before building anything: the first user's run turns the switch
+ * off, the remaining users must not get past that step, and the wire re-check
+ * inside the first user's own run must see the change too.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,7 +28,30 @@ vi.mock("@/lib/jobs/status-cron-candidates", () => ({
   ),
 }));
 
-import { runStatusCronGenerate } from "@/lib/jobs/reminder/insights-handlers";
+const batch = vi.hoisted(() => ({
+  run: async (_userId: string): Promise<void> => {},
+}));
+
+vi.mock("@/lib/insights/status-batch", async () => {
+  const { aiCapabilityForJob } = await import("@/lib/ai/capabilities/gate");
+  return {
+    generateStatusBatchForUser: vi.fn(async (userId: string) => {
+      const result = {
+        served: 0,
+        batched: 0,
+        fellBack: 0,
+        batchCallMade: false,
+      };
+      if (!(await aiCapabilityForJob(userId, "statusText")).available) {
+        return result;
+      }
+      await batch.run(userId);
+      return { ...result, batched: 1, batchCallMade: true };
+    }),
+  };
+});
+
+import { runStatusBatchCron } from "@/lib/jobs/reminder/insights-handlers";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 
 let counter = 0;
@@ -74,7 +98,7 @@ describe("a switch turned off mid-run", () => {
     const reached: string[] = [];
     const wire: Array<string | null> = [];
 
-    const generate = vi.fn(async (userId: string) => {
+    batch.run = async (userId: string) => {
       reached.push(userId);
       // The wire re-check before the switch moves: open.
       wire.push(
@@ -87,9 +111,9 @@ describe("a switch turned off mid-run", () => {
         (await aiEgressRefusal("statusText", userId, ["anthropic"]))?.reason ??
           null,
       );
-    });
+    };
 
-    await runStatusCronGenerate("job.test.fresh_switch", generate);
+    await runStatusBatchCron("job.test.fresh_switch", () => false);
 
     expect(reached).toEqual([candidates.ids[0]]);
     expect(wire[0]).toBeNull();

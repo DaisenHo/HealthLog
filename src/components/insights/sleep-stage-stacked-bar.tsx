@@ -77,7 +77,7 @@ export interface SleepStageBreakdown {
    */
   stages: Record<string, number>;
   /**
-   * v1.4.25 W3f — per-night breakdown over the trailing 30 days,
+   * v1.4.25 — per-night breakdown over the trailing 30 days,
    * sorted ascending. The chart slices the trailing N entries based on
    * the active window toggle.
    */
@@ -273,7 +273,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
   const formatCalendar = useCalendarDate();
   const fmtDay = (date: Date) => formatCalendar(dateOnlyKey(date));
 
-  // v1.4.25 W3f — window toggle (7 / 14 / 30). Default 7d so the user
+  // v1.4.25 — window toggle (7 / 14 / 30). Default 7d so the user
   // sees their most recent week with maximal per-bar resolution.
   const [windowDays, setWindowDays] = useState<WindowSize>(7);
 
@@ -289,7 +289,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
     [NAP_KEY]: t("insights.sleep.stages.nap"),
   };
 
-  // v1.4.25 W3f — per-night dataset. Slice the trailing N nights and
+  // v1.4.25 — per-night dataset. Slice the trailing N nights and
   // build a Recharts row per night with one numeric key per stage.
   // Empty perNight (legacy clients during the rollout) falls back to
   // the aggregate row so the chart still renders something rather
@@ -378,7 +378,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
             </span>
           </div>
           <div
-            // v1.4.27 MB7 / CF-70 — bump the gap from `gap-1` to
+            // v1.4.27 — bump the gap from `gap-1` to
             // `gap-1.5` so the three window-toggle buttons (7d /
             // 14d / 30d) breathe enough on Pixel 5 that the active
             // pill's border doesn't fuse with the inactive neighbour.

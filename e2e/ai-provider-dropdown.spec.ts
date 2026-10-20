@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.16 phase B2 — AI provider settings UX with single dropdown
+ * v1.4.16 — AI provider settings UX with single dropdown
  * driving the form below. Three things to lock in here:
  *
  *   1. /settings/ai exposes the active-provider Pulldown

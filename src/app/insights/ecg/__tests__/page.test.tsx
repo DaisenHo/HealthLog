@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.30 (UX/IA audit H1) — `/insights/ecg` routed sub-page.
+ * v1.30 — `/insights/ecg` routed sub-page.
  *
  * The page reuses `<EcgSection>` (verbatim, `hideHeading` set so the shell
  * owns the heading) and self-gates to an empty state when the account has no
@@ -52,7 +52,7 @@ function render(data: { recordings: EcgRecord[]; hasRecordings: boolean }) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  client.setQueryData(queryKeys.insightsEcgList(), data);
+  client.setQueryData(queryKeys.insightsEcgList(), { data, cap: null });
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <I18nProvider initialLocale="en">

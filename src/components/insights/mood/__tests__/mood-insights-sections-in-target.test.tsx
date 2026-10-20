@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.8.6 QA — the in-target share must appear exactly once on the mood
+ * v1.8.6 — the in-target share must appear exactly once on the mood
  * page. The canonical surface is `<MoodInTargetTile>`; when it renders
  * (inTargetPct present) the same-number `in-target` takeaway is dropped
  * from the narrative feed so the percentage is not duplicated one row

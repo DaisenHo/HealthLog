@@ -7,7 +7,7 @@ import {
 } from "../safety-contracts";
 
 /**
- * v1.4.25 W14c — safety-contract matrix parity guards.
+ * v1.4.25 — safety-contract matrix parity guards.
  *
  * Complements the W9d `i18n-locale-integrity.test.ts` for the YAML
  * matrix:

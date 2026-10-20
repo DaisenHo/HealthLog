@@ -55,7 +55,7 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: () => mocks.getGlobalBossMock(),
 }));
 
-// v1.4.36 QA H3 — `ensureUserRollupsFresh` now annotates + console-
+// v1.4.36 — `ensureUserRollupsFresh` now annotates + console-
 // errors on populator failures so silent regressions show up in ops.
 // Mock the annotate boundary so the test can assert the meta payload.
 vi.mock("@/lib/logging/context", () => ({
@@ -181,7 +181,7 @@ describe("recomputeBucketsForMeasurement", () => {
         mean: 82.5,
         min_value: 80.0,
         max_value: 85.0,
-        // v1.4.39 W-SUM — writer always populates `sum_value` (AVG
+        // v1.4.39 — writer always populates `sum_value` (AVG
         // and SUM compose in the same $queryRaw aggregate). 3 * 82.5
         // = 247.5 so the round-trips line up with `mean * count`.
         sum_value: 247.5,
@@ -224,7 +224,7 @@ describe("recomputeBucketsForMeasurement", () => {
     expect(params[4]).toBe("MANUAL");
     expect(params[5]).toBe(3);
     expect(params[6]).toBe(82.5);
-    // v1.4.39 W-SUM — sumValue flows through. Cumulative read paths
+    // v1.4.39 — sumValue flows through. Cumulative read paths
     // (steps, flights, distance, daylight, active-energy) consume it.
     expect(params[9]).toBe(247.5);
 
@@ -496,6 +496,19 @@ describe("persistRollupRows — large path (via recomputeUserRollups)", () => {
    * instant, a different oldest bucket was corrupted on each run and nothing
    * repaired it. The window must be snapped out to whole buckets first.
    */
+  it("stops between granularities once the job's budget is spent", async () => {
+    queryRawUnsafe.mockResolvedValue([]);
+    let asked = 0;
+    const result = await recomputeUserRollups("user-1", {
+      // The budget runs out after the first granularity was folded.
+      shouldStop: () => ++asked > 1,
+    });
+    expect(result.stopped).toBe(true);
+    // The first granularity's aggregate, then nothing more.
+    expect(queryRawUnsafe).toHaveBeenCalledTimes(1);
+    queryRawUnsafe.mockReset();
+  });
+
   describe("bucket alignment of the recompute window", () => {
     it("snaps a mid-day `from` down to the start of its DAY bucket", async () => {
       queryRawUnsafe.mockResolvedValueOnce(syntheticRows(1));

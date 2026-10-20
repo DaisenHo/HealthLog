@@ -101,7 +101,7 @@ export interface ComplianceMedicationInput {
   scheduleRevisions?: Parameters<
     typeof buildComplianceMedicationContext
   >[0]["scheduleRevisions"];
-  /** v1.25 H-MED1 — pause eras so paused days drop out of the denominator. */
+  /** v1.25 — pause eras so paused days drop out of the denominator. */
   pauseEras?: Parameters<
     typeof buildComplianceMedicationContext
   >[0]["pauseEras"];
@@ -262,7 +262,7 @@ export async function buildCompliancePayload(
     },
   });
 
-  // v1.7.0 SB-SCHED-2 — thread the medication context so the denominator
+  // v1.7.0 — thread the medication context so the denominator
   // routes through the canonical engine (RRULE / rolling / one-shot / PRN /
   // cyclic). `lastIntakeAt` is the latest non-skipped takenAt inside the
   // fetch window (rolling cadences re-anchor on it).

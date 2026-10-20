@@ -58,6 +58,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
     data: episode,
     isLoading,
     isError,
+    error,
     refetch,
   } = useIllnessEpisode(episodeId);
   const resolve = useResolveEpisode();
@@ -69,6 +70,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   if (isError) {
     return (
       <QueryErrorCard
+        error={error}
         title={t("illness.loadError")}
         onRetry={() => void refetch()}
       />

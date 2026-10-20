@@ -120,9 +120,11 @@ function dayKey(at: Date, tz: string): string {
 /**
  * Build the daily SYMPTOM_SEVERITY series (rides both roles; this returns it in
  * the requested `role`). Healthy days are zero-filled — but ONLY across the
- * span of the user's real episodes intersected with `[windowStart, windowEnd]`,
- * so a user with no episodes yields an EMPTY series (the channel degrades to
- * absent, never a spurious all-zero constant).
+ * span of the episodes passed in, intersected with `[windowStart, windowEnd]`.
+ * Logged days always count, inside a span or not, so an episode that carries
+ * no span (a chronic condition) still contributes its real readings. No span
+ * and no log yields an EMPTY series (the channel degrades to absent, never a
+ * spurious all-zero constant).
  *
  * Algorithm:
  *  1. Compute the set of in-window calendar days covered by ANY episode span
@@ -134,8 +136,8 @@ function dayKey(at: Date, tz: string): string {
  *     on a day → the MAX, the most-symptomatic reading).
  *
  * The result is a dense-within-episode-spans series with genuine 0↔>0 variance
- * when the user had symptomatic days, and NOTHING at all when they had no
- * episodes. Pure.
+ * when the user had symptomatic days, and NOTHING at all when there is neither
+ * a span nor a logged day. Pure.
  */
 export function buildSymptomSeverityDailySeries(args: {
   dayLogs: SymptomDayLogRow[];
@@ -171,11 +173,6 @@ export function buildSymptomSeverityDailySeries(args: {
     }
   }
 
-  // If no episode put a single day on the board, the channel is absent.
-  if (byDay.size === 0) {
-    return { key: SYMPTOM_SEVERITY_CHANNEL_KEY, role, points: [] };
-  }
-
   // Step 3 — overlay logged impacts (MAX per day). A logged day outside every
   // episode span is still honoured (it is, by definition, a symptomatic day the
   // user recorded), so it joins the series even if the span walk missed it.
@@ -184,6 +181,11 @@ export function buildSymptomSeverityDailySeries(args: {
     if (!Number.isFinite(log.impact)) continue;
     const prev = byDay.get(log.day);
     byDay.set(log.day, prev == null ? log.impact : Math.max(prev, log.impact));
+  }
+
+  // No span and no logged day: the channel is absent.
+  if (byDay.size === 0) {
+    return { key: SYMPTOM_SEVERITY_CHANNEL_KEY, role, points: [] };
   }
 
   const points: DailySeriesPoint[] = [...byDay.entries()]

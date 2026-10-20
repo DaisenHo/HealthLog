@@ -1,5 +1,5 @@
 /**
- * v1.4.27 F21 — translator-aware notification dispatch.
+ * v1.4.27 — translator-aware notification dispatch.
  *
  * The base `dispatchNotification` (in `./dispatcher`) is deliberately
  * locale-agnostic: it forwards `title` and `message` verbatim to every
@@ -26,7 +26,7 @@
  * a no-op (the dispatcher fans the message across every enabled
  * channel as before).
  *
- * v1.4.28 R3d (R1.2 H5) — the locale lookup previously fired
+ * v1.4.28 (R1.2 H5) — the locale lookup previously fired
  * `prisma.user.findUnique` on every call. A 30-second TTL LRU keyed on
  * `userId` collapses repeat reads inside the same recipient burst onto
  * one DB round-trip; the next read after 30 s re-validates. The
@@ -80,7 +80,8 @@ function isLocale(value: string | null | undefined): value is Locale {
     value === "es" ||
     value === "it" ||
     value === "pl" ||
-    value === "ko"
+    value === "ko" ||
+    value === "nl"
   );
 }
 
@@ -112,7 +113,7 @@ export function __resetDispatchLocaleCacheForTests(): void {
 }
 
 async function resolveRecipientLocale(userId: string): Promise<Locale> {
-  // v1.4.28 R3d (R1.2 H5) — fast path: cached entry within TTL.
+  // v1.4.28 (R1.2 H5) — fast path: cached entry within TTL.
   const cached = localeCache.get(userId);
   if (cached && cached.expiresAt > Date.now()) {
     // Mark as fresh by re-inserting (Map iteration order doubles as
