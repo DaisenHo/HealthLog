@@ -703,3 +703,22 @@ describe("extractFeatures — blood-pressure spread", () => {
     expect(features.bloodPressure?.sdSys30).toBe(8.2);
   });
 });
+
+describe("extractFeatures — mood fallback window", () => {
+  it("reads the raw fallback over the rollup's five years, not one", async () => {
+    // Empty rollup tier: the raw fallback answers.
+    prismaMock.moodEntryRollup.findMany.mockResolvedValue([]);
+    await extractFeatures("user-mood-window", false, {
+      only: new Set(["mood"]),
+    });
+    const call = prismaMock.moodEntry.findMany.mock.calls.find(
+      ([args]) =>
+        (args as { where?: { moodLoggedAt?: unknown } })?.where?.moodLoggedAt,
+    );
+    expect(call).toBeDefined();
+    const since = (call![0] as { where: { moodLoggedAt: { gte: Date } } }).where
+      .moodLoggedAt.gte;
+    const years = (Date.now() - since.getTime()) / (365 * dayMs);
+    expect(years).toBeGreaterThan(4.9);
+  });
+});
