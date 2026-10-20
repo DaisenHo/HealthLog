@@ -40,6 +40,55 @@ not reachable". The entrypoint also runs the migrations on every boot, so
 step 2 is optional; it is there for when you want to see the migration
 result before the new container takes traffic.
 
+### A migration that timed out on a lock
+
+Some migrations bound how long they wait for a table lock, so that a
+long-running holder (most often an autovacuum that is preventing
+transaction-ID wraparound, which does not step aside) cannot queue every
+write to that table behind the migration. Migration `0412` waits at most ten
+seconds for `measurements`. When the wait runs out, the boot log shows
+Prisma's report followed by a line from the entrypoint:
+
+```
+Error: P3018
+...
+Migration name: 0412_measurement_hot_updates
+
+Database error code: 55P03
+...
+HealthLog: migration 0412_measurement_hot_updates timed out waiting for a lock (55P03) and changed nothing; marking it rolled back and retrying in 15s (retry 1 of 5).
+```
+
+What happens on its own: such a migration is written so that a timed-out
+attempt changes nothing, and it says so in its file
+(`-- @retry-on-lock-timeout`). The entrypoint then marks that one migration
+rolled back (`prisma migrate resolve --rolled-back`) and runs
+`migrate deploy` again after 15, 30, 60, 120 and 240 seconds. The app starts
+as soon as an attempt gets the lock. A later boot that finds the attempt still
+on record (Prisma's `P3009`) reads the cause from `_prisma_migrations` and
+does the same. Nothing else is retried: any other failure, and a lock timeout
+in a migration that does not carry the marker, stops the boot exactly as
+before.
+
+If all five retries time out, the log ends with
+`HealthLog: ERROR — migration … timed out on a lock 6 times in a row; giving
+up.` and the container exits. Something has held the table for about eight
+minutes. Find it:
+
+```sh
+docker compose exec db psql -U healthlog -c "
+  SELECT pid, backend_type, state, now() - xact_start AS running, query
+    FROM pg_stat_activity
+   WHERE pid IN (SELECT pid FROM pg_locks
+                  WHERE relation = 'measurements'::regclass)"
+```
+
+An `autovacuum: VACUUM … (to prevent wraparound)` row finishes on its own;
+wait for it to disappear and start the container again (a restart policy does
+that for you, and each boot retries). Anything else is a session you can
+judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
+You never need to run `migrate resolve` by hand for this case.
+
 ### v1.11.0 notes
 
 Migrations `0110`–`0114` are additive (new tables / columns for the

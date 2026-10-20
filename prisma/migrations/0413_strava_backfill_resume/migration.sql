@@ -9,4 +9,4 @@
 -- Nullable and unset for every existing row: an unfinished backfill starts
 -- once more from the newest page and records its place from then on.
 
-ALTER TABLE "users" ADD COLUMN "strava_backfill_resume_before" TIMESTAMP(3);
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "strava_backfill_resume_before" TIMESTAMP(3);

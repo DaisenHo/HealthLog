@@ -28,13 +28,22 @@
 -- `ALTER TABLE ... SET` SHARE UPDATE EXCLUSIVE; both wait for an autovacuum
 -- that is preventing wraparound, which does not step aside, and while they
 -- wait every write to `measurements` queues behind them, including the ones
--- the running release still serves during a deploy. `migrate deploy` runs the
--- whole file as one transaction, so `SET LOCAL` bounds the wait for this file
--- alone: past ten seconds the migration fails and rolls back whole, the
--- writes go on, and the next deploy tries again once `prisma migrate resolve
--- --rolled-back 0412_measurement_hot_updates` has cleared the failed attempt.
-
-SET LOCAL lock_timeout = '10s';
+-- the running release still serves during a deploy. The wait is bounded at
+-- ten seconds; past that the attempt fails with SQLSTATE 55P03 and the queued
+-- writes go on.
+--
+-- `migrate deploy` does not run a migration file inside one transaction: each
+-- statement commits on its own, so a top-level `SET LOCAL` does nothing and a
+-- file that fails half-way stays half-applied. The two statements that take a
+-- lock therefore run inside one `DO` block, which is a single statement and
+-- so commits or rolls back whole, and the timeout is set inside it with
+-- `set_config(..., true)`, scoped to that statement. The function before it
+-- is `CREATE OR REPLACE` and harmless to run again. A lock timeout leaves the
+-- file safe to apply once more, which is what the marker below declares:
+-- `scripts/migrate-deploy.mjs` marks the attempt rolled back and retries it
+-- with a backoff (docs/ops/deploy.md, "A migration that timed out on a lock").
+--
+-- @retry-on-lock-timeout
 
 CREATE OR REPLACE FUNCTION "measurements_keep_stamps_on_noop"() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -48,13 +57,19 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER "measurements_noop_update_keeps_stamps"
-    BEFORE UPDATE ON "measurements"
-    FOR EACH ROW
-    EXECUTE FUNCTION "measurements_keep_stamps_on_noop"();
+DO $migration$
+BEGIN
+    PERFORM set_config('lock_timeout', '10s', true);
 
-ALTER TABLE "measurements" SET (
-    fillfactor = 85,
-    autovacuum_vacuum_scale_factor = 0.05,
-    autovacuum_analyze_scale_factor = 0.05
-);
+    CREATE TRIGGER "measurements_noop_update_keeps_stamps"
+        BEFORE UPDATE ON "measurements"
+        FOR EACH ROW
+        EXECUTE FUNCTION "measurements_keep_stamps_on_noop"();
+
+    ALTER TABLE "measurements" SET (
+        fillfactor = 85,
+        autovacuum_vacuum_scale_factor = 0.05,
+        autovacuum_analyze_scale_factor = 0.05
+    );
+END
+$migration$;
