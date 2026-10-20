@@ -34,6 +34,7 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/auth/mfa/verify-factor", () => ({
   verifyMfaFactor: vi.fn(),
+  loadFactorUser: vi.fn(),
 }));
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
@@ -42,7 +43,7 @@ import { POST } from "../route";
 import { requireMfaManagementAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { destroyOtherSessions } from "@/lib/auth/session";
-import { verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
+import { loadFactorUser, verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
 
 function req() {
   return new Request("http://localhost/api/auth/me/mfa/disable", {
@@ -54,6 +55,12 @@ function req() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(loadFactorUser).mockResolvedValue({
+    id: "u1",
+    totpSecretEncrypted: "enc",
+    totpLastStep: null,
+    totpConfirmedAt: new Date("2026-01-01"),
+  });
   vi.mocked(requireMfaManagementAuth).mockResolvedValue({
     transport: "cookie",
     user: { id: "u1" },

@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
-import type { User } from "@/generated/prisma/client";
 import { hashToken } from "@/lib/auth/hmac";
+import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
@@ -99,13 +99,13 @@ async function findSessionByCookie(cookieValue: string) {
     if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
       return await prisma.session.findUnique({
         where: { tokenHash: hashToken(cookieValue) },
-        include: { user: true },
+        include: { user: { select: SESSION_USER_SELECT } },
       });
     }
 
     const legacy = await prisma.session.findUnique({
       where: { id: cookieValue },
-      include: { user: true },
+      include: { user: { select: SESSION_USER_SELECT } },
     });
     // A row that already holds a secret has retired its id as a credential.
     return legacy && legacy.tokenHash === null ? legacy : null;
@@ -148,7 +148,10 @@ async function findSessionByCookie(cookieValue: string) {
  */
 export async function validateSessionFromCookieValue(
   cookieValue: string | undefined | null,
-): Promise<{ session: { id: string; expiresAt: Date }; user: User } | null> {
+): Promise<{
+  session: { id: string; expiresAt: Date };
+  user: SessionUser;
+} | null> {
   if (!cookieValue) return null;
   const session = await findSessionByCookie(cookieValue);
   if (!session || session.expiresAt < new Date()) return null;
@@ -179,7 +182,7 @@ export async function validateSessionWithCreatedAt(
   cookieValue: string | undefined | null,
 ): Promise<{
   session: { id: string; createdAt: Date; expiresAt: Date };
-  user: User;
+  user: SessionUser;
 } | null> {
   if (!cookieValue) return null;
   const session = await findSessionByCookie(cookieValue);
@@ -296,7 +299,7 @@ export async function getSession(): Promise<{
     actingAsUserId: string | null;
     recordEpoch: number;
   };
-  user: User;
+  user: SessionUser;
 } | null> {
   try {
     await ensureDbCompatibility();

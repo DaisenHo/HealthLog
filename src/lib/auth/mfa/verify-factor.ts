@@ -36,6 +36,28 @@ export interface FactorUser {
   totpConfirmedAt: Date | null;
 }
 
+/**
+ * Load the factor columns for one check, at the moment of the check.
+ *
+ * The per-request user (`SESSION_USER_SELECT`) carries no secret material, so
+ * a route that verifies a factor for an already-authenticated caller reads the
+ * secret and its replay floor here. Reading them fresh is also the right
+ * answer for the floor: it is the value the guarded update below compares.
+ */
+export async function loadFactorUser(
+  userId: string,
+): Promise<FactorUser | null> {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      totpSecretEncrypted: true,
+      totpLastStep: true,
+      totpConfirmedAt: true,
+    },
+  });
+}
+
 export interface FactorResult {
   ok: boolean;
   /** TOTP only: the code matched the secret but its step was already used. */

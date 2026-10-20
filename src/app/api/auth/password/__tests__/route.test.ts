@@ -20,7 +20,7 @@ vi.mock("@/lib/api-handler", async () => {
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { update: vi.fn() },
+    user: { update: vi.fn(), findUnique: vi.fn() },
   },
 }));
 
@@ -92,7 +92,6 @@ const SESSION_OK = {
     username: "tester",
     email: "t@example.com",
     role: "USER" as const,
-    passwordHash: "h",
     onboardingCompletedAt: new Date(),
     locale: "en",
   },
@@ -109,6 +108,10 @@ function postReq(body: unknown): NextRequest {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+  // The hash is read off the stored row, not the session user.
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    passwordHash: "h",
+  } as never);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
   // Default: account clears the step-up (no MFA enrolled, or a fresh factor).
   vi.mocked(requireFreshMfaIfEnrolled).mockResolvedValue(SESSION_OK as never);

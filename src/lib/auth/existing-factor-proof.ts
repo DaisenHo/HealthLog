@@ -16,7 +16,6 @@
  * (same key, so its counter carries straight over). A shared bucket means a
  * guesser cannot multiply the budget by rotating between routes.
  */
-import type { User } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { apiError } from "@/lib/api-response";
 import { REPROOF_REQUIRED_CODE } from "@/lib/api-errors";
@@ -34,7 +33,7 @@ import {
 import { verifyPassword } from "@/lib/auth/password";
 import { verifyAuthentication } from "@/lib/auth/passkey";
 import { verifyMfaAuthentication } from "@/lib/auth/mfa/webauthn";
-import { verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
+import { loadFactorUser, verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
 import {
   stepUpMintSchema,
   type StepUpMintRequest,
@@ -93,6 +92,9 @@ export async function refundReproof(userId: string): Promise<void> {
 
 export type ProofOutcome = { ok: true } | { ok: false; reason: string };
 
+/** The caller a proof is checked for: who they are and whether TOTP is live. */
+type ProofUser = { id: string; totpConfirmedAt: Date | null };
+
 /**
  * Verify a proof against the account. Never throws for a bad proof: a
  * malformed or expired WebAuthn challenge is a failed attempt, not a 500.
@@ -102,24 +104,25 @@ export type ProofOutcome = { ok: true } | { ok: false; reason: string };
  * A TOTP code is accepted only from a confirmed secret (`verifyMfaFactor`).
  */
 export async function verifyExistingFactorProof(
-  user: Pick<
-    User,
-    | "id"
-    | "passwordHash"
-    | "totpSecretEncrypted"
-    | "totpLastStep"
-    | "totpConfirmedAt"
-  >,
+  user: ProofUser,
   proof: ExistingFactorProof,
 ): Promise<ProofOutcome> {
+  // The secrets are read here, for this one check: the caller's row is the
+  // per-request projection, which carries none of them.
   if (proof.method === "password") {
-    if (!user.passwordHash) return { ok: false, reason: "no_password" };
-    const ok = await verifyPassword(user.passwordHash, proof.password);
+    const row = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { passwordHash: true },
+    });
+    if (!row?.passwordHash) return { ok: false, reason: "no_password" };
+    const ok = await verifyPassword(row.passwordHash, proof.password);
     return ok ? { ok } : { ok: false, reason: "bad_password" };
   }
 
   if (proof.method === "totp") {
-    const result = await verifyMfaFactor(user, "totp", proof.code);
+    const factorUser = await loadFactorUser(user.id);
+    if (!factorUser) return { ok: false, reason: "bad_totp" };
+    const result = await verifyMfaFactor(factorUser, "totp", proof.code);
     if (result.ok) return { ok: true };
     return { ok: false, reason: result.replay ? "totp_replay" : "bad_totp" };
   }
@@ -230,7 +233,7 @@ export const RECENT_PROOF_MAX_AGE_MS = 5 * 60 * 1000;
  * throttled and audited through the shared re-proof bucket.
  */
 export async function checkCookieEnrollmentProof(args: {
-  user: User;
+  user: ProofUser;
   sessionId: string;
   request: Request;
   ipAddress: string | null;
@@ -373,14 +376,7 @@ export type SensitiveChangeProof =
  * of such an account; the shipped app does not change it.
  */
 export async function authorizeSensitiveChange(args: {
-  user: Pick<
-    User,
-    | "id"
-    | "passwordHash"
-    | "totpSecretEncrypted"
-    | "totpLastStep"
-    | "totpConfirmedAt"
-  >;
+  user: ProofUser;
   /** The session row id on a cookie request; null on a Bearer request. */
   cookieSessionId: string | null;
   currentPassword: string | null;

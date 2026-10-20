@@ -162,6 +162,7 @@ export const GET = apiHandler(async () => {
     onboardingRow,
     ai,
     coachReasoning,
+    identity,
   ] = await Promise.all([
     // The actor's own row is already in hand; a switched session needs the
     // record's `gender`, which is the column the cycle gate derives from.
@@ -235,6 +236,13 @@ export const GET = apiHandler(async () => {
       recordId,
       authority: aiAuthority,
     }),
+    // The encrypted insurance number is not on the per-request user
+    // (`SESSION_USER_SELECT`); it is read here, for the one response that
+    // shows it.
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { insuranceNumberEncrypted: true },
+    }),
   ]);
 
   // The masking step, and the one place the record scoping is narrowed rather
@@ -286,9 +294,9 @@ export const GET = apiHandler(async () => {
   // one row never 500s the whole profile fetch (the field just reads
   // null and the user re-enters it).
   let insuranceNumber: string | null = null;
-  if (user.insuranceNumberEncrypted) {
+  if (identity?.insuranceNumberEncrypted) {
     try {
-      insuranceNumber = decrypt(user.insuranceNumberEncrypted);
+      insuranceNumber = decrypt(identity.insuranceNumberEncrypted);
     } catch {
       insuranceNumber = null;
     }

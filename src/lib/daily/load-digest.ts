@@ -12,7 +12,7 @@
  * module-gated at the build layer) plus the resolved module map the item
  * builders consult.
  */
-import type { User } from "@/generated/prisma/client";
+import type { SessionUser } from "@/lib/auth/session-user";
 
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -547,7 +547,7 @@ export interface DailyDigestLoadOptions {
 }
 
 export async function loadDailyDigest(
-  user: User,
+  user: SessionUser,
   now: Date = new Date(),
   options: DailyDigestLoadOptions = {},
 ): Promise<DailyDigest> {

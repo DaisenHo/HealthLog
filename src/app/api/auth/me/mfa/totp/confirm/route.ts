@@ -37,6 +37,7 @@ import { destroyOtherSessions } from "@/lib/auth/session";
 import { decrypt } from "@/lib/crypto";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { verifyTotp } from "@/lib/auth/mfa/totp";
+import { loadFactorUser } from "@/lib/auth/mfa/verify-factor";
 import {
   generateRecoveryCodes,
   persistRecoveryCodes,
@@ -69,7 +70,9 @@ export const POST = apiHandler(async (req: Request) => {
   if (user.totpConfirmedAt) {
     throw new HttpError(409, "A second factor is already active");
   }
-  if (!user.totpSecretEncrypted) {
+  // The pending secret and its replay floor are not on the per-request user.
+  const pending = await loadFactorUser(user.id);
+  if (!pending?.totpSecretEncrypted) {
     throw new HttpError(409, "Start enrollment before confirming");
   }
 
@@ -90,11 +93,11 @@ export const POST = apiHandler(async (req: Request) => {
 
   // Decrypt is fail-closed — a missing/rotated key throws rather than
   // confirming against junk.
-  const secret = decrypt(user.totpSecretEncrypted);
+  const secret = decrypt(pending.totpSecretEncrypted);
   const result = verifyTotp(
     secret,
     parsed.data.code,
-    user.totpLastStep === null ? null : Number(user.totpLastStep),
+    pending.totpLastStep === null ? null : Number(pending.totpLastStep),
   );
 
   if (!result.valid) {

@@ -128,10 +128,14 @@ export const DELETE = apiHandler(
     }
 
     // Check: at least 1 auth method must remain
-    const passkeyCount = await prisma.passkey.count({
-      where: { userId: user.id },
-    });
-    const hasPassword = !!user.passwordHash;
+    const [passkeyCount, credential] = await Promise.all([
+      prisma.passkey.count({ where: { userId: user.id } }),
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { passwordHash: true },
+      }),
+    ]);
+    const hasPassword = !!credential?.passwordHash;
 
     if (passkeyCount <= 1 && !hasPassword) {
       return apiError(

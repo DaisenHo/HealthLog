@@ -21,6 +21,7 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    user: { findUnique: vi.fn() },
     passkey: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -40,7 +41,9 @@ import { DELETE, PATCH } from "../route";
 import { requireAuth, requireMfaManagementAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 
-const USER = { id: "user-1", username: "u", passwordHash: "argon2id$…" };
+const USER = { id: "user-1", username: "u" };
+/** The stored credential row; the session user carries no hash. */
+const STORED = { passwordHash: "argon2id$…" };
 
 const ROW = {
   id: "pk-1",
@@ -75,6 +78,7 @@ const commitElevation = vi.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(STORED as never);
   vi.mocked(requireAuth).mockResolvedValue({ user: USER } as never);
   commitElevation.mockClear().mockResolvedValue(undefined);
   vi.mocked(requireMfaManagementAuth).mockResolvedValue({
@@ -256,9 +260,12 @@ describe("DELETE /api/auth/passkeys/{id} — the removal's gate", () => {
       name: "Only one",
     } as never);
     vi.mocked(prisma.passkey.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      passwordHash: null,
+    } as never);
     vi.mocked(requireMfaManagementAuth).mockResolvedValue({
       transport: "cookie",
-      user: { ...USER, passwordHash: null },
+      user: USER,
       session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
       commitElevation,
     } as never);
