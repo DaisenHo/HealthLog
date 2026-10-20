@@ -83,6 +83,19 @@ describe("buildMoodDailySeries", () => {
     expect(series.summary.count).toBe(2);
   });
 
+  it("bounds the live walk to the window the rollup read covers", async () => {
+    await buildMoodDailySeries("user-1");
+    const [rollupUser, since] = vi.mocked(readMoodDayRollups).mock.calls[0] as [
+      string,
+      Date,
+    ];
+    expect(rollupUser).toBe("user-1");
+    const args = vi.mocked(prisma.moodEntry.findMany).mock.calls[0]?.[0] as {
+      where: { moodLoggedAt?: { gte: Date } };
+    };
+    expect(args.where.moodLoggedAt?.gte).toEqual(since);
+  });
+
   it("returns an empty series for a user with no rollups and no raw entries", async () => {
     const series = await buildMoodDailySeries("user-1");
     expect(series.entries).toEqual([]);

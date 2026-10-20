@@ -116,11 +116,12 @@ export async function buildMoodDailySeries(
     return { entries, summary, entryCount, source: "rollup" };
   }
 
-  // Coverage fallback — no rollup rows yet. Run the legacy live walk ONCE;
-  // the warm-up above mints the rollups for the next request.
+  // Coverage fallback — no rollup rows yet. Run the live walk ONCE over the
+  // same window the rollup read covers; the warm-up above mints the rollups
+  // for the next request.
   const moodEntries = await client.moodEntry.findMany({
     // v1.7.0 sync — exclude tombstoned rows from the fallback.
-    where: { userId, deletedAt: null },
+    where: { userId, deletedAt: null, moodLoggedAt: { gte: since } },
     orderBy: { moodLoggedAt: "asc" },
     select: { date: true, score: true },
   });
