@@ -52,7 +52,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  // Metered by the fenced chat's own bucket below, not the shared ceiling.
+  const { user } = await requireAuth(undefined, { writeBucket: "own" });
   const userId = user.id;
 
   const gate = await requireModuleEnabled(userId, "inboundDocuments");

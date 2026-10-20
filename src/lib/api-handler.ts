@@ -546,7 +546,7 @@ export function isScopedCredential(auth: AuthContext): boolean {
  */
 export async function requireAuth(
   requiredPermission?: string,
-  options?: Pick<WriteMeterOptions, "writeBucket">,
+  options?: WriteMeterOptions,
 ): Promise<AuthContext> {
   const auth = await authenticateCaller(requiredPermission);
   const carrier = await readActingCarrier(auth);

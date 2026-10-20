@@ -16,6 +16,12 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));
 
+const signals = vi.hoisted(() => ({ emitted: [] as unknown[] }));
+
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: (input: unknown) => signals.emitted.push(input),
+}));
+
 vi.mock("@/lib/rate-limit", () => ({
   checkRecordWriteRateLimit: vi.fn(async () => ({
     allowed: state.allowed,
@@ -38,6 +44,7 @@ function request(method: string | undefined) {
 
 beforeEach(() => {
   vi.mocked(checkRecordWriteRateLimit).mockClear();
+  signals.emitted.length = 0;
   state.allowed = true;
   state.event = null;
 });
@@ -98,5 +105,28 @@ describe("meterAccountWrite", () => {
     expect((refusal as HttpError).errorCode).toBe(
       RECORD_WRITE_RATE_LIMITED_CODE,
     );
+  });
+
+  it("lets the write through with a warning when the bucket cannot be read", async () => {
+    vi.mocked(checkRecordWriteRateLimit).mockRejectedValueOnce(
+      new Error("canceling statement due to lock timeout"),
+    );
+    request("POST");
+    await expect(meterAccountWrite("account-1")).resolves.toBeUndefined();
+    expect(signals.emitted).toEqual([
+      expect.objectContaining({
+        action: "rate_limit.record_write.unavailable",
+        level: "warn",
+      }),
+    ]);
+  });
+
+  it("counter-check: a readable, spent bucket still refuses, with no warning", async () => {
+    state.allowed = false;
+    request("POST");
+    await expect(meterAccountWrite("account-1")).rejects.toBeInstanceOf(
+      HttpError,
+    );
+    expect(signals.emitted).toEqual([]);
   });
 });

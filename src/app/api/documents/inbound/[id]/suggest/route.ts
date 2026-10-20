@@ -73,7 +73,9 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // Writes nothing (the draft goes back to the edit form), so the shared
+    // write ceiling does not count it; the document-AI bucket meters it.
+    const { user } = await requireAuth(undefined, { readOverPost: true });
 
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
