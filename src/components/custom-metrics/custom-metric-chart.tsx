@@ -121,7 +121,11 @@ export function CustomMetricChart({
     focusFor: (index) => {
       const point = points[index];
       return point
-        ? { label: name, value: formatMetricValue(point.value, decimals), unit }
+        ? {
+            label: name,
+            value: formatMetricValue(point.value, decimals, fmt.number),
+            unit,
+          }
         : null;
     },
   });
@@ -187,7 +191,9 @@ export function CustomMetricChart({
                   tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   stroke="var(--border)"
                   width={44}
-                  tickFormatter={(v: number) => formatMetricValue(v, decimals)}
+                  tickFormatter={(v: number) =>
+                    formatMetricValue(v, decimals, fmt.number)
+                  }
                 />
                 {targetLow != null && targetHigh != null ? (
                   <ReferenceArea
@@ -230,7 +236,7 @@ export function CustomMetricChart({
                     const rows: RichTooltipRow[] = [
                       {
                         name: t("customMetrics.chart.valueLabel"),
-                        value: `${formatMetricValue(point.value, decimals)} ${unit}`,
+                        value: `${formatMetricValue(point.value, decimals, fmt.number)} ${unit}`,
                         color: primary,
                       },
                     ];
@@ -272,7 +278,9 @@ export function CustomMetricChart({
             }))}
             columns={[{ key: "value", label: name }]}
             unit={unit}
-            formatValue={(value) => formatMetricValue(value, decimals)}
+            formatValue={(value) =>
+              formatMetricValue(value, decimals, fmt.number)
+            }
             formatDate={(date) => fmt.dateShortSmartCalendar(date)}
             bucket="day"
             metricLabel={name}

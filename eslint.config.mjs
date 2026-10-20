@@ -121,6 +121,13 @@ const eslintConfig = defineConfig([
       // scripts/strip-planning-tags.mjs; see eslint-plugins/healthlog/
       // planning-tags.js for the shape and its limits.
       "healthlog/no-planning-tags": "error",
+      // A number shown to a person goes through useFormatters() (or
+      // makeFormatters outside React): toFixed() prints a full stop in every
+      // language and a locale-less toLocaleString() follows the browser
+      // instead of the language picked in the app. SVG path data and other
+      // machine-read strings carry `eslint-disable-next-line ... -- <reason>`;
+      // the rule refuses a directive without one. See the rule header.
+      "healthlog/no-unlocalised-decimal": "error",
     },
   },
   // v1.28.17 — every recharts-rendering component funnels through the

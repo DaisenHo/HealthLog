@@ -197,6 +197,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
+      // eslint-disable-next-line healthlog/no-unlocalised-decimal -- data attribute the day-picker's own styles key on, never shown
       data-day={day.date.toLocaleDateString()}
       data-selected-single={
         modifiers.selected &&

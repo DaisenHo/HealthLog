@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 
 import { ILLNESS_SYMPTOM_CATALOG } from "./symptom-catalog";
@@ -141,6 +141,7 @@ export function LogDaySheet({
   onsetDate,
 }: LogDaySheetProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   // The fever is stored in °C and typed in the reader's temperature unit:
   // seeded through the transform, inverted on save.
   const { toDisplay, fromDisplay, unitFor } = useUnitDisplay();
@@ -185,7 +186,8 @@ export function LogDaySheet({
     setFunctionalImpact(dto?.functionalImpact ?? null);
     setFever(
       dto?.feverC != null
-        ? String(toDisplay("BODY_TEMPERATURE", dto.feverC))
+        ? // Seeded in the reader's notation; the parser below takes either mark.
+          fmt.number(toDisplay("BODY_TEMPERATURE", dto.feverC))
         : "",
     );
     setNote(dto?.note ?? "");
@@ -345,7 +347,7 @@ export function LogDaySheet({
           summary={
             feverValue != null ? (
               <span className="text-muted-foreground text-xs">
-                {feverValue.toFixed(1)} {feverUnit}
+                {fmt.number(feverValue, 1)} {feverUnit}
               </span>
             ) : null
           }
@@ -357,7 +359,7 @@ export function LogDaySheet({
             <Input
               id="illness-fever"
               inputMode="decimal"
-              placeholder={toDisplay("BODY_TEMPERATURE", 37).toFixed(1)}
+              placeholder={fmt.number(toDisplay("BODY_TEMPERATURE", 37), 1)}
               value={fever}
               onChange={(e) => setFever(e.target.value)}
               className="max-w-32"

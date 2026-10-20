@@ -229,11 +229,11 @@ export function EncryptionSection() {
           />
           <Stat
             label={t("admin.section.encryption.totalRows")}
-            value={s.totalRows.toLocaleString()}
+            value={fmt.integer(s.totalRows)}
           />
           <Stat
             label={t("admin.section.encryption.staleRows")}
-            value={s.staleRows.toLocaleString()}
+            value={fmt.integer(s.staleRows)}
           />
         </div>
         {/* "Safe to drop the legacy key" needs a legacy key to drop. With a
@@ -414,6 +414,7 @@ export function ColumnCoverage({
   initiallyOpen?: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [open, setOpen] = useState(initiallyOpen);
   const [showAll, setShowAll] = useState(false);
   const withRows = columns.filter((c) => c.total > 0);
@@ -484,16 +485,12 @@ export function ColumnCoverage({
                           <td className="py-2 pr-3 font-mono text-xs">
                             {c.model}.{c.field}
                           </td>
-                          <td className="py-2 pr-3">
-                            {c.total.toLocaleString()}
-                          </td>
-                          <td className="py-2 pr-3">
-                            {active.toLocaleString()}
-                          </td>
+                          <td className="py-2 pr-3">{fmt.integer(c.total)}</td>
+                          <td className="py-2 pr-3">{fmt.integer(active)}</td>
                           <td className="py-2">
                             {stale > 0 ? (
                               <Badge variant="secondary">
-                                {stale.toLocaleString()}
+                                {fmt.integer(stale)}
                               </Badge>
                             ) : (
                               <span className="text-muted-foreground">0</span>

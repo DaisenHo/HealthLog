@@ -16,6 +16,9 @@
  *                              slicing an ISO string or parsing UTC midnight.
  *   - `no-planning-tags`     — no planning-note identifier at the head of a
  *                              comment line.
+ *   - `no-unlocalised-decimal` — a displayed number goes through the app's
+ *                              formatters, not toFixed() or a locale-less
+ *                              toLocaleString().
  */
 
 "use strict";
@@ -29,6 +32,7 @@ const jobHandlerOutcome = require("./job-handler-outcome.js");
 const noDefaultZoneLiteral = require("./no-default-zone-literal.js");
 const noUtcDayKey = require("./no-utc-day-key.js");
 const noPlanningTags = require("./no-planning-tags.js");
+const noUnlocalisedDecimal = require("./no-unlocalised-decimal.js");
 
 module.exports = {
   rules: {
@@ -46,5 +50,6 @@ module.exports = {
     "no-default-zone-literal": noDefaultZoneLiteral,
     "no-utc-day-key": noUtcDayKey,
     "no-planning-tags": noPlanningTags,
+    "no-unlocalised-decimal": noUnlocalisedDecimal,
   },
 };

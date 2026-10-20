@@ -51,6 +51,7 @@ export function LabTrendSparkline({
     return { value: v, x, y };
   });
   const polylinePoints = points
+    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- SVG coordinates, read by the renderer, not a person
     .map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`)
     .join(" ");
   const isValidRange =

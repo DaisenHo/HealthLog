@@ -15,7 +15,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiGet } from "@/lib/api/api-fetch";
 import { formatDate } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import { CustomMetricForm } from "./custom-metric-form";
@@ -31,6 +31,7 @@ import type { CustomMetricDto, CustomMetricListResponse } from "./types";
  */
 export function CustomMetricList() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   // v1.36.x — the section is dropped whole inside somebody else's record.
   // Defining a metric is not a delegated verb, and every row here links to
   // `/custom-metrics/{id}`, which sharing does not cover: the shell turns a
@@ -133,6 +134,7 @@ export function CustomMetricList() {
                           {formatMetricValue(
                             metric.latest.value,
                             metric.decimals,
+                            fmt.number,
                           )}
                           {metric.unit ? ` ${metric.unit}` : ""}
                         </span>

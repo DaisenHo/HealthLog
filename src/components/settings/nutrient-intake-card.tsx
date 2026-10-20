@@ -24,7 +24,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -46,14 +46,13 @@ interface NutrientIntakeOverview {
   nutrients: NutrientOverviewRow[];
 }
 
-function formatAmount(amount: number): string {
-  // Day totals arrive as floats; one decimal is plenty for a glance
-  // list and trailing zeros read as noise.
-  return String(Math.round(amount * 10) / 10);
-}
-
 export function NutrientIntakeCard() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
+  // Day totals arrive as floats; one decimal is plenty for a glance list and
+  // trailing zeros read as noise, so the digit count is a ceiling.
+  const formatAmount = (amount: number) =>
+    fmt.number(Math.round(amount * 10) / 10);
   const { user } = useAuth();
 
   const enabled = user?.modules?.nutrients === true;

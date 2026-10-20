@@ -20,7 +20,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { TagChip } from "@/components/ui/tag-chip";
 import { TileHeader } from "@/components/insights/tile-header";
-import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
+import {
+  useDateFormatPreference,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
 import { readStoredTimezone } from "@/lib/timezone-mirror";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -299,6 +303,7 @@ export function MoodChart({
 }: MoodChartProps) {
   const { isAuthenticated } = useAuth();
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
   // Issue #490 — x-axis tick + tooltip date labels. Every timestamp this
   // chart formats encodes a CALENDAR DAY (noon-UTC of a server day key,
   // or a `bucketTimeSeries` Berlin-day UTC-midnight bucket start), so
@@ -618,9 +623,9 @@ export function MoodChart({
   };
 
   const formatTooltipValue = (value: number): string => {
-    const rounded = Math.round(value * 10) / 10;
+    const rounded = fmt.number(Math.round(value * 10) / 10);
     const label = moodLabels[Math.round(value)];
-    return label ? `${rounded} (${label})` : String(rounded);
+    return label ? `${rounded} (${label})` : rounded;
   };
 
   // v1.4.16 — personal mood baseline (median over visible window).
@@ -681,7 +686,7 @@ export function MoodChart({
     if (scores.length === 0) {
       return t("charts.a11y.noData", { metric });
     }
-    const fmtScore = (v: number) => String(Math.round(v * 10) / 10);
+    const fmtScore = (v: number) => fmt.number(Math.round(v * 10) / 10);
     const minVal = Math.min(...scores);
     const maxVal = Math.max(...scores);
     const latestVal = scores[scores.length - 1];
@@ -938,7 +943,7 @@ export function MoodChart({
                     delta = t("charts.deltaUnchanged");
                   } else {
                     const sign = diff > 0 ? "+" : "−";
-                    const formatted = `${sign}${Math.abs(diff).toFixed(1)}`;
+                    const formatted = `${sign}${fmt.number(Math.abs(diff), 1)}`;
                     delta = t(
                       effectiveCompareBaseline === "lastMonth"
                         ? "comparison.deltaVs.lastMonth"
@@ -951,7 +956,7 @@ export function MoodChart({
                     delta = t("charts.deltaUnchanged");
                   } else {
                     const sign = diff > 0 ? "+" : "−";
-                    const formatted = `${sign}${Math.abs(diff).toFixed(1)}`;
+                    const formatted = `${sign}${fmt.number(Math.abs(diff), 1)}`;
                     delta = t("charts.deltaVsBaseline").replace(
                       "{delta}",
                       formatted,

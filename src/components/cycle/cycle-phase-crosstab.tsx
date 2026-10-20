@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { Formatters } from "@/lib/format-locale";
 import { useUnitDisplay, type UnitDisplay } from "@/hooks/use-unit-display";
 import {
   applyDisplayTransform,
@@ -81,8 +82,12 @@ const CONFIDENCE_CLASS: Record<CyclePhaseCrosstabConfidence, string> = {
 };
 
 /** Whole numbers for steps; one decimal otherwise. */
-function fmt(value: number, display: CyclePhaseCrosstabDisplay): string {
-  return display === "steps" ? Math.round(value).toString() : value.toFixed(1);
+function fmt(
+  value: number,
+  display: CyclePhaseCrosstabDisplay,
+  nf: Formatters,
+): string {
+  return display === "steps" ? nf.integer(value) : nf.number(value, 1);
 }
 
 /**
@@ -152,6 +157,7 @@ export function CyclePhaseHeadline({
   headline: CyclePhaseCrosstabRow | null;
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const unitDisplay = useUnitDisplay();
   if (!headline) {
     return (
@@ -176,7 +182,7 @@ export function CyclePhaseHeadline({
   const params = {
     metric: metricLabel,
     // A phase delta → factor-only conversion (no affine offset).
-    delta: fmt(Math.abs(deltaConv(headline.delta)), headline.display),
+    delta: fmt(Math.abs(deltaConv(headline.delta)), headline.display, nf),
     unit,
     dir,
   };
@@ -199,6 +205,7 @@ export function CyclePhaseCrosstab({
   rows: CyclePhaseCrosstabRow[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const unitDisplay = useUnitDisplay();
   if (rows.length === 0) return null;
 
@@ -223,7 +230,7 @@ export function CyclePhaseCrosstab({
           // observational, so colouring it would imply a verdict the data
           // doesn't support. The sign prefix + `data-direction` carry it.
           const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${fmt(deltaConv(row.delta), row.display)} ${unit}`;
+          const deltaText = `${up ? "+" : ""}${fmt(deltaConv(row.delta), row.display, nf)} ${unit}`;
           return (
             <li
               key={row.metricKey}
@@ -257,8 +264,12 @@ export function CyclePhaseCrosstab({
               <p className="text-muted-foreground text-xs">
                 {t("cycle.insights.crosstab.detail", {
                   metric: metricLabel,
-                  lutealAvg: fmt(absConv(row.lutealAvg), row.display),
-                  follicularAvg: fmt(absConv(row.follicularAvg), row.display),
+                  lutealAvg: fmt(absConv(row.lutealAvg), row.display, nf),
+                  follicularAvg: fmt(
+                    absConv(row.follicularAvg),
+                    row.display,
+                    nf,
+                  ),
                   unit,
                   lutealDays: row.lutealDays,
                   follicularDays: row.follicularDays,

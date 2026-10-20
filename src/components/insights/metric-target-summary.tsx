@@ -7,7 +7,7 @@ import { ExternalLink, Target } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { queryKeys } from "@/lib/query-keys";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { resolveTargetUnitAdapter } from "@/lib/targets/target-unit-display";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RangeBar } from "@/components/targets/range-bar";
@@ -231,6 +231,7 @@ function TargetReferencePanel({
   glucoseUnit: payloadGlucoseUnit,
 }: TargetReferencePanelProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const adjust = useTargetAdjust();
   const { preference, glucoseUnit: accountGlucoseUnit } = useUnitDisplay();
   const glucoseUnit = payloadGlucoseUnit ?? accountGlucoseUnit;
@@ -314,7 +315,7 @@ function TargetReferencePanel({
     const avgValue =
       bpDiastolic?.average30 != null
         ? `${Math.round(average30)}/${Math.round(bpDiastolic.average30)}`
-        : String(Math.round(average30 * 10) / 10);
+        : fmt.number(Math.round(average30 * 10) / 10);
     averageLabel = `${t("targets.average30d")} ${avgValue} ${unit}`;
   }
 

@@ -162,7 +162,8 @@ export function UserManagementSection() {
     setEditQuotaGb(
       u.documentQuotaBytes === null
         ? ""
-        : String(Math.round((u.documentQuotaBytes / 1_073_741_824) * 10) / 10),
+        : // eslint-disable-next-line healthlog/no-unlocalised-decimal -- value of a type="number" input, which only takes a full stop
+          String(Math.round((u.documentQuotaBytes / 1_073_741_824) * 10) / 10),
     );
   }
 
