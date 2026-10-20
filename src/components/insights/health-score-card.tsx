@@ -860,14 +860,14 @@ function PillarRow({
       data-status="ok"
       className="grid grid-cols-[minmax(0,7rem)_1fr_2rem_auto] items-center gap-2 text-xs"
     >
-      {/* The label truncates; the row never grows. `minmax(0,…)` plus
-          `min-w-0 truncate` is what makes that structural rather than a
-          promise — drop either and the track grows to the longest word and
-          pushes the row. Widening the column does not rescue the long names:
-          the longest label in five of the six locales overruns any column
-          this panel can afford, so the extra width would come off the fill
-          bar and buy a few more characters of one language. */}
-      <span className="text-muted-foreground min-w-0 truncate">
+      {/* The label wraps inside a fixed track; the row grows a line rather
+          than cutting the name. `minmax(0,…)` plus `min-w-0` keeps the track
+          from growing to the longest word, and `hyphens-auto` splits a
+          compound ("Körperfett-verteilung") at a syllable instead of ending
+          it in an ellipsis. Widening the column does not rescue the long
+          names: the longest label in most locales overruns any column this
+          panel can afford, and the width would come off the fill bar. */}
+      <span className="text-muted-foreground min-w-0 break-words hyphens-auto">
         {t(PILLAR_LABEL_KEY[pillar.id])}
       </span>
       <div
