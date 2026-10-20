@@ -31,7 +31,7 @@ const SRC = join(process.cwd(), "src");
 const PICKER = "lib/measurements/pick-canonical-workout-rows.ts";
 
 /**
- * Every production call site of the read-time picker, frozen.
+ * Every production call site of the picker, frozen.
  *
  * Adding a surface that collapses workouts is a deliberate act: it must fetch
  * the identity fields or it silently disagrees with every other surface. Adding
@@ -48,6 +48,18 @@ const IDENTITY_OWNER: Record<string, string> = {
   // block's data. Recording the owner here rather than assuming the call site
   // owns its own select is the whole point of this map.
   "lib/ai/coach/snapshot-blocks/workouts-block.ts": "lib/ai/coach/snapshot.ts",
+  // The write path: the batch route runs the same picker over the rows it is
+  // about to insert, so a duplicate inside one batch is dropped by the rule
+  // the list later applies.
+  "app/api/workouts/batch/route.ts": "app/api/workouts/batch/route.ts",
+};
+
+/**
+ * How a call site proves its rows carry the duration. A read selects the
+ * column; the batch route maps it off the row it computed for the insert.
+ */
+const IDENTITY_PROOF: Record<string, string> = {
+  "app/api/workouts/batch/route.ts": "durationSec: p.row.durationSec",
 };
 
 const EXPECTED_CALL_SITES = Object.keys(IDENTITY_OWNER).sort();
@@ -65,10 +77,8 @@ function read(rel: string): string {
 }
 
 /**
- * Lines that actually invoke the picker. Comment lines are excluded because the
- * write-time sibling (`lib/workouts/canonical-rows.ts`) names the read-time
- * picker in its docblock to explain how the two layer, and that mention is
- * documentation rather than a call.
+ * Lines that actually invoke the picker. Comment lines are excluded: a
+ * docblock that names the picker is documentation rather than a call.
  */
 function invokesPicker(source: string): boolean {
   return source
@@ -104,7 +114,9 @@ describe("every call site fetches the session identity", () => {
     // rows came from. Coarse in the safe direction — it can only fail to catch
     // a second unrelated select in the same file, never pass a caller that
     // fetches no duration at all.
-    expect(read(IDENTITY_OWNER[rel])).toContain("durationSec: true");
+    expect(read(IDENTITY_OWNER[rel])).toContain(
+      IDENTITY_PROOF[rel] ?? "durationSec: true",
+    );
   });
 });
 

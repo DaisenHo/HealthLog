@@ -35,7 +35,7 @@
  * The builder NEVER POSTs `/api/insights/generate`.
  */
 import type { PrismaClient, MeasurementType } from "@/generated/prisma/client";
-import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
 import type { SleepSourceDiscrepancy } from "@/lib/analytics/sleep-night";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
@@ -1013,7 +1013,7 @@ async function liftBriefing(
 /**
  * v1.7.0 — derive the per-metric latest-reading block from the slim
  * summaries slice already fetched for `tiles.summaries`. ZERO extra DB
- * round-trips: the slim slice's `DISTINCT ON (type)` read already
+ * round-trips: the slim slice's per-type latest read already
  * carries the latest `value` (`summaries[type].latest`) and the
  * matching timestamp (`lastSeenByType[type].lastSeenAt`); the unit is
  * the static canonical-unit lookup. This keeps the snapshot pool-safe
@@ -1329,7 +1329,7 @@ export async function buildDashboardSnapshot(
   ] = await Promise.all([
     // A5 — reuse the coverage map already probed above so the slice
     // doesn't re-run the identical `probeRollupCoverage` query.
-    time("summaries", () => computeSummariesSlice(user.id, coverage)),
+    time("summaries", () => readSummariesSlice(user.id, { coverage })),
     time("mood", () => buildMoodBlock(prisma, user.id)),
     // v1.34 — the thick slice awaits the shared `modulesPromise` (the same
     // pattern the score-ring task uses) so the hero ring's health score can
@@ -1372,29 +1372,30 @@ export async function buildDashboardSnapshot(
   // `NUTRIENT_WATER` key BEFORE the module gate below strips it (like
   // every other summary type) when `nutrients` is off. Not a real
   // `MeasurementType` — see the widened `SUMMARY_TYPE_MODULE` note.
-  if (nutrientWater) {
-    const lastMs = new Date(nutrientWater.lastSeenAt).getTime();
-    const daysAgo = Math.floor((nowMs - lastMs) / (24 * 60 * 60 * 1000));
-    slimRaw.summaries = {
-      ...slimRaw.summaries,
-      NUTRIENT_WATER: nutrientWater.summary,
-    };
-    slimRaw.lastSeenByType = {
-      ...slimRaw.lastSeenByType,
-      NUTRIENT_WATER: { lastSeenAt: nutrientWater.lastSeenAt, daysAgo },
-    };
-  }
+  // The slice is the shared cache cell's value: fold into copies, never into
+  // the cached object itself.
+  const slimSummaries = nutrientWater
+    ? { ...slimRaw.summaries, NUTRIENT_WATER: nutrientWater.summary }
+    : slimRaw.summaries;
+  const slimLastSeen = nutrientWater
+    ? {
+        ...slimRaw.lastSeenByType,
+        NUTRIENT_WATER: {
+          lastSeenAt: nutrientWater.lastSeenAt,
+          daysAgo: Math.floor(
+            (nowMs - new Date(nutrientWater.lastSeenAt).getTime()) /
+              (24 * 60 * 60 * 1000),
+          ),
+        },
+      }
+    : slimRaw.lastSeenByType;
 
   // v1.18.0 — strip disabled-module data before it leaves the server.
   // Mood is blanked when the mood module is off; sleep / glucose summary
   // types are dropped from the slim slice; the glucose clinical panel +
   // per-context block are cleared when glucose is off; the layout +
   // catalogue hide every disabled-module widget.
-  const slim = gateSummariesByModules(
-    slimRaw.summaries,
-    slimRaw.lastSeenByType,
-    modules,
-  );
+  const slim = gateSummariesByModules(slimSummaries, slimLastSeen, modules);
   const mood =
     modules.mood === false
       ? { summary: null, entries: [] as DashboardSnapshotMoodEntry[] }

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
-import { DEFAULT_WORKOUT_SOURCE_PRIORITY } from "@/lib/sources/pick-canonical-workout";
+import {
+  pickCanonicalWorkoutRows,
+  workoutSourceLadder,
+} from "@/lib/measurements/pick-canonical-workout-rows";
 import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
 
 /**
@@ -68,10 +70,10 @@ describe("POLAR workout dedup — read-time canonical picker", () => {
 });
 
 describe("POLAR sits in the workout source ladders", () => {
-  it("is present in the workout default ladder, below WITHINGS, above STRAVA", () => {
-    const polar = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf("POLAR");
-    const withings = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf("WITHINGS");
-    const strava = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf("STRAVA");
+  it("is present in the workout ladder, below WITHINGS, above STRAVA", () => {
+    const polar = workoutSourceLadder(null).indexOf("POLAR");
+    const withings = workoutSourceLadder(null).indexOf("WITHINGS");
+    const strava = workoutSourceLadder(null).indexOf("STRAVA");
     expect(polar).toBeGreaterThan(withings);
     expect(polar).toBeLessThan(strava);
   });

@@ -24,10 +24,12 @@ import { apiError, apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import {
   buildCadenceTimeline,
   computeNextDose,
-  type CadenceEngineContext,
 } from "@/lib/medications/scheduling/cadence";
 import { complianceChips } from "@/lib/medications/scheduling/compliance";
 import {
+  buildComplianceMedicationContext,
+  COMPLIANCE_LEDGER_WINDOW_DAYS,
+  COURSES_COMPLIANCE_SELECT,
   lastNonSkippedTakenAt,
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
@@ -58,6 +60,11 @@ export const GET = apiHandler(
         schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
         // v1.16.3 — archived schedule eras for era-aware chips/tallies.
         scheduleRevisions: { orderBy: { validFrom: "asc" } },
+        // The pause eras and courses, so the chips tally the ledger the
+        // detail page's rate reads: a paused day or a gap between two
+        // courses expects nothing.
+        pauseEras: { select: { pausedAt: true, resumedAt: true } },
+        courses: COURSES_COMPLIANCE_SELECT,
       },
     });
     if (!med) {
@@ -75,11 +82,13 @@ export const GET = apiHandler(
     const windowDays = parsed.data.days ?? 30;
     const asOf = new Date();
 
-    // Pull intake events covering the window + a small buffer so a dose
-    // logged at the edge can still pair with its slot.
-    const bufferMs = 24 * 60 * 60 * 1000;
+    // The events the compliance ledger reads (its full trailing year plus a
+    // day): the chips tally the same rows as the detail page, and a rolling
+    // cadence re-anchors on the latest intake even when it predates the
+    // chart's window.
     const from = new Date(
-      asOf.getTime() - windowDays * 24 * 60 * 60 * 1000 - bufferMs,
+      asOf.getTime() -
+        (COMPLIANCE_LEDGER_WINDOW_DAYS + 1) * 24 * 60 * 60 * 1000,
     );
     const events = await prisma.medicationIntakeEvent.findMany({
       where: {
@@ -93,6 +102,8 @@ export const GET = apiHandler(
         scheduledFor: true,
         takenAt: true,
         skipped: true,
+        // A dose the auto-miss job closed counts as missed, as in the rate.
+        autoMissed: true,
         // v1.15.20 — pinned takes bind by anchor in the chip tally so the
         // chips agree with the % + the history on a "zugeordnet" dose.
         attributionSource: true,
@@ -121,16 +132,11 @@ export const GET = apiHandler(
     // legacy weekday walker (e.g. `FREQ=WEEKLY;BYDAY=MO` expands daily,
     // PRN counts as a real cadence) and disagrees with the dashboard.
     // Mirrors `analytics/compliance.ts`'s context construction.
-    const lastIntakeAt = lastNonSkippedTakenAt(events);
-    const engineCtx: CadenceEngineContext = {
-      startsOn: med.startsOn,
-      endsOn: med.endsOn,
-      oneShot: med.oneShot,
-      createdAt: med.createdAt,
-      lastIntakeAt,
-      timeZone: userTz,
-      scheduleRevisions: med.scheduleRevisions,
-    };
+    const engineCtx = buildComplianceMedicationContext(
+      med,
+      lastNonSkippedTakenAt(events),
+      userTz,
+    );
 
     // v1.39.1 (#1033) — intake tracking off: no chip, no next dose.
     const liveSchedules = dueSchedules(med);
@@ -146,11 +152,10 @@ export const GET = apiHandler(
     const chips = complianceChips(
       liveSchedules,
       events,
+      engineCtx,
       asOf,
       windowDays,
       anchor,
-      userTz,
-      engineCtx,
     );
     const next = computeNextDose(
       liveSchedules,

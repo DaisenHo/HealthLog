@@ -9,7 +9,7 @@ import {
   insufficientPillar,
   mean,
   okPillar,
-  standardDeviation,
+  readingSpread,
 } from "./shared";
 
 export const ACTIVITY_WINDOW_DAYS = 28;
@@ -74,7 +74,7 @@ export function computeActivityPillar(
   const score = clampScore((observed / plateau) * 100);
   const noiseFloor = Math.max(
     1,
-    Math.round(((0.5 * standardDeviation(values)) / plateau) * 100),
+    Math.round(((0.5 * readingSpread(values)) / plateau) * 100),
   );
   const latestDay = [...points].sort((a, b) => b.day.localeCompare(a.day))[0];
 

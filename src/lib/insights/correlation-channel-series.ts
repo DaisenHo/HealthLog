@@ -20,6 +20,7 @@
  * fabricating a constant.
  */
 import { prisma } from "@/lib/db";
+import { REST_MODE_EPISODE_WHERE } from "@/lib/illness/rest-mode";
 import {
   buildComplianceMedicationContext,
   COURSES_COMPLIANCE_SELECT,
@@ -152,9 +153,9 @@ export async function fetchComplianceSeries(
  * v1.21.0 (FDREXTEND) — build the user's SYMPTOM_SEVERITY daily series in the
  * `outcome` role (callers that need the behaviour role re-tag the returned
  * series — the points are role-invariant). Reads every in-window illness episode
- * + its day-logs; the builder zero-fills healthy days ONLY across real episode
- * spans, so a user with no episodes yields an empty series that degrades to
- * absent.
+ * that is not a chronic condition + its day-logs; the builder zero-fills healthy
+ * days ONLY across those spans, so a user with no such episode yields an empty
+ * series that degrades to absent.
  */
 export async function fetchSymptomSeries(
   userId: string,
@@ -165,11 +166,15 @@ export async function fetchSymptomSeries(
   const episodes = await prisma.illnessEpisode.findMany({
     // An episode overlaps the window when it onset before `now` and either is
     // ongoing or resolved at/after the window start.
+    // A chronic condition has no end, so its span would zero-fill every day
+    // of the window and hand the engine a near-constant series. Only the
+    // episodes that can put the account into Rest Mode carry a span.
     where: {
       userId,
       deletedAt: null,
       onsetAt: { lte: now },
       OR: [{ resolvedAt: null }, { resolvedAt: { gte: since } }],
+      ...REST_MODE_EPISODE_WHERE,
     },
     select: { id: true, onsetAt: true, resolvedAt: true },
   });

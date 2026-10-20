@@ -356,8 +356,16 @@ describe("POST /api/workouts/batch (real Postgres)", () => {
   it("preserves same-source workouts and surfaces exact re-posts as duplicates", async () => {
     const { POST } = await import("@/app/api/workouts/batch/route");
 
+    // Two sessions of one source in the same five-minute slot: different
+    // start and length, so two workouts.
     const body = {
-      workouts: [baseWorkout("hk-uuid-dup-1"), baseWorkout("hk-uuid-dup-2")],
+      workouts: [
+        baseWorkout("hk-uuid-dup-1"),
+        baseWorkout("hk-uuid-dup-2", {
+          startedAt: "2026-05-14T06:32:00.000Z",
+          endedAt: "2026-05-14T06:50:00.000Z",
+        }),
+      ],
     };
 
     const first = await POST(makeRequest(body));
@@ -391,6 +399,31 @@ describe("POST /api/workouts/batch (real Postgres)", () => {
       where: { userId: TEST_USER_ID },
     });
     expect(stored).toBe(2);
+  });
+
+  it("stores a session re-sent under a new id once, the way the list shows it", async () => {
+    // HealthKit can hand the same session over twice with two external ids.
+    // The list collapses it to one workout; the write keeps one row and
+    // reports the other as a duplicate instead of storing what no read shows.
+    const { POST } = await import("@/app/api/workouts/batch/route");
+    const res = await POST(
+      makeRequest({
+        workouts: [
+          baseWorkout("hk-uuid-resend-1"),
+          baseWorkout("hk-uuid-resend-2"),
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      data: { inserted: number; duplicates: number };
+    };
+    expect(json.data.inserted).toBe(1);
+    expect(json.data.duplicates).toBe(1);
+    const stored = await getPrismaClient().workout.count({
+      where: { userId: TEST_USER_ID },
+    });
+    expect(stored).toBe(1);
   });
 
   it("replays a cached response when the same Idempotency-Key is reused", async () => {

@@ -43,6 +43,7 @@ import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { Prisma } from "@/generated/prisma/client";
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -203,9 +204,8 @@ function windowStats(buckets: RollupBucket[]): {
   const means = usable.map((b) => b.mean);
   const mean = means.reduce((s, m) => s + m, 0) / means.length;
   if (means.length < 2) return { mean: round(mean), sd: null, n };
-  const variance =
-    means.reduce((s, m) => s + (m - mean) ** 2, 0) / means.length;
-  return { mean: round(mean), sd: round(Math.sqrt(variance)), n };
+  const sd = standardDeviation(means, READING_SPREAD) ?? 0;
+  return { mean: round(mean), sd: round(sd), n };
 }
 
 /**

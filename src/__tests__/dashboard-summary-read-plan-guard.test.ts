@@ -97,10 +97,9 @@ describe("dashboard summary reads — the route keeps using them", () => {
     expect(route).toMatch(
       /readSparkBuckets\(\s*prisma,\s*userId,\s*measurementTypes,/,
     );
-    // No second copy of the rollup read can drift out of the guarded
-    // module. (`FROM measurements` still appears in the route's own
-    // streak-day aggregate, which is a bounded 365-row read and not part
-    // of this finding.)
+    expect(route).toMatch(/readActivityDayKeys\(\s*prisma,\s*userId,/);
+    // No second copy of a read can drift out of the guarded module.
     expect(route.includes("FROM measurement_rollups")).toBe(false);
+    expect(route.includes("FROM measurements")).toBe(false);
   });
 });

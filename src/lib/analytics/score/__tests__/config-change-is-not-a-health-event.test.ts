@@ -189,7 +189,7 @@ const fakeDb = vi.hoisted(() => {
 vi.mock("@/lib/db", () => ({ prisma: fakeDb }));
 
 // ── Everything around the score, faked at its own seam ──────────────
-const computeSummariesSlice = vi.fn();
+const readSummariesSlice = vi.fn();
 const probeRollupCoverage = vi.fn();
 const isFullyCovered = vi.fn();
 const readMoodDayRollups = vi.fn();
@@ -205,7 +205,7 @@ const loadIntradayPulse = vi.fn();
 const readDayMeanSeries = vi.fn();
 
 vi.mock("@/lib/analytics/summaries-slice", () => ({
-  computeSummariesSlice: (...a: unknown[]) => computeSummariesSlice(...a),
+  readSummariesSlice: (...a: unknown[]) => readSummariesSlice(...a),
 }));
 vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: (...a: unknown[]) => probeRollupCoverage(...a),
@@ -381,7 +381,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   __resetAllCachesForTests();
   dismissedKeys.clear();
-  computeSummariesSlice.mockResolvedValue({
+  readSummariesSlice.mockResolvedValue({
     summaries: {},
     lastSeenByType: {},
     bmi: null,

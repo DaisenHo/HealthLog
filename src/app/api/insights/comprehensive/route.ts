@@ -12,7 +12,7 @@ import {
   generateAlerts,
 } from "@/lib/analytics/classifications";
 import {
-  pearsonCorrelation,
+  significantPearsonCorrelation,
   type PairedPoint,
 } from "@/lib/analytics/correlations";
 import {
@@ -285,7 +285,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
   const weightDaily = aggregate.dailyByType.WEIGHT ?? [];
   const sysDaily = aggregate.dailyByType.BLOOD_PRESSURE_SYS ?? [];
   const weightBpPairs: PairedPoint[] = joinDailyByDay(weightDaily, sysDaily);
-  const weightBpCorrelation = pearsonCorrelation(weightBpPairs);
+  const weightBpCorrelation = significantPearsonCorrelation(weightBpPairs);
   const scatterData = weightBpPairs.map((p) => ({
     weight: p.a,
     sysBP: p.b,
@@ -308,11 +308,11 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
   );
 
   const moodBpPairs = pairMoodWithDaily(dailyMoodEntries, sysDailyLocal);
-  const moodBpCorrelation = pearsonCorrelation(moodBpPairs);
+  const moodBpCorrelation = significantPearsonCorrelation(moodBpPairs);
   const moodBpScatterData = moodBpPairs.map((p) => ({ mood: p.a, sysBP: p.b }));
 
   const moodWeightPairs = pairMoodWithDaily(dailyMoodEntries, weightDailyLocal);
-  const moodWeightCorrelation = pearsonCorrelation(moodWeightPairs);
+  const moodWeightCorrelation = significantPearsonCorrelation(moodWeightPairs);
   const moodWeightScatterData = moodWeightPairs.map((p) => ({
     mood: p.a,
     weight: p.b,
@@ -374,7 +374,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, stats]) => ({ day, value: stats.sum / stats.count }));
   const moodPulsePairs = pairMoodWithDaily(dailyMoodEntries, restingPulseDaily);
-  const moodPulseCorrelation = pearsonCorrelation(moodPulsePairs);
+  const moodPulseCorrelation = significantPearsonCorrelation(moodPulsePairs);
   const moodPulseScatterData = moodPulsePairs.map((p) => ({
     mood: p.a,
     pulse: p.b,
@@ -558,7 +558,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
       });
     }
 
-    const corr = pearsonCorrelation(pairs);
+    const corr = significantPearsonCorrelation(pairs);
     if (corr) {
       bpMedicationCorrelation = {
         ...corr,
@@ -667,7 +667,7 @@ function deriveDailyLocalMeans(
 
 /**
  * Daily-key inner join between two daily-aggregated series. Returns
- * `PairedPoint` shapes compatible with `pearsonCorrelation`.
+ * `PairedPoint` shapes compatible with `significantPearsonCorrelation`.
  *
  * Inputs are sorted ASC by `day` (the aggregator's ORDER BY
  * guarantees that). The walk is O(n + m) merge-join style instead of

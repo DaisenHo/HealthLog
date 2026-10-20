@@ -307,6 +307,41 @@ export function tallyLedgerRows(
 export const COMPLIANCE_LEDGER_WINDOW_DAYS = 365;
 
 /**
+ * The ledger over the trailing {@link COMPLIANCE_LEDGER_WINDOW_DAYS} ending at
+ * `now`: the one set of dose rows every per-medication compliance figure is
+ * tallied from. A slot before the medication's creation stays in it only when
+ * a recorded dose claims it (#1028).
+ */
+export function trailingComplianceLedger(
+  events: IntakeEvent[],
+  schedules: ComplianceSchedule[],
+  ctx: ComplianceMedicationContext,
+  now: Date,
+): DoseHistoryRow[] {
+  if (schedules.length === 0) return [];
+  const from = new Date(
+    now.getTime() - COMPLIANCE_LEDGER_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+  return buildComplianceLedgerRows(events, schedules, ctx, from, now, now);
+}
+
+/**
+ * The tally of the trailing `days` ending at `now`, carved out of
+ * {@link trailingComplianceLedger}: the same rows, so the same window reads
+ * the same rate on every surface.
+ */
+export function trailingComplianceTally(
+  ledger: DoseHistoryRow[],
+  days: number,
+  now: Date,
+): LedgerComplianceTally {
+  return tallyLedgerRows(ledger, {
+    from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000),
+    to: now,
+  });
+}
+
+/**
  * One day of the cadence-aware compliance series: the day's compliance %
  * over the doses the schedule actually expected that day, plus the raw
  * taken / missed counts behind it.

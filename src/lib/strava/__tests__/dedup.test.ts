@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
-import { DEFAULT_WORKOUT_SOURCE_PRIORITY } from "@/lib/sources/pick-canonical-workout";
+import {
+  pickCanonicalWorkoutRows,
+  workoutSourceLadder,
+} from "@/lib/measurements/pick-canonical-workout-rows";
 import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
 
 /**
@@ -67,10 +69,10 @@ describe("STRAVA workout dedup — read-time canonical picker", () => {
 });
 
 describe("STRAVA sits in the workout source ladders", () => {
-  it("is present in the workout default ladder, below the wearables, above MANUAL", () => {
-    const strava = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf("STRAVA");
-    const withings = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf("WITHINGS");
-    const manual = DEFAULT_WORKOUT_SOURCE_PRIORITY.indexOf("MANUAL");
+  it("is present in the workout ladder, below the wearables, above MANUAL", () => {
+    const strava = workoutSourceLadder(null).indexOf("STRAVA");
+    const withings = workoutSourceLadder(null).indexOf("WITHINGS");
+    const manual = workoutSourceLadder(null).indexOf("MANUAL");
     expect(strava).toBeGreaterThan(withings);
     expect(strava).toBeLessThan(manual);
   });

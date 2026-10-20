@@ -182,9 +182,9 @@ describe("POST /api/workouts/batch — concurrent-write race", () => {
     const { POST } = await import("@/app/api/workouts/batch/route");
 
     // Batch A — a cross-source pair one minute apart plus one shared key.
-    // The v1.4.42 `dedupeWorkoutBatch` picker collapses the Apple Health +
-    // Manual pair (same activity, within the 90 s window) to one
-    // surviving row, leaving 2 effective rows per batch.
+    // The workout picker collapses the Apple Health + Manual pair (same
+    // activity, same five-minute slot) to one surviving row, leaving 2
+    // effective rows per batch.
     const batchA: WorkoutFixture[] = [
       workout("hk-uuid-only-a-0", 1),
       workout("hk-uuid-only-a-1", 2, "MANUAL"),

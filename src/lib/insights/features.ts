@@ -31,8 +31,13 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
+  READING_SPREAD,
+  standardDeviation,
+  type VarianceKind,
+} from "@/lib/stats/spread";
+import {
   pairByTimestamp,
-  pearsonCorrelation,
+  significantPearsonCorrelation,
   type CorrelationResult,
 } from "@/lib/analytics/correlations";
 import { getMedicationCategories } from "@/lib/medication-category";
@@ -894,12 +899,17 @@ export class FeaturesPayloadTooLargeError extends Error {
   }
 }
 
-export function stdDev(values: number[]): number | null {
+/**
+ * A spread rounded to the payload's one decimal, `null` below two values: a
+ * single reading has no spread to report, not a spread of zero.
+ */
+export function roundedSpread(
+  values: readonly number[],
+  kind: VarianceKind,
+): number | null {
   if (values.length < 2) return null;
-  const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance =
-    values.reduce((s, v) => s + (v - mean) ** 2, 0) / (values.length - 1);
-  return Math.round(Math.sqrt(variance) * 10) / 10;
+  const sd = standardDeviation(values, kind);
+  return sd === null ? null : Math.round(sd * 10) / 10;
 }
 
 export function toDataPoints(
@@ -1468,14 +1478,14 @@ export async function extractFeatures(
         const vals = sysData
           .filter((m) => m.measuredAt.getTime() >= fromMs)
           .map((m) => m.value);
-        return stdDev(vals);
+        return roundedSpread(vals, READING_SPREAD);
       })(),
       sdDia30: (() => {
         const fromMs = now - 30 * 24 * 60 * 60 * 1000;
         const vals = diaData
           .filter((m) => m.measuredAt.getTime() >= fromMs)
           .map((m) => m.value);
-        return stdDev(vals);
+        return roundedSpread(vals, READING_SPREAD);
       })(),
       pulsePressure30: (() => {
         const avgSys = sysSummary?.avg30 ?? null;
@@ -1656,7 +1666,7 @@ export async function extractFeatures(
   }));
 
   const computeCorr = (a: DataPoint[], b: DataPoint[]) =>
-    pearsonCorrelation(pairByTimestamp(a, b));
+    significantPearsonCorrelation(pairByTimestamp(a, b));
 
   const sleepPoints = toDataPoints(sleepData);
 

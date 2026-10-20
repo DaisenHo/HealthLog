@@ -9,7 +9,11 @@
  * so every existing call site keeps importing from there.
  */
 import { trendSlope } from "@/lib/analytics/trends";
-import { avgInWindow, stdDev, toDataPoints } from "@/lib/insights/features";
+import {
+  avgInWindow,
+  roundedSpread,
+  toDataPoints,
+} from "@/lib/insights/features";
 import {
   SAME_HOURS_MIN_DAYS,
   SAME_HOURS_TYPES,
@@ -177,7 +181,11 @@ function buildSignal(
   // spread and the anomaly stay over the readings.
   const avg7 = avgInWindow(records, now, 7, 0, day);
   const avg30 = avgInWindow(records, now, 30, 0, day);
-  const spread30 = stdDev(win30.map((rec) => rec.value));
+  // The spread decides the verdict below, so it is the sample estimate.
+  const spread30 = roundedSpread(
+    win30.map((rec) => rec.value),
+    "sample",
+  );
   const deltaVs7 = avg7 !== null ? shown(newest.value - avg7) : null;
   const deltaVs30 = avg30 !== null ? shown(newest.value - avg30) : null;
   const outsideNormalSwing =
@@ -310,7 +318,10 @@ function buildSameHoursSignal(
 
   const avg30 = mean(earlier.map((d) => d.value));
   const avg7 = mean(earlier.filter((d) => d.age <= 7).map((d) => d.value));
-  const spread30 = stdDev(earlier.map((d) => d.value));
+  const spread30 = roundedSpread(
+    earlier.map((d) => d.value),
+    "sample",
+  );
   const latest = today.value;
   const outsideNormalSwing =
     avg30 !== null && spread30 !== null && spread30 > 0

@@ -68,6 +68,7 @@ import {
   LINKED_FEATURE_METRICS,
 } from "./feature-keys";
 import { occurrencesSuffice } from "./thresholds";
+import { standardDeviation } from "@/lib/stats/spread";
 
 /**
  * Most features the fit may carry.
@@ -444,10 +445,7 @@ export function buildFeatureMatrix(
   const standardisation = selected.map((key, column) => {
     const values = rawRows.map((row) => row[column]);
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-    const variance =
-      values.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) /
-      values.length;
-    return { key, mean, sd: Math.sqrt(variance) };
+    return { key, mean, sd: standardDeviation(values, "population") ?? 0 };
   });
 
   // A column with no spread inside the complete-case set carries no

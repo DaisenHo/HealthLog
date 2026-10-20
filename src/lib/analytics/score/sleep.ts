@@ -13,7 +13,7 @@ import {
   insufficientPillar,
   mean,
   okPillar,
-  standardDeviation,
+  readingSpread,
 } from "./shared";
 
 export const SLEEP_WINDOW_DAYS = 28;
@@ -75,7 +75,7 @@ export function computeSleepPillar(
       : Math.round(sufficiency * 0.6 + regularity * 0.4);
   const noiseFloor = Math.max(
     1,
-    Math.round(((0.5 * standardDeviation(asleepValues)) / need) * 100),
+    Math.round(((0.5 * readingSpread(asleepValues)) / need) * 100),
   );
   const latest = nights.at(-1)!;
 

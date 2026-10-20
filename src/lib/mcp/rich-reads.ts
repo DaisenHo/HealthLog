@@ -63,6 +63,7 @@ import { sanitizeValueText } from "@/lib/ai/coach/labs-snapshot";
 import { scrubFenceMarkers } from "@/lib/ai/coach/data-fence";
 import { encodeOffsetCursor } from "@/lib/mcp/pagination";
 import type { CoachScopeWindow } from "@/lib/ai/coach/types";
+import { standardDeviation } from "@/lib/stats/spread";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -1158,11 +1159,9 @@ function mean(xs: number[]): number {
   return xs.reduce((s, x) => s + x, 0) / xs.length;
 }
 
+/** The CUSUM threshold estimates the series' noise, so it is the sample SD. */
 function stdDev(xs: number[]): number {
-  if (xs.length < 2) return 0;
-  const m = mean(xs);
-  const variance = xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1);
-  return Math.sqrt(variance);
+  return standardDeviation(xs, "sample") ?? 0;
 }
 
 /**

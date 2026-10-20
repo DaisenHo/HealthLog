@@ -14,11 +14,9 @@
  *      logical run start within a minute of each other on both
  *      sources; the rounding gives the cross-source matcher slack
  *      without collapsing distinct back-to-back workouts.
- *   2. For each bucket, walk the SOURCE priority ladder
- *      (`APPLE_HEALTH ≻ WITHINGS ≻ MANUAL ≻ IMPORT` per the existing
- *      source-priority validator's default) and pick the FIRST
- *      source that has any row in that bucket. Keep every row from
- *      the winning source; drop the rest.
+ *   2. For each bucket, walk the source ladder (`workoutSourceLadder`)
+ *      and pick the FIRST source that has any row in that bucket. Keep
+ *      every row from the winning source; drop the rest.
  *   3. Rows whose source isn't in the ladder pass through untouched
  *      (fallback intent — never silently drop signal).
  *
@@ -26,10 +24,10 @@
  * (typically `ORDER BY startedAt ASC, id ASC` from the caller's
  * Prisma read). The output preserves input order.
  *
- * Future v1.5.x tune: metric-aware picker per R-F open question #4 —
- * route → Apple wins, HR zones → Withings wins. Out of scope for
- * v1.4.30; the existing ladder ships first so the dashboard tile is
- * unambiguous.
+ * This is the one workout picker. The reads use it, and so does the batch
+ * write route before it inserts: a write-time picker with its own window
+ * and a different default ladder kept or dropped a different row than the
+ * list then showed.
  */
 import type { MeasurementSource } from "@/generated/prisma/client";
 
@@ -250,6 +248,17 @@ function enrichWinnersFromWhoop<T extends WorkoutPickerRow>(
 }
 
 /**
+ * The source order for workouts: the `steps` metric's ladder, the
+ * canonical-activity bucket the Sources settings configure, falling back to
+ * its default when the user saved none or it does not parse.
+ */
+export function workoutSourceLadder(
+  userPriorityJson: unknown,
+): readonly MeasurementSource[] {
+  return getSourceLadder(parseSourcePriority(userPriorityJson), "steps");
+}
+
+/**
  * Pick canonical rows across sources for a user's workouts.
  *
  * @param rows               input rows (deterministic order required)
@@ -266,14 +275,7 @@ export function pickCanonicalWorkoutRows<T extends WorkoutPickerRow>(
 ): T[] {
   if (rows.length === 0) return [];
 
-  // Workouts ride the `steps` metric's source ladder — the
-  // canonical-activity bucket. The user's iOS Settings → Sources UI
-  // configures the same ladder for the workout dashboard tile;
-  // unifying on "steps" keeps a single configuration surface rather
-  // than introducing a new `workouts` metric key. Future ladders for
-  // workout-specific tunes (route-vs-zones) ride a v1.5.x change.
-  const resolved = parseSourcePriority(userPriorityJson);
-  const sourceLadder = getSourceLadder(resolved, "steps");
+  const sourceLadder = workoutSourceLadder(userPriorityJson);
 
   const buckets = new Map<
     string,

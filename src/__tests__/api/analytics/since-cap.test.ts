@@ -118,7 +118,7 @@ vi.mock("@/lib/analytics/correlations-fast-path", () => ({
 }));
 
 vi.mock("@/lib/analytics/summaries-slice", () => ({
-  computeSummariesSlice: vi.fn().mockResolvedValue({
+  readSummariesSlice: vi.fn().mockResolvedValue({
     summaries: {},
     bmi: null,
     bpInTargetPct: null,
@@ -176,7 +176,7 @@ beforeEach(async () => {
     await import("@/lib/analytics/score/reader");
   const { computeCorrelationHypothesesFastPath } =
     await import("@/lib/analytics/correlations-fast-path");
-  const { computeSummariesSlice } =
+  const { readSummariesSlice } =
     await import("@/lib/analytics/summaries-slice");
 
   (ensureUserRollupsFresh as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -196,7 +196,7 @@ beforeEach(async () => {
   (
     computeCorrelationHypothesesFastPath as ReturnType<typeof vi.fn>
   ).mockResolvedValue({ hypotheses: [] });
-  (computeSummariesSlice as ReturnType<typeof vi.fn>).mockResolvedValue({
+  (readSummariesSlice as ReturnType<typeof vi.fn>).mockResolvedValue({
     summaries: {},
     bmi: null,
     lastSeenByType: {},
@@ -206,7 +206,7 @@ beforeEach(async () => {
 describe("GET /api/analytics — per-type live walk retired (v1.4.49.1)", () => {
   // v1.4.49.1 — the W-SINCE 425-day `since` cap was a defense-in-depth
   // bound on the now-deleted 15-way per-type live walk. The default
-  // slice routes through `computeSummariesSlice` exclusively, which
+  // slice routes through `readSummariesSlice` exclusively, which
   // reads `measurement_rollups` DAY buckets + a 90-day narrow
   // `$queryRaw` directly — no chunked findMany against `measurements`
   // at all on the default critical path. The two assertions that pinned
@@ -222,7 +222,7 @@ describe("GET /api/analytics — per-type live walk retired (v1.4.49.1)", () => 
     );
     expect(response.status).toBe(200);
 
-    // The slim slice resolves through `computeSummariesSlice` only;
+    // The slim slice resolves through `readSummariesSlice` only;
     // the per-type findMany loop is skipped entirely so the rollup-
     // path semantics are unaffected by the `since` cap.
     const findMany = prisma.measurement.findMany as ReturnType<typeof vi.fn>;
