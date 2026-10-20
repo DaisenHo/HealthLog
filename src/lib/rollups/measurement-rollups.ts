@@ -184,6 +184,10 @@ interface RollupRow {
   sum_xy: number | null;
   sum_xx: number | null;
   sum_yy: number | null;
+  // The extremes of the readings' own `value`, without the per-row range
+  // `min_value` / `max_value` widen to. See `MeasurementRollup.readingMinValue`.
+  reading_min_value: number | null;
+  reading_max_value: number | null;
 }
 
 /**
@@ -546,7 +550,9 @@ async function runRollupAggregate(
         SUM(${REBASED_X})::double precision                       AS sum_x,
         SUM(${REBASED_X} * m."value")::double precision           AS sum_xy,
         SUM(${REBASED_X} * ${REBASED_X})::double precision        AS sum_xx,
-        SUM(m."value" * m."value")::double precision              AS sum_yy
+        SUM(m."value" * m."value")::double precision              AS sum_yy,
+        MIN(m."value")::double precision                          AS reading_min_value,
+        MAX(m."value")::double precision                          AS reading_max_value
       FROM measurements m
       WHERE m."user_id" = $1
         AND m."type" IN (${typeList})
@@ -594,7 +600,9 @@ async function runRollupAggregate(
       SUM(${REBASED_X})::double precision                       AS sum_x,
       SUM(${REBASED_X} * m."value")::double precision           AS sum_xy,
       SUM(${REBASED_X} * ${REBASED_X})::double precision        AS sum_xx,
-      SUM(m."value" * m."value")::double precision              AS sum_yy
+      SUM(m."value" * m."value")::double precision              AS sum_yy,
+      MIN(m."value")::double precision                          AS reading_min_value,
+      MAX(m."value")::double precision                          AS reading_max_value
     FROM measurements m
     WHERE m."user_id" = $1
       AND m."measured_at" >= $2
@@ -921,20 +929,24 @@ function buildRollupUpsert(
       row.sum_xy ?? null,
       row.sum_xx ?? null,
       row.sum_yy ?? null,
+      row.reading_min_value ?? null,
+      row.reading_max_value ?? null,
       computedAt,
     );
     tuples.push(
       `($${base + 1}, $${base + 2}::"measurement_type", $${base + 3}::"measurement_rollup_granularity", ` +
         `$${base + 4}::timestamptz, $${base + 5}::"measurement_source", $${base + 6}::int, ` +
         `$${base + 7}, $${base + 8}, $${base + 9}, $${base + 10}, $${base + 11}, $${base + 12}, ` +
-        `$${base + 13}, $${base + 14}, $${base + 15}, $${base + 16}, $${base + 17}, $${base + 18}::timestamptz)`,
+        `$${base + 13}, $${base + 14}, $${base + 15}, $${base + 16}, $${base + 17}, $${base + 18}, ` +
+        `$${base + 19}, $${base + 20}::timestamptz)`,
     );
   }
   const sql = `
     INSERT INTO measurement_rollups
       (user_id, type, granularity, bucket_start, source, count, mean,
        min_value, max_value, sum_value, sd, slope, r2,
-       sum_x, sum_xy, sum_xx, sum_yy, computed_at)
+       sum_x, sum_xy, sum_xx, sum_yy, reading_min_value, reading_max_value,
+       computed_at)
     VALUES ${tuples.join(", ")}
     ON CONFLICT (user_id, type, granularity, bucket_start, source)
     DO UPDATE SET
@@ -950,6 +962,8 @@ function buildRollupUpsert(
       sum_xy      = EXCLUDED.sum_xy,
       sum_xx      = EXCLUDED.sum_xx,
       sum_yy      = EXCLUDED.sum_yy,
+      reading_min_value = EXCLUDED.reading_min_value,
+      reading_max_value = EXCLUDED.reading_max_value,
       computed_at = EXCLUDED.computed_at
   `;
   return { sql, params };
@@ -1201,7 +1215,9 @@ export async function enqueueBootTimeRollupBackfill(
     //      catches up — mirrors the v1.4.39 sum_value rollout, which the
     //      v1.4.41 note confirms converged via this same boot queue. Bounded
     //      to the fold window so days outside it (un-foldable by design)
-    //      never re-flag a user on every boot.
+    //      never re-flag a user on every boot. The same arm refills the
+    //      reading extremes of migration 0417 (`reading_min_value IS NULL`);
+    //      the extremes reader treats a NULL as uncovered until it lands.
     const users = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT DISTINCT id FROM (
         SELECT DISTINCT mt."user_id" AS id
@@ -1227,7 +1243,7 @@ export async function enqueueBootTimeRollupBackfill(
         FROM measurement_rollups r
         WHERE r."granularity" = 'DAY'
           AND r."bucket_start" >= ${foldWindowStart}
-          AND r."sum_xy" IS NULL
+          AND (r."sum_xy" IS NULL OR r."reading_min_value" IS NULL)
       ) discovered
     `;
 
