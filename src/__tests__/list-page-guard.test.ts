@@ -30,7 +30,12 @@ import { walkSourceFiles } from "./helpers/source-files";
 const SRC = join(process.cwd(), "src");
 
 /** The modules allowed to cut a list by hand: the helper and its primitive. */
-const LIST_MODULES = new Set(["lib/api/list-cap.ts", "lib/http/list-query.ts"]);
+const LIST_MODULES = new Set([
+  "lib/api/list-cap.ts",
+  "lib/http/list-query.ts",
+  // The MCP tools' name for `listPage`; its reads are checked at its callers.
+  "lib/mcp/capped.ts",
+]);
 
 function stripComments(text: string): string {
   return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
@@ -93,6 +98,16 @@ function endsInId(order: string, file: string): boolean {
   return decl ? literal(decl[1]) : false;
 }
 
+/**
+ * A `distinct` read returns one row per key, so ordering by that key alone is
+ * already total: `distinct: ["analyte"]` with `orderBy: { analyte: "asc" }`.
+ */
+function ordersByDistinctKey(body: string, order: string): boolean {
+  const distinct = /\bdistinct\s*:\s*\[\s*["'](\w+)["']\s*\]/.exec(body);
+  if (!distinct) return false;
+  return new RegExp(`^\\{\\s*${distinct[1]}\\s*:[^,}]+\\}$`).test(order.trim());
+}
+
 describe("capped lists go through listPage", () => {
   const files = walkSourceFiles(SRC, { floor: 3000 }).filter(
     (file) =>
@@ -136,6 +151,12 @@ describe("capped lists go through listPage", () => {
       listPage(limit, (take) => prisma.x.findMany({ where, orderBy, take }))`;
     const [short] = callBodies(viaVariable, "listPage");
     expect(endsInId(orderByValue(short)!, viaVariable)).toBe(true);
+    // A distinct read is ordered whole by its own key.
+    const distinctRead = `listPage(limit, (take) =>
+      prisma.x.findMany({ distinct: ["analyte"], orderBy: { analyte: "asc" }, take }))`;
+    const [dist] = callBodies(distinctRead, "listPage");
+    expect(ordersByDistinctKey(dist, orderByValue(dist)!)).toBe(true);
+    expect(ordersByDistinctKey(dist, '{ createdAt: "desc" }')).toBe(false);
     const viaBadVariable = `const orderBy = [primaryOrder];
       listPage(limit, (take) => prisma.x.findMany({ where, orderBy, take }))`;
     const [bad] = callBodies(viaBadVariable, "listPage");
@@ -172,16 +193,24 @@ describe("capped lists go through listPage", () => {
     expect(guessed).toEqual([]);
   });
 
-  it("every listPage read orders by something that ends in the row id", () => {
+  it("every listPage or capped read orders by something that ends in the row id", () => {
     const unordered: string[] = [];
     let reads = 0;
     for (const f of files) {
       if (LIST_MODULES.has(f)) continue;
       const code = read(f);
-      for (const body of callBodies(code, "listPage")) {
+      for (const body of [
+        ...callBodies(code, "listPage"),
+        ...callBodies(code, "capped"),
+      ]) {
         reads += 1;
         const order = orderByValue(body);
-        if (!order || !endsInId(order, code)) unordered.push(f);
+        if (
+          !order ||
+          !(endsInId(order, code) || ordersByDistinctKey(body, order))
+        ) {
+          unordered.push(f);
+        }
       }
     }
     expect(reads).toBeGreaterThanOrEqual(18);
