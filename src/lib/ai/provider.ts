@@ -14,6 +14,7 @@ import {
   decryptCodexCreds,
   encryptAdminCodexCreds,
   decryptAdminCodexCreds,
+  CodexRefreshError,
   type CodexCreds,
 } from "./codex-oauth";
 import { isPublicUrl } from "@/lib/validations/notifications";
@@ -287,16 +288,33 @@ async function runCodexRefresh(
           // A sign-in replaced the token while the issuer refused the old one.
           return { fresh: now.creds };
         }
-        if (!isDeadCodexSignIn(error)) return { failed: error };
+        // `refresh_token_reused` is a dead grant here and only here: under the
+        // lock, with the row still holding the very token just spent, no peer
+        // of ours rotated it, so the issuer is refusing the whole family (a
+        // revoked sign-in answers every refresh so). Outside the lock it is
+        // the lost race it usually is (see DEAD_REFRESH_TOKEN_CODES).
+        const refused =
+          oauthErrorOf(error) === "refresh_token_reused"
+            ? new CodexRefreshError(401, "refresh_token_reused")
+            : error;
+        if (!isDeadCodexSignIn(refused)) return { failed: error };
         return {
-          refused: error,
+          refused,
           parked: (await store.park(tx, row.refreshEncrypted)) === 1,
         };
       }
       if ((await store.writeRotated(tx, row.refreshEncrypted, fresh)) === 0) {
-        // A sign-in replaced the row meanwhile; it wins over this refresh.
+        // A sign-in replaced the row meanwhile; it wins over this refresh. A
+        // row with no usable credential left was disconnected meanwhile: the
+        // person took Codex away, so nothing may be sent with it any more.
         const now = await store.read(tx);
-        if (now?.creds) return { fresh: now.creds };
+        if (now?.status === "connected" && now.creds) {
+          return { fresh: now.creds };
+        }
+        return {
+          refused: codexReconnectRequired("disconnected during refresh"),
+          parked: false,
+        };
       }
       return { fresh };
     },
