@@ -55,7 +55,7 @@ import {
 } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
 import { acceptIncomingRequestId } from "./http/request-id";
-import { withErrorRequestId } from "./api-response";
+import { withErrorEnvelopeDefaults } from "./api-response";
 import {
   capturedRateLimit,
   rateLimitResponseHeaders,
@@ -365,9 +365,10 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
           }
         }
         // Every error envelope names its request id in `meta.requestId`, so
-        // the id survives a proxy that strips the header (see
-        // `withErrorRequestId`).
-        const nr = (await withErrorRequestId(
+        // the id survives a proxy that strips the header, and carries a
+        // `meta.errorCode`, the status's default when the route named none
+        // (see `withErrorEnvelopeDefaults`).
+        const nr = (await withErrorEnvelopeDefaults(
           response as Response,
           evt.getRequestId(),
         )) as NextResponse;
