@@ -6,8 +6,8 @@
  * / `meta.limit`). The web client read only `data` (`apiGet`), so the signal
  * reached nobody: twelve routes sent it and no surface showed it. A capped
  * route is now bound to a reader, a production file outside the API tree
- * that fetches the route's path through `apiGetList` / `apiPostList`, the
- * one client reader of the cap, which a surface pairs with `ListCapNotice`.
+ * that fetches the route's path through `apiGetList`, the one client reader
+ * of the cap, which a surface pairs with `ListCapNotice`.
  *
  * The routes are derived from the tree (every route file that answers with
  * `apiListSuccess`), never listed by hand, so a newly capped route fails here
@@ -48,7 +48,7 @@ function clientPathPattern(route: string): RegExp {
     )
     .join("/");
   return new RegExp(
-    `\\bapi(?:Get|Post)List\\s*<[\\s\\S]{0,200}?>\\s*\\(\\s*["\`]${body}(?:[?"\`])|\\bapi(?:Get|Post)List\\s*\\(\\s*["\`]${body}(?:[?"\`])`,
+    `\\bapiGetList\\s*<[\\s\\S]{0,200}?>\\s*\\(\\s*["\`]${body}(?:[?"\`])|\\bapiGetList\\s*\\(\\s*["\`]${body}(?:[?"\`])`,
   );
 }
 
