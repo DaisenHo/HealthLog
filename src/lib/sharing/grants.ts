@@ -983,7 +983,20 @@ async function endGrant(
     (current.expiresAt === null || current.expiresAt > new Date());
 
   if (!actorOwnsGrant || !isActiveManagedGuardian) return end();
-  return reduceManagedProfileGuardian(db, current.grantorId, end);
+  // `current` was read before the record lock. A concurrent change that holds
+  // the lock first (the Guardian's account deletion ends this grant) commits
+  // in between, and counting under the lock would then refuse with "add
+  // another Guardian" for a grant that is no longer active, instead of saying
+  // it has already ended. So the grant is re-read under the lock; only a grant
+  // still live there is a Guardian whose removal the count has to allow.
+  return withManagedProfileLock(db, current.grantorId, async () => {
+    const live = await db.accountGrant.findFirst({
+      where: { id: grantId, revokedAt: null },
+      select: { id: true },
+    });
+    if (!live) return end();
+    return reduceManagedProfileGuardian(db, current.grantorId, end);
+  });
 }
 
 /**
