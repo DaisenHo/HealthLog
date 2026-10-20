@@ -15,7 +15,14 @@
  * The backfill contract (`backfillVerdict`), the same for every provider:
  *   - a failed collection is transient: the job throws and pg-boss retries;
  *   - a truncated collection is not complete: the marker is not stamped, and
- *     boot discovery offers the account again, without a retry storm;
+ *     boot discovery offers the account again, without a retry storm. Where
+ *     a real history can outrun the ceiling (Strava's forty pages, about
+ *     4 000 activities), the backfill records how far it got and the next
+ *     run goes on from there (`strava-backfill.ts`), or each run would read
+ *     the same newest pages again. The other ceilings sit far above any
+ *     history (a thousand pages for WHOOP and Withings), so a truncation
+ *     there is a cursor that does not advance, which no resume can cure;
+ *     the repeat check ends it on the first page it would read twice;
  *   - a connection parked for re-authorisation is permanent until the person
  *     reconnects: the runner returns without stamping and without a retry.
  *
@@ -32,7 +39,13 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import { annotate } from "@/lib/logging/context";
 
-/** One page as the client read it. A null `next` ends the walk. */
+/**
+ * One page as the client read it. A null, absent or empty `next` ends the
+ * walk: WHOOP and Oura answer the last page with `next_token: ""` as well as
+ * with null, and an empty token followed as a cursor is no cursor at all, so
+ * the client asked for the first page again, read it twice and the walk
+ * ended as a repeat, leaving the backfill incomplete for good.
+ */
 export interface WalkPage<C, T> {
   items: readonly T[];
   next: C | null | undefined;
@@ -66,7 +79,7 @@ export async function walkPages<C, T>(
     const result = await fetchPage(cursor, page);
     items.push(...result.items);
     const next = result.next;
-    if (next === null || next === undefined) {
+    if (next === null || next === undefined || next === "") {
       return { items, pages: page + 1, truncated: false };
     }
     if (seen.has(next)) return truncated(label, items, page + 1, "repeat");

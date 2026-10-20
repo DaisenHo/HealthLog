@@ -138,6 +138,16 @@ describe("fetchCollection pagination", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("ends on an empty next_token without reading the first page again", async () => {
+    const fetchMock = installFetchMock([
+      { status: 200, body: { records: [{ id: 1 }], next_token: "" } },
+      { status: 200, body: { records: [{ id: 1 }], next_token: "" } },
+    ]);
+    const recs = await fetchRecoveries("at");
+    expect(recs).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("throws WhoopApiError when a page returns 500", async () => {
     installFetchMock([{ status: 500, body: { error: "boom" } }]);
     await expect(fetchRecoveries("at")).rejects.toBeInstanceOf(WhoopApiError);

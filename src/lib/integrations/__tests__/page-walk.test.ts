@@ -32,6 +32,16 @@ describe("walkPages", () => {
     expect(walk.items).toEqual([0, 1, 2, 3]);
   });
 
+  it("ends on an empty cursor instead of following it back to the first page", async () => {
+    const fetchPage = vi.fn(async (cursor: string | undefined) => ({
+      items: [cursor ?? "first"],
+      next: "",
+    }));
+    const walk = await walkPages<string, string>("test.empty", 10, fetchPage);
+    expect(walk).toEqual({ items: ["first"], pages: 1, truncated: false });
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+  });
+
   it("stops on a cursor it already followed, the first one included", async () => {
     const fetchPage = vi.fn(async () => ({ items: [1], next: 0 }));
     const walk = await walkPages<number, number>(
