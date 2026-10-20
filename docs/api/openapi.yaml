@@ -75720,7 +75720,7 @@ components:
         conversations:
           type: array
           items:
-            $ref: "#/components/schemas/DocumentChatConversation"
+            $ref: "#/components/schemas/DocumentChatListItem"
         nextCursor:
           type:
             - string
@@ -75729,7 +75729,7 @@ components:
         - conversations
         - nextCursor
       additionalProperties: false
-    DocumentChatConversation:
+    DocumentChatListItem:
       type: object
       properties:
         id:
@@ -75742,12 +75742,38 @@ components:
           type: string
         messageCount:
           type: number
+        fenced:
+          type: boolean
+          description: "Always true here: a chat about a document is a fenced thread (no tools, no health snapshot)."
+        attachments:
+          description: The documents the thread is about, as they are now.
+          type: array
+          items:
+            type: object
+            properties:
+              documentId:
+                type: string
+              title:
+                description: The attached document's title, falling back to its filename; null when it has neither.
+                type:
+                  - string
+                  - "null"
+            required:
+              - documentId
+              - title
+            additionalProperties: false
+        documentTitle:
+          description: The first attached document's title, for a one-line badge; null when none is attached any more.
+          type:
+            - string
+            - "null"
       required:
         - id
         - title
         - createdAt
         - updatedAt
         - messageCount
+        - fenced
       additionalProperties: false
     DocumentReindexEnvelope:
       type: object

@@ -117,6 +117,41 @@ const NOT_CALLED: Record<string, string> = {
 const CHECKED_FLOOR = 235;
 
 /**
+ * Operations whose every list may come back empty here, with the reason. An
+ * empty list parses against any item schema, so every other operation must
+ * answer at least once with a list that has a row in it; the seed
+ * (`contract-seed.ts`) writes one for each. As for `NOT_CALLED`, a reason is
+ * about the operation: a list a fixture could fill is a row to seed.
+ */
+const EMPTY_ALLOWED: Record<string, string> = {
+  "/api/auth/me/mfa":
+    "The list is the account's security keys, and an enrolled second factor turns the export and backup reads this run also calls into a re-proof a seeded session cannot give.",
+  "/api/auth/passkeys":
+    "The same: a passkey on the account puts the export and backup reads behind a re-proof.",
+  "/api/coach/about-me/questions":
+    "The questions are written by the account's AI provider; the run has none.",
+  "/api/insights/medication-compliance-status":
+    "The per-medication summaries are written by the account's AI provider; with none the published answer is the empty list beside `hasProvider: false`.",
+  "/api/insights/chat/{id}/messages/{messageId}/results":
+    "Result tables are stored by a model turn that called tools, in its own sealed format; the run has no provider.",
+  "/api/cycle/insights":
+    "A phase row only survives a false-discovery-rate test over many cycles of readings, which no handful of rows passes.",
+  "/api/insights/health-status":
+    "A deviation or shift is reported only once a reading leaves the account's own long-run baseline, which needs months of history.",
+  "/api/insights/glp1-timeline":
+    "Entries exist only for a GLP-1 medication, whose dose phases would change what the main medication's reads answer.",
+  "/api/documents/sources":
+    "Lists connections to the operator's document archive, which is environment configuration; the run configures none.",
+  "/api/environment/travel/suggestions":
+    "Suggestions come from the account's location history in an external Dawarich instance the run does not reach.",
+  "/api/mcp/connections":
+    "A connection is minted only by the OAuth authorization flow of a registered agent client.",
+};
+
+/** The least number of operations that answer with a list that has a row. */
+const FILLED_FLOOR = 228;
+
+/**
  * The queries each operation is called with. An operation with a required
  * parameter needs an entry; an operation whose optional parameters select a
  * different body shape gets one variant per shape, because each is a separate
@@ -346,6 +381,8 @@ function onlyEmptyArrays(value: unknown): boolean {
 }
 
 const emptyBodies: string[] = [];
+/** Operations that answered at least once with a row in a list (or no list). */
+const filled = new Set<string>();
 
 /** Call one operation once and report what disagrees with its schema. */
 async function check(
@@ -407,6 +444,7 @@ async function check(
     );
   }
   if (onlyEmptyArrays(body)) emptyBodies.push(op.path);
+  else filled.add(op.path);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return {
@@ -465,6 +503,15 @@ describe("every published GET answers what its schema says", () => {
 
     expect(findings).toEqual([]);
     expect(checked).toBeGreaterThanOrEqual(CHECKED_FLOOR);
+
+    // Every list a schema promises is read with a row in it at least once,
+    // apart from the reasoned exceptions; an exception that now has a row
+    // is stale and goes.
+    const onlyEmpty = [...new Set(emptyBodies)]
+      .filter((path) => !filled.has(path))
+      .sort();
+    expect(onlyEmpty).toEqual(Object.keys(EMPTY_ALLOWED).sort());
+    expect(filled.size).toBeGreaterThanOrEqual(FILLED_FLOOR);
   }, 600_000);
 
   it("leaves no exception that the run could have called", async () => {

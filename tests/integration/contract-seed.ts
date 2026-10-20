@@ -467,15 +467,16 @@ export async function seedContractAccount(
         actorUserId: CONTRACT_USER_ID,
         medicationId: ids.medication,
         payload: {},
+        // Part-way through, so the progress lists carry an entry each.
         progress: {
-          processed: 0,
+          processed: 2,
           total: 3,
-          imported: 0,
-          skippedByReason: {},
-          skipDetails: [],
+          imported: 1,
+          skippedByReason: { already_recorded: 1 },
+          skipDetails: [{ line: 2, reason: "already_recorded" }],
           skippedDetailsOmitted: 0,
-          touchedDays: [],
-          rollupProcessed: 0,
+          touchedDays: [dayKey(daysAgo(3))],
+          rollupProcessed: 1,
         },
       },
     });
@@ -485,15 +486,16 @@ export async function seedContractAccount(
         recordUserId: CONTRACT_USER_ID,
         actorUserId: CONTRACT_USER_ID,
         payload: {},
+        // Part-way through, so the progress lists carry an entry each.
         progress: {
-          processed: 0,
+          processed: 2,
           total: 3,
-          imported: 0,
-          skippedByReason: {},
-          skipDetails: [],
+          imported: 1,
+          skippedByReason: { already_recorded: 1 },
+          skipDetails: [{ line: 2, reason: "already_recorded" }],
           skippedDetailsOmitted: 0,
-          touchedDays: [],
-          rollupProcessed: 0,
+          touchedDays: [dayKey(daysAgo(3))],
+          rollupProcessed: 1,
         },
       },
     });
@@ -509,9 +511,22 @@ export async function seedContractAccount(
       { id: ids.medication },
     );
   }
-  await write("cycle-symptom", "POST", "api/cycle/symptoms/custom", {
-    label: "Contract symptom",
-  });
+  const cycleSymptom = await write(
+    "cycle-symptom",
+    "POST",
+    "api/cycle/symptoms/custom",
+    { label: "Contract symptom" },
+  );
+  // The day carries the account's own symptom, so the day log's symptom
+  // list is not empty.
+  if (typeof cycleSymptom?.key === "string") {
+    await write("cycle-day-symptom", "POST", "api/cycle/day-logs", {
+      date: dayKey(daysAgo(3)),
+      loggedAt: daysAgo(3, 10).toISOString(),
+      flow: "MEDIUM",
+      symptoms: [{ key: cycleSymptom.key, severity: 2 }],
+    });
+  }
   await write("device", "POST", "api/devices", {
     token: "contract-device-token",
     bundleId: "dev.healthlog.contract",
@@ -582,6 +597,19 @@ export async function seedContractAccount(
   }
 
   if (ids.illness) {
+    // A logged day with a catalogue symptom (the catalogue is migration
+    // data), so the day's symptom list is not empty.
+    await write(
+      "illness-day-symptom",
+      "POST",
+      "api/illness/episodes/[id]/day-logs",
+      {
+        date: dayKey(daysAgo(2)),
+        functionalImpact: 1,
+        symptoms: [{ key: "cough", severity: 2 }],
+      },
+      { id: ids.illness },
+    );
     await write(
       "illness-day",
       "POST",
@@ -667,6 +695,20 @@ export async function seedContractAccount(
   });
   if (ingested.kind === "stored") ids.document = ingested.document.id;
   else failures.push(`document: ingest answered ${ingested.kind}`);
+  // A chat about that document, as the document sheet starts one.
+  if (ids.document) {
+    const documentChat = await createConversation({
+      userId: CONTRACT_USER_ID,
+      title: "About the letter",
+      documentScoped: true,
+      attachmentIds: [ids.document],
+    });
+    await appendMessage({
+      conversationId: documentChat.id,
+      role: "user",
+      content: "What does the letter say?",
+    });
+  }
 
   // ── An AI run ──────────────────────────────────────────────────────────
   const { createAiRun } = await import("@/lib/documents/ai-runs/store");
@@ -714,6 +756,235 @@ export async function seedContractAccount(
     },
   });
   ids.restoreJob = restore.id;
+
+  // ── Rows behind the lists a detail or a summary carries ──────────────
+  // An array that comes back empty parses against any item schema, so each
+  // list the run reads gets at least one row (see EMPTY_ALLOWED in the run
+  // for the ones that cannot have one here, with the reason).
+  if (ids.encounter) {
+    const visit = { id: ids.encounter };
+    const links: Array<[string, string | undefined]> = [
+      ["labResult", ids.lab],
+      ["conditionEpisode", ids.illness],
+      ["document", ids.document],
+      ["vaccination", ids.vaccination],
+      ["medication", ids.medication],
+    ];
+    for (const [targetKind, targetId] of links) {
+      if (!targetId) continue;
+      await write(
+        `encounter-link-${targetKind}`,
+        "POST",
+        "api/encounters/[id]/links",
+        { targetKind, targetIds: [targetId] },
+        visit,
+      );
+    }
+  }
+  if (ids.lab && ids.document) {
+    await write(
+      "lab-link-document",
+      "POST",
+      "api/labs/[id]/links",
+      { targetKind: "document", targetIds: [ids.document] },
+      { id: ids.lab },
+    );
+  }
+  await write("procedure", "POST", "api/encounters", {
+    kind: "PROCEDURE",
+    occurredAt: daysAgo(25).toISOString(),
+    reason: "Knee arthroscopy",
+    bodySite: "Knee",
+    laterality: "LEFT",
+  });
+  // A second reading of the same analyte, so the lab change summary has a
+  // pair to compare.
+  await write("lab-second", "POST", "api/labs", {
+    analyte: "HbA1c",
+    value: 5.8,
+    unit: "%",
+    takenAt: daysAgo(5).toISOString(),
+  });
+  await write("lab-third", "POST", "api/labs", {
+    analyte: "HbA1c",
+    value: 5.6,
+    unit: "%",
+    takenAt: daysAgo(20).toISOString(),
+  });
+  await write("nutrients", "POST", "api/nutrients/batch", {
+    entries: [1, 2, 3].map((n) => ({
+      day: dayKey(daysAgo(n)),
+      nutrient: "vitamin_c",
+      unit: "mg",
+      amount: 80 + n,
+    })),
+  });
+  await write("medication-category", "POST", "api/medications/categories", {
+    label: "Contract category",
+  });
+  if (ids.medication) {
+    await write("medication-layout", "PUT", "api/medications/layout", {
+      version: 1,
+      order: [ids.medication],
+    });
+    // An ended course and the current one. The route refuses a second
+    // course while the implicit open one runs, so both go in as rows.
+    await prisma.medicationCourse.createMany({
+      data: [
+        {
+          medicationId: ids.medication,
+          userId: CONTRACT_USER_ID,
+          startsOn: new Date(`${dayKey(daysAgo(400))}T00:00:00.000Z`),
+          endsOn: new Date(`${dayKey(daysAgo(380))}T00:00:00.000Z`),
+        },
+        {
+          medicationId: ids.medication,
+          userId: CONTRACT_USER_ID,
+          startsOn: new Date(`${dayKey(daysAgo(60))}T00:00:00.000Z`),
+          endsOn: null,
+        },
+      ],
+    });
+  }
+  // A schedule change archives the previous schedule as a revision. On a
+  // medication of its own, so the main one's history stays as seeded.
+  const rescheduled = await write(
+    "medication-rescheduled",
+    "POST",
+    "api/medications",
+    {
+      name: "Contract rescheduled",
+      dose: "5 mg",
+      schedules: [
+        {
+          time: "08:00",
+          windowStart: "07:00",
+          windowEnd: "10:00",
+          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        },
+      ],
+    },
+  );
+  keep("rescheduledMedication", rescheduled);
+  if (ids.rescheduledMedication) {
+    await write(
+      "medication-reschedule",
+      "PUT",
+      "api/medications/[id]",
+      {
+        name: "Contract rescheduled",
+        dose: "5 mg",
+        schedules: [
+          {
+            time: "09:00",
+            windowStart: "08:00",
+            windowEnd: "11:00",
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+          },
+        ],
+      },
+      { id: ids.rescheduledMedication },
+    );
+  }
+  await write("anamnesis-fact", "POST", "api/anamnesis/facts", {
+    kind: "SMOKING_STATUS",
+    value: "FORMER",
+    validFrom: dayKey(daysAgo(400)),
+  });
+  await write("coach-prefs", "PUT", "api/auth/me/coach-prefs", {
+    excludeMetrics: ["weight"],
+  });
+  await write(
+    "injection-site-prefs",
+    "PATCH",
+    "api/auth/me/injection-site-prefs",
+    {
+      globalExcludedInjectionSites: ["ABDOMEN_LEFT"],
+    },
+  );
+  await write("invite", "POST", "api/admin/invites", { expiresInDays: 7 });
+  const { encryptToBytes } = await import("@/lib/ai/coach/bytes-codec");
+  await prisma.coachPlan.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      metric: "SLEEP",
+      ifCueEncrypted: encryptToBytes("it is 22:30"),
+      thenActionEncrypted: encryptToBytes("put the phone away"),
+      status: "active",
+    },
+  });
+  await prisma.coachFact.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      factEncrypted: encryptToBytes("Works night shifts twice a month"),
+      category: "context",
+      confidence: 0.9,
+      source: "user",
+    },
+  });
+  if (ids.reminder) {
+    await prisma.measurementReminderEvent.create({
+      data: {
+        userId: CONTRACT_USER_ID,
+        reminderId: ids.reminder,
+        kind: "SATISFIED",
+        occurredAt: daysAgo(1, 7),
+        onTime: true,
+        source: "auto_measurement",
+      },
+    });
+  }
+  // A sign-in, as the security activity lists it.
+  await prisma.auditLog.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      actorUserId: CONTRACT_USER_ID,
+      action: "auth.login",
+      createdAt: daysAgo(1),
+    },
+  });
+  await prisma.personalRecord.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      metricType: "ACTIVITY_STEPS",
+      direction: "MAX",
+      value: 18_204,
+      unit: "steps",
+      achievedAt: daysAgo(6),
+    },
+  });
+  // A delegate's visit to this record, as the activity list shows it.
+  await prisma.auditLog.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      actorUserId: MANAGED_PROFILE_ID,
+      action: "sharing.record.accessed",
+      details: JSON.stringify({ accesses: 2 }),
+      createdAt: daysAgo(2),
+    },
+  });
+  // A remembered device. A passkey or a security key stays out: either one
+  // turns the export and backup reads into a re-proof the seeded session
+  // cannot give (EMPTY_ALLOWED in the run).
+  await prisma.trustedDevice.create({
+    data: {
+      userId: CONTRACT_USER_ID,
+      tokenHash: "contract-trusted-device-hash",
+      label: "Phone",
+      expiresAt: new Date(Date.now() + 20 * DAY),
+    },
+  });
+  if (ids.biomarker) {
+    await prisma.biomarkerAlias.create({
+      data: {
+        userId: CONTRACT_USER_ID,
+        biomarkerId: ids.biomarker,
+        name: "Contract alias",
+        nameFolded: "contract alias",
+        source: "MANUAL",
+      },
+    });
+  }
 
   // Fixed keys for the parameters that are not row ids.
   ids.today = dayKey(daysAgo(1));
@@ -774,7 +1045,7 @@ const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/medications/{id}/compliance": { id: "medication" },
   "/api/medications/{id}/efficacy": { id: "medication" },
   "/api/medications/{id}/dose-history": { id: "medication" },
-  "/api/medications/{id}/schedule-revisions": { id: "medication" },
+  "/api/medications/{id}/schedule-revisions": { id: "rescheduledMedication" },
   "/api/allergies/{id}": { id: "allergy" },
   "/api/family-history/{id}": { id: "familyHistory" },
   "/api/practitioners/{id}": { id: "practitioner" },
