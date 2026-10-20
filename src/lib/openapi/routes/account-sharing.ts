@@ -354,6 +354,11 @@ const recordActivityResponse = z
       .describe(
         "How far back this feed can see, in days. Resolved from the instance's audit retention setting (365 by default, operator-configurable), NOT a constant — an instance running a 90-day window sends 90. The query is bounded to this window, so it is the real limit of the list and not only a caption. Show it beside the rows.",
       ),
+    truncated: z.boolean().meta({
+      deprecated: true,
+      description:
+        "Deprecated: read `meta.truncated`, which carries the same value. Whether the list stopped at its row ceiling; kept in `data` for clients built against v1.43.6 and earlier.",
+    }),
   })
   .meta({
     id: "RecordActivity",
@@ -870,7 +875,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Who opened this record, and when",
       description:
-        "Every audit row filed under this account that somebody else performed, newest first — one row per delegate per day with a count, rather than one per request. `retentionDays` rides the response because audit history is purged on a schedule the operator configures: a view that showed the rows without the window would imply a completeness it does not have, and clients must state the number the server sends rather than assume the 365-day default. Whether the list stopped at its row ceiling is `meta.truncated` (it was a `truncated` field in `data` before v1.43.7). Not delegable: a grant is not an introduction to the other people in the household.",
+        "Every audit row filed under this account that somebody else performed, newest first — one row per delegate per day with a count, rather than one per request. `retentionDays` rides the response because audit history is purged on a schedule the operator configures: a view that showed the rows without the window would imply a completeness it does not have, and clients must state the number the server sends rather than assume the 365-day default. Whether the list stopped at its row ceiling is `meta.truncated`; the `truncated` field in `data` carries the same value and is deprecated. Not delegable: a grant is not an introduction to the other people in the household.",
       responses: {
         ...stdResponses,
         "200": {
