@@ -42,12 +42,8 @@ import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 // library into its route. Re-exported here for the server code that already
 // imports them from the schema module.
 export {
-  DOCUMENT_BULK_MAX_IDS,
-  DOCUMENT_CONTENT_INDEX_SOURCES,
-  DOCUMENT_LIST_DEFAULT_LIMIT,
   INBOUND_DOCUMENT_KINDS,
   MAX_COACH_ATTACHMENTS,
-  isAiReadSource,
   type DocumentContentIndexSourceValue,
   type InboundDocumentKindValue,
 } from "@/lib/documents/inbound-constants";
