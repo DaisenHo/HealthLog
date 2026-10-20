@@ -26,6 +26,7 @@ import {
   buildDailyRollUpBody,
   extractGoogleApiErrorDetail,
   fetchDailyRollUp,
+  runWithGoogleHealthClientOutcome,
   type GoogleHealthRollupShape,
 } from "../client";
 import { GoogleHealthApiError } from "../response-classifier";
@@ -216,6 +217,82 @@ describe("fetchDailyRollUp — chunk walk + conservative fallback", () => {
       }),
     ).rejects.toBeInstanceOf(GoogleHealthApiError);
     expect(safeFetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("fetchDailyRollUp — pages within a chunk (walkPages)", () => {
+  const oneChunk = { start: new Date("2026-06-20T00:00:00Z") };
+
+  it("follows nextPageToken to the end of a chunk", async () => {
+    safeFetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          rollupDataPoints: [{ steps: { countSum: "1" } }],
+          nextPageToken: "p2",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          rollupDataPoints: [{ steps: { countSum: "2" } }],
+          nextPageToken: "",
+        }),
+      );
+    const { result, outcome } = await runWithGoogleHealthClientOutcome(() =>
+      fetchDailyRollUp(
+        GOOGLE_HEALTH_DATA_TYPES.steps,
+        "token",
+        "fetchSteps",
+        oneChunk,
+      ),
+    );
+    expect(result).toHaveLength(2);
+    expect(safeFetchMock).toHaveBeenCalledTimes(2);
+    expect(
+      JSON.parse((safeFetchMock.mock.calls[1]![1] as { body: string }).body)
+        .pageToken,
+    ).toBe("p2");
+    expect(outcome).toMatchObject({ pages: 2, truncated: false });
+  });
+
+  it("stops a chunk whose page token comes back again and reports it truncated", async () => {
+    safeFetchMock.mockResolvedValue(
+      jsonResponse(200, {
+        rollupDataPoints: [{ steps: { countSum: "1" } }],
+        nextPageToken: "again",
+      }),
+    );
+    const { result, outcome } = await runWithGoogleHealthClientOutcome(() =>
+      fetchDailyRollUp(
+        GOOGLE_HEALTH_DATA_TYPES.steps,
+        "token",
+        "fetchSteps",
+        oneChunk,
+      ),
+    );
+    // The first page hands out "again", the second hands it out again.
+    expect(safeFetchMock).toHaveBeenCalledTimes(2);
+    expect(result).toHaveLength(2);
+    expect(outcome).toMatchObject({
+      truncated: true,
+      reasonCode: "existing_page_limit",
+    });
+  });
+
+  it("stops a chunk at its page ceiling and reports it truncated", async () => {
+    let n = 0;
+    safeFetchMock.mockImplementation(async () =>
+      jsonResponse(200, { rollupDataPoints: [], nextPageToken: `p${++n}` }),
+    );
+    const { outcome } = await runWithGoogleHealthClientOutcome(() =>
+      fetchDailyRollUp(
+        GOOGLE_HEALTH_DATA_TYPES.steps,
+        "token",
+        "fetchSteps",
+        oneChunk,
+      ),
+    );
+    expect(safeFetchMock).toHaveBeenCalledTimes(100);
+    expect(outcome).toMatchObject({ pages: 100, truncated: true });
   });
 });
 
