@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "Aún no hay tokens de API",
     "tokensEmptyDescription": "Los tokens se emiten cuando un cliente nativo inicia sesión o desde Ajustes → Cuenta.",
     "loginOverviewDescription": "Eventos de inicio de sesión y autenticación de todas las cuentas, filtrables y exportables como CSV.",
+    "loginOverviewFilterLabel": "Filtrar eventos",
     "allAuthEvents": "Todos los eventos de autenticación",
     "failedOnly": "Solo fallidos",
     "loginEmptyDescription": "Aquí aparecerán los inicios de sesión, los cierres de sesión y los cambios de passkey.",
@@ -7864,6 +7865,7 @@
           "admin": "Administradores",
           "user": "Usuarios"
         },
+        "filterLabel": "Filtrar usuarios",
         "forceLogout": "Forzar cierre de sesión",
         "forceLogoutConfirmTitle": "¿Forzar el cierre de sesión de {name}?",
         "forceLogoutConfirmBody": "Se revocarán todas las sesiones activas de este usuario. Tendrá que volver a iniciar sesión en todos los dispositivos.",

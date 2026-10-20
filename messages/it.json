@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "Ancora nessun token API",
     "tokensEmptyDescription": "I token vengono emessi quando un client nativo accede o tramite Impostazioni → Account.",
     "loginOverviewDescription": "Eventi di accesso e autenticazione di tutti gli account, filtrabili ed esportabili in CSV.",
+    "loginOverviewFilterLabel": "Filtra eventi",
     "allAuthEvents": "Tutti gli eventi di autenticazione",
     "failedOnly": "Solo non riusciti",
     "loginEmptyDescription": "Qui compariranno accessi, disconnessioni e modifiche delle passkey.",
@@ -7864,6 +7865,7 @@
           "admin": "Amministratori",
           "user": "Utenti"
         },
+        "filterLabel": "Filtra utenti",
         "forceLogout": "Forza la disconnessione",
         "forceLogoutConfirmTitle": "Forzare la disconnessione di {name}?",
         "forceLogoutConfirmBody": "Tutte le sessioni attive di questo utente verranno revocate. Dovrà accedere di nuovo su ogni dispositivo.",

@@ -183,10 +183,10 @@ describe("<SleepStageStackedBar>", () => {
       expect(html).toContain('data-slot="sleep-stage-window-30"');
       // The 7d button is default-active.
       expect(html).toMatch(
-        /data-slot="sleep-stage-window-7"[^>]*aria-pressed="true"/,
+        /aria-pressed="true"[^>]*data-slot="sleep-stage-window-7"/,
       );
       expect(html).toMatch(
-        /data-slot="sleep-stage-window-14"[^>]*aria-pressed="false"/,
+        /aria-pressed="false"[^>]*data-slot="sleep-stage-window-14"/,
       );
     });
 

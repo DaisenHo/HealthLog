@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import type { ChartRangePoints } from "@/lib/dashboard-layout";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -50,22 +50,17 @@ export function ChartRangeTabs({
 }) {
   const { t } = useTranslations();
   return (
-    <>
-      {CHART_RANGE_TABS.map((r) => (
-        <Button
-          key={r.labelKey}
-          variant={value === r.days ? "default" : "ghost"}
-          aria-pressed={value === r.days}
-          size="sm"
-          className="min-h-11 px-2 text-xs sm:px-3"
-          onClick={() => onChange(r.days)}
-          title={t(r.titleKey)}
-          data-slot="chart-range-tab"
-          data-range={r.days}
-        >
-          {t(r.labelKey)}
-        </Button>
-      ))}
-    </>
+    <Segmented
+      mode="toggle"
+      label={t("charts.rangeLabel")}
+      optionSlot={() => "chart-range-tab"}
+      value={String(value)}
+      onChange={(next) => onChange(Number(next) as ChartRangePoints)}
+      options={CHART_RANGE_TABS.map((r) => ({
+        value: String(r.days),
+        label: t(r.labelKey),
+        title: t(r.titleKey),
+      }))}
+    />
   );
 }

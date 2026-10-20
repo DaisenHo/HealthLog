@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "No API tokens yet",
     "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings → Account.",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
+    "loginOverviewFilterLabel": "Filter events",
     "allAuthEvents": "All auth events",
     "failedOnly": "Failed only",
     "loginEmptyDescription": "Sign-ins, sign-outs, and passkey changes will show up here.",
@@ -7864,6 +7865,7 @@
           "admin": "Admins",
           "user": "Users"
         },
+        "filterLabel": "Filter users",
         "forceLogout": "Force logout",
         "forceLogoutConfirmTitle": "Force logout {name}?",
         "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device.",

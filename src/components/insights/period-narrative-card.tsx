@@ -12,6 +12,7 @@ import {
 import { formatUpdatedLabel } from "@/lib/i18n/relative-time";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
+import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { AskCoachIconButton } from "@/components/insights/ask-coach-action";
@@ -175,29 +176,17 @@ export function PeriodNarrativeCard({
             reads best. */}
         <div className="flex items-start justify-between gap-2">
           {/* Calm segmented control, no chart. */}
-          <div className="flex gap-1">
-            {(["week", "month"] as const).map((p) => {
-              const active = period === p;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    "focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
-                    active
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {p === "week"
-                    ? t("insights.narrativeWeek")
-                    : t("insights.narrativeMonth")}
-                </button>
-              );
-            })}
-          </div>
+          <Segmented
+            mode="toggle"
+            label={t("insights.narrativeTitle")}
+            slot="period-narrative-period"
+            value={period}
+            onChange={setPeriod}
+            options={[
+              { value: "week", label: t("insights.narrativeWeek") },
+              { value: "month", label: t("insights.narrativeMonth") },
+            ]}
+          />
           <AskCoachIconButton
             question={t(
               period === "week"

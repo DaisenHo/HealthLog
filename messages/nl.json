@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "Nog geen API-tokens",
     "tokensEmptyDescription": "Tokens worden uitgegeven wanneer een native client inlogt of via Instellingen → Account.",
     "loginOverviewDescription": "Inlog- en authenticatiegebeurtenissen van alle accounts, te filteren en te exporteren als CSV.",
+    "loginOverviewFilterLabel": "Gebeurtenissen filteren",
     "allAuthEvents": "Alle authenticatiegebeurtenissen",
     "failedOnly": "Alleen mislukte",
     "loginEmptyDescription": "Inlogs, uitlogs en wijzigingen aan passkeys verschijnen hier.",
@@ -7864,6 +7865,7 @@
           "admin": "Beheerders",
           "user": "Gebruikers"
         },
+        "filterLabel": "Gebruikers filteren",
         "forceLogout": "Geforceerd uitloggen",
         "forceLogoutConfirmTitle": "{name} geforceerd uitloggen?",
         "forceLogoutConfirmBody": "Alle actieve sessies van deze gebruiker worden ingetrokken. Deze gebruiker moet daarna op elk apparaat opnieuw inloggen.",

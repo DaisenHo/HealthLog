@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "Aucun jeton d'API pour l'instant",
     "tokensEmptyDescription": "Les jetons sont émis lorsqu'un client natif se connecte ou via Paramètres → Compte.",
     "loginOverviewDescription": "Événements de connexion et d’authentification de tous les comptes, filtrables et exportables en CSV.",
+    "loginOverviewFilterLabel": "Filtrer les événements",
     "allAuthEvents": "Tous les événements d'authentification",
     "failedOnly": "Échecs uniquement",
     "loginEmptyDescription": "Les connexions, déconnexions et modifications de passkey apparaîtront ici.",
@@ -7864,6 +7865,7 @@
           "admin": "Administrateurs",
           "user": "Utilisateurs"
         },
+        "filterLabel": "Filtrer les utilisateurs",
         "forceLogout": "Forcer la déconnexion",
         "forceLogoutConfirmTitle": "Forcer la déconnexion de {name} ?",
         "forceLogoutConfirmBody": "Toutes les sessions actives de cet utilisateur seront révoquées. Il devra se reconnecter sur chaque appareil.",

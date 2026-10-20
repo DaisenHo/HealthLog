@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "Brak tokenów API",
     "tokensEmptyDescription": "Tokeny są wydawane, gdy klient natywny się loguje, lub przez Ustawienia → Konto.",
     "loginOverviewDescription": "Zdarzenia logowania i uwierzytelniania wszystkich kont, z filtrowaniem i eksportem CSV.",
+    "loginOverviewFilterLabel": "Filtruj zdarzenia",
     "allAuthEvents": "Wszystkie zdarzenia uwierzytelniania",
     "failedOnly": "Tylko nieudane",
     "loginEmptyDescription": "Tutaj pojawią się logowania, wylogowania i zmiany kluczy passkey.",
@@ -7864,6 +7865,7 @@
           "admin": "Administratorzy",
           "user": "Użytkownicy"
         },
+        "filterLabel": "Filtruj użytkowników",
         "forceLogout": "Wymuś wylogowanie",
         "forceLogoutConfirmTitle": "Wymusić wylogowanie {name}?",
         "forceLogoutConfirmBody": "Wszystkie aktywne sesje tego użytkownika zostaną unieważnione. Będzie musiał zalogować się ponownie na każdym urządzeniu.",

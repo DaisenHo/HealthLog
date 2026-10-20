@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
@@ -231,26 +232,17 @@ export function LoginOverviewSection() {
       <div className="space-y-3">
         {/* Quick-filter pills. Failed-only is the most common
               admin "is something wrong" question — keep the one-tap shortcut. */}
-        <div className="flex gap-1">
-          <Button
-            variant={filter === "all" ? "default" : "ghost"}
-            aria-pressed={filter === "all"}
-            size="sm"
-            className="min-h-11 min-w-11 px-3 text-xs"
-            onClick={resetPageOnFilterChange(() => setFilter("all"))}
-          >
-            {t("admin.allAuthEvents")}
-          </Button>
-          <Button
-            variant={filter === "failed" ? "default" : "ghost"}
-            aria-pressed={filter === "failed"}
-            size="sm"
-            className="min-h-11 min-w-11 px-3 text-xs"
-            onClick={resetPageOnFilterChange(() => setFilter("failed"))}
-          >
-            {t("admin.failedOnly")}
-          </Button>
-        </div>
+        <Segmented
+          mode="toggle"
+          label={t("admin.loginOverviewFilterLabel")}
+          slot="admin-login-filter"
+          value={filter}
+          onChange={resetPageOnFilterChange(setFilter)}
+          options={[
+            { value: "all", label: t("admin.allAuthEvents") },
+            { value: "failed", label: t("admin.failedOnly") },
+          ]}
+        />
 
         {/* Detailed filter row */}
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">

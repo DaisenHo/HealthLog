@@ -7711,6 +7711,7 @@
     "tokensEmptyTitle": "아직 API 토큰이 없어요",
     "tokensEmptyDescription": "네이티브 클라이언트가 로그인할 때나 설정 → 계정에서 토큰이 발급돼요.",
     "loginOverviewDescription": "모든 계정의 로그인·인증 이벤트예요. 필터링하고 CSV로 내보낼 수 있어요.",
+    "loginOverviewFilterLabel": "이벤트 필터",
     "allAuthEvents": "전체 인증 이벤트",
     "failedOnly": "실패만",
     "loginEmptyDescription": "로그인, 로그아웃, 패스키 변경이 여기에 표시돼요.",
@@ -7839,6 +7840,7 @@
           "admin": "관리자",
           "user": "사용자"
         },
+        "filterLabel": "사용자 필터",
         "forceLogout": "강제 로그아웃",
         "forceLogoutConfirmTitle": "{name} 강제 로그아웃할까요?",
         "forceLogoutConfirmBody": "이 사용자의 활성 세션이 모두 해제돼요. 모든 기기에서 다시 로그인해야 해요.",

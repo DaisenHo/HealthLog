@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { ChartDataTable } from "@/components/charts/chart-data-table";
 import {
   ChartDayFooter,
@@ -389,31 +389,21 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
               })}
             </span>
           </div>
-          <div
-            // v1.4.27 — bump the gap from `gap-1` to
-            // `gap-1.5` so the three window-toggle buttons (7d /
-            // 14d / 30d) breathe enough on Pixel 5 that the active
-            // pill's border doesn't fuse with the inactive neighbour.
-            className="flex items-center gap-1.5 self-end sm:self-auto"
-            data-slot="sleep-stage-window-toggle"
-          >
-            {WINDOW_DAYS.map((w) => (
-              <Button
-                key={w}
-                type="button"
-                variant={windowDays === w ? "default" : "ghost"}
-                size="sm"
-                className="min-h-11 px-2 text-xs sm:px-3"
-                onClick={() => setWindowDays(w)}
-                aria-pressed={windowDays === w}
-                data-slot={`sleep-stage-window-${w}`}
-              >
-                {/* The page's other range controls read "7T / 30T"; this
-                    one printed an English "7d" beside them. */}
-                {t("charts.daysNLabel", { days: w })}
-              </Button>
-            ))}
-          </div>
+          {/* The page's other range controls read "7T / 30T"; this one
+              printed an English "7d" beside them, hence `daysNLabel`. */}
+          <Segmented
+            mode="toggle"
+            label={t("charts.rangeLabel")}
+            slot="sleep-stage-window-toggle"
+            optionSlot={(w) => `sleep-stage-window-${w}`}
+            className="self-end sm:self-auto"
+            value={String(windowDays)}
+            onChange={(next) => setWindowDays(Number(next) as WindowSize)}
+            options={WINDOW_DAYS.map((w) => ({
+              value: String(w),
+              label: t("charts.daysNLabel", { days: w }),
+            }))}
+          />
         </div>
       </CardHeader>
       <CardContent>

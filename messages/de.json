@@ -7736,6 +7736,7 @@
     "tokensEmptyTitle": "Noch keine API-Tokens",
     "tokensEmptyDescription": "Tokens werden bei der Anmeldung nativer Clients oder über Einstellungen → Account ausgestellt.",
     "loginOverviewDescription": "Anmelde- und Auth-Ereignisse aller Konten, filterbar und als CSV exportierbar.",
+    "loginOverviewFilterLabel": "Ereignisse filtern",
     "allAuthEvents": "Alle Auth-Ereignisse",
     "failedOnly": "Nur fehlgeschlagene",
     "loginEmptyDescription": "Anmeldungen, Abmeldungen und Passkey-Änderungen erscheinen hier.",
@@ -7864,6 +7865,7 @@
           "admin": "Admins",
           "user": "Nutzer"
         },
+        "filterLabel": "Benutzer filtern",
         "forceLogout": "Abmeldung erzwingen",
         "forceLogoutConfirmTitle": "{name} abmelden?",
         "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich.",
