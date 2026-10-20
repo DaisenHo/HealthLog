@@ -367,16 +367,25 @@ function TargetReferencePanel({
         ) : null}
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Row 2: range bar — where today's value sits inside the band. */}
+        {/* Row 2: range bar — where today's value sits inside the band.
+          Blood pressure stacks two bars, so each one names its reading;
+          an unlabelled first bar read as the diastolic one's sibling. */}
         {currentValue != null ? (
-          <RangeBar
-            value={currentValue}
-            min={range.min}
-            max={range.max}
-            unit={unit}
-            orangeMin={isMedicationCompliance ? 70 : undefined}
-            orangeMax={isMedicationCompliance ? 100 : undefined}
-          />
+          <div className={isBp ? "space-y-1" : undefined}>
+            {isBp ? (
+              <p className="text-muted-foreground text-xs">
+                {t("targets.systolic")}
+              </p>
+            ) : null}
+            <RangeBar
+              value={currentValue}
+              min={range.min}
+              max={range.max}
+              unit={unit}
+              orangeMin={isMedicationCompliance ? 70 : undefined}
+              orangeMax={isMedicationCompliance ? 100 : undefined}
+            />
+          </div>
         ) : null}
 
         {/* Row 2b: diastolic range bar for blood pressure. */}

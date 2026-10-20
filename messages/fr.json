@@ -8901,6 +8901,7 @@
     "inTarget": "Dans la plage cible",
     "aboveTarget": "{delta} {unit} au-dessus de la plage",
     "belowTarget": "{delta} {unit} en dessous de la plage",
+    "systolic": "Systolique",
     "diastolic": "Diastolique",
     "glucoseFasting": "Glycémie (à jeun)",
     "glucosePostprandial": "Glycémie (postprandiale)",

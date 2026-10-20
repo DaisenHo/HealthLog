@@ -8901,6 +8901,7 @@
     "inTarget": "W zakresie docelowym",
     "aboveTarget": "{delta} {unit} powyżej zakresu",
     "belowTarget": "{delta} {unit} poniżej zakresu",
+    "systolic": "Skurczowe",
     "diastolic": "Rozkurczowe",
     "glucoseFasting": "Glikemia: na czczo",
     "glucosePostprandial": "Glikemia: po posiłku",

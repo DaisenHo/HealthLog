@@ -8901,6 +8901,7 @@
     "inTarget": "목표 범위 안",
     "aboveTarget": "목표보다 {delta} {unit} 높음",
     "belowTarget": "목표보다 {delta} {unit} 낮음",
+    "systolic": "수축기",
     "diastolic": "이완기",
     "glucoseFasting": "혈당 (공복)",
     "glucosePostprandial": "혈당 (식후)",
