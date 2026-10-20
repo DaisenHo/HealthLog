@@ -54,6 +54,7 @@ import {
 import { resolveSeriesReferenceLines } from "@/lib/measurements/series-reference-lines";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 
 /**
  * v1.11.4 — sleep is read row-per-stage (not from the day rollup), so its
@@ -209,10 +210,8 @@ interface SeriesPoint {
 
 function stdDev(values: number[]): number {
   if (values.length < 2) return 0;
-  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-  const variance =
-    values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
-  return Math.round(Math.sqrt(variance) * 100) / 100;
+  const sd = standardDeviation(values, READING_SPREAD) ?? 0;
+  return Math.round(sd * 100) / 100;
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {

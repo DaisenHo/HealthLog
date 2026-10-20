@@ -3,6 +3,8 @@
  * All functions are pure and work on sorted arrays of {date, value} pairs.
  */
 
+import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
+
 export interface DataPoint {
   date: Date;
   value: number;
@@ -95,9 +97,7 @@ export function detectAnomalies(data: DataPoint[], threshold = 2.0): Anomaly[] {
 
   const values = data.map((p) => p.value);
   const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  const variance =
-    values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
-  const stdDev = Math.sqrt(variance);
+  const stdDev = standardDeviation(values, READING_SPREAD) ?? 0;
 
   if (stdDev === 0) return [];
 

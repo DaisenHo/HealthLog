@@ -25,6 +25,7 @@
  */
 import type { GradedSeries } from "@/lib/insights/graded-series";
 import type { NormRange } from "@/lib/insights/derived/norms";
+import { standardDeviation } from "@/lib/stats/spread";
 
 /** Favourable-direction framing — mirrors the metric-status registry. */
 export type MetricDirection = "higher-better" | "lower-better" | "target-band";
@@ -96,16 +97,6 @@ function meanOf(values: number[]): number | null {
   return sum / values.length;
 }
 
-/** Sample standard deviation, or null with fewer than two points. */
-function sampleSd(values: number[]): number | null {
-  if (values.length < 2) return null;
-  const m = meanOf(values);
-  if (m === null) return null;
-  let acc = 0;
-  for (const v of values) acc += (v - m) ** 2;
-  return Math.sqrt(acc / (values.length - 1));
-}
-
 /** Placement of a value against a coarse normal range. */
 export function placeInBand(
   value: number,
@@ -169,7 +160,8 @@ export function buildMetricSignal(
   }
 
   const baseline = meanOf(baselineMeans);
-  const spread = sampleSd(baselineMeans);
+  // The spread decides the verdict, so it is the sample estimate.
+  const spread = standardDeviation(baselineMeans, "sample");
 
   let delta: number | null = null;
   let deltaPct: number | null = null;
