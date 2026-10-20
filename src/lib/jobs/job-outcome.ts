@@ -57,6 +57,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "assessments_warmed",
   "auto_resolved",
   "backed",
+  // The nightly measurements check: heap size over what the live rows need.
+  "bloat_factor",
   "buckets_collapsed",
   "buckets_recomputed",
   "budget_blocked",
@@ -78,6 +80,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "days_skipped",
   "days_skipped_no_tombstones",
   "days_stored",
+  "dead_rows",
   // Tombstone purge: accounts left for the next run because a restore of
   // the account was running.
   "deferred_accounts",
@@ -140,6 +143,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "inventory_expired_count",
   "inventory_items_migrated",
   "jobs",
+  // A heavy job pg-boss expired while it waited for the heavy lane.
+  "lane_expired",
   "legacy_rows_soft_deleted",
   "linked",
   "malformed",

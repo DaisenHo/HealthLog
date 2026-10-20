@@ -1,7 +1,7 @@
 /**
- * Shared user discovery for the nightly 02:xx per-metric status crons
- * (general / blood-pressure / weight / pulse / bmi / medication-
- * compliance / mood).
+ * User discovery for the nightly 02:00 status batch, which writes every
+ * per-metric status card (general / blood-pressure / weight / pulse / bmi /
+ * medication-compliance / mood).
  *
  * Before this module each cron iterated EVERY user row: accounts that
  * disabled the coach surface (`disableCoach`) and operator-disabled
@@ -12,18 +12,18 @@
  * Division of nightly labour (documented here once, referenced by the
  * handlers):
  *
- *   - 02:xx status crons → users the 04:30 `insight-pregenerate` pass will
+ *   - 02:00 status batch → users the 04:30 `insight-pregenerate` pass will
  *     not reach: a comprehensive cache fresher than `PREGENERATE_STALE_MS`,
  *     so that pass skips them, while their per-status notes still age out
  *     daily and only these crons re-fill them.
  *   - 04:30 insight-pregenerate → the rest: users with a comprehensive cache
  *     older than `PREGENERATE_STALE_MS`. That pass warms every per-status
  *     note whenever `statusText` is available for the user, whatever became
- *     of the briefing, so a 02:xx generation for them would be redone two
+ *     of the briefing, so a 02:00 generation for them would be redone two
  *     hours later.
  *
- * Cheap gates, in SQL and in order (the per-user `statusText` capability in
- * each handler, and the chokepoint behind it, are what decide):
+ * Cheap gates, in SQL and in order (the per-user `statusText` capability
+ * inside the batch, and the chokepoint behind it, are what decide):
  *   1. The operator's `insightStatus` switch (master applied). Off, the whole
  *      pass is empty.
  *   2. The person's AI analysis switch (the `insights` module). Someone who
@@ -32,7 +32,7 @@
  *      else.
  *   3. The pregenerate-candidate skip described above, only while the
  *      `briefing` switch is on; when it is off the 04:30 pass no-ops, so the
- *      02:xx crons keep covering everyone.
+ *      02:00 batch keeps covering everyone.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getAssistantFlags } from "@/lib/feature-flags";
@@ -59,7 +59,7 @@ export async function findStatusCronCandidates(
   if (users.length === 0) return [];
 
   // When the briefing switch is off the 04:30 pregenerate pass no-ops, so no
-  // user has a comprehensive claim and the 02:xx crons keep all.
+  // user has a comprehensive claim and the 02:00 batch keeps all.
   if (!flags.briefing) {
     return users.map((u) => ({ id: u.id, locale: u.locale }));
   }

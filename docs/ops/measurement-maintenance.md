@@ -137,7 +137,8 @@ it.
 ## Reading the result
 
 The run's wide event `job.measurement_maintenance` carries
-`maintenance_outcome` (`completed`, `refused_purge_running`, `failed`), the
+`maintenance_outcome` (`completed`, `nothing_due`, `refused_purge_running`,
+`failed`), the live and dead rows the run started from, the
 table and index sizes before and after, and `maintenance_steps`, one entry
 per step with its target, size before and after, and duration. The same
 sizes from `psql`:
@@ -146,6 +147,38 @@ sizes from `psql`:
 SELECT pg_size_pretty(pg_total_relation_size('measurements')) AS total,
        pg_size_pretty(pg_indexes_size('measurements')) AS indexes;
 ```
+
+## The nightly check
+
+Since v1.43.7 the same queue also runs by itself at 03:40 (Europe/Berlin).
+That run names no steps: it reads the table's live and dead rows and runs a
+plain `VACUUM (ANALYZE)` only when there are at least 10,000 dead rows and
+more than one for every ten live ones. It never rebuilds an index, and a
+plain vacuum stops neither reads nor writes. It shares the singleton key with
+the run you start, so the two never overlap. The admin card keeps showing
+only the runs you started.
+
+The check also measures how far the table file has grown past what its live
+rows need (`maintenance_bloat_factor` on the wide event, `bloat_factor` in the
+job result). Past 3 it adds a warning to the event: a plain vacuum makes the
+space reusable but does not shrink the file, and only `VACUUM FULL` does (see
+below).
+
+Why the table grew in the first place: until v1.43.7 an update that changed
+nothing still moved `updated_at`, which sits in an index, so no update could
+stay on its page. Migration 0412 keeps `updated_at` and `sync_version` on such
+an update and gives the table `fillfactor = 85` and a 5 % autovacuum
+threshold. To check that updates stay on their page:
+
+```sql
+SELECT n_tup_upd, n_tup_hot_upd, n_live_tup, n_dead_tup,
+       pg_size_pretty(pg_relation_size('measurements')) AS heap
+FROM pg_stat_user_tables WHERE relname = 'measurements';
+```
+
+`n_tup_hot_upd` should now grow along with `n_tup_upd`. The fill factor
+applies to pages written after the migration; a `VACUUM FULL` after the
+upgrade applies it to the whole table.
 
 ## "could not resize shared memory segment"
 
@@ -160,6 +193,6 @@ runs single-process and needs no shared segment, and the bundled
 ## Not part of this
 
 `VACUUM FULL` would shrink the table file as well, but it locks the table for
-reads and writes while it runs. After the purge the remaining table is small
-and the space inside it is reused by new rows, so it is not needed. If you
-want it anyway, run it yourself in a maintenance window with the app stopped.
+reads and writes while it runs, so no job starts it. When the nightly check
+warns about the bloat factor, run it yourself in a maintenance window with the
+app stopped.

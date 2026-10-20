@@ -7275,7 +7275,8 @@
         "lastNewValue": "Last new value {relative}",
         "lastBackground": "Last in background {relative}",
         "never": "Not received yet",
-        "lastBackfill": "History caught up {relative}"
+        "lastBackfill": "History caught up {relative}",
+        "lastEnteredHere": "Last entered here {relative}"
       }
     },
     "garminInfo": {

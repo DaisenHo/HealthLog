@@ -72,15 +72,6 @@ export type QueueRuntime =
 
 const short = (why: string): QueueRuntime => ({ runtime: "short", why });
 
-const nightlyStatusPass = (fn: string): QueueRuntime => ({
-  runtime: "long",
-  expireInSeconds: NIGHTLY_INSIGHT_PASS_EXPIRE_SECONDS,
-  expiryVia: ["nightlyInsightPassOptions"],
-  stop: { file: "lib/jobs/reminder/insights-handlers.ts", fn },
-  exclusive: "lockedPass",
-  why: "Nightly status pass: one provider call per candidate account, serially, over the whole instance.",
-});
-
 const cohortSync = (provider: string): QueueRuntime =>
   short(
     `${provider} sync: a recent window per connection (incremental since the last sync); a webhook job is one connection.`,
@@ -140,17 +131,17 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "strava-backfill": forwarder,
 
   // ── Status and insights ────────────────────────────────────────────
-  "insights-general-status": nightlyStatusPass("handleGeneralStatusGenerate"),
-  "insights-blood-pressure-status": nightlyStatusPass(
-    "handleBloodPressureStatusGenerate",
-  ),
-  "insights-weight-status": nightlyStatusPass("handleWeightStatusGenerate"),
-  "insights-pulse-status": nightlyStatusPass("handlePulseStatusGenerate"),
-  "insights-bmi-status": nightlyStatusPass("handleBmiStatusGenerate"),
-  "insights-mood-status": nightlyStatusPass("handleMoodStatusGenerate"),
-  "insights-medication-compliance-status": nightlyStatusPass(
-    "handleMedicationComplianceStatusGenerate",
-  ),
+  "insights-general-status": {
+    runtime: "long",
+    expireInSeconds: NIGHTLY_INSIGHT_PASS_EXPIRE_SECONDS,
+    expiryVia: ["nightlyInsightPassOptions"],
+    stop: {
+      file: "lib/jobs/reminder/insights-handlers.ts",
+      fn: "handleGeneralStatusGenerate",
+    },
+    exclusive: "lockedPass",
+    why: "Nightly status batch: one provider call per candidate account, serially, over the whole instance.",
+  },
   "insight-pregenerate": {
     runtime: "long",
     expireInSeconds: INSIGHT_PREGENERATE_EXPIRE_SECONDS,
@@ -400,7 +391,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     expiryVia: ["MEASUREMENT_MAINTENANCE_SEND_OPTIONS"],
     stop: {
       oneShot:
-        "VACUUM and REINDEX CONCURRENTLY cannot be resumed mid-statement; the send sets retryLimit 0 and the operator re-triggers.",
+        "VACUUM and REINDEX CONCURRENTLY cannot be resumed mid-statement; the send and the nightly tick set retryLimit 0, and the next night or the operator runs it again.",
     },
     exclusive: {
       marker: "retryLimit: 0",
@@ -409,7 +400,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
         fn: "MEASUREMENT_MAINTENANCE_SEND_OPTIONS",
       },
     },
-    why: "Rebuilds every index of the largest table, one at a time.",
+    why: "The operator's run rebuilds every index of the largest table, one at a time; the nightly check is one VACUUM at most.",
   },
   "pulse-day-mean": {
     runtime: "long",

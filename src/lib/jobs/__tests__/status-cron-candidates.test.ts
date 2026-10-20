@@ -175,44 +175,53 @@ describe("findStatusCronCandidates — gates", () => {
   });
 });
 
-describe("mood-status queue registration (dead-queue guard)", () => {
-  // v1.18.1 — the nightly status-ladder wiring moved out of the 2143-LOC
-  // reminder-worker boot file into the status registrar. The dead-queue guard
-  // follows the wiring there.
+describe("the nightly status batch is the one status cron", () => {
   const workerSrc = fs.readFileSync(
     path.resolve(__dirname, "../reminder/register-status.ts"),
     "utf8",
   );
+  const RETIRED = [
+    "insights-blood-pressure-status",
+    "insights-weight-status",
+    "insights-pulse-status",
+    "insights-bmi-status",
+    "insights-mood-status",
+    "insights-medication-compliance-status",
+  ];
 
-  it("registers the queue in the allQueues createQueue loop", () => {
+  it("registers and schedules the 02:00 batch with the nightly pass options", () => {
     const match = workerSrc.match(/const allQueues\s*=\s*\[([\s\S]*?)\];/);
     expect(match).not.toBeNull();
-    expect(match![1]).toMatch(/\bMOOD_STATUS_QUEUE\b/);
-  });
-
-  it("schedules the 02:30 cron with the nightly pass options (retries and expiry)", () => {
+    expect(match![1]).toMatch(/\bGENERAL_STATUS_QUEUE\b/);
     expect(workerSrc).toMatch(
-      /\[\s*MOOD_STATUS_QUEUE\s*,\s*MOOD_STATUS_CRON\s*,\s*nightlyInsightPassOptions\s*\]/,
+      /\[\s*GENERAL_STATUS_QUEUE\s*,\s*GENERAL_STATUS_CRON\s*,\s*nightlyInsightPassOptions\s*\]/,
     );
-    expect(workerSrc).toMatch(/MOOD_STATUS_CRON\s*=\s*"30 2 \* \* \*"/);
+    expect(workerSrc).toMatch(/GENERAL_STATUS_CRON\s*=\s*"0 2 \* \* \*"/);
   });
 
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSrc).toMatch(/createAndWork[\s\S]{0,120}MOOD_STATUS_QUEUE/);
+  it("retires the six per-metric crons on an instance that still has them", () => {
+    const retired = workerSrc.match(
+      /const RETIRED_STATUS_QUEUES\s*=\s*\[([\s\S]*?)\]/,
+    );
+    expect(retired).not.toBeNull();
+    for (const name of RETIRED) expect(retired![1]).toContain(`"${name}"`);
+    expect(workerSrc).toMatch(
+      /await retireQueues\(boss,\s*RETIRED_STATUS_QUEUES\)/,
+    );
+    const live = workerSrc.replace(retired![0], "");
+    for (const name of RETIRED) expect(live).not.toContain(`"${name}"`);
   });
 
-  it("drives all seven status crons through the shared discovery", () => {
+  it("drives the batch through the shared discovery", () => {
     const statusSrc = fs.readFileSync(
       path.resolve(__dirname, "../reminder/insights-handlers.ts"),
       "utf8",
     );
-    expect(statusSrc).toMatch(/findStatusCronCandidates\(prisma\)/);
-    // The old iterate-every-user discovery must be gone from the status
-    // handlers (the WHOOP/data-backup cohort reads keep their own scans).
     const statusBlock = statusSrc.slice(
-      statusSrc.indexOf("async function runStatusCronGenerate"),
+      statusSrc.indexOf("async function runStatusBatchCron"),
       statusSrc.indexOf("async function handleInsightPregenerateJob"),
     );
+    expect(statusBlock).toMatch(/findStatusCronCandidates\(prisma\)/);
     expect(statusBlock).not.toMatch(/prisma\.user\.findMany/);
   });
 });

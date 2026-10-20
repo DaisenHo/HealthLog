@@ -36,6 +36,7 @@ import {
 } from "@/lib/jobs/pr-detection";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { lockedPass, WHOLE_PASS } from "@/lib/jobs/long-pass";
+import { heavyLane } from "@/lib/jobs/heavy-lane";
 import {
   OFFHOST_BACKUP_QUEUE,
   OFFHOST_BACKUP_SEND_OPTIONS,
@@ -79,7 +80,9 @@ import {
   type MeasurementFoldRepairPayload,
 } from "@/lib/jobs/measurement-fold-repair";
 import {
+  MEASUREMENT_MAINTENANCE_CRON,
   MEASUREMENT_MAINTENANCE_QUEUE,
+  MEASUREMENT_MAINTENANCE_SEND_OPTIONS,
   handleMeasurementMaintenance,
   type MeasurementMaintenancePayload,
 } from "@/lib/jobs/measurement-maintenance";
@@ -506,9 +509,9 @@ const allQueues = [
   // their window; the purge above waits for it. Without this entry the boot
   // enqueue silently no-ops and the purge never runs.
   MEASUREMENT_FOLD_REPAIR_QUEUE,
-  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`. No
-  // cron: the admin route enqueues it. Without this entry the trigger
-  // silently no-ops.
+  // v1.42 — VACUUM / REINDEX of `measurements`: the admin route enqueues the
+  // operator's run, and a nightly check vacuums when dead rows pile up.
+  // Without this entry both silently no-op.
   MEASUREMENT_MAINTENANCE_QUEUE,
   // v1.43 — the pulse day-mean dry run and rebuild, admin-triggered only.
   PULSE_DAY_MEAN_QUEUE,
@@ -633,6 +636,14 @@ const allQueues = [
 // `retryLimit: 0` in its own options for the other reason: it pages each
 // failed account itself, and a retry would page the same accounts again.
 const schedules: ScheduleEntry[] = [
+  // v1.43.7 — nightly 03:40 check of `measurements`: a plain VACUUM when the
+  // dead rows pass the threshold, never a rebuild. Same singleton key as the
+  // operator's run, so the two collapse.
+  [
+    MEASUREMENT_MAINTENANCE_QUEUE,
+    MEASUREMENT_MAINTENANCE_CRON,
+    { ...MEASUREMENT_MAINTENANCE_SEND_OPTIONS },
+  ],
   // v1.25 (W-ENV) — daily 02:10 Europe/Berlin discovery tick (empty payload)
   // that fans out one per-user environment fetch per opted-in account.
   [ENVIRONMENT_FETCH_QUEUE, ENVIRONMENT_FETCH_CRON],
@@ -848,11 +859,11 @@ const queuePolicies: QueuePolicyTable = {
     reason:
       "Fixed singleton key, admin-triggered. Two concurrent corpus rotations must never overlap; the route already reports a suppressed send back as alreadyQueued.",
   },
-  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`.
+  // v1.42 — VACUUM / REINDEX of `measurements`, operator or nightly.
   [MEASUREMENT_MAINTENANCE_QUEUE]: {
     policy: "exclusive",
     reason:
-      "Fixed singleton key, admin-triggered. Two maintenance passes would rebuild the same indexes side by side; the route reports a suppressed send back as enqueued: false.",
+      "Fixed singleton key on the admin send and the nightly tick alike. Two maintenance passes would vacuum or rebuild side by side; the route reports a suppressed send back as enqueued: false.",
   },
   // v1.43 — the pulse day-mean dry run and rebuild.
   [PULSE_DAY_MEAN_QUEUE]: {
@@ -931,7 +942,11 @@ export async function registerMaintenanceQueues(
     boss,
     DATA_BACKUP_QUEUE,
     { localConcurrency: 1 },
-    lockedPass(DATA_BACKUP_QUEUE, () => WHOLE_PASS, handleDataBackup),
+    lockedPass(
+      DATA_BACKUP_QUEUE,
+      () => WHOLE_PASS,
+      heavyLane(DATA_BACKUP_QUEUE, handleDataBackup),
+    ),
   );
   await createAndWork<RateLimitCleanupPayload>(
     boss,
@@ -962,7 +977,11 @@ export async function registerMaintenanceQueues(
     boss,
     OFFHOST_BACKUP_QUEUE,
     { localConcurrency: 1, includeMetadata: true },
-    lockedPass(OFFHOST_BACKUP_QUEUE, () => WHOLE_PASS, handleOffhostBackup),
+    lockedPass(
+      OFFHOST_BACKUP_QUEUE,
+      () => WHOLE_PASS,
+      heavyLane(OFFHOST_BACKUP_QUEUE, handleOffhostBackup),
+    ),
   );
   // Locked: a drill that outlives a restart or a manual run never reads the
   // bucket beside another one.
@@ -970,7 +989,11 @@ export async function registerMaintenanceQueues(
     boss,
     RESTORE_DRILL_QUEUE,
     { localConcurrency: 1 },
-    lockedPass(RESTORE_DRILL_QUEUE, () => WHOLE_PASS, handleRestoreDrill),
+    lockedPass(
+      RESTORE_DRILL_QUEUE,
+      () => WHOLE_PASS,
+      heavyLane(RESTORE_DRILL_QUEUE, handleRestoreDrill),
+    ),
   );
   await createAndWork(
     boss,
@@ -985,7 +1008,7 @@ export async function registerMaintenanceQueues(
     boss,
     BACKUP_RESTORE_QUEUE,
     { localConcurrency: 1 },
-    handleBackupRestore,
+    heavyLane(BACKUP_RESTORE_QUEUE, handleBackupRestore),
   );
   // A restore the previous process was running is picked up again once its
   // heartbeat has gone stale; see `sweepInterruptedRestores`.
@@ -1192,7 +1215,7 @@ export async function registerMaintenanceQueues(
     boss,
     APPLE_HEALTH_IMPORT_V2_QUEUE,
     { localConcurrency: APPLE_HEALTH_IMPORT_CONCURRENCY },
-    async (jobs) => {
+    heavyLane(APPLE_HEALTH_IMPORT_V2_QUEUE, async (jobs) => {
       // pg-boss v12 work callbacks always receive an array (batched
       // worker mode); for our concurrency-1 + batchSize-1 case we just
       // process each job sequentially.
@@ -1205,7 +1228,7 @@ export async function registerMaintenanceQueues(
         if (!outcome.ok && failure === null) failure = outcome;
       }
       return failure ?? jobDone({ jobs: jobs.length });
-    },
+    }),
   );
   // Drain pre-revision-2 backlog by moving each claimed legacy job onto the
   // isolated v2 queue. This preserves the ImportJob status id without letting
@@ -1228,7 +1251,7 @@ export async function registerMaintenanceQueues(
     boss,
     HEALTH_CONNECT_IMPORT_QUEUE,
     { localConcurrency: HEALTH_CONNECT_IMPORT_CONCURRENCY },
-    handleHealthConnectImport,
+    heavyLane(HEALTH_CONNECT_IMPORT_QUEUE, handleHealthConnectImport),
   );
   // v1.42 — compaction-tombstone backlog purge. Serial: each batch holds
   // an account against a concurrent restore.

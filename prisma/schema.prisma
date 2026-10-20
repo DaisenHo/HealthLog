@@ -2094,6 +2094,11 @@ model Measurement {
   // limit+1`. Without this index Postgres filters by `userId` then sorts
   // the user's entire measurement set per page; the delta drain allows
   // 120 pulls/min/user. See migration 0096.
+  // Because `updatedAt` is indexed here, an update that moves it can never
+  // be heap-only. The trigger `measurements_noop_update_keeps_stamps`
+  // (migration 0412) keeps `updatedAt` and `syncVersion` on an update that
+  // changes nothing else, so those stay HOT; the table also carries
+  // `fillfactor = 85` and a 5 % autovacuum threshold from the same migration.
   @@index([userId, updatedAt, id])
   // `measurements_legacy_step_consolidation_idx` is a partial index
   // over `type = 'ACTIVITY_STEPS' AND deleted_at IS NULL` — see

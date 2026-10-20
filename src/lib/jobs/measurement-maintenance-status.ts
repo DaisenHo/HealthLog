@@ -1,8 +1,8 @@
 /**
  * What the admin card shows about the measurement table maintenance: the
- * newest run and where it stands, whether the compaction-tombstone purge is
- * still at work (the run refuses to start while it is), and the table's size
- * right now.
+ * newest run the operator started and where it stands, whether the
+ * compaction-tombstone purge is still at work (the run refuses to start while
+ * it is), and the table's size right now.
  *
  * Read straight from `pgboss.job`, the same source `job-failures.ts` reads,
  * and fail-soft the same way: a web-only deployment has no `pgboss` schema,
@@ -90,6 +90,9 @@ export async function readMeasurementMaintenanceStatus(): Promise<MeasurementMai
                output->'did'->>'outcome' AS outcome
         FROM pgboss.job
         WHERE name = ${MEASUREMENT_MAINTENANCE_QUEUE}
+          -- The operator's runs name their steps; the nightly check's tick
+          -- names none and reports through its wide event instead.
+          AND (data ? 'vacuum' OR data ? 'reindex')
         ORDER BY created_on DESC
         LIMIT 1
       `,

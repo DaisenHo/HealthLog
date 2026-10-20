@@ -32,6 +32,7 @@ import type { WorkoutSportType } from "@/lib/validations/workout";
 import { PolarApiError, classifyPolarResponse } from "./response-classifier";
 import { mapPolarSportType } from "./sport-map";
 import { envOr, envValue } from "@/lib/env";
+import { importValue } from "@/lib/integrations/import-value";
 
 const POLAR_API_BASE = "https://www.polaraccesslink.com";
 const POLAR_OAUTH_AUTH_URL = "https://flow.polar.com/oauth2/authorization";
@@ -401,10 +402,6 @@ export function fetchSpo2(accessToken: string): Promise<PolarSpo2[]> {
 
 const SEC_TO_MIN = 1 / 60;
 
-function round2(n: number): number {
-  return parseFloat(n.toFixed(2));
-}
-
 /** A single mapped reading destined for one `Measurement` row. The sync layer
  * stamps `source = POLAR` + `externalId = <resource>:<date>:<fieldTag>` unless
  * the mapper supplies its own full `externalId` (the per-segment sleep rows
@@ -446,7 +443,7 @@ export interface MappedMeasurement {
  * rescale 1–6 → 0–100 (1 = worst, 6 = best). */
 function rechargeStatusToScore(status: number): number {
   const clamped = Math.max(1, Math.min(6, status));
-  return round2(((clamped - 1) / 5) * 100);
+  return importValue(((clamped - 1) / 5) * 100);
 }
 
 /**
@@ -479,7 +476,7 @@ export function mapNightlyRecharge(
   ) {
     out.push({
       type: "HRV_RMSSD",
-      value: round2(r.heart_rate_variability_avg),
+      value: importValue(r.heart_rate_variability_avg),
       unit: "ms",
       measuredAt,
       fieldTag: "hrv_rmssd",
@@ -497,7 +494,7 @@ export function mapNightlyRecharge(
   if (typeof r.breathing_rate_avg === "number" && r.breathing_rate_avg > 0) {
     out.push({
       type: "RESPIRATORY_RATE",
-      value: round2(r.breathing_rate_avg),
+      value: importValue(r.breathing_rate_avg),
       unit: "breaths/min",
       measuredAt,
       fieldTag: "resp_rate",
@@ -511,7 +508,7 @@ export function mapNightlyRecharge(
   if (typeof r.ans_charge === "number") {
     out.push({
       type: "ANS_CHARGE",
-      value: round2(r.ans_charge),
+      value: importValue(r.ans_charge),
       unit: "score",
       measuredAt,
       fieldTag: "ans_charge",
@@ -600,7 +597,7 @@ export function mapSleep(s: PolarSleep, tz?: string): MappedMeasurement[] {
     if (typeof s.sleep_score === "number") {
       out.push({
         type: "SLEEP_PERFORMANCE",
-        value: round2(s.sleep_score),
+        value: importValue(s.sleep_score),
         unit: "%",
         measuredAt: new Date(endMs),
         fieldTag: "sleep_score",
@@ -618,7 +615,7 @@ export function mapSleep(s: PolarSleep, tz?: string): MappedMeasurement[] {
     if (typeof sec === "number" && sec >= 0) {
       out.push({
         type: "SLEEP_DURATION",
-        value: round2(sec * SEC_TO_MIN),
+        value: importValue(sec * SEC_TO_MIN),
         unit: "minutes",
         measuredAt,
         fieldTag,
@@ -629,7 +626,7 @@ export function mapSleep(s: PolarSleep, tz?: string): MappedMeasurement[] {
   if (typeof s.sleep_score === "number") {
     out.push({
       type: "SLEEP_PERFORMANCE",
-      value: round2(s.sleep_score),
+      value: importValue(s.sleep_score),
       unit: "%",
       measuredAt,
       fieldTag: "sleep_score",
@@ -664,7 +661,7 @@ export function mapActivity(
   if (typeof activeCalories === "number" && activeCalories >= 0) {
     out.push({
       type: "ACTIVE_ENERGY_BURNED",
-      value: round2(activeCalories),
+      value: importValue(activeCalories),
       unit: "kcal",
       measuredAt,
       fieldTag: "active_energy",
@@ -677,7 +674,7 @@ export function mapActivity(
   if (typeof distance === "number" && distance >= 0) {
     out.push({
       type: "WALKING_RUNNING_DISTANCE",
-      value: round2(distance),
+      value: importValue(distance),
       unit: "meters",
       measuredAt,
       fieldTag: "distance",
@@ -699,7 +696,7 @@ export function mapCardioLoad(
   return [
     {
       type: "CARDIO_LOAD",
-      value: round2(c.cardio_load),
+      value: importValue(c.cardio_load),
       unit: "score",
       measuredAt,
       fieldTag: "cardio_load",
@@ -719,7 +716,7 @@ export function mapSpo2(r: PolarSpo2): MappedMeasurement[] {
   return [
     {
       type: "OXYGEN_SATURATION",
-      value: round2(pct),
+      value: importValue(pct),
       unit: "%",
       measuredAt,
       fieldTag: "spo2",

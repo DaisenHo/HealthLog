@@ -108,6 +108,7 @@ import {
   workerLog,
   BOOT_BACKFILL_STAGGER_SECONDS,
 } from "./shared";
+import { heavyLane } from "@/lib/jobs/heavy-lane";
 import {
   createAndSchedule,
   createAndWork,
@@ -331,7 +332,7 @@ export async function registerRollupQueues(
     boss,
     ROLLUP_FULL_BACKFILL_QUEUE,
     { localConcurrency: ROLLUP_FULL_BACKFILL_CONCURRENCY },
-    async (jobs) => {
+    heavyLane(ROLLUP_FULL_BACKFILL_QUEUE, async (jobs) => {
       let rowsUpsertedTotal = 0;
       for (const job of jobs) {
         const { userId } = job.data;
@@ -346,7 +347,7 @@ export async function registerRollupQueues(
         users: jobs.length,
         rows_upserted: rowsUpsertedTotal,
       });
-    },
+    }),
   );
 
   // v1.5.6 — legacy step consolidation worker. The boot enqueue helper

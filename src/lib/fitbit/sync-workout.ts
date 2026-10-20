@@ -13,8 +13,10 @@
  * collapse for a server-owned source pair.
  *
  * The page-walk is bounded (the 150 req/h budget is tight): a small page cap
- * covers the incremental window comfortably; a deep backfill is bounded by the
- * backfill horizon `afterDate`. A per-endpoint 403 soft-skips the resource.
+ * covers the incremental window comfortably, and a backfill, bounded by the
+ * horizon `afterDate`, may read up to ten thousand sessions. A walk that
+ * reaches its cap is reported truncated (`walkPages`), so the backfill is not
+ * stamped complete over it. A per-endpoint 403 soft-skips the resource.
  */
 import { fetchActivityList, mapWorkout, readActivityList } from "./client";
 import type { FitbitMappedWorkout } from "./client";
@@ -24,16 +26,45 @@ import { prisma, toJson } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 /** Activities per page on the `activities/list` walk. */
 const WORKOUT_PAGE_SIZE = 100;
-/** Hard ceiling on pages walked per cycle (rate-budget guard). */
+/** Ceiling on pages walked per incremental cycle (rate-budget guard). */
 const WORKOUT_MAX_PAGES = 12;
+/** Ceiling on pages walked by a backfill. */
+const WORKOUT_BACKFILL_MAX_PAGES = 100;
 
 function metadataRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function walkActivityList(
+  accessToken: string,
+  afterDate: Date,
+  maxPages: number,
+) {
+  return walkPages<number, ReturnType<typeof readActivityList>[number]>(
+    "fitbit.exercise",
+    maxPages,
+    async (cursor) => {
+      const offset = cursor ?? 0;
+      const page = readActivityList(
+        await fetchActivityList(accessToken, afterDate, {
+          limit: WORKOUT_PAGE_SIZE,
+          offset,
+        }),
+      );
+      return {
+        items: page,
+        next:
+          page.length < WORKOUT_PAGE_SIZE ? null : offset + WORKOUT_PAGE_SIZE,
+      };
+    },
+    0,
+  );
 }
 
 export async function syncUserWorkout(
@@ -50,28 +81,19 @@ export async function syncUserWorkout(
   const afterDate =
     opts.start ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const entries: ReturnType<typeof readActivityList> = [];
-  let offset = 0;
-  let pages = 0;
-  while (pages < WORKOUT_MAX_PAGES) {
-    let body: unknown;
-    try {
-      body = await fetchActivityList(tokenInfo.accessToken, afterDate, {
-        limit: WORKOUT_PAGE_SIZE,
-        offset,
-      });
-    } catch (err) {
-      return handleCollectionFetchError("fetchExercise", userId, err);
-    }
-    const page = readActivityList(body);
-    entries.push(...page);
-    pages += 1;
-    if (page.length < WORKOUT_PAGE_SIZE) break;
-    offset += WORKOUT_PAGE_SIZE;
+  let walk: Awaited<ReturnType<typeof walkActivityList>>;
+  try {
+    walk = await walkActivityList(
+      tokenInfo.accessToken,
+      afterDate,
+      opts.fullSync ? WORKOUT_BACKFILL_MAX_PAGES : WORKOUT_MAX_PAGES,
+    );
+  } catch (err) {
+    return handleCollectionFetchError("fetchExercise", userId, err);
   }
 
   let imported = 0;
-  for (const entry of entries) {
+  for (const entry of walk.items) {
     const w: FitbitMappedWorkout | null = mapWorkout(entry, tz);
     if (!w) continue; // no usable time span — not a workout
 

@@ -125,3 +125,24 @@ describe("runFitbitBackfillForUser — verdict-gated marker", () => {
     expect(prismaMock.fitbitConnection.update).not.toHaveBeenCalled();
   });
 });
+
+describe("runFitbitBackfillForUser — a walk that reached its ceiling", () => {
+  it("leaves the marker unset and does not throw", async () => {
+    const { walkPages } = await import("@/lib/integrations/page-walk");
+    syncUserFitbit.mockImplementation(async () => {
+      // A history longer than the walk may read: every page has a next.
+      await walkPages<number, number>(
+        "fitbit.exercise",
+        3,
+        async (cursor) => ({ items: [1], next: (cursor ?? 0) + 1 }),
+        0,
+      );
+      return { imported: 3, failed: false };
+    });
+
+    await expect(runFitbitBackfillForUser("u1")).resolves.toEqual({
+      imported: 3,
+    });
+    expect(prismaMock.fitbitConnection.update).not.toHaveBeenCalled();
+  });
+});

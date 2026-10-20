@@ -1,5 +1,6 @@
 /**
- * Nightly insight status crons (general / blood pressure / weight / pulse / BMI / mood / medication compliance) plus the insight pregenerate and per-user status-generate handlers.
+ * The nightly status batch plus the insight pregenerate and per-user
+ * status-generate handlers.
  *
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
@@ -23,155 +24,32 @@ import {
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { withBackgroundEvent } from "@/lib/logging/background";
-import { generateBloodPressureStatusForUser } from "@/lib/insights/blood-pressure-status";
-import { generateWeightStatusForUser } from "@/lib/insights/weight-status";
-import { generatePulseStatusForUser } from "@/lib/insights/pulse-status";
-import { generateBmiStatusForUser } from "@/lib/insights/bmi-status";
-import { generateMoodStatusForUser } from "@/lib/insights/mood-status";
-import { generateMedicationComplianceStatusForUser } from "@/lib/insights/medication-compliance-status";
 import { generateStatusBatchForUser } from "@/lib/insights/status-batch";
 import { findStatusCronCandidates } from "@/lib/jobs/status-cron-candidates";
 import { annotate } from "@/lib/logging/context";
-import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { getWorkerPrisma } from "./shared";
 
 export interface GeneralStatusPayload {
   triggeredAt: string;
 }
 
-export interface BloodPressureStatusPayload {
-  triggeredAt: string;
-}
-
-export interface WeightStatusPayload {
-  triggeredAt: string;
-}
-
-export interface PulseStatusPayload {
-  triggeredAt: string;
-}
-
-export interface BmiStatusPayload {
-  triggeredAt: string;
-}
-
-export interface MoodStatusPayload {
-  triggeredAt?: string;
-}
-
-export interface MedicationComplianceStatusPayload {
-  triggeredAt: string;
-}
-
 /**
- * Shared driver for the nightly 02:xx per-metric status crons. User
- * discovery is centralised in `findStatusCronCandidates`, which applies
- * the operator's `insightStatus` switch, the person's AI analysis switch,
- * and the pregenerate-candidate skip (users with a stale comprehensive
- * cache belong to the 04:30 pre-generate pass, which re-warms every
- * per-status note anyway — see `status-cron-candidates.ts` for the full
- * division of nightly labour). Each user's `statusText` capability is then
- * resolved before a generator runs.
- * The generators normalise `locale` themselves (de stays de, everything
- * else gets English prose).
+ * The nightly status batch. The 02:00 cron runs `generateStatusBatchForUser`
+ * for every candidate (`findStatusCronCandidates`): it builds every
+ * per-metric snapshot once, issues ONE provider call for the metrics still
+ * needing the model, and fans the answer into the per-metric cache rows. A
+ * metric the batch omits, or every metric when the call fails, falls back to
+ * that card's own path inside the batch, so the pass covers every card on its
+ * own. Each user's `statusText` capability is resolved inside the batch before
+ * a snapshot is built.
  *
- * The pass is what succeeds or fails. One user whose generation threw is that
- * user's cold card, reported as the `failed` count; failing the job would
- * re-run the whole cohort over it.
- *
- * The pass walks every candidate with a provider call each, so on a large
- * instance it can outlast its job. `shouldStop` is the job's time budget: the
- * pass stops between users once it is spent and reports `stopped_early`. The
- * users it did not reach keep yesterday's note until the next night or their
- * next visit; nothing is retried beside a pass that is still running.
+ * The pass is what succeeds or fails. One user whose batch threw is that
+ * user's cold cards, reported as the `failed` count; failing the job would
+ * re-run the whole cohort over it. `shouldStop` is the job's time budget: the
+ * pass stops between users once it is spent and reports `stopped_early`, and
+ * the users it did not reach are warmed by their next visit or night.
  */
-export async function runStatusCronGenerate(
-  taskName: string,
-  generate: (
-    userId: string,
-    options: { locale: string | null; force: boolean },
-  ) => Promise<unknown>,
-  shouldStop: () => boolean = () => false,
-): Promise<JobOutcome> {
-  return withBackgroundEvent(taskName, async (evt) => {
-    const prisma = getWorkerPrisma();
-    try {
-      const users = await findStatusCronCandidates(prisma);
-
-      if (users.length === 0) {
-        return jobDone({ total: 0, generated: 0, failed: 0 });
-      }
-
-      let generated = 0;
-      let failed = 0;
-      let stoppedEarly = false;
-
-      for (const user of users) {
-        if (shouldStop()) {
-          stoppedEarly = true;
-          break;
-        }
-        // The capability before the generator builds a snapshot. The batch
-        // entry below checks for itself.
-        const capability = await aiCapabilityForJob(user.id, "statusText");
-        if (!capability.available) {
-          annotate({
-            action: { name: "insights.status.cron.skipped" },
-            meta: { task: taskName, reason: capability.reason },
-          });
-          continue;
-        }
-        try {
-          await generate(user.id, {
-            locale: await resolveJobLocale(user.locale),
-            force: false,
-          });
-          generated++;
-        } catch (error) {
-          failed++;
-          evt.addWarning(
-            `${taskName} generation failed for user ${user.id}: ${error}`,
-          );
-        }
-      }
-
-      evt.setBackground({
-        task_name: taskName,
-        result: { generated, failed, total: users.length, stoppedEarly },
-      });
-      return jobDone({
-        total: users.length,
-        generated,
-        failed,
-        stopped_early: stoppedEarly,
-      });
-    } catch (err) {
-      evt.setError(err);
-      recordError();
-      await reportWorkerError(taskName, err);
-      throw err;
-    }
-  });
-}
-
-/**
- * v1.18.11 (P2) — nightly status batch. The 02:00 anchor cron runs
- * `generateStatusBatchForUser` for every candidate: it builds all seven
- * per-metric snapshots once and issues ONE provider call for the metrics
- * still needing the LLM (seed-pinned + grounded inside `runStatusCompletion`,
- * unchanged), fanning the response into the SAME per-metric cache rows the
- * standalone generators wrote.
- *
- * The six later per-metric crons (02:05–02:30) stay registered and keep their
- * own drivers: a card the batch wrote today resolves inside their `prepare`
- * step as a calendar-day cache hit (`served`, no provider call, no snapshot
- * rebuild), so they cost a cache read and cover the edge cases the batch
- * can't — a user discovered after 02:00, a metric the batch omitted, or a
- * batch-call failure (which falls each metric back to its single-card path
- * inside the batch itself). Net effect: the nightly ladder pays one call per
- * user instead of seven, with no queue/registry churn.
- */
-async function runStatusBatchCron(
+export async function runStatusBatchCron(
   taskName: string,
   shouldStop: () => boolean,
 ): Promise<JobOutcome> {
@@ -189,8 +67,8 @@ async function runStatusBatchCron(
       let failed = 0;
       let stoppedEarly = false;
       for (const user of users) {
-        // Same budget as the per-metric passes: stop between users, and
-        // leave the rest to the later crons and the next night.
+        // Stop between users; the rest are warmed by a visit or the next
+        // night.
         if (shouldStop()) {
           stoppedEarly = true;
           break;
@@ -233,8 +111,7 @@ async function runStatusBatchCron(
         },
       });
       // A user whose batch call threw already fell back to the single-card
-      // path inside the batch, and the six later per-metric crons cover what
-      // is still cold. The batch pass ran, so it reports the count.
+      // path inside the batch. The pass ran, so it reports the count.
       return jobDone({
         total: users.length,
         generated,
@@ -255,66 +132,6 @@ export function handleGeneralStatusGenerate(
   jobs: Job<GeneralStatusPayload>[],
 ): Promise<JobOutcome> {
   return runStatusBatchCron("job.insights.batch", jobBudget(jobs));
-}
-
-export function handleBloodPressureStatusGenerate(
-  jobs: Job<BloodPressureStatusPayload>[],
-): Promise<JobOutcome> {
-  return runStatusCronGenerate(
-    "job.insights.blood_pressure",
-    generateBloodPressureStatusForUser,
-    jobBudget(jobs),
-  );
-}
-
-export function handleWeightStatusGenerate(
-  jobs: Job<WeightStatusPayload>[],
-): Promise<JobOutcome> {
-  return runStatusCronGenerate(
-    "job.insights.weight",
-    generateWeightStatusForUser,
-    jobBudget(jobs),
-  );
-}
-
-export function handlePulseStatusGenerate(
-  jobs: Job<PulseStatusPayload>[],
-): Promise<JobOutcome> {
-  return runStatusCronGenerate(
-    "job.insights.pulse",
-    generatePulseStatusForUser,
-    jobBudget(jobs),
-  );
-}
-
-export function handleBmiStatusGenerate(
-  jobs: Job<BmiStatusPayload>[],
-): Promise<JobOutcome> {
-  return runStatusCronGenerate(
-    "job.insights.bmi",
-    generateBmiStatusForUser,
-    jobBudget(jobs),
-  );
-}
-
-export function handleMoodStatusGenerate(
-  jobs: Job<MoodStatusPayload>[],
-): Promise<JobOutcome> {
-  return runStatusCronGenerate(
-    "job.insights.mood",
-    generateMoodStatusForUser,
-    jobBudget(jobs),
-  );
-}
-
-export function handleMedicationComplianceStatusGenerate(
-  jobs: Job<MedicationComplianceStatusPayload>[],
-): Promise<JobOutcome> {
-  return runStatusCronGenerate(
-    "job.insights.medication_compliance",
-    generateMedicationComplianceStatusForUser,
-    jobBudget(jobs),
-  );
 }
 
 export async function handleInsightPregenerateJob(

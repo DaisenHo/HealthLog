@@ -77,6 +77,35 @@ export function isBackfillLedgerKey(type: string): boolean {
  */
 export const MEDICATION_DOSE_ARRIVAL_TYPE = MEDICATION_DOSE_FRESHNESS_TYPE;
 
+/**
+ * The measurement types behind each Apple Health entry kind the app writes
+ * back to the phone (#1247). A reading entered here goes to Apple Health and
+ * is never sent back, so these types are counted from both directions.
+ */
+export const HEALTHKIT_WRITE_BACK_TYPES: Readonly<
+  Record<string, readonly MeasurementType[]>
+> = {
+  bodyMass: ["WEIGHT"],
+  bloodPressure: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+  bloodGlucose: ["BLOOD_GLUCOSE"],
+};
+
+/** The types the person's resolved entries currently write back. */
+export function healthKitWriteBackTypes(
+  entries: ReadonlyArray<{ kind: string; direction: string; enabled: boolean }>,
+): MeasurementType[] {
+  const types = new Set<MeasurementType>();
+  for (const entry of entries) {
+    if (!entry.enabled) continue;
+    if (entry.direction !== "bidirectional" && entry.direction !== "writeOnly")
+      continue;
+    for (const type of HEALTHKIT_WRITE_BACK_TYPES[entry.kind] ?? []) {
+      types.add(type);
+    }
+  }
+  return [...types].sort();
+}
+
 /** A ledger key: a measurement type, or the dose key above. */
 export type HealthKitArrivalType =
   MeasurementType | typeof MEDICATION_DOSE_ARRIVAL_TYPE;
