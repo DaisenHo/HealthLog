@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 /**
  * Base textarea primitive — mirror of `<Input>` for multi-line input.
  *
- * v1.4.47 W2 — extracted the iOS-zoom defence + tap-target floor +
+ * v1.4.47 — extracted the iOS-zoom defence + tap-target floor +
  * autocomplete defaults that the bugreport / medications-import /
  * side-effects / admin-feedback textareas were copy-pasting into a
  * single primitive. Six call sites previously each maintained their

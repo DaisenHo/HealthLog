@@ -106,7 +106,7 @@ export interface SanitiseZodIssueOptions {
 }
 
 /**
- * v1.4.42 W2 — multi-issue Zod error envelope.
+ * v1.4.42 — multi-issue Zod error envelope.
  *
  * Historic pattern was `apiError(parsed.error.issues[0].message, 422)`
  * which dropped every issue past the first. The iOS contract debug
@@ -291,7 +291,7 @@ export function apiValidationError(
  * via `t("settings.testConnection.errors." + errorCode)` instead of
  * displaying the server's English fallback.
  *
- * v1.4.25 W21 Fix-N — the third argument may also carry a `headers`
+ * v1.4.25 — the third argument may also carry a `headers`
  * record (e.g. `{ headers: rateLimitHeaders(rl) }`) so 429 responses
  * can attach the `X-RateLimit-*` triple in the same call. The `headers`
  * key is *not* echoed into the JSON body — it is consumed by the

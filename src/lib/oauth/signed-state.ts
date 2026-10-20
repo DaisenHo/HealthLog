@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — stateless, HMAC-signed OAuth `state` for the Polar + Oura
+ * v1.17.0 — stateless, HMAC-signed OAuth `state` for the Polar + Oura
  * authorization-code flows.
  *
  * Unlike WHOOP / Withings (which carry the in-flight `(nonce → userId)` mapping

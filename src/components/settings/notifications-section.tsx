@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 /**
  * `<NotificationsSection>` — Settings → Notifications ("Benachrichtigungen").
  *
- * v1.18.0 (S4) — the single module-gated home for reminder TYPES. Earlier the
+ * v1.18.0 — the single module-gated home for reminder TYPES. Earlier the
  * settings carried two near-identical entries: this Notifications screen and a
  * separate "Erinnerungen" hub that only deep-linked into the canonical editors
  * ("doppelt gemoppelt"). The hub is gone (its route 301-redirects here); the
@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
  * keeps ONLY the reminder-TYPE content; `/settings/channels` 301-redirects to
  * `/settings/integrations#channels`.
  *
- * v1.18.6 (W9) — the page heading + subtitle come from the shared
+ * v1.18.6 — the page heading + subtitle come from the shared
  * `<SettingsSectionFrame>`. The proactive-Coach nudge card lives under
  * Settings → Coach (it is a Coach setting, not a generic notification).
  */
@@ -39,7 +39,7 @@ export function NotificationsSection() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
 
-  // v1.18.0 (S4) — module-gated per-type visibility. Fail OPEN (`!== false`)
+  // v1.18.0 — module-gated per-type visibility. Fail OPEN (`!== false`)
   // so a stale `/me` payload without the module map keeps every card visible.
   const moodEnabled = user?.modules?.mood !== false;
   const medsEnabled = user?.modules?.medications !== false;

@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — server-side helpers for the inbound-document store.
+ * v1.25 — server-side helpers for the inbound-document store.
  *
  * The AES-256-GCM ↔ `Bytes` codec for `InboundDocument.contentEncrypted` (the
  * raw uploaded document, base64-of-binary → `encrypt()` string → UTF-8 bytes,
@@ -264,7 +264,7 @@ export function serialiseDocument(
 /**
  * Map a persisted staged-fact row to the review DTO.
  *
- * v1.43 (D1223) — with the account's `markerIndex`, a pending OBSERVATION
+ * v1.43 — with the account's `markerIndex`, a pending OBSERVATION
  * also says which marker its label resolves to (`biomarkerId`, `matchKind`)
  * or offers up to three (`suggestions`), the same resolution the confirm
  * applies. Without an index, or for any other fact, the fields are absent.

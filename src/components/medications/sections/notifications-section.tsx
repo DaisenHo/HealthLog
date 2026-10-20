@@ -59,7 +59,7 @@ interface UserPrefsResponse {
 }
 
 const SWITCH_ID = "medication-detail-notifications-switch";
-// v1.5.5 F-1 H-1 — split the title id so the section heading and
+// v1.5.5 — split the title id so the section heading and
 // the inner switch label resolve to distinct DOM nodes. The earlier
 // single `TITLE_ID` sat on both `<MedicationDetailSection>`'s heading
 // (`titleId` prop) and the inner `<span>` carrying the switch's

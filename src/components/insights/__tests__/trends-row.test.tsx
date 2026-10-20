@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.20 phase B3 — `<TrendsRow>` mounts three small charts (BP /
+ * v1.4.20 — `<TrendsRow>` mounts three small charts (BP /
  * weight / mood) and an annotation under each.
  *
  * Recharts is dynamic-imported behind `next/dynamic`, so SSR
@@ -133,7 +133,7 @@ describe("<TrendsRow>", () => {
   });
 
   it("pins every chart slot to a known responsive height so Recharts mounts with a size (CLS fix)", () => {
-    // v1.4.36 W2 — without an explicit height the Recharts
+    // v1.4.36 — without an explicit height the Recharts
     // ResponsiveContainer mounts with width=-1 height=-1 and emits a
     // console warning per chart. The mood card also drifted taller
     // than BP / weight on hydration.
@@ -160,7 +160,7 @@ describe("<TrendsRow>", () => {
   });
 
   it("bounds the chart slot so the mood card's axis labels stay contained (item I)", () => {
-    // v1.11.4 item I — the mood mini chart is a `<Card>` (extra header
+    // v1.11.4 — the mood mini chart is a `<Card>` (extra header
     // + padding chrome) wrapping a categorical y-axis + a date x-axis;
     // its tick labels used to bleed past the 180 px envelope and
     // overlap the caption below. The slot now (a) clips with
@@ -203,7 +203,7 @@ describe("<TrendsRow>", () => {
   });
 
   it("loading=true paints the pending shimmer for every metric (no 'mehr Daten' flash)", () => {
-    // v1.4.36 W2 T3 — pre-fix the row painted "Awaiting more data"
+    // v1.4.36 — pre-fix the row painted "Awaiting more data"
     // across all three metrics whenever the advisor query was in
     // flight. The loading flag now propagates to each annotation
     // slot so the user reads a generating-state shimmer instead.
@@ -263,7 +263,7 @@ describe("<TrendsRow>", () => {
   });
 
   it("captions an additive metric with its standard description (no advisor annotation slot)", () => {
-    // v1.8.6 W8 — additive metrics carry no advisor annotation, so the
+    // v1.8.6 — additive metrics carry no advisor annotation, so the
     // tile must fall back to the metric's standard one-line caption
     // rather than painting empty space below the chart. The
     // `<TrendAnnotation>` slot is reserved for the legacy triple.

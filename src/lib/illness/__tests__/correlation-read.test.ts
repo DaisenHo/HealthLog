@@ -1,5 +1,5 @@
 /**
- * v1.18.1 P3 — illness correlation READ layer + rollup-vs-live parity.
+ * v1.18.1 — illness correlation READ layer + rollup-vs-live parity.
  *
  * The reliability anchor: the same per-day series fed to the engine must
  * produce IDENTICAL findings whether it was resolved from the rollup DAY tier

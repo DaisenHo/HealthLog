@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19b — pg-boss helper for the daily
+ * v1.4.25 — pg-boss helper for the daily
  * `medication-inventory-expire` queue. The cron at 03:00 Europe/Berlin
  * (interleaved with the other 03:xx cleanup crons) sweeps every user
  * for IN_USE pens whose 30-day in-use window has lapsed and flips

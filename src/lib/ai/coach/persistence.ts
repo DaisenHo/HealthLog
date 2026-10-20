@@ -650,7 +650,7 @@ export interface RecordProactiveNudgeParams {
 }
 
 /**
- * v1.18.6 (CCH-02) — record a proactive Coach nudge as a real
+ * v1.18.6 — record a proactive Coach nudge as a real
  * conversation so it shows up in the conversation rail regardless of
  * which push channel (if any) the user configured. The proactive cron
  * used to dispatch a notification ONLY; with no push channel the nudge
@@ -947,7 +947,7 @@ export interface ListConversationsParams {
    */
   attachedDocumentId?: string;
   /**
-   * v1.30.2 (QoL H1) — optional server-side title search for the history
+   * v1.30.2 — optional server-side title search for the history
    * rail + the standalone conversations page. Case-insensitive substring
    * match against the title only; message BODIES are out of scope (see the
    * route's doc comment). Since v1.39.3 the title is encrypted at rest, so

@@ -148,7 +148,7 @@ export async function rotateConnection(
     return { ok: false, reason: "reuse_detected" };
   }
 
-  // L4 — revoke the access tokens minted before this rotation so a leaked
+  // Revoke the access tokens minted before this rotation so a leaked
   // 60-minute access token cannot outlive the refresh that spawned it.
   await db.apiToken.updateMany({
     where: { mcpConnectionId: connection.id, revoked: false },

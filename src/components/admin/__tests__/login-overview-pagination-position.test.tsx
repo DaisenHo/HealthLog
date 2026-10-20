@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.27 MB5 — `/admin/login-overview` pagination + summary lifted
+ * v1.4.27 — `/admin/login-overview` pagination + summary lifted
  * out of the `overflow-x-auto` table wrapper.
  *
  * The audit table can be wider than the viewport on phones, so it

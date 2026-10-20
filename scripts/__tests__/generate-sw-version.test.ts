@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (L3) — verify the SW build step + the SW source contract.
+ * v1.4.43 — verify the SW build step + the SW source contract.
  *
  * Pre-fix `public/sw.js` hard-coded `const CACHE_VERSION = "v1.4.38.4"`
  * which drifted four releases stale. The current shape:

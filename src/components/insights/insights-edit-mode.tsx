@@ -61,7 +61,7 @@ import {
 } from "@/lib/api/optimistic-token";
 
 /**
- * v1.15.11 W3 — inline "Anpassen" edit mode for the customizable Insights
+ * v1.15.11 — inline "Anpassen" edit mode for the customizable Insights
  * overview.
  *
  * Renders LIGHTWEIGHT edit cards (drag handle + localized title + eye toggle)
@@ -143,7 +143,7 @@ export function InsightsEditMode({
     update: (sections: InsightsSectionConfig[]) => InsightsSectionConfig[],
   ) => setDraftState((d) => ({ ...d, sections: update(d.sections) }));
 
-  // v1.15.11 QA L5 — on mount move focus to the edit-card heading so keyboard /
+  // v1.15.11 — on mount move focus to the edit-card heading so keyboard /
   // screen-reader users land on the surface they just opened (not the top of
   // the document). Inline, not modal, so no focus trap — focus returns to the
   // "Anpassen" toggle on close via the page's onClose handler.
@@ -162,7 +162,7 @@ export function InsightsEditMode({
 
   const saveMutation = useMutation({
     mutationFn: async (sections: InsightsSectionConfig[]) => {
-      // v1.32.21 (R5a) — echo the optimistic-concurrency base token this edit
+      // v1.32.21 — echo the optimistic-concurrency base token this edit
       // was based on so an interleaved write (a Settings pill-order Save, or
       // this surface open in another tab) 409s instead of clobbering.
       return apiPut<InsightsLayoutWithToken>(
@@ -185,7 +185,7 @@ export function InsightsEditMode({
       onClose();
     },
     onError: (err) => {
-      // v1.32.21 (R5a) — explicit-Save disposition: a 409 means someone else
+      // v1.32.21 — explicit-Save disposition: a 409 means someone else
       // committed since this edit was based. Refetch so the token advances,
       // KEEP the draft (stay in edit mode) so the user can re-save, and nudge
       // gently — nothing was lost.
@@ -490,7 +490,7 @@ function SortableSectionRow({
           <span className="truncate text-sm font-medium" title={title}>
             {title}
           </span>
-          {/* v1.15.11 QA M1-design — the gated hint reads as a caption BELOW the
+          {/* v1.15.11 — the gated hint reads as a caption BELOW the
               title so the row's right-edge control position stays stable whether
               the section is gated or not. */}
           {gatedOff && (
@@ -502,7 +502,7 @@ function SortableSectionRow({
             </span>
           )}
         </div>
-        {/* v1.15.11 QA M1-design — a gated section keeps a DISABLED eye toggle in
+        {/* v1.15.11 — a gated section keeps a DISABLED eye toggle in
             the SAME position rather than swapping it for a text span, so the row
             layout never jumps. The section stays reorderable; only the toggle is
             inert until the gate opens. */}

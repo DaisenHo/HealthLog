@@ -1,5 +1,5 @@
 /**
- * v1.18.7 (MEDIUM-5) — comprehensive JSON-retry robustness.
+ * v1.18.7 — comprehensive JSON-retry robustness.
  *
  * The comprehensive path used to fail cold to `invalid-json` on a first-pass
  * parse miss. It now reuses `buildRetryCorrectionMessage` for ONE corrective
@@ -27,7 +27,7 @@ vi.mock("@/lib/db", () => ({
     user: {
       findUnique: (...a: unknown[]) => findUnique(...a),
       update: (...a: unknown[]) => userUpdate(...a),
-      // v1.32.22 (M6) — the cache commit is now a privacy-mode-guarded
+      // v1.32.22 — the cache commit is now a privacy-mode-guarded
       // updateMany; record it on the same spy but return a matched count so the
       // guard proceeds (mode unchanged in these tests).
       updateMany: (...a: unknown[]) => {

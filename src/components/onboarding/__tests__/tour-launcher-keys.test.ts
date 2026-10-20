@@ -1,5 +1,5 @@
 /**
- * v1.4.15 H4 — sessionStorage keys used by the dashboard tour
+ * v1.4.15 — sessionStorage keys used by the dashboard tour
  * launcher must be scoped per user id. Without scoping, an admin
  * impersonating a second user (or a family member sharing the
  * browser) inherited the first user's "tour dismissed for this

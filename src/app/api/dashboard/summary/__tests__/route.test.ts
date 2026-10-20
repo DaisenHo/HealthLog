@@ -21,7 +21,7 @@ vi.mock("@/lib/db", () => ({
     measurement: { groupBy: vi.fn(), findMany: vi.fn() },
     medicationIntakeEvent: {
       findMany: vi.fn(),
-      // v1.4.39 W-SERVER-FIX-2 — the dashboard route now backfills
+      // v1.4.39 — the dashboard route now backfills
       // missing today-rows for daily schedules (parity with the
       // intake route's `expandTodayIntakes` projection) so the iOS
       // Dashboard compliance tile leaves "Heute nichts geplant" the
@@ -32,7 +32,7 @@ vi.mock("@/lib/db", () => ({
       groupBy: vi.fn(),
     },
     medication: {
-      // v1.4.39 W-SERVER-FIX-2 — projection source for the today's-
+      // v1.4.39 — projection source for the today's-
       // intakes backfill.
       findMany: vi.fn(),
     },
@@ -51,7 +51,7 @@ vi.mock("@/lib/db", () => ({
     appSettings: {
       findUnique: vi.fn(async () => null),
     },
-    // v1.4.38 W-F — the route now uses `$queryRaw` for the per-type
+    // v1.4.38 — the route now uses `$queryRaw` for the per-type
     // latest reading, the 7-day rollup-bucket sparkline, and the
     // 365-day distinct-day streak set. Three raw calls per request,
     // in the order the Promise.all dispatches them.
@@ -127,13 +127,13 @@ function makeReq(): NextRequest {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  // v1.4.38 W-F — three `$queryRaw` invocations land inside the
+  // v1.4.38 — three `$queryRaw` invocations land inside the
   // Promise.all in the order [latest7d, sparkline, streakDays]. The
   // analytics-cache wrap is also process-local, so we must reset it
   // between tests to keep cross-test isolation.
   __resetAllCachesForTests();
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
-  // v1.4.33 maintainer-item-1 — the route now issues a `groupBy` for
+  // v1.4.33 — the route now issues a `groupBy` for
   // per-type all-time count + most-recent timestamp. Default to an
   // empty aggregate so legacy tests keep their "no data" expectations.
   vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
@@ -144,7 +144,7 @@ beforeEach(() => {
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
     [] as never,
   );
-  // v1.4.39 W-SERVER-FIX-2 — default the projection prisma reads to
+  // v1.4.39 — default the projection prisma reads to
   // "no active medications" so the legacy tests stay in their original
   // branch (empty today bucket, no backfill firing).
   vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
@@ -168,7 +168,7 @@ beforeEach(() => {
   } as never);
 });
 
-// v1.4.48 L13 — restore real timers no matter how a test exits. A failed
+// v1.4.48 — restore real timers no matter how a test exits. A failed
 // assertion inside an `it` that opted into fake timers would otherwise
 // leak the fake clock into the next test in the file (or, worse, the
 // next file in the same vitest worker).
@@ -1071,7 +1071,7 @@ describe("GET /api/dashboard/summary", () => {
       data: { compliance: { scheduledToday: number; takenToday: number } };
     };
     expect(body.data.compliance.scheduledToday).toBe(1);
-    // v1.4.48 L13 — suite-level `afterEach` restores real timers.
+    // v1.4.48 — suite-level `afterEach` restores real timers.
   });
 
   it("computes intake compliance for today", async () => {

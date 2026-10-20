@@ -54,7 +54,7 @@ function minuteLabel(minute: number): string {
 const AXIS_TICKS = [0, 360, 720, 1080, 1440];
 
 /**
- * S11 — the intraday pulse "shape of the day" layer inside the pulse insight.
+ * The intraday pulse "shape of the day" layer inside the pulse insight.
  *
  * Charts one local day's 10-minute mean heart rate (computed on demand from
  * raw), with the personal resting baseline drawn as a reference line and any

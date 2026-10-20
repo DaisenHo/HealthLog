@@ -91,7 +91,7 @@ const READ_TOOLS = [
   "list_metrics",
   "search",
   "fetch",
-  // Phase 4 — deep-value reads.
+  // Deep-value reads.
   "get_correlation",
   "compare_metric",
   "get_metric_baseline",

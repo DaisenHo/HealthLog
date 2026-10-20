@@ -113,7 +113,7 @@ export { __resetCoachSnapshotCacheForTests } from "./snapshot-cache";
 export interface CoachSnapshotResult {
   snapshotJson: string;
   /**
-   * v1.20.0 (F1) — the structured, post-degrade snapshot record `snapshotJson`
+   * v1.20.0 — the structured, post-degrade snapshot record `snapshotJson`
    * is serialised from. Keyed by domain block (`bloodPressure`, `weight`,
    * `pulse`, `mood`, `compliance`, `glucose`, `sleep`, `sleepRhythm`, `labs`,
    * `illness`, `derived`, `dayStrain`, `trajectory`, `weeklyContext`, …) plus a
@@ -129,7 +129,7 @@ export interface CoachSnapshotResult {
    */
   provenance: CoachProvenance;
   /**
-   * v1.18.6 (W7) — citation-aware reference-range grounding for the
+   * v1.18.6 — citation-aware reference-range grounding for the
    * metrics present in this snapshot, or null when none is covered by the
    * reference backbone. The Coach route appends it verbatim after the
    * SNAPSHOT so the model reads published population bands + the user's
@@ -185,7 +185,7 @@ const COARSE_TAIL_START_DAYS = 90;
  *     window so the Coach can still cite older weeks without ballooning
  *     the prompt
  *
- * v1.4.25 W7b — every day-key + weekday label is now anchored to the
+ * v1.4.25 — every day-key + weekday label is now anchored to the
  * user's display timezone (read from `User.timezone`). Falls back to
  * Europe/Berlin when the column is missing so the legacy snapshot
  * stays byte-identical for the only path the v1.4.24 suite tested.
@@ -273,7 +273,7 @@ async function buildCoachSnapshotImpl(
   } = await resolveSnapshotPrelude(userId, scope, reach);
   const bounded = isBounded(reach);
   const glucoseUnit = units.glucoseUnit;
-  // v1.4.36 W3 T2 — `medications` and `anthropometrics` are
+  // v1.4.36 — `medications` and `anthropometrics` are
   // exclude-only toggles (not in `CoachScopeSource`); they gate the
   // GLP-1 weeklyContext / compliance branch and the anthropometrics
   // block respectively.
@@ -298,7 +298,7 @@ async function buildCoachSnapshotImpl(
   // `userId` + the resolved window/sources), so running them
   // concurrently shaves a round-trip off the cold path. No block reads
   // `features` before the shared await, so the deferral is safe.
-  // v1.20.0 (H-1) — `extractFeatures` is the heaviest read on the cold path
+  // v1.20.0 — `extractFeatures` is the heaviest read on the cold path
   // (user findUnique + a windowed measurement findMany + the all-time extremes).
   // The F1 tools rebuild distinct-scope snapshots whose LRU keys differ, so they
   // do not share this read; memoise it per-request keyed on the only varying
@@ -322,7 +322,7 @@ async function buildCoachSnapshotImpl(
   // budget for free-tier accounts.
   const snapshot: Record<string, unknown> = {};
   const windows = new Set<CoachProvenance["windows"][number]>();
-  // v1.4.27 B7 / BL-P6-4 — seed the provenance window set with the
+  // v1.4.27 — seed the provenance window set with the
   // user's resolved scope so the year-in-review window surfaces in the
   // provenance envelope even when the per-metric branches below only
   // emit `last30days` / `last90days` chips. Older windows are added
@@ -333,7 +333,7 @@ async function buildCoachSnapshotImpl(
   const metrics = new Set<CoachProvenance["metrics"][number]>();
   const counts: NonNullable<CoachProvenance["counts"]> = {};
 
-  // v1.18.6 (W7) — representative scalar per reference-covered metric, in the
+  // v1.18.6 — representative scalar per reference-covered metric, in the
   // metric's reference unit, collected as the blocks below build. Feeds the
   // citation-aware grounding block (population band + the user's placement).
   // Each entry reads the SAME number the snapshot already surfaces — no
@@ -525,7 +525,7 @@ async function buildCoachSnapshotImpl(
               supersededByRevisionId: true,
             },
           },
-          // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+          // v1.25 — pause eras so paused days drop out of the denominator.
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
           // v1.40 (#1024) — the courses, so a gap between two expects nothing.
           courses: COURSES_COMPLIANCE_SELECT,
@@ -578,7 +578,7 @@ async function buildCoachSnapshotImpl(
           totalDistanceM: true,
           avgHeartRate: true,
           maxHeartRate: true,
-          // v1.30.4 (C1) — needed by `pickCanonicalWorkoutRows` in the block
+          // v1.30.4 — needed by `pickCanonicalWorkoutRows` in the block
           // builder to collapse a dual-source session (e.g. Apple Watch +
           // WHOOP recording the same run) to one, matching `GET /api/workouts`.
           source: true,
@@ -637,7 +637,7 @@ async function buildCoachSnapshotImpl(
   const trajectoryBlockPromise = derivedActive
     ? buildTrajectorySnapshotBlock(userId, derivedProfile, now, reach)
     : null;
-  // RECON1 (D5-5) — discovered cross-metric driver pairs for the no-tools
+  // Discovered cross-metric driver pairs for the no-tools
   // snapshot floor. Reuses the SAME gated/ranked output the get_correlations
   // tool serves (effect-size floor + family-tautology exclusion + shrinkage +
   // confidence tiering already applied inside the discovery engine), so a
@@ -672,7 +672,7 @@ async function buildCoachSnapshotImpl(
       ? buildCycleSnapshotBlock(userId, prefsRow?.gender, now, userTz)
       : null;
 
-  // v1.18.1 P4 — illness/condition context. Always attempted (the helper is
+  // v1.18.1 — illness/condition context. Always attempted (the helper is
   // module-gated internally and short-circuits to null for a non-illness
   // account). It is CONTEXT, not a scope-gated metric: appended like
   // anthropometrics/scope below without a `registerBlock` so the budget
@@ -950,7 +950,7 @@ async function buildCoachSnapshotImpl(
     registerBlock("cycle", "skin_temp");
   }
 
-  // v1.18.1 P4 — illness/condition context. Small + load-bearing, so it is
+  // v1.18.1 — illness/condition context. Small + load-bearing, so it is
   // attached WITHOUT a cluster registration (like scope/anthropometrics): the
   // budget degrader never sheds it, the Coach always knows whether the user is
   // in Rest Mode. Labels + lifecycle + dates only — no decrypted note.
@@ -1045,7 +1045,7 @@ async function buildCoachSnapshotImpl(
     ...(bounded ? { lookbackLimit: reach.window } : {}),
   };
 
-  // v1.4.36 W3 T4 — compactSections drops any zero-row block before
+  // v1.4.36 — compactSections drops any zero-row block before
   // serialisation so the prompt never carries a labelled-empty key.
   // The snapshot is built conditionally above so most empty paths are
   // already skipped, but the helper catches future regressions and
@@ -1105,7 +1105,7 @@ async function buildCoachSnapshotImpl(
     (key) => blockDaily.get(key)?.(),
   );
 
-  // v1.18.6 (W7) — build the citation-aware reference-grounding block from the
+  // v1.18.6 — build the citation-aware reference-grounding block from the
   // representative scalars collected above. Deterministic + pure; the route
   // appends it verbatim after the SNAPSHOT. Null when no present metric is
   // covered by the reference backbone. Insertion order follows the block-build
@@ -1131,7 +1131,7 @@ async function buildCoachSnapshotImpl(
 
   return {
     snapshotJson: JSON.stringify(compactSnapshot),
-    // v1.20.0 (F1) — the structured, post-degrade snapshot record keyed by
+    // v1.20.0 — the structured, post-degrade snapshot record keyed by
     // domain block (`bloodPressure`, `glucose`, `labs`, …). The coach tool
     // executor slices a single domain block out of this so a retrieval tool
     // returns exactly the numbers the legacy snapshot path would have shown —
@@ -1290,7 +1290,7 @@ export function degradeToBudget(
       block && Array.isArray(block.facts) && block.facts.length > 0
         ? block.facts
         : null;
-    // v1.21.3 (B1) — the durable plans survive the drop alongside facts: they
+    // v1.21.3 — the durable plans survive the drop alongside facts: they
     // are the user's confirmed if-then commitments, tiny by construction
     // (top-6, ≤160 chars each), and shedding them would make the Coach forget
     // a plan exactly on the data-heavy accounts that hit the char cap.
@@ -1298,7 +1298,7 @@ export function degradeToBudget(
       block && Array.isArray(block.plans) && block.plans.length > 0
         ? block.plans
         : null;
-    // v1.22 (B2/B3) — the episodic reminders survive the drop alongside
+    // v1.22 — the episodic reminders survive the drop alongside
     // facts/plans: they are the user's own "remember this" asks, tiny by
     // construction (top-6, ≤280 chars each), and shedding them would make the
     // Coach forget a reminder on exactly the data-heavy accounts that hit the

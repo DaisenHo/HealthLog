@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W16c — Enqueue helper + handler glue for the pg-boss
+ * v1.4.25 — Enqueue helper + handler glue for the pg-boss
  * `pr-detection` queue. Lives in `src/lib/jobs/` next to the other
  * job-side helpers; the worker process binds the handler in
  * the maintenance registrar via `createAndWork(boss, PR_DETECTION_QUEUE, …)`.

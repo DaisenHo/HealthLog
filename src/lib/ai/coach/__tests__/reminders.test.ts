@@ -1,5 +1,5 @@
 /**
- * v1.22 (B2) — Coach episodic reminder capture: grammar + sentinel + write.
+ * v1.22 — Coach episodic reminder capture: grammar + sentinel + write.
  *
  * Covers the closed `when` grammar (ISO date / relative / context cue / reject),
  * the `---REMEMBER---` strip (capture, recall-only note, malformed drop, prose

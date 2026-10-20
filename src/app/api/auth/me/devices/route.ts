@@ -1,13 +1,13 @@
 /**
  * GET /api/auth/me/devices
  *
- * v1.4.23 W4 F7b — list active devices for the current user. Drives the
+ * v1.4.23 — list active devices for the current user. Drives the
  * settings → security → devices surface in the v1.5 iOS app and the
  * matching web view planned for a follow-up. The list ships
  * device-identifying metadata only (label, lastSeen, channels) — no
  * tokens, no APNs identifiers, no IPs.
  *
- * v1.4.23 W6 reconcile (Sr-MED-5) — the "current device" marker is no
+ * v1.4.23 — the "current device" marker is no
  * longer derived from the unauthenticated `X-Device-Id` request header
  * alone. The header value is now cross-checked against an unrevoked
  * RefreshToken row owned by the authenticated user; only when both
@@ -40,7 +40,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   const headerDeviceId = request.headers.get("x-device-id");
 
-  // Sr-MED-5 — anchor `isCurrent` against a server-trusted credential.
+  // Anchor `isCurrent` against a server-trusted credential.
   // The header is only honoured when the user actually holds a live
   // refresh-token issued for that device. Otherwise, ignore it.
   let trustedCurrentDeviceId: string | null = null;

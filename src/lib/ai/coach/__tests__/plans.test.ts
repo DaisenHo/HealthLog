@@ -1,5 +1,5 @@
 /**
- * v1.21.3 (B1) — extractAndStorePlanProposals tests.
+ * v1.21.3 — extractAndStorePlanProposals tests.
  *
  * Covers:
  *  - extraction parses the model JSON, drops malformed items via the Zod gate,

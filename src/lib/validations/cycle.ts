@@ -15,7 +15,7 @@ import { assertStableExternalId } from "@/lib/validations/external-id";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
- * v1.17 W1b — `loggedAt` instant on the cycle wire stays a string (the iOS
+ * v1.17 — `loggedAt` instant on the cycle wire stays a string (the iOS
  * contract reads it back verbatim), so the plausibility bound is applied as
  * a `.refine` over the parsed instant rather than the date-typed
  * `validateEntryInstant` wrapper. Same `isPlausibleEntryInstant` predicate

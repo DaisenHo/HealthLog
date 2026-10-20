@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.0 (S5) — Settings → Gesundheitsakte (health record).
+ * v1.18.0 — Settings → Gesundheitsakte (health record).
  *
  * The full health-record export is a distinct concept — a complete,
  * clinician-ready record (PDF + FHIR R4 + a combined zip package) — and earns
@@ -34,7 +34,7 @@ import { SharingSection } from "@/components/settings/sharing-section";
 export function GesundheitsakteSection() {
   const { t } = useTranslations();
 
-  // v1.18.6 (W9) — the visible page heading + subtitle come from the shared
+  // v1.18.6 — the visible page heading + subtitle come from the shared
   // `<SettingsSectionFrame>` in the route; the export panel is the primary
   // surface, with the share-links group sequenced below it.
   return (

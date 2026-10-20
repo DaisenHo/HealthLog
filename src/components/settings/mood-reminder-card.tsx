@@ -19,7 +19,7 @@ interface ProfileShape {
 
 interface NotificationPrefsShape {
   mood: { reminderHour: number };
-  // v1.32.22 (R5b) — optimistic-concurrency token, a sibling key on the
+  // v1.32.22 — optimistic-concurrency token, a sibling key on the
   // resolved prefs response, echoed on the reminder-hour PATCH.
   updatedAt?: string;
 }
@@ -136,7 +136,7 @@ export function MoodReminderCard({
       clearTimerRef.current = null;
     }
 
-    // v1.32.22 (R5b) — echo the base token so a concurrent notification-prefs
+    // v1.32.22 — echo the base token so a concurrent notification-prefs
     // write (the iOS client's `clientManaged` flag, another web card) 409s
     // instead of silently reverting a sibling category through the deep-merge.
     const res = await apiFetchRaw("/api/auth/me/notification-prefs", {

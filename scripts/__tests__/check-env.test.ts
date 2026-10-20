@@ -1,5 +1,5 @@
 /**
- * v1.4.42 W6 — env-check sanity tests.
+ * v1.4.42 — env-check sanity tests.
  *
  * The script's two pure helpers (`parseEnvFile` + `checkEnv`) are
  * pinned here. The renderResults / main() entrypoint is intentionally

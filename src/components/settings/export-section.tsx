@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.4.16 phase B7 — Settings → Export.
+ * v1.4.16 — Settings → Export.
  *
  * Single surface that consolidates every "give me my data out" path in
  * HealthLog. Replaces the old `<ExportCard>` inside `<AdvancedSection>`
@@ -14,7 +14,7 @@
  *   3. Mood CSV                   — optional `since`/`until`
  *   4. Full JSON Backup           — single-file user-scoped dump
  *
- * v1.18.0 (S5) — the full health-record export (PDF + FHIR R4 + zip
+ * v1.18.0 — the full health-record export (PDF + FHIR R4 + zip
  * package) moved out to its own top-level "Gesundheitsakte" section. This
  * page now keeps only the generic data export/import paths.
  *
@@ -79,12 +79,12 @@ async function downloadFromUrl(url: string, filename: string): Promise<void> {
 
 export function ExportSection() {
   const { t } = useTranslations();
-  // v1.18.6 (W9) — the visible page heading + subtitle now come from the
+  // v1.18.6 — the visible page heading + subtitle now come from the
   // shared `<SettingsSectionFrame>` in the route; the inner `<h2>` keeps its
   // own "other options" subsection label.
   return (
     <div className="space-y-6">
-      {/* v1.18.0 (S5) — the full health-record export moved to its own
+      {/* v1.18.0 — the full health-record export moved to its own
           top-level "Gesundheitsakte" section. This page keeps the generic
           CSV/JSON data-out paths and the import surface. */}
       <section
@@ -104,7 +104,7 @@ export function ExportSection() {
         </div>
       </section>
 
-      {/* R28 / issue #281 — the import surface for the Apple Health
+      {/* issue #281 — the import surface for the Apple Health
           `export.zip` and the generic JSON paths. The export routes had
           backends with no UI until now. */}
       <ImportPanel />

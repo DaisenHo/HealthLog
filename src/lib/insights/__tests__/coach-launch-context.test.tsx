@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
 
 /**
- * v1.4.27 R3d MB4 — Coach launch context smoke contract.
+ * v1.4.27 — Coach launch context smoke contract.
  *
  * The project's test convention is `renderToStaticMarkup` (no
  * `@testing-library/react` dependency). We can't simulate interaction

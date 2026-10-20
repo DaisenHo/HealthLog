@@ -120,7 +120,7 @@ describe("computeBpInTargetPct", () => {
   });
 
   /**
-   * v1.30.3 (QA F7) — the same-day pairing fallback used to hardcode the
+   * v1.30.3 — the same-day pairing fallback used to hardcode the
    * Berlin calendar day regardless of the caller's actual user. A New
    * York user logging SYS at 17:50 and DIA at 18:10 local time (>5-min
    * session gap) sits on 2026-05-01 in New York but straddles 23:50 →
@@ -332,7 +332,7 @@ describe("computeBpInTargetWindows — all-time headline (v1.4.19 A1)", () => {
   });
 
   /**
-   * v1.17 W1d — the BD-Zielbereich headline, the Health-Score BP pillar
+   * v1.17 — the BD-Zielbereich headline, the Health-Score BP pillar
    * and the coach grounding number standardise on a **90-day** window.
    * The helper must surface a `last90Days` window distinct from both the
    * 30-day and the all-time aggregate so the route can route the headline
@@ -567,7 +567,7 @@ describe("computeBpInTargetWindows", () => {
 
 describe("computeBpInTargetWindows — period-aligned prior windows (Code-H2)", () => {
   /**
-   * v1.4.22 W5 reconcile (Code-H2) — the BD-Zielbereich tile's
+   * v1.4.22 — the BD-Zielbereich tile's
    * comparison-overlay caption used to compute `last30Days - allTime`
    * regardless of the user's `comparisonBaseline` selection. The math
    * therefore claimed "vs. last month" while subtracting an all-time

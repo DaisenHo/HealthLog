@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  * Both write through the same `/api/insights/layout` contract the tab strip
  * and the overview share, so a save here repaints both surfaces in lockstep.
  *
- * v1.18.6 (W9) — the visible "Insights" heading + subtitle now come from the
+ * v1.18.6 — the visible "Insights" heading + subtitle now come from the
  * shared `<SettingsSectionFrame>`, and the "← back to hub" link rides the
  * frame's `topSlot`. The body is the two arrange cards only.
  */

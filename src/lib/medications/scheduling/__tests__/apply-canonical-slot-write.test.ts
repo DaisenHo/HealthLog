@@ -1,5 +1,5 @@
 /**
- * v1.8.2 reconcile — medically-critical slot-upsert invariants.
+ * v1.8.2 — medically-critical slot-upsert invariants.
  *
  * Pins the four reconcile guards the dose-tap write path depends on:
  *   - C1  a P2002 race on the create branch re-finds + updates the racing

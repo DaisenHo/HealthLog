@@ -157,7 +157,7 @@ export function getEngagementMetrics(input: {
   moodEntries: MoodEntryRecord[];
   intakeEvents: IntakeEventRecord[];
   /**
-   * v1.18.11 (W5 perf) — day-keys for `measurements`, precomputed once by
+   * v1.18.11 — day-keys for `measurements`, precomputed once by
    * the caller and passed in parallel to the array. When present the
    * measurement rows reuse these instead of re-deriving a day key per row;
    * mood / intake timestamps (far fewer) still derive inline. Falls back to
@@ -276,7 +276,7 @@ export function getHiddenMetrics(input: {
   intakeEvents: IntakeEventRecord[];
   auditEvents: AuditLogRecord[];
   /**
-   * v1.18.11 (W5 perf) — Berlin day-keys + hours for `measurements`,
+   * v1.18.11 — Berlin day-keys + hours for `measurements`,
    * precomputed once by the caller and passed in parallel to the array. When
    * present the measurement rows reuse these instead of re-running
    * `Intl.DateTimeFormat` per row for both the hour and the day-key; mood /
@@ -395,7 +395,7 @@ export function buildExpansionMetricValues(input: {
   intakeEvents: IntakeEventRecord[];
   auditEvents: AuditLogRecord[];
   /**
-   * v1.18.11 (W5 perf) — Berlin day-keys for `measurements`, precomputed once
+   * v1.18.11 — Berlin day-keys for `measurements`, precomputed once
    * by the caller (the achievements builder already derives them for the
    * green-day / weekly-consistency passes) and threaded into the engagement +
    * hidden passes so the full vitals array is `Intl`-walked once, not ~3×.

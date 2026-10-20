@@ -280,7 +280,7 @@ describe("DELETE /api/medications/layout", () => {
 });
 
 /**
- * v1.32.21 (R5a) — optimistic concurrency (issue #581 family). A PUT carrying
+ * v1.32.21 — optimistic concurrency (issue #581 family). A PUT carrying
  * the `baseUpdatedAt` it was based on writes CONDITIONALLY on the stored row
  * still carrying that token, so a view toggle can never resurrect an order the
  * reorder Save just committed (and vice versa). A tokenless PUT keeps the prior

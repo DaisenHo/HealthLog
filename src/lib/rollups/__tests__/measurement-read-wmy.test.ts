@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-WMY — unit tests for the WEEK / MONTH / YEAR rollup
+ * v1.4.39 — unit tests for the WEEK / MONTH / YEAR rollup
  * readers and the auto-router that picks the largest granularity
  * that still resolves a requested window.
  *
@@ -405,7 +405,7 @@ describe("readBestGranularityRollups — cross-consumer routing parity", () => {
 });
 
 /**
- * v1.19.2 W-CHARTS — whole-history series reader. Pins that a very long
+ * v1.19.2 — whole-history series reader. Pins that a very long
  * "Alle" window reads the display-matching coarse tier (WEEK for 1–2 y,
  * MONTH beyond) and returns coverage spanning the FULL span rather than a
  * truncated recent slice; that the finer fallback rescues a coverage
@@ -472,7 +472,7 @@ describe("readTieredRollupSeries", () => {
     expect(result?.rows).toHaveLength(2);
   });
 
-  // v1.26.0 SEAM-N2 — a historic window entirely in the past bounds the read
+  // v1.26.0 — a historic window entirely in the past bounds the read
   // on BOTH ends.
   it("bounds the span read on both ends for a historic window", async () => {
     const from = new Date("2020-01-01T00:00:00.000Z");

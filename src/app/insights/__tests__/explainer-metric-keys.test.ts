@@ -28,7 +28,7 @@ import { join } from "node:path";
  * `i18n-locale-integrity.test.ts` then propagates the EN guarantee across
  * the other five locales.
  *
- * v1.15.12 B1 — the score-anatomy detail page (`scores/[metric]/page.tsx`)
+ * v1.15.12 — the score-anatomy detail page (`scores/[metric]/page.tsx`)
  * picks its explainer key at runtime from a closed `Record<…, string>`
  * literal (`explainerMetric={EXPLAINER_METRIC[metric]}`), one of five score
  * suffixes. That single dynamic site is resolved STATICALLY here by parsing
@@ -68,7 +68,7 @@ interface PropSite {
 const LITERAL_PATTERN = /explainerMetric="([a-zA-Z][a-zA-Z0-9]*)"/g;
 const DYNAMIC_PATTERN = /explainerMetric=\{/;
 
-// v1.15.12 B1 — the one allowed dynamic site: the score-anatomy detail page
+// v1.15.12 — the one allowed dynamic site: the score-anatomy detail page
 // reads its explainer key from a closed `EXPLAINER_METRIC` record literal.
 // We resolve it statically — parse the record's string-literal values — so
 // the dynamic site stays verifiable rather than escaping the guard.

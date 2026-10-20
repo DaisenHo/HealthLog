@@ -43,7 +43,7 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:WALKING_RUNNING_DISTANCE",
   "metric:VO2_MAX",
   "metric:BODY_TEMPERATURE",
-  // v1.4.25 W5d — Withings full coverage. Same posture as v1.4.23 — the
+  // v1.4.25 — Withings full coverage. Same posture as v1.4.23 — the
   // LLM can reference these in prose; dedicated chart components land in
   // v1.5 when the Insights body-composition + cardiovascular sub-pages
   // are designed.
@@ -54,7 +54,7 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:PULSE_WAVE_VELOCITY",
   "metric:VASCULAR_AGE",
   "metric:VISCERAL_FAT",
-  // v1.4.25 W8d — Apple Health server-prep. Same posture as v1.4.23 /
+  // v1.4.25 — Apple Health server-prep. Same posture as v1.4.23 /
   // W5d: the LLM can reference these in prose; the corresponding
   // dedicated chart components land alongside the iOS-app sync.
   "metric:AUDIO_EXPOSURE_ENV",
@@ -147,7 +147,7 @@ export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];
 
 const ALLOWED_SET = new Set<string>(ALLOWED_CHART_TOKENS);
 
-// v1.4.19 A3 — strip vs parse split. The strip-side character class
+// v1.4.19 — strip vs parse split. The strip-side character class
 // is permissive (`[A-Za-z0-9_]+`) so model-emitted lowercase or
 // snake_case tokens like `metric:blood_pressure_sweet_spot` (verbatim
 // maintainer probe 2026-05-10) get cleaved out of prose instead of leaking to the
@@ -162,7 +162,7 @@ const ALLOWED_SET = new Set<string>(ALLOWED_CHART_TOKENS);
 const STRIP_TOKEN_REGEX = /metric:[A-Za-z0-9_]+/g;
 const PARSE_TOKEN_REGEX = /metric:[A-Z_]+/g;
 
-// v1.4.25 W5b — capitalised-Metric form. The maintainer reported the leak
+// v1.4.25 — capitalised-Metric form. The maintainer reported the leak
 // pattern `Metric Pressure_Sys` on /insights 2026-05-14: the model
 // emitted the metric reference as a two-word phrase ("Metric" + space
 // + enum-cased identifier) instead of the canonical `metric:<TYPE>`
@@ -179,7 +179,7 @@ const PARSE_TOKEN_REGEX = /metric:[A-Z_]+/g;
 // ordinary prose ("Metricated", "submetric_x").
 const METRIC_WORD_REGEX = /\bMetric\s+[A-Za-z][A-Za-z0-9_]*\b/g;
 
-// v1.4.25 W5b — orphan enum-identifier leaks. The model sometimes
+// v1.4.25 — orphan enum-identifier leaks. The model sometimes
 // drops the bare MeasurementType enum name straight into prose
 // ("Your BLOOD_PRESSURE_SYS is elevated"). This was harmless when
 // the only enums were short capitalised words but leaks badly with
@@ -243,7 +243,7 @@ const ORPHAN_ENUM_REGEX = new RegExp(
  * are in the allowlist. Hallucinated tokens (e.g. `metric:NUKE`) are
  * silently dropped.
  *
- * v1.4.17 hotfix: legacy cached payloads from before the strict insight
+ * v1.4.17: legacy cached payloads from before the strict insight
  * schema landed can deliver `undefined` here when the consumer reads a
  * field that didn't exist in the v1.4.14 shape (e.g. `insight.summary`
  * on a `{changed, stable, drivers, ...}` blob). Rather than crashing
@@ -262,7 +262,7 @@ export function parseChartTokens(
 /**
  * Strip the chart tokens out of the visible insight text.
  *
- * v1.4.17 hotfix: same defensive contract as `parseChartTokens()` —
+ * v1.4.17: same defensive contract as `parseChartTokens()` —
  * non-string input returns the empty string instead of crashing the
  * caller. The empty result keeps the surrounding JSX render path
  * (`<p>{stripChartTokens(insight.summary)}</p>`) alive so the legacy-

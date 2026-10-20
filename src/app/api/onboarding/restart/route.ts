@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — `POST /api/onboarding/restart`.
+ * v1.39 — `POST /api/onboarding/restart`.
  *
  * "Set up again", from Settings. It puts the nine steps back to `pending`,
  * clears the flow's completion stamp and clears the derivation marker so the

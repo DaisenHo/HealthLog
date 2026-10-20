@@ -42,7 +42,7 @@ function fakeSummary(count: number): DataSummary {
 
 describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
   it("renders only the Overview pill when availability is omitted (v1.4.36 W4d strict gate)", () => {
-    // v1.4.36 W4d — the pre-v1.4.36 fallback used to render every
+    // v1.4.36 — the pre-v1.4.36 fallback used to render every
     // metric pill while the analytics fetch was in flight. Users with
     // zero observations on a metric briefly saw nav targets they
     // couldn't act on, and on a failed fetch the pills stayed up
@@ -79,7 +79,7 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
     expect(html).not.toContain(">Mood<");
     expect(html).not.toContain(">Medication<");
     expect(html).not.toContain(">Sleep<");
-    // v1.4.34 IW-D — the parent "Vitals" pill stays out when no
+    // v1.4.34 — the parent "Vitals" pill stays out when no
     // wave-A HealthKit metric has data (none in this availability).
     expect(html).not.toContain(">Vitals<");
   });
@@ -149,7 +149,7 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
 });
 
 describe("<InsightsTabStrip> — vitals group collapse (v1.4.34 IW-D)", () => {
-  // v1.4.36 W4d — strict gate: every test here passes an explicit
+  // v1.4.36 — strict gate: every test here passes an explicit
   // `availability` that lights up the wave-A metrics so the popover
   // parent pill renders. Pre-v1.4.36 the no-availability fallback
   // lit up every pill by default; under the strict gate the same

@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MED — persistent medication-compliance rollup tier.
+ * v1.4.39 — persistent medication-compliance rollup tier.
  *
  * Replaces the unbounded `MedicationIntakeEvent.findMany` walk on
  * `/api/medications/intake?scope=compliance` with a ledger keyed
@@ -124,7 +124,7 @@ export async function recomputeMedicationComplianceForDay(
   // The local day's own bounds: 23, 24 or 25 hours on DST days.
   const { dayStart: start, dayEnd: windowEnd } = localDayWindow(dayKey, safeTz);
 
-  // v1.4.39 hotfix (QA F-H-02): atomic upsert closes the race window
+  // v1.4.39: atomic upsert closes the race window
   // between the prior `SELECT … aggregate then UPSERT` pattern. Two
   // concurrent writes for the same (user, medication, day) used to
   // interleave A-SELECT → B-SELECT → B-UPSERT (correct) → A-UPSERT
@@ -310,7 +310,7 @@ export async function recomputeUserMedicationCompliance(
 }
 
 /**
- * v1.4.39 hotfix (QA F-SEC-M-01) — user-scoped enqueue helper for the
+ * v1.4.39 — user-scoped enqueue helper for the
  * request-path coverage-miss fallback.
  *
  * Mirrors `ensureUserMoodRollupsFresh`: the route fires this when its

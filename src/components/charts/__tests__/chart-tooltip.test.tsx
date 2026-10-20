@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { RichChartTooltip } from "../chart-tooltip";
 
 /**
- * v1.4.16 B1a — Apple-Health-style tooltip primitive contract.
+ * v1.4.16 — Apple-Health-style tooltip primitive contract.
  */
 describe("<RichChartTooltip>", () => {
   it("renders nothing when inactive", () => {

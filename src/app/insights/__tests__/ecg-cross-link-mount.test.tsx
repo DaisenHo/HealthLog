@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.30 (UX/IA audit H1) — `<EcgCrossLink>` now mounts on the resting-pulse
+ * v1.30 — `<EcgCrossLink>` now mounts on the resting-pulse
  * and HRV sub-pages (previously only on `/insights/pulse`), threaded through
  * `<HealthKitMetricPage afterAssessment>`. The pointer self-gates on
  * recordings, so the shared `insightsEcgList` cache is pre-seeded with one

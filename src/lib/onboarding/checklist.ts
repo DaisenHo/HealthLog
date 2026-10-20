@@ -20,10 +20,10 @@ export const CHECKLIST_ITEM_IDS = [
   "dataSource",
   "notifications",
   "insights",
-  // v1.39 (C2) — present only for an answer that named a visit within a
+  // v1.39 — present only for an answer that named a visit within a
   // month (design spec §After the flow: "prepare the visit").
   "visit",
-  // v1.39 (C2) — "someone I look after" (or "both") with no managed profile
+  // v1.39 — "someone I look after" (or "both") with no managed profile
   // yet: the answers were given for a record that does not exist, and this
   // row is where it gets created.
   "managedProfile",
@@ -91,18 +91,18 @@ export interface ChecklistInputs {
   /** Dismissed item ids (per-item localStorage state). */
   dismissedIds: ReadonlySet<ChecklistItemId>;
   /**
-   * v1.39 (C2) — visits booked from today on, for the "prepare the visit"
+   * v1.39 — visits booked from today on, for the "prepare the visit"
    * row. Read only while the row can exist, so a caller that never asked the
    * question passes zero.
    */
   upcomingVisitCount: number;
   /**
-   * v1.39 (C2) — managed profiles this account looks after, for the row that
+   * v1.39 — managed profiles this account looks after, for the row that
    * asks a guardian to create the one their answers were about.
    */
   managedProfileCount: number;
   /**
-   * v1.39 (C1) — the needs-based setup state from `GET /api/auth/me`, or null
+   * v1.39 — the needs-based setup state from `GET /api/auth/me`, or null
    * for a record that never entered the flow.
    *
    * Required rather than optional: the ordering below is the whole reason the
@@ -113,7 +113,7 @@ export interface ChecklistInputs {
 }
 
 /**
- * v1.39 (C1) — the order the answers imply.
+ * v1.39 — the order the answers imply.
  *
  * The rows themselves are fixed; what the questionnaire decides is which of
  * them a person sees first. Someone who said they take medication daily should
@@ -296,7 +296,7 @@ export function checklistProgress(items: ChecklistItem[]): ChecklistProgress {
  */
 export interface StillInSetupInputs {
   /**
-   * v1.39 (C1) — the needs-based setup state for this record, or null before
+   * v1.39 — the needs-based setup state for this record, or null before
    * the account payload resolves. A record that never entered the flow reads
    * as empty answers with nine pending steps and is treated as having no
    * unfinished setup, which is what keeps every account that predates the flow

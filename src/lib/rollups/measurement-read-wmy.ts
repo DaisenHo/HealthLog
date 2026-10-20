@@ -376,7 +376,7 @@ const TIER_ORDER: RollupGranularity[] = ["DAY", "WEEK", "MONTH", "YEAR"];
  * future tier ever risks an unbounded count it must step coarser rather
  * than truncate; no silent cap lives on this path.
  *
- * v1.26.0 SEAM-N2 — the reader is bounded to the REQUESTED `[from, to]`
+ * v1.26.0 — the reader is bounded to the REQUESTED `[from, to]`
  * window on BOTH ends, not a trailing "now − windowDays … now" slice.
  * The caller passes arbitrary ISO instants (a historic "All" range whose
  * `to` need not be ≈ now), so anchoring on `Date.now()` returned the wrong

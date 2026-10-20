@@ -56,7 +56,7 @@ export const GET = apiHandler(async () => {
 
   const row = await prisma.user.findUnique({
     where: { id: user.id },
-    // v1.32.22 (M1) — `updatedAt` rides the response as the optimistic-
+    // v1.32.22 — `updatedAt` rides the response as the optimistic-
     // concurrency token so a client can echo it on its next PATCH.
     select: { notificationPrefs: true, updatedAt: true },
   });
@@ -91,7 +91,7 @@ export const PATCH = apiHandler(async (req: Request) => {
     });
   }
 
-  // v1.32.22 (M1) — pull the optimistic-concurrency base token off the body
+  // v1.32.22 — pull the optimistic-concurrency base token off the body
   // BEFORE the Zod parse so it never pollutes `changedCategories`
   // (`Object.keys(parsed.data)`) or the schema. The race that matters: iOS
   // sets `medication.clientManaged = true`, a web card PATCH based on a
@@ -125,7 +125,7 @@ export const PATCH = apiHandler(async (req: Request) => {
     parsed.data,
   );
 
-  // v1.32.22 (M1) — guard the deep-merge write on the client's base token. A
+  // v1.32.22 — guard the deep-merge write on the client's base token. A
   // stale base 409s and writes NOTHING, so a concurrent web PATCH can't revert
   // a category (e.g. `medication.clientManaged`) another writer just set from a
   // fresher read. A tokenless request keeps the prior unconditional write.

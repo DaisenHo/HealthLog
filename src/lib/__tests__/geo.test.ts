@@ -15,7 +15,7 @@ vi.mock("undici", async (importOriginal) => {
   };
 });
 
-// v1.18.11 (W3): capture wide-event warnings so the non-ok-status path can
+// v1.18.11: capture wide-event warnings so the non-ok-status path can
 // be asserted. `getEvent()` returns null outside a request context, so
 // without this mock the `getEvent()?.addWarning(...)` call is a silent
 // no-op and there is nothing to assert against.
@@ -71,7 +71,7 @@ describe("lookupIpLocation IP-geolocation HTTPS guard", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  // v1.4.16 A8a: helper turns a JS object into a real `Response` whose
+  // v1.4.16: helper turns a JS object into a real `Response` whose
   // body is the UTF-8 byte stream of `JSON.stringify(value)`. The geo
   // helper now reads via `arrayBuffer() + TextDecoder('utf-8')` so the
   // test fakes have to expose those, not just `json()`.
@@ -201,7 +201,7 @@ describe("lookupIpLocation IP-geolocation HTTPS guard", () => {
   });
 });
 
-// v1.18.11 (W3): a non-ok HTTP status (403 free-plan/CORS rejection, 429
+// v1.18.11: a non-ok HTTP status (403 free-plan/CORS rejection, 429
 // rate-limit, 5xx) must surface a wide-event warning instead of being
 // swallowed as a clean miss. The ipwho.is 403 that produced the prod "—"
 // never emitted a single signal; this guards against that regression.
@@ -246,7 +246,7 @@ describe("lookupIpLocation non-ok status warning (v1.18.11 W3)", () => {
   });
 });
 
-// v1.4.16 A8a: the maintainer spotted "Nrnberg" rendered in /admin/login-overview
+// v1.4.16: the maintainer spotted "Nrnberg" rendered in /admin/login-overview
 // for an audit row that should have read "Nürnberg, DE". The geo source
 // (ipwho.is) returns valid UTF-8, but `Response.json()` defers its
 // charset decoding to whatever the server's `Content-Type` header

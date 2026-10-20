@@ -25,7 +25,7 @@ import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.18.6 (W8 / MOD-03) — generic, controlled reorder list shared by the
+ * v1.18.6 — generic, controlled reorder list shared by the
  * Vorsorge / Illness / Labs settings pages.
  *
  * A single section (no active/inactive split — the secondary modules have a

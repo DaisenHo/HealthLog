@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W5a — buildCoachMemoryBlock unit tests.
+ * v1.11.0 — buildCoachMemoryBlock unit tests.
  *
  * Asserts the rolling-profile block assembles from the two persisted
  * sources (period-narrative read + band transitions), carries the right

@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn() },
-    // v1.4.43 W6 — audit-ledger breadcrumb for validation-failed paths.
+    // v1.4.43 — audit-ledger breadcrumb for validation-failed paths.
     auditLog: { create: vi.fn() },
     // Per-metric freshness + first-run sync progress for the APPLE_HEALTH
     // source (#778).

@@ -1,5 +1,5 @@
 /**
- * v1.18.7 (MEDIUM-3) — daily-briefing phrasing re-roll on unchanged data.
+ * v1.18.7 — daily-briefing phrasing re-roll on unchanged data.
  *
  * The content-hash gate keeps the FINDINGS byte-stable when the snapshot is
  * unchanged, but the daily-briefing PARAGRAPH is re-rolled at most once per
@@ -29,7 +29,7 @@ vi.mock("@/lib/db", () => ({
     user: {
       findUnique: (...a: unknown[]) => findUnique(...a),
       update: (...a: unknown[]) => userUpdate(...a),
-      // v1.32.22 (M6) — the cache commit is now a privacy-mode-guarded
+      // v1.32.22 — the cache commit is now a privacy-mode-guarded
       // updateMany; record it on the same spy but return a matched count so the
       // guard proceeds (mode unchanged in these tests).
       updateMany: (...a: unknown[]) => {

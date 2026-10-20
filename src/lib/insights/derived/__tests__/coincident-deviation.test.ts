@@ -17,7 +17,7 @@ vi.mock("@/lib/rollups/measurement-coverage", () => ({
 vi.mock("@/lib/rollups/measurement-read-wmy", () => ({
   readBestGranularityRollups: vi.fn().mockResolvedValue(null),
 }));
-// v1.18.1 P4 — the illness reframe. Default no active episode; the reframe
+// v1.18.1 — the illness reframe. Default no active episode; the reframe
 // test flips it. Since #1216 the reframe reads active episodes directly
 // (chronic conditions included), not Rest Mode.
 const restModeMock = vi.hoisted(() => ({

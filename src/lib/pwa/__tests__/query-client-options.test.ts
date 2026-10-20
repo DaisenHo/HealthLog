@@ -1,5 +1,5 @@
 /**
- * F-OFF-1 — offline mutations must FAIL fast (surfacing state) rather than
+ * Offline mutations must FAIL fast (surfacing state) rather than
  * pause forever and lose the write on reload.
  *
  * The library default network mode (`online`) pauses a mutation fired offline:

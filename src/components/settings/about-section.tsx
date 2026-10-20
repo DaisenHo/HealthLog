@@ -75,7 +75,7 @@ function writeLastCheckedISO(iso: string): void {
 }
 
 /**
- * v1.4.36 QA H7 — keyboard- and touch-accessible update badge.
+ * v1.4.36 — keyboard- and touch-accessible update badge.
  *
  * Renders as a 44 px-square hit target (anchor when a release URL is
  * known, span fallback otherwise) with a focus-visible ring, semantic
@@ -132,7 +132,7 @@ export function AboutSection() {
     staleTime: Infinity,
   });
 
-  // v1.4.36 W4f — the explicit "Check for updates" button is gone;
+  // v1.4.36 — the explicit "Check for updates" button is gone;
   // only the 24 h auto-check stays. When the auto-check reports
   // `newer_available`, a subtle upward-arrow badge appears next to
   // the version line with the latest tag in its tooltip.
@@ -185,7 +185,7 @@ export function AboutSection() {
   }, [version?.version]);
   /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the section
+  // v1.18.6 — the visible heading + subtitle now come from the section
   // frame that wraps this component: `<SettingsSectionFrame>` on the settings
   // route and the admin renderer's `SectionFrame` on `/admin/about`. The body
   // is the version / license / sources cards.
@@ -212,7 +212,7 @@ export function AboutSection() {
                 {t("settings.about.version")}
               </dt>
               <dd className="font-mono font-medium">v{version.version}</dd>
-              {/* v1.4.36 W4f — subtle upward-arrow badge that
+              {/* v1.4.36 — subtle upward-arrow badge that
                   appears only when the 24 h auto-check reports a
                   newer release. Hover/tap reveals the latest tag via
                   the title attribute (read by screen readers + as a
@@ -342,7 +342,7 @@ export function AboutSection() {
           no longer duplicates it; per-module "Diese Tour zeigen" affordances
           on every module page cover in-context re-entry. */}
 
-      {/* v1.4.36 W4f — the dedicated "Updates" card with the
+      {/* v1.4.36 — the dedicated "Updates" card with the
           manual "Check for updates" button is gone. The 24 h auto-
           check still runs on mount and writes its result into the
           local `updateResult` state; the consequence renders as the

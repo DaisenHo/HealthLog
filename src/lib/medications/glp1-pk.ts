@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19c — GLP-1 pharmacokinetic helpers (pure module).
+ * v1.4.25 — GLP-1 pharmacokinetic helpers (pure module).
  *
  * One-compartment Bateman absorption / elimination math for the five
  * EMA-approved GLP-1 receptor agonists in `glp1-knowledge.ts`.

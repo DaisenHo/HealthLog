@@ -178,7 +178,7 @@ export const PATCH = apiHandler(
     await auditLog("illness.episode.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the replaced fields; the note is named and never quoted.
+      // The replaced fields; the note is named and never quoted.
       details: {
         episodeId: id,
         ...overwriteDetails({

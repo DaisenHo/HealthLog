@@ -27,7 +27,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 
 /**
- * v1.4.25 W4 — `/insights/medications`.
+ * v1.4.25 — `/insights/medications`.
  *
  * Routed Medication-Compliance sub-page. Mirrors the per-medication
  * grid from the v1.4.24 mother page (compliance bars + heatmap +
@@ -189,7 +189,7 @@ export default function InsightsMedikamentePage() {
   }
 
   if (medications.length === 0) {
-    // v1.4.27 F17 — medication compliance is event-driven so the
+    // v1.4.27 — medication compliance is event-driven so the
     // gate reads `medications.length > 0`. CTA targets `/medications`
     // (the dedicated medication-management surface).
     return (
@@ -272,7 +272,7 @@ export default function InsightsMedikamentePage() {
                     <span>{t("insights.compliance7d")}</span>
                     <span className="font-medium">{med.compliance7}%</span>
                   </div>
-                  {/* v1.4.33 IW9 — aria-label so the bar has an
+                  {/* v1.4.33 — aria-label so the bar has an
                       accessible name (Lighthouse a11y 91/94). */}
                   <Progress
                     value={med.compliance7}

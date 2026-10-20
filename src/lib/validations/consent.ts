@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
- * v1.4.40 SB-10 — AI consent receipts (App-Store Guideline 5.1.2(i) +
+ * v1.4.40 — AI consent receipts (App-Store Guideline 5.1.2(i) +
  * GDPR Art. 7 audit trail).
  *
  * The discriminator covers the consent surfaces collected independently:

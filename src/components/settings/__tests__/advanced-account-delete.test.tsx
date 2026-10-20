@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (M3 + L5) — `<AdvancedSection>` danger-zone shaping.
+ * v1.4.43 — `<AdvancedSection>` danger-zone shaping.
  *
  *   M3: a separate "Delete account entirely" destructive card
  *       (`AccountDeleteCard`) sits beside the existing `DataResetCard`

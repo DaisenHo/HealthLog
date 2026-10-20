@@ -71,7 +71,7 @@ type Translate = (
 export const FDR_Q = 0.1;
 
 /**
- * RECON1 (D2-2) — effect-size floor on the SHRUNK |r|. A pair can be
+ * Effect-size floor on the SHRUNK |r|. A pair can be
  * statistically significant (p < 0.05, FDR-clean) yet explain a trivial slice
  * of variance — e.g. n=180, r=0.16 explains ~2.5% and is noise-floor signal a
  * human should not chase. Below this floor we DROP the pair from the discovered
@@ -82,7 +82,7 @@ export const FDR_Q = 0.1;
 export const EFFECT_SIZE_FLOOR = 0.2;
 
 /**
- * RECON1 (D2-2 / D2-6) — the |r| at/above which a pair earns CONFIDENT phrasing
+ * The |r| at/above which a pair earns CONFIDENT phrasing
  * ("tends to go with"). Between `EFFECT_SIZE_FLOOR` and this, the pair survives
  * but is down-tiered to a hedged "faint hint" so the narrated confidence never
  * outruns the effect.
@@ -90,7 +90,7 @@ export const EFFECT_SIZE_FLOOR = 0.2;
 export const CONFIDENT_EFFECT_THRESHOLD = 0.3;
 
 /**
- * RECON1 (D4) — James-Stein / regression-to-the-mean shrinkage constant. A
+ * James-Stein / regression-to-the-mean shrinkage constant. A
  * sparse n-of-1 Pearson estimate is noisy and over-states the effect; we pull
  * it toward null by the factor n/(n+SHRINKAGE_K) before ranking + tiering, so a
  * thin-data correlation cannot out-rank a deep, well-sampled one purely on an
@@ -113,7 +113,7 @@ export function shrinkEstimate(r: number, n: number): number {
 }
 
 /**
- * RECON1 (D2-1) — metric-family key for a discovery channel. Two channels in
+ * Metric-family key for a discovery channel. Two channels in
  * the same family (e.g. both blood-pressure components) lag-correlate trivially
  * (serial auto-correlation of one physiological signal), so a same-family
  * lagged pair is a near-tautology, not a cross-domain insight. The discovery
@@ -129,7 +129,7 @@ export function metricFamily(key: string): string {
   // tautology as MOOD→MOOD and is excluded too.
   if (key.startsWith(FACTOR_CHANNEL_PREFIX) || key === "MOOD") return "MOOD";
   if (key.startsWith("BLOOD_PRESSURE")) return "BLOOD_PRESSURE";
-  // v1.25 (W-ENV) — every environmental-exposure channel (ENV_TEMP_MEAN,
+  // v1.25 — every environmental-exposure channel (ENV_TEMP_MEAN,
   // ENV_DAYLIGHT, …) shares ONE family so the same-family guard never
   // lag-correlates two same-day weather fields against each other (a
   // near-tautology). They stay free to pair cross-domain against mood / sleep /
@@ -148,11 +148,11 @@ export function metricFamily(key: string): string {
   return key;
 }
 
-/** RECON1 (D2-6) — explicit phrasing tier a low-confidence signal must honour. */
+/** Explicit phrasing tier a low-confidence signal must honour. */
 export type ConfidenceTier = "high" | "moderate" | "faint";
 
 /**
- * RECON1 (D2-2 / D2-6) — classify a pair into a phrasing tier from its SHRUNK
+ * Classify a pair into a phrasing tier from its SHRUNK
  * effect size and paired-day depth. The tier is a contract the narration (and
  * the hallucination tests) can check, so a thin / weak signal is hedged
  * differently from a deep / strong one rather than both reading "tends to go
@@ -220,12 +220,12 @@ export interface DiscoveredCorrelation {
   /** Benjamini-Hochberg adjusted q-value. */
   qValue: number;
   /**
-   * RECON1 (D4) — the sample-size-shrunk r (toward null) used for ranking,
+   * The sample-size-shrunk r (toward null) used for ranking,
    * the effect-size floor, and the phrasing tier. Display still uses raw `r`.
    */
   shrunkR: number;
   /**
-   * RECON1 (D2-6) — phrasing tier the narration must honour: a `faint` signal
+   * Phrasing tier the narration must honour: a `faint` signal
    * is hedged, a `high` signal stated plainly. Never `null` here (a below-floor
    * pair is dropped before this list).
    */
@@ -539,7 +539,7 @@ export function discoverCorrelations(
   const tested: RawPair[] = [];
   for (const b of behaviours) {
     for (const o of outcomes) {
-      // RECON1 (D2-1) — skip same-metric-FAMILY lagged pairs, not just the exact
+      // Skip same-metric-FAMILY lagged pairs, not just the exact
       // self-pair. A same-family lag (mood→mood, sys→any-BP) is a serial
       // auto-correlation tautology, not a cross-domain insight; excluding it
       // before testing stops it crowding out genuine cross-metric links.
@@ -572,7 +572,7 @@ export function discoverCorrelations(
   const discovered: DiscoveredCorrelation[] = tested
     .map((t, i) => ({ ...t, qValue: qValues[i] }))
     .filter((t) => t.pValue < 0.05 && t.qValue <= fdrQ)
-    // RECON1 (D4) — shrink each estimate toward null by its sample depth, then
+    // Shrink each estimate toward null by its sample depth, then
     // (D2-2) classify into a phrasing tier. A pair below the effect-size floor
     // tiers to `null` and is dropped: it is statistically real but explains too
     // little variance to narrate as a driver.
@@ -616,7 +616,7 @@ export function discoverCorrelations(
       ),
       lagDays: t.lagDays,
     }))
-    // RECON1 (D2-2 / D4) — rank by the SHRUNK effect magnitude (a deep, strong
+    // Rank by the SHRUNK effect magnitude (a deep, strong
     // pair leads a thin one even if the thin one's raw r is higher), with q as
     // the tie-break so a tighter FDR still wins on equal effect.
     .sort(
@@ -675,7 +675,7 @@ export const DISCOVERY_OUTCOMES = [
   // BP survive. BH-FDR controls the wider pair family this opens up.
   "BLOOD_PRESSURE_SYS",
   "BLOOD_PRESSURE_DIA",
-  // v1.11.5 (F3) — mood is now an OUTCOME channel too, not only a behaviour.
+  // v1.11.5 — mood is now an OUTCOME channel too, not only a behaviour.
   // The discovery loop skips the MOOD→MOOD self-pair (`b.key === o.key`), so
   // promoting it lets the FDR scan surface "behaviour today → next-day mood"
   // relations (e.g. more daylight today → better mood tomorrow) in addition

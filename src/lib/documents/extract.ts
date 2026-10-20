@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — inbound clinical-document extraction orchestration.
+ * v1.25 — inbound clinical-document extraction orchestration.
  *
  * Takes the sniffed upload bytes (or in-browser-OCR'd text) + the resolved
  * OCR/vision provider, runs ONE (retry-once) structured-extraction call,

@@ -1,5 +1,5 @@
 /**
- * v1.11.0 (Epic C, C5) — clinician-view presentation.
+ * v1.11.0 — clinician-view presentation.
  *
  * Asserts the load-bearing rendering properties: the fenced wellness card
  * carries the descriptive "not a clinical assessment / not a diagnosis"

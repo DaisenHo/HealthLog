@@ -21,14 +21,14 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       // v1.16.10 — the slot-move path re-inserts via the shared upsert.
       create: vi.fn(),
-      // v1.4.39 W-SERVER-FIX — `scope=today` now backfills missing
+      // v1.4.39 — `scope=today` now backfills missing
       // rows for schedules whose window opens today (covers daily
       // meds with `daysOfWeek: null` whose reminder hasn't fired yet).
       createMany: vi.fn(),
     },
     medication: {
       update: vi.fn(),
-      // v1.4.39 W-SERVER-FIX — today's projection reads active meds +
+      // v1.4.39 — today's projection reads active meds +
       // their schedules to know what to backfill.
       findMany: vi.fn(),
       // v1.15.18 — the band resolver loads the medication via findFirst.
@@ -40,10 +40,10 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       deleteMany: vi.fn(),
     },
-    // v1.4.43 W6 — audit-ledger breadcrumb for validation-failed paths.
+    // v1.4.43 — audit-ledger breadcrumb for validation-failed paths.
     auditLog: { create: vi.fn() },
     $transaction: vi.fn(),
-    // v1.4.39 QA F-H-01 — coverage probe + atomic upsert use raw SQL.
+    // v1.4.39 — coverage probe + atomic upsert use raw SQL.
     $queryRaw: vi.fn(),
     $executeRaw: vi.fn().mockResolvedValue(0),
   },
@@ -106,20 +106,20 @@ beforeEach(() => {
   // helper, whose promise the route attaches a `.catch` to. `resetAllMocks`
   // clears the factory's implementation, so it is restored here.
   vi.mocked(auditLog).mockResolvedValue(undefined);
-  // v1.4.34 IW-G — reset compliance LRU between tests so each case
+  // v1.4.34 — reset compliance LRU between tests so each case
   // observes a cold cache.
   __resetAllCachesForTests();
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
     [] as never,
   );
-  // v1.4.39 W-SERVER-FIX — default the today-projection prisma reads
+  // v1.4.39 — default the today-projection prisma reads
   // to "no active medications" so existing compliance / POST tests
   // exercise their original paths without an unmocked-call failure.
   vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medicationIntakeEvent.createMany).mockResolvedValue({
     count: 0,
   } as never);
-  // v1.4.39 W-MED — default the coverage probe to "uncovered" so the
+  // v1.4.39 — default the coverage probe to "uncovered" so the
   // legacy compliance test still exercises the live-fallback branch
   // and finds the legacy mocked intake events.
   vi.mocked(prisma.medicationComplianceRollup.findFirst).mockResolvedValue(
@@ -128,18 +128,18 @@ beforeEach(() => {
   vi.mocked(prisma.medicationComplianceRollup.findMany).mockResolvedValue(
     [] as never,
   );
-  // v1.4.39 QA F-H-01 — the coverage probe is now a single `$queryRaw`
+  // v1.4.39 — the coverage probe is now a single `$queryRaw`
   // aggregate returning `{ rolled_days, event_days }`. Default to
   // "zero rollups, zero events" (covered/trivial-empty) so tests that
   // don't care about coverage land on the rollup path.
   vi.mocked(prisma.$queryRaw).mockResolvedValue([
     { rolled_days: BigInt(0), event_days: BigInt(0) },
   ] as never);
-  // v1.4.43 W6 — default the audit-row write to resolve.
+  // v1.4.43 — default the audit-row write to resolve.
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
-// v1.4.48 L13 — restore real timers no matter how a test exits. A failed
+// v1.4.48 — restore real timers no matter how a test exits. A failed
 // assertion inside an `it` that opted into fake timers would otherwise
 // leak the fake clock into the next test in the file (or, worse, the
 // next file in the same vitest worker).
@@ -257,7 +257,7 @@ describe("GET /api/medications/intake", () => {
           source: "REMINDER",
         },
       ],
-      // v1.4.39 W-SERVER-FIX-2 — the createMany must ship
+      // v1.4.39 — the createMany must ship
       // `skipDuplicates: true` so a concurrent dashboard-summary hit
       // can't race a duplicate `(userId, medicationId, scheduledFor,
       // REMINDER)` row in between this route's existence probe and
@@ -322,7 +322,7 @@ describe("GET /api/medications/intake", () => {
     );
     expect(res.status).toBe(200);
     expect(prisma.medicationIntakeEvent.createMany).not.toHaveBeenCalled();
-    // v1.4.48 L13 — suite-level `afterEach` restores real timers.
+    // v1.4.48 — suite-level `afterEach` restores real timers.
   });
 
   it("returns compliance buckets for the last N days", async () => {

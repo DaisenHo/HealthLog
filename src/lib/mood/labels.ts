@@ -1,5 +1,5 @@
 /**
- * v1.4.27 B6 / BL-P6-11 — single source of truth for mood verbal labels.
+ * v1.4.27 — single source of truth for mood verbal labels.
  *
  * Previously `mood-list.tsx` and `charts/mood-chart.tsx` each carried
  * their own label set:

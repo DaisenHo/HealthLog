@@ -47,7 +47,7 @@ interface TrendCardProps {
    *  shows both numbers). */
   secondary?: SecondaryMetric;
   /**
-   * v1.4.15 Fix 4 — 7-day trend delta. When provided, the avg7 line
+   * v1.4.15 — 7-day trend delta. When provided, the avg7 line
    * shows a signed delta (e.g. "+1.2 kg") next to the average and the
    * label switches from `charts.avg7dShort` (just "7d") to
    * `charts.trend7dShort` ("7d trend"). Color of the delta follows the
@@ -61,7 +61,7 @@ interface TrendCardProps {
    */
   trend7Delta?: number | null;
   /**
-   * v1.4.16 phase B8 — comparison delta callout. When the dashboard's
+   * v1.4.16 — comparison delta callout. When the dashboard's
    * comparison toggle is active and we can compute a baseline value,
    * the tile renders a "Δ −2.3 kg vs. last month" caption on a second
    * line below the latest value. Color follows the same metric-aware
@@ -73,7 +73,7 @@ interface TrendCardProps {
   compareBaseline?: ComparisonBaseline;
   compareDelta?: number | null;
   /**
-   * v1.4.33 maintainer-item-1 — when the metric's most recent reading is
+   * v1.4.33 — when the metric's most recent reading is
    * older than 7 days but the all-time count is still non-zero, the
    * caller passes a positive integer day count here. The tile renders a
    * muted "Letzter Wert vor Xd" caption underneath the value row so the
@@ -84,7 +84,7 @@ interface TrendCardProps {
    */
   staleDays?: number | null;
   /**
-   * v1.17 W1b — short text shown in the headline slot in place of the
+   * v1.17 — short text shown in the headline slot in place of the
    * "—" placeholder when `latest === null`. Used by the BD-Zielbereich
    * tile to render "collecting data" while the trailing window has too
    * few readings to narrate a confident percentage. When omitted the
@@ -135,7 +135,7 @@ export function TrendCard({
   const { t, tCount } = useTranslations();
   const fmt = useFormatters();
 
-  // v1.4.33 F5 — pick a single signal to drive both the arrow and the
+  // v1.4.33 — pick a single signal to drive both the arrow and the
   // 7-day delta value so they never disagree. `trend7Delta` is the
   // user-facing number on the tile; when present, the arrow follows
   // its sign. When the caller only supplies `slope30` (legacy tiles
@@ -162,13 +162,13 @@ export function TrendCard({
 
   const formatValue = (value: number) => fmt.number(value, fractionDigits);
 
-  // v1.4.15 Fix 4 — the 7-day delta now shares the arrow's colour so
+  // v1.4.15 — the 7-day delta now shares the arrow's colour so
   // both elements communicate the same sentiment for the same signal.
   const deltaSentiment = getTrendSentiment(trend7Delta, directionSentiment);
   const deltaColor = sentimentColorClass(deltaSentiment);
 
   /**
-   * v1.4.16 phase B8 — color the comparison delta with the same
+   * v1.4.16 — color the comparison delta with the same
    * metric-aware sentiment rules used everywhere else on the tile.
    * Tiny deltas read as stable and stay muted.
    */
@@ -205,7 +205,7 @@ export function TrendCard({
 
   return (
     <div className="bg-card border-border flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border p-4 md:p-6">
-      {/* v1.4.25 W20a — single-line discipline + deterministic height for
+      {/* v1.4.25 — single-line discipline + deterministic height for
           the heading row so the value row below sits at the same baseline
           across every tile. The label is locale-abbreviated upstream (see
           `dashboard.*Short` keys) so `truncate` is a layout safeguard
@@ -220,7 +220,7 @@ export function TrendCard({
         </span>
         <Icon className="text-muted-foreground h-4 w-4 shrink-0" />
       </div>
-      {/* v1.4.25 W20a — baseline-aligned value row. The headline value,
+      {/* v1.4.25 — baseline-aligned value row. The headline value,
           unit, and trend arrow share a single flex line with
           `items-baseline` so the digits line up at the same y-coordinate
           across every tile in the strip (Weight 80 kg vs. BP 122 mmHg used
@@ -235,7 +235,7 @@ export function TrendCard({
         data-slot="trend-card-value-row"
       >
         {latest === null && emptyHint ? (
-          // v1.17 W1b — thin-data placeholder. Renders the caller's short
+          // v1.17 — thin-data placeholder. Renders the caller's short
           // text (e.g. "collecting data") where the numeric headline would
           // sit, at a smaller size so the longer phrase fits the tile's
           // deterministic height. No unit; the arrow slot below still
@@ -345,7 +345,7 @@ export function TrendCard({
             )}`}
           </span>
         )}
-        {/* v1.4.33 maintainer-item-1 — stale-data caption. Renders
+        {/* v1.4.33 — stale-data caption. Renders
             only when the caller passes `staleDays` (positive integer
             of days since the metric's last reading). The tile keeps
             the historical value visible because the maintainer would
@@ -355,7 +355,7 @@ export function TrendCard({
             caption; on `<sm` the line-clamp keeps the 140 px height
             contract intact.
 
-            v1.4.34 IW-B — bucket-aware copy. Days under a week stay
+            v1.4.34 — bucket-aware copy. Days under a week stay
             silent (the tile reads as fresh); 8-30 days surfaces as
             "vor Xd"; 31-60 days collapses to "vor X Wochen"; beyond
             two months collapses to "vor X Monaten". One key per
@@ -457,7 +457,7 @@ export function TrendCard({
               </span>
             )}
           </span>
-          {/* v1.4.28 FB-C2 — the all-time third sub-value retired
+          {/* v1.4.28 — the all-time third sub-value retired
               alongside the `avgAllTime*` props. The BD-Zielbereich
               tile was the only consumer; the same number stays
               visible on the Insights blood-pressure target panel with

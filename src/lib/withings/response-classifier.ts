@@ -251,7 +251,7 @@ export class WithingsApiError extends Error {
     const statusLabel =
       typeof opts.withingsStatus === "number" ? opts.withingsStatus : "?";
     const errSegment = opts.upstreamError ? ` - ${opts.upstreamError}` : "";
-    // v1.4.43 W3-SECURITY (H-2, v1.4.42 L-1 carry-over): cap the
+    // v1.4.43 (H-2, v1.4.42 L-1 carry-over): cap the
     // message at 1024 chars in the constructor so every downstream
     // audit / notification path inherits the bound. A misbehaving
     // upstream that returns a multi-MB error body must not be able to

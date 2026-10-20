@@ -6,7 +6,7 @@ import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { EmptyState } from "@/components/ui/empty-state";
 
 /**
- * v1.4.28 R3d (BK-F-M1 + BK-MED-4) — shared empty-state primitive for
+ * v1.4.28 — shared empty-state primitive for
  * the insights sub-pages.
  *
  * Pre-fix, every sub-page repeated the same five-line incantation:

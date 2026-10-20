@@ -116,7 +116,7 @@ import {
 } from "@/generated/prisma/client";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-// v1.4.25 W16c — historical-backfill threshold for PR push
+// v1.4.25 — historical-backfill threshold for PR push
 // suppression. A batch larger than this fires the detection job with
 // `silent: true` so a multi-year Apple Health backfill writes records
 // without spamming the user with hundreds of pushes. Tuned generously
@@ -134,7 +134,7 @@ const MAX_BATCH_ENTRIES = 500;
 // The cap is a DoS ceiling, not a tight bound.
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
-// v1.4.25 W10 reconcile (security H-2): cap batch ingest at 60
+// v1.4.25 (security H-2): cap batch ingest at 60
 // batches per user per minute. Healthy iOS sync drains its
 // HealthKit observer queue in well under one batch per minute (the
 // observer pattern coalesces), so 60/min × 500 entries/batch =
@@ -144,7 +144,7 @@ const MAX_BODY_BYTES = 4 * 1024 * 1024;
 const BATCH_RATE_LIMIT_MAX = 60;
 const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
-// v1.8.6 W6 — the set of `source` values this client-facing ingest
+// v1.8.6 — the set of `source` values this client-facing ingest
 // route accepts. Deliberately narrower than the full `MeasurementSource`
 // enum: `WITHINGS` and `IMPORT` are server-owned (the Withings webhook
 // and the CSV importer mint those rows respectively), so letting an iOS
@@ -182,7 +182,7 @@ const batchEntrySchema = z.object({
   // @external-id-checked-per-entry: src/app/api/measurements/batch/route.ts
   externalId: z.string().min(1).max(120),
   externalSourceVersion: z.string().min(1).max(120).optional(),
-  // v1.8.6 W6 — optional per-entry source tag. Defaults to
+  // v1.8.6 — optional per-entry source tag. Defaults to
   // `APPLE_HEALTH` so every pre-W6 caller (web + current iOS) stays
   // byte-for-byte unchanged. The iOS standalone adopt-on-pair backfill
   // sends `MANUAL` for rows the user entered by hand on-device so they
@@ -190,7 +190,7 @@ const batchEntrySchema = z.object({
   // `(userId, type, source, externalId)` dedup key, so a `MANUAL` row
   // and an `APPLE_HEALTH` row sharing an externalId are distinct rows.
   source: batchSourceEnum.optional(),
-  // v1.4.25 W8c — optional device-type tag. The iOS client maps the
+  // v1.4.25 — optional device-type tag. The iOS client maps the
   // `HKDevice.model` of each sample to one of the canonical device
   // classes (watch | band | ring | phone | scale | other | unknown).
   // Backward-compatible: every pre-W8c iOS build skips the field and
@@ -301,7 +301,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // its rows may carry, and whether it may move the phone's sync checkpoint.
   const scoped = isScopedCredential(auth);
 
-  // v1.4.25 W10 reconcile (security H-2): per-user rate limit. Without
+  // v1.4.25 (security H-2): per-user rate limit. Without
   // it, a leaked wildcard iOS token can sustain unbounded writes
   // (500 rows/batch × N batches/sec) and degrade the database for
   // every other user on the host. 60 batches/min/user is generous
@@ -593,7 +593,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
         valueMin,
         valueMax,
         unit: mapped.unit,
-        // v1.8.6 W6 — honour the per-entry source tag, defaulting to
+        // v1.8.6 — honour the per-entry source tag, defaulting to
         // `APPLE_HEALTH` when absent so legacy callers are unchanged.
         //
         // v1.38.x — a scoped credential gets `EXTERNAL`, and can hold no other
@@ -611,7 +611,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
         // v1.10.0 — categorical events (WX-B). The device's own verdict /
         // severity for an EVENT row; null for every continuous reading.
         rhythmClassification: mapped.rhythmClassification ?? null,
-        // v1.4.25 W8c — pass the iOS-supplied device-type through to
+        // v1.4.25 — pass the iOS-supplied device-type through to
         // the row. Stays null for pre-W8c iOS builds; the canonical
         // picker treats null as `unknown` so legacy ingest keeps
         // working without a server-side default.
@@ -1281,7 +1281,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
   }
 
-  // v1.4.25 W16c — kick off PR detection for this user when at least one
+  // v1.4.25 — kick off PR detection for this user when at least one
   // row was written, so a single off-day reading still gets evaluated; the
   // warm-up gate inside the detector decides whether it's a record. Suppress
   // push notifications for historical backfills above the silent threshold.
@@ -1340,7 +1340,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // v1.4.34 — bust per-user analytics + achievements + workouts
   // caches when at least one row landed so the next read picks up the
   // ingested batch. Skipped-only ingests don't change state, so we
   // gate the invalidation on `insertedCount > 0 || updatedCount > 0`
@@ -1369,7 +1369,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
       wroteManualRow;
     invalidateUserMeasurements(user.id, evict ? { evict: true } : undefined);
 
-    // v1.37.19 (C2-F1) — shared post-mutation tail for every distinct
+    // v1.37.19 — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as
     // inserts, so this deliberately retains the prepared-row scope.
     // A batch is the phone's sync, held to the sync gap, unless it wrote one
@@ -1379,7 +1379,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
       source: wroteManualRow ? "manual" : "sync",
     });
 
-    // S4 — Apple-Health sleep is the third sleep transport. If any SLEEP_DURATION
+    // Apple-Health sleep is the third sleep transport. If any SLEEP_DURATION
     // row for last night just landed, kick the debounced morning refresh so the
     // digest/score finalise with the current sleep. The trigger judges "last
     // night" in the user's profile tz, so a historical Apple export replaying

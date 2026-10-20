@@ -1,5 +1,5 @@
 /**
- * S11 — intraday pulse shape + elevated-at-rest ("tension") detection.
+ * Intraday pulse shape + elevated-at-rest ("tension") detection.
  *
  * The signal-correctness bar for this slice is high (the launch posture is
  * "says less than it could"), so these pin the two things that are easy to get

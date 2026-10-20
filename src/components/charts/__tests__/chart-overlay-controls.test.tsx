@@ -175,7 +175,7 @@ describe("<ChartOverlayControls>", () => {
   });
 
   /**
-   * v1.4.25 W3f — comparison-baseline grey-out when the parent chart
+   * v1.4.25 — comparison-baseline grey-out when the parent chart
    * reports `hasComparisonData=false`. The disabled state communicates
    * "you selected a comparison but there's no prior-period series to
    * paint" instead of silently hiding the overlay.

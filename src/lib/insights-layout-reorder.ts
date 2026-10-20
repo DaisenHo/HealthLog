@@ -1,5 +1,5 @@
 /**
- * v1.15.11 W3 — pure reorder helper for the inline Insights edit mode.
+ * v1.15.11 — pure reorder helper for the inline Insights edit mode.
  *
  * Mirrors the `reorderWidgets` contract in
  * `src/components/settings/dashboard-layout-section.tsx` (move an item from
@@ -43,7 +43,7 @@ export function reorderById<T extends OrderableRow>(
 }
 
 /**
- * v1.15.11 QA M2 — rebuild a full tile list after reordering ONLY the Vitals
+ * v1.15.11 — rebuild a full tile list after reordering ONLY the Vitals
  * subset, without the non-transitive mixed-key comparator the inline edit mode
  * used to run. Walks the ORIGINAL `order` of every tile: a non-Vitals tile
  * (the routed sub-page strip) keeps its slot verbatim; each Vitals slot, in

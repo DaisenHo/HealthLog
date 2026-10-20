@@ -25,7 +25,7 @@ type GlucoseUnit = "mg/dL" | "mmol/L";
 type UnitPreference = "metric" | "imperial";
 
 /**
- * v1.39 (C2) — Q6, the optional units question.
+ * v1.39 — Q6, the optional units question.
  *
  * Shown only while an area that needs a unit is among the answers and the
  * account does not already hold the preference (the step machine decides;

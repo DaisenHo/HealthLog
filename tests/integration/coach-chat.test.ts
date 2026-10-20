@@ -424,7 +424,7 @@ describe("POST /api/insights/chat — integration", () => {
     expect(persisted.keyValues).toBeUndefined();
   });
 
-  // v1.4.43 W13 M-3 — replay-injection guard. The detector runs only
+  // v1.4.43 — replay-injection guard. The detector runs only
   // on the inbound `message` each turn, so an injection that slipped
   // past the regex bank on a previous turn would re-enter every reply.
   // Re-running `detectRefusal` against each user-turn loaded from DB
@@ -489,7 +489,7 @@ describe("POST /api/insights/chat — integration", () => {
   });
 
   it("never leaks raw ---KEYVALUES--- markers when the provider returns a sentinel-only reply", async () => {
-    // v1.4.22 W5 reconcile (Code-H1) — regression test. The model
+    // v1.4.22 — regression test. The model
     // emits ONLY the sentinel block with no leading prose AND a
     // missing close marker, so `parseKeyValuesSentinel` returns
     // `{ prose: "", malformed: true }`. The route must surface the

@@ -141,7 +141,7 @@ export function computeBpInTargetPct(
   sysSeries: BpReading[],
   diaSeries: BpReading[],
   targets: BpTargets,
-  /** v1.30.3 (QA F7) — the user's own IANA tz; defaults to Berlin for
+  /** v1.30.3 — the user's own IANA tz; defaults to Berlin for
    *  legacy callers that haven't threaded it through yet. */
   tz: string = DEFAULT_TIMEZONE,
 ): { pct: number; pairs: number } | null {
@@ -177,7 +177,7 @@ export function computeBpInTargetPct(
 }
 
 /**
- * v1.15.12 A1 — collect the accepted SYS/DIA pairs (same pairing rules
+ * v1.15.12 — collect the accepted SYS/DIA pairs (same pairing rules
  * as `computeBpInTargetPct`) as timestamped points, for the graded BP
  * pillar score. Returns `{ at, sys, dia }` per accepted pair using the
  * SYS reading's timestamp as the pair anchor — recency weighting only
@@ -186,7 +186,7 @@ export function computeBpInTargetPct(
 export function collectBpPairs(
   sysSeries: BpReading[],
   diaSeries: BpReading[],
-  /** v1.30.3 (QA F7) — see `computeBpInTargetPct`'s identical parameter. */
+  /** v1.30.3 — see `computeBpInTargetPct`'s identical parameter. */
   tz: string = DEFAULT_TIMEZONE,
 ): Array<{ at: Date; sys: number; dia: number }> {
   if (sysSeries.length === 0 || diaSeries.length === 0) return [];
@@ -245,13 +245,13 @@ export function computeBpInTargetWindows(
   diaSeries: BpReading[],
   targets: BpTargets,
   now: Date = new Date(),
-  /** v1.30.3 (QA F7) — see `computeBpInTargetPct`'s identical parameter. */
+  /** v1.30.3 — see `computeBpInTargetPct`'s identical parameter. */
   tz: string = DEFAULT_TIMEZONE,
 ): {
   last7Days: { pct: number; pairs: number } | null;
   last30Days: { pct: number; pairs: number } | null;
   /**
-   * v1.17 W1d — the trailing-90-day window. This is the canonical window
+   * v1.17 — the trailing-90-day window. This is the canonical window
    * the BD-Zielbereich headline, the Health-Score BP pillar and the coach
    * grounding number all standardise on (a 90-day arc balances recency
    * against enough pairs to be stable). The all-time aggregate stays
@@ -259,7 +259,7 @@ export function computeBpInTargetWindows(
    */
   last90Days: { pct: number; pairs: number } | null;
   /**
-   * v1.17 W1b — timestamp of the oldest accepted pair inside the
+   * v1.17 — timestamp of the oldest accepted pair inside the
    * trailing-90-day window, or `null` when the window holds no pairs.
    * Feeds `computeWindowConfidence` so the BD-Zielbereich tile can label
    * the EFFECTIVE span ("· 23 T" until ~90 days of history exist) rather
@@ -268,7 +268,7 @@ export function computeBpInTargetWindows(
   last90EarliestAt: Date | null;
   allTime: { pct: number; pairs: number } | null;
   /**
-   * v1.4.22 W5 reconcile (Code-H2) — period-aligned 30-day window
+   * v1.4.22 — period-aligned 30-day window
    * shifted back by one month (now-60d … now-30d). Used by the
    * BD-Zielbereich tile's comparison-overlay caption when the user's
    * `comparisonBaseline === "lastMonth"` so the rendered "Δ X% vs.
@@ -276,7 +276,7 @@ export function computeBpInTargetWindows(
    */
   priorMonth: { pct: number; pairs: number } | null;
   /**
-   * v1.4.22 W5 reconcile (Code-H2) — same shape, shifted back one
+   * v1.4.22 — same shape, shifted back one
    * year (now-395d … now-365d) for `comparisonBaseline === "lastYear"`.
    */
   priorYear: { pct: number; pairs: number } | null;
@@ -332,7 +332,7 @@ export function computeBpInTargetWindows(
       r.measuredAt.getTime() < oneYearMinus30DaysAgoMs,
   );
 
-  // v1.17 W1b — oldest accepted pair inside the 90-day window for the
+  // v1.17 — oldest accepted pair inside the 90-day window for the
   // effective-span label. `collectBpPairs` applies the same pairing rules
   // as `computeBpInTargetPct`, so the anchor matches the counted pairs.
   const pairsLast90 = collectBpPairs(sysLast90, diaLast90, tz);
@@ -347,10 +347,10 @@ export function computeBpInTargetWindows(
   return {
     last7Days: computeBpInTargetPct(sysLast7, diaLast7, targets, tz),
     last30Days: computeBpInTargetPct(sysLast30, diaLast30, targets, tz),
-    // v1.17 W1d — canonical headline / score / coach window.
+    // v1.17 — canonical headline / score / coach window.
     last90Days: computeBpInTargetPct(sysLast90, diaLast90, targets, tz),
     last90EarliestAt,
-    // v1.4.19 A1 — independent aggregate over EVERY paired reading. The
+    // v1.4.19 — independent aggregate over EVERY paired reading. The
     // analytics route now routes the dashboard tile's headline through
     // this so it stops mirroring `last30Days`.
     allTime: computeBpInTargetPct(sysSeries, diaSeries, targets, tz),

@@ -101,12 +101,12 @@ export type ModelOutcome =
       workingProviderType: ProviderChainType;
       toolTrace: CoachToolTrace[];
       /**
-       * v1.21.0 (P6) — the present tool-result payloads this turn, for the
+       * v1.21.0 — the present tool-result payloads this turn, for the
        * post-hoc prose number-verifier. Empty on the no-tools path.
        */
       toolResultPayloads: unknown[];
       /**
-       * v1.21.2 (A8) — no-tools/local-provider parity for the prose
+       * v1.21.2 — no-tools/local-provider parity for the prose
        * number-verifier. The tool path grades prose against the figures the
        * tools returned; the no-tools path has no tools, so the authoritative
        * set is the SNAPSHOT the model was actually shown this turn —
@@ -128,7 +128,7 @@ export type ModelOutcome =
       inventoryPayloads: unknown[];
       totalTokens: number;
       /**
-       * v1.21.0 (F3) — cached-input tokens to subtract at reconcile
+       * v1.21.0 — cached-input tokens to subtract at reconcile
        * (prompt-cached input the user did not re-pay for must not be billed
        * to the daily meter).
        */
@@ -355,7 +355,7 @@ export async function runTurnModel(args: {
     }
 
     if (toolMode) {
-      // v1.20.0 (F1) — base context: the full system prompt + a tool-mode
+      // v1.20.0 — base context: the full system prompt + a tool-mode
       // grounding addendum, with the tiny DATA INVENTORY manifest and the
       // transcript on the user turn. The figures are NOT in the prompt — the
       // model pulls only what it needs via the retrieval tools.
@@ -433,7 +433,7 @@ export async function runTurnModel(args: {
         temperature: AI_BUDGETS.coach.temperature,
         maxTokens: AI_BUDGETS.coach.maxTokens,
         fallbackWindow: effectiveScope?.window,
-        // v1.21.0 (D5-1) — share the inventory's full-source snapshot across
+        // v1.21.0 — share the inventory's full-source snapshot across
         // every tool so the turn builds ONE snapshot, not one per tool.
         sharedScope: inventory.probeScope,
         // The lookback limit: every tool call is clamped to it.
@@ -704,7 +704,7 @@ export async function runTurnModel(args: {
       workingProviderType: fallback.workingProvider.providerType,
       toolTrace: [],
       toolResultPayloads: [],
-      // v1.21.2 (A8) — the no-tools path grades only when it delivered the
+      // v1.21.2 — the no-tools path grades only when it delivered the
       // full SNAPSHOT.
       noToolsSnapshotPayloads: turnContext.includeFullSnapshot
         ? [
@@ -769,7 +769,7 @@ export async function runTurnModel(args: {
           credentialExpired: err.primaryCredentialExpired,
         },
       });
-      // v1.11.0 W1 — when the user's PRIMARY provider failed with an
+      // v1.11.0 — when the user's PRIMARY provider failed with an
       // auth-class status (401/403), the credential is dead, not the
       // service. Surface a distinct `credential_expired` frame so the
       // drawer can deep-link the user to reconnect rather than telling
@@ -778,7 +778,7 @@ export async function runTurnModel(args: {
       if (err.primaryCredentialExpired) {
         return { ok: false, code: "coach.provider.credential_expired" };
       }
-      // v1.4.25 W5 — distinguish provider rate-limit (every attempt
+      // v1.4.25 — distinguish provider rate-limit (every attempt
       // landed on 429) from generic unavailability. The drawer's
       // error-decoder surfaces the rate-limit copy with a warning
       // toast instead of the generic provider-down message, so the

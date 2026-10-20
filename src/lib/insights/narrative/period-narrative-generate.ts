@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W3 — period-narrative GENERATOR (Pillar P1).
+ * v1.11.0 — period-narrative GENERATOR (Pillar P1).
  *
  * A sibling of `generateComprehensiveInsight`: it feeds the W2
  * `buildPeriodNarrativeContext` output — a compact, provenance-carrying
@@ -101,7 +101,7 @@ interface GenerateOptions {
   /** Injected for tests — the shared client by default. */
   prisma?: PrismaClient;
   /**
-   * v1.22 (W6) — pin the deterministic `REFERENCE_AI_SEED` instead of the
+   * v1.22 — pin the deterministic `REFERENCE_AI_SEED` instead of the
    * day-rotated production seed. Used ONLY by the cross-feature attribution /
    * diff baseline (and tests) that need byte-stable output; real users generate
    * with a day-rotated seed so weekly / monthly narratives vary run-to-run.
@@ -359,7 +359,7 @@ export async function generatePeriodNarrative(
     userPrompt: buildNarrativeUserPrompt(context, bodyLocale),
     temperature: AI_BUDGETS.narrative.temperature,
     maxTokens: AI_BUDGETS.narrative.maxTokens,
-    // v1.18.7 / v1.22 (W6) — the reference/diff path pins the deterministic
+    // v1.18.7 / v1.22 — the reference/diff path pins the deterministic
     // seed (byte-stable for attribution); real users get a day-rotated seed so
     // the weekly / monthly narrative varies run-to-run instead of reading
     // near-identical every time (Root cause D — the fixed seed in prod).
@@ -445,7 +445,7 @@ export async function generatePeriodNarrative(
     return { status: "failed", reason: "empty" };
   }
 
-  // v1.18.10 (HIGH-3) — grounding gate on the AI prose, matching the rejecting
+  // v1.18.10 — grounding gate on the AI prose, matching the rejecting
   // gate Comprehensive Insights already has. Flag causal phrasing and any
   // number absent from the context; on a trip, retry ONCE with a corrective
   // suffix, then fall back to writing NOTHING (last good row stays) rather than

@@ -133,7 +133,7 @@ export function getMetricArchetypeUserPrompt(
    */
   assessmentContextBlock?: string,
   /**
-   * v1.27.13 (Welle J) — the guideline interpretation block (band table +
+   * v1.27.13 — the guideline interpretation block (band table +
    * server-computed position) for metrics the knowledge base covers. Absent
    * for metrics with no guideline band — the prompt then stays personal-
    * relative, exactly as before.

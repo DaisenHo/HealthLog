@@ -1,5 +1,5 @@
 /**
- * S11 — intraday pulse shape + the elevated-at-rest ("tension") window.
+ * Intraday pulse shape + the elevated-at-rest ("tension") window.
  *
  * Two deterministic, IO-free computations that reveal the SHAPE of a single
  * day's heart rate and, cautiously, whether a stretch of it looks like tension

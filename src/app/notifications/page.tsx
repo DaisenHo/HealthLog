@@ -109,7 +109,7 @@ export default function NotificationsPage() {
       (p) => p.channelId === channelId && p.eventType === eventType,
     );
     if (pref) return pref.enabled;
-    // v1.4.25 W16c — per-event default. Most events stay opt-out
+    // v1.4.25 — per-event default. Most events stay opt-out
     // (no row = ON); PERSONAL_RECORD flips to opt-in (no row = OFF)
     // so a backfill doesn't fire hundreds of pushes on first sync.
     return EVENT_DEFAULT_ENABLED[eventType as EventType] ?? true;

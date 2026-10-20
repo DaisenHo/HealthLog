@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B5e — daily feedback aggregator.
+ * v1.4.16 — daily feedback aggregator.
  *
  * Runs once a day (04:00 Europe/Berlin via the pg-boss schedule
  * registered in `reminder-worker.ts`). Aggregates the last 30 days
@@ -36,7 +36,7 @@ export interface FeedbackBucket {
   /** Fraction in [0..1], rounded to 2 decimals. Always 0 when total=0. */
   helpfulRate: number;
   /**
-   * v1.4.23 H7 — surface origin so the admin dashboard can group
+   * v1.4.23 — surface origin so the admin dashboard can group
    * recommendation rows separately from Coach assistant-message rows
    * (the existing buckets blended both before this field landed).
    */
@@ -44,7 +44,7 @@ export interface FeedbackBucket {
 }
 
 /**
- * v1.4.23 H7 — slim view onto the Coach-only rows so the admin
+ * v1.4.23 — slim view onto the Coach-only rows so the admin
  * coach-feedback dashboard can render the first-week aggregate without
  * re-deriving the slice from the recommendation buckets.
  */
@@ -65,7 +65,7 @@ export interface FeedbackAggregationSummary {
   windowDays: number;
   buckets: FeedbackBucket[];
   /**
-   * v1.4.23 H7 — Coach assistant-message buckets sliced by
+   * v1.4.23 — Coach assistant-message buckets sliced by
    * (promptVersion, tone, verbosity). Empty array when the
    * aggregation window has no Coach feedback rows.
    */
@@ -79,7 +79,7 @@ interface MinimalFeedbackRow {
   promptVersion: string;
   helpful: boolean;
   /**
-   * v1.4.23 H7 — present on every row from the new schema. Defaults to
+   * v1.4.23 — present on every row from the new schema. Defaults to
    * "recommendation" for legacy rows so the bucketing still works
    * during the upgrade window when the migration has run but the route
    * hasn't started writing the field yet.
@@ -151,7 +151,7 @@ export function buildFeedbackBuckets(
 }
 
 /**
- * v1.4.23 H7 — derive the Coach-only bucket view from the unified
+ * v1.4.23 — derive the Coach-only bucket view from the unified
  * recommendation feedback rows. The Coach route writes the user's
  * active prefs into `metricSourceType` as
  * `coach:tone=<x>:verbosity=<y>`; this helper parses that back out so

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — per-row side-effect operations.
+ * v1.4.25 — per-row side-effect operations.
  *
  *   DELETE /api/medications/[id]/side-effects/[logId]
  *     - hard delete; the row is user-owned, non-clinical, and the

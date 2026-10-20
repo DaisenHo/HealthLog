@@ -85,7 +85,7 @@ export const insightsKeys = {
   insightsEcgDetail: (id: string, full: boolean) =>
     ["insights", "ecg", id, full ? "full" : "overview"] as const,
   /**
-   * S11 — the intraday pulse / tension layer (`/api/insights/pulse/intraday`).
+   * The intraday pulse / tension layer (`/api/insights/pulse/intraday`).
    * Keyed by the viewed local day so each day's 10-minute-mean shape caches
    * independently and yesterday's curve never poisons today's. Under the
    * `["insights"]` prefix so a fresh PULSE write busts it via the standard
@@ -135,7 +135,7 @@ export const insightsKeys = {
   insightsCorrelations: () => ["insights", "correlations"] as const,
 
   /**
-   * v1.4.41 W-FRONTEND-FACTORY — Settings → AI surfaces (provider chain,
+   * v1.4.41 — Settings → AI surfaces (provider chain,
    * insights settings, user provider preference) and the targets editor
    * all read these endpoints; centralising the keys keeps invalidation
    * symmetrical with the user-thresholds + auth surfaces.
@@ -160,7 +160,7 @@ export const insightsKeys = {
   insightsLayout: () => ["user", "insightsLayout"] as const,
 
   /**
-   * v1.11.4 item J — bounded 30-day daily-aggregate read backing the
+   * v1.11.4 — bounded 30-day daily-aggregate read backing the
    * Insights Trends-row deterministic caption (`trend-descriptor.ts`).
    * Keyed by the comma-joined measurement type set so each card's slot
    * caches its own small window (≤ 30 rollup rows). Distinct from
@@ -173,7 +173,7 @@ export const insightsKeys = {
   insightsTrendSeries: (types: string) => ["trend-series", types] as const,
 
   /**
-   * v1.21.2 (A1) — per-metric "Coach read" strip
+   * v1.21.2 — per-metric "Coach read" strip
    * (`/api/insights/coach-read?metric=<MeasurementType>`). One generic route
    * backs every metric sub-page, so the key is parameterised by the
    * MeasurementType. Pure compute over the baseline + correlation engines —

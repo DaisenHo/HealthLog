@@ -1,7 +1,7 @@
 /**
  * Export utilities — CSV, JSON, and ZIP generation.
  *
- * v1.4.25 W7 — per-user timezone. Timestamps were emitted with
+ * v1.4.25 — per-user timezone. Timestamps were emitted with
  * `.toISOString()` (UTC `Z` suffix), which Excel / LibreOffice
  * silently render in the viewer's local zone — issue #167. The
  * helpers now accept a `userTz` argument and write

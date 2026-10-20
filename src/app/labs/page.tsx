@@ -141,7 +141,7 @@ export default function LabsPage() {
         description={t("labs.subtitle")}
         actions={
           <>
-            {/* v1.18.6 (MOD-01) — the wrench is the module's customize entry
+            {/* v1.18.6 — the wrench is the module's customize entry
                 point, left of the primary Add and linking to the Labs settings
                 page (view, sort order, biomarker CRUD + reorder). Mirrors the
                 medication page header's wrench glyph + slot + 44px tap floor. */}
@@ -235,7 +235,7 @@ export default function LabsPage() {
               queryKey: queryKeys.labResults(),
             });
           }}
-          // v1.30.1 H3 — "Save & add another" keeps the sheet open; the
+          // v1.30.1 — "Save & add another" keeps the sheet open; the
           // form clears the reading itself, this callback just refreshes
           // the list underneath so the just-saved row is there once the
           // user is done and closes the sheet.

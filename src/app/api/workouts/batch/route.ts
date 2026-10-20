@@ -97,14 +97,14 @@ import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
 import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
 
-// v1.4.25 W16c — push-suppression threshold for workout PRs. A batch
+// v1.4.25 — push-suppression threshold for workout PRs. A batch
 // larger than this fires the detection job with `silent: true` so a
 // multi-year HKWorkout backfill doesn't spam the user with hundreds of
 // pushes. Matches the measurements-batch threshold so behaviour stays
 // uniform across both ingest paths.
 const PR_DETECTION_SILENT_THRESHOLD = 50;
 
-// v1.4.25 W10 reconcile (security H-2 parity): cap batch ingest at 60
+// v1.4.25 (security H-2 parity): cap batch ingest at 60
 // batches per user per minute. Healthy iOS sync drains its HealthKit
 // observer queue in well under one batch per minute (the observer
 // pattern coalesces); 60/min × 100 workouts/batch = 6 000 workouts/
@@ -246,7 +246,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // its rows is resolved from the credential below rather than from the body.
   const scoped = isScopedCredential(auth);
 
-  // v1.4.43 W9 — resolve the per-user source-priority blob once at
+  // v1.4.43 — resolve the per-user source-priority blob once at
   // the start of the handler so the write-time canonical-row picker
   // walks the SAME ladder the read-time picker walks. Without this
   // lookup a user who customised Settings → Sources (e.g. MANUAL >
@@ -283,7 +283,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     }
   }
 
-  // v1.4.25 W10 reconcile (security H-2 parity): per-user rate limit.
+  // v1.4.25 (security H-2 parity): per-user rate limit.
   // Without it, a leaked wildcard iOS token can sustain unbounded
   // writes (100 workouts/batch × N batches/sec) and degrade the
   // database for every other user on the host. 60 batches/min/user is
@@ -534,7 +534,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const overwrittenIdByIndex = new Map<number, string>();
 
   if (survivors.length > 0) {
-    // v1.4.42 W5 — only the write-time dedup survivors are probed
+    // v1.4.42 — only the write-time dedup survivors are probed
     // against existing rows; the dropped twins already carry a
     // `duplicate` status and never reach the DB.
     const dedupCandidates = survivors
@@ -871,7 +871,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.25 W16c — kick off PR detection for this user. Suppress push
+  // v1.4.25 — kick off PR detection for this user. Suppress push
   // notifications for historical-backfill batches so a multi-year
   // HKWorkout import doesn't fire hundreds of pushes during initial
   // sync. The detector also scans Measurement history on the same
@@ -906,7 +906,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // v1.4.34 — bust per-user analytics + achievements + workouts
   // caches when at least one row landed. Workouts ride on the
   // measurements bucket because achievements / analytics also touch
   // workout-derived metrics.

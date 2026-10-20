@@ -1,5 +1,5 @@
 /**
- * v1.43 (#1107 follow-up) — the admin pulse day-mean dry run and apply step.
+ * v1.43 (#1107) — the admin pulse day-mean dry run and apply step.
  *
  * The status shape is the admin console's own and stays out of the published
  * API description: the admin routes are not part of the public contract.

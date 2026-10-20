@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — side-effect API route tests.
+ * v1.4.25 — side-effect API route tests.
  *
  * Mirrors the inventory route test fixture pattern: every external
  * dependency is mocked at module boundaries (Prisma, session, audit,

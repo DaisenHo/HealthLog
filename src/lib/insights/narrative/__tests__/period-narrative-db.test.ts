@@ -1,5 +1,5 @@
 /**
- * v1.30.3 (QA F2/F3) — `buildPeriodNarrativeContext` (the DB wrapper) must:
+ * v1.30.3 — `buildPeriodNarrativeContext` (the DB wrapper) must:
  *   - order its measurement read DESC + cap, resorting ASC before folding,
  *     so a dense account's cap falls on the OLDEST rows and never drops
  *     the CURRENT period (F2 — the asc+take(20000) cap used to drop the

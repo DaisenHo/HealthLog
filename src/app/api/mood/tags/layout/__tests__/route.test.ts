@@ -1,5 +1,5 @@
 /**
- * v1.32.22 (M2) — `PUT /api/mood/tags/layout` optimistic concurrency.
+ * v1.32.22 — `PUT /api/mood/tags/layout` optimistic concurrency.
  *
  * The two manage cards write DIFFERENT fields of the same blob (group order
  * vs placements) from the same page; a stale merge would resurrect the other

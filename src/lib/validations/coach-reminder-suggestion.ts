@@ -1,5 +1,5 @@
 /**
- * v1.18.1 (Workstream C) — request body for the Coach cadence-suggestion
+ * v1.18.1 — request body for the Coach cadence-suggestion
  * action endpoint (`POST /api/coach/reminder-suggestions`).
  *
  * The client sends ONLY the cadence id and the action it took; the server

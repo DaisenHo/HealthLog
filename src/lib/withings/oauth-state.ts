@@ -1,5 +1,5 @@
 /**
- * v1.4.47 W6 — shared constants + mint helper for the Withings OAuth
+ * v1.4.47 — shared constants + mint helper for the Withings OAuth
  * state nonce ledger.
  *
  * The legacy implementation (v1.4.42-) built the state as

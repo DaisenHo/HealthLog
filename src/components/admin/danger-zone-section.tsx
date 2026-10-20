@@ -87,7 +87,7 @@ export function DangerZoneSection() {
   });
 
   return (
-    // v1.18.10 (W7) — the card SURFACE is neutral like every other admin /
+    // v1.18.10 — the card SURFACE is neutral like every other admin /
     // settings section (`SettingsCard`: bg-card + border-border): a red card
     // edge reads as alarming, not premium. The danger signal lives ONLY in
     // the destructive delete button + its typed-confirmation dialog, which

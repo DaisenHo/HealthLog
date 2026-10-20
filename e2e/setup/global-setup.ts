@@ -585,7 +585,7 @@ export const SEAM_BANNERS_STORAGE_STATE_PATH = resolve(
 );
 
 /**
- * v1.39 (C2) — the setup flow's own accounts, one per journey.
+ * v1.39 — the setup flow's own accounts, one per journey.
  *
  * Each journey walks the questions from the welcome screen to the dashboard
  * and asserts what the walk wrote: the module map, the tile order, the
@@ -1550,7 +1550,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // can reuse them via `test.use({ storageState })`. This is the documented
     // Playwright pattern (`docs/auth.md`) and the only way to avoid the
     // per-spec login + rate-limit dance.
-    // v1.39 (C2) — the setup flow's accounts. `onboarding_completed_at` NULL
+    // v1.39 — the setup flow's accounts. `onboarding_completed_at` NULL
     // is the whole point: it is what lands them on `/onboarding`. The tour
     // flag stays true for the reason every other fixture sets it. Whatever a
     // previous run wrote — the answers row, the module map, the seeded
@@ -1693,7 +1693,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,
       [E2E_GUARDIAN.username, now],
     );
-    // v1.39 (C2) — the setup flow's jars, one per journey and one per sweep.
+    // v1.39 — the setup flow's jars, one per journey and one per sweep.
     // The child journey's factor is stamped after its capture, for the reason
     // the guardian's is: the password-only capture cannot pass a TOTP login.
     await capture(E2E_SETUP_BP, SETUP_BP_STORAGE_STATE_PATH);

@@ -43,7 +43,7 @@ import { RecordScopeHydrationGate } from "./record-scope-hydration-gate";
 import { SidebarNav } from "./sidebar-nav";
 import { TopBar } from "./top-bar";
 
-// v1.4.27 MB6 — `/about` joins the public-path list so the GeoLite2
+// v1.4.27 — `/about` joins the public-path list so the GeoLite2
 // CC BY-SA 4.0 attribution stays reachable for unauthenticated
 // visitors. The `/about` route is already registered in `proxy.ts`
 // PUBLIC_PATHS; this constant gates the client-side auth shell, and
@@ -100,7 +100,7 @@ export function AuthShell({
   // squash a 3000-word policy into a "login card" layout, so we let it
   // render edge-to-edge while still resolving as a public page for the
   // auth gate above.
-  // v1.4.27 MB6 — `/about` follows the same shape (own header, own
+  // v1.4.27 — `/about` follows the same shape (own header, own
   // footer, full-width body), so it joins the standalone list.
   // v1.11.0 — the clinician view (`/c/*`) renders edge-to-edge with its own
   // standalone chrome and no app shell, like the legal pages.
@@ -265,7 +265,7 @@ export function AuthShell({
     }
   }, [isLoading, isAuthenticated, isAdminPage, user?.role, router]);
 
-  // v1.4.22 C4 — onboarding redirect moved to proxy.ts so it lands on
+  // v1.4.22 — onboarding redirect moved to proxy.ts so it lands on
   // the first server response instead of post-hydration. The proxy
   // reads the `hl_onboarding` cookie (mirrored from the DB by the auth
   // routes) and 307s to /onboarding before this shell ever paints. The
@@ -372,7 +372,7 @@ export function AuthShell({
 
   // Authenticated — full app shell.
   //
-  // v1.4.34 IW-B — the Coach launch provider lives here (not inside
+  // v1.4.34 — the Coach launch provider lives here (not inside
   // `app/insights/layout.tsx` anymore) so every authenticated route can
   // call `askCoach()` from the same context. Pre-hoist the drawer was
   // only reachable from `/insights/**`; the dashboard hero CTA now opens
@@ -442,7 +442,7 @@ export function AuthShell({
       */}
       <div className="shell-safe-area flex h-dvh flex-col">
         {/*
-          v1.4.43 QoL (M5) — `<OfflineBanner>` paints only when
+          v1.4.43 — `<OfflineBanner>` paints only when
           `navigator.onLine === false`. Sits above the maintainership
           banner + top bar so the connection-status hint is always
           the first chrome line a user sees in the offline branch.
@@ -505,7 +505,7 @@ export function AuthShell({
               )}
             >
               {/*
-              v1.4.33 IW9 — container normalised on `max-w-screen-xl`
+              v1.4.33 — container normalised on `max-w-screen-xl`
               (1280 px) so dashboard / settings / admin all hit the
               same content frame. Pre-v1.4.33 the dashboard
               shell capped at `max-w-[76.8rem]` (1228 px) while the

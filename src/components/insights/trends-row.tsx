@@ -50,7 +50,7 @@ import { useUnitDisplay } from "@/hooks/use-unit-display";
  * is null, `<TrendAnnotation>`'s empty state hints at the gap without
  * breaking the row's rhythm.
  *
- * v1.8.6 W8 — every card carries a caption. Additive metrics (the
+ * v1.8.6 — every card carries a caption. Additive metrics (the
  * briefing-driven slots beyond the legacy triple) carry no advisor
  * annotation, so they fall back to a standard one-line description
  * (`config.captionKey`). Before this every additive card painted the
@@ -100,7 +100,7 @@ interface TrendsRowProps {
     mood?: TrendAnnotationConfidenceBand;
   };
   /**
-   * v1.4.36 W2 T3 — advisor query / mutation in flight. When true,
+   * v1.4.36 — advisor query / mutation in flight. When true,
    * every per-metric annotation slot paints a pending shimmer instead
    * of the "Mehr Daten nötig" empty hint. Resolves the recurring
    * complaint where the empty hint flashed across all three metrics
@@ -168,7 +168,7 @@ export function TrendsRow({
     hiddenMetrics,
   });
 
-  // v1.4.36 W2 T3 — derive the tri-state status per metric from the
+  // v1.4.36 — derive the tri-state status per metric from the
   // advisor's loading flag + the annotation presence. Pending wins
   // over needs_data so a mid-generation regenerate doesn't flash the
   // empty hint between the spinner and the new prose.
@@ -180,7 +180,7 @@ export function TrendsRow({
   const annotationFor = (key: TrendAnnotationKey): string | null =>
     annotations?.[key] ?? null;
 
-  // v1.11.4 item J — three-tier caption precedence for the legacy triple
+  // v1.11.4 — three-tier caption precedence for the legacy triple
   // (the only slots that carry an advisor annotation):
   //   1. advisor in flight        → `<TrendAnnotation status="pending">`
   //                                  shimmer (loading flag).
@@ -230,23 +230,23 @@ export function TrendsRow({
         title={t("insights.trendsRow.title")}
         subtitle={t("insights.trendsRow.subtitle")}
       />
-      {/* v1.4.22 A4 — equal-height cards. The annotation prose
+      {/* v1.4.22 — equal-height cards. The annotation prose
           below each chart varies in length, which used to leave the
           three cards on visibly different baselines. Each card is now
           a flex column with `min-h-[300px]` so the chart anchors to
           the top and the annotation grows downward into a shared
           minimum height.
-          v1.4.25 W3 — strengthen the equal-height contract with
+          v1.4.25 — strengthen the equal-height contract with
           `md:auto-rows-fr` + `md:items-stretch` on the grid and
           `h-full` on each card so the tallest annotation still pins
           every row member to a single baseline.
 
-          v1.4.27 MB7 / CF-71 — drop the unconditional `min-h-[300px]`
+          v1.4.27 — drop the unconditional `min-h-[300px]`
           floor to `md:min-h-[300px]` so mobile single-column doesn't
           eat dead space below a short chart; the floor stays on `md+`
           to preserve the equal-height baseline across the row.
 
-          v1.4.28 R3c-Insights (FB-K1/K2) — three-slot template.
+          v1.4.28 — three-slot template.
           `auto-rows-fr` covers every viewport, not just `md+`, so the
           mobile single-column path picks up the same row contract
           when the user expands the strip side-by-side via the
@@ -268,7 +268,7 @@ export function TrendsRow({
               key={config.metric}
               data-slot="trends-row-card"
               data-metric={config.metric}
-              // v1.15.12 D1 — drop the `md:min-h-[300px]` floor. The chart
+              // v1.15.12 — drop the `md:min-h-[300px]` floor. The chart
               // slot is a fixed 180 px and the caption is `line-clamp-3`, so a
               // card's natural height tops out around 270 px; the 300 px floor
               // padded ~30 px of dead space below every caption, which read as
@@ -279,12 +279,12 @@ export function TrendsRow({
               // the floor was redundant. Cards now size to content.
               className="flex h-full flex-col gap-2"
             >
-              {/* v1.4.28 R3c-Insights — fixed chart slot. The mini
+              {/* v1.4.28 — fixed chart slot. The mini
                   chart paints its own band; this wrapper pins the
                   total chart-envelope height so every tile lines up on
                   a single baseline regardless of the chart kind.
 
-                  v1.11.4 item I — the slot is now the hard bound for
+                  v1.11.4 — the slot is now the hard bound for
                   every chart kind. Two changes close the mood-card
                   overflow (its categorical y-axis + date x-axis bled
                   the tick labels out the bottom, overlapping the
@@ -319,10 +319,10 @@ export function TrendsRow({
               {config.annotationKey ? (
                 renderLegacyCaption(config)
               ) : (
-                // v1.8.6 W8 — additive metrics carry no advisor
+                // v1.8.6 — additive metrics carry no advisor
                 // annotation. Paint the metric's standard one-line
                 // description so the card is never caption-less.
-                // v1.8.7 W-E — render that description through the same
+                // v1.8.7 — render that description through the same
                 // `<TrendCaptionCard>` shell the advisor caption uses, so
                 // the fallback caption shares the bordered card, Sparkles
                 // affordance, and `text-foreground` typography rather than

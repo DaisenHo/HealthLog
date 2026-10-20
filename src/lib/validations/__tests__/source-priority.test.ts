@@ -14,8 +14,8 @@ import {
 import { measurementSourceEnum } from "../measurement";
 
 /**
- * v1.4.25 W5e — per-user, per-metric-class source-priority foundation.
- * v1.4.25 W8c — two-axis extension: `metricPriority` + `deviceTypePriority`.
+ * v1.4.25 — per-user, per-metric-class source-priority foundation.
+ * v1.4.25 — two-axis extension: `metricPriority` + `deviceTypePriority`.
  */
 describe("sourcePrioritySchema", () => {
   it("accepts an empty object (every key is optional)", () => {

@@ -18,7 +18,7 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { MeasurementType } from "@/generated/prisma/client";
 
-/** v1.4.38 W-F — the single most recent reading per measurement
+/** v1.4.38 — the single most recent reading per measurement
  *  type, irrespective of age. One row per metric the user has ever
  *  touched; replaces the legacy unbounded `prisma.measurement.findMany`.
  *
@@ -37,12 +37,12 @@ export interface LatestEverRow {
   measured_at: Date;
 }
 
-/** v1.4.38 W-F — per-day measurement_rollup bucket feeding the dashboard
+/** v1.4.38 — per-day measurement_rollup bucket feeding the dashboard
  *  sparkline. At most `sparkDays` buckets per metric × N metrics —
  *  bounded by `sparkDays * |measurementTypes|` rather than the raw row
  *  count.
  *
- *  v1.4.39 W-SUM — `sum_value` rides along so the cumulative tile
+ *  v1.4.39 — `sum_value` rides along so the cumulative tile
  *  (ACTIVITY_STEPS) renders the daily SUM rather than the per-bucket
  *  MEAN. Spot metrics ignore the column; cumulative tiles fall back to
  *  `mean * count` when the legacy NULL hits (boot-backfill convergence

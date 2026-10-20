@@ -130,7 +130,7 @@ export interface BiomarkerBackupEntry {
   /** The catalogue key the marker's name and unit resolve to. */
   analyteKey?: string | null;
   /**
-   * v1.43 (D1223) — the other spellings the marker answers to, with where
+   * v1.43 — the other spellings the marker answers to, with where
    * each came from. Absent on files written before them.
    */
   aliases?: BiomarkerAliasBackupEntry[];
@@ -147,7 +147,7 @@ export interface BiomarkerAliasBackupEntry {
 }
 
 /**
- * v1.43 (D1223) — one marker folded into another. The target travels by id
+ * v1.43 — one marker folded into another. The target travels by id
  * in a disaster-recovery file and by name in both, the way a lab result's
  * marker does; the source is gone, so its id and name are the record.
  */

@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B2 — write endpoint for the user's AI provider chain.
+ * v1.4.16 — write endpoint for the user's AI provider chain.
  *
  * The Settings → AI section drives reorder + enable/disable through a
  * single dropdown + arrow controls; the persisted shape lives in

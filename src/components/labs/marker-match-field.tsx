@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.43 (D1223) — which marker a reviewed lab value goes to.
+ * v1.43 — which marker a reviewed lab value goes to.
  *
  * Shared by the scan review and the document review. The server resolves a
  * printed name to one of the account's markers (its name, an alias, or a

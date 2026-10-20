@@ -131,7 +131,7 @@ export const GET = apiHandler(
       // Category enrichment is optional
     }
 
-    // v1.7.0 SB-SCHED-3 — server-computed next due instant. Rolling
+    // v1.7.0 — server-computed next due instant. Rolling
     // cadences re-anchor on the latest non-skipped intake, so fetch it
     // once (no-op for calendar cadences but cheap + keeps the value
     // correct for rolling injections).
@@ -338,7 +338,7 @@ export const PUT = apiHandler(
     );
 
     const { id } = await params;
-    // v1.5.5 C-E3-3 — route ownership check through the shared helper
+    // v1.5.5 — route ownership check through the shared helper
     // so the 404 leak shape stays identical across every
     // `[id]/**` handler. The PUT branch still needs `existing.active`
     // for the pausedAt-derivation step below, so re-read the narrow
@@ -379,7 +379,7 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateMedicationSchema.safeParse(body);
     if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422.
+      // v1.4.43 — multi-issue 422.
       return returnAllZodIssues(parsed.error, 422);
     }
 
@@ -752,7 +752,7 @@ export const PUT = apiHandler(
         where: tombstoneWhere,
         select: { scheduledFor: true },
       });
-      // C7 — the count and the day range of the anchors that went.
+      // The count and the day range of the anchors that went.
       tombstonedSlotCount = tombstoned.length;
       for (const row of tombstoned) {
         if (tombstonedFrom === null || row.scheduledFor < tombstonedFrom) {
@@ -1033,7 +1033,7 @@ export const PUT = apiHandler(
           include: { schedules: true },
         });
 
-        // v1.25 H-MED1 — durable pause intervals. The `pausedAt` column is a
+        // v1.25 — durable pause intervals. The `pausedAt` column is a
         // single live marker that resume clears, so the paused window is
         // irrecoverable once resumed and every paused day's slot collapses to
         // "missed" in the compliance denominator. Mirror the live transition
@@ -1205,7 +1205,7 @@ export const PUT = apiHandler(
       },
     });
 
-    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // v1.4.34 — bust per-user medications + compliance + achievement
     // caches so the next read reflects the schedule change.
     invalidateUserMedications(user.id, { evict: true });
 
@@ -1234,7 +1234,7 @@ export const DELETE = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    // v1.5.5 C-E3-3 — ownership via the shared helper. The DELETE
+    // v1.5.5 — ownership via the shared helper. The DELETE
     // branch needs the medication name for the audit-row detail; pull
     // it after the guard passes.
     const guard = await assertMedicationOwnership(id, user.id);
@@ -1279,7 +1279,7 @@ export const DELETE = apiHandler(
       },
     });
 
-    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // v1.4.34 — bust per-user medications + compliance + achievement
     // caches so the next read reflects the deletion.
     invalidateUserMedications(user.id, { evict: true });
 

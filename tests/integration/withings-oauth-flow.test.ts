@@ -1,5 +1,5 @@
 /**
- * v1.4.47 W6 — end-to-end coverage for the new Withings OAuth state
+ * v1.4.47 — end-to-end coverage for the new Withings OAuth state
  * ledger.
  *
  * The audit's L-1 recommendation was a fully-random nonce backed by a

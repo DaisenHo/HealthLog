@@ -71,13 +71,13 @@ function rangeToSince(range: DateRangePreset): string | undefined {
 export function LoginOverviewSection() {
   const { t } = useTranslations();
   const { user } = useAuth();
-  // v1.4.25 W7 — every CSV-emitted timestamp uses the admin's display
+  // v1.4.25 — every CSV-emitted timestamp uses the admin's display
   // timezone so the resulting `2026-05-11T11:05:00+02:00` cell stays
   // legible after Excel/LibreOffice strip the `Z` suffix from the
   // legacy UTC export.
   const userTz = user?.timezone ?? DEFAULT_TIMEZONE;
 
-  // v1.4.25 W8b — the section used to wrap its body in a
+  // v1.4.25 — the section used to wrap its body in a
   // collapse/expand toggle. Since v1.5 phase-4b moved this to a
   // dedicated `/admin/login-overview` route (the only thing on the
   // page), the toggle was pure clutter: visiting the page already
@@ -88,7 +88,7 @@ export function LoginOverviewSection() {
   // Quick-filter pill (kept from the v1.4.x UI for one-tap "show failed").
   const [filter, setFilter] = useState<"all" | "failed">("all");
 
-  // v1.4.16 phase B4 — deeper filter/pagination/export.
+  // v1.4.16 — deeper filter/pagination/export.
   const [actor, setActor] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("");
   const [target, setTarget] = useState("");
@@ -183,7 +183,7 @@ export function LoginOverviewSection() {
       user: t("admin.userColumn"),
       ip: t("admin.ip"),
       location: t("admin.location"),
-      // v1.4.27 B3 — `admin.carrier` is shipped by bucket B6. The
+      // v1.4.27 — `admin.carrier` is shipped by bucket B6. The
       // `t()` helper falls back to the raw key string when the
       // translation row hasn't landed yet, so the CSV stays valid
       // through the staggered B3 → B6 release.
@@ -404,7 +404,7 @@ export function LoginOverviewSection() {
             }
           />
         ) : (
-          // v1.4.27 MB5 — the audit table itself stays in an
+          // v1.4.27 — the audit table itself stays in an
           // `overflow-x-auto` scroll container so wide rows can pan
           // horizontally on phones, but the pagination + summary line
           // moved out into a sibling `<div>` below so the prev/next
@@ -432,7 +432,7 @@ export function LoginOverviewSection() {
                       {t("admin.ip")}
                     </th>
                     {/*
-                      v1.4.25 W8b — Standort column. Previously rendered
+                      v1.4.25 — Standort column. Previously rendered
                       `text-right`, which on wide audit tables let the
                       `Berlin, DE` label drift to the table edge and
                       blend into the timestamp gutter. Left-aligning it

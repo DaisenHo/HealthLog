@@ -4,7 +4,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { CorrelationResult } from "@/lib/insights/correlations";
 
 /**
- * v1.4.20 phase B3 — `<CorrelationCard>` rendering.
+ * v1.4.20 — `<CorrelationCard>` rendering.
  *
  * Tests cover:
  *   1. OK status renders title + interpretation + source chip + disabled CTA.

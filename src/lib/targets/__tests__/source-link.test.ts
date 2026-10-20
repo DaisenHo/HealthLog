@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { getTargetSourceLink } from "../source-link";
 
 /**
- * v1.8.5 W5 — `getTargetSourceLink` was extracted from the Targets page
+ * v1.8.5 — `getTargetSourceLink` was extracted from the Targets page
  * so both the Targets card and the Insights reference panel resolve the
  * identical guideline-citation URL. These tests pin the type → URL map
  * and the pulse source-substring branching.

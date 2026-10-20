@@ -153,14 +153,14 @@ export interface DataSummary {
    */
   anomalyCount?: number;
   /**
-   * v1.4.16 phase B8 — average value over the 30-day window starting
+   * v1.4.16 — average value over the 30-day window starting
    * 30 days before today, i.e. the "last month" prior period the
    * dashboard tile delta callout compares against. Null when the
    * window has no data.
    */
   avg30LastMonth?: number | null;
   /**
-   * v1.4.16 phase B8 — average value over the 30-day window starting
+   * v1.4.16 — average value over the 30-day window starting
    * 365 days before today (one calendar year ago). Null when the
    * window has no data.
    */
@@ -191,7 +191,7 @@ export function summarize(data: DataPoint[]): DataSummary {
 
   const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
   const values = sorted.map((p) => p.value);
-  // v1.4.33 P0 — single-pass fold for sum/min/max replaces the previous
+  // v1.4.33 — single-pass fold for sum/min/max replaces the previous
   // `Math.min(...values)` / `Math.max(...values)` spread. V8 caps
   // function arity at ~125k-130k; Apple-Health-synced PULSE series for
   // a multi-year power user routinely exceed that, and the spread
@@ -232,7 +232,7 @@ export function summarize(data: DataPoint[]): DataSummary {
   const last7 = sorted.filter((p) => now - p.date.getTime() < 7 * DAY);
   const last30 = sorted.filter((p) => now - p.date.getTime() < 30 * DAY);
 
-  // v1.4.16 phase B8 — prior-period 30-day means powering the tile
+  // v1.4.16 — prior-period 30-day means powering the tile
   // delta callout. The lastMonth window is days [30, 60) ago; the
   // lastYear window is days [365, 395) ago. Both align to the 30-day
   // shift the chart overlay uses so the tile delta and the chart

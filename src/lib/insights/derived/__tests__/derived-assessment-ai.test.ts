@@ -1,5 +1,5 @@
 /**
- * v1.30.3 (QA F5) — the derived-score AI warm layer must roll its cache over
+ * v1.30.3 — the derived-score AI warm layer must roll its cache over
  * at the USER's own midnight (not Berlin's) and label the prompt's date line
  * with the user's actual tz (not a hardcoded "(Europe/Berlin)").
  */

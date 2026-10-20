@@ -2,7 +2,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.27 MB6 — public surfaces.
+ * v1.4.27 — public surfaces.
  *
  * Three contracts under test, all reachable without a session:
  *

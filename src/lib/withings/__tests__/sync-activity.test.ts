@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b — Withings activity-sync unit tests.
+ * v1.4.25 — Withings activity-sync unit tests.
  *
  * Coverage focuses on the per-page response shape, field mapping, and
  * the writer's idempotency hook. The end-to-end DB path is covered by
@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => {
-  // v1.20.2 F3 — the write path batches: one `findMany` resolves the
+  // v1.20.2 — the write path batches: one `findMany` resolves the
   // overwrite-vs-insert decision for the whole sync, `createMany` lands
   // every fresh slot, and changed-value overwrites run inside a
   // `$transaction([...update])`. The mock `$transaction` awaits the array
@@ -174,7 +174,7 @@ describe("fetchWithingsActivity", () => {
 });
 
 /**
- * v1.20.2 F3 — helper: pull the flat `data[]` the batched `createMany`
+ * v1.20.2 — helper: pull the flat `data[]` the batched `createMany`
  * received (the writer always passes a single call with every fresh
  * slot). Returns `[]` when `createMany` never fired.
  */
@@ -198,7 +198,7 @@ describe("syncUserActivity — field mapping + idempotency", () => {
     const imported = await syncUserActivity("user-1");
 
     expect(imported).toBe(3);
-    // v1.20.2 F3 — one batched insert carrying all three metric rows.
+    // v1.20.2 — one batched insert carrying all three metric rows.
     expect(prisma.measurement.createMany).toHaveBeenCalledTimes(1);
 
     const types = createManyRows().map((r) => r.type as string);
@@ -580,7 +580,7 @@ describe("syncUserActivity — scope-skip guard (v1.4.26)", () => {
   });
 
   it("classifies a Withings 403 in the catch-block as reauth_required and STILL pages (defence-in-depth)", async () => {
-    // BL-P3-2 — the defence-in-depth 403 catch-block stays on
+    // The defence-in-depth 403 catch-block stays on
     // `recordSyncFailure` so a genuinely unexpected 403 (Withings
     // revokes scope between OAuth and the next sync without
     // invalidating the refresh token) still trips the 3-strike alert.

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W6c — per-section toggle integration tests.
+ * v1.4.25 — per-section toggle integration tests.
  *
  * Asserts the privacy-by-default contract for mood data: when the user
  * submits `sections.mood = false`, the generated PDF MUST NOT contain

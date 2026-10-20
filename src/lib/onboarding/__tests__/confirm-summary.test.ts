@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the confirm screen's list is the registry's derivation and
+ * v1.39 — the confirm screen's list is the registry's derivation and
  * nothing else.
  */
 import { describe, expect, it } from "vitest";

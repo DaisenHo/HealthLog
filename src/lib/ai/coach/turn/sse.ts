@@ -111,7 +111,7 @@ export async function emitReply(
   }
 
   for (const tok of tokeniseForStreaming(outcome.replyText)) {
-    // v1.18.10 (A-2) — stop tokenising the moment the client disconnects.
+    // v1.18.10 — stop tokenising the moment the client disconnects.
     if (emitter.aborted()) return;
     emitter.emit({ type: "token", token: tok });
     await flushTick();
@@ -123,11 +123,11 @@ export async function emitReply(
   for (const result of outcome.results) {
     emitter.emit({ type: "result", result });
   }
-  // v1.18.1 (Workstream C) — additive `suggestion` frame.
+  // v1.18.1 — additive `suggestion` frame.
   if (outcome.suggestion) {
     emitter.emit({ type: "suggestion", suggestion: outcome.suggestion });
   }
-  // v1.22 (F6) — additive `suggestedAction` frame.
+  // v1.22 — additive `suggestedAction` frame.
   if (outcome.action) {
     emitter.emit({
       type: "suggestedAction",

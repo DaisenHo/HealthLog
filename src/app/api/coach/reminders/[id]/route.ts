@@ -2,7 +2,7 @@
  * PATCH  /api/coach/reminders/[id] — confirm / update a reminder's lifecycle.
  * DELETE /api/coach/reminders/[id] — soft-delete one reminder.
  *
- * v1.22 (B2/B6) — the user-confirm + management surface for the Coach episodic
+ * v1.22 — the user-confirm + management surface for the Coach episodic
  * reminders. `status` confirms a `proposed` reminder (→ active), marks it
  * `done` / `dismissed`, or re-activates it; `when` re-schedules (snooze) via the
  * closed grammar. The body never carries the note text, so a client can never

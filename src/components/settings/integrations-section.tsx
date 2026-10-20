@@ -3,7 +3,7 @@
 /**
  * `<IntegrationsSection>` — Settings → Integrationen.
  *
- * v1.18.1 (D4) — the Connections content IS the Integrationen page: clicking
+ * v1.18.1 — the Connections content IS the Integrationen page: clicking
  * Integrationen shows the OAuth + device data sources (Withings / WHOOP /
  * Fitbit / Polar / Oura / Nightscout) directly, with no tab strip.
  *
@@ -20,7 +20,7 @@
  * `parseOAuthOutcome` / `oauthReasonKey` are re-exported from
  * `connections-panel.tsx` so existing unit-test imports keep resolving.
  *
- * 2026-07-17 UX/IA audit M7 — `<NutrientIntakeCard>` (v1.28) moved here from
+ * `<NutrientIntakeCard>` (v1.28) moved here from
  * Settings → Sources. It is a read-only sync inventory (what the Apple
  * Health nutrients opt-in has stored), not a which-connection-wins ranking —
  * "Source priority" describes the latter only. Matches the standing
@@ -53,7 +53,7 @@ export function IntegrationsSection({
 }) {
   const { t } = useTranslations();
 
-  // v1.18.6 (W9) — the visible page heading + subtitle come from the shared
+  // v1.18.6 — the visible page heading + subtitle come from the shared
   // `<SettingsSectionFrame>` in the route; the connections panel is the
   // primary surface, with the delivery-channels group sequenced below it.
   return (
@@ -70,7 +70,7 @@ export function IntegrationsSection({
         />
         <ConnectionsPanel callbackUrls={callbackUrls} />
 
-        {/* 2026-07-17 UX/IA audit M7 — the opt-in nutrients sync inventory
+        {/* The opt-in nutrients sync inventory
             (moved from Settings → Sources, where "source priority" only
             ever meant which-connection-wins ranking, not a read-only sync
             list). The card carries its own header + renders nothing while

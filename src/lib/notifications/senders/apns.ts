@@ -670,7 +670,7 @@ export async function sendViaApns(
         ? (["production", "sandbox"] as const)
         : (["sandbox", "production"] as const);
 
-    // SB-5 v1.4.40 — only MEDICATION_REMINDER opts in to Focus-bypass by
+    // v1.4.40 — only MEDICATION_REMINDER opts in to Focus-bypass by
     // default. The user explicitly asked the server to nudge them about a
     // dose; a missed dose is the textbook "time-sensitive" use case Apple
     // sanctions. Every other event-type (mood nudges, anomaly alerts,

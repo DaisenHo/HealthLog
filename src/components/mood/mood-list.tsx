@@ -169,7 +169,7 @@ function toDateTimeLocalValue(isoString: string): string {
 
 interface MoodListProps {
   /**
-   * v1.4.15 phase-C5: optional callback wired by the parent page so
+   * v1.4.15: optional callback wired by the parent page so
    * the empty-state's "Log your first mood" CTA opens the same dialog
    * the header button does. When undefined, the CTA hides instead of
    * rendering a no-op button.
@@ -285,7 +285,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
     });
   }
   const [editDeleteDialogOpen, setEditDeleteDialogOpen] = useState(false);
-  // v1.4.27 R4 RC2 — Sheet-branch sticky-pinned footer slot.
+  // v1.4.27 — Sheet-branch sticky-pinned footer slot.
   const editFormId = useId();
   const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(null);
 
@@ -719,7 +719,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
             onRetry={() => void refetch()}
           />
         ) : !data?.entries?.length ? (
-          // v1.4.15 phase-C5: replace bare-text empty rectangle with
+          // v1.4.15: replace bare-text empty rectangle with
           // EmptyState. Filter-aware copy splits "no mood entries yet"
           // (brand-new account) from "no entries match this filter".
           <EmptyState
@@ -1037,7 +1037,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
               })}
             </span>
             <div className="flex gap-1">
-              {/* v1.15.13 L2 — match the measurements list's 44px pagination
+              {/* v1.15.13 — match the measurements list's 44px pagination
                   target (was `size="sm"`, below the WCAG 2.5.5 floor). */}
               <Button
                 variant="ghost"
@@ -1114,7 +1114,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                 id="edit-mood-logged-at"
                 value={editMoodLoggedAt}
                 onChange={setEditMoodLoggedAt}
-                // v1.17 W1b — match the server bound: no future instant.
+                // v1.17 — match the server bound: no future instant.
                 max={toDateTimeLocalValue(new Date().toISOString())}
                 required
               />
@@ -1168,7 +1168,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                 that day's figures. */}
             <MoodLinkedDaySection linked={editLinked} />
 
-            {/* v1.8.5 (C1) — free-text note. */}
+            {/* v1.8.5 — free-text note. */}
             <div className="space-y-2">
               <Label htmlFor="edit-mood-note">
                 {t("mood.note")} ({t("common.optional")})

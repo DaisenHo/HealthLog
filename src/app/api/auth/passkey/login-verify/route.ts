@@ -72,7 +72,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   await ensureDbCompatibility();
 
-  // v1.4.43 W13 M-4 — tighter shared bucket on trust-chain misconfig.
+  // v1.4.43 — tighter shared bucket on trust-chain misconfig.
   const rl = await checkAuthSurfaceRateLimit(
     request,
     "auth:passkey-verify",
@@ -139,7 +139,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("User not found", 404);
   }
 
-  // v1.4.22 W5 reconcile (Sr-H1) — `createSession` anchors the
+  // v1.4.22 — `createSession` anchors the
   // `hl_onboarding` cookie itself; pass the user's onboarding state
   // through so the proxy short-circuits the redirect before
   // hydration.

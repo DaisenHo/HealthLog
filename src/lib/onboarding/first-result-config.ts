@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — what each first-result task needs to render, as data.
+ * v1.39 — what each first-result task needs to render, as data.
  *
  * The task itself is chosen by the step machine (`chooseFirstResultTask`);
  * this file says what a task's target maps to on the surfaces that already

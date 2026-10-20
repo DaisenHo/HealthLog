@@ -6,7 +6,7 @@ import { isMaintainedLocale, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.25 W9e — notice strip for AI-initial locales.
+ * v1.4.25 — notice strip for AI-initial locales.
  *
  * HealthLog ships German + English as maintainer-curated translations
  * (the maintainer owns both bodies). French, Spanish, Italian
@@ -34,7 +34,7 @@ import { useTranslations } from "@/lib/i18n/context";
  */
 
 const STORAGE_PREFIX = "healthlog-i18n-banner-dismissed:";
-// v1.4.26 P6-8 — `.github/ISSUE_TEMPLATE/translation.yml` now exists.
+// v1.4.26 — `.github/ISSUE_TEMPLATE/translation.yml` now exists.
 // GitHub matches the `?template=` query against the filename; the old
 // `.md` filename never resolved (the form file was missing), so the
 // link landed users on a blank issue body.

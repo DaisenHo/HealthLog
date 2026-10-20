@@ -19,7 +19,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    // v1.4.37 W2 — `ensureUserRollupsFresh` pokes `measurement.findFirst`
+    // v1.4.37 — `ensureUserRollupsFresh` pokes `measurement.findFirst`
     // for the newest-measurement watermark; mock both shapes.
     measurement: {
       findMany: vi.fn(),
@@ -38,7 +38,7 @@ vi.mock("@/lib/db", () => ({
     // v1.38 — the composition note reads the account's last stored score
     // day. Nothing stored in these fixtures, so no note is raised.
     healthScoreRecord: { findFirst: vi.fn().mockResolvedValue(null) },
-    // v1.4.33 C1 — slim summaries slice runs through `$queryRaw`. The
+    // v1.4.33 — slim summaries slice runs through `$queryRaw`. The
     // v1.4.36 per-type coverage probe and the v1.4.37 default-slice
     // probe also ride `$queryRaw`. Default to an empty coverage map so
     // the route falls back to the live aggregator branches and the
@@ -134,7 +134,7 @@ const SESSION_OK = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  // v1.4.34 IW-G — reset the analytics LRU between tests so each case
+  // v1.4.34 — reset the analytics LRU between tests so each case
   // observes a cold cache (otherwise tests sharing a userId would land
   // on the prior test's cached response).
   __resetAllCachesForTests();
@@ -169,7 +169,7 @@ beforeEach(() => {
     count: 0,
   } as never);
   vi.mocked(prisma.measurementRollup.upsert).mockResolvedValue({} as never);
-  // v1.4.37 W2 — `ensureUserRollupsFresh` reads `measurement.findFirst`;
+  // v1.4.37 — `ensureUserRollupsFresh` reads `measurement.findFirst`;
   // the per-type coverage probe + the rollup-recompute aggregator ride
   // `$queryRaw` / `$queryRawUnsafe`. Default to empty so the route
   // falls back to the live fast-path branches and the assertions stay
@@ -294,7 +294,7 @@ describe("GET /api/analytics", () => {
     expect("avg30LastMonth" in (body.data.summaries.WEIGHT ?? {})).toBe(true);
   });
 
-  // v1.4.33 C1 — slim summaries slice. The route branches on
+  // v1.4.33 — slim summaries slice. The route branches on
   // `?slice=summaries` BEFORE any chunked findMany; the two `$queryRaw`
   // passes carry the per-type DataSummary shape with the same
   // contract the dashboard tile strip reads.
@@ -344,7 +344,7 @@ describe("GET /api/analytics", () => {
       req,
     );
     expect(res.status).toBe(200);
-    // v1.4.34 IW-B — bfcache-friendly directive rides on the slim
+    // v1.4.34 — bfcache-friendly directive rides on the slim
     // slice too.
     expect(res.headers.get("Cache-Control")).toBe(
       "private, max-age=0, must-revalidate",
@@ -378,7 +378,7 @@ describe("GET /api/analytics", () => {
     expect(body.data.summaries.WEIGHT.slope30?.direction).toBe("down");
     // Slim slice never carries BMI — the consumer re-derives.
     expect(body.data.bmi).toBeNull();
-    // v1.4.34 IW-B — slim slice surfaces lastSeenByType too so the
+    // v1.4.34 — slim slice surfaces lastSeenByType too so the
     // tile-strip caption works regardless of which slice the client
     // read.
     expect(body.data.lastSeenByType.WEIGHT?.daysAgo).toBeGreaterThanOrEqual(4);
@@ -386,7 +386,7 @@ describe("GET /api/analytics", () => {
     expect(body.data.lastSeenByType.PULSE).toBeNull();
   });
 
-  // v1.18.0 B1 — the default slice serves the glucose-only surfaces
+  // v1.18.0 — the default slice serves the glucose-only surfaces
   // (per-context summaries + the TIR/GMI/eA1C clinical panel) only when
   // the `glucose` module is enabled. A disabled-glucose account nulls
   // both fields rather than 403-ing the whole core-metrics payload.

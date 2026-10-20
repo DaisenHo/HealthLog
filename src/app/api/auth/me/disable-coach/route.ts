@@ -1,5 +1,5 @@
 /**
- * v1.4.47 W3 — per-user Coach opt-out endpoint.
+ * v1.4.47 — per-user Coach opt-out endpoint.
  *
  *  GET    /api/auth/me/disable-coach  — current flag.
  *  PATCH  /api/auth/me/disable-coach  — body `{ disableCoach: boolean }`.

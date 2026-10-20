@@ -86,7 +86,7 @@ const MOOD_LEVELS = [
   { value: "LAUSIG", score: 1, labelKey: "mood.levelLausig" },
 ] as const;
 
-// v1.8.5 (C1) — note free-text limit. Mirrors the `maxLength` on the
+// v1.8.5 — note free-text limit. Mirrors the `maxLength` on the
 // textarea and the server-side Zod bound; surfaced as a character counter
 // so the truncation at the cap is no longer silent.
 const NOTE_MAX_LENGTH = 500;
@@ -95,7 +95,7 @@ interface MoodFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   /**
-   * v1.4.27 R4 RC2 — when the form is mounted inside a
+   * v1.4.27 — when the form is mounted inside a
    * `<ResponsiveSheet>` the caller can pass the sheet's footer slot
    * element here. The action-row (kebab + Cancel + Save) is portalled
    * into that slot so the bottom-sheet branch can sticky-pin it; the
@@ -144,7 +144,7 @@ export function MoodForm({
   const [tagsInput, setTagsInput] = useState("");
   // v1.8.5 — structured-tag keys picked from the taxonomy catalog.
   const [tagKeys, setTagKeys] = useState<string[]>([]);
-  // v1.8.5 (C1) — first-class free-text note. The model + API already
+  // v1.8.5 — first-class free-text note. The model + API already
   // accepted `note`; the web form was the only surface that couldn't
   // write it.
   const [note, setNote] = useState("");
@@ -188,11 +188,11 @@ export function MoodForm({
     );
   }
 
-  // v1.4.27 MB3 — error banner descriptor for the timestamp input.
+  // v1.4.27 — error banner descriptor for the timestamp input.
   const errorId = useId();
   const errorDescriptor = error ? errorId : undefined;
 
-  // v1.4.27 R4 RC2 — stable form id so the portalled Save button can
+  // v1.4.27 — stable form id so the portalled Save button can
   // associate with this `<form>` element via the HTML `form` attribute
   // even when DOM-mounted inside the `<ResponsiveSheet>` footer slot.
   const formId = useId();
@@ -417,7 +417,7 @@ export function MoodForm({
               id="mood-logged-at"
               value={moodLoggedAt}
               onChange={setMoodLoggedAt}
-              // v1.17 W1b — match the server bound: no future instant.
+              // v1.17 — match the server bound: no future instant.
               max={getDefaultMoodLoggedAtValue()}
               required
               aria-required="true"
@@ -550,7 +550,7 @@ export function MoodForm({
               </div>
             </div>
 
-            {/* v1.8.5 (C1) — free-text note. */}
+            {/* v1.8.5 — free-text note. */}
             <FieldGroup
               htmlFor="mood-note"
               label={

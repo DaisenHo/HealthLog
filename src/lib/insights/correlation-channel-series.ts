@@ -97,7 +97,7 @@ export async function fetchComplianceSeries(
     include: {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
@@ -231,7 +231,7 @@ export async function fetchSymptomSeries(
 }
 
 /**
- * v1.25 (W-ENV) — build the user's environmental-exposure BEHAVIOUR channels.
+ * v1.25 — build the user's environmental-exposure BEHAVIOUR channels.
  *
  * One {@link NamedSeries} per registered env field (temperature, daylight,
  * sunshine, precipitation, pressure mean + intraday swing), read from the daily
@@ -507,7 +507,7 @@ export interface MeasurementWindowFetch {
 }
 
 /**
- * v1.30.3 (QA F1/F2/F3) — shared measurement-window fetch for every
+ * v1.30.3 — shared measurement-window fetch for every
  * correlation-adjacent surface: the `/api/insights/correlations` route, the
  * Coach `get_correlations` tool, the per-metric assessment card, and the
  * period narrative. Hoisted here so a fourth independently-maintained copy
@@ -574,7 +574,7 @@ export interface MoodWindowFetch {
 }
 
 /**
- * v1.30.3 (QA F1/F2/F3) — shared mood-window fetch, same desc+cap+resort
+ * v1.30.3 — shared mood-window fetch, same desc+cap+resort
  * discipline as {@link fetchMeasurementWindowSeries}. This helper covers the
  * plain-score case; the RATED-factor variant that also reads each entry's
  * tag-links is {@link fetchMoodFactorWindowSeries}, which carries the same

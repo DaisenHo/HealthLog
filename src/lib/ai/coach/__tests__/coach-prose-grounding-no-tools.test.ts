@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A8) — no-tools/local-provider parity for the prose number-verifier.
+ * v1.21.2 — no-tools/local-provider parity for the prose number-verifier.
  *
  * On the no-tools path the Coach has no tools, so the authoritative figure set
  * is the SNAPSHOT the model was shown — the structured `snapshot.sections`

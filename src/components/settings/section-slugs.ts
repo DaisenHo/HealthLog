@@ -6,9 +6,9 @@
  * graph.
  */
 
-// v1.18.0 (S3) — `sources` was folded into Settings → Integrations as the
+// v1.18.0 — `sources` was folded into Settings → Integrations as the
 // "Sources" sub-tab.
-// v1.18.1 (D4) — the Integrations sub-tabs (Connections / Channels / Sources)
+// v1.18.1 — the Integrations sub-tabs (Connections / Channels / Sources)
 // were split back into three separate left-side entries: `integrations` (the
 // Connections content, shown directly), `channels` (delivery channels), and
 // `sources` (source weighting). The `/settings/sources` redirect is gone
@@ -32,19 +32,19 @@
 // resolve through the shell. `labs` + `illness` are module-gated (they are
 // toggleable modules); `vorsorge` (preventive-care reminders) is not a
 // module, so its entry is always shown.
-// v1.17.1 (F-2) — `layout` is the one "Layout & Personalization" home.
+// v1.17.1 — `layout` is the one "Layout & Personalization" home.
 // The dashboard / insights / medications / mood personalization editors
 // each keep their own route (deep links, page-header cogs, and the hub's
 // own links all resolve), but the settings NAV now surfaces a single
 // `layout` entry instead of four scattered "arrange" entries, so the
 // concept reads as one place. The four editor slugs stay in this list so
 // their routes still resolve; they are simply not listed in the shell nav.
-// v1.18.0 (S4) — the standalone `reminders` hub is gone. It was a
+// v1.18.0 — the standalone `reminders` hub is gone. It was a
 // link-only page ("doppelt gemoppelt") that merely deep-linked into the
 // canonical editors; reminder TYPES now live centrally in `notifications`,
 // each row gated on its module. `/settings/reminders` 301-redirects to
 // `/settings/notifications` (next.config.ts).
-// v1.18.0 (S5) — per-submodule settings split. `gesundheitsakte` (the full
+// v1.18.0 — per-submodule settings split. `gesundheitsakte` (the full
 // health-record export, always available) lifts out of Export & Import into
 // its own top-level entry.
 export const SETTINGS_SECTION_SLUGS = [
@@ -65,7 +65,7 @@ export const SETTINGS_SECTION_SLUGS = [
   // single front door for enabling/disabling secondary tracking domains.
   "modules",
   "integrations",
-  // v1.18.1 (D4) — Quellen (source weighting) split out of the Integrations
+  // v1.18.1 — Quellen (source weighting) split out of the Integrations
   // tabs into its own left-side entry. v1.25.3 — Kanäle (delivery channels)
   // folded back into Notifications as an in-page group; `/settings/channels`
   // 301-redirects to `/settings/notifications#channels` (next.config.ts).
@@ -80,11 +80,11 @@ export const SETTINGS_SECTION_SLUGS = [
   // pages and keeping eight dead component wirings. The redirects, the
   // section components, and the layout-hub subpages are unchanged.
   "layout",
-  // v1.25 (W-ENV) — "Umwelt" (environmental context): home location, travel
+  // v1.25 — "Umwelt" (environmental context): home location, travel
   // overrides, and the weather/daylight backfill. Module-gated on the opt-in
   // `environment` module (the nav entry only shows when it is on).
   "environment",
-  // v1.25 (W-RECORDS) — "Anamnese" (medical history): the structured-record
+  // v1.25 — "Anamnese" (medical history): the structured-record
   // home for allergies + family history. Always shown (not module-gated, like
   // `vorsorge`); the records are foundational health-profile data.
   "anamnesis",
@@ -96,7 +96,7 @@ export const SETTINGS_SECTION_SLUGS = [
   "score",
   "thresholds",
   "ai",
-  // v1.18.0 (S5) — `coach` gathers the Coach preference cards (disable
+  // v1.18.0 — `coach` gathers the Coach preference cards (disable
   // toggle, preferences, memory) out of the AI section, module-gated on
   // the coach module. The `ai` entry keeps provider / model / BYOK only.
   "coach",

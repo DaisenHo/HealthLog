@@ -40,7 +40,7 @@ interface AllTimeExtremes {
 }
 
 /**
- * v1.18.11 P1 — full-history min / max / mean per measurement type via ONE
+ * v1.18.11 — full-history min / max / mean per measurement type via ONE
  * grouped SQL aggregation, with NO row materialisation in JS. Fills the
  * `allTime*` feature fields; the windowed `summarize()` covers trends + recent
  * windows, and this covers the long-horizon figures the prompt labels
@@ -154,7 +154,7 @@ export async function readAllTimeExtremes(
 }
 
 /**
- * v1.4.36 W3 T1 — bucket-window definitions for the
+ * v1.4.36 — bucket-window definitions for the
  * `bucketedMeasurements` payload. Mirrors the rollup populator's
  * granularity ladder so the read-side picks up whatever the persistent
  * table holds without a recompute round-trip.
@@ -467,7 +467,7 @@ export async function readWorkoutsBlock(
 }
 
 /**
- * S10 — ECG recording descriptor for the briefing narrative (device-verdict
+ * ECG recording descriptor for the briefing narrative (device-verdict
  * only). A bounded, non-diagnostic snapshot of the user's on-device ECG
  * recordings over the trailing window: how many exist, the distribution of the
  * RECORDING DEVICE's OWN verdicts (never HealthLog's), and the latest

@@ -1,7 +1,7 @@
 /**
  * Process-local positive cache for working Codex model slugs.
  *
- * Phase C1 (v1.4.15) — slug-drift defence per
+ * (v1.4.15) — slug-drift defence per
  * `docs/codex-protocol-spec.md` §7b. The ChatGPT-Codex backend rotates
  * its allow-list silently; pinning a single `CODEX_MODEL` slug bricks
  * the integration the moment upstream flips it. Instead of pinning,

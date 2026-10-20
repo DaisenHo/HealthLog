@@ -186,7 +186,7 @@ describe("applyDiscoveryFilter", () => {
   });
 });
 
-// v1.18.1 P4 — Rest Mode streak-freeze. A streak that lapses ONLY across
+// v1.18.1 — Rest Mode streak-freeze. A streak that lapses ONLY across
 // illness days bridges into one continuous run rather than breaking; it is
 // never invented, and a non-illness gap still breaks the streak.
 describe("bridgeFrozenStreakGaps (Rest Mode streak-freeze)", () => {

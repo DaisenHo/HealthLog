@@ -1,5 +1,5 @@
 /**
- * v1.18.11 (P3) — request/run-scoped shared feature cache.
+ * v1.18.11 — request/run-scoped shared feature cache.
  *
  * The comprehensive briefing builds its feature snapshot via
  * `extractFeatures(userId, includeRaw, { sinceDays })`. That call materialises a
@@ -155,7 +155,7 @@ export async function getCachedFeatures<T>(args: {
     return args.compute();
   }
 
-  // v1.30.3 (QA F5) — the day-key rolls over at the USER'S own midnight, not
+  // v1.30.3 — the day-key rolls over at the USER'S own midnight, not
   // Berlin's, so a Coach/briefing scope spanning the user's local midnight
   // recomputes at the right instant for that user.
   const [inputHash, userTz] = await Promise.all([

@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Oura Cloud v2 sync.
+ * v1.17.0 — Oura Cloud v2 sync.
  *
  * Pulls daily readiness (→ RECOVERY_SCORE + BODY_TEMPERATURE_DEVIATION), sleep
  * (real per-segment hypnogram timeline when present, else per-stage totals;
@@ -692,7 +692,7 @@ export async function syncUserOura(
     );
   }
 
-  // S4 — trigger the debounced morning refresh on a last-night segment landing
+  // Trigger the debounced morning refresh on a last-night segment landing
   // (mirrors the Withings / WHOOP / Apple seams). Fires whether or not a
   // sibling collection failed, since the sleep readings were still imported.
   void maybeEnqueueMorningRefresh(userId, insertedSleepMeasuredAts).catch(

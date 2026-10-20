@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on GET + POST /api/mood-entries.
+ * v1.4.43 — multi-issue 422 envelope on GET + POST /api/mood-entries.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";

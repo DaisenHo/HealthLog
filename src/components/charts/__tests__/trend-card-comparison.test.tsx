@@ -6,7 +6,7 @@ import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.16 phase B8 — TrendCard comparison delta callout.
+ * v1.4.16 — TrendCard comparison delta callout.
  *
  * The tile picks up an optional `compareBaseline` + `compareDelta`
  * pair. When both are set, the second-line callout renders with

@@ -1,5 +1,5 @@
 /**
- * v1.4.23 H4 — per-user Coach prompt-tuning preferences.
+ * v1.4.23 — per-user Coach prompt-tuning preferences.
  *
  *  GET  /api/auth/me/coach-prefs  — returns the parsed prefs (defaults
  *                                   when the row is null).
@@ -46,7 +46,7 @@ export const GET = apiHandler(async () => {
     select: { coachPrefsJson: true, updatedAt: true },
   });
   const prefs = parseCoachPrefs(row?.coachPrefsJson);
-  // v1.32.22 (M4) — a never-saved user gets the PURE default with NO token
+  // v1.32.22 — a never-saved user gets the PURE default with NO token
   // (mirrors the insights-layout never-saved GET). There is nothing to guard
   // against yet, and the first save is just the tokenless unconditional write.
   // A saved row carries `updatedAt` (additive sibling key; the prefs shape is a
@@ -68,7 +68,7 @@ export const PUT = apiHandler(async (req: Request) => {
     });
   }
 
-  // v1.32.22 (M4) — pull the optimistic-concurrency base token off before the
+  // v1.32.22 — pull the optimistic-concurrency base token off before the
   // parse. This is a full-replace endpoint, so the classic two-tab / two-device
   // stale-replace clobbers silently: the form was hydrated from a GET minutes
   // ago. The token closes that window.
@@ -98,12 +98,12 @@ export const PUT = apiHandler(async (req: Request) => {
   // Persist the canonical defaulted form so the column shape stays
   // stable regardless of which subset of keys the caller supplied.
   //
-  // v1.4.36 W3 T3 — mirror the excludeMetrics list onto the dedicated
+  // v1.4.36 — mirror the excludeMetrics list onto the dedicated
   // `insightsExcludeMetrics` column so the Insights generator and
   // Coach snapshot share a single source of truth. Keeps the user's
   // privacy contract symmetric across the two surfaces without
   // requiring a separate Insights settings sheet.
-  // v1.32.22 (M4) — the guarded write covers BOTH columns in one conditional
+  // v1.32.22 — the guarded write covers BOTH columns in one conditional
   // update so the mirror-column contract (v1.4.36 W3 T3) stays unsplittable: a
   // 409 leaves `coachPrefsJson` AND `insightsExcludeMetrics` untouched together.
   const guarded = await guardedUserUpdate({

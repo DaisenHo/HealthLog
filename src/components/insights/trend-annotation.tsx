@@ -23,7 +23,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 
 /**
- * v1.4.20 phase B3 — single-sentence AI annotation rendered directly
+ * v1.4.20 — single-sentence AI annotation rendered directly
  * below a Trends-row chart.
  *
  * Pure presentational. The annotation string is sourced from the AI
@@ -35,7 +35,7 @@ import { useUnitDisplay } from "@/hooks/use-unit-display";
  * a backing correlation gives us one. The chip is purely visual and
  * never adds new copy beyond the `low / moderate / high` translation.
  *
- * v1.4.36 W2 T3 — render-state contract (`status`). Pre-fix the
+ * v1.4.36 — render-state contract (`status`). Pre-fix the
  * component derived empty vs filled from `annotation == null` alone,
  * which painted "Mehr Daten nötig" on every cold mount and every
  * regenerate-in-flight, even when the advisor was about to deliver an
@@ -91,7 +91,7 @@ export function TrendCaptionCard({
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1 space-y-1">
-        {/* v1.4.28 R3c-Insights — `line-clamp-3` bounds caption
+        {/* v1.4.28 — `line-clamp-3` bounds caption
             variance (FB-K2). A 1-sentence BP annotation paints
             ~3 lines wrapped; a 4-line mood annotation used to push
             the cell taller, which `auto-rows-fr` propagated to
@@ -143,7 +143,7 @@ export function TrendAnnotation({
 }: TrendAnnotationProps) {
   const { t } = useTranslations();
 
-  // v1.4.36 W2 T3 — render-state contract. When `status` is supplied
+  // v1.4.36 — render-state contract. When `status` is supplied
   // it drives the branch directly; otherwise we fall back on the
   // legacy `annotation == null → empty` mapping so existing callers
   // (tests, isolated mounts) keep their previous behaviour.
@@ -173,7 +173,7 @@ export function TrendAnnotation({
       <p
         data-slot="trend-annotation-empty"
         data-metric={metric}
-        // v1.4.28 R3c-Insights — `line-clamp-3` on both states. The
+        // v1.4.28 — `line-clamp-3` on both states. The
         // empty-state copy is short by construction but the row
         // contract still pins the slot's height so the chart slot
         // above stays aligned with the filled-state neighbour

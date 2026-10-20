@@ -161,7 +161,7 @@ describe("<MetricTargetSummary>", () => {
     // redundant "Target: 60.1–80.9 kg" string above it.
     expect(html).toContain('data-slot="tile-header"');
     expect(html).toContain("Target");
-    // 2026-07-17 a11y audit (M1) — the range-bar marker now carries an
+    // The range-bar marker now carries an
     // `aria-label` that reuses this same string as a text alternative
     // (screen-reader only, not a rendered heading) — strip attribute
     // values before asserting no redundant VISIBLE "Target: …" text node

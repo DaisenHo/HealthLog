@@ -159,7 +159,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = externalIntakeSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — external native ingest is a bulk-source; surface
+    // v1.4.43 — external native ingest is a bulk-source; surface
     // every Zod issue so a Telegram-bridge or HomeAssistant
     // integration sees the full validation shape at once. Audit
     // breadcrumb keyed `ingest.medication.validation-failed`.
@@ -335,7 +335,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // than wait out the TTL.
   invalidateUserMedications(apiToken.userId, { evict: true });
 
-  // v1.4.39 W-MED — refresh the compliance rollup for the ingested
+  // v1.4.39 — refresh the compliance rollup for the ingested
   // event's user-day.
   await recomputeMedicationComplianceForEvent({
     userId: apiToken.userId,

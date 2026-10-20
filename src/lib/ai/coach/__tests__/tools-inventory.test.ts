@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — the DATA INVENTORY manifest: it must mark present/absent per
+ * v1.20.0 — the DATA INVENTORY manifest: it must mark present/absent per
  * domain from the snapshot's sections, carry restMode + cycleEnabled, and
  * render a compact, brand-free, grounding-honest block. The model reads this to
  * know what is fetchable so it never invents a metric.
@@ -146,7 +146,7 @@ describe("renderDataInventory", () => {
   });
 });
 
-// v1.21.0 (D1) — the launch FOCUS hint narrows tool mode to the metric the
+// v1.21.0 — the launch FOCUS hint narrows tool mode to the metric the
 // Coach was opened from. The no-tools path narrows the snapshot; this is the
 // tool-mode equivalent so the metric-narrowing is not silently dropped.
 describe("renderFocusHint", () => {

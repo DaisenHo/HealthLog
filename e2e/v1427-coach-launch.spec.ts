@@ -11,7 +11,7 @@ import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
  *   1. The floating Coach FAB (`data-slot="coach-fab"`) is the single
  *      Coach launcher on every authenticated page. The per-metric inline
  *      launch icon the sub-page header used to mount was retired in
- *      CCH-04 — the FAB is now the only entry. An unread Coach-initiated
+ *      The FAB is now the only entry. An unread Coach-initiated
  *      nudge (`GET /api/insights/coach/nudge-status`) paints an unread
  *      dot (`data-slot="coach-fab-unread"`) on its corner; with nothing
  *      unread the FAB renders without the dot.

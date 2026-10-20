@@ -26,7 +26,7 @@ import type { AssessmentStatus } from "@/lib/insights/status-shared";
  * own that prop; `<TileHeader>` drives its icon off a component, so wrap
  * the node in a thin component that renders it.
  *
- * v1.12.7 (M2) — `<TileHeader>` owns the canonical `h-5 w-5 text-foreground`
+ * v1.12.7 — `<TileHeader>` owns the canonical `h-5 w-5 text-foreground`
  * sizing and passes it through as `className` to its icon component. The
  * previous wrapper rendered the node verbatim and dropped that class, so a
  * caller passing an unsized (or mis-sized) node could drift off the contract.
@@ -68,7 +68,7 @@ interface InsightStatusCardProps {
    */
   assessment?: AssessmentStatus;
   /**
-   * v1.21.0 (C4 H2) — opt-in "Ask the Coach about this assessment" hand-off.
+   * v1.21.0 — opt-in "Ask the Coach about this assessment" hand-off.
    * When `coachQuestion` is set (the metric-aware caller supplies it), the
    * populated card renders a discreet Coach action seeded with that opener
    * and narrowed to `coachScope` when known. Callers that omit it keep the
@@ -237,7 +237,7 @@ export function InsightStatusCard({
   }
 
   return (
-    // v1.4.38 W-D P2-2 — `aria-live="polite"` so screen readers
+    // v1.4.38 — `aria-live="polite"` so screen readers
     // announce the assessment when it swaps into the same slot the
     // structured skeleton occupied. The skeleton card already carries
     // `aria-busy="true" aria-live="polite"`; mirroring the live region
@@ -297,7 +297,7 @@ export function InsightStatusCard({
 }
 
 /**
- * v1.4.27 MB7 / CF-39 — collapsible status copy. The assessment text
+ * v1.4.27 — collapsible status copy. The assessment text
  * routinely lands at 3-5 paragraphs of dense narrative which dominates
  * the surface on phones. The default collapses to 3 lines via
  * `line-clamp-3`; a "Show more" toggle reveals the full body.
@@ -334,7 +334,7 @@ function LastUpdatedFooter({ updatedAt }: { updatedAt: string | null }) {
     // v1.11.5 — right-aligned so the timestamp tucks to the trailing edge
     // of the card for a tidier read against the left-aligned prose above.
     //
-    // v1.22 (W6) — the freshness caption is the calendar-bucketed
+    // v1.22 — the freshness caption is the calendar-bucketed
     // `formatUpdatedLabel` ("Updated today, 14:30" / "yesterday" / "on DD.MM."),
     // matching the briefing + per-metric cards. The day boundary follows the
     // user's profile timezone, not the browser's.

@@ -84,7 +84,7 @@ export function buildComplianceBlock(
     registerBlock,
   } = ctx;
   const ledgerRows: DoseHistoryRow[] = [];
-  // v1.17 W1c — the coach's headline adherence figure routes through the
+  // v1.17 — the coach's headline adherence figure routes through the
   // SAME `calculateCompliance(...).rate` ledger authority the medication
   // card shows (the ledger path, `medicationContext` supplied), so the
   // coach can never quote a denominator the card doesn't use. Per
@@ -184,7 +184,7 @@ export function buildComplianceBlock(
       }))
       .sort((a, b) => a.weekISO.localeCompare(b.weekISO));
     snapshot.compliance = {
-      // v1.17 W1c — headline adherence % from the SAME ledger authority
+      // v1.17 — headline adherence % from the SAME ledger authority
       // (`calculateCompliance(...).rate`) the medication card shows: the
       // dose-weighted pool of taken / (taken + missed) across the user's
       // scheduled medications, so the coach quotes the card's figure

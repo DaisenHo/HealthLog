@@ -112,7 +112,7 @@ export async function generateMedicationComplianceStatusForUser(
 }
 
 /**
- * v1.18.7 (HIGH-1) — everything up to (not including) the provider call.
+ * v1.18.7 — everything up to (not including) the provider call.
  * Carries the richer `{ summary, medications }` result through the shared
  * prepare/run/finalize contract. See `status-card-generation.ts`.
  */
@@ -129,7 +129,7 @@ export async function prepareMedicationComplianceStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("medication-compliance", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -207,7 +207,7 @@ export async function prepareMedicationComplianceStatusForUser(
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware compliance.
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
@@ -265,7 +265,7 @@ export async function prepareMedicationComplianceStatusForUser(
     },
   });
 
-  // v1.7.0 SB-SCHED-2 — the compliance-pillar denominators route through
+  // v1.7.0 — the compliance-pillar denominators route through
   // the canonical engine on the user's own tz. `userTz` was already
   // resolved above for the cache day-key.
 
@@ -317,7 +317,7 @@ export async function prepareMedicationComplianceStatusForUser(
     const dailySeries = buildGradedSeriesFromPoints(perDayRecords, now, userTz);
     const latestDay = dailyBudgeted.daily[0] ?? null;
 
-    // v1.18.10 (HIGH-4) — the finished recent-vs-baseline adherence comparison
+    // v1.18.10 — the finished recent-vs-baseline adherence comparison
     // + normal-swing verdict, computed from the canonical per-day rate series
     // so the model states the trend rather than deriving it. The compliance %
     // itself stays server-computed (compliance7/30 above); this adds only the

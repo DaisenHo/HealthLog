@@ -1,5 +1,5 @@
 /**
- * v1.28.39 F4 — Withings measure-sync watermark-hold contract.
+ * v1.28.39 — Withings measure-sync watermark-hold contract.
  *
  * The documented status-tracking contract (see `syncUserMeasurements`) says a
  * downstream measurement-upsert failure must record a sync failure rather than

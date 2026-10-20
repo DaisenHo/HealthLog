@@ -250,7 +250,7 @@ async function resolveCimdClient(clientId: string): Promise<ClientResolution> {
     };
   }
 
-  // M3 — enforce the byte cap WHILE reading: reject up front on an oversized
+  // Enforce the byte cap WHILE reading: reject up front on an oversized
   // Content-Length and abort the stream the moment it overflows, so a hostile
   // CIMD host cannot buffer gigabytes into memory before a post-hoc check.
   const read = await readBodyCapped(res, CIMD_MAX_BYTES);
@@ -270,7 +270,7 @@ async function resolveCimdClient(clientId: string): Promise<ClientResolution> {
   }
   const redirectUris = asStringArray(doc.redirect_uris);
   if (!redirectUris) return { ok: false, reason: "invalid_metadata" };
-  // L2 — CIMD redirect URIs get the same https/loopback floor DCR enforces.
+  // CIMD redirect URIs get the same https/loopback floor DCR enforces.
   if (!redirectUris.every(isAllowableRedirectUri)) {
     return { ok: false, reason: "invalid_metadata" };
   }

@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — edit a staged fact before approval.
+ * v1.25 — edit a staged fact before approval.
  *
  * The review screen corrects OCR / units / dates / codes on a staged fact. A
  * successful edit rewrites the fact's FHIR-staged payload (still STATED status

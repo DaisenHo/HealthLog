@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on POST /api/auth/password.
+ * v1.4.43 — multi-issue 422 envelope on POST /api/auth/password.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";

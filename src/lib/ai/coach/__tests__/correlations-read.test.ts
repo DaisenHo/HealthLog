@@ -1,5 +1,5 @@
 /**
- * v1.21.0 (C3) — the Coach correlations reader surfaces the deterministic FDR
+ * v1.21.0 — the Coach correlations reader surfaces the deterministic FDR
  * discovery + coincident-deviation flag, returns descriptive driver rows, and
  * degrades to a clean { present: false } when nothing survives or a read fails.
  */

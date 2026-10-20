@@ -156,7 +156,7 @@ const allQueues = [
   // provisions the queue and the enqueue silently drops. No cron schedule —
   // a send-only queue driven by navigation.
   INSIGHT_STATUS_GENERATE_QUEUE,
-  // S4 — event-driven morning digest refresh, enqueued by the sleep-arrival
+  // Event-driven morning digest refresh, enqueued by the sleep-arrival
   // trigger when last night's completed sleep lands. No cron schedule — a
   // send-only queue driven by sleep ingest; without this entry pg-boss never
   // provisions the queue and every enqueue silently drops.
@@ -190,16 +190,16 @@ const allQueues = [
   // v1.15.20 — proactive Coach nudge. Without this entry the daily 05:15
   // schedule silently no-ops and no nudge ever fires.
   COACH_NUDGE_QUEUE,
-  // v1.22 (M4) — daily Coach-reminder sweep. Without this entry the 05:20
+  // v1.22 — daily Coach-reminder sweep. Without this entry the 05:20
   // schedule silently no-ops and no "remind me" reminder ever surfaces.
   COACH_REMINDER_SWEEP_QUEUE,
-  // v1.22 (W9, C2) — daily n-of-1 experiment review worker. Without this entry
+  // v1.22 — daily n-of-1 experiment review worker. Without this entry
   // the 05:25 schedule silently no-ops and no experiment read-back is written.
   COACH_PLAN_REVIEW_QUEUE,
   // v1.16.11 — daily medication low-stock pass. Without this entry the 09:00
   // schedule silently no-ops and no low-stock alert ever fires.
   MEDICATION_LOW_STOCK_QUEUE,
-  // S5 — daily-briefing fallback cron. The primary morning push rides the
+  // Daily-briefing fallback cron. The primary morning push rides the
   // sleep-arrival finalisation hook below; this queue is the fixed local-morning
   // slot for the no-sleep-arrived case. Without this entry the every-15-min
   // schedule silently no-ops and the fallback push never fires.
@@ -245,11 +245,11 @@ const schedules: ScheduleEntry[] = [
   // the 04:45–04:55 score crons so the recovery-score trigger reads
   // settled rows. Deterministic triggers only — no AI call on this path.
   [COACH_NUDGE_QUEUE, COACH_NUDGE_CRON],
-  // v1.22 (M4) — daily 05:20 Europe/Berlin Coach-reminder sweep, just after
+  // v1.22 — daily 05:20 Europe/Berlin Coach-reminder sweep, just after
   // the nudge tick. Flips overdue reminders to `due` + mints plan-review
   // reminders from passed CoachPlan.reviewDate. In-app surface only; no push.
   [COACH_REMINDER_SWEEP_QUEUE, COACH_REMINDER_SWEEP_CRON],
-  // v1.22 (W9, C2) — daily 05:25 Europe/Berlin n-of-1 experiment review, just
+  // v1.22 — daily 05:25 Europe/Berlin n-of-1 experiment review, just
   // after the reminder sweep mints the plan-review reminders this worker reads.
   // Writes the grounded before/after read-back; no provider call, no push.
   [COACH_PLAN_REVIEW_QUEUE, COACH_PLAN_REVIEW_CRON],
@@ -258,7 +258,7 @@ const schedules: ScheduleEntry[] = [
   // can act on it. Once daily; the per-medication stamp keeps it at
   // one push per threshold crossing.
   [MEDICATION_LOW_STOCK_QUEUE, MEDICATION_LOW_STOCK_CRON],
-  // S5 — daily-briefing fallback slot. Ticks every 15 min; the per-user
+  // Daily-briefing fallback slot. Ticks every 15 min; the per-user
   // local-hour gate inside the tick selects each user's fixed morning slot, so
   // one UTC cron serves every timezone. The `push_attempts` cap suppresses it
   // when the sleep-arrival finalisation push already fired this morning.
@@ -380,7 +380,7 @@ export async function registerStatusQueues(
       ),
     ),
   );
-  // S4 — event-driven morning digest refresh. One forced comprehensive
+  // Event-driven morning digest refresh. One forced comprehensive
   // regeneration per user per local morning, enqueued by the sleep-arrival
   // trigger. Single-flight: the enqueue-side singletonKey already collapses a
   // night's samples into one job, and the handler's marker re-check makes a
@@ -407,7 +407,7 @@ export async function registerStatusQueues(
               "morning_refresh",
               `${result.status}:${result.comprehensive ?? "none"}`,
             );
-            // S5 — the day just finalised (last night's sleep folded in), so
+            // The day just finalised (last night's sleep folded in), so
             // this is the natural, event-driven moment to fire the calm morning
             // push carrying the FINAL digest. Fully fault-isolated inside the
             // seam; the opt-in / morning-window / once-per-day gates all live
@@ -594,7 +594,7 @@ export async function registerStatusQueues(
     { localConcurrency: WORKOUT_INSIGHT_GENERATE_CONCURRENCY },
     handleWorkoutInsightGenerate,
   );
-  // S5 — daily-briefing fallback slot. Single-flight; the `push_attempts`
+  // Daily-briefing fallback slot. Single-flight; the `push_attempts`
   // frequency cap makes an overlapping tick a no-op (a second same-day attempt
   // is suppressed), and the tick only loads a digest for opted-in users at
   // their exact local fallback hour. No provider call — it reads the cached
@@ -794,7 +794,7 @@ export async function registerStatusQueues(
     },
   );
 
-  // v1.22 (M4) — daily Coach-reminder sweep. Single-flight; surfacing an
+  // v1.22 — daily Coach-reminder sweep. Single-flight; surfacing an
   // overdue reminder into the user's Coach thread and minting plan-review
   // reminders are both idempotent across re-fires (an already-surfaced
   // reminder is not re-written; a plan whose reviewDate was cleared is not
@@ -837,7 +837,7 @@ export async function registerStatusQueues(
     },
   );
 
-  // v1.22 (W9, C2) — n-of-1 experiment review worker: reads the plan-review
+  // v1.22 — n-of-1 experiment review worker: reads the plan-review
   // reminders the sweep minted and writes the grounded before/after read-back
   // into the plan's encrypted outcome column, flipping it to `reviewed`.
   // Idempotent (a reviewed plan is not re-processed). No provider call, no push.

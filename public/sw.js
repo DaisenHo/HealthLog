@@ -14,7 +14,7 @@
 // and triggers an SW-unregister + cache-wipe + hard reload when the
 // server moves ahead of the running shell.
 //
-// v1.4.43 QoL (L3) — read the active version from `self.__APP_VERSION__`,
+// v1.4.43 — read the active version from `self.__APP_VERSION__`,
 // which the build step writes to `/public/sw-version.js` (loaded
 // synchronously below via `importScripts`). Pre-fix the literal was
 // hand-bumped per release and quietly drifted four releases stale, so

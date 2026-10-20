@@ -1,5 +1,5 @@
 /**
- * v1.23 Phase-Q — `<TotpCard>` recovery-code regeneration guard.
+ * v1.23 — `<TotpCard>` recovery-code regeneration guard.
  *
  * Regenerating recovery codes is destructive: the previous set stops working
  * immediately. This suite pins that the regenerate action is gated behind a

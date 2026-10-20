@@ -48,7 +48,7 @@ import {
 import { apiGet } from "@/lib/api/api-fetch";
 
 /**
- * v1.4.36 W4a — Lite intake-history surface.
+ * v1.4.36 — Lite intake-history surface.
  *
  * The 886-LoC v1 was retired in v1.4.28 (commit 8c81af10) with the
  * note "no other consumer". The standalone medication-history page
@@ -103,7 +103,7 @@ interface IntakeListResponse {
 }
 
 /**
- * v1.5.5 F-1 C-2 — optional selection contract. When the wrapper
+ * v1.5.5 — optional selection contract. When the wrapper
  * passes `selection`, each row renders a leading `<Checkbox>` that
  * mirrors the selected set. Single mode hides the bulk-toolbar; multi
  * mode wires through to `<BulkDeleteToolbar>`. The contract lives on
@@ -121,7 +121,7 @@ interface IntakeHistoryListV2Props {
   /** Override the default page size — primarily for tests. */
   pageSize?: number;
   /**
-   * v1.5.5 F-1 C-2 — per-row Bearbeiten callback. When provided the
+   * v1.5.5 — per-row Bearbeiten callback. When provided the
    * row renders a kebab `<DropdownMenu>` with an Edit action. v1.5.6
    * G-1 §9 Q1: threads the whole `IntakeEvent` (not just the id) so
    * the edit dialog seeds from the row's real `takenAt` / `skipped`
@@ -129,12 +129,12 @@ interface IntakeHistoryListV2Props {
    */
   onEditIntake?: (event: IntakeEvent) => void;
   /**
-   * v1.5.5 F-1 C-2 — per-row Löschen callback. When provided the row
+   * v1.5.5 — per-row Löschen callback. When provided the row
    * renders a kebab `<DropdownMenu>` with a Delete action.
    */
   onDeleteIntake?: (eventId: string) => void;
   /**
-   * v1.5.5 F-1 C-2 — selection contract; see `IntakeHistoryListV2Selection`.
+   * v1.5.5 — selection contract; see `IntakeHistoryListV2Selection`.
    */
   selection?: IntakeHistoryListV2Selection;
   /**
@@ -151,7 +151,7 @@ type SortKey = IntakeHistorySortKey;
 
 const DEFAULT_PAGE_SIZE = 25;
 /**
- * v1.4.37 W3 — pinned to "completed" for the detail-page surface so
+ * v1.4.37 — pinned to "completed" for the detail-page surface so
  * planned / missed rows never leak into the table. Lifted to a
  * module-level constant so the queryKey stays stable across renders
  * and `setQueryData` in tests can pre-seed the same shape.
@@ -189,7 +189,7 @@ export function IntakeHistoryListV2({
   // to the stacked list after hydration.
   const isMobile = useIsMobile("md");
 
-  // v1.5.5 F-1 C-2 — the kebab + checkbox columns are gated by the
+  // v1.5.5 — the kebab + checkbox columns are gated by the
   // caller-passed callbacks. The list never assumes a wrapper; it
   // renders the extra columns only when explicitly opted-in.
   const showRowActions = Boolean(onEditIntake || onDeleteIntake);
@@ -352,7 +352,7 @@ export function IntakeHistoryListV2({
                 </TableHeader>
                 <TableBody>
                   {events.map((event) => {
-                    // v1.4.37 W3 — `status=completed` server filter
+                    // v1.4.37 — `status=completed` server filter
                     // guarantees that every row is either a taken or a
                     // skipped event. We derive the branch from the data
                     // itself rather than trusting a single `skipped`

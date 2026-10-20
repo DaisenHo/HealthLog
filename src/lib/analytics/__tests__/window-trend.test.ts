@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { computeWindowTrend, SPLIT_HALF_THRESHOLD_DAYS } from "../window-trend";
 
 /**
- * v1.4.16 Fix A8b — chart trend overlay on the "All" filter.
+ * v1.4.16 — chart trend overlay on the "All" filter.
  *
  * Maintainer report: clicking the All range button on a multi-year metric
  * displays "+0.0 kg/Woche" because the per-week delta rounds to zero

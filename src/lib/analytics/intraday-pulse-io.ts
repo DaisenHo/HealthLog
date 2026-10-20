@@ -1,5 +1,5 @@
 /**
- * S11 — IO seam for the intraday pulse / tension layer.
+ * IO seam for the intraday pulse / tension layer.
  *
  * Loads ONE local day's raw signals on demand (read-swap; never persisted as
  * 10-min rollups) and hands them to the pure `intraday-pulse` computations:

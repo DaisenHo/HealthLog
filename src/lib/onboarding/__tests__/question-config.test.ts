@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the chip questions as data, and the two translations the
+ * v1.39 — the chip questions as data, and the two translations the
  * screen relies on: stored answers → chips to pre-select, and a selection →
  * the strict body the answers route accepts.
  */

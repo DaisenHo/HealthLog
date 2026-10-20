@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the dashboard order the setup answers imply.
+ * v1.39 — the dashboard order the setup answers imply.
  *
  * The ordering half of Q2. Pins that every area maps only to tiles the
  * layout knows, that the seed promotes and forces visible without dropping a

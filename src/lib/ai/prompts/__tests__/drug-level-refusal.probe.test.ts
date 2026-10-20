@@ -9,7 +9,7 @@ import { getCoachSystemPrompt } from "@/lib/ai/coach/system-prompt";
 import type { Locale } from "@/lib/i18n/config";
 
 /**
- * v1.4.25 W19c-Safety — adversarial drug-level refusal probes.
+ * v1.4.25 — adversarial drug-level refusal probes.
  *
  * Sister to `refusal-probe.test.ts` (W14c). That file drives the
  * 14-rule × 6-locale × 20+-paraphrasing matrix; this file zooms in on

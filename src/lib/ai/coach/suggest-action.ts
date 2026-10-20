@@ -1,5 +1,5 @@
 /**
- * v1.22 (F6) — generalised inline "confirm → apply" Coach action cards.
+ * v1.22 — generalised inline "confirm → apply" Coach action cards.
  *
  * The propose→confirm moat already ships for ONE action type — the cadence
  * reminder (`suggest-reminder.ts` CADENCE_CATALOG → `suggestion` SSE frame →

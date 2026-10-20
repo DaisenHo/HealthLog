@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.17.1 (N-5) — the up-affordance for a hub child editor.
+ * v1.17.1 — the up-affordance for a hub child editor.
  *
  * The four Layout personalization editors (dashboard / insights /
  * medications / mood) are reached through the "Layout & Personalization"

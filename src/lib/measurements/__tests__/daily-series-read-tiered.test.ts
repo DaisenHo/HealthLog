@@ -1,5 +1,5 @@
 /**
- * v1.19.2 W-CHARTS — `readDailySeries` long-range tier step-up.
+ * v1.19.2 — `readDailySeries` long-range tier step-up.
  *
  * Pins that a window WIDER than the DAY bucket cap routes through the
  * tiered rollup reader (whole-history coverage, downsampled by tier)
@@ -87,7 +87,7 @@ describe("readDailySeries — long-range tier step-up", () => {
     });
 
     expect(mocks.readTieredRollupSeries).toHaveBeenCalledTimes(1);
-    // v1.26.0 SEAM-N2 — the resolved `[from, to]` bounds are threaded so the
+    // v1.26.0 — the resolved `[from, to]` bounds are threaded so the
     // tier reads the REQUESTED window, not a trailing "to now" slice.
     expect(mocks.readTieredRollupSeries.mock.calls[0][0].from).toBe(from);
     expect(mocks.readTieredRollupSeries.mock.calls[0][0].to).toBe(to);

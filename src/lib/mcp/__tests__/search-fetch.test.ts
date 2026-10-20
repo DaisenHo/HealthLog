@@ -34,7 +34,7 @@ vi.mock("@/lib/db", () => ({
     labResult: { findMany: vi.fn() },
     // v1.25 — `search` probes the clinical-signal measurement types.
     measurement: { groupBy: vi.fn(async () => []) },
-    // v1.30 (G1) — the nutrients pipeline.
+    // v1.30 — the nutrients pipeline.
     nutrientIntakeDay: {
       findMany: vi.fn(async () => []),
       groupBy: vi.fn(async () => []),

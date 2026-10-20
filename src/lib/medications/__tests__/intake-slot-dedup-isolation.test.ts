@@ -1,5 +1,5 @@
 /**
- * v1.8.2 reconcile (cleanup-job MEDIUM) — per-slot error isolation.
+ * v1.8.2 (cleanup-job MEDIUM) — per-slot error isolation.
  *
  * The winner-`scheduledFor` normalise can throw P2002 (a tombstoned row
  * already sits on the canonical instant with the winner's source — the
@@ -179,7 +179,7 @@ describe("dedupeUserIntakeSlots — per-slot error isolation", () => {
 });
 
 /**
- * v1.20.2 F4 — the per-medication dedup read path is batched. The
+ * v1.20.2 — the per-medication dedup read path is batched. The
  * pre-v1.20.2 shape issued a `findFirst` (latest takenAt) + a `findMany`
  * (all rows) PER medication → 2N round-trips. The batched path pulls
  * every live row for the user's medication set in ONE `findMany`, groups

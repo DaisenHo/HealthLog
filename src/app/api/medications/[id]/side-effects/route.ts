@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — GLP-1 side-effect log CRUD (collection).
+ * v1.4.25 — GLP-1 side-effect log CRUD (collection).
  *
  *   GET  /api/medications/[id]/side-effects?from=ISO&to=ISO&limit=50
  *     - returns the user's logs for this medication, newest first,
@@ -61,7 +61,7 @@ export const GET = apiHandler(
       limit: url.searchParams.get("limit") ?? undefined,
     });
     if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422.
+      // v1.4.43 — multi-issue 422.
       return returnAllZodIssues(parsed.error, 422);
     }
 
@@ -154,13 +154,13 @@ async function postSideEffect(
 
   const parsed = createSideEffectSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 
   const { entry, severity, occurredAt, notes } = parsed.data;
 
-  // v1.4.25 W21 Fix-N (code-M6) — category is derived server-side
+  // v1.4.25 (code-M6) — category is derived server-side
   // from the entry via the authoritative taxonomy mapping. The wire
   // schema no longer accepts `category`; older clients that still
   // send it now have it ignored by Zod's strict drop, and the row

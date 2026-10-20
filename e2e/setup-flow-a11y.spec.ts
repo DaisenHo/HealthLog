@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — axe over every setup screen, at both viewports, plus one
+ * v1.39 — axe over every setup screen, at both viewports, plus one
  * keyboard-only pass through a question.
  *
  * The pattern is `a11y.spec.ts`: a scan waits for something the SCREEN

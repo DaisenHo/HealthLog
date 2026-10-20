@@ -109,7 +109,7 @@ export function AboutMeNoteManager() {
       });
     },
     onError: (err) => {
-      // v1.32.21 (R5a) — a 409 means the stored self-context advanced since
+      // v1.32.21 — a 409 means the stored self-context advanced since
       // this edit was based. Refetch so the token advances, KEEP the draft so
       // the user can re-save, nudge gently.
       if (isConflict(err)) {

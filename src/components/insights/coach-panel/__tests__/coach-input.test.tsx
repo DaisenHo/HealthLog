@@ -12,7 +12,7 @@ function render(node: React.ReactNode, locale: "en" | "de" = "en") {
 
 describe("<CoachInput>", () => {
   it("mounts the textarea + send button slots", () => {
-    // v1.4.22 B4 — the disclaimer moved to the sources rail; the
+    // v1.4.22 — the disclaimer moved to the sources rail; the
     // composer no longer renders its own paragraph below the input.
     const html = render(
       <CoachInput value="" onChange={() => {}} onSubmit={() => {}} />,
@@ -129,7 +129,7 @@ describe("<CoachInput>", () => {
   });
 
   it("swaps the send button for a Stop control while streaming with onCancel", () => {
-    // v1.11.3 D1 — while a reply streams the composer must surface a
+    // v1.11.3 — while a reply streams the composer must surface a
     // visible Stop affordance bound to the abort handler so the user
     // can interrupt a long or off-track reply. The Stop button only
     // appears when an `onCancel` handler is wired (the drawer always
@@ -318,7 +318,7 @@ describe("<CoachInput>", () => {
   });
 
   it("renders the textarea at rows=1 initial state (W5 auto-grow baseline)", () => {
-    // v1.4.25 W5 — Claude-web-style auto-grow. SSR baseline is a
+    // v1.4.25 — Claude-web-style auto-grow. SSR baseline is a
     // single-line textarea; the client-side `useEffect` measures
     // `scrollHeight` and grows the height up to ~6 lines. The static
     // markup must show `rows="1"` so the initial paint matches the
@@ -335,7 +335,7 @@ describe("<CoachInput>", () => {
   });
 });
 
-// v1.4.25 W5 — `computeAutoGrowHeight` is the pure helper backing the
+// v1.4.25 — `computeAutoGrowHeight` is the pure helper backing the
 // textarea's auto-grow effect. Pin its math so the textarea never
 // collapses below a single line or grows past the 6-line ceiling.
 import { computeAutoGrowHeight } from "../coach-input";

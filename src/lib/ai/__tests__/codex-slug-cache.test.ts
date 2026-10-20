@@ -8,7 +8,7 @@ import {
 } from "../codex-slug-cache";
 
 /**
- * Phase C1 — slug-drift defence positive cache.
+ * Slug-drift defence positive cache.
  * Cache TTL = 1 hour per `docs/codex-protocol-spec.md` §7b.
  */
 describe("Codex slug cache", () => {

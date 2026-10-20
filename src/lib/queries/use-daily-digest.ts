@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * S2 — client cell for the unified daily digest (`GET /api/daily/digest`).
+ * Client cell for the unified daily digest (`GET /api/daily/digest`).
  *
  * The Today hero reads the ALREADY-CACHED `DailyDigest` DTO S1 assembled
  * server-side. This hook is a plain GET of that cached route — it never

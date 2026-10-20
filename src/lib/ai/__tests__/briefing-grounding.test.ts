@@ -262,7 +262,7 @@ describe("core-vitals grounding extension", () => {
     expect(found.map((f) => f.value)).toContain(195);
   });
 
-  // S10 — the ECG device-verdict descriptor feeds the narrative; its
+  // The ECG device-verdict descriptor feeds the narrative; its
   // server-computed counts must be admitted so a device-attributed sentence
   // ("your device logged 5 ECG recordings") is not stripped by the gate, while
   // a count the block never produced still trips it.

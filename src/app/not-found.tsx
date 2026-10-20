@@ -5,7 +5,7 @@ import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /**
- * v1.4.27 MB6 — branded 404 page. Next.js mounts this file for any
+ * v1.4.27 — branded 404 page. Next.js mounts this file for any
  * route that doesn't resolve to a server component, so the previous
  * implicit fallback was the framework's bare "404" text. The shape
  * here intentionally stays lighter than `<ErrorDetails>` — Decision L
@@ -18,7 +18,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
  * `safe-area-inset-top` keeps the headline clear of the notch or
  * Dynamic Island.
  *
- * v1.4.43 QoL — copy lifted into i18n keys (`notFound.title` /
+ * v1.4.43 — copy lifted into i18n keys (`notFound.title` /
  * `notFound.backToDashboard`) and tightened. The previous
  * marketing-flavoured paragraph ("The page you were looking for…
  * Head back to the dashboard to pick up where you left off.") read

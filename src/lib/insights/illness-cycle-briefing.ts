@@ -1,5 +1,5 @@
 /**
- * v1.18.11 P5 — illness + cycle context for the daily briefing.
+ * v1.18.11 — illness + cycle context for the daily briefing.
  *
  * The briefing used to narrate as if nothing were going on even when the user
  * is mid-illness-episode or mid-cycle, because — unlike the Coach — it never

@@ -32,7 +32,7 @@ export interface WithingsSyncPayload {
 }
 
 /**
- * v1.4.25 W17b — payload for the activity-sync queue. When enqueued
+ * v1.4.25 — payload for the activity-sync queue. When enqueued
  * by the webhook handler, `userId` is set so the worker syncs only
  * that user; when enqueued by the cron schedule, `userId` is absent
  * and the worker iterates every connection (safety-net behaviour).
@@ -43,7 +43,7 @@ export interface WithingsActivitySyncPayload {
 }
 
 /**
- * v1.4.25 W17c — payload for the sleep-sync queue. Same shape and
+ * v1.4.25 — payload for the sleep-sync queue. Same shape and
  * webhook-vs-cron semantics as the activity payload.
  */
 export interface WithingsSleepSyncPayload {
@@ -247,7 +247,7 @@ export async function handleWithingsEcgSync(
 }
 
 /**
- * v1.4.25 W17b — activity-sync handler.
+ * v1.4.25 — activity-sync handler.
  *
  * Two enqueue paths feed this queue:
  *
@@ -332,7 +332,7 @@ export async function handleWithingsActivitySync(
 }
 
 /**
- * v1.4.25 W17c — sleep-sync handler. Same enqueue semantics as the
+ * v1.4.25 — sleep-sync handler. Same enqueue semantics as the
  * activity handler: per-user when the webhook fires, full-iteration
  * when the cron ticks.
  */

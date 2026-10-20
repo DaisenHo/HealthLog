@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W3e — verbal label for the MOOD_STABILITY target headline.
+ * v1.4.25 — verbal label for the MOOD_STABILITY target headline.
  *
  * The card used to render the raw σ value ("0.42 σ"), which most users
  * cannot interpret. Replace with a three-state verbal label keyed

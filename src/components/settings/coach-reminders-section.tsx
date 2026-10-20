@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.22 (B6) — Settings → AI "Your context: reminders" panel.
+ * v1.22 — Settings → AI "Your context: reminders" panel.
  *
  * The user-facing ledger for the durable "remind me about X" memory the Coach
  * captures inline (the `---REMEMBER---` sentinel) and the sweep resurfaces. The

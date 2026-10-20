@@ -266,13 +266,13 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.39.3 — the title: the opening words of the first message, or a rename.
   { model: "CoachConversation", field: "titleEncrypted", kind: "bytes" },
   { model: "CoachFact", field: "factEncrypted", kind: "bytes" },
-  // v1.21.3 (B1) — Coach goal / if-then plan free-text columns.
+  // v1.21.3 — Coach goal / if-then plan free-text columns.
   { model: "CoachPlan", field: "ifCueEncrypted", kind: "bytes" },
   { model: "CoachPlan", field: "thenActionEncrypted", kind: "bytes" },
   { model: "CoachPlan", field: "targetEncrypted", kind: "bytes" },
-  // v1.22 (W9, C2) — n-of-1 experiment outcome read-back prose.
+  // v1.22 — n-of-1 experiment outcome read-back prose.
   { model: "CoachPlan", field: "outcomeEncrypted", kind: "bytes" },
-  // v1.22 (B2/B6) — Coach episodic reminder free-text note.
+  // v1.22 — Coach episodic reminder free-text note.
   { model: "CoachReminder", field: "noteEncrypted", kind: "bytes" },
 
   // ───── User health profile (Bytes columns) ─────

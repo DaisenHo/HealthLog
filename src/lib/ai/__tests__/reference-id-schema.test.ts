@@ -7,7 +7,7 @@ import {
 import { MEDICAL_REFERENCES } from "../medical-references";
 
 /**
- * v1.4.16 phase B5a — `recommendation.referenceId` validation.
+ * v1.4.16 — `recommendation.referenceId` validation.
  *
  * The schema accepts optional `referenceId` strings, but only when
  * they point into the curated `MEDICAL_REFERENCES` bundle. A

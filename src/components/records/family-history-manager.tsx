@@ -21,7 +21,7 @@ import { FamilyHistoryForm } from "./family-history-form";
 import type { FamilyHistoryEntryDTO } from "@/lib/records/dto";
 
 /**
- * v1.25 (W-RECORDS) — the structured family-history manager. Renders in the
+ * v1.25 — the structured family-history manager. Renders in the
  * Settings → Anamnese section: a list of condition-by-relative records with
  * add / edit / delete. Patient-reported reference data, not a clinical
  * diagnosis.

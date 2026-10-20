@@ -149,7 +149,7 @@ export const POST = apiHandler(async () => {
     });
   }
 
-  // v1.4.27 F21 — resolve the admin's persisted locale so the test
+  // v1.4.27 — resolve the admin's persisted locale so the test
   // notification arrives in their preferred language. The test route
   // talks to the senders directly (not the dispatcher) because it
   // needs per-channel success / error feedback for the UI, so we

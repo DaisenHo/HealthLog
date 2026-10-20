@@ -1,5 +1,5 @@
 /**
- * v1.5.5 F-1 C-2 — `<IntakeHistoryListV2>` row-actions + selection
+ * v1.5.5 — `<IntakeHistoryListV2>` row-actions + selection
  * contract.
  *
  * Mirrors the SSR + `setQueryData` seed pattern the v1.4.36 W4a tests

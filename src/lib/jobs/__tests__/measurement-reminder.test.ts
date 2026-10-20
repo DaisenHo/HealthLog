@@ -21,7 +21,7 @@
  */
 import { beforeEach, describe, it, expect, vi } from "vitest";
 
-// v1.37.19 (A6-7) — the tick claims the slot BEFORE provider egress via
+// v1.37.19 — the tick claims the slot BEFORE provider egress via
 // the shared record-event ledger. The manual Prisma double has no
 // notification_events surface, so the claim is mocked controllable:
 // default granted, individual cases flip it to prove the guard.
@@ -154,7 +154,7 @@ interface FakeReminder {
 function makePrisma(opts: {
   reminders: FakeReminder[];
   measurementMatch?: { measuredAt: Date } | null;
-  /** v1.18.1 (D2) — a free-text reminder now auto-resolves from a matching
+  /** v1.18.1 — a free-text reminder now auto-resolves from a matching
    *  LabResult. Default `null` (no lab landed). */
   labMatch?: { takenAt: Date } | null;
 }) {

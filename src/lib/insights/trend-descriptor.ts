@@ -1,5 +1,5 @@
 /**
- * v1.11.4 item J — deterministic, rule-based trend descriptor for the
+ * v1.11.4 — deterministic, rule-based trend descriptor for the
  * Insights "Trends" row captions.
  *
  * Background. Each Trends-row card carries a one-line caption below its

@@ -24,7 +24,7 @@ const CoachDrawer = dynamic(
 );
 
 /**
- * v1.4.27 R3d MB4 — bridge between the layout-level
+ * v1.4.27 — bridge between the layout-level
  * `<CoachLaunchProvider>` and the Coach drawer mount.
  *
  * The layout file is a server component (it lives next to other server
@@ -47,7 +47,7 @@ export function LayoutCoachMount() {
       open={launch.open}
       onOpenChange={launch.setOpen}
       prefill={launch.prefill}
-      // v1.21.0 (C4 H1/H4) — carry the launch scope so a conversation
+      // v1.21.0 — carry the launch scope so a conversation
       // opened from a metric surface or insight card is pre-narrowed to
       // the relevant source(s).
       scope={launch.scope}

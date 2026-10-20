@@ -1,5 +1,5 @@
 /**
- * P2 — `Milestone`, the durable-states reward primitive.
+ * `Milestone`, the durable-states reward primitive.
  *
  * A milestone is "a state REACHED" — a durable achievement the record now
  * carries: a metric that settled back inside the user's own range, a run of

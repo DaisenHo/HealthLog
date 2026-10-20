@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * v1.30.2 (QoL H1) — `GET /api/insights/chat` gained an optional `q` search
+ * v1.30.2 — `GET /api/insights/chat` gained an optional `q` search
  * param so the history rail's search reaches the caller's FULL conversation
  * set (title-only, server-side) instead of filtering only the loaded page.
  * This suite pins the route's parsing: trimmed, length-capped, and omitted

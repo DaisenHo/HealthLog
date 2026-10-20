@@ -86,7 +86,7 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          // v1.4.27 R4 RC3 — widen the icon-only close-X tap target to
+          // v1.4.27 — widen the icon-only close-X tap target to
           // a 36 px floor, matching the Dialog close-X treatment from
           // MB2 (Decision I). 36 px (not 44 px) is the intentional
           // exception for fixed icon-only close affordances per the
@@ -97,7 +97,7 @@ function SheetContent({
             className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none sm:min-h-9 sm:min-w-9 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            {/* v1.4.34 IW-G — read `common.close` so screen readers
+            {/* v1.4.34 — read `common.close` so screen readers
                 hear the localised label instead of literal English. */}
             <span className="sr-only">{t("common.close")}</span>
           </SheetPrimitive.Close>

@@ -119,7 +119,7 @@ export const PATCH = apiHandler(
     await auditLog("allergy.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the replaced fields. The reaction and the note are named and
+      // The replaced fields. The reaction and the note are named and
       // never quoted; both are encrypted at rest and the audit table is not a
       // second store for them.
       details: {
@@ -196,7 +196,7 @@ export const DELETE = apiHandler(
     await auditLog("allergy.delete", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C3 — the allergen, its severity and its recorded date, and never the
+      // The allergen, its severity and its recorded date, and never the
       // encrypted reaction text.
       details: {
         allergyId: id,

@@ -145,7 +145,7 @@ describe("resolveRichMetric", () => {
     }
   });
 
-  // v1.30.4 (C2) — the signal registry's `surfaces.mcp` flag is documented as
+  // v1.30.4 — the signal registry's `surfaces.mcp` flag is documented as
   // the SINGLE source of truth for MCP exposure, but `resolveRichMetric`'s
   // metric-status-registry path (exact id / display-name match) used to
   // resolve an id regardless of that flag. `AVERAGE_HEART_RATE` /

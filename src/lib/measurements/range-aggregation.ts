@@ -1,5 +1,5 @@
 /**
- * v1.4.28 R3a FB-D2 (R1.2 H0) — server-side range aggregation for the
+ * v1.4.28 (R1.2 H0) — server-side range aggregation for the
  * health-chart pipeline.
  *
  * Before: every chart navigation issued an unbounded `while (true)`

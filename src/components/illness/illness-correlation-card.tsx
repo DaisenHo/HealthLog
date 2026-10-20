@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.1 P3 — the per-episode retrospective correlation card ("How it
+ * v1.18.1 — the per-episode retrospective correlation card ("How it
  * unfolded"). Server-authoritative + coverage-gated: it pattern-matches the
  * `Derived<T>` `status` and renders "still learning" when the signal is thin,
  * NEVER a fabricated number. Retrospective only — never a prediction or a

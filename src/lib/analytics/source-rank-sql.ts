@@ -47,7 +47,7 @@ export const RANKED_TYPES: readonly MeasurementType[] = [
   "PULSE",
   "VO2_MAX",
   "RECOVERY_SCORE",
-  // v1.18.10 I-5 — STRESS_SCORE carries a source-priority ladder (`stress`)
+  // v1.18.10 — STRESS_SCORE carries a source-priority ladder (`stress`)
   // so the SQL collapse ranks a future device-native producer above the
   // COMPUTED proxy deterministically. No-op until a second producer lands.
   "STRESS_SCORE",

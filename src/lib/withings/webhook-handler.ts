@@ -33,7 +33,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWithingsEcgSync } from "@/lib/jobs/withings-ecg-queue";
 
 /**
- * v1.4.25 W17b/c — appli categories that have their own sync routine
+ * v1.4.25 — appli categories that have their own sync routine
  * fan-out. The measure path (appli=1/2/4) keeps the legacy inline
  * call to `syncUserMeasurements`; activity (16) and sleep v2 (44) hand
  * off to pg-boss so the webhook response stays fast and a slow sync
@@ -149,7 +149,7 @@ export async function processWithingsNotification(
     return NextResponse.json({ status: "unknown_user" }, { status: 200 });
   }
 
-  // v1.4.25 W17b/c — dispatch on appli category. Activity (16) and
+  // v1.4.25 — dispatch on appli category. Activity (16) and
   // sleep v2 (44) hand off to dedicated pg-boss queues so the webhook
   // response stays sub-100ms; the measure family (appli=1/2/4) keeps
   // the existing inline `syncUserMeasurements` call. An absent or
@@ -190,7 +190,7 @@ export async function processWithingsNotification(
 }
 
 /**
- * v1.4.25 W17b/c — enqueue a per-user activity / sleep sync job onto
+ * v1.4.25 — enqueue a per-user activity / sleep sync job onto
  * the pg-boss queue. When pg-boss isn't available (Next.js dev server
  * without the worker process attached) we fall back to firing the
  * sync inline so dev iteration isn't blocked on a separate worker

@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Polar AccessLink v3 client for OAuth + data fetching.
+ * v1.17.0 — Polar AccessLink v3 client for OAuth + data fetching.
  * Docs: https://www.polar.com/accesslink-api/ (re-verify at build).
  * Envelope shapes + windows below verified against the live AccessLink swagger
  * (`accesslink-api/swagger.yaml`) on 2026-07-24; a body that no longer matches

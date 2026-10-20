@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17b — Withings Activity sync.
+ * v1.4.25 — Withings Activity sync.
  *
  * Pulls daily aggregates from `POST /v2/measure?action=getactivity`
  * and writes one Measurement row per (date, metric). The webhook
@@ -280,7 +280,7 @@ export async function syncUserActivity(
       today,
     );
   } catch (err) {
-    // v1.4.43 W7-B3 — typed-classification path. The thrown
+    // v1.4.43 — typed-classification path. The thrown
     // `WithingsApiError` from `fetchWithingsActivity` carries the
     // verdict + `withingsStatus` directly; `recordWithingsSyncFailure`
     // routes it through `classifyError`, which falls back to the regex
@@ -329,7 +329,7 @@ export async function syncUserActivity(
   }
 
   let imported = 0;
-  // W-2 — a swallowed batch-write must not read as a clean sync. The catch
+  // A swallowed batch-write must not read as a clean sync. The catch
   // below sets this so the tail stamps success ONLY when the write landed; a
   // persistent write bug then accrues strikes instead of being reset by its
   // own success stamp every tick.
@@ -340,7 +340,7 @@ export async function syncUserActivity(
   // `source=rollup` fast-path otherwise misses Withings activity days.
   const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
 
-  // v1.20.2 F3 — flatten (entry × field) into the concrete rows the sync
+  // v1.20.2 — flatten (entry × field) into the concrete rows the sync
   // wants to land, then batch the reads + writes. The pre-v1.20.2 shape
   // ran a per-(entry, field) `findFirst` + `update`/`create`, i.e.
   // ~entries × 3 × 2 round-trips (≈ 2,190 on a 365-day backfill). The
@@ -561,7 +561,7 @@ export async function syncUserActivity(
     );
   }
 
-  // W-2 — only a clean write stamps success. A swallowed batch-write left the
+  // Only a clean write stamps success. A swallowed batch-write left the
   // ledger honest via the transient failure recorded above.
   if (!writeFailed) {
     await recordSyncSuccess(userId, "withings", {

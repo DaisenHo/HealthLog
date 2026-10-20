@@ -58,7 +58,7 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateIntakeEventSchema.safeParse(body);
     if (!parsed.success) {
-      // v1.4.43 W6 — per-event update hot path; multi-issue 422 +
+      // v1.4.43 — per-event update hot path; multi-issue 422 +
       // audit breadcrumb keyed
       // `medications.intake.event.update.validation-failed`.
       const issues = sanitiseZodIssues(parsed.error.issues);
@@ -315,7 +315,7 @@ export const PUT = apiHandler(
         isExplicitTaken: !nextSkipped && nextTakenAt !== null,
         isExplicitSkip: nextSkipped,
         idempotencyKey: null,
-        // C8 — the converged row keeps the ORIGINAL's provenance. This used
+        // The converged row keeps the ORIGINAL's provenance. This used
         // to be a hardcoded `"WEB"`, which said "somebody typed this in the
         // browser" about an Apple Health dose whose time was corrected. Under
         // MANAGE the sentence would be wrong about a second person as well.
@@ -351,7 +351,7 @@ export const PUT = apiHandler(
     await auditLog("medication.intake.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — what the correction moved. A dose edit changes when a dose is
+      // What the correction moved. A dose edit changes when a dose is
       // recorded as taken, which is exactly what a clinician reads back.
       details: {
         eventId,
@@ -384,11 +384,11 @@ export const PUT = apiHandler(
       meta: { medication_id: id },
     });
 
-    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // v1.4.34 — bust per-user medications + compliance + achievement
     // caches so the next read reflects the edited event.
     invalidateUserMedications(user.id, { evict: true });
 
-    // v1.4.39 W-MED — refresh the rollup row for both the old + new
+    // v1.4.39 — refresh the rollup row for both the old + new
     // scheduledFor day-keys when the dose moved across a day boundary
     // (band re-attribution can move it as well as an explicit edit); if the
     // slot is unchanged the second call collapses to a no-op upsert.
@@ -481,11 +481,11 @@ export const DELETE = apiHandler(
       meta: { medication_id: id },
     });
 
-    // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+    // v1.4.34 — bust per-user medications + compliance + achievement
     // caches so the next read reflects the deletion.
     invalidateUserMedications(user.id, { evict: true });
 
-    // v1.4.39 W-MED — refresh the rollup row for the day the deleted
+    // v1.4.39 — refresh the rollup row for the day the deleted
     // event sat on. When that day now holds zero events the helper
     // drops the rollup row entirely.
     await recomputeMedicationComplianceForEvent({

@@ -8,7 +8,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.4.43 QoL (M5) — slim banner that surfaces "you're offline" while
+ * v1.4.43 — slim banner that surfaces "you're offline" while
  * `navigator.onLine` reads false. The PWA service worker already
  * serves the read paths from cache (`public/sw.js`), but pre-fix a
  * user toggling airplane mode mid-form-fill saw blank tiles and no

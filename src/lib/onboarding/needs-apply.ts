@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — applying one answered step to the stored onboarding state.
+ * v1.39 — applying one answered step to the stored onboarding state.
  *
  * Pure, so the idempotence claim is checkable without a database: applying the
  * same body twice returns a value equal to applying it once, which is what

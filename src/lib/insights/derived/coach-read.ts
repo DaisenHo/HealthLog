@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A1) — "Coach read" strip data builder.
+ * v1.21.2 — "Coach read" strip data builder.
  *
  * Two server-authoritative lines for a single metric sub-page, computed
  * here so web and iOS read the SAME resolved DTO (no client re-derivation):

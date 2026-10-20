@@ -1,5 +1,5 @@
 /**
- * v1.22 (W6) — deterministic opener-archetype rotation + hash helpers.
+ * v1.22 — deterministic opener-archetype rotation + hash helpers.
  *
  * The narrative weakness the maintainer reports ("every text is structured the
  * same way") is structural: the per-metric card, the briefing, and the score

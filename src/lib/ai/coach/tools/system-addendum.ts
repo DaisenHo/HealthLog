@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — tool-mode system-prompt addendum.
+ * v1.20.0 — tool-mode system-prompt addendum.
  *
  * Appended to the stable Coach system prompt ONLY when retrieval tools are
  * offered this turn (a tool-capable provider). It reframes the grounding

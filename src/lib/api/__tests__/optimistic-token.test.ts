@@ -1,5 +1,5 @@
 /**
- * v1.32.21 (R5a) — the client-side optimistic-concurrency primitives every
+ * v1.32.21 — the client-side optimistic-concurrency primitives every
  * guarded writer uses (`readUpdatedAtToken`, `withBaseToken`, `isConflict`),
  * plus the B-3 token-preservation guarantee for the insights-layout read.
  */

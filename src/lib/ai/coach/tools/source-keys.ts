@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — CoachScopeSource → snapshot section key map.
+ * v1.20.0 — CoachScopeSource → snapshot section key map.
  *
  * `get_metric_series` fetches a single metric by re-running the snapshot
  * builder scoped to that one source, then reads the matching section out of the
@@ -76,7 +76,7 @@ export const COACH_SOURCE_SNAPSHOT_KEY: Readonly<
 };
 
 /**
- * v1.21.0 (C2-3) — human-readable domain label per metric source, for the DATA
+ * v1.21.0 — human-readable domain label per metric source, for the DATA
  * INVENTORY lines. Brand-free, lower-case, stable across turns so the cached
  * prefix holds. Every key in `COACH_SOURCE_SNAPSHOT_KEY` plus the dedicated-tool
  * sources has an entry; the inventory renders one line per series source the
@@ -125,7 +125,7 @@ export const COACH_SOURCE_DOMAIN_LABEL: Readonly<
 };
 
 /**
- * v1.21.0 (C2-2 / C2-3) — the FULL set of metric-series sources the inventory
+ * v1.21.0 — the FULL set of metric-series sources the inventory
  * probes for presence: every source `get_metric_series` can serve (the
  * `COACH_SOURCE_SNAPSHOT_KEY` keys), minus the few that ride a dedicated tool
  * (sleep has `get_sleep`; glucose/compliance/workouts are excluded). The
@@ -140,7 +140,7 @@ export const METRIC_SERIES_INVENTORY_SOURCES: ReadonlyArray<CoachScopeSource> =
   );
 
 /**
- * v1.21.0 (C2-2) — the full source set the inventory snapshot is built against,
+ * v1.21.0 — the full source set the inventory snapshot is built against,
  * so every domain with stored rows reports `present` (not the default-cluster
  * subset). The per-tool reads still re-scope to the exact domain, so widening
  * the inventory probe never widens a figure read. This is the canonical enum

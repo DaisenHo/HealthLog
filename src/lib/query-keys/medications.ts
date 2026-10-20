@@ -25,7 +25,7 @@ export const medicationKeys = {
   medicationSideEffects: (medicationId: string) =>
     ["medications", medicationId, "side-effects", "list"] as const,
   /**
-   * v1.4.42 W3-QUERYKEY-LONGTAIL — per-medication compliance KPI used
+   * v1.4.42 — per-medication compliance KPI used
    * by `medication-card` + `glp1-medication-card`. Centralising lets
    * the intake mutation invalidate every compliance read through the
    * `["medications"]` prefix instead of one bare-literal at a time.
@@ -122,7 +122,7 @@ export const medicationKeys = {
       params.status,
     ] as const,
   /**
-   * v1.4.40 W-RSC — the dashboard-level compliance chart (aggregate
+   * v1.4.40 — the dashboard-level compliance chart (aggregate
    * across every scheduled medication) was a bare `["medication-
    * compliance-chart", days]` key; route it through the factory so
    * `medicationDependentKeys` invalidates it on intake-mutation just
@@ -136,7 +136,7 @@ export const medicationKeys = {
   medicationPhaseConfig: (medicationId: string) =>
     ["phase-config", medicationId] as const,
   /**
-   * v1.5.5 F-1 H-2 — per-medication api-endpoint status (enabled +
+   * v1.5.5 — per-medication api-endpoint status (enabled +
    * active-token-count) used by the detail-page Externe Integration
    * row. The key rides under the `["medications", id, …]` prefix so
    * `medicationDependentKeys` catches it on token mint / disable.

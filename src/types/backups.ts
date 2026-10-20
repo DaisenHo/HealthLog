@@ -1,5 +1,5 @@
 /**
- * v1.4.41 W-ORG (org-audit rec #2) — DTOs for `/api/admin/backups`.
+ * v1.4.41 (org-audit rec #2) — DTOs for `/api/admin/backups`.
  *
  * Pre-v1.4.41 these interfaces lived inside the route handler at
  * `src/app/api/admin/backups/route.ts` and were imported directly from

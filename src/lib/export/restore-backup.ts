@@ -788,7 +788,7 @@ export async function restoreBackup(
         const moods = await tx.moodEntry.deleteMany({
           where: { userId: ownerId },
         });
-        // v1.4.39 W-MOOD — wipe the persisted mood rollup partition
+        // v1.4.39 — wipe the persisted mood rollup partition
         // for this owner so the next analytics read doesn't surface
         // pre-restore daily means. The fold below mints fresh rows
         // from the restored mood entries.
@@ -2106,7 +2106,7 @@ export async function restoreBackup(
           });
           biomarkerByName.set(biomarker.name, created.id);
           restoredBiomarkerIds.add(created.id);
-          // v1.43 (D1223) — the other spellings, folded the way the resolver
+          // v1.43 — the other spellings, folded the way the resolver
           // reads them, so the next scan matches them again.
           const aliasRows = (biomarker.aliases ?? [])
             .map((alias) => ({
@@ -2141,7 +2141,7 @@ export async function restoreBackup(
           }
         }
 
-        // v1.43 (D1223) — the merge ledger, against the markers just written:
+        // v1.43 — the merge ledger, against the markers just written:
         // by id where the file carries one this restore kept, by name
         // otherwise. A row whose target the file does not carry has nothing
         // to point at and is left out (counted on the event).
@@ -3039,7 +3039,7 @@ export async function restoreBackup(
     }
   }
 
-  // v1.4.39 W-MOOD — re-fold the mood rollup tier from the just-
+  // v1.4.39 — re-fold the mood rollup tier from the just-
   // restored entries. Runs outside the transaction so the (5-year)
   // fold can't hold a long write lock; best-effort so a populator
   // hiccup doesn't undo the restore. The boot-time backfill is the
@@ -3058,7 +3058,7 @@ export async function restoreBackup(
     }
   }
 
-  // v1.4.39 W-MED — re-fold the medication-compliance rollup tier
+  // v1.4.39 — re-fold the medication-compliance rollup tier
   // from the restored intake events. The medication delete inside the
   // transaction already cascaded the existing rollup partition for
   // this owner via the FK, so the fold mints fresh rows. Boot-time

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19e — compliance chip aggregator tests.
+ * v1.4.25 — compliance chip aggregator tests.
  *
  * The chips feed the GLP-1 detail page. Tests cover the four chip
  * values plus the no-doses-expected null path.
@@ -189,7 +189,7 @@ describe("complianceChips", () => {
   });
 
   it("threads timeZone through so chips stay consistent for tz-distant users", () => {
-    // v1.4.25 W21 Fix-O — passing an IANA zone must not lose any
+    // v1.4.25 — passing an IANA zone must not lose any
     // expected slots vs the no-tz default. Two users with the same
     // intake stream — one resolved through Berlin, one through
     // Tokyo — must see the same adherence rate when the events

@@ -37,7 +37,7 @@ function toDateOnDay(time: string, day: Date, tz?: string): Date {
 /**
  * Classify how punctual an intake was relative to a schedule window.
  *
- * v1.4.34 IW-C — widened pre-window grace from 1h to 3h and introduced
+ * v1.4.34 — widened pre-window grace from 1h to 3h and introduced
  * a dedicated `early` bucket so a proactive logger (e.g. 10 min before
  * the window) no longer gets flushed into `very_late`. The post-window
  * grace likewise grew to 3h so a "20 minutes late" dose stays `on_time`.

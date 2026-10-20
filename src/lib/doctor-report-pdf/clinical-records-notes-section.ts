@@ -180,7 +180,7 @@ export function buildClinicalRecordsNotesSection(
     }
   }
 
-  // v1.18.1 P4 — illness / condition episodes overlapping the window. Present
+  // v1.18.1 — illness / condition episodes overlapping the window. Present
   // only when the illness module is on AND the window held an episode (the
   // aggregator gates `data.illnessEpisodes`). Labels + lifecycle + dates and
   // the body site where one is stated; the encrypted note is never read. A purely retrospective, factual table —

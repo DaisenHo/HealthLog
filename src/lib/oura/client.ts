@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Oura Cloud API v2 client for OAuth + data fetching.
+ * v1.17.0 — Oura Cloud API v2 client for OAuth + data fetching.
  * Docs: https://cloud.ouraring.com/v2/docs (re-verify at build).
  *
  * Mirrors the WHOOP / Polar client structure: hand-rolled fetch over

@@ -178,7 +178,7 @@ export function HeroStrip({
               {greeting}
             </h1>
           </div>
-          {/* v1.22 (W6) — the briefing paragraph renders through ProseBlocks
+          {/* v1.22 — the briefing paragraph renders through ProseBlocks
                 so a multi-paragraph verdict-first briefing shows real paragraph
                 spacing (still plain text children, no markdown). */}
           <div

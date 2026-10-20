@@ -1,5 +1,5 @@
 /**
- * v1.4.34 IW-G — per-user cache invalidation helpers.
+ * v1.4.34 — per-user cache invalidation helpers.
  *
  * Each write endpoint that touches a measurement / mood / medication /
  * dashboard-widget row calls the matching helper after its successful
@@ -23,7 +23,7 @@ import { forgetCoverageProbe } from "@/lib/rollups/coverage-inflight";
 import { caches } from "./server-cache";
 
 /**
- * v1.7.0 W6 — server cache key for the unified dashboard first-paint
+ * v1.7.0 — server cache key for the unified dashboard first-paint
  * snapshot. Lives under the analytics cache bucket so the `${userId}|`
  * sweep on a measurement / mood / medication write already covers it
  * (measurement writes mark it stale; mood / medication writes hard-evict
@@ -98,7 +98,7 @@ export function invalidateUserMeasurements(
   }
   caches.achievements.deleteByPrefix(userId);
   caches.workouts.deleteByPrefix(`${userId}|`);
-  // v1.4.36 W1 — measurement writes change the per-target consistency
+  // v1.4.36 — measurement writes change the per-target consistency
   // strips, the in-range rates and the streak counters that
   // `/api/insights/targets` computes.
   //
@@ -134,7 +134,7 @@ export function invalidateUserMood(userId: string): void {
   caches.moodAnalytics.deleteByPrefix(userId);
   caches.achievements.deleteByPrefix(userId);
   caches.analytics.deleteByPrefix(`${userId}|`);
-  // v1.4.36 W1 — mood writes change the mood target rows on the
+  // v1.4.36 — mood writes change the mood target rows on the
   // insights/targets response (MOOD_SCORE, MOOD_STABILITY).
   caches.insightsTargets.deleteByPrefix(userId);
   // v1.8.5 — mood writes dirty every dimension of the mood-insights
@@ -182,7 +182,7 @@ export function invalidateUserMedications(
     // so the card rates and the heatmap reflect the action on the next
     // read.
     caches.medicationCompliance.deleteByPrefix(`${userId}|`);
-    // v1.4.38 W-F — `/api/dashboard/summary` lives under the analytics
+    // v1.4.38 — `/api/dashboard/summary` lives under the analytics
     // cache and reads `medicationIntakeEvent` for both today's compliance
     // tally and the 365-day streak feed. A taken / skipped event must
     // evict the user-bucket so the next iOS poll reflects the change.
@@ -199,7 +199,7 @@ export function invalidateUserMedications(
   }
   caches.medicationsIntake.deleteByPrefix(`${userId}|`);
   caches.achievements.deleteByPrefix(userId);
-  // v1.4.36 W1 — medication writes change the MEDICATION_COMPLIANCE
+  // v1.4.36 — medication writes change the MEDICATION_COMPLIANCE
   // target rollup (compliance7 / compliance30 / consistency strip).
   caches.insightsTargets.deleteByPrefix(userId);
 }
@@ -248,7 +248,7 @@ export function invalidateUserProfile(userId: string): void {
  */
 export function invalidateUserDashboardWidgets(userId: string): void {
   caches.dashboardWidgets.deleteByPrefix(userId);
-  // v1.7.0 W6 — the layout rides inside the unified snapshot now, so a
+  // v1.7.0 — the layout rides inside the unified snapshot now, so a
   // tile reorder / visibility toggle must also drop the snapshot. The
   // widget invalidator does NOT touch the analytics bucket, so the
   // prefix sweep above does not cover the snapshot key — drop it

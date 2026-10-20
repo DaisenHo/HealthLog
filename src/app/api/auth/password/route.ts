@@ -53,7 +53,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = changePasswordSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 
@@ -122,7 +122,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   await revokeStepUpElevations(user.id);
 
   // Invalidate all existing sessions and create a fresh one.
-  // v1.4.22 W5 reconcile (Sr-H1) — `createSession` re-anchors the
+  // v1.4.22 — `createSession` re-anchors the
   // `hl_onboarding` cookie itself.
   await destroyAllSessions(user.id);
   await createSession(

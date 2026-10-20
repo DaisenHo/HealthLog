@@ -200,7 +200,7 @@ beforeEach(() => {
     (async (args: { data: Array<{ workoutId: string }> }) =>
       args.data.map((row) => ({ workoutId: row.workoutId }))) as never,
   );
-  // v1.4.43 W9 — default to no per-user source-priority override so
+  // v1.4.43 — default to no per-user source-priority override so
   // the write-time picker walks the canonical default ladder. Tests
   // that exercise a custom ladder override this in-line.
   vi.mocked(prisma.user.findUnique).mockResolvedValue({

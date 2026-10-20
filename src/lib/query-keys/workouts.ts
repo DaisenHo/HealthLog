@@ -10,7 +10,7 @@ export const workoutKeys = {
   workouts: () => ["workouts"] as const,
   workoutsRecent: () => ["workouts", "recent"] as const,
   /**
-   * v1.4.42 W3-QUERYKEY-LONGTAIL — the `useWorkouts` hook used to
+   * v1.4.42 — the `useWorkouts` hook used to
    * spread `workoutsRecent()` and append an opts object inline. The
    * factory now owns the full shape so the hook never reaches for a
    * literal-array wrapper.

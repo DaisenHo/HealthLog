@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — Coach DATA INVENTORY manifest.
+ * v1.20.0 — Coach DATA INVENTORY manifest.
  *
  * The tiny, always-sent manifest that replaces snapshot-stuffing in the base
  * context. It tells the model WHAT data exists (so it never invents a metric)
@@ -97,7 +97,7 @@ export interface CoachDataInventory {
   /** The person's lookback limit, or undefined when there is none. */
   lookbackLimit?: string;
   /**
-   * v1.21.0 (D5-1) — the exact full-source scope this inventory's snapshot was
+   * v1.21.0 — the exact full-source scope this inventory's snapshot was
    * built against. The route threads it to the tool loop so every per-tool read
    * lands the SAME 60s LRU entry (one snapshot build per turn, not N). Returned
    * here so the route reuses the identical scope object rather than
@@ -107,7 +107,7 @@ export interface CoachDataInventory {
 }
 
 /**
- * v1.21.0 (C2-2 / C2-3) — generate the get_metric_series inventory rows from
+ * v1.21.0 — generate the get_metric_series inventory rows from
  * the FULL source→key map rather than the eight legacy clusters. Every series
  * the user actually has rows for is advertised, so the model is no longer told
  * (rule 2) to skip body-composition / vascular / SpO2 / gait / environment.
@@ -131,7 +131,7 @@ export async function buildCoachDataInventory(
   /** The person's lookback limit; the probe and every row answer to it. */
   reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<CoachDataInventory> {
-  // v1.21.0 (C2-2) — probe presence against the FULL source set, not the
+  // v1.21.0 — probe presence against the FULL source set, not the
   // user's narration-cluster default. `effectiveScope` only carried the
   // window; expanding `sources` here makes the snapshot build every domain the
   // user has rows for, so sleep / glucose / activity / body-composition / etc.
@@ -192,7 +192,7 @@ export async function buildCoachDataInventory(
       ? { count: counts.compliance }
       : {}),
   });
-  // v1.21.0 (C2-4) — workouts has its own tool now (get_metric_series refuses
+  // v1.21.0 — workouts has its own tool now (get_metric_series refuses
   // it). The block builds when the user has workout rows + the cluster is on.
   entries.push({
     tool: "get_workouts",
@@ -211,7 +211,7 @@ export async function buildCoachDataInventory(
     present:
       has("illness") || has("derived") || has("dayStrain") || has("trajectory"),
   });
-  // v1.21.0 (C3) — discovered cross-metric correlations (FDR-controlled lagged
+  // v1.21.0 — discovered cross-metric correlations (FDR-controlled lagged
   // drivers) + the coincident-deviation flag. Advertised when the user has any
   // two discovery channels with data; the tool itself returns present:false
   // cleanly when nothing survives, so the inventory marks it present whenever a
@@ -227,7 +227,7 @@ export async function buildCoachDataInventory(
       has("steps") ||
       has("sleep"),
   });
-  // v1.21.0 (C2-1) — cycle is fetchable via get_cycle when cycle tracking is
+  // v1.21.0 — cycle is fetchable via get_cycle when cycle tracking is
   // available for this account (per-user toggle AND operator switch).
   if (cycleEnabled) {
     entries.push({
@@ -382,7 +382,7 @@ async function attachAvailability(
 }
 
 /**
- * v1.21.0 (D1) — render the launch FOCUS hint for the tool-mode user turn.
+ * v1.21.0 — render the launch FOCUS hint for the tool-mode user turn.
  *
  * When the Coach is opened from a metric page or card, the client sends
  * `scope.sources` (the metric the user is looking at). The no-tools path

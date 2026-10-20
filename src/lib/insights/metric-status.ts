@@ -160,7 +160,7 @@ export async function generateMetricStatus(args: {
   const readOnly = args.readOnly === true;
   const scope = metricStatusScope(meta.id);
   const cacheAction = statusCacheAction(scope, locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -285,7 +285,7 @@ export async function generateMetricStatus(args: {
   // to SLEEP_DURATION only so no other metric's status path changes.
   const isSleep = meta.measurementType === "SLEEP_DURATION";
 
-  // v1.2.5 (M-TZ3) — the day bucketing below keys on the user's own
+  // v1.2.5 — the day bucketing below keys on the user's own
   // calendar regardless of branch. `userTz` was already resolved above for
   // the cache day-key.
 
@@ -370,7 +370,7 @@ export async function generateMetricStatus(args: {
   const ageYears = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
   const sex = binaryReferenceSex(user?.gender);
 
-  // v1.10.0 F1 — sharpen the coarse registry `normalRange` with the
+  // v1.10.0 — sharpen the coarse registry `normalRange` with the
   // age/sex reference-range enabler when one is available for this
   // metric + profile; otherwise keep the existing flat anchor (strictly
   // additive, never a regression). Age + sex only — no ancestry/region.
@@ -509,7 +509,7 @@ export async function generateMetricStatus(args: {
     locale,
   );
 
-  // v1.27.13 (Welle J) — the guideline interpretation block for metrics the
+  // v1.27.13 — the guideline interpretation block for metrics the
   // knowledge base covers (visceral fat, resting HR, SpO₂, respiratory rate,
   // body temperature, sleep duration, waist, PWV). The band position is
   // computed from the signal's current value (or the latest day when no signal
@@ -562,7 +562,7 @@ export async function generateMetricStatus(args: {
       interpretationBlock,
       openerHint,
     ),
-    // v1.12.1 (D1) — the phrasing task benefits from a touch more sampling
+    // v1.12.1 — the phrasing task benefits from a touch more sampling
     // entropy while the FACTS stay pinned by the snapshot + the
     // forbidden-phrase guards. 0.3 was conservative for a 2-4 sentence prose
     // task; 0.45 varies cadence without loosening grounding. The pair used to

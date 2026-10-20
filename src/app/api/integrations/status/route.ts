@@ -184,7 +184,7 @@ export const GET = apiHandler(async () => {
     "dawarich",
   ]);
 
-  // F-SYNC-1 — per-metric-type last-value timestamps so the card can show that a
+  // Per-metric-type last-value timestamps so the card can show that a
   // single metric type has gone silent even while the integration reads green
   // ("connected · 5 min ago"). Fail-soft: this is an honesty signal, never worth
   // 500-ing the whole Settings card, so a groupBy hiccup degrades to no data.
@@ -315,7 +315,7 @@ export const GET = apiHandler(async () => {
         tokenExpired: withingsConn
           ? withingsConn.tokenExpiresAt.getTime() <= now
           : null,
-        // v1.4.25 W5d — `scope` is the comma-separated OAuth scope string;
+        // v1.4.25 — `scope` is the comma-separated OAuth scope string;
         // `hasActivityScope` is the derived flag the reconnect banner reads.
         // Null `scope` = legacy connection that predates activity-scope reads.
         scope: withingsConn?.scope ?? null,

@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — the canonical environmental-exposure field vocabulary.
+ * v1.25 — the canonical environmental-exposure field vocabulary.
  *
  * One declarative table that names each daily weather/daylight field HealthLog
  * stores AND correlates. It is the single source the two surfaces speak:

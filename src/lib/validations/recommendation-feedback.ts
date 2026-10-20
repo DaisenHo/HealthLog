@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 /**
- * v1.4.16 phase B5e — request body for `POST /api/insights/feedback`.
+ * v1.4.16 — request body for `POST /api/insights/feedback`.
  *
  * Mirrors the `RecommendationFeedback` Prisma model fields the client
  * is allowed to specify. `providerType` and `promptVersion` are NOT

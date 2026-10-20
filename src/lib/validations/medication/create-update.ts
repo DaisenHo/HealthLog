@@ -110,9 +110,9 @@ export const createMedicationSchema = z
     name: z.string().min(1).max(100),
     dose: z.string().min(1).max(50),
     category: medicationCategoryInputSchema.optional(),
-    /** v1.4.25 W4d — treatment-class discriminator (GENERIC | GLP1). */
+    /** v1.4.25 — treatment-class discriminator (GENERIC | GLP1). */
     treatmentClass: z.enum(MEDICATION_TREATMENT_CLASS_VALUES).optional(),
-    /** v1.4.25 W4d — doses per pen/vial for inventory tracking.
+    /** v1.4.25 — doses per pen/vial for inventory tracking.
      *  v1.16.10 raises the cap to 1000 (large tablet packs). */
     dosesPerUnit: z.number().int().min(1).max(1000).optional(),
     /**

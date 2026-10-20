@@ -40,7 +40,7 @@ import {
 import { nextScreen, previousScreen } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.39 (C2) — one question per screen, Q1 to Q5.
+ * v1.39 — one question per screen, Q1 to Q5.
  *
  * The chip set is the whole screen (design spec §Principles 3: one screen,
  * one decision). The selection lives in component state while the screen is

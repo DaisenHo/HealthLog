@@ -57,7 +57,7 @@ export const localeLabels: Record<Locale, string> = {
 };
 
 /**
- * v1.4.25 W9e — locales actively maintained by the project owner.
+ * v1.4.25 — locales actively maintained by the project owner.
  * Locales outside this set are AI-initial translations and surface a
  * <MaintainershipBanner> notice at the top of the auth shell so users
  * know to expect rough edges and where to contribute fixes. Promoting

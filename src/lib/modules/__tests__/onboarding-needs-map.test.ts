@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — the needs → modules mapping, and the merge that protects a
+ * v1.39 — the needs → modules mapping, and the merge that protects a
  * decision somebody already made.
  *
  * The mapping is the one piece of the flow with a consequence that outlives

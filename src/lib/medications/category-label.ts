@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W4b — shared medication category-label lookup.
+ * v1.4.37 — shared medication category-label lookup.
  *
  * Both the generic `<MedicationCard>` and the GLP-1 variant render
  * `categoryLabel` into the same `<MedicationCardHeader>` outline badge.

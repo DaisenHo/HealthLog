@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — extraction mapping safety tests.
+ * v1.25 — extraction mapping safety tests.
  *
  * The mapping is the safety boundary: it must reproduce STATED facts only and
  * never let a code, value, or status leak across resource types or past the

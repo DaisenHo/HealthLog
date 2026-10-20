@@ -1,5 +1,5 @@
 /**
- * v1.4.48 H-APNs-1 — coverage for the admin notification diagnostic
+ * v1.4.48 — coverage for the admin notification diagnostic
  * endpoint. The route surfaces what the dispatcher would observe when
  * targeting the calling admin's account so an operator can debug push
  * delivery without DB-shell access; these tests pin:

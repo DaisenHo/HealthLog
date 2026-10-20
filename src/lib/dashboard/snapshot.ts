@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — unified dashboard first-paint snapshot.
+ * v1.7.0 — unified dashboard first-paint snapshot.
  *
  * `buildDashboardSnapshot` assembles every above-the-fold tile field in
  * a single server round-trip from the existing rollup / mood / widget
@@ -278,7 +278,7 @@ export interface DashboardSnapshotExtras {
   bpInTargetPctPriorMonth: number | null;
   bpInTargetPctPriorYear: number | null;
   /**
-   * v1.17 W1b — number of paired BP readings inside the trailing-90-day
+   * v1.17 — number of paired BP readings inside the trailing-90-day
    * window, and the EFFECTIVE label span (real calendar span capped at 90
    * days, or `null` when the window is empty). The BD-Zielbereich tile reads
    * the count against the confidence floor to decide between a percentage and
@@ -378,7 +378,7 @@ export interface DashboardSnapshotHealthScore {
    */
   restMode?: RestModeAnnotation | null;
   /**
-   * v1.21.2 (A5) — Tension Verdict, locale-agnostic. Fires only when the
+   * v1.21.2 — Tension Verdict, locale-agnostic. Fires only when the
    * readiness composite's contributors DISAGREE (≥1 strongly favourable AND ≥1
    * strongly unfavourable); suppressed (`null`) under a clinical red-flag so the
    * red-flag path dominates. `positive` / `negative` carry the readiness
@@ -388,7 +388,7 @@ export interface DashboardSnapshotHealthScore {
    */
   tension?: ScoreTensionDto | null;
   /**
-   * v1.21.2 (A6) — return-to-baseline, locale-agnostic. Present only when a
+   * v1.21.2 — return-to-baseline, locale-agnostic. Present only when a
    * salient metric has come BACK inside the user's own personal range after a
    * prior out-of-band run; at most one (the most salient). `metricType` is the
    * `MeasurementType` the client maps to its localised metric name. Null
@@ -398,7 +398,7 @@ export interface DashboardSnapshotHealthScore {
 }
 
 /**
- * v1.21.2 (A4) — the briefing recall + forward-look. Both strings are
+ * v1.21.2 — the briefing recall + forward-look. Both strings are
  * already-localised, server-resolved prose: `recall` is the prior period's
  * narrative headline; `forward` points ahead to the most salient trend drift
  * (or a calm "holding steady" when nothing drifted). The card renders them
@@ -500,7 +500,7 @@ export interface DashboardSnapshot {
   scoreRings?: DashboardScoreRing[];
   briefing: DailyBriefing | null;
   /**
-   * v1.21.2 (A4) — server-resolved recall + forward-look for the briefing card.
+   * v1.21.2 — server-resolved recall + forward-look for the briefing card.
    * Null when no prior narrative is on file. Rides the snapshot DTO so iOS reads
    * the same already-localised block. Optional on the type (additive contract)
    * so older cached snapshots / fixtures without it stay valid.
@@ -681,7 +681,7 @@ async function buildExtras(
   let bpInTargetPctPriorYear: number | null = null;
   let bpInTargetCount90: number | null = null;
   let bpInTargetSpanDays90: number | null = null;
-  // v1.17 W1b — hold the current + prior-week BP envelopes so the shared
+  // v1.17 — hold the current + prior-week BP envelopes so the shared
   // Health-Score input builder grades the pillar off the identical shape the
   // analytics route uses.
   let bpEnvelope: BpInTargetEnvelope | null = null;
@@ -698,7 +698,7 @@ async function buildExtras(
   );
   const clinicalBpTargets = getBpTargets(user.dateOfBirth);
   if (bpTargets) {
-    // v1.17 W1b — two runs (current + prior-week), identical to the
+    // v1.17 — two runs (current + prior-week), identical to the
     // analytics route, so the dashboard ring's week-over-week delta reflects
     // BP movement instead of zeroing it out. Both reuse the already-probed
     // coverage map and share the rollup/live branch decision.
@@ -759,7 +759,7 @@ async function buildExtras(
           }),
         ]);
     }
-    // v1.17 W1d — the headline standardises on the trailing-90-day
+    // v1.17 — the headline standardises on the trailing-90-day
     // window (labelled "· 90 T" in the tile), identical to the analytics
     // route, so the dashboard tile and the insights surface never narrate
     // two windows for the same metric. All-time stays carried for the
@@ -770,7 +770,7 @@ async function buildExtras(
     bpInTargetPctAllTime = windows.allTime?.pct ?? null;
     bpInTargetPctPriorMonth = windows.priorMonth?.pct ?? null;
     bpInTargetPctPriorYear = windows.priorYear?.pct ?? null;
-    // v1.17 W1b — count + effective span for the tile's confidence gate,
+    // v1.17 — count + effective span for the tile's confidence gate,
     // derived through the shared helper so this surface and `/api/analytics`
     // can never disagree on the gate or the label span.
     const bpWindow = deriveBpWindow90(
@@ -786,7 +786,7 @@ async function buildExtras(
   // already-probed coverage map (no second probe). Score + band +
   // delta only; the component breakdown stays off this wire.
   //
-  // v1.17 W1b — the BP-pillar inputs come from the ONE shared
+  // v1.17 — the BP-pillar inputs come from the ONE shared
   // `buildHealthScoreBpInputs` builder the analytics route also uses, so the
   // ring and the insights card grade the pillar off identical inputs (same
   // 90-day window via W1d, same all-time fallback, same graded score, same
@@ -1158,7 +1158,7 @@ function gateLayoutByModules(
 }
 
 /**
- * v1.21.2 (A4) — map the machine-derived coach memory block onto the briefing
+ * v1.21.2 — map the machine-derived coach memory block onto the briefing
  * card's `{ recall, forward }` shape, both already-localised. `recall` is the
  * prior period's narrative headline (locale-generated prose). `forward` points
  * ahead from the single most salient trend drift (a metric whose current-period
@@ -1424,7 +1424,7 @@ export async function buildDashboardSnapshot(
     locale,
   );
 
-  // v1.21.2 (A4 / A5 / A6) — the score-card narrative (Tension Verdict +
+  // v1.21.2 — the score-card narrative (Tension Verdict +
   // return-to-baseline) and the briefing recall + forward-look. The score
   // narrative is computed from the derived engines, no model involved, so no
   // AI switch and no AI opt-out gates it. The recall reads the period
@@ -1521,7 +1521,7 @@ export async function buildDashboardSnapshot(
     },
     extras: extrasResult?.extras ?? null,
     medsToday,
-    // v1.21.2 (A5 / A6) — fold the score-card narrative onto the health score so
+    // v1.21.2 — fold the score-card narrative onto the health score so
     // the hero reads tension + return-to-baseline off the resolved score DTO.
     healthScore: extrasResult?.healthScore
       ? {
@@ -1535,7 +1535,7 @@ export async function buildDashboardSnapshot(
     // older cached snapshots stay valid.
     scoreRings,
     briefing: briefing.briefing,
-    // v1.21.2 (A4) — the briefing recall + forward-look. Null when there is no
+    // v1.21.2 — the briefing recall + forward-look. Null when there is no
     // prior narrative on file or no briefing is shown.
     briefingMemory: briefing.briefing !== null ? briefingMemory : null,
     briefingState: briefing.briefingState,

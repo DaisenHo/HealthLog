@@ -134,7 +134,7 @@ export function MoodInsightsBreakdowns({
   const hasStabilityTile = data.stability != null;
   const hasInTargetTile = data.summary.inTargetPct != null;
 
-  // F1 — fold the structured + flat influence axes into one list ranked by
+  // Fold the structured + flat influence axes into one list ranked by
   // absolute delta, so the strongest "this tag moves my mood" rows lead
   // regardless of which axis they came from. Defensive against a stale
   // server-cache payload minted before the v1.11.5 shape landed (the

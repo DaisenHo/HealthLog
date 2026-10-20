@@ -711,7 +711,7 @@ export function calculateLongestStreak(dayKeys: string[]): number {
 }
 
 /**
- * v1.18.1 P4 — freeze (don't break) a day-streak across illness days.
+ * v1.18.1 — freeze (don't break) a day-streak across illness days.
  *
  * Rest Mode principle: a streak that lapses ONLY because the user was unwell
  * should not be broken — being ill is not a failure to track. This pure

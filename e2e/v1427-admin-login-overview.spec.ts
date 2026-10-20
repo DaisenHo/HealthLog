@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.27 B3 — admin login-overview carrier chip + CSV column.
+ * v1.4.27 — admin login-overview carrier chip + CSV column.
  *
  * Two contracts under test:
  *

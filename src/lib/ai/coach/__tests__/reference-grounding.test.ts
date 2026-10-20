@@ -4,7 +4,7 @@ import { buildReferenceGroundingBlock } from "../reference-grounding";
 import { CITATIONS } from "@/lib/medical-citations";
 
 /**
- * W7 — the Coach reference-grounding block. These tests pin the
+ * The Coach reference-grounding block. These tests pin the
  * deterministic shape the hallucination-QA pass audits: the right band per
  * metric, the right four-state placement, the general-guidance caveat, the
  * ESH-2023 blood-pressure label, the diabetes opt-in gating, and the hard

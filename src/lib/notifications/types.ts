@@ -34,7 +34,7 @@ export const EVENT_TYPES = [
   "COMPLIANCE_LOW",
   "WITHINGS_SYNC_FAILED",
   "SYSTEM_ALERT",
-  // v1.4.25 W16c — PR detection. Default OFF (see DEFAULT_EVENT_PREFS
+  // v1.4.25 — PR detection. Default OFF (see DEFAULT_EVENT_PREFS
   // below) so a multi-year Apple Health backfill doesn't fire hundreds
   // of pushes during initial sync.
   "PERSONAL_RECORD",
@@ -104,7 +104,7 @@ export const EVENT_TYPES = [
   // would defeat the feature. An explicit per-channel `NotificationPreference`
   // row still wins for a user who opts out.
   "SECURITY_ALERT",
-  // S5 — the once-daily calm morning briefing. Default OFF (see
+  // The once-daily calm morning briefing. Default OFF (see
   // EVENT_DEFAULT_ENABLED, the PERSONAL_RECORD precedent): the user opts in
   // per-channel from the /notifications matrix, so the channel choice is
   // explicit at opt-in. It reads the CACHED daily digest — never a fresh AI
@@ -200,7 +200,7 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // needs surfaced. An explicit per-channel `NotificationPreference` row
   // (enabled=false) still suppresses it for a user who opts out.
   SECURITY_ALERT: true,
-  // S5 — OFF by default (the PERSONAL_RECORD precedent). The calm daily
+  // OFF by default (the PERSONAL_RECORD precedent). The calm daily
   // briefing stays silent until the user explicitly opts in per-channel at
   // /notifications; the dispatcher's default-policy gate suppresses every
   // channel that has no explicit enabled row, so a fresh account never

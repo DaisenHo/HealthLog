@@ -1,5 +1,5 @@
 /**
- * v1.20.0 F6 — bit-identical parity for the rollup regression accumulators.
+ * v1.20.0 — bit-identical parity for the rollup regression accumulators.
  *
  * The windowed slope / r² / population-sd now compose from the per-bucket
  * accumulators (`sum_x / sum_xy / sum_xx / sum_yy`, plus `n = count` and

@@ -51,12 +51,12 @@ vi.mock("@/lib/db", () => ({
     // v1.38 — the visit history read + the appointments folded into
     // get_preventive_care both read the Encounter table.
     encounter: { findMany: vi.fn(async () => []) },
-    // v1.30 (G1) — the nutrients pipeline.
+    // v1.30 — the nutrients pipeline.
     nutrientIntakeDay: {
       findMany: vi.fn(async () => []),
       groupBy: vi.fn(async () => []),
     },
-    // v1.30 (G3) — ECG recording metadata.
+    // v1.30 — ECG recording metadata.
     ecgRecording: { findMany: vi.fn(async () => []) },
   },
 }));
@@ -90,7 +90,7 @@ vi.mock("@/lib/ai/coach/bytes-codec", () => ({
     Buffer.from(buf).toString("utf8"),
   ),
 }));
-// v1.30 (G1) — `get_nutrients` delegates to the nutrients-read engine; stub
+// v1.30 — `get_nutrients` delegates to the nutrients-read engine; stub
 // only the DB-touching entry point so the tool-wiring tests below never reach
 // a real engine. `NUTRIENT_LABELS` / `resolveNutrientCode` stay real (pure,
 // no DB) so the search/fetch id + label wiring is exercised for real; the
@@ -99,7 +99,7 @@ vi.mock("@/lib/mcp/nutrients-read", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../nutrients-read")>();
   return { ...actual, getNutrients: vi.fn(async () => ({ present: true })) };
 });
-// v1.30 (G2) — `get_intraday_pulse` delegates to the shared IO seam; stub it
+// v1.30 — `get_intraday_pulse` delegates to the shared IO seam; stub it
 // so the tool-wiring tests below never reach a real DB read. The engine's own
 // logic (dense-90d + hourly fallback + tension) is covered elsewhere.
 vi.mock("@/lib/analytics/intraday-pulse-io", () => ({
@@ -114,7 +114,7 @@ vi.mock("@/lib/analytics/intraday-pulse-io", () => ({
     resolution: "tenMin",
   })),
 }));
-// Phase 4 — the deep-value reads delegate to the rich-reads engines; stub them
+// The deep-value reads delegate to the rich-reads engines; stub them
 // so the registry-wide loops (surface / annotation / no-verdict) never reach a
 // real engine. Their own logic is covered in `rich-reads.test.ts`.
 vi.mock("../rich-reads", () => ({
@@ -132,7 +132,7 @@ vi.mock("../rich-reads", () => ({
       label: "Grip strength",
     },
   ],
-  // v1.30 (G5/C4) — the metric-status-only discovery allowlist.
+  // v1.30 — the metric-status-only discovery allowlist.
   MCP_METRIC_STATUS_DISCOVERY: [
     {
       key: "WRIST_TEMPERATURE",
@@ -189,7 +189,7 @@ describe("MCP tool registry — surface", () => {
         // v1.22.0 — the ChatGPT default-mode retrieval pair.
         "search",
         "fetch",
-        // Phase 4 — deep-value reads.
+        // Deep-value reads.
         "get_correlation",
         "compare_metric",
         "get_metric_baseline",
@@ -1078,7 +1078,7 @@ describe("get_visits", () => {
     expect(v.conditions).toEqual(["Hypertension"]);
   });
 
-  // WR-10 — the absence contract, the check that must never be decorative. An
+  // The absence contract, the check that must never be decorative. An
   // empty list is honest absence, not empty success. { present: true,
   // visits: [] } would tell the model "you have no visits" when the truth is
   // "you have never recorded one".

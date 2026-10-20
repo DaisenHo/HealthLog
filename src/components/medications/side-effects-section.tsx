@@ -52,7 +52,7 @@ import { apiDelete, apiFetchEnvelope, apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.4.25 W19d — GLP-1 side-effect section for the medication detail
+ * v1.4.25 — GLP-1 side-effect section for the medication detail
  * page. Sits below the drug-level chart and above the intake history
  * timeline. Mounted only for `treatmentClass === "GLP1"` rows.
  *
@@ -64,7 +64,7 @@ import { queryKeys } from "@/lib/query-keys";
  *     each row showing category badge + entry label + severity chip +
  *     timestamp + delete button + collapsed notes.
  *
- * v1.4.25 W21 Fix-N — wraps the shared `<MedicationDetailSection>` so
+ * v1.4.25 — wraps the shared `<MedicationDetailSection>` so
  * the three sibling sections share one chrome contract, and swaps the
  * native `<select>` for the shadcn-radix `<Select>` so the picker
  * matches the rest of the form library (focus rings, keyboard nav,
@@ -138,7 +138,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
   const [severity, setSeverity] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
-  // v1.4.27 R4 RC2 — sticky-pin the Save / Cancel row by portalling it
+  // v1.4.27 — sticky-pin the Save / Cancel row by portalling it
   // into the `<ResponsiveSheet>` footer slot. The submit button keeps
   // its `<form>` association via the HTML `form` attribute.
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
@@ -192,7 +192,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       severity: number;
       notes: string | null;
     }) => {
-      // v1.4.25 W21 Fix-N (code-M6) — drop client-side `category`
+      // v1.4.25 (code-M6) — drop client-side `category`
       // from the wire payload. The server derives it from the entry
       // via `categoryForEntry`. Backwards-compatible with older
       // clients during the cut window (route accepts both shapes).
@@ -352,7 +352,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                 className="bg-muted/30 flex items-start justify-between gap-2 rounded-md px-2.5 py-2"
               >
                 <div className="min-w-0 flex-1 space-y-1">
-                  {/* v1.4.28 FB-F2 — fixed-width date slot pinned to
+                  {/* v1.4.28 — fixed-width date slot pinned to
                       the right of the row meta so the date stamp keeps
                       its column across rows. The category badge +
                       entry label + severity chip share the left-most
@@ -376,7 +376,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                       </Badge>
                     </div>
                     <p
-                      // D-H7 — narrowed from `w-[5.5rem]` (88 px) to
+                      // Narrowed from `w-[5.5rem]` (88 px) to
                       // `w-14` (56 px). The longest short-date variant
                       // ("15. Mai") fits inside 56 px with slack;
                       // recovering 32 px relieves the left slot's

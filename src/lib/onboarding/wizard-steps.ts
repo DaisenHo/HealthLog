@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the step machine behind the setup screens.
+ * v1.39 — the step machine behind the setup screens.
  *
  * The server publishes the ledger (`steps`) and the answers (`needs`); this
  * file turns them into a route. Pure and browser-free, so the page that

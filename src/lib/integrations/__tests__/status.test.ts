@@ -1,5 +1,5 @@
 /**
- * v1.4.15 Phase B2 — IntegrationStatus helper tests.
+ * v1.4.15 — IntegrationStatus helper tests.
  *
  * The persistence path is exercised by the integration suite under
  * `tests/integration/integration-status.test.ts` (real Postgres so the
@@ -116,9 +116,9 @@ describe("recordSyncSuccess", () => {
       lastSuccessAt: expect.any(Date),
       lastAttemptAt: expect.any(Date),
       lastError: null,
-      // v1.4.43 W14 — success clears every per-kind bucket so the
+      // v1.4.43 — success clears every per-kind bucket so the
       // next failure starts from zero in its own bucket.
-      // v1.4.47 W1 — the legacy `consecutiveFailures` column was
+      // v1.4.47 — the legacy `consecutiveFailures` column was
       // dropped (migration 0077); the bucket reset is the only
       // counter write now.
       consecutiveFailuresByKind: {
@@ -209,7 +209,7 @@ describe("recordSyncFailure — at threshold", () => {
   });
 
   it("dispatches an admin Telegram alert when failure count reaches default threshold (3)", async () => {
-    // v1.4.47 W1 — the alert ladder reads Math.max(...buckets) so the
+    // v1.4.47 — the alert ladder reads Math.max(...buckets) so the
     // existing row must seed the bucket at N-1 before the in-memory
     // increment produces alertSignal = N.
     vi.mocked(prisma.integrationStatus.findUnique).mockResolvedValueOnce({
@@ -631,8 +631,8 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
     expect(args.update).toEqual({
       state: "disconnected",
       lastError: null,
-      // v1.4.43 W14 — disconnect must clear the per-kind buckets too.
-      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // v1.4.43 — disconnect must clear the per-kind buckets too.
+      // v1.4.47 — legacy `consecutiveFailures` column dropped
       // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
@@ -655,9 +655,9 @@ describe("markReauthRequired / markDisconnected / markReconnected", () => {
     expect(args.update).toEqual({
       state: "connected",
       lastError: null,
-      // v1.4.43 W14 — reconnect clears the per-kind buckets so the
+      // v1.4.43 — reconnect clears the per-kind buckets so the
       // next sync starts on a clean slate.
-      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // v1.4.47 — legacy `consecutiveFailures` column dropped
       // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,
@@ -841,7 +841,7 @@ describe("recordSyncFailure — v1.4.43 W14 per-kind buckets", () => {
   });
 
   it("seeds a fresh zero envelope when the row has no bucket payload yet", async () => {
-    // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+    // v1.4.47 — the legacy `consecutiveFailures` column was dropped
     // (migration 0077). A row that has never written a bucket payload
     // (`consecutiveFailuresByKind: null`) starts from a zero envelope
     // on the next failure; the matching bucket ticks to 1 in a single
@@ -976,7 +976,7 @@ describe("resumeIntegrationFromPark", () => {
     expect(upsertArgs.update).toEqual({
       state: "connected",
       lastError: null,
-      // v1.4.47 W1 — legacy `consecutiveFailures` column dropped
+      // v1.4.47 — legacy `consecutiveFailures` column dropped
       // (migration 0077); the bucket reset is the only counter write.
       consecutiveFailuresByKind: {
         transient: 0,

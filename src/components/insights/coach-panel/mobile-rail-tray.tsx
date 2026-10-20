@@ -11,14 +11,14 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.20 phase B4 — mobile-only rail trays for the Coach drawer.
+ * v1.4.20 — mobile-only rail trays for the Coach drawer.
  *
  * The desktop layout pins the history rail (lg+) and the sources rail
  * (xl+) alongside the message thread. Below those breakpoints the
  * rails are reachable via chevron triggers in the thread's sub-header
  * strip; each trigger opens the matching side-sheet here.
  *
- * v1.4.28 R3c (BK-F-M6) — carved out of `<CoachDrawer>` (~560 LOC).
+ * v1.4.28 — carved out of `<CoachDrawer>` (~560 LOC).
  * The parent still owns the rail content + the open/closed state for
  * each tray so this component stays a thin presentational shell that
  * can be unit-tested in isolation without standing up the drawer's

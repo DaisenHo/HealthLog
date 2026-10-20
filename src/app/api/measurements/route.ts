@@ -456,7 +456,7 @@ async function postMeasurement(request: NextRequest) {
       measurements: body,
     });
     if (!parsed.success) {
-      // v1.4.43 W6 — iOS batch ingest (BP + Pulse, combined BG) needs
+      // v1.4.43 — iOS batch ingest (BP + Pulse, combined BG) needs
       // every issue echoed back so a one-shot retry can fix the full
       // payload rather than walk it field-by-field.
       const issues = sanitiseZodIssues(parsed.error.issues);
@@ -516,7 +516,7 @@ async function postMeasurement(request: NextRequest) {
               notesEncrypted: encryptNote(m.notes ?? null),
               glucoseContext:
                 (m.glucoseContext as GlucoseContext | undefined) ?? null,
-              // v1.4.25 W10 reconcile (code-review M4): mirror the
+              // v1.4.25 (code-review M4): mirror the
               // single-entry path so the multi-entry batch persists
               // `deviceType` instead of silently dropping it.
               deviceType: m.deviceType ?? null,
@@ -552,7 +552,7 @@ async function postMeasurement(request: NextRequest) {
       },
     });
 
-    // v1.4.34 IW-G — flush every cache that reflects this user's
+    // v1.4.34 — flush every cache that reflects this user's
     // measurement set so the next read paints the new rows. Interactive
     // multi-entry create (combined BP + pulse form) — hard-evict so the
     // SWR readers don't serve the pre-write body back to the user.
@@ -603,7 +603,7 @@ async function postMeasurement(request: NextRequest) {
       { action: "measurement.safety_floor.check" },
     );
 
-    // v1.37.19 (C2-F1) — the shared post-mutation tail: rollup recompute
+    // v1.37.19 — the shared post-mutation tail: rollup recompute
     // (collapsed per (type, day)) + status-insight re-warm, both
     // best-effort. One helper so a future write surface cannot remember
     // one leg and forget the other.
@@ -619,7 +619,7 @@ async function postMeasurement(request: NextRequest) {
   // Single mode (existing behavior)
   const parsed = createMeasurementSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — single-row POST is the iOS fallback path; one
+    // v1.4.43 — single-row POST is the iOS fallback path; one
     // round-trip per stale-field bug was the v1.4.41 iOS-contract
     // pain point. Multi-issue envelope + audit breadcrumb.
     const issues = sanitiseZodIssues(parsed.error.issues);
@@ -676,7 +676,7 @@ async function postMeasurement(request: NextRequest) {
         notes: null,
         notesEncrypted: encryptNote(notes ?? null),
         glucoseContext: (glucoseContext as GlucoseContext | undefined) ?? null,
-        // v1.4.25 W10 reconcile (code-review M4): the deviceType column
+        // v1.4.25 (code-review M4): the deviceType column
         // already accepts client metadata from the batch route. Mirror
         // the behaviour here so single-entry POST persists the tag
         // instead of silently dropping it.
@@ -712,7 +712,7 @@ async function postMeasurement(request: NextRequest) {
     },
   });
 
-  // v1.4.34 IW-G — flush every cache that reflects this user's
+  // v1.4.34 — flush every cache that reflects this user's
   // measurement set so the next read paints the new row. Interactive
   // single-entry create — hard-evict so the SWR readers don't serve the
   // pre-write body back to the user.

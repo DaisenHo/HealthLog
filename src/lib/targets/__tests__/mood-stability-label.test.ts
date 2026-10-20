@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { moodStabilityLabel } from "../mood-stability-label";
 
 /**
- * v1.4.25 W3e — threshold contract for the verbal MOOD_STABILITY label.
+ * v1.4.25 — threshold contract for the verbal MOOD_STABILITY label.
  * The card switches from raw σ to one of three buckets; the rule lives
  * here so the boundaries can be unit-tested without React.
  */

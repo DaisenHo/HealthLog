@@ -7,7 +7,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 /**
- * v1.4.20 phase B3 — single-sentence trend annotation under each
+ * v1.4.20 — single-sentence trend annotation under each
  * Trends-row chart.
  *
  * Tests cover:

@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — every Q2 area and every connectable Q4 source has a target
+ * v1.39 — every Q2 area and every connectable Q4 source has a target
  * on a surface that exists, so the first-result screen can never be handed
  * a task it cannot render.
  */

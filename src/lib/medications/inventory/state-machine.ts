@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19b — container inventory state machine.
+ * v1.4.25 — container inventory state machine.
  *
  * Pure functions over a minimal `InventoryItemView` shape — no DB
  * access, no Prisma imports. The route handlers, the consumption hook

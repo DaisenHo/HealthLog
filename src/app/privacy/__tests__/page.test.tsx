@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import PrivacyPage from "../page";
 
 /**
- * v1.4.40 W-PRIVACY (SB-3) — Bilingual public privacy-policy contract.
+ * v1.4.40 — Bilingual public privacy-policy contract.
  *
  * The page is the App-Store-submission blocker (Apple BLOCKER 2 of 5).
  * These tests pin the structural commitments that any future redesign

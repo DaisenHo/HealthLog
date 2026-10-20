@@ -5,7 +5,7 @@ import { loadSafetyContracts } from "@/lib/ai/prompts/safety-contracts";
 import type { Locale } from "@/lib/i18n/config";
 
 /**
- * v1.18.10 (MEDIUM-1) — resolved-Coach-prompt contract parity.
+ * v1.18.10 — resolved-Coach-prompt contract parity.
  *
  * `safety-contracts-parity.test.ts` asserts every ground-rule BODY in the
  * matrix is non-empty per locale. This file goes one step further and asserts

@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-SINCE — defense-in-depth row cap on the live-fallback
+ * v1.4.39 — defense-in-depth row cap on the live-fallback
  * per-type read.
  *
  * The v1.4.38.7 perf audit (`.planning/round-v1438-perf-analysis.md`

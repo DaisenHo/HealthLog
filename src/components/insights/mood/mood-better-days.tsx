@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
 
 /**
- * v1.11.5 (F2) — "What's associated with your better days" board.
+ * v1.11.5 — "What's associated with your better days" board.
  *
  * One ranked, confidence-gated list folding the F1 tag deltas and the
  * mood × health-metric correlations into a single effect-size-ranked

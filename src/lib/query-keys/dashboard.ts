@@ -4,7 +4,7 @@
  */
 export const dashboardKeys = {
   /**
-   * v1.4.33 IW2 — the analytics queryKey now optionally carries a
+   * v1.4.33 — the analytics queryKey now optionally carries a
    * `slice` discriminator so the dashboard tile-strip can subscribe to
    * the slim `?slice=summaries` server slice (IW1 / C1) without
    * colliding with the thick-payload consumers on the Insights tree.
@@ -26,7 +26,7 @@ export const dashboardKeys = {
     ["analytics", "range", type, range] as const,
 
   /**
-   * v1.7.0 W6 — unified dashboard first-paint snapshot. One client cell
+   * v1.7.0 — unified dashboard first-paint snapshot. One client cell
    * hydrates every above-the-fold tile from `GET /api/dashboard/snapshot`,
    * replacing the four independent analytics-slim / analytics-thick /
    * mood / widget-layout cells. A measurement / mood / medication /
@@ -50,7 +50,7 @@ export const dashboardKeys = {
       : (["dashboard", "snapshot"] as const),
 
   /**
-   * v1.4.22 W5 reconcile (Code-LOW-5) — `["user", "dashboardWidgets"]`
+   * v1.4.22 — `["user", "dashboardWidgets"]`
    * was duplicated as a literal at three call sites (dashboard,
    * insights, settings/dashboard-layout). One typo turns into a
    * silent cache miss + extra fetch; the centralised key defends

@@ -38,7 +38,7 @@ describe("formatter-cache", () => {
     expect(a.format(new Date("2026-05-08T12:00:00Z"))).toBe("2026-05-08");
   });
 
-  // v1.28.42 (H2) — `makeFormatters` routes every date/time closure through
+  // v1.28.42 — `makeFormatters` routes every date/time closure through
   // this cache, so the memo key MUST distinguish the two variables that make
   // otherwise-identical shapes render differently: the profile timezone and
   // the hour-cycle option. A collision on either would render the wrong wall

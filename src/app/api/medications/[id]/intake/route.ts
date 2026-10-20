@@ -72,7 +72,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     });
   }
 
-  // v1.36.1 follow-up — the sibling route `POST /api/medications/intake`
+  // v1.36.1 — the sibling route `POST /api/medications/intake`
   // refuses a delegate changing a dose the owner already recorded. This route
   // reaches the same rows through the slot upsert, so without the same rule it
   // is simply the way round the other one: an explicit skip posted onto a
@@ -114,7 +114,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   const intakeSource = authMethod === "bearer" ? "API" : "WEB";
 
   const { id } = await params;
-  // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper. This is a
+  // v1.4.25 — privacy gate hoisted to the shared helper. This is a
   // dose write, so the guard also refuses a record-only medication with
   // `medication.intake.notTracked` (iOS #116, item 15): its history stays,
   // but a new dose would be stored and then counted nowhere.
@@ -131,7 +131,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     medicationId: id,
   });
   if (!parsed.success) {
-    // v1.4.43 W6 — per-med intake POST hot path; multi-issue 422 +
+    // v1.4.43 — per-med intake POST hot path; multi-issue 422 +
     // audit breadcrumb keyed `medications.intake.create.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
     const shape = unstableExternalIdShape(body, "idempotencyKey");
@@ -224,7 +224,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
 
   const resolvedTakenAt = skipped ? null : (takenAt ?? new Date());
   const incomingScheduledFor = scheduledFor ?? takenAt ?? new Date();
-  // C2 — the per-med route only ever carries an explicit user gesture:
+  // The per-med route only ever carries an explicit user gesture:
   // `resolvedTakenAt` is `now()` for any non-skip POST (there is no
   // "mark pending" write on this route), so a non-skip is an explicit
   // taken and a `skipped:true` body is an explicit skip. Neither is a
@@ -413,7 +413,7 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
   }
 
   let event;
-  // v1.8.2 reconcile — whether this write moved the slot pending→taken.
+  // v1.8.2 — whether this write moved the slot pending→taken.
   // Only that transition decrements pen inventory (M2). For the
   // unscheduled/PRN branch a non-skip write always records a fresh dose,
   // so it consumes when not skipped.
@@ -601,11 +601,11 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+  // v1.4.34 — bust per-user medications + compliance + achievement
   // caches so the next read reflects the dose event.
   invalidateUserMedications(user.id, { evict: true });
 
-  // v1.4.39 W-MED — refresh the persistent compliance rollup for the
+  // v1.4.39 — refresh the persistent compliance rollup for the
   // affected day. The hook is best-effort; failures annotate but never
   // block the user's POST response.
   await recomputeMedicationComplianceForEvent({
@@ -676,14 +676,14 @@ export const GET = apiHandler(
     const { user } = await requireRecordAuth("read", "medications");
 
     const { id } = await params;
-    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    // v1.4.25 — privacy gate hoisted to the shared helper.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
     const searchParams = Object.fromEntries(request.nextUrl.searchParams);
     const parsed = listIntakeEventsSchema.safeParse(searchParams);
     if (!parsed.success) {
-      // v1.4.43 W6 — multi-issue 422 + audit breadcrumb keyed
+      // v1.4.43 — multi-issue 422 + audit breadcrumb keyed
       // `medications.intake.list.validation-failed`.
       const issues = sanitiseZodIssues(parsed.error.issues);
       annotate({
@@ -709,7 +709,7 @@ export const GET = apiHandler(
 
     const { limit, offset, sortBy, sortDir, status } = parsed.data;
 
-    // v1.4.37 W3 — translate the optional `status` filter into a Prisma
+    // v1.4.37 — translate the optional `status` filter into a Prisma
     // `where` fragment. Default `status:"all"` keeps the contract
     // byte-stable for the iOS Swift client and the dashboard tiles that
     // were on the wire before this knob existed. The detail-page
@@ -740,7 +740,7 @@ export const GET = apiHandler(
       ...statusFilter,
     };
 
-    // v1.7.0 O-1 — pin NULLS LAST on the `takenAt` sort. Skipped rows
+    // v1.7.0 — pin NULLS LAST on the `takenAt` sort. Skipped rows
     // carry `takenAt: null`; under a bare `desc` collation Postgres
     // emits NULLS FIRST, floating skipped/planned rows to the top of
     // the history view. Pinning them last keeps the descending order

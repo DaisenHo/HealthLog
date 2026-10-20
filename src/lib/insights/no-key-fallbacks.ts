@@ -2,7 +2,7 @@ import type { Locale } from "@/lib/i18n/config";
 import type { MetricSignal } from "@/lib/insights/metric-signal";
 
 /**
- * v1.4.25 W9e / v1.31.0 — these no-key fallbacks now carry a written body for
+ * v1.4.25 v1.31.0 — these no-key fallbacks now carry a written body for
  * every shipped locale (de/en/fr/es/it/pl). They used to ship DE + EN only and
  * route the other four through the English body, which meant a French, Spanish,
  * Italian or Polish self-hoster read English on nine metric surfaces whenever

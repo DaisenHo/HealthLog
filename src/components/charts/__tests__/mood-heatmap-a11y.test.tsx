@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { MoodHeatmap } from "../mood-heatmap";
 
 /**
- * 2026-07-17 a11y audit (M2) — mood heatmap day cells are pointer-only SVG
+ * Mood heatmap day cells are pointer-only SVG
  * `<rect>`s. The keyboard/screen-reader path to the per-day values is a
  * the data table under the grid (v1.42: the same `ChartDataTable` every
  * day-linked chart carries, collapsed until asked for), not focusable rects

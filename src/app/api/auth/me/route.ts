@@ -175,7 +175,7 @@ export const GET = apiHandler(async () => {
           where: { id: recordId },
           select: {
             gender: true,
-            // v1.39 (C1) — the record's own unit columns, for the setup
+            // v1.39 — the record's own unit columns, for the setup
             // flow's "never re-ask a value the account holds" rule.
             glucoseUnit: true,
             unitPreference: true,
@@ -199,7 +199,7 @@ export const GET = apiHandler(async () => {
     // Server-WIDE, so it is the same map for every record and is not
     // re-scoped here.
     getOperatorModuleAvailability(),
-    // v1.39 (C1) — the needs-based setup state for the RECORD, like the two
+    // v1.39 — the needs-based setup state for the RECORD, like the two
     // module fields above and for the same reason: it says what that record
     // tracks, and its only consumer reads it beside that record's reading
     // count, medication count and integration state. Ordering a record's rows
@@ -249,7 +249,7 @@ export const GET = apiHandler(async () => {
   // exactly as it was, and `moduleAccess` is the same answer with the reason
   // attached — the record's own switch, the grant's edge, or the operator's.
   // Every client that only wants "paint it or not" keeps reading the boolean.
-  // v1.39 (C1) — the published steps carry the Q6 resolution: a record whose
+  // v1.39 — the published steps carry the Q6 resolution: a record whose
   // account already holds both unit preferences reads `units` as `done`, so
   // the flow never re-asks a value the account holds.
   const recordOnboarding = toOnboardingStateDto(
@@ -308,7 +308,7 @@ export const GET = apiHandler(async () => {
     timezone: await resolveStoredTimezone(user.timezone),
     onboardingCompletedAt: user.onboardingCompletedAt,
     onboardingTourCompleted: user.onboardingTourCompleted,
-    // v1.39 (C1) — the needs-based setup flow, published additively:
+    // v1.39 — the needs-based setup flow, published additively:
     // `steps` (the nine stable ids and their `pending | done | skipped`
     // status), `needs` (the answers as given), `completedAt` (the flow's OWN
     // completion, distinct from `onboardingCompletedAt` above, which keeps its
@@ -326,7 +326,7 @@ export const GET = apiHandler(async () => {
     // a step id it does not know skips it — the list is the contract, not the
     // client's own copy of it.
     onboarding,
-    // v1.18.6 (DISC-02) — one-time medical-disclaimer acknowledgment. Null
+    // v1.18.6 — one-time medical-disclaimer acknowledgment. Null
     // when never acknowledged; the onboarding welcome gate reads this to
     // decide whether to require the acknowledgment before "Get started".
     disclaimerAcknowledgedAt: user.disclaimerAcknowledgedAt,
@@ -376,7 +376,7 @@ export const GET = apiHandler(async () => {
     // defaults rather than to `undefined`, so the switch is what renders.
     // No extra query — the session already loads the row this column is on.
     notificationPrefs: parseNotificationPrefs(user.notificationPrefs ?? null),
-    // v1.4.47 W3 — the caller's own stored Coach opt-out, published for the
+    // v1.4.47 — the caller's own stored Coach opt-out, published for the
     // switch that edits it. Default `false` if the column is absent
     // (partial-deploy rollback safety, see migration 0078 commentary). It is
     // not a gate: whether the Coach shows for the record on screen is the

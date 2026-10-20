@@ -10,7 +10,7 @@ import {
 } from "../medical-references";
 
 /**
- * v1.4.16 phase B5a — system prompt embeds the curated medical-
+ * v1.4.16 — system prompt embeds the curated medical-
  * reference bundle as a SOURCES block so the model can cite by id.
  *
  * The block is injected dynamically: only references that overlap the

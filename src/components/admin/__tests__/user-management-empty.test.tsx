@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.15 phase-C5 — `/admin/users` empty state.
+ * v1.4.15 — `/admin/users` empty state.
  *
  * Before this phase, when the admin's filter bucket returned zero
  * users (or the system had only one admin and the "Users" filter was

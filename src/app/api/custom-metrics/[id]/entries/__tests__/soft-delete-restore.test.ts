@@ -1,5 +1,5 @@
 /**
- * v1.37.20 (A3-11) — custom-metric entries move from hard delete to the
+ * v1.37.20 — custom-metric entries move from hard delete to the
  * tombstone + Undo contract every peer entry surface carries.
  *
  * Watched red: before the conversion the DELETE verb called

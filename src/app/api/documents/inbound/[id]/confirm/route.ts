@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — review-then-confirm: commit the user's decisions.
+ * v1.25 — review-then-confirm: commit the user's decisions.
  *
  * The ONLY write path out of the staging area. The user approves or rejects
  * each staged fact; an approved fact is committed to its structured store
@@ -100,7 +100,7 @@ async function confirmDocument(
     }
 
     try {
-      // v1.43 (D1223) — an OBSERVATION may name the marker the person chose
+      // v1.43 — an OBSERVATION may name the marker the person chose
       // on the review screen; the label is then remembered as its alias.
       const ref = await commitApprovedFact(user.id, fact, {
         biomarkerId: decision.biomarkerId,

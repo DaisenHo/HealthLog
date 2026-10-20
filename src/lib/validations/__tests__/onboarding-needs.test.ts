@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — what `PATCH /api/onboarding/answers` will and will not accept.
+ * v1.39 — what `PATCH /api/onboarding/answers` will and will not accept.
  *
  * The union has an answer arm per step and a skip arm for six of the nine, and
  * the split is a decision rather than a shape: `who` is the one required

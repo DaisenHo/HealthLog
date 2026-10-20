@@ -97,7 +97,7 @@ interface LabFormProps {
   onSuccess?: (created: LabResultDto) => void;
   onCancel?: () => void;
   /**
-   * v1.30.1 (H3 QoL fix) — "Save & add another": the sheet stays open, the
+   * v1.30.1 — "Save & add another": the sheet stays open, the
    * reading is cleared for the next entry, and `takenAt` is PRESERVED (a
    * real lab report is 10-20 analytes sharing one blood-draw date, usually
    * in the past — re-picking that date for every row was the pain point).
@@ -180,7 +180,7 @@ export function LabForm({
   // The bounds are derived from what is typed; what is typed is kept verbatim.
   const [sourceRangeOpen, setSourceRangeOpen] = useState(false);
   const [sourceRange, setSourceRange] = useState("");
-  // v1.30.1 H3 — which submit button is in flight, so the OTHER one doesn't
+  // v1.30.1 — which submit button is in flight, so the OTHER one doesn't
   // also show a spinner. `!== null` replaces the old plain `submitting`
   // boolean for every disabled check below.
   const [pendingAction, setPendingAction] = useState<
@@ -219,7 +219,7 @@ export function LabForm({
     e.preventDefault();
     setError(null);
 
-    // v1.30.1 H3 — both Save and Save & add another are `type="submit"`
+    // v1.30.1 — both Save and Save & add another are `type="submit"`
     // buttons tied to this one `<form>` via the HTML `form` attribute (they
     // render portalled into the sheet's footer, outside the `<form>` tag
     // itself); `submitter` distinguishes which one fired this submit.
@@ -355,7 +355,7 @@ export function LabForm({
           {t("common.cancel")}
         </Button>
       ) : null}
-      {/* v1.30.1 H3 — additive: only renders when the caller wires up
+      {/* v1.30.1 — additive: only renders when the caller wires up
           `onSavedKeepOpen`. `data-action` is how `handleSubmit` tells this
           button apart from the plain Save below via `event.submitter`. */}
       {onSavedKeepOpen ? (

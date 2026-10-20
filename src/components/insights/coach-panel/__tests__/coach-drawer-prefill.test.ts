@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { nextResettableValue } from "../coach-drawer";
 
 /**
- * v1.4.23 H3 — drawer prefill is now a fully-controlled prop.
+ * v1.4.23 — drawer prefill is now a fully-controlled prop.
  *
  * The v1.4.20 implementation reset the composer by mounting the
  * `<CoachDrawer>` with `key={prefill}`. That weaponised React's

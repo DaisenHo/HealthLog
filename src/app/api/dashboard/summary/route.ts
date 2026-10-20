@@ -177,7 +177,7 @@ interface MetricCard {
   sparkline: number[];
   updatedAt: string | null;
   /**
-   * v1.4.33 maintainer-item-1 — total readings the user has ever
+   * v1.4.33 — total readings the user has ever
    * logged for this metric, irrespective of the 7-day sparkline
    * window. The dashboard tile keeps showing whenever `allTimeCount > 0`
    * so a user with valid historical data isn't surprised by a tile
@@ -186,7 +186,7 @@ interface MetricCard {
    */
   allTimeCount: number;
   /**
-   * v1.4.33 maintainer-item-1 — ISO timestamp of the metric's single
+   * v1.4.33 — ISO timestamp of the metric's single
    * most recent reading. When `allTimeCount > 0` but the latest
    * reading is older than 7 days, the iOS tile renders a muted
    * "last reading N days ago" caption so the user understands the
@@ -336,19 +336,19 @@ export const GET = apiHandler(async () => {
   const { user } = await requireRecordAuth("manage", "record");
   annotate({ action: { name: "dashboard.summary" } });
 
-  // v1.4.25 W7b — anchor every day-bucket call to the user's display
+  // v1.4.25 — anchor every day-bucket call to the user's display
   // timezone. Falls back to Europe/Berlin when the column is somehow
   // missing (defensive — the schema's NOT NULL default normally pins
   // it).
   const userTz = validTimezoneOr(user.timezone, DEFAULT_TIMEZONE);
 
-  // v1.4.38 W-F — wrap the whole response in the analytics LRU.
+  // v1.4.38 — wrap the whole response in the analytics LRU.
   // Subsequent iOS polls inside the TTL hit memory; measurement /
   // mood / medication writes invalidate the user-bucket via the
   // existing `invalidateUserMeasurements` + the v1.4.38-extended
   // `invalidateUserMedications` hooks.
   //
-  // v1.18.11 (W5 perf) — read via `cachedSwr`. The `analytics` bucket
+  // v1.18.11 — read via `cachedSwr`. The `analytics` bucket
   // already provisions a 1 h `staleTtlMs` window, but this endpoint read
   // through plain `cached` and so ignored it: the iOS client polls every
   // 60 s, and a plain read past the 60 s fresh TTL re-paid the full cold
@@ -444,7 +444,7 @@ async function buildDashboardSummary(
     ...measurementTypeEnum.options,
   ] as MeasurementType[];
 
-  // v1.4.38 W-F — per-sub-query wall-clock timing for prod observability.
+  // v1.4.38 — per-sub-query wall-clock timing for prod observability.
   // Captured on the cache-miss path; the cache-hit path skips this whole
   // builder. Reported under `meta.dashboard.sub_*_ms` so the next
   // perf-verify can attribute a regression to a specific sub-query
@@ -460,7 +460,7 @@ async function buildDashboardSummary(
     return result;
   };
 
-  // v1.4.38 W-F — six bounded sub-queries replace the legacy 4
+  // v1.4.38 — six bounded sub-queries replace the legacy 4
   // unbounded ones. Row counts are now:
   //   - latestEver: ≤ N metric types (one indexed lookup per type via
   //                 LATERAL, REG-11: dropped the 7-day window so a
@@ -500,7 +500,7 @@ async function buildDashboardSummary(
         _max: { measuredAt: true },
       }),
     ),
-    // v1.4.39 W-SERVER-FIX-2 — the dashboard compliance tile pulled
+    // v1.4.39 — the dashboard compliance tile pulled
     // `MedicationIntakeEvent` rows for the today-window only. Daily
     // schedules (`daysOfWeek: null`) had no row to read until the
     // reminder worker entered the RED phase at the end of the dose
@@ -607,7 +607,7 @@ async function buildDashboardSummary(
     };
   }
 
-  // v1.4.38 W-F — activity-day set assembled from the bounded streak
+  // v1.4.38 — activity-day set assembled from the bounded streak
   // queries. The measurement side arrives as local YYYY-MM-DD keys, the
   // same keys `userDayKey(measuredAt, userTz)` produces for the intakes.
   const activityDays = new Set<string>(measurementStreakDays);
@@ -617,7 +617,7 @@ async function buildDashboardSummary(
 
   const streak = computeStreak(activityDays, userTz);
 
-  // v1.4.38 W-F — per-type latest (one row per type) + sparkline
+  // v1.4.38 — per-type latest (one row per type) + sparkline
   // (bucket means per day) assembled from the two new SQL aggregates.
   // REG-11 (v1.4.44): `latestEver` carries the most recent reading
   // regardless of age — the iOS tile shows the historical value plus a
@@ -629,7 +629,7 @@ async function buildDashboardSummary(
       at: new Date(row.measured_at),
     });
   }
-  // v1.4.39 W-SUM — cumulative tiles paint the daily SUM; spot tiles
+  // v1.4.39 — cumulative tiles paint the daily SUM; spot tiles
   // keep the daily MEAN. Reading `sum_value` directly off the rollup
   // row eliminates the legacy `mean * count` reconstruction; the
   // fallback covers pre-v1.4.39 NULL rows during the boot-backfill
@@ -693,7 +693,7 @@ async function buildDashboardSummary(
 
   const metrics: MetricCard[] = [];
 
-  // v1.4.33 maintainer-item-1 — every emitted card now carries
+  // v1.4.33 — every emitted card now carries
   // `allTimeCount` + `lastSeenAt` so the iOS tile renderer can keep
   // a metric visible during a logging gap (gate on `allTimeCount > 0`)
   // and paint a muted "Letzter Wert vor Xd" caption when the most

@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { EDGE_PADDING_PERCENT, RangeBar } from "../range-bar";
 
 /**
- * v1.4.25 W3e — `<RangeBar>` was extracted from the inline 790-line
+ * v1.4.25 — `<RangeBar>` was extracted from the inline 790-line
  * `targets/page.tsx`. Behaviour is intentionally unchanged from the
  * v1.4.22 inline version; these tests pin the contract so the
  * extraction is provably side-effect-free.

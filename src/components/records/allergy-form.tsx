@@ -53,7 +53,7 @@ function toInstant(value: string): string | undefined {
 }
 
 /**
- * v1.25 (W-RECORDS) — create or edit a structured allergy/intolerance record.
+ * v1.25 — create or edit a structured allergy/intolerance record.
  *
  * `substance` is the queryable label; the free-text reaction + note are
  * encrypted server-side. Patient-reported reference data, not a clinical

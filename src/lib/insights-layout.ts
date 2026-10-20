@@ -146,7 +146,7 @@ export interface InsightsLayout {
 }
 
 /**
- * v1.32.21 (R5a) — the resolved layout plus the server-stamped `updatedAt`
+ * v1.32.21 — the resolved layout plus the server-stamped `updatedAt`
  * optimistic-concurrency token (mirrors `User.updatedAt`, never persisted
  * inside the blob). GET and every write response carry it; the client echoes
  * it back as `baseUpdatedAt` on the next write. Mirrors
@@ -413,7 +413,7 @@ function serializeInsightsSections(
 }
 
 /**
- * v1.15.11 W2 — the visible section ids in render order, derived from a
+ * v1.15.11 — the visible section ids in render order, derived from a
  * resolved layout. Pure helper so the page can map each id onto its JSX in
  * `SECTION_REGISTRY` without re-implementing the sort/filter inline (and so
  * the ordering is unit-testable without rendering React). Sections marked
@@ -433,7 +433,7 @@ export function orderedVisibleSectionIds(
 }
 
 /**
- * v1.15.11 W2c — resolve a single tile's layout decision against a resolved
+ * v1.15.11 — resolve a single tile's layout decision against a resolved
  * layout. Returns `{ visible, order }` for a known tile id; for a tile id the
  * layout does not enumerate (a dashboard tile with no corresponding layout
  * entry — e.g. a derived re-frame like FITNESS_AGE) the tile is treated as

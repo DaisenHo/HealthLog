@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W8c — two-axis source-priority resolution, end-to-end.
+ * v1.4.25 — two-axis source-priority resolution, end-to-end.
  *
  * Wave 8c lays down a per-user, per-metric, per-device-type canonical
  * picker. The picker is unit-tested at the helper level; this file

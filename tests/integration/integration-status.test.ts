@@ -1,5 +1,5 @@
 /**
- * v1.4.15 Phase B2 — IntegrationStatus end-to-end (real Postgres).
+ * v1.4.15 — IntegrationStatus end-to-end (real Postgres).
  *
  * The unit suite (`src/lib/integrations/__tests__/status.test.ts`)
  * mocks Prisma. This file lights up the real driver so we lock in the
@@ -88,7 +88,7 @@ describe("IntegrationStatus end-to-end", () => {
     });
     expect(status).not.toBeNull();
     expect(status!.state).toBe("error_transient");
-    // v1.4.47 W1 — legacy `consecutiveFailures` column dropped; the
+    // v1.4.47 — legacy `consecutiveFailures` column dropped; the
     // per-kind bucket is now the sole counter.
     expect(status!.consecutiveFailuresByKind).toMatchObject({
       transient: 1,
@@ -126,7 +126,7 @@ describe("IntegrationStatus end-to-end", () => {
     const snapshot = await getIntegrationStatus(TEST_USER_ID, "nightscout");
     expect(snapshot.state).toBe("error_transient");
     expect(snapshot.lastError).toBe("Nightscout sync HTTP 502");
-    // v1.4.47 W1 — snapshot drops the legacy `consecutiveFailures`
+    // v1.4.47 — snapshot drops the legacy `consecutiveFailures`
     // scalar; the per-kind bucket carries the count.
     expect(snapshot.consecutiveFailuresByKind).toMatchObject({
       transient: 1,
@@ -269,7 +269,7 @@ describe("IntegrationStatus end-to-end", () => {
     });
   });
 
-  // v1.4.43 W14 — end-to-end resume flow against real Postgres.
+  // v1.4.43 — end-to-end resume flow against real Postgres.
   //
   // The full ladder: persistent failure × N → bucket increments only
   // the persistent slot → wall-clock crosses 24h → next failure flips

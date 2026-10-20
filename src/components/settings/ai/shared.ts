@@ -52,7 +52,7 @@ export interface UserAIProvider {
 export type { ReasoningEffort };
 
 /**
- * v1.4.16 phase B2 — provider tags exposed to the UI. Mirrors
+ * v1.4.16 — provider tags exposed to the UI. Mirrors
  * `PROVIDER_CHAIN_TYPES` server-side; kept as a const-array here to
  * avoid pulling a server-only module into the client bundle.
  */

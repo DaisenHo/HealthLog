@@ -1,7 +1,7 @@
 /**
  * POST /api/coach/suggested-actions — confirm a generalised Coach action card.
  *
- * v1.22 (F6) — the confirm half of the generalised propose→confirm moat. The
+ * v1.22 — the confirm half of the generalised propose→confirm moat. The
  * Coach proposes an action via the closed `---SUGGEST-ACTION---` sentinel →
  * `suggestedAction` SSE frame → `<SuggestedActionCard>`. This endpoint is what
  * the card's confirm button calls. It switches on the CLOSED `actionType`

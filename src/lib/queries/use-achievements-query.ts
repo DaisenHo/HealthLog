@@ -13,7 +13,7 @@ import type {
 } from "@/lib/gamification/achievements";
 
 /**
- * v1.4.34 IW-F-Perf — single TanStack-Query wrapper for
+ * v1.4.34 — single TanStack-Query wrapper for
  * `/api/gamification/achievements`.
  *
  * Pre-fix, three consumers each declared their own `useQuery` block:

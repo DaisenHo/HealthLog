@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — Polar poll-cohort sync handler.
+ * v1.17.0 — Polar poll-cohort sync handler.
  * v1.32.15 — the per-user arm now runs BOTH Polar legs: vitals
  * (`syncUserPolar`) then exercises/workouts (`syncUserPolarWorkouts`).
  *

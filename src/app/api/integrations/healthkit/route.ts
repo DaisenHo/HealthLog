@@ -254,7 +254,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — iOS HealthKit ingest is a hot path. Multi-issue
+    // v1.4.43 — iOS HealthKit ingest is a hot path. Multi-issue
     // 422 + audit breadcrumb so the iOS Sync engine sees the full
     // diff and stops iterating one field at a time.
     const issues = sanitiseZodIssues(parsed.error.issues);

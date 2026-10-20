@@ -90,7 +90,7 @@ export const REGRESSION_X_ORIGIN_DAYS = Math.floor(
 ); // 18262
 
 /**
- * v1.20.0 F6 — per-bucket OLS regression accumulators (epoch-day x-axis).
+ * v1.20.0 — per-bucket OLS regression accumulators (epoch-day x-axis).
  * Mirrors the four columns migration 0190 added to `measurement_rollups`
  * plus the `n` / `Σy` the existing `count` / `mean` already carry. A bucket
  * whose accumulators predate the migration (or whose write missed the
@@ -127,7 +127,7 @@ export interface ComposedRegression {
 }
 
 /**
- * v1.20.0 F6 — compose a windowed OLS slope / r² / population-sd from the
+ * v1.20.0 — compose a windowed OLS slope / r² / population-sd from the
  * summed regression accumulators of a set of DAY buckets.
  *
  * The six terms (`n = Σcount`, `Σx`, `Σy`, `Σxy`, `Σxx`, `Σyy`) are ADDITIVE
@@ -315,7 +315,7 @@ export function collapseRollupRowsBySource<T extends SourcedBucketRow>(
 }
 
 /**
- * v1.20.0 F6 — a DAY bucket carrying its `bucketStart` plus the
+ * v1.20.0 — a DAY bucket carrying its `bucketStart` plus the
  * regression accumulators. The windowed-regression readers consume an
  * array of these (one canonical-source row per day) and slice them into
  * the 7/30/90-day sub-windows before composing.
@@ -325,7 +325,7 @@ export interface AccumulatorBucketRow extends RegressionAccumulators {
 }
 
 /**
- * v1.20.0 F6 — compose a windowed slope / r² / population-sd over the DAY
+ * v1.20.0 — compose a windowed slope / r² / population-sd over the DAY
  * buckets whose `bucketStart` falls on or after `since`.
  *
  * The window is DAY-aligned (a bucket is in-window iff its `bucketStart`
@@ -350,7 +350,7 @@ export function composeWindowedRegression(
 }
 
 /**
- * v1.20.0 P3 M-1 — true iff any in-window DAY bucket carries a NULL
+ * v1.20.0 — true iff any in-window DAY bucket carries a NULL
  * regression accumulator (a row that predates migration 0190, or whose
  * boot re-fold has not yet refilled it). `composeWindowedRegression`
  * collapses both that case AND the legitimate "< 2 readings" / degenerate

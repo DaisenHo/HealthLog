@@ -85,7 +85,7 @@ export function SystemStatusSummary() {
               tone={keyBackup.due ? "warning" : "success"}
             />
           )}
-          {/* v1.4.27 R5 — surface the offline-geo state so the maintainer
+          {/* v1.4.27 — surface the offline-geo state so the maintainer
               spots the missing GeoLite2 databases without crawling logs.
               Read from the admin status, not the public /api/version. */}
           <StatusItem

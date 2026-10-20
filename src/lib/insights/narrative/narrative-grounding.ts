@@ -1,5 +1,5 @@
 /**
- * v1.18.10 (HIGH-3) — period-narrative grounding validator.
+ * v1.18.10 — period-narrative grounding validator.
  *
  * The period narrative was plain text written straight to storage after the
  * provider call, with NO post-generation check and NO corrective retry —

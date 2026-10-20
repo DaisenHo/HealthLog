@@ -9,7 +9,7 @@ import {
 } from "@/lib/insights/sub-page-metric";
 
 /**
- * v1.15.14 W2 — the "Anpassen" sub-page manager lists EVERY routed
+ * v1.15.14 — the "Anpassen" sub-page manager lists EVERY routed
  * sub-page slug grouped by category. These guards pin the total grouping
  * so a future slug can never silently drop out of the manager.
  */

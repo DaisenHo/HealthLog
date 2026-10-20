@@ -132,7 +132,7 @@ export type CorrelationResult = CorrelationOk | CorrelationInsufficient;
 /**
  * Hard floor for paired sample count.
  *
- * v1.4.23 H6 — raised from 14 to 20 so borderline-df Pearson cards
+ * v1.4.23 — raised from 14 to 20 so borderline-df Pearson cards
  * stop surfacing. The Fisher's-Z normal approximation overstates
  * significance at df < 18; raising the gate is the simpler patch here
  * (a rigorous incomplete-beta replacement is queued as a v1.4.24
@@ -229,7 +229,7 @@ export function pearson(input: {
   const clamped = Math.max(-1, Math.min(1, r));
 
   // Two-sided p-value via Student's t. t = r * sqrt(n-2) / sqrt(1-r^2).
-  // v1.4.26 P6-1 — replaced the normal-approx fallback with a rigorous
+  // v1.4.26 — replaced the normal-approx fallback with a rigorous
   // regularised-incomplete-beta evaluation so the surface decision is
   // exact at every df the corpus produces, not just for df >= 18. The
   // auto-discovery work planned for v1.5/v1.6 widens the metric pair
@@ -375,7 +375,7 @@ function roundTo(value: number, digits: number): number {
 /**
  * Two-sided p-value for a t-statistic with `df` degrees of freedom.
  *
- * v1.4.26 P6-1 — exact Student's-t survival via the regularised
+ * v1.4.26 — exact Student's-t survival via the regularised
  * incomplete beta. The two-sided p of |t| with df is
  *   p = I_{x}(df/2, 1/2)        where x = df / (df + t^2).
  * `regularizedIncompleteBeta` below evaluates `I_x(a, b)` with the

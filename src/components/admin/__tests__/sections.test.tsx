@@ -132,13 +132,13 @@ describe("admin sections — SSR smoke", () => {
     expect(html).toContain("Delete all data globally");
   });
 
-  // v1.4.16 phase B5e — admin AI quality preview. The mocked useQuery
+  // v1.4.16 — admin AI quality preview. The mocked useQuery
   // returns `data: null, isLoading: false` so the empty-state branch
   // paints; the table-render branch is exercised by the dedicated
   // ai-quality-section test.
   it("<AiQualitySection> renders the empty-state when no summary exists", () => {
     const html = render(<AiQualitySection />);
-    // v1.4.33 IW7 — section renamed from "AI Quality" to
+    // v1.4.33 — section renamed from "AI Quality" to
     // "Insights Quality" per the project-voice rule (no "KI"/"AI" prefix
     // in user-facing copy).
     expect(html).toContain("Insights Quality");

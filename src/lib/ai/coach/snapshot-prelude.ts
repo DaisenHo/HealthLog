@@ -51,7 +51,7 @@ export const DAILY_TIMELINE_DAYS = 14;
 export const MAX_SNAPSHOT_CHARS = 14_000;
 
 /**
- * v1.18.10 (P-2) — newest-first cap on the single multi-type measurement read
+ * v1.18.10 — newest-first cap on the single multi-type measurement read
  * that feeds the Coach snapshot timelines. The window read can reach 365 days
  * (`lastYear` / `allTime`) across high-frequency types (PULSE / glucose are
  * 200k-row-class), but the prompt only renders ~21 daily + ~10 weekly buckets
@@ -85,13 +85,13 @@ const CORE_CLUSTERS: ReadonlySet<CoachDataCluster> = new Set<CoachDataCluster>([
 /**
  * Resolve the prefs, module gates and scope a build reads under.
  *
- * v1.4.23 H4 — apply per-user `excludeMetrics` BEFORE we read any
+ * v1.4.23 — apply per-user `excludeMetrics` BEFORE we read any
  * measurement rows so the model never sees data the user opted out
  * of. The filter intersects with the resolved scope (the explicit
  * `scope` argument from the request body still wins for the
  * _maximum_ set; prefs only narrow further).
  *
- * v1.4.25 W7b — the same prefs read also returns the user's
+ * v1.4.25 — the same prefs read also returns the user's
  * displayTimezone so the day-key and weekday labels below match the
  * calendar the user is looking at. Reading both columns in one
  * query keeps the snapshot's read budget the same as before.
@@ -118,7 +118,7 @@ export async function resolveSnapshotPrelude(
   reach: CoachHistoryReach = UNBOUNDED_REACH,
 ) {
   const moduleMapPromise = resolveModuleMap(userId);
-  // v1.20.0 (H-1) — the F1 coach tools each rebuild a single-source snapshot
+  // v1.20.0 — the F1 coach tools each rebuild a single-source snapshot
   // with a distinct LRU key, so the 60s snapshot cache does not share this read
   // across the fan-out. Memoise it per-request (the select shape is constant, so
   // userId is the only key) so up to 6 concurrent tool builds collapse to one
@@ -145,7 +145,7 @@ export async function resolveSnapshotPrelude(
         // The metric/imperial choice: the grounding bands and the blocks
         // that carry a mass, length or temperature are written in it.
         unitPreference: true,
-        // v1.18.6 (W7) — the explicit, user-declared diabetes opt-in. Selects
+        // v1.18.6 — the explicit, user-declared diabetes opt-in. Selects
         // the tighter ADA glycemic GOAL band for the glucose reference-grounding
         // line only; never inferred from a reading, never a diagnosis. Read on
         // this existing prefs hop (no extra round-trip).
@@ -270,7 +270,7 @@ export function readSnapshotMeasurementRows(
           measuredAt: { gte: cutoff },
           deletedAt: null,
         },
-        // v1.18.10 (P-2) — read NEWEST-first + cap. PULSE / glucose are
+        // v1.18.10 — read NEWEST-first + cap. PULSE / glucose are
         // 200k-row-class types and the window can reach 365 days
         // (lastYear / allTime), so an uncapped read pulled the entire
         // year of high-frequency rows into memory just to fold them into

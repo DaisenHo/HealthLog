@@ -301,7 +301,7 @@ describe("buildLedgerCompliance — doctor-report adherence via the dose ledger"
   }
 
   /**
-   * v1.17 W1a — the raw-row tally double-counted cross-source duplicate
+   * v1.17 — the raw-row tally double-counted cross-source duplicate
    * rows (a REMINDER + an API row for the same slot both counted as taken)
    * and counted every row toward the denominator. The ledger dedups onto
    * one slot. This pins that the doctor report now matches the detail page:

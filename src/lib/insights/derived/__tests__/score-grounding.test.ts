@@ -1,5 +1,5 @@
 /**
- * v1.22 (W6) — the score-card number-grounding gate. The only numbers the AI
+ * v1.22 — the score-card number-grounding gate. The only numbers the AI
  * score prose may state are the score and its contributor values; anything else
  * is flagged so the caller falls back to the deterministic text.
  */

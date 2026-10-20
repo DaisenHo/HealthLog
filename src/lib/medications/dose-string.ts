@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W21 Fix-N — unified dose-string → mg parser.
+ * v1.4.25 — unified dose-string → mg parser.
  *
  * Replaces two near-identical helpers previously hand-rolled inside
  * `<DrugLevelChart>` (`parseDoseMg`) and the titration route

@@ -6,7 +6,7 @@ import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /**
- * v1.4.27 B3 — Public about / credits page.
+ * v1.4.27 — Public about / credits page.
  *
  * Two reasons this page exists:
  *
@@ -102,7 +102,7 @@ export default async function AboutPage() {
       </header>
 
       {/*
-        v1.4.33 IW9 — `max-w-3xl` is intentional (same rationale as
+        v1.4.33 — `max-w-3xl` is intentional (same rationale as
         `/privacy`): long-form column reads better around 70-80
         chars per line. The dashboard / settings / admin shells use
         `max-w-screen-xl` (1280 px); legal pages stay at 768 px.

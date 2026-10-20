@@ -7,7 +7,7 @@ import {
 } from "./utils/mock-dashboard-snapshot";
 
 /**
- * v1.4.15 phase-A3 fix #3 — onboarding card flicker on dashboard load.
+ * v1.4.15 #3 — onboarding card flicker on dashboard load.
  *
  * The previous version of `<GettingStartedChecklist>` rendered against a
  * default-true `shouldShowChecklist` decision while `measurementCount`
@@ -64,7 +64,7 @@ test.describe("dashboard onboarding card flicker guard", () => {
     // works by NOT rendering until this resolves, so even with the
     // delay the card stays invisible the whole time.
     //
-    // v1.4.37 W-CI — match `/api/analytics` AND any sliced variant
+    // v1.4.37 — match `/api/analytics` AND any sliced variant
     // (`?slice=summaries`). The previous string glob `**/api/analytics`
     // missed the IW1 slim-slice URL so the checklist hook's analytics
     // query fell through to the real route in CI; on a fresh seed user
@@ -161,7 +161,7 @@ test.describe("dashboard onboarding card flicker guard", () => {
     // card mounts collapsed: header + progress meter visible, full row
     // list hidden until the user clicks the chevron.
     //
-    // v1.4.22 C4 — the onboarding redirect now lives in `proxy.ts`,
+    // v1.4.22 — the onboarding redirect now lives in `proxy.ts`,
     // not in `<AuthShell>`. The proxy reads the `hl_onboarding` cookie
     // (which the auth routes mirror from the DB). Our storageState
     // belongs to a fully-onboarded user (no `hl_onboarding` cookie),

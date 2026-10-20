@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.8.6 W4c — GLP-1 dose-strength (titration) curve.
+ * v1.8.6 — GLP-1 dose-strength (titration) curve.
  *
  * Replaces the EMA *reference*-ladder block that showed no values when
  * the medication's brand fell outside the catalog. This surface plots

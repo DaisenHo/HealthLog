@@ -1,5 +1,5 @@
 /**
- * v1.4.39 W-MED — unit tests for the medication-compliance rollup tier.
+ * v1.4.39 — unit tests for the medication-compliance rollup tier.
  *
  * `prisma` is mocked at the module boundary so the test can pin the
  * intake-event fan-out + the rollup upsert / read shape without

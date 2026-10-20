@@ -39,7 +39,7 @@ describe("summaryToTrend7Delta()", () => {
   });
 
   it("falls back to slope30 when slope7 is null (sparse metrics like mood)", () => {
-    // v1.4.16 fix A4: mood-tile showed no trend number for users who
+    // v1.4.16: mood-tile showed no trend number for users who
     // log mood < daily because slope7 needs ≥2 points within the
     // trailing 7-day window. slope30 still answers "is this metric
     // drifting?" so we project that onto 7 days for label parity.

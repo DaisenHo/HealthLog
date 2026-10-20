@@ -167,7 +167,7 @@ export async function validateSessionWithCreatedAt(
 const LAST_ACTIVE_THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * v1.4.22 C4 — flag cookie mirroring the user's `onboardingCompletedAt`
+ * v1.4.22 — flag cookie mirroring the user's `onboardingCompletedAt`
  * status. Set to `"pending"` while the field is null and cleared once
  * onboarding completes. The proxy reads this cookie to short-circuit
  * the post-hydration redirect that previously caused a dashboard flash
@@ -188,7 +188,7 @@ export async function setOnboardingPendingCookie(
     cookieStore.set(ONBOARDING_COOKIE, "pending", {
       httpOnly: false,
       secure: shouldEmitSecureCookie(),
-      // v1.4.22 W5 reconcile (Sec-MED-1) — Strict (not Lax) because
+      // v1.4.22 — Strict (not Lax) because
       // no cross-site redirect flow ever depends on this cookie. The
       // sibling `healthlog_session` cookie stays Lax because the
       // Withings OAuth callback arrives via top-level cross-site
@@ -203,7 +203,7 @@ export async function setOnboardingPendingCookie(
 }
 
 /**
- * v1.4.22 W5 reconcile (Sr-H1) — `onboardingPending` is required
+ * v1.4.22 — `onboardingPending` is required
  * (not optional) so issuing a session without anchoring the
  * onboarding cookie is type-impossible. Every auth surface (login,
  * passkey-verify, register, password-reset) must thread the user's

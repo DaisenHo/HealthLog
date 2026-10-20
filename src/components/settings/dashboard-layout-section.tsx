@@ -60,13 +60,13 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 
 /**
- * v1.4.47 W4 — pure reorder helper shared by the arrow buttons and the
+ * v1.4.47 — pure reorder helper shared by the arrow buttons and the
  * @dnd-kit drag-end handler. Both surfaces produce the same `widgets[]`
  * shape (`order: 0..n-1`) so the existing PUT contract stays untouched
  * and either input mode flushes via the same Save mutation. Exported so
  * the unit test can pin the contract without spinning up a DndContext.
  *
- * v1.4.48 M6a — also drives the arrow-button `move()` handler below;
+ * v1.4.48 — also drives the arrow-button `move()` handler below;
  * the previous in-file swap-and-renumber implementation was a second
  * copy of the same logic.
  */
@@ -99,7 +99,7 @@ export function setHeroItemKindEnabled(
 }
 
 /**
- * v1.4.48 M6a — merge the `{ id, order }` shape returned by
+ * v1.4.48 — merge the `{ id, order }` shape returned by
  * `reorderWidgets()` back into the full `DashboardWidgetConfig[]` so
  * the section's draft state keeps every per-row flag (`visible`,
  * `tileVisible`) while the order is rewritten. The arrow buttons and
@@ -158,11 +158,11 @@ const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   hrv: "measurements.typeHeartRateVariability",
   respiratoryRate: "measurements.typeRespiratoryRate",
   achievements: "achievements.title",
-  // v1.4.25 W8d — VO2 max secondary-metric tile (opt-in).
+  // v1.4.25 — VO2 max secondary-metric tile (opt-in).
   vo2Max: "dashboard.vo2Max",
   // v1.4.32 — Recent workouts tile (default-on).
   recentWorkouts: "dashboard.recentWorkouts.title",
-  // v1.11.2 B5 — v1.10 additive HealthKit signals, now pinnable. Each
+  // v1.11.2 — v1.10 additive HealthKit signals, now pinnable. Each
   // reuses the existing measurement-type label key.
   cardioRecovery: "measurements.typeCardioRecovery",
   sixMinuteWalk: "measurements.typeSixMinuteWalkDistance",
@@ -201,7 +201,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   // explicitly `false`.
   const { user } = useAuth();
   const modules = user?.modules;
-  // v1.4.47 W4 — stable id namespace for the drag-handle `aria-describedby`
+  // v1.4.47 — stable id namespace for the drag-handle `aria-describedby`
   // tooltip. One hint paragraph is rendered once at the bottom of the list
   // and referenced by every drag handle in this section.
   const dragHintId = useId();
@@ -221,7 +221,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   // `LayoutModuleGate` already uses for the same class of mismatch.
   const hydrated = useMounted();
 
-  // v1.4.47 W4 — sensors: pointer for mouse/touch, keyboard for Tab + Space
+  // v1.4.47 — sensors: pointer for mouse/touch, keyboard for Tab + Space
   // + arrow-key reordering. The KeyboardSensor still works for users who
   // tab to the GripVertical handle; the legacy ArrowUp / ArrowDown buttons
   // below remain the primary keyboard surface for accessibility.
@@ -375,7 +375,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   }
 
   /**
-   * v1.4.15 Fix 5 — independent toggle for the *strip tile* (the upper
+   * v1.4.15 — independent toggle for the *strip tile* (the upper
    * row of trend cards). Until v1.4.14 a single switch controlled both
    * the tile AND the chart for the same metric, which the maintainer found too
    * coarse: they wanted a chart visible without the tile (for metrics they
@@ -426,7 +426,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   }
 
   /**
-   * v1.4.48 M6a — the arrow buttons now delegate to `reorderWidgets()`
+   * v1.4.48 — the arrow buttons now delegate to `reorderWidgets()`
    * so the swap-and-renumber logic lives in exactly one place. The
    * neighbour id is derived from the sorted layout index + delta;
    * out-of-bounds clicks (top row + ArrowUp, bottom row + ArrowDown)
@@ -448,7 +448,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
   }
 
   /**
-   * v1.4.47 W4 — drag-and-drop reorder via @dnd-kit. Persists the same
+   * v1.4.47 — drag-and-drop reorder via @dnd-kit. Persists the same
    * `order` rewrite shape the arrow buttons already use, so save / cancel
    * / reset and the existing draft state machine work unchanged. The
    * pointer + keyboard sensors are wired in the same `useSensors` call;
@@ -577,7 +577,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
         // (UI-STANDARDS §9 one-scroll-floor; guarded by
         // e2e/settings-overscroll.spec.ts).
         <div className="relative space-y-2">
-          {/* v1.4.15 Fix 5 — table-style header naming the two
+          {/* v1.4.15 — table-style header naming the two
               switches. The "tile" column controls the strip tile in
               the upper row; the "chart" column controls the line
               chart in the lower row. the maintainer wanted independent control
@@ -588,7 +588,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
               right-hand spacer reserves the width of two
               size-11/sm:size-9 buttons so the Tile / Chart column
               headers continue to line up with the switches below. */}
-          {/* v1.4.47 W4 — column header spacer additionally reserves the
+          {/* v1.4.47 — column header spacer additionally reserves the
               width of the new drag-handle icon (w-7) so Tile / Chart
               alignment with the row switches below stays pixel-perfect. */}
           <div className="text-muted-foreground flex items-center gap-2 px-3 pb-1 text-xs font-medium tracking-wide uppercase">
@@ -612,7 +612,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             // because the Save mutation PUTs `layout.widgets` whole and
             // the server retains every catalogue id.
             //
-            // v1.11.2 HIGH-1 — the 8 B5 ids are WRITABLE (in
+            // v1.11.2 — the 8 B5 ids are WRITABLE (in
             // `DASHBOARD_WIDGET_IDS` so the iOS pin PUT validates) but
             // have no web render path either, so exclude
             // `IOS_PIN_ONLY_WIDGET_IDS` too: a web toggle for them would
@@ -670,11 +670,11 @@ export function DashboardLayoutSection({ id }: { id: string }) {
               </DndContext>
             );
           })()}
-          {/* v1.4.47 W4 — single shared aria-describedby target for all
+          {/* v1.4.47 — single shared aria-describedby target for all
               drag handles. Screen readers read this once per focused
               handle; sighted users see it in the native browser tooltip
               via the matching `title` attribute on each handle.
-              v1.4.48 L8 — gate on widget count so an empty layout never
+              v1.4.48 — gate on widget count so an empty layout never
               orphans the paragraph (no handles to describe). */}
           {layout.widgets.length > 0 && (
             <p id={dragHintId} className="text-muted-foreground sr-only">
@@ -811,7 +811,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
 }
 
 /**
- * v1.4.47 W4 — sortable row primitive extracted from the section render
+ * v1.4.47 — sortable row primitive extracted from the section render
  * so the @dnd-kit `useSortable` hook stays scoped to one row. Translation
  * strings are passed in pre-resolved (rather than calling `useTranslations`
  * inside) so this component stays cheap to re-render for the 13+ rows.
@@ -866,7 +866,7 @@ function SortableWidgetRow({
     isDragging,
   } = useSortable({ id: widget.id });
 
-  // v1.4.48 L7 — honour the OS `prefers-reduced-motion` preference. The
+  // v1.4.48 — honour the OS `prefers-reduced-motion` preference. The
   // rest of HealthLog pairs every transition with a `motion-reduce`
   // companion; dnd-kit's default `transform 250ms ease` was the lone
   // surface that ignored it. Short-circuit to `none` when reduced
@@ -902,7 +902,7 @@ function SortableWidgetRow({
         {...attributes}
         {...listeners}
         aria-label={`${labels.dragHandle}: ${labels.widgetLabel}`}
-        // v1.4.47 W4 — `aria-describedby` is set after `{...attributes}`
+        // v1.4.47 — `aria-describedby` is set after `{...attributes}`
         // so our shared hint paragraph wins over dnd-kit's own announcer
         // hookup. The announcer still fires on drag-start / drag-over /
         // drag-end via the screenReaderInstructions slot below.

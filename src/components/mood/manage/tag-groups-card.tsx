@@ -149,7 +149,7 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
       reorderGroups(current, nextOrder),
     );
     try {
-      // v1.32.22 (R5b) — echo the base token this order was based on. The two
+      // v1.32.22 — echo the base token this order was based on. The two
       // cards on this page write DIFFERENT fields of the same blob (group order
       // vs tag placements); a stale merge would resurrect the other card's
       // overwritten field, which the token now 409s instead. Seed the token

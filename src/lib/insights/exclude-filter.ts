@@ -1,5 +1,5 @@
 /**
- * v1.4.36 W3 T3 — exclude-metrics filter for the AI Insights payload.
+ * v1.4.36 — exclude-metrics filter for the AI Insights payload.
  *
  * Mirrors the Coach snapshot's `excludeMetrics` contract so the user
  * has a single privacy contract across both surfaces: what's hidden

@@ -70,7 +70,7 @@ import { isoDateTime } from "@/lib/validations/datetime";
 // `disableCoach` + operator master flag, the rest read the per-user
 // disabled-allowlist. The map is the single thing a client needs to gate
 // every secondary domain end-to-end.
-// v1.32.22 (M3) — the doc request extends the strict runtime schema with the
+// v1.32.22 — the doc request extends the strict runtime schema with the
 // optimistic-concurrency `baseUpdatedAt` token. The runtime strips it pre-Zod
 // (`takeBaseToken`) BEFORE the strict parse, so the runtime schema alone would
 // under-document the wire; documenting it here keeps the contract complete.
@@ -309,7 +309,7 @@ const diabetesFlag = z
 // is the REAL runtime validator (`notificationPrefsSchema` — every
 // category and field optional, deep-merged server-side); the response
 // is the fully-resolved shape with the documented defaults filled in.
-// v1.32.22 (M1) — the doc request extends the runtime validator with the
+// v1.32.22 — the doc request extends the runtime validator with the
 // optimistic-concurrency `baseUpdatedAt` token (stripped pre-Zod at runtime).
 const notificationPrefsPatchRequest = notificationPrefsSchema
   .extend({ baseUpdatedAt: baseUpdatedAtField })
@@ -398,13 +398,13 @@ const notificationPrefsResolved = z
       "Fully-resolved per-user notification preferences. Every key is present — a null / drifted persisted row resolves to the documented defaults.",
   });
 
-// v1.32.22 (M1) — GET / PATCH responses carry the optimistic-concurrency token
+// v1.32.22 — GET / PATCH responses carry the optimistic-concurrency token
 // as an additive sibling key next to the resolved categories.
 const notificationPrefsResponse = notificationPrefsResolved
   .extend({ updatedAt: updatedAtTokenField })
   .meta({ id: "NotificationPrefsResponse" });
 
-// v1.32.22 (M4) — coach-prefs GET / PUT responses carry the token; the PUT
+// v1.32.22 — coach-prefs GET / PUT responses carry the token; the PUT
 // request extends the runtime validator with the base token.
 const coachPrefsResponse = coachPrefsSchema
   .extend({ updatedAt: updatedAtTokenField })

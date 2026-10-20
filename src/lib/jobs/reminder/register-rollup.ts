@@ -122,7 +122,7 @@ import {
   DRAIN_CONTINUATION_DELAY_SECONDS,
   nextDrainContinuation,
 } from "@/lib/jobs/drain-continuation";
-// v1.4.37 W7c — nightly drain of per-sample APPLE_HEALTH cumulative rows.
+// v1.4.37 — nightly drain of per-sample APPLE_HEALTH cumulative rows.
 // Collapses each user × cumulative-type × calendar-day bucket into one
 // `stats:…` row so the list view stops painting hundreds of step chunks per
 // day. 03:45 Europe/Berlin slots in between the 03:15 audit-log cleanup and
@@ -146,14 +146,14 @@ interface DrainCumulativePayload {
 const allQueues = [
   ROLLUP_RECOMPUTE_QUEUE,
   ROLLUP_FULL_BACKFILL_QUEUE,
-  // v1.4.39 W-MOOD — per-bucket WEEK/MONTH/YEAR fold queue for the
+  // v1.4.39 — per-bucket WEEK/MONTH/YEAR fold queue for the
   // mood rollup tier. The DAY pass runs inline in the write hook;
   // these enqueue paths cover the cross-granularity buckets the
   // worker materialises off the request path.
   MOOD_ROLLUP_RECOMPUTE_QUEUE,
-  // v1.4.39 W-MOOD — boot-time fold queue for the mood rollup tier.
+  // v1.4.39 — boot-time fold queue for the mood rollup tier.
   MOOD_ROLLUP_FULL_BACKFILL_QUEUE,
-  // v1.4.39 W-MED — boot-time fold for the medication-compliance
+  // v1.4.39 — boot-time fold for the medication-compliance
   // rollup tier. Discovery enqueues one job per user with intake
   // events but no rollup coverage; idempotent across reboots.
   MEDICATION_COMPLIANCE_BACKFILL_QUEUE,
@@ -179,7 +179,7 @@ const allQueues = [
   // dense-tier days. Boot-discovery driven and self-converging (a rebuilt
   // day's retired daily row drops it from the discovery pairing).
   DENSE_INTRADAY_HOURLY_REBUILD_QUEUE,
-  // v1.4.37 W7c — explicit createQueue is required before the nightly
+  // v1.4.37 — explicit createQueue is required before the nightly
   // schedule below registers (pg-boss v12 contract). Without this entry the
   // drain schedule silently no-ops and the per-sample APPLE_HEALTH rows
   // never collapse.
@@ -190,7 +190,7 @@ const allQueues = [
 ];
 
 const schedules: ScheduleEntry[] = [
-  // v1.4.37 W7c — nightly fold of per-sample APPLE_HEALTH cumulative
+  // v1.4.37 — nightly fold of per-sample APPLE_HEALTH cumulative
   // rows into one row per day per type. Slots between the
   // audit-log cleanup (03:15) and the feedback aggregator (04:00).
   [DRAIN_CUMULATIVE_QUEUE, DRAIN_CUMULATIVE_CRON, cronIsTheRetry],
@@ -637,7 +637,7 @@ export async function registerRollupQueues(
     },
   );
 
-  // v1.4.39 W-MOOD — mood-rollup per-bucket worker. Folds the
+  // v1.4.39 — mood-rollup per-bucket worker. Folds the
   // WEEK / MONTH / YEAR buckets that the mood-entry write hooks
   // enqueue; the DAY bucket runs synchronously in the hook itself.
   // No current read path consumes these buckets — they exist so a
@@ -660,7 +660,7 @@ export async function registerRollupQueues(
     },
   );
 
-  // v1.4.39 W-MOOD — mood-rollup boot-time fold worker. The boot
+  // v1.4.39 — mood-rollup boot-time fold worker. The boot
   // discovery helper below sends one job per user with mood entries
   // but zero rollup rows; this handler folds the full 5-year window
   // across every granularity. Concurrency-1 so the populator never
@@ -706,7 +706,7 @@ export async function registerRollupQueues(
     },
   );
 
-  // v1.4.39 W-MED — medication-compliance boot-backfill worker. The
+  // v1.4.39 — medication-compliance boot-backfill worker. The
   // discovery helper below sends one job per user with intake events
   // but zero rollup coverage; this handler folds the trailing 90-day
   // window per account. Concurrency-1 so the populator never crowds
@@ -744,7 +744,7 @@ export async function registerRollupQueues(
     },
   );
 
-  // v1.4.37 W7c — nightly drain worker. Walks every user × cumulative
+  // v1.4.37 — nightly drain worker. Walks every user × cumulative
   // type and folds per-sample APPLE_HEALTH rows older than the cutoff
   // into one `stats:…` row per calendar day. Idempotent — a second run
   // collapses zero buckets once every day is in the `stats:` shape.
@@ -1093,7 +1093,7 @@ export async function enqueueRollupBootDiscovery(): Promise<void> {
     );
   }
 
-  // v1.4.39 W-MOOD — mood rollup tier. Mirrors the v1.4.35.1
+  // v1.4.39 — mood rollup tier. Mirrors the v1.4.35.1
   // measurement-rollup pattern: one job per user with mood entries but no
   // rollup coverage. Idempotent across reboots and singleton-keyed inside
   // pg-boss so a fast restart while a backfill is queued doesn't double up.
@@ -1122,7 +1122,7 @@ export async function enqueueRollupBootDiscovery(): Promise<void> {
     );
   }
 
-  // v1.4.39 W-MED — medication compliance rollup tier. Mirrors the v1.4.35.1
+  // v1.4.39 — medication compliance rollup tier. Mirrors the v1.4.35.1
   // pattern: one job per user with intake events but no rollup coverage.
   // Idempotent across reboots and singleton-keyed inside pg-boss.
   try {
@@ -1180,7 +1180,7 @@ export async function enqueueRollupBootDiscovery(): Promise<void> {
     );
   }
 
-  // v1.30.3 (QA F4) — cumulative-PersonalRecord rederivation. Finds every
+  // v1.30.3 — cumulative-PersonalRecord rederivation. Finds every
   // account still holding a suspect measurement-driven cumulative-type
   // record created before the source-collapse fix landed and enqueues one
   // repair job per account. Self-converging: a deleted-and-redetected

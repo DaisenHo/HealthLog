@@ -19,7 +19,7 @@ import {
 } from "@/lib/auth/webauthn-rp";
 import { hashToken } from "@/lib/auth/hmac";
 
-// v1.4.43 W13 L-3 — explicit Zod narrowing in front of
+// v1.4.43 — explicit Zod narrowing in front of
 // `verifyAuthentication`. Replaces the raw
 // `as AuthenticationResponseJSON` cast; the SimpleWebAuthn verifier
 // still owns the cryptographic validation downstream, but a
@@ -351,7 +351,7 @@ export async function verifyAuthentication(
     );
   }
 
-  // v1.4.43 W13 L-3 — explicit Zod narrowing instead of the previous
+  // v1.4.43 — explicit Zod narrowing instead of the previous
   // raw `as AuthenticationResponseJSON` cast. A malformed body now
   // throws here with a structured error rather than crashing on a
   // follow-up `.id` deref. The SimpleWebAuthn verifier downstream

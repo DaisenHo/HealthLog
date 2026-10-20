@@ -147,7 +147,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
     const rollback = await snapshotManageCache(queryClient);
     updateManageCache(queryClient, () => mergeBack(catalog, nextCatalog));
     try {
-      // v1.32.22 (R5b) — echo + seed the layout token (see `putGroupOrder` in
+      // v1.32.22 — echo + seed the layout token (see `putGroupOrder` in
       // the groups card): the sibling group-order card writes the same blob, so
       // a stale placements merge is exactly the overwrite the token 409s.
       const resolved = await apiPut<MoodTagLayoutResolved>(
@@ -264,7 +264,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
       }
       // Both kinds pin the resulting per-group order in the layout blob
       // so the resolved tree matches what the user just saw happen.
-      // v1.32.22 (R5b) — echo + seed the layout token so a concurrent write to
+      // v1.32.22 — echo + seed the layout token so a concurrent write to
       // the same blob 409s instead of clobbering.
       const resolved = await apiPut<MoodTagLayoutResolved>(
         "/api/mood/tags/layout",

@@ -1,5 +1,5 @@
 /**
- * Q8 — WHOOP cycle ingest used the narrow 1 h default overlap while workout /
+ * WHOOP cycle ingest used the narrow 1 h default overlap while workout /
  * recovery / sleep use the 7-day re-score overlap. A cycle re-scored through the
  * day (or fetched just after the cursor stepped past it) then fell before the
  * incremental `start` and its final value was never re-fetched. This pins cycle

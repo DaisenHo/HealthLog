@@ -89,7 +89,7 @@ export const GET = apiHandler(async () => {
       settings?.documentQuotaBytes !== undefined
         ? Number(settings.documentQuotaBytes)
         : 1_073_741_824,
-    // v1.4.25 W7 — null means "fall back to Europe/Berlin in the
+    // v1.4.25 — null means "fall back to Europe/Berlin in the
     // resolver"; surfacing the raw value lets the admin UI render
     // an empty picker placeholder until they opt in.
     defaultUserTimezone: settings?.defaultUserTimezone ?? null,
@@ -116,7 +116,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   if (jsonError) return jsonError;
   const parsed = adminSettingsSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 
@@ -244,7 +244,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     auditDetails.documentQuotaBytes = data.documentQuotaBytes;
   }
 
-  // v1.4.25 W7 — server-default timezone for new signups.
+  // v1.4.25 — server-default timezone for new signups.
   // Empty string clears the override (resolver falls back to
   // Europe/Berlin); a non-empty string must pass Intl validation
   // upstream of the column write.

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W4d — GLP-1 medication details endpoint.
+ * v1.4.25 — GLP-1 medication details endpoint.
  *
  * Returns per-medication extras the GLP-1 card variant + the dashboard
  * tile + the doctor-report PDF section read: chronological dose-change
@@ -8,7 +8,7 @@
  * /api/medications/[id] GET is unchanged so v1.4.24 consumers keep
  * working untouched.
  *
- * v1.4.25 W21 Fix-K — POST hardened with Zod parse, audit-log, 30/min
+ * v1.4.25 — POST hardened with Zod parse, audit-log, 30/min
  * rate-limit, finite-number guard on `doseValue`, length cap on `note`,
  * and sane bounds on `effectiveFrom`. Mirrors the sibling
  * `/inventory` + `/side-effects` route shape.
@@ -68,7 +68,7 @@ export const GET = apiHandler(
     const { user } = await requireRecordAuth("read", "medications");
     const { id } = await params;
 
-    // v1.5.5 F-1 C-4 — close the §10 invariant 24 gap. The destructive
+    // v1.5.5 — close the §10 invariant 24 gap. The destructive
     // sweep in af224964 lifted every sibling `[id]/**` handler onto the
     // shared ownership helper; the glp1 GET still hand-rolled the
     // `findUnique + userId compare` pattern. Routing it through the
@@ -290,7 +290,7 @@ async function postGlp1Update(
 
   const parsed = glp1PostBodySchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 422.
+    // v1.4.43 — multi-issue 422.
     return returnAllZodIssues(parsed.error, 422);
   }
 

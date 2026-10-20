@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { isLegacyInsightPayload } from "../legacy-payload";
 
 /**
- * v1.4.16 phase B5c — legacy-payload detection.
+ * v1.4.16 — legacy-payload detection.
  *
  * Cached insight blobs persisted before B5c shipped don't carry the
  * `rationale` field. The /api/insights/generate route returns a

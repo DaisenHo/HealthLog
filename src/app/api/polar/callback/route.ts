@@ -17,7 +17,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * v1.17.0 (F4) — OAuth callback from Polar AccessLink.
+ * v1.17.0 — OAuth callback from Polar AccessLink.
  *
  * Identity + CSRF: the `state` URL param is a stateless HMAC-signed token. The
  * callback enforces (1) the param equals the httpOnly cookie byte-for-byte

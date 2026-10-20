@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on PUT
+ * v1.4.43 — multi-issue 422 envelope on PUT
  * /api/medications/[id]/intake/[eventId].
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";

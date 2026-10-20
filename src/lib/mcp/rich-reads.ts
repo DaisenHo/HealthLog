@@ -1,5 +1,5 @@
 /**
- * Phase 4 — deep-value MCP read tools (engine glue).
+ * Deep-value MCP read tools (engine glue).
  *
  * Four "bring data into relation" reads, each a THIN re-export of an existing
  * server-authoritative engine — no new statistics, no new business logic
@@ -216,7 +216,7 @@ const ALIASES: Record<string, string> = {
 function fromRegistry(id: string): RichMetric | null {
   const meta = getMetricStatusMeta(id);
   if (!meta) return null;
-  // v1.30.4 (C2) — the signal registry's `surfaces.mcp` flag is documented as
+  // v1.30.4 — the signal registry's `surfaces.mcp` flag is documented as
   // the SINGLE source of truth for MCP exposure, but the metric-status
   // registry (this function's own source) carries no `surfaces` facet of its
   // own, so an id the signal registry marks `mcp:false` (e.g.

@@ -57,7 +57,7 @@ describe("stripChartTokens", () => {
     expect(stripChartTokens(" metric:WEIGHT ")).toBe("");
   });
 
-  // v1.4.17 hotfix — defensive: reading `insight.summary` on a legacy
+  // v1.4.17 — defensive: reading `insight.summary` on a legacy
   // cached payload (no `summary` field) returns undefined. Crashing
   // with `Cannot read properties of undefined (reading 'replace')` was
   // the production /insights bug the maintainer hit on 2026-05-10. Treat
@@ -71,7 +71,7 @@ describe("stripChartTokens", () => {
   });
 });
 
-// v1.4.25 W5b — the maintainer reported the raw "Metric Pressure_Sys" leak on
+// v1.4.25 — the maintainer reported the raw "Metric Pressure_Sys" leak on
 // /insights 2026-05-14. The v1.4.22 W1a regex only caught the canonical
 // `metric:<TYPE>` colon form; the model emitted a capitalised "Metric"
 // word followed by a Pascal/enum-cased identifier. The fix extends the

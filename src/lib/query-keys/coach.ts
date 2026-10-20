@@ -15,7 +15,7 @@ export const coachKeys = {
   lifeCircumstances: () => ["life-circumstances"] as const,
   /** v1.16.1 — unseen proactive-nudge state for the floating Coach bubble. */
   coachNudgeStatus: () => ["coach-nudge-status"] as const,
-  /** v1.18.6 (CCH-03) — mark-Coach-seen mutation (clears the FAB unread dot). */
+  /** v1.18.6 — mark-Coach-seen mutation (clears the FAB unread dot). */
   coachMarkSeen: () => ["coach-mark-seen"] as const,
   /**
    * v1.18.7 — the Coach conversation rail list (`GET /api/insights/chat`).
@@ -79,7 +79,7 @@ export const coachKeys = {
       "trail",
     ] as const,
   /**
-   * v1.22 (B2/B6) — the user's Coach episodic reminders (`GET /api/coach/
+   * v1.22 — the user's Coach episodic reminders (`GET /api/coach/
    * reminders`). The optional `status` arg keys the in-app tile read
    * (`due,surfaced`) separately from the full ledger list so the two never
    * share a cache slot.

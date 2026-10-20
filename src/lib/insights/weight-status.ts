@@ -145,7 +145,7 @@ export async function generateWeightStatusForUser(
 }
 
 /**
- * v1.18.7 (HIGH-1) — everything up to (not including) the provider call.
+ * v1.18.7 — everything up to (not including) the provider call.
  * Returns a finished `served` result for every path that never needed the
  * LLM, or a `pending` descriptor the single-card path and the batch path
  * both drive. See `status-card-generation.ts` for the contract.
@@ -169,7 +169,7 @@ export async function prepareWeightStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("weight", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -234,7 +234,7 @@ export async function prepareWeightStatusForUser(
     };
   }
 
-  // v1.18.11 (P6) — input gate for this slow-moving metric. A cheap grouped
+  // v1.18.11 — input gate for this slow-moving metric. A cheap grouped
   // probe over the salient inputs (weight + BP channels + mood) fingerprints
   // what the snapshot would read. On a non-forced run with an unchanged
   // fingerprint the cached assessment is re-stamped under today's key and the
@@ -268,7 +268,7 @@ export async function prepareWeightStatusForUser(
       unitPreference: units.system,
     },
     includeMood: true,
-    // v1.18.11 (P6-tighten) — WEIGHT is an FDR discovery OUTCOME channel and
+    // v1.18.11 — WEIGHT is an FDR discovery OUTCOME channel and
     // the prompt folds `getRelevantCorrelationsForMetric(userId, "WEIGHT")`, so
     // a relation surfacing off a behaviour channel (e.g. more daylight →
     // next-day weight) must flip the gate even when no weight row moved. Fold
@@ -296,7 +296,7 @@ export async function prepareWeightStatusForUser(
     }
   }
 
-  // v1.4.28 FB-D2 — cap the snapshot input. BP captures three types
+  // v1.4.28 — cap the snapshot input. BP captures three types
   // per day so 1095 = 365 d × 3 channels. Order desc + reverse so we
   // keep the most recent year of rows.
   const measurements = await prisma.measurement
@@ -321,7 +321,7 @@ export async function prepareWeightStatusForUser(
 
   const now = new Date();
 
-  // v1.2.5 (M-TZ3) — every day-bucketing pass below keys on the user's own
+  // v1.2.5 — every day-bucketing pass below keys on the user's own
   // calendar day. `userTz` was already resolved above for the cache day-key.
 
   const weightSeries = applyPayloadBudget(
@@ -355,7 +355,7 @@ export async function prepareWeightStatusForUser(
   );
 
   // Fetch mood context (optional — for enrichment only). v1.4.28
-  // FB-D2 — cap at 90 entries.
+  // Cap at 90 entries.
   const moodEntries = await prisma.moodEntry
     .findMany({
       where: { userId },
@@ -483,7 +483,7 @@ export async function prepareWeightStatusForUser(
       )
     : null;
 
-  // v1.18.10 (HIGH-4) — hand the model the finished recent-vs-baseline
+  // v1.18.10 — hand the model the finished recent-vs-baseline
   // comparison + normal-swing verdict instead of asking it to derive them.
   // Weight has no universal favourable direction or population band, so
   // without a stored target the signal carries the neutral "target-band"
@@ -742,7 +742,7 @@ export async function prepareWeightStatusForUser(
         todayKey,
         text: summary,
         snapshotHash,
-        // v1.18.11 (P6) — persist the input fingerprint so tomorrow's input
+        // v1.18.11 — persist the input fingerprint so tomorrow's input
         // gate can skip the rebuild when nothing salient changed.
         inputHash,
       });

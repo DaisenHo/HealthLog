@@ -1,5 +1,5 @@
 /**
- * v1.18.1 (Workstream C) — the non-naggy gate for Coach cadence
+ * v1.18.1 — the non-naggy gate for Coach cadence
  * suggestions.
  *
  * The model can PROPOSE a cadence (the `---SUGGEST-REMINDER---` sentinel);

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.6 (W8 / MOD-03) — client-side per-module list preferences for the
+ * v1.18.6 — client-side per-module list preferences for the
  * three secondary modules (Vorsorge, Illness, Labs).
  *
  * These modules do not carry a server-side list-layout column the way

@@ -227,7 +227,7 @@ export const createMoodEntrySchema = z
     a3: levelADimension.nullable().optional(),
     a4: levelADimension.nullable().optional(),
     a5: levelADimension.nullable().optional(),
-    // v1.4.30 H-5 — first-class free-text note. Replaces the
+    // v1.4.30 — first-class free-text note. Replaces the
     // `tags: ["note:<text>"]` workaround. Capped at 500 chars so the
     // Coach evidence shelf renders cleanly without truncating chips.
     note: z.string().max(500).optional(),
@@ -237,7 +237,7 @@ export const createMoodEntrySchema = z
     // context surface must not blank one somebody filled in on the web. A
     // context that says nothing removes the row.
     context: moodContextSchema.nullable().optional(),
-    // v1.17 W1b — plausibility bound (shared `validateEntryInstant`): no
+    // v1.17 — plausibility bound (shared `validateEntryInstant`): no
     // future instants beyond a 5-min clock-skew tolerance, no instant before
     // 1900. Mirrors the measurement + medication-intake bound.
     moodLoggedAt: validateEntryInstant(
@@ -282,7 +282,7 @@ export const updateMoodEntrySchema = z.object({
   // `tagKeys` and `ratedFactors` work on this path: omit to leave it alone,
   // send it to replace it, send `null` (or an empty one) to remove the row.
   context: moodContextSchema.nullable().optional(),
-  // v1.17 W1b — same plausibility bound on the edit path.
+  // v1.17 — same plausibility bound on the edit path.
   moodLoggedAt: validateEntryInstant(
     isoDateTime().transform((s) => new Date(s)),
   ).optional(),

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.22 (B2/B6) — read + mutate the user's Coach episodic reminders.
+ * v1.22 — read + mutate the user's Coach episodic reminders.
  *
  * One shared hook for the in-app reminder tile/indicator and the "Your context"
  * ledger. Reads unwrap `(await res.json()).data` per the envelope convention;

@@ -461,7 +461,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  // v1.4.39 W-MOOD — one bounded re-fold per import is cheaper than
+  // v1.4.39 — one bounded re-fold per import is cheaper than
   // firing N per-row hooks. The mood rollup tier is keyed on the
   // user + day; the fold materialises every touched day from the
   // entries we just wrote. Best-effort: an importer hiccup must not

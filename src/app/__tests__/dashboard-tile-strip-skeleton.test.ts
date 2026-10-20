@@ -13,7 +13,7 @@ import {
 } from "@/lib/dashboard-layout";
 
 /**
- * v1.4.43 W11-M5 — dashboard tile-strip skeleton during slow first
+ * v1.4.43 — dashboard tile-strip skeleton during slow first
  * paint.
  *
  * Pre-fix the strip only painted once `trendCards.length > 0`. When the

@@ -10,7 +10,7 @@ import {
 } from "@/lib/dashboard-layout";
 
 /**
- * v1.4.25 W4 — shared reader for the dashboard-layout payload across
+ * v1.4.25 — shared reader for the dashboard-layout payload across
  * the insights surfaces.
  *
  * The mother page and every sub-page need the persisted

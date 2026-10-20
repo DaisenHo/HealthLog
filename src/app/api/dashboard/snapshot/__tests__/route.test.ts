@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — route tests for GET /api/dashboard/snapshot.
+ * v1.7.0 — route tests for GET /api/dashboard/snapshot.
  *
  *   - 401 envelope when unauthenticated;
  *   - 200 `{ data, error }` envelope with the snapshot body when

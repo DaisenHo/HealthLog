@@ -14,7 +14,7 @@ import { tourProgressSchema } from "@/lib/onboarding/tour-progress";
 import { Prisma } from "@/generated/prisma/client";
 
 /**
- * v1.4.15 Phase B5 — onboarding tour completion endpoint.
+ * v1.4.15 — onboarding tour completion endpoint.
  * v1.18.6 — extended with the resumable module-tour progress point.
  *
  * Operations on a single resource:

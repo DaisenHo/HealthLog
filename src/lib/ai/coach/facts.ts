@@ -1,5 +1,5 @@
 /**
- * v1.11.1 (Epic B, B-W7) — durable personal-fact extraction + injection.
+ * v1.11.1 — durable personal-fact extraction + injection.
  *
  * The Coach learns STABLE facts about a user from a conversation — standing
  * preferences, conditions the user STATES about themselves, durable goals,

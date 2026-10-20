@@ -17,7 +17,7 @@ import {
 } from "./adapters";
 
 /**
- * v1.7.0 item 5 — count the expected dose slots a medication's schedules
+ * v1.7.0 — count the expected dose slots a medication's schedules
  * emit inside `[dayStart, dayEnd)`, routed through the canonical engine.
  * Powers the per-day `due` / `expectedCount` fields on the per-med
  * compliance payload so iOS history renders a "missed" mark only on days
@@ -81,7 +81,7 @@ export function expectedSlotCountForDay(
  * `[from, to]` window and we sort the union of every schedule's slots so
  * a multi-schedule medication interleaves its slots in time order.
  *
- * v1.8.6 QA — the window lower bound is clamped to `ctx.createdAt`. The
+ * v1.8.6 — the window lower bound is clamped to `ctx.createdAt`. The
  * legacy weekday walker floors on `startsOn` but not on `createdAt`, so a
  * brand-new daily med queried over a 30-day window would otherwise emit
  * slots for every day before it existed (7/30 expected on a 2-day-old med).

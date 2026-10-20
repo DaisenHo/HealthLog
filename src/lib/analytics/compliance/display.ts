@@ -357,7 +357,7 @@ export function calculateCompliance(
     windowStart: s.windowStart,
     windowEnd: s.windowEnd,
     daysOfWeek: s.daysOfWeek ?? null,
-    // v1.7.0 SB-SCHED-2 — thread the canonical-engine fields so the
+    // v1.7.0 — thread the canonical-engine fields so the
     // cadence expander can delegate to `occurrencesBetween` when a
     // medication context is supplied. Undefined fields collapse to the
     // legacy weekday path inside `expandScheduleSlots`.
@@ -370,7 +370,7 @@ export function calculateCompliance(
     cyclicOffWeeks: s.cyclicOffWeeks ?? null,
   }));
 
-  // v1.7.0 SB-SCHED-2 — build the engine context once per medication.
+  // v1.7.0 — build the engine context once per medication.
   // When the caller supplies it, the timeline routes through the
   // canonical engine (RRULE / rolling / one-shot / PRN / cyclic);
   // otherwise the legacy weekday walker stays in force.

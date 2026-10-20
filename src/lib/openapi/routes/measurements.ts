@@ -101,7 +101,7 @@ const batchEntrySchema = z
           "The id MUST be stable across app restarts. An object description or memory address (`<Class: 0x…>`, `0x12ab34cd`) is a new value on every launch, so it can never match its own earlier row; such an entry is `skipped` with reason `unstable_external_id` while the rest of the batch still lands.",
       ),
     externalSourceVersion: z.string().min(1).max(120).optional(),
-    // v1.8.6 W6 — optional per-entry source tag. Defaults to
+    // v1.8.6 — optional per-entry source tag. Defaults to
     // `APPLE_HEALTH` server-side when omitted, so legacy clients are
     // unchanged. Restricted to the `{APPLE_HEALTH, MANUAL}` subset of
     // `MeasurementSource`: `WITHINGS` / `IMPORT` are server-owned and
@@ -112,7 +112,7 @@ const batchEntrySchema = z
       .describe(
         "Source attribution for the row. Defaults to `APPLE_HEALTH` when omitted. Send `MANUAL` to tag rows the user entered by hand on-device (e.g. the standalone adopt-on-pair backfill). Part of the `(userId, type, source, externalId)` dedup key, so the same externalId under a different source is a distinct row. `WITHINGS` / `IMPORT` are not accepted here.",
       ),
-    // v1.4.25 W8c — optional device-type tag fed into the canonical
+    // v1.4.25 — optional device-type tag fed into the canonical
     // source picker's second axis. NULL is treated as `unknown`;
     // legacy iOS builds that don't ship the field continue to work.
     deviceType: deviceTypeEnum

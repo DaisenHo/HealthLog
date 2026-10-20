@@ -8,7 +8,7 @@ import type { ChannelType } from "@/lib/notifications/types";
 export const dynamic = "force-dynamic";
 
 /**
- * v1.4.48 H-APNs-1 — admin-only diagnostic endpoint for the
+ * v1.4.48 — admin-only diagnostic endpoint for the
  * notification subsystem. Surfaces what the dispatcher would see when
  * targeting the calling admin's account so an operator can debug an
  * iOS / Web Push / Telegram / ntfy issue without needing DB shell

@@ -194,7 +194,7 @@ describe("validateStep", () => {
 });
 
 /**
- * v1.8.6 W4b — `firstInvalidIndex` is the multi-step forward lookahead
+ * v1.8.6 — `firstInvalidIndex` is the multi-step forward lookahead
  * that powers the dot stepper's jump gate (`goToStep`) and its
  * `reachableUntil` ceiling. The dialog's rule:
  *   - backward jumps are always allowed;

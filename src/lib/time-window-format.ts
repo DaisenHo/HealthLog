@@ -19,7 +19,7 @@ import type { Locale } from "@/lib/i18n/config";
  * legacy German output for backwards compatibility with any consumer we may
  * have missed.
  *
- * v1.4.25 W9e — locales other than DE render with the language-neutral
+ * v1.4.25 — locales other than DE render with the language-neutral
  * "08:00 – 12:00" form (the same as EN) until a locale-specific suffix
  * ships. The DE branch keeps its trailing "Uhr" suffix verbatim.
  */

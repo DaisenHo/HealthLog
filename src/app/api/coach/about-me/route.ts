@@ -172,7 +172,7 @@ export const PUT = apiHandler(async (req: Request) => {
   });
   if (jsonError) return jsonError;
 
-  // v1.32.21 (R5a) — pull the optimistic-concurrency base token off the body
+  // v1.32.21 — pull the optimistic-concurrency base token off the body
   // BEFORE the Zod parse (issue #581 family). The token guards on
   // `UserHealthProfile.updatedAt`, which — unlike the layout endpoints on the
   // shared `User` row — moves only when THIS surface (or the `/adopt`
@@ -268,7 +268,7 @@ export const PUT = apiHandler(async (req: Request) => {
     let updatedAtIso: string;
     let savedProfileUpdatedAt: Date | null = null;
 
-    // v1.32.21 (R5a) — optimistic concurrency on
+    // v1.32.21 — optimistic concurrency on
     // `UserHealthProfile.updatedAt`.
     //   - no base token → today's upsert (backward-compat arm);
     //   - base present + row still carries it → conditional update;

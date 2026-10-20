@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the setup flow, path 1: blood pressure and weight, typed in.
+ * v1.39 — the setup flow, path 1: blood pressure and weight, typed in.
  *
  * From the welcome screen to the dashboard on one account of its own: the
  * questions, leaving after Q3 and coming back to Q4, the units question that

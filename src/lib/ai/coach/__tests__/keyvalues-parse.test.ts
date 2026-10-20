@@ -7,7 +7,7 @@ import {
 } from "../keyvalues";
 
 /**
- * v1.4.22 Wave 3 B1+B2 — Coach evidence-block sentinel parser.
+ * v1.4.22 — Coach evidence-block sentinel parser.
  */
 describe("parseKeyValueLine", () => {
   it("parses a full line with unit + window", () => {

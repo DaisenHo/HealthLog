@@ -101,7 +101,7 @@ vi.mock("@/hooks/use-auth", () => ({
 vi.mock("@/components/settings/dashboard-layout-section", () => ({
   DashboardLayoutSection: () => <div data-testid="dashboard-layout" />,
 }));
-// v1.4.16 phase B6: the inner editor moved from `thresholds-section.tsx` to
+// v1.4.16: the inner editor moved from `thresholds-section.tsx` to
 // `thresholds-editor-section.tsx` so the route-level wrapper can claim the
 // canonical `<slug>-section.tsx` filename. The wrapper itself is now
 // `<ThresholdsSection>`. This stub mocks the inner editor so the
@@ -121,7 +121,7 @@ import { ApiSection } from "../api-section";
 import { DashboardSection } from "../dashboard-section";
 import { IntegrationsSection } from "../integrations-section";
 import { NotificationsSection } from "../notifications-section";
-// v1.4.16 phase B6: route-level wrapper. The historic
+// v1.4.16: route-level wrapper. The historic
 // `<ThresholdsSettingsSection>` was renamed to `<ThresholdsSection>` and
 // its filename changed from `thresholds-settings-section.tsx` to
 // `thresholds-section.tsx` so the component name + filename match the
@@ -147,7 +147,7 @@ function render(node: React.ReactElement, locale: "en" | "de" = "en") {
   );
 }
 
-// v1.18.6 (W9) — the visible page heading + subtitle moved out of the section
+// v1.18.6 — the visible page heading + subtitle moved out of the section
 // bodies into the shared `<SettingsSectionFrame>` that the route wraps every
 // section in. The heading-level smoke checks render the body THROUGH the frame
 // (mirroring production) so they assert what the user actually sees.
@@ -192,7 +192,7 @@ describe("settings sections — SSR smoke", () => {
   it("<AboutSection> renders version + license + sources/docs cards (no Updates panel)", () => {
     const html = renderFramed("about", <AboutSection />);
     expect(html).toContain("About");
-    // v1.4.36 W4f — the dedicated "Updates" card with its manual
+    // v1.4.36 — the dedicated "Updates" card with its manual
     // "Check now" button is gone. The 24 h auto-check still runs and
     // surfaces a subtle ArrowUpCircle badge next to the version line
     // when a newer release is available. The Sources & docs card
@@ -214,7 +214,7 @@ describe("settings sections — SSR smoke", () => {
 
   it("<AiSection> renders the AI provider heading", () => {
     const html = renderFramed("ai", <AiSection />);
-    // v1.18.6 (W9) — section renamed to "AI provider"; the visible heading
+    // v1.18.6 — section renamed to "AI provider"; the visible heading
     // now comes from the shared frame, which keeps the historic id.
     expect(html).toContain("AI provider");
     expect(html).toContain("settings-section-ai-title");
@@ -236,7 +236,7 @@ describe("settings sections — SSR smoke", () => {
 
   it("<NotificationsSection> renders the reminders group only (channels moved out, v1.25.7)", () => {
     const html = renderFramed("notifications", <NotificationsSection />);
-    // v1.18.6 (W9) — the visible heading comes from the frame; the proactive
+    // v1.18.6 — the visible heading comes from the frame; the proactive
     // Coach nudge moved to Settings → Coach, so it no longer renders here.
     expect(html).toContain("settings-section-notifications-title");
     expect(html).not.toContain('data-slot="notifications-channels-cross-link"');
@@ -274,7 +274,7 @@ describe("settings sections — SSR smoke", () => {
 
   it("<AdvancedSection> renders the danger-zone card only (export moved to /settings/export)", () => {
     const html = renderFramed("advanced", <AdvancedSection />);
-    // v1.4.16 phase B7: every export path moved out into the dedicated
+    // v1.4.16: every export path moved out into the dedicated
     // `<ExportSection>` so what remains is the irreversible delete-all
     // path. The heading (supplied by the frame) + dangerZone surface are the
     // only primary surfaces here now.
@@ -285,7 +285,7 @@ describe("settings sections — SSR smoke", () => {
 
   it("<AboutSection> resolves about.* keys in German", () => {
     const html = renderFramed("about", <AboutSection />, "de");
-    // v1.4.36 W4f — "Updates" panel + "Jetzt prüfen" button removed;
+    // v1.4.36 — "Updates" panel + "Jetzt prüfen" button removed;
     // the surviving German copy is the section title + the Sources
     // & docs heading + the version line.
     expect(html).toContain("Über");

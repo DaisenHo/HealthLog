@@ -1,7 +1,7 @@
 /**
  * GET /api/personal-records
  *
- * v1.4.25 W8d — schema-only release of the PersonalRecord feature.
+ * v1.4.25 — schema-only release of the PersonalRecord feature.
  * The detection worker that actually populates rows lands in a later
  * release (v1.4.26 or v1.5 — TBD). This route exists today so the
  * v1.5 iOS-Swift app can build its query path against a stable

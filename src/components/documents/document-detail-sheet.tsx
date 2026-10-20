@@ -422,7 +422,7 @@ export function DocumentDetailSheet({
   const linkSeedFresh =
     openedOn !== null && detail.dataUpdatedAt > openedOn.seenAt;
 
-  // 2026-07-17 UX/IA audit M5 / F5-5 — the document → lab-values direction
+  // The document → lab-values direction
   // had no UI link at all: an auto-staged (PENDING) or OCR-confirmed
   // (APPROVED, see `linkOcrLabsToVaultDocument`) OBSERVATION fact already
   // ties this document to specific lab rows, but nothing on the sheet said

@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W6 — multi-issue 422 envelope on the measurements route.
+ * v1.4.43 — multi-issue 422 envelope on the measurements route.
  *
  * GET, batch POST and single POST now return every Zod issue under
  * `details.issues` and write an audit-ledger breadcrumb so the

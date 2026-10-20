@@ -101,7 +101,7 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateMoodEntrySchema.safeParse(body);
     if (!parsed.success) {
-      // v1.4.43 W6 — mood edit hot path; multi-issue 422 + audit
+      // v1.4.43 — mood edit hot path; multi-issue 422 + audit
       // breadcrumb keyed `mood-entries.update.validation-failed`.
       const issues = sanitiseZodIssues(parsed.error.issues);
       annotate({
@@ -161,7 +161,7 @@ export const PUT = apiHandler(
     if (data.a4 !== undefined) updateData.connectionA4 = data.a4;
     if (data.a5 !== undefined) updateData.stabilityA5 = data.a5;
     if (data.moodLoggedAt !== undefined) {
-      // v1.4.25 W7b — re-anchor the row's `date` to the user's current
+      // v1.4.25 — re-anchor the row's `date` to the user's current
       // displayTimezone. Also refresh the `tz` column so the row's
       // attribution stays consistent with the new `date`. Legacy rows
       // promoted via this PUT therefore migrate to per-row tz without
@@ -294,7 +294,7 @@ export const PUT = apiHandler(
     await auditLog("moodEntry.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the replaced fields. The note and the free-text tags are named
+      // The replaced fields. The note and the free-text tags are named
       // and never quoted; the note is encrypted at rest.
       details: {
         moodEntryId: id,
@@ -330,10 +330,10 @@ export const PUT = apiHandler(
       },
     });
 
-    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    // v1.4.34 — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
 
-    // v1.4.39 W-MOOD — refresh the persisted rollup for the new
+    // v1.4.39 — refresh the persisted rollup for the new
     // bucket AND the old bucket when the entry's `moodLoggedAt`
     // changed. The two recomputes are independent (different
     // (user, day) tuples) so we fan them out in parallel. Best-
@@ -420,10 +420,10 @@ export const DELETE = apiHandler(
       meta: { moodEntryId: id },
     });
 
-    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    // v1.4.34 — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
 
-    // v1.4.39 W-MOOD — refresh the persisted rollup for the
+    // v1.4.39 — refresh the persisted rollup for the
     // deleted entry's bucket; the recompute helper handles the
     // "now-empty day → drop the rollup row" branch internally.
     try {

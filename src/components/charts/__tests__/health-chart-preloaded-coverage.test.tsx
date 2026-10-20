@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.19.0 W11b — preloaded-coverage guard.
+ * v1.19.0 — preloaded-coverage guard.
  *
  * The dashboard batches a ~30-day series slice and hands each chart its
  * portion via `preloadedSeries`. Pre-fix the chart consumed that slice for

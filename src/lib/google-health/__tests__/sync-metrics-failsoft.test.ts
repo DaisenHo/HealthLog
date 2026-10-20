@@ -1,5 +1,5 @@
 /**
- * F-SYNC-3 — the metric MAPPER runs inside a per-type catch, not just the
+ * The metric MAPPER runs inside a per-type catch, not just the
  * fetch. A single malformed point whose `resource.map(point)` throws used to
  * escape the METRIC_RESOURCES loop and skip every metric type ordered after it
  * (body-fat, spo2, hrv, rhr, respiratory, glucose, temps), also blocking the

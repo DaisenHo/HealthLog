@@ -1,5 +1,5 @@
 /**
- * v1.4.40 W-INSIGHTS — `/api/insights/targets` mood-rollup tier swap.
+ * v1.4.40 — `/api/insights/targets` mood-rollup tier swap.
  *
  * Audit Critical Finding #2 (`.planning/round-v1439-arch-qa-infra-db.md`)
  * flagged the unbounded `prisma.moodEntry.findMany({ where: { userId } })`

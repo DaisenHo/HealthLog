@@ -65,7 +65,7 @@ import { userDayKey } from "@/lib/tz/format";
 export const PROMPT_VERSION = "5.1.0" as const;
 
 /**
- * v1.22 (W6) — the daily-briefing personalization SYSTEM CONTEXT block.
+ * v1.22 — the daily-briefing personalization SYSTEM CONTEXT block.
  *
  * Two deterministic, per-(user, day) touches the briefing user prompt appends:
  *   - an OPENER HINT (the hash-seeded archetype rotation) so the lead varies
@@ -883,7 +883,7 @@ user-logged event with a neutral label + detail. Hard cap 20 entries.`,
 Eintrag verweist auf ein reales, vom Nutzer geloggtes Ereignis mit
 neutralem Label + Detail. Höchstgrenze: 20 Einträge.`,
   },
-  // v1.18.7 (HIGH-2) — the shared cross-surface contracts as the canonical
+  // v1.18.7 — the shared cross-surface contracts as the canonical
   // source. The detailed rules above stay for this calibrated surface; these
   // restate the five contracts in the wording every surface now shares, so a
   // future safety edit is made once in `shared-contracts.ts`.
@@ -893,7 +893,7 @@ neutralem Label + Detail. Höchstgrenze: 20 Einträge.`,
   // briefing already leads verdict-first (rule 8); this pins it to the same
   // fragment the per-metric cards carry so the two surfaces can't drift.
   { id: "sharedOpeningShape", en: openingShape.en, de: openingShape.de },
-  // v1.27.13 (Welle J) — the overview + briefing text carried the same
+  // v1.27.13 — the overview + briefing text carried the same
   // recitation disease (counts, cadence). Both contracts apply here so the
   // summary and the daily briefing interpret rather than enumerate; the
   // briefing's own grounding/format machinery is untouched.
@@ -927,7 +927,7 @@ neutralem Label + Detail. Höchstgrenze: 20 Einträge.`,
     en: outlookContract.en,
     de: outlookContract.de,
   },
-  // v1.22 (W6) — paragraph formatting so the briefing paragraph renders as real
+  // v1.22 — paragraph formatting so the briefing paragraph renders as real
   // paragraphs through the shared `ProseBlocks` helper.
   {
     id: "sharedFormatting",
@@ -974,7 +974,7 @@ const SYSTEM_PROMPT_EN = composeInsightPrompt("en");
 const SYSTEM_PROMPT_DE = composeInsightPrompt("de");
 
 /**
- * v1.4.25 W14c — native locale-specific Insights system prompts.
+ * v1.4.25 — native locale-specific Insights system prompts.
  *
  * Replaces the W9e REPLY-LANGUAGE-footer plumbing. For FR / ES / IT /
  * PL the prompt body is assembled from the safety-contract matrix in
@@ -1016,7 +1016,7 @@ export function getStrictInsightsSystemPrompt(locale: Locale): string {
 }
 
 /**
- * v1.4.16 phase B5a — return the scope-hardened prompt with a
+ * v1.4.16 — return the scope-hardened prompt with a
  * dynamically-built SOURCES block injected at the end. Only
  * references whose `metricApplicability` overlaps the current
  * `metrics[]` are listed, so a weight-only call doesn't burn tokens
@@ -1038,7 +1038,7 @@ export function buildSystemPromptWithReferences(
   const refs = selectReferencesForMetrics(metrics);
   if (refs.length === 0) return base;
 
-  // v1.4.25 W9e — AI-initial locales (FR/ES/IT/PL) ride the EN sources
+  // v1.4.25 — AI-initial locales (FR/ES/IT/PL) ride the EN sources
   // block. The "title" field is the EN title; the model is told to
   // surface the citation id, not to translate the source title, so this
   // is safe — citation labels in the UI use the contract id (lowercase,
@@ -1109,7 +1109,7 @@ export const OUT_OF_SCOPE_REFUSAL_DE = {
 };
 
 /**
- * v1.4.25 W14c — native out-of-scope refusal payloads. Lazy-built
+ * v1.4.25 — native out-of-scope refusal payloads. Lazy-built
  * from the safety-contract matrix so the summary copy stays in sync
  * with the prompt body that taught the model to emit it. The EN /
  * DE constants above remain authoritative for their locales — these

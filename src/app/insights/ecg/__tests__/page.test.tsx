@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.30 (UX/IA audit H1) — `/insights/ecg` routed sub-page.
+ * v1.30 — `/insights/ecg` routed sub-page.
  *
  * The page reuses `<EcgSection>` (verbatim, `hideHeading` set so the shell
  * owns the heading) and self-gates to an empty state when the account has no

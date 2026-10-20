@@ -199,7 +199,7 @@ describe("formatMeasurementsForExport", () => {
     expect(result[0].unit).toBe("kg");
   });
 
-  // v1.4.25 W7 — per-user timezone offset in exports (issue #167).
+  // v1.4.25 — per-user timezone offset in exports (issue #167).
   it("emits ISO-8601 with user-tz offset when userTz is provided", () => {
     const measurements = [
       {

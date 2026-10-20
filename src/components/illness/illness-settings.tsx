@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.6 (W8 / MOD-03) — the Illness module's own settings page body.
+ * v1.18.6 — the Illness module's own settings page body.
  *
  * Reached from the wrench beside the page's "hinzufügen" button. Lets the
  * user reorder conditions/episodes + pick the card-vs-list page view. Order

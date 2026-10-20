@@ -155,7 +155,7 @@ export function OcrRowEditor({
               className="font-medium"
             />
             {fieldError("analyte", "labs.ocr.errorAnalyte")}
-            {/* v1.43 (D1223) — the marker this value goes to: the server's
+            {/* v1.43 — the marker this value goes to: the server's
                 match, or a choice between its suggestions and a new one. */}
             <MarkerMatchField
               matchedName={

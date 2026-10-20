@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.16 phase B5e — coverage for the admin AI quality preview.
+ * v1.4.16 — coverage for the admin AI quality preview.
  *
  * Three branches:
  *   1. loading state (Loader2 spinner + label)
@@ -57,7 +57,7 @@ describe("<AiQualitySection>", () => {
     mockQueryState.isLoading = false;
     mockQueryState.isError = false;
     const html = render(<AiQualitySection />);
-    // v1.4.33 IW7 — admin section renamed from "AI Quality" to
+    // v1.4.33 — admin section renamed from "AI Quality" to
     // "Insights Quality" per the project-voice rule.
     expect(html).toContain("Insights Quality");
     expect(html).toContain("No feedback yet");

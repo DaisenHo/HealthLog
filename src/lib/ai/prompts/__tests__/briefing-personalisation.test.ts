@@ -1,5 +1,5 @@
 /**
- * v1.22 (W6) — the daily-briefing personalization block: always an opener hint,
+ * v1.22 — the daily-briefing personalization block: always an opener hint,
  * a sparse + hash-gated first-name clause, and byte-identical (name-free) output
  * for unnamed accounts.
  */

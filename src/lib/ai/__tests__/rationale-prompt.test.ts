@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { getStrictInsightsSystemPrompt } from "../prompts/insight-generator";
 
 /**
- * v1.4.16 phase B5c — system prompt advertises the new `rationale`
+ * v1.4.16 — system prompt advertises the new `rationale`
  * field shape and instructs the model to populate it on every rec.
  *
  * The output-format block in the prompt was previously a 4-field

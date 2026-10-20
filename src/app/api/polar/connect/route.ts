@@ -12,7 +12,7 @@ import {
 import { NextResponse } from "next/server";
 
 /**
- * v1.17.0 (F4) — redirect the user to the Polar AccessLink consent screen.
+ * v1.17.0 — redirect the user to the Polar AccessLink consent screen.
  *
  * BYO-key OAuth: the client id/secret resolve DB-first then env via
  * `getPolarClientCredentials` — a user's own AccessLink app when stored,

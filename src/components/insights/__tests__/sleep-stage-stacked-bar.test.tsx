@@ -17,7 +17,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 /**
- * v1.4.25 W4c / W3f — sleep-stage stacked-bar chart unit tests.
+ * v1.4.25 — sleep-stage stacked-bar chart unit tests.
  *
  * The chart relies on Recharts which uses `ResponsiveContainer` —
  * `renderToStaticMarkup` produces SSR-only HTML so we assert the
@@ -161,7 +161,7 @@ describe("<SleepStageStackedBar>", () => {
   });
 
   /**
-   * v1.4.25 W3f — per-night surface + window toggle.
+   * v1.4.25 — per-night surface + window toggle.
    */
   describe("per-night + window toggle (v1.4.25 W3f)", () => {
     it("renders three window-toggle buttons (7 / 14 / 30 days) with 7d active by default", () => {

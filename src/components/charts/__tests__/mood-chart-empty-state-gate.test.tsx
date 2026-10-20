@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import deMessages from "../../../../messages/de.json";
 
 /**
- * v1.4.43 W2-CHART-GATE — mood-chart empty-state copy split.
+ * v1.4.43 — mood-chart empty-state copy split.
  *
  * `chartData` collapses entries to one point per calendar day, so a
  * user with many mood entries on < 3 distinct days saw the legacy

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W6 — integration coverage for the PUT
+ * v1.4.25 — integration coverage for the PUT
  * `/api/dashboard/widgets` endpoint with realistic full-layout payloads.
  *
  * Root-cause this suite pins:
@@ -374,7 +374,7 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
     expect(res.status).toBe(200);
   });
 
-  // v1.4.42 W2 — the route used to return only `issues[0].message`,
+  // v1.4.42 — the route used to return only `issues[0].message`,
   // which forced one round-trip per wrong field during iOS contract
   // debugging. The route now returns every issue under `details.issues`
   // and keeps the refusal on the wide event (`meta.rejected_attempt`);

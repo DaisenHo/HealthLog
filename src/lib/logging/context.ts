@@ -34,7 +34,7 @@ export function annotate(fields: {
   }
 }
 
-// v1.4.25 Fix-G — wire the schema-parser breadcrumb into the
+// v1.4.25 — wire the schema-parser breadcrumb into the
 // AsyncLocalStorage-backed `annotate()` only on the server. The
 // validations module stays bundle-safe for client imports; this side
 // effect runs the first time any server module imports the logging

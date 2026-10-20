@@ -36,7 +36,7 @@ import {
 } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.39 (C2) — the confirm screen.
+ * v1.39 — the confirm screen.
  *
  * Three things on one screen, all of them confirmations rather than
  * questions (design spec §The screens, 3):

@@ -132,7 +132,7 @@ test.describe("add measurement flow", () => {
 
     await openMenu(page, addTrigger);
 
-    // v1.5 phase-5: the menu items now have distinct labels — the
+    // v1.5: the menu items now have distinct labels — the
     // measurement entry says "Measurement" / "Messung" instead of "Add",
     // so we can target it directly.
     // The desktop rail opens a dropdown, the phone shell the capture sheet

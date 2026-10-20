@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (M3) — integration coverage for
+ * v1.4.43 — integration coverage for
  * `DELETE /api/settings/account`.
  *
  * The audit found the danger-zone UI offered only a half-delete (wipe

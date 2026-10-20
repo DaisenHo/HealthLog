@@ -1,5 +1,5 @@
 /**
- * v1.4.20 phase D reconcile — shared relative-time helper.
+ * v1.4.20 — shared relative-time helper.
  *
  * Formats an ISO timestamp as a localised "just now" / "N minutes ago"
  * string via i18n keys. Three Insights surfaces (hero strip, daily
@@ -8,7 +8,7 @@
  *
  * Buckets: <1m → just-now, <1h → minutes, <24h → hours, else days.
  *
- * v1.4.43 H6 — pluralisation. Each bucket reads a *One (singular) or
+ * v1.4.43 — pluralisation. Each bucket reads a *One (singular) or
  * *Other (plural) key, matching the dashboard.staleHintWeeksOne / Other
  * pattern already in the bundle. Eliminates the "vor 1 Minuten" grammar
  * bug a German user spotted.
@@ -103,7 +103,7 @@ export function relativeCalendarDate(
 }
 
 /**
- * v1.22 (W6) — "Updated …" freshness label for the insight surfaces.
+ * v1.22 — "Updated …" freshness label for the insight surfaces.
  *
  * Replaces the bare relative read ("2 hours ago") on the briefing + per-metric
  * cards with a calendar-bucketed label that shows the TIME only for today:

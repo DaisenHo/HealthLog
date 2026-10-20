@@ -82,7 +82,7 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = updateMeasurementSchema.safeParse(body);
     if (!parsed.success) {
-      // v1.4.43 W6 — measurement edit hot path; multi-issue 422 +
+      // v1.4.43 — measurement edit hot path; multi-issue 422 +
       // audit breadcrumb keyed `measurements.update.validation-failed`.
       const issues = sanitiseZodIssues(parsed.error.issues);
       annotate({
@@ -192,7 +192,7 @@ export const PUT = apiHandler(
         },
       });
     } catch (err) {
-      // v1.4.28 FB-B1 — re-pointing `measuredAt` onto an existing
+      // v1.4.28 — re-pointing `measuredAt` onto an existing
       // `(userId, type, measuredAt, source, sleepStage)` tuple raises
       // `P2002`. Mirror the POST handler's catch so the row-edit Sheet
       // surfaces a clean 409 with a translatable `errorCode` instead of
@@ -214,7 +214,7 @@ export const PUT = apiHandler(
     await auditLog("measurement.update", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      // C4 — the overwritten scalars. Without them the owner's feed says a
+      // The overwritten scalars. Without them the owner's feed says a
       // reading changed and cannot say from what. The note is named and never
       // quoted: it is encrypted on the row and copying it here would make the
       // audit table a second store for it.
@@ -239,12 +239,12 @@ export const PUT = apiHandler(
       },
     });
 
-    // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+    // v1.4.34 — bust per-user analytics + achievements + workouts
     // caches so subsequent reads reflect the edited row. Interactive
     // edit — hard-evict so the SWR readers don't serve the pre-edit body.
     invalidateUserMeasurements(user.id, { evict: true });
 
-    // v1.37.19 (C2-F1) — shared post-mutation tail. Both the OLD and the
+    // v1.37.19 — shared post-mutation tail. Both the OLD and the
     // NEW identity ride the list: an edit can move the row across day
     // boundaries or re-type it, and the helper collapses identical
     // (type, day) pairs so the common in-place edit fires once.
@@ -308,13 +308,13 @@ export const DELETE = apiHandler(
       },
     });
 
-    // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+    // v1.4.34 — bust per-user analytics + achievements + workouts
     // caches so subsequent reads reflect the deletion. Interactive
     // delete — hard-evict so the SWR readers don't serve the pre-delete
     // body.
     invalidateUserMeasurements(user.id, { evict: true });
 
-    // v1.37.19 (C2-F1) — shared post-mutation tail (the recompute drops
+    // v1.37.19 — shared post-mutation tail (the recompute drops
     // the rollup row when the day's measurement count goes to zero).
     await afterMeasurementMutation(
       user.id,

@@ -41,7 +41,7 @@ export function MoodSection() {
     </div>
   );
 
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the mood-tag cards.
   return (
     <div className="space-y-6">

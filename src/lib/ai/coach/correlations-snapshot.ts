@@ -1,5 +1,5 @@
 /**
- * RECON1 (D5-5) — discovered-driver block for the no-tools Coach snapshot.
+ * Discovered-driver block for the no-tools Coach snapshot.
  *
  * The FDR-controlled cross-metric driver pairs were reachable ONLY via the
  * `get_correlations` tool, so a local / no-tools provider (Ollama) got the

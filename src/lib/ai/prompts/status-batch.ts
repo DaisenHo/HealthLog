@@ -1,5 +1,5 @@
 /**
- * v1.18.7 (HIGH-1) — the prompt scaffold for the BATCHED per-metric status
+ * v1.18.7 — the prompt scaffold for the BATCHED per-metric status
  * assessment.
  *
  * Instead of seven independent `runStatusCompletion` calls — one per

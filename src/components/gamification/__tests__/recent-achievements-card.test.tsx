@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { AchievementProgress } from "@/lib/gamification/achievements";
 
 /**
- * v1.4.15 phase-B4 — `<RecentAchievementsCard>` contract.
+ * v1.4.15 — `<RecentAchievementsCard>` contract.
  *
  *   1. `pickRecentUnlocks` — locked entries dropped, unlocked sorted by
  *      `completedAt` descending, capped at the requested limit. Pure.
@@ -43,7 +43,7 @@ let mockData:
 };
 let mockIsPending = false;
 
-// v1.4.34 IW-F-Perf — the card now reads through the shared
+// v1.4.34 — the card now reads through the shared
 // `useAchievementsQuery` hook; the test mocks the hook directly so the
 // network layer + TanStack provider scaffolding stays out of scope.
 vi.mock("@/lib/queries/use-achievements-query", () => ({

@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B5a — curated medical-reference bundle.
+ * v1.4.16 — curated medical-reference bundle.
  *
  * Every normative claim in an AI-generated recommendation ("target
  * < 140/90", "BMI 18.5-24.9", "≥ 7h sleep") MUST cite an entry in

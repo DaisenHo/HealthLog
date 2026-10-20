@@ -194,7 +194,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         const timeWindow = `${schedule.windowStart}–${schedule.windowEnd}`;
 
         try {
-          // v1.4.27 F21 — each notification renders in the affected
+          // v1.4.27 — each notification renders in the affected
           // user's `User.locale` (the recipient is the user whose dose
           // is overdue, not the admin running the check).
           // `dispatchLocalisedNotification` resolves the locale from

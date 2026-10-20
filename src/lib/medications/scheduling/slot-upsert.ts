@@ -399,7 +399,7 @@ async function applyToExisting(
     };
   }
 
-  // C2 — never clear a recorded dose with a pending projection echo. An
+  // Never clear a recorded dose with a pending projection echo. An
   // iOS offline re-sync replays a PENDING projection (no takenAt,
   // skipped=false) for a slot the user already actioned; applying it
   // would overwrite `takenAt` to null and convert a recorded dose into a
@@ -417,7 +417,7 @@ async function applyToExisting(
     };
   }
 
-  // M2 — only a genuine pending→taken move consumes inventory. Re-posting
+  // Only a genuine pending→taken move consumes inventory. Re-posting
   // an already-taken slot must not decrement again.
   const consumedTransition = existing.takenAt === null && takenAt !== null;
 

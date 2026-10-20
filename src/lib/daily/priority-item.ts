@@ -1,5 +1,5 @@
 /**
- * P1 — `PriorityItem`, the ONE typed model behind every "worth a look" item.
+ * `PriorityItem`, the ONE typed model behind every "worth a look" item.
  *
  * A `PriorityItem` is the single rendering unit for every rail entry the
  * unified daily-value system produces: a coach check-in, a dose-window CTA, a

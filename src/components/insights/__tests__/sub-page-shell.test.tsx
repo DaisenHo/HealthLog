@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 /**
- * v1.4.25 W4 — `<SubPageShell>` unit tests.
+ * v1.4.25 — `<SubPageShell>` unit tests.
  *
  * The shell renders a focusable `<h1>` (for screen-reader landing on
  * tab navigation) plus an optional description and badge. SSR-rendered

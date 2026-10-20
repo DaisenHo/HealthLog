@@ -89,7 +89,7 @@ async function primeAllCaches(): Promise<void> {
   await cached(caches.dashboardWidgets, USER_A, async () => ({ d: 1 }));
   await cached(caches.dashboardWidgets, USER_B, async () => ({ d: 2 }));
 
-  // v1.7.0 W6 — the unified dashboard snapshot lives under the analytics
+  // v1.7.0 — the unified dashboard snapshot lives under the analytics
   // bucket. Since v1.21.2 the real cell is keyed WITH the resolved locale
   // (`${userId}|dashboard-snapshot|${locale}`) because the briefing prose is
   // locale-specific. Seed the locale-suffixed cell (the production shape) so
@@ -148,7 +148,7 @@ describe("invalidateUserMeasurements", () => {
 
     expect(caches.analytics.get(`${USER_A}|default`)).toBeNull();
     expect(caches.analytics.get(`${USER_A}|summaries`)).toBeNull();
-    // v1.7.0 W6 — the `${userId}|` prefix sweep covers the snapshot key.
+    // v1.7.0 — the `${userId}|` prefix sweep covers the snapshot key.
     expect(caches.analytics.get(snapshotCell(USER_A))).toBeNull();
     expect(caches.achievements.get(USER_A)).toBeNull();
     expect(caches.workouts.get(`${USER_A}|3|0||`)).toBeNull();
@@ -253,7 +253,7 @@ describe("invalidateUserMedications", () => {
     expect(caches.medications.get(USER_A)).toBeNull();
     expect(caches.medicationsIntake.get(`${USER_A}|compliance|30`)).toBeNull();
     expect(caches.achievements.get(USER_A)).toBeNull();
-    // v1.7.0 W6 — medication writes sweep the analytics bucket, which
+    // v1.7.0 — medication writes sweep the analytics bucket, which
     // covers the snapshot key.
     expect(caches.analytics.get(snapshotCell(USER_A))).toBeNull();
     expect(caches.medications.get(USER_B)).not.toBeNull();
@@ -333,7 +333,7 @@ describe("invalidateUserDashboardWidgets", () => {
     invalidateUserDashboardWidgets(USER_A);
     expect(caches.dashboardWidgets.get(USER_A)).toBeNull();
     expect(caches.dashboardWidgets.get(USER_B)).not.toBeNull();
-    // v1.7.0 W6 — the layout rides inside the snapshot now, so a tile
+    // v1.7.0 — the layout rides inside the snapshot now, so a tile
     // reorder must drop the snapshot too. The widget invalidator does
     // NOT sweep the whole analytics bucket, so the slim/default cells
     // stay warm — only the point-keyed snapshot is dropped.

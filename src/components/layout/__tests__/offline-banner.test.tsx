@@ -1,5 +1,5 @@
 /**
- * v1.4.43 QoL (M5) — `<OfflineBanner>` SSR contract.
+ * v1.4.43 — `<OfflineBanner>` SSR contract.
  *
  * The banner reads `navigator.onLine` + subscribes to `online`/`offline`
  * window events inside a `useEffect`. SSR markup is therefore always
@@ -49,7 +49,7 @@ describe("<OfflineBanner>", () => {
   });
 
   it("ships the EN copy for `offlineBanner.message`", () => {
-    // F-OFF-1 — the copy must not over-promise auto-save: offline mutations now
+    // The copy must not over-promise auto-save: offline mutations now
     // fail fast (networkMode "always") rather than queue, so the banner states
     // the honest thing.
     const en = loadMessages("en");
@@ -88,7 +88,7 @@ describe("<OfflineBanner>", () => {
   });
 });
 
-// v1.4.43 QoL (M5) — also pin the client-side branch: when
+// v1.4.43 — also pin the client-side branch: when
 // `isOnline === false` the banner paints with the i18n message,
 // the WifiOff icon, and the `role="status"` aria-live region. We
 // can't easily fire window events from a node-environment vitest

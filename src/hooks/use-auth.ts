@@ -73,7 +73,7 @@ export interface AuthUser {
   timezone: string;
   onboardingCompletedAt: string | null;
   /**
-   * v1.4.15 Phase B5: whether the user has finished or dismissed
+   * v1.4.15: whether the user has finished or dismissed
    * the spotlight tour overlaid on the dashboard. Distinct from
    * `onboardingCompletedAt` (the wizard at /onboarding) — see the
    * `<TourLauncher>` component for the gating logic.
@@ -87,7 +87,7 @@ export interface AuthUser {
    */
   onboardingTourProgress: AuthTourProgress | null;
   /**
-   * v1.39 (C1) — the needs-based setup flow's state for the record the payload
+   * v1.39 — the needs-based setup flow's state for the record the payload
    * describes — the active one under a switch: the nine ordered steps with
    * their `pending | done | skipped` status, the answers as given, the flow's
    * own completion stamp (distinct from `onboardingCompletedAt` above, which
@@ -100,7 +100,7 @@ export interface AuthUser {
    */
   onboarding?: OnboardingStateDto | null;
   /**
-   * v1.18.6 (DISC-02) — ISO timestamp of the one-time medical-disclaimer
+   * v1.18.6 — ISO timestamp of the one-time medical-disclaimer
    * acknowledgment, or null when never acknowledged. The onboarding welcome
    * step gates "Get started" on a non-null value for a fresh account.
    * Optional in the type so a stale /me payload (older server image without
@@ -147,7 +147,7 @@ export interface AuthUser {
    */
   dateFormat: DateFormatPreference;
   /**
-   * v1.4.47 W3 — the signed-in person's own stored Coach opt-out. It is
+   * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
    * the value the Activate-Coach switch and the module toggle edit, and
    * nothing else should read it: it belongs to the account, not to the
    * record on screen, and it is only one of the layers that decide whether
@@ -350,7 +350,7 @@ export async function fetchMe(): Promise<AuthUser> {
   // throws `ApiError`, which `useAuth` treats as "not authenticated"
   // exactly like the old hand-rolled throw.
   //
-  // v1.4.47 W3 — coerce `disableCoach` against `undefined` so a stale
+  // v1.4.47 — coerce `disableCoach` against `undefined` so a stale
   // /me payload from a partial-deploy rollback (older server image
   // without the field) keeps the Coach surface visible by default.
   const data = await apiGet<
@@ -421,7 +421,7 @@ export async function fetchMe(): Promise<AuthUser> {
     // v1.18.6 — coerce against a stale /me payload (older server image
     // without the field) to null so the tour starts from the top.
     onboardingTourProgress: data.onboardingTourProgress ?? null,
-    // v1.39 (C1) — coerce against a stale /me payload (an older server image
+    // v1.39 — coerce against a stale /me payload (an older server image
     // without the field) to null, which every reader treats as "no flow was
     // ever run" rather than as an unfinished one.
     onboarding: data.onboarding ?? null,
@@ -502,7 +502,7 @@ function resolveAccountAccess(value: object): {
 
 export function useAuth() {
   const query = useQuery({
-    // v1.4.40 W-RSC — factory-routed to `queryKeys.authMe()`. Pre-fix
+    // v1.4.40 — factory-routed to `queryKeys.authMe()`. Pre-fix
     // the literal `["auth", "me"]` was the canonical example in
     // audit-H1 of factory drift. The prefix `["auth"]` still matches
     // `queryKeys.auth()` invalidations.

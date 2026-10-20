@@ -605,7 +605,7 @@ function searchAndFetchTools(): McpToolDefinition[] {
           );
         }
 
-        // v1.30 (G1) — nutrients (water/caffeine/24 micronutrients) presence
+        // v1.30 — nutrients (water/caffeine/24 micronutrients) presence
         // probe, gated on the opt-in `nutrients` module exactly like the
         // ingest/read routes: an account that never turned the module on gets
         // no rows here, mirroring the module's own dark-by-default posture.

@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W2 — probe-gated correlation hypothesis runner.
+ * v1.4.37 — probe-gated correlation hypothesis runner.
  *
  * The three pre-defined hypotheses (BP × medication compliance, mood ×
  * resting pulse, weight × weekday) need PAIRED day-level samples
@@ -69,7 +69,7 @@ import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 
 /**
- * v1.4.37 W2 — cold-path correlation window. Trim from 30 to 28 days
+ * v1.4.37 — cold-path correlation window. Trim from 30 to 28 days
  * keeps the `n >= 20` Pearson gate comfortably reachable while shaving
  * two days off every read the runner issues. Kept as a constant so the
  * sentinel annotate and the SQL/Prisma WHERE clauses stay in lockstep.
@@ -142,7 +142,7 @@ export async function computeCorrelationHypothesesFastPath(
 
   const coverage = input.coverage ?? (await probeRollupCoverage(userId));
 
-  // v1.4.38 W-A — cross-tz runtime guard. The rollup table buckets at
+  // v1.4.38 — cross-tz runtime guard. The rollup table buckets at
   // UTC midnight, while the per-event mood / intake streams below are
   // re-keyed via `userDayKey(..., userTz)`. For a user inside the +-3h
   // band around UTC (Europe + western Mid-Atlantic), the two keying
@@ -162,7 +162,7 @@ export async function computeCorrelationHypothesesFastPath(
   // logged, even when those were fully covered. Per-type coverage is the
   // correct gate.
   //
-  // v1.2.5 (M-CS2) — PULSE is no longer hydrated from the rollup tier:
+  // v1.2.5 — PULSE is no longer hydrated from the rollup tier:
   // the mood × "resting pulse" hypothesis now scores the RESTING series
   // (RESTING_HEART_RATE rows, else a low-percentile PULSE proxy from RAW
   // samples), not the day-mean PULSE the rollup carries. A day-mean folds
@@ -241,7 +241,7 @@ export async function computeCorrelationHypothesesFastPath(
     weightRows = weightRowsLive;
   }
 
-  // v1.2.5 (M-CS2) — resolve the RESTING-pulse series the mood × pulse
+  // v1.2.5 — resolve the RESTING-pulse series the mood × pulse
   // hypothesis scores against. Prefer the clean RESTING_HEART_RATE rows;
   // only when the user has none do we pull RAW PULSE samples for the
   // low-percentile daily proxy (the proxy needs the per-day distribution,
@@ -370,7 +370,7 @@ export async function computeCorrelationHypothesesFastPath(
         path: measurementsOnRollups ? "rollup" : "live",
         window_days: CORRELATION_WINDOW_DAYS,
         degraded: false,
-        // v1.4.38 W-A — surfaces the cross-tz guard decision so ops
+        // v1.4.38 — surfaces the cross-tz guard decision so ops
         // logs can distinguish "user is Berlin, rollup path eligible"
         // from "user is Honolulu, forced to live regardless of coverage".
         tz_guard: userNearUtc ? "near-utc" : "non-utc-live-fallback",

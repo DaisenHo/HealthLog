@@ -212,7 +212,7 @@ export function getPersistentFailureThreshold(): number {
  */
 
 /**
- * v1.4.43 W14 — once a `persistent` failure streak has been running
+ * v1.4.43 — once a `persistent` failure streak has been running
  * for this long without a single intervening success, flip the
  * integration to `parked`. 24h matches the same window the alert
  * ladder uses for re-paging and gives the operator a full business
@@ -288,7 +288,7 @@ export interface IntegrationStatusSnapshot {
   lastSuccessAt: string | null;
   lastAttemptAt: string | null;
   lastError: string | null;
-  /** v1.4.43 W14 — per-kind bucketed counters; `null` for rows
+  /** v1.4.43 — per-kind bucketed counters; `null` for rows
    *  that have never recorded a write yet. v1.4.47 W1 — sole source
    *  of truth now that the legacy `consecutiveFailures` column is
    *  gone. */
@@ -304,7 +304,7 @@ export interface IntegrationStatusSnapshot {
 
 /**
  * Bucketed consecutive-failure counters keyed by `FailureKind`.
- * v1.4.43 W14 — exposed so the response shape stays explicit and
+ * v1.4.43 — exposed so the response shape stays explicit and
  * tests can pin the bucket increments.
  */
 export type ConsecutiveFailuresByKind = Record<FailureKind, number>;
@@ -386,7 +386,7 @@ export async function getIntegrationStatus(
  * Read the current `state` cheaply — used by the sync entry-points
  * to short-circuit when reauth is required.
  *
- * v1.4.43 W14 — `parked` is treated as "reauth required" for the
+ * v1.4.43 — `parked` is treated as "reauth required" for the
  * purpose of sync short-circuit: the user has to call `/resume` (or
  * complete the OAuth flow again) before any further sync work
  * happens. Returning `true` for both states means existing call sites
@@ -504,9 +504,9 @@ export async function recordSyncSuccess(
     }
   }
 
-  // v1.4.43 W14 — a success resets ALL per-kind buckets back to zero
+  // v1.4.43 — a success resets ALL per-kind buckets back to zero
   // and clears the persistent-streak start timestamp.
-  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // v1.4.47 — the legacy `consecutiveFailures` column was dropped
   // (migration 0077), so the bucket reset is the only counter write.
   await prisma.integrationStatus.upsert({
     where: { userId_integration: { userId, integration } },
@@ -572,10 +572,10 @@ export interface RecordSyncFailureInput {
  * admins. Failures here are best-effort: a failed dispatch DOES NOT
  * swallow the audit log.
  *
- * v1.4.43 W14 — per-kind counter migration. Each failure increments
+ * v1.4.43 — per-kind counter migration. Each failure increments
  * ONLY its own bucket; a transient hiccup followed by a persistent
  * failure no longer masks the persistent streak's true age.
- * v1.4.47 W1 — the legacy single-column `consecutiveFailures` integer
+ * v1.4.47 — the legacy single-column `consecutiveFailures` integer
  * was dropped (migration 0077); the bucket is now the sole counter
  * and the back-fill branch is gone.
  *
@@ -751,7 +751,7 @@ export async function recordSyncFailure(
   // serially without bloating latency in the success path (which never
   // calls this).
   //
-  // v1.4.47 W1 — `attemptNumber` is now sourced from the bucket sum
+  // v1.4.47 — `attemptNumber` is now sourced from the bucket sum
   // (the legacy `consecutiveFailures` column was dropped). The sum
   // matches the legacy column's value for any row written after
   // v1.4.43: a transient burst followed by a single persistent failure
@@ -791,10 +791,10 @@ export async function recordSyncFailure(
   // prevents loops where a flapping integration that fails once an
   // hour pages every hour.
   //
-  // v1.4.43 W14 — the threshold check reads `Math.max(...buckets)` so
+  // v1.4.43 — the threshold check reads `Math.max(...buckets)` so
   // a row with a 3-deep persistent streak still pages even when the
   // transient bucket sat at 0.
-  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // v1.4.47 — the legacy `consecutiveFailures` column was dropped
   // (migration 0077); the bucket max is now the sole alert signal.
   const threshold = getPersistentFailureThreshold();
   const alertSignal = Math.max(...Object.values(buckets));
@@ -885,7 +885,7 @@ export async function recordSyncFailure(
 }
 
 /**
- * v1.4.43 W14 — clear a `parked` integration so the next scheduled
+ * v1.4.43 — clear a `parked` integration so the next scheduled
  * sync runs again. Used by `/api/integrations/withings/resume` and
  * the OAuth-callback path. The state moves to `connected`; all
  * per-kind buckets reset to zero; the persistent-streak anchor
@@ -1054,7 +1054,7 @@ export async function markReauthRequired(
     select: { failingSinceAt: true },
   });
 
-  // v1.4.47 W1 — the legacy `consecutiveFailures` column was dropped
+  // v1.4.47 — the legacy `consecutiveFailures` column was dropped
   // (migration 0077). Out-of-band reauth detection (proactive token
   // refresh) seeds the `reauth_required` bucket at 1 on a first-ever
   // row so subsequent reauth detections accumulate against the same

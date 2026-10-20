@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-ENV) — nightly environmental-context fetch.
+ * v1.25 — nightly environmental-context fetch.
  *
  * For every account with the environmental-context module enabled AND a home
  * location set, fetch the daily weather/daylight for the recent uncovered days

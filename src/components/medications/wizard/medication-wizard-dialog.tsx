@@ -88,7 +88,7 @@ export interface MedicationWizardDialogProps {
   /** Fires with the medication id on a successful create / save. */
   onSuccess?: (id: string) => void;
   /**
-   * v1.39 (C2) — whether a create lands on the new medication's page. The
+   * v1.39 — whether a create lands on the new medication's page. The
    * medications list wants that; the setup flow's first-result screen mounts
    * the wizard inline and shows the result where it stands, so it opts out.
    */
@@ -190,7 +190,7 @@ function WizardDialogShell({
   const isLastStep = displayStep === totalSteps;
   const isFirstStep = displayStep === 1;
 
-  // v1.8.6 W4b — forward-reachability ceiling for the dot stepper. The
+  // v1.8.6 — forward-reachability ceiling for the dot stepper. The
   // dot at path-index `j` is reachable iff every gate from the active
   // slot up to (but not including) `j` passes. `firstInvalidIndex`
   // returns the first failing slot from `fallbackIndex`; every slot up
@@ -246,7 +246,7 @@ function WizardDialogShell({
     }
   }, [payload.mode, payload.cadence.kind, step]);
 
-  // v1.8.6 W4b — jump-to-arbitrary-step from the dot stepper. Backward
+  // v1.8.6 — jump-to-arbitrary-step from the dot stepper. Backward
   // jumps are always allowed; a forward jump is gated on EVERY
   // intervening path gate validating (a multi-step lookahead over the
   // single-step `validateStep`). A jump that lands on the final review
@@ -384,7 +384,7 @@ function WizardDialogShell({
     total: totalSteps,
   });
 
-  // v1.8.6 W4b — short per-slot labels for the dot stepper. Keyed by
+  // v1.8.6 — short per-slot labels for the dot stepper. Keyed by
   // raw step number so the path-aware `stepList` maps straight through.
   const stepperLabels = useMemo(() => {
     const map: Record<number, string> = {};
@@ -476,7 +476,7 @@ function WizardDialogShell({
           aria-busy={submitting || undefined}
           className="flex flex-col"
         >
-          {/* v1.8.6 W4b — dot stepper replaces the v1.5.5 continuous
+          {/* v1.8.6 — dot stepper replaces the v1.5.5 continuous
               `<Progress>` strip + "Step X of Y" caption. The dot row +
               body share the same outer padding so they read as one
               column; the right padding leaves room for the shell's
@@ -561,7 +561,7 @@ function WizardDialogShell({
                   {stepTitle}
                 </h2>
                 <p className="text-muted-foreground text-sm">{stepSubline}</p>
-                {/* v1.8.6 W4b — muted "what's next" hint so the user
+                {/* v1.8.6 — muted "what's next" hint so the user
                     knows what the Next tap leads to (or, on the final
                     slot, that Next saves). */}
                 <p

@@ -4,7 +4,7 @@
  * `<ConnectionsPanel>` — the connected-services half of Settings →
  * Integrations: Withings / WHOOP / Fitbit / Polar / Oura / Nightscout.
  *
- * v1.18.0 (S3) — extracted out of `integrations-section.tsx` so the section
+ * v1.18.0 — extracted out of `integrations-section.tsx` so the section
  * file can host the Connections / Channels / Sources sub-tabs without growing
  * unbounded. This panel owns the OAuth-callback toast handlers (the four
  * providers + Withings redirect back here with `?<provider>=…` params) and the
@@ -258,7 +258,7 @@ export function ConnectionsPanel({
     }
   }, [withingsOauthOutcome, router, queryClient, t]);
 
-  // v1.17.0 (F4) — generic OAuth-callback toast for the OAuth providers.
+  // v1.17.0 — generic OAuth-callback toast for the OAuth providers.
   // The Polar / Oura / WHOOP / Fitbit callbacks redirect back with
   // `?<provider>=connected` or `?<provider>=error&reason=<tag>`; surface the
   // outcome as a toast and scrub the one-shot params so a reload doesn't replay

@@ -157,7 +157,7 @@ function MoodCorrelationCard({
                 <Badge variant="outline" className="text-2xs">
                   {t(STRENGTH_KEY[data.result.strength])}
                 </Badge>
-                {/* v1.12.4 (C4) — the "{n} paired days · r" line sat under the
+                {/* v1.12.4 — the "{n} paired days · r" line sat under the
                     scatter as a half-empty row. Move it into an explainer icon
                     in the header so the card footprint stays tight. */}
                 <MoodExplainerIcon

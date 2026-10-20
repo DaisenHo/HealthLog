@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.4.25 W16c — Personal-record "PR" pill.
+ * v1.4.25 — Personal-record "PR" pill.
  *
  * Renders a small, text-only "PR" tag next to a metric label when the
  * given metric reached an all-time best in the last 30 days. Pulls

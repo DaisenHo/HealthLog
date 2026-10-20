@@ -102,7 +102,7 @@ export async function guardReply(args: {
   // "Worauf bezieht sich das?" disclosure.
   const sentinel = parseKeyValuesSentinel(rawReply);
   const proseAfterStrip = sentinel.prose.trim();
-  // v1.4.22 W5 reconcile (Code-H1) — when the model emits a
+  // v1.4.22 — when the model emits a
   // sentinel-only / malformed reply, `sentinel.prose` is empty after
   // stripping. The previous fallback `sentinel.prose.trim() || rawReply`
   // surfaced raw `---KEYVALUES---` markers to the user. The empty-prose
@@ -120,7 +120,7 @@ export async function guardReply(args: {
     });
     return { ok: false, code: "coach.provider.empty" };
   }
-  // v1.18.1 (Workstream C) — strip the optional `---SUGGEST-REMINDER---`
+  // v1.18.1 — strip the optional `---SUGGEST-REMINDER---`
   // block out of the prose-after-keyvalues. The model proposes a cadence;
   // the gate decides whether it actually surfaces (module-toggle + opt-out
   // + dismissal memory + cooldown + dedup against a live COACH reminder).
@@ -128,7 +128,7 @@ export async function guardReply(args: {
   const suggestParse = parseSuggestReminder(proseAfterStrip);
   let replyText = suggestParse.prose.trim() || proseAfterStrip;
 
-  // v1.22 (B2) — strip the optional `---REMEMBER---` block and capture the
+  // v1.22 — strip the optional `---REMEMBER---` block and capture the
   // reminder INLINE on this turn (not in the >20-turn memory worker), so a
   // casual "remind me about X" in a SHORT chat is no longer lost. A missing
   // note / invalid `when` drops the block (the user never sees the raw
@@ -156,7 +156,7 @@ export async function guardReply(args: {
     });
   }
 
-  // v1.22 (F6) — strip the optional `---SUGGEST-ACTION---` block (the
+  // v1.22 — strip the optional `---SUGGEST-ACTION---` block (the
   // generalised confirm→apply moat). The model names ONE action from the closed
   // allowlist (`checkup.create` / `reminder.note`); the card surfaces additively
   // and NOTHING is created until the user taps confirm (the entity is built
@@ -194,7 +194,7 @@ export async function guardReply(args: {
   const resultRefs = stripResultRefs(replyText);
   replyText = resultRefs.prose.trim() || replyText;
 
-  // v1.18.10 (HIGH-2) — OUTBOUND safety screen on the assembled assistant
+  // v1.18.10 — OUTBOUND safety screen on the assembled assistant
   // reply, before persistence and streaming. The inbound `detectRefusal`
   // guards the user's message; this guards the model's reply for a
   // dose-prescription or a fabricated clinical risk score that slipped past
@@ -222,7 +222,7 @@ export async function guardReply(args: {
     });
   }
 
-  // v1.21.0 (P6 / C2-5) — post-hoc numeric verifier on the Coach prose. Cross-
+  // v1.21.0 — post-hoc numeric verifier on the Coach prose. Cross-
   // check every number the model cited against this turn's authoritative figure
   // set; an unmatched number (transcription / paraphrase drift) is soft-stripped
   // to the editorial elision mark `[…]` and annotated (v1.32.14 — the withheld
@@ -232,7 +232,7 @@ export async function guardReply(args: {
   // backstop, exactly like the briefing's "no signals → skip". A blocked turn
   // already carries canned fallback prose, so skip it.
   //
-  // v1.21.2 (A8) — the authoritative set is the figures the tools returned on the
+  // v1.21.2 — the authoritative set is the figures the tools returned on the
   // tool path, and the SNAPSHOT the model was shown on the no-tools/local path
   // (`snapshot.sections`, which already carries the correlations-snapshot block).
   // Exactly one is populated per turn; the grading, tolerance, and exemptions are

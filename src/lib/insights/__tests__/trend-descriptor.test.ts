@@ -8,7 +8,7 @@ import {
 } from "../trend-descriptor";
 
 /**
- * v1.11.4 item J — deterministic Trends-row caption descriptor.
+ * v1.11.4 — deterministic Trends-row caption descriptor.
  *
  * The helper turns the same series the mini-chart plots into a neutral,
  * observational direction + magnitude. These tests pin the direction

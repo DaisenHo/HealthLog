@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W13 M-4 — `checkAuthSurfaceRateLimit` is the wrapper every
+ * v1.4.43 — `checkAuthSurfaceRateLimit` is the wrapper every
  * anonymous auth surface routes through. It guards against the
  * trust-chain misconfiguration documented in `api-response.ts`:
  *

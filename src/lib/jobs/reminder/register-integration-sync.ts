@@ -140,7 +140,7 @@ import {
 const WITHINGS_SYNC_QUEUE = "withings-fallback-sync";
 
 const WITHINGS_SYNC_CRON = "0 * * * *"; // every 60 minutes
-// v1.4.25 W17b/c — webhook-primary + cron-safety-net for activity and
+// v1.4.25 — webhook-primary + cron-safety-net for activity and
 // sleep v2. The webhook handler enqueues per-user jobs on appli=16 / 44
 // notifications; the crons below are the catch-net for the 1 % of
 // notifications Withings drops. Offset 15-minute cadence per the
@@ -163,7 +163,7 @@ const WITHINGS_SLEEP_CRON = "15 * * * *"; // every hour at :15
 // 20,30,35,50) staggered off every other hourly sync tick.
 const WITHINGS_ECG_SYNC_CRON = "41 * * * *"; // every hour at :41
 
-// v1.4.47 W6 — daily sweep for the Withings OAuth state ledger. Slots
+// v1.4.47 — daily sweep for the Withings OAuth state ledger. Slots
 // at :20 between the audit-log cleanup (:15) and the mood-reminder
 // cleanup (:25), inside the existing 02:xx-03:xx maintenance window.
 // Rows are normally consumed by the callback handler in single-use
@@ -243,7 +243,7 @@ const GOOGLE_HEALTH_OAUTH_STATE_CLEANUP_CRON = "26 3 * * *";
 // without importing this registrar and its whole handler graph. Creation,
 // scheduling, and handler binding stay here.
 const NIGHTSCOUT_SYNC_CRON = "11 * * * *"; // every hour at :11
-// v1.17.0 (F4) — Polar + Oura OAuth poll sync. Poll-only (one hourly tick per
+// v1.17.0 — Polar + Oura OAuth poll sync. Poll-only (one hourly tick per
 // provider re-walks every connected user). :13 / :15 stagger off the other
 // hourly sync ticks (WHOOP :05, Fitbit :08, Nightscout :11) so the polls don't
 // pile up on one boss poll. The queues MUST be registered in `allQueues` below
@@ -321,7 +321,7 @@ const allQueues = [
   // v1.17.0 — Nightscout CGM poll sync. Poll-only (no webhook, no OAuth, no
   // backfill queue — the hourly window walks the recent SGV set).
   NIGHTSCOUT_SYNC_QUEUE,
-  // v1.17.0 (F4) — Polar + Oura OAuth poll sync.
+  // v1.17.0 — Polar + Oura OAuth poll sync.
   POLAR_SYNC_QUEUE,
   OURA_SYNC_QUEUE,
   // v1.28.x — Strava OAuth poll sync + self-converging boot backfill.
@@ -385,7 +385,7 @@ const schedules: ScheduleEntry[] = [
   // v1.17.0 — hourly Nightscout CGM poll (:11, staggered off the other sync
   // ticks).
   [NIGHTSCOUT_SYNC_QUEUE, NIGHTSCOUT_SYNC_CRON],
-  // v1.17.0 (F4) — hourly Polar (:13) + Oura (:15) OAuth polls.
+  // v1.17.0 — hourly Polar (:13) + Oura (:15) OAuth polls.
   [POLAR_SYNC_QUEUE, POLAR_SYNC_CRON],
   [OURA_SYNC_QUEUE, OURA_SYNC_CRON],
   // v1.28.x — hourly Strava (:17) OAuth poll.
@@ -726,7 +726,7 @@ export async function registerIntegrationSyncQueues(
     { localConcurrency: 1 },
     handleNightscoutSync,
   );
-  // v1.17.0 (F4) — Polar + Oura OAuth poll-cohort sync. The hourly cron tick
+  // v1.17.0 — Polar + Oura OAuth poll-cohort sync. The hourly cron tick
   // (no `userId`) re-walks every connected user; one user's revoked grant is
   // warned, not fatal.
   await createAndWork<PolarSyncPayload>(

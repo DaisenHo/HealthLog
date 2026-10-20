@@ -1,5 +1,5 @@
 /**
- * v1.27.13 (Welle J) — the interpretation block renders the guideline band
+ * v1.27.13 — the interpretation block renders the guideline band
  * table + server-computed position into the assessment prompt. These guards
  * assert it renders for a covered metric (with the value's band named) and is
  * ABSENT for an uncovered one or a sex-required metric with no known sex —

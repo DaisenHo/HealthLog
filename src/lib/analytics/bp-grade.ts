@@ -1,5 +1,5 @@
 /**
- * v1.15.12 A1 — graded blood-pressure pillar score.
+ * v1.15.12 — graded blood-pressure pillar score.
  *
  * The Personal Health Score's BP pillar previously equalled
  * `bpInTargetRate`: the share of paired readings where BOTH systolic and

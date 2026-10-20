@@ -26,7 +26,7 @@ vi.mock("@/lib/db", () => ({
     illnessDayLog: { findMany: vi.fn().mockResolvedValue([]) },
     // v1.22 — labs ↔ outcome pass fetches lab draws; default empty.
     labResult: { findMany: vi.fn().mockResolvedValue([]) },
-    // v1.25 (W-ENV) — the route folds the environmental-exposure behaviour
+    // v1.25 — the route folds the environmental-exposure behaviour
     // channels in (read from EnvironmentContext); default empty so no env
     // channel produces a point.
     environmentContext: { findMany: vi.fn().mockResolvedValue([]) },

@@ -70,7 +70,7 @@ export function pickRecentUnlocks(
 const RECENT_LIMIT = 3;
 
 /**
- * v1.4.15 phase-B4 — small dashboard card surfacing the user's three
+ * v1.4.15 — small dashboard card surfacing the user's three
  * most-recently unlocked achievements. Empty-states with a CTA to
  * /achievements when nothing is unlocked yet so the user discovers the
  * feature exists. Visibility is controlled from Settings → Dashboard

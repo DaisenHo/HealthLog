@@ -44,7 +44,7 @@ export const DASHBOARD_WIDGET_IDS = [
   "hrv",
   "respiratoryRate",
   "achievements",
-  // v1.4.25 W8d — VO2 max trend tile (secondary-metric pattern). The
+  // v1.4.25 — VO2 max trend tile (secondary-metric pattern). The
   // strip tile is on by default and self-gates on having any VO2_MAX
   // sample, so accounts that sync cardio fitness see it without enabling
   // it in Settings → Dashboard, while empty accounts get a clean tile
@@ -58,7 +58,7 @@ export const DASHBOARD_WIDGET_IDS = [
   // cue is discoverable from the dashboard rather than hidden
   // behind Settings.
   "recentWorkouts",
-  // v1.11.2 B5 — the v1.10 additive HealthKit signals become pinnable.
+  // v1.11.2 — the v1.10 additive HealthKit signals become pinnable.
   // Each maps 1:1 to a MeasurementType the server already stores;
   // default-invisible so existing dashboards stay unchanged until the
   // user opts in via Settings → Dashboard.
@@ -85,7 +85,7 @@ export const DASHBOARD_WIDGET_IDS = [
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 
 /**
- * v1.11.2 B5 / HIGH-1 — widget ids that are WRITABLE (members of
+ * v1.11.2 — widget ids that are WRITABLE (members of
  * `DASHBOARD_WIDGET_IDS`, so the iOS pin PUT validates them) but have NO
  * web render path: `src/app/page.tsx` renders strip tiles via hardcoded
  * per-id blocks and never iterates an id→component map, so these ids draw
@@ -195,7 +195,7 @@ export interface DashboardWidgetConfig {
    */
   visible: boolean;
   /**
-   * v1.4.15 Fix 5 — independent visibility for the *strip tile* (the
+   * v1.4.15 — independent visibility for the *strip tile* (the
    * upper row of trend cards). When omitted, the resolver mirrors
    * `visible` so existing saved layouts keep their previous behaviour
    * (one toggle controls both surfaces). When set explicitly the user
@@ -208,7 +208,7 @@ export interface DashboardWidgetConfig {
 }
 
 /**
- * v1.4.16 phase B8 — comparison baseline persisted alongside widgets.
+ * v1.4.16 — comparison baseline persisted alongside widgets.
  *
  * Research §7 Q3 settled on piggy-backing the comparison preference
  * onto the existing `User.dashboardWidgetsJson` blob rather than
@@ -264,7 +264,7 @@ export const CHART_OVERLAY_KEYS = [
   "medications",
   "sleep",
   "steps",
-  // v1.4.25 W16a — VO2 max chart-row on /insights/pulse. Independent
+  // v1.4.25 — VO2 max chart-row on /insights/pulse. Independent
   // overlay-prefs slot so the cardio sub-page's VO2 chart-cog state
   // doesn't bleed into the pulse chart sitting directly above it.
   "vo2Max",
@@ -586,7 +586,7 @@ function coerceEnabledHeroItemKinds(value: unknown): PriorityItemKind[] {
 export interface DashboardLayout {
   version: number;
   widgets: DashboardWidgetConfig[];
-  /** v1.4.16 phase B8 — see `COMPARISON_BASELINES` doc. */
+  /** v1.4.16 — see `COMPARISON_BASELINES` doc. */
   comparisonBaseline?: ComparisonBaseline;
   /** v1.4.18 — per-chart overlay-prefs (3 toggles per chart card). */
   chartOverlayPrefs?: ChartOverlayPrefsMap;
@@ -770,14 +770,14 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     { id: "sleep", visible: false, tileVisible: true, order: 14 },
     { id: "steps", visible: false, tileVisible: true, order: 15 },
     { id: "glucose", visible: false, tileVisible: true, order: 16 },
-    // v1.4.15 phase-B4 — recent-unlocks card (dashboard surface for the
+    // v1.4.15 — recent-unlocks card (dashboard surface for the
     // gamification feature). Visible by default — the card is small,
     // self-gates on having any achievements (otherwise it shows a brief
     // "no achievements yet" + link), and maintainer-asked-for-it explicitly.
     // `tileVisible` is forced false because there is no tile surface
     // for this widget; only the chart-row card.
     { id: "achievements", visible: true, tileVisible: false, order: 17 },
-    // v1.4.25 W8d — VO2 max trend tile. The strip tile is on by default
+    // v1.4.25 — VO2 max trend tile. The strip tile is on by default
     // (`tileVisible: true`) so accounts that already sync a VO2max sample
     // see cardio fitness without hunting through Settings → Dashboard; the
     // tile self-gates on having any VO2_MAX sample (see `showVo2Tile` in
@@ -791,7 +791,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     // workouts list and renders an Apple-Health onboarding hint
     // otherwise.
     { id: "recentWorkouts", visible: true, tileVisible: true, order: 19 },
-    // v1.11.2 B5 — v1.10 additive HealthKit signals, pinnable but
+    // v1.11.2 — v1.10 additive HealthKit signals, pinnable but
     // default-invisible on both surfaces. The user opts in via
     // Settings → Dashboard; each tile self-gates on having any sample.
     { id: "cardioRecovery", visible: false, tileVisible: false, order: 20 },
@@ -881,7 +881,7 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
   return {
     version: DASHBOARD_LAYOUT_VERSION,
     widgets: [...normalized, ...appended].sort((a, b) => a.order - b.order),
-    // v1.4.16 phase B8 — clamp unknown / missing comparison values to
+    // v1.4.16 — clamp unknown / missing comparison values to
     // "none" so the dashboard renders the pre-B8 behaviour for legacy
     // layouts and refuses to act on a value it doesn't recognise.
     comparisonBaseline: isComparisonBaseline(candidate.comparisonBaseline)
@@ -939,7 +939,7 @@ export function serializeDashboardLayout(
           typeof w.tileVisible === "boolean" ? w.tileVisible : w.visible,
         order: i, // normalize to 0-based dense order
       })),
-    // v1.4.16 phase B8 — persist the comparison baseline explicitly.
+    // v1.4.16 — persist the comparison baseline explicitly.
     comparisonBaseline: isComparisonBaseline(layout.comparisonBaseline)
       ? layout.comparisonBaseline
       : "none",

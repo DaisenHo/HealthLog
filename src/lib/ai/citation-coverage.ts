@@ -42,7 +42,7 @@ export interface PayloadForCoverage {
 }
 
 /**
- * v1.4.16 phase B5a — citation-coverage post-validation.
+ * v1.4.16 — citation-coverage post-validation.
  *
  * After the schema parse + cross-citation check pass, the wrapper
  * counts how many recommendations make a normative claim

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => {
-  // v1.32.22 (M5) — the [itemId] PATCH / DELETE now run inside a transaction
+  // v1.32.22 — the [itemId] PATCH / DELETE now run inside a transaction
   // that takes the per-medication advisory lock. The mock transaction runs the
   // callback with the base client as tx, and `$queryRaw` stands in for the
   // advisory-lock query.

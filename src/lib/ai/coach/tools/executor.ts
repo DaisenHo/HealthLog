@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — Coach retrieval tool executor.
+ * v1.20.0 — Coach retrieval tool executor.
  *
  * Dispatches a single tool call from the model: validates the raw JSON
  * arguments against the tool's Zod schema, runs the existing
@@ -29,7 +29,7 @@
  * The builder result is memoised by the 60s snapshot LRU keyed on
  * `(userId, window, sources)`.
  *
- * v1.21.0 (D5-1) — ONE snapshot per turn. The route hands every tool the SAME
+ * v1.21.0 — ONE snapshot per turn. The route hands every tool the SAME
  * `sharedScope` it built the DATA INVENTORY against (the full source set + the
  * conversation window). A full-source build already contains every section, so
  * each tool reads under that shared scope key and slices its own section out —
@@ -233,7 +233,7 @@ function limitWindow(
 /**
  * Resolve the scope a tool reads its snapshot under.
  *
- * v1.21.0 (D5-1) — when the route handed us a `sharedScope` (the full-source
+ * v1.21.0 — when the route handed us a `sharedScope` (the full-source
  * inventory build for this turn) AND the tool's effective window matches the
  * shared window, read under the SHARED scope key so the per-tool read lands the
  * 60s LRU hit the inventory already primed (the section it needs is present in
@@ -318,7 +318,7 @@ export async function executeCoachTool(args: {
   /** The conversation's effective window, used when a call omits `window`. */
   fallbackWindow?: CoachScopeWindow;
   /**
-   * v1.21.0 (D5-1) — the turn's shared full-source snapshot scope (the same one
+   * v1.21.0 — the turn's shared full-source snapshot scope (the same one
    * the DATA INVENTORY was built against). When present and the tool's window
    * matches, the tool reads under this scope key so it lands the inventory's
    * already-built cache entry instead of rebuilding a single-source snapshot.
@@ -785,13 +785,13 @@ async function getLabs(
   // Labs ride the snapshot regardless of `sources` (attached unconditionally),
   // so a minimal scope still surfaces them.
   //
-  // v1.21.0 (A5-F4) — the labs block itself is a "latest reading per biomarker
+  // v1.21.0 — the labs block itself is a "latest reading per biomarker
   // over the last 12 months" snapshot and is intentionally window-AGNOSTIC
   // (the read cutoff is fixed). We still thread the conversation's window onto
   // the scope so the snapshot's `scope` block reports the right horizon for the
   // turn; it does not move the labs read.
   //
-  // v1.21.0 (D5-1) — prefer the turn's shared full-source scope so this read
+  // v1.21.0 — prefer the turn's shared full-source scope so this read
   // lands the inventory's cache entry; fall back to a tight empty-source scope
   // (labs ride unconditionally) when no shared scope or a window mismatch.
   const snapshot = await buildCoachSnapshot(
@@ -843,11 +843,11 @@ async function getIllnessRecovery(
   // sources; request them so the derived / dayStrain / trajectory blocks can
   // build when the module is on. Illness rides the snapshot unconditionally.
   //
-  // v1.21.0 (A5-F4) — honour the conversation's window so the recovery/strain/
+  // v1.21.0 — honour the conversation's window so the recovery/strain/
   // trajectory composites are computed over the horizon the caller asked for
   // rather than the builder default.
   //
-  // v1.21.0 (D5-1) — prefer the turn's shared full-source scope (which already
+  // v1.21.0 — prefer the turn's shared full-source scope (which already
   // carries hrv/resting_hr/vo2_max + illness + derived) so this read lands the
   // inventory's cache entry; the narrow scope is the window-mismatch fallback.
   const snapshot = await buildCoachSnapshot(
@@ -959,7 +959,7 @@ async function getCycle(
   // so a minimal scope still surfaces it when the account tracks cycles, and a
   // non-cycle account structurally produces no block (→ present:false).
   //
-  // v1.21.0 (D5-1) — prefer the turn's shared full-source scope so this read
+  // v1.21.0 — prefer the turn's shared full-source scope so this read
   // lands the inventory's cache entry; the empty-source scope is the fallback
   // when no shared scope is threaded.
   const snapshot = await buildCoachSnapshot(

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.15 phase-C5 — `/measurements` empty state.
+ * v1.4.15 — `/measurements` empty state.
  *
  * Before this phase the list rendered a single sentence
  * ("No measurements yet") in a dashed-border box with no CTA. Brand-

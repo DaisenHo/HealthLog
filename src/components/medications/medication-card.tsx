@@ -69,7 +69,7 @@ interface Medication {
   /** v1.40 — the label of a custom category; null for a built-in one. */
   categoryLabel?: string | null;
   /**
-   * v1.4.25 W4d — Prisma treatment-class discriminator. When set to
+   * v1.4.25 — Prisma treatment-class discriminator. When set to
    * "GLP1" the parent should render the {@link Glp1MedicationCard}
    * variant instead of this generic card. The field is optional for
    * backwards compatibility with mocks.
@@ -411,7 +411,7 @@ export function MedicationCard({
     />
   );
 
-  // v1.7.2 W3 — the four former header icon-buttons (open / edit /
+  // v1.7.2 — the four former header icon-buttons (open / edit /
   // history / advanced) collapse into a single overflow kebab. The card
   // header itself links to the detail page (the former chevron target).
   const headerActions = (

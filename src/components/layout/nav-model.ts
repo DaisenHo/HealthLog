@@ -85,7 +85,7 @@ export interface NavDestination {
  * (after Medications) and is filtered out when the account gate is off;
  * the order is otherwise identical for both surfaces.
  */
-// v1.19.1 (S4) — the clinical/insight spine below the dashboard/measurements/
+// v1.19.1 — the clinical/insight spine below the dashboard/measurements/
 // mood/cycle head follows one fixed sequence, each entry directly below the
 // previous: Medications → Vorsorge → Labs → Illness → Insights → Coach →
 // Achievements. A disabled module simply drops out; the rest keep this order.
@@ -135,7 +135,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     tKey: "nav.medications",
     icon: Pill,
     tourId: "nav-medications",
-    // v1.18.1 (D3) — medications graduated from a CORE domain to a toggleable
+    // v1.18.1 — medications graduated from a CORE domain to a toggleable
     // module; the nav entry now drops when the account turns the module off.
   },
   // v1.17.1 — Vorsorge (preventive-care) gets a top-level nav home in the
@@ -198,7 +198,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // surfaces as an Insights tab-strip pill (`/insights/workouts` gated on
   // a workout row, `/insights/recovery` always present), so neither is a
   // top-level `NAV_DESTINATIONS` entry any more.
-  // v1.25.0 (W-DOCS-IN) — inbound clinical documents sit in the clinical
+  // v1.25.0 — inbound clinical documents sit in the clinical
   // spine after Illness. Owned by `inboundDocuments` in the surface map.
   {
     href: "/documents",
@@ -250,7 +250,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     icon: Lightbulb,
     tourId: "nav-insights",
   },
-  // v1.17.1 (F-3) — the Coach finally gets a single labeled nav home. It
+  // v1.17.1 — the Coach finally gets a single labeled nav home. It
   // was reachable from seven scattered entry points (FAB, hero CTA, empty
   // states, per-metric icons …) but nowhere in the nav, so a new user
   // could miss the differentiator entirely. The other entry points stay.

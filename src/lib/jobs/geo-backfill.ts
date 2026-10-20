@@ -1,5 +1,5 @@
 /**
- * v1.4.27 B3 — Backfill `location` + `asn` + `carrier` on audit-log
+ * v1.4.27 — Backfill `location` + `asn` + `carrier` on audit-log
  * rows that landed with the offline DB unavailable or with `ipwho.is`
  * timing out.
  *

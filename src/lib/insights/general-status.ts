@@ -101,7 +101,7 @@ export async function prepareGeneralStatusForUser(
   const force = options?.force === true;
   const readOnly = options?.readOnly === true;
   const cacheAction = statusCacheAction("general", locale);
-  // v1.30.3 (QA F5) — resolve the user's own tz BEFORE the day-key so the
+  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
   // cache rolls over at the user's local midnight, not Berlin's. Has to
   // happen ahead of the cache read below (the earliest possible return
   // path), not just the later day-bucketing reads.
@@ -168,7 +168,7 @@ export async function prepareGeneralStatusForUser(
     },
   });
 
-  // v1.4.28 FB-D2 — cap the snapshot input. General-status pulls
+  // v1.4.28 — cap the snapshot input. General-status pulls
   // every supported measurement type; without a cap the read scales
   // linearly with account density.
   const measurements = await prisma.measurement
@@ -193,7 +193,7 @@ export async function prepareGeneralStatusForUser(
 
   const now = new Date();
 
-  // v1.2.5 (M-TZ3) — every day-bucketing pass below keys on the user's own
+  // v1.2.5 — every day-bucketing pass below keys on the user's own
   // calendar (a near-midnight reading lands on the user's day for
   // non-Berlin self-hosters). `userTz` was already resolved above for the
   // cache day-key.
@@ -308,7 +308,7 @@ export async function prepareGeneralStatusForUser(
   );
 
   // Fetch mood context (optional — for enrichment only). v1.4.28
-  // FB-D2 — cap at 90 entries.
+  // Cap at 90 entries.
   const moodEntries = await prisma.moodEntry
     .findMany({
       where: { userId },
@@ -354,7 +354,7 @@ export async function prepareGeneralStatusForUser(
 
     if (paired.length > 0) {
       const inTargetCount = paired.filter((point) =>
-        // v1.4.16 A2 — one-sided ceiling semantics with hypotension
+        // v1.4.16 — one-sided ceiling semantics with hypotension
         // floor. See lib/analytics/bp-in-target.ts.
         isBpReadingInTarget(point.sys, point.dia, bpTargets),
       ).length;

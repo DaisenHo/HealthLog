@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.27 MB5 — `/settings/api` mobile card-list parity.
+ * v1.4.27 — `/settings/api` mobile card-list parity.
  *
  * The section ships three tables: endpoint catalogue, active tokens,
  * revoked tokens. Each table now renders twice:

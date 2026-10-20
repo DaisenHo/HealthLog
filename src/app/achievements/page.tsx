@@ -230,7 +230,7 @@ function AchievementCard({ achievement, t, tCount }: AchievementCardProps) {
               ),
             })}
           </p>
-          {/* v1.4.33 IW9 — aria-label so the bar carries an accessible name. */}
+          {/* v1.4.33 — aria-label so the bar carries an accessible name. */}
           <Progress
             value={achievement.progressPercent}
             className="h-1.5"
@@ -289,7 +289,7 @@ export default function AchievementsPage() {
   // hides on an explicit `false`.
   const achievementsEnabled = user?.modules?.achievements !== false;
 
-  // v1.4.34 IW-F-Perf — mother page rides the shared cache slot
+  // v1.4.34 — mother page rides the shared cache slot
   // alongside `<RecentAchievementsCard>` and
   // `<AchievementUnlockNotifier>` so the three consumers never trigger
   // more than one network call on a cold dashboard mount.
@@ -432,7 +432,7 @@ export default function AchievementsPage() {
       </div>
 
       {grouped.length === 0 ? (
-        // v1.4.15 phase-C5: upgrade to the EmptyState primitive so the
+        // v1.4.15: upgrade to the EmptyState primitive so the
         // surface matches the rest of the app. Trophy icon makes the
         // intent obvious before the user reads the copy. Reuses the
         // existing `noneUnlockedYet` string to avoid C4 i18n churn.

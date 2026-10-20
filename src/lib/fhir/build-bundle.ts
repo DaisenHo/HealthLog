@@ -82,7 +82,7 @@ function escapeXml(value: string): string {
 }
 
 /**
- * v1.25 (W-RECORDS) — the structured records folded into the document bundle.
+ * v1.25 — the structured records folded into the document bundle.
  * Passed separately from `DoctorReportData` (they are always-available
  * reference records, not part of the time-windowed report aggregation).
  * Empty arrays emit nothing.

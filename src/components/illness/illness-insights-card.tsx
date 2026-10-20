@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.1 P3 — the cross-episode retrospective summary card ("Your illness
+ * v1.18.1 — the cross-episode retrospective summary card ("Your illness
  * history"): how many episodes in the window, and — on demand — the typical
  * recovery gap. Retrospective only — a count of the past, never a forecast.
  *

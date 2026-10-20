@@ -212,7 +212,7 @@ async function findTelegramUser(chatId: string) {
       id: true,
       telegramBotToken: true,
       locale: true,
-      // v1.4.39 W-MED — pulled into the select so the post-write
+      // v1.4.39 — pulled into the select so the post-write
       // compliance-rollup hook can anchor the user-day bucket.
       timezone: true,
     },
@@ -424,7 +424,7 @@ async function markMedicationTaken(
     invalidateUserMedications(userId, { evict: true });
   }
 
-  // v1.4.39 W-MED — refresh the compliance rollup for the
+  // v1.4.39 — refresh the compliance rollup for the
   // affected day so the next read after the cache miss reflects the
   // new dose. Only fires when the write landed a row.
   if (scheduledFor) {
@@ -686,7 +686,7 @@ export async function handleCallback(update: TelegramUpdate) {
       invalidateUserMedications(user.id, { evict: true });
     }
 
-    // v1.4.39 W-MED — refresh the compliance rollup for the skipped
+    // v1.4.39 — refresh the compliance rollup for the skipped
     // event's user-day so the next read sees the (scheduled, skipped)
     // counts incremented.
     if (skippedScheduledFor) {

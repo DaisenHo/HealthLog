@@ -45,7 +45,7 @@ export default function MeasurementsPage() {
   const searchParams = useSearchParams();
   const { t } = useTranslations();
 
-  // v1.4.27 MB6 — read the `?add=<TYPE>` query param during render so
+  // v1.4.27 — read the `?add=<TYPE>` query param during render so
   // the dialog opens on the first paint (no flash of the page behind
   // it). The first-load param is consumed in the `useState` lazy
   // initializers: they run identically on the server and the hydration
@@ -79,7 +79,7 @@ export default function MeasurementsPage() {
   const [consumedAddRequest, setConsumedAddRequest] = useState<string | null>(
     () => addRequestParam,
   );
-  // v1.4.27 R4 RC2 — DOM handle the form portals its action row into so
+  // v1.4.27 — DOM handle the form portals its action row into so
   // the Sheet branch can sticky-pin Save / Cancel.
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
 

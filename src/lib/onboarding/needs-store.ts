@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — reading the needs-onboarding row, for the payload and for the
+ * v1.39 — reading the needs-onboarding row, for the payload and for the
  * three writes.
  *
  * One place that turns an `OnboardingRecord` row (or its absence) into the

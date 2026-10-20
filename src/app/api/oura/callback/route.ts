@@ -18,7 +18,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * v1.17.0 (F4) — OAuth callback from Oura.
+ * v1.17.0 — OAuth callback from Oura.
  *
  * Identity + CSRF mirror the Polar callback: the `state` param is a stateless
  * HMAC-signed token, enforced as a byte-exact double-submit against the

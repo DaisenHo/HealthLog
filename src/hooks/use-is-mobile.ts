@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 /**
  * Viewport-width hook seeded from a SSR-safe snapshot.
  *
- * v1.4.27 R4 RC3 — the previous `useEffect`-driven flavour returned
+ * v1.4.27 — the previous `useEffect`-driven flavour returned
  * `false` on the server AND on the first client paint, then flipped to
  * the live value on the effect tick. Two consumers
  * (`<ResponsiveSheet>`, `<CoachDrawer>`) branch their render tree off

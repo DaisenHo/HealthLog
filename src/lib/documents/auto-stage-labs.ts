@@ -1,5 +1,5 @@
 /**
- * S8 — auto-stage lab facts from a freshly indexed vault document.
+ * Auto-stage lab facts from a freshly indexed vault document.
  *
  * After the per-document auto-index job transcribes a stored document, a
  * document that LOOKS LIKE a lab result is run through the SAME inbound

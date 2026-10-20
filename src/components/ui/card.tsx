@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * v1.4.33 IW9 — Card padding normalised on `p-4 md:p-6`.
+ * v1.4.33 — Card padding normalised on `p-4 md:p-6`.
  *
  * Pre-v1.4.33 the shadcn defaults shipped `py-6` + `px-6` (uniform
  * 24 px on every breakpoint) while the dashboard tile-strip + chart

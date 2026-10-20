@@ -1,5 +1,5 @@
 /**
- * v1.7.0 SB-SCHED-3 — server-computed `nextDueAt`.
+ * v1.7.0 — server-computed `nextDueAt`.
  *
  * Stops the iOS client re-implementing the recurrence engine: the
  * server computes the next due instant per medication by asking the

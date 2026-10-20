@@ -12,7 +12,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 /**
- * v1.4.25 W4d-tests — RTL-style coverage for the body-map injection
+ * v1.4.25 — RTL-style coverage for the body-map injection
  * picker deferred by phase W4d.
  *
  * The picker is a controlled SVG with 8 click-targets. Each visible

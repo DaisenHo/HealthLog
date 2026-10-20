@@ -1,5 +1,5 @@
 /**
- * v1.4.16 Phase B7 — Settings → Export section.
+ * v1.4.16 — Settings → Export section.
  *
  * The consolidated Export page surfaces:
  *   - Measurements CSV
@@ -11,7 +11,7 @@
  * download/generate button. SSR-only smoke test — interaction is
  * exercised by the e2e suite.
  *
- * v1.18.0 (S5) — the full health-record export moved out to its own
+ * v1.18.0 — the full health-record export moved out to its own
  * top-level "Gesundheitsakte" section; this page keeps only the generic
  * CSV/JSON data-out paths under a "Weitere Export-Optionen" / "Other
  * export options" sub-heading plus the import surface. Each component
@@ -58,7 +58,7 @@ function render(node: React.ReactElement, locale: "en" | "de" = "en") {
 
 describe("<ExportSection> — SSR smoke", () => {
   it("renders the section heading + description", () => {
-    // v1.18.6 (W9) — the page heading comes from the shared frame the route
+    // v1.18.6 — the page heading comes from the shared frame the route
     // wraps the section in.
     const html = render(
       <SettingsSectionFrame slug="export">
@@ -73,7 +73,7 @@ describe("<ExportSection> — SSR smoke", () => {
 
   it("mounts the import area below the export options", () => {
     const html = render(<ExportSection />);
-    // R28 — the import surface (issue #281) lives in the same section.
+    // The import surface (issue #281) lives in the same section.
     expect(html).toContain('id="settings-section-import-title"');
     expect(html).toContain('data-testid="import-card-apple-health"');
     expect(html).toContain('data-testid="import-card-json"');
@@ -88,7 +88,7 @@ describe("<ExportSection> — SSR smoke", () => {
 
   it("no longer mounts the health-record export panel (moved to Gesundheitsakte)", () => {
     const html = render(<ExportSection />);
-    // v1.18.0 (S5) — the full health-record export lives in its own
+    // v1.18.0 — the full health-record export lives in its own
     // top-level Gesundheitsakte section now, not on this page.
     expect(html).not.toContain('data-testid="health-record-export-panel"');
   });

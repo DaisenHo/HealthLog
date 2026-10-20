@@ -1,5 +1,5 @@
 /**
- * v1.17.1 (F-1 / F-3) — the one navigation information-model.
+ * v1.17.1 — the one navigation information-model.
  *
  * Pins the coherence contract the desktop sidebar and the mobile
  * bottom-nav both consume: one ordered destination list (so the two bars
@@ -50,7 +50,7 @@ describe("nav-model destination list", () => {
     expect(hrefs).toContain("/checkups");
     const vorsorge = NAV_DESTINATIONS.find((d) => d.href === "/checkups");
     expect(vorsorge?.tKey).toBe("nav.vorsorge");
-    // v1.19.1 (S4) — the fixed spine is Medications → Checkups → Labs →
+    // v1.19.1 — the fixed spine is Medications → Checkups → Labs →
     // Illness → Insights, so Checkups sits after Medications and before Labs.
     expect(hrefs.indexOf("/medications")).toBeLessThan(
       hrefs.indexOf("/checkups"),
@@ -92,7 +92,7 @@ describe("visibleNavDestinations module gate", () => {
   it("includes Cycle (between Mood and Medications) only when its module is enabled", () => {
     // v1.18.0 — cycle is owned by `cycle` in the surface map and reads the delegated
     // `cycle` key from the same resolved module map every other gate uses.
-    // v1.19.1 (S4) — cycle sits in the head block, after Mood and before the
+    // v1.19.1 — cycle sits in the head block, after Mood and before the
     // fixed Medications → … → Achievements spine.
     const off = visibleNavDestinations({ cycle: false }).map((d) => d.href);
     const on = visibleNavDestinations({ cycle: true }).map((d) => d.href);
@@ -108,7 +108,7 @@ describe("visibleNavDestinations module gate", () => {
       labs: false,
       coach: false,
       achievements: false,
-      // v1.18.1 (D3) — medications graduated to a toggleable module.
+      // v1.18.1 — medications graduated to a toggleable module.
       medications: false,
     }).map((d) => d.href);
     expect(disabled).not.toContain("/mood");

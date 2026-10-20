@@ -4,7 +4,7 @@ import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 
 /**
- * v1.4.16 phase B5e — admin AI quality preview.
+ * v1.4.16 — admin AI quality preview.
  *
  * Returns the latest aggregator-written summary from
  * `AppSettings.adminAiInsightsFeedbackSummary`. The pg-boss

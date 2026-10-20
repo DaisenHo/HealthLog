@@ -10,7 +10,7 @@ import {
 } from "@/lib/onboarding/needs";
 
 /**
- * v1.39 (C2) — the setup flow's front door.
+ * v1.39 — the setup flow's front door.
  *
  * Three ways in, decided by the step machine: a record that never entered
  * the flow sees the welcome screen, a record mid-way is sent to the step it

@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — unit tests for `buildDashboardSnapshot`.
+ * v1.7.0 — unit tests for `buildDashboardSnapshot`.
  *
  * The builder is tested in isolation with every sub-helper mocked so
  * the assertions pin the assembly contract without a live DB / LLM:
@@ -452,7 +452,7 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
-      // v1.21.2 (A5 / A6) — additive narrative fields, null absent a
+      // v1.21.2 — additive narrative fields, null absent a
       // disagreeing readiness set / a returned metric (the fake derived
       // engines resolve nothing here).
       tension: null,
@@ -566,8 +566,8 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
     computeBpInTargetFastPath.mockResolvedValue({
       last7Days: { pct: 70, pairs: 6 },
       last30Days: { pct: 80, pairs: 12 },
-      // v1.17 W1d — the BP pillar reads this 90-day window, NOT last30Days.
-      // v1.17 W1b — `pairs` above the confidence floor so the pillar grades
+      // v1.17 — the BP pillar reads this 90-day window, NOT last30Days.
+      // v1.17 — `pairs` above the confidence floor so the pillar grades
       // the 90-day rate rather than falling back to all-time.
       last90Days: { pct: 77, pairs: 30 },
       last90EarliestAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -598,7 +598,7 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
       deltaReason: null,
       scoreVersion: SCORE_VERSION,
       bandSetter: "BLOOD_PRESSURE",
-      // v1.21.2 (A5 / A6) — additive narrative fields, null here.
+      // v1.21.2 — additive narrative fields, null here.
       tension: null,
       returnToBand: null,
     });
@@ -1093,7 +1093,7 @@ describe("module gating maps — every toggleable-domain widget is mapped (v1.18
     "glucose",
     "achievements",
     "recentWorkouts",
-    // v1.18.1 (D3) — medications graduated from CORE to a toggleable module.
+    // v1.18.1 — medications graduated from CORE to a toggleable module.
     "medications",
     "cardioRecovery",
     "sixMinuteWalk",
@@ -1356,7 +1356,7 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
   });
 });
 
-// v1.21.2 (A4 / A5 / A6) — the ambient-narrative wire. The Tension Verdict +
+// v1.21.2 — the ambient-narrative wire. The Tension Verdict +
 // return-to-baseline ride the warm-phase healthScore; the briefing recall +
 // forward-look rides `briefingMemory`. The resolvers themselves are pinned in
 // `score-narrative.test.ts`; here only the THREADING through the snapshot DTO is

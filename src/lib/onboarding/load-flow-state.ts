@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the setup flow's state, for the server-rendered pages.
+ * v1.39 — the setup flow's state, for the server-rendered pages.
  *
  * One read per request: the page that guards a URL and the metadata that
  * titles it both ask for the same row, and `cache` makes the second ask free.

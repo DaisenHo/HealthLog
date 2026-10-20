@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — does a record already hold data in a module's domain?
+ * v1.39 — does a record already hold data in a module's domain?
  *
  * The setup flow's derivation writes an explicit `false` for every module the
  * answers did not name, and that is the right answer for a record that is

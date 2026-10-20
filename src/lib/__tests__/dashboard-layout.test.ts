@@ -18,7 +18,7 @@ import {
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 
 /**
- * v1.4.15 Fix 5 — Dashboard layout: top tiles selectable.
+ * v1.4.15 — Dashboard layout: top tiles selectable.
  *
  * Until v1.4.14 the layout schema had a single `visible` flag per
  * widget that controlled BOTH the upper-row strip tile AND the lower-
@@ -129,7 +129,7 @@ describe("serializeDashboardLayout() — tileVisible persistence", () => {
 });
 
 /**
- * v1.4.16 Fix A5 — top-tile selector real-fix.
+ * v1.4.16 — top-tile selector real-fix.
  *
  * The maintainer reported the toggles in Settings → Dashboard didn't filter
  * the dashboard tile-strip. Root cause: the `widgetIdEnum` Zod schema
@@ -222,7 +222,7 @@ describe("DEFAULT_DASHBOARD_LAYOUT contract", () => {
 });
 
 /**
- * v1.4.16 phase B8 — comparison baseline persistence.
+ * v1.4.16 — comparison baseline persistence.
  *
  * The comparison toggle (Vormonat / Vorjahr) piggy-backs on the
  * existing `User.dashboardWidgetsJson` blob per research §7 Q3
@@ -444,7 +444,7 @@ describe("resolveDashboardLayout() — retired heroVisible field", () => {
  */
 describe("DASHBOARD_WIDGET_CATALOGUE_IDS — 27-id catalogue", () => {
   it("carries exactly 42 distinct ids (29 server-known + 13 iOS-only)", () => {
-    // v1.11.2 B5 — the 8 v1.10 additive metrics became web-writable, so
+    // v1.11.2 — the 8 v1.10 additive metrics became web-writable, so
     // the server-known set grew 16 → 24 and the catalogue 27 → 35.
     // v1.18.2 — the Vorsorge summary widget added one server-known id
     // (24 → 25), so the catalogue grew 35 → 36.
@@ -616,7 +616,7 @@ describe("v1.28.52 — vitals + body-composition strip tiles", () => {
 });
 
 /**
- * v1.11.2 HIGH-1 — the 8 B5 metrics are WRITABLE (members of
+ * v1.11.2 — the 8 B5 metrics are WRITABLE (members of
  * `DASHBOARD_WIDGET_IDS`, so the widgets PUT enum — derived from the
  * catalogue — accepts them, which the iOS Home-pin request requires) but
  * have NO web render path. `IOS_PIN_ONLY_WIDGET_IDS` names exactly that
@@ -661,7 +661,7 @@ describe("IOS_PIN_ONLY_WIDGET_IDS — writable but not web-rendered", () => {
 });
 
 /**
- * v1.7.0 W1 — iOS-only ids round-trip through the stored layout so the
+ * v1.7.0 — iOS-only ids round-trip through the stored layout so the
  * native client can drop its local merge workarounds
  * (`byMergingIosOnlyDefaults` / `byRestoringIosOnlyWidgets`). The
  * resolver + serializer must RETAIN every catalogue id (27) while the

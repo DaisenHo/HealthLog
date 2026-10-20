@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the chip question screen, as the server paints it.
+ * v1.39 — the chip question screen, as the server paints it.
  *
  * Vitest runs without a DOM here, so what is pinned is the first paint: the
  * stored answer is pre-selected, Q1 cannot be passed and cannot continue

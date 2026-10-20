@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.8.6 W4b — dot/bullet stepper for the medication wizard.
+ * v1.8.6 — dot/bullet stepper for the medication wizard.
  *
  * Replaces the continuous `<Progress>` bar + "Step X of Y" caption with
  * one dot per path slot (so the one-shot path shows 5 dots, the

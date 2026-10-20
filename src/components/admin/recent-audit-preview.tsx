@@ -89,7 +89,7 @@ export function RecentAuditPreview() {
             onRetry={() => void refetch()}
           />
         ) : entries.length === 0 ? (
-          // v1.4.15 phase-C5: compact + plain so it nests inside the
+          // v1.4.15: compact + plain so it nests inside the
           // overview card without doubling the dashed border. Reuses
           // the existing audit-empty string.
           <EmptyState

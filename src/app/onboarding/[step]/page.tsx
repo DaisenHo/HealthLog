@@ -23,7 +23,7 @@ import {
 } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.39 (C2) — one setup screen per step id.
+ * v1.39 — one setup screen per step id.
  *
  *   /onboarding/who … /onboarding/visit   the five questions
  *   /onboarding/units                     Q6, when it applies

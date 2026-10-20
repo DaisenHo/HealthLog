@@ -1,5 +1,5 @@
 /**
- * v1.18.0 (S5) — Settings → Gesundheitsakte section.
+ * v1.18.0 — Settings → Gesundheitsakte section.
  *
  * The full health-record export (PDF + FHIR R4 + zip package) lifted out
  * of Export & Import into its own top-level home. SSR-only smoke test —
@@ -40,7 +40,7 @@ function render(node: React.ReactElement, locale: "en" | "de" = "en") {
 
 describe("<GesundheitsakteSection> — SSR smoke", () => {
   it("renders the section heading and the health-record panel", () => {
-    // v1.18.6 (W9) — the visible heading (with the historic id) comes from
+    // v1.18.6 — the visible heading (with the historic id) comes from
     // the shared frame the route wraps the section in.
     const html = render(
       <SettingsSectionFrame slug="gesundheitsakte">

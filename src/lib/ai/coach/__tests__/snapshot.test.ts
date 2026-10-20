@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
     medicationIntakeEvent: { findMany: vi.fn() },
     medication: { findMany: vi.fn() },
     user: { findUnique: vi.fn() },
-    // v1.18.1 P4 — the illness context block reads active + recent episodes.
+    // v1.18.1 — the illness context block reads active + recent episodes.
     illnessEpisode: { findMany: vi.fn(async () => []) },
     symptomEvent: { groupBy: vi.fn(async () => []) },
     // v1.18.11 (#65) — the labs context block reads recent lab results.
@@ -134,7 +134,7 @@ describe("buildCoachSnapshot", () => {
     prismaMock.moodEntry.findMany.mockResolvedValue([]);
     prismaMock.medicationIntakeEvent.findMany.mockResolvedValue([]);
     prismaMock.medication.findMany.mockResolvedValue([]);
-    // v1.4.23 H4 — snapshot now reads `User.coachPrefsJson` to apply
+    // v1.4.23 — snapshot now reads `User.coachPrefsJson` to apply
     // per-user excludeMetrics. Default null = use legacy defaults.
     prismaMock.user.findUnique.mockResolvedValue({ coachPrefsJson: null });
     // v1.18.0 — default fixture: every toggleable module enabled.
@@ -645,7 +645,7 @@ describe("buildCoachSnapshot", () => {
     expect(parsed.scope.window).toBe("last30days");
   });
 
-  // v1.4.36 W3 T2 — `medications` exclusion drops the GLP-1 weeklyContext
+  // v1.4.36 — `medications` exclusion drops the GLP-1 weeklyContext
   // block + the compliance source so no medication data reaches the
   // prompt. Empty-data behaviour: when the user has no GLP-1 medication
   // the block is absent anyway (this test only proves the toggle path).
@@ -661,7 +661,7 @@ describe("buildCoachSnapshot", () => {
     expect(parsed.scope.sources).not.toContain("compliance");
   });
 
-  // v1.17 W1c — the coach's headline adherence % must route through the
+  // v1.17 — the coach's headline adherence % must route through the
   // SAME `calculateCompliance(...).rate` authority the medication card
   // shows, never a per-day / per-week denominator of its own. A daily med
   // with 7 of 10 expected doses taken reads 70 % on the card; the coach
@@ -750,7 +750,7 @@ describe("buildCoachSnapshot", () => {
     expect(parsed.compliance.rate).toBe(authority.rate);
   });
 
-  // v1.4.36 W3 T2 — `anthropometrics` exclusion drops the profile
+  // v1.4.36 — `anthropometrics` exclusion drops the profile
   // block even when features.context has populated fields.
   it("omits anthropometrics when excludeMetrics contains 'anthropometrics'", async () => {
     featuresMock.mockResolvedValue({
@@ -765,7 +765,7 @@ describe("buildCoachSnapshot", () => {
     expect(parsed.anthropometrics).toBeUndefined();
   });
 
-  // v1.4.36 W3 T2 — anthropometrics block is added when features.context
+  // v1.4.36 — anthropometrics block is added when features.context
   // has at least one non-null field AND the exclusion is off.
   it("includes anthropometrics when context has data and exclusion is off", async () => {
     featuresMock.mockResolvedValue({
@@ -780,7 +780,7 @@ describe("buildCoachSnapshot", () => {
     });
   });
 
-  // v1.4.36 W3 T2 — empty-block omit: when every anthropometric field
+  // v1.4.36 — empty-block omit: when every anthropometric field
   // is null the block is dropped entirely, not emitted as a labelled
   // null-trio that would render as `Hier sind die Profildaten: [keine]`
   // in the eventual prompt.
@@ -1164,7 +1164,7 @@ describe("buildCoachSnapshot", () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
-// v1.4.43 W13 L-2 — snapshot free-text regression guard.
+// v1.4.43 — snapshot free-text regression guard.
 //
 // Every snapshot builder is allowed to ship arbitrary structured data
 // (numbers, booleans, ISO dates, enum strings) into the SNAPSHOT JSON
@@ -1427,7 +1427,7 @@ describe("Coach snapshot — free-text fields wrap through sanitizeForPrompt (L-
   });
 });
 
-// v1.18.6 (W7) — the citation-aware reference-range grounding rides through
+// v1.18.6 — the citation-aware reference-range grounding rides through
 // buildCoachSnapshot for the metrics present, gated on the W6 diabetes opt-in.
 describe("buildCoachSnapshot — reference grounding (W7)", () => {
   beforeEach(() => {

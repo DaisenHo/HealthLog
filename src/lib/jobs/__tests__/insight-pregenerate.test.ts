@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — unit tests for the nightly insight pre-generation cron.
+ * v1.7.0 — unit tests for the nightly insight pre-generation cron.
  *
  * Covers:
  *   - the discovery query selects stale-cache users who kept AI analysis
@@ -96,7 +96,7 @@ vi.mock("@/lib/insights/medication-compliance-status", () => ({
 vi.mock("@/lib/insights/general-status", () => ({
   generateGeneralStatusForUser: vi.fn(),
 }));
-// v1.18.7 (HIGH-1) — the batched status warm is the production default;
+// v1.18.7 — the batched status warm is the production default;
 // every test here injects its own `statusGenerators`, so the batch is never
 // exercised. Stub the module so its transitive `prepare*` imports of the
 // mocked status modules above don't trip an incomplete-mock load error.

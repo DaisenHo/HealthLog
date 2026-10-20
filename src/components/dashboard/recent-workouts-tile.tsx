@@ -87,7 +87,7 @@ export function RecentWorkoutsTile() {
       </CardHeader>
       <CardContent>
         {showLoading ? (
-          // v1.4.43 W11-L6 — reserve roughly the loaded tile height
+          // v1.4.43 — reserve roughly the loaded tile height
           // (3 workouts × ~3 rem rows + spacing) so the surrounding
           // dashboard layout doesn't reflow once the data lands.
           // v1.29.x — row-shaped skeletons instead of a "loading…" text

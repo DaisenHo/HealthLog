@@ -161,13 +161,13 @@ async function deleteByExternalIds(request: NextRequest): Promise<Response> {
     meta: { processed: externalIds.length, deleted: result.count },
   });
 
-  // v1.4.34 IW-G — bust per-user analytics + achievements + workouts
+  // v1.4.34 — bust per-user analytics + achievements + workouts
   // caches when at least one row deleted so the next read reflects the
   // reconciliation. A 0-delete batch is a no-op and skips the eviction.
   if (result.count > 0) {
     invalidateUserMeasurements(user.id);
 
-    // v1.37.19 (C2-F1) — shared post-mutation tail (identities collected
+    // v1.37.19 — shared post-mutation tail (identities collected
     // BEFORE the destructive statement, while readable).
     await afterMeasurementMutation(user.id, affectedRows, { source: "sync" });
   }

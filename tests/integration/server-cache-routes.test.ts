@@ -1,5 +1,5 @@
 /**
- * v1.4.34 IW-G — integration coverage for the server-cache layer.
+ * v1.4.34 — integration coverage for the server-cache layer.
  *
  * Pins two contracts the unit suite cannot cover end-to-end:
  *

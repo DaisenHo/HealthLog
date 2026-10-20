@@ -6,7 +6,7 @@ import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.25 W20a — regression coverage for the dashboard top-tile polish.
+ * v1.4.25 — regression coverage for the dashboard top-tile polish.
  *
  * Maintainer directive 2026-05-14 named three issues with the 5-tile top row:
  *

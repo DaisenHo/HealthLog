@@ -1,5 +1,5 @@
 /**
- * v1.4.15 Phase B5 — onboarding tour state model.
+ * v1.4.15 — onboarding tour state model.
  * v1.18.6 — rebuilt as a 15-stop module-by-module guided tour.
  *
  * Pure data + state-machine helpers for the spotlight tour. Kept

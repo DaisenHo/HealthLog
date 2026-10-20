@@ -1,5 +1,5 @@
 /**
- * v1.4.20 phase D reconcile — shared confidence-band classnames.
+ * v1.4.20 — shared confidence-band classnames.
  *
  * Both `<CorrelationCard>` and `<TrendAnnotation>` paint a discrete
  * "low / moderate / high" badge with byte-identical semantic utility

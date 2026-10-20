@@ -55,7 +55,7 @@ async function resolveLayoutResponse(
       layout.groupOrder,
     ),
     placements: layout.placements ?? {},
-    // v1.32.22 (M2) — optimistic-concurrency token; omitted (dropped from
+    // v1.32.22 — optimistic-concurrency token; omitted (dropped from
     // JSON) when absent so a fresh user's response shape is unchanged.
     ...(updatedAt !== undefined ? { updatedAt } : {}),
   };
@@ -81,7 +81,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   });
   if (jsonError) return jsonError;
 
-  // v1.32.22 (M2) — split the optimistic-concurrency base token off before the
+  // v1.32.22 — split the optimistic-concurrency base token off before the
   // Zod parse. The two cards on this page write DIFFERENT fields of the same
   // blob (group order vs placements); a stale merge would resurrect the other
   // card's overwritten field, which the token now 409s instead.

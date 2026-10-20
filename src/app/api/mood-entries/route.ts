@@ -53,7 +53,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const params = Object.fromEntries(request.nextUrl.searchParams);
   const parsed = listMoodEntriesSchema.safeParse(params);
   if (!parsed.success) {
-    // v1.4.43 W6 — surface every Zod issue + audit breadcrumb keyed
+    // v1.4.43 — surface every Zod issue + audit breadcrumb keyed
     // `mood-entries.list.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
     annotate({
@@ -126,7 +126,7 @@ async function postMoodEntry(request: NextRequest) {
   if (jsonError) return jsonError;
   const parsed = createMoodEntrySchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.43 W6 — iOS mood log hot path; multi-issue 422 + audit
+    // v1.4.43 — iOS mood log hot path; multi-issue 422 + audit
     // breadcrumb keyed `mood-entries.create.validation-failed`.
     const issues = sanitiseZodIssues(parsed.error.issues);
     const shape = unstableExternalIdShape(body);
@@ -180,7 +180,7 @@ async function postMoodEntry(request: NextRequest) {
     a4: parsed.data.a4,
     a5: parsed.data.a5,
   });
-  // v1.4.25 W7b (Decision A) — anchor the `date` string to the user's
+  // v1.4.25 (Decision A) — anchor the `date` string to the user's
   // current displayTimezone and store the resolved zone on the row.
   // Legacy rows with `tz IS NULL` continue to read as Europe/Berlin
   // (see `src/lib/mood/date-key.ts`).
@@ -192,7 +192,7 @@ async function postMoodEntry(request: NextRequest) {
   // and the row write agree on the exact value.
   const resolvedSource = source ?? "MANUAL";
 
-  // C6 — the delegated arm refuses `externalId`. It is the sync client's dedup
+  // The delegated arm refuses `externalId`. It is the sync client's dedup
   // handle: supplying it turns this create into an upsert on
   // `(userId, source, externalId)`, which is a device's contract with its own
   // rows and not something a second person should be able to aim at somebody
@@ -375,10 +375,10 @@ async function postMoodEntry(request: NextRequest) {
       },
     });
 
-    // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches.
+    // v1.4.34 — bust per-user mood + achievements + analytics caches.
     invalidateUserMood(user.id);
 
-    // v1.4.39 W-MOOD — refresh the persisted DAY rollup for the
+    // v1.4.39 — refresh the persisted DAY rollup for the
     // entry's bucket and enqueue the WEEK / MONTH / YEAR folds.
     // Best-effort: a failure here must not surface as a 5xx to the
     // user, the rollup is a cache tier, not a write-path invariant.

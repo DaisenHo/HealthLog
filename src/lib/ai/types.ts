@@ -24,7 +24,7 @@ export const insightDataQualitySchema = z.object({
 });
 
 /**
- * v1.4.16 phase B5c — rationale shape mirrors the strict
+ * v1.4.16 — rationale shape mirrors the strict
  * `aiRecommendationRationaleSchema`. dataWindow values match
  * `mini-window.ts` so the rec card's mini-chart can pin to the right
  * window without an extra mapping table.
@@ -42,7 +42,7 @@ export const insightRecommendationRationaleSchema = z.object({
  * `referenceId` is set and resolves to a known entry in
  * `MEDICAL_REFERENCES`.
  *
- * v1.4.16 phase B5c — adds `rationale` (Oura-style "Contributors")
+ * v1.4.16 — adds `rationale` (Oura-style "Contributors")
  * and `metricSource` so the rec card can render the expand-out
  * explainability panel + a mini-chart pinned to the rec's window.
  * Both fields are optional on the UI type because legacy cached
@@ -66,7 +66,7 @@ export const insightRecommendationSchema = z.union([
     severity: z.enum(["info", "suggestion", "important", "urgent"]).optional(),
     id: z.string().optional(),
     /**
-     * v1.4.16 phase B5d — deterministic confidence score (0-100).
+     * v1.4.16 — deterministic confidence score (0-100).
      * Optional on the UI type because legacy cached payloads predate
      * the field; `<ConfidenceMeter>` renders a "draft" pill in that
      * case. Server-side `aiRecommendationSchema` mirrors this shape.

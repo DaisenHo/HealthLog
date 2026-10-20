@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A1) — "Coach read" strip route.
+ * v1.21.2 — "Coach read" strip route.
  *
  * `GET /api/insights/coach-read?metric=<MeasurementType>` serves the two
  * server-authoritative lines a metric sub-page renders above its chart: the

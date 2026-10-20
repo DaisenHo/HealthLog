@@ -31,7 +31,7 @@ import { loadDocument } from "@/lib/navigation/load-document";
 /**
  * Settings → Advanced.
  *
- * v1.4.16 phase B7: every export path (CSV, JSON, doctor-report PDF)
+ * v1.4.16: every export path (CSV, JSON, doctor-report PDF)
  * moved out into the dedicated `<ExportSection>` under `/settings/export`.
  * What stays here is the irreversible danger-zone — the "wipe all my
  * data" surface that should never live next to a single-click export
@@ -46,7 +46,7 @@ import { loadDocument } from "@/lib/navigation/load-document";
  * it stamped are gone. This page is the destructive controls.
  */
 export function AdvancedSection() {
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the advanced cards.
   // v1.18.6.1 — the guided tour replay card was removed: the tour now exists
   // only as the first-time auto-start after onboarding. This page is the
@@ -115,7 +115,7 @@ function DataResetCard() {
   return (
     <SettingsCard data-slot="settings-data-reset-card">
       {recentProof.dialog}
-      {/* v1.4.43 QoL (L5) — dropped the `AlertTriangle` icon and
+      {/* v1.4.43 — dropped the `AlertTriangle` icon and
           neutralised the title colour so the danger-zone shaping is
           GitHub-style (red CTA only) rather than red-on-red-on-red.
           The protective gate (confirmation dialog) is unchanged; this
@@ -199,7 +199,7 @@ function DataResetCard() {
 }
 
 /**
- * v1.4.43 QoL (M3) — separate destructive action for the full account
+ * v1.4.43 — separate destructive action for the full account
  * delete. Pre-fix, the only "danger zone" CTA wiped the user's health
  * data but left the user row, passkeys, audit log, and sessions
  * intact — half of what a user reading "Danger Zone" expects per

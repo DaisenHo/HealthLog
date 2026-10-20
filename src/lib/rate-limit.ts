@@ -278,7 +278,7 @@ export async function checkConsentRateLimit(
 }
 
 /**
- * v1.4.43 W13 M-4 — anonymous/trust-violation bucket key shared by every
+ * v1.4.43 — anonymous/trust-violation bucket key shared by every
  * caller of `checkAuthSurfaceRateLimit`. When `TRUST_PROXY_HOPS` and the
  * actual proxy chain don't agree, `getClientIp` returns null and every
  * caller falls back to a literal `"unknown"` rate-limit bucket. Any

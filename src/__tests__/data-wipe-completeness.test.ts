@@ -282,7 +282,7 @@ describe("data-wipe completeness", () => {
   });
 
   it("freezes the set of user-linked tables that carry no foreign key", () => {
-    // v1.37.20 (A6-19) — NO_FK_BY_DESIGN, as an assertion instead of a pair
+    // v1.37.20 — NO_FK_BY_DESIGN, as an assertion instead of a pair
     // of FK migrations. The two Telegram plumbing tables link to an account
     // by a bare `userId` string on purpose: both hold a bounded, short-lived
     // window of chat state (scheduled message deletions, prompt contexts)

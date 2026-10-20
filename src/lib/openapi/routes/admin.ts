@@ -12,7 +12,7 @@ import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-// v1.4.48 H-APNs-1 — admin diagnostic endpoint for the notification
+// v1.4.48 — admin diagnostic endpoint for the notification
 // subsystem. Mirrors the runtime types in
 // `src/app/api/admin/notifications/diagnostic/route.ts`: APNs tokens
 // are surfaced only as 8-char hex prefix + suffix (never the full

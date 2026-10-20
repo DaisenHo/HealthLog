@@ -34,7 +34,7 @@ export function getWithingsRedirectUri(): string {
 }
 
 /**
- * v1.4.25 W5d — Withings OAuth scope set HealthLog requests.
+ * v1.4.25 — Withings OAuth scope set HealthLog requests.
  *
  *   - `user.metrics`  : every meastype the Measure / Heart-list /
  *                       Sleep endpoints expose (weight, BP, pulse,

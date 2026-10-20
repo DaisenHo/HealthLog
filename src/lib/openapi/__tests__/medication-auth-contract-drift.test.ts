@@ -91,7 +91,7 @@ describe("medications — documented shapes match the handlers", () => {
   });
 
   it("admits APPLE_HEALTH as an intake source (IntakeSource enum, v1.28)", () => {
-    // v1.37.19 (A4-8) — the resource declares the FULL row both intake
+    // v1.37.19 — the resource declares the FULL row both intake
     // responses return, so the fixture carries every field.
     const event = {
       id: "cm000000000000000000000",

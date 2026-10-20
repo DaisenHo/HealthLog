@@ -72,7 +72,7 @@ export function SelectionActionBar({
       // `:has()` gate and yields while the bar is mounted, so the
       // floating launcher never sits over the delete action.
       data-slot="selection-action-bar"
-      // v1.15.13 HIGH-1 — on mobile the fixed bottom-nav (64px, `md:hidden`,
+      // v1.15.13 — on mobile the fixed bottom-nav (64px, `md:hidden`,
       // z-50) plus the iOS home-indicator inset sit over the page's lower
       // edge. A `sticky bottom-2` bar lands BEHIND the nav, hiding the
       // destructive "Delete (N)" button. Lift the bar to clear the nav band

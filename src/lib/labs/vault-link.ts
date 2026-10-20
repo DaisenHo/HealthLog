@@ -1,5 +1,5 @@
 /**
- * S9 — link labs committed from an OCR scan back to the vault document filed
+ * Link labs committed from an OCR scan back to the vault document filed
  * for that scan.
  *
  * When a user scans a lab report in the labs area with the `inboundDocuments`

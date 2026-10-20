@@ -103,7 +103,7 @@ describe("PUT /api/mood/tags/layout", () => {
     expect(res.status).toBe(200);
     expect(db.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
-      // v1.32.22 (M2) — tokenless write echoes the fresh `updatedAt` token.
+      // v1.32.22 — tokenless write echoes the fresh `updatedAt` token.
       select: { updatedAt: true },
       data: {
         moodTagLayoutJson: {

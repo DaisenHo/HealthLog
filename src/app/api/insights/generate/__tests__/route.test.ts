@@ -52,7 +52,7 @@ vi.mock("@/lib/db", () => ({
     // The newest reading per signal type (`readSignalLastSeen`).
     measurement: { groupBy: vi.fn(async () => []) },
     auditLog: {
-      // v1.4.16 A7: route now evicts stale per-status cache rows
+      // v1.4.16: route now evicts stale per-status cache rows
       // (`insights.<scope>-status.<locale>`) on every successful
       // generation. The test prisma mock has to surface the call so
       // the cache-invalidation test can assert against it.
@@ -91,7 +91,7 @@ vi.mock("@/lib/ai/provider", async () => {
   return {
     ...actual,
     resolveProvider: vi.fn(),
-    // v1.4.16 phase B5b: the route consults the multi-provider chain
+    // v1.4.16: the route consults the multi-provider chain
     // first; the existing single-provider mocks return an empty chain
     // so the route falls through to `resolveProvider()` and the legacy
     // test fixtures keep behaving exactly as before.
@@ -758,7 +758,7 @@ describe("POST /api/insights/generate — briefingless fresh cache (v1.28.30)", 
   });
 });
 
-// v1.4.36 QA H1 — when both the raw-mode extraction AND the aggregated
+// v1.4.36 — when both the raw-mode extraction AND the aggregated
 // retry cross the 5 MB ceiling, the route used to throw uncaught → 500.
 // It now wraps the retry, downgrades further via the exclude filter,
 // and on a third failure returns 422 with an annotate event for ops.

@@ -863,7 +863,7 @@ describe("measurement rollups — integration", () => {
   });
 
   it("falls back to the live aggregate for a type without rollup coverage", async () => {
-    // v1.4.36 QA C1 — pre-fix the global rollup probe flipped to true
+    // v1.4.36 — pre-fix the global rollup probe flipped to true
     // as soon as ANY type had a DAY bucket, which made the comprehensive
     // response collapse a brand-new type's all-time count to whatever
     // the bucket-derived path could see (often 1 — the freshly-written

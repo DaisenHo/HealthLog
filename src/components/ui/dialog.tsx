@@ -63,7 +63,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          // v1.4.27 R3d MB1 — cap `<DialogContent>` at the viewport's
+          // v1.4.27 — cap `<DialogContent>` at the viewport's
           // dynamic height with internal scroll so long forms (medication
           // editor, API endpoint, intake import) never spill past the
           // viewport on short / soft-keyboard-collapsed mobile screens.
@@ -93,7 +93,7 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
-          // v1.4.27 R3d MB2 — widen the icon-only close-X tap target
+          // v1.4.27 — widen the icon-only close-X tap target
           // to a 36 px floor per WCAG 2.5.8 minimum target size.
           // 36 px (not 44 px) is the intentional exception for fixed
           // icon-only close affordances per Decision I — 44 px would
@@ -103,7 +103,7 @@ function DialogContent({
             className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none sm:min-h-9 sm:min-w-9 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            {/* v1.4.34 IW-G — read `common.close` so screen readers
+            {/* v1.4.34 — read `common.close` so screen readers
                 hear the localised label instead of literal English. */}
             <span className="sr-only">{t("common.close")}</span>
           </DialogPrimitive.Close>

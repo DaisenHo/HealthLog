@@ -208,7 +208,7 @@ export function RemindersSection() {
   return (
     <>
       <SettingsCard>
-        {/* v1.4.22 D / F-58 — icon swap so the section header matches
+        {/* v1.4.22 — icon swap so the section header matches
           the admin-shell nav tile (Bell). Clock now lives on the
           timing chips inline instead of competing as the page icon. */}
         <SettingsCardHeader
@@ -302,7 +302,7 @@ export function RemindersSection() {
         {reminderCheck.data?.medications &&
           reminderCheck.data.medications.length > 0 && (
             <div className="space-y-2">
-              {/* v1.4.33 IW9 — h4 -> h2 so the page outline stays
+              {/* v1.4.33 — h4 -> h2 so the page outline stays
                 sequential (parent admin SectionFrame ships <h1>). */}
               <h2 className="text-sm font-medium">
                 {t("admin.reminderCheckResults")}

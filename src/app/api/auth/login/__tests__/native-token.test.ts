@@ -48,7 +48,7 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi
     .fn()
     .mockResolvedValue({ allowed: true, remaining: 5, reset: 0 }),
-  // v1.4.43 W13 M-4 — auth surfaces now route through the wrapper that
+  // v1.4.43 — auth surfaces now route through the wrapper that
   // returns `{ip, ...rate-limit-result}`. Default to a clean per-IP
   // result so the existing tests don't need to set every IP up.
   checkAuthSurfaceRateLimit: vi.fn().mockResolvedValue({

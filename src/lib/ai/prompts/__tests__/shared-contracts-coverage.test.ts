@@ -1,5 +1,5 @@
 /**
- * v1.18.7 (HIGH-2) — cross-surface shared-contract coverage.
+ * v1.18.7 — cross-surface shared-contract coverage.
  *
  * The grounding / tone / GLP-1-safety / metric-identifier-ban / forbidden-
  * filler contracts live once in `shared-contracts.ts`. These guards assert
@@ -56,7 +56,7 @@ const SURFACES: Record<
     contracts: [
       grounding,
       toneContract,
-      // v1.27.13 (Welle J) — anti-recitation + interpretation-depth reach the
+      // v1.27.13 — anti-recitation + interpretation-depth reach the
       // overview + briefing text too.
       antiRecitation,
       interpretationDepth,
@@ -70,7 +70,7 @@ const SURFACES: Record<
       // v1.21.0 (QoL-B §3) — the briefing composes the forward-looking outlook
       // contract beside the tone contract.
       outlookContract,
-      // v1.22 (W6) — the paragraph formatting contract.
+      // v1.22 — the paragraph formatting contract.
       formattingContract,
     ],
   },
@@ -79,7 +79,7 @@ const SURFACES: Record<
     contracts: [
       grounding,
       toneContract,
-      // v1.27.13 (Welle J) — the assessment cards enforce both new contracts.
+      // v1.27.13 — the assessment cards enforce both new contracts.
       antiRecitation,
       interpretationDepth,
       // v1.28.40 — the opening-shape contract lands here so the per-metric card
@@ -89,7 +89,7 @@ const SURFACES: Record<
       safetyAcute,
       metricIdentifierBan,
       forbiddenFiller,
-      // v1.22 (W6) — the paragraph formatting contract.
+      // v1.22 — the paragraph formatting contract.
       formattingContract,
     ],
   },
@@ -104,7 +104,7 @@ const SURFACES: Record<
       forbiddenFiller,
       // v1.21.0 (QoL-B §3) — the Coach composes the outlook contract too.
       outlookContract,
-      // v1.22 (W6) — the paragraph formatting contract.
+      // v1.22 — the paragraph formatting contract.
       formattingContract,
     ],
   },
@@ -123,7 +123,7 @@ const SURFACES: Record<
       safetyAcute,
       metricIdentifierBan,
       forbiddenFiller,
-      // v1.22 (W6) — the paragraph formatting contract.
+      // v1.22 — the paragraph formatting contract.
       formattingContract,
     ],
   },
@@ -191,7 +191,7 @@ describe("shared-contract cross-surface coverage", () => {
   });
 });
 
-// v1.21.0 (D3-M1 / D3-L1) — the acute-safety clause's threshold numbers are
+// v1.21.0 — the acute-safety clause's threshold numbers are
 // composed from `clinical-floors.ts`, so the Coach's stated crisis thresholds
 // can never drift from the dashboard hero / notification engine / status
 // registry that read the same constants. Assert every floor is present in the

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W7 — resolver tests.
+ * v1.4.25 — resolver tests.
  *
  * The cache-hit / cache-miss assertions assume the test file is run
  * in isolation. Vitest's default per-file isolation gives us that.

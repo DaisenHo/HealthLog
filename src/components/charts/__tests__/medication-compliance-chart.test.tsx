@@ -94,7 +94,7 @@ describe("aggregateMedicationCompliance()", () => {
 });
 
 /**
- * v1.4.16 A6 — 7-day trend computation.
+ * v1.4.16 — 7-day trend computation.
  *
  * The chart header now paints a 7-day trend chip with a signed delta
  * in percentage points (pp) plus a direction arrow. The helper
@@ -191,7 +191,7 @@ describe("<MedicationComplianceChart>", () => {
   });
 
   /**
-   * v1.4.16 A6 — the trend chip is suppressed when the dataset is
+   * v1.4.16 — the trend chip is suppressed when the dataset is
    * empty (the empty-state placeholder is shown instead). Once data
    * arrives, the chip + reference lines paint — those are exercised
    * end-to-end by the e2e suite; a unit-rendered SSR snapshot can't

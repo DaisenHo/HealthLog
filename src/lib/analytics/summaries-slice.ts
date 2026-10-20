@@ -115,7 +115,7 @@ import { canonicalRowsOfDay } from "@/lib/mood/linked-context";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * v1.18.10 P-7 — upper bound on the cold-fallback `allTime` aggregate's
+ * v1.18.10 — upper bound on the cold-fallback `allTime` aggregate's
  * scan window. Sits far beyond any real account's history (the earliest prod
  * measurements are < 10 years old) so it never changes a real all-time
  * count / min / max / mean; it exists purely so a coverage-miss cold read
@@ -207,14 +207,14 @@ interface NarrowAggregateRow {
    */
   median: number | null;
   avg30_last_month: number | null;
-  // v1.20.0 F6 — slope7/30/90 + r2_7/30/90 have moved off this live query
+  // v1.20.0 — slope7/30/90 + r2_7/30/90 have moved off this live query
   // onto the rollup accumulators (composeWindowedRegression); they no longer
   // scan the raw measurements partition on the warm path. `median` stays
   // live (PERCENTILE_CONT is non-composable across buckets).
 }
 
 /**
- * v1.20.0 F6 — cold-fallback windowed row. The coverage-miss path keeps the
+ * v1.20.0 — cold-fallback windowed row. The coverage-miss path keeps the
  * live REGR_* regression (no rollup accumulators to compose from yet), so it
  * carries the slope / r² columns the warm `NarrowAggregateRow` dropped.
  */
@@ -273,7 +273,7 @@ export interface SummariesSlice {
    */
   bmi: null;
   /**
-   * v1.4.34 IW-B — per-type freshness map matching the default-slice
+   * v1.4.34 — per-type freshness map matching the default-slice
    * shape so the dashboard tile strip can render a "Letzter Wert vor
    * Xd" caption on stale tiles regardless of which slice the client
    * read from. Types the user has never logged report `null`.
@@ -298,7 +298,7 @@ export interface SummariesSlice {
 export async function computeSummariesSlice(
   userId: string,
   /**
-   * v1.12.7 A5 — optional pre-probed coverage map. The dashboard
+   * v1.12.7 — optional pre-probed coverage map. The dashboard
    * snapshot already calls `probeRollupCoverage` up front to decide
    * whether to run the thick `extras` phase, then called this slice
    * which re-probed the identical query. Threading the map in lets the
@@ -308,7 +308,7 @@ export async function computeSummariesSlice(
    */
   precomputedCoverage?: RollupCoverageMap,
 ): Promise<SummariesSlice> {
-  // v1.4.37.1 hotfix — fire-and-forget. See `src/app/api/analytics/route.ts`
+  // v1.4.37.1 — fire-and-forget. See `src/app/api/analytics/route.ts`
   // for the full rationale: awaiting this on the read path can stall
   // the event loop for tens of seconds on tenants with large iOS step
   // sample sets that keep the 90-day window slightly stale. The downstream
@@ -317,7 +317,7 @@ export async function computeSummariesSlice(
   // for the background refresh.
   void ensureUserRollupsFresh(userId);
 
-  // v1.4.36 QA C1 — per-type coverage probe replaces the legacy global
+  // v1.4.36 — per-type coverage probe replaces the legacy global
   // COUNT. The previous gate returned true as soon as ANY type had at
   // least one DAY bucket. Pathology: a user with BP fully rolled up
   // logs their first WEIGHT measurement → the sync write-hook upserts
@@ -590,7 +590,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     'p."source"',
   );
 
-  // v1.37.19 (A6-10) — where the fold window starts. DAY rollup buckets
+  // v1.37.19 — where the fold window starts. DAY rollup buckets
   // only exist inside the trailing `ROLLUP_FOLD_WINDOW_MS` (5 y), so the
   // rollup-composed "all-time" figures silently truncated to that window
   // for accounts with older history, while the cold live path reported
@@ -635,7 +635,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         userId,
       ),
       readLatestCanonical(userId, priorityJson),
-      // v1.4.37.2 hotfix — the v1.4.35 implementation read EVERY DAY
+      // v1.4.37.2 — the v1.4.35 implementation read EVERY DAY
       // rollup bucket for the user (`findMany` without a `bucketStart`
       // window) and then composed `count / min / max / mean` in JS.
       // On tenants with large measurement partitions that materialised
@@ -686,7 +686,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
         userId,
         foldSplit,
       ),
-      // v1.20.0 F6 — trailing 90-day DAY rollup rows carrying the per-bucket
+      // v1.20.0 — trailing 90-day DAY rollup rows carrying the per-bucket
       // regression accumulators. The windowed slope / r² / sd compose from
       // these (composeWindowedRegression) instead of the live REGR_* scan the
       // narrow query used to run. Rows are per source; collapsed per type
@@ -714,7 +714,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           sumYy: true,
         },
       }),
-      // v1.37.19 (A6-10) — all-time remainder OLDER than the fold window,
+      // v1.37.19 — all-time remainder OLDER than the fold window,
       // spliced into the per-type figures below so "all-time" means all time
       // on the rollup path too (empty for any account younger than the
       // window). It keeps one source per (type, day) the way the rollup half
@@ -797,7 +797,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     });
   }
 
-  // v1.20.0 F6 — collapse the 90-day accumulator rows to the canonical
+  // v1.20.0 — collapse the 90-day accumulator rows to the canonical
   // source per (type, day), then build a per-type accumulator-bucket list so
   // the windowed slope / r² / sd compose from the canonical source only.
   const accBucketsByType = new Map<string, AccumulatorBucketRow[]>();
@@ -837,7 +837,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   const since90 = startOfUtcDay(new Date(nowMs - 90 * DAY_MS));
 
   const latestByType = new Map<string, number>();
-  // v1.4.34 IW-B — capture the per-type `measured_at` alongside the
+  // v1.4.34 — capture the per-type `measured_at` alongside the
   // value so we can surface the freshness map on the slim slice
   // without an extra round-trip.
   const lastSeenAtByType = new Map<string, Date>();
@@ -872,7 +872,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     };
   }
 
-  // v1.4.37.2 hotfix — the rollup aggregate is now shaped server-side
+  // v1.4.37.2 — the rollup aggregate is now shaped server-side
   // (one row per type with count / min / max / mean already computed),
   // so we map straight through instead of partitioning + composing in
   // JS. The narrows query feeds the windowed avgs + slope columns the
@@ -885,7 +885,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   let totalRows = 0;
   let typeCount = 0;
   const typesWithData: string[] = [];
-  // v1.20.0 P3 M-1 — set once any in-window bucket carries a NULL
+  // v1.20.0 — set once any in-window bucket carries a NULL
   // accumulator (pre-0190 row, or boot re-fold pending). The slope stays
   // null then — honest, it converges after backfill — but the miss must be
   // observable per the "no silent cap" rule, so it surfaces in the
@@ -898,7 +898,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     typesWithData.push(row.type);
     const narrow = narrowByType.get(row.type);
     const latest = latestByType.get(row.type) ?? null;
-    // v1.20.0 F6 — windowed slope / r² compose from the per-bucket
+    // v1.20.0 — windowed slope / r² compose from the per-bucket
     // accumulators (canonical-source-collapsed above) rather than the live
     // REGR_* scan. A full miss (NULL accumulators pre-backfill, or < 2
     // readings) yields a null slope, the same shape the empty REGR_* FILTER
@@ -912,7 +912,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     }
     const reg7 = composeWindowedRegression(accBuckets, since7);
     const reg30 = composeWindowedRegression(accBuckets, since30);
-    // v1.37.19 (A6-10) — splice the pre-fold remainder into the all-time
+    // v1.37.19 — splice the pre-fold remainder into the all-time
     // figures: the rollup tier only covers the trailing fold window, so
     // count / min / max / mean composed from it alone truncated "all
     // time" to 5 y. Windowed fields (avg7/30, median, slopes) are
@@ -946,7 +946,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     if (pre) totalRows += pre.count;
   }
 
-  // v1.37.19 (A6-10) — a type whose ONLY rows are older than the fold
+  // v1.37.19 — a type whose ONLY rows are older than the fold
   // window has no DAY bucket at all; without this arm it read as "never
   // logged" on the rollup path while the live path reported its history.
   for (const [type, pre] of preFoldByType) {
@@ -993,13 +993,13 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           type_count: typeCount,
           path: "rollup",
           year_over_year_types: yearOverYearTypeCount,
-          // v1.20.0 F6 — slope / r² now compose from the rollup
+          // v1.20.0 — slope / r² now compose from the rollup
           // accumulators (no live REGR_* scan). The median stays live
           // (PERCENTILE_CONT is non-composable); both sources are logged
           // per the "no silent cap" rule so a regression is observable.
           slope_source: "rollup",
           median_source: "live",
-          // v1.20.0 P3 M-1 — when a NULL accumulator (pre-0190 row, or boot
+          // v1.20.0 — when a NULL accumulator (pre-0190 row, or boot
           // re-fold pending) forced a slope miss, the read intentionally
           // returns null without a live-SQL fallback (the design avoids the
           // heavy scan). Surface the gap so the silent null is observable;
@@ -1272,7 +1272,7 @@ async function computeAvg30LastYearForType(
 }
 
 /**
- * v1.4.40 W-WMY-WIRE — fan out `computeAvg30LastYearForType` across
+ * v1.4.40 — fan out `computeAvg30LastYearForType` across
  * the types the caller actually surfaces. Runs the per-type rollup reads
  * in parallel so the long-tail of types doesn't serialise into a
  * per-type round-trip stack.

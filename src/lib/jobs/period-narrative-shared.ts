@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W3 — generator-free contract for the period-narrative warm queue.
+ * v1.11.0 — generator-free contract for the period-narrative warm queue.
  *
  * The read-only GET route enqueues a single-user warm here without importing
  * the concrete generator (which would pull the provider chain + W2 context

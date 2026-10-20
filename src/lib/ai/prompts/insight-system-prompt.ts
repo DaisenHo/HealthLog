@@ -6,7 +6,7 @@ import { instructionLocale } from "./output-language";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 
 /**
- * v1.4.16 phase B8 — comparison snapshot the prompt narrates against
+ * v1.4.16 — comparison snapshot the prompt narrates against
  * when the user has the dashboard's "Compare to" toggle on. The snapshot
  * is opt-in: pass it through `buildUserPrompt`'s 4th argument when
  * `comparisonBaseline !== "none"` so the LLM has prior-period context
@@ -77,7 +77,7 @@ ${featuresJson}${comparisonBlock}`;
 }
 
 /**
- * v1.4.16 phase B8 — comparison context block.
+ * v1.4.16 — comparison context block.
  *
  * Renders a dedicated SYSTEM CONTEXT section after the user data so
  * the LLM can narrate the comparison ("Your average BP improved by

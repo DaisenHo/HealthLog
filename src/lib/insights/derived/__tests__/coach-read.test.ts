@@ -8,7 +8,7 @@ import {
 import type { CoachCorrelationDriver } from "@/lib/ai/coach/tools/correlations-read";
 
 /**
- * v1.21.2 (A1) — "Coach read" strip selection logic.
+ * v1.21.2 — "Coach read" strip selection logic.
  *
  * Covers the two decisions the strip turns on:
  *   1. band-line placement (within / above / below), incl. the inclusive

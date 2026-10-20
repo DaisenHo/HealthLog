@@ -1,5 +1,5 @@
 /**
- * v1.4.41 W-DELETED-2 — pin soft-delete invisibility across the remaining
+ * v1.4.41 — pin soft-delete invisibility across the remaining
  * reader tiers that W-DELETED-1 (v1.4.40) did not cover:
  *   - /api/export (legacy CSV/JSON endpoint),
  *   - /api/export/full-backup (single-file JSON bundle),

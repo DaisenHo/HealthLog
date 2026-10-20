@@ -1,5 +1,5 @@
 /**
- * v1.21.0 (P6 / C2-5) — post-hoc numeric verifier on Coach prose. It must flag
+ * v1.21.0 — post-hoc numeric verifier on Coach prose. It must flag
  * a number the model cited that no tool returned this turn (transcription
  * drift), exempt structural window/ordinal integers, and no-op when no tool
  * returned figures. Soft-strip replaces only the flagged tokens.

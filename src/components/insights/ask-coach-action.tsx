@@ -18,7 +18,7 @@ import {
 import { useAiCapability } from "@/hooks/use-ai-capability";
 
 /**
- * v1.21.0 (C4 H2) — discreet "Ask the Coach about this" affordance for
+ * v1.21.0 — discreet "Ask the Coach about this" affordance for
  * high-value insight / assessment cards (briefing, recommendation,
  * correlation, status, health-score, period narrative).
  *

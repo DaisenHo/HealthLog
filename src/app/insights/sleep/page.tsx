@@ -21,19 +21,19 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useSleepRhythm } from "@/components/insights/sleep/use-sleep-rhythm";
 
 /**
- * v1.4.25 W4c — `/insights/sleep`.
+ * v1.4.25 — `/insights/sleep`.
  *
  * The Sleep sub-page surfaces the per-stage breakdown + duration trend
  * the v1.4.23 schema gained but never rendered. All charts live inside
  * `<SleepOverview>` so the page-level scaffold stays trivial; data
  * fetches and empty-state handling are encapsulated in the component.
  *
- * v1.4.27 F17 — when `summaries.SLEEP_DURATION.count === 0` (no
+ * v1.4.27 — when `summaries.SLEEP_DURATION.count === 0` (no
  * Apple-Health / Withings sleep rows yet), the page short-circuits
  * to an empty-state CTA pointing at `/settings/integrations` so the
  * user can connect a sleep source.
  *
- * v1.4.28 R3d (BK-F-H1 + BK-F-M1) — analytics fetch + empty-state
+ * v1.4.28 — analytics fetch + empty-state
  * render consume the shared hook + primitive.
  */
 export default function InsightsSchlafPage() {

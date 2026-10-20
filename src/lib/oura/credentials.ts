@@ -1,5 +1,5 @@
 /**
- * v1.17.0 (F4) — per-user Oura token accessors.
+ * v1.17.0 — per-user Oura token accessors.
  * v1.17.1 — per-user BYO client id/secret resolver (DB-first then env).
  *
  * Like WHOOP / Fitbit, Oura is now a per-user BYO-key integration: each user may

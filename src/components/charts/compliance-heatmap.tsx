@@ -26,7 +26,7 @@ interface ComplianceHeatmapProps {
 
 const CELL_SIZE = 18;
 const GAP = 3;
-// v1.4.27 MB7 / CF-10 — cell-floor so the static heatmap never paints
+// v1.4.27 — cell-floor so the static heatmap never paints
 // below the touch-friendly 14 px square on narrow viewports. The
 // stretch branch computes an adaptive size; both branches clamp here.
 const CELL_FLOOR_PX = 14;
@@ -56,7 +56,7 @@ function getColor(data: DailyData): string {
     const late = data.late ?? 0;
     const missed = Math.max(0, data.expected - taken - data.skipped);
 
-    // v1.4.34 IW-C — the v1.4.33 `looksClassifierBug` fallthrough is
+    // v1.4.34 — the v1.4.33 `looksClassifierBug` fallthrough is
     // gone because the root cause is fixed: `classifyIntakeTiming` now
     // routes proactive logs into the `early` bucket (counted as
     // compliant by the API) instead of flushing them to `very_late`.
@@ -196,7 +196,7 @@ export function ComplianceHeatmap({
 
   const labelWidth = stretch ? 0 : 76;
   const headerHeight = 18;
-  // v1.4.27 MB7 / CF-10 — clamp the stretch-branch adaptive cell to the
+  // v1.4.27 — clamp the stretch-branch adaptive cell to the
   // 14 px floor so the heatmap stays tap-friendly when the container
   // narrows. Static (non-stretch) instances use the canonical 18 px.
   const cellSize =
@@ -241,7 +241,7 @@ export function ComplianceHeatmap({
 
   return (
     <div className={`relative ${stretch ? "w-full" : ""}`} ref={containerRef}>
-      {/* v1.4.27 MB7 / CF-10 — `overflow-x-auto` on `<sm` so the heatmap
+      {/* v1.4.27 — `overflow-x-auto` on `<sm` so the heatmap
           horizontal-scrolls inside its card instead of compressing the
           cells below the touch floor. The stretch branch already
           paints to container width on `>=sm`, so the scroll branch
@@ -312,7 +312,7 @@ export function ComplianceHeatmap({
               height={cellSize}
               rx={2}
               fill={cell.color}
-              // 2026-07-17 a11y audit (M2) — the per-day values reach
+              // The per-day values reach
               // assistive tech through the data table below the grid, not
               // through the rects: a cell subtree nested under the SVG's
               // `role="img"` is pruned from the a11y tree, and per-cell tab

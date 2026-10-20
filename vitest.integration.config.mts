@@ -35,7 +35,7 @@ export default defineConfig({
     // level (the old `poolOptions.forks.singleFork` was removed).
     pool: "forks",
     fileParallelism: false,
-    // v1.4.37 W-CI — switched from `isolate: false` to `isolate: true`.
+    // v1.4.37 — switched from `isolate: false` to `isolate: true`.
     // The previous setting reused the module graph across files inside
     // one fork; mock declarations (`vi.mock("@/lib/notifications/...")`,
     // `vi.mock("@parse/node-apn")`) registered in `apns-dispatch.test.ts`

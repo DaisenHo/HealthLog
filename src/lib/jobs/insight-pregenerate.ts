@@ -1,5 +1,5 @@
 /**
- * v1.7.0 W6 — nightly insight pre-generation cron.
+ * v1.7.0 — nightly insight pre-generation cron.
  *
  * Closes the gap the R-firstpaint audit surfaced: before this cron,
  * every daily briefing was generated lazily on the first `/insights`
@@ -373,7 +373,7 @@ async function warmPerStatusCaches(
 }
 
 /**
- * v1.18.7 (HIGH-1) — the production warm for the seven specialised status
+ * v1.18.7 — the production warm for the seven specialised status
  * cards. `generateStatusBatchForUser` builds the seven per-metric snapshots
  * once and issues ONE provider call for the metrics still needing the LLM,
  * fanning the response back into the same per-metric cache rows the
@@ -603,7 +603,7 @@ export async function runInsightPregenerate(
   const generate = options.generate ?? generateComprehensiveInsight;
   const enqueueRetry = options.enqueueRetry ?? enqueuePregenerateFailureRetry;
   const reportRun = options.reportRun ?? reportJobRun;
-  // v1.18.7 (HIGH-1) — when the caller injects its own `statusGenerators`
+  // v1.18.7 — when the caller injects its own `statusGenerators`
   // (the unit tests do), keep the per-card warm so those assertions hold;
   // production injects nothing, so the seven warm calls collapse into ONE
   // batched generation. The injected per-card path stays the test seam.
@@ -1007,12 +1007,12 @@ export async function forceWarmUser(
     today?: boolean;
   } = {},
 ): Promise<ForceWarmResult> {
-  // v1.18.11 P3 — one feature-cache scope for the whole forced warm of this
+  // v1.18.11 — one feature-cache scope for the whole forced warm of this
   // user, so the comprehensive briefing's bounded feature read is computed
   // once and reused by any sibling consumer in the same warm.
   return withFeatureCacheScope(async () => {
     const generate = options.generate ?? generateComprehensiveInsight;
-    // v1.18.7 (HIGH-1) — batch the seven status warms into ONE provider call
+    // v1.18.7 — batch the seven status warms into ONE provider call
     // in production; keep the per-card path when a test injects generators.
     const injectedStatusGenerators = options.statusGenerators;
     const warmStatus = (

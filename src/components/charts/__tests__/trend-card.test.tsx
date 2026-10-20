@@ -7,7 +7,7 @@ import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.5 phase-5 — metric-aware trend-arrow colour. Each metric tile gets a
+ * v1.5 — metric-aware trend-arrow colour. Each metric tile gets a
  * `directionSentiment` prop (`up-good` | `up-bad` | `neutral`) so the small
  * up/down arrow next to the latest reading paints semantically:
  *
@@ -284,7 +284,7 @@ describe("<TrendCard> valueAdornment slot", () => {
 
 describe("<TrendCard> responsive layout", () => {
   it("keeps long BP target tile content wrappable inside the card", () => {
-    // v1.4.28 FB-C2 — the BD-Zielbereich tile dropped `avgAllTime`
+    // v1.4.28 — the BD-Zielbereich tile dropped `avgAllTime`
     // and the synthetic slope; assert the surviving shape (overflow
     // wrap discipline, compare-delta callout) still ships.
     const html = render(

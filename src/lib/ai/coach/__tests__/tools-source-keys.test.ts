@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — every CoachScopeSource must either resolve to a snapshot
+ * v1.20.0 — every CoachScopeSource must either resolve to a snapshot
  * section key (so get_metric_series can fetch it) or be one of the
  * dedicated-tool sources. A new source added to the scope enum without a key
  * here would otherwise fall through to a fabricated "no data" answer for a

@@ -76,7 +76,7 @@ vi.mock("@/lib/ai/coach/types", async (importOriginal) => ({
     safeParse: () => ({ success: false, error: { issues: [] } }),
   },
 }));
-// v1.20.0 (F1) — the route statically imports the tool barrel; this suite
+// v1.20.0 — the route statically imports the tool barrel; this suite
 // never reaches tool code (it asserts the 403 module-gate short-circuit), so a
 // thin stub keeps the import graph satisfied without pulling the real schemas.
 vi.mock("@/lib/ai/coach/tools", () => ({

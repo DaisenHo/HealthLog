@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.40 W-RSC — dashboard Suspense boundaries.
+ * v1.4.40 — dashboard Suspense boundaries.
  *
  * Audit-H2 flagged "no `<Suspense>` boundaries anywhere in the app".
  * The v1.4.40 W-RSC wave wraps every dashboard tile cell and every

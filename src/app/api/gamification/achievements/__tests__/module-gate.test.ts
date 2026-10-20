@@ -96,7 +96,7 @@ beforeEach(() => {
   vi.mocked(prisma.userHealthProfile.findUnique).mockResolvedValue(
     null as never,
   );
-  // v1.18.0 B5 — default to "every module on" so individual cases only
+  // v1.18.0 — default to "every module on" so individual cases only
   // flip the one key under test.
   vi.mocked(resolveModuleMap).mockResolvedValue({} as never);
 });

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W21 Fix-N (code-M1 + simp-M1) — drift guard.
+ * v1.4.25 (code-M1 + simp-M1) — drift guard.
  *
  * Three sources of truth historically described the side-effect enum:
  *

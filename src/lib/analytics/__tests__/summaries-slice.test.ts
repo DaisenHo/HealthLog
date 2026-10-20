@@ -100,7 +100,7 @@ beforeEach(() => {
   ROLLUP_FIND_MANY.mockResolvedValue([]);
   ROLLUP_FIND_FIRST.mockResolvedValue(null);
   MEASUREMENT_FIND_FIRST.mockResolvedValue(null);
-  // v1.37.19 (A6-10) — default the tagged-template RAW reads (the coverage
+  // v1.37.19 — default the tagged-template RAW reads (the coverage
   // probe + the pre-fold all-time remainder) to empty; individual tests
   // queue their own `mockResolvedValueOnce` sequences on top.
   RAW.mockResolvedValue([]);
@@ -147,7 +147,7 @@ describe("computeSummariesSlice", () => {
     });
 
     it("maps a populated heavy aggregate row into the DataSummary shape on cold path", async () => {
-      // v1.4.48 M0 — cold path now splits the heavy aggregate into
+      // v1.4.48 — cold path now splits the heavy aggregate into
       // all-time + 90-day-capped windowed queries. Mock order:
       // 1. coverage probe (WEIGHT uncovered → cold path)
       // 2. all-time aggregate (count / min / max / mean)
@@ -330,7 +330,7 @@ describe("computeSummariesSlice", () => {
           avg7: 82,
           avg30: 82.5,
           median: 82.1,
-          // v1.20.0 F6 — the narrow query no longer carries slope/r²; those
+          // v1.20.0 — the narrow query no longer carries slope/r²; those
           // compose from the accumulator buckets mocked below.
         },
       ])
@@ -353,7 +353,7 @@ describe("computeSummariesSlice", () => {
           },
         ]);
 
-      // v1.20.0 F6 — the 90-day accumulator findMany (first measurementRollup
+      // v1.20.0 — the 90-day accumulator findMany (first measurementRollup
       // .findMany in the Promise.all). Two single-reading DAY buckets one day
       // apart inside the 7-day window: x = epoch-days, y = 82.00 then 82.02.
       // composeWindowedRegression over them yields slope = 0.02/day with a
@@ -399,7 +399,7 @@ describe("computeSummariesSlice", () => {
       expect(weight.median).toBe(82.1);
       expect(weight.latest).toBe(82.7);
       expect(weight.avg7).toBe(82);
-      // v1.20.0 F6 — slope composed from the accumulator buckets: a clean
+      // v1.20.0 — slope composed from the accumulator buckets: a clean
       // +0.02/day with a perfect two-point fit.
       expect(weight.slope7).toEqual({
         slope: 0.02,
@@ -548,7 +548,7 @@ describe("computeSummariesSlice", () => {
     });
 
     it("only probes types that actually have data in the current window", async () => {
-      // v1.4.48 M0 — empty coverage map ⇒ `isFullyCovered` returns
+      // v1.4.48 — empty coverage map ⇒ `isFullyCovered` returns
       // false ⇒ cold-fallback path. v1.11.1 — coverage probe stays on
       // `$queryRaw`; all-time + windowed + latests run via
       // `$queryRawUnsafe`. All return empty arrays here ⇒ no
@@ -565,7 +565,7 @@ describe("computeSummariesSlice", () => {
   });
 
   /**
-   * v1.4.48 M0 — pins the 90-day outer `measured_at` cap on the two
+   * v1.4.48 — pins the 90-day outer `measured_at` cap on the two
    * windowed measurements scans: the `narrows` query inside the
    * rollup-fresh happy path and the `windowed` query inside the
    * cold-fallback path. Both must constrain the outer WHERE to the
@@ -619,7 +619,7 @@ describe("computeSummariesSlice", () => {
         expect.any(String),
         "90 days",
       );
-      // v1.18.10 P-7 — the `allTime` aggregate is now capped at a generous
+      // v1.18.10 — the `allTime` aggregate is now capped at a generous
       // 15-year scan-DoS floor (far beyond any real history) so a
       // coverage-miss cold read can't trigger an unbounded full-partition
       // scan. It no longer calls the helper without an interval.

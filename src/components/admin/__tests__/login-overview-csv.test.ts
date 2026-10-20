@@ -9,7 +9,7 @@ import {
 import { toCSV } from "@/lib/export";
 
 /**
- * v1.4.25 W8b — Login-Übersicht CSV export contract.
+ * v1.4.25 — Login-Übersicht CSV export contract.
  *
  * The previous CSV emitted snake_case English headers and the raw UTC
  * `createdAt` string, which Excel/LibreOffice misread once the `Z`
@@ -31,7 +31,7 @@ const LABELS_EN: AuditCsvLabels = {
   user: "Users",
   ip: "IP",
   location: "Location",
-  // v1.4.27 B3 — `admin.carrier` is shipped by bucket B6; the test
+  // v1.4.27 — `admin.carrier` is shipped by bucket B6; the test
   // pins the English literal so the column order is locked.
   carrier: "Carrier",
   provider: "Provider",

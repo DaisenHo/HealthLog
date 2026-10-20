@@ -18,7 +18,7 @@ import type {
 } from "@/lib/ai/coach/types";
 
 /**
- * v1.18.11 (W11, #67) — the Coach page is a deep-link target INTO a
+ * v1.18.11 (#67) — the Coach page is a deep-link target INTO a
  * conversation. These tests pin the selection contract on the shared
  * `<CoachConversation>` page surface:
  *

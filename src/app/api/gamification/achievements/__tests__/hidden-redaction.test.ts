@@ -31,7 +31,7 @@ vi.mock("@/lib/modules/gate", () => ({
   // Plain async fn (not a `vi.fn`) so `vi.resetAllMocks()` in beforeEach
   // can't blank it out and flip the gate to a falsy decision.
   requireModuleEnabled: async () => ({ enabled: true }),
-  // v1.18.0 B5 — all modules on so the per-module badge filter is inert.
+  // v1.18.0 — all modules on so the per-module badge filter is inert.
   resolveModuleMap: async () => ({}),
   MODULE_DISABLED_ERROR_CODE: "module.disabled",
 }));
@@ -84,7 +84,7 @@ const HIDDEN_TRIGGER_STRINGS = [
 
 beforeEach(() => {
   vi.resetAllMocks();
-  // v1.4.34 IW-G — reset achievement LRU between tests so each case
+  // v1.4.34 — reset achievement LRU between tests so each case
   // observes a cold cache.
   __resetAllCachesForTests();
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);

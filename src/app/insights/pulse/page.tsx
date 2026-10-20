@@ -37,7 +37,7 @@ const IntradayPulseChart = dynamic(
 );
 
 /**
- * v1.4.25 W4 — `/insights/pulse`.
+ * v1.4.25 — `/insights/pulse`.
  *
  * Routed Pulse sub-page. Renders the raw/workout-inclusive pulse chart
  * plus the per-section AI assessment. Note: `chartKey="pulse"` so the
@@ -90,7 +90,7 @@ export default function InsightsPulsPage() {
   // strip (the VO2 chart-row below keeps its own full-range read).
   const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
 
-  // v1.4.27 F17 — gate the sub-page on at least one pulse observation.
+  // v1.4.27 — gate the sub-page on at least one pulse observation.
   // Brand-new accounts (no manual logs, no Apple-Health upload yet)
   // see a one-line empty-state with a CTA into
   // `/measurements?add=PULSE` rather than a chart skeleton over a
@@ -168,7 +168,7 @@ export default function InsightsPulsPage() {
         dayLinks
       />
 
-      {/* S11 — the intraday "shape of the day" layer: 10-minute mean heart
+      {/* The intraday "shape of the day" layer: 10-minute mean heart
           rate with the resting baseline and any cautious elevated-at-rest
           window. Computed on demand from raw for today; non-diagnostic. */}
       <IntradayPulseChart userTimezone={user?.timezone} />
@@ -187,7 +187,7 @@ export default function InsightsPulsPage() {
         icon={<Heart className="h-5 w-5" />}
       />
 
-      {/* S10 — device-attributed pointer into the ECG viewer, in the
+      {/* Device-attributed pointer into the ECG viewer, in the
           resting-HR / pulse context. Un-mounts when the user has no ECG
           recordings; surfaces only that recordings exist + the device's own
           latest result, never a HealthLog interpretation. */}

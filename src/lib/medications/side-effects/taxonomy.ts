@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — GLP-1 side-effect taxonomy (pure module).
+ * v1.4.25 — GLP-1 side-effect taxonomy (pure module).
  *
  * Single source of truth for the entry → category mapping the picker
  * UI, the API validator, and the Coach snapshot all read. Derived

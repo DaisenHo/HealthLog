@@ -747,7 +747,7 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
     });
   });
 
-  // v1.8.6 W6 — optional per-entry `source`. The standalone iOS client
+  // v1.8.6 — optional per-entry `source`. The standalone iOS client
   // tags adopt-on-pair backfill rows it knows were entered by hand as
   // `MANUAL`; every other caller (web + current iOS) omits the field and
   // must keep storing rows as `APPLE_HEALTH`. `source` is part of the

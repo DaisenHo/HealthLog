@@ -485,7 +485,7 @@ export async function handleReminderCheck(
             occurrencesByScheduleId.get(canonicalSchedule.id) ?? [];
           if (scheduleOccurrences.length === 0) continue;
 
-          // v1.7.0 SB-SCHED-4 — multi-time-of-day dispatch. A schedule
+          // v1.7.0 — multi-time-of-day dispatch. A schedule
           // with `timesOfDay = ["08:00","20:00"]` is two distinct dose
           // slots per day; the pre-v1.7 worker keyed phase + dedup on the
           // single `windowStart`, so the evening dose never reminded.
@@ -709,7 +709,7 @@ export async function handleReminderCheck(
                 missedDosesMinted++;
                 evt.addMeta("missed_dose", `${med.name}:${slotTime}`);
 
-                // v1.4.39 W-MED — refresh the compliance rollup so the
+                // v1.4.39 — refresh the compliance rollup so the
                 // per-day `scheduled` count increments before any read.
                 await recomputeMedicationComplianceForEvent({
                   userId: med.user.id,
@@ -782,7 +782,7 @@ export async function handleReminderCheck(
                     date: slotScheduledFor.toLocaleDateString("sv-SE", {
                       timeZone: userTz,
                     }),
-                    // v1.7.0 SB-SCHED-4 — carry the dedup time-of-day so
+                    // v1.7.0 — carry the dedup time-of-day so
                     // the Telegram-message ledger keys per slot.
                     timeOfDay: dedupTimeOfDay,
                     scheduledAt: scheduledAtIso,

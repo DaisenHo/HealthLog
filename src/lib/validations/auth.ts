@@ -40,7 +40,7 @@ export const registerSchema = z.object({
   username: accountUsernameSchema,
   password: newAccountPasswordSchema,
   /**
-   * v1.4.25 W7 — browser-detected timezone. The signup form pulls
+   * v1.4.25 — browser-detected timezone. The signup form pulls
    * `Intl.DateTimeFormat().resolvedOptions().timeZone` and sends it
    * along; the server validates against the runtime IANA list and
    * falls back to the admin-configured server default

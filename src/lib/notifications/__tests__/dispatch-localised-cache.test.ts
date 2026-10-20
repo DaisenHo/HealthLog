@@ -1,5 +1,5 @@
 /**
- * v1.4.28 R3d (R1.2 H5) — cache behaviour for the per-recipient locale
+ * v1.4.28 (R1.2 H5) — cache behaviour for the per-recipient locale
  * lookup behind `dispatchLocalisedNotification`.
  *
  * Pre-fix, every dispatch hit `prisma.user.findUnique` to resolve

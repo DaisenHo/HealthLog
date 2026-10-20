@@ -24,7 +24,7 @@ import { z } from "zod/v4";
  */
 export const onboardingCompleteSchema = z.object({
   /**
-   * v1.39 (C2) — the managed record the answers were given FOR. Sent by the
+   * v1.39 — the managed record the answers were given FOR. Sent by the
    * confirm screen after "someone I look after" created the profile: the
    * module map and the dashboard order derived from the caller's answers are
    * applied to that record, and the caller's own record is stamped complete

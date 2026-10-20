@@ -49,7 +49,7 @@ function ok(
   return {
     metric: "COINCIDENT_DEVIATION",
     status: "ok",
-    // v1.18.1 P4 — default the Rest Mode reframe flag off so the existing
+    // v1.18.1 — default the Rest Mode reframe flag off so the existing
     // fixtures stay valid; the reframe test passes `illnessExplained: true`.
     value: { illnessExplained: false, ...value },
     coverage: {

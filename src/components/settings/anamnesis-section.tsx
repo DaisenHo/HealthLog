@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.25 (W-RECORDS) — Settings → Anamnese (medical history).
+ * v1.25 — Settings → Anamnese (medical history).
  *
  * The home for the structured health records: allergies / intolerances and
  * family history. Each is a self-contained CRUD manager rendered in its own

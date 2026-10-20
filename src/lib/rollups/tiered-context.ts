@@ -298,7 +298,7 @@ const BAND_TRUNC_UNIT: Record<
 };
 
 /**
- * v1.37.19 (A6-11) — LIVE aggregate for one band, the fallback the module
+ * v1.37.19 — LIVE aggregate for one band, the fallback the module
  * doc has promised since v1.18.7 but `readBand` never had: a coverage
  * miss (or a >5y account whose YEAR partition was never folded) used to
  * hand the AI an empty MONTH/YEAR band as if the history did not exist.
@@ -489,7 +489,7 @@ async function readBand(
 ): Promise<RollupBucket[]> {
   const from = new Date(now - fromDaysAgo * DAY_MS);
   const to = new Date(now - toDaysAgo * DAY_MS);
-  // v1.37.19 (A6-11) — the far-from-UTC guard the correlation readers
+  // v1.37.19 — the far-from-UTC guard the correlation readers
   // carry (v1.4.38 W-A class): DAY rollup buckets group by UTC day, which
   // diverges from the user's local calendar for most of the day outside
   // the ±3 h near-UTC band. For those users the day-grain band goes

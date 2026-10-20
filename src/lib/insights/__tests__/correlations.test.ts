@@ -11,7 +11,7 @@ import {
 import { seededRng } from "./helpers/seeded-series";
 
 /**
- * v1.4.20 phase B3 — correlation discovery.
+ * v1.4.20 — correlation discovery.
  *
  * Three pre-defined hypotheses are surfaced as `<CorrelationCard>` rows.
  * Quality bar is non-negotiable: n >= 20 (v1.4.23 H6 raise), p < 0.05.
@@ -70,7 +70,7 @@ describe("pearson", () => {
   });
 
   it("returns r near 0 for noise, with p above the surface threshold", () => {
-    // v1.4.26 P6-1 — fixture regenerated against the exact incomplete-beta
+    // v1.4.26 — fixture regenerated against the exact incomplete-beta
     // p-value. The pre-existing jittered fixture happened to produce
     // r ≈ -0.494, which is a real moderate correlation; the old normal
     // approximation was loose enough that p still sat above 0.05, but
@@ -95,7 +95,7 @@ describe("pearson", () => {
   });
 
   /**
-   * v1.4.23 H6 — pin the surfacing-gate raise. n=15 is the borderline
+   * v1.4.23 — pin the surfacing-gate raise. n=15 is the borderline
    * case the v1.4.22 product-lead memo flagged: under the old n>=14
    * gate the normal-approx p-value would surface a card; under the
    * new n>=20 gate the call short-circuits to `insufficient` so a
@@ -113,7 +113,7 @@ describe("pearson", () => {
   });
 
   /**
-   * v1.4.26 P6-1 — exact Student's-t p-value via regularised
+   * v1.4.26 — exact Student's-t p-value via regularised
    * incomplete beta. Pins three R-derived reference points so a
    * future refactor of the survival function can't quietly drift
    * back to the normal approximation.

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W21 Fix-N — shared client-side error reader.
+ * v1.4.25 — shared client-side error reader.
  *
  * The four onboarding components (WelcomeCarousel, GoalsChipPicker,
  * SourceCardGrid, BaselineForm) all hand-rolled the same helper to

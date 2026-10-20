@@ -1,5 +1,5 @@
 /**
- * v1.21.0 (P6 / C2-5) — post-hoc numeric verifier for Coach prose.
+ * v1.21.0 — post-hoc numeric verifier for Coach prose.
  * v1.32.7 (Coach Guard I / G1) — typed tokenizer + normal-form reconciler.
  * v1.32.9 (Coach Guard II / G2+G3) — the typed Grounding Ledger + the
  *   four-rung action ladder (the reference-sentence exemption in particular).

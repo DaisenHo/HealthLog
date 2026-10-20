@@ -8,7 +8,7 @@ import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { markDisconnected } from "@/lib/integrations/status";
 
 /**
- * v1.17.0 (F4) — disconnect Oura for the current user.
+ * v1.17.0 — disconnect Oura for the current user.
  *
  * Clears the stored access + refresh token on `User` and parks the integration
  * status at `disconnected`. Imported `source = OURA` measurements are left

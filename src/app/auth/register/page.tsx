@@ -47,7 +47,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslations();
-  // v1.4.27 MB3 — explicit error-region id wired to every required
+  // v1.4.27 — explicit error-region id wired to every required
   // input via `aria-describedby` so screen readers pair the validation
   // failure with the offending field instead of announcing it as a
   // standalone alert detached from the form.
@@ -60,7 +60,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // v1.4.25 W7 — ship the browser-detected timezone with the
+      // v1.4.25 — ship the browser-detected timezone with the
       // signup payload. Server validates against the IANA list and
       // falls back to the admin server-default if the value is
       // bogus, so a tampered or proxied request can never poison
@@ -166,7 +166,7 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-sm">
-      {/* v1.4.27 MB7 / CF-61 — drop `p-8` to `p-6 sm:p-8` so the
+      {/* v1.4.27 — drop `p-8` to `p-6 sm:p-8` so the
           auth card breathes on Galaxy Fold / Pixel 5 without stealing
           half the visible viewport with padding. Tablet+ keeps the
           generous 32 px padding. */}
@@ -266,7 +266,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* v1.4.27 MB6 — lift the submit to the 44 px tap-target
+          {/* v1.4.27 — lift the submit to the 44 px tap-target
               floor and the `lg` size so the primary action stays
               reachable on a narrow viewport without falling under the
               iOS keyboard's accessory bar. */}

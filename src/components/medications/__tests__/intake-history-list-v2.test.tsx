@@ -10,7 +10,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 /**
- * v1.4.36 W4a — IntakeHistoryListV2 SSR smoke tests.
+ * v1.4.36 — IntakeHistoryListV2 SSR smoke tests.
  *
  * Mirrors the project convention: `renderToStaticMarkup` +
  * react-query data seeded via `QueryClient.setQueryData()`. Sort-toggle
@@ -65,7 +65,7 @@ function seedIntake(
   const sortDir = opts.sortDir ?? "desc";
   const limit = opts.limit ?? 25;
   const offset = opts.offset ?? 0;
-  // v1.4.37 W3 — the component pins `status:"completed"` on the
+  // v1.4.37 — the component pins `status:"completed"` on the
   // server-side query and threads it through the cache key. The seed
   // routes through the canonical factory so the params shape stays in
   // lockstep with the component's read.
@@ -151,7 +151,7 @@ describe("<IntakeHistoryListV2> — populated rows", () => {
   });
 
   it("renders the taken row with a green Check chip and the skipped row with an outline SkipForward chip", () => {
-    // v1.4.37 W3 — guards the regression the maintainer reported on 2026-05-17:
+    // v1.4.37 — guards the regression the maintainer reported on 2026-05-17:
     // before the fix, every row used the same secondary badge with the
     // "Eingenommen" label regardless of skipped status. The chip must
     // surface a distinct icon + label per branch and never label a
@@ -201,7 +201,7 @@ describe("<IntakeHistoryListV2> — populated rows", () => {
   });
 
   it("renders the skipped chip in German without leaking the Eingenommen label", () => {
-    // v1.4.37 W3 — UAT echo. The maintainer reported a German row labelled
+    // v1.4.37 — UAT echo. The maintainer reported a German row labelled
     // both "übersprungen" and "eingenommen". The fix means a
     // skipped-only fixture renders "Übersprungen" exactly once and
     // "Eingenommen" zero times.

@@ -26,7 +26,7 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.39 (C2) — the screen before the first question.
+ * v1.39 — the screen before the first question.
  *
  * One sentence on what happens and how long it takes, "Set up", and "Skip for
  * now" (design spec §The screens, 1). The skip is a real exit: it stamps the

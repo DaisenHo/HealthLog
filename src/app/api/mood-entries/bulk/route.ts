@@ -226,7 +226,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
 
   const parsed = bulkPayloadSchema.safeParse(rawBody);
   if (!parsed.success) {
-    // v1.4.43 W6 — bulk mood ingest; keep the `mood.bulk.invalid`
+    // v1.4.43 — bulk mood ingest; keep the `mood.bulk.invalid`
     // errorCode meta intact so the iOS Sync engine's retry classifier
     // still branches on it. Adds the audit-ledger breadcrumb keyed
     // `mood.bulk.validation-failed`.
@@ -545,7 +545,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
         });
       }
     } catch (err: unknown) {
-      // v1.37.19 (A6-18) — P2002 = a concurrent batch raced the same
+      // v1.37.19 — P2002 = a concurrent batch raced the same
       // NULL-distinct `(userId, source, externalId)` key and won. That is
       // the plain duplicate the sequential probe would have classified;
       // reporting it as "skipped" with a raw Prisma message told the
@@ -616,14 +616,14 @@ async function postBulk(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user mood + achievements + analytics caches
+  // v1.4.34 — bust per-user mood + achievements + analytics caches
   // when at least one row landed so the next read picks up the ingested
   // batch. Skipped / duplicate-only ingests are no-ops.
   if (inserted > 0) {
     invalidateUserMood(user.id);
   }
 
-  // v1.4.39 W-MOOD — refresh the rollup tier for every distinct day
+  // v1.4.39 — refresh the rollup tier for every distinct day
   // touched by this batch. The bulk endpoint is an iOS one-shot
   // backfill so the batch can span many days; we collapse to the
   // unique `(user, dayStart)` set first to bound the recompute count.

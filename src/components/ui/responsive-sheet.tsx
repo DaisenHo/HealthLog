@@ -111,7 +111,7 @@ const CONTENT_WIDTH_CLASS: Record<
 };
 
 /**
- * v1.4.27 R3d MB1 — shared mount primitive that flips between a
+ * v1.4.27 — shared mount primitive that flips between a
  * bottom-anchored `<Sheet>` on narrow viewports and the existing
  * centred `<Dialog>` on tablet/desktop. Picks the breakpoint via
  * the `useIsMobile()` hook (Tailwind `md` — 768 px).

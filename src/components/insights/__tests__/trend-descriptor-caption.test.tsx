@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.11.4 item J — `<TrendDescriptorCaption>` is the deterministic
+ * v1.11.4 — `<TrendDescriptorCaption>` is the deterministic
  * fallback the Trends row shows when the AI advisor produced no
  * annotation (cold briefing). It reads the SAME series the mini-chart
  * plots and renders a neutral direction + magnitude descriptor, or the

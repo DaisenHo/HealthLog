@@ -1,5 +1,5 @@
 /**
- * v1.4.42 W2 — multi-issue 422 envelope on PUT.
+ * v1.4.42 — multi-issue 422 envelope on PUT.
  *
  * Until v1.4.41 this route returned `parsed.error.issues[0].message`,
  * which dropped every issue past the first. iOS contract debugging

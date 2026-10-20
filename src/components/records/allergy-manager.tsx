@@ -22,7 +22,7 @@ import { AllergyForm } from "./allergy-form";
 import type { AllergyDTO } from "@/lib/records/dto";
 
 /**
- * v1.25 (W-RECORDS) — the structured allergy/intolerance manager. Renders in
+ * v1.25 — the structured allergy/intolerance manager. Renders in
  * the Settings → Anamnese section: a list of records with add / edit / delete.
  * Patient-reported reference data, not a clinical diagnosis.
  *

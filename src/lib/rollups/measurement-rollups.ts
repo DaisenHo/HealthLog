@@ -165,7 +165,7 @@ interface RollupRow {
   sd: number | null;
   slope: number | null;
   r2: number | null;
-  // v1.20.0 F6 — per-bucket OLS regression accumulators (epoch-day x-axis).
+  // v1.20.0 — per-bucket OLS regression accumulators (epoch-day x-axis).
   // See `MeasurementRollup.sumX` doc in schema.prisma. These let the
   // windowed slope / r² / sd compose from summed accumulators across DAY
   // buckets with bit-identical parity to live REGR_*/STDDEV_POP.
@@ -883,7 +883,7 @@ function buildRollupUpsert(
       row.mean ?? 0,
       row.min_value ?? 0,
       row.max_value ?? 0,
-      // v1.4.39 W-SUM — populate for every type. Cumulative read paths
+      // v1.4.39 — populate for every type. Cumulative read paths
       // (steps, flights, distance, daylight, active-energy) consume this
       // column directly; spot metrics carry it for free because the
       // underlying SUM aggregator runs in the same query as AVG/MIN/MAX.
@@ -891,7 +891,7 @@ function buildRollupUpsert(
       row.sd,
       row.slope,
       row.r2,
-      // v1.20.0 F6 — persist the regression accumulators alongside the
+      // v1.20.0 — persist the regression accumulators alongside the
       // existing stats; they ride the same aggregate (no extra round-trip).
       row.sum_x ?? null,
       row.sum_xy ?? null,
@@ -1071,7 +1071,7 @@ async function ensureUserRollupsFreshImpl(
     return { recomputed: true };
   } catch (err) {
     // Best-effort — never block the read path on a populator failure.
-    // v1.4.36 QA H3 — surface the failure so ops can spot a silent
+    // v1.4.36 — surface the failure so ops can spot a silent
     // populator regression. `annotate` is a no-op when there's no
     // request context (worker calls, tests); `console.error` carries
     // the same shape through the worker log pipeline so the regression

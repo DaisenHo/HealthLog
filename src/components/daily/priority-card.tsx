@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * P1 — `PriorityCard`, the ONE card behind every "worth a look" rail item.
+ * `PriorityCard`, the ONE card behind every "worth a look" rail item.
  *
  * It renders a `PriorityItem` and never fetches. Every later consumer reuses
  * it verbatim: the Today rail (S2), a coach check-in (S3), a milestone
@@ -144,7 +144,7 @@ export function PriorityCard({
     .filter((action) => action.href || onAction)
     .slice(0, 3);
   const hue = KIND_HUE[item.kind];
-  // S12 — the quiet "reached" moment: the milestone card swaps the generic
+  // The quiet "reached" moment: the milestone card swaps the generic
   // fade-in for the `.milestone-reached` treatment (a soft `--success` halo
   // over the theme card + a one-shot spring reveal on `--ring-spring`;
   // reduced-motion fallback lives beside the keyframes in globals.css). The

@@ -60,7 +60,7 @@ export const PUBLIC_PATHS = [
   // requires a publicly reachable Privacy-Policy URL during submission;
   // GDPR Art. 13 expects the same for any visitor before they sign up.
   "/privacy",
-  // v1.4.27 B3 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution
+  // v1.4.27 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution
   // alongside the project credits. The CC licence requires the
   // attribution to be reachable without a sign-in.
   "/about",
@@ -120,7 +120,7 @@ const WELL_KNOWN_PUBLIC_PATHS = new Set<string>([
 ]);
 
 /**
- * v1.4.22 W5 reconcile (Sec-MED-2) — `/onboarding` matches exact
+ * v1.4.22 — `/onboarding` matches exact
  * page + subroutes (`/onboarding`, `/onboarding/*`) only, NOT the
  * loose `pathname.startsWith("/onboarding")` family that would admit
  * `/onboarding-export`, `/onboarding.json`, etc. Every other entry
@@ -181,7 +181,7 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     // Chart display-pref toggles above the charts (dashboard + insights):
     { path: "/api/dashboard/chart-overlay-prefs", method: "PUT" },
     { path: "/api/dashboard/widgets", method: "PUT" },
-    // v1.39 (C1) — the needs-based setup flow, which the demo has to be able
+    // v1.39 — the needs-based setup flow, which the demo has to be able
     // to complete with preset answers (design spec §Principles 5). All three
     // are user-scoped preference writes: closed enum answers, the step ledger,
     // and the module map derived from them. No health data is created by any
@@ -189,7 +189,7 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     { path: "/api/onboarding/answers", method: "PATCH" },
     { path: "/api/onboarding/complete", method: "POST" },
     { path: "/api/onboarding/restart", method: "POST" },
-    // v1.39 (C2) — the two writes the flow's welcome and exit make: the
+    // v1.39 — the two writes the flow's welcome and exit make: the
     // one-time disclaimer acknowledgment gates both welcome buttons, and the
     // tour's progress checkpoint is what the done screen's offer leads to.
     // Without the first, a demo account on a fresh seed (or after a version
@@ -527,7 +527,7 @@ export function proxy(request: NextRequest) {
       );
     }
 
-    // v1.4.22 C4 — server-side onboarding redirect. Previously the
+    // v1.4.22 — server-side onboarding redirect. Previously the
     // `<AuthShell>` ran this in a post-hydration `useEffect`, so a user
     // with `onboardingCompletedAt === null` briefly saw the dashboard
     // flash before the redirect fired. The auth flows (login, passkey,
@@ -538,7 +538,7 @@ export function proxy(request: NextRequest) {
     // for the surfaces that need to redirect away.
     const onboardingPending =
       request.cookies.get("hl_onboarding")?.value === "pending";
-    // v1.4.22 W5 reconcile (Sec-MED-2) — exact match the redirect
+    // v1.4.22 — exact match the redirect
     // short-circuit so a hypothetical `/onboarding-export` route can
     // never inherit the silent-pass-through.
     const isOnboardingSurface =
@@ -651,7 +651,7 @@ export function proxy(request: NextRequest) {
     "camera=(), microphone=(), geolocation=()",
   );
 
-  // v1.11.0 (Epic C, C6) — the public clinician share view at `/c/<token>`
+  // v1.11.0 — the public clinician share view at `/c/<token>`
   // is a scoped health record authenticated by an unguessable bearer token
   // in the path. Defend it at the edge regardless of what the RSC emits:
   //   - `Cache-Control: no-store` so no shared proxy / CDN ever retains a

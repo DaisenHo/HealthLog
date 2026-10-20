@@ -86,7 +86,7 @@ export const adminSettingsSchema = z
       .min(10_485_760)
       .max(1_099_511_627_776)
       .optional(),
-    // v1.4.25 W7 — server-wide default timezone for new signups
+    // v1.4.25 — server-wide default timezone for new signups
     // that don't carry a browser-detected zone. The route validates
     // against Intl.supportedValuesOf at runtime; this schema just
     // guards the shape + length.

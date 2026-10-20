@@ -16,7 +16,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { resetChecklistDismissals } from "@/lib/onboarding/checklist-storage";
 
 /**
- * v1.39 (C2) — Settings → Account → Setup.
+ * v1.39 — Settings → Account → Setup.
  *
  * The two ways back into the first-run experience (design spec §Principles 4
  * and §After the flow). "Set up again" asks the questions once more through

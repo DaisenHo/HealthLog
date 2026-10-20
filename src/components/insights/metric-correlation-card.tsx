@@ -89,7 +89,7 @@ export function MetricCorrelationCard({ slug }: MetricCorrelationCardProps) {
         title={t("insights.correlationRow.title")}
       />
       <CorrelationCard result={result} />
-      {/* v1.18.6 (DISC-01) — the "observational, not causal / talk to your
+      {/* v1.18.6 — the "observational, not causal / talk to your
           doctor" disclaimer is removed; the one-time onboarding acknowledgment
           now covers the not-medical-advice framing app-wide. */}
     </section>

@@ -1,5 +1,5 @@
 /**
- * v1.4.33 C1 — `?slice=summaries` integration coverage.
+ * v1.4.33 — `?slice=summaries` integration coverage.
  *
  * Pins the slim summaries slice against the real Postgres + the real
  * `regr_slope` / `regr_r2` functions, not a unit-level `$queryRaw`

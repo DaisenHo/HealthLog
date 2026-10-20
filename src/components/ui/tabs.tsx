@@ -35,7 +35,7 @@ function Tabs({
 // looks identical because the inline-flex shrink-wraps inside the
 // wider container.
 //
-// v1.4.19 A7 — `overflow-y-hidden` clamps the y-axis. Browsers couple
+// v1.4.19 — `overflow-y-hidden` clamps the y-axis. Browsers couple
 // the two overflow axes once one is `auto`: setting only
 // `overflow-x: auto` silently flips `overflow-y` to `auto` as well.
 // Combined with the fixed `h-9` strip and badge children that ride

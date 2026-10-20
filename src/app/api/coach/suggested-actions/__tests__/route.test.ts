@@ -1,5 +1,5 @@
 /**
- * v1.22 (F6) — `POST /api/coach/suggested-actions`.
+ * v1.22 — `POST /api/coach/suggested-actions`.
  *
  * Covers the closed allowlist confirm endpoint:
  *   - checkup.create builds a Vorsorge MeasurementReminder field-by-field

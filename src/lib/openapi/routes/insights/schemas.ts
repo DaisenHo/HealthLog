@@ -1494,7 +1494,7 @@ export const dashboardSnapshotResponse = z
           })
           .nullable()
           .optional(),
-        // v1.21.2 (A5) — the Tension Verdict, locale-agnostic. Fires only
+        // v1.21.2 — the Tension Verdict, locale-agnostic. Fires only
         // when the readiness composite's contributors disagree (>=1
         // strongly favourable AND >=1 strongly unfavourable); suppressed
         // (null) under a clinical red-flag so that path dominates.
@@ -1513,7 +1513,7 @@ export const dashboardSnapshotResponse = z
           .describe(
             "Locale-agnostic tension verdict: present only when the readiness composite's contributors disagree. `positive`/`negative` carry readiness contributor keys the client maps to localised labels. Null on a coherent day or when a clinical red-flag suppresses it. Optional so older cached snapshots without the field stay valid.",
           ),
-        // v1.21.2 (A6) — return-to-baseline, locale-agnostic. Present only
+        // v1.21.2 — return-to-baseline, locale-agnostic. Present only
         // when a salient metric has come back inside the user's own
         // personal range after a prior out-of-band run; at most one.
         returnToBand: z
@@ -1561,7 +1561,7 @@ export const dashboardSnapshotResponse = z
         "User-selected hero score rings (max 3, `selectedScoreRings` on the dashboard layout), resolved server-side: READINESS / RECOVERY_SCORE / SLEEP_SCORE via the derived engines (module-gated like `/api/insights/derived`); MED_COMPLIANCE is TODAY's dose progress off the snapshot's medsToday tally — `score` is the rounded 0..100 progress, `doses` carries the taken/scheduled pair, the band is progress semantics (green once every scheduled dose is taken, yellow while doses remain, never red), and the ring is absent when no dose is scheduled today. Only rings with data appear, in selection order — a missing entry means no data or a disabled module, never zero. Clients render what arrives and never recompute.",
       ),
     briefing: z.record(z.string(), z.unknown()).nullable(),
-    // v1.21.2 (A4) — server-resolved recall + forward-look for the
+    // v1.21.2 — server-resolved recall + forward-look for the
     // briefing card, rides the snapshot DTO so iOS reads the same
     // already-localised block the web card renders verbatim.
     briefingMemory: z

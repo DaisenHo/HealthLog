@@ -465,7 +465,7 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
   });
 
   it("consumes the mood-rollup tier and skips the raw findMany when DAY rows exist", async () => {
-    // v1.4.40 W-INSIGHTS — rollup-tier read swap parity. Three DAY rows
+    // v1.4.40 — rollup-tier read swap parity. Three DAY rows
     // populated → the route reads them directly and never touches the
     // raw `moodEntry.findMany`. `moodSummary` is computed over per-day
     // mean DataPoints, matching the rollup-tier convention shipped by
@@ -525,7 +525,7 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
   });
 
   it("falls back to the bounded live walk when the rollup tier is empty but raw mood entries exist", async () => {
-    // v1.4.40 W-INSIGHTS — coverage-fallback parity. Legacy account
+    // v1.4.40 — coverage-fallback parity. Legacy account
     // with raw entries but no rollup coverage yet. The route runs the
     // legacy bounded walk once; the warm-up helper (stubbed) is
     // supposed to fire fire-and-forget so the next request lands on
@@ -686,7 +686,7 @@ describe("GET /api/insights/comprehensive — stale-while-revalidate marker", ()
   });
 });
 
-// v1.32.17 (R1) — mood × metric correlations must pair on the LOCAL
+// v1.32.17 — mood × metric correlations must pair on the LOCAL
 // logging day. The mood series has been local-day-keyed since v1.32.12;
 // the three metric partners (sys BP, weight, resting pulse) were still
 // UTC-keyed, so for non-UTC users an evening reading landed a day off and

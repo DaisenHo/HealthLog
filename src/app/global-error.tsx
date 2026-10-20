@@ -68,7 +68,7 @@ export default function GlobalError({
           backgroundColor: "#1e1f29",
           color: "#f8f8f2",
           margin: 0,
-          // v1.4.27 MB6 — `100dvh` follows the dynamic viewport on
+          // v1.4.27 — `100dvh` follows the dynamic viewport on
           // iOS Safari (URL-bar collapse) so the wrapper still
           // anchors centred when the browser chrome animates in or
           // out. `safe-area-inset-top` keeps the headline out from
@@ -82,7 +82,7 @@ export default function GlobalError({
       >
         <div style={{ maxWidth: 560 }}>
           {/*
-            v1.4.43 QoL — bilingual lockup so a German user landing
+            v1.4.43 — bilingual lockup so a German user landing
             in this boundary doesn't read pure English in an already-
             bad-state moment. The root layout has failed by the time
             this fires, so no i18n provider is available; the static
@@ -150,7 +150,7 @@ export default function GlobalError({
                 color: "#282a36",
                 border: "none",
                 borderRadius: 6,
-                // v1.4.27 MB6 — 44 px minimum height matches the
+                // v1.4.27 — 44 px minimum height matches the
                 // app-wide tap-target floor; the larger inline padding
                 // keeps the labels comfortably finger-tap-sized.
                 minHeight: 44,

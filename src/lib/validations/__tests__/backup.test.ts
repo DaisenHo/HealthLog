@@ -1,5 +1,5 @@
 /**
- * v1.4.16 H2 — moodEntrySchema.tags must reject malformed tag blobs
+ * v1.4.16 — moodEntrySchema.tags must reject malformed tag blobs
  * before the restore transaction inserts them. The DB column stores
  * tags as a JSON-array-as-string ("[\"work\",\"sleep\"]"), so an
  * arbitrary string slipping through Zod is a foot-gun:

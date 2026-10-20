@@ -192,7 +192,7 @@ export interface DoctorReportData {
   } | null;
   mood: DoctorReportMood | null;
   /**
-   * v1.4.25 W4d — GLP-1 therapy section. Populated when the user has at
+   * v1.4.25 — GLP-1 therapy section. Populated when the user has at
    * least one active GLP-1 medication. Null/absent when the user has no
    * GLP-1 prescription (the vast majority of accounts). When set the
    * PDF gains a "GLP-1 Therapy" section listing dose history, weight
@@ -312,7 +312,7 @@ export interface DoctorReportData {
     count: number;
   }> | null;
   /**
-   * v1.18.1 P4 — illness / condition episodes overlapping the report window.
+   * v1.18.1 — illness / condition episodes overlapping the report window.
    * Populated ONLY when the `illness` module is enabled (default-on, opt-out);
    * the journal is on and shared deliberately, so the privacy stance matches
    * labs (ON when the module is on), not mood / cycle.
@@ -543,7 +543,7 @@ export interface CollectDoctorReportOptions {
 }
 
 /**
- * v1.17 W1a — the medication row shape the ledger compliance builder needs.
+ * v1.17 — the medication row shape the ledger compliance builder needs.
  * Carries the cadence-engine context fields (course window + creation +
  * archived schedule eras) so the same band minter the detail page uses can
  * reconstruct expected slots.
@@ -560,7 +560,7 @@ export interface DoctorReportComplianceMedication {
   createdAt: Date;
   schedules: ComplianceSchedule[];
   scheduleRevisions?: ScheduleRevisionLike[];
-  /** v1.25 H-MED1 — pause eras so paused days drop out of the denominator. */
+  /** v1.25 — pause eras so paused days drop out of the denominator. */
   pauseEras?: MedicationPauseEraLike[];
   /** v1.40 (#1024) — the courses, so a gap between two expects nothing. */
   courses?: { startsOn: Date; endsOn: Date | null }[];

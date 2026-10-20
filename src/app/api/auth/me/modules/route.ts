@@ -56,7 +56,7 @@ export const GET = apiHandler(async () => {
   annotate({ action: { name: "auth.me.modules.get" } });
 
   const modules = await resolveModuleMap(user.id);
-  // v1.32.22 (M3) — surface the optimistic-concurrency token. `resolveModuleMap`
+  // v1.32.22 — surface the optimistic-concurrency token. `resolveModuleMap`
   // returns no row metadata, so read `updatedAt` on its own.
   const row = await prisma.user.findUnique({
     where: { id: user.id },
@@ -90,7 +90,7 @@ export const PATCH = apiHandler(async (req: Request) => {
     });
   }
 
-  // v1.32.22 (M3) — strip the optimistic-concurrency base token BEFORE the
+  // v1.32.22 — strip the optimistic-concurrency base token BEFORE the
   // parse: `modulePrefsPatchSchema` is `.strict()` and must stay strict, so
   // the transport token can never reach it (it would 422 as an unknown key).
   const taken = takeBaseToken(body ?? {});
@@ -127,7 +127,7 @@ export const PATCH = apiHandler(async (req: Request) => {
     changed.push(key);
   }
 
-  // v1.32.22 (M3) — guard the write on the client's base token; a stale base
+  // v1.32.22 — guard the write on the client's base token; a stale base
   // 409s and writes nothing. Tokenless requests keep the unconditional write.
   const guarded = await guardedUserUpdate({
     userId: user.id,

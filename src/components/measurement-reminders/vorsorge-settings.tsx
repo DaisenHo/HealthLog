@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * v1.18.6 (W8 / MOD-03) — the Vorsorge module's own settings page body.
+ * v1.18.6 — the Vorsorge module's own settings page body.
  *
  * Reached from the wrench beside the page's "hinzufügen" button. Lets the
  * user reorder reminders + pick the card-vs-list page view, and re-homes the
@@ -56,7 +56,7 @@ export function VorsorgeSettings() {
       : t("measurementReminders.selfPlanned"),
   }));
 
-  // v1.18.10 (W7) — the three Vorsorge settings groups adopt the shared
+  // v1.18.10 — the three Vorsorge settings groups adopt the shared
   // `SettingsCard` + `SettingsCardHeader` contract (rounded-xl bordered
   // surface, neutral muted icon, `text-lg` title, short muted description)
   // so this surface reads like every other Settings section instead of bare
@@ -130,7 +130,7 @@ export function VorsorgeSettings() {
                         })
                       }
                       disabled={update.isPending}
-                      // L3 — label each row's Switch by its own name span so SR
+                      // Label each row's Switch by its own name span so SR
                       // users hear the reminder name (plus the switch role's
                       // on/off state) instead of N identical generic labels.
                       aria-labelledby={`vorsorge-reminder-label-${reminder.id}`}

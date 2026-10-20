@@ -1,5 +1,5 @@
 /**
- * v1.4.28 R3d — Web Vitals beacon.
+ * v1.4.28 — Web Vitals beacon.
  *
  * Next 16 exposes `reportWebVitals` from the root layout; the client
  * POSTs every measurement to this internal route, which logs to the

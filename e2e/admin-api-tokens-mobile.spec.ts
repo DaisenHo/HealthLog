@@ -3,7 +3,7 @@ import { expect, test } from "./setup/test";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
- * v1.4.16 A3 — `/admin/api-tokens` must not produce horizontal page
+ * v1.4.16 — `/admin/api-tokens` must not produce horizontal page
  * overflow on a Pixel-5 viewport (393 CSS px). v1.4.15 added column-
  * hide breakpoints + tighter card padding, but the maintainer still saw a
  * scrollbar on prod. The v1.4.16 fix swaps the desktop `<table>` for a
@@ -75,7 +75,7 @@ test.describe("/admin/api-tokens mobile no-overflow", () => {
     ).toBeLessThanOrEqual(dims.innerWidth + 1);
   });
 
-  // v1.4.18 phase A2 — production probe at Pixel-5 viewport pinned the
+  // v1.4.18 — production probe at Pixel-5 viewport pinned the
   // visible "scrollbar" the maintainer reported for the third time as the
   // `<AdminShell>` mobile section strip, NOT the api-tokens table. The
   // strip carries 13 admin sections so its scrollWidth (~1700 CSS px)
@@ -119,7 +119,7 @@ test.describe("/admin/api-tokens mobile no-overflow", () => {
     expect(stripDims.scrollWidth).toBeGreaterThan(stripDims.clientWidth);
   });
 
-  // v1.4.19 phase A7 (4th attempt) — even with the mobile-strip
+  // v1.4.19 (4th attempt) — even with the mobile-strip
   // `no-scrollbar` fix from v1.4.18, the maintainer still reported a painted
   // scrollbar. The card body itself must not contribute any
   // horizontal-overflow culprit: every element inside the api-tokens

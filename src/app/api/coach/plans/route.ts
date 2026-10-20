@@ -1,7 +1,7 @@
 /**
  * GET /api/coach/plans — list the caller's Coach goal / if-then plans.
  *
- * v1.21.3 (B1) — the management + confirm surface for the durable plans the
+ * v1.21.3 — the management + confirm surface for the durable plans the
  * Coach proposes. A plan is an "if-then" implementation intention tied to one
  * metric, with an optional target. The Coach extractor writes a plan as
  * `status: "proposed"`; only the user-facing PATCH (`/api/coach/plans/[id]`)

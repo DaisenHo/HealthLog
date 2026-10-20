@@ -1,5 +1,5 @@
 /**
- * SEC-05 / SEC-08 — Add-passkey reauthentication UX contract.
+ * Add-passkey reauthentication UX contract.
  *
  * This repository intentionally keeps component tests SSR/source-oriented
  * rather than installing a browser DOM harness. The ordering assertions below

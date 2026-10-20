@@ -41,7 +41,7 @@ import {
   OFFHOST_BACKUP_PERIOD_HOURS,
   type OffhostBackupFreshness,
 } from "@/lib/jobs/offhost-backup-freshness";
-// v1.4.41 W-ORG — `BackupRow` / `BackupsList` moved to `src/types/backups.ts`
+// v1.4.41 — `BackupRow` / `BackupsList` moved to `src/types/backups.ts`
 // so callers (in particular `components/admin/backups-section.tsx`) don't
 // have to reach across the component → route-handler layer boundary.
 import type {

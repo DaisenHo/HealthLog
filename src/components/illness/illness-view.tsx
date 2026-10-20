@@ -132,7 +132,7 @@ function EpisodeCard({
   const active = episode.resolvedAt === null;
   const isChronic = episode.lifecycle === "CHRONIC_ONGOING";
 
-  // v1.18.6 (MOD-03) — compact list row: a single divided line per episode
+  // v1.18.6 — compact list row: a single divided line per episode
   // (label + status chips + onset; tap navigates to the detail surface).
   if (view === "list") {
     return (
@@ -291,7 +291,7 @@ function EpisodeGroup({
   resolving: boolean;
   view: "cards" | "list";
   /**
-   * v1.18.6 (MOD-05) — the resolved group collapses by default behind a
+   * v1.18.6 — the resolved group collapses by default behind a
    * disclosure trigger so a long recovered history never pushes the active
    * conditions below the fold.
    */
@@ -395,7 +395,7 @@ export function IllnessView() {
     );
 
     return {
-      // v1.18.6 (MOD-03) — honour the user's persisted manual order within
+      // v1.18.6 — honour the user's persisted manual order within
       // each status group (ids absent from the order sort after the block).
       activeParents: applyOrder(activeParents, prefs.order, (e) => e.id),
       resolvedParents: applyOrder(resolvedParents, prefs.order, (e) => e.id),
@@ -412,7 +412,7 @@ export function IllnessView() {
         description={t("illness.subtitle")}
         actions={
           <>
-            {/* v1.18.6 (MOD-01) — wrench left of the primary Add, linking to the
+            {/* v1.18.6 — wrench left of the primary Add, linking to the
                 Illness settings page (view + reorder). `/settings` is the
                 caller's, not the record's, so no grant reaches it. */}
             {!inSharedRecord && (
@@ -431,7 +431,7 @@ export function IllnessView() {
                 </Link>
               </Button>
             )}
-            {/* v1.18.6 (MOD-02) — the add button reads "hinzufügen" like every
+            {/* v1.18.6 — the add button reads "hinzufügen" like every
                 other module, not the bespoke "neue Episode". */}
             {/* Hidden while there is no episode: the empty state below
                 carries the add action then. */}
@@ -448,7 +448,7 @@ export function IllnessView() {
         }
       />
 
-      {/* v1.18.6 (DISC-01) — the per-page medical disclaimer line is removed;
+      {/* v1.18.6 — the per-page medical disclaimer line is removed;
           the one-time acknowledgment now lives at onboarding and the legal
           text stays reachable on the public privacy page. */}
 

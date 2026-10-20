@@ -41,7 +41,7 @@ export const POST = apiHandler(async () => {
     return apiError("Bot token and chat ID must be saved first", 422);
   }
 
-  // v1.4.27 F21 — the test body now reads from the user's persisted
+  // v1.4.27 — the test body now reads from the user's persisted
   // locale rather than the hardcoded English string. The route talks
   // to `sendTelegramMessage` directly (it needs the boolean send
   // result for the UI) so we compose the body via the server

@@ -52,7 +52,7 @@ export function BiomarkerManager() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BiomarkerDto | null>(null);
   const [formFooterEl, setFormFooterEl] = useState<HTMLDivElement | null>(null);
-  // v1.43 (D1223) — merging is a manage-level act, like edit and delete.
+  // v1.43 — merging is a manage-level act, like edit and delete.
   const { canManageDomain } = useRecordCapabilities();
   const canMerge = canManageDomain("labs");
   const [mergeOpen, setMergeOpen] = useState(false);

@@ -200,7 +200,7 @@ export interface CoachNudgeSummary {
   candidatesScanned: number;
   dispatched: number;
   /**
-   * v1.18.6 (CCH-02) — nudges written into the conversation rail as an
+   * v1.18.6 — nudges written into the conversation rail as an
    * initial ASSISTANT message. Counted independently of `dispatched`:
    * the conversation lands even when no push channel is configured, so
    * `persisted` can exceed `dispatched`.
@@ -224,7 +224,7 @@ export interface CoachNudgeSummary {
   skippedNoTrigger: number;
   skippedNoChannel: number;
   /**
-   * v1.18.1 P4 — Rest Mode pause: a cadence-nudge ("weigh more often",
+   * v1.18.1 — Rest Mode pause: a cadence-nudge ("weigh more often",
    * "measure BP morning + evening") is the wrong message to a user who is
    * actively unwell. While an illness episode is active the nudge is paused,
    * not penalised: nothing is recorded against the user, the cadence simply
@@ -1025,7 +1025,7 @@ export async function runCoachNudgeTick(
         }
       }
 
-      // v1.18.6 (CCH-02) — persist the nudge as a real conversation
+      // v1.18.6 — persist the nudge as a real conversation
       // BEFORE dispatching the notification. The proactive nudge used to
       // be notification-only, so a user with no push channel never saw
       // it anywhere; writing it as the initial ASSISTANT message means it
@@ -1040,7 +1040,7 @@ export async function runCoachNudgeTick(
           title,
           body,
         });
-        // v1.22 (W5) — keep the conversation id so the push deep-links
+        // v1.22 — keep the conversation id so the push deep-links
         // precisely into the proactive thread instead of the generic
         // `/coach`, closing the most-recent-heuristic gap on the web side.
         nudgeConversationId = recorded.conversationId;

@@ -632,7 +632,7 @@ describe("doctor-report clinical glucose panel", () => {
   });
 });
 
-// v1.18.1 P4 — illness / condition episodes section. Retrospective + factual:
+// v1.18.1 — illness / condition episodes section. Retrospective + factual:
 // label, type, course, onset, resolved. Present only when the aggregator
 // populated `illnessEpisodes` (module on + episode in window).
 describe("doctor-report recorded precision", () => {

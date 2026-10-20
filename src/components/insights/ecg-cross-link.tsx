@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { TileHeader } from "@/components/insights/tile-header";
 
 /**
- * S10 — ECG cross-link, the pointer from the resting-HR / pulse context into
+ * ECG cross-link, the pointer from the resting-HR / pulse context into
  * the ECG viewer (`/insights/ecg`). Points at the routed sub-page, which
  * always mounts, rather than the overview `#ecg` fragment, which is absent
  * until the overview section's own fetch resolves (UX-flows finding F1-1).

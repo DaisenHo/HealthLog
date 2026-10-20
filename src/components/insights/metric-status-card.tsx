@@ -43,7 +43,7 @@ export function MetricStatusCard({
   const mounted = useMounted();
   const { data: status, isLoading } = useInsightMetricStatus(metric, enabled);
 
-  // v1.21.0 (C4 H2) — narrow the Coach hand-off to this metric's snapshot
+  // v1.21.0 — narrow the Coach hand-off to this metric's snapshot
   // source when one exists; the registry id is a `MeasurementType`-style
   // token, which `scopeSourceFromMetricKey` resolves for the metrics that
   // carry a snapshot block. Unmapped metrics still get a metric-named

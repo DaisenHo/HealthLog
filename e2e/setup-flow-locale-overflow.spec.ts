@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — every setup screen, in every locale, with 30% longer strings.
+ * v1.39 — every setup screen, in every locale, with 30% longer strings.
  *
  * The design spec asks for 30–50% string headroom in every layout, and the
  * seven bundles are the floor, not the ceiling: a German label that fits

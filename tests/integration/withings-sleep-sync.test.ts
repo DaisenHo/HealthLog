@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W17c — Withings Sleep v2 end-to-end integration.
+ * v1.4.25 — Withings Sleep v2 end-to-end integration.
  *
  * Drives `syncUserSleep` against a mocked Withings response and the
  * real Postgres testcontainer. Asserts the contract Migration 0055

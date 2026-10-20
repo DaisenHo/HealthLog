@@ -1,5 +1,5 @@
 /**
- * v1.25 (W-DOCS-IN) — inbound clinical-document ingestion contract.
+ * v1.25 — inbound clinical-document ingestion contract.
  *
  * A self-hoster uploads a doctor report / discharge letter they received. The
  * dedicated OCR/vision provider transcribes STRUCTURED FACTS that land on a

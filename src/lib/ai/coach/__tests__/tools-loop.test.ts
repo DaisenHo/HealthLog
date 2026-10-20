@@ -1,5 +1,5 @@
 /**
- * v1.20.0 (F1) — bounded Coach retrieval loop: tool dispatch round-trip, the
+ * v1.20.0 — bounded Coach retrieval loop: tool dispatch round-trip, the
  * max-rounds cap with a forced-final answer, parallel tool execution, and the
  * summed-token accounting the budget reconcile depends on.
  */
@@ -89,7 +89,7 @@ describe("runCoachToolLoop", () => {
     expect(out.toolTrace).toEqual([
       { name: "get_metric_series", present: true, args: { metric: "bp" } },
     ]);
-    // v1.21.0 (P6) — the present result's payload is retained for the prose
+    // v1.21.0 — the present result's payload is retained for the prose
     // number-verifier.
     expect(out.toolResults).toEqual([{ present: true, data: { x: 1 } }]);
     // The second call must forbid tools? No — round 2 still offers them
@@ -218,7 +218,7 @@ describe("runCoachToolLoop", () => {
   });
 });
 
-// v1.21.0 (D5-1) — the loop threads the turn's shared snapshot scope to every
+// v1.21.0 — the loop threads the turn's shared snapshot scope to every
 // tool so each per-tool read lands one cache key (one snapshot build per turn).
 describe("shared snapshot scope threading (D5-1)", () => {
   it("retains an out-of-window miss's availability payload for grounding", async () => {

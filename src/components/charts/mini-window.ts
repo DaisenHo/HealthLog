@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B5c — shared chart-mini window vocabulary.
+ * v1.4.16 — shared chart-mini window vocabulary.
  *
  * The Oura-style RecommendationCard (B5c) embeds a mini-chart that
  * pins to the recommendation's `rationale.dataWindow`. This helper

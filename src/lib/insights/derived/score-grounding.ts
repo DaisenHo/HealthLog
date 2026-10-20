@@ -1,5 +1,5 @@
 /**
- * v1.22 (W6) — number-grounding gate for the AI-warmed SCORE assessment.
+ * v1.22 — number-grounding gate for the AI-warmed SCORE assessment.
  *
  * The per-score AI text (`derived-assessment-ai.ts`) rode the base-system
  * prompt but had NO post-generation number verifier — unlike the briefing

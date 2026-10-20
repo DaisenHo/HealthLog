@@ -110,7 +110,7 @@ const OutOfScopeRefusalSchema = z.object({
 });
 
 /**
- * v1.4.25 W19c — drug-level refusal contract. Sits alongside the
+ * v1.4.25 — drug-level refusal contract. Sits alongside the
  * ground-rule matrix and drives the adversarial drug-level probe suite.
  * Trigger phrases are NOT prompt copy — they are the test surface the
  * probe runner sweeps against the ground-rule-15 body. Expected /

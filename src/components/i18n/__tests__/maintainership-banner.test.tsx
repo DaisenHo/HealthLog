@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 
 /**
- * v1.4.25 W9e — <MaintainershipBanner> contract:
+ * v1.4.25 — <MaintainershipBanner> contract:
  *  1. Renders nothing on maintained locales (DE / EN).
  *  2. Renders a notice strip on AI-initial locales (FR / ES / IT / PL).
  *  3. The notice carries a GitHub-issue CTA so feedback has a clear

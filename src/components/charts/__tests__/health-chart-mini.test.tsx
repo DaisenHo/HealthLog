@@ -44,7 +44,7 @@ import { HealthChart } from "../health-chart";
 import { resolveMiniRangePoints, type DataWindow } from "../mini-window";
 
 /**
- * v1.4.16 phase B5c — chart mini-mode + windowOverride.
+ * v1.4.16 — chart mini-mode + windowOverride.
  *
  * The Oura-style RecommendationCard (B5c task 5) embeds a small
  * version of the chart for the recommendation's data window. The

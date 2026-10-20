@@ -24,7 +24,7 @@
  * The cross-surface coverage test (`shared-contracts-coverage.test.ts`)
  * asserts each fragment appears verbatim in every surface that enforces it.
  *
- * v1.21.0 (D3-M1 / D3-L1) — the acute-safety clause's threshold numbers are no
+ * v1.21.0 — the acute-safety clause's threshold numbers are no
  * longer prose literals: they are composed from the canonical
  * `clinical-floors.ts` constants so the Coach's stated crisis thresholds can
  * never drift from the dashboard hero, the notification engine, or the status
@@ -97,7 +97,7 @@ Schreibe in der zweiten Person, warm und direkt. Wenn die Daten es hergeben, ben
 };
 
 /**
- * v1.27.13 (Welle J) — anti-recitation contract. The maintainer's complaint,
+ * v1.27.13 — anti-recitation contract. The maintainer's complaint,
  * verbatim intent: "that I logged it three times, or in what rhythm values were
  * taken, is nice but does nothing for me." Measurement counts, logging cadence,
  * and page-mechanics narration are NOT insights. They may appear ONLY when they
@@ -111,7 +111,7 @@ Eine Messanzahl ("3-mal erfasst"), ein Erfassungsrhythmus ("alle paar Tage gemes
 };
 
 /**
- * v1.27.13 (Welle J) — interpretation-depth contract. Assessments must
+ * v1.27.13 — interpretation-depth contract. Assessments must
  * interpret, not enumerate: place the value on its guideline scale, judge the
  * trend BY that position, frame the consequence without diagnosis. Where the
  * user prompt carries an INTERPRETATION CONTEXT block, lead from it; where it
@@ -202,7 +202,7 @@ Schließe, wenn es passt, mit einem kleinen Ausblick, damit sich die Person in d
 };
 
 /**
- * v1.22 (W6) — paragraph formatting contract. The prose surfaces render through
+ * v1.22 — paragraph formatting contract. The prose surfaces render through
  * the shared `ProseBlocks` helper, which turns a blank line into a real
  * paragraph break — but only if the model emits one. This single fragment asks
  * for that structure on every narrative surface so a longer assessment reads as

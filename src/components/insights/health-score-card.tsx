@@ -129,7 +129,7 @@ const PANEL_CHROME_CLASS =
 const PANEL_RESERVE_CLASS = "min-h-[28rem]";
 
 /**
- * v1.21.2 (A5) — readiness contributor keys the Tension Verdict surfaces.
+ * v1.21.2 — readiness contributor keys the Tension Verdict surfaces.
  * Kept as a local string union so the client never imports the server
  * derived-engine types. Localised through the existing
  * `insights.derived.composite.READINESS.component.{key}` labels.
@@ -138,7 +138,7 @@ export type ReadinessContributorKey =
   "rhr" | "hrv" | "sleep" | "respiratory" | "mood";
 
 /**
- * v1.21.2 (A5) — readiness contributor key → existing localised label key.
+ * v1.21.2 — readiness contributor key → existing localised label key.
  * Reuses the score-anatomy contributor labels so the Tension Verdict reads the
  * same names the wellness ring's anatomy view renders — no new keys.
  */
@@ -151,7 +151,7 @@ const TENSION_CONTRIBUTOR_LABEL_KEY: Record<ReadinessContributorKey, string> = {
 };
 
 /**
- * v1.21.2 (A6) — `MeasurementType` → existing localised metric-name key
+ * v1.21.2 — `MeasurementType` → existing localised metric-name key
  * (`measurements.type*`). Only the salient deviation vitals the
  * return-to-baseline detector scans need an entry; an unmapped type falls back
  * to a prettified raw form so a new type never blanks.
@@ -243,7 +243,7 @@ function reasonOf(report: HealthScoreReport, id: string): string {
 export interface HealthScoreCardProps {
   report: HealthScoreReport;
   /**
-   * v1.21.2 (A5) — Tension Verdict, server-resolved + locale-agnostic. `band`
+   * v1.21.2 — Tension Verdict, server-resolved + locale-agnostic. `band`
    * is the readiness composite's band; `positive` / `negative` carry the
    * readiness contributor KEYS. Null on a coherent day (or under a clinical
    * red-flag suppress).
@@ -254,7 +254,7 @@ export interface HealthScoreCardProps {
     negative: ReadinessContributorKey[];
   } | null;
   /**
-   * v1.21.2 (A6) — return-to-baseline, server-resolved + locale-agnostic.
+   * v1.21.2 — return-to-baseline, server-resolved + locale-agnostic.
    * `metricType` is a `MeasurementType` this card maps to its localised metric
    * name. Null when no salient metric returned from a genuine prior
    * out-of-band run.

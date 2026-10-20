@@ -5,7 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { AchievementProgress } from "@/lib/gamification/achievements";
 
 /**
- * v1.4.15 phase-B4 — /achievements page contract.
+ * v1.4.15 — /achievements page contract.
  *
  * Two surfaces under test:
  *
@@ -158,7 +158,7 @@ const mockData = {
   },
 };
 
-// v1.4.34 IW-F-Perf — page now reads through the shared
+// v1.4.34 — page now reads through the shared
 // `useAchievementsQuery` hook; mock it directly so the test stays
 // scoped to the page render and bypasses the TanStack provider.
 vi.mock("@/lib/queries/use-achievements-query", () => ({

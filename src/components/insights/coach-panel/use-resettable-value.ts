@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 /**
- * v1.4.23 H3 — local state seeded from a controlled prop, reset on
+ * v1.4.23 — local state seeded from a controlled prop, reset on
  * prop change. Same render-phase pattern React's docs recommend in
  * place of `useEffect(() => setState(prop), [prop])` (which the
  * `react-hooks/set-state-in-effect` ESLint rule banned). The reset
@@ -39,7 +39,7 @@ export function useResettableValue<T>(
 }
 
 /**
- * v1.4.23 H3 — pure decision function behind `useResettableValue`.
+ * v1.4.23 — pure decision function behind `useResettableValue`.
  * Given the previous controlled value the hook recorded and the
  * incoming controlled value, returns either `{ reset: true, value }`
  * (the next render must seed local state with `value`) or

@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the step machine behind the setup screens.
+ * v1.39 — the step machine behind the setup screens.
  *
  * Pure, so every question the screens ask — which screen is next, where a
  * returning person resumes, whether a URL may be visited, what the counter

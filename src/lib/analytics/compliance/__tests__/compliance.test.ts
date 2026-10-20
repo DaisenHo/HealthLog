@@ -382,7 +382,7 @@ describe("calculateCompliance — cadence-aware adapter", () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
-// v1.7.0 SB-SCHED-2 — canonical-engine-routed compliance (Option B)
+// v1.7.0 — canonical-engine-routed compliance (Option B)
 //
 // When a `medicationContext` is supplied, the expected-slot denominator
 // runs through the canonical recurrence engine. These golden fixtures
@@ -991,7 +991,7 @@ describe("calculateCompliance — engine-routed (medicationContext)", () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
-// v1.7.0 item 5 — per-day due / expectedCount helpers
+// v1.7.0 — per-day due / expectedCount helpers
 // ────────────────────────────────────────────────────────────────────
 
 describe("expectedSlotCountForDay + lastNonSkippedTakenAt", () => {
@@ -1220,7 +1220,7 @@ describe("expectedSlotCountForDay + lastNonSkippedTakenAt", () => {
 });
 
 describe("classifyIntakeTiming", () => {
-  // v1.4.34 IW-C — the classifier now widens the pre-window grace to
+  // v1.4.34 — the classifier now widens the pre-window grace to
   // 3h and introduces an `early` bucket so a proactive logger (10 min
   // before the window) is no longer flushed to `very_late`. Doses up
   // to 3h past `windowEnd` stay `on_time`; `late` spans the next 2h
@@ -3106,7 +3106,7 @@ describe("tallyComplianceFromLedger — the unified % keystone", () => {
     expect(tally.rate).toBeGreaterThanOrEqual(90);
   });
 
-  // v1.15.18 W7 — the persisted per-dose window reaches the % through the
+  // v1.15.18 — the persisted per-dose window reaches the % through the
   // SAME minter the history view + write path use. An 11:29 take that the
   // default ±1h leaves ad-hoc (slot missed) is counted on-time once the
   // morning slot carries an explicit 07:00–12:00 window.

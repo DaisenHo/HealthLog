@@ -1220,7 +1220,7 @@ export const medicationListLayoutSchema = z
       "Per-user /medications presentation: the card/table view choice plus the manual medication order shared by both views. Mirrors the dashboard-widgets / insights-layout contract.",
   });
 
-// v1.32.21 (R5a) — the PUT body additionally carries the optional
+// v1.32.21 — the PUT body additionally carries the optional
 // optimistic-concurrency base token (stripped pre-Zod at runtime by
 // `takeBaseToken`); GET / PUT responses echo the fresh `updatedAt` token.
 export const medicationListLayoutPutBody = medicationListLayoutSchema

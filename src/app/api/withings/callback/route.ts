@@ -15,7 +15,7 @@ import { timingSafeEqual } from "node:crypto";
 /**
  * OAuth callback from Withings. Exchanges code for tokens and stores them.
  *
- * v1.4.47 W6 — `state` is now a fully-random 22-character base64url
+ * v1.4.47 — `state` is now a fully-random 22-character base64url
  * nonce keyed against the `WithingsOAuthState` ledger, rather than the
  * legacy `${user.id}:${random16}` shape. The user identity bound to
  * the in-flight handshake is resolved via the ledger's `userId`
@@ -24,7 +24,7 @@ import { timingSafeEqual } from "node:crypto";
  * runs. The row is consumed (deleted) on every exit branch so a
  * replay of the same nonce fails the second time.
  *
- * v1.4.48 M3 — the row is now consumed via a single delete-first
+ * v1.4.48 — the row is now consumed via a single delete-first
  * round-trip. Prisma `delete` returns the row on success, so the
  * post-delete validity checks (`expiresAt`, `userId`) still run
  * against the consumed payload. Two concurrent callbacks with the
@@ -111,7 +111,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // page. Re-throwing would land on the apiHandler's 500 path and
     // strand the user without a clean redirect.
     //
-    // v1.4.49 QA-2 — the warning interpolates `err.name` rather than
+    // v1.4.49 — the warning interpolates `err.name` rather than
     // `${err}` so a Prisma error message echoing the offending value
     // (e.g. the raw nonce) into the wide-event log cannot leak it.
     const errName = err instanceof Error ? err.name : "unknown";
@@ -173,7 +173,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
     const subscriptionRetryAt = new Date();
 
-    // v1.4.25 W5d — persist the OAuth scope we requested. The token
+    // v1.4.25 — persist the OAuth scope we requested. The token
     // response doesn't echo the granted scopes back as a top-level
     // field, but Withings honours the scope param verbatim — there's
     // no scope downgrade unless the user explicitly revokes one in

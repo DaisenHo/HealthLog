@@ -1,5 +1,5 @@
 /**
- * v1.4.43 W14 — manual resume endpoint for a parked Withings
+ * v1.4.43 — manual resume endpoint for a parked Withings
  * integration.
  *
  * Background: B4 introduced the `parked` state in

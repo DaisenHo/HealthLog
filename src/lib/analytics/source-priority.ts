@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W5e — cross-source canonical-row picker.
+ * v1.4.25 — cross-source canonical-row picker.
  *
  * Cumulative metrics (steps, active energy, walking/running distance,
  * flights climbed, sleep duration) sum-per-day. When two sources both
@@ -14,7 +14,7 @@
  * audit trail — the user can flip the priority and the analytics
  * re-pick instantly without a re-sync.
  *
- * v1.4.25 W8c — two-axis pick. After narrowing to the winning source,
+ * v1.4.25 — two-axis pick. After narrowing to the winning source,
  * the picker now consults a device-type ladder ("watch beats phone
  * beats scale") and keeps ONLY the rows from the top-ranked device-
  * type present in that day's bucket. Rationale: a user wearing an

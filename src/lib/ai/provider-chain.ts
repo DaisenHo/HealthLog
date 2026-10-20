@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B5b — multi-provider redundancy.
+ * v1.4.16 — multi-provider redundancy.
  *
  * The persisted shape on `User.aiProviderChain` is a JSON array of
  * entries describing **which** providers to try and **in what order**.

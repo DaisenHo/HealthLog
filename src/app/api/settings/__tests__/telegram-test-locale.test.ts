@@ -1,5 +1,5 @@
 /**
- * v1.4.27 F21 — settings/telegram/test locale path.
+ * v1.4.27 — settings/telegram/test locale path.
  *
  * Asserts the per-user Telegram test message renders in the user's
  * persisted `User.locale` rather than the hardcoded English string

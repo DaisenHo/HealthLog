@@ -71,7 +71,7 @@ export const GET = apiHandler(
 
     annotate({ action: { name: "workouts.detail" }, meta: { workoutId: id } });
 
-    // v1.18.0 B1 — gate the detail surface behind the workouts module.
+    // v1.18.0 — gate the detail surface behind the workouts module.
     const gate = await requireModuleEnabled(user.id, "workouts");
     if (!gate.enabled) return gate.response;
     // The stored Activity Insight paragraph is model text: it is read and

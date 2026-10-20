@@ -246,7 +246,7 @@ export async function enqueueBootTimeMedNotesEncryptionBackfill(): Promise<{
   }
 
   try {
-    // v1.28.46 perf (H4) — DB-level SELECT DISTINCT, not Prisma `distinct`
+    // v1.28.46 — DB-level SELECT DISTINCT, not Prisma `distinct`
     // (which fetches every matching row then de-dupes in JS at boot). Dose-
     // changes carry no userId, so their owner comes through a join on the
     // parent medication. The migration-0243 partial indexes match each

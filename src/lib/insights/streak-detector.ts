@@ -1,5 +1,5 @@
 /**
- * v1.21.2 (A6) — per-metric in/out-of-band streak + return-to-baseline event.
+ * v1.21.2 — per-metric in/out-of-band streak + return-to-baseline event.
  *
  * A PURE detector over a DAY-bucket per-day-mean series. It answers two
  * questions the "ambient Coach presence" surface needs to close a worry:

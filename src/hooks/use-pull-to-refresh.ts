@@ -60,7 +60,7 @@ export function usePullToRefresh({
     let busy = false;
     let lastDistance = 0;
 
-    // v1.30.1 M12 — the authenticated shell's actual scroll container is
+    // v1.30.1 — the authenticated shell's actual scroll container is
     // `<main id="main-content">` (`AuthShell` sets it `overflow-y-auto`
     // inside a height-locked `h-dvh` layout); `document.scrollingElement`
     // never moves there; it stays permanently at 0. Checking the document

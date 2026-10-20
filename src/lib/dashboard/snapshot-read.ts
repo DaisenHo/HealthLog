@@ -143,7 +143,7 @@ export async function readDashboardSnapshotCached(
     healthScoreConfigJson: user.healthScoreConfigJson,
   };
 
-  // v1.21.2 (A4) — the briefing recall + forward-look is locale-specific
+  // v1.21.2 — the briefing recall + forward-look is locale-specific
   // prose, so the snapshot cache key carries the resolved locale: an EN and
   // a DE session never share a snapshot cell (and never see each other's
   // memory wording). The `${user.id}|` prefix still covers the key under

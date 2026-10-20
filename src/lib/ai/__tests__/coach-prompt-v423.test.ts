@@ -6,7 +6,7 @@ import {
 } from "@/lib/ai/prompts/insight-generator";
 
 /**
- * v1.4.23 W4 F6 — pins the additive Apple Health prompt ratchet.
+ * v1.4.23 — pins the additive Apple Health prompt ratchet.
  *
  * Asserts:
  *   1. PROMPT_VERSION sits on the 4.23.x train.
@@ -92,7 +92,7 @@ describe("getStrictInsightsSystemPrompt — DE", () => {
 });
 
 /**
- * v1.4.25 W5b — pin the enum-identifier ban rule (no internal metric
+ * v1.4.25 — pin the enum-identifier ban rule (no internal metric
  * identifiers
  * in prose). The maintainer saw the "Metric Pressure_Sys" leak on the
  * Einschätzungen surface 2026-05-14; the stripper covers the leak at

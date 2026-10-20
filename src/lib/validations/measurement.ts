@@ -184,7 +184,7 @@ export const measurementSourceEnum = z.enum(MEASUREMENT_SOURCES);
 export const WRITABLE_MEASUREMENT_SOURCES = ["MANUAL", "APPLE_HEALTH"] as const;
 
 /**
- * v1.10.0 QA — the Zod enum the single-entry POST validates `source` against.
+ * v1.10.0 — the Zod enum the single-entry POST validates `source` against.
  * Built from `WRITABLE_MEASUREMENT_SOURCES` so the allowlist has one source of
  * truth. A client may only attribute a row it actually owns: `MANUAL` (a
  * hand-entered reading) or `APPLE_HEALTH` (the HealthKit batch's per-row
@@ -467,7 +467,7 @@ export const createMeasurementSchema = z
   .object({
     type: measurementTypeEnum,
     value: z.number(),
-    // v1.17 W1b — plausibility bound (shared `validateEntryInstant`): no
+    // v1.17 — plausibility bound (shared `validateEntryInstant`): no
     // future instants beyond a 5-min clock-skew tolerance, no instant before
     // 1900. Closes the data-portability gap where a hand-rolled POST could
     // backdate or forward-date a reading arbitrarily.
@@ -475,7 +475,7 @@ export const createMeasurementSchema = z
       isoDateTime().transform((s) => new Date(s)),
     ),
     notes: z.string().max(MEASUREMENT_NOTES_MAX_LENGTH).optional(),
-    // v1.10.0 QA — validate against the client-writable subset, not the full
+    // v1.10.0 — validate against the client-writable subset, not the full
     // `MeasurementSource` enum. A client may attribute only `MANUAL` or
     // `APPLE_HEALTH`; `WITHINGS` / `IMPORT` / `COMPUTED` are server-owned and
     // forging them would pollute the per-source canonical picker.
@@ -485,7 +485,7 @@ export const createMeasurementSchema = z
     // 0274). The "required on a glucose row" half below is a rule of THIS
     // schema only — see the refine.
     glucoseContext: glucoseContextEnum.optional(),
-    // v1.4.25 W10 reconcile (code-review M4): the single-entry POST
+    // v1.4.25 (code-review M4): the single-entry POST
     // dropped `deviceType` silently because the column existed on
     // `Measurement` and was accepted by the batch route, but never
     // declared in this schema. iOS clients that POST one row at a
@@ -529,7 +529,7 @@ export const updateMeasurementSchema = z.object({
   // it). The former `min(0)` also blocked legitimate edits of the signed
   // types (ANS_CHARGE, BODY_TEMPERATURE_DEVIATION).
   value: z.number().optional(),
-  // v1.17 W1b — same plausibility bound on the edit path; an edit cannot
+  // v1.17 — same plausibility bound on the edit path; an edit cannot
   // forward-date a reading into the future nor before 1900.
   measuredAt: validateEntryInstant(
     isoDateTime().transform((s) => new Date(s)),
@@ -572,7 +572,7 @@ export const listMeasurementsSchema = z
     to: isoDateTime()
       .transform((s) => new Date(s))
       .optional(),
-    // v1.4.28 FB-D2 — when the chart sends an explicit from/to window the
+    // v1.4.28 — when the chart sends an explicit from/to window the
     // payload is already bounded; lift the per-request ceiling to 5000
     // (still cheaper than the legacy unbounded `while (true)` walk).
     // Callers that omit from/to keep the historical 500-row cap.
@@ -583,7 +583,7 @@ export const listMeasurementsSchema = z
       .optional()
       .default("measuredAt"),
     sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
-    // v1.4.28 FB-D2 — bucket hint for range-aware queries. When set the
+    // v1.4.28 — bucket hint for range-aware queries. When set the
     // GET handler runs a server-side `date_trunc` aggregation and returns
     // one row per bucket per type rather than the raw measurement rows.
     // Omitting `aggregate` keeps the raw wire shape (iOS contract); the

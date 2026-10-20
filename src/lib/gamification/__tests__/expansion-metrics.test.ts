@@ -367,7 +367,7 @@ describe("buildExpansionMetricValues — integration smoke", () => {
   });
 });
 
-// v1.18.11 (W5 perf) — the achievements builder now precomputes each vitals
+// v1.18.11 — the achievements builder now precomputes each vitals
 // row's Berlin day-key (and hour) ONCE and threads the parallel arrays into
 // the engagement + hidden passes instead of re-running `Intl.DateTimeFormat`
 // per row per pass. The optimisation must be a pure speed-up: supplying the

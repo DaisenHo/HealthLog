@@ -255,7 +255,7 @@ describe("PUT /api/insights/layout — happy path", () => {
 });
 
 describe("PUT /api/insights/layout — accepts version 1 (iOS contract)", () => {
-  // v1.15.11 QA C1 — the live iOS client still PUTs `version: 1`. The schema
+  // v1.15.11 — the live iOS client still PUTs `version: 1`. The schema
   // accepts both 1 and 2; the serializer always normalises to the canonical
   // v2 blob, so a v1 body persists a resolved v2 layout rather than 422ing.
   it("accepts a PUT with version 1 and no sections, persisting a resolved v2 layout", async () => {
@@ -685,7 +685,7 @@ describe("DELETE /api/insights/layout", () => {
 });
 
 /**
- * v1.32.21 (R5a) — optimistic concurrency (issue #581 family). A PUT carrying
+ * v1.32.21 — optimistic concurrency (issue #581 family). A PUT carrying
  * the `baseUpdatedAt` it was based on writes CONDITIONALLY on the stored row
  * still carrying that token, so an interleaved edit-mode Save and Settings
  * pill-order Save can't clobber one another. A tokenless PUT keeps the prior

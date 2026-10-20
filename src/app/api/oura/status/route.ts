@@ -11,7 +11,7 @@ import {
 } from "@/lib/integrations/sync-verdict";
 
 /**
- * v1.17.0 (F4) — Oura connection status for the current user.
+ * v1.17.0 — Oura connection status for the current user.
  *
  * `available` reports whether usable OAuth credentials resolve for this user —
  * per-user BYO keys (v1.17.1) first, then the shared env app.

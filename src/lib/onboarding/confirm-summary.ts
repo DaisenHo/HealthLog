@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — what the confirm screen says is switched on.
+ * v1.39 — what the confirm screen says is switched on.
  *
  * A READ of the registry's derivation, never a second mapping: the list the
  * person confirms is `deriveOnboardingModuleDefaults` applied to the same

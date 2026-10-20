@@ -358,7 +358,7 @@ const HOST_METRIC_QUEUE = "host-metric-sample";
 // The admin chart's polling interval (`host-metrics-chart.tsx`) has to match.
 
 const HOST_METRIC_CRON = "*/5 * * * *";
-// v1.4.16 phase B5e — daily rec-feedback aggregator. 04:00 Europe/Berlin
+// v1.4.16 — daily rec-feedback aggregator. 04:00 Europe/Berlin
 // runs the slot AFTER all the cleanup jobs (rate-limit, idempotency,
 // audit-log) so the previous-day's noise is gone before we aggregate.
 
@@ -440,7 +440,7 @@ const MED_NOTES_ENCRYPTION_BACKFILL_CRON = "5 4 * * *";
 const FREE_TEXT_ENCRYPTION_BACKFILL_CRON = "7 4 * * *";
 
 const allQueues = [
-  // v1.25 (W-ENV) — nightly environmental-context fetch. A daily discovery tick
+  // v1.25 — nightly environmental-context fetch. A daily discovery tick
   // fans out one per-user job per opted-in account with a home location; the
   // queue also serves the on-demand backfill from the Environment settings
   // surface. Without this entry pg-boss never provisions it and both the cron
@@ -644,7 +644,7 @@ const schedules: ScheduleEntry[] = [
     MEASUREMENT_MAINTENANCE_CRON,
     { ...MEASUREMENT_MAINTENANCE_SEND_OPTIONS },
   ],
-  // v1.25 (W-ENV) — daily 02:10 Europe/Berlin discovery tick (empty payload)
+  // v1.25 — daily 02:10 Europe/Berlin discovery tick (empty payload)
   // that fans out one per-user environment fetch per opted-in account.
   [ENVIRONMENT_FETCH_QUEUE, ENVIRONMENT_FETCH_CRON],
   // v1.42 — daily 02:40 discovery for the air-quality history backfill, after
@@ -697,7 +697,7 @@ const schedules: ScheduleEntry[] = [
     PR_DETECTION_FALLBACK_CRON,
     { expireInSeconds: PR_DETECTION_EXPIRE_SECONDS },
   ],
-  // v1.4.25 W19b — daily expire-stale pass for the per-pen inventory
+  // v1.4.25 — daily expire-stale pass for the per-pen inventory
   // entities. Flips IN_USE rows whose 30-day clock has blown to
   // EXPIRED at 03:30 Europe/Berlin (in the existing 02:xx–03:xx
   // maintenance window, right after idempotency-cleanup).
@@ -1884,7 +1884,7 @@ export async function registerMaintenanceQueues(
     },
   );
 
-  // v1.25 (W-ENV) — nightly environment fetch. The daily discovery tick (empty
+  // v1.25 — nightly environment fetch. The daily discovery tick (empty
   // payload) fans out one per-user job per opted-in account; the queue also
   // serves the on-demand backfill payloads from the settings surface. Serial
   // concurrency so the staggered outbound fetches never crowd the request pool.

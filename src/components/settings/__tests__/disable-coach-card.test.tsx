@@ -1,7 +1,7 @@
 /**
- * v1.4.47 W3 — Settings → Coach activation toggle persistence contract.
+ * v1.4.47 — Settings → Coach activation toggle persistence contract.
  *
- * v1.18.1 (D7) — the card reads "Activate Coach" (default ON). The persisted
+ * v1.18.1 — the card reads "Activate Coach" (default ON). The persisted
  * column is still `User.disableCoach`; the Switch shows the activated view
  * (`checked = !disableCoach`). The SSR render is `mounted=false`, where the
  * card paints the default-ON (checked) state so the default-on contract holds
@@ -43,7 +43,7 @@ vi.mock("@/hooks/use-auth", async () => {
 // cards) reach for so the SSR pass doesn't blow up. The disable-coach card
 // itself doesn't trigger any GET — it only writes through PATCH on click.
 //
-// v1.18.0 (S5) — the Coach cards moved from `<AiSection>` to the dedicated
+// v1.18.0 — the Coach cards moved from `<AiSection>` to the dedicated
 // `<CoachSection>`; this contract test renders the new parent.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -127,7 +127,7 @@ function render(): string {
 describe("Settings — DisableCoachCard", () => {
   it("renders the activation Switch checked at SSR (default-on contract)", () => {
     const html = render();
-    // v1.18.1 (D7) — the SSR render is `mounted=false`, where the card paints
+    // v1.18.1 — the SSR render is `mounted=false`, where the card paints
     // the default-ON (activated → checked) state regardless of the wire value,
     // so the Switch never flashes off before /me resolves.
     expect(html).toContain('data-testid="settings-disable-coach-switch"');
@@ -148,7 +148,7 @@ describe("Settings — DisableCoachCard", () => {
 
   it("renders the Coach-activation title + description", () => {
     const html = render();
-    // v1.18.1 (D7) — polarity flipped to activate/default-on.
+    // v1.18.1 — polarity flipped to activate/default-on.
     expect(html).toContain("Activate Coach");
     expect(html).toContain("Show the Coach button and drawer");
   });

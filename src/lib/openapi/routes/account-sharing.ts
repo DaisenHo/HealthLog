@@ -574,7 +574,7 @@ const accountPayload = z
     notificationPrefs: z.looseObject({
       medication: z.looseObject({ clientManaged: z.boolean() }),
     }),
-    // v1.39 (C1) — enumerated for the same reason `notificationPrefs` is: a
+    // v1.39 — enumerated for the same reason `notificationPrefs` is: a
     // client DECIDES on it. The getting-started checklist orders its rows from
     // `needs` and stays on screen while the flow is unfinished, and a future
     // native client renders the steps it knows. Always present, and resolved

@@ -20,7 +20,7 @@ import { useAiCapability } from "@/hooks/use-ai-capability";
 import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marker";
 
 /**
- * v1.4.16 phase D reconcile (CRITICAL C1 + C2) — shared TanStack Query
+ * v1.4.16 (CRITICAL C1 + C2) — shared TanStack Query
  * helper that reads the rich advisor payload from `/api/insights/generate`.
  *
  * Why a POST under a `useQuery` rather than a dedicated GET endpoint:
@@ -42,7 +42,7 @@ export interface InsightAdvisorPayload {
   cachedAt?: string | null;
   legacyPayload?: boolean;
   /**
-   * v1.4.20 phase B1 — Daily Briefing block surfaced for the new hero
+   * v1.4.20 — Daily Briefing block surfaced for the new hero
    * strip + briefing card. Lives on the cached payload alongside the
    * legacy `insights` shape (see `aiInsightResponseSchema` — the
    * `.passthrough()` lets the field round-trip through any provider).
@@ -51,7 +51,7 @@ export interface InsightAdvisorPayload {
    */
   dailyBriefing?: DailyBriefingPayload | null;
   /**
-   * v1.4.20 phase B3 — optional trend annotations for the Trends row.
+   * v1.4.20 — optional trend annotations for the Trends row.
    * Same lift-pattern as `dailyBriefing` — validated client-side and
    * left null when the cached payload predates PROMPT_VERSION 4.20.1.
    */
@@ -359,7 +359,7 @@ export async function fetchAdvisor(
     payload.dailyBriefing = null;
   }
 
-  // v1.4.20 phase B3 — same lift for `trendAnnotations`. Cached payloads
+  // v1.4.20 — same lift for `trendAnnotations`. Cached payloads
   // from the 4.20.0 line predate the field, so null is the expected
   // default. A malformed candidate also resolves to null so the UI
   // surfaces the per-metric empty hint instead of a half-rendered card.

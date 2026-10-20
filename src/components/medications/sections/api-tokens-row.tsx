@@ -66,7 +66,7 @@ export function ApiTokensRow({
   // stays out of the default-visible DOM until the user opts in).
   const [examplesOpen, setExamplesOpen] = useState(false);
 
-  // v1.5.5 F-1 H-2 — single source of truth for the per-medication
+  // v1.5.5 — single source of truth for the per-medication
   // api-endpoint key. The earlier inline `useMemo` minted the same
   // tuple as a bare array, slipping past `healthlog/queryKey-factory`.
   // Reading from the factory keeps the bundle invalidation +
@@ -205,7 +205,7 @@ export function ApiTokensRow({
       <p className="text-muted-foreground text-xs">
         {t("medications.detail.api.caption", { name: medicationName })}
       </p>
-      {/* R26 — the endpoint URL is an inline read-only field with a copy
+      {/* The endpoint URL is an inline read-only field with a copy
           icon on the right rather than a separate "URL kopieren" button.
           The `<code>` carries the value; the icon button copies it. */}
       <div

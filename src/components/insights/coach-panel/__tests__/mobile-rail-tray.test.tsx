@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.28 R3c (BK-F-M6) — pin the carved-out mobile rail tray's
+ * v1.4.28 — pin the carved-out mobile rail tray's
  * presentational contract. The carve-out is pure render: the parent
  * owns open/closed state + the rail content; this component just
  * paints two side-sheets with the right slots when open.

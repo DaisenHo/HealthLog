@@ -73,7 +73,7 @@ export async function surfaceCards(args: {
       });
     }
   }
-  // v1.22 (F6) — surface the confirm-card action when the turn was not blocked.
+  // v1.22 — surface the confirm-card action when the turn was not blocked.
   // Additive: the prose already stands alone; the card only offers the one-tap
   // confirm. Nothing is created server-side until the user taps it.
   let surfacedAction: CoachSuggestedAction | null = null;

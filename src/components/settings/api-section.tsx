@@ -58,7 +58,7 @@ interface ApiTokenInfo {
 }
 
 export function ApiSection() {
-  // v1.18.6 (W9) — the visible heading + subtitle now come from the shared
+  // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the API cards.
   return (
     <div className="space-y-6">
@@ -313,7 +313,7 @@ function IngestTokenCard({
 function ApiEndpointsCard() {
   const { t } = useTranslations();
 
-  // v1.4.27 MB5 — dual-render: <md gets a stacked card list, md+
+  // v1.4.27 — dual-render: <md gets a stacked card list, md+
   // keeps the original table. Mobile cards wrap inside their box and
   // never trigger horizontal scroll, mirroring the pattern from
   // `<ApiTokenOverviewSection>`. The endpoint catalogue is array-driven

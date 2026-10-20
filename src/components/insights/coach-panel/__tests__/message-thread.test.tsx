@@ -37,13 +37,13 @@ vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => useAuthMock(),
 }));
 
-// v1.4.23 H4 — message-thread reads `useQuery(["coach-prefs"])` so the
+// v1.4.23 — message-thread reads `useQuery(["coach-prefs"])` so the
 // evidence disclosure honours `showEvidenceByDefault`. SSR has no
 // QueryClientProvider; stub the hook to return the legacy defaults so
 // the existing assertions on the closed-by-default disclosure stay
 // representative.
 //
-// v1.4.23 H7 — also stubs `useMutation` for the per-message thumbs
+// v1.4.23 — also stubs `useMutation` for the per-message thumbs
 // feedback row inside the assistant bubble.
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: undefined }),
@@ -231,7 +231,7 @@ describe("<MessageThread>", () => {
   });
 
   it("announces the empty-thread hero as a polite live region", () => {
-    // v1.11.3 D5 — the bespoke empty-state hero stays (gradient avatar),
+    // v1.11.3 — the bespoke empty-state hero stays (gradient avatar),
     // but it must carry `role="status"` + `aria-live="polite"` so screen
     // readers announce the hint when the thread first mounts.
     const html = render(<MessageThread conversation={null} />);
@@ -340,7 +340,7 @@ describe("<MessageThread>", () => {
         })}
       />,
     );
-    // v1.4.33 IW7 — copy rewritten from "AI provider" to "Insights
+    // v1.4.33 — copy rewritten from "AI provider" to "Insights
     // provider" per the project-voice rule (no "KI"/"AI" prefix in
     // user-facing strings).
     expect(html).toContain("could not reach an Insights provider");
@@ -557,7 +557,7 @@ describe("<MessageThread>", () => {
     expect(html).toMatch(/data-slot="coach-bubble-user-avatar"[^>]*>TE</);
   });
 
-  // v1.4.25 W5 — optimistic user bubble appears before the "Thinking…"
+  // v1.4.25 — optimistic user bubble appears before the "Thinking…"
   // placeholder so the visible order matches the user's mental model.
   it("renders the optimistic user bubble before the streaming Thinking placeholder", () => {
     const html = render(
@@ -683,7 +683,7 @@ describe("<MessageThread>", () => {
     );
   });
 
-  // v1.4.25 W5 — distinct daily-limit vs provider-rate-limit copy.
+  // v1.4.25 — distinct daily-limit vs provider-rate-limit copy.
   it("surfaces the daily-limit copy for coach.budget.exceeded", () => {
     const html = render(
       <MessageThread
@@ -701,7 +701,7 @@ describe("<MessageThread>", () => {
     expect(html).toContain(
       "Daily limit reached. The budget refreshes at midnight in your time zone.",
     );
-    // v1.4.33 IW7 — fallback copy rewritten ("AI provider" -> "Insights
+    // v1.4.33 — fallback copy rewritten ("AI provider" -> "Insights
     // provider"). Both old and new strings should be absent here when
     // the budget-exceeded error takes precedence.
     expect(html).not.toContain("could not reach an Insights provider");
@@ -756,7 +756,7 @@ describe("<MessageThread>", () => {
   });
 });
 
-// v1.4.25 W5 — pin the error-code → i18n-key resolver so future code
+// v1.4.25 — pin the error-code → i18n-key resolver so future code
 // changes can't silently demote the daily-limit / rate-limit copy
 // back to the generic provider-unavailable fallback.
 import { errorCodeToI18nKey } from "../message-thread";
@@ -795,7 +795,7 @@ describe("errorCodeToI18nKey", () => {
     );
   });
 
-  // v1.4.43 QoL (M6) — `coach.network` no longer collapses to the
+  // v1.4.43 — `coach.network` no longer collapses to the
   // generic provider copy; the user needs the actionable offline hint.
   it("maps the demo's refusal to its own honest line, not the outage copy", () => {
     expect(errorCodeToI18nKey("demo.readOnly")).toBe(
@@ -809,7 +809,7 @@ describe("errorCodeToI18nKey", () => {
     );
   });
 
-  // v1.11.0 W1 — a dead primary credential gets the reconnect copy, not
+  // v1.11.0 — a dead primary credential gets the reconnect copy, not
   // the generic provider-unavailable copy.
   it("maps coach.provider.credential_expired to the reconnect key", () => {
     expect(errorCodeToI18nKey("coach.provider.credential_expired")).toBe(

@@ -1,5 +1,5 @@
 /**
- * v1.39 (C1) — request schemas for the three needs-onboarding writes.
+ * v1.39 — request schemas for the three needs-onboarding writes.
  *
  * They live outside the route files for the reason `./onboarding.ts` gives: a
  * route module may only export handlers plus the Next.js route config, so the
@@ -47,7 +47,7 @@ function skipped<Id extends string>(id: Id) {
 }
 
 /**
- * Q6 — the unit answers. Both fields are optional and nullable: the screen
+ * The unit answers. Both fields are optional and nullable: the screen
  * only appears when glucose or weight is among the areas, and it may set one
  * without the other. The route writes the record's real display columns from
  * these and records the answer beside them.

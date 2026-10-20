@@ -87,9 +87,9 @@ interface Medication {
   category: string;
   /** v1.40 — the label of a custom category; null for a built-in one. */
   categoryLabel?: string | null;
-  /** v1.4.25 W4d — Prisma treatment class (GENERIC | GLP1). */
+  /** v1.4.25 — Prisma treatment class (GENERIC | GLP1). */
   treatmentClass?: string;
-  /** v1.4.25 W4d — doses per pen/vial for inventory math. */
+  /** v1.4.25 — doses per pen/vial for inventory math. */
   dosesPerUnit?: number | null;
   /** v1.6.0 — route of administration (ORAL | INJECTION | OTHER). */
   deliveryForm?: string;
@@ -152,7 +152,7 @@ interface Medication {
 }
 
 /**
- * v1.11.3 C4 — loading placeholder for one medication card. Renders the
+ * v1.11.3 — loading placeholder for one medication card. Renders the
  * real `Card`/`CardContent` shell (so padding, radius and gap match the
  * loaded card exactly) with the shared `Skeleton` primitive standing in
  * for each populated slot: header title + dose, status pill, next / last
@@ -259,7 +259,7 @@ export default function MedicationsPageClient() {
   // withheld; sharing does not cover it at all.
   const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
   const canAddMedication = canWriteDomain("medications");
-  // v1.18.1 (D3) — medications is an opt-out module. When the account has it
+  // v1.18.1 — medications is an opt-out module. When the account has it
   // turned off the whole page disappears (the nav entry is hidden by the same
   // gate) and the list query never fires (the API would 403 anyway).
   // Default-on: an absent key reads as enabled, so the page only hides on an
@@ -354,7 +354,7 @@ export default function MedicationsPageClient() {
     refetchOnMount: refetchMedicationsOnMount("list"),
   });
 
-  // v1.30.1 M12 — pull-to-refresh parity with labs/checkups/mood/measurements.
+  // v1.30.1 — pull-to-refresh parity with labs/checkups/mood/measurements.
   // Medications is one of the sharpest PWA-resume-staleness surfaces (a
   // background-refreshed take/skip from a notification, or a cross-device
   // write, wouldn't otherwise show up until the 5-min staleTime lapses or a
@@ -638,7 +638,7 @@ export default function MedicationsPageClient() {
       )}
 
       {isLoading || isLayoutLoading ? (
-        // v1.11.3 C4 — skeletons instead of a bare centred spinner so the
+        // v1.11.3 — skeletons instead of a bare centred spinner so the
         // page reserves the loaded layout and does not jump when the
         // medications resolve. v1.16.10 — the skeleton follows the
         // persisted view (table rows vs card grid) so resolving the data
@@ -663,7 +663,7 @@ export default function MedicationsPageClient() {
           onRetry={() => void refetchMedications()}
         />
       ) : !medications?.length ? (
-        // v1.4.15 phase-C5: refactor the inline icon+text+button block
+        // v1.4.15: refactor the inline icon+text+button block
         // to the shared EmptyState primitive so the empty path matches
         // every other list page in the app (role=status, dashed
         // border, consistent icon-bubble + spacing).

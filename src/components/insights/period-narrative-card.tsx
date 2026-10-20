@@ -20,7 +20,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { InsightSectionCard } from "./insight-section-card";
 
 /**
- * v1.11.0 W3 — period-narrative card (Pillar P1).
+ * v1.11.0 — period-narrative card (Pillar P1).
  *
  * A calm, top-of-overview summary of the user's last week / month, drawn from
  * the read-only `GET /api/insights/narrative` route. The route is
@@ -187,7 +187,7 @@ export function PeriodNarrativeCard({
           />
         </div>
 
-        {/* v1.22 (W6) — real paragraphs via the shared ProseBlocks helper
+        {/* v1.22 — real paragraphs via the shared ProseBlocks helper
             (still plain text children — NO markdown renderer, XSS posture). */}
         <div className="text-foreground text-sm">
           <ProseBlocks text={narrative.text} />

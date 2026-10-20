@@ -132,7 +132,7 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
     onSuccess: () => {
       toast.success(t("insights.coach.settingsSaved"));
     },
-    // v1.32.22 (R5b) — a concurrent write advanced the row since this edit was
+    // v1.32.22 — a concurrent write advanced the row since this edit was
     // based. The hook already refetched (so the form re-syncs to server truth
     // and the token advances); nudge the user to re-apply and save again.
     onConflict: () => {
@@ -376,7 +376,7 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
             </ul>
           </div>
 
-          {/* v1.18.1 (Workstream C) — cadence-suggestion opt-out. The
+          {/* v1.18.1 — cadence-suggestion opt-out. The
               Coach offers an occasional, evidence-based reminder to
               measure a metric more regularly; this is the master switch
               for that surface. Off ⇒ no suggestion cards ever surface. */}

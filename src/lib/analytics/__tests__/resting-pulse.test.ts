@@ -1,5 +1,5 @@
 /**
- * v1.15.12 A2 — unit pins for resting-pulse estimation.
+ * v1.15.12 — unit pins for resting-pulse estimation.
  *
  * The canonical regression (the maintainer's apps01 profile): a day with
  * ~500 high workout PULSE samples + ~10 resting reads must NOT classify

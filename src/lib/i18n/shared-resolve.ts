@@ -1,7 +1,7 @@
 /**
  * Server-side message-bundle map + re-export of the shared key resolver.
  *
- * v1.4.27 B7 / BL-P4-11-S10 — client and server previously each carried
+ * v1.4.27 — client and server previously each carried
  * their own private copy of `allMessages` plus a near-identical
  * `resolveKey` helper; pinning both to one import stopped the maps
  * drifting when a locale was added.

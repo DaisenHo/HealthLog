@@ -9,7 +9,7 @@ import {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * v1.4.16 phase B8 — comparison shift unit tests.
+ * v1.4.16 — comparison shift unit tests.
  *
  * The shift is integer-day forward addition; the helper does not care
  * about timezones because every input timestamp is already anchored at

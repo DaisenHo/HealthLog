@@ -170,7 +170,7 @@ function safeRequestProp<R>(
     return read(request as NextRequest);
   } catch (err) {
     if (isTolerableRequestProbeError(err)) {
-      // v1.4.27 B7 / BL-P1-3 — surface every fallback so a real read
+      // v1.4.27 — surface every fallback so a real read
       // regression cannot hide behind the tolerated-error narrowing.
       // Vitest direct-invoke and the force-static placeholder path are
       // the two known-quiet shapes; anything else worth a look should

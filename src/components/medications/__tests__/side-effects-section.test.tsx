@@ -45,7 +45,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 /**
- * v1.4.25 W19d — SideEffectsSection SSR smoke tests.
+ * v1.4.25 — SideEffectsSection SSR smoke tests.
  *
  * The project never installed `@testing-library/react`; the
  * convention is `renderToStaticMarkup` + assertions against the SSR
@@ -266,7 +266,7 @@ describe("<SideEffectsSection> — surface render", () => {
     seedSideEffects(client, "med-1", []);
     const html = render(<SideEffectsSection medicationId="med-1" />, client);
     expect(html).toContain("Side effects");
-    // v1.4.28 FB-F1 — the CTA dropped its qualifier so the chip stops
+    // v1.4.28 — the CTA dropped its qualifier so the chip stops
     // overflowing the side-effects card on narrow viewports. The
     // section title carries the context.
     expect(html).toContain(">Log<");

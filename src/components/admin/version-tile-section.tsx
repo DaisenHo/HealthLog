@@ -3,7 +3,7 @@
 /**
  * `<VersionTileSection>` — admin-overview version card.
  *
- * v1.15.12 H1 — a dedicated tile that surfaces the running build's
+ * v1.15.12 — a dedicated tile that surfaces the running build's
  * version, short build SHA, and build timestamp, plus a best-effort
  * "update available" hint computed against the latest GitHub release
  * tag. The release comparison reuses the existing

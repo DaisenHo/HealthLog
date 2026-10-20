@@ -31,7 +31,7 @@ vi.mock("@/lib/insights/derived/readiness", () => ({
   computeReadiness: (...args: unknown[]) => computeReadinessMock(...args),
 }));
 
-// v1.18.1 P4 — Rest Mode resolver. Default inactive; the annotation test
+// v1.18.1 — Rest Mode resolver. Default inactive; the annotation test
 // flips it active to assert the score is NOT penalised, only annotated.
 const restModeMock = vi.hoisted(() => ({
   resolveRestMode: vi.fn(async () => ({

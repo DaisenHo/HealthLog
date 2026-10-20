@@ -1,5 +1,5 @@
 /**
- * v1.4.16 phase B5b — read-only chain summary surfaced under
+ * v1.4.16 — read-only chain summary surfaced under
  * `/settings/ai`. The full management UX is owned by B2 (provider
  * settings cleanup); this endpoint just lets the existing AI section
  * render "Active provider: codex" + "Configured: codex, openai" so the
@@ -107,7 +107,7 @@ describe("GET /api/insights/provider-chain", () => {
   });
 
   it("surfaces disabled entries on the wire so the user can re-enable them", async () => {
-    // v1.4.16 phase D reconcile (code-review H2) — the GET response
+    // v1.4.16 (code-review H2) — the GET response
     // used to filter through resolveProviderChain which DROPS disabled
     // entries; the UI then lost them on next refetch. The persisted
     // chain is the source of truth on the wire.

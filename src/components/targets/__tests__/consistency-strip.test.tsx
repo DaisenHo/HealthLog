@@ -8,7 +8,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 /**
- * v1.4.25 W3e — `<ConsistencyStrip>` replaces the v1.4.22 per-card
+ * v1.4.25 — `<ConsistencyStrip>` replaces the v1.4.22 per-card
  * sparkline. Seven dots, one per Berlin-tz day; band-coloured when the
  * day's mean reading was in range, hollow when no readings, and a
  * trailing caption that flips between "in range" and "logged" depending

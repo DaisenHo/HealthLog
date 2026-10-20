@@ -72,7 +72,7 @@ export function pairByTimestamp(
 }
 
 /**
- * v1.2.5 (M-CS3) — significance-gated Pearson, the one correlation every
+ * v1.2.5 — significance-gated Pearson, the one correlation every
  * surface reports.
  *
  * A strength band read from |r| alone, above a floor of five pairs, let a

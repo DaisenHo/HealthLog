@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.20 phase B3 — guards for the `/insights` wiring of the
+ * v1.4.20 — guards for the `/insights` wiring of the
  * Trends row + the analytics correlations payload.
  *
  * The page-source scan pattern mirrors `insights-polish.test.ts` —
@@ -65,7 +65,7 @@ describe("v1.4.20 B3 — /insights mounts TrendsRow", () => {
 });
 
 describe("v1.4.20 B3 — /api/analytics surfaces correlations", () => {
-  // v1.4.37 W2 — the inline correlation builder relocated to
+  // v1.4.37 — the inline correlation builder relocated to
   // `src/lib/analytics/correlations-fast-path.ts`. The route now
   // delegates through `computeCorrelationHypothesesFastPath`; the
   // three Pearson runner imports live alongside the new dispatcher.

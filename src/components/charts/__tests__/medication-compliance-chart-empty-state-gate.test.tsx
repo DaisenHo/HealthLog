@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import deMessages from "../../../../messages/de.json";
 
 /**
- * v1.4.43 W2-CHART-GATE — medication-compliance empty-state copy split.
+ * v1.4.43 — medication-compliance empty-state copy split.
  *
  * The chart aggregates per-day compliance buckets, so a user with 20
  * scheduled doses on 2 calendar days collapses to `chartData.length =

@@ -84,7 +84,7 @@ interface DerivedSnapshotEntry {
 }
 
 /**
- * v1.21.0 (C3 / D3) — the coincident-deviation flag, compactly. "Two or more
+ * v1.21.0 — the coincident-deviation flag, compactly. "Two or more
  * of your vitals are outside their usual band today." Descriptive multi-signal
  * co-movement, never a cause; carries the illness-explained reframe. Folded
  * into the derived block so BOTH Coach paths (the tool path via
@@ -102,7 +102,7 @@ interface CoincidentSnapshotEntry {
 }
 
 /**
- * v1.21.2 (A5) — the Tension Verdict flag, compactly. The readiness/recovery
+ * v1.21.2 — the Tension Verdict flag, compactly. The readiness/recovery
  * composite blends several contributors; when they DISAGREE (e.g. good sleep
  * but a suppressed HRV-balance or an elevated resting pulse) the single band
  * hides the conflict. This flag names the honest "internal read" the model
@@ -145,7 +145,7 @@ type DerivedSnapshotBlock = Record<string, DerivedSnapshotEntry> & {
 };
 
 /**
- * v1.21.2 (A5) — a contributor reading at/above this 0..100 score is FAVOURABLE;
+ * v1.21.2 — a contributor reading at/above this 0..100 score is FAVOURABLE;
  * at/below `TENSION_LOW_SCORE` it is UNFAVOURABLE. The gap in the middle is
  * "neutral" — neither side of a disagreement. A genuine tension needs at least
  * one contributor on EACH side.
@@ -163,7 +163,7 @@ const READINESS_CONTRIBUTOR_LABEL: Record<string, string> = {
 };
 
 /**
- * v1.21.2 (A5) — derive the Tension Verdict from the readiness contributors.
+ * v1.21.2 — derive the Tension Verdict from the readiness contributors.
  * Pure: a list of `{ key, value }` contributors (value 0..100, higher = better,
  * null = absent) plus the composite band and the clinical-override bit. Returns
  * the fired flag ONLY when at least one contributor reads favourably AND at least
@@ -263,7 +263,7 @@ export async function buildDerivedSnapshotBlock(
       reach,
     );
 
-  // v1.21.0 (C3 / D3) — the coincident-deviation flag, fired-only. Computed
+  // v1.21.0 — the coincident-deviation flag, fired-only. Computed
   // off the one shared profile alongside the scores; fail-soft to null so a
   // baseline hiccup never sinks the derived block. Only attached when it
   // FIRED (≥2 vitals out of band today) — a quiet day adds no entry, keeping
@@ -299,7 +299,7 @@ export async function buildDerivedSnapshotBlock(
     }),
   );
 
-  // v1.21.2 (A5) — capture the readiness contributors so the Tension Verdict can
+  // v1.21.2 — capture the readiness contributors so the Tension Verdict can
   // read the per-contributor directions the composite band hides. Only the
   // readiness blend exposes them; recovery resolves to the same proxy when no
   // device-native row exists, so reading readiness once is enough.
@@ -378,7 +378,7 @@ export async function buildDerivedSnapshotBlock(
     };
   }
 
-  // v1.21.2 (A5) — the Tension Verdict. A real clinical red-flag is in play when
+  // v1.21.2 — the Tension Verdict. A real clinical red-flag is in play when
   // the coincident-deviation flag fired WITHOUT an illness explanation; the flag
   // carries that bit so the narration never reconciles a red-flag into a calm
   // verdict (clinical-floors override). Only attached when the contributors

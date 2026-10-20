@@ -49,7 +49,7 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 
 /**
- * v1.39 (C2) — the one task the flow ends on.
+ * v1.39 — the one task the flow ends on.
  *
  * Exactly one of three, chosen by the step machine's fixed priority: connect
  * the wearable named in Q4, add the first medication, or log one reading for

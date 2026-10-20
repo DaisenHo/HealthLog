@@ -329,7 +329,7 @@ export function UserManagementSection() {
 
       {filteredUsers ? (
         filteredUsers.length === 0 ? (
-          // v1.4.15 phase-C5: dedicated empty state. The previous build
+          // v1.4.15: dedicated empty state. The previous build
           // rendered an empty `<tbody>` so an admin filter that returned
           // no rows produced a blank rectangle; the icon + filter-aware
           // copy + "Show all users" CTA make the state explicit.

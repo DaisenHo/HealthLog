@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * S10 — `<EcgCrossLink>` unit tests.
+ * `<EcgCrossLink>` unit tests.
  *
  * The load-bearing behaviour under test:
  *   - data-availability gating: the pointer un-mounts entirely when the user

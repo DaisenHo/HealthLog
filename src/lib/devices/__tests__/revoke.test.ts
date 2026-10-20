@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// v1.4.23 W6 (HIGH 6) — verify the device-revoke cascade wraps every
+// v1.4.23 (HIGH 6) — verify the device-revoke cascade wraps every
 // write inside `prisma.$transaction` so a partial failure doesn't
 // leave the device row alive with all its tokens revoked. Also pins
 // the cross-user 404 path (returns null) and the no-access-token

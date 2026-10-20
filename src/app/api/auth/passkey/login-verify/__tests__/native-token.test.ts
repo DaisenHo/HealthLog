@@ -32,7 +32,7 @@ vi.mock("@/lib/auth/login-alert", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
-  // v1.4.43 W13 M-4 — passkey/login-verify now uses the auth-surface
+  // v1.4.43 — passkey/login-verify now uses the auth-surface
   // wrapper. Default to a clean per-IP result.
   checkAuthSurfaceRateLimit: vi.fn(),
 }));

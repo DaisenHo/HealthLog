@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.27 MB5 — `/admin/app-logs` summary line lifted out of the
+ * v1.4.27 — `/admin/app-logs` summary line lifted out of the
  * `overflow-x-auto` table wrapper so admins on narrow viewports can
  * still see "showing X of Y events" without first scrolling the table
  * back to its starting offset. The refresh control already lives in

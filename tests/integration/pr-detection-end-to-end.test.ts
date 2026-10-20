@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W16c — PR detection end-to-end.
+ * v1.4.25 — PR detection end-to-end.
  *
  * The handler runs against a real Postgres testcontainer + real
  * Measurement / Workout rows. We assert two flows:

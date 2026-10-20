@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * v1.4.37 W7c — when the list filter is a cumulative HK type, the
+ * v1.4.37 — when the list filter is a cumulative HK type, the
  * list view renders one row per user-TZ day with the day's total and
  * a chevron that drills back into the per-sample chunks via a
  * separate query. This test mocks both queries (the parent + the

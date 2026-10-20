@@ -1,5 +1,5 @@
 /**
- * v1.26.0 SEAM-N3 — the adherence storyline must read the SAME
+ * v1.26.0 — the adherence storyline must read the SAME
  * schedule-anchored, cadence-aware adherence number the dashboard tile does.
  *
  * The regression this pins: the storyline used to derive its adherence % from

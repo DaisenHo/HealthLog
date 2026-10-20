@@ -1,5 +1,5 @@
 /**
- * v1.4.29 C2 — `aggregate=daily` against a real Postgres.
+ * v1.4.29 — `aggregate=daily` against a real Postgres.
  *
  * The mocked-`$queryRaw` unit test in
  * `src/app/api/measurements/__tests__/range-aggregation-route.test.ts`

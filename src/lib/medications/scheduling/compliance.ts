@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19e — pure compliance chip aggregator.
+ * v1.4.25 — pure compliance chip aggregator.
  *
  * Reuses `buildCadenceTimeline` to count taken vs missed slots over a
  * rolling window. The W19e detail page surfaces four chips: adherence

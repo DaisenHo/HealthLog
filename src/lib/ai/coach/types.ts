@@ -47,7 +47,7 @@ export const coachScopeWindowSchema = z.enum([
   "last7days",
   "last30days",
   "last90days",
-  // v1.4.27 B7 / BL-P6-4 — long-horizon window for the year-in-review
+  // v1.4.27 — long-horizon window for the year-in-review
   // surfaces. Sits between `last90days` and `allTime` so the snapshot
   // builder can sample a denser timeline (one row per week) than the
   // unbounded fallback while still surfacing seasonal patterns.
@@ -162,7 +162,7 @@ export const coachChatRequestSchema = z.object({
 });
 
 /**
- * v1.18.1 (Workstream C) — a Coach cadence suggestion surfaced as a
+ * v1.18.1 — a Coach cadence suggestion surfaced as a
  * one-tap action card. The model proposes the cadence via a sentinel
  * block; the server resolves it against the closed cadence catalog and
  * gates it (module-toggle + opt-out + dismissal + cooldown + dedup). When
@@ -823,20 +823,20 @@ export interface CoachProvenance {
    */
   keyValues?: ReadonlyArray<CoachKeyValue>;
   /**
-   * v1.18.1 (Workstream C) — a cadence suggestion attached to this turn.
+   * v1.18.1 — a cadence suggestion attached to this turn.
    * Persisted alongside the message so the one-tap action card re-renders
    * on a conversation reload. Absent on turns that carry no suggestion.
    */
   suggestion?: CoachSuggestion;
   /**
-   * v1.22 (F6) — a generalised confirm→apply action card attached to this turn
+   * v1.22 — a generalised confirm→apply action card attached to this turn
    * (`checkup.create` / `reminder.note`, closed allowlist). Persisted alongside
    * the message so the card re-renders on a conversation reload. Absent on turns
    * that carry no action.
    */
   suggestedAction?: CoachSuggestedAction;
   /**
-   * v1.20.0 (F1) — the retrieval-tool trace for this turn: which tools the
+   * v1.20.0 — the retrieval-tool trace for this turn: which tools the
    * Coach called and whether each found data (`present`). Metadata only — no
    * raw values beyond what `keyValues` already persists. Lets a conversation
    * reload show "what I looked at" and lets the hallucination audit replay

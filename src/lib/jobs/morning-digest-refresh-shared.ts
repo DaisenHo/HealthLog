@@ -1,5 +1,5 @@
 /**
- * S4 — generator-free contract for the `morning-digest-refresh` queue.
+ * Generator-free contract for the `morning-digest-refresh` queue.
  *
  * The sleep-arrival trigger (`@/lib/daily/morning-refresh-trigger`) — reached
  * from the Withings, WHOOP, and Apple-Health sleep-write seams — enqueues a

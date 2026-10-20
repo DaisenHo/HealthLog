@@ -1,7 +1,7 @@
 /**
  * PUT /api/auth/me/timezone
  *
- * v1.4.25 W7 — per-user timezone setter. Lifts the timezone write
+ * v1.4.25 — per-user timezone setter. Lifts the timezone write
  * out of `PUT /api/auth/profile` so the picker UI can post the
  * single field without round-tripping email/heightCm/etc, and so
  * the change pipeline (validate → write → invalidate-cache) is
@@ -62,7 +62,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 
   invalidateUserTimezone(user.id);
 
-  // v1.37.19 (A6-12) — the medication-compliance rollup keys its rows by
+  // v1.37.19 — the medication-compliance rollup keys its rows by
   // the LOCAL day the dose fell on, minted under the timezone in force at
   // write time. A zone change re-buckets those days, so the stored keys go
   // stale (and the coverage probe compares counts, not keys — it cannot

@@ -1,5 +1,5 @@
 /**
- * v1.30.3 (QA F4) — cumulative-PersonalRecord rederivation queue
+ * v1.30.3 — cumulative-PersonalRecord rederivation queue
  * registration guard.
  *
  * Same source-text-grep approach as the step-consolidation-repair guard:

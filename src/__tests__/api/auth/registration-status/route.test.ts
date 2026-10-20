@@ -1,5 +1,5 @@
 /**
- * v1.4.40 W-INSIGHTS SB-7 — pin the four discovery branches of
+ * v1.4.40 — pin the four discovery branches of
  * `GET /api/auth/registration-status`.
  *
  * The route is read-only; the iOS sign-in flow + the web onboarding

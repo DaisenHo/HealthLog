@@ -295,7 +295,7 @@ export async function buildGlp1SnapshotBlock(
 
   const medications: Glp1MedicationBlock[] = meds.map((med) => {
     const { display, generic } = deriveDrugNames(med.name);
-    // v1.4.25 W10 reconcile (security H-1): the snapshot JSON ships
+    // v1.4.25 (security H-1): the snapshot JSON ships
     // verbatim inside the Coach user prompt. `Medication.name`,
     // `MedicationDoseChange.doseUnit`, and `MedicationDoseChange.note`
     // are free-text columns the user edits — without sanitisation a

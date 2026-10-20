@@ -115,6 +115,12 @@ const eslintConfig = defineConfig([
       // carries `eslint-disable-next-line ... -- <reason>`; the rule refuses
       // a directive without one. See the rule header.
       "healthlog/no-utc-day-key": "error",
+      // A comment does not open with the identifier of the work item that
+      // produced it: those point into notes that never ship. A release
+      // version and an issue reference may stay. The matcher is shared with
+      // scripts/strip-planning-tags.mjs; see eslint-plugins/healthlog/
+      // planning-tags.js for the shape and its limits.
+      "healthlog/no-planning-tags": "error",
     },
   },
   // v1.28.17 — every recharts-rendering component funnels through the

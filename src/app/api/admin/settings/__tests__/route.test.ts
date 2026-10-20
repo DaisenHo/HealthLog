@@ -377,7 +377,7 @@ describe("PUT /api/admin/settings", () => {
     expect(res.status).toBe(415);
   });
 
-  // v1.4.25 W7 — server-default timezone.
+  // v1.4.25 — server-default timezone.
   it("persists a valid defaultUserTimezone", async () => {
     vi.mocked(prisma.appSettings.upsert).mockResolvedValue({
       id: "singleton",

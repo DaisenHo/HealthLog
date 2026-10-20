@@ -10,7 +10,7 @@ import {
 } from "../prompts/insight-generator";
 
 /**
- * v1.4.20 phase B3 — Trend Annotations schema + prompt validation.
+ * v1.4.20 — Trend Annotations schema + prompt validation.
  *
  * Acceptance covered here:
  *   1. PROMPT_VERSION matches `^4\.20\.\d+$` and is `4.20.1` (B3 bump).

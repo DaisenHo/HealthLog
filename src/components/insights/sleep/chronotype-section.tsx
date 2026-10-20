@@ -6,7 +6,7 @@ import { useSleepRhythm } from "./use-sleep-rhythm";
 import { ChronotypeCard } from "./chronotype-card";
 
 /**
- * v1.18.7 W-D — chronotype card on the Sleep view.
+ * v1.18.7 — chronotype card on the Sleep view.
  *
  * v1.19.0 — the standalone "Chronotyp" `<SectionHeading>` was removed: it
  * duplicated the heading the `<ChronotypeCard>` already carries in its own

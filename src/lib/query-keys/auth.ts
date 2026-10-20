@@ -5,7 +5,7 @@
 export const authKeys = {
   auth: () => ["auth"] as const,
   /**
-   * v1.4.40 W-RSC — the `useAuth` hook's `["auth", "me"]` shape was a
+   * v1.4.40 — the `useAuth` hook's `["auth", "me"]` shape was a
    * recurring source of factory drift (audit H1 — "`useAuth` uses
    * `["auth", "me"]` but `queryKeys.auth()` returns `["auth"]`"). Both
    * shapes share the `["auth"]` prefix so existing prefix-invalidations
@@ -16,7 +16,7 @@ export const authKeys = {
   authRegistrationStatus: () => ["auth", "registration-status"] as const,
   authOidcStatus: () => ["auth", "oidc", "status"] as const,
   /**
-   * v1.4.40 W-RSC — Settings → AI surfaces and the targets editor
+   * v1.4.40 — Settings → AI surfaces and the targets editor
    * subscribe to the user-thresholds API. Centralise the key so a
    * future rename (e.g. `["user","limits"]`) doesn't drift across the
    * three call sites (settings/thresholds-editor-section,
@@ -85,7 +85,7 @@ export const authKeys = {
   authNotificationPrefs: () => ["auth", "me", "notification-prefs"] as const,
 
   /**
-   * v1.4.25 W5e — per-user, per-metric-class source priority. The
+   * v1.4.25 — per-user, per-metric-class source priority. The
    * Settings → Sources surface reads + writes this key; saving
    * invalidates `analytics()` because the cumulative-metric aggregator
    * folds the new priority into the SLEEP_DURATION daily total

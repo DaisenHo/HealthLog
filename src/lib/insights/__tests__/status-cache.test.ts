@@ -8,7 +8,7 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       updateMany: vi.fn(),
     },
-    // v1.18.11 (P6) — the input gate / fingerprint probe salient inputs.
+    // v1.18.11 — the input gate / fingerprint probe salient inputs.
     measurement: { groupBy: vi.fn() },
     moodEntry: { aggregate: vi.fn() },
     customMetric: { findMany: vi.fn() },

@@ -1,5 +1,5 @@
 /**
- * v1.4.40 SB-10 — AI consent latest-receipt reader + revoke endpoint.
+ * v1.4.40 — AI consent latest-receipt reader + revoke endpoint.
  *
  *   GET /api/consent/ai/latest?kind=ai_full
  *     Returns the latest non-revoked receipt for that kind, or null.
@@ -55,7 +55,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 400 (consent routes use 400 not 422).
+    // v1.4.43 — multi-issue 400 (consent routes use 400 not 422).
     return returnAllZodIssues(parsed.error, 400);
   }
 
@@ -121,7 +121,7 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
-    // v1.4.43 W6 — multi-issue 400 (consent routes use 400 not 422).
+    // v1.4.43 — multi-issue 400 (consent routes use 400 not 422).
     return returnAllZodIssues(parsed.error, 400);
   }
 

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * v1.4.43 W11 — insights mother-page dynamic-skeleton guards.
+ * v1.4.43 — insights mother-page dynamic-skeleton guards.
  * v1.11.3 — rewritten for the shared `BlockSkeleton` loader.
  *
  * The `next/dynamic` loading placeholders for the below-the-hero blocks

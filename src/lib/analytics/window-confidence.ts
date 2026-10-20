@@ -56,7 +56,7 @@ export interface WindowConfidence {
 }
 
 /**
- * v1.17 W1b — derive the BD-Zielbereich tile's confidence inputs (90-day
+ * v1.17 — derive the BD-Zielbereich tile's confidence inputs (90-day
  * pair count + effective label span) from a BP envelope's 90-day window.
  * Shared by the dashboard snapshot and the `/api/analytics` thick slice so
  * the two surfaces can never compute the tile's gate or span differently.

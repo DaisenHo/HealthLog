@@ -49,7 +49,7 @@ interface AiProviderStatus {
 }
 
 /**
- * v1.39 (C2) — the setup flow's exit.
+ * v1.39 — the setup flow's exit.
  *
  * The dashboard is one click away, already ordered, and the checklist opens
  * on arrival (design spec §The screens, 5). The tour is an OFFER here rather

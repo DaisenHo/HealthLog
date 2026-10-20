@@ -6,7 +6,7 @@
  * insert-vs-update statuses off a single bulk existence probe, and the
  * batch envelope errors (`too_large`, multi-issue `invalid`).
  *
- * v1.29 perf fix — the probe-then-upsert-per-entry pattern (up to 1000
+ * v1.29 — the probe-then-upsert-per-entry pattern (up to 1000
  * sequential round trips) was replaced by one indexed `findMany` existence
  * read + a bulk `createMany` for new pairs + a `$transaction` of per-row
  * `update` calls for existing pairs. `$transaction` is mocked to actually
@@ -320,7 +320,7 @@ describe("POST /api/nutrients/batch — write semantics", () => {
     expect(prisma.nutrientIntakeDay.update).not.toHaveBeenCalled();
   });
 
-  // v1.30.3 (QA F9) — a landed row must evict the dashboard snapshot so
+  // v1.30.3 — a landed row must evict the dashboard snapshot so
   // the water/nutrient tile reflects the new total on the very next read,
   // matching the manual water POST's own posture (`nutrients/water/route.ts`).
   it("evicts the dashboard snapshot when a row lands", async () => {

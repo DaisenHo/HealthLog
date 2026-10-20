@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 /**
- * v1.4.15 phase-C5 — `/admin/backups` empty state.
+ * v1.4.15 — `/admin/backups` empty state.
  *
  * The previous build rendered a single-line `<p>No backups recorded
  * yet.</p>` inside the card. Brand-new admins didn't realise the "Run

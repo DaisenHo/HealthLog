@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W16c — `<PersonalRecordBadge>` rendering.
+ * v1.4.25 — `<PersonalRecordBadge>` rendering.
  *
  * The badge renders a small "PR" pill when the user achieved an
  * all-time best for the metric in the last 30 days. Tests cover:

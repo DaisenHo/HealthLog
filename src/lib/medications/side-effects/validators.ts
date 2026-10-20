@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W19d — Zod validators for the side-effect API surface.
+ * v1.4.25 — Zod validators for the side-effect API surface.
  *
  * The category supplied on the wire is sanity-checked against the
  * authoritative entry → category mapping in `./taxonomy.ts`; on
@@ -22,7 +22,7 @@ import {
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /**
- * v1.4.25 W21 Fix-N (simp-M1) — these arrays used to restate the
+ * v1.4.25 (simp-M1) — these arrays used to restate the
  * Prisma enum keys verbatim, which meant adding a new entry required
  * three separate edits (schema, taxonomy map, validator array) that
  * could silently drift. The arrays are now derived from the Prisma
@@ -44,7 +44,7 @@ export const SIDE_EFFECT_ENTRY_VALUES = Object.values(
 const SIDE_EFFECT_NOTES_MAX = 280;
 
 /**
- * v1.4.25 W21 Fix-N (code-M6) — `category` was dropped from the wire
+ * v1.4.25 (code-M6) — `category` was dropped from the wire
  * schema. The route now derives the canonical category from `entry`
  * via `categoryForEntry`. Older clients that still send `category` see
  * it silently ignored (Zod strips unknown fields by default), and the

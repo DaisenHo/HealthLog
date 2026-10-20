@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * S2 — the Today hero, the promoted day's read on the dashboard.
+ * The Today hero, the promoted day's read on the dashboard.
  *
  * MARC SIGN-OFF (2026-07-16, decision 1): Today is the dashboard hero
  * promoted to the default read, with the dense tile grid demoted below

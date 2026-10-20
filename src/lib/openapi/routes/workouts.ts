@@ -22,7 +22,7 @@ import {
 import { aiCapabilityState } from "./profile";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-// v1.4.25 W16b — typed workout batch ingest response envelope. Mirrors
+// v1.4.25 — typed workout batch ingest response envelope. Mirrors
 // the measurements batch shape but reports the `workouts` count rather
 // than the entries count. `skipped` carries the entries the server
 // refused: an unusable external id, or a `samples` array that failed

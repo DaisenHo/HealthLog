@@ -588,7 +588,7 @@ export const TWO_ENDED_MODELS = [
   // questionnaire over every module decision taken in Settings since. It is
   // carried and asserted, not defaulted.
   "OnboardingRecord",
-  // v1.43 (D1223) — a marker's other spellings ride on the marker as
+  // v1.43 — a marker's other spellings ride on the marker as
   // `aliases[]`, and the merge ledger travels as its own list whose target is
   // resolved by id or by name like a lab result's marker. Without the aliases a
   // restored account is asked again at the next scan which marker each

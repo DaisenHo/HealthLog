@@ -236,7 +236,7 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
         clientManaged: false,
       },
       content: { detail: "generic" },
-      // v1.32.22 (M1) — the write echoes the fresh optimistic-concurrency token.
+      // v1.32.22 — the write echoes the fresh optimistic-concurrency token.
       updatedAt: expect.any(String),
     });
 
@@ -441,7 +441,7 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
         clientManaged: false,
       },
       content: { detail: "generic" },
-      // v1.32.22 (M1) — the write echoes the fresh optimistic-concurrency token.
+      // v1.32.22 — the write echoes the fresh optimistic-concurrency token.
       updatedAt: expect.any(String),
     });
 
@@ -644,7 +644,7 @@ describe("PATCH /api/auth/me/notification-prefs", () => {
 });
 
 /**
- * v1.32.22 (M1) — optimistic concurrency (issue #581 family). A PATCH carrying
+ * v1.32.22 — optimistic concurrency (issue #581 family). A PATCH carrying
  * the `baseUpdatedAt` it was based on writes CONDITIONALLY on the stored row
  * still carrying that token. The headline case: a concurrent web PATCH of a
  * DIFFERENT category can no longer silently revert the iOS `clientManaged`

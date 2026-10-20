@@ -13,7 +13,7 @@ import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import type { CoachSuggestedAction } from "@/lib/ai/coach/suggest-action";
 
 /**
- * v1.22 (F6) — the generalised one-tap "confirm → apply" Coach action card.
+ * v1.22 — the generalised one-tap "confirm → apply" Coach action card.
  *
  * Rendered under an assistant bubble when the turn carried a `suggestedAction`
  * (live from the SSE frame, or persisted on the message provenance). The card

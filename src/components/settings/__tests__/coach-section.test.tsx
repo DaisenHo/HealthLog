@@ -1,5 +1,5 @@
 /**
- * v1.18.0 (S5) — Settings → Coach section.
+ * v1.18.0 — Settings → Coach section.
  *
  * The Coach preference cards (disable toggle, preferences, memory) moved
  * out of the AI / Assistant section into their own dedicated, module-gated
@@ -66,7 +66,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
-  // v1.18.6 (W9) — the visible heading lives in the shared frame the route
+  // v1.18.6 — the visible heading lives in the shared frame the route
   // wraps the section in; render through it so the heading id is present.
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>
@@ -84,10 +84,10 @@ describe("<CoachSection> — SSR smoke", () => {
     expect(html).toContain('id="settings-section-coach-title"');
     expect(html).toContain('data-testid="settings-disable-coach-card"');
     expect(html).toContain('data-testid="settings-disable-coach-switch"');
-    // v1.18.1 (D7) — polarity flipped to activate/default-on.
+    // v1.18.1 — polarity flipped to activate/default-on.
     expect(html).toContain("Activate Coach");
     expect(html).toContain("Show the Coach button and drawer");
-    // v1.18.6 (W9) — the proactive Coach nudge card moved here from
+    // v1.18.6 — the proactive Coach nudge card moved here from
     // Benachrichtigungen; its anchor renders under the enabled-coach gate.
     expect(html).toContain('id="coach-nudge"');
     // Raw key never leaks past i18n.

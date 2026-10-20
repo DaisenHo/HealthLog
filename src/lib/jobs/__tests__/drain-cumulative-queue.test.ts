@@ -1,5 +1,5 @@
 /**
- * v1.4.37 W7c — pg-boss queue registration for the nightly drain of
+ * v1.4.37 — pg-boss queue registration for the nightly drain of
  * per-sample APPLE_HEALTH cumulative rows. The drain helper exists
  * since v1.4.30 but only ran via the admin endpoint / CLI; the
  * scheduled wrapper closes the loop so the list view stops painting

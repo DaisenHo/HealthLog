@@ -36,7 +36,7 @@ const baseRationale = {
 };
 
 /**
- * v1.4.16 phase B5a — citation-coverage post-validation logging.
+ * v1.4.16 — citation-coverage post-validation logging.
  *
  * After the schema parse + cross-citation check pass, the wrapper
  * counts how many recommendations make a normative claim and how

@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W7b — date-key contract for MoodEntry rows.
+ * v1.4.25 — date-key contract for MoodEntry rows.
  *
  * Pin both halves of Decision A:
  *

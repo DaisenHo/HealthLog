@@ -202,7 +202,7 @@ const ECG_ENTRY: CatalogEntry = {
   nameKey: "insights.ecg.sectionTitle",
   sourceKey: "metricCatalog.ecg.source",
   kind: "metric",
-  // v1.30 (H1) — ECG now has its own routed page; the catalog "View" button
+  // v1.30 — ECG now has its own routed page; the catalog "View" button
   // points there instead of the overview teaser anchor.
   href: `${INSIGHTS_OVERVIEW_PATH}/ecg`,
   connectable: true,

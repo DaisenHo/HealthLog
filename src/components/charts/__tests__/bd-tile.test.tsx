@@ -6,7 +6,7 @@ import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * v1.4.28 R3a FB-C1 + FB-C2 — BD-Zielbereich tile shape parity.
+ * v1.4.28 — BD-Zielbereich tile shape parity.
  *
  * Until v1.4.27 the dashboard mounted the BD tile through a special
  * branch that:

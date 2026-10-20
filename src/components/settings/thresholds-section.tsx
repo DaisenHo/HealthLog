@@ -21,7 +21,7 @@ import { ThresholdsEditorSection } from "@/components/settings/thresholds-editor
  *   2. `<ThresholdsEditorSection>` — per-metric range inputs. The editor
  *      card keeps its own affordance row (icon, reset-all button).
  *
- * v1.4.16 phase B6: file renamed from the historic
+ * v1.4.16: file renamed from the historic
  * `thresholds-settings-section.tsx` (`<ThresholdsSettingsSection>`)
  * so the filename + default export match the slug — every other
  * section in `src/components/settings/` follows the

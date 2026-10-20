@@ -45,7 +45,7 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * v1.4.33 C1 — pull `?slice=…` from either a NextRequest (the
+ * v1.4.33 — pull `?slice=…` from either a NextRequest (the
  * route's production wrapper) or a plain `Request` (the integration
  * tests instantiate `new Request("http://localhost/api/analytics")`
  * and cast through). Falls back to the raw `URL(request.url)` parse
@@ -83,7 +83,7 @@ export const GET = apiHandler(async (request?: Request) => {
     });
   }
 
-  // v1.4.33 C1 — slim summaries slice for the dashboard tile strip.
+  // v1.4.33 — slim summaries slice for the dashboard tile strip.
   // The default path runs 30+ chunked findMany reads to feed
   // `summarize()` per type; under `?slice=summaries` the route
   // resolves the same per-type DataSummary shape from 2 SQL passes
@@ -96,7 +96,7 @@ export const GET = apiHandler(async (request?: Request) => {
   // tile's `<InView>` boundary. Consumers that need only the headline
   // tile values land on this branch and skip the heavy chain.
   if (parsedQuery.data.slice === "summaries") {
-    // v1.4.34 IW-G — read-through the analytics cache keyed on
+    // v1.4.34 — read-through the analytics cache keyed on
     // (userId, slice). The slim slice is the dashboard tile strip's hot
     // path; multiple dashboard mounts inside a 60-second TTL all hit a
     // warm cache.
@@ -123,7 +123,7 @@ export const GET = apiHandler(async (request?: Request) => {
       slim.lastSeenByType,
       slimModules,
     );
-    // v1.4.34 IW-B — bfcache-friendly directive on the slim slice too
+    // v1.4.34 — bfcache-friendly directive on the slim slice too
     // so a back-forward navigation that landed on the dashboard tile
     // strip can restore from memory instead of paying a full reload.
     const slimRes = apiSuccess({
@@ -138,7 +138,7 @@ export const GET = apiHandler(async (request?: Request) => {
     return slimRes;
   }
 
-  // v1.4.34 IW-G — wrap the heavy default-slice body in the analytics
+  // v1.4.34 — wrap the heavy default-slice body in the analytics
   // cache keyed on (userId, "default"). The dashboard, the checklist
   // mount, and the Coach drawer all hit this endpoint within seconds
   // of each other; the 60s TTL converts the 7.99s combined dashboard
@@ -172,7 +172,7 @@ export const GET = apiHandler(async (request?: Request) => {
   const body = enrichLastSeenDaysAgo(cachedBody);
 
   const response = apiSuccess(body);
-  // v1.4.34 IW-B — bfcache-friendly directive so back-forward navigation
+  // v1.4.34 — bfcache-friendly directive so back-forward navigation
   // restores the dashboard from memory. Per `src/lib/http/cache-headers.ts`:
   // `private` keeps shared caches out of personal data, `max-age=0` forces
   // revalidation on every navigation so session swaps detect on the wire,
@@ -224,14 +224,14 @@ function enrichLastSeenDaysAgo<
 }
 
 /**
- * v1.4.34 IW-G — the heavy default-slice body, lifted out of the route
+ * v1.4.34 — the heavy default-slice body, lifted out of the route
  * handler so `cached()` can wrap it. Returns the raw JSON payload; the
  * route handler attaches `Cache-Control` headers afterward. The split
  * matches the v1.4.33 snapshot LRU's `buildCoachSnapshot` →
  * `buildCoachSnapshotImpl` shape.
  */
 async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
-  // v1.4.37.1 hotfix — fire-and-forget the rollup-fresh check.
+  // v1.4.37.1 — fire-and-forget the rollup-fresh check.
   // Awaiting it on the read path can stall the Node event loop for
   // 30–60 s on a power-user account whose iOS step samples keep the
   // 90-day DAY window slightly stale, which starves /api/health,
@@ -244,7 +244,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
   // wraps its own try/catch, so the void call cannot reject.
   void ensureUserRollupsFresh(user.id);
 
-  // v1.4.37 W2 — single per-type coverage probe shared by the
+  // v1.4.37 — single per-type coverage probe shared by the
   // bp_in_target / healthScore / correlations branches below. The
   // probe is one indexed query against `measurement_rollups`; the
   // three downstream branches each reuse the resulting `coverage`
@@ -253,7 +253,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
   // cost flat across the three branches.
   const coverage = await probeRollupCoverage(user.id);
 
-  // v1.4.25 W7b — every day-bucket call inside this route honours the
+  // v1.4.25 — every day-bucket call inside this route honours the
   // user's display timezone via `userDayKey(date, userTz)` (the legacy
   // `berlinDayKey()` helper was retired in v1.4.40).
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
@@ -329,7 +329,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
   let bpInTargetPct30d: number | null = null;
   let bpInTargetPctAllTime: number | null = null;
   /**
-   * v1.4.22 W5 reconcile (Code-H2) — period-aligned prior-window
+   * v1.4.22 — period-aligned prior-window
    * pcts so the BD-Zielbereich tile's comparison-overlay caption
    * stops mismatching its math with its label. The tile's
    * `compareDelta` is `last30Days - priorMonth` (or `… - priorYear`)
@@ -338,12 +338,12 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
    */
   let bpInTargetPctPriorMonth: number | null = null;
   let bpInTargetPctPriorYear: number | null = null;
-  // v1.17 W1b — 90-day pair count + effective label span for the tile's
+  // v1.17 — 90-day pair count + effective label span for the tile's
   // thin-data gate. Surfaced so the BD-Zielbereich tile renders "collecting
   // data" until the window holds enough readings, with a dynamic span label.
   let bpInTargetCount90: number | null = null;
   let bpInTargetSpanDays90: number | null = null;
-  // v1.17 W1b — hold the current + prior-week BP envelopes so the shared
+  // v1.17 — hold the current + prior-week BP envelopes so the shared
   // Health-Score input builder grades the pillar off the identical shape the
   // dashboard snapshot uses (one builder, no per-surface assembly drift).
   // The graded score + prior-week BP figures the score consumes are read off
@@ -362,7 +362,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
   const clinicalBpTargets = getBpTargets(user.dateOfBirth);
   if (bpTargets) {
     const now = new Date();
-    // v1.4.37 W2 — probe-gated dispatcher replaces the inline chunked
+    // v1.4.37 — probe-gated dispatcher replaces the inline chunked
     // read. When BOTH BP types have DAY-bucket coverage the helper
     // pairs the per-day MEAN SYS + MEAN DIA from `measurement_rollups`
     // and counts in-target days against the five reporting windows,
@@ -390,7 +390,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
           targets: bpTargets,
           now,
           coverage,
-          // v1.4.38 W-A — cross-tz runtime guard. The helper falls back
+          // v1.4.38 — cross-tz runtime guard. The helper falls back
           // to the live SQL path when the user is more than 3 hours
           // from UTC, where the rollup table's UTC-midnight day-key
           // would slip a calendar day relative to the live aggregator's
@@ -454,7 +454,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
           }),
         ]);
     }
-    // v1.17 W1d — the BD-Zielbereich headline standardises on the
+    // v1.17 — the BD-Zielbereich headline standardises on the
     // trailing-90-day window (labelled "· 90 T" in the tile). All-time
     // remains carried below for the BP detail page's long view only.
     bpInTargetPct = windows.last90Days?.pct ?? null;
@@ -463,7 +463,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
     bpInTargetPctAllTime = windows.allTime?.pct ?? null;
     bpInTargetPctPriorMonth = windows.priorMonth?.pct ?? null;
     bpInTargetPctPriorYear = windows.priorYear?.pct ?? null;
-    // v1.17 W1b — count + effective span for the BD-Zielbereich tile's
+    // v1.17 — count + effective span for the BD-Zielbereich tile's
     // confidence gate (thin-data → "collecting data"; dynamic span label).
     // Shared helper keeps this identical to the dashboard snapshot.
     const bpWindow = deriveBpWindow90(
@@ -477,7 +477,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
 
   // Per-context glucose summaries (canonical mg/dL).
   //
-  // v1.4.29 H2 — bound to the trailing 30 days. The dashboard tile
+  // v1.4.29 — bound to the trailing 30 days. The dashboard tile
   // path only reads the trailing window; pre-bound this query
   // walked every persisted BG row a multi-year user has written.
   const glucoseSince = new Date(
@@ -518,8 +518,8 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
     { windowDays: GLUCOSE_PANEL_WINDOW_DAYS, now: new Date() },
   );
 
-  // v1.4.20 phase B3 — three pre-defined correlation hypotheses.
-  // v1.4.37 W2 — probe-gated helper. The 28-day scan window (down
+  // v1.4.20 — three pre-defined correlation hypotheses.
+  // v1.4.37 — probe-gated helper. The 28-day scan window (down
   // from 30 to keep the cold critical path tight while still
   // satisfying the n >= 20 surface gate) reads SYS / PULSE / WEIGHT
   // per-day means from `measurement_rollups` when the user has full
@@ -631,7 +631,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
     bpEnvelopePriorTwoWeeks,
   });
 
-  // v1.18.1 P4 — Rest Mode annotation. When an illness/condition episode is
+  // v1.18.1 — Rest Mode annotation. When an illness/condition episode is
   // active we frame the score (not penalise it): the number above is left
   // exactly as computed and we attach a value-free "you were unwell" context.
   // Resolved server-side so iOS mirrors the same fact, never recomputing it.
@@ -668,7 +668,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
     // sleep tile marks the headline with a discreet "sources disagree"
     // hint; clients that don't read the field stay unchanged.
     sleepSourceDiscrepancy: slim.sleepSourceDiscrepancy,
-    // v1.4.34 IW-B — per-type freshness map drives the dashboard's
+    // v1.4.34 — per-type freshness map drives the dashboard's
     // staleness caption on each `<TrendCard>`. Additive: clients that
     // don't read the field stay unchanged.
     lastSeenByType,
@@ -684,7 +684,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
  * case. Returns the sum-per-stage AND the day count covered so the
  * UI can render an "averaged across N nights" caption truthfully.
  *
- * v1.4.25 W3f — also returns a `perNight` array: one entry per
+ * v1.4.25 — also returns a `perNight` array: one entry per
  * Berlin-tz day inside the window, with minutes-per-stage for the
  * stacked-bar chart. Days with zero stage-tagged rows are omitted
  * from `perNight` (the chart treats them as gaps).
@@ -735,7 +735,7 @@ async function computeSleepStageBreakdown(
   return buildSleepStageComposition(rows, userTz, priorityJson, WINDOW_DAYS);
 }
 
-// v1.4.37 W2 — `computeCorrelationHypotheses` body relocated to
+// v1.4.37 — `computeCorrelationHypotheses` body relocated to
 // `src/lib/analytics/correlations-fast-path.ts` so the probe-gated
 // rollup / live dispatcher can be unit-tested independently of the
 // route. The new helper also tightens the scan window to 28 days and
@@ -751,7 +751,7 @@ async function computeSleepStageBreakdown(
 // concurrent slim slice and prevents future regressions from
 // accidentally reintroducing the fan-out.
 
-// v1.4.37 W2 — `WEEKDAY_FORMATTER_CACHE`, `getWeekdayFormatter`,
+// v1.4.37 — `WEEKDAY_FORMATTER_CACHE`, `getWeekdayFormatter`,
 // `dateFromDayKey`, `ISO_WEEKDAY`, and `isoWeekdayInTz` relocated
 // alongside the correlation runner in
 // `src/lib/analytics/correlations-fast-path.ts`. They were only ever

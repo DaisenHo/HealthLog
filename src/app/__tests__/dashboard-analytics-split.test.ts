@@ -20,7 +20,7 @@ import { join } from "node:path";
  * waterfall regresses to the v1.4.39.1 behaviour, so the test pins the
  * two call shapes.
  *
- * v1.7.0 W6 — both calls now carry an `enabled` gate so the unified
+ * v1.7.0 — both calls now carry an `enabled` gate so the unified
  * snapshot rollout flag can disable them in favour of a single
  * `/api/dashboard/snapshot` cell. With the flag OFF (default) the
  * slim/thick split still drives the page, so the protective intent

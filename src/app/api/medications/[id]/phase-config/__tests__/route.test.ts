@@ -1,5 +1,5 @@
 /**
- * v1.5.5 F-1 H-3 — phase-config PUT now returns the multi-issue 422
+ * v1.5.5 — phase-config PUT now returns the multi-issue 422
  * envelope rather than the flat `400 Invalid input`.
  */
 

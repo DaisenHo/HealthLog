@@ -5,7 +5,7 @@ import {
 } from "../prompts/insight-generator";
 
 /**
- * v1.4.19 phase A4 — strip the default-positivity opener.
+ * v1.4.19 — strip the default-positivity opener.
  *
  * The maintainer reported every insight summary started with the same
  * "Datengrundlage ist sehr stark" / "Your data foundation is strong"

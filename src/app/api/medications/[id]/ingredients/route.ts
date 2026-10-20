@@ -79,7 +79,7 @@ async function putIngredients(
     });
   }
 
-  // C1 — keyed on the ACTOR, so a manager burns their own allowance.
+  // Keyed on the ACTOR, so a manager burns their own allowance.
   const rl = await checkRateLimit(
     `medication-ingredients:put:${actor.id}`,
     PUT_RATE_LIMIT,
@@ -145,7 +145,7 @@ async function putIngredients(
   await auditLog("medication.ingredients.update", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    // C4 — the composition this replaced, as one comparable line per side.
+    // The composition this replaced, as one comparable line per side.
     details: {
       medicationId: id,
       source,

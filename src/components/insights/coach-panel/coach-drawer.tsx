@@ -60,7 +60,7 @@ export function coachMaximizeHref(
 }
 
 /**
- * v1.4.20 phase B2b — AI Coach drawer (right-side `<Sheet>` overlay).
+ * v1.4.20 — AI Coach drawer (right-side `<Sheet>` overlay).
  *
  * Mounts above `/insights` so the user keeps the dashboard context
  * behind it. The drawer is fully-controlled by the parent (`open` /
@@ -80,7 +80,7 @@ export interface CoachDrawerProps {
   /** Optional pre-fill for the input box (suggested-prompt chip click). */
   prefill?: string | null;
   /**
-   * v1.21.0 (C4 H1/H4) — optional launch scope so a conversation opened
+   * v1.21.0 — optional launch scope so a conversation opened
    * from a metric surface or insight card is pre-narrowed to the relevant
    * source(s) + window. Null → the route's default all-source snapshot.
    */
@@ -118,7 +118,7 @@ export function CoachDrawer({
 }: CoachDrawerProps) {
   const { t } = useTranslations();
   const router = useRouter();
-  // v1.4.27 R3d MB1 — below the `sm` breakpoint (640 px) the Coach
+  // v1.4.27 — below the `sm` breakpoint (640 px) the Coach
   // drawer slides up from the bottom edge of the viewport instead of
   // sliding in from the right. Right-side slide makes the back-arrow
   // / close-X drift far from the user's thumb on a phone; bottom-up
@@ -188,11 +188,11 @@ export function CoachDrawer({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
-        // v1.4.27 R3d MB1 — below `sm` the drawer slides up from the
+        // v1.4.27 — below `sm` the drawer slides up from the
         // bottom edge so the header chrome stays near the user's thumb;
         // above `sm` it keeps its existing right-side slide.
         side={isPhoneViewport ? "bottom" : "right"}
-        // v1.4.25 W5 — render our own Close button inside the header so
+        // v1.4.25 — render our own Close button inside the header so
         // X / maximize sit on the same baseline with identical size,
         // color, and hit target.
         showCloseButton={false}

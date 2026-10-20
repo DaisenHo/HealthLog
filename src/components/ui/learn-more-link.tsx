@@ -58,7 +58,7 @@ export function LearnMoreLink({ concept, className }: LearnMoreLinkProps) {
 }
 
 /**
- * v1.22 (W5) — inline, catalog-whitelisted Learn anchor for AI prose.
+ * v1.22 — inline, catalog-whitelisted Learn anchor for AI prose.
  *
  * Where `LearnMoreLink` resolves a *concept* to its guide for a deterministic
  * UI surface, this variant linkifies a `/learn/<slug>` reference that already

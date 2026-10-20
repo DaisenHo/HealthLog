@@ -25,7 +25,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-// v1.4.27 MB7 / CF-52 — the in-file `NATIVE_SELECT_CLASS` constant
+// v1.4.27 — the in-file `NATIVE_SELECT_CLASS` constant
 // retired; the shared `<NativeSelect>` primitive owns the visual
 // contract now. The admin copy previously diverged on the
 // `focus-visible:ring-[3px]` weight; the shared primitive pins
@@ -125,7 +125,7 @@ export function GeneralSettingsSection() {
           disabled={updateSettings.isPending}
         />
 
-        {/* v1.4.27 MB7 / CF-56 — match the SettingsToggle stacking
+        {/* v1.4.27 — match the SettingsToggle stacking
             contract: stack on `<sm`, side-by-side on `sm+`. */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -153,7 +153,7 @@ export function GeneralSettingsSection() {
           </NativeSelect>
         </div>
 
-        {/* v1.4.25 W7 — server-wide default timezone for new
+        {/* v1.4.25 — server-wide default timezone for new
             signups. Existing accounts are NOT touched; this drives
             only the registration handler's fallback when the
             client doesn't send a browser-detected zone. */}

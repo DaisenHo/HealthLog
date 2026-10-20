@@ -13,7 +13,7 @@ export const GET = apiHandler(
     const { user } = await requireRecordAuth("read", "medications");
 
     const { id } = await params;
-    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    // v1.4.25 — privacy gate hoisted to the shared helper.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
@@ -50,7 +50,7 @@ export const PUT = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    // v1.4.25 — privacy gate hoisted to the shared helper.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
@@ -61,14 +61,14 @@ export const PUT = apiHandler(
     if (jsonError) return jsonError;
     const parsed = phaseConfigSchema.safeParse(body);
     if (!parsed.success) {
-      // v1.5.5 F-1 H-3 — every v1.5.5 route returns the multi-issue
+      // v1.5.5 — every v1.5.5 route returns the multi-issue
       // 422 envelope so iOS sees per-field feedback the same way the
       // bulk-delete and intake routes already do. The old `400 Invalid
       // input` flat response was the last hold-out in the surface.
       return returnAllZodIssues(parsed.error, 422);
     }
 
-    // v1.5.5 F-1 H-4 — build the Prisma payload field-by-field rather
+    // v1.5.5 — build the Prisma payload field-by-field rather
     // than spreading `parsed.data`. A future schema extension would
     // otherwise land on the upsert silently; the explicit pick keeps
     // the surface honest at the call site.
@@ -116,7 +116,7 @@ export const DELETE = apiHandler(
     const { user } = await requireAuth();
 
     const { id } = await params;
-    // v1.4.25 W21 Fix-N — privacy gate hoisted to the shared helper.
+    // v1.4.25 — privacy gate hoisted to the shared helper.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 

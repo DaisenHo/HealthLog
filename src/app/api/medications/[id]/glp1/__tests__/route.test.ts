@@ -1,5 +1,5 @@
 /**
- * v1.4.25 W21 Fix-K — GLP-1 convenience-route POST tests.
+ * v1.4.25 — GLP-1 convenience-route POST tests.
  *
  * Pins the sec-H1 hardening pass: Zod parse, 30/min/user rate-limit,
  * `medication.glp1.update` audit row, bounded `doseValue` / `note` /
@@ -603,7 +603,7 @@ describe("GET /api/medications/[id]/glp1 — v1.16.10 item-backed inventory", ()
     expect(body.data.inventory).toBeNull();
   });
 
-  // W1 — the legacy delta ledger the POST below still accepts must stay
+  // The legacy delta ledger the POST below still accepts must stay
   // readable: an account that only ever posted `{inventory: {delta}}`
   // sees its pen count on GET instead of a silent null.
   it("falls back to the legacy ledger when the user has zero inventory items", async () => {

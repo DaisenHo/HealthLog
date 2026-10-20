@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockPathnameRef.value,
 }));
 
-// v1.18.0 (S5) — the shell module-gates per-submodule nav entries off
+// v1.18.0 — the shell module-gates per-submodule nav entries off
 // `useAuth().user.modules`. The mock returns a user whose modules map is
 // mutated per-test via `mockModulesRef`. `undefined` (the default) means
 // every gate fails open, so all entries render.
@@ -98,7 +98,7 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // one place.
     // v1.4.25 W5e added `sources` between `thresholds` and `ai`; v1.4.34
     // IW-D merged it into `thresholds`; v1.8.7.1 split it back out.
-    // v1.18.0 (S3) — `sources` is no longer a standalone slug: source
+    // v1.18.0 — `sources` is no longer a standalone slug: source
     // priority folded into Settings → Integrations as the "Sources"
     // sub-tab. `/settings/sources` 301-redirects to `/settings/integrations`.
     // v1.15.18 — `insights` sits between `dashboard` and `thresholds`: the
@@ -109,21 +109,21 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // v1.17 — `mood` sits between `medications` and `thresholds`: the
     // mood-tag management surface (groups, custom tags, hide/archive,
     // picker order), reached from the /mood page header's wrench glyph.
-    // v1.17.1 (F-2) — `layout` is the one "Layout & Personalization" home
+    // v1.17.1 — `layout` is the one "Layout & Personalization" home
     // and sits after `notifications`. The four personalization editor
     // slugs (`dashboard`, `insights`, `medications`, `mood`) keep their
     // routes so deep links resolve, but they are reached through the
     // Layout hub instead of four standalone nav entries.
-    // v1.18.0 (S4) — the standalone `reminders` hub is gone; reminder TYPES
+    // v1.18.0 — the standalone `reminders` hub is gone; reminder TYPES
     // live in `notifications`, each gated on its module. `/settings/reminders`
     // 301-redirects to `/settings/notifications`.
     // v1.18.0 — `modules` ("Was du trackst") sits right after `account` as
     // the single front door for enabling/disabling secondary domains.
-    // v1.18.0 (S5) — `gesundheitsakte` (the full health-record export) lifts
+    // v1.18.0 — `gesundheitsakte` (the full health-record export) lifts
     // out of Export & Import into its own top-level entry, before `export`;
     // `coach` gathers the Coach preference cards out of the AI section and
     // sits right after `ai`.
-    // v1.18.1 (D4) — `channels` + `sources` split out of the Integrations
+    // v1.18.1 — `channels` + `sources` split out of the Integrations
     // sub-tabs into their own left-side entries, right after `integrations`.
     // v1.25.3 — `channels` folded back into Notifications as an in-page group;
     // `/settings/channels` 301-redirects to `/settings/notifications#channels`.
@@ -151,10 +151,10 @@ describe("SETTINGS_SECTION_SLUGS", () => {
       // redirects in next.config.ts, so the dynamic route could never
       // serve them.
       "layout",
-      // v1.25 (W-ENV) — Environment (home location, travel overrides, backfill),
+      // v1.25 — Environment (home location, travel overrides, backfill),
       // module-gated on the opt-in `environment` module.
       "environment",
-      // v1.25 (W-RECORDS) — Anamnese (allergies + family history), always shown.
+      // v1.25 — Anamnese (allergies + family history), always shown.
       "anamnesis",
       // v1.35.0 — the Health Score composition surface.
       "score",
@@ -435,7 +435,7 @@ describe("<SettingsShell>", () => {
     // (single-line; the longer "Notification channels" wrapped). The
     // `/notifications` inbox now shares the "Notifications" label.
     expect(html).toContain("Notifications");
-    // v1.17.1 (F-2) — the view/arrangement editors are reached through one hub
+    // v1.17.1 — the view/arrangement editors are reached through one hub
     // entry (route stays `/settings/layout`). v1.42 — the hub is named
     // "Layout": it arranges and picks what each module shows and holds no
     // theme, so "Appearance" promised a control it does not have.
@@ -455,17 +455,17 @@ describe("<SettingsShell>", () => {
     // The ampersand is HTML-escaped by React SSR — assert on the encoded
     // form so we don't accidentally match a parser that double-escapes.
     expect(html).toContain("API &amp; tokens");
-    // v1.18.0 (S5) — the health record is its own top-level entry.
+    // v1.18.0 — the health record is its own top-level entry.
     expect(html).toContain('href="/settings/gesundheitsakte"');
     expect(html).toContain("Health record");
-    // v1.4.16 phase B7: the consolidated Export section is a top-level
+    // v1.4.16: the consolidated Export section is a top-level
     // entry in the sidebar; the link must be present in both locales.
     expect(html).toContain('href="/settings/export"');
     expect(html).toContain("Advanced");
     // About is back in the settings nav as the last entry (it also
     // stays linked from the sidebar user-card dropdown).
     expect(html).toContain('href="/settings/about"');
-    // v1.18.1 (D4) — Sources is a standalone nav entry again (split out of
+    // v1.18.1 — Sources is a standalone nav entry again (split out of
     // the Integrations sub-tabs). Targets keeps its own entry.
     expect(html).toContain('href="/settings/thresholds"');
     expect(html).toContain('href="/settings/sources"');
@@ -480,7 +480,7 @@ describe("<SettingsShell>", () => {
     // compound "Benachrichtigungs-Kanäle" wrapped). The `/notifications`
     // inbox now shares the "Benachrichtigungen" label.
     expect(html).toContain("Benachrichtigungen");
-    // v1.17.1 (F-2) — the view editors are reached through one hub entry
+    // v1.17.1 — the view editors are reached through one hub entry
     // (route stays `/settings/layout`). v1.42 — "Layout" in German too;
     // "Darstellung" now names the account page's language-and-units card.
     expect(html).toContain('href="/settings/layout"');
@@ -494,7 +494,7 @@ describe("<SettingsShell>", () => {
     expect(html).not.toContain('href="/settings/mood"');
     // Targets keeps its German nav entry ("Zielwerte").
     expect(html).toContain("Zielwerte");
-    // v1.18.6 (W9) — the AI section is named "KI-Anbieter" in German: the
+    // v1.18.6 — the AI section is named "KI-Anbieter" in German: the
     // page is about the provider / BYOK, not an "Auswertung".
     expect(html).toContain("KI-Anbieter");
     // German keeps the noun capitalised: "API & Tokens".
@@ -503,7 +503,7 @@ describe("<SettingsShell>", () => {
     // "Über diese App" (About) is back as the last in-shell nav entry
     // (the sidebar user-card dropdown keeps its own link too).
     expect(html).toContain('href="/settings/about"');
-    // v1.18.1 (D4) — Sources is a standalone nav entry again.
+    // v1.18.1 — Sources is a standalone nav entry again.
     expect(html).toContain('href="/settings/sources"');
   });
 

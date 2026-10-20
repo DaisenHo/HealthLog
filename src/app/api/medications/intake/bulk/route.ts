@@ -235,7 +235,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
 
   const parsed = bulkPayloadSchema.safeParse(rawBody);
   if (!parsed.success) {
-    // v1.4.43 W6 — bulk intake ingest; preserve the existing
+    // v1.4.43 — bulk intake ingest; preserve the existing
     // `medications.intake.bulk.invalid` errorCode meta so the iOS
     // Sync engine's retry classifier still branches on it. Audit
     // breadcrumb keyed `medications.intake.bulk.validation-failed`.
@@ -365,7 +365,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
   let extraDosesUnscheduled = 0;
   const skipped: Array<{ index: number; reason: string }> = [];
   const unstableShapes: UnstableExternalIdShape[] = [];
-  // v1.4.39 W-MED — collect distinct `(medicationId, dayKey)` pairs
+  // v1.4.39 — collect distinct `(medicationId, dayKey)` pairs
   // touched by the batch so one rollup recompute fires per pair after
   // all inserts complete. Per-row recompute would balloon a 500-entry
   // batch into 500 sequential rollup hits.
@@ -448,7 +448,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
       const incomingScheduledFor =
         entry.scheduledFor ?? entry.takenAt ?? new Date();
 
-      // C2 — classify the incoming write. An offline-sync replay echoes a
+      // Classify the incoming write. An offline-sync replay echoes a
       // PENDING projection (no `takenAt`, `skipped:false`) for a slot the
       // user may already have actioned; that echo must NEVER clear a
       // recorded `takenAt`. An explicit `takenAt` or `skipped:true` is a
@@ -632,7 +632,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
           externalId: entry.externalId ?? null,
         });
         if (applied.noDowngradeNoOp) {
-          // C2 — pending echo onto an already-actioned slot. Report it as a
+          // Pending echo onto an already-actioned slot. Report it as a
           // duplicate so the iOS cursor advances WITHOUT downgrading the
           // recorded dose. A pending echo is never a taken write, so it
           // must never reach the inventory consume below.
@@ -936,7 +936,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     },
   });
 
-  // v1.4.34 IW-G — bust per-user medications + compliance + achievement
+  // v1.4.34 — bust per-user medications + compliance + achievement
   // caches when at least one row landed so the next read reflects the
   // ingested batch. v1.16.8 — hard-evict: this bulk endpoint is the iOS
   // user's INTERACTIVE intake path (a dose taken / skipped on the phone
@@ -949,7 +949,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
     invalidateUserMedications(user.id, { evict: true });
   }
 
-  // v1.4.39 W-MED — refresh one rollup row per distinct
+  // v1.4.39 — refresh one rollup row per distinct
   // `(medicationId, dayKey)` touched by the batch. Best-effort: failures
   // are swallowed by the helper's `recomputeMedicationComplianceForEvent`
   // wrapper, but bulk callers wrap recompute directly to keep the

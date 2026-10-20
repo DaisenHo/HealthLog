@@ -1,5 +1,5 @@
 /**
- * v1.4.27 F17/F18/F19 — single decision point for "does the user have
+ * v1.4.27 — single decision point for "does the user have
  * any observations on this metric?".
  *
  * Three render gates consume this helper:

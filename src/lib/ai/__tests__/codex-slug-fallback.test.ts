@@ -9,7 +9,7 @@ import {
 } from "../codex-slug-cache";
 
 /**
- * Phase C1 — slug-drift defence.
+ * Slug-drift defence.
  *
  * The maintainer, verbatim 2026-05-09: "Die Integration des Slug Drift Risiko
  * darf halt immer überhaupt nicht sein."

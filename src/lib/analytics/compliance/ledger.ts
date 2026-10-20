@@ -201,7 +201,7 @@ export function buildComplianceLedgerRows(
   // mints phantom misses (#1028).
   const rows = reconstructDoseHistory(bands, intakes, now, ctx.createdAt);
 
-  // v1.25 H-MED1 — drop expected dose slots whose anchor falls inside a
+  // v1.25 — drop expected dose slots whose anchor falls inside a
   // pause interval. While a medication is paused no dose is expected, so a
   // slot minted across the paused window must never count as "missed" (the
   // denominator-inflating status). Only `slot` rows are dropped, and only

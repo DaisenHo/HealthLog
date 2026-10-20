@@ -124,7 +124,7 @@ type AuthedUser = AuthContext["user"];
 export async function buildComprehensiveResponse(user: AuthedUser) {
   const userId = user.id;
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  // v1.30.3 (QA F8) — the one shared per-user tz for every day-bucketing
+  // v1.30.3 — the one shared per-user tz for every day-bucketing
   // pass in this route (resting-pulse proxy, medication-continuity, BP
   // pairing). Was previously re-derived ad hoc (or hardcoded UTC) at each
   // call site.
@@ -318,7 +318,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
     weight: p.b,
   }));
 
-  // v1.2.5 (M-CS2) — this correlation is labelled "Resting pulse (bpm)";
+  // v1.2.5 — this correlation is labelled "Resting pulse (bpm)";
   // score it against the RESTING series, not the raw PULSE day-mean. The
   // aggregator's `dailyByType.PULSE` is a per-day AVG that folds in workout
   // HR for Apple-Health users and inflates the "resting" figure. Prefer the
@@ -392,7 +392,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
       schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
       // v1.16.3 — archived schedule eras for era-aware compliance.
       scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 H-MED1 — pause eras so paused days drop out of the denominator.
+      // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
@@ -449,7 +449,7 @@ export async function buildComprehensiveResponse(user: AuthedUser) {
       skipped: e.skipped,
       scheduledFor: e.scheduledFor,
     }));
-    // v1.7.0 SB-SCHED-2 — engine-routed denominator.
+    // v1.7.0 — engine-routed denominator.
     const medicationContext = buildComplianceMedicationContext(
       med,
       lastNonSkippedTakenAt(mapped),

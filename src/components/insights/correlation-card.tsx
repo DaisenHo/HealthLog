@@ -21,7 +21,7 @@ import {
 } from "./pattern-dismiss-action";
 
 /**
- * v1.4.20 phase B3 — single Correlation card.
+ * v1.4.20 — single Correlation card.
  *
  * Each card surfaces ONE pre-defined hypothesis (BP × compliance,
  * mood × pulse, weight × weekday). Below-threshold results render an
@@ -40,7 +40,7 @@ const ScatterCorrelationChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      // v1.4.43 W11 — mirror the loaded chart's responsive aspect-
+      // v1.4.43 — mirror the loaded chart's responsive aspect-
       // ratio classes (`scatter-correlation-chart.tsx:100`) so the
       // skeleton reserves the same space across breakpoints. The
       // legacy `h-[180px]` was ~60 px shorter than the painted chart
@@ -79,7 +79,7 @@ const CONFIDENCE_LABEL_KEY: Record<"low" | "moderate" | "high", string> = {
   low: "insights.correlationRow.confidenceLow",
 };
 
-// v1.21.0 (C4 H2) — the two sources each correlation pair spans, so the
+// v1.21.0 — the two sources each correlation pair spans, so the
 // Coach hand-off narrows its snapshot to exactly the relationship the
 // card describes.
 const COACH_SOURCES_BY_KIND: Record<
@@ -91,7 +91,7 @@ const COACH_SOURCES_BY_KIND: Record<
   "weight-weekday": ["weight"],
 };
 
-// v1.22 (W6) — i18n keys (resolved at the call site), not hardcoded English.
+// v1.22 — i18n keys (resolved at the call site), not hardcoded English.
 const COACH_QUESTION_BY_KIND: Record<CorrelationResult["kind"], string> = {
   "bp-compliance": "insights.coach.seed.correlationBpCompliance",
   "mood-pulse": "insights.coach.seed.correlationMoodPulse",
@@ -199,7 +199,7 @@ export function CorrelationCard({ result }: CorrelationCardProps) {
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>{t("insights.correlationRow.experimentCta")}</span>
               </Button>
-              {/* v1.21.0 (C4 H2) — the live Coach hand-off sits beside the
+              {/* v1.21.0 — the live Coach hand-off sits beside the
                   roadmap CTA: it scopes to both sources in the pair. */}
               <AskCoachAction
                 question={t(COACH_QUESTION_BY_KIND[result.kind])}

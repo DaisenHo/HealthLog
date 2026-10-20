@@ -213,7 +213,7 @@ export function useUpdateLabsLocalOcr() {
 export interface OcrCommitInput {
   rows: OcrCommitRowInput[];
   /**
-   * S9 — the scanned file, threaded from the vision-mode extract. When present
+   * The scanned file, threaded from the vision-mode extract. When present
    * (and the documents module is on) it is filed into the Documents vault and
    * the committed labs are cross-linked to it. Absent in text mode, where the
    * image stays on-device.
@@ -228,7 +228,7 @@ export interface OcrCommitInput {
 }
 
 /**
- * S9 — file the scanned bytes into the Documents vault (kind LAB_RESULT) via the
+ * File the scanned bytes into the Documents vault (kind LAB_RESULT) via the
  * existing upload endpoint (encrypted at rest, EXIF-stripped, thumbnailed,
  * sha256-deduped). Best-effort: a module-off account 403s and a re-scan dedupes,
  * so any failure resolves to `undefined` and the commit proceeds unlinked.

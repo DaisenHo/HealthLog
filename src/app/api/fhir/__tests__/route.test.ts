@@ -1,5 +1,5 @@
 /**
- * v1.11.0 (Epic C, C2) — read-only FHIR R4 REST face.
+ * v1.11.0 — read-only FHIR R4 REST face.
  *
  * Asserts the searchset Bundle shape (total + self/next links + `match`
  * mode + `application/fhir+json`), `_count` clamping (≤200), paging, the

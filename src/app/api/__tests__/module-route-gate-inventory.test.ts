@@ -139,7 +139,7 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   recovery: [],
   // v1.18.1 — the user-scoped Biomarker catalog backs the Labs feature.
   labs: ["src/app/api/labs", "src/app/api/biomarkers"],
-  // v1.18.1 (W-B) — the illness/condition journal. Every `/api/illness/*`
+  // v1.18.1 — the illness/condition journal. Every `/api/illness/*`
   // route gates on the `illness` module via the thin
   // `requireIllnessEnabled(...)` wrapper (which re-stamps the
   // illness-specific errorCode over `requireModuleEnabled("illness")`),
@@ -157,19 +157,19 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   // the data routes that live here (ECG, scores, statistics, the Today
   // digest) are EXEMPT below because a computation never depends on AI.
   insights: ["src/app/api/insights", "src/app/api/daily"],
-  // v1.18.1 (D3) — medications graduated from CORE to a toggleable module.
+  // v1.18.1 — medications graduated from CORE to a toggleable module.
   // SURFACE-gated (nav entry, dashboard widget, the dedicated Medikamente
   // settings entry), not data-layer-gated: every `/api/medications/*` route is
   // raw CRUD / intake / inventory / compliance over the user's own rows, so
   // they are EXEMPT below under the same data-layer reasoning as mood/labs.
   medications: ["src/app/api/medications"],
-  // v1.18.0 B3 — the legacy `/api/doctor-report` tree was orphaned dead code
+  // v1.18.0 — the legacy `/api/doctor-report` tree was orphaned dead code
   // and removed. The doctor-report surface is `/api/export/health-record` plus
   // the FHIR REST face; both gate on `doctorReport` directly, and both are
   // key-pinned below so a future route cannot satisfy the inventory by gating
   // on some other, more permissive module.
   doctorReport: ["src/app/api/fhir", "src/app/api/export/health-record"],
-  // v1.25.0 (W-ENV) — the environmental-context tree. Every route calls
+  // v1.25.0 — the environmental-context tree. Every route calls
   // `requireModuleEnabled(user.id, "environment")`, including the geocode
   // lookup and the backfill, because each one either reads the module's data
   // or spends the outbound weather/geocode budget on the user's behalf.
@@ -178,7 +178,7 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   // `/api` tree, and it gates on the module itself. What lives under
   // `/api/mcp` is the credential-management surface behind it, exempt below.
   mcp: ["src/app/api/mcp"],
-  // v1.25.0 (W-DOCS-IN) — the inbound clinical-document vault. Every route
+  // v1.25.0 — the inbound clinical-document vault. Every route
   // gates on `inboundDocuments`; the AI READ of a document is a separate
   // per-user opt-in on top.
   inboundDocuments: ["src/app/api/documents/inbound"],
@@ -267,7 +267,7 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/labs/ocr/capability/route.ts",
   "src/app/api/labs/ocr/commit/route.ts",
   // ── DATA LAYER (medications) ──────────────────────────────────────
-  // v1.18.1 (D3) — medications graduated from CORE to a toggleable module,
+  // v1.18.1 — medications graduated from CORE to a toggleable module,
   // but it is SURFACE-gated (nav / dashboard widget / settings entry), not
   // data-layer-gated. Every `/api/medications/*` route is raw CRUD over the
   // user's own medication / intake / inventory / compliance / side-effect

@@ -19,7 +19,7 @@ vi.mock("@/lib/doctor-report-data", () => ({
 vi.mock("@/lib/ai/coach/tools/inventory", () => ({
   buildCoachDataInventory: vi.fn(),
 }));
-// v1.30 (G5/C4) — `measurements-inventory` appends the metric-status-only
+// v1.30 — `measurements-inventory` appends the metric-status-only
 // discovery rows; stub the engine so this file never reaches a real DB read.
 vi.mock("@/lib/mcp/rich-reads", () => ({
   metricStatusDiscoveryRows: vi.fn(async () => []),

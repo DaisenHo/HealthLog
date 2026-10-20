@@ -1,5 +1,5 @@
 /**
- * v1.39 (C2) — the setup flow, path 2: a daily medication with a reminder.
+ * v1.39 — the setup flow, path 2: a daily medication with a reminder.
  *
  * Q3 "yes" is the one answer that makes the first medication the task the
  * flow ends on, ahead of a reading; every other question is passed, which is

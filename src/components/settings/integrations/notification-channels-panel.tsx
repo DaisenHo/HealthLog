@@ -4,7 +4,7 @@
  * `<NotificationChannelsPanel>` — the delivery-provider half of Settings →
  * Integrations.
  *
- * v1.18.0 (S3) — the notification CHANNELS (Telegram / ntfy / Web Push /
+ * v1.18.0 — the notification CHANNELS (Telegram / ntfy / Web Push /
  * Webhook / Email, plus the live per-channel status surface) moved out of
  * Settings → Notifications and into Integrations. Channels are delivery
  * providers — the same conceptual family as Withings / WHOOP / a connected
@@ -53,7 +53,7 @@ export function NotificationChannelsPanel() {
     <div className="space-y-6" data-slot="notification-channels-panel">
       <NotificationStatusCard />
 
-      {/* v1.4.27 MB3 — `scroll-mt-28` keeps each channel card's anchor
+      {/* v1.4.27 — `scroll-mt-28` keeps each channel card's anchor
           target below the safe-area sticky page header when the user lands
           on `/settings/integrations#telegram` or similar. */}
       {showTelegram && (

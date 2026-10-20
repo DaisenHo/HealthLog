@@ -27,7 +27,7 @@ import { readUpdatedAtToken, withBaseToken } from "@/lib/api/optimistic-token";
 
 interface NotificationPrefsShape {
   medication: { lowStockRunwayDays: number | null; reorderLeadDays?: number };
-  // v1.32.22 (R5b) — optimistic-concurrency token, a sibling key on the
+  // v1.32.22 — optimistic-concurrency token, a sibling key on the
   // resolved prefs response, echoed on every PATCH from this card.
   updatedAt?: string;
 }
@@ -120,7 +120,7 @@ export function LowStockCard({
       clearTimerRef.current = null;
     }
 
-    // v1.32.22 (R5b) — echo the base token so a concurrent notification-prefs
+    // v1.32.22 — echo the base token so a concurrent notification-prefs
     // write (the iOS client, another web card) 409s instead of reverting a
     // sibling category through the server-side deep-merge.
     const res = await apiFetchRaw("/api/auth/me/notification-prefs", {

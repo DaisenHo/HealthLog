@@ -14,7 +14,7 @@
  * pre-fetch data (e.g. a static prop), migrate it to `useFormatters()` to
  * stay consistent with the server-rendered locale.
  *
- * v1.4.43 QoL (M8) — `activeLocale()` now reads the full `Locale` union
+ * v1.4.43 — `activeLocale()` now reads the full `Locale` union
  * (`de | en | fr | es | it | pl`). Pre-fix, a sub-locale user (fr / es /
  * it / pl) saw French strings but the legacy SSR formatters silently
  * fell back to `en`, producing "12/24/2025, 2:30 PM" in a French shell.
@@ -88,7 +88,7 @@ export function formatTime(date: Date | string): string {
 }
 
 /**
- * v1.4.43 QoL (L8) — render a timestamp as a relative phrase when it
+ * v1.4.43 — render a timestamp as a relative phrase when it
  * happened within the last 24 hours, otherwise fall back to the
  * absolute locale-aware date+time. Closes the visual inconsistency
  * the measurement-list surfaced: the same screen could show "vor 3

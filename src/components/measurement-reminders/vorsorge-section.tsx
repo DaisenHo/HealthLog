@@ -104,7 +104,7 @@ import {
   userDayKey,
 } from "@/lib/tz/format";
 
-// v1.18.1 (V3) — the active-measurement set, grouped so the dropdown
+// v1.18.1 — the active-measurement set, grouped so the dropdown
 // doesn't read as a flat 15-item list. Mirrors the Zod allow-list in
 // `validations/measurement-reminders.ts`; the labels resolve through
 // `measurementReminders.types.*`, the group headers through
@@ -248,7 +248,7 @@ export function VorsorgeSection({
   } = useMeasurementReminders(enabled);
   const { create, update, remove, satisfy, skip, snooze } =
     useMeasurementReminderMutations();
-  // v1.18.6 (MOD-03) — page view (cards/list) + manual order persist
+  // v1.18.6 — page view (cards/list) + manual order persist
   // client-side; the settings page writes them, the page reads them.
   const { prefs } = useModuleListPrefs("vorsorge");
 
@@ -404,7 +404,7 @@ export function VorsorgeSection({
   const cadenceCustom = form.cadenceChoice === CADENCE_CUSTOM;
   const cadenceRrule = form.cadenceChoice === CADENCE_RRULE;
 
-  // v1.18.6 (MOD-02) — the primary add affordance reads "hinzufügen" like
+  // v1.18.6 — the primary add affordance reads "hinzufügen" like
   // every other module's add button.
   // v1.36.x — a checkup reminder belongs to the person whose schedule it is,
   // and no grant level admits creating, editing or satisfying one. Inside
@@ -421,7 +421,7 @@ export function VorsorgeSection({
     </Button>
   ) : null;
 
-  // v1.18.6 (MOD-01) — the wrench links to the Vorsorge settings page (view,
+  // v1.18.6 — the wrench links to the Vorsorge settings page (view,
   // reorder, per-reminder enable toggles), left of the Add button — the
   // canonical medication-page pattern. The old kebab "Anpassen" sheet is
   // gone (MOD-07); its toggles moved to the settings page. `/settings` is the
@@ -811,7 +811,7 @@ export function VorsorgeSection({
 }
 
 /**
- * v1.18.6 (MOD-06) — progress through the current interval toward the next
+ * v1.18.6 — progress through the current interval toward the next
  * due date, as a 0–100 percentage. Honest "are we on track" gamification
  * that reuses the medication card's `Progress` building block without
  * fabricating a streak the reminder data cannot support: 100 % (or beyond)
@@ -991,7 +991,7 @@ function VorsorgeCard({
             the primary action, the way the medication card carries "taken"
             and "skipped" side by side, so it is a card button now — see
             `postponeButton` below. */}
-        {/* v1.18.7 (Wave E) — jump to the measurements list pre-filtered to
+        {/* v1.18.7 — jump to the measurements list pre-filtered to
             this reminder's type. Only for measurement-linked reminders; a
             free-text reminder has no readings to show. */}
         {isLinked && (
@@ -1272,7 +1272,7 @@ function VorsorgeCard({
       </div>
     ) : null;
 
-  // v1.18.6 (MOD-03) — compact list row variant.
+  // v1.18.6 — compact list row variant.
   if (view === "list") {
     return (
       <>
@@ -1442,7 +1442,7 @@ function VorsorgeCard({
           {nextLastSlot}
           {skipSnoozeMeta}
 
-          {/* v1.18.6 (MOD-06) — light gamification: progress through the
+          {/* v1.18.6 — light gamification: progress through the
               current interval toward next-due, reusing the medication card's
               Progress building block. Honest "on track / due" signal without
               a fabricated streak; hidden for RRULE / unscheduled reminders. */}

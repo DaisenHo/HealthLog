@@ -167,7 +167,7 @@ describe("aggregateRecommendationFeedback", () => {
     expect(upsertCall.update.adminAiInsightsFeedbackSummary.buckets).toEqual(
       [],
     );
-    // v1.4.23 H7 — coachBuckets always present, empty by default.
+    // v1.4.23 — coachBuckets always present, empty by default.
     expect(
       upsertCall.update.adminAiInsightsFeedbackSummary.coachBuckets,
     ).toEqual([]);
@@ -175,7 +175,7 @@ describe("aggregateRecommendationFeedback", () => {
 });
 
 /**
- * v1.4.23 H7 — Coach-only bucket view. The aggregator slices the
+ * v1.4.23 — Coach-only bucket view. The aggregator slices the
  * unified RecommendationFeedback rows on `targetType === "coach"` and
  * groups by (promptVersion, tone, verbosity).
  */

@@ -1,5 +1,5 @@
 /**
- * v1.11.0 W1 — durable provider-health ledger.
+ * v1.11.0 — durable provider-health ledger.
  *
  * Epic B Pillar 4 (resilience floor). Promotes the volatile per-worker
  * `lastWorkingCache` in `provider-runner.ts` to a Postgres table so the

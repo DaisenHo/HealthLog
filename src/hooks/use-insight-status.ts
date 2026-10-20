@@ -312,7 +312,7 @@ export function useInsightStatus(metric: InsightStatusMetric) {
       ),
     enabled: isAuthenticated && statusText.available,
     staleTime: 60 * 1000,
-    // v1.4.28 FB-D2 — the status route returns a deterministic envelope on
+    // v1.4.28 — the status route returns a deterministic envelope on
     // a miss/timeout. Retrying inline re-fires work and lengthens the
     // perceived hang; the bounded `preparing` poll below covers the warm-up.
     retry: 0,

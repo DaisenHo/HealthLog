@@ -50,13 +50,13 @@ export interface ComplianceResult {
 export interface DailyComplianceEntry {
   expected: number;
   /**
-   * v1.7.0 item 5 — the true engine-computed due-slot count for the day.
+   * v1.7.0 — the true engine-computed due-slot count for the day.
    * Equals `expected`; carried as an explicit additive field iOS keys
    * off so it doesn't have to infer "due-ness" from `expected`.
    */
   expectedCount: number;
   /**
-   * v1.7.0 item 5 — `expectedCount > 0`. iOS renders a "missed" mark
+   * v1.7.0 — `expectedCount > 0`. iOS renders a "missed" mark
    * only when `due === true`, so off-weeks / non-matching weekdays / PRN
    * days no longer paint a false miss.
    */
@@ -83,7 +83,7 @@ export interface ComplianceSchedule {
   windowEnd: string; // HH:mm
   daysOfWeek?: string | null;
   /**
-   * v1.7.0 SB-SCHED-2 — canonical-engine fields. When present (and a
+   * v1.7.0 — canonical-engine fields. When present (and a
    * `medicationContext` is threaded into `calculateCompliance`), the
    * expected-slot grid is computed through the canonical recurrence
    * engine, so an `rrule = "FREQ=WEEKLY;BYDAY=MO"` schedule counts only
@@ -149,7 +149,7 @@ export const COURSES_COMPLIANCE_SELECT = {
 } as const;
 
 /**
- * v1.7.0 SB-SCHED-2 — medication-level context the canonical engine
+ * v1.7.0 — medication-level context the canonical engine
  * needs to expand expected slots. When supplied, `calculateCompliance`
  * routes the denominator through the engine; when omitted, every
  * schedule falls back to the legacy weekday walker (the byte-stable
@@ -170,7 +170,7 @@ export interface ComplianceMedicationContext {
    */
   scheduleRevisions?: ScheduleRevisionLike[];
   /**
-   * v1.25 H-MED1 — durable pause intervals (`MedicationPauseEra`). When
+   * v1.25 — durable pause intervals (`MedicationPauseEra`). When
    * present, expected dose slots whose anchor falls inside any
    * `[pausedAt, resumedAt ?? now)` interval are dropped from the ledger so a
    * resumed medication never counts the paused days as missed. Optional:
@@ -226,7 +226,7 @@ export function slotInsideCourses(
 }
 
 /**
- * v1.25 H-MED1 — the pause-interval projection the compliance engine reads.
+ * v1.25 — the pause-interval projection the compliance engine reads.
  * A Prisma `MedicationPauseEra` row (or a `{ pausedAt, resumedAt }` literal)
  * drops in. An open era (`resumedAt === null`) runs to `now`.
  */
@@ -236,7 +236,7 @@ export interface MedicationPauseEraLike {
 }
 
 /**
- * v1.7.0 SB-SCHED-2 — convenience builder so the eight compliance call
+ * v1.7.0 — convenience builder so the eight compliance call
  * sites don't each re-spell the context shape. Pass the medication row
  * (any object carrying the course-window fields), the latest non-skipped
  * intake instant, and the user's timezone.
@@ -249,7 +249,7 @@ export function buildComplianceMedicationContext(
     createdAt: Date;
     /** v1.16.3 — thread the archived eras when the bundle carries them. */
     scheduleRevisions?: ScheduleRevisionLike[];
-    /** v1.25 H-MED1 — thread the pause eras when the caller carries them. */
+    /** v1.25 — thread the pause eras when the caller carries them. */
     pauseEras?: MedicationPauseEraLike[];
     /** v1.40 (#1024) — thread the courses when the caller carries them. */
     courses?: CourseSpan[];
@@ -271,7 +271,7 @@ export function buildComplianceMedicationContext(
 }
 
 /**
- * v1.7.0 SB-SCHED-2 — the latest non-skipped `takenAt` across an event
+ * v1.7.0 — the latest non-skipped `takenAt` across an event
  * list (rolling cadences re-anchor on it). Returns null when the user
  * has never logged a non-skipped intake. Order-independent, so the
  * caller can pass an events array in any sort order.

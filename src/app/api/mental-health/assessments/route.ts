@@ -277,7 +277,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   const total = scoreTotal(id, items);
   const band = severityBand(id, total);
   const flagged = isSafetyFlagged(id, items);
-  // C2 — the locale of the person holding the phone, not of the record.
+  // The locale of the person holding the phone, not of the record.
   // `presentedLocale` is used twice: it is stored on the row as what was
   // shown, and it selects the crisis-resource copy returned on a positive
   // item 9. Under a switch the reader is the MANAGER, and crisis resources in
@@ -384,7 +384,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   });
   invalidateUserHealthScore(user.id);
 
-  // v1.37.19 (A6-13) — the projection row is a Measurement like any other:
+  // v1.37.19 — the projection row is a Measurement like any other:
   // route it through the shared post-mutation tail so the (type, day)
   // rollup bucket and the cached status assessment converge without
   // waiting for a nightly discovery pass.

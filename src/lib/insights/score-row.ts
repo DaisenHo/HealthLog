@@ -101,7 +101,7 @@ export async function upsertScoreRow(
     },
   });
 
-  // v1.37.19 (A6-13) — a score row is a Measurement like any other: route
+  // v1.37.19 — a score row is a Measurement like any other: route
   // it through the shared post-mutation tail so the (type, day) rollup
   // bucket and the cached status assessment converge on the same tick that
   // wrote the score, instead of waiting for a discovery pass.

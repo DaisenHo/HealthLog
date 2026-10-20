@@ -1,5 +1,5 @@
 /**
- * v1.11.0 (Epic C, C3) — CRITICAL INVARIANT.
+ * v1.11.0 — CRITICAL INVARIANT.
  *
  * A share token can authenticate ONLY the public share surface. Presented on a
  * normal authenticated route it must be REJECTED: `requireAuth` reads only the

@@ -3,7 +3,7 @@ import { COACH_SOURCE_DOMAIN_LABEL } from "@/lib/ai/coach/tools/source-keys";
 import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry";
 
 /**
- * v1.21.0 (C4 H1/H4) — metric → Coach scope + seed-question map.
+ * v1.21.0 — metric → Coach scope + seed-question map.
  *
  * The Coach launch context can now carry a live `scope` (a
  * `CoachScopeSource` + window) and a `prefill` seed question into the
@@ -18,7 +18,7 @@ import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry
  *   - the "Ask the Coach" affordance on insight/assessment cards passes
  *     an explicit scope so a card tap lands a pre-scoped conversation.
  *
- * v1.22 (W6) — seed questions are i18n KEYS (`insights.coach.seed.*`), not
+ * v1.22 — seed questions are i18n KEYS (`insights.coach.seed.*`), not
  * hardcoded English: a German user was getting an English composer seed. The
  * consumer (`SubPageShell`) resolves the key through `t()` before handing it to
  * the composer, so the seed reads in the user's language.
@@ -238,7 +238,7 @@ export function scopeSourceFromMetricKey(
 }
 
 /**
- * v1.21.2 (A2) — the human label for a launch scope's primary metric, for
+ * v1.21.2 — the human label for a launch scope's primary metric, for
  * the VISIBLE "the Coach is already on …" pill. The caller resolves the
  * i18n string via `t("insights.coach.scope.metric.<source>")`; this helper
  * supplies the English domain phrase as the deterministic fallback for any
@@ -254,7 +254,7 @@ export function metricScopeLabelFallback(
 }
 
 /**
- * v1.21.2 (A2) — map a launch-scope source onto the EXISTING localised
+ * v1.21.2 — map a launch-scope source onto the EXISTING localised
  * `measurements.type*` metric-name key. The scope pill reads in the user's
  * own language for every measurement-backed source, instead of the English
  * `COACH_SOURCE_DOMAIN_LABEL` fallback that only carries the brand-free
