@@ -46,6 +46,7 @@ import {
   type ExistingFactorProof,
   type ReauthMethod,
 } from "./existing-factor-reauth-dialog";
+import { InlineAction } from "@/components/ui/inline-action";
 
 interface SetupData {
   otpauthUri: string;
@@ -430,13 +431,9 @@ export function TotpCard({
                   {t("settings.security.totp.verify")}
                 </Button>
               </div>
-              <button
-                type="button"
-                onClick={resetWizard}
-                className="text-muted-foreground hover:text-foreground text-xs"
-              >
+              <InlineAction tone="muted" onClick={resetWizard}>
                 {t("common.cancel")}
-              </button>
+              </InlineAction>
             </form>
           </div>
         )}
@@ -564,9 +561,8 @@ export function TotpCard({
                       }
                       className="font-mono"
                     />
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground text-xs"
+                    <InlineAction
+                      tone="muted"
                       onClick={() =>
                         setDisableMethod((m) =>
                           m === "totp" ? "recovery" : "totp",
@@ -576,7 +572,7 @@ export function TotpCard({
                       {disableMethod === "totp"
                         ? t("settings.security.useRecoveryCode")
                         : t("settings.security.useAuthenticator")}
-                    </button>
+                    </InlineAction>
                   </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>

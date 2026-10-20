@@ -32,6 +32,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import { accountLabel } from "@/lib/sharing/account-access-view";
+import { InlineAction } from "@/components/ui/inline-action";
 
 interface AiProviderStatus {
   /** Origin of the provider that would serve this user, if any. */
@@ -376,12 +377,9 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
 
           <MedicalDisclaimer variant="dataPosture" />
 
-          <Link
-            href="/settings/ai"
-            className="text-primary text-sm font-medium underline underline-offset-4"
-          >
-            {t("onboarding.ai.setupCta")}
-          </Link>
+          <InlineAction asChild size="sm" className="font-medium underline">
+            <Link href="/settings/ai">{t("onboarding.ai.setupCta")}</Link>
+          </InlineAction>
         </section>
       ) : null}
 
@@ -459,20 +457,28 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
           new account one honest pointer to Settings → Modules before they
           leave the wizard. */}
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-        <Link
-          href="/settings/export"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
+        <InlineAction
+          asChild
+          tone="muted"
+          size="sm"
+          className="gap-1.5 underline"
         >
-          <FileUp className="size-3.5" />
-          {t("onboarding.done.importCta")}
-        </Link>
-        <Link
-          href="/settings/modules"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
+          <Link href="/settings/export">
+            <FileUp className="size-3.5" />
+            {t("onboarding.done.importCta")}
+          </Link>
+        </InlineAction>
+        <InlineAction
+          asChild
+          tone="muted"
+          size="sm"
+          className="gap-1.5 underline"
         >
-          <Settings2 className="size-3.5" />
-          {t("onboarding.done.modulesCta")}
-        </Link>
+          <Link href="/settings/modules">
+            <Settings2 className="size-3.5" />
+            {t("onboarding.done.modulesCta")}
+          </Link>
+        </InlineAction>
       </div>
     </section>
   );

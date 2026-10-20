@@ -118,6 +118,7 @@ import {
   droppedAnyLinkKeys,
   type DroppedLinkKeysWire,
 } from "@/lib/mood/dropped-link-keys";
+import { InlineAction } from "@/components/ui/inline-action";
 
 // Re-export the score map under the legacy local name to keep the
 // rest of this file unchanged. v1.4.27 B6 / BL-P6-11 — the single
@@ -1361,16 +1362,15 @@ function MoodNoteText({
         {note}
       </p>
       {(expanded || clamped) && (
-        <button
-          type="button"
+        <InlineAction
+          className="font-medium"
           onClick={onToggle}
           aria-expanded={expanded}
           aria-controls={noteId}
           data-testid="mood-note-toggle"
-          className="text-primary cursor-pointer text-xs font-medium"
         >
           {expanded ? t("mood.noteCollapse") : t("mood.noteExpand")}
-        </button>
+        </InlineAction>
       )}
     </div>
   );

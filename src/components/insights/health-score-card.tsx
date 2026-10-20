@@ -41,6 +41,7 @@ import type {
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { SCORE_PILLAR_LABEL_KEYS } from "@/lib/score-config/labels";
 import { cn } from "@/lib/utils";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * The Health Score panel: the hero band's right-hand column.
@@ -441,14 +442,15 @@ export function HealthScoreCard({
             </span>
           ) : null}
           {/* v1.42 — the way to the score's course over time. */}
-          <Link
-            href="/insights/health-score"
-            data-slot="health-score-history-link"
-            className="text-foreground/80 hover:text-foreground focus-visible:ring-ring/50 -my-3 inline-flex items-center gap-1 rounded-md py-3 text-xs underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
-          >
-            <History className="size-3.5" aria-hidden="true" />
-            {t("insights.healthScore.historyLink")}
-          </Link>
+          <InlineAction asChild tone="foreground">
+            <Link
+              href="/insights/health-score"
+              data-slot="health-score-history-link"
+            >
+              <History className="size-3.5" aria-hidden="true" />
+              {t("insights.healthScore.historyLink")}
+            </Link>
+          </InlineAction>
         </div>
       </div>
 

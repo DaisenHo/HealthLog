@@ -23,6 +23,7 @@ import {
   type TrendAnnotationStatus,
 } from "./trend-annotation";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * Trends row — a small chart per metric above a one-sentence
@@ -339,15 +340,20 @@ export function TrendsRow({
                   is used but was unreachable from Insights. The link sits below
                   the caption so the chart keeps its own interactions. */}
               {config.detailHref ? (
-                <Link
-                  href={config.detailHref}
-                  data-slot="trends-row-detail-link"
-                  data-metric={config.metric}
-                  className="text-muted-foreground hover:text-foreground mt-auto inline-flex items-center gap-1 self-start text-xs font-medium transition-colors"
+                <InlineAction
+                  asChild
+                  tone="muted"
+                  className="mt-auto self-start font-medium"
                 >
-                  {t("insights.trendsRow.viewDetail", { metric: title })}
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
+                  <Link
+                    href={config.detailHref}
+                    data-slot="trends-row-detail-link"
+                    data-metric={config.metric}
+                  >
+                    {t("insights.trendsRow.viewDetail", { metric: title })}
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </InlineAction>
               ) : null}
             </div>
           );

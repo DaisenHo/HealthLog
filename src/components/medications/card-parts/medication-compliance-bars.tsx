@@ -3,6 +3,7 @@ import { Flame, RotateCw } from "lucide-react";
 import { ComplianceInfoTip } from "@/components/medications/card-parts/compliance-info-tip";
 import { Progress } from "@/components/ui/progress";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import { InlineAction } from "@/components/ui/inline-action";
 
 interface MedicationComplianceBarsProps {
   rate7: number;
@@ -286,14 +287,10 @@ export function MedicationComplianceError({
       </div>
       <div className="space-y-1.5">
         <div className="flex h-5 items-center">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs underline-offset-2 hover:underline"
-          >
-            <RotateCw className="h-3 w-3" aria-hidden="true" />
+          <InlineAction tone="muted" onClick={onRetry}>
+            <RotateCw className="size-3" aria-hidden="true" />
             {t("common.retry")}
-          </button>
+          </InlineAction>
         </div>
         <div className="bg-muted/40 h-2 rounded" />
       </div>

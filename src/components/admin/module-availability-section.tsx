@@ -23,6 +23,7 @@ import {
 import type { ModuleKey } from "@/lib/modules/registry";
 import { SettingsToggle } from "./_shared";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * v1.18.0 — operator-side panel for server-wide module availability, the
@@ -127,12 +128,11 @@ export function ModuleAvailabilitySection() {
                     onCheckedChange={() => {}}
                     disabled
                   />
-                  <Link
-                    href="/admin/coach"
-                    className="text-primary text-xs underline-offset-4 hover:underline"
-                  >
-                    {t("admin.section.coach.title")}
-                  </Link>
+                  <InlineAction asChild>
+                    <Link href="/admin/coach">
+                      {t("admin.section.coach.title")}
+                    </Link>
+                  </InlineAction>
                 </div>
               );
             }

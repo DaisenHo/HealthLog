@@ -54,6 +54,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 import { formatPeriod, type PeriodQuery } from "./period-query";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export interface EntityLinkOption {
   id: string;
@@ -546,16 +547,15 @@ export function EntityLinkPicker({
                         >
                           {group.label}
                         </span>
-                        <button
-                          type="button"
+                        <InlineAction
+                          tone="muted"
                           data-slot={`${slot}-group-select`}
                           onClick={() =>
                             change(toggleAll(selected, groupIds), group.options)
                           }
-                          className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
                         >
                           {t("links.picker.selectAll")}
-                        </button>
+                        </InlineAction>
                       </div>
                     ) : null}
                     <ul className="space-y-1">

@@ -36,6 +36,7 @@ import {
   invalidateKeys,
   queryKeys,
 } from "@/lib/query-keys";
+import { InlineAction } from "@/components/ui/inline-action";
 
 interface CentralCodexStatus {
   status: string;
@@ -228,15 +229,15 @@ export function CentralCodexSection() {
                 {t("settings.ai.deviceCodeStep2")}
                 <div className="bg-card border-border mt-2 inline-flex items-center gap-2 rounded border px-3 py-2 font-mono text-lg tracking-widest">
                   {deviceCode.userCode}
-                  <button
-                    type="button"
+                  <InlineAction
+                    tone="muted"
+                    className="underline"
                     onClick={() =>
                       navigator.clipboard?.writeText(deviceCode.userCode)
                     }
-                    className="text-muted-foreground hover:text-foreground text-xs underline"
                   >
                     {t("settings.ai.deviceCodeCopy")}
-                  </button>
+                  </InlineAction>
                 </div>
               </li>
               <li>{t("settings.ai.deviceCodeStep3")}</li>

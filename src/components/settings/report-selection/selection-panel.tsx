@@ -74,6 +74,7 @@ import {
   shiftDateKey,
   validTimezoneOr,
 } from "@/lib/tz/format";
+import { InlineAction } from "@/components/ui/inline-action";
 
 type ExportFormat = "pdf" | "fhir" | "package";
 
@@ -310,13 +311,12 @@ export function HealthRecordExportPanel() {
             {/* Entry point into the document vault for the report period
                 (navigation only). Only rendered when the module is enabled. */}
             {user?.modules?.inboundDocuments ? (
-              <Link
-                href={`/documents?year=${new Date().getFullYear()}`}
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex items-center gap-1.5 rounded-md text-xs transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-              >
-                <FolderOpen className="size-3.5" aria-hidden />
-                {t("settings.healthRecord.documentsLink")}
-              </Link>
+              <InlineAction asChild tone="muted" className="gap-1.5">
+                <Link href={`/documents?year=${new Date().getFullYear()}`}>
+                  <FolderOpen className="size-3.5" aria-hidden />
+                  {t("settings.healthRecord.documentsLink")}
+                </Link>
+              </InlineAction>
             ) : null}
           </div>
         </div>

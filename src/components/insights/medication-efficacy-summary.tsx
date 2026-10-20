@@ -24,6 +24,7 @@ import type {
   MedicationEfficacyDTO,
   EfficacyTargetView,
 } from "@/lib/medications/efficacy/build-efficacy";
+import { InlineAction } from "@/components/ui/inline-action";
 
 function primaryWithDelta(
   dto: MedicationEfficacyDTO,
@@ -108,13 +109,14 @@ export function MedicationEfficacySummary({
                       </span>
                     </p>
                   </div>
-                  <Link
-                    href={`/medications/${med.id}?tab=wirkung`}
-                    className="text-primary focus-visible:ring-ring shrink-0 rounded-sm text-xs underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                    data-slot="insights-medication-efficacy-link"
-                  >
-                    {t("medications.efficacy.insights.link")}
-                  </Link>
+                  <InlineAction asChild className="shrink-0">
+                    <Link
+                      href={`/medications/${med.id}?tab=wirkung`}
+                      data-slot="insights-medication-efficacy-link"
+                    >
+                      {t("medications.efficacy.insights.link")}
+                    </Link>
+                  </InlineAction>
                 </li>
               );
             })}

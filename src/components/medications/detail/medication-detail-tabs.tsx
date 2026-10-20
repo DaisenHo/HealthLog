@@ -104,6 +104,7 @@ import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-t
 import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
 import type { RelatedLink } from "@/lib/links/related";
+import { InlineAction } from "@/components/ui/inline-action";
 
 // v1.15.20 — Recharts stays out of the detail page's initial bundle:
 // both chart bodies load through `next/dynamic` (client-only) with the
@@ -1097,14 +1098,13 @@ function StatusRow({
         <p className="text-muted-foreground text-xs font-medium">{label}</p>
         <p className="text-foreground text-sm">{value}</p>
       </div>
-      <button
-        type="button"
+      <InlineAction
         onClick={onJump}
-        className="text-primary focus-visible:ring-ring shrink-0 rounded-sm text-xs underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+        className="shrink-0"
         data-slot={`${dataSlot}-jump`}
       >
         {jumpLabel}
-      </button>
+      </InlineAction>
     </li>
   );
 }

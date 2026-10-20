@@ -18,6 +18,7 @@ import { ArrowRight, Plus, Wrench } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useTranslations } from "@/lib/i18n/context";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export default function MoodPageClient() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -197,14 +198,12 @@ export default function MoodPageClient() {
           here (module-gated — no nav change) rather than a merge: capture
           vs. screener stay two defensible surfaces, just cross-linked. */}
       {user?.modules?.mentalHealth === true ? (
-        <Link
-          href="/mental-wellbeing"
-          data-slot="mood-mental-wellbeing-link"
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex items-center gap-1.5 text-sm underline-offset-4 transition-colors hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
-        >
-          {t("mood.mentalWellbeingLink")}
-          <ArrowRight className="size-3.5" aria-hidden="true" />
-        </Link>
+        <InlineAction asChild tone="muted" size="sm" className="gap-1.5">
+          <Link href="/mental-wellbeing" data-slot="mood-mental-wellbeing-link">
+            {t("mood.mentalWellbeingLink")}
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        </InlineAction>
       ) : null}
     </div>
   );

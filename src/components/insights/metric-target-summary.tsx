@@ -18,6 +18,7 @@ import { useTargetAdjust } from "@/lib/insights/target-adjust-context";
 import { getTargetSourceLink } from "@/lib/targets/source-link";
 import { apiGet } from "@/lib/api/api-fetch";
 import { resolveGlucoseUnit, type GlucoseUnit } from "@/lib/glucose";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * v1.8.0 → v1.8.5 — surface the per-metric target reference panel on each
@@ -416,19 +417,16 @@ function TargetReferencePanel({
           panel registers itself as that gear's edit target above. */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-0.5">
           {sourceLink ? (
-            <a
-              href={sourceLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-            >
-              <span>
-                {t("targets.sourceLabel", {
-                  source: sourceName(target.source, t),
-                })}
-              </span>
-              <ExternalLink className="size-3" aria-hidden="true" />
-            </a>
+            <InlineAction asChild tone="muted">
+              <a href={sourceLink} target="_blank" rel="noopener noreferrer">
+                <span>
+                  {t("targets.sourceLabel", {
+                    source: sourceName(target.source, t),
+                  })}
+                </span>
+                <ExternalLink className="size-3" aria-hidden="true" />
+              </a>
+            </InlineAction>
           ) : (
             <span className="text-muted-foreground text-xs">
               {t("targets.sourceLabel", {

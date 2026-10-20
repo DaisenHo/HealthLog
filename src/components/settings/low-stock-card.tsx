@@ -13,6 +13,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { readUpdatedAtToken, withBaseToken } from "@/lib/api/optimistic-token";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * v1.16.11 — medication low-stock alert threshold (Settings →
@@ -320,13 +321,11 @@ export function LowStockCard({
       {/* v1.16.11 — back-link to the medications list, the surface the
           alert is about (the supply tab links here the same way). */}
       <p>
-        <Link
-          href="/medications"
-          className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
-          data-slot="low-stock-medications-link"
-        >
-          {t("notifications.lowStock.medicationsLink")}
-        </Link>
+        <InlineAction asChild tone="muted">
+          <Link href="/medications" data-slot="low-stock-medications-link">
+            {t("notifications.lowStock.medicationsLink")}
+          </Link>
+        </InlineAction>
       </p>
     </SettingsCard>
   );

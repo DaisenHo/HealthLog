@@ -83,6 +83,7 @@ import {
 } from "./source-errors";
 import { SegmentedChoice } from "./segmented-choice";
 import { systemName } from "./use-document-sources";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export interface DocumentPickerLink {
   kind: DocumentPickerLinkKind;
@@ -485,19 +486,19 @@ export function DocumentSourcePicker({
           </div>
         </div>
         {hasFilters ? (
-          <button
-            type="button"
+          <InlineAction
+            tone="muted"
             onClick={() => {
               startOver();
               setTag("");
               setFrom("");
               setTo("");
             }}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-8 items-center gap-1 rounded-sm text-xs underline-offset-2 hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
+            className="min-h-8"
           >
             <X className="size-3.5" aria-hidden />
             {t("documents.sourcePicker.clearFilters")}
-          </button>
+          </InlineAction>
         ) : null}
 
         {finished ? (
