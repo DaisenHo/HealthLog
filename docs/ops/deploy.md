@@ -79,6 +79,12 @@ does the same. Nothing else is retried: any other failure, and a lock timeout
 in a migration that does not carry the marker, stops the boot exactly as
 before.
 
+The retries fit inside the container's health check: its start period is ten
+minutes (`docker-compose.yml` and the image's own `HEALTHCHECK`), so failed
+probes while the entrypoint is still migrating do not mark the container
+unhealthy. The first probe that answers ends the start period, so a normal
+boot is reported healthy within half a minute of the server listening.
+
 If all five retries time out, the log ends with
 `HealthLog: ERROR — migration … timed out on a lock 6 times in a row; giving
 up.` and the container exits. Something has held the table for about eight
