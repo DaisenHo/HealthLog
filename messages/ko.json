@@ -6674,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "연결됨",
-      "errorReconnect": "오류: 다시 연결",
-      "warningServerError": "동기화 실패 중",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "일시중지: 다시 연결",
-      "notConnected": "연결 안 됨",
       "justNow": "방금",
       "minutesAgo": "{count}분 전",
       "hoursAgo": "{count}시간 전",
       "daysAgo": "{count}일 전",
       "resumeSuccess": "연동을 다시 시작했어요",
-      "resumeError": "다시 연결하지 못했어요",
-      "stale": "연결됨, 최근 데이터 없음",
-      "stalled": "동기화 멈춤",
-      "pendingSetup": "첫 데이터 기다리는 중"
+      "resumeError": "다시 연결하지 못했어요"
     },
     "integrationFreshness": {
       "title": "받은 데이터",

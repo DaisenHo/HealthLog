@@ -353,10 +353,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/insights-pill-order-section.tsx": {
     "toast.success": 1,
   },
-  "src/components/settings/integration-status-pill.tsx": {
-    CheckCircle2: 2,
-    "text-success": 1,
-  },
   "src/components/settings/integrations/connections-panel.tsx": {
     "toast.success": 2,
   },

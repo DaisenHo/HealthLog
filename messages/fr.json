@@ -6674,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Connecté",
-      "errorReconnect": "Erreur : reconnecter",
-      "warningServerError": "Échec de synchronisation",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "En pause : reconnecter",
-      "notConnected": "Non connecté",
       "justNow": "à l’instant",
       "minutesAgo": "il y a {count} min",
       "hoursAgo": "il y a {count} h",
       "daysAgo": "il y a {count} j",
       "resumeSuccess": "Intégration reprise",
-      "resumeError": "Échec de la reconnexion",
-      "stale": "Connecté, aucune donnée récente",
-      "stalled": "Synchronisation arrêtée",
-      "pendingSetup": "En attente des premières données"
+      "resumeError": "Échec de la reconnexion"
     },
     "integrationFreshness": {
       "title": "Données reçues",

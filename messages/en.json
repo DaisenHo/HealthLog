@@ -6674,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Connected",
-      "errorReconnect": "Error: reconnect",
-      "warningServerError": "Sync failing",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Paused: reconnect",
-      "notConnected": "Not connected",
       "justNow": "just now",
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
       "resumeSuccess": "Integration resumed",
-      "resumeError": "Reconnect failed",
-      "stale": "Connected, no recent data",
-      "stalled": "Sync stopped",
-      "pendingSetup": "Waiting for first data"
+      "resumeError": "Reconnect failed"
     },
     "integrationFreshness": {
       "title": "Data received",

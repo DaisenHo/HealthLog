@@ -6674,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Gekoppeld",
-      "errorReconnect": "Fout: opnieuw koppelen",
-      "warningServerError": "Synchronisatie mislukt",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Gepauzeerd: opnieuw koppelen",
-      "notConnected": "Niet gekoppeld",
       "justNow": "zojuist",
       "minutesAgo": "{count} min geleden",
       "hoursAgo": "{count} u geleden",
       "daysAgo": "{count} d geleden",
       "resumeSuccess": "Koppeling hervat",
-      "resumeError": "Opnieuw koppelen mislukt",
-      "stale": "Gekoppeld, geen recente gegevens",
-      "stalled": "Synchronisatie gestopt",
-      "pendingSetup": "Wachten op eerste gegevens"
+      "resumeError": "Opnieuw koppelen mislukt"
     },
     "integrationFreshness": {
       "title": "Ontvangen gegevens",
