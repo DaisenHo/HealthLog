@@ -66,14 +66,17 @@ vi.mock("next/headers", () => ({
 import { prisma } from "@/lib/db";
 import { getSession } from "../session";
 
+/** A cookie value in the shape `mintSessionSecret` produces. */
+const SECRET = `hls_${"a".repeat(64)}`;
+
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 function seedSession(userLocale: string | null) {
-  cookieState.sessionId = "hls_raw-secret";
+  cookieState.sessionId = SECRET;
   store.row = {
     id: "sess-1",
     userId: "user-1",
-    tokenHash: "hash:hls_raw-secret",
+    tokenHash: `hash:${SECRET}`,
     // Far enough out that the sliding-expiry refresh stays quiet.
     expiresAt: new Date(Date.now() + THIRTY_DAYS_MS),
     lastActiveAt: new Date(),
