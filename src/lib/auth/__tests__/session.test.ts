@@ -86,7 +86,10 @@ import {
   createSession,
   destroyAllSessions,
   destroySession,
+  validateSessionFromCookieValue,
+  validateSessionWithCreatedAt,
 } from "../session";
+import { SessionStoreUnavailableError } from "@/lib/api-errors";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -251,6 +254,59 @@ describe("getSession", () => {
     });
     expect(cookieState.delete).toHaveBeenCalledWith("healthlog_session");
     expect(cookieState.delete).toHaveBeenCalledWith("hl_onboarding");
+  });
+});
+
+describe("a session lookup that fails is not a missing session", () => {
+  // A dropped connection used to fold into `null`, which every caller reads
+  // as "signed out": the route answered 401 and the client discarded a good
+  // credential because the database blinked.
+  function failLookup() {
+    vi.mocked(prisma.session.findUnique).mockRejectedValueOnce(
+      Object.assign(new Error("Can't reach database server"), {
+        code: "P1001",
+      }) as never,
+    );
+  }
+
+  it("getSession raises a 503 with a retryable code", async () => {
+    cookieState.sessionId = "hls_abc";
+    failLookup();
+    const err = await getSession().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(SessionStoreUnavailableError);
+    expect(err).toMatchObject({
+      statusCode: 503,
+      errorCode: "auth.session.unavailable",
+    });
+    // Nothing about the browser's credential changes on a fault.
+    expect(cookieState.delete).not.toHaveBeenCalled();
+  });
+
+  it("validateSessionFromCookieValue raises instead of answering null", async () => {
+    failLookup();
+    await expect(
+      validateSessionFromCookieValue("hls_abc"),
+    ).rejects.toBeInstanceOf(SessionStoreUnavailableError);
+  });
+
+  it("validateSessionWithCreatedAt raises instead of answering null", async () => {
+    failLookup();
+    await expect(
+      validateSessionWithCreatedAt("hls_abc"),
+    ).rejects.toBeInstanceOf(SessionStoreUnavailableError);
+  });
+
+  it("still answers null for a cookie that matches nothing", async () => {
+    await expect(validateSessionFromCookieValue("hls_nope")).resolves.toBe(
+      null,
+    );
+  });
+
+  it("logout still clears the cookie when the lookup fails", async () => {
+    cookieState.sessionId = "hls_abc";
+    failLookup();
+    await expect(destroySession()).resolves.toBeUndefined();
+    expect(cookieState.delete).toHaveBeenCalledWith("healthlog_session");
   });
 });
 

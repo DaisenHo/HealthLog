@@ -81,6 +81,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.reproof.too_weak",
       "auth.scope.insufficient",
       "auth.session.insecure_transport",
+      "auth.session.unavailable",
       "auth.stepup.required",
       "auth.token.expired",
       "auth.token.invalid",
