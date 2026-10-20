@@ -129,6 +129,7 @@ vi.mock("@/lib/google-health/sync", () => ({
 import {
   GOOGLE_HEALTH_BACKFILL_MAX_SLICE,
   GOOGLE_HEALTH_BACKFILL_THROTTLED_DELAY_SECONDS,
+  googleHealthBackfillRetryKey,
   runGoogleHealthBackfillForUser,
 } from "../google-health-backfill";
 import { INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS } from "@/lib/jobs/integration-backfill-admission";
@@ -397,6 +398,46 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
     expect(Math.abs(startAfter - 10 * 3600)).toBeLessThanOrEqual(2);
     expect(bossSend.mock.calls[0]![1]).toMatchObject({
       data: { slice: 8 },
+    });
+  });
+
+  it("keys a waiting retry on when it is due, so a boot's slice cannot start a second chain", async () => {
+    resumeState.doneBefore = GOOGLE_HEALTH_COLLECTION_KEYS.filter(
+      (k) => k !== "fetchHeartRate",
+    );
+    resumeState.parks = ["fetchHeartRate"];
+    resumeState.retryDueAt = Date.now() + 20 * 3_600_000;
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 0, failed: false });
+
+    // The slice that parked the collection, then a boot's first slice meeting
+    // the same wait from the same note.
+    await runGoogleHealthBackfillForUser("u1", undefined, 7);
+    await runGoogleHealthBackfillForUser("u1", undefined, 0);
+
+    const keys = bossSend.mock.calls.map(
+      (call) => (call[2] as { singletonKey: string }).singletonKey,
+    );
+    expect(keys).toEqual([
+      googleHealthBackfillRetryKey("u1", resumeState.retryDueAt),
+      googleHealthBackfillRetryKey("u1", resumeState.retryDueAt),
+    ]);
+    expect(keys[0]).toBe(
+      `google-health-backfill|u1|retry-${new Date(resumeState.retryDueAt).toISOString()}`,
+    );
+  });
+
+  it("sends a retry that is already due as an ordinary next slice", async () => {
+    resumeState.doneBefore = GOOGLE_HEALTH_COLLECTION_KEYS.filter(
+      (k) => k !== "fetchHeartRate",
+    );
+    resumeState.parks = ["fetchHeartRate"];
+    resumeState.retryDueAt = Date.now() - 1_000;
+    syncUserGoogleHealthMock.mockResolvedValue({ imported: 0, failed: false });
+
+    await runGoogleHealthBackfillForUser("u1", undefined, 7);
+    expect(bossSend.mock.calls[0]![2]).toMatchObject({
+      singletonKey: "google-health-backfill|u1|slice-8",
+      startAfter: INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
     });
   });
 
