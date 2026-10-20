@@ -9,6 +9,7 @@ import {
   classifyWithingsResponse,
 } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
+import { importValue } from "@/lib/integrations/import-value";
 
 const WITHINGS_OAUTH_URL =
   "https://account.withings.com/oauth2_user/authorize2";
@@ -326,7 +327,7 @@ export async function fetchMeasurements(
 
         results.push({
           type: mapping.type,
-          value: parseFloat(value.toFixed(2)),
+          value: importValue(value),
           measuredAt,
         });
       }

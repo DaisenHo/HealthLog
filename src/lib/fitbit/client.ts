@@ -43,6 +43,7 @@ import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 import { FitbitApiError, classifyFitbitResponse } from "./response-classifier";
 import { envValue } from "@/lib/env";
+import { importValue } from "@/lib/integrations/import-value";
 
 /** Classic Fitbit Web API base. */
 export const FITBIT_API_BASE = "https://api.fitbit.com";
@@ -505,10 +506,6 @@ async function fitbitGet(
 // `FitbitMappedMeasurement[]` (the source + final externalId are stamped by the
 // sync layer).
 
-function round2(n: number): number {
-  return parseFloat(n.toFixed(2));
-}
-
 /** Finite + strictly-positive guard. */
 function positive(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n) && n > 0;
@@ -637,7 +634,7 @@ export function mapWeight(
     if (!positive(e.weight)) continue;
     out.push({
       type: "WEIGHT",
-      value: round2(e.weight),
+      value: importValue(e.weight),
       unit: "kg",
       measuredAt: bodyLogInstant(e, tz),
       fieldTag: `${bodyLogAnchor(e)}:weight`,
@@ -657,7 +654,7 @@ export function mapBodyFat(
     if (!positive(e.fat)) continue;
     out.push({
       type: "BODY_FAT",
-      value: round2(e.fat),
+      value: importValue(e.fat),
       unit: "%",
       measuredAt: bodyLogInstant(e, tz),
       fieldTag: `${bodyLogAnchor(e)}:body_fat`,
@@ -703,7 +700,7 @@ function mapDailySummary(
     const scaled = spec.factor ? value * spec.factor : value;
     out.push({
       type: spec.type,
-      value: round2(scaled),
+      value: importValue(scaled),
       unit: spec.unit,
       measuredAt: canonicalDailyTimestamp(day, tz),
       fieldTag: `${day}:${spec.fieldTag}`,
@@ -822,7 +819,7 @@ export function mapVo2Max(
     if (v === null || !positive(v)) continue;
     out.push({
       type: "VO2_MAX",
-      value: round2(v),
+      value: importValue(v),
       unit: "mL/(kg·min)",
       measuredAt: canonicalDailyTimestamp(day, tz),
       fieldTag: `vo2_max:${day}`,
@@ -880,7 +877,7 @@ function mapActivitySeries(
     const scaled = spec.factor ? n * spec.factor : n;
     out.push({
       type: spec.type,
-      value: round2(scaled),
+      value: importValue(scaled),
       unit: spec.unit,
       measuredAt: canonicalDailyTimestamp(day, tz),
       fieldTag: `${spec.fieldTag}:${day}`,
@@ -1221,7 +1218,7 @@ export function mapSleepSessionDetailed(
     if (!windowEnd || end > windowEnd) windowEnd = end;
     rows.push({
       type: "SLEEP_DURATION",
-      value: round2(minutes),
+      value: importValue(minutes),
       unit: "minutes",
       measuredAt: end,
       fieldTag: `${anchor}:sleep:${start.toISOString()}`,
@@ -1359,7 +1356,7 @@ export function mapWorkout(
   // distance is km under the metric locale → metres.
   const distanceM =
     typeof entry.distance === "number" && entry.distance >= 0
-      ? round2(entry.distance * 1000)
+      ? importValue(entry.distance * 1000)
       : null;
   const avgHr = positive(entry.averageHeartRate)
     ? Math.round(entry.averageHeartRate)

@@ -20,6 +20,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { reconstructContiguousSleepTimeline } from "@/lib/sleep/reconstruct-timeline";
 import { WhoopApiError, classifyWhoopResponse } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
+import { importValue } from "@/lib/integrations/import-value";
 
 const WHOOP_API_BASE = "https://api.prod.whoop.com/developer";
 const WHOOP_OAUTH_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth";
@@ -522,10 +523,6 @@ export interface MappedMeasurement {
   reconstructed?: boolean;
 }
 
-function round2(n: number): number {
-  return parseFloat(n.toFixed(2));
-}
-
 /**
  * Map one WHOOP recovery record into Measurement readings. An unscored record
  * (`score === null`) yields nothing. `recovery.score.recovery_score` →
@@ -540,21 +537,21 @@ export function mapRecovery(r: WhoopRecovery): MappedMeasurement[] {
   const out: MappedMeasurement[] = [
     {
       type: "RECOVERY_SCORE",
-      value: round2(r.score.recovery_score),
+      value: importValue(r.score.recovery_score),
       unit: "score",
       measuredAt,
       fieldTag: "recovery",
     },
     {
       type: "HRV_RMSSD",
-      value: round2(r.score.hrv_rmssd_milli),
+      value: importValue(r.score.hrv_rmssd_milli),
       unit: "ms",
       measuredAt,
       fieldTag: "hrv_rmssd",
     },
     {
       type: "RESTING_HEART_RATE",
-      value: round2(r.score.resting_heart_rate),
+      value: importValue(r.score.resting_heart_rate),
       unit: "bpm",
       measuredAt,
       fieldTag: "rhr",
@@ -563,7 +560,7 @@ export function mapRecovery(r: WhoopRecovery): MappedMeasurement[] {
   if (typeof r.score.spo2_percentage === "number") {
     out.push({
       type: "OXYGEN_SATURATION",
-      value: round2(r.score.spo2_percentage),
+      value: importValue(r.score.spo2_percentage),
       unit: "%",
       measuredAt,
       fieldTag: "spo2",
@@ -572,7 +569,7 @@ export function mapRecovery(r: WhoopRecovery): MappedMeasurement[] {
   if (typeof r.score.skin_temp_celsius === "number") {
     out.push({
       type: "SKIN_TEMPERATURE",
-      value: round2(r.score.skin_temp_celsius),
+      value: importValue(r.score.skin_temp_celsius),
       unit: "celsius",
       measuredAt,
       fieldTag: "skin_temp",
@@ -665,7 +662,7 @@ export function mapSleep(s: WhoopSleep): MappedMeasurement[] {
     need.need_from_recent_nap_milli;
   out.push({
     type: "SLEEP_NEED",
-    value: round2(totalNeedMilli * MS_TO_MIN),
+    value: importValue(totalNeedMilli * MS_TO_MIN),
     unit: "minutes",
     measuredAt,
     fieldTag: "sleep_need",
@@ -684,7 +681,7 @@ export function mapSleep(s: WhoopSleep): MappedMeasurement[] {
     if (typeof value === "number") {
       out.push({
         type,
-        value: round2(value),
+        value: importValue(value),
         unit: "%",
         measuredAt,
         fieldTag,
@@ -695,7 +692,7 @@ export function mapSleep(s: WhoopSleep): MappedMeasurement[] {
   if (typeof s.score.respiratory_rate === "number") {
     out.push({
       type: "RESPIRATORY_RATE",
-      value: round2(s.score.respiratory_rate),
+      value: importValue(s.score.respiratory_rate),
       unit: "breaths/min",
       measuredAt,
       fieldTag: "resp_rate",
@@ -727,14 +724,14 @@ export function mapCycle(c: WhoopCycle): MappedMeasurement[] {
   const out: MappedMeasurement[] = [
     {
       type: "DAY_STRAIN",
-      value: round2(c.score.strain),
+      value: importValue(c.score.strain),
       unit: "score",
       measuredAt,
       fieldTag: "day_strain",
     },
     {
       type: "ENERGY_EXPENDITURE_KJ",
-      value: round2(c.score.kilojoule),
+      value: importValue(c.score.kilojoule),
       unit: "kJ",
       measuredAt,
       fieldTag: "energy_kj",
@@ -801,12 +798,14 @@ export function mapBody(b: WhoopBodyMeasurement): MappedBodyMeasurement {
   const positive = (n: number | undefined): n is number =>
     typeof n === "number" && Number.isFinite(n) && n > 0;
   return {
-    weightKg: positive(b.weight_kilogram) ? round2(b.weight_kilogram) : null,
+    weightKg: positive(b.weight_kilogram)
+      ? importValue(b.weight_kilogram)
+      : null,
     maxHeartRate: positive(b.max_heart_rate)
       ? Math.round(b.max_heart_rate)
       : null,
     heightCm: positive(b.height_meter)
-      ? round2(b.height_meter * M_TO_CM)
+      ? importValue(b.height_meter * M_TO_CM)
       : null,
   };
 }
