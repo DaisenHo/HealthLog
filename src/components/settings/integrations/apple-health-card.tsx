@@ -136,7 +136,9 @@ function DeliveryDiagnostic({
  * arrives on "Sync all" from one the phone delivers by itself (#1173), plus
  * the last background arrival when a later one came another way. Nothing
  * renders when the server sent no arrival facts (the workouts row, or a failed
- * ledger read), so absence is never painted as "not received".
+ * ledger read), so absence is never painted as "not received". A type the app
+ * writes back to the phone also names when a reading was last entered here
+ * (#1247), since those never arrive back.
  */
 export function ArrivalDetail({
   entry,
@@ -147,10 +149,21 @@ export function ArrivalDetail({
   t: (key: string, params?: Record<string, string | number>) => string;
   now?: Date;
 }) {
-  if (entry.lastReceivedAt === undefined) return null;
   const reference = (now ?? new Date()).getTime();
   const relative = (iso: string) =>
     formatRelative(Math.max(0, reference - new Date(iso).getTime()), t);
+  const enteredHere = entry.lastEnteredHereAt
+    ? t("settings.appleHealth.freshness.lastEnteredHere", {
+        relative: relative(entry.lastEnteredHereAt),
+      })
+    : null;
+  if (entry.lastReceivedAt === undefined) {
+    return enteredHere ? (
+      <span data-testid="apple-health-arrival" data-state="entered-here">
+        {enteredHere}
+      </span>
+    ) : null;
+  }
   // v1.43 (ios #77) — a history catch-up is named apart from the live
   // arrivals, and never counts as one.
   const backfill = entry.lastBackfillAt
@@ -161,7 +174,7 @@ export function ArrivalDetail({
   if (entry.lastReceivedAt === null) {
     return (
       <span data-testid="apple-health-arrival" data-state="never">
-        {[t("settings.appleHealth.freshness.never"), backfill]
+        {[t("settings.appleHealth.freshness.never"), backfill, enteredHere]
           .filter((part): part is string => part !== null)
           .join(", ")}
       </span>
@@ -199,6 +212,7 @@ export function ArrivalDetail({
     );
   }
   if (backfill) parts.push(backfill);
+  if (enteredHere) parts.push(enteredHere);
   return (
     <span
       data-testid="apple-health-arrival"

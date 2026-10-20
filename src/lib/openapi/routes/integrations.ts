@@ -289,6 +289,12 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .describe(
         'v1.43 — when a batch with `syncTrigger: "backfill"` last carried this type. A backfill moves only this and `syncProgress`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt` or the account-level sync stamps, so catching up history does not read as a run of healthy daily syncs. Absent on older servers.',
       ),
+    lastEnteredHereAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.43.7 — present only on a type the app writes back to Apple Health (weight, blood pressure, blood glucose while their entry is `bidirectional` or `writeOnly` and enabled): when the newest reading of the type was entered here rather than arriving from Apple Health, or null when none was. Such readings go to the phone and never come back as an arrival, so `stale` already counts them: the type is quiet only when both this and `lastSeenAt` are. Show it as the server sends it; do not recompute `stale`.",
+      ),
   })
   .meta({
     id: "AppleHealthMetricFreshnessEntry",
