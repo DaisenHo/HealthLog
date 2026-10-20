@@ -72,12 +72,66 @@ export const HEAP_CRITICAL_RATIO = 0.95;
 export const HEAP_PRESSURE_COOLDOWN_MS = 30 * 60_000;
 export const HEAP_PRESSURE_LIST_MAX = 50;
 
-export interface HeapFigures {
+/**
+ * The used size of each V8 heap space, by the field it is reported under.
+ *
+ * `old_space` alone left most of a large heap unexplained: a buffer or string
+ * past V8's large-object threshold (a profile picture read into memory, a
+ * long JSON payload) lives in `large_object_space`, compiled code in the code
+ * spaces, and since V8 12 bytecode and other sandboxed objects in
+ * `trusted_space`. Every space a runtime reports that is not named here
+ * (the shared spaces, a space a later V8 adds) is summed into
+ * `other_spaces_mb`, so the fields account for the whole used heap and the
+ * line keeps one shape whatever the Node version.
+ */
+const HEAP_SPACE_FIELDS = {
+  new_space: "new_space_mb",
+  old_space: "old_space_mb",
+  code_space: "code_space_mb",
+  large_object_space: "large_object_space_mb",
+  new_large_object_space: "new_large_object_space_mb",
+  code_large_object_space: "code_large_object_space_mb",
+  trusted_space: "trusted_space_mb",
+  read_only_space: "read_only_space_mb",
+} as const;
+
+type HeapSpaceField =
+  | (typeof HEAP_SPACE_FIELDS)[keyof typeof HEAP_SPACE_FIELDS]
+  | "other_spaces_mb";
+
+export type HeapSpaceFigures = Record<HeapSpaceField, number>;
+
+/** The per-space breakdown of `getHeapSpaceStatistics()`, in megabytes. */
+export function heapSpaceFigures(
+  spaces: ReadonlyArray<{ space_name: string; space_used_size: number }>,
+): HeapSpaceFigures {
+  const bytes: Record<HeapSpaceField, number> = {
+    new_space_mb: 0,
+    old_space_mb: 0,
+    code_space_mb: 0,
+    large_object_space_mb: 0,
+    new_large_object_space_mb: 0,
+    code_large_object_space_mb: 0,
+    trusted_space_mb: 0,
+    read_only_space_mb: 0,
+    other_spaces_mb: 0,
+  };
+  for (const space of spaces) {
+    const field =
+      HEAP_SPACE_FIELDS[space.space_name as keyof typeof HEAP_SPACE_FIELDS] ??
+      "other_spaces_mb";
+    bytes[field] += space.space_used_size;
+  }
+  return Object.fromEntries(
+    Object.entries(bytes).map(([field, size]) => [field, megabytes(size)]),
+  ) as HeapSpaceFigures;
+}
+
+export interface HeapFigures extends HeapSpaceFigures {
   heap_used_mb: number;
   heap_total_mb: number;
   heap_limit_mb: number;
   heap_used_ratio: number;
-  old_space_mb: number;
   rss_mb: number;
   external_mb: number;
   array_buffers_mb: number;
@@ -115,9 +169,6 @@ function defaultReadHeap(): { used: number; limit: number } {
 function defaultReadFigures(registry: InFlightRegistry): HeapFigures {
   const memory = process.memoryUsage();
   const limit = getHeapStatistics().heap_size_limit;
-  const oldSpace = getHeapSpaceStatistics().find(
-    (space) => space.space_name === "old_space",
-  );
   const counts = registry.counts();
   return {
     heap_used_mb: megabytes(memory.heapUsed),
@@ -125,7 +176,7 @@ function defaultReadFigures(registry: InFlightRegistry): HeapFigures {
     heap_limit_mb: megabytes(limit),
     heap_used_ratio:
       limit > 0 ? Math.round((memory.heapUsed / limit) * 1000) / 1000 : 0,
-    old_space_mb: megabytes(oldSpace?.space_used_size ?? 0),
+    ...heapSpaceFigures(getHeapSpaceStatistics()),
     rss_mb: megabytes(memory.rss),
     external_mb: megabytes(memory.external),
     array_buffers_mb: megabytes(memory.arrayBuffers),
