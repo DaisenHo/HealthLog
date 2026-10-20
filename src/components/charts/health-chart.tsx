@@ -89,6 +89,7 @@ import {
   DEFAULT_CHART_RANGE,
   rangeWindowDays,
 } from "./chart-range-tabs";
+import { trendLineByTime } from "@/lib/stats/linear-fit";
 
 // The range tabs (7 / 30 / 90 / All, a calendar-day window ending now) and
 // the "All" tab's ten-year fetch span live with the shared
@@ -583,44 +584,6 @@ export function resolveAnnotationPositions(
     });
   }
   return out;
-}
-
-function buildTrendSeriesByTime(data: Array<{ date: Date; value: number }>): {
-  points: Array<{ date: Date; value: number }>;
-  slopePerDay: number;
-} | null {
-  if (data.length < 2) return null;
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-  const startTime = sorted[0].date.getTime();
-  const points = sorted.map((p) => ({
-    x: (p.date.getTime() - startTime) / 86400000,
-    y: p.value,
-  }));
-
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-
-  const denominator = n * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-
-  const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / n;
-
-  return {
-    points: sorted.map((p) => ({
-      date: p.date,
-      value:
-        Math.round(
-          (intercept + slope * ((p.date.getTime() - startTime) / 86400000)) *
-            100,
-        ) / 100,
-    })),
-    slopePerDay: slope,
-  };
 }
 
 export function HealthChart({
@@ -1235,7 +1198,7 @@ export function HealthChart({
           }));
 
         if (typeData.length >= 2) {
-          const trend = buildTrendSeriesByTime(typeData);
+          const trend = trendLineByTime(typeData);
           if (trend) {
             for (const point of trend.points) {
               const pointTimestamp = point.date.getTime();

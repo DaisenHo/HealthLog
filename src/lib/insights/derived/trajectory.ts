@@ -53,6 +53,7 @@ import {
 import { readDayMeanSeries, type BaselineProfile } from "./baseline";
 import type { Derived, DerivedProvenanceSource } from "./types";
 import { daysBetweenDateKeys, shiftDateKey } from "@/lib/tz/format";
+import { linearFit } from "@/lib/stats/linear-fit";
 
 /** Trailing window the fit reads (days). Matches the baseline engine. */
 const DEFAULT_WINDOW_DAYS = 30;
@@ -154,22 +155,9 @@ export function fitOls(xs: number[], ys: number[]): OlsFit | null {
   const n = xs.length;
   if (n < 3 || ys.length !== n) return null;
 
-  const sumX = xs.reduce((s, x) => s + x, 0);
-  const sumY = ys.reduce((s, y) => s + y, 0);
-  const meanX = sumX / n;
-  const meanY = sumY / n;
-
-  let sxx = 0;
-  let sxy = 0;
-  for (let i = 0; i < n; i++) {
-    const dx = xs[i] - meanX;
-    sxx += dx * dx;
-    sxy += dx * (ys[i] - meanY);
-  }
-  if (sxx === 0) return null; // all x identical → no slope
-
-  const slope = sxy / sxx;
-  const intercept = meanY - slope * meanX;
+  const fit = linearFit(xs, ys);
+  if (!fit) return null; // all x identical → no slope
+  const { slope, intercept, meanX, meanY, sxx } = fit;
 
   let ssRes = 0;
   let ssTot = 0;
