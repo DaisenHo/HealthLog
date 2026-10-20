@@ -26,6 +26,7 @@ import { INSTRUMENTS, needsFollowUp } from "@/lib/mental-health/instruments";
 
 import { CrisisCard } from "./crisis-card";
 import type { CreateResponse } from "./types";
+import { PageHeader } from "@/components/ui/page-header";
 
 export function AssessmentResult({
   result,
@@ -67,18 +68,12 @@ export function AssessmentResult({
         {t("mentalHealth.backToList")}
       </Button>
 
-      <header className="flex flex-col gap-1">
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          className="scroll-mt-4 text-2xl font-semibold outline-none"
-        >
-          {t(`mentalHealth.instrument.${key}`)}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {t(`mentalHealth.instrumentDescription.${key}`)}
-        </p>
-      </header>
+      <PageHeader
+        title={t(`mentalHealth.instrument.${key}`)}
+        description={t(`mentalHealth.instrumentDescription.${key}`)}
+        headingRef={headingRef}
+        focusable
+      />
 
       <p className="text-muted-foreground text-xs" role="status">
         {t("mentalHealth.saved")}

@@ -45,6 +45,7 @@ import {
   UNANSWERED,
 } from "./check-in-nav";
 import type { InstrumentId } from "./types";
+import { PageHeader } from "@/components/ui/page-header";
 
 const FUNCTIONAL_SCALE = [0, 1, 2, 3] as const;
 
@@ -142,13 +143,10 @@ export function CheckInWizard({
       {/* In-test header — instrument title + ONE standardized explanation line.
           No disclaimer here (§2); the landing carries it. */}
       <header className="flex flex-col gap-1">
-        {/* Wizard hero H1: intentionally semibold, same hero exception as onboarding (UI-STANDARDS §5). Do not sweep to font-bold. */}
-        <h1 className="text-2xl font-semibold">
-          {t(`mentalHealth.instrument.${key}`)}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {t(`mentalHealth.instrumentDescription.${key}`)}
-        </p>
+        <PageHeader
+          title={t(`mentalHealth.instrument.${key}`)}
+          description={t(`mentalHealth.instrumentDescription.${key}`)}
+        />
         {/* Honest translation note: the instrument is validated in its source
             language; the surrounding chrome stays localized. */}
         {!hasValidatedItems(instrument, locale) && (
