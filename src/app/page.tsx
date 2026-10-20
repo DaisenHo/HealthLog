@@ -76,12 +76,15 @@ const DIGEST_SOFT_BUDGET_MS = 400;
  *    others.
  */
 export default async function DashboardPage() {
+  // `DEMO_MODE` is a server-only env var; resolved here and threaded in, as
+  // the layout does for the shell.
+  const demoMode = process.env.DEMO_MODE === "true";
   // Operator/test escape hatch: `DASHBOARD_SSR_PREFETCH=false` renders the
   // pure client-fetch dashboard (pre-prefetch behaviour). The e2e server
   // sets it so Playwright route mocks — which only see CLIENT fetches —
   // keep governing what the dashboard paints. It gates EVERY prefetch below.
   if (process.env.DASHBOARD_SSR_PREFETCH === "false") {
-    return <DashboardPageClient />;
+    return <DashboardPageClient demoMode={demoMode} />;
   }
   let dehydratedState = null;
   let batchWindow: BatchWindow | undefined;
@@ -171,11 +174,13 @@ export default async function DashboardPage() {
   }
 
   if (dehydratedState === null) {
-    return <DashboardPageClient batchWindow={batchWindow} />;
+    return (
+      <DashboardPageClient batchWindow={batchWindow} demoMode={demoMode} />
+    );
   }
   return (
     <HydrationBoundary state={dehydratedState}>
-      <DashboardPageClient batchWindow={batchWindow} />
+      <DashboardPageClient batchWindow={batchWindow} demoMode={demoMode} />
     </HydrationBoundary>
   );
 }
