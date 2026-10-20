@@ -14,53 +14,45 @@
  */
 export const DASHBOARD_REFETCH_INTERVAL_MS = 120_000;
 
+/**
+ * How many fetches a bounded poll has made: the ones that settled with data
+ * and the ones that failed. TanStack Query's `dataUpdateCount` alone does not
+ * move on a failed fetch, and the last good payload stays in place, so a
+ * poll counted on it kept going for as long as the request kept failing.
+ */
+export function pollAttemptCount(state: {
+  dataUpdateCount: number;
+  errorUpdateCount: number;
+}): number {
+  return state.dataUpdateCount + state.errorUpdateCount;
+}
+
 /*
  * ── Every client poll, in one place ─────────────────────────────────────
  *
  * The web client polls in three shapes, and each poll belongs to exactly
- * one of them. A new poll picks its shape here, and is added to this list.
+ * one of them. The inventory of every poll, with its interval and why, is
+ * `src/__tests__/client-poll-inventory-guard.test.ts`: it is held to every
+ * `refetchInterval:` in the tree, so a new poll is added there or the suite
+ * fails.
  *
  * 1. STANDING — a fixed interval while the surface is mounted. TanStack
  *    Query pauses it while the tab is hidden (`refetchIntervalInBackground`
- *    defaults to false), so it costs nothing on a background tab.
- *
- *    | Surface                              | Interval | Why this figure                                   |
- *    | ------------------------------------ | -------- | ------------------------------------------------- |
- *    | dashboard snapshot, analytics, digest | 120 s    | this constant; matches the snapshot cache TTL     |
- *    | version poller (`version-poller.tsx`) | 60 s     | a deploy notice within a minute; plain timer      |
- *    | notification channel status           | 30 s     | last-delivery results move while the panel is open |
- *    | admin app-log preview                 | 30 s     | an operator watching a live log                   |
- *    | achievement unlock notifier           | 5 min    | out-of-band unlocks; an app-global poll           |
- *    | admin host metrics chart              | 5 min    | the sampler's own cadence                         |
+ *    defaults to false), so it costs nothing on a background tab. The
+ *    version poller (`version-poller.tsx`, 60 s) is a plain timer of the
+ *    same shape.
  *
  * 2. UNTIL-DONE — polls while a server job is visibly running and stops on
  *    the terminal state the response reports. The interval is short because
  *    a person is watching a progress indicator; the stop condition is what
  *    bounds it, so it must be a state the server always reaches.
  *
- *    | Surface                               | Interval | Stops when                                   |
- *    | ------------------------------------- | -------- | -------------------------------------------- |
- *    | Apple Health / Health Connect import  | 2 s      | the job reports a terminal status            |
- *    | admin backup restore list             | 2 s      | no restore is active                         |
- *    | documents list                        | 4 s      | no document is inside its 3-minute upload    |
- *    |                                       |          | processing window without an index           |
- *    | Coach staged attachment               | 2.5 s    | the same: index exists or window passed      |
- *    | admin pulse day-mean / maintenance    | 10 s     | the recompute reports done                   |
- *
  * 3. BOUNDED — polls while the server says fresh model text is on its way
  *    (`preparing` / `revalidating`), with an attempt ceiling, because a
  *    generation that keeps failing would otherwise poll an open page
- *    forever. The ceilings live beside the deciders and are unit-tested.
- *
- *    | Surface                       | Interval | Ceiling                                    |
- *    | ----------------------------- | -------- | ------------------------------------------ |
- *    | status cards (`use-insight-status.ts`, `nextStatusPollInterval`) | 4 s  | 12 attempts |
- *    | advisor / briefing (`nextAdvisorPollInterval`)                   | 25 s | 10 attempts |
- *    | period narrative              | 5 s      | stops once the narrative arrives          |
- *
- *    The period narrative has no attempt ceiling: it stops on a state the
- *    server reaches (the warm writes text or clears `revalidating`), and it
- *    is only mounted while a person is looking at it.
+ *    forever. The ceilings live beside the deciders
+ *    (`nextStatusPollInterval`, `nextAdvisorPollInterval`) and count
+ *    attempts with {@link pollAttemptCount}, failed fetches included.
  *
  * A document that is never indexed is the reason the two document polls are
  * bounded by the upload window (`RECENT_UPLOAD_WINDOW_MS` in

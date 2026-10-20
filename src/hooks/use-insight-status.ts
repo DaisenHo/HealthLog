@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
+import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { useTranslations } from "@/lib/i18n/context";
 import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry";
 import type { AssessmentStatus } from "@/lib/insights/status-shared";
@@ -221,9 +222,8 @@ async function fetchStatusData(
 
 function useStatusPollAttemptCount(queryKey: readonly unknown[]): number {
   const queryClient = useQueryClient();
-  return (
-    queryClient.getQueryState<InsightStatusData>(queryKey)?.dataUpdateCount ?? 0
-  );
+  const state = queryClient.getQueryState<InsightStatusData>(queryKey);
+  return state ? pollAttemptCount(state) : 0;
 }
 
 /**
@@ -324,7 +324,7 @@ export function useInsightStatus(metric: InsightStatusMetric) {
     refetchInterval: (query) =>
       nextStatusPollInterval(
         query.state.data?.preparing,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
         query.state.data?.revalidating,
       ),
   });
@@ -383,7 +383,7 @@ export function useInsightMetricStatus(
     refetchInterval: (query) =>
       nextStatusPollInterval(
         query.state.data?.preparing,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
         query.state.data?.revalidating,
       ),
   });
@@ -438,7 +438,7 @@ export function useInsightBiomarkerAssessment(
     refetchInterval: (query) =>
       nextStatusPollInterval(
         query.state.data?.preparing,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
         query.state.data?.revalidating,
       ),
   });
