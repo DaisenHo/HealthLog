@@ -176,7 +176,9 @@ describe("measurement write tail", () => {
     const missing = handRolled.filter((file) => {
       const src = readFileSync(join(SRC, file), "utf8");
       return !(
-        /recomputeBucketsForMeasurement|afterMeasurementMutation/.test(src) &&
+        /recomputeBucketsFor(Measurement|Keys)|afterMeasurementMutation/.test(
+          src,
+        ) &&
         /invalidateStatusInsightsForTypes|afterMeasurementMutation/.test(src)
       );
     });
