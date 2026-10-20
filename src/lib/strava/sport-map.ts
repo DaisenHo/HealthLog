@@ -7,11 +7,10 @@
  * to write `summary.sport_type ?? summary.type ?? detail?.sport_type ??
  * "workout"` straight into `Workout.sportType`, so a Strava "Run" or
  * "VirtualRide" never matched a canonical bucket — `/insights/workouts`
- * rendered every Strava row generic, and the read-time picker in
- * `src/lib/sources/pick-canonical-workout.ts` treats any two GENERIC rows
- * as sport-compatible, so a same-source brick session (a Strava "Ride"
- * ending 15:00 immediately followed by a Strava "Run" starting 15:03)
- * clustered into one and silently dropped a leg. Fitbit
+ * rendered every Strava row generic, and a picker that treats two generic
+ * rows as the same sport clusters a same-source brick session (a Strava
+ * "Ride" ending 15:00 immediately followed by a Strava "Run" starting
+ * 15:03) into one and silently drops a leg. Fitbit
  * (`mapFitbitSportType()` in `src/lib/fitbit/client.ts`), Google Health
  * (`mapGoogleHealthSportType()` in `src/lib/google-health/mappers.ts`), and
  * WHOOP (`mapWhoopSportType()` in `src/lib/whoop/sport-map.ts`) all

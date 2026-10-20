@@ -91,7 +91,7 @@ import {
   UNSTABLE_EXTERNAL_ID_REASON,
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
-import { dedupeWorkoutBatch } from "@/lib/workouts/canonical-rows";
+import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
 import { WORKOUTS_WRITE_SCOPE } from "@/lib/workouts/scopes";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
@@ -494,41 +494,29 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
   }
 
-  // v1.4.42 W5 — write-time cross-source dedup. The v1.5 iOS app
-  // drains a HealthKit observer queue that frequently carries the
-  // SAME logical workout from two paired sensors (Apple Watch +
-  // Withings ScanWatch). Without this pass, both rows persist (their
-  // `externalId`s differ → the `(userId, source, externalId)` unique
-  // index never fires) and the read-time canonical-picker has to
-  // carry the duplicate forward on every dashboard render.
-  //
-  // The helper is pure (no Prisma, no user lookups). It groups by
-  // `(userId, activityType, startedAt ± 90 s)`, prefers the canonical
-  // source ladder (APPLE_HEALTH > WITHINGS > MANUAL > IMPORT), and
-  // breaks ties on calories > earliest createdAt > input order. Rows
-  // dropped here surface to the iOS client as `duplicate` so the
-  // sync cursor advances past them identically to the externalId
-  // case below.
-  const canonicalPrepared = dedupeWorkoutBatch(
+  // Write-time cross-source dedup through the one workout picker the reads
+  // use, with the same source ladder: one logical workout from two sources
+  // in one batch (or one HealthKit session re-sent under a new id) lands
+  // once. Rows the picker hides surface to the client as `duplicate`, so
+  // the sync cursor advances past them like the externalId case below.
+  const canonicalPrepared = pickCanonicalWorkoutRows(
     prepared.map((p) => ({
+      index: p.index,
       userId: p.row.userId,
-      activityType: p.row.sportType,
+      sportType: p.row.sportType,
       startedAt: p.row.startedAt as Date,
+      durationSec: p.row.durationSec,
       // Zod's `measurementSourceEnum.optional().default("MANUAL")`
       // guarantees `source` is set post-parse, but Prisma's
-      // `WorkoutCreateManyInput` types it optional. Default through
-      // the same fallback the validator uses so the picker's source
-      // ladder still resolves on the rare row where TypeScript
-      // can't prove the union.
+      // `WorkoutCreateManyInput` types it optional.
       source: (p.row.source ?? "MANUAL") as MeasurementSource,
-      caloriesKcal: p.row.totalEnergyKcal ?? null,
-      // No createdAt yet — the row is pre-insert; the tie-breaker
-      // falls through to input order via the `index` field below.
-      index: p.index,
+      avgHeartRate: p.row.avgHeartRate ?? null,
+      maxHeartRate: p.row.maxHeartRate ?? null,
+      metadata: p.row.metadata ?? null,
     })),
     userPriority?.sourcePriorityJson ?? null,
   );
-  const survivingIndices = new Set(canonicalPrepared.map((r) => r.index ?? -1));
+  const survivingIndices = new Set(canonicalPrepared.map((r) => r.index));
   const droppedByWriteDedup: number[] = [];
   for (const p of prepared) {
     if (!survivingIndices.has(p.index)) {
