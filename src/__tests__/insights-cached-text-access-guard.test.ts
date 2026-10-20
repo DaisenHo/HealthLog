@@ -67,6 +67,7 @@ describe("insights cache column access", () => {
   });
 
   it("still finds every stated exception, so the matcher is live", () => {
+    expect(found.length).toBeGreaterThan(5);
     expect([...found].sort()).toEqual(Object.keys(ALLOWED).sort());
   });
 });
