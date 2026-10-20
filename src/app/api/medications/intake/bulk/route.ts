@@ -197,7 +197,10 @@ interface EntryResult {
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
 
 async function postBulk(request: NextRequest): Promise<Response> {
-  const auth = await requireAuth();
+  // Metered by this route's own bulk bucket below, not the shared per-account
+  // write bucket: the native client syncs through here in bursts (see
+  // `meterAccountWrite`).
+  const auth = await requireAuth(undefined, { writeBucket: "own" });
   const { user } = auth;
   // A narrow, single-purpose credential (a bridge, an ingest token) is no
   // Apple Health sync, so it never writes the dose arrival record below. The

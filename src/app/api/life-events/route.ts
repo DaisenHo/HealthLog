@@ -21,7 +21,6 @@ import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
-  apiError,
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
@@ -36,7 +35,6 @@ import {
   toLifeEventDTO,
 } from "@/lib/life-events/service";
 import { annotate } from "@/lib/logging/context";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -52,13 +50,6 @@ export const POST = apiHandler(withIdempotency<[NextRequest]>(postLifeEvent));
 
 async function postLifeEvent(request: NextRequest): Promise<Response> {
   const { user } = await requireAuth();
-
-  const writeRl = await checkRecordWriteRateLimit(user.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
 
   const { data: rawBody, error: jsonError } = await safeJson(request, {
     maxBytes: 16 * 1024,

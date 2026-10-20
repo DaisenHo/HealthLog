@@ -203,7 +203,10 @@ export const GET = apiHandler(async () => {
  * to the same row by construction rather than by a cached response.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  // Metered by this route's own bulk bucket below, not the shared per-account
+  // write bucket: the native client syncs through here in bursts (see
+  // `meterAccountWrite`).
+  const { user } = await requireAuth(undefined, { writeBucket: "own" });
   // A device ingest carries no model text: switching AI off, or the AI
   // analysis opt-out, must never refuse a recording.
 

@@ -20,7 +20,6 @@ import { fireAndForget } from "@/lib/logging/fire-and-forget";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
-  apiError,
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
@@ -31,7 +30,6 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
-import { checkRecordWriteRateLimit } from "@/lib/rate-limit";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { rememberImportAlias } from "@/lib/labs/biomarker-aliases";
@@ -158,17 +156,6 @@ function inBatchKey(
 
 async function commitOcrRows(request: NextRequest) {
   const { user } = await requireAuth();
-
-  // Shared per-account write ceiling, the same bucket every other lab write
-  // charges (`POST /api/labs`, `POST /api/biomarkers`). A commit can write a
-  // whole report's rows and mint markers on the way, so it was the one lab
-  // write a looping client could repeat without any ceiling.
-  const writeRl = await checkRecordWriteRateLimit(user.id);
-  if (!writeRl.allowed) {
-    return apiError("Too many writes, try again later", 429, {
-      errorCode: "record_write.rate_limited",
-    });
-  }
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 256 * 1024,
