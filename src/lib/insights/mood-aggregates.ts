@@ -428,9 +428,9 @@ export interface MoodMetricCorrelation {
  *
  * This routes through `significantPearsonCorrelation` — n >= 20 AND
  * p < 0.05 — for the same reason the weight, blood-pressure and
- * mood-status surfaces do: the plain `pearsonCorrelation` bands from |r|
- * alone above a floor of five pairs, so five days of noise sloping the
- * right way arrive at the reader labelled "strong". A mood page is where
+ * mood-status surfaces do: a band read from |r| alone above a floor of
+ * five pairs lets five days of noise sloping the right way arrive at the
+ * reader labelled "strong". A mood page is where
  * that costs the most, because the reader is looking for something to
  * change about their week.
  */

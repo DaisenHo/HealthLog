@@ -32,7 +32,7 @@ import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
   pairByTimestamp,
-  pearsonCorrelation,
+  significantPearsonCorrelation,
   type CorrelationResult,
 } from "@/lib/analytics/correlations";
 import { getMedicationCategories } from "@/lib/medication-category";
@@ -1656,7 +1656,7 @@ export async function extractFeatures(
   }));
 
   const computeCorr = (a: DataPoint[], b: DataPoint[]) =>
-    pearsonCorrelation(pairByTimestamp(a, b));
+    significantPearsonCorrelation(pairByTimestamp(a, b));
 
   const sleepPoints = toDataPoints(sleepData);
 
