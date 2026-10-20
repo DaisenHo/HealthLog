@@ -7275,7 +7275,8 @@
         "lastNewValue": "Laatste nieuwe waarde {relative}",
         "lastBackground": "Laatst op de achtergrond {relative}",
         "never": "Nog niet ontvangen",
-        "lastBackfill": "Geschiedenis bijgewerkt {relative}"
+        "lastBackfill": "Geschiedenis bijgewerkt {relative}",
+        "lastEnteredHere": "Laatst hier ingevoerd {relative}"
       }
     },
     "garminInfo": {
