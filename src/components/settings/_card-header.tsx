@@ -61,8 +61,7 @@ export interface SettingsCardHeaderProps {
    *  anchors it relies on are pinned in `src/lib/command-palette/
    *  settings-cards.ts`. */
   anchor?: string;
-  /** Optional right-aligned status surface — typically an
-   *  `<IntegrationStatusPill>` or a wrapper around badges. */
+  /** Optional right-aligned status surface — typically a badge. */
   status?: React.ReactNode;
   /** Optional extra classes applied to the outer wrapper. */
   className?: string;

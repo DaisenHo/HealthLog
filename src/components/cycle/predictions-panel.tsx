@@ -15,6 +15,7 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
 import { FERTILE_HUE, FLOW_HUE, OVULATION_HUE } from "./phase-tokens";
 import type { CyclePrediction, CycleHistoryResponse } from "./types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.15.0 — the predictions panel.
@@ -81,9 +82,11 @@ export function PredictionsPanel({
               body={t("cycle.predictions.rawModeBody")}
             />
           ) : prediction == null ? (
-            <p className="text-muted-foreground text-sm">
-              {t("cycle.predictions.none")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("cycle.predictions.none")}
+            />
           ) : prediction.stillLearning ? (
             <>
               <Learning
@@ -215,9 +218,11 @@ function HistoryCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {!stats || stats.avgLengthDays == null ? (
-          <p className="text-muted-foreground text-sm">
-            {t("cycle.history.none")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("cycle.history.none")}
+          />
         ) : (
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <Stat

@@ -26,6 +26,7 @@ import { ILLNESS_SYMPTOM_CATALOG } from "./symptom-catalog";
 import { useIllnessDayLogList } from "./use-illness";
 import type { IllnessDayLogDTO } from "./types";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function symptomLabelKey(key: string): string | null {
   return ILLNESS_SYMPTOM_CATALOG.find((s) => s.key === key)?.labelKey ?? null;
@@ -64,9 +65,11 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
           })}
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">
-          {t("illness.timeline.noSymptoms")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("illness.timeline.noSymptoms")}
+        />
       )}
 
       {log.functionalImpact !== null ? (
@@ -134,20 +137,18 @@ export function IllnessDayTimeline({
             onRetry={() => void refetch()}
           />
         ) : dayLogs.length === 0 ? (
-          <div className="space-y-3">
-            <p className="text-muted-foreground text-sm">
-              {t("illness.timeline.empty")}
-            </p>
-            {canManageIllness && (
-              <Button
-                variant="outline"
-                className="min-h-11 sm:min-h-9"
-                onClick={onLogDay}
-              >
-                {t("illness.logDay")}
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("illness.timeline.empty")}
+            action={
+              canManageIllness ? (
+                <Button variant="outline" onClick={onLogDay}>
+                  {t("illness.logDay")}
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="space-y-4">
             {dayLogs.map((log) => (

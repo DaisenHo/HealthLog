@@ -31,6 +31,7 @@ import {
   type ManageCatalog,
   type ManageTag,
 } from "./use-mood-tag-manage";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.17 — archived custom tags for `/settings/mood`. Archiving keeps
@@ -109,12 +110,12 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       </p>
 
       {archived.length === 0 ? (
-        <p
-          className="text-muted-foreground text-sm"
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("mood.manage.archivedEmpty")}
           data-slot="mood-archived-empty"
-        >
-          {t("mood.manage.archivedEmpty")}
-        </p>
+        />
       ) : (
         <div className="space-y-2">
           {archived.map((tag) => {

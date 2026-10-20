@@ -34,6 +34,7 @@ import {
   type ReportLeafId,
 } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type Translate = (
   key: string,
@@ -185,9 +186,11 @@ export function LeafSection({
           {t("clinicianView.sectionUnavailable")}
         </p>
       ) : empty ? (
-        <p className="text-muted-foreground text-sm">
-          {t("clinicianView.sectionEmpty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("clinicianView.sectionEmpty")}
+        />
       ) : (
         children
       )}

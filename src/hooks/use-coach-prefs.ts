@@ -9,10 +9,8 @@ import {
   withBaseToken,
   isConflict,
 } from "@/lib/api/optimistic-token";
-import {
-  DEFAULT_COACH_PREFS,
-  type CoachPrefs,
-} from "@/lib/validations/coach-prefs";
+import type { CoachPrefs } from "@/lib/validations/coach-prefs";
+import { DEFAULT_COACH_PREFS } from "@/lib/ai/coach/prefs-constants";
 
 /**
  * v1.32.22 — the cached Coach-prefs row carries the optimistic-

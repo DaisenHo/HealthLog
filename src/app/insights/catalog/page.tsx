@@ -351,11 +351,7 @@ export default function MetricCatalogPage() {
           // it ever probes for rows, so a module-off account never saw
           // the in-context enable CTA; this row is the fix).
           return (
-            <Card
-              key={group}
-              data-slot="catalog-group"
-              className="gap-2 py-3 md:py-4"
-            >
+            <Card key={group} data-slot="catalog-group" density="compact">
               <CardHeader>
                 <TileHeader
                   icon={Icon}

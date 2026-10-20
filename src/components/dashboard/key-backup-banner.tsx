@@ -11,6 +11,7 @@ import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { useKeyBackupStatus } from "@/components/admin/use-key-backup-status";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export function KeyBackupBanner({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useTranslations();
@@ -29,12 +30,11 @@ export function KeyBackupBanner({ isAdmin }: { isAdmin: boolean }) {
         </p>
         <p className="text-sm">{t("dashboard.keyBackupBanner.body")}</p>
       </div>
-      <Link
-        href="/admin/encryption"
-        className="text-primary inline-flex min-h-11 items-center text-sm font-medium underline-offset-4 hover:underline"
-      >
-        {t("dashboard.keyBackupBanner.action")}
-      </Link>
+      <InlineAction asChild size="sm" className="min-h-11 font-medium">
+        <Link href="/admin/encryption">
+          {t("dashboard.keyBackupBanner.action")}
+        </Link>
+      </InlineAction>
     </div>
   );
 }

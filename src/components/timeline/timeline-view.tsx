@@ -59,7 +59,7 @@ import {
   showReadinessCard,
 } from "./readiness-model";
 import { TimelineReadinessSheet } from "./readiness-sheet";
-import { Segmented } from "./segmented";
+import { Segmented } from "@/components/ui/segmented";
 import { SERIES_PALETTE, assignSeriesColors } from "./series-colors";
 import { useSeriesValueFormat } from "./use-series-value-format";
 import { SelectionBar } from "./selection-bar";

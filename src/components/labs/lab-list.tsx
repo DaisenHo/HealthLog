@@ -254,10 +254,14 @@ export function LabList({
                   <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
                     {/* One line with an ellipsis on a phone; from `lg` the name
                         wraps instead, so a long one (the schema allows 120
-                        characters) always reads in full. */}
+                        characters) always reads in full. It wraps between
+                        words and hyphenates in the page language; a word is
+                        only cut when it is wider than the column on its own
+                        (`anywhere` cut "Hämoglobin" in the middle of the
+                        word whenever the column was a little short). */}
                     <span
                       data-slot="lab-list-analyte"
-                      className="truncate font-medium lg:overflow-visible lg:[overflow-wrap:anywhere] lg:text-clip lg:whitespace-normal"
+                      className="truncate font-medium lg:overflow-visible lg:break-words lg:text-clip lg:hyphens-auto lg:whitespace-normal"
                     >
                       {group.analyte}
                     </span>

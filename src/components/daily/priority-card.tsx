@@ -163,9 +163,9 @@ export function PriorityCard({
     <Card
       data-slot="priority-card"
       data-kind={item.kind}
+      density="compact"
       className={cn(
         isMilestone ? "milestone-reached" : "animate-insight-in",
-        "gap-2 py-3 md:gap-2 md:py-4",
         item.status ? STATUS_WASH[item.status] : null,
         hue ? "metric-accent" : null,
         className,

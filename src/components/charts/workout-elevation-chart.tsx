@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   applyDisplayTransform,
@@ -35,6 +35,7 @@ export function WorkoutElevationChart({
   points: WorkoutElevationPoint[];
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { preference } = useUnitDisplay();
   // Distance along the route in km or mi, altitude in m or ft — the same
   // registry the stat tiles read, so the axis and the tiles agree.
@@ -74,7 +75,7 @@ export function WorkoutElevationChart({
             type="number"
             domain={[0, "dataMax"]}
             tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-            tickFormatter={(v) => Number(v).toFixed(1)}
+            tickFormatter={(v) => fmt.number(Number(v), 1)}
             tickLine={false}
             axisLine={false}
           />
@@ -94,7 +95,7 @@ export function WorkoutElevationChart({
               fontSize: "0.875rem",
             }}
             labelFormatter={(d) =>
-              `${Number(d).toFixed(2)} ${distance.displayUnit}`
+              `${fmt.number(Number(d), 2)} ${distance.displayUnit}`
             }
             formatter={(value) => [
               `${Math.round(Number(value))} ${elevation.displayUnit}`,

@@ -40,6 +40,7 @@ import {
   type NutrientCatalogEntryDto,
   type SupplementLabelProposal,
 } from "./use-composition";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /** The categories the composition is offered for without being asked. */
 export const COMPOSITION_CATEGORIES: ReadonlySet<string> = new Set([
@@ -520,9 +521,11 @@ export function CompositionSection({
       }
     >
       {ingredients.length === 0 ? (
-        <p className="text-muted-foreground">
-          {t("medications.composition.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("medications.composition.empty")}
+        />
       ) : (
         <div className="space-y-3">
           <ul className="divide-border/60 divide-y" role="list">

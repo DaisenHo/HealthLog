@@ -44,6 +44,7 @@ import { tileKeyOf } from "./day-values-model";
 import { shiftDateKey } from "./day-url";
 import { useDay, usePrefetchDay } from "./use-day";
 import { useDayValueFormat } from "./use-day-value-format";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * One day, as the layer shows it in every shell: a header with the date and
@@ -282,9 +283,12 @@ export function DayView({
         ) : data === undefined ? (
           <DaySkeleton />
         ) : isEmpty ? (
-          <p className="text-muted-foreground text-sm" data-slot="day-empty">
-            {t("day.empty")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("day.empty")}
+            data-slot="day-empty"
+          />
         ) : (
           <>
             <DayRunning items={data.running} date={date} />

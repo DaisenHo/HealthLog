@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { reorderById } from "@/lib/insights-layout-reorder";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { useTranslations } from "@/lib/i18n/context";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.18.6 — generic, controlled reorder list shared by the
@@ -97,9 +98,11 @@ export function ModuleOrderEditor({ items, onChange }: ModuleOrderEditorProps) {
 
   if (items.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        {t("moduleList.reorder.empty")}
-      </p>
+      <EmptyState
+        variant="plain"
+        size="compact"
+        title={t("moduleList.reorder.empty")}
+      />
     );
   }
 

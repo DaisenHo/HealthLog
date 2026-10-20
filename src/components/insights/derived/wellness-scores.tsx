@@ -17,6 +17,8 @@ import type { ScoreBand } from "./band-tokens";
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
 import type { WellnessScoreValue } from "@/lib/insights/derived/wellness-scores";
+import { TileHeader } from "@/components/insights/tile-header";
+import { Card } from "@/components/ui/card";
 
 /**
  * v1.10.0 — the wellness-scores strip.
@@ -152,12 +154,7 @@ function RingTile({
         animate && "wellness-tile-rise",
       )}
     >
-      <div className="text-foreground flex items-center gap-2">
-        <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-        <span className="truncate text-base leading-none font-semibold">
-          {label}
-        </span>
-      </div>
+      <TileHeader icon={Icon} title={label} titleClassName="truncate" />
       <div className="flex flex-col items-center gap-1.5">
         {/* The ring keeps just the number centred; the metric name lives in
             the header above. The per-metric `hue` gradient leans the arc
@@ -242,10 +239,10 @@ function historyOf(
  */
 function WellnessScoreTileSkeleton() {
   return (
-    <div
+    <Card
       data-slot="wellness-score-tile-skeleton"
       aria-hidden="true"
-      className="bg-card border-border flex flex-col gap-4 rounded-xl border p-4 md:p-6"
+      className="gap-4 px-4 md:gap-4 md:px-6"
     >
       <div className="flex items-center gap-2">
         <Skeleton className="h-5 w-5 rounded" />
@@ -260,7 +257,7 @@ function WellnessScoreTileSkeleton() {
         <Skeleton className="h-10 w-full" />
         <Skeleton className="mx-auto h-3 w-20" />
       </div>
-    </div>
+    </Card>
   );
 }
 

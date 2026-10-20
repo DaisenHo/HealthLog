@@ -30,6 +30,7 @@ import {
   useDeleteCoachConversationWithUndo,
 } from "./use-coach";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * The Coach's conversation list: the full history grouped by recency
@@ -169,12 +170,13 @@ export function HistoryRail({
             className="px-2 py-3"
           />
         ) : groups.length === 0 ? (
-          <p
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("insights.coach.historyEmpty")}
+            className="px-2"
             data-slot="coach-history-empty"
-            className="text-muted-foreground px-2 py-3 text-sm leading-relaxed"
-          >
-            {t("insights.coach.historyEmpty")}
-          </p>
+          />
         ) : (
           groups.map((group) => (
             <section

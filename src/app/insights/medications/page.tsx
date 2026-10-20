@@ -248,7 +248,7 @@ export default function InsightsMedikamentePage() {
             med.categoryLabel,
           );
           return (
-            <Card key={med.id} className="gap-2 py-3 md:py-4">
+            <Card key={med.id} density="compact">
               <CardHeader>
                 <TileHeader icon={Pill} title={med.name} />
                 <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -394,11 +394,7 @@ function MedicationComplianceCalendar({
   }
 
   if (!data?.dailyCompliance) {
-    return (
-      <div className="text-muted-foreground rounded-lg border border-dashed px-3 py-4 text-xs">
-        {t("insights.complianceNoData")}
-      </div>
-    );
+    return <EmptyState size="compact" title={t("insights.complianceNoData")} />;
   }
 
   return (

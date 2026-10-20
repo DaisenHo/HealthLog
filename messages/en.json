@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Medication compliance heatmap from {start} to {end}, {days} active days.",
       "complianceHeatmapEmpty": "Medication compliance heatmap, no active days yet."
     },
-    "medicationsEmptyAction": "Add a medication"
+    "medicationsEmptyAction": "Add a medication",
+    "rangeLabel": "Time range"
   },
   "chart": {
     "overlay": {
@@ -6673,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Connected",
-      "errorReconnect": "Error: reconnect",
-      "warningServerError": "Sync failing",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Paused: reconnect",
-      "notConnected": "Not connected",
       "justNow": "just now",
       "minutesAgo": "{count} min ago",
       "hoursAgo": "{count} h ago",
       "daysAgo": "{count} d ago",
       "resumeSuccess": "Integration resumed",
-      "resumeError": "Reconnect failed",
-      "stale": "Connected, no recent data",
-      "stalled": "Sync stopped",
-      "pendingSetup": "Waiting for first data"
+      "resumeError": "Reconnect failed"
     },
     "integrationFreshness": {
       "title": "Data received",
@@ -9190,10 +9182,7 @@
         "unitSteps": "steps",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Low confidence",
-        "confidenceMedium": "Medium confidence",
-        "confidenceHigh": "High confidence"
+        "unitMood": "pts"
       },
       "title": "Cycle insights",
       "symptomPatternsTitle": "Symptom patterns by phase",

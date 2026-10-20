@@ -181,13 +181,11 @@ describe("assessment presentation contract", () => {
       "utf8",
     );
 
-    expect(cardSource).toContain(
-      'className="animate-insight-in gap-2 py-3 md:py-4"',
-    );
+    expect(cardSource).toContain('density="compact"');
+    expect(cardSource).toContain('className="animate-insight-in"');
     expect(cardSource).toContain('className="text-foreground text-sm"');
-    expect(moodSource).toContain(
-      'className="animate-insight-in gap-2 py-3 md:py-4"',
-    );
+    expect(moodSource).toContain('density="compact"');
+    expect(moodSource).toContain('className="animate-insight-in"');
     expect(moodSource).toContain('data-slot="insight-assessment"');
     expect(moodBodySource).toContain(
       'className="text-foreground mb-2 text-sm"',

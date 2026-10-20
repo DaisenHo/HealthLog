@@ -1,13 +1,14 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import type { Formatters } from "@/lib/format-locale";
 import { useUnitDisplay, type UnitDisplay } from "@/hooks/use-unit-display";
 import {
   applyDisplayTransform,
   applyDisplayTransformDelta,
   getReadingTransform,
 } from "@/lib/measurements/display-transform";
-import { cn } from "@/lib/utils";
+import { MetricCrosstab } from "@/components/insights/metric-crosstab";
 
 /**
  * v1.15 — CYCLE_PHASE × vital crosstab card.
@@ -68,21 +69,13 @@ const UNIT_KEY: Partial<Record<CyclePhaseCrosstabDisplay, string>> = {
   mood: "cycle.insights.crosstab.unitMood",
 };
 
-const CONFIDENCE_KEY: Record<CyclePhaseCrosstabConfidence, string> = {
-  low: "cycle.insights.crosstab.confidenceLow",
-  medium: "cycle.insights.crosstab.confidenceMedium",
-  high: "cycle.insights.crosstab.confidenceHigh",
-};
-
-const CONFIDENCE_CLASS: Record<CyclePhaseCrosstabConfidence, string> = {
-  low: "bg-secondary text-muted-foreground",
-  medium: "bg-info/15 text-info",
-  high: "bg-success/15 text-success",
-};
-
 /** Whole numbers for steps; one decimal otherwise. */
-function fmt(value: number, display: CyclePhaseCrosstabDisplay): string {
-  return display === "steps" ? Math.round(value).toString() : value.toFixed(1);
+function fmt(
+  value: number,
+  display: CyclePhaseCrosstabDisplay,
+  nf: Formatters,
+): string {
+  return display === "steps" ? nf.integer(value) : nf.number(value, 1);
 }
 
 /**
@@ -152,6 +145,7 @@ export function CyclePhaseHeadline({
   headline: CyclePhaseCrosstabRow | null;
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const unitDisplay = useUnitDisplay();
   if (!headline) {
     return (
@@ -176,7 +170,7 @@ export function CyclePhaseHeadline({
   const params = {
     metric: metricLabel,
     // A phase delta → factor-only conversion (no affine offset).
-    delta: fmt(Math.abs(deltaConv(headline.delta)), headline.display),
+    delta: fmt(Math.abs(deltaConv(headline.delta)), headline.display, nf),
     unit,
     dir,
   };
@@ -199,75 +193,42 @@ export function CyclePhaseCrosstab({
   rows: CyclePhaseCrosstabRow[];
 }) {
   const { t } = useTranslations();
+  const nf = useFormatters();
   const unitDisplay = useUnitDisplay();
-  if (rows.length === 0) return null;
-
   return (
-    <div data-slot="cycle-phase-crosstab">
-      <p className="text-muted-foreground mb-2 text-sm">
-        {t("cycle.insights.crosstab.description")}
-      </p>
-      <ul className="divide-border divide-y">
-        {rows.map((row) => {
-          const metricLabel = t(
-            METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey,
-          );
-          const {
+    <MetricCrosstab
+      slot="cycle-phase-crosstab"
+      rowSlot="cycle-phase-crosstab-row"
+      description={t("cycle.insights.crosstab.description")}
+      rows={rows.map((row) => {
+        const metricLabel = t(METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey);
+        const {
+          unit,
+          abs: absConv,
+          delta: deltaConv,
+        } = rowUnits(row.display, unitDisplay, t);
+        // `delta` = lutealAvg − follicularAvg: positive = the vital runs
+        // higher in the luteal phase.
+        return {
+          key: row.metricKey,
+          metricKey: row.metricKey,
+          pairLabel: t("cycle.insights.crosstab.pairLabel", {
+            metric: metricLabel,
+          }),
+          up: row.delta >= 0,
+          deltaValue: fmt(deltaConv(row.delta), row.display, nf),
+          unit,
+          confidence: row.confidence,
+          detail: t("cycle.insights.crosstab.detail", {
+            metric: metricLabel,
+            lutealAvg: fmt(absConv(row.lutealAvg), row.display, nf),
+            follicularAvg: fmt(absConv(row.follicularAvg), row.display, nf),
             unit,
-            abs: absConv,
-            delta: deltaConv,
-          } = rowUnits(row.display, unitDisplay, t);
-          // `delta` = lutealAvg − follicularAvg: positive = the vital runs
-          // higher in the luteal phase. The number stays NEUTRAL — higher is
-          // good for steps but bad for resting HR, and this board is
-          // observational, so colouring it would imply a verdict the data
-          // doesn't support. The sign prefix + `data-direction` carry it.
-          const up = row.delta >= 0;
-          const deltaText = `${up ? "+" : ""}${fmt(deltaConv(row.delta), row.display)} ${unit}`;
-          return (
-            <li
-              key={row.metricKey}
-              className="flex flex-col gap-1.5 py-2"
-              data-slot="cycle-phase-crosstab-row"
-              data-metric={row.metricKey}
-              data-direction={up ? "up" : "down"}
-              data-confidence={row.confidence}
-            >
-              <div className="flex items-center gap-2 text-sm">
-                <span
-                  className="text-foreground min-w-0 flex-1 truncate"
-                  title={metricLabel}
-                >
-                  {t("cycle.insights.crosstab.pairLabel", {
-                    metric: metricLabel,
-                  })}
-                </span>
-                <span className="text-foreground shrink-0 text-sm font-semibold tabular-nums">
-                  {deltaText}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    CONFIDENCE_CLASS[row.confidence],
-                  )}
-                >
-                  {t(CONFIDENCE_KEY[row.confidence])}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {t("cycle.insights.crosstab.detail", {
-                  metric: metricLabel,
-                  lutealAvg: fmt(absConv(row.lutealAvg), row.display),
-                  follicularAvg: fmt(absConv(row.follicularAvg), row.display),
-                  unit,
-                  lutealDays: row.lutealDays,
-                  follicularDays: row.follicularDays,
-                })}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+            lutealDays: row.lutealDays,
+            follicularDays: row.follicularDays,
+          }),
+        };
+      })}
+    />
   );
 }

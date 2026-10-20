@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Mapa de calor de cumplimiento de medicación de {start} a {end}, {days} días activos.",
       "complianceHeatmapEmpty": "Mapa de calor de cumplimiento de medicación, aún no hay días activos."
     },
-    "medicationsEmptyAction": "Añadir un medicamento"
+    "medicationsEmptyAction": "Añadir un medicamento",
+    "rangeLabel": "Periodo"
   },
   "chart": {
     "overlay": {
@@ -6673,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Conectado",
-      "errorReconnect": "Error: reconectar",
-      "warningServerError": "Sincronización con errores",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Pausado: reconectar",
-      "notConnected": "No conectado",
       "justNow": "ahora mismo",
       "minutesAgo": "hace {count} min",
       "hoursAgo": "hace {count} h",
       "daysAgo": "hace {count} d",
       "resumeSuccess": "Integración reanudada",
-      "resumeError": "Reconexión fallida",
-      "stale": "Conectado, sin datos recientes",
-      "stalled": "Sincronización detenida",
-      "pendingSetup": "Esperando los primeros datos"
+      "resumeError": "Reconexión fallida"
     },
     "integrationFreshness": {
       "title": "Datos recibidos",
@@ -9190,10 +9182,7 @@
         "unitSteps": "pasos",
         "unitBpm": "lpm",
         "unitMs": "ms",
-        "unitMood": "pts",
-        "confidenceLow": "Confianza baja",
-        "confidenceMedium": "Confianza media",
-        "confidenceHigh": "Confianza alta"
+        "unitMood": "pts"
       },
       "title": "Análisis del ciclo",
       "symptomPatternsTitle": "Patrones de síntomas por fase",

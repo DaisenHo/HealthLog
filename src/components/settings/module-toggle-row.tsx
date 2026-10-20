@@ -36,6 +36,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export interface ModuleToggleRowProps {
   /** Stable key — used for the input id + the test query handle. */
@@ -112,13 +113,12 @@ export function ModuleToggleRow({
             <p className="text-muted-foreground text-xs">{disabledReason}</p>
           ) : null}
           {manageLink ? (
-            <Link
-              href={manageLink.href}
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs underline-offset-2 hover:underline"
-            >
-              {manageLink.label}
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
+            <InlineAction asChild tone="muted">
+              <Link href={manageLink.href}>
+                {manageLink.label}
+                <ChevronRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            </InlineAction>
           ) : null}
         </div>
       </div>

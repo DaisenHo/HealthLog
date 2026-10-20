@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Heatmap zur Medikamenteneinnahme von {start} bis {end}, {days} aktive Tage.",
       "complianceHeatmapEmpty": "Heatmap zur Medikamenteneinnahme, noch keine aktiven Tage."
     },
-    "medicationsEmptyAction": "Medikament anlegen"
+    "medicationsEmptyAction": "Medikament anlegen",
+    "rangeLabel": "Zeitraum"
   },
   "chart": {
     "overlay": {
@@ -6673,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Verbunden",
-      "errorReconnect": "Fehler: neu verbinden",
-      "warningServerError": "Sync fehlgeschlagen",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Pausiert: neu verbinden",
-      "notConnected": "Nicht verbunden",
       "justNow": "gerade eben",
       "minutesAgo": "vor {count} min",
       "hoursAgo": "vor {count} Std.",
       "daysAgo": "vor {count} d",
       "resumeSuccess": "Integration wieder aktiv",
-      "resumeError": "Wieder verbinden fehlgeschlagen",
-      "stale": "Verbunden, keine neuen Daten",
-      "stalled": "Sync gestoppt",
-      "pendingSetup": "Warte auf erste Daten"
+      "resumeError": "Wieder verbinden fehlgeschlagen"
     },
     "integrationFreshness": {
       "title": "Empfangene Daten",
@@ -9190,10 +9182,7 @@
         "unitSteps": "Schritte",
         "unitBpm": "S/min",
         "unitMs": "ms",
-        "unitMood": "Pkt.",
-        "confidenceLow": "Geringe Sicherheit",
-        "confidenceMedium": "Mittlere Sicherheit",
-        "confidenceHigh": "Hohe Sicherheit"
+        "unitMood": "Pkt."
       },
       "title": "Zyklus-Erkenntnisse",
       "symptomPatternsTitle": "Symptommuster nach Phase",

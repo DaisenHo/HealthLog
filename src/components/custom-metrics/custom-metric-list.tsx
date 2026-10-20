@@ -15,12 +15,13 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiGet } from "@/lib/api/api-fetch";
 import { formatDate } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import { CustomMetricForm } from "./custom-metric-form";
 import { formatMetricValue } from "./format-value";
 import type { CustomMetricDto, CustomMetricListResponse } from "./types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.25.5 — inline list of the user's custom metrics, mounted ON the
@@ -31,6 +32,7 @@ import type { CustomMetricDto, CustomMetricListResponse } from "./types";
  */
 export function CustomMetricList() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   // v1.36.x — the section is dropped whole inside somebody else's record.
   // Defining a metric is not a delegated verb, and every row here links to
   // `/custom-metrics/{id}`, which sharing does not cover: the shell turns a
@@ -98,12 +100,10 @@ export function CustomMetricList() {
           onRetry={() => refetch()}
         />
       ) : metrics.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
-            <Gauge className="text-muted-foreground size-6" />
-            <p className="text-muted-foreground text-sm">
-              {t("customMetrics.emptyDescription")}
-            </p>
+        <EmptyState
+          icon={<Gauge className="size-6" />}
+          title={t("customMetrics.emptyDescription")}
+          action={
             <Button
               size="sm"
               onClick={() => setAddOpen(true)}
@@ -111,8 +111,8 @@ export function CustomMetricList() {
             >
               {t("customMetrics.add")}
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <Card>
           <CardContent className="divide-border divide-y p-0">
@@ -133,6 +133,7 @@ export function CustomMetricList() {
                           {formatMetricValue(
                             metric.latest.value,
                             metric.decimals,
+                            fmt.number,
                           )}
                           {metric.unit ? ` ${metric.unit}` : ""}
                         </span>

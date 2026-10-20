@@ -45,6 +45,7 @@ import {
   type MeasurementReminder,
 } from "@/hooks/use-measurement-reminders";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const SUMMARY_LIMIT = 3;
 
@@ -168,16 +169,18 @@ export function VorsorgeDashboardCard() {
           // checkup is the harm behind that fall-through (§6).
           <QueryErrorRow inset error={error} onRetry={() => refetch()} />
         ) : upcoming.length === 0 ? (
-          <div className="space-y-2">
-            <p className="text-muted-foreground text-sm">
-              {t("measurementReminders.dashboard.empty")}
-            </p>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/checkups">
-                {t("measurementReminders.dashboard.openLink")}
-              </Link>
-            </Button>
-          </div>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("measurementReminders.dashboard.empty")}
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link href="/checkups">
+                  {t("measurementReminders.dashboard.openLink")}
+                </Link>
+              </Button>
+            }
+          />
         ) : (
           <ul className="space-y-2">
             {upcoming.map((reminder) => {

@@ -138,7 +138,7 @@ export function AiConsentRequest({
   };
 
   return (
-    <Card data-slot="ai-consent-request" className="gap-2 py-3 md:py-4">
+    <Card data-slot="ai-consent-request" density="compact">
       <CardHeader>
         <TileHeader
           icon={ShieldCheck}

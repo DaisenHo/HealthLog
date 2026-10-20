@@ -30,6 +30,8 @@ import {
   type MoodDimensionWindow,
 } from "@/lib/mood/dimensions";
 import { cn } from "@/lib/utils";
+import { Segmented } from "@/components/ui/segmented";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.37 — the five level-A dimensions over time.
@@ -128,32 +130,30 @@ export function MoodDimensionTrends({
 
   if (present.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        {t("insights.mood.dimensions.none")}
-      </p>
+      <EmptyState
+        variant="plain"
+        size="compact"
+        title={t("insights.mood.dimensions.none")}
+      />
     );
   }
 
   return (
     <div className="space-y-3" data-slot="mood-dimension-trends">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {MOOD_DIMENSION_WINDOWS.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => setWindow(option)}
-            aria-pressed={window === option}
-            className={cn(
-              "min-h-9 rounded-full border px-3 text-xs transition-colors",
-              window === option
-                ? "border-primary bg-primary/15 text-primary"
-                : "border-border/70 text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            {t("insights.mood.dimensions.window", { days: option })}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        options={MOOD_DIMENSION_WINDOWS.map((option) => ({
+          value: String(option),
+          label: t("insights.mood.dimensions.window", { days: option }),
+        }))}
+        value={String(window)}
+        onChange={(next) =>
+          setWindow(
+            MOOD_DIMENSION_WINDOWS.find((w) => String(w) === next) ?? window,
+          )
+        }
+        label={t("charts.rangeLabel")}
+        slot="mood-dimension-window"
+      />
 
       <div
         data-slot="chart-plot"

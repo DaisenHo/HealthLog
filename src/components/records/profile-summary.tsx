@@ -9,6 +9,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { ProfileSummaryPayload } from "@/lib/records/profile-summary";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function profileFactLabel(label: string, t: (key: string) => string): string {
   const keys: Record<string, string> = {
@@ -61,9 +62,11 @@ export function ProfileSummary({
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              {t("records.allergies.emptyTitle")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("records.allergies.emptyTitle")}
+            />
           )}
         </CardContent>
       </Card>
@@ -88,9 +91,11 @@ export function ProfileSummary({
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              {t("records.family.emptyTitle")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("records.family.emptyTitle")}
+            />
           )}
         </CardContent>
       </Card>
@@ -112,9 +117,11 @@ export function ProfileSummary({
               ))}
             </dl>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              {t("records.profileFacts.notRecorded")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("records.profileFacts.notRecorded")}
+            />
           )}
         </CardContent>
       </Card>

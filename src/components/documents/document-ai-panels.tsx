@@ -30,6 +30,7 @@ import {
 } from "@/lib/validations/inbound-documents";
 
 import type { DocumentDescribeResult } from "./use-document-assist";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * The line under a document AI action while its read runs in the background,
@@ -220,9 +221,11 @@ export function AssistSuggestionReview({
           ) : null}
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">
-          {t("documents.assist.empty")}
-        </p>
+        <EmptyState
+          variant="plain"
+          size="compact"
+          title={t("documents.assist.empty")}
+        />
       )}
     </div>
   );

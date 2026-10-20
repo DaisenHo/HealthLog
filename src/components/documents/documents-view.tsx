@@ -61,15 +61,15 @@ import {
 } from "@/lib/insights/coach-launch-context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 import { useDocumentsLayout } from "@/lib/queries/use-documents-layout";
-import {
-  DOCUMENT_BULK_MAX_IDS,
-  type DocumentBulkAction,
-  type DocumentBulkResultDto,
-  type DocumentUsageDto,
-  type InboundDocumentDetailDto,
-  type InboundDocumentDto,
-  type InboundDocumentKindValue,
+import type {
+  DocumentBulkAction,
+  DocumentBulkResultDto,
+  DocumentUsageDto,
+  InboundDocumentDetailDto,
+  InboundDocumentDto,
+  InboundDocumentKindValue,
 } from "@/lib/validations/inbound-documents";
+import { DOCUMENT_BULK_MAX_IDS } from "@/lib/documents/inbound-constants";
 import { DocumentBulkBar } from "./document-bulk-bar";
 import { DocumentDetailSheet } from "./document-detail-sheet";
 import { DocumentShareSheet } from "./document-share-sheet";

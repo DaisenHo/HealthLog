@@ -22,7 +22,7 @@ import type { TimelineZoom } from "@/lib/day/contract";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { RangeFields } from "./range-fields";
-import { Segmented, type SegmentedOption } from "./segmented";
+import { Segmented, type SegmentedOption } from "@/components/ui/segmented";
 import type { TimelineRange } from "./timeline-url";
 
 interface RangeLimits {

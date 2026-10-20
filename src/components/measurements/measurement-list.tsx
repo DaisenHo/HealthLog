@@ -1936,9 +1936,11 @@ function DayDrillDown({
   const rows = data?.measurements ?? [];
   if (rows.length === 0) {
     return (
-      <div className="text-muted-foreground py-2 text-xs">
-        {t("measurements.emptyDescription")}
-      </div>
+      <EmptyState
+        variant="plain"
+        size="compact"
+        title={t("measurements.emptyDescription")}
+      />
     );
   }
   // v1.11.5 — for SLEEP_DURATION the drill-down rows are stage segments;

@@ -39,7 +39,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
-import { SegmentedChoice } from "@/components/documents/sources/segmented-choice";
+import { Segmented } from "@/components/ui/segmented";
 import {
   errorCodeOf,
   sourceErrorMessage,
@@ -104,23 +104,22 @@ export function DocumentSourcesCard() {
       </p>
 
       {options.length > 1 ? (
-        <SegmentedChoice
-          options={options}
+        <Segmented
+          options={options.map((option) => ({
+            value: option,
+            label: systemName(option),
+            trailing: connections.some((c) => c.system === option) ? (
+              <Check
+                className="size-3.5"
+                aria-label={t("settings.documentSources.statusConnected")}
+              />
+            ) : null,
+          }))}
           value={system}
           onChange={setPicked}
           label={t("settings.documentSources.systemLabel")}
           slot="document-sources-system"
-          renderOption={(option) => (
-            <>
-              {systemName(option)}
-              {connections.some((c) => c.system === option) ? (
-                <Check
-                  className="size-3.5"
-                  aria-label={t("settings.documentSources.statusConnected")}
-                />
-              ) : null}
-            </>
-          )}
+          className="self-start"
         />
       ) : null}
 

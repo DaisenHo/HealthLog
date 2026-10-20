@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, HeartPulse } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { cn } from "@/lib/utils";
-import { TileHeader } from "@/components/insights/tile-header";
+import { CrossLinkCard } from "@/components/insights/cross-link-card";
 import { useEcgList } from "./use-ecg-list";
 
 /**
@@ -61,27 +59,20 @@ export function EcgCrossLink({ enabled = true, className }: EcgCrossLinkProps) {
     : null;
 
   return (
-    <Link
+    <CrossLinkCard
       href="/insights/ecg"
-      data-slot="ecg-cross-link"
-      className={cn(
-        // `.metric-accent` — the heart-family identity edge (`--tile-strain`,
-        // the wellness vocabulary's cardiovascular hue), the same mark the
-        // `ecg_new_recording` rail card carries, so the two ECG pointers
-        // read as one family.
-        "bg-card hover:bg-accent/40 focus-visible:ring-ring/50 metric-accent block space-y-1.5 rounded-xl border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none",
-        className,
-      )}
+      slot="ecg-cross-link"
+      icon={HeartPulse}
+      title={t("insights.ecg.crossLink.title")}
+      body={resultText ? `${countText} ${resultText}` : countText}
+      cta={t("insights.ecg.crossLink.cta")}
+      className={className}
+      // `.metric-accent` — the heart-family identity edge (`--tile-strain`,
+      // the wellness vocabulary's cardiovascular hue), the same mark the
+      // `ecg_new_recording` rail card carries, so the two ECG pointers read
+      // as one family.
+      cardClassName="metric-accent"
       style={{ "--tile-hue": "var(--tile-strain)" } as React.CSSProperties}
-    >
-      <TileHeader icon={HeartPulse} title={t("insights.ecg.crossLink.title")} />
-      <span className="text-muted-foreground block text-xs leading-snug">
-        {resultText ? `${countText} ${resultText}` : countText}
-      </span>
-      <span className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium">
-        {t("insights.ecg.crossLink.cta")}
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </span>
-    </Link>
+    />
   );
 }

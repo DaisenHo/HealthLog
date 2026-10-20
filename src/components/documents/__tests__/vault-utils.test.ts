@@ -11,7 +11,6 @@ import {
   documentCardKeyAction,
   documentDateKey,
   expandRangeSelection,
-  formatBytes,
   formatMonthLabel,
   hasProcessingDocument,
   isDocumentProcessing,
@@ -213,15 +212,6 @@ describe("timeline items", () => {
   it("formats a month key in the viewer's locale", () => {
     expect(formatMonthLabel("2026-03", "de")).toBe("März 2026");
     expect(formatMonthLabel("not-a-month", "de")).toBe("not-a-month");
-  });
-});
-
-describe("byte formatting", () => {
-  it("scales units and keeps one decimal below 10", () => {
-    expect(formatBytes(0, "en")).toBe("0 B");
-    expect(formatBytes(512, "en")).toBe("512 B");
-    expect(formatBytes(26_214_400, "en")).toBe("25 MB");
-    expect(formatBytes(1_288_490_189, "en")).toBe("1.2 GB");
   });
 });
 

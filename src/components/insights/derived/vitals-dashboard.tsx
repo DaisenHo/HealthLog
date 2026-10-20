@@ -1,7 +1,13 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
-import { Footprints, Gauge, HeartPulse, Scale } from "lucide-react";
+import { useMemo, type ComponentProps, type ReactNode } from "react";
+import {
+  Footprints,
+  Gauge,
+  HeartPulse,
+  Scale,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +43,7 @@ import type { BmiValue } from "@/lib/insights/derived/bmi";
 import type { SixMinuteWalkValue } from "@/lib/insights/derived/six-minute-walk";
 import type { SameTimeBaselineValue } from "@/lib/insights/derived/same-time-baseline";
 import type { DerivedProvenance } from "@/lib/insights/derived/types";
+import { TrendTile } from "@/components/ui/trend-tile";
 
 /**
  * v1.10.0 — the Vitals dashboard surface (Apple-Health-Highlights grid).
@@ -240,29 +247,19 @@ function BaselineTile({
   // Provisional — building the band; show value-less coverage state.
   if (data.status === "insufficient") {
     return (
-      <div
-        data-slot="vitals-tile"
-        data-metric={tileId}
-        data-state="provisional"
-        className="bg-card border-border flex h-full w-full min-w-0 flex-col gap-3 rounded-xl border p-4 md:p-6"
-      >
-        <TileHeader
-          icon={Icon}
-          title={label}
-          titleAs="h2"
-          titleClassName="truncate"
-        />
-        <p
-          className="text-muted-foreground text-sm"
-          data-slot="vitals-tile-building"
-        >
-          {t("insights.derived.vitals.building", {
-            count: data.coverage.historyDays,
-            target: 7,
-          })}
-        </p>
-        <CoverageMeter coverage={data.coverage} />
-      </div>
+      <BuildingTile
+        slot="vitals-tile"
+        metric={tileId}
+        state="provisional"
+        icon={Icon}
+        title={label}
+        messageSlot="vitals-tile-building"
+        message={t("insights.derived.vitals.building", {
+          count: data.coverage.historyDays,
+          target: 7,
+        })}
+        coverage={data.coverage}
+      />
     );
   }
 
@@ -349,29 +346,19 @@ function SameTimeBaselineTile({
     // occupying the grid with an apology.
     if (data.reason !== "learning_usual_day") return null;
     return (
-      <div
-        data-slot="same-time-tile"
-        data-metric={tileId}
-        data-state="learning"
-        className="bg-card border-border flex h-full w-full min-w-0 flex-col gap-3 rounded-xl border p-4 md:p-6"
-      >
-        <TileHeader
-          icon={Icon}
-          title={label}
-          titleAs="h2"
-          titleClassName="truncate"
-        />
-        <p
-          className="text-muted-foreground text-sm"
-          data-slot="same-time-tile-learning"
-        >
-          {t("insights.derived.sameTime.learning", {
-            count: data.coverage.historyDays,
-            target: SAME_TIME_BASELINE_MIN_HISTORY_DAYS,
-          })}
-        </p>
-        <CoverageMeter coverage={data.coverage} />
-      </div>
+      <BuildingTile
+        slot="same-time-tile"
+        metric={tileId}
+        state="learning"
+        icon={Icon}
+        title={label}
+        messageSlot="same-time-tile-learning"
+        message={t("insights.derived.sameTime.learning", {
+          count: data.coverage.historyDays,
+          target: SAME_TIME_BASELINE_MIN_HISTORY_DAYS,
+        })}
+        coverage={data.coverage}
+      />
     );
   }
 
@@ -556,26 +543,19 @@ function HrvBalanceTile({ read, isLoading }: TileProps) {
   }
   if (data.status === "insufficient") {
     return (
-      <div
-        data-slot="vitals-tile"
-        data-metric="HRV_BALANCE"
-        data-state="provisional"
-        className="bg-card border-border flex h-full w-full min-w-0 flex-col gap-3 rounded-xl border p-4 md:p-6"
-      >
-        <TileHeader
-          icon={HeartPulse}
-          title={t("measurements.typeHeartRateVariability")}
-          titleAs="h2"
-          titleClassName="truncate"
-        />
-        <p className="text-muted-foreground text-sm">
-          {t("insights.derived.vitals.building", {
-            count: data.coverage.historyDays,
-            target: 7,
-          })}
-        </p>
-        <CoverageMeter coverage={data.coverage} />
-      </div>
+      <BuildingTile
+        slot="vitals-tile"
+        metric="HRV_BALANCE"
+        state="provisional"
+        icon={HeartPulse}
+        title={t("measurements.typeHeartRateVariability")}
+        messageSlot="vitals-tile-building"
+        message={t("insights.derived.vitals.building", {
+          count: data.coverage.historyDays,
+          target: 7,
+        })}
+        coverage={data.coverage}
+      />
     );
   }
   const v = data.value!;
@@ -626,6 +606,51 @@ function BmiTile({ read, isLoading }: TileProps) {
 }
 
 /**
+ * A tile whose band is still being built: the header, one sentence saying how
+ * far the history has come, and the coverage meter. The baseline, same-time
+ * and HRV tiles each spelled this out by hand.
+ */
+function BuildingTile({
+  slot,
+  metric,
+  state,
+  icon,
+  title,
+  message,
+  messageSlot,
+  coverage,
+}: {
+  slot: string;
+  metric: string;
+  state: string;
+  icon: LucideIcon;
+  title: string;
+  message: string;
+  messageSlot: string;
+  coverage: ComponentProps<typeof CoverageMeter>["coverage"];
+}) {
+  return (
+    <TrendTile
+      data-slot={slot}
+      data-metric={metric}
+      data-state={state}
+      className="gap-3"
+    >
+      <TileHeader
+        icon={icon}
+        title={title}
+        titleAs="h2"
+        titleClassName="truncate"
+      />
+      <p className="text-muted-foreground text-sm" data-slot={messageSlot}>
+        {message}
+      </p>
+      <CoverageMeter coverage={coverage} />
+    </TrendTile>
+  );
+}
+
+/**
  * A loading placeholder occupying the resolved tile footprint so the grid
  * reserves its final height and the real tiles drop in without a layout
  * shift. Mirrors the SparklineDeltaTile geometry (card + label row + value
@@ -633,10 +658,10 @@ function BmiTile({ read, isLoading }: TileProps) {
  */
 function VitalsTileSkeleton() {
   return (
-    <div
+    <TrendTile
       data-slot="vitals-tile-skeleton"
       aria-hidden="true"
-      className="bg-card border-border flex h-full w-full min-w-0 flex-col gap-3 rounded-xl border p-4 md:p-6"
+      className="gap-3"
     >
       <div className="flex items-center justify-between gap-2">
         <Skeleton className="h-3 w-24" />
@@ -644,7 +669,7 @@ function VitalsTileSkeleton() {
       </div>
       <Skeleton className="h-8 w-20" />
       <Skeleton className="h-3 w-3/4" />
-    </div>
+    </TrendTile>
   );
 }
 

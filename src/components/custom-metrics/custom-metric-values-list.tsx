@@ -17,6 +17,7 @@ import type {
   CustomMetricEntryDto,
   CustomMetricEntryListResponse,
 } from "./types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const ENTRIES_PAGE_SIZE = 200;
 
@@ -90,9 +91,11 @@ export function CustomMetricValuesList({
 
   if (entries.length === 0) {
     return (
-      <p className="text-muted-foreground py-8 text-center text-sm">
-        {t("customMetrics.detail.emptyTitle")}
-      </p>
+      <EmptyState
+        variant="plain"
+        size="compact"
+        title={t("customMetrics.detail.emptyTitle")}
+      />
     );
   }
 

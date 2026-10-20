@@ -20,7 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Gauge } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { nextChoiceIndex } from "@/components/documents/sources/segmented-choice";
+import { rovingRadioNextIndex } from "@/hooks/use-roving-radio-group";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -94,7 +94,7 @@ export function AiUsageCard() {
     level: AiUsageLevel,
   ) {
     const from = allowedLevels.indexOf(level);
-    const next = nextChoiceIndex(event.key, from, allowedLevels.length);
+    const next = rovingRadioNextIndex(event.key, from, allowedLevels.length);
     if (next === null) return;
     event.preventDefault();
     const target = allowedLevels[next]!;

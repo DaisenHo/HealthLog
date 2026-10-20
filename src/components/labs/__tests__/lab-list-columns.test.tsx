@@ -169,10 +169,14 @@ describe("<LabList> columns", () => {
         "lg:overflow-visible",
         "lg:whitespace-normal",
         "lg:text-clip",
-        "lg:[overflow-wrap:anywhere]",
+        "lg:break-words",
+        "lg:hyphens-auto",
       ]) {
         expect(classes).toContain(c);
       }
+      // `anywhere` breaks inside a word that would have fit on the next line.
+      expect(classes).not.toContain("lg:[overflow-wrap:anywhere]");
+      expect(classes).not.toContain("lg:break-all");
     });
   });
 

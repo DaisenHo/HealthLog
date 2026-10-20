@@ -20,6 +20,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { canLogWorkout } from "@/lib/workouts/manual-entry";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * v1.4.32 — `/insights/workouts`.
@@ -187,12 +188,13 @@ export default function InsightsWorkoutsPageClient() {
               />
             </>
           ) : (
-            <p
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("insights.workouts.filterEmpty")}
+              className="px-4 md:px-6"
               data-slot="workout-list-filter-empty"
-              className="text-muted-foreground px-4 text-sm md:px-6"
-            >
-              {t("insights.workouts.filterEmpty")}
-            </p>
+            />
           )}
         </>
       )}

@@ -43,6 +43,7 @@ import {
   type AchievementCategory,
   type AchievementProgress,
 } from "@/lib/gamification/achievements";
+import { TrendTile } from "@/components/ui/trend-tile";
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -351,7 +352,7 @@ export default function AchievementsPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="bg-card border-border flex min-h-34 flex-col justify-between rounded-xl border p-4 md:p-6">
+        <TrendTile className="min-h-34 justify-between">
           <p className="text-muted-foreground text-sm">
             {t("achievements.points")}
           </p>
@@ -370,8 +371,8 @@ export default function AchievementsPage() {
             className="h-1.5"
             aria-label={t("achievements.points")}
           />
-        </div>
-        <div className="bg-card border-border flex min-h-34 flex-col justify-between rounded-xl border p-4 md:p-6">
+        </TrendTile>
+        <TrendTile className="min-h-34 justify-between">
           <p className="text-muted-foreground text-sm">
             {t("achievements.unlocked")}
           </p>
@@ -384,8 +385,8 @@ export default function AchievementsPage() {
           <p className="text-muted-foreground text-xs">
             {t("achievements.remainingUnlocks", { count: remainingUnlocks })}
           </p>
-        </div>
-        <div className="bg-card border-border min-h-34 rounded-xl border p-4 sm:col-span-2 md:p-6 lg:col-span-1">
+        </TrendTile>
+        <TrendTile className="min-h-34 sm:col-span-2 lg:col-span-1">
           <p className="text-muted-foreground text-sm">
             {t("achievements.nextGoal")}
           </p>
@@ -428,7 +429,7 @@ export default function AchievementsPage() {
             className="mt-3 h-1.5"
             aria-label={t("achievements.nextProgressLabel")}
           />
-        </div>
+        </TrendTile>
       </div>
 
       {grouped.length === 0 ? (

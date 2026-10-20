@@ -25,8 +25,32 @@
  *     it is always narrowed from the session.
  */
 import { z } from "zod/v4";
+import {
+  DOCUMENT_BULK_MAX_IDS,
+  DOCUMENT_CONTENT_INDEX_SOURCES,
+  DOCUMENT_LIST_DEFAULT_LIMIT,
+  INBOUND_DOCUMENT_KINDS,
+  MAX_COACH_ATTACHMENTS,
+  type DocumentContentIndexSourceValue,
+  type InboundDocumentKindValue,
+} from "@/lib/documents/inbound-constants";
 
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
+
+// The constants and label lists a client needs live in a zod-free module, so
+// a component that wants the list of document kinds does not pull the schema
+// library into its route. Re-exported here for the server code that already
+// imports them from the schema module.
+export {
+  DOCUMENT_BULK_MAX_IDS,
+  DOCUMENT_CONTENT_INDEX_SOURCES,
+  DOCUMENT_LIST_DEFAULT_LIMIT,
+  INBOUND_DOCUMENT_KINDS,
+  MAX_COACH_ATTACHMENTS,
+  isAiReadSource,
+  type DocumentContentIndexSourceValue,
+  type InboundDocumentKindValue,
+} from "@/lib/documents/inbound-constants";
 
 /** Max facts a single document may stage / confirm. A dense letter is ~40. */
 export const INBOUND_MAX_FACTS = 120;
@@ -46,44 +70,6 @@ export const INBOUND_FACT_TYPES = [
   "MEDICATION_STATEMENT",
 ] as const;
 export type InboundFactType = (typeof INBOUND_FACT_TYPES)[number];
-
-/** The document-kind labels (no interpretation — a label only). */
-export const INBOUND_DOCUMENT_KINDS = [
-  "DOCTOR_REPORT",
-  "DISCHARGE_LETTER",
-  "LAB_RESULT",
-  "IMAGING",
-  "PRESCRIPTION",
-  "REFERRAL",
-  "INSURANCE",
-  "VACCINATION",
-  "SICK_NOTE",
-  "OTHER",
-] as const;
-export type InboundDocumentKindValue = (typeof INBOUND_DOCUMENT_KINDS)[number];
-
-/**
- * How a document's content index was produced (mirrors the server `source`
- * column). `vision` means an AI provider read the original (the AI-first path);
- * every other value is a provider-free local extraction. The UI reads it to
- * tell an AI-read document from a locally-indexed one — the former already had
- * the richer read, the latter can still be offered "Read with AI".
- */
-export const DOCUMENT_CONTENT_INDEX_SOURCES = [
-  "vision",
-  "text-ocr",
-  "local-pdf",
-  "local-ocr",
-] as const;
-export type DocumentContentIndexSourceValue =
-  (typeof DOCUMENT_CONTENT_INDEX_SOURCES)[number];
-
-/** True when the index was produced by an AI provider reading the original. */
-export function isAiReadSource(
-  source: DocumentContentIndexSourceValue | string | null,
-): boolean {
-  return source === "vision";
-}
 
 /**
  * Narrow the free-String DB `source` column to the DTO union, or `null` for an
@@ -880,7 +866,6 @@ export const DOCUMENT_LIST_SORTS = [
 export type DocumentListSort = (typeof DOCUMENT_LIST_SORTS)[number];
 
 export const DOCUMENT_LIST_MAX_LIMIT = 100;
-export const DOCUMENT_LIST_DEFAULT_LIMIT = 50;
 
 /**
  * The library list query: title/filename search, category filter, a
@@ -916,9 +901,6 @@ export const documentListQuerySchema = z.object({
 export type DocumentListQuery = z.infer<typeof documentListQuerySchema>;
 
 // ─── Vault: bulk actions ───────────────────────────────────────────────────
-
-/** Max document ids one bulk request may touch. */
-export const DOCUMENT_BULK_MAX_IDS = 100;
 
 export const DOCUMENT_BULK_ACTIONS = [
   "setKind",
@@ -1109,11 +1091,6 @@ export type DocumentChatHistoryQuery = z.infer<
 >;
 
 // ─── Fenced multi-document coach chat (S7) ──────────────────────────────────
-
-/** Max documents attachable to one coach conversation. Bounds prompt size + the
- * numeric-grounding union; five labelled documents is already past the point a
- * chat answer stays useful. */
-export const MAX_COACH_ATTACHMENTS = 5;
 
 /**
  * Request body for `POST /api/insights/chat/fenced`. `.strict()` — the schema

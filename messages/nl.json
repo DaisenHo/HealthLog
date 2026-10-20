@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Heatmap van therapietrouw van {start} tot {end}, {days} actieve dagen.",
       "complianceHeatmapEmpty": "Heatmap van therapietrouw, nog geen actieve dagen."
     },
-    "medicationsEmptyAction": "Medicijn toevoegen"
+    "medicationsEmptyAction": "Medicijn toevoegen",
+    "rangeLabel": "Periode"
   },
   "chart": {
     "overlay": {
@@ -6673,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Gekoppeld",
-      "errorReconnect": "Fout: opnieuw koppelen",
-      "warningServerError": "Synchronisatie mislukt",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Gepauzeerd: opnieuw koppelen",
-      "notConnected": "Niet gekoppeld",
       "justNow": "zojuist",
       "minutesAgo": "{count} min geleden",
       "hoursAgo": "{count} u geleden",
       "daysAgo": "{count} d geleden",
       "resumeSuccess": "Koppeling hervat",
-      "resumeError": "Opnieuw koppelen mislukt",
-      "stale": "Gekoppeld, geen recente gegevens",
-      "stalled": "Synchronisatie gestopt",
-      "pendingSetup": "Wachten op eerste gegevens"
+      "resumeError": "Opnieuw koppelen mislukt"
     },
     "integrationFreshness": {
       "title": "Ontvangen gegevens",
@@ -9190,10 +9182,7 @@
         "unitSteps": "stappen",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "pnt",
-        "confidenceLow": "Lage betrouwbaarheid",
-        "confidenceMedium": "Gemiddelde betrouwbaarheid",
-        "confidenceHigh": "Hoge betrouwbaarheid"
+        "unitMood": "pnt"
       },
       "title": "Cyclusinzichten",
       "symptomPatternsTitle": "Symptoompatronen per fase",

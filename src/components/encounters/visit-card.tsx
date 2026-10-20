@@ -94,7 +94,7 @@ export function VisitCard({
     <Card
       data-slot="visit-card"
       data-encounter-id={encounter.id}
-      className="gap-2 py-3 md:py-4"
+      density="compact"
     >
       <CardContent className="space-y-2">
         <Body onOpen={onOpen} encounter={encounter}>

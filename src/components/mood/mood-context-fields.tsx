@@ -55,6 +55,7 @@ import {
   contextValueLabelKey,
 } from "@/lib/mood/context-vocabulary";
 import type { LinkedDayContext, LinkedFigure } from "@/lib/mood/linked-context";
+import { InlineAction } from "@/components/ui/inline-action";
 
 const CONTEXT_NOTE_MAX_LENGTH = 500;
 
@@ -683,16 +684,17 @@ export function MoodLinkedDaySection({
               <Activity className="mr-1 inline h-3 w-3" aria-hidden="true" />
               {bodyLine}
             </span>
-            <a
-              href={
-                linked.body.available && linked.body.episodeId
-                  ? `/illness/${linked.body.episodeId}`
-                  : "/illness"
-              }
-              className="text-primary text-xs underline underline-offset-2"
-            >
-              {t("mood.dayContext.openIllness")}
-            </a>
+            <InlineAction asChild className="underline">
+              <a
+                href={
+                  linked.body.available && linked.body.episodeId
+                    ? `/illness/${linked.body.episodeId}`
+                    : "/illness"
+                }
+              >
+                {t("mood.dayContext.openIllness")}
+              </a>
+            </InlineAction>
           </div>
         ) : null}
       </div>

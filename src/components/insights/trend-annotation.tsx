@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,8 +16,7 @@ import {
   TREND_SLOT_DESCRIPTOR_META,
   type TrendDescriptorPoint,
 } from "@/lib/insights/trend-descriptor";
-import { cn } from "@/lib/utils";
-import { CONFIDENCE_BADGE_CLASS } from "./confidence-badge";
+import { CONFIDENCE_TONE, ScorePill } from "@/components/ui/score-pill";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 
@@ -192,13 +190,12 @@ export function TrendAnnotation({
       text={stripChartTokens(annotation)}
     >
       {confidence ? (
-        <Badge
+        <ScorePill
           data-slot="trend-annotation-confidence"
-          variant="outline"
-          className={cn("text-xs", CONFIDENCE_BADGE_CLASS[confidence])}
+          tone={CONFIDENCE_TONE[confidence]}
         >
           {t(CONFIDENCE_LABEL_KEY[confidence])}
-        </Badge>
+        </ScorePill>
       ) : null}
     </TrendCaptionCard>
   );

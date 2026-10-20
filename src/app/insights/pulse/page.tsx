@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Gauge, Heart } from "lucide-react";
+import { Gauge, Heart } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
@@ -19,9 +19,9 @@ import { MeasurementDiversityNudge } from "@/components/insights/measurement-div
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { EcgCrossLink } from "@/components/insights/ecg-cross-link";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
-import { TileHeader } from "@/components/insights/tile-header";
 import dynamic from "next/dynamic";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { CrossLinkCard } from "@/components/insights/cross-link-card";
 
 // Load the intraday area chart through the shared chart-runtime boundary (the
 // one recharts chunk), not as a direct import — a direct `from "recharts"`
@@ -199,27 +199,17 @@ export default function InsightsPulsPage() {
           the full chart plus the plain-language assessment — rather than
           duplicating a second, divergent VO₂ max view here.
 
-          v1.12.8 — the card now leads with the canonical `<TileHeader>` so the
-          `Gauge` glyph reads in the foreground colour at the same size and
-          position as every other tile header, with the body + CTA beneath. */}
+          The card is the shared `CrossLinkCard`: the canonical `TileHeader`
+          (foreground `Gauge` glyph), the body and the CTA beneath. */}
       {hasVo2 ? (
-        <Link
+        <CrossLinkCard
           href="/insights/cardio-fitness"
-          data-slot="vo2-cardio-link"
-          className="bg-card hover:bg-accent/40 focus-visible:ring-ring/50 block space-y-1.5 rounded-xl border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none md:p-6"
-        >
-          <TileHeader
-            icon={Gauge}
-            title={t("insights.vo2Max.cardioLinkTitle")}
-          />
-          <span className="text-muted-foreground block text-xs leading-snug">
-            {t("insights.vo2Max.cardioLinkBody")}
-          </span>
-          <span className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium">
-            {t("insights.vo2Max.cardioLinkCta")}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </span>
-        </Link>
+          slot="vo2-cardio-link"
+          icon={Gauge}
+          title={t("insights.vo2Max.cardioLinkTitle")}
+          body={t("insights.vo2Max.cardioLinkBody")}
+          cta={t("insights.vo2Max.cardioLinkCta")}
+        />
       ) : null}
     </SubPageShell>
   );

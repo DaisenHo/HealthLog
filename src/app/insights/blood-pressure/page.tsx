@@ -204,7 +204,7 @@ export default function InsightsBlutdruckPage() {
           // edge, ~16–24 px left of every neighbouring card's text) — and
           // foreground, not muted: multi-sentence explainer prose is
           // content, muted stays reserved for meta.
-          <Card data-slot="bp-derived-caption" className="gap-2 py-3 md:py-4">
+          <Card data-slot="bp-derived-caption" density="compact">
             <CardContent>
               <p className="text-sm leading-relaxed">
                 {t("insights.subPage.bpDerived.pulsePressure", {

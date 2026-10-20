@@ -68,6 +68,7 @@ import {
   useSymptomEvents,
   useUpdateSymptomDefinition,
 } from "./use-symptoms";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -489,9 +490,11 @@ export function SymptomsSection() {
             {t("symptoms.section.recent")}
           </p>
           {days.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {t("symptoms.section.recentEmpty")}
-            </p>
+            <EmptyState
+              variant="plain"
+              size="compact"
+              title={t("symptoms.section.recentEmpty")}
+            />
           ) : (
             <div className="space-y-3">
               {days.map((group) => (

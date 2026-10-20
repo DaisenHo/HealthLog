@@ -843,7 +843,7 @@ async function uploadOnce(file: File) {
 }
 
 export function BackupsSection() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
@@ -1327,7 +1327,7 @@ export function BackupsSection() {
                       </Badge>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs tabular-nums">
-                      {formatBytes(row.sizeBytes, fmt)}
+                      {formatBytes(row.sizeBytes, locale)}
                     </td>
                     <td className="text-muted-foreground px-3 py-2 text-right text-xs whitespace-nowrap">
                       {fmt.dateTime(row.createdAt)}
@@ -1394,7 +1394,7 @@ export function BackupsSection() {
                   </div>
                   <p className="text-muted-foreground text-xs">
                     {t("admin.section.backups.colSize")}:{" "}
-                    {formatBytes(row.sizeBytes, fmt)} ·{" "}
+                    {formatBytes(row.sizeBytes, locale)} ·{" "}
                     {fmt.dateTime(row.createdAt)}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">

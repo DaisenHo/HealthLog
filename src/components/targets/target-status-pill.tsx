@@ -6,8 +6,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+import { ScorePill } from "@/components/ui/score-pill";
 
 /**
  * v1.8.5 — `<TargetStatusPill>` extracted from `target-card.tsx`.
@@ -153,7 +153,8 @@ export function statusGroupForCategory(
   return "near";
 }
 
-// Coloured text on a 10% same-hue tint with a 30% ring. The tint and
+// Coloured text on a 10% same-hue tint, in the `ScorePill` anatomy. The
+// tone classes stay this pill's own, on purpose: the tint and
 // text share one theme-aware token per tone (`--status-pill-{in,near,
 // out}` in globals.css) so the pill clears WCAG AA (4.5:1) on both the
 // Targets card (`bg-card`) and the W5 insights reference panel
@@ -171,9 +172,9 @@ export function statusGroupForCategory(
 // that parses cleanly. See the Tailwind v4 upgrade guide for the
 // migration from bracket-form to paren-form for CSS-variable values.
 export const STATUS_PILL_STYLES: Record<"in" | "near" | "out", string> = {
-  in: "bg-(--status-pill-in)/10 text-(--status-pill-in) ring-(--status-pill-in)/30",
-  near: "bg-(--status-pill-near)/10 text-(--status-pill-near) ring-(--status-pill-near)/30",
-  out: "bg-(--status-pill-out)/10 text-(--status-pill-out) ring-(--status-pill-out)/30",
+  in: "bg-(--status-pill-in)/10 text-(--status-pill-in)",
+  near: "bg-(--status-pill-near)/10 text-(--status-pill-near)",
+  out: "bg-(--status-pill-out)/10 text-(--status-pill-out)",
 };
 
 export interface TargetStatusPillProps {
@@ -204,16 +205,13 @@ export function TargetStatusPill({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
+          <ScorePill
             data-slot="target-status-pill"
             data-status={statusGroup}
-            className={cn(
-              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
-              statusPillStyle,
-            )}
+            className={statusPillStyle}
           >
             {statusLabel}
-          </span>
+          </ScorePill>
         </TooltipTrigger>
         <TooltipContent>
           {range && (

@@ -2597,7 +2597,8 @@
     "days90Title": "최근 90일",
     "daysAllLabel": "전체",
     "daysAllTitle": "전체 기간",
-    "medicationsEmptyAction": "약 추가하기"
+    "medicationsEmptyAction": "약 추가하기",
+    "rangeLabel": "기간"
   },
   "chart": {
     "overlay": {
@@ -6673,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "연결됨",
-      "errorReconnect": "오류: 다시 연결",
-      "warningServerError": "동기화 실패 중",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "일시중지: 다시 연결",
-      "notConnected": "연결 안 됨",
       "justNow": "방금",
       "minutesAgo": "{count}분 전",
       "hoursAgo": "{count}시간 전",
       "daysAgo": "{count}일 전",
       "resumeSuccess": "연동을 다시 시작했어요",
-      "resumeError": "다시 연결하지 못했어요",
-      "stale": "연결됨, 최근 데이터 없음",
-      "stalled": "동기화 멈춤",
-      "pendingSetup": "첫 데이터 기다리는 중"
+      "resumeError": "다시 연결하지 못했어요"
     },
     "integrationFreshness": {
       "title": "받은 데이터",
@@ -9190,10 +9182,7 @@
         "unitSteps": "걸음",
         "unitBpm": "bpm",
         "unitMs": "ms",
-        "unitMood": "점",
-        "confidenceLow": "신뢰도 낮음",
-        "confidenceMedium": "신뢰도 보통",
-        "confidenceHigh": "신뢰도 높음"
+        "unitMood": "점"
       },
       "title": "주기 인사이트",
       "symptomPatternsTitle": "단계별 증상 패턴",

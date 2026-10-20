@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Mapa cieplna przyjmowania leków od {start} do {end}, {days} aktywnych dni.",
       "complianceHeatmapEmpty": "Mapa cieplna przyjmowania leków, brak aktywnych dni."
     },
-    "medicationsEmptyAction": "Dodaj lek"
+    "medicationsEmptyAction": "Dodaj lek",
+    "rangeLabel": "Zakres czasu"
   },
   "chart": {
     "overlay": {
@@ -6673,21 +6674,12 @@
       }
     },
     "integrationPill": {
-      "connected": "Połączono",
-      "errorReconnect": "Błąd: połącz ponownie",
-      "warningServerError": "Synchronizacja nie działa",
-      "failureCount": "{count}/{threshold}",
-      "parkedReconnect": "Wstrzymane: połącz ponownie",
-      "notConnected": "Nie połączono",
       "justNow": "przed chwilą",
       "minutesAgo": "{count} min temu",
       "hoursAgo": "{count} godz. temu",
       "daysAgo": "{count} dni temu",
       "resumeSuccess": "Integracja wznowiona",
-      "resumeError": "Ponowne połączenie nieudane",
-      "stale": "Połączono, brak nowych danych",
-      "stalled": "Synchronizacja zatrzymana",
-      "pendingSetup": "Czekam na pierwsze dane"
+      "resumeError": "Ponowne połączenie nieudane"
     },
     "integrationFreshness": {
       "title": "Odebrane dane",
@@ -9190,10 +9182,7 @@
         "unitSteps": "kroki",
         "unitBpm": "ud./min",
         "unitMs": "ms",
-        "unitMood": "pkt",
-        "confidenceLow": "Niska pewność",
-        "confidenceMedium": "Średnia pewność",
-        "confidenceHigh": "Wysoka pewność"
+        "unitMood": "pkt"
       },
       "title": "Analizy cyklu",
       "symptomPatternsTitle": "Wzorce objawów wg fazy",

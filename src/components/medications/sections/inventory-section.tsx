@@ -79,6 +79,7 @@ import {
   type InventoryItem,
   type InventoryState,
 } from "./inventory-shared";
+import { InlineAction } from "@/components/ui/inline-action";
 
 export { AddInventoryDialog, AdjustInventoryDialog } from "./inventory-dialogs";
 export { invalidateSupplyQueries } from "./inventory-shared";
@@ -314,17 +315,18 @@ export function InventorySection({
             of what was shared" panel. */}
         {!inSharedRecord && (
           <div className="py-2">
-            <Link
-              href="/settings/notifications#low-stock"
-              className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
-              data-slot="inventory-low-stock-link"
-            >
-              {lowStockDays !== null
-                ? t("medications.detail.bestand.lowStockLinkOn", {
-                    days: lowStockDays,
-                  })
-                : t("medications.detail.bestand.lowStockLinkOff")}
-            </Link>
+            <InlineAction asChild tone="muted">
+              <Link
+                href="/settings/notifications#low-stock"
+                data-slot="inventory-low-stock-link"
+              >
+                {lowStockDays !== null
+                  ? t("medications.detail.bestand.lowStockLinkOn", {
+                      days: lowStockDays,
+                    })
+                  : t("medications.detail.bestand.lowStockLinkOff")}
+              </Link>
+            </InlineAction>
           </div>
         )}
       </SettingsGroup>

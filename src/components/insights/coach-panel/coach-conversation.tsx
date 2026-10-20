@@ -19,7 +19,7 @@ import { apiDelete, apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import type { CoachFollowUp, CoachScope } from "@/lib/ai/coach/types";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
-import { MAX_COACH_ATTACHMENTS } from "@/lib/validations/inbound-documents";
+import { MAX_COACH_ATTACHMENTS } from "@/lib/documents/inbound-constants";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
 import {
   parseUploadResponse,
