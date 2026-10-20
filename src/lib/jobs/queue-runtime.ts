@@ -391,7 +391,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     expiryVia: ["MEASUREMENT_MAINTENANCE_SEND_OPTIONS"],
     stop: {
       oneShot:
-        "VACUUM and REINDEX CONCURRENTLY cannot be resumed mid-statement; the send sets retryLimit 0 and the operator re-triggers.",
+        "VACUUM and REINDEX CONCURRENTLY cannot be resumed mid-statement; the send and the nightly tick set retryLimit 0, and the next night or the operator runs it again.",
     },
     exclusive: {
       marker: "retryLimit: 0",
@@ -400,7 +400,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
         fn: "MEASUREMENT_MAINTENANCE_SEND_OPTIONS",
       },
     },
-    why: "Rebuilds every index of the largest table, one at a time.",
+    why: "The operator's run rebuilds every index of the largest table, one at a time; the nightly check is one VACUUM at most.",
   },
   "pulse-day-mean": {
     runtime: "long",

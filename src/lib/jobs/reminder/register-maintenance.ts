@@ -80,7 +80,9 @@ import {
   type MeasurementFoldRepairPayload,
 } from "@/lib/jobs/measurement-fold-repair";
 import {
+  MEASUREMENT_MAINTENANCE_CRON,
   MEASUREMENT_MAINTENANCE_QUEUE,
+  MEASUREMENT_MAINTENANCE_SEND_OPTIONS,
   handleMeasurementMaintenance,
   type MeasurementMaintenancePayload,
 } from "@/lib/jobs/measurement-maintenance";
@@ -507,9 +509,9 @@ const allQueues = [
   // their window; the purge above waits for it. Without this entry the boot
   // enqueue silently no-ops and the purge never runs.
   MEASUREMENT_FOLD_REPAIR_QUEUE,
-  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`. No
-  // cron: the admin route enqueues it. Without this entry the trigger
-  // silently no-ops.
+  // v1.42 — VACUUM / REINDEX of `measurements`: the admin route enqueues the
+  // operator's run, and a nightly check vacuums when dead rows pile up.
+  // Without this entry both silently no-op.
   MEASUREMENT_MAINTENANCE_QUEUE,
   // v1.43 — the pulse day-mean dry run and rebuild, admin-triggered only.
   PULSE_DAY_MEAN_QUEUE,
@@ -634,6 +636,14 @@ const allQueues = [
 // `retryLimit: 0` in its own options for the other reason: it pages each
 // failed account itself, and a retry would page the same accounts again.
 const schedules: ScheduleEntry[] = [
+  // v1.43.7 — nightly 03:40 check of `measurements`: a plain VACUUM when the
+  // dead rows pass the threshold, never a rebuild. Same singleton key as the
+  // operator's run, so the two collapse.
+  [
+    MEASUREMENT_MAINTENANCE_QUEUE,
+    MEASUREMENT_MAINTENANCE_CRON,
+    { ...MEASUREMENT_MAINTENANCE_SEND_OPTIONS },
+  ],
   // v1.25 (W-ENV) — daily 02:10 Europe/Berlin discovery tick (empty payload)
   // that fans out one per-user environment fetch per opted-in account.
   [ENVIRONMENT_FETCH_QUEUE, ENVIRONMENT_FETCH_CRON],
@@ -849,11 +859,11 @@ const queuePolicies: QueuePolicyTable = {
     reason:
       "Fixed singleton key, admin-triggered. Two concurrent corpus rotations must never overlap; the route already reports a suppressed send back as alreadyQueued.",
   },
-  // v1.42 — operator-triggered VACUUM / REINDEX of `measurements`.
+  // v1.42 — VACUUM / REINDEX of `measurements`, operator or nightly.
   [MEASUREMENT_MAINTENANCE_QUEUE]: {
     policy: "exclusive",
     reason:
-      "Fixed singleton key, admin-triggered. Two maintenance passes would rebuild the same indexes side by side; the route reports a suppressed send back as enqueued: false.",
+      "Fixed singleton key on the admin send and the nightly tick alike. Two maintenance passes would vacuum or rebuild side by side; the route reports a suppressed send back as enqueued: false.",
   },
   // v1.43 — the pulse day-mean dry run and rebuild.
   [PULSE_DAY_MEAN_QUEUE]: {

@@ -312,6 +312,7 @@ export const SCHEDULED_AND_SENT_QUEUES: ReadonlySet<string> = new Set([
   "geolite2-fetch",
   "insight-pregenerate",
   "intake-slot-dedup",
+  "measurement-maintenance",
   "med-notes-encryption-backfill",
   "nightscout-sync",
   "note-encryption-backfill",

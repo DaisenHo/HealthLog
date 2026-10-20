@@ -1,12 +1,22 @@
 /**
- * Operator-triggered maintenance of the `measurements` table (v1.42).
+ * Maintenance of the `measurements` table (v1.42).
  *
  * `VACUUM (ANALYZE)` and a `REINDEX INDEX CONCURRENTLY` per index, largest
  * first, after the compaction-tombstone purge has shrunk the table. Neither
  * statement can run inside a transaction, so this is a job rather than a
- * Prisma migration. Started only from `POST /api/admin/maintenance/measurements`
- * (cookie-only admin), never on a schedule: the operator picks a quiet window.
- * Runbook: `docs/ops/measurement-maintenance.md`.
+ * Prisma migration. Runbook: `docs/ops/measurement-maintenance.md`.
+ *
+ * Two ways in:
+ *   - The operator, from `POST /api/admin/maintenance/measurements`
+ *     (cookie-only admin), with the steps named; the rebuild only ever runs
+ *     this way, in a window the operator picks.
+ *   - The nightly check (`MEASUREMENT_MAINTENANCE_CRON`, a tick without
+ *     steps). It reads the table's dead and live rows and vacuums only when
+ *     the dead ones pass `vacuumDue`. A plain VACUUM takes no lock that stops
+ *     reads or writes. It also measures how far the heap has grown past its
+ *     live rows (`TableHealth.bloatFactor`); only a rewrite (`VACUUM FULL`,
+ *     which locks the table) gives that space back, so past
+ *     `TABLE_BLOAT_WARN_FACTOR` the run warns instead of acting.
  *
  * Why the indexes: after the purge the heap is small, but a B-tree does not
  * give back the pages its deleted entries held. VACUUM marks the heap space
@@ -59,10 +69,49 @@ export const MEASUREMENT_MAINTENANCE_SEND_OPTIONS = {
   singletonKey: MEASUREMENT_MAINTENANCE_SINGLETON_KEY,
 } as const;
 
-/** Which steps the operator asked for. */
+/** Which steps the operator asked for. The nightly tick names none. */
 export interface MeasurementMaintenancePayload {
+  vacuum?: boolean;
+  reindex?: boolean;
+}
+
+/** The steps a run takes, once resolved. */
+export interface MaintenanceSteps {
   vacuum: boolean;
   reindex: boolean;
+}
+
+/** 03:40 Europe/Berlin, inside the nightly maintenance band. */
+export const MEASUREMENT_MAINTENANCE_CRON = "40 3 * * *";
+
+/** Dead rows, as a share of live ones, past which the nightly check vacuums. */
+export const DEAD_ROW_VACUUM_SHARE = 0.1;
+
+/** Fewer dead rows than this are never worth a vacuum of their own. */
+export const DEAD_ROW_VACUUM_FLOOR = 10_000;
+
+/**
+ * Heap size against what the live rows need, past which the run warns that
+ * only a rewrite gives the space back.
+ */
+export const TABLE_BLOAT_WARN_FACTOR = 3;
+
+/** Bytes a heap row costs beyond its data: header, item pointer, alignment. */
+const ROW_OVERHEAD_BYTES = 28;
+
+/** The fill factor migration 0412 gives the table. */
+const FILL_FACTOR = 0.85;
+
+/** What the statistics say about the table's heap. */
+export interface TableHealth {
+  liveRows: number;
+  deadRows: number;
+  heapBytes: number;
+  /**
+   * Heap bytes over what the live rows need at the planner's average row
+   * width and the table's fill factor; null before the table has statistics.
+   */
+  bloatFactor: number | null;
 }
 
 /**
@@ -113,7 +162,12 @@ export interface MaintenanceStep {
 }
 
 export interface MeasurementMaintenanceSummary {
-  outcome: "completed" | "refused_purge_running" | "already_running" | "failed";
+  outcome:
+    | "completed"
+    | "nothing_due"
+    | "refused_purge_running"
+    | "already_running"
+    | "failed";
   steps: MaintenanceStep[];
   tableBytesBefore: number;
   tableBytesAfter: number;
@@ -141,6 +195,62 @@ async function relationSizes(
     table: Number(rows[0]?.table ?? 0),
     indexes: Number(rows[0]?.indexes ?? 0),
   };
+}
+
+/** The table's heap as the statistics collector and the planner see it. */
+export async function tableHealth(
+  db: MaintenanceConnection,
+): Promise<TableHealth> {
+  const { rows } = await db.query<{
+    live: string;
+    dead: string;
+    heap: string;
+    width: string | null;
+  }>(
+    `SELECT s.n_live_tup::text AS live,
+            s.n_dead_tup::text AS dead,
+            pg_relation_size('measurements'::regclass)::text AS heap,
+            (SELECT sum(avg_width)::text FROM pg_stats
+              WHERE schemaname = s.schemaname AND tablename = 'measurements') AS width
+       FROM pg_stat_user_tables s
+      WHERE s.relid = 'measurements'::regclass`,
+  );
+  const liveRows = Number(rows[0]?.live ?? 0);
+  const heapBytes = Number(rows[0]?.heap ?? 0);
+  const width = Number(rows[0]?.width ?? 0);
+  const needed = (liveRows * (width + ROW_OVERHEAD_BYTES)) / FILL_FACTOR;
+  return {
+    liveRows,
+    deadRows: Number(rows[0]?.dead ?? 0),
+    heapBytes,
+    bloatFactor:
+      liveRows > 0 && width > 0
+        ? Math.round((heapBytes / needed) * 10) / 10
+        : null,
+  };
+}
+
+/** Whether the dead rows are worth a vacuum of their own tonight. */
+export function vacuumDue(health: TableHealth): boolean {
+  return (
+    health.deadRows >= DEAD_ROW_VACUUM_FLOOR &&
+    health.deadRows > health.liveRows * DEAD_ROW_VACUUM_SHARE
+  );
+}
+
+/**
+ * The steps a delivery takes: the operator's as asked, the nightly tick's a
+ * vacuum when one is due and never a rebuild.
+ */
+export function resolveSteps(
+  payload: MeasurementMaintenancePayload | undefined,
+  health: TableHealth,
+): MaintenanceSteps {
+  const named =
+    typeof payload?.vacuum === "boolean" ||
+    typeof payload?.reindex === "boolean";
+  if (!named) return { vacuum: vacuumDue(health), reindex: false };
+  return { vacuum: payload?.vacuum ?? true, reindex: payload?.reindex ?? true };
 }
 
 async function measurementIndexes(
@@ -223,7 +333,7 @@ async function dropInvalidCopies(
  */
 export async function runMeasurementMaintenance(
   db: MaintenanceConnection,
-  payload: MeasurementMaintenancePayload,
+  payload: MaintenanceSteps,
   options: { shouldStop?: () => boolean } = {},
 ): Promise<MeasurementMaintenanceSummary> {
   const before = await relationSizes(db);
@@ -239,6 +349,8 @@ export async function runMeasurementMaintenance(
     indexBytesBefore: before.indexes,
     indexBytesAfter: after.indexes,
   });
+
+  if (!payload.vacuum && !payload.reindex) return summary("nothing_due");
 
   // The queue table exists wherever a worker has started; a database without
   // one has no purge to wait for.
@@ -327,10 +439,6 @@ export async function handleMeasurementMaintenance(
   jobs: Job<MeasurementMaintenancePayload>[],
 ): Promise<JobOutcome> {
   const job = jobs[0];
-  const payload: MeasurementMaintenancePayload = {
-    vacuum: job?.data?.vacuum ?? true,
-    reindex: job?.data?.reindex ?? true,
-  };
   return withBackgroundEvent("job.measurement_maintenance", async (evt) => {
     const startedAt = Date.now();
     const guarded = await withJobLock(
@@ -350,7 +458,10 @@ export async function handleMeasurementMaintenance(
               await client.query(statement);
             }
           }
-          return await runMeasurementMaintenance(client, payload);
+          const health = await tableHealth(client);
+          const steps = resolveSteps(job?.data, health);
+          const summary = await runMeasurementMaintenance(client, steps);
+          return { summary, health, steps };
         } finally {
           await client
             .end()
@@ -363,20 +474,26 @@ export async function handleMeasurementMaintenance(
         }
       },
     );
-    const result: MeasurementMaintenanceSummary = guarded.ran
-      ? guarded.result
-      : {
-          outcome: "already_running",
-          steps: [],
-          tableBytesBefore: 0,
-          tableBytesAfter: 0,
-          indexBytesBefore: 0,
-          indexBytesAfter: 0,
-        };
+    if (!guarded.ran) {
+      evt.addMeta("maintenance_outcome", "already_running");
+      return jobDone({ outcome: "already_running" });
+    }
+    const { summary: result, health, steps } = guarded.result;
 
     evt.addMeta("maintenance_outcome", result.outcome);
-    evt.addMeta("maintenance_vacuum", payload.vacuum);
-    evt.addMeta("maintenance_reindex", payload.reindex);
+    evt.addMeta("maintenance_vacuum", steps.vacuum);
+    evt.addMeta("maintenance_reindex", steps.reindex);
+    evt.addMeta("maintenance_live_rows", health.liveRows);
+    evt.addMeta("maintenance_dead_rows", health.deadRows);
+    evt.addMeta("maintenance_heap_bytes", health.heapBytes);
+    if (health.bloatFactor !== null) {
+      evt.addMeta("maintenance_bloat_factor", health.bloatFactor);
+      if (health.bloatFactor > TABLE_BLOAT_WARN_FACTOR) {
+        evt.addWarning(
+          `measurements heap is ${health.bloatFactor}x what its live rows need; only VACUUM FULL in a maintenance window gives the space back`,
+        );
+      }
+    }
     evt.addMeta("maintenance_table_bytes_before", result.tableBytesBefore);
     evt.addMeta("maintenance_table_bytes_after", result.tableBytesAfter);
     evt.addMeta("maintenance_index_bytes_before", result.indexBytesBefore);
@@ -412,6 +529,9 @@ export async function handleMeasurementMaintenance(
       processed: result.steps.filter((s) => s.ok).length,
       failed: result.steps.filter((s) => !s.ok).length,
       duration_ms: Date.now() - startedAt,
+      dead_rows: health.deadRows,
+      // Zero before the table has statistics to measure against.
+      bloat_factor: health.bloatFactor ?? 0,
     };
     if (result.outcome === "failed") {
       const firstError = result.steps.find((s) => !s.ok);
