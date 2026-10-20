@@ -142,7 +142,7 @@ export function Segmented<T extends string>({
               stretch && "flex-1",
               checked
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+                : "text-foreground/75 hover:text-foreground dark:text-tab-inactive dark:hover:text-foreground",
             )}
           >
             {Icon ? (
