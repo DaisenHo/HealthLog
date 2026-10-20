@@ -20,15 +20,36 @@ import { describe, expect, it } from "vitest";
 const ROOT = join(__dirname, "..", "..");
 const SRC = join(ROOT, "src");
 
-/** `file: reason` for every bare clock read that is deliberately left. */
-const ALLOWED: Record<string, string> = {
-  "src/lib/rollups/mood-rollups.ts": "computed_at is timestamptz",
-  "src/lib/rollups/medication-compliance-rollups.ts":
-    "computed_at is timestamptz",
-  "src/lib/jobs/job-failures.ts": "pg-boss tables are timestamptz",
-  "src/lib/jobs/heavy-lane.ts": "pg-boss start_after is timestamptz",
-  "src/lib/jobs/reminder/registrar-shared.ts": "pg-boss tables are timestamptz",
-  "src/lib/db-compat.ts": "DDL default on a timestamptz column",
+/**
+ * Every bare clock read that is deliberately left: the file, how many such
+ * reads it holds, and why. The count makes the exception cover those reads
+ * and not the next one written into the same file.
+ */
+const ALLOWED: Record<string, { hits: number; why: string }> = {
+  "src/lib/rollups/mood-rollups.ts": {
+    hits: 1,
+    why: "computed_at is timestamptz",
+  },
+  "src/lib/rollups/medication-compliance-rollups.ts": {
+    hits: 1,
+    why: "computed_at is timestamptz",
+  },
+  "src/lib/jobs/job-failures.ts": {
+    hits: 2,
+    why: "pg-boss tables are timestamptz",
+  },
+  "src/lib/jobs/heavy-lane.ts": {
+    hits: 1,
+    why: "pg-boss start_after is timestamptz",
+  },
+  "src/lib/jobs/reminder/registrar-shared.ts": {
+    hits: 1,
+    why: "pg-boss tables are timestamptz",
+  },
+  "src/lib/db-compat.ts": {
+    hits: 1,
+    why: "DDL default on a timestamptz column",
+  },
 };
 
 const SQL_CLOCK =
@@ -47,11 +68,11 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-function offenders(): string[] {
+/** Every bare clock read in the tree, allowed or not. */
+function bareReads(): string[] {
   const found: string[] = [];
   for (const file of walk(SRC)) {
     const rel = relative(ROOT, file);
-    if (ALLOWED[rel]) continue;
     readFileSync(file, "utf8")
       .split("\n")
       .forEach((line, index) => {
@@ -81,18 +102,22 @@ describe("raw SQL clock reads are anchored to UTC", () => {
   });
 
   it("leaves no bare NOW() / CURRENT_TIMESTAMP outside the allowlist", () => {
-    expect(offenders()).toEqual([]);
+    const reads = bareReads();
+    const inFile = (rel: string) =>
+      reads.filter((r) => r.startsWith(`${rel}:`)).length;
+    const over = reads.filter((r) => {
+      const rel = r.slice(0, r.indexOf(":"));
+      return !ALLOWED[rel] || inFile(rel) > ALLOWED[rel].hits;
+    });
+    expect(over).toEqual([]);
   });
 
-  it("keeps the allowlist honest: every entry still has a bare read", () => {
-    for (const rel of Object.keys(ALLOWED)) {
-      const lines = readFileSync(join(ROOT, rel), "utf8")
-        .replace(ANCHORED, "")
-        .split("\n");
-      expect(
-        lines.some((line) => SQL_CLOCK.test(line)),
-        rel,
-      ).toBe(true);
+  it("keeps the allowlist honest: every entry holds exactly its count", () => {
+    const reads = bareReads();
+    for (const [rel, { hits }] of Object.entries(ALLOWED)) {
+      expect(reads.filter((r) => r.startsWith(`${rel}:`)).length, rel).toBe(
+        hits,
+      );
     }
   });
 });
