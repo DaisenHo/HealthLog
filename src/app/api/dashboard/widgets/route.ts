@@ -245,7 +245,11 @@ export const GET = apiHandler(async () => {
   let hasSdnn = true;
   if (!recoveryEnabled) {
     const sdnnRow = await prisma.measurement.findFirst({
-      where: { userId: user.id, type: "HEART_RATE_VARIABILITY" },
+      where: {
+        userId: user.id,
+        type: "HEART_RATE_VARIABILITY",
+        deletedAt: null,
+      },
       select: { id: true },
     });
     hasSdnn = sdnnRow !== null;

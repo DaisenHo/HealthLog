@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
   getGeneralStatusSystemPrompt,
   getGeneralStatusUserPrompt,
@@ -309,14 +310,7 @@ export async function prepareGeneralStatusForUser(
 
   // Fetch mood context (optional — for enrichment only). v1.4.28
   // Cap at 90 entries.
-  const moodEntries = await prisma.moodEntry
-    .findMany({
-      where: { userId },
-      orderBy: { moodLoggedAt: "desc" },
-      take: 90,
-      select: { date: true, score: true, moodLoggedAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const moodEntries = await readRecentMoodScores(userId, 90);
 
   const moodRecords = moodEntries.map((entry) => ({
     measuredAt: entry.moodLoggedAt,

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
   getPulseSystemPrompt,
   getPulseUserPrompt,
@@ -252,14 +253,7 @@ export async function preparePulseStatusForUser(
   // Fetch mood context (optional — for enrichment only). Cap at 90
   // entries (~3 months); the bucket-series budget then summarises
   // further. v1.4.28 FB-D2 — prevent unbounded reads for power users.
-  const moodEntries = await prisma.moodEntry
-    .findMany({
-      where: { userId },
-      orderBy: { moodLoggedAt: "desc" },
-      take: 90,
-      select: { date: true, score: true, moodLoggedAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const moodEntries = await readRecentMoodScores(userId, 90);
 
   const moodPoints = moodEntries.map((entry) => ({
     measuredAt: entry.moodLoggedAt,

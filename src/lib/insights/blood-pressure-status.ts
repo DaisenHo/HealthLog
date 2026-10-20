@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
   getBloodPressureSystemPrompt,
   getBloodPressureUserPrompt,
@@ -238,6 +239,7 @@ export async function prepareBloodPressureStatusForUser(
     .findMany({
       where: {
         userId,
+        deletedAt: null,
         type: {
           in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
         },
@@ -457,14 +459,7 @@ export async function prepareBloodPressureStatusForUser(
   // Fetch mood context (optional — for enrichment only). v1.4.28
   // Cap at 90 entries (~3 months) so power users don't pull
   // unbounded rows before the bucket-series budget runs.
-  const moodEntries = await prisma.moodEntry
-    .findMany({
-      where: { userId },
-      orderBy: { moodLoggedAt: "desc" },
-      take: 90,
-      select: { date: true, score: true, moodLoggedAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const moodEntries = await readRecentMoodScores(userId, 90);
 
   const moodSeries = applyPayloadBudget(
     moodEntries.map((entry) => ({
