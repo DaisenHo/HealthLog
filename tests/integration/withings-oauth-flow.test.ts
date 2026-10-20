@@ -10,9 +10,10 @@
  *   1. `withings/connect` mints a row and stamps the cookie.
  *   2. `withings/callback` resolves the user via the row's `userId`,
  *      verifies it matches the session, and deletes the row.
- *   3. A second callback with the same nonce hits the "row not
- *      found" branch and redirects to the error page (replay
- *      protection).
+ *   3. A second callback with the same nonce never reaches the token
+ *      endpoint: while the first callback's claim stands it follows
+ *      that callback to the same page, and without one it hits the
+ *      "row not found" branch and the error page (replay protection).
  *   4. A callback whose row has expired hits the same branch.
  *   5. The connect handler refuses to start when the user has no
  *      Withings credentials — no ledger row is minted.
@@ -157,7 +158,7 @@ describe("Withings OAuth nonce ledger (real Postgres)", () => {
     expect(rows).toHaveLength(0);
   });
 
-  it("connect → callback consumes the row (single-use); replay of the same nonce hits the error page", async () => {
+  it("connect → callback consumes the row (single-use); a repeat of the same nonce never exchanges again", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const url = typeof input === "string" ? input : (input as Request).url;
       if (url === WITHINGS_TOKEN_URL) {
@@ -214,22 +215,30 @@ describe("Withings OAuth nonce ledger (real Postgres)", () => {
     });
     expect(afterCallback).toBeNull();
 
-    // Leg 3 — replay the same nonce. The cookie compare still passes
-    // (matching strings) but the row lookup misses, so the handler
-    // bounces to the error page without hitting the token endpoint
-    // again.
+    // Leg 3 — the browser delivers the same callback again. The cookie
+    // compare still passes (matching strings) and the row is gone, but the
+    // first callback's claim stands: the repeat follows it to the same page
+    // without hitting the token endpoint again.
     const fetchSpy = vi.mocked(globalThis.fetch);
     fetchSpy.mockClear();
-    const replayReq = new NextRequest(
-      `http://localhost/api/withings/callback?code=auth-code&state=${encodeURIComponent(nonce)}`,
-      {
-        method: "GET",
-        headers: {
-          cookie: `healthlog_session=${cookieJar.get("healthlog_session")}; withings_state=${nonce}`,
+    const replayRequest = () =>
+      new NextRequest(
+        `http://localhost/api/withings/callback?code=auth-code&state=${encodeURIComponent(nonce)}`,
+        {
+          method: "GET",
+          headers: {
+            cookie: `healthlog_session=${cookieJar.get("healthlog_session")}; withings_state=${nonce}`,
+          },
         },
-      },
-    );
-    const replayRes = await callback(replayReq);
+      );
+    const repeatRes = await callback(replayRequest());
+    expect(repeatRes.status).toBe(307);
+    expect(repeatRes.headers.get("location")).toContain("withings=connected");
+
+    // Leg 4 — once the claim has been swept, the same nonce is a plain
+    // replay and lands on the error page.
+    await prisma.oAuthCallbackClaim.deleteMany();
+    const replayRes = await callback(replayRequest());
     expect(replayRes.status).toBe(307);
     expect(replayRes.headers.get("location")).toContain(
       "withings=error&reason=replay",

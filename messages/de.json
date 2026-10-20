@@ -4657,7 +4657,7 @@
       "scoreCrossLink": "Den zusammengesetzten Erholungs-Score ansehen",
       "emptyTitle": "Noch keine Erholungsdaten",
       "empty": "Diese Seite füllt sich mit den Erholungs-, Belastungs- und Trainingslastwerten von WHOOP oder Polar und mit Ouras Resilienz-Stufe.",
-      "emptyOuraPermission": "Ouras Resilienz-Stufe braucht Zugriff auf Herzgesundheitsdaten, also verbinde Oura einmal neu unter Integrationen und erlaube ihn.",
+      "emptyOuraPermission": "Ouras Resilienz-Stufe braucht die Berechtigung für Stressdaten, also verbinde Oura einmal neu unter Integrationen und erlaube sie.",
       "emptyOuraNoResilience": "Oura ist verbunden, und seine Resilienz-Stufe erscheint hier, sobald Oura eine liefert.",
       "emptyAction": "Integrationen öffnen",
       "block": {

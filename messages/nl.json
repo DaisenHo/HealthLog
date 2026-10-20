@@ -4668,7 +4668,7 @@
       },
       "emptyAction": "Integraties openen",
       "emptyOuraNoResilience": "Oura is verbonden, en het veerkrachtniveau verschijnt hier zodra Oura er een levert.",
-      "emptyOuraPermission": "Het veerkrachtniveau van Oura heeft toegang tot hartgezondheid nodig, dus verbind Oura één keer opnieuw onder Integraties en sta dat toe.",
+      "emptyOuraPermission": "Het veerkrachtniveau van Oura heeft toestemming voor stressgegevens nodig, dus verbind Oura één keer opnieuw onder Integraties en sta die toe.",
       "loadError": "Je herstelwaarden konden niet worden geladen."
     },
     "bodyTempDeviation": {

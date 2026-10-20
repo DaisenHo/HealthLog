@@ -45,7 +45,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
@@ -628,9 +628,7 @@ export async function syncUserSleep(
   // ~10 stage rows per night land in one DAY recompute.
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
 
     // v1.8.0 — drop the per-metric assessment caches the synced types
     // dirty (sleep + resting-HR feed the pulse / general cards).

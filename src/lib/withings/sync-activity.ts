@@ -45,7 +45,7 @@ import { getUnitForType } from "@/lib/validations/measurement";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 
@@ -540,9 +540,7 @@ export async function syncUserActivity(
   // catch-up costs at most ~N (type, day) recomputes.
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
 
     // v1.8.0 — drop the per-metric assessment caches the synced types
     // dirty (steps feed the general overview). Fire-and-forget.

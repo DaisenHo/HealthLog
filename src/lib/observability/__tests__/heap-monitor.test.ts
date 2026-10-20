@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { getHeapSpaceStatistics } from "node:v8";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -34,6 +35,7 @@ import {
   type HeapFigures,
   type HeapMonitorDeps,
   emitHeapLine,
+  heapSpaceFigures,
   isPrivateDirectory,
   writeDiagnosticHeapSnapshot,
 } from "../heap-monitor";
@@ -46,7 +48,15 @@ const FIGURE_KEYS: Array<keyof HeapFigures> = [
   "heap_total_mb",
   "heap_limit_mb",
   "heap_used_ratio",
+  "new_space_mb",
   "old_space_mb",
+  "code_space_mb",
+  "large_object_space_mb",
+  "new_large_object_space_mb",
+  "code_large_object_space_mb",
+  "trusted_space_mb",
+  "read_only_space_mb",
+  "other_spaces_mb",
   "rss_mb",
   "external_mb",
   "array_buffers_mb",
@@ -122,6 +132,50 @@ describe("heap monitor sampling", () => {
     const [line] = h.named(HEAP_TASK_NAMES.sampled);
     expect(line.level).toBe("info");
     expect(Object.keys(line.meta).sort()).toEqual([...FIGURE_KEYS].sort());
+  });
+});
+
+describe("heap space breakdown", () => {
+  const MB = 1024 * 1024;
+
+  it("reports each named space and sums the rest into other_spaces_mb", () => {
+    const figures = heapSpaceFigures([
+      { space_name: "old_space", space_used_size: 300 * MB },
+      { space_name: "large_object_space", space_used_size: 120 * MB },
+      { space_name: "trusted_space", space_used_size: 40 * MB },
+      { space_name: "shared_space", space_used_size: 2 * MB },
+      { space_name: "a_space_v8_adds_later", space_used_size: 3 * MB },
+    ]);
+    expect(figures).toEqual({
+      new_space_mb: 0,
+      old_space_mb: 300,
+      code_space_mb: 0,
+      large_object_space_mb: 120,
+      new_large_object_space_mb: 0,
+      code_large_object_space_mb: 0,
+      trusted_space_mb: 40,
+      read_only_space_mb: 0,
+      other_spaces_mb: 5,
+    });
+  });
+
+  it("accounts for every space this runtime reports", () => {
+    const spaces = getHeapSpaceStatistics();
+    expect(spaces.length).toBeGreaterThan(0);
+    const figures = heapSpaceFigures(spaces);
+    expect(Object.keys(figures).sort()).toEqual(
+      FIGURE_KEYS.filter(
+        (k) => k.endsWith("space_mb") || k === "other_spaces_mb",
+      )
+        .map(String)
+        .sort(),
+    );
+    const total = spaces.reduce((sum, s) => sum + s.space_used_size, 0);
+    const reported = Object.values(figures).reduce((a, b) => a + b, 0);
+    // Each space is rounded to the megabyte on its own.
+    expect(Math.abs(reported - total / MB)).toBeLessThanOrEqual(
+      Object.keys(figures).length,
+    );
   });
 });
 

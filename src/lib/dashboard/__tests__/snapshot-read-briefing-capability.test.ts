@@ -11,7 +11,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { User } from "@/generated/prisma/client";
+import type { SessionUser } from "@/lib/auth/session-user";
 import {
   AI_AVAILABLE,
   aiUnavailable,
@@ -29,7 +29,19 @@ const briefingBody = {
 const buildDashboardSnapshot = vi.fn(async () => briefingBody);
 const aiCapabilityToServe = vi.fn();
 
-vi.mock("@/lib/db", () => ({ prisma: {} }));
+// Generated a moment ago, so the today rule keeps it and these tests see
+// only the capability decision. Read off its own row, not the session user.
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    user: {
+      findUnique: async () => ({
+        insightsCachedText: JSON.stringify({
+          briefingGeneratedAt: new Date().toISOString(),
+        }),
+      }),
+    },
+  },
+}));
 vi.mock("@/lib/dashboard/snapshot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/dashboard/snapshot")>()),
   buildDashboardSnapshot: () => buildDashboardSnapshot(),
@@ -44,16 +56,11 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
 const { readDashboardSnapshotCached } = await import("../snapshot-read");
 const { __resetAllCachesForTests } = await import("@/lib/cache/server-cache");
 
-// Generated a moment ago, so the today rule keeps it and these tests see
-// only the capability decision.
 const USER = {
   id: "user-briefing-gate",
   locale: "en",
   timezone: "UTC",
-  insightsCachedText: JSON.stringify({
-    briefingGeneratedAt: new Date().toISOString(),
-  }),
-} as unknown as User;
+} as unknown as SessionUser;
 
 beforeEach(() => {
   __resetAllCachesForTests();

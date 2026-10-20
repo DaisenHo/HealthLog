@@ -5,7 +5,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { User } from "@/generated/prisma/client";
+import type { SessionUser } from "@/lib/auth/session-user";
 import {
   AI_AVAILABLE,
   aiUnavailable,
@@ -47,7 +47,13 @@ const body = (pulseLastSeen: string) => ({
 let current = body("2026-10-04T06:50:00.000Z");
 const buildDashboardSnapshot = vi.fn(async () => current);
 
-vi.mock("@/lib/db", () => ({ prisma: {} }));
+// The cached briefing text is read off its own row, not the session user.
+const cacheRow = vi.hoisted(() => ({
+  current: null as { insightsCachedText: string | null } | null,
+}));
+vi.mock("@/lib/db", () => ({
+  prisma: { user: { findUnique: async () => cacheRow.current } },
+}));
 vi.mock("@/lib/dashboard/snapshot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/dashboard/snapshot")>()),
   buildDashboardSnapshot: () => buildDashboardSnapshot(),
@@ -72,16 +78,18 @@ const { __resetAllCachesForTests } = await import("@/lib/cache/server-cache");
 /** 2026-10-05 21:00 in Berlin. */
 const NOW = new Date("2026-10-05T19:00:00.000Z");
 
-function user(generatedAt: string | null): User {
-  return {
-    id: "user-briefing-today",
-    locale: "en",
-    timezone: "Europe/Berlin",
+function user(generatedAt: string | null): SessionUser {
+  cacheRow.current = {
     insightsCachedText: JSON.stringify({
       dailyBriefing: BRIEFING,
       ...(generatedAt ? { briefingGeneratedAt: generatedAt } : {}),
     }),
-  } as unknown as User;
+  };
+  return {
+    id: "user-briefing-today",
+    locale: "en",
+    timezone: "Europe/Berlin",
+  } as unknown as SessionUser;
 }
 
 beforeEach(() => {

@@ -79,6 +79,7 @@ import { buildMedsTodayBlock } from "@/lib/dashboard/meds-today";
 import { computeStreak } from "@/lib/dashboard/streak";
 import {
   readActivityDayKeys,
+  readAllTimeCounts,
   readLatestEver,
   readSparkBuckets,
 } from "@/lib/dashboard/summary-reads";
@@ -468,7 +469,7 @@ async function buildDashboardSummary(
   //   - sparkBuckets: ≤ SPARK_DAYS × N metric types (typically <80,
   //                  REG-11: taken via ROW_NUMBER window, no calendar
   //                  filter, so a 60-day-old metric still paints a chart)
-  //   - allTimeAggregate: ≤ N metric types (unchanged)
+  //   - allTimeAggregate: ≤ N metric types, summed from the DAY rollups
   //   - medsToday: today-window tally via the shared projector
   //                (≤ daily intake schedule count, unchanged semantics)
   //   - streakActivity: ≤ daily intake count × 365 (unchanged)
@@ -492,13 +493,10 @@ async function buildDashboardSummary(
     time("sparkline", () =>
       readSparkBuckets(prisma, userId, measurementTypes, SPARK_DAYS),
     ),
+    // Counted from the DAY rollups where they cover the days, not by one
+    // index entry per reading (see `readAllTimeCounts`).
     time("allTime", () =>
-      prisma.measurement.groupBy({
-        by: ["type"],
-        where: { userId, type: { in: measurementTypes }, deletedAt: null },
-        _count: { _all: true },
-        _max: { measuredAt: true },
-      }),
+      readAllTimeCounts(prisma, userId, measurementTypes, now),
     ),
     // v1.4.39 — the dashboard compliance tile pulled
     // `MedicationIntakeEvent` rows for the today-window only. Daily
@@ -583,17 +581,20 @@ async function buildDashboardSummary(
 
   // Per-type metadata lookup — typed Map so a metric with no readings
   // at all falls through `metaForType` to the `{ allTimeCount: 0,
-  // lastSeenAt: null }` default. The aggregate row's `_count._all` is
-  // always `number` per Prisma's runtime contract; defending against
-  // undefined keeps the helper's narrow signature stable.
+  // lastSeenAt: null }` default.
   const allTimeByType = new Map<
     MeasurementType,
     { allTimeCount: number; lastSeenAt: Date | null }
   >();
+  // The newest reading is the one `latestEver` already read per type; its
+  // instant is the metric's last-seen time.
+  const lastSeenByType = new Map(
+    latestEver.map((row) => [row.type, row.measured_at]),
+  );
   for (const row of allTimeAggregate) {
     allTimeByType.set(row.type, {
-      allTimeCount: row._count?._all ?? 0,
-      lastSeenAt: row._max?.measuredAt ?? null,
+      allTimeCount: row.count,
+      lastSeenAt: lastSeenByType.get(row.type) ?? null,
     });
   }
   function metaForType(type: MeasurementType): {

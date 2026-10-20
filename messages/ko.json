@@ -4657,7 +4657,7 @@
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
       "empty": "이 페이지에는 WHOOP 또는 Polar의 회복, 부하, 훈련 부하 값과 Oura의 회복탄력성 수준이 표시돼요.",
-      "emptyOuraPermission": "Oura의 회복탄력성 수준에는 심장 건강 데이터 접근 권한이 필요하니, 연동에서 Oura를 한 번 다시 연결하고 허용해 주세요.",
+      "emptyOuraPermission": "Oura의 회복탄력성 수준에는 스트레스 데이터 권한이 필요하니, 연동에서 Oura를 한 번 다시 연결하고 허용해 주세요.",
       "emptyOuraNoResilience": "Oura가 연결되어 있으며, Oura가 회복탄력성 수준을 제공하는 즉시 여기에 표시돼요.",
       "emptyAction": "통합 열기",
       "block": {

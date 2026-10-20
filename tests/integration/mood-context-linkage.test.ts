@@ -524,10 +524,12 @@ describe("mood context linkage (real Postgres)", () => {
     expect(res.status).toBe(403);
     const raw = await res.text();
     // Asserted on the bytes, not on a parsed field: the point is that not one
-    // of the owner's figures reached the response.
-    expect(raw).not.toContain("7777");
-    expect(raw).not.toContain("55");
-    expect(raw).not.toContain("functionalImpact");
+    // of the owner's figures reached the response. The request id is random
+    // and can contain any digit run, so it is taken out before the check.
+    const bytes = raw.replace(/"requestId":"[^"]*"/, "");
+    expect(bytes).not.toContain("7777");
+    expect(bytes).not.toContain("55");
+    expect(bytes).not.toContain("functionalImpact");
   });
 
   it("refuses a malformed day", async () => {

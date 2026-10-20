@@ -888,7 +888,8 @@ export async function runInsightPregenerate(
             } else if (generated.credentialExpired) {
               // v1.42 — a dead sign-in (a Codex refresh token the issuer
               // revoked) does not heal in 45 minutes either; the person has
-              // to reconnect, and the ledger already tells them so.
+              // to reconnect. The refusal parked the connection as expired,
+              // which Settings shows, and the next run no longer counts it.
               settle("auth_failed", generated.reason);
             } else {
               settle("failed", generated.reason);

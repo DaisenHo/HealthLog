@@ -1,5 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Single-use claiming is covered against Postgres in
+// tests/integration/oauth-callback-single-use.test.ts; here every callback
+// is the first and only one.
+const { claimSpy } = vi.hoisted(() => ({ claimSpy: vi.fn() }));
+vi.mock("@/lib/oauth/callback-claim", () => ({
+  runOAuthCallbackOnce: (
+    _p: string,
+    _s: string,
+    _o: unknown,
+    run: () => Promise<unknown>,
+  ) => {
+    claimSpy();
+    return run();
+  },
+  settleOAuthCallback: (_p: string, _s: string, run: () => Promise<unknown>) =>
+    run(),
+  consumeLedgerState: async (
+    _p: string,
+    _s: string,
+    consume: (tx: unknown) => Promise<unknown>,
+  ) => consume((await import("@/lib/db")).prisma),
+  duplicateOAuthCallback: async () => null,
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -205,5 +229,38 @@ describe("GET /api/oura/callback — connect-time first sync", () => {
     const res = await GET(makeReq({ code: "c", state: "S", cookie: "S" }));
 
     expect(res.headers.get("location")).toContain("oura=connected");
+  });
+});
+
+// A refused callback must not spend the state: Oura sends a denied consent
+// back without a code, and the person may return to the same authorize URL
+// and allow it.
+describe("GET /api/oura/callback — claim only what can be exchanged", () => {
+  it("does not claim the state for a callback without a code", async () => {
+    const res = await GET(makeReq({ state: "S", cookie: "S" }));
+    expect(res.headers.get("location")).toContain("reason=nocode");
+    expect(claimSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not claim the state for a foreign issuer or a cross-user session", async () => {
+    await GET(
+      makeReq({
+        code: "c",
+        state: "S",
+        cookie: "S",
+        iss: "https://evil.example/oauth",
+      }),
+    );
+    (getSession as ReturnType<typeof vi.fn>).mockResolvedValue({
+      user: { id: "attacker" },
+    });
+    await GET(makeReq({ code: "c", state: "S", cookie: "S" }));
+    expect(claimSpy).not.toHaveBeenCalled();
+  });
+
+  it("claims the state once before exchanging a valid code", async () => {
+    await GET(makeReq({ code: "c", state: "S", cookie: "S" }));
+    expect(claimSpy).toHaveBeenCalledTimes(1);
+    expect(exchangeMock).toHaveBeenCalledTimes(1);
   });
 });

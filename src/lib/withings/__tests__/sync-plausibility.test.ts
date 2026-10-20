@@ -14,10 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
-      findFirst: vi.fn(),
       findMany: vi.fn(),
-      create: vi.fn(),
       createMany: vi.fn(),
+      createManyAndReturn: vi.fn(),
       update: vi.fn(),
     },
     withingsConnection: {
@@ -67,6 +66,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   return {
     ...actual,
     recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+    recomputeBucketsForKeys: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -125,13 +125,15 @@ beforeEach(() => {
     lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000),
   } as never);
   vi.mocked(prisma.withingsConnection.update).mockResolvedValue({} as never);
-  vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.measurement.create).mockResolvedValue({
-    id: "m-1",
-    type: "PULSE",
-    measuredAt: new Date(),
-  } as never);
+  vi.mocked(prisma.measurement.createManyAndReturn).mockImplementation(
+    (async (args: { data: Array<{ type: string; measuredAt: Date }> }) =>
+      args.data.map((d, i) => ({
+        id: `m-${i}`,
+        type: d.type,
+        measuredAt: d.measuredAt,
+      }))) as never,
+  );
   vi.mocked(prisma.measurement.createMany).mockResolvedValue({
     count: 1,
   } as never);
@@ -157,7 +159,11 @@ describe("syncUserMeasurements — plausibility gate", () => {
     );
 
     expect(result).toEqual({ imported: 1, failed: false });
-    expect(prisma.measurement.create).toHaveBeenCalledTimes(1);
+    expect(prisma.measurement.createManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(prisma.measurement.createManyAndReturn).mock.calls[0]?.[0]
+        ?.data,
+    ).toHaveLength(1);
     expect(tally()).toBeUndefined();
   });
 
@@ -182,7 +188,11 @@ describe("syncUserMeasurements — plausibility gate", () => {
     // Only the real reading landed, and the run is still a clean success: one
     // impossible sample must not strand the rest behind a held watermark.
     expect(result).toEqual({ imported: 1, failed: false });
-    expect(prisma.measurement.create).toHaveBeenCalledTimes(1);
+    expect(prisma.measurement.createManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(prisma.measurement.createManyAndReturn).mock.calls[0]?.[0]
+        ?.data,
+    ).toHaveLength(1);
     expect(tally()).toEqual({
       total: 1,
       buckets: [
@@ -196,9 +206,15 @@ describe("syncUserMeasurements — plausibility gate", () => {
     // The slot already holds a real pulse; the provider re-sends the same
     // instant carrying a decode slip. Ungated, the update branch rewrote the
     // good value with the bad one.
-    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
-      id: "existing-row",
-    } as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValueOnce([
+      {
+        id: "existing-row",
+        type: "PULSE",
+        measuredAt: new Date("2026-05-16T08:00:00Z"),
+        value: 61,
+        deletedAt: null,
+      },
+    ] as never);
     vi.mocked(fetchMeasurements).mockResolvedValue([
       {
         type: "PULSE",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import type { AccountGrant, User } from "@/generated/prisma/client";
+import type { AccountGrant } from "@/generated/prisma/client";
+import { SESSION_USER_SELECT, type SessionUser } from "./auth/session-user";
 import {
   applyBypassRouteHeaders,
   bypassRouteRefusal,
@@ -472,7 +473,7 @@ export type AuthContext = {
      */
     readonly recordEpoch?: number;
   };
-  user: User;
+  user: SessionUser;
   /**
    * Transport the caller authenticated with, derived from the SAME branch that
    * sets the wide event's `auth_method`: the cookie-session path resolves
@@ -886,7 +887,7 @@ export async function requireActorAuth(): Promise<AuthContext> {
  */
 export interface RecordAuthContext extends AuthContext {
   /** The authenticated caller. Equals `user` when the caller acts as themselves. */
-  readonly actor: User;
+  readonly actor: SessionUser;
   /** The grant being exercised, or null when the caller acts as themselves. */
   readonly grantId: string | null;
 }
@@ -1125,7 +1126,7 @@ export async function requireGuardianAuth(): Promise<RecordAuthContext> {
 async function resolveSwitchedRecord(
   auth: AuthContext,
   carrier: Extract<ActingCarrier, { accountId: string }>,
-  admit: (grant: AccountGrant, owner: User) => string | null,
+  admit: (grant: AccountGrant, owner: SessionUser) => string | null,
 ): Promise<RecordAuthContext> {
   /** Every refusal below is this one error, with the reason kept off the wire. */
   const denied = (reason: string): SharingAccessDeniedError => {
@@ -1155,6 +1156,7 @@ async function resolveSwitchedRecord(
 
   const owner = await prisma.user.findUnique({
     where: { id: grant.grantorId },
+    select: SESSION_USER_SELECT,
   });
   // Unreachable while the FK cascade holds — a grant naming a deleted account
   // is deleted with it. Fail closed anyway: an authorization we cannot resolve
@@ -1584,7 +1586,7 @@ export async function requireRecentProof(options: {
  * caller themselves (the admin routes, which must stay on `requireAdmin`).
  */
 export async function assertRecentCookieProof(
-  user: User,
+  user: SessionUser,
   sessionId: string,
 ): Promise<void> {
   const enrolled = await hasSecondFactorEnrolled(user);
@@ -1713,7 +1715,7 @@ export const STEP_UP_ELEVATION_HEADER = "x-step-up";
  * own device login. A comment would not have caught that; a type does.
  */
 export type MfaManagementContext = {
-  user: User;
+  user: SessionUser;
   /**
    * Spend the elevation. Call it immediately BEFORE the mutation, once every
    * cheap validation has passed — a 429, a 422, or a wrong factor code must not
@@ -1837,7 +1839,7 @@ export async function requireMfaManagementAuth(
  * the wire.
  */
 async function resolveBearerElevation(
-  auth: { user: User; apiTokenId: string },
+  auth: { user: SessionUser; apiTokenId: string },
   options: { freshFactor: boolean; proofSource: FreshFactorProofSource },
 ): Promise<() => Promise<void>> {
   const { freshFactor, proofSource } = options;

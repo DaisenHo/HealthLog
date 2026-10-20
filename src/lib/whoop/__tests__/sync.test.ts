@@ -90,8 +90,13 @@ vi.mock("@/lib/integrations/status", () => ({
 vi.mock("@/lib/rollups/measurement-rollups", () => ({
   collapseToTypeDayKeys: (rows: Array<{ type: string; measuredAt: Date }>) =>
     rows.map((r) => ({ type: r.type, measuredAt: r.measuredAt })),
-  recomputeBucketsForMeasurement: (...a: unknown[]) =>
-    recomputeBucketsMock(...a),
+  recomputeBucketsForKeys: async (
+    userId: string,
+    keys: Array<{ type: string; measuredAt: Date }>,
+  ) => {
+    for (const k of keys)
+      await recomputeBucketsMock(userId, k.type, k.measuredAt);
+  },
 }));
 
 vi.mock("@/lib/insights/comprehensive-generate", () => ({

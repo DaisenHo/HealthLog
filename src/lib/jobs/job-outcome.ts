@@ -63,6 +63,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "buckets_recomputed",
   "budget_blocked",
   "cached",
+  // The daily Withings OAuth-state cleanup also sweeps the callback claims.
+  "callback_claims_deleted",
   "candidates_scanned",
   // The nightly sign-in ledger cleanup (`auth-ledger-cleanup`).
   "challenges_deleted",

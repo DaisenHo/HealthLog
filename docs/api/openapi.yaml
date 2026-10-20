@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.43.8
+  version: 1.43.9
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -77130,7 +77130,9 @@ components:
             glucose while their entry is `bidirectional` or `writeOnly` and enabled): when the newest reading of the
             type was entered here rather than arriving from Apple Health, or null when none was. Such readings go to the
             phone and never come back as an arrival, so `stale` already counts them: the type is quiet only when both
-            this and `lastSeenAt` are. Show it as the server sends it; do not recompute `stale`."
+            are. Since v1.43.9 `lastSeenAt` on such a type is the newer of this and the newest reading from Apple
+            Health, because a reading entered here is in Apple Health too; show both as the server sends them and do not
+            recompute `stale`."
           anyOf:
             - type: string
               format: date-time
@@ -79301,8 +79303,9 @@ components:
           type: boolean
         scopeReconnect:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Oura only. Collections the stored grant does not cover: they
-            answered 401 while sibling collections succeeded with the same token. Not a failure and not counted toward
+          description: "Deprecated: removed in v1.44, read `health`. Oura only. Collections the stored grant does not cover: Oura
+            refused them for a missing scope (named in its 401, or inferred when sibling collections succeeded with the
+            same token), or the scopes Oura reported at connect leave theirs out. Not a failure and not counted toward
             the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything
             HealthLog reads."
           type: array

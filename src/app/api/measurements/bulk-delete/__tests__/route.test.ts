@@ -47,10 +47,20 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   const actual = await vi.importActual<
     typeof import("@/lib/rollups/measurement-rollups")
   >("@/lib/rollups/measurement-rollups");
+  const perKey = vi.fn().mockResolvedValue(undefined);
   return {
     // keep the real collapse so the test exercises the actual fan-out logic
     collapseToTypeDayKeys: actual.collapseToTypeDayKeys,
-    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+    recomputeBucketsForMeasurement: perKey,
+    // The keyed refold, observed as the per-key recomputes it stands for.
+    recomputeBucketsForKeys: vi.fn(
+      async (
+        userId: string,
+        keys: Array<{ type: string; measuredAt: Date }>,
+      ) => {
+        for (const k of keys) await perKey(userId, k.type, k.measuredAt);
+      },
+    ),
   };
 });
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));

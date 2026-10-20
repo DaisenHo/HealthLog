@@ -4657,7 +4657,7 @@
       "scoreCrossLink": "Voir le score de récupération composite",
       "emptyTitle": "Pas encore de données de récupération",
       "empty": "Cette page se remplit avec les valeurs de récupération, d'effort et de charge de WHOOP ou Polar et avec le niveau de résilience d'Oura.",
-      "emptyOuraPermission": "Le niveau de résilience d'Oura demande l'accès aux données de santé cardiaque : reconnectez Oura une fois dans Intégrations et autorisez-le.",
+      "emptyOuraPermission": "Le niveau de résilience d'Oura demande l'autorisation d'accès aux données de stress : reconnectez Oura une fois dans Intégrations et autorisez-la.",
       "emptyOuraNoResilience": "Oura est connecté, et son niveau de résilience apparaîtra ici dès qu'Oura en fournira un.",
       "emptyAction": "Ouvrir les intégrations",
       "block": {

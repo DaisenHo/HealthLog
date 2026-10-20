@@ -4657,7 +4657,7 @@
       "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
       "empty": "This page fills with the recharge, strain and load readings from WHOOP or Polar and with Oura's resilience level.",
-      "emptyOuraPermission": "Oura's resilience level needs heart-health access, so reconnect Oura once under Integrations and allow it.",
+      "emptyOuraPermission": "Oura's resilience level needs the stress permission, so reconnect Oura once under Integrations and allow it.",
       "emptyOuraNoResilience": "Oura is connected, and its resilience level appears here as soon as Oura provides one.",
       "emptyAction": "Open integrations",
       "block": {

@@ -15,6 +15,11 @@ import { FITBIT_BACKFILL_QUEUE } from "@/lib/jobs/fitbit-backfill";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
+import {
+  consumeLedgerState,
+  duplicateOAuthCallback,
+  settleOAuthCallback,
+} from "@/lib/oauth/callback-claim";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 
@@ -37,6 +42,12 @@ import { timingSafeEqual } from "node:crypto";
  * On success: exchange the code, fetch the Fitbit profile for the external
  * `fitbitUserId`, persist the encrypted `FitbitConnection`, clear any prior
  * reauth state, and enqueue the self-converging history backfill.
+ *
+ * A repeat of a consumed nonce is told apart from a replay by the callback
+ * claim taken in the same transaction (`src/lib/oauth/callback-claim.ts`): a
+ * browser that delivers the callback twice gets one exchange, and the repeat
+ * follows the first request to the same page. Only a nonce with no claim left
+ * lands on `replay`.
  */
 const ERR = (reason: string) =>
   NextResponse.redirect(
@@ -79,14 +90,24 @@ export const GET = apiHandler(async (request: NextRequest) => {
     codeVerifier: string | null;
   } | null = null;
   try {
-    stateRow = await prisma.fitbitOAuthState.delete({
-      where: { nonce: state },
-    });
+    stateRow = await consumeLedgerState("fitbit", state, (tx) =>
+      tx.fitbitOAuthState.delete({ where: { nonce: state } }),
+    );
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2025"
     ) {
+      // A duplicate of a callback that is consuming or has consumed this
+      // row: follow that request's result instead of showing an error.
+      const duplicate = await duplicateOAuthCallback("fitbit", state, {
+        fallbackUrl: new URL(
+          "/settings/integrations",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ).toString(),
+        stateCookie: FITBIT_OAUTH_STATE_COOKIE,
+      });
+      if (duplicate) return duplicate;
       annotate({ meta: { reason: "replay" } });
       return ERR("replay");
     }
@@ -96,105 +117,108 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return ERR("state");
   }
 
-  if (stateRow.expiresAt <= new Date()) {
-    annotate({ meta: { reason: "expired" } });
-    return ERR("expired");
-  }
-  if (stateRow.userId !== user.id) {
-    annotate({ meta: { reason: "cross_user" } });
-    return ERR("cross_user");
-  }
-
-  if (!code) {
-    return ERR("nocode");
-  }
-
-  // The PKCE verifier minted at connect rides on the ledger row. Its absence
-  // means a malformed / legacy handshake — refuse rather than send a code
-  // exchange Fitbit will reject for a missing verifier.
-  if (!stateRow.codeVerifier) {
-    annotate({ meta: { reason: "no_verifier" } });
-    return ERR("no_verifier");
-  }
-
-  try {
-    const creds = await getUserFitbitCredentials(user.id);
-    if (!creds) {
-      return ERR("nocreds");
+  const consumed = stateRow;
+  return settleOAuthCallback("fitbit", state, async () => {
+    if (consumed.expiresAt <= new Date()) {
+      annotate({ meta: { reason: "expired" } });
+      return ERR("expired");
+    }
+    if (consumed.userId !== user.id) {
+      annotate({ meta: { reason: "cross_user" } });
+      return ERR("cross_user");
     }
 
-    const tokens = await exchangeCode(code, stateRow.codeVerifier, creds);
-
-    // The initial code exchange MUST return a refresh token. If Fitbit ever
-    // omits it, refuse to persist — a stored empty refresh token silently bricks
-    // every future token refresh (the refresh POST then 400s and the connection
-    // dies the moment the access token expires). Error out cleanly so the user
-    // re-consents rather than landing a dead connection.
-    if (!tokens.refresh_token) {
-      getEvent()?.addWarning(
-        `fitbit callback: token response carried no refresh_token for user ${user.id}`,
-      );
-      annotate({ meta: { reason: "no_refresh_token" } });
-      return ERR("no_refresh_token");
+    if (!code) {
+      return ERR("nocode");
     }
 
-    const profile = await fetchProfile(tokens.access_token);
-    const fitbitUserId = resolveFitbitUserId(profile);
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    // The PKCE verifier minted at connect rides on the ledger row. Its absence
+    // means a malformed / legacy handshake — refuse rather than send a code
+    // exchange Fitbit will reject for a missing verifier.
+    if (!consumed.codeVerifier) {
+      annotate({ meta: { reason: "no_verifier" } });
+      return ERR("no_verifier");
+    }
 
-    await prisma.fitbitConnection.upsert({
-      where: { userId: user.id },
-      update: {
-        fitbitUserId,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope: tokens.scope ?? FITBIT_OAUTH_SCOPE,
-        backfillCompletedAt: null,
-      },
-      create: {
-        userId: user.id,
-        fitbitUserId,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope: tokens.scope ?? FITBIT_OAUTH_SCOPE,
-      },
-    });
+    try {
+      const creds = await getUserFitbitCredentials(user.id);
+      if (!creds) {
+        return ERR("nocreds");
+      }
 
-    await auditLog("fitbit.connect", {
-      userId: user.id,
-      details: { fitbitUserId },
-    });
+      const tokens = await exchangeCode(code, consumed.codeVerifier, creds);
 
-    // Re-completing OAuth clears any prior reauth-required state.
-    await markReconnected(user.id, "fitbit");
-
-    // Enqueue the self-converging history backfill. Best-effort: the boot-time
-    // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
-    // missing boss instance here doesn't strand the connection.
-    const boss = getGlobalBoss();
-    if (boss) {
-      await boss
-        .send(FITBIT_BACKFILL_QUEUE, {
-          userId: user.id,
-          enqueuedAt: new Date().toISOString(),
-        })
-        .catch((err) =>
-          getEvent()?.addWarning(`fitbit-backfill enqueue failed: ${err}`),
+      // The initial code exchange MUST return a refresh token. If Fitbit ever
+      // omits it, refuse to persist — a stored empty refresh token silently bricks
+      // every future token refresh (the refresh POST then 400s and the connection
+      // dies the moment the access token expires). Error out cleanly so the user
+      // re-consents rather than landing a dead connection.
+      if (!tokens.refresh_token) {
+        getEvent()?.addWarning(
+          `fitbit callback: token response carried no refresh_token for user ${user.id}`,
         );
-    }
+        annotate({ meta: { reason: "no_refresh_token" } });
+        return ERR("no_refresh_token");
+      }
 
-    const response = NextResponse.redirect(
-      new URL(
-        "/settings/integrations?fitbit=connected",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-    response.cookies.delete(FITBIT_OAUTH_STATE_COOKIE);
-    return response;
-  } catch (err) {
-    getEvent()?.setError(err);
-    return ERR("token");
-  }
+      const profile = await fetchProfile(tokens.access_token);
+      const fitbitUserId = resolveFitbitUserId(profile);
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+
+      await prisma.fitbitConnection.upsert({
+        where: { userId: user.id },
+        update: {
+          fitbitUserId,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope: tokens.scope ?? FITBIT_OAUTH_SCOPE,
+          backfillCompletedAt: null,
+        },
+        create: {
+          userId: user.id,
+          fitbitUserId,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope: tokens.scope ?? FITBIT_OAUTH_SCOPE,
+        },
+      });
+
+      await auditLog("fitbit.connect", {
+        userId: user.id,
+        details: { fitbitUserId },
+      });
+
+      // Re-completing OAuth clears any prior reauth-required state.
+      await markReconnected(user.id, "fitbit");
+
+      // Enqueue the self-converging history backfill. Best-effort: the boot-time
+      // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
+      // missing boss instance here doesn't strand the connection.
+      const boss = getGlobalBoss();
+      if (boss) {
+        await boss
+          .send(FITBIT_BACKFILL_QUEUE, {
+            userId: user.id,
+            enqueuedAt: new Date().toISOString(),
+          })
+          .catch((err) =>
+            getEvent()?.addWarning(`fitbit-backfill enqueue failed: ${err}`),
+          );
+      }
+
+      const response = NextResponse.redirect(
+        new URL(
+          "/settings/integrations?fitbit=connected",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+      response.cookies.delete(FITBIT_OAUTH_STATE_COOKIE);
+      return response;
+    } catch (err) {
+      getEvent()?.setError(err);
+      return ERR("token");
+    }
+  });
 });

@@ -14,7 +14,11 @@ vi.mock("@/lib/db", () => ({
     session: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn(async () => 0) },
     passkey: { count: vi.fn(async () => 0) },
-    user: { findFirst: vi.fn() },
+    user: {
+      findFirst: vi.fn(),
+      // The stored row: the password hash is not on the session user.
+      findUnique: vi.fn(async () => ({ passwordHash: "argon" })),
+    },
     accountGrant: { create: vi.fn(), findFirst: vi.fn() },
   },
 }));
@@ -50,7 +54,6 @@ const OWNER = {
   role: "USER",
   username: "owner",
   totpConfirmedAt: null,
-  passwordHash: "argon",
 };
 
 function invite(): NextRequest {

@@ -15,6 +15,11 @@ import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "@/lib/jobs/google-health-backfill"
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
+import {
+  consumeLedgerState,
+  duplicateOAuthCallback,
+  settleOAuthCallback,
+} from "@/lib/oauth/callback-claim";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 
@@ -36,6 +41,12 @@ import { timingSafeEqual } from "node:crypto";
  * Health profile for the external `googleUserId`, persist the encrypted
  * `GoogleHealthConnection`, clear any prior reauth state (`needsReauth:false` +
  * the status ledger), and enqueue the self-converging history backfill.
+ *
+ * A repeat of a consumed nonce is told apart from a replay by the callback
+ * claim taken in the same transaction (`src/lib/oauth/callback-claim.ts`): a
+ * browser that delivers the callback twice gets one exchange, and the repeat
+ * follows the first request to the same page. Only a nonce with no claim left
+ * lands on `replay`.
  */
 const ERR = (reason: string) =>
   NextResponse.redirect(
@@ -81,14 +92,24 @@ export const GET = apiHandler(async (request: NextRequest) => {
     codeVerifier: string | null;
   } | null = null;
   try {
-    stateRow = await prisma.googleHealthOAuthState.delete({
-      where: { nonce: state },
-    });
+    stateRow = await consumeLedgerState("google-health", state, (tx) =>
+      tx.googleHealthOAuthState.delete({ where: { nonce: state } }),
+    );
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2025"
     ) {
+      // A duplicate of a callback that is consuming or has consumed this
+      // row: follow that request's result instead of showing an error.
+      const duplicate = await duplicateOAuthCallback("google-health", state, {
+        fallbackUrl: new URL(
+          "/settings/integrations",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ).toString(),
+        stateCookie: GOOGLE_HEALTH_OAUTH_STATE_COOKIE,
+      });
+      if (duplicate) return duplicate;
       annotate({ meta: { reason: "replay" } });
       return ERR("replay");
     }
@@ -98,114 +119,117 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return ERR("state");
   }
 
-  if (stateRow.expiresAt <= new Date()) {
-    annotate({ meta: { reason: "expired" } });
-    return ERR("expired");
-  }
-  if (stateRow.userId !== user.id) {
-    annotate({ meta: { reason: "cross_user" } });
-    return ERR("cross_user");
-  }
-  if (!stateRow.codeVerifier) {
-    annotate({ meta: { reason: "no_verifier" } });
-    return ERR("no_verifier");
-  }
-
-  if (!code) {
-    return ERR("nocode");
-  }
-
-  try {
-    const creds = await getUserGoogleHealthCredentials(user.id);
-    if (!creds) {
-      return ERR("nocreds");
+  const consumed = stateRow;
+  return settleOAuthCallback("google-health", state, async () => {
+    if (consumed.expiresAt <= new Date()) {
+      annotate({ meta: { reason: "expired" } });
+      return ERR("expired");
+    }
+    if (consumed.userId !== user.id) {
+      annotate({ meta: { reason: "cross_user" } });
+      return ERR("cross_user");
+    }
+    if (!consumed.codeVerifier) {
+      annotate({ meta: { reason: "no_verifier" } });
+      return ERR("no_verifier");
     }
 
-    const tokens = await exchangeCode(code, stateRow.codeVerifier, creds);
-
-    // The initial code exchange MUST return a refresh token (the connect route
-    // forces `prompt=consent` + `access_type=offline`). If Google ever omits
-    // it, refuse to persist — a stored empty refresh token silently bricks
-    // every future token refresh (the refresh POST then 400s and the
-    // connection dies the moment the access token expires). Error out cleanly
-    // so the user re-consents rather than landing a dead connection.
-    if (!tokens.refresh_token) {
-      getEvent()?.addWarning(
-        `google-health callback: token response carried no refresh_token for user ${user.id}`,
-      );
-      annotate({ meta: { reason: "no_refresh_token" } });
-      return ERR("no_refresh_token");
+    if (!code) {
+      return ERR("nocode");
     }
 
-    const profile = await fetchProfile(tokens.access_token);
-    const googleUserId = resolveGoogleHealthUserId(profile);
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-    const scope = tokens.scope ?? getGoogleHealthScopeString();
+    try {
+      const creds = await getUserGoogleHealthCredentials(user.id);
+      if (!creds) {
+        return ERR("nocreds");
+      }
 
-    await prisma.googleHealthConnection.upsert({
-      where: { userId: user.id },
-      update: {
-        googleUserId,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope,
-        // Fresh consent clears the soft-disconnect flag so the card drops the
-        // reconnect CTA and the sync path stops short-circuiting.
-        needsReauth: false,
-        backfillCompletedAt: null,
-        // A new grant walks history from the start: what an earlier
-        // backfill finished was read under the old one.
-        backfillProgress: Prisma.DbNull,
-      },
-      create: {
-        userId: user.id,
-        googleUserId,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope,
-        needsReauth: false,
-      },
-    });
+      const tokens = await exchangeCode(code, consumed.codeVerifier, creds);
 
-    await auditLog("google_health.connect", {
-      userId: user.id,
-      details: { googleUserId },
-    });
-
-    // Re-completing OAuth clears any prior reauth-required state on the status
-    // ledger too (the `needsReauth` column above is the connection-local flag;
-    // this resets the integration-status streak).
-    await markReconnected(user.id, "google-health");
-
-    // Enqueue the self-converging history backfill. Best-effort: the boot-time
-    // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
-    // missing boss instance here doesn't strand the connection.
-    const boss = getGlobalBoss();
-    if (boss) {
-      await boss
-        .send(GOOGLE_HEALTH_BACKFILL_QUEUE, {
-          userId: user.id,
-          enqueuedAt: new Date().toISOString(),
-        })
-        .catch((err) =>
-          getEvent()?.addWarning(
-            `google-health-backfill enqueue failed: ${err}`,
-          ),
+      // The initial code exchange MUST return a refresh token (the connect route
+      // forces `prompt=consent` + `access_type=offline`). If Google ever omits
+      // it, refuse to persist — a stored empty refresh token silently bricks
+      // every future token refresh (the refresh POST then 400s and the
+      // connection dies the moment the access token expires). Error out cleanly
+      // so the user re-consents rather than landing a dead connection.
+      if (!tokens.refresh_token) {
+        getEvent()?.addWarning(
+          `google-health callback: token response carried no refresh_token for user ${user.id}`,
         );
-    }
+        annotate({ meta: { reason: "no_refresh_token" } });
+        return ERR("no_refresh_token");
+      }
 
-    const response = NextResponse.redirect(
-      new URL(
-        "/settings/integrations?googleHealth=connected",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-    response.cookies.delete(GOOGLE_HEALTH_OAUTH_STATE_COOKIE);
-    return response;
-  } catch (err) {
-    getEvent()?.setError(err);
-    return ERR("token");
-  }
+      const profile = await fetchProfile(tokens.access_token);
+      const googleUserId = resolveGoogleHealthUserId(profile);
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+      const scope = tokens.scope ?? getGoogleHealthScopeString();
+
+      await prisma.googleHealthConnection.upsert({
+        where: { userId: user.id },
+        update: {
+          googleUserId,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope,
+          // Fresh consent clears the soft-disconnect flag so the card drops the
+          // reconnect CTA and the sync path stops short-circuiting.
+          needsReauth: false,
+          backfillCompletedAt: null,
+          // A new grant walks history from the start: what an earlier
+          // backfill finished was read under the old one.
+          backfillProgress: Prisma.DbNull,
+        },
+        create: {
+          userId: user.id,
+          googleUserId,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope,
+          needsReauth: false,
+        },
+      });
+
+      await auditLog("google_health.connect", {
+        userId: user.id,
+        details: { googleUserId },
+      });
+
+      // Re-completing OAuth clears any prior reauth-required state on the status
+      // ledger too (the `needsReauth` column above is the connection-local flag;
+      // this resets the integration-status streak).
+      await markReconnected(user.id, "google-health");
+
+      // Enqueue the self-converging history backfill. Best-effort: the boot-time
+      // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
+      // missing boss instance here doesn't strand the connection.
+      const boss = getGlobalBoss();
+      if (boss) {
+        await boss
+          .send(GOOGLE_HEALTH_BACKFILL_QUEUE, {
+            userId: user.id,
+            enqueuedAt: new Date().toISOString(),
+          })
+          .catch((err) =>
+            getEvent()?.addWarning(
+              `google-health-backfill enqueue failed: ${err}`,
+            ),
+          );
+      }
+
+      const response = NextResponse.redirect(
+        new URL(
+          "/settings/integrations?googleHealth=connected",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+      response.cookies.delete(GOOGLE_HEALTH_OAUTH_STATE_COOKIE);
+      return response;
+    } catch (err) {
+      getEvent()?.setError(err);
+      return ERR("token");
+    }
+  });
 });

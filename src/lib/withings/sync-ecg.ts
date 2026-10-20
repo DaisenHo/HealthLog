@@ -56,7 +56,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { persistEcgRecording } from "@/lib/ecg/persist-recording";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 
@@ -519,9 +519,7 @@ export async function syncUserEcg(
   // then drop the per-metric assessment caches the new events dirty.
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),

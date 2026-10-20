@@ -22,6 +22,30 @@ const {
   bossMock: vi.fn(),
 }));
 
+// Single-use claiming is covered against Postgres in
+// tests/integration/oauth-callback-single-use.test.ts; here every callback
+// is the first and only one.
+const { claimSpy } = vi.hoisted(() => ({ claimSpy: vi.fn() }));
+vi.mock("@/lib/oauth/callback-claim", () => ({
+  runOAuthCallbackOnce: (
+    _p: string,
+    _s: string,
+    _o: unknown,
+    run: () => Promise<unknown>,
+  ) => {
+    claimSpy();
+    return run();
+  },
+  settleOAuthCallback: (_p: string, _s: string, run: () => Promise<unknown>) =>
+    run(),
+  consumeLedgerState: async (
+    _p: string,
+    _s: string,
+    consume: (tx: unknown) => Promise<unknown>,
+  ) => consume((await import("@/lib/db")).prisma),
+  duplicateOAuthCallback: async () => null,
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -58,9 +82,9 @@ import { GET } from "../route";
 
 process.env.NEXT_PUBLIC_APP_URL = "https://app.example";
 
-function makeReq(): Parameters<typeof GET>[0] {
+function makeReq(query = "code=abc&state=s"): Parameters<typeof GET>[0] {
   return {
-    url: "https://app.example/api/polar/callback?code=abc&state=s",
+    url: `https://app.example/api/polar/callback?${query}`,
     cookies: { get: () => ({ value: "s" }) },
   } as unknown as Parameters<typeof GET>[0];
 }
@@ -141,5 +165,16 @@ describe("GET /api/polar/callback — connect-time first sync", () => {
     const res = await run(makeReq());
 
     expect(res.headers.get("location")).toContain("polar=connected");
+  });
+});
+
+describe("GET /api/polar/callback — claim only what can be exchanged", () => {
+  it("does not claim the state for a callback without a code or for another user", async () => {
+    const denied = await run(makeReq("state=s&error=access_denied"));
+    expect(denied.headers.get("location")).toContain("reason=nocode");
+    getSessionMock.mockResolvedValue({ user: { id: "other" } });
+    await run(makeReq());
+    expect(claimSpy).not.toHaveBeenCalled();
+    expect(exchangeCodeMock).not.toHaveBeenCalled();
   });
 });

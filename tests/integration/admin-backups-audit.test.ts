@@ -225,6 +225,16 @@ describe("GET /api/admin/backups — schedule health", () => {
       data: { userId: admin.id, type: "MANUAL_UPLOAD_1", data: blob },
     });
 
+    // Files that drive the queue create the `pgboss` schema in the shared
+    // database, and one of them leaves a finished backup run behind. Clear
+    // that queue's history so this case reads the same in every file order.
+    const [queueTable] = await prisma.$queryRaw<Array<{ t: string | null }>>`
+      SELECT to_regclass('pgboss.job')::text AS t
+    `;
+    if (queueTable?.t) {
+      await prisma.$executeRaw`DELETE FROM pgboss.job WHERE name = 'data-backup'`;
+    }
+
     // The listing handler declares no parameters; `apiHandler` reads the
     // request defensively out of its arguments, so calling it bare is what a
     // zero-argument handler supports.
@@ -255,9 +265,9 @@ describe("GET /api/admin/backups — schedule health", () => {
 
     expect(body.data.schedule.lastSuccessAgeDays).toBe(46);
     expect(body.data.schedule.stale).toBe(true);
-    // No `pgboss` schema in the test database — the run reader fails soft to
-    // null rather than taking the whole page down, which is the arm a web-only
-    // deployment lives on permanently.
+    // No remembered run, or no `pgboss` schema at all — the run reader fails
+    // soft to null rather than taking the whole page down, which is the arm a
+    // web-only deployment lives on permanently.
     expect(body.data.schedule.lastRun).toBeNull();
     expect(body.data.schedule.lastRunFailed).toBe(false);
   });

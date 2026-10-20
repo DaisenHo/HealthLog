@@ -29,6 +29,7 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import {
   ROLLUP_FULL_BACKFILL_QUEUE,
   enqueueBootTimeRollupBackfill,
+  recomputeBucketsForKeys,
   recomputeBucketsForMeasurement,
   recomputeUserRollups,
   ALL_GRANULARITIES,
@@ -952,5 +953,168 @@ describe("measurement rollups — integration", () => {
     expect(aggregate.summaries.WEIGHT).toBeDefined();
     expect(aggregate.summaries.WEIGHT.count).toBe(expectedWeightCount);
     expect(aggregate.summaries.BLOOD_PRESSURE_SYS).toBeDefined();
+  });
+});
+
+describe("keyed DAY refold", () => {
+  /** The DAY tier as comparable rows, `computedAt` aside. */
+  async function dayTier(userId: string) {
+    const rows = await getPrismaClient().measurementRollup.findMany({
+      where: { userId, granularity: "DAY" },
+      orderBy: [{ type: "asc" }, { bucketStart: "asc" }, { source: "asc" }],
+    });
+    // Floating sums depend on the order the scan feeds them; the last bits
+    // of a double are not what the comparison is about.
+    return rows.map(({ computedAt: _computedAt, ...rest }) =>
+      Object.fromEntries(
+        Object.entries(rest).map(([k, v]) => [
+          k,
+          typeof v === "number" ? Number(v.toPrecision(12)) : v,
+        ]),
+      ),
+    );
+  }
+
+  it("leaves the tier the per-key hook leaves, touching nothing else", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: { username: "keyed-refold", email: "keyed-refold@example.test" },
+    });
+    const at = (iso: string) => new Date(iso);
+    const reading = (
+      type: "PULSE" | "WEIGHT",
+      source: "MANUAL" | "WITHINGS",
+      iso: string,
+      value: number,
+    ) => ({
+      userId: user.id,
+      type,
+      source,
+      value,
+      unit: type === "PULSE" ? "bpm" : "kg",
+      measuredAt: at(iso),
+    });
+    await prisma.measurement.createMany({
+      data: [
+        // Two sources on one day, pulse over several hours (its day is a
+        // mean of hourly means), a weight two years earlier, and a day whose
+        // only reading is about to be deleted.
+        reading("PULSE", "WITHINGS", "2026-05-10T07:10:00.000Z", 58),
+        reading("PULSE", "WITHINGS", "2026-05-10T07:40:00.000Z", 66),
+        reading("PULSE", "MANUAL", "2026-05-10T19:00:00.000Z", 71),
+        reading("WEIGHT", "WITHINGS", "2024-03-02T06:00:00.000Z", 82.4),
+        reading("WEIGHT", "WITHINGS", "2026-05-11T06:00:00.000Z", 81.0),
+        reading("WEIGHT", "MANUAL", "2025-01-15T06:00:00.000Z", 83.3),
+      ],
+    });
+    const keys = [
+      { type: "PULSE" as const, measuredAt: at("2026-05-10T07:10:00.000Z") },
+      { type: "WEIGHT" as const, measuredAt: at("2024-03-02T06:00:00.000Z") },
+      { type: "WEIGHT" as const, measuredAt: at("2026-05-11T06:00:00.000Z") },
+    ];
+    // An untouched bucket, folded once, must keep its row as it is.
+    await recomputeBucketsForMeasurement(
+      user.id,
+      "WEIGHT",
+      at("2025-01-15T06:00:00.000Z"),
+    );
+    for (const k of keys) {
+      await recomputeBucketsForMeasurement(user.id, k.type, k.measuredAt);
+    }
+    await prisma.measurement.updateMany({
+      where: { userId: user.id, measuredAt: at("2026-05-11T06:00:00.000Z") },
+      data: { deletedAt: new Date() },
+    });
+    await prisma.measurement.create({
+      data: reading("PULSE", "WITHINGS", "2026-05-10T12:00:00.000Z", 90),
+    });
+    const untouched = await prisma.measurementRollup.findFirstOrThrow({
+      where: {
+        userId: user.id,
+        type: "WEIGHT",
+        granularity: "DAY",
+        bucketStart: at("2025-01-15T00:00:00.000Z"),
+      },
+    });
+
+    // The per-key hook's answer, then the keyed refold's, from the same rows.
+    for (const k of keys) {
+      await recomputeBucketsForMeasurement(user.id, k.type, k.measuredAt);
+    }
+    const perKey = await dayTier(user.id);
+    await prisma.measurementRollup.deleteMany({
+      where: { userId: user.id, bucketStart: { not: untouched.bucketStart } },
+    });
+
+    const sends: Array<{ singletonKey: string }> = [];
+    vi.mocked(getGlobalBoss).mockReturnValue({
+      send: vi.fn(async (_queue: string, _payload: unknown, opts: never) => {
+        sends.push(opts);
+        return "job";
+      }),
+    } as never);
+    await recomputeBucketsForKeys(user.id, keys);
+
+    expect(await dayTier(user.id)).toEqual(perKey);
+    expect(
+      perKey.some(
+        (r) =>
+          (r.bucketStart as Date).getTime() ===
+          at("2026-05-11T00:00:00Z").getTime(),
+      ),
+    ).toBe(false);
+    const after = await prisma.measurementRollup.findFirstOrThrow({
+      where: {
+        userId: user.id,
+        type: "WEIGHT",
+        granularity: "DAY",
+        bucketStart: untouched.bucketStart,
+      },
+    });
+    expect(after.computedAt).toEqual(untouched.computedAt);
+
+    // One coarse job per bucket here: no two touched buckets of one type are
+    // adjacent, so no run merges.
+    expect(sends.map((o) => o.singletonKey).sort()).toEqual(
+      [
+        `${user.id}|PULSE|WEEK|2026-05-04T00:00:00.000Z`,
+        `${user.id}|PULSE|MONTH|2026-05-01T00:00:00.000Z`,
+        `${user.id}|PULSE|YEAR|2026-01-01T00:00:00.000Z`,
+        `${user.id}|WEIGHT|WEEK|2024-02-26T00:00:00.000Z`,
+        `${user.id}|WEIGHT|WEEK|2026-05-11T00:00:00.000Z`,
+        `${user.id}|WEIGHT|MONTH|2024-03-01T00:00:00.000Z`,
+        `${user.id}|WEIGHT|MONTH|2026-05-01T00:00:00.000Z`,
+        `${user.id}|WEIGHT|YEAR|2024-01-01T00:00:00.000Z`,
+        `${user.id}|WEIGHT|YEAR|2026-01-01T00:00:00.000Z`,
+      ].sort(),
+    );
+  });
+
+  it("merges adjacent buckets into one ranged job", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: { username: "keyed-runs", email: "keyed-runs@example.test" },
+    });
+    const sends: Array<{ singletonKey: string }> = [];
+    vi.mocked(getGlobalBoss).mockReturnValue({
+      send: vi.fn(async (_queue: string, _payload: unknown, opts: never) => {
+        sends.push(opts);
+        return "job";
+      }),
+    } as never);
+    // Three consecutive weeks of a daily reading.
+    const keys = Array.from({ length: 21 }, (_, i) => ({
+      type: "WEIGHT" as const,
+      measuredAt: new Date(Date.UTC(2026, 4, 4 + i, 6)),
+    }));
+
+    await recomputeBucketsForKeys(user.id, keys);
+
+    const weekKeys = sends
+      .map((o) => o.singletonKey)
+      .filter((k) => k.includes("|WEEK|"));
+    expect(weekKeys).toEqual([
+      `${user.id}|WEIGHT|WEEK|2026-05-04T00:00:00.000Z|2026-05-25T00:00:00.000Z`,
+    ]);
   });
 });

@@ -12,6 +12,8 @@ import {
   stateMatchesCookie,
   verifySignedState,
 } from "@/lib/oauth/signed-state";
+import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
+import { ouraCollectionsMissingFromGrant } from "@/lib/oura/scope";
 import { markReconnected } from "@/lib/integrations/status";
 import { OURA_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -26,9 +28,22 @@ import { NextRequest, NextResponse } from "next/server";
  * binding. The `userId` is read from inside the verified token, cross-checked
  * against the web session when present.
  *
+ * The callback is single-use: the verified state is claimed before anything
+ * else (`src/lib/oauth/callback-claim.ts`). A browser that delivers it twice
+ * gets one exchange; the duplicate is sent where the first request went and
+ * never touches the code, because Oura revokes the first exchange's token
+ * when it sees the code reused.
+ *
  * On success: exchange the code, persist the encrypted access + refresh token
- * on `User`, clear any prior reauth state, and redirect back to Settings.
+ * on `User`, note the collections the granted scopes leave out, clear any
+ * prior reauth state, and redirect back to Settings.
  */
+const SETTINGS_URL = () =>
+  new URL(
+    "/settings/integrations",
+    process.env.NEXT_PUBLIC_APP_URL!,
+  ).toString();
+
 const ERR = (reason: string) =>
   NextResponse.redirect(
     new URL(
@@ -40,9 +55,7 @@ const ERR = (reason: string) =>
 export const GET = apiHandler(async (request: NextRequest) => {
   annotate({ action: { name: "oura.callback" } });
 
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
+  const state = new URL(request.url).searchParams.get("state");
   const cookieState = request.cookies.get(oauthStateCookieName("oura"))?.value;
 
   if (!stateMatchesCookie(state, cookieState)) {
@@ -56,6 +69,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return ERR("state");
   }
   const userId = verified.userId;
+
+  // Everything that can refuse the callback without the code runs before
+  // the claim, so a refused callback (a denied consent arrives without a
+  // code) never spends the state: the same authorize URL still works. The
+  // claim stays strictly before the exchange.
+  const params = new URL(request.url).searchParams;
+  const code = params.get("code");
 
   const evt = getEvent();
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
@@ -71,26 +91,49 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // RFC 9207: an authorization server that names itself must be Oura's. The
   // issuer also tells which token endpoint the code belongs to. Older apps
   // send none, which is fine.
-  const iss = searchParams.get("iss");
+  const iss = params.get("iss");
   if (!isAcceptedOuraIssuer(iss)) {
     annotate({ meta: { reason: "issuer" } });
     return ERR("issuer");
   }
 
+  return runOAuthCallbackOnce(
+    "oura",
+    state,
+    {
+      fallbackUrl: SETTINGS_URL(),
+      stateCookie: oauthStateCookieName("oura"),
+    },
+    () => completeCallback(userId, code, iss),
+  );
+});
+
+async function completeCallback(
+  userId: string,
+  code: string,
+  iss: string | null,
+): Promise<NextResponse> {
   try {
     const creds = await getOuraClientCredentials(userId);
     if (!creds) return ERR("nocreds");
 
     const tokens = await exchangeCode(code, creds, iss);
 
+    // The token response names the granted scopes when Oura sends them; a
+    // permission the person unticked on the consent screen is known from it
+    // at once. Without them, the first sync finds out per collection.
+    const missing = ouraCollectionsMissingFromGrant(tokens.scope);
+    if (missing && missing.length > 0) {
+      annotate({ meta: { oura_scope_denied: missing } });
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
         ouraAccessTokenEncrypted: encrypt(tokens.access_token),
         ouraRefreshTokenEncrypted: encrypt(tokens.refresh_token),
-        // A new grant carries the scopes asked for now; whatever the old one
-        // lacked is found out again by the first sync.
-        ouraScopeDenied: Prisma.DbNull,
+        ouraScopeDenied:
+          missing && missing.length > 0 ? missing : Prisma.DbNull,
       },
     });
 
@@ -124,4 +167,4 @@ export const GET = apiHandler(async (request: NextRequest) => {
     getEvent()?.setError(err);
     return ERR("token");
   }
-});
+}

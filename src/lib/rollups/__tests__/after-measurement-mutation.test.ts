@@ -4,7 +4,7 @@
  * invalidation).
  *
  * Watched red: with the recompute loop removed from the helper the
- * first test fails naming the missing `recomputeBucketsForMeasurement`
+ * first test fails naming the missing `recomputeBucketsForKeys`
  * call; with the `.catch` isolation removed the failure-isolation test
  * throws. Both verified red against a deliberately broken helper before
  * the real implementation landed.
@@ -27,7 +27,12 @@ vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => {
     await importOriginal<typeof import("@/lib/rollups/measurement-rollups")>();
   return {
     ...actual,
-    recomputeBucketsForMeasurement: mocks.recompute,
+    recomputeBucketsForKeys: async (
+      userId: string,
+      keys: Array<{ type: string; measuredAt: Date }>,
+    ) => {
+      for (const k of keys) await mocks.recompute(userId, k.type, k.measuredAt);
+    },
   };
 });
 

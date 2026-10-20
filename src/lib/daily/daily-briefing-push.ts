@@ -26,7 +26,7 @@
  * on `MEASUREMENT_ANOMALY`, never here. It fires ONLY inside a local morning
  * window, which is the quiet-hours guarantee for this nudge.
  */
-import type { User } from "@/generated/prisma/client";
+import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -82,11 +82,15 @@ export type DailyBriefingDispatchResult =
 
 export interface DailyBriefingDispatchDeps {
   dispatch?: typeof dispatchNotification;
-  loadDigest?: (user: User, now: Date, locale: Locale) => Promise<DailyDigest>;
+  loadDigest?: (
+    user: SessionUser,
+    now: Date,
+    locale: Locale,
+  ) => Promise<DailyDigest>;
 }
 
 function loadDailyBriefingDigest(
-  user: User,
+  user: SessionUser,
   now: Date,
   locale: Locale,
 ): Promise<DailyDigest> {
@@ -181,7 +185,10 @@ export async function maybeDispatchDailyBriefing(
   const loadDigest = deps.loadDigest ?? loadDailyBriefingDigest;
 
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: SESSION_USER_SELECT,
+    });
     if (!user) {
       annotate({ action: { name: "daily.briefing_push.missing_user" } });
       return "missing-user";

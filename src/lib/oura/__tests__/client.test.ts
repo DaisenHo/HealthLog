@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   OURA_OAUTH_LEGACY_TOKEN_URL,
-  OURA_OAUTH_SCOPE,
   OURA_OAUTH_TOKEN_URL,
   RESILIENCE_LEVELS,
   derivePeriodDaysFromCyclePhases,
@@ -78,7 +77,7 @@ describe("getAuthorizationUrl", () => {
   it("builds the Oura authorize URL", () => {
     const url = getAuthorizationUrl("signed", CREDS);
     expect(url).toContain("cloud.ouraring.com/oauth/authorize");
-    expect(url).toContain("scope=daily+personal");
+    expect(url).toContain("scope=daily+spo2+heart_health+stress+personal");
     expect(url).toContain("state=signed");
   });
 });
@@ -704,14 +703,44 @@ describe("mapResilience", () => {
   });
 });
 
-describe("OURA_OAUTH_SCOPE", () => {
-  it("requests daily, personal and the scopes behind SpO2 and heart health", () => {
-    expect(OURA_OAUTH_SCOPE.split(" ")).toEqual([
-      "daily",
-      "personal",
-      "spo2",
-      "heart_health",
+describe("collection refusals", () => {
+  const query = { startDate: "2026-06-01", endDate: "2026-06-10" };
+
+  it("reads a 401 that names a scope as a missing permission, not a dead token", async () => {
+    installFetchMock([
+      {
+        status: 401,
+        body: { detail: "Token is not authorized access stress scope." },
+      },
     ]);
+    const err = await fetchResilience("tok", query).catch((e) => e);
+    expect(err).toBeInstanceOf(OuraApiError);
+    expect(err.httpStatus).toBe(401);
+    expect(err.missingScope).toBe("stress");
+    expect(err.reason).toBe("scope_missing");
+  });
+
+  it("keeps a dead token's 401 a token refusal", async () => {
+    installFetchMock([
+      {
+        status: 401,
+        body: {
+          detail:
+            "The access token provided is expired, revoked, malformed, or invalid for other reasons.",
+        },
+      },
+    ]);
+    const err = await fetchReadiness("tok", query).catch((e) => e);
+    expect(err.httpStatus).toBe(401);
+    expect(err.missingScope).toBeUndefined();
+    expect(err.classification).toBe("reauth_required");
+  });
+
+  it("classifies a 403 (lapsed membership) as persistent rather than a reconnect", async () => {
+    installFetchMock([{ status: 403, body: { detail: "forbidden" } }]);
+    const err = await fetchReadiness("tok", query).catch((e) => e);
+    expect(err.httpStatus).toBe(403);
+    expect(err.classification).toBe("persistent");
   });
 });
 

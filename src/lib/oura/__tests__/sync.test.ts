@@ -64,9 +64,25 @@ const {
   scopeDeniedMock: vi.fn(),
 }));
 
+// The serialised refresh itself is covered against Postgres in
+// `tests/integration/oura-refresh-serialization.test.ts`; here it stands in as
+// "refresh with the client, then persist", so the sync's own branching is what
+// these cases pin.
 vi.mock("../credentials", () => ({
   getOuraConnection: getConnMock,
-  storeOuraTokens: storeTokensMock,
+  refreshOuraAccessToken: async (
+    userId: string,
+    spentCiphertext: string,
+    creds: unknown,
+  ) => {
+    const rotated = await refreshMock("ref", creds);
+    return storeTokensMock(
+      userId,
+      rotated.access_token,
+      rotated.refresh_token,
+      spentCiphertext,
+    );
+  },
   getOuraClientCredentials: getCredsMock,
   syncOuraScopeDenied: scopeDeniedMock,
 }));
@@ -98,7 +114,12 @@ vi.mock("@/lib/integrations/status", async (importOriginal) => ({
 vi.mock("@/lib/rollups/measurement-rollups", () => ({
   collapseToTypeDayKeys: (rows: Array<{ type: string; measuredAt: Date }>) =>
     rows.map((r) => ({ type: r.type, measuredAt: r.measuredAt })),
-  recomputeBucketsForMeasurement: recomputeMock,
+  recomputeBucketsForKeys: async (
+    userId: string,
+    keys: Array<{ type: string; measuredAt: Date }>,
+  ) => {
+    for (const k of keys) await recomputeMock(userId, k.type, k.measuredAt);
+  },
 }));
 
 vi.mock("@/lib/insights/comprehensive-generate", () => ({
@@ -140,7 +161,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const CONN = {
   accessToken: "acc",
-  refreshToken: "ref",
   refreshTokenCiphertext: "enc(ref)",
 };
 
@@ -222,6 +242,26 @@ function err401() {
     classification: "reauth_required",
     httpStatus: 401,
     reason: "http_401",
+  });
+}
+
+/** The 401 Oura sends when the token is fine but the grant lacks `scope`. */
+function errScope401(scope: string) {
+  return new OuraApiError({
+    verb: "fetchResilience",
+    classification: "reauth_required",
+    httpStatus: 401,
+    reason: "scope_missing",
+    missingScope: scope,
+  });
+}
+
+function err403() {
+  return new OuraApiError({
+    verb: "fetchReadiness",
+    classification: "persistent",
+    httpStatus: 403,
+    reason: "http_403",
   });
 }
 
@@ -1121,5 +1161,129 @@ describe("syncUserOura — a grant without the spo2 / heart_health scopes", () =
 
     expect(refreshMock).toHaveBeenCalledTimes(1);
     expect(scopeDeniedMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncUserOura — Oura names the missing scope", () => {
+  it("records resilience as a permission gap without a refresh, even when nothing else succeeded", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    // Every core collection is merely empty: the token is never proven by a
+    // sibling, only by Oura naming the scope it lacks.
+    fetchReadinessMock.mockRejectedValue(
+      new OuraApiError({
+        verb: "fetchReadiness",
+        classification: "transient",
+        httpStatus: 503,
+        reason: "http_503",
+      }),
+    );
+    fetchSleepMock.mockRejectedValue(
+      new OuraApiError({
+        verb: "fetchSleep",
+        classification: "transient",
+        httpStatus: 503,
+        reason: "http_503",
+      }),
+    );
+    fetchActivityMock.mockRejectedValue(
+      new OuraApiError({
+        verb: "fetchDailyActivity",
+        classification: "transient",
+        httpStatus: 503,
+        reason: "http_503",
+      }),
+    );
+    fetchDailySleepMock.mockRejectedValue(
+      new OuraApiError({
+        verb: "fetchDailySleep",
+        classification: "transient",
+        httpStatus: 503,
+        reason: "http_503",
+      }),
+    );
+    fetchSpo2Mock.mockRejectedValue(errScope401("spo2"));
+    fetchVo2MaxMock.mockRejectedValue(errScope401("heart_health"));
+    fetchCardioAgeMock.mockRejectedValue(errScope401("heart_health"));
+    fetchResilienceMock.mockRejectedValue(errScope401("stress"));
+
+    await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", [
+      "spo2",
+      "vo2max",
+      "cardio_age",
+      "resilience",
+    ]);
+    // The outage stays a failure; the permission gap never joins it.
+    const failure = recordFailureMock.mock.calls[0]![0] as { message: string };
+    expect(failure.message).not.toContain("resilience");
+  });
+
+  it("spends no refresh when the only 401 names a scope", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchReadinessMock.mockResolvedValue([
+      { id: "x", day: "2026-06-10", score: 70 },
+    ]);
+    fetchResilienceMock.mockRejectedValue(errScope401("stress"));
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ imported: 1, failed: false });
+    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", ["resilience"]);
+    expect(recordSuccessMock).toHaveBeenCalledWith("u1", "oura");
+  });
+
+  it("does not retry a named-scope refusal after a refresh another collection needed", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchReadinessMock
+      .mockRejectedValueOnce(err401())
+      .mockResolvedValueOnce([{ id: "x", day: "2026-06-10", score: 70 }]);
+    fetchResilienceMock.mockRejectedValue(errScope401("stress"));
+    refreshMock.mockResolvedValue({
+      access_token: "newAcc",
+      refresh_token: "newRef",
+      expires_in: 86400,
+    });
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(fetchResilienceMock).toHaveBeenCalledTimes(1);
+    expect(result.failed).toBe(false);
+    expect(scopeDeniedMock).toHaveBeenCalledWith("u1", ["resilience"]);
+  });
+
+  it("keeps a named-scope 401 on a core collection a failure", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchReadinessMock.mockRejectedValue(errScope401("daily"));
+    fetchSleepMock.mockRejectedValue(errScope401("daily"));
+    fetchActivityMock.mockRejectedValue(errScope401("daily"));
+    fetchDailySleepMock.mockRejectedValue(errScope401("daily"));
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(result.failed).toBe(true);
+    expect(recordFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({ integration: "oura", kind: "reauth_required" }),
+    );
+  });
+
+  it("does not refresh over a 403 and does not count it toward a reconnect", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchReadinessMock.mockResolvedValue([
+      { id: "x", day: "2026-06-10", score: 70 },
+    ]);
+    fetchSleepMock.mockRejectedValue(err403());
+
+    const result = await syncUserOura("u1");
+
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(result.failed).toBe(true);
+    expect(recordFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({ integration: "oura", kind: "persistent" }),
+    );
   });
 });

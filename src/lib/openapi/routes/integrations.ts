@@ -293,7 +293,7 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .nullable()
       .optional()
       .describe(
-        "v1.43.7 — present only on a type the app writes back to Apple Health (weight, blood pressure, blood glucose while their entry is `bidirectional` or `writeOnly` and enabled): when the newest reading of the type was entered here rather than arriving from Apple Health, or null when none was. Such readings go to the phone and never come back as an arrival, so `stale` already counts them: the type is quiet only when both this and `lastSeenAt` are. Show it as the server sends it; do not recompute `stale`.",
+        "v1.43.7 — present only on a type the app writes back to Apple Health (weight, blood pressure, blood glucose while their entry is `bidirectional` or `writeOnly` and enabled): when the newest reading of the type was entered here rather than arriving from Apple Health, or null when none was. Such readings go to the phone and never come back as an arrival, so `stale` already counts them: the type is quiet only when both are. Since v1.43.9 `lastSeenAt` on such a type is the newer of this and the newest reading from Apple Health, because a reading entered here is in Apple Health too; show both as the server sends them and do not recompute `stale`.",
       ),
   })
   .meta({
@@ -1146,7 +1146,7 @@ const integrationEnvelopeEntry = z
       .optional()
       .meta(
         legacy(
-          "Oura only. Collections the stored grant does not cover: they answered 401 while sibling collections succeeded with the same token. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
+          "Oura only. Collections the stored grant does not cover: Oura refused them for a missing scope (named in its 401, or inferred when sibling collections succeeded with the same token), or the scopes Oura reported at connect leave theirs out. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
         ),
       ),
     hasToken: z.boolean().optional().describe("Nightscout only."),

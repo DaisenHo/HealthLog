@@ -329,9 +329,20 @@ const nextConfig: NextConfig = {
   // their own body after authenticating (`src/lib/http/proxy-bypass-routes.ts`),
   // and every other route's own cap is at or below this. Large exports still
   // want a matching reverse-proxy body limit (docs/self-hosting/reverse-proxy.md).
+  //
+  // `preloadEntriesOnStart` is off. Next turns it on by default and then
+  // requires every route and page module (about 670 here) right after the
+  // server starts. That load runs on the event loop: a stall of several
+  // seconds in the first minute of every container, the first requests
+  // queued behind it, and a heap of about 430 MB before anyone has signed in,
+  // most of it code for routes a given instance rarely or never serves. Off,
+  // each module loads on its route's first request, which costs that one
+  // request a few tens of milliseconds; the same image measured locally
+  // started at 185 MB of heap instead of 428 and without the stall.
   experimental: {
     optimizePackageImports: ["recharts", "lucide-react"],
     proxyClientMaxBodySize: "1mb",
+    preloadEntriesOnStart: false,
   },
 };
 
