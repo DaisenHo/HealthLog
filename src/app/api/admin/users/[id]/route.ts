@@ -60,7 +60,10 @@ export const PUT = apiHandler(
       return returnAllZodIssues(parsed.error, 422);
     }
 
-    const target = await prisma.user.findUnique({ where: { id } });
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
     if (!target) return apiError("User not found", 404);
 
     // Prevent removing the last admin

@@ -406,6 +406,9 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       expect(entries.WEIGHT.lastEnteredHereAt).toBe(
         enteredHereAt.toISOString(),
       );
+      // The reading entered here is in Apple Health too, so it is the type's
+      // newest reading: the row and the verdict read the same instant.
+      expect(entries.WEIGHT.lastSeenAt).toBe(enteredHereAt.toISOString());
       // A read-only type keeps its own verdict and carries no such field.
       expect(entries.PULSE.stale).toBe(true);
       expect(entries.PULSE).not.toHaveProperty("lastEnteredHereAt");

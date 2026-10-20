@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     session: { findUnique: vi.fn(), update: vi.fn() },
+    user: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn() },
     passkey: { count: vi.fn() },
     authChallenge: { findUnique: vi.fn() },
@@ -38,7 +39,10 @@ vi.mock("@/lib/auth/mfa/webauthn", () => ({
   verifyMfaAuthentication: vi.fn(),
   createMfaAuthenticationOptions: vi.fn(),
 }));
-vi.mock("@/lib/auth/mfa/verify-factor", () => ({ verifyMfaFactor: vi.fn() }));
+vi.mock("@/lib/auth/mfa/verify-factor", () => ({
+  verifyMfaFactor: vi.fn(),
+  loadFactorUser: vi.fn(),
+}));
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: (fn: unknown) => fn,
   requireCookieAuth: vi.fn(),
@@ -47,7 +51,7 @@ vi.mock("@/lib/api-handler", () => ({
 import { prisma } from "@/lib/db";
 import { checkRateLimit, refundRateLimit } from "@/lib/rate-limit";
 import { verifyPassword } from "@/lib/auth/password";
-import { verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
+import { loadFactorUser, verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
 import { createRegistrationOptions } from "@/lib/auth/passkey";
 import { requireCookieAuth } from "@/lib/api-handler";
 import {
@@ -79,6 +83,21 @@ const ENROLLED: {
 };
 const PLAIN = { ...ENROLLED, totpSecretEncrypted: null, totpConfirmedAt: null };
 
+/**
+ * The account as the request sees it: its secrets live in the stored row,
+ * which the verifiers read for themselves, and not on the session user.
+ */
+function stored(user: typeof ENROLLED | typeof PLAIN) {
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(user as never);
+  vi.mocked(loadFactorUser).mockResolvedValue(user as never);
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    totpConfirmedAt: user.totpConfirmedAt,
+  };
+}
+
 function req(body?: unknown): Request {
   return new Request("http://localhost/api/auth/me/mfa/totp/setup", {
     method: "POST",
@@ -101,7 +120,7 @@ function session(stamps: {
 
 function gate(user: typeof ENROLLED | typeof PLAIN, request: Request) {
   return checkCookieEnrollmentProof({
-    user: user as never,
+    user: stored(user),
     sessionId: "sess-1",
     request,
     ipAddress: "203.0.113.9",
@@ -198,7 +217,7 @@ describe("POST /api/auth/passkey/register-options", () => {
 
   it("refuses a password on an account with a second factor, before verifying it", async () => {
     vi.mocked(requireCookieAuth).mockResolvedValue({
-      user: ENROLLED,
+      user: stored(ENROLLED),
       session: { id: "sess-1" },
     } as never);
     const res = await PASSKEY_REGISTER_OPTIONS(
@@ -214,7 +233,7 @@ describe("POST /api/auth/passkey/register-options", () => {
 
   it("still takes a password on an account without one", async () => {
     vi.mocked(requireCookieAuth).mockResolvedValue({
-      user: PLAIN,
+      user: stored(PLAIN),
       session: { id: "sess-1" },
     } as never);
     vi.mocked(verifyPassword).mockResolvedValue(true);
@@ -236,7 +255,7 @@ describe("changing the email address", () => {
     opts: { cookie?: boolean; password?: string | null } = {},
   ) {
     return authorizeSensitiveChange({
-      user: user as never,
+      user: stored(user),
       cookieSessionId: opts.cookie === false ? null : "sess-1",
       currentPassword: opts.password ?? null,
       ipAddress: "203.0.113.9",

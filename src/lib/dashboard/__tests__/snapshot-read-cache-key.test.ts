@@ -14,12 +14,14 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { User } from "@/generated/prisma/client";
+import type { SessionUser } from "@/lib/auth/session-user";
 
 const buildDashboardSnapshot = vi.fn(async () => ({ tiles: {} }));
 const resolveServerLocale = vi.fn(async () => "de");
 
-vi.mock("@/lib/db", () => ({ prisma: {} }));
+vi.mock("@/lib/db", () => ({
+  prisma: { user: { findUnique: async () => null } },
+}));
 vi.mock("@/lib/dashboard/snapshot", () => ({
   buildDashboardSnapshot: (...args: unknown[]) =>
     buildDashboardSnapshot(...(args as [])),
@@ -46,7 +48,7 @@ const {
   invalidateUserMedications,
 } = await import("@/lib/cache/invalidate");
 
-const USER = { id: "user-key-guard", locale: "de" } as unknown as User;
+const USER = { id: "user-key-guard", locale: "de" } as unknown as SessionUser;
 
 beforeEach(() => {
   __resetAllCachesForTests();

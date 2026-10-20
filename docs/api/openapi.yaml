@@ -77130,7 +77130,9 @@ components:
             glucose while their entry is `bidirectional` or `writeOnly` and enabled): when the newest reading of the
             type was entered here rather than arriving from Apple Health, or null when none was. Such readings go to the
             phone and never come back as an arrival, so `stale` already counts them: the type is quiet only when both
-            this and `lastSeenAt` are. Show it as the server sends it; do not recompute `stale`."
+            are. Since v1.43.9 `lastSeenAt` on such a type is the newer of this and the newest reading from Apple
+            Health, because a reading entered here is in Apple Health too; show both as the server sends them and do not
+            recompute `stale`."
           anyOf:
             - type: string
               format: date-time

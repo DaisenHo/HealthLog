@@ -2253,31 +2253,31 @@ enum RollupGranularity {
 }
 
 model MeasurementRollup {
-  userId      String            @map("user_id")
-  type        MeasurementType
-  granularity RollupGranularity
-  bucketStart DateTime          @map("bucket_start") @db.Timestamptz(3)
+  userId          String            @map("user_id")
+  type            MeasurementType
+  granularity     RollupGranularity
+  bucketStart     DateTime          @map("bucket_start") @db.Timestamptz(3)
   /// v1.11.1 — source-aware grain. Rollup rows are minted per source so the
   /// read path can collapse overlapping sources (e.g. WHOOP + Apple Watch
   /// resting heart rate) to the ladder-canonical reading, while cumulative
   /// metrics (steps, energy) sum per source. Always non-null; migration 0115
   /// purged the legacy source-blind aggregates and the boot backfill re-mints
   /// per-source rows.
-  source      MeasurementSource
-  count       Int
-  mean        Float
-  minValue    Float             @map("min_value")
-  maxValue    Float             @map("max_value")
-  sd          Float?
-  slope       Float?
-  r2          Float?
+  source          MeasurementSource
+  count           Int
+  mean            Float
+  minValue        Float             @map("min_value")
+  maxValue        Float             @map("max_value")
+  sd              Float?
+  slope           Float?
+  r2              Float?
   /// v1.4.39 W-SUM — cumulative-metric sum for the bucket. Populated
   /// alongside `mean / count` for every type; cumulative read paths
   /// (steps, flights, distance, daylight, active-energy) consume this
   /// directly instead of re-deriving from raw measurements. Nullable
   /// to keep the migration additive — the boot backfill fills NULLs
   /// for existing rows; new rows always carry the sum.
-  sumValue    Float?            @map("sum_value")
+  sumValue        Float?            @map("sum_value")
   /// v1.20.0 F6 — per-bucket OLS regression accumulators over the same
   /// canonical-source raw rows the live REGR_* query reads. With
   /// `n = count` and `Σy = mean·count` these close the additive set so a
@@ -2291,11 +2291,21 @@ model MeasurementRollup {
   /// parity-matches the cross-bucket compose. Nullable to keep migration 0190
   /// additive — the boot backfill fills NULLs for pre-migration rows; new
   /// rows always carry them (they ride the same aggregate as mean / sum).
-  sumX        Float?            @map("sum_x")
-  sumXy       Float?            @map("sum_xy")
-  sumXx       Float?            @map("sum_xx")
-  sumYy       Float?            @map("sum_yy")
-  computedAt  DateTime          @default(now()) @map("computed_at") @db.Timestamptz(3)
+  sumX            Float?            @map("sum_x")
+  sumXy           Float?            @map("sum_xy")
+  sumXx           Float?            @map("sum_xx")
+  sumYy           Float?            @map("sum_yy")
+  /// The lowest and highest reading `value` of the bucket. `minValue` /
+  /// `maxValue` widen to a row's own range (`Measurement.valueMin` /
+  /// `valueMax`, the intra-hour range an hourly heart-rate statistic
+  /// carries); these do not, so a reader whose figure is over the readings
+  /// themselves (the full-history extremes in `feature-blocks.ts`) can fold
+  /// the DAY tier instead of the raw rows. Nullable to keep migration 0417
+  /// additive: the boot re-fold fills existing rows, new rows always carry
+  /// them, and a reader treats a type with a NULL in its range as uncovered.
+  readingMinValue Float?            @map("reading_min_value")
+  readingMaxValue Float?            @map("reading_max_value")
+  computedAt      DateTime          @default(now()) @map("computed_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -5405,18 +5415,26 @@ model AuditLog {
   /// lives.
   actorUserId String? @map("actor_user_id")
 
-  action    String // e.g. "auth.login", "measurement.create", "export.csv"
-  details   String? // JSON string, no sensitive data
-  ipAddress String?  @map("ip_address")
-  location  String? // e.g. "Berlin, DE" — resolved from IP at log time
+  action         String // e.g. "auth.login", "measurement.create", "export.csv"
+  details        String? // JSON string, no sensitive data
+  ipAddress      String?   @map("ip_address")
+  location       String? // e.g. "Berlin, DE" — resolved from IP at log time
   // v1.4.27 B3 — resolved at audit-creation time from the bundled
   // GeoLite2-ASN MMDB. `asn` is the autonomous-system number,
   // `carrier` is the organisation string (e.g. "Deutsche Telekom AG").
   // Both nullable so older rows, private-IP rows, and offline-miss
   // rows stay valid.
-  asn       Int? // autonomous-system number
-  carrier   String? // autonomous-system organisation
-  createdAt DateTime @default(now()) @map("created_at")
+  asn            Int? // autonomous-system number
+  carrier        String? // autonomous-system organisation
+  /// When the geo backfill (`src/lib/jobs/geo-backfill.ts`) last tried this
+  /// row. A row it could not complete waits `GEO_BACKFILL_RETRY_DAYS` before
+  /// the next try, so an address no database will ever place (a private
+  /// range behind a proxy) is not resolved again on every hourly pass. NULL:
+  /// never tried. The backfill reads its candidates through the partial index
+  /// `audit_logs_geo_backfill_idx` (migration 0418, raw SQL only: Prisma
+  /// cannot express its predicate).
+  geoAttemptedAt DateTime? @map("geo_attempted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 

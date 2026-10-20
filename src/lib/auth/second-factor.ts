@@ -1,4 +1,3 @@
-import type { User } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
 /**
@@ -53,19 +52,25 @@ export type RecentProofMethod = "password" | "totp" | "webauthn" | "passkey";
  * endpoint cannot disagree.
  */
 export async function recentProofMethods(
-  user: Pick<User, "id" | "totpConfirmedAt" | "passwordHash">,
+  user: { id: string; totpConfirmedAt: Date | null },
   enrolled?: boolean,
 ): Promise<RecentProofMethod[]> {
   const hasSecond = enrolled ?? (await hasSecondFactorEnrolled(user));
-  const [keys, passkeys] = await Promise.all([
+  // Whether a password exists is read here rather than off the caller's row:
+  // the hash is not part of the per-request user (`SESSION_USER_SELECT`).
+  const [keys, passkeys, credential] = await Promise.all([
     prisma.webauthnMfaCredential.count({ where: { userId: user.id } }),
     prisma.passkey.count({ where: { userId: user.id } }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { passwordHash: true },
+    }),
   ]);
   const methods: RecentProofMethod[] = [];
   if (hasSecond) {
     if (user.totpConfirmedAt) methods.push("totp");
     if (keys > 0) methods.push("webauthn");
-  } else if (user.passwordHash) {
+  } else if (credential?.passwordHash) {
     methods.push("password");
   }
   if (passkeys > 0) methods.push("passkey");

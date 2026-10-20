@@ -14,9 +14,9 @@
  * HTTP path keeps its existing `auth.bearer.*` audit trail), so this layer adds
  * no I/O beyond the two reads the validation needs.
  */
-import type { User } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { hashToken } from "@/lib/auth/hmac";
+import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 
 /** Why a Bearer token was rejected. Stable handles for audit details. */
 export type BearerAuthReason =
@@ -67,7 +67,7 @@ export class BearerAuthError extends Error {
 
 /** The validated identity behind a Bearer token. */
 export interface BearerResolution {
-  user: User;
+  user: SessionUser;
   /** The `ApiToken` row id (the token-id half of the `<user>:<token>` binding). */
   tokenId: string;
   /** The token's granted scopes (`["*"]` = wildcard). */
@@ -147,6 +147,7 @@ export async function resolveBearerToken(
 
   const user = await prisma.user.findUnique({
     where: { id: apiToken.userId },
+    select: SESSION_USER_SELECT,
   });
 
   if (!user) {

@@ -58,11 +58,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const { currentPassword, newPassword } = parsed.data;
-  if (!user.passwordHash) {
+  const credential = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { passwordHash: true },
+  });
+  if (!credential?.passwordHash) {
     return apiError("No password set for this account", 400);
   }
 
-  const currentValid = await verifyPassword(user.passwordHash, currentPassword);
+  const currentValid = await verifyPassword(
+    credential.passwordHash,
+    currentPassword,
+  );
   if (!currentValid) {
     await recordReproofFailure(
       user.id,

@@ -60,7 +60,10 @@ export const POST = apiHandler(
       return apiError("Password required", 422);
     }
 
-    const target = await prisma.user.findUnique({ where: { id } });
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { locale: true, username: true },
+    });
     if (!target) return apiError("User not found", 404);
 
     const locale = await resolveServerLocale({

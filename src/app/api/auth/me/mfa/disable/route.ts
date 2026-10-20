@@ -30,7 +30,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { destroyOtherSessions } from "@/lib/auth/session";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
+import { loadFactorUser, verifyMfaFactor } from "@/lib/auth/mfa/verify-factor";
 import { mfaDisableSchema } from "@/lib/validations/mfa";
 
 export const dynamic = "force-dynamic";
@@ -72,11 +72,10 @@ export const POST = apiHandler(async (req: Request) => {
     );
   }
 
-  const factor = await verifyMfaFactor(
-    user,
-    parsed.data.method,
-    parsed.data.code,
-  );
+  const factorUser = await loadFactorUser(user.id);
+  const factor = factorUser
+    ? await verifyMfaFactor(factorUser, parsed.data.method, parsed.data.code)
+    : { ok: false, replay: false };
   if (!factor.ok) {
     await auditLog("auth.mfa.failed", {
       userId: user.id,

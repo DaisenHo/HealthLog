@@ -28,6 +28,8 @@ vi.mock("@/lib/db", () => ({
     },
     webauthnMfaCredential: { count: vi.fn(async () => 0) },
     passkey: { count: vi.fn(async () => 0) },
+    // The password hash is read off the stored row; none here.
+    user: { findUnique: vi.fn(async () => null) },
   },
 }));
 vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: vi.fn() }));

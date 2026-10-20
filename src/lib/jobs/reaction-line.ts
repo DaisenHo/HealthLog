@@ -58,6 +58,7 @@ import {
 import { extractAssessmentSummary } from "@/lib/insights/status-shared";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
+import { SESSION_USER_SELECT } from "@/lib/auth/session-user";
 import { singleUserTurn, type CompletionResult } from "@/lib/ai/types";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
@@ -500,7 +501,10 @@ export async function runReactionLine(
     };
   }
 
-  const user = await prisma.user.findUnique({ where: { id: job.userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: job.userId },
+    select: SESSION_USER_SELECT,
+  });
   if (!user) return { status: "skipped", reason: "no_user" };
 
   const locale = await resolveJobLocale(user.locale);
