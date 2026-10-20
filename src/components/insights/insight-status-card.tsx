@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TileHeader } from "@/components/insights/tile-header";
 import {
   useTranslations,
@@ -228,9 +229,11 @@ export function InsightStatusCard({
           <TileHeader icon={nodeIcon(icon)} title={title} />
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">
-            {t("insights.noAnalysisYet")}
-          </p>
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("insights.noAnalysisYet")}
+          />
         </CardContent>
       </Card>
     );

@@ -10,15 +10,15 @@
  * keeps a new `<h1>` literal from appearing outside the places where a
  * different heading is the point.
  *
- * Matched: an `<h1` tag in JSX under `src/components` and `src/app`. A
- * mention in a comment counts too, which is why the files that only talk
- * about an H1 are listed with that reason.
+ * Matched: an `<h1` tag in JSX under `src/components` and `src/app`, with
+ * comments stripped first, so a file that only talks about an H1 needs no
+ * entry and every entry below is a heading that is actually rendered.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(__dirname, "..");
 
@@ -48,14 +48,6 @@ const ALLOWED: Record<string, string> = {
   // Prose pages (the prose H1 tier, §5).
   "app/about/page.tsx": "prose page",
   "app/privacy/page.tsx": "prose page",
-  // Mention an H1 in a comment only.
-  "app/insights/ecg/page.tsx": "comment",
-  "components/admin/reminders-section.tsx": "comment",
-  "components/charts/health-chart.tsx": "comment",
-  "components/insights/coach-panel/coach-top-bar-trail.tsx": "comment",
-  "components/insights/ecg-section.tsx": "comment",
-  "components/measurement-reminders/vorsorge-section.tsx": "comment",
-  "components/settings/settings-shell.tsx": "comment",
 };
 
 describe("page titles go through PageHeader", () => {
@@ -65,9 +57,8 @@ describe("page titles go through PageHeader", () => {
       (p.startsWith("components/") || p.startsWith("app/")) &&
       !p.includes("__tests__/"),
   );
-  const withH1 = files.filter((p) =>
-    readFileSync(join(SRC, p), "utf8").includes("<h1"),
-  );
+  const hasH1 = (source: string) => /<h1[\s>]/.test(stripComments(source));
+  const withH1 = files.filter((p) => hasH1(readFileSync(join(SRC, p), "utf8")));
 
   it("finds the H1 sites at all", () => {
     expect(withH1.length).toBeGreaterThan(10);
@@ -75,6 +66,14 @@ describe("page titles go through PageHeader", () => {
 
   it("has no hand-rolled H1 outside the allowlist", () => {
     expect(withH1.filter((p) => !(p in ALLOWED))).toEqual([]);
+  });
+
+  it("counter-check: an H1 in code counts, one in a comment does not", () => {
+    expect(hasH1(`return <h1 className="text-2xl">Title</h1>;`)).toBe(true);
+    expect(hasH1(`// the page's <h1> lives in PageHeader\nreturn null;`)).toBe(
+      false,
+    );
+    expect(hasH1(`/* an <h1> above */ return <h2>x</h2>;`)).toBe(false);
   });
 
   it("keeps every allowlist entry live", () => {
