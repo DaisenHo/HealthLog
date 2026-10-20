@@ -1248,7 +1248,6 @@ model EnvironmentContext {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([userId, date])
-  @@index([userId, date])
   // `environment_contexts_aq_gap_idx` (user_id, date) WHERE aq_fetched_at IS
   // NULL is a partial index from migration 0381 (raw SQL only).
   @@map("environment_contexts")
@@ -1300,6 +1299,8 @@ model Passkey {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("passkeys")
 }
 
@@ -1484,7 +1485,6 @@ model UserKnownDevice {
   // twice for one account, so the "first sighting → alert" decision is a
   // single unique-constrained upsert.
   @@unique([userId, deviceHash])
-  @@index([userId])
   @@map("user_known_devices")
 }
 
@@ -2088,7 +2088,6 @@ model Measurement {
   // v1.4.23 — Apple Health batch dedup key. NULL externalId is distinct
   // (Postgres semantics) so manual entries don't collide here.
   @@unique([userId, type, source, externalId])
-  @@index([userId, type, measuredAt])
   // v1.25 — type-less `(userId, measuredAt)` range scan. The bulk feature read
   // (`extractFeatures`) and consolidation scans walk a user's measurements by
   // time with no `type` predicate; `(userId, type, measuredAt)` can't serve
@@ -3003,7 +3002,6 @@ model Medication {
   /// re-mirror of the same concept id returns the existing row (the
   /// create route pre-queries the triple and catches the P2002 race).
   @@unique([userId, externalSource, externalId])
-  @@index([userId])
   @@index([treatmentClass])
   @@map("medications")
 }
@@ -3213,6 +3211,8 @@ model MedicationSchedule {
   medication       Medication                @relation(fields: [medicationId], references: [id], onDelete: Cascade)
   telegramMessages TelegramReminderMessage[]
 
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([medicationId])
   @@map("medication_schedules")
 }
 
@@ -3491,6 +3491,8 @@ model MedicationIntakeEvent {
   // without this one the purge planned a sequential scan and could not finish
   // inside statement_timeout. Raw SQL only (partial predicate not expressible
   // in Prisma).
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([medicationId])
   @@map("medication_intake_events")
 }
 
@@ -3655,6 +3657,8 @@ model MedicationInventoryItem {
   // `(user_id) WHERE notes IS NOT NULL AND notes_encrypted IS NULL` — see
   // migration 0243 (v1.28.46 H4) for the med-notes boot-discovery scan. Raw
   // SQL only (partial predicate not expressible in Prisma).
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([medicationId])
   @@map("medication_inventory_items")
 }
 
@@ -3718,6 +3722,8 @@ model MedicationSideEffect {
   // `(user_id) WHERE notes IS NOT NULL AND notes_encrypted IS NULL` — see
   // migration 0243 (v1.28.46 H4) for the med-notes boot-discovery scan. Raw
   // SQL only (partial predicate not expressible in Prisma).
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([medicationId])
   @@map("medication_side_effects")
 }
 
@@ -3809,6 +3815,8 @@ model TelegramReminderMessage {
 
   @@unique([recipientUserId, medicationId, scheduleId, date, phase, timeOfDay], map: "telegram_reminder_messages_recipient_slot_key")
   @@index([medicationId, date])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([scheduleId])
   @@map("telegram_reminder_messages")
 }
 
@@ -4004,6 +4012,9 @@ model InviteToken {
   redemptions InviteRedemption[]
 
   @@index([expiresAt])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([createdBy])
+  @@index([usedBy])
   @@map("invite_tokens")
 }
 
@@ -4047,6 +4058,8 @@ model ManagedProfileHandover {
   @@index([profileId])
   // `managed_profile_handovers_open_idx` UNIQUE (profile_id) WHERE used_at IS
   // NULL AND revoked_at IS NULL is a partial index from migration 0383.
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([createdById])
   @@map("managed_profile_handovers")
 }
 
@@ -4100,6 +4113,8 @@ model InviteRedemption {
   user   User?       @relation("InviteRedemptions", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([inviteId])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("invite_redemptions")
 }
 
@@ -4136,7 +4151,6 @@ model RefreshToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   /// Composite index — every reuse-detection / device-scoped lookup filters
   /// on (userId, deviceId), so a single-column device_id index would never
   /// be used while costing writes. Multiple live rows per (userId, deviceId)
@@ -4267,6 +4281,8 @@ model WithingsOAuthState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("withings_oauth_states")
 }
 
@@ -4348,6 +4364,8 @@ model WhoopOAuthState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("whoop_oauth_states")
 }
 
@@ -4380,6 +4398,8 @@ model WhoopConnectTicket {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("whoop_connect_tickets")
 }
 
@@ -4434,6 +4454,8 @@ model FitbitOAuthState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("fitbit_oauth_states")
 }
 
@@ -4512,6 +4534,8 @@ model GoogleHealthOAuthState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([userId])
   @@map("google_health_oauth_states")
 }
 
@@ -4642,7 +4666,6 @@ model MoodEntry {
   // that carry a source-stable id upsert on this; native/MANUAL entries
   // (NULL externalId) are distinct here and stay on the legacy key above.
   @@unique([userId, source, externalId])
-  @@index([userId, date])
   // v1.12.1 (P1-3) — mood-insights reads filter `{ userId, deletedAt:
   // null, moodLoggedAt: { gte } }` ordered by `moodLoggedAt desc`; this
   // index turns that into a range scan. See migration 0123.
@@ -5098,7 +5121,6 @@ model IntegrationStatus {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, integration])
-  @@index([userId])
   @@index([state])
   @@map("integration_statuses")
 }
@@ -5451,7 +5473,6 @@ model NotificationChannel {
   preferences NotificationPreference[]
 
   @@unique([userId, type])
-  @@index([userId])
   @@map("notification_channels")
 }
 
@@ -5479,7 +5500,6 @@ model PushSubscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, endpoint])
-  @@index([userId])
   @@map("push_subscriptions")
 }
 
@@ -5526,7 +5546,6 @@ model DataBackup {
   chunks DataBackupChunk[]
 
   @@unique([userId, type], map: "data_backups_user_id_type_key")
-  @@index([userId])
   @@map("data_backups")
 }
 
@@ -6369,7 +6388,6 @@ model Biomarker {
   mergesInto      BiomarkerMerge[]
 
   @@unique([userId, name])
-  @@index([userId])
   @@map("biomarkers")
 }
 
@@ -6412,7 +6430,6 @@ model CustomMetric {
   entries CustomMetricEntry[]
 
   @@unique([userId, name])
-  @@index([userId])
   @@map("custom_metrics")
 }
 
@@ -6450,6 +6467,8 @@ model CustomMetricEntry {
   // `(user_id) WHERE note IS NOT NULL` — see
   // migration 0357 for the free-text encryption boot-discovery scan. Raw SQL
   // only (partial predicate not expressible in Prisma).
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([customMetricId])
   @@map("custom_metric_entries")
 }
 
@@ -6497,7 +6516,6 @@ model UserAchievement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, achievementId])
-  @@index([userId])
   @@map("user_achievements")
 }
 
@@ -7189,7 +7207,6 @@ model CoachUsage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dateKey])
-  @@index([userId, dateKey])
   @@map("coach_usage")
 }
 
@@ -7440,7 +7457,6 @@ model ClinicianShareLinkDocument {
   document  InboundDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([shareLinkId, documentId])
-  @@index([shareLinkId])
   @@index([documentId])
   @@map("clinician_share_link_documents")
 }
@@ -8031,7 +8047,6 @@ model MenstrualCycle {
   dayLogs CycleDayLog[]
 
   @@unique([userId, startDate])
-  @@index([userId, startDate])
   // Keyset support for the `/api/sync/changes` cycle feed
   // (`where userId` ordered by `(updatedAt asc, id asc)`).
   @@index([userId, updatedAt, id])
@@ -8131,9 +8146,10 @@ model CycleDayLog {
   // NULL-distinct external dedup key for HealthKit re-ingest (the
   // MoodEntry dual-unique precedent).
   @@unique([userId, source, externalId])
-  @@index([userId, date])
   // Keyset support for the `/api/sync/changes` cycle-day feed.
   @@index([userId, updatedAt, id])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([cycleId])
   @@map("cycle_day_logs")
 }
 
@@ -8325,7 +8341,6 @@ model IllnessDayLog {
 
   @@unique([episodeId, date])
   @@index([userId, date])
-  @@index([episodeId])
   @@map("illness_day_logs")
 }
 
@@ -9332,6 +9347,8 @@ model Encounter {
   @@index([userId, deletedAt, occurredAt])
   @@index([userId, status, occurredAt])
   @@index([practitionerId])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([reminderId])
   @@map("encounters")
 }
 
@@ -9592,6 +9609,10 @@ model VaccinationRecord {
   @@index([userId, deletedAt, occurredAt])
   @@index([userId, antigenSlug, occurredAt])
   @@index([customVaccineId])
+  // Leads the foreign key, so a cascade from the parent row is an index lookup.
+  @@index([encounterId])
+  @@index([practitionerId])
+  @@index([reminderId])
   @@map("vaccination_records")
 }
 

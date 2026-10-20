@@ -19,8 +19,8 @@
  *   - All-time scan rather than a rolling window. The
  *     `personal_records_user_metric_idx` index makes
  *     `ORDER BY value LIMIT 1` constant-time; reading the worst-case
- *     ~30k measurement rows per metric is ~50 ms with the typed
- *     `measurements_user_id_type_measured_at_idx` index.
+ *     ~30k measurement rows per metric is ~50 ms over the
+ *     `(user_id, type, measured_at, …)` unique index.
  *   - Tie handling: an equal-value reading writes a row but the caller
  *     suppresses the push notification (the user matched, not beat
  *     their best). The notification suppression lives on the job
