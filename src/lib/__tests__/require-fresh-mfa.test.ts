@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     session: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn() },
     passkey: { count: vi.fn() },
   },
@@ -50,7 +51,15 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
-function mockSession(user: unknown) {
+function mockSession(user: {
+  id: string;
+  totpConfirmedAt: Date | null;
+  passwordHash?: string | null;
+}) {
+  // The password hash is read off the stored row, not the session user.
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    passwordHash: user.passwordHash ?? null,
+  } as never);
   vi.mocked(getSession).mockResolvedValue({
     session: { id: "sess-1", expiresAt: new Date(Date.now() + 1e6) },
     user,

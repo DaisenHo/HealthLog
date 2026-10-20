@@ -72,13 +72,17 @@ beforeEach(() => {
 });
 
 function cookie(
-  user: unknown,
+  user: { id: string; passwordHash?: string | null },
   stamps: {
     mfaVerifiedAt?: Date | null;
     createdAt?: Date;
     reproofAt?: Date | null;
   },
 ) {
+  // The password hash is read off the stored row, not the session user.
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    passwordHash: user.passwordHash ?? null,
+  } as never);
   vi.mocked(getSession).mockResolvedValue({
     session: { id: "sess-1", expiresAt: new Date(Date.now() + 1e6) },
     user,
