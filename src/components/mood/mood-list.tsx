@@ -846,7 +846,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground max-w-[18rem] text-sm">
-                          <span className="block truncate">
+                          <span className="block break-words">
                             {entry.tags.length > 0
                               ? entry.tags.join(", ")
                               : "-"}
@@ -960,7 +960,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                           </DayLink>
                         </p>
                         {entry.tags.length > 0 && (
-                          <p className="text-muted-foreground truncate text-xs">
+                          <p className="text-muted-foreground text-xs break-words">
                             {entry.tags.join(", ")}
                           </p>
                         )}
