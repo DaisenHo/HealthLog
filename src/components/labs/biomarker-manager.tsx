@@ -57,7 +57,7 @@ export function BiomarkerManager() {
   const canMerge = canManageDomain("labs");
   const [mergeOpen, setMergeOpen] = useState(false);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.biomarkers(),
     queryFn: () => apiGet<BiomarkerListResponse>("/api/biomarkers"),
   });
@@ -195,6 +195,7 @@ export function BiomarkerManager() {
         </div>
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           title={t("labs.biomarker.loadError")}
           onRetry={() => void refetch()}
         />

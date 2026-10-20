@@ -18,6 +18,7 @@
  * to the derived contract cannot leave this document behind.
  */
 import { z } from "zod/v4";
+import { recoveryEmptySchema } from "./recovery-empty";
 import type { ZodOpenApiObject } from "zod-openapi";
 
 import { SCORE_PILLAR_IDS } from "@/lib/analytics/score/types";
@@ -140,11 +141,12 @@ const analyticsSummariesSlice = z
       ),
     lastSeenByType,
     sleepSourceDiscrepancy,
+    recoveryEmpty: recoveryEmptySchema,
   })
   .meta({
     id: "AnalyticsSummariesSlice",
     description:
-      "What `?slice=summaries` answers: the per-type summaries and their freshness, and nothing thick. Four keys, and the caller gets them from two SQL passes rather than the default slice's chain.",
+      "What `?slice=summaries` answers: the per-type summaries and their freshness, the recovery page's empty reason, and nothing thick. Five keys, and the caller gets them from two SQL passes rather than the default slice's chain.",
   });
 
 // ── Correlations ─────────────────────────────────────────────────────

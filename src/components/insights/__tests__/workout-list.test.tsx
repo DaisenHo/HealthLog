@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { makeFormatters } from "@/lib/format-locale";
 import { WorkoutList } from "../workout-list";
 import type { WorkoutListEntry } from "@/hooks/use-workouts";
 
@@ -16,6 +17,14 @@ const account = vi.hoisted(() => ({
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: account.user, isAuthenticated: true }),
   useAccountOnceMounted: () => account.user,
+}));
+
+// The reader's date and clock preferences reach the list through
+// `useFormatters()`; this reader orders dates year first, on a 24-hour clock.
+const READER_FORMATTERS = makeFormatters("en", "UTC", "H24", "YMD");
+vi.mock("@/lib/i18n/context", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/i18n/context")>()),
+  useFormatters: () => READER_FORMATTERS,
 }));
 
 /**
@@ -52,6 +61,13 @@ describe("<WorkoutList>", () => {
     expect(html).toContain('href="/insights/workouts/w-1"');
     expect(html).toContain("Running");
     expect(html).toContain("30m");
+  });
+
+  it("writes the start in the reader's own date order and clock", () => {
+    const html = render(<WorkoutList workouts={[ROW]} />);
+    expect(html).toContain(
+      `${READER_FORMATTERS.dateWithWeekdaySmart(ROW.startedAt)}, ${READER_FORMATTERS.time(ROW.startedAt)}`,
+    );
   });
 
   it("renders the distance and energy chips when present", () => {

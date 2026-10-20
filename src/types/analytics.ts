@@ -33,6 +33,7 @@
  * surface. Three named shapes capture the contract; one swiss-army
  * shape loses it.
  */
+import type { RecoveryEmptyReason } from "@/lib/insights/recovery-empty";
 import type { DataSummary } from "@/lib/analytics/trends";
 import type { SleepSourceDiscrepancy } from "@/lib/analytics/sleep-night";
 import type { CorrelationResult } from "@/lib/insights/correlations";
@@ -53,6 +54,11 @@ export interface SubPageAnalyticsData {
     string,
     { lastSeenAt: string; daysAgo: number } | null
   >;
+  /**
+   * Why the recovery page has nothing to chart, resolved on the server
+   * (`resolveRecoveryEmpty`); null when it has. Slim slice only.
+   */
+  recoveryEmpty?: RecoveryEmptyReason | null;
 }
 
 /**

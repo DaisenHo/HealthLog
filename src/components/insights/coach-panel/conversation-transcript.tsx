@@ -12,7 +12,7 @@ import { useCoachConversation } from "./use-coach";
  */
 export function ConversationTranscript({ id }: { id: string }) {
   const { t } = useTranslations();
-  const { data, isLoading, isError, refetch } = useCoachConversation(id);
+  const { data, isLoading, isError, error, refetch } = useCoachConversation(id);
   if (isLoading) {
     return (
       <p className="text-muted-foreground px-3 pb-3 text-xs">
@@ -23,6 +23,7 @@ export function ConversationTranscript({ id }: { id: string }) {
   if (isError || !data) {
     return (
       <QueryErrorRow
+        error={error}
         className="mx-3 mb-3"
         onRetry={() => void refetch()}
         slot="coach-conversations-transcript-error"

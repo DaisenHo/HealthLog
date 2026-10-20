@@ -274,6 +274,7 @@ export function DayView({
 
         {day.isError ? (
           <QueryErrorRow
+            error={day.error}
             message={t("day.loadFailed")}
             onRetry={() => void day.refetch()}
             slot="day-error"

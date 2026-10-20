@@ -265,7 +265,10 @@ reading:
   nothing left but a data type waiting for its second attempt and queued the
   next slice for when it is due (`delaySeconds`).
 - `meta["googleHealth.backfill.ended"]` appears on the slice where a data
-  type ended short, with the same entries. A walk stopped for lack of
+  type ended short: the `collection`, its measurement `type`, the `reason`,
+  whether the end is `final`, how many data types have ended short so far
+  (`endedCount`) and of those for good (`finalCount`), and their `types`.
+  The full entries are in the slice report's `ended`. A walk stopped for lack of
   progress also leaves a warning:
   `fetchHeartRate: 20 pages in a row reached no further back than <instant>`.
 - `meta["googleHealth.backfill.edgeFilterUnsupported"]` appears on the slice

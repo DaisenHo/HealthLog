@@ -31,7 +31,7 @@ import { useKeyBackupStatus } from "./use-key-backup-status";
 
 export function SystemStatusSummary() {
   const { t } = useTranslations();
-  const { data: status, isError, refetch } = useSystemStatus();
+  const { data: status, isError, error, refetch } = useSystemStatus();
   const { data: keyBackup } = useKeyBackupStatus();
 
   return (
@@ -110,6 +110,7 @@ export function SystemStatusSummary() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          error={error}
           message={t("admin.overview.snapshotLoadError")}
           onRetry={() => void refetch()}
         />

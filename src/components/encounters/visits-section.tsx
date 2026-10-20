@@ -110,6 +110,7 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
 
       {list.isError ? (
         <QueryErrorCard
+          error={list.error}
           title={t("encounters.loadError")}
           onRetry={() => void list.refetch()}
         />

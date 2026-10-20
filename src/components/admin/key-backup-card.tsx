@@ -155,6 +155,7 @@ export function KeyBackupCard() {
         />
         {status.isError ? (
           <QueryErrorRow
+            error={status.error}
             message={t("admin.keyBackup.loadError")}
             onRetry={() => void status.refetch()}
           />

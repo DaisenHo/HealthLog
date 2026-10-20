@@ -45,9 +45,11 @@ export default function InsightsSchlafPage() {
   // to paint the same sentence three times, none of them offering a way out.
   // The page owns the shared state and renders one notice with a retry; the
   // cards no longer carry their own copy of it.
-  const { isError: rhythmError, refetch: refetchRhythm } = useSleepRhythm(
-    Boolean(user) && !isEmpty,
-  );
+  const {
+    isError: rhythmError,
+    error: rhythmFailure,
+    refetch: refetchRhythm,
+  } = useSleepRhythm(Boolean(user) && !isEmpty);
 
   if (isEmpty) {
     return (
@@ -127,6 +129,7 @@ export default function InsightsSchlafPage() {
       */}
       {rhythmError ? (
         <QueryErrorCard
+          error={rhythmFailure}
           description={t("insights.sleep.rhythm.loadError")}
           onRetry={() => void refetchRhythm()}
         />

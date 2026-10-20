@@ -24,7 +24,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { randomId } from "@/lib/random-id";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
-import { readFailureKind } from "@/components/ui/read-failure-row";
+import { readFailureKind } from "@/lib/api/read-failure";
 
 import {
   cycleDependentKeys,
@@ -158,7 +158,7 @@ export function useCycleRingDial(enabled: boolean): {
       enabled &&
       calendar.isError &&
       !calendar.data &&
-      readFailureKind(calendar.error) !== "denied",
+      readFailureKind(calendar.error) !== "refused",
   };
 }
 

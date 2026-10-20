@@ -71,10 +71,7 @@ import {
   summarizeSeries,
 } from "@/lib/insights/status-shared";
 import { runStatusCompletion } from "@/lib/insights/status-provider";
-import {
-  reconstructSleepNights,
-  type SleepStageRow,
-} from "@/lib/analytics/sleep-night";
+import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import {
@@ -295,31 +292,16 @@ export async function generateMetricStatus(args: {
   const points: Array<{ measuredAt: Date; value: number }> = [];
   let measurements: Array<{ measuredAt: Date }> = [];
   if (isSleep) {
-    const [priorityJson, sleepRows] = await Promise.all([
-      loadUserSourcePriority(args.userId),
-      prisma.measurement.findMany({
-        where: {
-          userId: args.userId,
-          type: "SLEEP_DURATION",
-          deletedAt: null,
-        },
-        orderBy: { measuredAt: "desc" },
-        take: 365 * 6, // ≈ 5 stage rows/night × source-count for a year
-        // Writer-level collapse: two HealthKit apps behind one source
-        // (watch stages vs phone in-bed) must not blend into one night.
-        select: {
-          value: true,
-          measuredAt: true,
-          sleepStage: true,
-          source: true,
-          deviceType: true,
-        },
-      }),
-    ]);
-    const nights = reconstructSleepNights(
-      sleepRows as SleepStageRow[],
-      userTz,
-      priorityJson,
+    // The latest 365 nights, the sleep twin of the 365 latest readings the
+    // other types read. A cut on stage rows instead (2190 of them) reached
+    // back a few weeks on a stage-rich watch and began mid-night.
+    const nights = (
+      await readSleepNights(
+        args.userId,
+        userTz,
+        await loadUserSourcePriority(args.userId),
+        { maxNights: 365, newest: true },
+      )
     ).filter((n) => n.asleepMinutes > 0);
     for (const n of nights) {
       points.push({ measuredAt: n.measuredAt, value: n.asleepMinutes });

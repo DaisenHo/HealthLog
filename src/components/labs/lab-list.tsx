@@ -146,7 +146,7 @@ export function LabList({
   // (beneath the heading); the overview rows no longer carry it.
   // One entry per biomarker over the whole history, grouped server-side: a
   // capped page of raw rows dropped every marker measured only long ago.
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.labResultsOverview(),
     queryFn: () => apiGet<LabOverviewResponse>("/api/labs/overview"),
   });
@@ -203,6 +203,7 @@ export function LabList({
     // outage never reads as "you have no lab results".
     return (
       <QueryErrorCard
+        error={error}
         title={t("labs.loadError")}
         onRetry={() => void refetch()}
       />

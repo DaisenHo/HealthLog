@@ -270,6 +270,7 @@ export function useCoachConversationHistory(
     conversations,
     isLoading: query.isLoading,
     isError: query.isError,
+    error: query.error,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
     fetchNextPage: query.fetchNextPage,

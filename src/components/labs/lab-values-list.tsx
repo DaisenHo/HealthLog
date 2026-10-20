@@ -34,6 +34,7 @@ export function LabValuesList({ biomarkerId }: { biomarkerId: string }) {
     data: list,
     isLoading,
     isError,
+    error,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -63,6 +64,7 @@ export function LabValuesList({ biomarkerId }: { biomarkerId: string }) {
   if (isError) {
     return (
       <QueryErrorCard
+        error={error}
         title={t("labs.loadError")}
         onRetry={() => void refetch()}
       />

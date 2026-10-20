@@ -250,8 +250,9 @@ describe("readCoachCorrelations", () => {
       // Next-day sleep falls as today's burden rises (8h baseline − burden).
       measurements.push({
         type: "SLEEP_DURATION",
-        value: 8 - burden,
-        measuredAt: new Date(base + (i + 1) * 86_400_000),
+        // A night of hours waking at 07:00, not a midday minute-long nap.
+        value: (8 - burden) * 60,
+        measuredAt: new Date(base + (i + 1) * 86_400_000 - 5 * 3_600_000),
       });
     }
 
@@ -346,8 +347,9 @@ describe("readCoachCorrelations", () => {
       // Higher pressure today → shorter sleep tomorrow (a clean negative r).
       measurements.push({
         type: "SLEEP_DURATION",
-        value: 8 - swing * 0.5,
-        measuredAt: new Date(base + (i + 1) * 86_400_000),
+        // A night of hours waking at 07:00, not a midday minute-long nap.
+        value: (8 - swing * 0.5) * 60,
+        measuredAt: new Date(base + (i + 1) * 86_400_000 - 5 * 3_600_000),
       });
     }
 

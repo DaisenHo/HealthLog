@@ -293,7 +293,7 @@ export default function AchievementsPage() {
   // alongside `<RecentAchievementsCard>` and
   // `<AchievementUnlockNotifier>` so the three consumers never trigger
   // more than one network call on a cold dashboard mount.
-  const { data, isLoading, isError, refetch } = useAchievementsQuery({
+  const { data, isLoading, isError, error, refetch } = useAchievementsQuery({
     enabled: isAuthenticated && achievementsEnabled,
   });
 
@@ -326,7 +326,7 @@ export default function AchievementsPage() {
           title={t("achievements.title")}
           description={t("achievements.subtitle")}
         />
-        <QueryErrorCard onRetry={() => refetch()} />
+        <QueryErrorCard error={error} onRetry={() => refetch()} />
       </div>
     );
   }

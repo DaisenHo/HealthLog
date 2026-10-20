@@ -217,6 +217,78 @@ describe("date formatters name the calendar they render in", () => {
 });
 
 /**
+ * A component renders dates through `useFormatters()`, never through the
+ * shared cache directly.
+ *
+ * The two-argument `getDateTimeFormat(locale, options)` from
+ * `@/lib/intl/formatter-cache` can name a zone and still be wrong: it takes
+ * the locale and the hour cycle from wherever the caller found them and
+ * knows nothing of the reader's date-order preference. The workout surfaces
+ * rebuilt their own formatters this way and showed "Dec 16" to a reader who
+ * had chosen YYYY-MM-DD. The three-argument `(locale, timeZone, options)`
+ * form from `@/lib/tz/intl-cache` builds day keys and clock parts, not
+ * display text, and stays allowed.
+ */
+describe("components format dates through useFormatters", () => {
+  const CALL = /\bgetDateTimeFormat\s*\(/g;
+
+  function scan() {
+    const files = execFileSync(
+      "grep",
+      [
+        "-rlE",
+        "getDateTimeFormat\\s*\\(",
+        "src/components",
+        "--include=*.ts",
+        "--include=*.tsx",
+      ],
+      { cwd: REPO_ROOT, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .filter((f) => !f.includes("__tests__"));
+    const offenders: string[] = [];
+    let calls = 0;
+    for (const file of files) {
+      const source = readFileSync(resolve(REPO_ROOT, file), "utf8");
+      CALL.lastIndex = 0;
+      for (let m = CALL.exec(source); m; m = CALL.exec(source)) {
+        const lineStart = source.lastIndexOf("\n", m.index) + 1;
+        if (/^\s*(?:\/\/|\*|\/\*)/.test(source.slice(lineStart, m.index)))
+          continue;
+        calls += 1;
+        const args = argumentList(source, m.index + m[0].length - 1);
+        if (topLevelArgCount(args) < 3) {
+          offenders.push(
+            `${file}:${source.slice(0, m.index).split("\n").length}`,
+          );
+        }
+      }
+    }
+    return { offenders, calls };
+  }
+
+  it("still sees the cache's calls in components (the matcher matches)", () => {
+    expect(scan().calls).toBeGreaterThanOrEqual(1);
+  });
+
+  it("has no two-argument getDateTimeFormat in src/components", () => {
+    expect(scan().offenders).toEqual([]);
+  });
+
+  it("the matcher flags the two-argument form across lines", () => {
+    const source =
+      'getDateTimeFormat(\n  locale,\n  { timeZone, month: "short" },\n)';
+    CALL.lastIndex = 0;
+    const m = CALL.exec(source)!;
+    expect(
+      topLevelArgCount(argumentList(source, m.index + m[0].length - 1)),
+    ).toBe(2);
+  });
+});
+
+/**
  * A stated calendar date must not go through a zone-aware short formatter.
  *
  * A day key is anchored at noon UTC (`${key}T12:00:00Z`) so that it is the

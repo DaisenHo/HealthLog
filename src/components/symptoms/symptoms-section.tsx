@@ -390,6 +390,7 @@ export function SymptomsSection() {
   if (definitions.isError || events.isError) {
     return (
       <QueryErrorCard
+        error={definitions.error ?? events.error}
         title={t("symptoms.section.loadError")}
         onRetry={() => {
           void definitions.refetch();

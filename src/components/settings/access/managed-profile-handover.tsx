@@ -88,6 +88,7 @@ export function ManagedProfileHandover({
   if (status.isError) {
     return (
       <QueryErrorCard
+        error={status.error}
         title={t("recordSharing.managed.handover.loadError")}
         onRetry={() => void status.refetch()}
       />

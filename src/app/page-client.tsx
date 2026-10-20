@@ -998,7 +998,10 @@ export default function DashboardPageClient({
         ) : !mounted || digestQuery.isLoading ? (
           <TodayHeroSkeleton />
         ) : digestQuery.isError ? (
-          <QueryErrorCard onRetry={() => digestQuery.refetch()} />
+          <QueryErrorCard
+            error={digestQuery.error}
+            onRetry={() => digestQuery.refetch()}
+          />
         ) : null
       }
 

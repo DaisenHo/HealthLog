@@ -17,18 +17,19 @@ import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
   enqueueIntegrationBackfillAdmission,
+  INTEGRATION_BACKFILL_ADMISSION_QUEUE,
   INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
+  integrationBackfillAdmissionSendOptions,
+  integrationBackfillIdentity,
   integrationBackfillSourceOptions,
+  type IntegrationBackfillAdmissionPayload,
 } from "@/lib/jobs/integration-backfill-admission";
+import { runWithGoogleHealthBackfillResume } from "@/lib/google-health/sync-core";
 import {
   googleHealthBackfillProgressAfterCompletion,
-  readGoogleHealthBackfillCursors,
-  readGoogleHealthBackfillDone,
-  readGoogleHealthBackfillEdgeFilterUnsupported,
-  readGoogleHealthBackfillEnded,
   googleHealthBackfillRetryPending,
-  runWithGoogleHealthBackfillResume,
-} from "@/lib/google-health/sync-core";
+  readGoogleHealthBackfillProgress,
+} from "@/lib/google-health/backfill-progress";
 import { googleHealthBackfillEndIsFinal } from "@/lib/google-health/backfill-bounds";
 import {
   isGoogleHealthParked,
@@ -103,6 +104,23 @@ export const GOOGLE_HEALTH_BACKFILL_MAX_SLICE =
     GOOGLE_HEALTH_BACKFILL_MAX_CHAIN_MS / GOOGLE_HEALTH_BACKFILL_SLICE_MS,
   ) +
   2;
+
+/**
+ * The singleton key of a slice that waits for a parked collection's retry:
+ * the import's identity and the instant the retry is due. The instant comes
+ * from the stored note, so every slice that reads the same note derives the
+ * same key.
+ */
+export function googleHealthBackfillRetryKey(
+  userId: string,
+  dueAt: number,
+): string {
+  const identity = integrationBackfillIdentity({
+    kind: "google-health-backfill",
+    data: { userId, enqueuedAt: "" },
+  });
+  return `${identity}|retry-${new Date(dueAt).toISOString()}`;
+}
 
 /** Test seam: a slice's budget, when not the production one. */
 export interface GoogleHealthBackfillSliceOptions {
@@ -198,14 +216,12 @@ export async function runGoogleHealthBackfillForUser(
     });
     return { imported: 0 };
   }
-  const done = readGoogleHealthBackfillDone(connection?.backfillProgress);
-  const cursors = readGoogleHealthBackfillCursors(connection?.backfillProgress);
-  const edgeFilterUnsupported = readGoogleHealthBackfillEdgeFilterUnsupported(
-    connection?.backfillProgress,
-  );
-  const endedBefore = readGoogleHealthBackfillEnded(
-    connection?.backfillProgress,
-  );
+  const {
+    done,
+    cursors,
+    edgeFilterUnsupported,
+    ended: endedBefore,
+  } = readGoogleHealthBackfillProgress(connection?.backfillProgress);
   // A collection that ended short for good has read all it is going to, so
   // it counts as finished alongside the ones read to the end. One parked
   // after a first end without progress does not: it waits for another try.
@@ -285,23 +301,36 @@ export async function runGoogleHealthBackfillForUser(
     );
   }
 
-  const sendNextSlice = async (delaySeconds: number): Promise<boolean> => {
+  /**
+   * Queue the next slice. A slice that waits for a parked collection's retry
+   * goes under a key named after when the retry is due, instead of its slice
+   * number: every slice that meets the same wait, a boot's included, names the
+   * same job, and the queue keeps one. Under the slice number a boot during
+   * the day-long wait started a second chain beside the waiting one.
+   */
+  const sendNextSlice = async (
+    delaySeconds: number,
+    retryDueAt?: number,
+  ): Promise<boolean> => {
     if (slice + 1 > GOOGLE_HEALTH_BACKFILL_MAX_SLICE) return false;
     const boss = getGlobalBoss();
-    const sent = boss
-      ? await enqueueIntegrationBackfillAdmission(
-          boss,
-          {
-            kind: "google-health-backfill",
-            data: {
-              userId,
-              enqueuedAt: new Date().toISOString(),
-              slice: slice + 1,
-            },
-          },
-          delaySeconds,
-        )
-      : null;
+    if (!boss) return false;
+    const payload: IntegrationBackfillAdmissionPayload = {
+      kind: "google-health-backfill",
+      data: {
+        userId,
+        enqueuedAt: new Date().toISOString(),
+        slice: slice + 1,
+      },
+    };
+    const sent =
+      retryDueAt === undefined
+        ? await enqueueIntegrationBackfillAdmission(boss, payload, delaySeconds)
+        : await boss.send(INTEGRATION_BACKFILL_ADMISSION_QUEUE, payload, {
+            ...integrationBackfillAdmissionSendOptions(payload),
+            singletonKey: googleHealthBackfillRetryKey(userId, retryDueAt),
+            startAfter: delaySeconds,
+          });
     return Boolean(sent);
   };
 
@@ -315,11 +344,18 @@ export async function runGoogleHealthBackfillForUser(
       (key) => done.has(key) || pending.keys.includes(key),
     );
   if (pending && (onlyRetriesLeft || !failed)) {
+    const waitSeconds = Math.ceil((pending.dueAt - Date.now()) / 1000);
     const delaySeconds = Math.max(
       INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
-      Math.ceil((pending.dueAt - Date.now()) / 1000),
+      waitSeconds,
     );
-    if (await sendNextSlice(delaySeconds)) {
+    // A retry already due is an ordinary next slice; only a wait is keyed on
+    // when it ends.
+    const delayed =
+      waitSeconds > INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS;
+    if (
+      await sendNextSlice(delaySeconds, delayed ? pending.dueAt : undefined)
+    ) {
       annotate({
         action: {
           name: "google_health.backfill.retry_scheduled",
@@ -328,9 +364,10 @@ export async function runGoogleHealthBackfillForUser(
       });
       return { imported, continued: true };
     }
-    // Not queued (most often one is already waiting under the same slice
-    // key, sent by an earlier boot's slice). Nothing is lost: the marker is
-    // not stamped, so the next boot offers the backfill again.
+    // Not queued: most often the same retry is already waiting, sent by the
+    // slice that parked the collection, and this is a boot's slice meeting
+    // the same wait. Nothing is lost either way: the marker is not stamped,
+    // so the next boot offers the backfill again.
     annotate({
       action: {
         name: "google_health.backfill.retry_not_queued",

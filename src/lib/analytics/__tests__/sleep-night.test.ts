@@ -4,6 +4,8 @@ import {
   reconstructSleepNights,
   reconstructSleepSessions,
   pickMainNightAndNaps,
+  isDaytimeNap,
+  separateNightsAndNaps,
   summarizeSleepNights,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
@@ -591,6 +593,80 @@ describe("pickMainNightAndNaps", () => {
     // Jun 4 is the longer night.
     expect(main?.night).toBe("2026-06-04");
     expect(naps).toEqual([]);
+  });
+});
+
+describe("the one nap rule", () => {
+  it("tells a nap from a night by length and time of day together", () => {
+    // Short and in the afternoon: a nap.
+    expect(isDaytimeNap(60, 14 * 60)).toBe(true);
+    // Short but at night: the night.
+    expect(isDaytimeNap(150, 2 * 60)).toBe(false);
+    expect(isDaytimeNap(150, 22 * 60)).toBe(false);
+    // A late sleeper's short night, centred at 09:00.
+    expect(isDaytimeNap(150, 9 * 60)).toBe(false);
+    // Long in the daytime (after a night shift): a main sleep.
+    expect(isDaytimeNap(420, 13 * 60)).toBe(false);
+  });
+
+  it("gives a day of naps alone no main night", () => {
+    // 14:00 to 15:00 Berlin, nothing overnight (the watch was charging).
+    const rows: SleepStageRow[] = [row("2026-06-04T13:00:00.000Z", "CORE", 60)];
+    const sessions = reconstructSleepSessions(rows, "Europe/Berlin");
+    const { main, naps } = pickMainNightAndNaps(sessions);
+    expect(main).toBeNull();
+    expect(naps).toHaveLength(1);
+    expect(naps[0].daytimeNap).toBe(true);
+    const nights = reconstructSleepNights(rows, "Europe/Berlin");
+    expect(nights[0].asleepMinutes).toBe(60);
+    expect(nights[0].mainSession).toBeNull();
+    expect(separateNightsAndNaps(sessions)).toEqual([
+      { night: "2026-06-04", main: null, naps },
+    ]);
+  });
+
+  it("keeps a short night as the main sleep over a longer afternoon nap", () => {
+    const rows: SleepStageRow[] = [
+      // 02:00 to 03:30 Berlin: a broken night, 90 minutes.
+      row("2026-06-04T01:30:00.000Z", "CORE", 90),
+      // 13:00 to 15:00 Berlin: a two-hour nap.
+      row("2026-06-04T13:00:00.000Z", "CORE", 120),
+    ];
+    const sessions = reconstructSleepSessions(rows, "Europe/Berlin");
+    const { main, naps } = pickMainNightAndNaps(sessions);
+    expect(main?.asleepMinutes).toBe(90);
+    expect(naps.map((n) => n.asleepMinutes)).toEqual([120]);
+    // The merged night places the same session on the clock.
+    const [night] = reconstructSleepNights(rows, "Europe/Berlin");
+    expect(night.mainSession?.asleepMinutes).toBe(90);
+    expect(night.mainSession?.end.getTime()).toBe(main?.end.getTime());
+  });
+
+  it("files a session under the day its last row ends on, over every writer", () => {
+    // The watch stops at 23:50 UTC; the phone's in-bed span runs to 00:10.
+    const rows: SleepStageRow[] = [
+      srcRow("2026-06-03T23:50:00.000Z", "CORE", 170, "WHOOP"),
+      srcRow("2026-06-04T00:10:00.000Z", "IN_BED", 200, "APPLE_HEALTH"),
+    ];
+    const sessions = reconstructSleepSessions(rows, "UTC");
+    const nights = reconstructSleepNights(rows, "UTC");
+    expect(sessions.map((s) => s.night)).toEqual(["2026-06-04"]);
+    expect(nights.map((n) => n.night)).toEqual(["2026-06-04"]);
+  });
+});
+
+describe("a zero-minute granular row", () => {
+  it("does not strip the bare aggregate that carries the night", () => {
+    // A writer's bare 6-hour night beside a REM row of no length: the REM
+    // row partitions nothing, so the night is the aggregate's six hours.
+    const rows: SleepStageRow[] = [
+      row("2026-06-04T06:00:00.000Z", "ASLEEP", 360),
+      row("2026-06-04T06:00:00.000Z", "REM", 0),
+    ];
+    const [session] = reconstructSleepSessions(rows, "UTC");
+    expect(session.asleepMinutes).toBe(360);
+    expect(session.stages.ASLEEP).toBe(360);
+    expect(reconstructSleepNights(rows, "UTC")[0].asleepMinutes).toBe(360);
   });
 });
 

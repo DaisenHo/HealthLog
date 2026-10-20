@@ -7,6 +7,7 @@ import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { loadRecoveryEmpty } from "@/lib/insights/recovery-empty-read";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { bpTargetsEqual, getBpTargets } from "@/lib/analytics/bp-targets";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -129,6 +130,9 @@ export const GET = apiHandler(async (request?: Request) => {
       ...slim,
       summaries: slimGated.summaries,
       lastSeenByType: slimGated.lastSeenByType,
+      // Resolved here, from the gated summaries and the Oura connection, so
+      // a client renders the recovery page's empty note without deciding it.
+      recoveryEmpty: await loadRecoveryEmpty(user.id, slimGated.summaries),
     });
     slimRes.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
     return slimRes;

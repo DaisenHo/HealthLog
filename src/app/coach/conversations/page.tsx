@@ -69,6 +69,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
     conversations,
     isLoading,
     isError,
+    error,
     refetch,
     hasNextPage,
     isFetchingNextPage,
@@ -182,7 +183,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
           // A load failure must not masquerade as "no conversations yet" —
           // that reads as a data-loss scare and offers no way back. Mirror
           // /coach/plans and surface a retry.
-          <QueryErrorCard onRetry={() => refetch()} />
+          <QueryErrorCard error={error} onRetry={() => refetch()} />
         ) : groups.length === 0 ? (
           <div
             data-slot="coach-conversations-empty"

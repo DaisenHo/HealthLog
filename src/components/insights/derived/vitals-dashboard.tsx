@@ -891,6 +891,7 @@ export function VitalsDashboard({ batch, layout, className }: DashboardProps) {
             subtitle={t("insights.derived.vitals.sectionSubtitle")}
           />
           <QueryErrorRow
+            error={batch.error}
             slot="vitals-dashboard-error"
             retrySlot="vitals-dashboard-retry"
             message={t("insights.derived.vitals.loadError")}

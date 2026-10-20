@@ -5,17 +5,9 @@ import Link from "next/link";
 import { HeartPulse, Loader2, Map as MapIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getNumberFormat, getDateTimeFormat } from "@/lib/intl/formatter-cache";
+import { getNumberFormat } from "@/lib/intl/formatter-cache";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
-import {
-  useDisplayTimezone,
-  useTimeFormatPreference,
-  useTranslations,
-} from "@/lib/i18n/context";
-import {
-  hourCycleOptions,
-  type TimeFormatPreference,
-} from "@/lib/format-locale";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import type { WorkoutListEntry } from "@/hooks/use-workouts";
 import { Button } from "@/components/ui/button";
@@ -40,30 +32,6 @@ function formatEnergy(kcal: number, locale: string): string {
   }).format(Math.round(kcal));
 }
 
-function formatDate(
-  iso: string,
-  locale: string,
-  timeFormat: TimeFormatPreference,
-  timeZone: string,
-): string {
-  const d = new Date(iso);
-  // Show the year whenever the workout is not from the current year, so a
-  // "Do., 16. Dez." from a previous year is never mistaken for this year's.
-  const yearOf = (value: Date) =>
-    getDateTimeFormat(locale, { timeZone, year: "numeric" }).format(value);
-  const showYear = yearOf(d) !== yearOf(new Date());
-  return getDateTimeFormat(locale, {
-    timeZone,
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    ...(showYear ? { year: "numeric" as const } : {}),
-    hour: "2-digit",
-    minute: "2-digit",
-    ...hourCycleOptions(timeFormat),
-  }).format(d);
-}
-
 export interface WorkoutListProps {
   workouts: WorkoutListEntry[];
   className?: string;
@@ -82,8 +50,9 @@ export function WorkoutList({
   onLoadMore,
 }: WorkoutListProps) {
   const { t, locale } = useTranslations();
-  const timeFormat = useTimeFormatPreference();
-  const timeZone = useDisplayTimezone();
+  // The reader's date order, hour cycle and zone, as everywhere else; the
+  // year shows whenever the workout is not from this year.
+  const fmt = useFormatters();
   const { preference } = useUnitDisplay();
 
   return (
@@ -150,12 +119,7 @@ export function WorkoutList({
                     stays readable beside the stats column. */}
                 <span className="text-muted-foreground text-xs">
                   <DayLinkAt at={workout.startedAt} className="z-10">
-                    {formatDate(
-                      workout.startedAt,
-                      locale,
-                      timeFormat,
-                      timeZone,
-                    )}
+                    {`${fmt.dateWithWeekdaySmart(workout.startedAt)}, ${fmt.time(workout.startedAt)}`}
                   </DayLinkAt>
                 </span>
               </div>

@@ -287,7 +287,7 @@ export function DocumentRecordLinks({
           title={t("documents.detail.vaccinationsLabel")}
           slot="document-vaccination-links"
           pending={vaccinations.isPending || !seedFresh}
-          error={vaccinations.isError || seedError}
+          error={vaccinations.error || seedError}
           errorLabel={t("links.picker.loadError")}
           onRetry={() => {
             if (vaccinations.isError) void vaccinations.refetch();

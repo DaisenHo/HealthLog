@@ -106,6 +106,7 @@ export default function InsightsMedikamentePage() {
     data: comprehensive,
     isLoading: isComprehensiveLoading,
     isError: isComprehensiveError,
+    error: comprehensiveError,
     refetch: refetchComprehensive,
   } = useQuery({
     queryKey: queryKeys.insightsComprehensive(),
@@ -179,6 +180,7 @@ export default function InsightsMedikamentePage() {
         explainerMetric="medications"
       >
         <QueryErrorCard
+          error={comprehensiveError}
           description={t("insights.loadError")}
           onRetry={() => refetchComprehensive()}
         />

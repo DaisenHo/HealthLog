@@ -81,6 +81,7 @@ export function ManagedProfileEditForm({
   if (profile.isError) {
     return (
       <QueryErrorCard
+        error={profile.error}
         title={t("recordSharing.managed.editLoadError")}
         onRetry={() => void profile.refetch()}
       />

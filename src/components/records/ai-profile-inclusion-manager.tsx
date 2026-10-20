@@ -110,6 +110,7 @@ export function AiProfileInclusionManager() {
   if (query.isError) {
     return (
       <QueryErrorCard
+        error={query.error}
         title={t("records.aiInclusion.loadError")}
         onRetry={() => void query.refetch()}
       />

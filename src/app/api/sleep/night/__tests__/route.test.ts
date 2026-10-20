@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { findMany: vi.fn() },
+    measurement: { findMany: vi.fn(), findFirst: vi.fn() },
     auditLog: { create: vi.fn() },
   },
 }));
@@ -76,6 +76,7 @@ function stage(
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 });
 
@@ -138,10 +139,46 @@ describe("GET /api/sleep/night", () => {
       stage("2026-06-02T03:00:00.000Z", "CORE", 200),
       stage("2026-06-04T03:00:00.000Z", "CORE", 300),
     ] as never);
+    vi.mocked(prisma.measurement.findFirst).mockResolvedValue({
+      measuredAt: new Date("2026-06-04T03:00:00.000Z"),
+    } as never);
     const res = await GET(req(""));
     const body = await res.json();
     expect(body.data.night).toBe("2026-06-04");
     expect(body.data.main.asleepMinutes).toBe(300);
+  });
+
+  it("reads a night of any age from a day and a half either side of it", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      stage("2019-03-01T06:00:00.000Z", "CORE", 420),
+    ] as never);
+    const res = await GET(req("date=2019-03-01"));
+    const body = await res.json();
+    // Years past any trailing window, the night is still served.
+    expect(body.data.main.asleepMinutes).toBe(420);
+    const where = vi.mocked(prisma.measurement.findMany).mock.calls[0][0]!
+      .where as { AND: Array<{ measuredAt: { gte: Date; lte: Date } }> };
+    expect(where.AND[0].measuredAt.gte.toISOString()).toBe(
+      "2019-02-27T12:00:00.000Z",
+    );
+    expect(where.AND[0].measuredAt.lte.toISOString()).toBe(
+      "2019-03-03T12:00:00.000Z",
+    );
+  });
+
+  it("answers a day of naps alone with its naps and no main night", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      // 13:00 to 14:00 UTC, nothing overnight.
+      stage("2026-06-04T14:00:00.000Z", "CORE", 60),
+    ] as never);
+    const res = await GET(req("date=2026-06-04"));
+    const body = await res.json();
+    expect(body.data.night).toBe("2026-06-04");
+    expect(body.data.main).toBeNull();
+    expect(body.data.naps).toHaveLength(1);
+    expect(body.data.naps[0].asleepMinutes).toBe(60);
   });
 
   it("surfaces a daytime nap separately from the main night", async () => {
@@ -169,7 +206,7 @@ describe("GET /api/sleep/night", () => {
     expect(body.data.naps).toEqual([]);
   });
 
-  // A5 — a reconstruction edge (a session of only bare ASLEEP / stage-less rows
+  // A reconstruction edge (a session of only bare ASLEEP / stage-less rows
   // alongside a granular partition for the same span) must return a valid empty
   // night, NEVER a 500 from the unguarded `segments[0]` access.
   it("returns 200 + empty night on an IN_BED/AWAKE-only reconstruction, never 500", async () => {

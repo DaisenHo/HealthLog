@@ -55,7 +55,9 @@
     "errorIdLabel": "Error ID",
     "errorIdCopy": "Copy error ID",
     "errorIdCopied": "Error ID copied",
-    "readThrottled": "Too many requests just now. Try again later."
+    "readThrottled": "Too many requests just now. Try again later.",
+    "sessionEnded": "Your session has ended. Sign in again to continue.",
+    "signInAgain": "Sign in"
   },
   "apiErrors": {
     "measurement": {
@@ -4395,7 +4397,7 @@
             "composition": "Composition"
           },
           "gap": {
-            "fewNights": "not enough nights yet ({count} of 3)",
+            "fewNights": "not enough nights yet ({count} of {needed})",
             "noMainSleep": "latest day had only a nap"
           }
         },
@@ -4664,9 +4666,9 @@
       "description": "How well your body has bounced back: the recovery, strain and load signals your wearable records overnight.",
       "scoreCrossLink": "See the composite recovery score",
       "emptyTitle": "No recovery data yet",
-      "empty": "Nothing to chart here yet. This page shows the recharge, strain and load readings that WHOOP and Polar record, and Oura's resilience level. Oura's readiness appears as your recovery score, linked above.",
-      "emptyOuraPermission": "Oura is connected, but the permission it was given leaves out heart-health data, and Oura's resilience level sits behind it. Reconnect Oura once under Settings, Integrations and allow heart-health access; the level then appears here with the next sync. Oura's readiness is already your recovery score, linked above.",
-      "emptyOuraNoResilience": "Oura is connected, but no resilience level has arrived for this account yet. HealthLog asks Oura for it on every sync, so it appears here as soon as Oura provides one. If the Oura app shows a level, the Oura card under Settings, Integrations names anything the connection cannot deliver. Oura's readiness is already your recovery score, linked above.",
+      "empty": "This page fills with the recharge, strain and load readings from WHOOP or Polar and with Oura's resilience level.",
+      "emptyOuraPermission": "Oura's resilience level needs heart-health access, so reconnect Oura once under Integrations and allow it.",
+      "emptyOuraNoResilience": "Oura is connected, and its resilience level appears here as soon as Oura provides one.",
       "emptyAction": "Open integrations",
       "block": {
         "ansChargeExplainer": "How charged your autonomic nervous system is for the day ahead, a recharge reading drawn from your overnight heart and breathing signals.",

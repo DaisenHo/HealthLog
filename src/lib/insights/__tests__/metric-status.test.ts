@@ -110,6 +110,38 @@ function stubCompletion(
   );
 }
 
+/**
+ * Postgres names the nights the sleep read reconstructs; answer the night
+ * page query with the one night the stage rows make, and every other raw
+ * query with nothing.
+ */
+function nightPageOver(rows: Array<{ value: number; measuredAt: Date }>) {
+  const start = Math.min(
+    ...rows.map((r) => r.measuredAt.getTime() - r.value * 60_000),
+  );
+  const end = Math.max(...rows.map((r) => r.measuredAt.getTime()));
+  vi.mocked(prisma.$queryRaw).mockImplementation(((
+    _strings: TemplateStringsArray,
+    ...values: unknown[]
+  ) =>
+    Promise.resolve(
+      values.some((v) =>
+        String((v as { sql?: string })?.sql ?? "").includes("sess AS"),
+      )
+        ? [
+            {
+              night: new Date(end).toLocaleDateString("sv-SE", {
+                timeZone: "Europe/Berlin",
+              }),
+              span_start: new Date(start),
+              span_end: new Date(end),
+              total: 1,
+            },
+          ]
+        : [],
+    )) as never);
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.insightStatusCache.findUnique).mockResolvedValue(null);
@@ -167,6 +199,7 @@ describe("generateMetricStatus — SLEEP_DURATION night reconstruction (iOS E2)"
     vi.mocked(prisma.measurement.findMany).mockResolvedValue(
       stageRows as never,
     );
+    nightPageOver(stageRows);
 
     const capture = { systemPrompt: null, userPrompt: null } as {
       systemPrompt: string | null;
@@ -190,7 +223,7 @@ describe("generateMetricStatus — SLEEP_DURATION night reconstruction (iOS E2)"
     expect(prompt).not.toContain('"value": 90');
   });
 
-  it("the snapshot graded series is the deduped night total, never the ~20 h raw-stage sum (A4)", async () => {
+  it("the snapshot graded series is the deduped night total, never the ~20 h raw-stage sum", async () => {
     // The ~20.3 h symptom: a source writes BOTH a bare ASLEEP aggregate AND the
     // granular CORE/DEEP/REM partition for the same span. Pre-fix the graded
     // `series` came from `buildGradedSeriesWithRollups`, which folds bare + each
@@ -249,6 +282,7 @@ describe("generateMetricStatus — SLEEP_DURATION night reconstruction (iOS E2)"
     vi.mocked(prisma.measurement.findMany).mockResolvedValue(
       stageRows as never,
     );
+    nightPageOver(stageRows);
 
     const capture = { systemPrompt: null, userPrompt: null } as {
       systemPrompt: string | null;

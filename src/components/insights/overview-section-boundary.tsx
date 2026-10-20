@@ -30,13 +30,14 @@ interface FenceProps {
 
 interface FenceState {
   failed: boolean;
+  error?: unknown;
 }
 
 class SectionFence extends Component<FenceProps, FenceState> {
   state: FenceState = { failed: false };
 
-  static getDerivedStateFromError(): FenceState {
-    return { failed: true };
+  static getDerivedStateFromError(error: unknown): FenceState {
+    return { failed: true, error };
   }
 
   componentDidCatch(error: Error): void {
@@ -58,9 +59,10 @@ class SectionFence extends Component<FenceProps, FenceState> {
         data-section={this.props.sectionId}
       >
         <QueryErrorRow
+          error={this.state.error}
           message={this.props.message}
           retryLabel={this.props.retryLabel}
-          onRetry={() => this.setState({ failed: false })}
+          onRetry={() => this.setState({ failed: false, error: undefined })}
         />
       </section>
     );

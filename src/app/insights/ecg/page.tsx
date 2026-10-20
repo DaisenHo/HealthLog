@@ -39,7 +39,7 @@ export default function InsightsEcgPage() {
   // Reuse the SAME query cell `<EcgSection>` reads (`insightsEcgList`) so the
   // page and the section share one cache entry. The page only needs the
   // `hasRecordings` flag to choose between the empty state and the section.
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsEcgList(),
     queryFn: () => apiGet<{ hasRecordings: boolean }>("/api/insights/ecg"),
     enabled: isAuthenticated,
@@ -55,7 +55,7 @@ export default function InsightsEcgPage() {
         title={t("insights.ecg.sectionTitle")}
         description={t("insights.subPage.ecgDescription")}
       >
-        <QueryErrorCard onRetry={() => refetch()} />
+        <QueryErrorCard error={error} onRetry={() => refetch()} />
       </SubPageShell>
     );
   }

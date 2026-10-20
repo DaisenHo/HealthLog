@@ -191,6 +191,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
     data: list,
     isLoading,
     isError: listError,
+    error: listFailure,
     refetch: refetchList,
   } = useInfiniteQuery({
     queryKey: queryKeys.labResultsInfinite({ biomarkerId, sortDir: "desc" }),
@@ -332,6 +333,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
           description={description}
         />
         <QueryErrorCard
+          error={markerError ? markerFailure : listFailure}
           title={t("labs.loadError")}
           onRetry={() => {
             if (markerError) void refetchMarker();

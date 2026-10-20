@@ -240,7 +240,7 @@ function CoachPlansBody({ readOnly }: { readOnly: boolean }) {
         )}
       >
         {query.isError ? (
-          <QueryErrorCard onRetry={() => query.refetch()} />
+          <QueryErrorCard error={query.error} onRetry={() => query.refetch()} />
         ) : query.isLoading ? (
           <div
             data-slot="coach-plans-loading"

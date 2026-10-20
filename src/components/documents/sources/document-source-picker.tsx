@@ -552,6 +552,7 @@ export function DocumentSourcePicker({
           </div>
         ) : search.isError ? (
           <QueryErrorRow
+            error={search.error}
             message={sourceErrorMessage(t, errorCodeOf(search.error))}
             onRetry={() => void search.refetch()}
             slot="document-source-error"

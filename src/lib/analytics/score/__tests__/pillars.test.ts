@@ -373,6 +373,38 @@ describe("reference-score pillars", () => {
     }
   });
 
+  it("holds regularity back until 21 nights carry a midpoint, not 21 nights", () => {
+    const nights = days(24, 480).map((point, index) => ({
+      night: point.day,
+      asleepMinutes: point.value,
+      // Four nap-only days count toward the level but have no place on the
+      // clock, which leaves 20 midpoints.
+      midpoint: index % 6 === 0 ? null : 180,
+    }));
+    const result = computeSleepPillar({
+      ...live,
+      asOf: NOW,
+      ageYears: 40,
+      nights,
+      sources: ["APPLE_HEALTH"],
+    });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.value.observed.label).not.toContain("regularity");
+    }
+    const enough = computeSleepPillar({
+      ...live,
+      asOf: NOW,
+      ageYears: 40,
+      nights: nights.map((n) => ({ ...n, midpoint: 180 })),
+      sources: ["APPLE_HEALTH"],
+    });
+    if (enough.status === "ok") {
+      expect(enough.value.observed.label).toContain("regularity");
+    }
+    expect(enough.status).toBe("ok");
+  });
+
   it("scores exactly 28 sleep calendar keys", () => {
     const nights = days(29, 600).map((point) => ({
       night: point.day,

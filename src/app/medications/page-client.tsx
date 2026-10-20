@@ -333,6 +333,7 @@ export default function MedicationsPageClient() {
     data: medications,
     isLoading,
     isError,
+    error,
     refetch: refetchMedications,
   } = useQuery({
     queryKey: queryKeys.medications(),
@@ -656,6 +657,7 @@ export default function MedicationsPageClient() {
         </div>
       ) : isError ? (
         <QueryErrorCard
+          error={error}
           description={t("medications.loadFailed")}
           retryLabel={t("medications.retryLoad")}
           onRetry={() => void refetchMedications()}

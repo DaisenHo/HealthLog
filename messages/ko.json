@@ -55,7 +55,9 @@
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
     "errorIdCopied": "오류 ID 복사됨",
-    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요."
+    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요.",
+    "sessionEnded": "세션이 만료되었어요. 계속하려면 다시 로그인해 주세요.",
+    "signInAgain": "로그인"
   },
   "apiErrors": {
     "measurement": {
@@ -4395,7 +4397,7 @@
             "composition": "구성"
           },
           "gap": {
-            "fewNights": "아직 밤이 부족함 ({count}/3)",
+            "fewNights": "아직 밤이 부족함 ({count}/{needed})",
             "noMainSleep": "최근 하루는 낮잠만 있음"
           }
         },
@@ -4664,9 +4666,9 @@
       "description": "몸이 얼마나 회복했는지: 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
       "scoreCrossLink": "종합 회복 점수 보기",
       "emptyTitle": "아직 회복 데이터가 없어요",
-      "empty": "아직 여기에 표시할 내용이 없어요. 이 페이지는 WHOOP과 Polar가 기록하는 충전, 부하, 운동량 값과 Oura의 회복 탄력성 단계를 보여줘요. Oura의 준비도(Readiness)는 위에 연결된 회복 점수에 표시돼요.",
-      "emptyOuraPermission": "Oura는 연결되어 있지만 허용된 권한에 심장 건강 데이터가 빠져 있어요. Oura의 회복 탄력성 단계는 바로 이 데이터에 속해요. 설정, 통합에서 Oura를 한 번 다시 연결하고 심장 건강 접근을 허용하면 다음 동기화 때 여기에 단계가 표시돼요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
-      "emptyOuraNoResilience": "Oura가 연결되어 있지만 이 계정의 회복 탄력성 단계가 아직 도착하지 않았어요. HealthLog는 동기화할 때마다 요청하므로 Oura가 보내는 즉시 여기에 표시돼요. Oura 앱에 단계가 보인다면 설정, 통합의 Oura 카드에서 이 연결이 가져올 수 없는 항목을 확인할 수 있어요. Oura의 준비도(Readiness)는 이미 위에 연결된 회복 점수에 표시돼요.",
+      "empty": "이 페이지에는 WHOOP 또는 Polar의 회복, 부하, 훈련 부하 값과 Oura의 회복탄력성 수준이 표시돼요.",
+      "emptyOuraPermission": "Oura의 회복탄력성 수준에는 심장 건강 데이터 접근 권한이 필요하니, 연동에서 Oura를 한 번 다시 연결하고 허용해 주세요.",
+      "emptyOuraNoResilience": "Oura가 연결되어 있으며, Oura가 회복탄력성 수준을 제공하는 즉시 여기에 표시돼요.",
       "emptyAction": "통합 열기",
       "block": {
         "ansChargeExplainer": "오늘 하루를 맞을 자율신경계의 충전 상태예요. 밤사이 심장·호흡 신호에서 읽어낸 재충전 지표예요.",

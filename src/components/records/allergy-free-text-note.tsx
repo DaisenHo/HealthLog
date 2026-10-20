@@ -133,6 +133,7 @@ export function AllergyFreeTextNote({
       {query.isError ? (
         <>
           <QueryErrorRow
+            error={query.error}
             message={t("settings.ai.aboutMe.loadError")}
             onRetry={() => query.refetch()}
           />

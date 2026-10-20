@@ -52,6 +52,8 @@ export interface UseSleepNightResult {
    *  night that carried nothing. */
   data: SleepNightPayload | undefined;
   isError: boolean;
+  /** The failed read's error, for the error row to read. */
+  error: unknown;
   refetch: () => void;
 }
 
@@ -65,7 +67,7 @@ export function useSleepNight(
   date: string | undefined,
   enabled: boolean,
 ): UseSleepNightResult {
-  const { data, isError, refetch } = useQuery({
+  const { data, isError, error, refetch } = useQuery({
     queryKey: queryKeys.sleepNight(date),
     queryFn: () =>
       apiGet<SleepNightPayload>(
@@ -76,5 +78,5 @@ export function useSleepNight(
     refetchOnWindowFocus: false,
   });
 
-  return { data, isError, refetch: () => void refetch() };
+  return { data, isError, error, refetch: () => void refetch() };
 }

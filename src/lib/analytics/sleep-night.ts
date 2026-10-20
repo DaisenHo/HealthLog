@@ -48,7 +48,7 @@
  * measured on the absolute UTC instant, so it is immune to DST shifts.
  *
  * Each session is keyed by the LOCAL WAKE DAY — `userDayKey` of the session's
- * LAST segment (its end instant) in the user's timezone. This matches the
+ * LAST row end over every writer, in the user's timezone. This matches the
  * Apple Health convention (a sleep session is attributed to the date you wake
  * up) and keeps the keying tz/DST-correct because it runs on the real instant.
  *
@@ -58,9 +58,12 @@
  * day under one key so the headline "time asleep" for a day is the day's
  * total. `reconstructSleepSessions` keeps each session SEPARATE, and
  * `pickMainNightAndNaps` applies the convention the UI needs: the MAIN night
- * is the session with the most asleep minutes (normally the overnight block),
- * and every other session on the same wake day is a NAP, surfaced separately
- * and never folded into the main night's headline.
+ * is the main sleep with the most asleep minutes (normally the overnight
+ * block), and every other session on the same wake day is a NAP, surfaced
+ * separately and never folded into the main night's headline. A session is
+ * a nap rather than a main sleep when it is short and centred in the daytime
+ * (`isDaytimeNap`), so a day with an afternoon nap and no recorded night has
+ * no main night at all, rather than the nap standing in for one.
  *
  * Writer de-dup
  * -------------
@@ -127,6 +130,7 @@
  */
 import type { MeasurementSource, SleepStage } from "@/generated/prisma/client";
 import { userDayKey } from "@/lib/tz/format";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { summarize, type DataSummary } from "@/lib/analytics/trends";
 import {
   getDeviceTypeLadder,
@@ -152,6 +156,17 @@ const GRANULAR_ASLEEP_STAGES: ReadonlySet<SleepStage> = new Set<SleepStage>([
 ]);
 
 /**
+ * Every stage that counts as asleep: the granular partition plus the bare
+ * `ASLEEP` aggregate. A stage-less row counts as asleep too, but it has no
+ * stage to list. The sleep list's SQL session cut splices this list, so the
+ * two decide "does this session hold sleep?" from one definition.
+ */
+export const ASLEEP_STAGES: readonly SleepStage[] = [
+  "ASLEEP",
+  ...GRANULAR_ASLEEP_STAGES,
+];
+
+/**
  * True when any row in the set carries a GRANULAR asleep stage
  * (CORE / DEEP / REM). When this holds, the bare `ASLEEP` aggregate (and any
  * stage-less row) is the redundant unspecified twin of the granular partition
@@ -162,7 +177,10 @@ const GRANULAR_ASLEEP_STAGES: ReadonlySet<SleepStage> = new Set<SleepStage>([
 function sawGranularStage(rows: readonly SleepStageRow[]): boolean {
   for (const r of rows) {
     const stage = r.sleepStage;
-    if (stage != null && GRANULAR_ASLEEP_STAGES.has(stage)) return true;
+    // A zero-minute granular row partitions nothing: it must not strip the
+    // bare aggregate that does carry the night.
+    if (stage != null && GRANULAR_ASLEEP_STAGES.has(stage) && r.value > 0)
+      return true;
   }
   return false;
 }
@@ -199,7 +217,7 @@ function asleepMinutesOf(rows: readonly SleepStageRow[]): number {
     const stage = seg.stage;
     if (stage != null && GRANULAR_ASLEEP_STAGES.has(stage)) {
       granular += seg.minutes;
-      sawGranular = true;
+      if (seg.minutes > 0) sawGranular = true;
     } else if (stage === "ASLEEP" || stage == null) {
       // Bare unspecified aggregate (`ASLEEP`) or a stage-less legacy/manual
       // row — only used when no granular stage carries the night.
@@ -258,6 +276,70 @@ function inBedEnvelopeMinutes(rows: readonly SleepStageRow[]): number | null {
  */
 export const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
 
+/**
+ * Below this much asleep time a session can be a nap. Three hours is where
+ * wearables draw the line between a nap and a main sleep (Oura types a
+ * period `long_sleep` from three hours on).
+ */
+export const MAIN_SLEEP_MIN_MINUTES = 180;
+
+/**
+ * The night window, in local minutes-of-day: a session whose midpoint falls
+ * from 20:00 to 10:00 is night sleep however short it is. Wide enough for a
+ * late chronotype (asleep 04:00 to 12:00 has its midpoint at 08:00) and for
+ * an early one, and clear of the afternoon where naps sit.
+ */
+export const NIGHT_WINDOW_START_MINUTES = 20 * 60;
+export const NIGHT_WINDOW_END_MINUTES = 10 * 60;
+
+/**
+ * True for a session that is a nap rather than a main sleep: short (under
+ * `MAIN_SLEEP_MIN_MINUTES` asleep) AND centred in the daytime. A short night
+ * is still the night (insomnia, a newborn, split sleep); a long daytime sleep
+ * (after a night shift) is still a main sleep. The one nap rule: the nap
+ * convention, the sleep score's midpoint and every list read it. Pure.
+ */
+export function isDaytimeNap(
+  asleepMinutes: number,
+  midpointMinutes: number,
+): boolean {
+  if (asleepMinutes >= MAIN_SLEEP_MIN_MINUTES) return false;
+  const atNight =
+    midpointMinutes >= NIGHT_WINDOW_START_MINUTES ||
+    midpointMinutes < NIGHT_WINDOW_END_MINUTES;
+  return !atNight;
+}
+
+/**
+ * The centre of a session's asleep span as local minutes-of-day: its wake
+ * instant minus half its asleep minutes, read on the sleeper's wall clock.
+ */
+export function asleepMidpointMinutes(
+  end: Date,
+  asleepMinutes: number,
+  tz: string,
+): number {
+  const mid = new Date(end.getTime() - (asleepMinutes / 2) * 60_000);
+  if (tz === "UTC") return mid.getUTCHours() * 60 + mid.getUTCMinutes();
+  const { hour, minute } = wallClockInTz(mid, tz);
+  return hour * 60 + minute;
+}
+
+/**
+ * The wake day a session is filed under: the local day its last row ends on,
+ * over every writer in the session. One rule for every reader, the SQL page
+ * cut of the sleep list included, which sees every writer and cannot know the
+ * winning one. Filing by the winner alone named a different day whenever a
+ * losing writer's in-bed span ran past midnight after the winner stopped, and
+ * the list and the night view then disagreed about which day the night was.
+ */
+function wakeDayOf(rows: readonly SleepStageRow[], tz: string): string {
+  let end = rows[0].measuredAt;
+  for (const r of rows)
+    if (r.measuredAt.getTime() > end.getTime()) end = r.measuredAt;
+  return userDayKey(end, tz);
+}
+
 export interface SleepStageRow {
   value: number;
   measuredAt: Date;
@@ -271,12 +353,12 @@ export interface SleepStageRow {
    */
   source?: MeasurementSource | null;
   /**
-   * Device-type tag of the stage row (`Measurement.deviceType`, v1.4.25
-   * W8c). Distinguishes WRITERS behind one source: several HealthKit apps
+   * Device-type tag of the stage row (`Measurement.deviceType`, v1.4.25).
+   * Distinguishes WRITERS behind one source: several HealthKit apps
    * write sleep under `source = APPLE_HEALTH` (watch granular stages, phone
    * coarse in-bed, vendor-app re-exports), and collapsing on source alone
    * blends them. Optional — callers that don't select the column (and every
-   * row stored before W8c) collapse per source exactly as before.
+   * row stored before v1.4.25) collapse per source exactly as before.
    */
   deviceType?: string | null;
 }
@@ -309,9 +391,9 @@ export interface SleepNight {
   stages: Partial<Record<SleepStage, number>>;
   /**
    * Non-null when two writer buckets reported clearly different asleep
-   * totals for the night's MAIN session — the same-wake-day session with
+   * totals for the night's MAIN session — the same-wake-day main sleep with
    * the most asleep minutes, normally the overnight block (see
-   * `sessionSourceDiscrepancy`). Sessions never cross-compare: a nap's
+   * `pickMainNightAndNaps` and `sessionSourceDiscrepancy`). Sessions never cross-compare: a nap's
    * writers are not measured against the overnight's. Observational only —
    * the served `asleepMinutes` stays the winning writer's total; the
    * annotation lets the UI mark the number with a discreet
@@ -319,12 +401,13 @@ export interface SleepNight {
    */
   sourceDiscrepancy: SleepSourceDiscrepancy | null;
   /**
-   * The night's MAIN session alone: the same-wake-day session with the most
-   * asleep minutes (the one `sourceDiscrepancy` reads), its wake instant and
-   * its own asleep minutes. A nap on the same wake day is in the night's
-   * totals but not here, so a reader that places the night on the clock (the
-   * sleep midpoint) is not dragged into the afternoon by it. Null when no
-   * session carries asleep minutes.
+   * The night's MAIN session alone, chosen by the nap convention
+   * (`pickMainNightAndNaps`: the main sleep with the most asleep minutes, the
+   * one `sourceDiscrepancy` reads), its wake instant and its own asleep
+   * minutes. A nap on the same wake day is in the night's totals but not
+   * here, so a reader that places the night on the clock (the sleep midpoint)
+   * is not dragged into the afternoon by it. Null when no session carries
+   * asleep minutes, and on a day whose only sleep is daytime naps.
    */
   mainSession: { end: Date; asleepMinutes: number } | null;
 }
@@ -643,13 +726,9 @@ export function reconstructSleepNights(
     const canonical = pickSessionWriter(session, sleepLadder, deviceLadder);
     const kept = session.filter((r) => writerKeyOf(r) === canonical);
     const pool = kept.length > 0 ? kept : session;
-    // The wake day is the LATEST segment END in the session (Apple Health
-    // attributes a session to the morning you wake up).
-    const wakeInstant = pool.reduce(
-      (max, r) => (r.measuredAt.getTime() > max.getTime() ? r.measuredAt : max),
-      pool[0].measuredAt,
-    );
-    const key = userDayKey(wakeInstant, tz);
+    // The wake day is the session's latest row end (Apple Health attributes
+    // a session to the morning you wake up), over every writer.
+    const key = wakeDayOf(session, tz);
     const list = byNight.get(key) ?? [];
     list.push({ pool, all: session });
     byNight.set(key, list);
@@ -671,9 +750,9 @@ export function reconstructSleepNights(
     // edits.
     let latest = nightSessions[0].pool[0].measuredAt;
     const stages: Partial<Record<SleepStage, number>> = {};
-    // MAIN session of the night = most asleep minutes (same per-session
-    // asleep total the headline sums; tie → later wake instant, matching
-    // `pickMainNightAndNaps`). Its FULL raw row set (every writer,
+    // MAIN session of the night = the main sleep (not a daytime nap) with
+    // the most asleep minutes (same per-session asleep total the headline
+    // sums; tie → later wake instant), exactly as `pickMainNightAndNaps`. Its FULL raw row set (every writer,
     // pre-collapse) feeds the night's source-discrepancy annotation —
     // per session, so a nap's writers never cross-compare against the
     // overnight block's.
@@ -731,6 +810,10 @@ export function reconstructSleepNights(
       }
       if (
         sessionAsleep > 0 &&
+        !isDaytimeNap(
+          sessionAsleep,
+          asleepMidpointMinutes(new Date(sessionEnd), sessionAsleep, tz),
+        ) &&
         (sessionAsleep > mainSessionAsleep ||
           (sessionAsleep === mainSessionAsleep && sessionEnd > mainSessionEnd))
       ) {
@@ -844,6 +927,12 @@ export interface SleepSession {
    * "sources disagree" hint.
    */
   sourceDiscrepancy: SleepSourceDiscrepancy | null;
+  /**
+   * `true` when the session is a daytime nap rather than a main sleep
+   * (`isDaytimeNap`). Decided here, once, so the nap convention, the sleep
+   * score and every list read the same answer.
+   */
+  daytimeNap: boolean;
 }
 
 /** Resolve a stage row to its absolute span (start = end − duration). */
@@ -1079,7 +1168,7 @@ export function reconstructSleepSessions(
     const asleep = asleepMinutesOf(pool);
     const canonicalSource = sourceOfWriterKey(canonical);
     sessions.push({
-      night: userDayKey(latest, tz),
+      night: wakeDayOf(session, tz),
       source:
         canonicalSource === NO_SOURCE
           ? null
@@ -1101,21 +1190,28 @@ export function reconstructSleepSessions(
       // losing bucket's disagreement is visible; the served totals above
       // stay winner-only.
       sourceDiscrepancy: sessionSourceDiscrepancy(session),
+      daytimeNap: isDaytimeNap(
+        asleep,
+        asleepMidpointMinutes(latest, asleep, tz),
+      ),
     });
   }
   return sessions.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
 /**
- * Apply the NAP convention to a wake-day's sessions: the MAIN night is the
- * session with the most asleep minutes (normally the overnight block); every
- * other session on the same wake day is a nap, surfaced separately and never
- * folded into the main night's headline.
+ * Apply the NAP convention to a wake-day's sessions. The MAIN night is the
+ * main-sleep session (see `isDaytimeNap`) with the most asleep minutes,
+ * normally the overnight block; every other scorable session on the same wake
+ * day is a nap, surfaced separately and never folded into the main night's
+ * headline. A day whose only sleep is daytime naps has no main night: `main`
+ * is null and the naps are all there is.
  *
  * Returns the main session plus the naps (sorted by start). When the input
  * holds sessions across multiple wake days, only the sessions matching the
- * main session's wake day are considered naps — call once per wake day, or
- * pass a single wake day's sessions.
+ * main session's wake day (or, without one, the latest session's) are
+ * considered naps — call once per wake day, or pass a single wake day's
+ * sessions.
  */
 export function pickMainNightAndNaps(sessions: readonly SleepSession[]): {
   main: SleepSession | null;
@@ -1123,14 +1219,22 @@ export function pickMainNightAndNaps(sessions: readonly SleepSession[]): {
 } {
   const scorable = sessions.filter((s) => s.asleepMinutes > 0);
   if (scorable.length === 0) return { main: null, naps: [] };
-  // Main = most asleep minutes; tie-break on the later end (overnight wins).
-  const main = [...scorable].sort((a, b) => {
-    if (b.asleepMinutes !== a.asleepMinutes)
-      return b.asleepMinutes - a.asleepMinutes;
-    return b.end.getTime() - a.end.getTime();
-  })[0];
+  // Main = most asleep minutes among the main sleeps; tie-break on the later
+  // end (overnight wins).
+  const main =
+    scorable
+      .filter((s) => !s.daytimeNap)
+      .sort((a, b) => {
+        if (b.asleepMinutes !== a.asleepMinutes)
+          return b.asleepMinutes - a.asleepMinutes;
+        return b.end.getTime() - a.end.getTime();
+      })[0] ?? null;
+  const day =
+    main?.night ??
+    scorable.reduce((a, b) => (b.end.getTime() > a.end.getTime() ? b : a))
+      .night;
   const naps = scorable
-    .filter((s) => s !== main && s.night === main.night)
+    .filter((s) => s !== main && s.night === day)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
   return { main, naps };
 }
@@ -1139,8 +1243,11 @@ export function pickMainNightAndNaps(sessions: readonly SleepSession[]): {
 export interface SleepDaySplit {
   /** Wake-day key (YYYY-MM-DD) in the user's timezone. */
   night: string;
-  /** The overnight block — the session with the most asleep minutes. */
-  main: SleepSession;
+  /**
+   * The main sleep (see `pickMainNightAndNaps`), or null on a day whose only
+   * sleep is daytime naps.
+   */
+  main: SleepSession | null;
   /** Every other scorable session on the same wake day, sorted by start. */
   naps: SleepSession[];
 }
@@ -1154,8 +1261,8 @@ export interface SleepDaySplit {
  * than growing its own idea of a night. There is exactly one nap classifier in
  * this codebase and it is `pickMainNightAndNaps`; this is its multi-day form.
  *
- * Days whose sessions carry no asleep minutes are dropped (no main night to
- * report). The result is sorted ascending by wake day.
+ * Days whose sessions carry no asleep minutes are dropped; a day of naps
+ * alone is kept with `main` null. The result is sorted ascending by wake day.
  */
 export function separateNightsAndNaps(
   sessions: readonly SleepSession[],
@@ -1169,7 +1276,7 @@ export function separateNightsAndNaps(
   const days: SleepDaySplit[] = [];
   for (const [night, daySessions] of byDay) {
     const { main, naps } = pickMainNightAndNaps(daySessions);
-    if (!main) continue;
+    if (!main && naps.length === 0) continue;
     days.push({ night, main, naps });
   }
   return days.sort((a, b) => a.night.localeCompare(b.night));

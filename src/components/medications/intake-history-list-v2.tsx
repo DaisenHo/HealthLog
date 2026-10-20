@@ -201,28 +201,29 @@ export function IntakeHistoryListV2({
 
   const offset = page * pageSize;
 
-  const { data, isLoading, isError, refetch } = useQuery<IntakeListResponse>({
-    queryKey: queryKeys.medicationIntakeList(medicationId, {
-      sortBy,
-      sortDir,
-      limit: pageSize,
-      offset,
-      status: STATUS_FILTER,
-    }),
-    queryFn: async () => {
-      const params = new URLSearchParams({
+  const { data, isLoading, isError, error, refetch } =
+    useQuery<IntakeListResponse>({
+      queryKey: queryKeys.medicationIntakeList(medicationId, {
         sortBy,
         sortDir,
-        limit: String(pageSize),
-        offset: String(offset),
+        limit: pageSize,
+        offset,
         status: STATUS_FILTER,
-      });
-      return apiGet<IntakeListResponse>(
-        `/api/medications/${medicationId}/intake?${params.toString()}`,
-      );
-    },
-    enabled: isAuthenticated,
-  });
+      }),
+      queryFn: async () => {
+        const params = new URLSearchParams({
+          sortBy,
+          sortDir,
+          limit: String(pageSize),
+          offset: String(offset),
+          status: STATUS_FILTER,
+        });
+        return apiGet<IntakeListResponse>(
+          `/api/medications/${medicationId}/intake?${params.toString()}`,
+        );
+      },
+      enabled: isAuthenticated,
+    });
 
   const sourceLabels: Record<IntakeSourceValue, string> = useMemo(
     () =>
@@ -274,6 +275,7 @@ export function IntakeHistoryListV2({
           </div>
         ) : isError ? (
           <QueryErrorCard
+            error={error}
             title={t("medications.loadFailed")}
             onRetry={() => void refetch()}
           />

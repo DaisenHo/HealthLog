@@ -110,7 +110,7 @@ export function buildFeedbackBuckets(
       row.metricSourceType,
       row.providerType,
       row.promptVersion,
-    ].join("");
+    ].join("\x01");
     const existing = map.get(key);
     if (existing) {
       if (row.helpful) existing.helpful += 1;

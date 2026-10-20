@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Tag } from "lucide-react";
 
-import { ReadFailureRow } from "@/components/ui/read-failure-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
@@ -124,7 +124,7 @@ export function MoodTagPicker({
 
   if (isError && !data) {
     return (
-      <ReadFailureRow
+      <QueryErrorRow
         error={error}
         slot="mood-tag-picker-error"
         message={t("mood.tagCatalogLoadError")}

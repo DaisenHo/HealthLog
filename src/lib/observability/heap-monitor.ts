@@ -9,6 +9,7 @@ import {
 import { envFlag, envOr } from "@/lib/env";
 import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { emitIfSampled } from "@/lib/logging/transports";
+import { megabytes } from "@/lib/support/heap-limit";
 
 import { inFlightRegistry, type InFlightRegistry } from "./in-flight";
 
@@ -32,7 +33,11 @@ import { inFlightRegistry, type InFlightRegistry } from "./in-flight";
  *     flight and the routes most of them share (see `in-flight.ts`). It
  *     re-arms only after the heap has fallen back under 70 % AND thirty minutes
  *     have passed, so a heap hovering at the line writes one report, not one
- *     every check.
+ *     every check. A second tier at 95 % writes the same report with no
+ *     cooldown at all, and re-arms as soon as the heap is back under 85 %:
+ *     a heap that climbs to its limit within the half hour after an 85 %
+ *     report would otherwise die with only that older report on record, the
+ *     requests that pushed it over missing from it.
  *   - `runtime.heap.snapshot`, at `warn`, only with the opt-in below: where
  *     the snapshot was written, or that writing it failed.
  *
@@ -63,6 +68,7 @@ export const HEAP_SAMPLE_INTERVAL_MS = 5 * 60_000;
 export const HEAP_SAMPLE_INTERVAL_ELEVATED_MS = 60_000;
 export const HEAP_ELEVATED_RATIO = 0.7;
 export const HEAP_PRESSURE_RATIO = 0.85;
+export const HEAP_CRITICAL_RATIO = 0.95;
 export const HEAP_PRESSURE_COOLDOWN_MS = 30 * 60_000;
 export const HEAP_PRESSURE_LIST_MAX = 50;
 
@@ -99,10 +105,6 @@ export interface HeapMonitorDeps {
   ) => void;
   snapshotEnabled: boolean;
   writeSnapshot: () => SnapshotOutcome;
-}
-
-function megabytes(bytes: number): number {
-  return Math.round(bytes / 1024 / 1024);
 }
 
 function defaultReadHeap(): { used: number; limit: number } {
@@ -205,6 +207,7 @@ export function writeDiagnosticHeapSnapshot(): SnapshotOutcome {
 export class HeapMonitor {
   private lastSampleAt: number | null = null;
   private pressureArmed = true;
+  private criticalArmed = true;
   private lastPressureAt: number | null = null;
   private snapshotTaken = false;
 
@@ -225,11 +228,29 @@ export class HeapMonitor {
       this.pressureArmed = true;
     }
 
+    if (!this.criticalArmed && ratio < HEAP_PRESSURE_RATIO) {
+      this.criticalArmed = true;
+    }
+
     if (this.pressureArmed && ratio >= HEAP_PRESSURE_RATIO) {
       this.pressureArmed = false;
       this.lastPressureAt = at;
       this.lastSampleAt = at;
-      this.reportPressure(at);
+      // A heap that jumps straight past 95 % gets one report, at the tier
+      // it reached.
+      const critical = ratio >= HEAP_CRITICAL_RATIO;
+      if (critical) this.criticalArmed = false;
+      this.reportPressure(
+        at,
+        critical ? HEAP_CRITICAL_RATIO : HEAP_PRESSURE_RATIO,
+      );
+      return;
+    }
+
+    if (this.criticalArmed && ratio >= HEAP_CRITICAL_RATIO) {
+      this.criticalArmed = false;
+      this.lastSampleAt = at;
+      this.reportPressure(at, HEAP_CRITICAL_RATIO);
       return;
     }
 
@@ -245,7 +266,7 @@ export class HeapMonitor {
     }
   }
 
-  private reportPressure(at: number): void {
+  private reportPressure(at: number, tier: number): void {
     const { registry, emit, readFigures } = this.deps;
     const inFlight = registry.report(at, HEAP_PRESSURE_LIST_MAX);
     const willSnapshot = this.deps.snapshotEnabled && !this.snapshotTaken;
@@ -253,7 +274,7 @@ export class HeapMonitor {
     // process over, the report is already on stdout.
     emit(HEAP_TASK_NAMES.pressure, "warn", {
       ...readFigures(),
-      pressure_ratio: HEAP_PRESSURE_RATIO,
+      pressure_ratio: tier,
       in_flight_oldest: inFlight.oldest,
       in_flight_by_route: inFlight.by_route,
       snapshot: willSnapshot ? "pending" : "disabled",

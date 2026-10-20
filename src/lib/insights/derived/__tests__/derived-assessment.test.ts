@@ -76,6 +76,7 @@ const sleepScore: SleepScoreValue = {
   ],
   windowNights: 20,
   rhythmNights: 20,
+  rhythmMinNights: 3,
   series: [78, 82],
 };
 

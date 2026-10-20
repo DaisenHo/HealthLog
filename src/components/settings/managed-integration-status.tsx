@@ -73,7 +73,12 @@ export function ManagedIntegrationStatus() {
   });
 
   if (statusQuery.isError) {
-    return <QueryErrorCard onRetry={() => void statusQuery.refetch()} />;
+    return (
+      <QueryErrorCard
+        error={statusQuery.error}
+        onRetry={() => void statusQuery.refetch()}
+      />
+    );
   }
 
   const loading = statusQuery.isLoading || !statusQuery.data;

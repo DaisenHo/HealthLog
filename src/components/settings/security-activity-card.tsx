@@ -68,7 +68,7 @@ export function SecurityActivityCard({
   const [open, setOpen] = useState(false);
   const regionId = useId();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.securityActivity(),
     queryFn: () =>
       apiGet<{ events: ActivityRow[] }>("/api/auth/me/security-activity"),
@@ -110,6 +110,7 @@ export function SecurityActivityCard({
 
         {isError && (
           <QueryErrorRow
+            error={error}
             message={t("settings.security.activityLoadError")}
             onRetry={() => refetch()}
           />

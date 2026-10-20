@@ -155,6 +155,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
     data,
     isLoading,
     isError,
+    error,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -330,7 +331,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       )}
 
       {!isLoading && isError && (
-        <QueryErrorCard onRetry={() => void refetch()} />
+        <QueryErrorCard error={error} onRetry={() => void refetch()} />
       )}
 
       {!isLoading && !isError && items.length === 0 && (

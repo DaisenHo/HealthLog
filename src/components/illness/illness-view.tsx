@@ -370,6 +370,7 @@ export function IllnessView() {
     data: episodes,
     isLoading,
     isError,
+    error,
     refetch,
   } = useIllnessEpisodes(true);
   const resolve = useResolveEpisode();
@@ -460,6 +461,7 @@ export function IllnessView() {
         // A read failure is NOT an empty journal — surface the error + Retry so
         // an outage never reads as "no episodes yet".
         <QueryErrorCard
+          error={error}
           title={t("illness.listLoadError")}
           onRetry={() => void refetch()}
         />

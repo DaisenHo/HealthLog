@@ -38,7 +38,7 @@ interface AuditLogResponse {
 export function RecentAuditPreview() {
   const { t } = useTranslations();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.adminAuditOverview(),
     queryFn: async () => {
       return apiGet<AuditLogResponse>(
@@ -84,6 +84,7 @@ export function RecentAuditPreview() {
           </div>
         ) : isError ? (
           <QueryErrorRow
+            error={error}
             message={t("admin.overview.auditLoadError")}
             onRetry={() => void refetch()}
           />

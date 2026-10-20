@@ -173,10 +173,8 @@ export function CoincidentDeviationCard({
   className,
 }: CoincidentDeviationCardProps) {
   const { t } = useTranslations();
-  const { data, isError, refetch } = useDerivedMetric<CoincidentDeviationValue>(
-    COINCIDENT_METRIC,
-    { enabled },
-  );
+  const { data, isError, error, refetch } =
+    useDerivedMetric<CoincidentDeviationValue>(COINCIDENT_METRIC, { enabled });
 
   // A failed read says so with a retry. Without this branch the card sat on
   // its skeleton forever, which read as "still loading" rather than failed.
@@ -192,6 +190,7 @@ export function CoincidentDeviationCard({
           title={t("insights.derived.coincident.cardTitle")}
         />
         <QueryErrorRow
+          error={error}
           slot="coincident-deviation-error"
           onRetry={() => void refetch()}
         />

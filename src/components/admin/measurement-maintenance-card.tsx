@@ -111,6 +111,7 @@ export function MeasurementMaintenanceCard() {
   if (status.isError) {
     return (
       <QueryErrorCard
+        error={status.error}
         title={t("admin.section.maintenance.loadError")}
         onRetry={() => void status.refetch()}
       />

@@ -7,7 +7,7 @@ A Node process that reaches its heap limit stops with `JavaScript heap out of me
 Two background wide events, no configuration needed:
 
 - `runtime.heap.sampled` (info), every five minutes, and every minute while the heap is at or above 70 % of its limit. It goes to stdout and Loki but not to Admin > App logs, so it cannot push other events out of that page's 500-entry buffer. It carries `heap_used_mb`, `heap_total_mb`, `heap_limit_mb`, `heap_used_ratio`, `old_space_mb`, `rss_mb`, `external_mb`, `array_buffers_mb`, `active_requests`, `active_jobs`, `in_flight_dropped` and `uptime_s`.
-- `runtime.heap.pressure` (warn), the first time the heap reaches 85 % of its limit. Besides the figures above it lists the 50 oldest requests and jobs in flight (`in_flight_oldest`: kind, method, route, age in seconds, whether it was a server action) and the routes most of them share (`in_flight_by_route`). Routes are reduced to their shape: no query string, secret path segments replaced by `[REDACTED]`, ids by `:id`, anything unusual by `:x`. It writes again only after the heap has dropped below 70 % and thirty minutes have passed.
+- `runtime.heap.pressure` (warn), the first time the heap reaches 85 % of its limit. Besides the figures above it lists the 50 oldest requests and jobs in flight (`in_flight_oldest`: kind, method, route, age in seconds, whether it was a server action) and the routes most of them share (`in_flight_by_route`). Routes are reduced to their shape: no query string, secret path segments replaced by `[REDACTED]`, ids by `:id`, anything unusual by `:x`. It writes again only after the heap has dropped below 70 % and thirty minutes have passed. One exception: when the heap reaches 95 %, the same report is written again at once, with `pressure_ratio: 0.95`, whatever the cooldown; that tier re-arms as soon as the heap is back under 85 %. A heap that climbs to its limit shortly after an 85 % report therefore still leaves a report naming the work that pushed it over.
 
 The heap is read every five seconds, a single call that takes microseconds. Tracking requests costs one map insert and one delete per request.
 
@@ -16,6 +16,16 @@ To find the last lines before a crash:
 ```sh
 docker compose logs app --since 2h | grep '"runtime.heap.'
 ```
+
+## The report Node writes when the heap runs out
+
+The image sets `NODE_OPTIONS="--report-on-fatalerror --report-filename=stderr --report-exclude-env --report-exclude-network"`. When the process runs out of heap, Node writes a diagnostic report, about 10 KB of JSON with `"trigger": "OOMError"`, to stderr just before it exits: the JavaScript stack at the failed allocation, the native stack, the heap spaces and the open handles. It lands in the container log beside the `runtime.heap.*` lines:
+
+```sh
+docker compose logs app --since 2h | grep -A400 '"trigger": "OOMError"'
+```
+
+The two exclude flags keep environment variables (keys, passwords, the database URL) and network interfaces out of the report. If you set `NODE_OPTIONS` yourself, for example to raise `--max-old-space-size`, your value replaces the image's; add the four flags to it to keep the report.
 
 ## Optional heap snapshot
 

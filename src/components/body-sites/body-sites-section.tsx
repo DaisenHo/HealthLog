@@ -93,6 +93,7 @@ export function BodySitesSection({
 
       {list.isError ? (
         <QueryErrorCard
+          error={list.error}
           title={t("bodySites.loadError")}
           onRetry={() => void list.refetch()}
         />

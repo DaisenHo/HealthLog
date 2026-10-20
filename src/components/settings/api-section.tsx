@@ -440,6 +440,7 @@ function ApiTokensCard() {
   const {
     data: tokens,
     isError,
+    error,
     isLoading,
     refetch,
   } = useQuery({
@@ -511,7 +512,7 @@ function ApiTokensCard() {
         {isError ? (
           // A read failure must not read as "no active tokens" on this
           // security surface — the §6 fall-through the token list must avoid.
-          <QueryErrorCard onRetry={() => refetch()} />
+          <QueryErrorCard error={error} onRetry={() => refetch()} />
         ) : isLoading ? (
           <div data-testid="settings-api-tokens-loading">
             <Skeleton className="h-40 w-full rounded-lg" />

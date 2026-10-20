@@ -1,14 +1,10 @@
-import { getNumberFormat, getDateTimeFormat } from "@/lib/intl/formatter-cache";
+import { getNumberFormat } from "@/lib/intl/formatter-cache";
 import {
   applyDisplayTransform,
   getQuantityTransform,
   paceSecondsPerDistanceUnit,
   type UnitPreference,
 } from "@/lib/measurements/display-transform";
-import {
-  hourCycleOptions,
-  type TimeFormatPreference,
-} from "@/lib/format-locale";
 
 /**
  * Shared formatters for the workout-detail surface. Pure helpers pulled
@@ -119,29 +115,4 @@ export function formatPaceSeconds(secPerUnit: number, unit: string): string {
     s = 0;
   }
   return `${m}:${s.toString().padStart(2, "0")} min/${unit}`;
-}
-
-export function formatDateRange(
-  startedAt: string,
-  endedAt: string,
-  locale: string,
-  timeFormat: TimeFormatPreference,
-  timeZone: string,
-): string {
-  const start = new Date(startedAt);
-  const end = new Date(endedAt);
-  const dateFmt = getDateTimeFormat(locale, {
-    timeZone,
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-  const timeFmt = getDateTimeFormat(locale, {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    ...hourCycleOptions(timeFormat),
-  });
-  return `${dateFmt.format(start)}, ${timeFmt.format(start)}–${timeFmt.format(end)}`;
 }
