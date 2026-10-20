@@ -78,6 +78,11 @@ vi.mock("@/lib/rollups/measurement-read", () => ({
 // covered by `src/lib/analytics/__tests__/mood-series.test.ts`. Pinned to an
 // empty series by default so the legacy assertions keep their "no mood"
 // expectation, and overridden per test below.
+vi.mock("@/lib/dashboard/summary-reads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/dashboard/summary-reads")>()),
+  readAllTimeCounts: vi.fn(),
+}));
+
 vi.mock("@/lib/analytics/mood-series", () => ({
   buildMoodDailySeries: vi.fn(async () => ({
     entries: [],
@@ -106,6 +111,7 @@ import { getSession } from "@/lib/auth/session";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import { buildMoodDailySeries } from "@/lib/analytics/mood-series";
 import { userDayKey } from "@/lib/tz/format";
+import { readAllTimeCounts } from "@/lib/dashboard/summary-reads";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -133,10 +139,10 @@ beforeEach(() => {
   // between tests to keep cross-test isolation.
   __resetAllCachesForTests();
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
-  // v1.4.33 — the route now issues a `groupBy` for
-  // per-type all-time count + most-recent timestamp. Default to an
-  // empty aggregate so legacy tests keep their "no data" expectations.
-  vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+  // The per-type all-time counts (`readAllTimeCounts`). Default to none so
+  // legacy tests keep their "no data" expectations; the newest reading per
+  // type, which `lastSeenAt` carries, comes from the latest-reading read.
+  vi.mocked(readAllTimeCounts).mockResolvedValue([] as never);
   // v1.11.4 — the sleep tile reads the raw per-stage SLEEP_DURATION rows
   // via `measurement.findMany` to reconstruct the night total. Default to
   // no rows so legacy tests keep their "no sleep" expectation.
@@ -249,21 +255,25 @@ describe("GET /api/dashboard/summary", () => {
     }
   });
 
-  it("surfaces lastSeenAt from the historical aggregate even when the 7-day window is empty", async () => {
+  it("surfaces lastSeenAt from the newest reading even when the 7-day window is empty", async () => {
     // Power-user path — the user has logged weight for years but
-    // hasn't touched the app in two weeks. `groupBy` returns the
-    // all-time count + most-recent timestamp; the 7-day `findMany`
-    // returns empty. The route should still emit the weight card
+    // hasn't touched the app in two weeks. The all-time count and the
+    // newest reading come back; the sparkline is empty. The route should
+    // still emit the weight card
     // with the historical `lastSeenAt` so the iOS client renders the
     // staleness caption.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const twoWeeksAgo = new Date(Date.now() - 14 * 86_400_000);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "WEIGHT",
-        _count: { _all: 312 },
-        _max: { measuredAt: twoWeeksAgo },
+        count: 312,
       },
+    ] as never);
+    // The newest reading, which `lastSeenAt` carries (first `$queryRaw` of
+    // the round: the latest-reading read).
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { type: "WEIGHT", value: 81.2, measured_at: twoWeeksAgo },
     ] as never);
     const res = await callGet(makeReq());
     const body = (await res.json()) as {
@@ -281,10 +291,9 @@ describe("GET /api/dashboard/summary", () => {
     expect(weight, "weight card must be present").toBeDefined();
     expect(weight?.allTimeCount).toBe(312);
     expect(weight?.lastSeenAt).toBe(twoWeeksAgo.toISOString());
-    // No 7-day reading → latestValue stays null but updatedAt falls
-    // through to the historical timestamp so the iOS client can
-    // build the relative-age caption from a single field.
-    expect(weight?.latestValue).toBeNull();
+    // The tile shows the historical reading (REG-11) and dates it, so the
+    // iOS client builds the relative-age caption from one field.
+    expect(weight?.latestValue).toBe(81.2);
     expect(weight?.updatedAt).toBe(twoWeeksAgo.toISOString());
   });
 
@@ -299,16 +308,14 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000);
     const sixtyOneDaysAgo = new Date(Date.now() - 61 * 86_400_000);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "BLOOD_PRESSURE_SYS",
-        _count: { _all: 14 },
-        _max: { measuredAt: sixtyDaysAgo },
+        count: 14,
       },
       {
         type: "BLOOD_PRESSURE_DIA",
-        _count: { _all: 14 },
-        _max: { measuredAt: sixtyDaysAgo },
+        count: 14,
       },
     ] as never);
     // Promise.all order: [latestEver, sparkline, streakDays].
@@ -406,11 +413,10 @@ describe("GET /api/dashboard/summary", () => {
     // don't accidentally regress the fresh-data case.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "WEIGHT",
-        _count: { _all: 200 },
-        _max: { measuredAt: twoDaysAgo },
+        count: 200,
       },
     ] as never);
     vi.mocked(prisma.$queryRaw)
@@ -457,11 +463,10 @@ describe("GET /api/dashboard/summary", () => {
     // oldest bucket first.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const days = (n: number) => new Date(Date.now() - n * 86_400_000);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "PULSE",
-        _count: { _all: 42 },
-        _max: { measuredAt: days(30) },
+        count: 42,
       },
     ] as never);
     vi.mocked(prisma.$queryRaw)
@@ -547,12 +552,14 @@ describe("GET /api/dashboard/summary", () => {
     // hint).
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "BLOOD_GLUCOSE",
-        _count: { _all: 4 },
-        _max: { measuredAt: tenDaysAgo },
+        count: 4,
       },
+    ] as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([
+      { type: "BLOOD_GLUCOSE", value: 104, measured_at: tenDaysAgo },
     ] as never);
     const res = await callGet(makeReq());
     const body = (await res.json()) as {
@@ -579,11 +586,10 @@ describe("GET /api/dashboard/summary", () => {
     // hours, NOT surface a single stage. Excludes IN_BED + AWAKE.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const wake = new Date("2026-06-04T06:00:00.000Z");
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "SLEEP_DURATION",
-        _count: { _all: 5 },
-        _max: { measuredAt: wake },
+        count: 5,
       },
     ] as never);
     // Raw per-stage rows for the night (the sleep findMany read).
@@ -654,11 +660,10 @@ describe("GET /api/dashboard/summary", () => {
     // total; the additive annotation surfaces the disagreement.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const wake = new Date("2026-06-04T06:00:00.000Z");
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "SLEEP_DURATION",
-        _count: { _all: 4 },
-        _max: { measuredAt: wake },
+        count: 4,
       },
     ] as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
@@ -780,11 +785,10 @@ describe("GET /api/dashboard/summary", () => {
     // returned shape proves the route hands `sum_value` through
     // instead of reconstructing from `mean * count`.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "ACTIVITY_STEPS",
-        _count: { _all: 7 },
-        _max: { measuredAt: new Date() },
+        count: 7,
       },
     ] as never);
     // First call: latest7d. Second call: sparkline. Third call:
@@ -824,11 +828,10 @@ describe("GET /api/dashboard/summary", () => {
 
   it("falls back to mean * count when the legacy sum_value is null (v1.4.39 W-SUM)", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
+    vi.mocked(readAllTimeCounts).mockResolvedValue([
       {
         type: "ACTIVITY_STEPS",
-        _count: { _all: 7 },
-        _max: { measuredAt: new Date() },
+        count: 7,
       },
     ] as never);
     vi.mocked(prisma.$queryRaw)

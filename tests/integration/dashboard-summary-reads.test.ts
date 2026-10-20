@@ -27,12 +27,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
+  allTimeRollupBoundary,
+  readAllTimeCounts,
   readLatestEver,
   readSparkBuckets,
   type LatestEverRow,
   type SparklineRow,
 } from "@/lib/dashboard/summary-reads";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
+import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import type {
   MeasurementType,
   RollupGranularity,
@@ -243,5 +246,94 @@ describe("dashboard summary reads — parity with the pre-v1.38.5 SQL", () => {
         .map((r) => r.bucket_start.getTime());
       expect(stamps).toEqual([...stamps].sort((a, b) => a - b));
     }
+  });
+});
+
+describe("dashboard all-time counts — parity with the live count", () => {
+  /** The pre-rollup read: one index entry per live reading. */
+  async function legacyAllTime(userId: string) {
+    const groups = await getPrismaClient().measurement.groupBy({
+      by: ["type"],
+      where: { userId, type: { in: TYPES }, deletedAt: null },
+      _count: { _all: true },
+    });
+    return new Map(groups.map((g) => [g.type, g._count._all]));
+  }
+
+  it("counts what the live count counts, from the rollups", async () => {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.create({
+      data: { username: "all-time-counts", email: "all-time@example.test" },
+    });
+    const now = new Date();
+    const boundary = allTimeRollupBoundary(now);
+
+    // A watch-dense pulse history from two sources: a reading every four
+    // minutes for two years, written set-wise the way an import lands it.
+    const twoYears = 2 * 365 * DAY;
+    for (const [source, offsetMinutes] of [
+      ["APPLE_HEALTH", 0],
+      ["WITHINGS", 2],
+    ] as const) {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO measurements
+           (id, user_id, type, value, unit, source, measured_at, created_at, updated_at)
+         SELECT md5($1 || $2 || g::text), $1, 'PULSE'::"measurement_type",
+                60 + (g % 30), 'bpm', $2::"measurement_source",
+                $3::timestamptz + make_interval(mins => g * 4 + $4), now(), now()
+           FROM generate_series(0, $5::int) AS g`,
+        user.id,
+        source,
+        new Date(now.getTime() - twoYears),
+        offsetMinutes,
+        Math.floor(twoYears / (4 * 60_000)) - 1,
+      );
+    }
+    // Weigh-ins: some older than the fold window, one tombstoned.
+    await prisma.measurement.createMany({
+      data: [
+        ...[1, 2, 3].map((years) => ({
+          userId: user.id,
+          type: "WEIGHT" as MeasurementType,
+          value: 80 + years,
+          unit: "kg",
+          measuredAt: new Date(boundary.getTime() - years * 30 * DAY),
+        })),
+        ...[3, 2, 1].map((days) => ({
+          userId: user.id,
+          type: "WEIGHT" as MeasurementType,
+          value: 79,
+          unit: "kg",
+          measuredAt: new Date(now.getTime() - days * DAY),
+          deletedAt: days === 2 ? now : null,
+        })),
+      ],
+    });
+    await recomputeUserRollups(user.id, { granularities: ["DAY"] });
+    // A type written after the fold, never bucketed: counted live.
+    await prisma.measurement.createMany({
+      data: [5, 4].map((days) => ({
+        userId: user.id,
+        type: "BLOOD_GLUCOSE" as MeasurementType,
+        value: 98,
+        unit: "mg/dL",
+        measuredAt: new Date(now.getTime() - days * DAY),
+      })),
+    });
+
+    let started = performance.now();
+    const legacy = await legacyAllTime(user.id);
+    const legacyMs = performance.now() - started;
+    started = performance.now();
+    const shipped = await readAllTimeCounts(prisma, user.id, TYPES, now);
+    const shippedMs = performance.now() - started;
+    console.log(
+      `all-time counts over ${legacy.get("PULSE")} pulse rows: live ${legacyMs.toFixed(0)} ms, rollups ${shippedMs.toFixed(0)} ms`,
+    );
+
+    expect(new Map(shipped.map((r) => [r.type, r.count]))).toEqual(legacy);
+    expect(legacy.get("PULSE")).toBeGreaterThan(500_000);
+    expect(legacy.get("WEIGHT")).toBe(5);
+    expect(legacy.get("BLOOD_GLUCOSE")).toBe(2);
   });
 });
