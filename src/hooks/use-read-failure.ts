@@ -45,7 +45,7 @@ export function useReadFailure(
         kind: "unauthenticated",
         message: t("common.sessionEnded"),
         action: {
-          label: t("common.signInAgain"),
+          label: t("common.signIn"),
           onClick: () => window.location.assign(signInHref()),
           kind: "signIn",
         },

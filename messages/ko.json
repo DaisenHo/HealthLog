@@ -55,9 +55,9 @@
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
     "errorIdCopied": "오류 ID 복사됨",
-    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요.",
-    "sessionEnded": "세션이 만료되었어요. 계속하려면 다시 로그인해 주세요.",
-    "signInAgain": "로그인"
+    "readThrottled": "지금은 요청이 너무 많으니 나중에 다시 시도해 주세요.",
+    "sessionEnded": "세션이 만료되었으니 계속하려면 다시 로그인해 주세요.",
+    "signIn": "로그인"
   },
   "apiErrors": {
     "measurement": {
@@ -4397,8 +4397,8 @@
             "composition": "구성"
           },
           "gap": {
-            "fewNights": "아직 밤이 부족함 ({count}/{needed})",
-            "noMainSleep": "최근 하루는 낮잠만 있음"
+            "fewNights": "아직 밤이 부족해요 ({needed}일 중 {count}일)",
+            "noMainSleep": "최근 하루는 낮잠만 있었어요"
           }
         },
         "READINESS": {

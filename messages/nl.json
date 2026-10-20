@@ -55,9 +55,9 @@
     "errorIdLabel": "Fout-ID",
     "errorIdCopy": "Fout-ID kopiëren",
     "errorIdCopied": "Fout-ID gekopieerd",
-    "readThrottled": "Er zijn net te veel verzoeken. Probeer het later opnieuw.",
-    "sessionEnded": "Je sessie is verlopen. Meld je opnieuw aan om verder te gaan.",
-    "signInAgain": "Aanmelden"
+    "readThrottled": "Er zijn net te veel verzoeken, dus probeer het later opnieuw.",
+    "sessionEnded": "Je sessie is verlopen, dus meld je opnieuw aan om verder te gaan.",
+    "signIn": "Aanmelden"
   },
   "apiErrors": {
     "measurement": {

@@ -91,7 +91,7 @@ describe.each([
 
   it("says a spent budget without offering a retry", () => {
     const html = render(new ApiError("Too many", 429));
-    expect(html).toContain("Too many requests just now.");
+    expect(html).toContain("There are too many requests just now");
     expect(html).not.toContain("retry");
     expect(html).not.toContain("Could not load");
     expect(html).not.toContain("Something on our side.");
@@ -100,7 +100,7 @@ describe.each([
   it("offers sign-in for an ended session, never a blank", () => {
     const html = render(new ApiError("Unauthorized", 401));
     expect(html).not.toBe("");
-    expect(html).toContain("Your session has ended.");
+    expect(html).toContain("Your session has ended");
     expect(html).toContain('data-slot="query-error-sign-in"');
     expect(html).not.toContain("retry");
   });

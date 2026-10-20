@@ -55,9 +55,9 @@
     "errorIdLabel": "ID d'erreur",
     "errorIdCopy": "Copier l'ID d'erreur",
     "errorIdCopied": "ID d'erreur copié",
-    "readThrottled": "Trop de requêtes pour le moment. Réessaie plus tard.",
-    "sessionEnded": "Ta session a expiré. Reconnecte-toi pour continuer.",
-    "signInAgain": "Se connecter"
+    "readThrottled": "Il y a trop de requêtes pour le moment, réessayez plus tard.",
+    "sessionEnded": "Votre session a expiré, reconnectez-vous pour continuer.",
+    "signIn": "Se connecter"
   },
   "apiErrors": {
     "measurement": {
@@ -4667,7 +4667,7 @@
       "scoreCrossLink": "Voir le score de récupération composite",
       "emptyTitle": "Pas encore de données de récupération",
       "empty": "Cette page se remplit avec les valeurs de récupération, d'effort et de charge de WHOOP ou Polar et avec le niveau de résilience d'Oura.",
-      "emptyOuraPermission": "Le niveau de résilience d'Oura demande l'accès aux données de santé cardiaque : reconnecte Oura une fois dans Intégrations et autorise-le.",
+      "emptyOuraPermission": "Le niveau de résilience d'Oura demande l'accès aux données de santé cardiaque : reconnectez Oura une fois dans Intégrations et autorisez-le.",
       "emptyOuraNoResilience": "Oura est connecté, et son niveau de résilience apparaîtra ici dès qu'Oura en fournira un.",
       "emptyAction": "Ouvrir les intégrations",
       "block": {
