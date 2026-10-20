@@ -193,6 +193,7 @@ import {
 
 export default function DashboardPageClient({
   batchWindow: batchWindowProp,
+  demoMode = false,
 }: {
   /**
    * v1.30.9 — the batched-series ISO window computed server-side from the
@@ -204,6 +205,12 @@ export default function DashboardPageClient({
    * under, so the prefetched slice lands instead of triggering a refetch.
    */
   batchWindow?: BatchWindow;
+  /**
+   * True on a `DEMO_MODE` instance. The demo is one shared, read-only
+   * account a visitor cannot set up, so the setup checklist has nothing to
+   * offer there, as the shell already leaves out the tour.
+   */
+  demoMode?: boolean;
 } = {}) {
   const { isAuthenticated } = useAuth();
   const mounted = useMounted();
@@ -2312,7 +2319,7 @@ export default function DashboardPageClient({
        * content (tiles, charts) keeps a stable position, and the
        * near-empty dashboards of the new accounts the card targets keep
        * it visible without scrolling anyway. */}
-      <GettingStartedChecklist />
+      {demoMode ? null : <GettingStartedChecklist />}
     </div>
   );
 }

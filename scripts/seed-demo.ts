@@ -90,6 +90,7 @@ import {
 import { ENVIRONMENT_LOCATION_AAD } from "../src/lib/crypto/encrypted-columns";
 import { sealInsightsCachedText } from "../src/lib/insights/cached-text-cipher";
 import {
+  DEFAULT_CHART_OVERLAY_PREFS,
   DEFAULT_DASHBOARD_LAYOUT,
   serializeDashboardLayout,
 } from "../src/lib/dashboard-layout";
@@ -497,16 +498,40 @@ async function seed() {
     // One row of six tiles (weight, the two blood-pressure values, resting
     // heart rate, HRV and mood) and the weight chart right below it, so the
     // first screen of the public demo shows the summary, the tiles and the
-    // start of a chart together. Every other tile stays one switch away in
-    // the layout settings; its data is seeded either way. Writing the layout
-    // verbatim keeps the demo's home page stable across default tweaks.
+    // start of a chart together. Below it only the measurement charts: the
+    // mood and medication cards, achievements, recent workouts and check-ups
+    // stay one switch away in the layout settings, their data seeded either
+    // way. Weight, BMI and blood pressure open on 90 days, resting heart rate
+    // on 30 with its 7-day trend and trend line, so each chart shows a shape
+    // rather than a flat week. Writing the layout verbatim keeps the demo's
+    // home page stable across default tweaks.
     const SHOWCASE_TILE_IDS = new Set(["weight", "bp", "pulse", "hrv", "mood"]);
+    const HIDDEN_CARD_IDS = new Set([
+      "mood",
+      "medications",
+      "achievements",
+      "recentWorkouts",
+      "vorsorge",
+    ]);
     const demoDashboardLayout = serializeDashboardLayout({
       ...DEFAULT_DASHBOARD_LAYOUT,
       widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => ({
         ...w,
+        visible: w.visible && !HIDDEN_CARD_IDS.has(w.id),
         tileVisible: SHOWCASE_TILE_IDS.has(w.id),
       })),
+      chartOverlayPrefs: {
+        weight: { ...DEFAULT_CHART_OVERLAY_PREFS, rangePoints: 90 },
+        bmi: { ...DEFAULT_CHART_OVERLAY_PREFS, rangePoints: 90 },
+        bp: { ...DEFAULT_CHART_OVERLAY_PREFS, rangePoints: 90 },
+        // The resting heart rate chart is the dashboard's `pulse` chart.
+        pulse: {
+          ...DEFAULT_CHART_OVERLAY_PREFS,
+          rangePoints: 30,
+          showTrendIndicator: true,
+          showTrendArrow: true,
+        },
+      },
     });
     await client.query(
       `UPDATE users SET dashboard_widgets_json = $1 WHERE id = $2`,
