@@ -57,6 +57,14 @@ describe("one least-squares line", () => {
         ),
     );
     expect(offenders).toEqual([]);
+    // The six readers now call the implementation: a sweep that finds fewer
+    // call sites read the wrong tree or lost one.
+    const callers = files.filter((file) =>
+      /\b(?:linearFit|fitFromSums|trendLineByTime)\s*\(/.test(
+        stripComments(readFileSync(join(SRC, file), "utf8")),
+      ),
+    );
+    expect(callers.length).toBeGreaterThanOrEqual(7);
     // The implementation itself matches, so the sweep read real files.
     expect(
       HAND_ROLLED_SLOPE.test(

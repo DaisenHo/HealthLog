@@ -70,7 +70,9 @@ export async function readRecentReadings(
  * the multi-metric overview. It read the newest 5 000 rows across all types
  * at once, so a dense stream (pulse every few minutes) filled the whole read
  * within days and every other type fell out of the overview. One index
- * descent per type now bounds each type on its own.
+ * descent per type now bounds each type on its own. The driving relation is
+ * aliased `mt`, the way `readLatestEver` aliases it, so the i18n call-site
+ * scanner does not read the SQL as a translation call.
  */
 export async function readLatestReadingsPerType(
   userId: string,
@@ -81,13 +83,13 @@ export async function readLatestReadingsPerType(
   const rows = await prisma.$queryRaw<
     Array<{ type: MeasurementType; value: number; measured_at: Date }>
   >`
-    SELECT t."type" AS "type", x."value", x."measured_at"
-    FROM unnest(${[...types]}::text[]) AS t("type")
+    SELECT mt."type" AS "type", x."value", x."measured_at"
+    FROM unnest(${[...types]}::text[]) AS mt("type")
     CROSS JOIN LATERAL (
       SELECT m."value", m."measured_at"
       FROM measurements m
       WHERE m."user_id" = ${userId}
-        AND m."type" = t."type"::measurement_type
+        AND m."type" = mt."type"::measurement_type
         AND m."deleted_at" IS NULL
       ORDER BY m."measured_at" DESC
       LIMIT ${perType}
