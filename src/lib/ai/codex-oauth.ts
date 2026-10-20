@@ -296,14 +296,18 @@ export async function refreshDeviceTokens(
 
 /**
  * OAuth error codes on the refresh grant that mean the stored refresh token
- * is dead for good: revoked, expired, already rotated, or issued to another
- * client. Retrying cannot help; only signing in again can.
+ * is dead for good: revoked, expired, or issued to another client. Retrying
+ * cannot help; only signing in again can.
+ *
+ * `refresh_token_reused` is deliberately not among them. It is what the loser
+ * of two refreshes of one token hears while the winner's rotated token is
+ * perfectly alive, so it says nothing about the sign-in: the refresh re-reads
+ * the row and carries on with the newer token (`refreshCodexCredential`).
  */
 const DEAD_REFRESH_TOKEN_CODES: ReadonlySet<string> = new Set([
   "invalid_grant",
   "invalid_refresh_token",
   "refresh_token_expired",
-  "refresh_token_reused",
   "refresh_token_invalidated",
   "invalid_token",
 ]);
@@ -333,9 +337,12 @@ export class CodexRefreshError extends Error {
   readonly oauthError: string | null;
 
   constructor(status: number, oauthError: string | null) {
+    // A bare 403 is not proof: an edge challenge in front of the issuer
+    // answers 403 to a perfectly valid grant. It keeps its own status and
+    // with it the ledger's timed auth cooldown; only a 401 or the issuer's
+    // own dead-grant code parks the sign-in until the person reconnects.
     const credentialExpired =
       status === 401 ||
-      status === 403 ||
       (oauthError !== null && DEAD_REFRESH_TOKEN_CODES.has(oauthError));
     super(
       credentialExpired
@@ -345,7 +352,7 @@ export class CodexRefreshError extends Error {
     this.name = "CodexRefreshError";
     this.credentialExpired = credentialExpired;
     this.oauthError = oauthError;
-    this.httpStatus = credentialExpired && status !== 403 ? 401 : status;
+    this.httpStatus = credentialExpired ? 401 : status;
   }
 }
 

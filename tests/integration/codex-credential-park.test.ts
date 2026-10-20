@@ -261,3 +261,61 @@ describe("a refused Codex sign-in", () => {
     expect(vi.mocked(refreshDeviceTokens)).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("two refreshes of one Codex token", () => {
+  async function codexStatus(userId: string) {
+    return (
+      await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { codexConnectionStatus: true },
+      })
+    ).codexConnectionStatus;
+  }
+
+  it("share one refresh: the slower caller never parks the winner's sign-in", async () => {
+    const user = await seedCodexUser();
+    // The issuer honours each refresh token once. The first caller's refresh
+    // takes a moment; a second refresh of the same token is refused as reused.
+    let asked = 0;
+    vi.mocked(refreshDeviceTokens).mockImplementation(async () => {
+      asked += 1;
+      if (asked > 1) throw new CodexRefreshError(400, "refresh_token_reused");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return creds("rotated", 10 * HOUR_MS);
+    });
+
+    const [first, second] = await Promise.all([
+      resolveProviderChain(user.id),
+      resolveProviderChain(user.id),
+    ]);
+
+    expect(first.map((p) => p.providerType)).toContain("codex");
+    expect(second.map((p) => p.providerType)).toContain("codex");
+    expect(asked).toBe(1);
+    expect(await codexStatus(user.id)).toBe("connected");
+    expect(parkSignals("codex")).toHaveLength(0);
+  });
+
+  it("carries on with the token a peer rotated while the issuer refused the old one", async () => {
+    const user = await seedCodexUser();
+    // Another process won the race: by the time the issuer answers this
+    // caller "reused", the peer's rotated tokens are in the row.
+    vi.mocked(refreshDeviceTokens).mockImplementation(async () => {
+      const peer = encryptCodexCreds(creds("peer", 10 * HOUR_MS));
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          codexAccessTokenEncrypted: peer.accessEncrypted,
+          codexRefreshTokenEncrypted: peer.refreshEncrypted,
+        },
+      });
+      throw new CodexRefreshError(400, "refresh_token_reused");
+    });
+
+    const chain = await resolveProviderChain(user.id);
+
+    expect(chain.map((p) => p.providerType)).toContain("codex");
+    expect(await codexStatus(user.id)).toBe("connected");
+    expect(parkSignals("codex")).toHaveLength(0);
+  });
+});
