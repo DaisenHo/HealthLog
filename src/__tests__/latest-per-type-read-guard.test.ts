@@ -14,6 +14,12 @@
  * the one cell; `computeSummariesSlice` is its builder and is called nowhere
  * else in production code.
  *
+ * The Prisma spelling of the same question is `measurement.groupBy` by type
+ * with nothing but `_max` (or nothing at all, a presence probe) and no time
+ * window: it groups every live row the account has to answer a question one
+ * index probe per type answers. Grouped reads that count, sum or average, or
+ * that are bounded in time, ask something else and pass.
+ *
  * Comments are stripped before matching, and the planted cases prove each
  * matcher finds what it claims to.
  */
@@ -36,6 +42,36 @@ function stripComments(text: string): string {
 const LATEST_PER_TYPE = /DISTINCT\s+ON\s*\(\s*(?:\w+\s*\.\s*)?"?type"?\s*\)/i;
 
 const SLICE_BUILDER_CALL = /\bcomputeSummariesSlice\s*\(/;
+
+/** Grouped presence reads that ask something the per-type probe cannot. */
+const GROUPBY_ALLOWED: Record<string, string> = {
+  "lib/measurements/import-apple-health-export.ts":
+    "Which types hold a MANUAL reading: a source-filtered presence the per-type probe does not take.",
+  "lib/jobs/insight-pregenerate.ts":
+    "Which types exist at all, with no type list to drive a per-type probe; a nightly job, not a request path.",
+};
+
+/** Each `measurement.groupBy(...)` argument that asks only latest or presence. */
+function latestOnlyGroupBys(code: string): string[] {
+  const out: string[] = [];
+  for (const m of code.matchAll(/\.measurement\s*\.\s*groupBy\s*\(/g)) {
+    let i = m.index + m[0].length;
+    let depth = 1;
+    while (depth > 0 && i < code.length) {
+      if (code[i] === "(") depth += 1;
+      else if (code[i] === ")") depth -= 1;
+      i += 1;
+    }
+    const arg = code.slice(m.index + m[0].length, i - 1);
+    const byType = /by:\s*\[\s*"type"\s*\]/.test(arg);
+    const asksMore = /\b_(?:count|sum|avg|min)\b/.test(arg);
+    const windowed = /\bmeasuredAt\s*:/.test(
+      arg.replace(/_max:\s*\{[^}]*\}/, ""),
+    );
+    if (byType && !asksMore && !windowed) out.push(arg.replace(/\s+/g, " "));
+  }
+  return out;
+}
 
 function productionFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 }).filter(
@@ -68,6 +104,49 @@ describe("latest-per-type reads", () => {
         stripComments(readFileSync(join(SRC, file), "utf8")),
       ),
     );
+    expect(offenders).toEqual([]);
+  });
+
+  it("the groupBy matcher finds a latest-only or presence-only read", () => {
+    expect(
+      latestOnlyGroupBys(
+        `prisma.measurement.groupBy({ by: ["type"], where: { userId }, _max: { measuredAt: true } })`,
+      ),
+    ).toHaveLength(1);
+    expect(
+      latestOnlyGroupBys(
+        `prisma.measurement\n .groupBy({ by: ["type"], where: { userId, deletedAt: null } })`,
+      ),
+    ).toHaveLength(1);
+    expect(
+      latestOnlyGroupBys(
+        `prisma.measurement.groupBy({ by: ["type"], where: { userId }, _count: { _all: true }, _max: { measuredAt: true } })`,
+      ),
+    ).toEqual([]);
+    expect(
+      latestOnlyGroupBys(
+        `prisma.measurement.groupBy({ by: ["type"], where: { userId, measuredAt: { gte: since } }, _max: { measuredAt: true } })`,
+      ),
+    ).toEqual([]);
+  });
+
+  it("no production read groups every row for the latest per type", () => {
+    const files = productionFiles();
+    const grouped = files.filter((file) =>
+      /\.measurement\s*\.\s*groupBy\s*\(/.test(
+        readFileSync(join(SRC, file), "utf8"),
+      ),
+    );
+    // The tree groups measurements in a dozen places; finding none means
+    // the walk read the wrong tree.
+    expect(grouped.length).toBeGreaterThanOrEqual(8);
+    const offenders = files
+      .filter((file) => !(file in GROUPBY_ALLOWED))
+      .flatMap((file) =>
+        latestOnlyGroupBys(
+          stripComments(readFileSync(join(SRC, file), "utf8")),
+        ).map((arg) => `${file}: ${arg.slice(0, 100)}`),
+      );
     expect(offenders).toEqual([]);
   });
 

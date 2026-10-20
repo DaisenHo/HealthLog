@@ -60,6 +60,13 @@ vi.mock("@/lib/db", () => ({
     ecgRecording: { findMany: vi.fn(async () => []) },
   },
 }));
+
+// The search presence probe is one index lookup per type in Postgres; the
+// suite states which types hold a live reading through this stub.
+vi.mock("@/lib/dashboard/summary-reads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/dashboard/summary-reads")>()),
+  readLatestEver: vi.fn(async () => []),
+}));
 // v1.24 — the operational reads delegate to existing server-authoritative
 // engines; stub them so the registry-wide loops never reach a real engine.
 vi.mock("@/lib/medications/scheduling/next-due", () => ({
@@ -157,6 +164,7 @@ import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { listTargetsBySource } from "@/lib/links";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import type { McpAuthContext } from "../auth";
+import { readLatestEver } from "@/lib/dashboard/summary-reads";
 
 const CTX: McpAuthContext = {
   userId: "user-1",
@@ -1229,8 +1237,8 @@ describe("v1.25 clinical signals on the MCP surface", () => {
   });
 
   it("search surfaces a present clinical signal as metric:<KEY>", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
-      { type: "GRIP_STRENGTH" },
+    vi.mocked(readLatestEver).mockResolvedValue([
+      { type: "GRIP_STRENGTH", value: 1, measured_at: new Date() },
     ] as never);
     const result = (await tool("search").run(CTX, { query: "grip" })) as {
       results: Array<{ id: string; title: string; url: string }>;
@@ -1242,7 +1250,7 @@ describe("v1.25 clinical signals on the MCP surface", () => {
   });
 
   it("search omits a clinical signal with no recorded data", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
     const result = (await tool("search").run(CTX, { query: "grip" })) as {
       results: Array<{ id: string }>;
     };
@@ -1250,7 +1258,7 @@ describe("v1.25 clinical signals on the MCP surface", () => {
   });
 
   it("fetch hydrates a clinical signal via the baseline read (not the Coach path)", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
     vi.mocked(getMetricBaseline).mockResolvedValue({
       present: true,
       metric: "Grip strength",
@@ -1292,8 +1300,8 @@ describe("metric-status-only discovery on search/fetch (v1.30 coverage review G5
   });
 
   it("search surfaces a present metric-status-only id (undiscoverable before this wave)", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([
-      { type: "WRIST_TEMPERATURE" },
+    vi.mocked(readLatestEver).mockResolvedValue([
+      { type: "WRIST_TEMPERATURE", value: 1, measured_at: new Date() },
     ] as never);
     const result = (await tool("search").run(CTX, { query: "wrist" })) as {
       results: Array<{ id: string; title: string }>;
@@ -1303,7 +1311,7 @@ describe("metric-status-only discovery on search/fetch (v1.30 coverage review G5
   });
 
   it("fetch hydrates a metric-status-only id via the baseline read", async () => {
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
     vi.mocked(getMetricBaseline).mockResolvedValue({
       present: true,
       metric: "Wrist skin temperature",
@@ -1387,7 +1395,7 @@ describe("nutrients on search / fetch (v1.30 coverage review G1)", () => {
     } as never);
     vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
     vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.measurement.groupBy).mockResolvedValue([] as never);
+    vi.mocked(readLatestEver).mockResolvedValue([] as never);
   });
 
   it("search resolves 'water' to nutrient:water when the user has logged it", async () => {
