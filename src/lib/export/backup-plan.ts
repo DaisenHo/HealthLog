@@ -960,6 +960,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   coachLastSeenAt: "OPERATIONAL",
   stravaLastActivityAt: "OPERATIONAL",
   stravaBackfillCompletedAt: "OPERATIONAL",
+  stravaBackfillResumeBefore: "OPERATIONAL",
   healthKitLastSyncedAt: "OPERATIONAL",
   healthKitLastSyncTrigger: "OPERATIONAL",
   healthKitLastBackgroundSyncAt: "OPERATIONAL",
