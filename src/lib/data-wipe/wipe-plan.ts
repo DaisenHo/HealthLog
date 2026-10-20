@@ -348,6 +348,8 @@ export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
   EncryptionKeyCanary:
     "one known value per configured encryption key id, checked at boot; belongs to the instance's keys, not to any account",
   RateLimit: "instance-wide rate-limit buckets, keyed by string, self-expiring",
+  OAuthCallbackClaim:
+    "single-use claims on in-flight OAuth callbacks, keyed on a hash of the state, minutes-lived and swept by expiry; no user id",
   HostMetric: "instance-wide host telemetry, not attributable to an account",
   OffhostBackupKeyUse:
     "per encryption key, when the nightly off-host run last wrote an object needing it; says nothing about any account",

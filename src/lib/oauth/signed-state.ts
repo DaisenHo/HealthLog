@@ -139,7 +139,7 @@ export function verifySignedState(
 export function stateMatchesCookie(
   urlState: string | null | undefined,
   cookieState: string | null | undefined,
-): boolean {
+): urlState is string {
   if (!urlState || !cookieState) return false;
   if (urlState.length !== cookieState.length) return false;
   return timingSafeEqual(Buffer.from(urlState), Buffer.from(cookieState));

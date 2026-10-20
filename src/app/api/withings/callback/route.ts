@@ -9,6 +9,11 @@ import { WITHINGS_OAUTH_STATE_COOKIE } from "@/lib/withings/oauth-state";
 import { setupWebhook } from "@/lib/withings/sync";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
+import {
+  consumeLedgerState,
+  duplicateOAuthCallback,
+  settleOAuthCallback,
+} from "@/lib/oauth/callback-claim";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 
@@ -39,6 +44,12 @@ import { timingSafeEqual } from "node:crypto";
  * carries only the opaque nonce, so a future refactor flipping it to
  * non-httpOnly cannot leak the user id into request logs / network
  * captures.
+ *
+ * A repeat of a consumed nonce is told apart from a replay by the callback
+ * claim taken in the same transaction (`src/lib/oauth/callback-claim.ts`): a
+ * browser that delivers the callback twice gets one exchange, and the repeat
+ * follows the first request to the same page. Only a nonce with no claim left
+ * lands on `replay`.
  */
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -88,15 +99,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // lookup before either issues the delete.
   let stateRow: { userId: string; expiresAt: Date } | null = null;
   try {
-    stateRow = await prisma.withingsOAuthState.delete({
-      where: { nonce: state },
-    });
+    stateRow = await consumeLedgerState("withings", state, (tx) =>
+      tx.withingsOAuthState.delete({ where: { nonce: state } }),
+    );
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2025"
     ) {
       // Row already consumed (replay) or never existed.
+      // A duplicate of a callback that is consuming or has consumed this
+      // row: follow that request's result instead of showing an error.
+      const duplicate = await duplicateOAuthCallback("withings", state, {
+        fallbackUrl: new URL(
+          "/settings/integrations",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ).toString(),
+        stateCookie: WITHINGS_OAUTH_STATE_COOKIE,
+      });
+      if (duplicate) return duplicate;
       annotate({ meta: { reason: "replay" } });
       return NextResponse.redirect(
         new URL(
@@ -125,116 +146,119 @@ export const GET = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  // Validity checks against the consumed row. The row is already
-  // gone from the ledger by this point — single-use semantics —
-  // whether the expiry tripped, the userId mismatched, or
-  // everything looked good.
-  if (stateRow.expiresAt <= new Date()) {
-    annotate({ meta: { reason: "expired" } });
-    return NextResponse.redirect(
-      new URL(
-        "/settings/integrations?withings=error&reason=expired",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-  }
-  if (stateRow.userId !== user.id) {
-    annotate({ meta: { reason: "cross_user" } });
-    return NextResponse.redirect(
-      new URL(
-        "/settings/integrations?withings=error&reason=cross_user",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-  }
-
-  if (!code) {
-    return NextResponse.redirect(
-      new URL(
-        "/settings/integrations?withings=error&reason=nocode",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-  }
-
-  try {
-    const creds = await getUserWithingsCredentials(user.id);
-    if (!creds) {
+  const consumed = stateRow;
+  return settleOAuthCallback("withings", state, async () => {
+    // Validity checks against the consumed row. The row is already
+    // gone from the ledger by this point — single-use semantics —
+    // whether the expiry tripped, the userId mismatched, or
+    // everything looked good.
+    if (consumed.expiresAt <= new Date()) {
+      annotate({ meta: { reason: "expired" } });
       return NextResponse.redirect(
         new URL(
-          "/settings/integrations?withings=error&reason=nocreds",
+          "/settings/integrations?withings=error&reason=expired",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+    }
+    if (consumed.userId !== user.id) {
+      annotate({ meta: { reason: "cross_user" } });
+      return NextResponse.redirect(
+        new URL(
+          "/settings/integrations?withings=error&reason=cross_user",
           process.env.NEXT_PUBLIC_APP_URL!,
         ),
       );
     }
 
-    const tokens = await exchangeCode(code, creds);
+    if (!code) {
+      return NextResponse.redirect(
+        new URL(
+          "/settings/integrations?withings=error&reason=nocode",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+    }
 
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-    const subscriptionRetryAt = new Date();
+    try {
+      const creds = await getUserWithingsCredentials(user.id);
+      if (!creds) {
+        return NextResponse.redirect(
+          new URL(
+            "/settings/integrations?withings=error&reason=nocreds",
+            process.env.NEXT_PUBLIC_APP_URL!,
+          ),
+        );
+      }
 
-    // v1.4.25 — persist the OAuth scope we requested. The token
-    // response doesn't echo the granted scopes back as a top-level
-    // field, but Withings honours the scope param verbatim — there's
-    // no scope downgrade unless the user explicitly revokes one in
-    // their Health Mate account, which would fail the token exchange
-    // entirely. Storing the requested set is therefore a safe
-    // representation of what the connection holds.
-    await prisma.withingsConnection.upsert({
-      where: { userId: user.id },
-      update: {
-        withingsUserId: tokens.userid,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope: WITHINGS_OAUTH_SCOPE,
-        webhookSubscriptionState: Prisma.DbNull,
-        webhookSubscriptionRetryAt: subscriptionRetryAt,
-        // A reconnect may come with another developer app (another plan), so
-        // what the old grant's plan refused is asked for again.
-        apiPlanState: Prisma.DbNull,
-      },
-      create: {
+      const tokens = await exchangeCode(code, creds);
+
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+      const subscriptionRetryAt = new Date();
+
+      // v1.4.25 — persist the OAuth scope we requested. The token
+      // response doesn't echo the granted scopes back as a top-level
+      // field, but Withings honours the scope param verbatim — there's
+      // no scope downgrade unless the user explicitly revokes one in
+      // their Health Mate account, which would fail the token exchange
+      // entirely. Storing the requested set is therefore a safe
+      // representation of what the connection holds.
+      await prisma.withingsConnection.upsert({
+        where: { userId: user.id },
+        update: {
+          withingsUserId: tokens.userid,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope: WITHINGS_OAUTH_SCOPE,
+          webhookSubscriptionState: Prisma.DbNull,
+          webhookSubscriptionRetryAt: subscriptionRetryAt,
+          // A reconnect may come with another developer app (another plan), so
+          // what the old grant's plan refused is asked for again.
+          apiPlanState: Prisma.DbNull,
+        },
+        create: {
+          userId: user.id,
+          withingsUserId: tokens.userid,
+          accessToken: encrypt(tokens.access_token),
+          refreshToken: encrypt(tokens.refresh_token),
+          tokenExpiresAt: expiresAt,
+          scope: WITHINGS_OAUTH_SCOPE,
+          webhookSubscriptionState: Prisma.DbNull,
+          webhookSubscriptionRetryAt: subscriptionRetryAt,
+        },
+      });
+
+      // Reconcile every category from a clean state after connect/reconnect.
+      setupWebhook(user.id).catch(() =>
+        getEvent()?.addWarning("Webhook setup failed"),
+      );
+
+      await auditLog("withings.connect", {
         userId: user.id,
-        withingsUserId: tokens.userid,
-        accessToken: encrypt(tokens.access_token),
-        refreshToken: encrypt(tokens.refresh_token),
-        tokenExpiresAt: expiresAt,
-        scope: WITHINGS_OAUTH_SCOPE,
-        webhookSubscriptionState: Prisma.DbNull,
-        webhookSubscriptionRetryAt: subscriptionRetryAt,
-      },
-    });
+        details: { withingsUserId: tokens.userid },
+      });
 
-    // Reconcile every category from a clean state after connect/reconnect.
-    setupWebhook(user.id).catch(() =>
-      getEvent()?.addWarning("Webhook setup failed"),
-    );
+      // Re-completing OAuth clears any prior `error_reauth` state. We
+      // don't write a fresh success-time — that's the next sync's job.
+      await markReconnected(user.id, "withings");
 
-    await auditLog("withings.connect", {
-      userId: user.id,
-      details: { withingsUserId: tokens.userid },
-    });
-
-    // Re-completing OAuth clears any prior `error_reauth` state. We
-    // don't write a fresh success-time — that's the next sync's job.
-    await markReconnected(user.id, "withings");
-
-    const response = NextResponse.redirect(
-      new URL(
-        "/settings/integrations?withings=connected",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-    response.cookies.delete(WITHINGS_OAUTH_STATE_COOKIE);
-    return response;
-  } catch {
-    getEvent()?.setError(new Error("Withings callback failed"));
-    return NextResponse.redirect(
-      new URL(
-        "/settings/integrations?withings=error&reason=token",
-        process.env.NEXT_PUBLIC_APP_URL!,
-      ),
-    );
-  }
+      const response = NextResponse.redirect(
+        new URL(
+          "/settings/integrations?withings=connected",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+      response.cookies.delete(WITHINGS_OAUTH_STATE_COOKIE);
+      return response;
+    } catch {
+      getEvent()?.setError(new Error("Withings callback failed"));
+      return NextResponse.redirect(
+        new URL(
+          "/settings/integrations?withings=error&reason=token",
+          process.env.NEXT_PUBLIC_APP_URL!,
+        ),
+      );
+    }
+  });
 });

@@ -20,6 +20,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// Single-use claiming is covered against Postgres in
+// tests/integration/oauth-callback-single-use.test.ts. Here the state row is
+// consumed for real against the mocked client, the claim always wins, and
+// every callback is the first and only one.
+vi.mock("@/lib/oauth/callback-claim", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/oauth/callback-claim")>()),
+  settleOAuthCallback: (_p: string, _s: string, run: () => Promise<unknown>) =>
+    run(),
+  duplicateOAuthCallback: async () => null,
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
   requireAuth: vi.fn(async () => ({
@@ -36,16 +47,19 @@ vi.mock("@/lib/api-handler", () => ({
   },
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prisma = {
     withingsOAuthState: {
       delete: vi.fn(),
     },
     withingsConnection: {
       upsert: vi.fn(),
     },
-  },
-}));
+    oAuthCallbackClaim: { createMany: vi.fn(async () => ({ count: 1 })) },
+    $transaction: async (run: (tx: unknown) => unknown) => run(prisma),
+  };
+  return { prisma };
+});
 
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 

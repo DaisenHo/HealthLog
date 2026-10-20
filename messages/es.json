@@ -4657,7 +4657,7 @@
       "scoreCrossLink": "Ver la puntuación de recuperación combinada",
       "emptyTitle": "Aún no hay datos de recuperación",
       "empty": "Esta página se llena con los valores de recuperación, esfuerzo y carga de WHOOP o Polar y con el nivel de resiliencia de Oura.",
-      "emptyOuraPermission": "El nivel de resiliencia de Oura necesita acceso a los datos de salud cardíaca, así que vuelve a conectar Oura una vez en Integraciones y permítelo.",
+      "emptyOuraPermission": "El nivel de resiliencia de Oura necesita el permiso de datos de estrés, así que vuelve a conectar Oura una vez en Integraciones y permítelo.",
       "emptyOuraNoResilience": "Oura está conectado y su nivel de resiliencia aparecerá aquí en cuanto Oura proporcione uno.",
       "emptyAction": "Abrir integraciones",
       "block": {

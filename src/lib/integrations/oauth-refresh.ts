@@ -61,7 +61,7 @@ export async function persistRotatedToken(
   return opts.readPeerAccessToken();
 }
 
-export type SerializedRefreshProvider = "whoop" | "withings";
+export type SerializedRefreshProvider = "whoop" | "withings" | "oura";
 
 /**
  * Provider refreshes hold a database transaction open around one bounded

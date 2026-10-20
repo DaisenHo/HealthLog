@@ -25,6 +25,26 @@ const {
   markReconnectedMock: vi.fn(async () => {}),
 }));
 
+// Single-use claiming is covered against Postgres in
+// tests/integration/oauth-callback-single-use.test.ts; here every callback
+// is the first and only one.
+vi.mock("@/lib/oauth/callback-claim", () => ({
+  runOAuthCallbackOnce: (
+    _p: string,
+    _s: string,
+    _o: unknown,
+    run: () => Promise<unknown>,
+  ) => run(),
+  settleOAuthCallback: (_p: string, _s: string, run: () => Promise<unknown>) =>
+    run(),
+  consumeLedgerState: async (
+    _p: string,
+    _s: string,
+    consume: (tx: unknown) => Promise<unknown>,
+  ) => consume((await import("@/lib/db")).prisma),
+  duplicateOAuthCallback: async () => null,
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));

@@ -8,6 +8,10 @@
  *   - `transient`       → 429 (rate-limited), 5xx, 3xx, unknown.
  *   - `reauth_required` → 401 / 403 — token rejected / grant revoked.
  *   - `persistent`      → any other 4xx — malformed request / contract drift.
+ *
+ * A collection read refines this from the body (`collectionRefusal` in
+ * `./client`): a 401 that names a scope is a missing permission, a 403 a lapsed
+ * membership.
  */
 
 import {
@@ -26,15 +30,31 @@ export function classifyOuraResponse(
 }
 
 export class OuraApiError extends IntegrationApiError {
+  /**
+   * The scope Oura named when it refused a collection read for a missing
+   * permission (`401 {"detail":"Token is not authorized access stress
+   * scope."}`). Undefined for every other failure, a dead token included.
+   */
+  readonly missingScope: string | undefined;
+
   constructor(opts: {
     verb: string;
     classification: IntegrationClassification;
     httpStatus: number | undefined;
     reason: string;
     upstreamError?: string;
+    missingScope?: string;
   }) {
-    super({ vendor: "Oura", ...opts });
+    const { missingScope, ...rest } = opts;
+    super({
+      vendor: "Oura",
+      ...rest,
+      upstreamError:
+        rest.upstreamError ??
+        (missingScope ? `scope_missing:${missingScope}` : undefined),
+    });
     this.name = "OuraApiError";
+    this.missingScope = missingScope;
   }
 }
 

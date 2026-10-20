@@ -20,9 +20,11 @@
  * unknown / missing level mints no row. See `RESILIENCE_LEVELS` in `./client`.
  *
  * Token model: Oura uses refresh tokens. The merged schema has no expiry
- * column, so the sync refreshes REACTIVELY — the first read that 401s triggers
- * one refresh (persisting BOTH rotated tokens) and a single retry. A failed
- * refresh (`invalid_grant`) records `reauth_required` on the `oura` ledger.
+ * column, so the sync refreshes REACTIVELY — the first read refused for its
+ * token triggers one refresh (persisting BOTH rotated tokens, serialised per
+ * user) and a single retry. A 401 that names a missing scope is not a token
+ * refusal and spends no refresh. A failed refresh (`invalid_grant`) records
+ * `reauth_required` on the `oura` ledger.
  *
  * Idempotency: `externalId = <resource>:<day>:<fieldTag>` for the day-keyed
  * collections; sleep rows carry a record-scoped `sleep:<record-id>:<fieldTag>`
@@ -82,18 +84,17 @@ import {
   mapResilience,
   mapSleep,
   mapVo2Max,
-  refreshAccessToken,
   type MappedMeasurement,
 } from "./client";
 import {
   getOuraClientCredentials,
   getOuraConnection,
-  storeOuraTokens,
+  refreshOuraAccessToken,
   syncOuraScopeDenied,
 } from "./credentials";
 import { OuraApiError, classifyOuraError } from "./response-classifier";
 import { syncUserOuraCyclePhases } from "./cycle-sync";
-import { OURA_SCOPE_GATED_COLLECTIONS } from "./scope";
+import { isOuraScopeGatedCollection } from "./scope";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
@@ -254,53 +255,81 @@ export interface OuraFetchResult {
    */
   sleepRetirements: string[];
   /**
-   * Collections refused with 401 while a sibling succeeded with the same
-   * token: the token is fine, the grant does not cover them. Not failures; the
-   * card asks for one reconnect instead. `null` when the run never proved the
-   * token (no collection succeeded, or the refresh was abandoned): it learned
-   * nothing about the grant, so the note from the last run that did stands.
+   * Collections the grant does not cover: refused with a 401 that names the
+   * missing scope, or with a bare 401 while a sibling succeeded with the same
+   * token. Not failures; the card asks for one reconnect instead. `null` when
+   * the run never proved the token (no collection succeeded, none was refused
+   * by name, or the refresh was abandoned): it learned nothing about the
+   * grant, so the note from the last run that did stands.
    */
   scopeDenied: string[] | null;
 }
 
 /**
- * A 401 from Oura: the token, or the grant's scope, was refused. A 403 stays a
- * plain failure: Oura also answers 403 for a lapsed membership, which a
- * reconnect does not fix.
+ * A 401 whose body names the missing scope (see `./scope`): Oura checked the
+ * token and found it valid, the grant just does not cover this collection. A
+ * refresh cannot widen a grant, so none is spent on it.
  */
-function isAuthRefusal(err: unknown): boolean {
-  return err instanceof OuraApiError && err.httpStatus === 401;
-}
-
-const SCOPE_GATED: ReadonlySet<string> = new Set(OURA_SCOPE_GATED_COLLECTIONS);
-
-/**
- * A 401 that can be the grant's scope rather than the token: only the
- * collections behind `spo2` / `heart_health` sit outside the `daily` scope
- * every grant carries. A 401 on sleep, readiness or activity is a real auth
- * failure whatever its siblings did.
- */
-function isScopeRefusal(f: OuraCollectionFailure): boolean {
-  return SCOPE_GATED.has(f.name) && isAuthRefusal(f.err);
+function isNamedScopeRefusal(err: unknown): boolean {
+  return (
+    err instanceof OuraApiError &&
+    err.httpStatus === 401 &&
+    err.missingScope !== undefined
+  );
 }
 
 /**
- * Split the scope refusals out of a run's failures once a sibling collection
- * has proven the token. Oura's authorization server enforces scopes per
- * collection, so a grant issued without `spo2` / `heart_health` answers 401 on
- * exactly the collections behind them and 200 everywhere else. Counting those
- * toward the reconnect ladder painted a working connection as broken on every
- * sync, and refreshing the token over them changed nothing. Any other failure,
- * a 401 on a core collection included, stays a failure.
+ * Any other 401: the token was refused, or an older authorization server sent
+ * no body to tell. This is what the one refresh is for. A 403 is neither: Oura
+ * answers it for a lapsed membership, which no refresh or reconnect fixes.
+ */
+function isTokenRefusal(err: unknown): boolean {
+  return (
+    err instanceof OuraApiError &&
+    err.httpStatus === 401 &&
+    err.missingScope === undefined
+  );
+}
+
+/**
+ * A failure that is the grant's scope rather than the token. Only the
+ * collections behind a scope beyond `daily` qualify: without `daily` nothing
+ * syncs, and that is a reconnect, not a hint. On those, a 401 naming its scope
+ * always qualifies; a bare 401 qualifies only once a sibling collection has
+ * proven the token, the inference that predates Oura naming the scope.
+ */
+function isScopeRefusal(
+  f: OuraCollectionFailure,
+  tokenProven: boolean,
+): boolean {
+  if (!isOuraScopeGatedCollection(f.name)) return false;
+  return isNamedScopeRefusal(f.err) || (tokenProven && isTokenRefusal(f.err));
+}
+
+/**
+ * Split the scope refusals out of a run's failures. Oura's authorization
+ * server enforces scopes per collection, so a grant issued without `spo2`,
+ * `heart_health` or `stress` answers 401 on exactly the collections behind
+ * them and 200 everywhere else. Counting those toward the reconnect ladder
+ * painted a working connection as broken on every sync, and refreshing the
+ * token over them changed nothing. Any other failure, a 401 on a core
+ * collection included, stays a failure.
+ *
+ * A 401 that names its scope proves the token by itself: Oura validated it in
+ * order to say which permission it lacks.
  */
 function splitScopeDenied(
   failures: OuraCollectionFailure[],
-  tokenProven: boolean,
+  siblingSucceeded: boolean,
 ): { failures: OuraCollectionFailure[]; scopeDenied: string[] | null } {
+  const tokenProven =
+    siblingSucceeded || failures.some((f) => isNamedScopeRefusal(f.err));
   if (!tokenProven) return { failures, scopeDenied: null };
   return {
-    failures: failures.filter((f) => !isScopeRefusal(f)),
-    scopeDenied: failures.filter(isScopeRefusal).map((f) => f.name),
+    failures: failures.filter((f) => !isScopeRefusal(f, true)),
+    scopeDenied: failures
+      .filter((f) => isScopeRefusal(f, true))
+      .map((f) => f.name),
   };
 }
 
@@ -323,7 +352,6 @@ function splitScopeDenied(
 async function fetchAll(
   userId: string,
   accessToken: string,
-  refreshToken: string,
   refreshTokenCiphertext: string,
   lookbackDays: number,
   knownScopeDenied: readonly string[] = [],
@@ -448,18 +476,14 @@ async function fetchAll(
     specs: OuraCollectionSpec[],
   ): Promise<{
     readings: OuraMeasurementUpsert[];
-    failed: OuraCollectionSpec[];
     failures: OuraCollectionFailure[];
-    auth401: boolean;
     succeeded: number;
   }> => {
     const settled = await Promise.allSettled(
       specs.map((spec) => spec.collect(token)),
     );
     const readings: OuraMeasurementUpsert[] = [];
-    const failed: OuraCollectionSpec[] = [];
     const failures: OuraCollectionFailure[] = [];
-    let auth401 = false;
     let succeeded = 0;
     settled.forEach((res, i) => {
       const spec = specs[i]!;
@@ -467,28 +491,26 @@ async function fetchAll(
         succeeded++;
         readings.push(...res.value);
       } else {
-        const err = res.reason;
-        if (err instanceof OuraApiError && err.httpStatus === 401)
-          auth401 = true;
-        failed.push(spec);
-        failures.push({ name: spec.name, err });
+        failures.push({ name: spec.name, err: res.reason });
       }
     });
-    return { readings, failed, failures, auth401, succeeded };
+    return { readings, failures, succeeded };
   };
 
   const first = await attempt(accessToken, collections);
-  // A 401 limited to collections already known to sit outside the grant, next
-  // to collections that succeeded, is the grant's scope again: a refresh cannot
-  // widen it, so none is spent. Any other 401 still takes the one refresh, and
-  // whatever 401s after it beside a success is recorded as scope.
-  const knownDenied = new Set(
-    knownScopeDenied.filter((name) => SCOPE_GATED.has(name)),
+  // The refresh is for a refused token. A 401 that names its scope is not one,
+  // and neither is a bare 401 on a collection already known to sit outside the
+  // grant while a sibling succeeded with the same token: a refresh cannot
+  // widen a grant, so none is spent on either.
+  const knownDenied = new Set<string>(
+    knownScopeDenied.filter((name) => isOuraScopeGatedCollection(name)),
   );
-  const onlyKnownScope401 = first.failures
-    .filter((f) => isAuthRefusal(f.err))
-    .every((f) => knownDenied.has(f.name));
-  if (!first.auth401 || (first.succeeded > 0 && onlyKnownScope401)) {
+  const needsRefresh = first.failures.some(
+    (f) =>
+      isTokenRefusal(f.err) &&
+      !(first.succeeded > 0 && knownDenied.has(f.name)),
+  );
+  if (!needsRefresh) {
     return {
       readings: first.readings,
       ...splitScopeDenied(first.failures, first.succeeded > 0),
@@ -498,43 +520,56 @@ async function fetchAll(
   }
 
   // Reactive refresh: the access token expired (a 401 on the shared token).
-  // Refresh once (rotating both tokens) and retry ONLY the collections that
-  // failed. A failed refresh throws so the caller parks reauth_required.
+  // Refresh once, serialised per user so an overlapping sync never spends the
+  // same one-time refresh token twice, and retry the collections that failed
+  // for any reason but a named scope. A failed refresh throws so the caller
+  // parks reauth_required.
   const creds = await getOuraClientCredentials(userId);
   if (!creds)
     return {
       readings: first.readings,
-      failures: first.failures,
+      // The refresh never happened, so no sibling's success can be trusted
+      // over it; a refusal that names its scope still says what it says.
+      ...splitScopeDenied(first.failures, false),
       sleepSweeps,
       sleepRetirements,
-      scopeDenied: null,
     };
 
-  const rotated = await refreshAccessToken(refreshToken, creds);
-  // Compare-and-swap persist: on a lost race against a concurrent sync this
-  // returns the peer's freshly rotated access token rather than the (now
-  // invalidated) one we just minted, so neither sync parks the connection.
-  const usableToken = await storeOuraTokens(
+  const usableToken = await refreshOuraAccessToken(
     userId,
-    rotated.access_token,
-    rotated.refresh_token,
     refreshTokenCiphertext,
+    creds,
   );
   if (!usableToken)
     return {
       readings: first.readings,
-      failures: first.failures,
+      // The refresh never happened, so no sibling's success can be trusted
+      // over it; a refusal that names its scope still says what it says.
+      ...splitScopeDenied(first.failures, false),
       sleepSweeps,
       sleepRetirements,
-      scopeDenied: null,
     };
 
-  const retry = await attempt(usableToken, first.failed);
+  const settledByScope = first.failures.filter((f) =>
+    isNamedScopeRefusal(f.err),
+  );
+  const retryNames = new Set(
+    first.failures
+      .filter((f) => !isNamedScopeRefusal(f.err))
+      .map((f) => f.name),
+  );
+  const retry = await attempt(
+    usableToken,
+    collections.filter((c) => retryNames.has(c.name)),
+  );
   return {
     readings: [...first.readings, ...retry.readings],
     // Proven by either pass: a collection that succeeded before the refresh
     // proves the grant as much as one that succeeded after it.
-    ...splitScopeDenied(retry.failures, first.succeeded + retry.succeeded > 0),
+    ...splitScopeDenied(
+      [...settledByScope, ...retry.failures],
+      first.succeeded + retry.succeeded > 0,
+    ),
     sleepSweeps,
     sleepRetirements,
   };
@@ -615,7 +650,6 @@ export async function syncUserOura(
     result = await fetchAll(
       userId,
       conn.accessToken,
-      conn.refreshToken,
       conn.refreshTokenCiphertext,
       lookbackDays,
       conn.scopeDenied,
