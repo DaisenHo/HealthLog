@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -33,10 +33,6 @@ const HOMES = new Set([
 const PEARSON_DEFINITION =
   /(?:function\s+|const\s+)\w*(?:pearson|correlationCoefficient)\w*\s*(?:=|\()/i;
 const DELETED = /(?<![A-Za-z])pearsonCorrelation\b/;
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 function sourceFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 }).filter(

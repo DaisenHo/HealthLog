@@ -21,7 +21,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
+
+/** The shared comment strip, plus SQL line comments inside template strings. */
+function stripCode(text: string): string {
+  return stripComments(text).replace(/^\s*--.*$/gm, "");
+}
 
 const SRC = join(process.cwd(), "src");
 
@@ -30,13 +35,6 @@ const SINGLE_SHIFT =
 
 const DOUBLE_SHIFT =
   /AT\s+TIME\s+ZONE\s+'UTC'\s*\)?\s*AT\s+TIME\s+ZONE\s+(?:\$\{|\$\d)/i;
-
-function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "")
-    .replace(/^\s*--.*$/gm, "");
-}
 
 describe("naive timestamp zone shifts", () => {
   it("the matcher fires on the single shift and spares the double one", () => {
@@ -62,7 +60,7 @@ describe("naive timestamp zone shifts", () => {
         !/\.test\.tsx?$/.test(file),
     );
     const code = (file: string) =>
-      stripComments(readFileSync(join(SRC, file), "utf8"));
+      stripCode(readFileSync(join(SRC, file), "utf8"));
     // The reads that shift correctly, so a sweep that reads nothing fails.
     const doubleShifts = files.filter((file) => DOUBLE_SHIFT.test(code(file)));
     expect(doubleShifts.length).toBeGreaterThanOrEqual(5);
