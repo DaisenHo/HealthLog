@@ -24,6 +24,8 @@ describe("source files carry no raw control bytes", () => {
       floor: 3000,
       extensions: [".ts", ".tsx", ".js", ".mjs", ".css", ".json", ".md"],
     }).filter((file) => !file.startsWith("generated/"));
+    // A sweep that read nothing would agree with any tree.
+    expect(files.length).toBeGreaterThan(3000);
     const offenders: string[] = [];
     for (const file of files) {
       const lines = readFileSync(join(src, file), "utf8").split("\n");

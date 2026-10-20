@@ -53,7 +53,10 @@ describe("stripImageMetadata — passthrough", () => {
 describe("stripImageMetadata — JPEG", () => {
   // SOI + APP0(JFIF) + APP1(Exif w/ GPS) + APP2(ICC) + COM + DQT + SOS + scan.
   const soi = Buffer.from([0xff, 0xd8]);
-  const app0 = jpegSegment(0xe0, Buffer.from("JFIF\0\x01\x01\0\0\x01\0\x01\0\0"));
+  const app0 = jpegSegment(
+    0xe0,
+    Buffer.from("JFIF\0\x01\x01\0\0\x01\0\x01\0\0"),
+  );
   const exifPayload = Buffer.concat([
     Buffer.from("Exif\0\0"),
     // A recognisable GPS marker string we can assert is gone.

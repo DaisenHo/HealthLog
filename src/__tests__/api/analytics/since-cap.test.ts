@@ -35,6 +35,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn() },
+    // The empty recovery page reads the Oura fields for its reason.
+    user: { findUnique: vi.fn().mockResolvedValue(null) },
   },
 }));
 
