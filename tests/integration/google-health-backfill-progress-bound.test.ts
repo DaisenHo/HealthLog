@@ -331,7 +331,7 @@ describe("Google Health backfill bounded by progress, not pages (#1220)", () => 
     expect(fake.heartRateRequests).toBeLessThanOrEqual(10 + 2 * slices);
   }, 600_000);
 
-  it("parks a walk Google keeps answering with the same page, tries it again a day later, and only then ends it", async () => {
+  it("parks a walk Google keeps answering with the same page, and ends it only after a day brings no progress", async () => {
     await seed({ total: 5_000, spacing: 60_000, perPage: 1000 });
     fake.loop = true;
     const { GOOGLE_HEALTH_NO_PROGRESS_PAGES } =
@@ -339,6 +339,21 @@ describe("Google Health backfill bounded by progress, not pages (#1220)", () => 
     const { googleHealthBackfillEndedList } =
       await import("@/lib/google-health/backfill-progress");
     const walk = 1 + GOOGLE_HEALTH_NO_PROGRESS_PAGES;
+    const prisma = getPrismaClient();
+    /** Let a day pass for the parked walk. */
+    const dayLater = async () => {
+      const progress = (await connection()).backfillProgress as {
+        ended: Record<string, { endedAt: string; attempts?: number }>;
+      };
+      progress.ended.fetchHeartRate!.endedAt = new Date(
+        Date.now() - 25 * HOUR,
+      ).toISOString();
+      await prisma.googleHealthConnection.update({
+        where: { userId: USER },
+        data: { backfillProgress: progress },
+      });
+      return progress.ended.fetchHeartRate!;
+    };
 
     // First attempt: the first page and the twenty that repeat it. Not
     // complete, nothing published, and the next slice a day out.
@@ -354,22 +369,25 @@ describe("Google Health backfill bounded by progress, not pages (#1220)", () => 
     expect(fake.heartRateRequests).toBe(walk);
     expect((await connection()).backfillCompletedAt).toBeNull();
 
-    // A day later the walk goes on from its edge, gets one page further,
-    // meets the same wall, and this time the history ends there.
-    const prisma = getPrismaClient();
-    const progress = c.backfillProgress as {
-      ended: Record<string, { endedAt: string }>;
-    };
-    progress.ended.fetchHeartRate!.endedAt = new Date(
-      Date.now() - 25 * HOUR,
-    ).toISOString();
-    await prisma.googleHealthConnection.update({
-      where: { userId: USER },
-      data: { backfillProgress: progress },
-    });
+    // A day later the walk goes on from its edge and gets one page further
+    // before the wall. That is progress: it parks again, counting afresh,
+    // rather than ending a history that is still coming in.
+    expect((await dayLater()).attempts ?? 1).toBe(1);
     await runChain(5, sent.slices.at(-1)!);
-
     expect(fake.heartRateRequests).toBe(2 * walk);
+    c = await connection();
+    expect(c.backfillCompletedAt).toBeNull();
+    expect(await pulseRows()).toBe(1999);
+    expect((await dayLater()).attempts ?? 1).toBe(1);
+
+    // Another day, and nothing lies past the edge any more: the walk meets
+    // the wall where it stood, and this time the history ends there.
+    fake.total = 1999;
+    await runChain(5, sent.slices.at(-1)!);
+    // No page of this attempt is new, the first included.
+    expect(fake.heartRateRequests).toBe(
+      2 * walk + GOOGLE_HEALTH_NO_PROGRESS_PAGES,
+    );
     c = await connection();
     expect(c.backfillCompletedAt).toBeInstanceOf(Date);
     expect(googleHealthBackfillEndedList(c.backfillProgress)).toEqual([
