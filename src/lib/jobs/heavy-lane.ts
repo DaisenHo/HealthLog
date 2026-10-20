@@ -7,47 +7,44 @@
  * process and one heap limit, and these jobs used to run side by side when
  * their schedules or a person's upload happened to meet, so the peak was the
  * sum of whatever overlapped rather than the largest one. Under the lane a
- * heavy job waits for the one before it, first come first served.
+ * heavy job runs only while no other heavy job does.
  *
  * The lane lives in the process, not the database: the heap it protects is
  * the process's own, and another process has a heap of its own.
  *
- * A job waits until its turn or until pg-boss gives up on it. At the job's
- * expiry pg-boss aborts its signal and applies the queue's retry policy, so a
- * waiter that sees the abort leaves the line without running and reports
- * `lane_expired`; the retry takes its place. A queue bound with `lockedPass`
- * holds that lock outside the lane, so the retry finds the lock taken while
- * the original still waits instead of queueing a second time
- * (`heavy-lane-guard.test.ts`). The exception is a one-shot: its input lives
- * outside pg-boss (a staged upload, a restore row) and nothing retries it, so
- * it keeps its place past the expiry and runs when its turn comes, as pg-boss
- * lets a handler do.
+ * A job that arrives while the lane is taken does not wait in the handler. It
+ * goes back to the queue (`deferLaneJobs`): its row returns to `created` with
+ * `start_after` a little ahead, the claim cleared so the next fetch does not
+ * count an attempt, and pg-boss's completion of the handler then finds no
+ * active row and leaves it alone. Waiting in the handler instead ran the
+ * job's expiry down while it stood in line, because pg-boss counts the expiry
+ * from the fetch and ends the handler at it: a six-hour import let a
+ * two-hour backup expire through all its retries, and an upload that waited
+ * longer than its own expiry was failed, stopped counting as in use, and had
+ * its staged file swept from under it. A deferred job keeps its id, its
+ * retries and its staged upload, and its expiry starts when it runs.
  */
 import type { Job } from "pg-boss";
 
+import { prisma } from "@/lib/db";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { annotate } from "@/lib/logging/context";
 
 export interface HeavyQueue {
   /** What makes the job heavy. */
   why: string;
-  /** A one-shot keeps its place past its expiry; see the module note. */
-  oneShot?: true;
 }
 
 /** The queues that take the lane. */
 export const HEAVY_QUEUES: Readonly<Record<string, HeavyQueue>> = {
   "apple-health-import-v2": {
     why: "Parses an export of up to several gigabytes.",
-    oneShot: true,
   },
   "health-connect-import": {
     why: "Reads a Health Connect export database.",
-    oneShot: true,
   },
   "backup-restore": {
     why: "Holds a batch of a whole account's readings per insert.",
-    oneShot: true,
   },
   "data-backup": { why: "Serialises every account's whole record." },
   "data-backup-offhost": {
@@ -68,78 +65,74 @@ export const HEAVY_QUEUES: Readonly<Record<string, HeavyQueue>> = {
   "period-narrative-warm": {
     why: "The boundary-night walk: a narrative per account and period.",
   },
+  "integration-backfill-admission": {
+    why: "A provider's full history for one account, page by page; the Google Health import is the largest heap in the tree.",
+  },
 };
 
-type Waiter = () => void;
+/** How far ahead a deferred job is put back in the queue. */
+export const LANE_DEFER_SECONDS = 60;
 
-const NEVER = new AbortController().signal;
+/**
+ * Put `jobs` of `queue` back in the queue to run `seconds` from now. The same
+ * reset pg-boss's own `restore()` makes, with `start_after` moved in the same
+ * statement: a restore followed by a separate update leaves a moment in which
+ * another fetch could claim the row, and the completion of this handler would
+ * then settle that newer claim, since a restored job's next claim keeps its
+ * attempt number. Answers how many rows went back.
+ */
+export async function deferLaneJobs(
+  queue: string,
+  jobs: readonly Job<unknown>[],
+  seconds: number = LANE_DEFER_SECONDS,
+): Promise<number> {
+  const ids = jobs.map((job) => job.id);
+  return prisma.$executeRaw`
+    UPDATE pgboss.job
+    SET state = 'created',
+        started_on = NULL,
+        heartbeat_on = NULL,
+        upsert_by_key = NULL,
+        start_after = now() + make_interval(secs => ${seconds}::int)
+    WHERE name = ${queue}
+      AND id = ANY(${ids}::uuid[])
+      AND state = 'active'
+  `;
+}
 
-const waiting: Waiter[] = [];
 let busy = false;
-
-/** Resolves true once the lane is ours, false if `signal` aborts first. */
-function enter(signal: AbortSignal): Promise<boolean> {
-  if (!busy) {
-    busy = true;
-    return Promise.resolve(true);
-  }
-  return new Promise((resolve) => {
-    const onAbort = () => {
-      const at = waiting.indexOf(grant);
-      if (at >= 0) waiting.splice(at, 1);
-      resolve(false);
-    };
-    const grant: Waiter = () => {
-      signal.removeEventListener("abort", onAbort);
-      resolve(true);
-    };
-    if (signal.aborted) return resolve(false);
-    signal.addEventListener("abort", onAbort, { once: true });
-    waiting.push(grant);
-  });
-}
-
-function leave(): void {
-  const next = waiting.shift();
-  if (next) next();
-  else busy = false;
-}
 
 /**
  * Wrap `handler` so the jobs of `queue` run in the lane. `inLane` picks the
  * jobs that are heavy where a queue carries light ones too (a single
  * account's warm beside the nightly walk); a batch with none of them runs at
- * once.
+ * once. `defer` is the way back to the queue; tests replace it.
  */
 export function heavyLane<J extends Job<unknown>>(
   queue: string,
   handler: (jobs: J[]) => Promise<JobOutcome>,
   inLane: (job: J) => boolean = () => true,
+  defer: (queue: string, jobs: readonly J[]) => Promise<number> = deferLaneJobs,
 ): (jobs: J[]) => Promise<JobOutcome> {
-  const heavy = HEAVY_QUEUES[queue];
-  if (!heavy) throw new Error(`heavyLane: ${queue} is not in HEAVY_QUEUES`);
+  if (!HEAVY_QUEUES[queue]) {
+    throw new Error(`heavyLane: ${queue} is not in HEAVY_QUEUES`);
+  }
   return async (jobs) => {
     if (!jobs.some(inLane)) return handler(jobs);
-    const queuedAt = Date.now();
-    const entered = await enter(
-      heavy.oneShot ? NEVER : AbortSignal.any(signalsOf(jobs)),
-    );
-    const waitedMs = Date.now() - queuedAt;
-    annotate({
-      action: {
-        name: entered ? "job.heavy_lane.entered" : "job.heavy_lane.expired",
-      },
-      meta: { queue, waited_ms: waitedMs },
-    });
-    if (!entered) return jobDone({ lane_expired: jobs.length });
+    if (busy) {
+      const deferred = await defer(queue, jobs);
+      annotate({
+        action: { name: "job.heavy_lane.deferred" },
+        meta: { queue, jobs: jobs.length, deferred },
+      });
+      return jobDone({ lane_deferred: deferred });
+    }
+    busy = true;
+    annotate({ action: { name: "job.heavy_lane.entered" }, meta: { queue } });
     try {
       return await handler(jobs);
     } finally {
-      leave();
+      busy = false;
     }
   };
-}
-
-function signalsOf(jobs: readonly Job<unknown>[]): AbortSignal[] {
-  return jobs.flatMap((job) => (job.signal ? [job.signal] : []));
 }
