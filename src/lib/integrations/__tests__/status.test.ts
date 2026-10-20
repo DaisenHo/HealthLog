@@ -36,6 +36,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: vi.fn(),
+  logCaught: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -66,6 +71,7 @@ import {
 } from "../status";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 beforeEach(() => {
@@ -148,17 +154,24 @@ describe("recordSyncFailure — under threshold", () => {
     });
 
     expect(prisma.integrationStatus.upsert).toHaveBeenCalledOnce();
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        userId: "u1",
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           integration: "withings",
-          attemptNumber: 1,
+          attempt_number: 1,
           state: "error_transient",
         }),
       }),
     );
+    // A provider failure is not something a person did to the account: no
+    // audit row, and the provider's message stays sealed on the status row.
+    expect(auditLog).not.toHaveBeenCalledWith(
+      "integrations.sync.failed",
+      expect.anything(),
+    );
+    const [signal] = vi.mocked(emitSignal).mock.calls[0]!;
+    expect(JSON.stringify(signal)).not.toContain("upstream");
     expect(dispatchNotification).not.toHaveBeenCalled();
   });
 });
@@ -456,12 +469,12 @@ describe("recordSyncFailure — reauth_required", () => {
     const upsertArgs = vi.mocked(prisma.integrationStatus.upsert).mock
       .calls[0][0];
     expect(upsertArgs.update).toMatchObject({ state: "error_reauth" });
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "reauth_required",
-          errorCode: "100",
+          error_code: "100",
         }),
       }),
     );
@@ -489,12 +502,12 @@ describe("recordSyncFailure — persistent (v1.4.42 W6)", () => {
     const upsertArgs = vi.mocked(prisma.integrationStatus.upsert).mock
       .calls[0][0];
     expect(upsertArgs.update).toMatchObject({ state: "error_transient" });
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "persistent",
-          errorCode: "293",
+          error_code: "293",
         }),
       }),
     );
@@ -1089,12 +1102,12 @@ describe("transient-streak escalation", () => {
       persistent: 1,
     });
     expect(upsertUpdate().persistentFailureStartedAt).toBeInstanceOf(Date);
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "persistent",
-          escalatedFrom: "transient",
+          escalated_from: "transient",
         }),
       }),
     );
@@ -1116,12 +1129,12 @@ describe("transient-streak escalation", () => {
       persistent: 0,
     });
     expect(upsertUpdate().persistentFailureStartedAt).toBeNull();
-    expect(auditLog).toHaveBeenCalledWith(
-      "integrations.sync.failed",
+    expect(emitSignal).toHaveBeenCalledWith(
       expect.objectContaining({
-        details: expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
           kind: "transient",
-          escalatedFrom: null,
+          escalated_from: null,
         }),
       }),
     );

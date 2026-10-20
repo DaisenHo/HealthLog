@@ -3,13 +3,9 @@
  *
  * The unit suite (`src/lib/integrations/__tests__/status.test.ts`)
  * mocks Prisma. This file lights up the real driver so we lock in the
- * upsert + concurrent-write story AND prove that every sync failure
- * writes one `AuditLog` row with the documented schema:
- *
- *   action  : "integrations.sync.failed"
- *   userId  : <subject>
- *   details : { integration, kind, errorCode, message,
- *               attemptNumber, state }
+ * upsert + concurrent-write story, and that a sync failure leaves the audit
+ * log alone: it emits an `integrations.sync.failed` signal instead, and the
+ * provider's message stays sealed on the status row.
  *
  * The dispatcher is mocked at module level so we don't actually hit
  * Telegram while testing — the assertion is on the alerting side
@@ -34,6 +30,11 @@ vi.mock("@/lib/db-compat", () => ({
 // configs and call sendViaTelegram. We're not testing that path —
 // B3 owns it. Stub returns void so the helper's await chain
 // resolves cleanly.
+vi.mock("@/lib/logging/signal", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/logging/signal")>();
+  return { ...actual, emitSignal: vi.fn(actual.emitSignal) };
+});
+
 vi.mock("@/lib/notifications/dispatcher", () => ({
   dispatchNotification: vi.fn().mockResolvedValue({
     dispatched: true,
@@ -53,6 +54,7 @@ import {
   resumeIntegrationFromPark,
 } from "@/lib/integrations/status";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { emitSignal } from "@/lib/logging/signal";
 
 const TEST_USER_ID = "user-integration-status-e2e";
 
@@ -66,6 +68,7 @@ beforeEach(async () => {
     },
   });
   vi.mocked(dispatchNotification).mockClear();
+  vi.mocked(emitSignal).mockClear();
 });
 
 describe("IntegrationStatus end-to-end", () => {
@@ -103,16 +106,19 @@ describe("IntegrationStatus end-to-end", () => {
     const audits = await getPrismaClient().auditLog.findMany({
       where: { action: "integrations.sync.failed", userId: TEST_USER_ID },
     });
-    expect(audits).toHaveLength(1);
-    const detailsParsed = JSON.parse(audits[0].details ?? "{}");
-    expect(detailsParsed).toMatchObject({
-      integration: "withings",
-      kind: "transient",
-      errorCode: "503",
-      message: "Withings refresh error: 503 - upstream",
-      attemptNumber: 1,
-      state: "error_transient",
-    });
+    expect(audits).toHaveLength(0);
+    expect(emitSignal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "integrations.sync.failed",
+        meta: expect.objectContaining({
+          integration: "withings",
+          kind: "transient",
+          error_code: "503",
+          attempt_number: 1,
+          state: "error_transient",
+        }),
+      }),
+    );
   });
 
   it("getIntegrationStatus returns plaintext error after roundtrip (decryption succeeds)", async () => {

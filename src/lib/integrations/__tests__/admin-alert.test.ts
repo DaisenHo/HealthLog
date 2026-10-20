@@ -31,6 +31,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/logging/signal", () => ({
+  emitSignal: vi.fn(),
+  logCaught: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -52,6 +57,7 @@ vi.mock("@/lib/crypto", () => ({
 import { formatAdminAlertPayload, parkIntegrationAtReauth } from "../status";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 beforeEach(() => {
@@ -246,9 +252,8 @@ describe("parkIntegrationAtReauth — silent scope-skip park (v1.4.27 F20)", () 
         }),
       }),
     );
-    expect(auditLog).not.toHaveBeenCalledWith(
-      "integrations.sync.failed",
-      expect.anything(),
+    expect(emitSignal).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: "integrations.sync.failed" }),
     );
   });
 
