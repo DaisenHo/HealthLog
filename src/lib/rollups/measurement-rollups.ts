@@ -126,6 +126,17 @@ export const ROLLUP_FULL_BACKFILL_QUEUE = "rollup-full-backfill";
 /** Boot-fold worker concurrency. Serial so we don't crowd the pool. */
 export const ROLLUP_FULL_BACKFILL_CONCURRENCY = 1;
 
+/**
+ * The full fold's expiry: an hour. One fold is four granularities, each an
+ * aggregate held to the connection's statement timeout (60 s by default) and
+ * a persist transaction of up to 120 s, so the worst case under the defaults
+ * is close to thirteen minutes, too near pg-boss's fifteen-minute default to
+ * rely on, and an operator who raises `DATABASE_STATEMENT_TIMEOUT_MS` (or
+ * sets it to 0) lifts that bound altogether. Past the expiry pg-boss retries
+ * the job, and the retry folded the same account a second time.
+ */
+export const ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS = 60 * 60;
+
 /** Payload the boot-time backfill helper enqueues. */
 export interface RollupFullBackfillPayload {
   userId: string;
@@ -203,8 +214,14 @@ export async function recomputeUserRollups(
      * statement group, so it ends with it.
      */
     statementTimeoutMs?: number;
+    /**
+     * Asked before each granularity: a fold that runs under a job's budget
+     * (`jobBudget`) stops between granularities, each of which commits on
+     * its own, and reports `stopped`.
+     */
+    shouldStop?: () => boolean;
   } = {},
-): Promise<{ rowsUpserted: number; durationMs: number }> {
+): Promise<{ rowsUpserted: number; durationMs: number; stopped?: true }> {
   const startedAt = Date.now();
   const granularities = opts.granularities ?? ALL_GRANULARITIES;
   const fiveYearsAgo = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
@@ -214,6 +231,13 @@ export async function recomputeUserRollups(
   let rowsUpserted = 0;
 
   for (const granularity of granularities) {
+    if (opts.shouldStop?.()) {
+      return {
+        rowsUpserted,
+        durationMs: Date.now() - startedAt,
+        stopped: true,
+      };
+    }
     // Snap the window out to whole buckets before aggregating. The
     // aggregate filters rows by `measured_at` but GROUPS by
     // `date_trunc(<granularity>, measured_at)`, and `persistRollupRows`
@@ -1219,6 +1243,7 @@ export async function enqueueBootTimeRollupBackfill(
         enqueuedAt: new Date().toISOString(),
       };
       const jobId = await boss.send(ROLLUP_FULL_BACKFILL_QUEUE, payload, {
+        expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,
         retryLimit: 3,
         retryDelay: 60,
         retryBackoff: true,

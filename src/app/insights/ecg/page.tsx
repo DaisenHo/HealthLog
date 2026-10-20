@@ -41,9 +41,10 @@ export default function InsightsEcgPage() {
   const data = page?.data;
 
   // A read failure must be visible, not a heading over an empty body that
-  // reads the same as "still loading" (§6). The section teaser below unmounts
-  // silently on error, which is right for the overview but wrong for the page
-  // the user opened to see this list.
+  // reads the same as "still loading" (§6). The section shows a one-line
+  // `QueryErrorRow`, the right weight for a supplementary block on the
+  // overview; on the page the person opened to see this list the failure is
+  // the whole content, so it gets the full `QueryErrorCard` instead.
   if (isError) {
     return (
       <SubPageShell

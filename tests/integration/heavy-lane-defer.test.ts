@@ -59,7 +59,13 @@ describe("deferLaneJobs", () => {
     expect(fetched?.id).toBe(id);
     expect((await row(id!))?.state).toBe("active");
 
-    expect(await deferLaneJobs(WAITER_QUEUE, [fetched!], 30)).toBe(1);
+    const deferral = await deferLaneJobs(WAITER_QUEUE, [fetched!], 30);
+    expect(deferral.deferred).toBe(1);
+    // When it was first queued, so a long wait can be told from a short one.
+    expect(deferral.oldestCreatedOn).toBeInstanceOf(Date);
+    expect(Date.now() - deferral.oldestCreatedOn!.getTime()).toBeLessThan(
+      60_000,
+    );
     expect(await row(id!)).toMatchObject({
       state: "created",
       retry_count: 0,
@@ -77,7 +83,10 @@ describe("deferLaneJobs", () => {
   it("leaves a job alone that is no longer active", async () => {
     const id = await boss.send(WAITER_QUEUE, { probe: 2 });
     const job = { id, name: WAITER_QUEUE, data: {} } as unknown as Job<object>;
-    expect(await deferLaneJobs(WAITER_QUEUE, [job], 30)).toBe(0);
+    expect(await deferLaneJobs(WAITER_QUEUE, [job], 30)).toEqual({
+      deferred: 0,
+      oldestCreatedOn: null,
+    });
     expect((await row(id!))?.future).toBe(false);
     await boss.deleteJob(WAITER_QUEUE, id!);
   });

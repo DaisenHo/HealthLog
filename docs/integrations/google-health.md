@@ -245,8 +245,10 @@ reading:
     upper-bound filter Google refused.
   - `stopReason`: why it ended early. `time_budget` and `page_budget` are the
     normal end of a slice, `rate_limited` means Google would not take more
-    requests for now, `job_budget` that the job itself ran out of time.
-    `null` means the slice read everything it started.
+    requests for now, `job_budget` that the job itself ran out of time,
+    `lane_wanted` that the slice made room for another heavy job (a nightly
+    run, a backup, an upload) that was waiting; the next slice starts two
+    minutes later. `null` means the slice read everything it started.
   - `collectionsDone` of `collectionsTotal`: data types read to the end so
     far.
   - `collections`: one entry per data type the slice touched, with its

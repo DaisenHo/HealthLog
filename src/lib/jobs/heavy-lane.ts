@@ -23,12 +23,24 @@
  * longer than its own expiry was failed, stopped counting as in use, and had
  * its staged file swept from under it. A deferred job keeps its id, its
  * retries and its staged upload, and its expiry starts when it runs.
+ *
+ * A deferred job also leaves word that the lane is wanted (`laneWanted`). A
+ * holder that runs in slices asks it at the boundaries where it can already
+ * stop and keep its place, ends its slice there, and queues the rest a little
+ * later than the job that waited (`LANE_YIELD_DELAY_SECONDS`), so a long
+ * import makes room for the nightly runs and for an upload instead of holding
+ * them back for hours. A holder that cannot stop part-way runs to its end; a
+ * job that has stood in line for `LANE_WAIT_WARN_MS` is reported at `warn`
+ * (`job.heavy_lane.waiting_long`), once per holder, so a lane that is held
+ * for hours shows in the alerts instead of only in `info` lines.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { Job } from "pg-boss";
 
 import { prisma } from "@/lib/db";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { annotate } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 
 export interface HeavyQueue {
   /** What makes the job heavy. */
@@ -74,20 +86,38 @@ export const HEAVY_QUEUES: Readonly<Record<string, HeavyQueue>> = {
 export const LANE_DEFER_SECONDS = 60;
 
 /**
+ * How far ahead a holder that gave way queues the rest of its work: past the
+ * deferred job's own return, so the job it gave way to takes the lane first.
+ */
+export const LANE_YIELD_DELAY_SECONDS = 2 * LANE_DEFER_SECONDS;
+
+/** How long a job may stand in line before the wait is reported at `warn`. */
+export const LANE_WAIT_WARN_MS = 2 * 60 * 60 * 1000;
+
+/** What one trip back to the queue did. */
+export interface LaneDeferral {
+  /** Rows that went back. */
+  deferred: number;
+  /** When the oldest of them was first queued, if any went back. */
+  oldestCreatedOn: Date | null;
+}
+
+/**
  * Put `jobs` of `queue` back in the queue to run `seconds` from now. The same
  * reset pg-boss's own `restore()` makes, with `start_after` moved in the same
  * statement: a restore followed by a separate update leaves a moment in which
  * another fetch could claim the row, and the completion of this handler would
  * then settle that newer claim, since a restored job's next claim keeps its
- * attempt number. Answers how many rows went back.
+ * attempt number. Answers how many rows went back, and since when the oldest
+ * of them has been waiting.
  */
 export async function deferLaneJobs(
   queue: string,
   jobs: readonly Job<unknown>[],
   seconds: number = LANE_DEFER_SECONDS,
-): Promise<number> {
+): Promise<LaneDeferral> {
   const ids = jobs.map((job) => job.id);
-  return prisma.$executeRaw`
+  const rows = await prisma.$queryRaw<Array<{ created_on: Date }>>`
     UPDATE pgboss.job
     SET state = 'created',
         started_on = NULL,
@@ -97,42 +127,102 @@ export async function deferLaneJobs(
     WHERE name = ${queue}
       AND id = ANY(${ids}::uuid[])
       AND state = 'active'
+    RETURNING created_on
   `;
+  const oldest = rows.reduce<Date | null>(
+    (min, row) => (min === null || row.created_on < min ? row.created_on : min),
+    null,
+  );
+  return { deferred: rows.length, oldestCreatedOn: oldest };
 }
 
-let busy = false;
+/** The job holding the lane, and what has happened while it held it. */
+interface LaneHold {
+  queue: string;
+  /** The first other queue that found the lane taken during this hold. */
+  wantedBy: string | null;
+  /** Queues whose long wait has been reported during this hold. */
+  warned: Set<string>;
+}
+
+let hold: LaneHold | null = null;
+const holdScope = new AsyncLocalStorage<LaneHold>();
+
+/**
+ * Whether the caller holds the lane and a job of another queue has been sent
+ * back while it did. False outside the lane, so a job that runs beside the
+ * lane (a light job of a heavy queue, any other queue) never gives way.
+ */
+export function laneWanted(): boolean {
+  const current = holdScope.getStore();
+  return current !== undefined && current === hold && current.wantedBy !== null;
+}
+
+function reportLongWait(
+  current: LaneHold,
+  queue: string,
+  deferral: LaneDeferral,
+  now: number,
+): void {
+  if (!deferral.oldestCreatedOn || current.warned.has(queue)) return;
+  const waitedMs = now - deferral.oldestCreatedOn.getTime();
+  if (waitedMs < LANE_WAIT_WARN_MS) return;
+  current.warned.add(queue);
+  emitSignal({
+    action: "job.heavy_lane.waiting_long",
+    level: "warn",
+    meta: {
+      queue,
+      holder: current.queue,
+      waited_minutes: Math.floor(waitedMs / 60_000),
+    },
+  });
+}
 
 /**
  * Wrap `handler` so the jobs of `queue` run in the lane. `inLane` picks the
  * jobs that are heavy where a queue carries light ones too (a single
  * account's warm beside the nightly walk); a batch with none of them runs at
- * once. `defer` is the way back to the queue; tests replace it.
+ * once. `defer` is the way back to the queue; tests replace it, and `now`.
  */
 export function heavyLane<J extends Job<unknown>>(
   queue: string,
   handler: (jobs: J[]) => Promise<JobOutcome>,
   inLane: (job: J) => boolean = () => true,
-  defer: (queue: string, jobs: readonly J[]) => Promise<number> = deferLaneJobs,
+  defer: (
+    queue: string,
+    jobs: readonly J[],
+  ) => Promise<LaneDeferral> = deferLaneJobs,
+  now: () => number = Date.now,
 ): (jobs: J[]) => Promise<JobOutcome> {
   if (!HEAVY_QUEUES[queue]) {
     throw new Error(`heavyLane: ${queue} is not in HEAVY_QUEUES`);
   }
   return async (jobs) => {
     if (!jobs.some(inLane)) return handler(jobs);
-    if (busy) {
-      const deferred = await defer(queue, jobs);
+    const current = hold;
+    if (current) {
+      const deferral = await defer(queue, jobs);
+      if (queue !== current.queue) current.wantedBy ??= queue;
       annotate({
         action: { name: "job.heavy_lane.deferred" },
-        meta: { queue, jobs: jobs.length, deferred },
+        meta: {
+          queue,
+          holder: current.queue,
+          jobs: jobs.length,
+          deferred: deferral.deferred,
+        },
       });
-      return jobDone({ lane_deferred: deferred });
+      reportLongWait(current, queue, deferral, now());
+      return jobDone({ lane_deferred: deferral.deferred });
     }
-    busy = true;
+    const entered: LaneHold = { queue, wantedBy: null, warned: new Set() };
+    hold = entered;
     annotate({ action: { name: "job.heavy_lane.entered" }, meta: { queue } });
     try {
-      return await handler(jobs);
+      return await holdScope.run(entered, () => handler(jobs));
     } finally {
-      busy = false;
+      hold = null;
     }
   };
 }

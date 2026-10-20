@@ -27,7 +27,10 @@ const { storeMock, clearMock } = vi.hoisted(() => ({
   storeMock: vi.fn(),
   clearMock: vi.fn(),
 }));
-vi.mock("@/lib/strava/credentials", () => ({
+vi.mock("@/lib/strava/credentials", async (importOriginal) => ({
+  STRAVA_DISCONNECTED: (
+    await importOriginal<typeof import("@/lib/strava/credentials")>()
+  ).STRAVA_DISCONNECTED,
   storeStravaClientCredentials: storeMock,
   clearStravaClientCredentials: clearMock,
 }));
@@ -80,14 +83,18 @@ describe("DELETE /api/strava/credentials", () => {
     expect(markDisconnected).toHaveBeenCalledWith("u1", "strava");
   });
 
-  it("clears the athlete id alongside both tokens", async () => {
+  it("clears the athlete id and the backfill state alongside both tokens", async () => {
     await del();
+    // The backfill markers belong to the account that was connected; a later
+    // connection must start its own history walk from the newest activity.
     expect(userUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: {
           stravaAccessTokenEncrypted: null,
           stravaRefreshTokenEncrypted: null,
           stravaAthleteId: null,
+          stravaBackfillCompletedAt: null,
+          stravaBackfillResumeBefore: null,
         },
       }),
     );

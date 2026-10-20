@@ -8,8 +8,10 @@ import type { Job } from "pg-boss";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
+vi.mock("@/lib/logging/signal", () => ({ emitSignal: vi.fn() }));
 
-import { heavyLane } from "../heavy-lane";
+import { emitSignal } from "@/lib/logging/signal";
+import { heavyLane, LANE_WAIT_WARN_MS, laneWanted } from "../heavy-lane";
 import { jobDone } from "../job-outcome";
 
 type TestJob = Job<{ force?: boolean }>;
@@ -36,7 +38,7 @@ function deferrals() {
   const back: Array<{ queue: string; ids: string[] }> = [];
   const defer = vi.fn(async (queue: string, jobs: readonly TestJob[]) => {
     back.push({ queue, ids: jobs.map((j) => j.id) });
-    return jobs.length;
+    return { deferred: jobs.length, oldestCreatedOn: null };
   });
   return { back, defer };
 }
@@ -158,5 +160,109 @@ describe("heavyLane", () => {
     expect(() =>
       heavyLane("host-metric-sample", async () => jobDone()),
     ).toThrow(/not in HEAVY_QUEUES/);
+  });
+});
+
+describe("laneWanted", () => {
+  it("tells the holder, and only the holder, that another queue is waiting", async () => {
+    const seen: Record<string, boolean[]> = { holder: [], beside: [] };
+    let release!: () => void;
+    const released = new Promise<void>((r) => (release = r));
+    const { defer } = deferrals();
+    expect(laneWanted()).toBe(false);
+    const held = heavyLane(
+      "integration-backfill-admission",
+      async () => {
+        seen.holder.push(laneWanted());
+        await released;
+        seen.holder.push(laneWanted());
+        return jobDone({ jobs: 1 });
+      },
+      undefined,
+      defer,
+    )([job("slice")]);
+    await tick();
+    // A job of the same queue going back is not a reason to give way.
+    await heavyLane(
+      "integration-backfill-admission",
+      vi.fn(),
+      undefined,
+      defer,
+    )([job("next-slice")]);
+    expect(laneWanted()).toBe(false);
+    await heavyLane(
+      "insights-general-status",
+      vi.fn(),
+      undefined,
+      defer,
+    )([job("nightly")]);
+    // A light job of a heavy queue running beside the lane is never asked, even now.
+    await heavyLane(
+      "insight-pregenerate",
+      async () => {
+        seen.beside.push(laneWanted());
+        return jobDone({ jobs: 1 });
+      },
+      () => false,
+      defer,
+    )([job("warm")]);
+    release();
+    await held;
+    expect(seen.holder).toEqual([false, true]);
+    expect(seen.beside).toEqual([false]);
+    // The next holder starts with a clean slate.
+    await heavyLane(
+      "data-backup",
+      async () => {
+        seen.holder.push(laneWanted());
+        return jobDone({ jobs: 1 });
+      },
+      undefined,
+      defer,
+    )([job("weekly")]);
+    expect(seen.holder).toEqual([false, true, false]);
+  });
+});
+
+describe("a long wait for the lane", () => {
+  it("is reported at warn once per holder when a job has waited past the limit", async () => {
+    vi.mocked(emitSignal).mockClear();
+    const now = Date.parse("2026-10-20T06:00:00Z");
+    let release!: () => void;
+    const released = new Promise<void>((r) => (release = r));
+    const queuedAt = (ms: number) => async () => ({
+      deferred: 1,
+      oldestCreatedOn: new Date(now - ms),
+    });
+    const held = heavyLane("integration-backfill-admission", async () => {
+      await released;
+      return jobDone({ jobs: 1 });
+    })([job("import")]);
+    await tick();
+    const wait = (ms: number) =>
+      heavyLane(
+        "insights-general-status",
+        vi.fn(),
+        undefined,
+        queuedAt(ms),
+        () => now,
+      )([job("nightly")]);
+
+    await wait(LANE_WAIT_WARN_MS - 60_000);
+    expect(emitSignal).not.toHaveBeenCalled();
+    await wait(LANE_WAIT_WARN_MS + 60_000);
+    await wait(LANE_WAIT_WARN_MS + 120_000);
+    expect(emitSignal).toHaveBeenCalledTimes(1);
+    expect(emitSignal).toHaveBeenCalledWith({
+      action: "job.heavy_lane.waiting_long",
+      level: "warn",
+      meta: {
+        queue: "insights-general-status",
+        holder: "integration-backfill-admission",
+        waited_minutes: 121,
+      },
+    });
+    release();
+    await held;
   });
 });

@@ -6,7 +6,7 @@ import { hashToken } from "@/lib/auth/hmac";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
-import { isDatabaseUnavailable, isP2025 } from "@/lib/prisma-errors";
+import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
@@ -116,11 +116,13 @@ async function findSessionByCookie(cookieValue: string) {
     // signed its person out. It is a 503 now, with a code a client can retry
     // on (`auth.session.unavailable`).
     //
-    // Only for a store that could not be reached. Any other query error says
-    // something about the value asked for, not about the store, and is
-    // answered like a value that matches nothing: a 503 there would let any
-    // anonymous caller produce server errors at will.
-    if (isDatabaseUnavailable(error)) {
+    // The shape check above already refused every crafted value before the
+    // query, so a failure here is about the store, not the caller: the pool
+    // had no connection free, the server ran out of connections or memory, a
+    // lock wait ran out. All of those are a 503. Only a refusal that names
+    // the value itself (a data exception, a Prisma validation error) is
+    // answered like a value that matches nothing.
+    if (!isInputRefusal(error)) {
       throw new SessionStoreUnavailableError(error);
     }
     getEvent()?.addWarning(

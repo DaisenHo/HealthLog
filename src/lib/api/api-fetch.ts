@@ -231,19 +231,6 @@ export async function apiGetList<T = unknown>(
   return { data, cap: readListCap(meta) };
 }
 
-/** POST variant of {@link apiGetList}, for a list read with a body. */
-export async function apiPostList<T = unknown>(
-  path: string,
-  body?: unknown,
-  init?: RequestInit,
-): Promise<{ data: T; cap: ListCap | null }> {
-  const { data, meta } = await apiFetchEnvelope<T>(
-    path,
-    withDefaultIdempotencyKey(withJsonBody("POST", body, init)),
-  );
-  return { data, cap: readListCap(meta) };
-}
-
 /** GET — resolves with the unwrapped `data` payload. */
 export function apiGet<T = unknown>(
   path: string,

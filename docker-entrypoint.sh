@@ -88,9 +88,12 @@ echo "HealthLog: Database is reachable."
 # Say how many migrations this image is about to apply, with a reminder to
 # back up first. Reporting only: it never stops the boot.
 node scripts/pending-migrations.mjs || true
+# `migrate-deploy.mjs` runs `prisma migrate deploy` and retries only a
+# migration that timed out on a lock and is marked safe to re-run; any other
+# failure stops the boot with Prisma's exit code (docs/ops/deploy.md).
 echo "HealthLog: Running database migrations..."
 NODE_PATH=/opt/prisma-cli/node_modules \
-  node /opt/prisma-cli/node_modules/prisma/build/index.js migrate deploy
+  node scripts/migrate-deploy.mjs
 echo "HealthLog: Migrations complete."
 
 # ── Start application ────────────────────────────────────────

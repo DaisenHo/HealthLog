@@ -312,6 +312,42 @@ describe("a session lookup that fails is not a missing session", () => {
     );
   });
 
+  it("raises for the pool's own connect timeout, which carries no code", async () => {
+    // pg-pool rejects with exactly this message and nothing else; the driver
+    // adapter hands it through unchanged.
+    vi.mocked(prisma.session.findUnique).mockRejectedValueOnce(
+      new Error("timeout exceeded when trying to connect") as never,
+    );
+    await expect(validateSessionFromCookieValue(SECRET)).rejects.toBeInstanceOf(
+      SessionStoreUnavailableError,
+    );
+  });
+
+  it.each([
+    ["53300", "sorry, too many clients already"],
+    ["55P03", "canceling statement due to lock timeout"],
+    ["53200", "out of memory"],
+  ])("raises for SQLSTATE %s, which is about the store", async (state, msg) => {
+    vi.mocked(prisma.session.findUnique).mockRejectedValueOnce(
+      Object.assign(new Error(msg), {
+        code: "P2010",
+        meta: { driverAdapterError: { cause: { originalCode: state } } },
+      }) as never,
+    );
+    await expect(validateSessionFromCookieValue(SECRET)).rejects.toBeInstanceOf(
+      SessionStoreUnavailableError,
+    );
+  });
+
+  it("answers null for a Prisma validation refusal", async () => {
+    vi.mocked(prisma.session.findUnique).mockRejectedValueOnce(
+      Object.assign(new Error("Invalid value provided"), {
+        name: "PrismaClientValidationError",
+      }) as never,
+    );
+    await expect(validateSessionFromCookieValue(SECRET)).resolves.toBe(null);
+  });
+
   it("answers null, not 503, when the query refused the value itself", async () => {
     // Postgres 22021: a byte sequence it will not accept in text. Nothing is
     // wrong with the store; a 503 here would let any anonymous caller produce

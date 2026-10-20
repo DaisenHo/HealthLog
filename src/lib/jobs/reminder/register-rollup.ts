@@ -109,6 +109,7 @@ import {
   BOOT_BACKFILL_STAGGER_SECONDS,
 } from "./shared";
 import { heavyLane } from "@/lib/jobs/heavy-lane";
+import { lockedPass } from "@/lib/jobs/long-pass";
 import {
   createAndSchedule,
   createAndWork,
@@ -332,22 +333,37 @@ export async function registerRollupQueues(
     boss,
     ROLLUP_FULL_BACKFILL_QUEUE,
     { localConcurrency: ROLLUP_FULL_BACKFILL_CONCURRENCY },
-    heavyLane(ROLLUP_FULL_BACKFILL_QUEUE, async (jobs) => {
-      let rowsUpsertedTotal = 0;
-      for (const job of jobs) {
-        const { userId } = job.data;
-        const { rowsUpserted, durationMs } = await recomputeUserRollups(userId);
-        rowsUpsertedTotal += rowsUpserted;
-        workerLog(
-          "info",
-          `[rollup-full-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
-        );
-      }
-      return jobDone({
-        users: jobs.length,
-        rows_upserted: rowsUpsertedTotal,
-      });
-    }),
+    // The lock sits outside the lane: a retry pg-boss starts after the expiry
+    // while the first fold still runs finds the account's lock and settles,
+    // instead of waiting in the lane and folding the account again.
+    lockedPass(
+      ROLLUP_FULL_BACKFILL_QUEUE,
+      (job) => job.data.userId,
+      heavyLane(ROLLUP_FULL_BACKFILL_QUEUE, async (jobs) => {
+        const shouldStop = jobBudget(jobs);
+        let rowsUpsertedTotal = 0;
+        for (const job of jobs) {
+          const { userId } = job.data;
+          const { rowsUpserted, durationMs, stopped } =
+            await recomputeUserRollups(userId, { shouldStop });
+          if (stopped) {
+            // Each granularity committed on its own; the retry folds again.
+            throw new Error(
+              `rollup-full-backfill for user ${userId} stopped on its job budget; the retry folds the rest`,
+            );
+          }
+          rowsUpsertedTotal += rowsUpserted;
+          workerLog(
+            "info",
+            `[rollup-full-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
+          );
+        }
+        return jobDone({
+          users: jobs.length,
+          rows_upserted: rowsUpsertedTotal,
+        });
+      }),
+    ),
   );
 
   // v1.5.6 — legacy step consolidation worker. The boot enqueue helper

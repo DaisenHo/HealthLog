@@ -42,6 +42,7 @@ import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-int
 import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
 import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
 import { PULSE_DAY_MEAN_SEND_OPTIONS } from "@/lib/jobs/pulse-day-mean";
+import { ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS } from "@/lib/rollups/measurement-rollups";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
@@ -190,9 +191,14 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
 
   // ── Rollups ────────────────────────────────────────────────────────
   "rollup-recompute": short("One bucket."),
-  "rollup-full-backfill": short(
-    "One account's rollup tiers: four aggregate statements, each held to the 60-second statement timeout.",
-  ),
+  "rollup-full-backfill": {
+    runtime: "long",
+    expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,
+    expiryVia: ["ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS"],
+    stop: "binding",
+    exclusive: "lockedPass",
+    why: "One account's five-year fold: four aggregates under the statement timeout and four persist transactions of up to 120 s each, about thirteen minutes at worst under the defaults and unbounded when the operator lifts the statement timeout.",
+  },
   "mood-rollup-recompute": short("One bucket."),
   "mood-rollup-full-backfill": short(
     "One account's mood entries, a few a day.",

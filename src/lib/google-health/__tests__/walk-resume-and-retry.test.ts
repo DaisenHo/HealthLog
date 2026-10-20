@@ -152,6 +152,22 @@ describe("a resumable walk", () => {
     expect(budget.stopReason).toBe("rate_limited");
   });
 
+  it("gives way to a waiting heavy job after its first page, keeping its place", async () => {
+    safeFetchMock.mockImplementation(async (url: string) =>
+      page(Number(new URL(url).searchParams.get("pageToken") ?? 0), true),
+    );
+    const budget = googleHealthSliceBudget(60_000, 500, Date.now, () => true);
+    const { outcome } = await runWithGoogleHealthStop(
+      () => false,
+      () => walk({ resumable: true }),
+      budget,
+    );
+    // Never before a page is on disk: a slice that ended empty would fail.
+    expect(safeFetchMock).toHaveBeenCalledTimes(1);
+    expect(outcome.truncated).toBe(true);
+    expect(budget.stopReason).toBe("lane_wanted");
+  });
+
   it("still fails on a rate limit outside a slice", async () => {
     safeFetchMock.mockResolvedValue(
       page(0, true, 429, { "retry-after": "3600" }),
@@ -175,6 +191,20 @@ describe("a walk that is not resumable", () => {
       budget,
     );
     expect(safeFetchMock).toHaveBeenCalledTimes(6);
+    expect(outcome.truncated).toBe(false);
+  });
+
+  it("does not give way part-way, since it would start over", async () => {
+    safeFetchMock.mockImplementation(async (url: string) => {
+      const n = Number(new URL(url).searchParams.get("pageToken") ?? 0);
+      return page(n, n < 3);
+    });
+    const { outcome } = await runWithGoogleHealthStop(
+      () => false,
+      () => walk(),
+      googleHealthSliceBudget(60_000, 500, Date.now, () => true),
+    );
+    expect(safeFetchMock).toHaveBeenCalledTimes(4);
     expect(outcome.truncated).toBe(false);
   });
 

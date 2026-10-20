@@ -153,6 +153,10 @@ export const GET = apiHandler(async () => {
       // The bound the view states out loud. Resolved here so the UI never has to
       // hardcode a number the operator can change.
       retentionDays,
+      // Deprecated copy of `meta.truncated`. It was a required field of `data`
+      // through v1.43.6, and a client built against that contract must keep
+      // decoding it; it goes in a minor release. The web reads `meta`.
+      truncated: cap.truncated,
     },
     // Whether the list is everything inside that window, or its most recent
     // hundred rows, rides the envelope like every capped list's (`meta`).

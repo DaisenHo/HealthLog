@@ -18,7 +18,7 @@
  * reads `meta` decodes it unchanged. `truncated` is exact: true only when a
  * row past the limit exists. The OpenAPI side is `listEnvelope` in
  * `src/lib/openapi/routes/shared.ts`. A client reads it through `apiGetList`
- * / `apiPostList` (`src/lib/api/api-fetch.ts`) and shows it with
+ * (`src/lib/api/api-fetch.ts`) and shows it with
  * `ListCapNotice`; `src/__tests__/list-cap-reader-guard.test.ts` binds every
  * capped route to such a reader.
  */

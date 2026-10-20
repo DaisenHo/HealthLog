@@ -274,26 +274,43 @@ async function readExtremeHistory(args: {
     });
   }
 
-  const found = new Map<string, DailyStats>();
-  const missing = blocks.filter((block) => {
-    const hit = cache.get(block.key);
-    if (hit) found.set(block.key, hit);
-    return !hit;
-  });
-  if (missing.length > 0) {
-    const first = missing[0]!;
-    const last = missing[missing.length - 1]!;
-    const stats = await read(
-      startOfLocalDayKey(first.start, args.tz),
-      last.end,
+  // Every block goes through `wrap`, so a build is coalesced with a
+  // concurrent read of the same block and, above all, is fenced: a write
+  // that invalidates the account's analytics entries while the read is in
+  // flight stops the result from being cached, instead of the pre-write
+  // days being served for the block's whole TTL. The blocks missing right
+  // now still share one read of their contiguous span.
+  const missing = blocks.filter((block) => cache.get(block.key) === null);
+  let span: Promise<DailyStats> | null = null;
+  const readSpan = (): Promise<DailyStats> => {
+    span ??= read(
+      startOfLocalDayKey(missing[0]!.start, args.tz),
+      missing[missing.length - 1]!.end,
     );
-    for (const block of blocks) {
-      if (block.start < first.start || block.end > last.end) continue;
-      const cell = sliceDays(stats, block.start, block.end);
-      cache.set(block.key, cell, HISTORY_TTL_MS);
-      found.set(block.key, cell);
-    }
-  }
+    return span;
+  };
+  const inSpan = (block: { start: string; end: string }) =>
+    missing.length > 0 &&
+    block.start >= missing[0]!.start &&
+    block.end <= missing[missing.length - 1]!.end;
+  const cells = await Promise.all(
+    blocks.map(async (block) => {
+      const { value } = await cache.wrap(
+        block.key,
+        async () =>
+          sliceDays(
+            inSpan(block)
+              ? await readSpan()
+              : await read(startOfLocalDayKey(block.start, args.tz), block.end),
+            block.start,
+            block.end,
+          ),
+        HISTORY_TTL_MS,
+      );
+      return [block.key, value] as const;
+    }),
+  );
+  const found = new Map<string, DailyStats>(cells);
 
   const out: DailyStats = new Map();
   for (const block of blocks) {

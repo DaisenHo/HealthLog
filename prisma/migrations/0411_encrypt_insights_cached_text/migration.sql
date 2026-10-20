@@ -16,7 +16,7 @@
 --
 -- Additive only: no table rewrite, no data change.
 
-ALTER TABLE "users" ADD COLUMN "insights_cached_text_encrypted" BYTEA;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "insights_cached_text_encrypted" BYTEA;
 
 -- Partial index on exactly the backfill's discovery predicate, so the boot
 -- scan is index-only and shrinks to nothing as the backfill converges (the
