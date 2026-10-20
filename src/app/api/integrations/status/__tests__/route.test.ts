@@ -485,3 +485,26 @@ describe("/api/integrations/status — the unified connection health", () => {
     }
   });
 });
+
+describe("/api/integrations/status — one round of reads", () => {
+  it("asks for the connection health and the freshness without waiting on the provider rows", async () => {
+    userFind.mockResolvedValue({});
+    // Hold the user row back: under the old shape nothing else was asked
+    // until it (and the rest of the first round) had answered.
+    let release: (row: unknown) => void = () => {};
+    userFind.mockImplementationOnce(
+      () => new Promise((resolve) => (release = resolve)),
+    );
+    const { loadConnectionHealth } =
+      await import("@/lib/integrations/connection-health-load");
+
+    const pending = fetchEnvelope();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(loadConnectionHealth).toHaveBeenCalledTimes(1);
+    expect(listLiveMeasurementTypes).toHaveBeenCalled();
+    release({});
+    const envelope = await pending;
+    expect(envelope.integrations.length).toBeGreaterThan(0);
+  });
+});

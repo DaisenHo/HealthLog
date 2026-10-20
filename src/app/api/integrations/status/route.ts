@@ -64,124 +64,138 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "integrations.status" } });
 
+  // One round: the per-provider rows, the unified connection health and the
+  // per-metric freshness do not depend on each other. Awaited one after
+  // another, a cold first visit paid the three latencies end to end.
+  let metricFreshnessDegraded = false;
   const [
-    withingsStatus,
-    whoopStatus,
-    fitbitStatus,
-    googleHealthStatus,
-    polarStatus,
-    ouraStatus,
-    stravaStatus,
-    nightscoutStatus,
-    dawarichStatus,
-    dbUser,
-    withingsConn,
-    whoopConn,
-    fitbitConn,
-    googleHealthConn,
-    // v1.17.1 — `available` reports whether usable OAuth credentials resolve
-    // (per-user BYO first, then the shared env app), mirroring the per-card
-    // /api/<provider>/status the consolidated envelope now replaces.
-    polarAvailable,
-    ouraAvailable,
-    stravaAvailable,
+    [
+      withingsStatus,
+      whoopStatus,
+      fitbitStatus,
+      googleHealthStatus,
+      polarStatus,
+      ouraStatus,
+      stravaStatus,
+      nightscoutStatus,
+      dawarichStatus,
+      dbUser,
+      withingsConn,
+      whoopConn,
+      fitbitConn,
+      googleHealthConn,
+      // v1.17.1 — `available` reports whether usable OAuth credentials resolve
+      // (per-user BYO first, then the shared env app), mirroring the per-card
+      // /api/<provider>/status the consolidated envelope now replaces.
+      polarAvailable,
+      ouraAvailable,
+      stravaAvailable,
+    ],
+    health,
+    metricFreshness,
   ] = await Promise.all([
-    getIntegrationStatus(user.id, "withings"),
-    getIntegrationStatus(user.id, "whoop"),
-    getIntegrationStatus(user.id, "fitbit"),
-    getIntegrationStatus(user.id, "google-health"),
-    getIntegrationStatus(user.id, "polar"),
-    getIntegrationStatus(user.id, "oura"),
-    getIntegrationStatus(user.id, "strava"),
-    getIntegrationStatus(user.id, "nightscout"),
-    getIntegrationStatus(user.id, "dawarich"),
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        withingsClientIdEncrypted: true,
-        withingsClientSecretEncrypted: true,
-        whoopClientIdEncrypted: true,
-        whoopClientSecretEncrypted: true,
-        fitbitClientIdEncrypted: true,
-        fitbitClientSecretEncrypted: true,
-        googleHealthClientIdEncrypted: true,
-        googleHealthClientSecretEncrypted: true,
-        polarAccessTokenEncrypted: true,
-        polarClientIdEncrypted: true,
-        polarClientSecretEncrypted: true,
-        ouraAccessTokenEncrypted: true,
-        ouraClientIdEncrypted: true,
-        ouraClientSecretEncrypted: true,
-        ouraScopeDenied: true,
-        stravaAccessTokenEncrypted: true,
-        stravaClientIdEncrypted: true,
-        stravaClientSecretEncrypted: true,
-        // Nightscout folds onto the envelope; the card reads these three off
-        // it instead of its own /api/nightscout/status round-trip.
-        nightscoutUrlEncrypted: true,
-        nightscoutTokenEncrypted: true,
-        nightscoutAllowPrivateHost: true,
-        dawarichUrlEncrypted: true,
-      },
+    Promise.all([
+      getIntegrationStatus(user.id, "withings"),
+      getIntegrationStatus(user.id, "whoop"),
+      getIntegrationStatus(user.id, "fitbit"),
+      getIntegrationStatus(user.id, "google-health"),
+      getIntegrationStatus(user.id, "polar"),
+      getIntegrationStatus(user.id, "oura"),
+      getIntegrationStatus(user.id, "strava"),
+      getIntegrationStatus(user.id, "nightscout"),
+      getIntegrationStatus(user.id, "dawarich"),
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          withingsClientIdEncrypted: true,
+          withingsClientSecretEncrypted: true,
+          whoopClientIdEncrypted: true,
+          whoopClientSecretEncrypted: true,
+          fitbitClientIdEncrypted: true,
+          fitbitClientSecretEncrypted: true,
+          googleHealthClientIdEncrypted: true,
+          googleHealthClientSecretEncrypted: true,
+          polarAccessTokenEncrypted: true,
+          polarClientIdEncrypted: true,
+          polarClientSecretEncrypted: true,
+          ouraAccessTokenEncrypted: true,
+          ouraClientIdEncrypted: true,
+          ouraClientSecretEncrypted: true,
+          ouraScopeDenied: true,
+          stravaAccessTokenEncrypted: true,
+          stravaClientIdEncrypted: true,
+          stravaClientSecretEncrypted: true,
+          // Nightscout folds onto the envelope; the card reads these three off
+          // it instead of its own /api/nightscout/status round-trip.
+          nightscoutUrlEncrypted: true,
+          nightscoutTokenEncrypted: true,
+          nightscoutAllowPrivateHost: true,
+          dawarichUrlEncrypted: true,
+        },
+      }),
+      prisma.withingsConnection.findUnique({
+        where: { userId: user.id },
+        select: {
+          tokenExpiresAt: true,
+          lastSyncedAt: true,
+          createdAt: true,
+          scope: true,
+          apiPlanState: true,
+        },
+      }),
+      prisma.whoopConnection.findUnique({
+        where: { userId: user.id },
+        select: {
+          tokenExpiresAt: true,
+          whoopUserId: true,
+          lastSyncedAt: true,
+          createdAt: true,
+          backfillCompletedAt: true,
+        },
+      }),
+      prisma.fitbitConnection.findUnique({
+        where: { userId: user.id },
+        select: {
+          tokenExpiresAt: true,
+          lastSyncedAt: true,
+          createdAt: true,
+          backfillCompletedAt: true,
+        },
+      }),
+      prisma.googleHealthConnection.findUnique({
+        where: { userId: user.id },
+        select: {
+          tokenExpiresAt: true,
+          lastSyncedAt: true,
+          createdAt: true,
+          backfillCompletedAt: true,
+          backfillProgress: true,
+          needsReauth: true,
+        },
+      }),
+      getPolarClientCredentials(user.id).then((c) => !!c),
+      getOuraClientCredentials(user.id).then((c) => !!c),
+      getStravaClientCredentials(user.id).then((c) => !!c),
+    ]),
+    // The unified per-connection state. Resolved by the same loader the
+    // per-provider routes and the integration watchdog use, so the envelope
+    // and every other surface say the same thing about a connection.
+    loadConnectionHealth(user.id, [
+      "withings",
+      "whoop",
+      "fitbit",
+      "google-health",
+      "polar",
+      "oura",
+      "strava",
+      "nightscout",
+      "dawarich",
+    ]),
+    // See `metricFreshnessDegraded` below.
+    getSourceMetricFreshness(user.id).catch(() => {
+      metricFreshnessDegraded = true;
+      return {} as Partial<Record<IntegrationKey, MetricFreshnessSample[]>>;
     }),
-    prisma.withingsConnection.findUnique({
-      where: { userId: user.id },
-      select: {
-        tokenExpiresAt: true,
-        lastSyncedAt: true,
-        createdAt: true,
-        scope: true,
-        apiPlanState: true,
-      },
-    }),
-    prisma.whoopConnection.findUnique({
-      where: { userId: user.id },
-      select: {
-        tokenExpiresAt: true,
-        whoopUserId: true,
-        lastSyncedAt: true,
-        createdAt: true,
-        backfillCompletedAt: true,
-      },
-    }),
-    prisma.fitbitConnection.findUnique({
-      where: { userId: user.id },
-      select: {
-        tokenExpiresAt: true,
-        lastSyncedAt: true,
-        createdAt: true,
-        backfillCompletedAt: true,
-      },
-    }),
-    prisma.googleHealthConnection.findUnique({
-      where: { userId: user.id },
-      select: {
-        tokenExpiresAt: true,
-        lastSyncedAt: true,
-        createdAt: true,
-        backfillCompletedAt: true,
-        backfillProgress: true,
-        needsReauth: true,
-      },
-    }),
-    getPolarClientCredentials(user.id).then((c) => !!c),
-    getOuraClientCredentials(user.id).then((c) => !!c),
-    getStravaClientCredentials(user.id).then((c) => !!c),
-  ]);
-
-  // The unified per-connection state. Resolved by the same loader the
-  // per-provider routes and the integration watchdog use, so the envelope and
-  // every other surface say the same thing about a connection.
-  const health = await loadConnectionHealth(user.id, [
-    "withings",
-    "whoop",
-    "fitbit",
-    "google-health",
-    "polar",
-    "oura",
-    "strava",
-    "nightscout",
-    "dawarich",
   ]);
 
   // Per-metric-type last-value timestamps so the card can show that a
@@ -196,12 +210,7 @@ export const GET = apiHandler(async () => {
   // the wire, and the honesty signal quietly became the thing it was built to
   // prevent. `metricFreshnessDegraded` separates them. One flag rather than a
   // nullable array per entry, because this is ONE query for all eight providers
-  // — it fails for all of them or for none.
-  let metricFreshnessDegraded = false;
-  const metricFreshness = await getSourceMetricFreshness(user.id).catch(() => {
-    metricFreshnessDegraded = true;
-    return {} as Partial<Record<IntegrationKey, MetricFreshnessSample[]>>;
-  });
+  // — it fails for all of them or for none. (Read in the round above.)
 
   const now = Date.now();
   const whoopConnected = !!whoopConn?.whoopUserId;
