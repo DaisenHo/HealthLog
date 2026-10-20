@@ -187,23 +187,41 @@ export async function readFirstReadings(
   return out;
 }
 
-/** Cached history starts on a block boundary, so neighbouring days share it. */
+/**
+ * The history is cached in fixed blocks of local days counted from the
+ * epoch, so neighbouring days share them and a block's size never grows.
+ */
 const HISTORY_BLOCK_DAYS = 90;
 const HISTORY_EPOCH = "1970-01-01";
-/** Measurement writes sweep the cell; the TTL only bounds an idle one. */
+/** Measurement writes sweep the cells; the TTL only bounds an idle one. */
 const HISTORY_TTL_MS = 15 * 60_000;
+
+/** The first day of the block holding `day`. */
+function blockStartOf(day: string): string {
+  const offset = daysBetweenDateKeys(HISTORY_EPOCH, day);
+  return shiftDateKey(
+    HISTORY_EPOCH,
+    Math.floor(offset / HISTORY_BLOCK_DAYS) * HISTORY_BLOCK_DAYS,
+  );
+}
 
 /**
  * The daily series behind the extremes, for the local days `[from, to]`.
  *
  * Every day view compares its day with the two years before it, so paging
  * from one day to the next read the same two years again. The history is
- * cached per record, zone, source ladder and readable type set, from a block
- * boundary at or before `from` up to today, and each caller takes its own
- * slice: a day's value does not depend on the window around it, and a slice
- * cut at local day keys is exactly the window the live read would see. A
- * type the record's modules switch off is never read. A lookback floor
- * inside the window, or a window that reaches past today, reads live.
+ * cached per record, zone, source ladder and readable type set in blocks of
+ * {@link HISTORY_BLOCK_DAYS} days, and a window is put together from the
+ * blocks it touches: a day's value does not depend on the window around it,
+ * so a slice cut at local day keys is exactly what the live read would see.
+ * A block that ends before today is the same whatever day it is read on; the
+ * block holding today ends at today and carries today in its key. Each cell
+ * therefore holds at most one block of days per type, paging back reuses the
+ * blocks it already has instead of caching a near-full copy of the two years
+ * per block boundary, and a cold day long ago reads its own two years, not
+ * everything from there to today. The blocks a window misses are read in one
+ * query. A type the record's modules switch off is never read. A lookback
+ * floor inside the window, or a window that reaches past today, reads live.
  */
 async function readExtremeHistory(args: {
   userId: string;
@@ -216,51 +234,78 @@ async function readExtremeHistory(args: {
 }): Promise<DailyStats> {
   const fromInstant = startOfLocalDayKey(args.from, args.tz);
   const today = userDayKey(new Date(), args.tz);
-  const live = (from: Date) =>
+  const read = (from: Date, lastDay: string) =>
     readLocalDailyStats({
       userId: args.userId,
       types: args.readable,
       from,
-      to: startOfLocalDayKey(shiftDateKey(args.to, 1), args.tz),
+      to: startOfLocalDayKey(shiftDateKey(lastDay, 1), args.tz),
       tz: args.tz,
       priorityJson: args.priorityJson,
     });
-  if (args.floor && args.floor > fromInstant) return live(args.floor);
-  if (args.to > today) return live(fromInstant);
+  if (args.floor && args.floor > fromInstant) return read(args.floor, args.to);
+  if (args.to > today) return read(fromInstant, args.to);
 
-  const offset = daysBetweenDateKeys(HISTORY_EPOCH, args.from);
-  const blockStart = shiftDateKey(
-    HISTORY_EPOCH,
-    Math.floor(offset / HISTORY_BLOCK_DAYS) * HISTORY_BLOCK_DAYS,
-  );
   const ladder = createHash("sha256")
     .update(JSON.stringify(args.priorityJson ?? null))
     .digest("base64url")
     .slice(0, 16);
-  const key = [
+  const prefix = [
     args.userId,
     "notable-history",
     args.tz,
     ladder,
     [...args.readable].sort().join(","),
-    blockStart,
-    today,
   ].join("|");
   const cache = caches.analytics as ServerCache<DailyStats>;
-  const { value } = await cache.wrap(
-    key,
-    () =>
-      readLocalDailyStats({
-        userId: args.userId,
-        types: args.readable,
-        from: startOfLocalDayKey(blockStart, args.tz),
-        to: startOfLocalDayKey(shiftDateKey(today, 1), args.tz),
-        tz: args.tz,
-        priorityJson: args.priorityJson,
-      }),
-    HISTORY_TTL_MS,
-  );
-  return sliceDays(value, args.from, args.to);
+
+  const blocks: Array<{ start: string; end: string; key: string }> = [];
+  for (
+    let start = blockStartOf(args.from);
+    start <= args.to;
+    start = shiftDateKey(start, HISTORY_BLOCK_DAYS)
+  ) {
+    const last = shiftDateKey(start, HISTORY_BLOCK_DAYS - 1);
+    const open = last >= today;
+    blocks.push({
+      start,
+      end: open ? today : last,
+      key: `${prefix}|${start}|${open ? today : "closed"}`,
+    });
+  }
+
+  const found = new Map<string, DailyStats>();
+  const missing = blocks.filter((block) => {
+    const hit = cache.get(block.key);
+    if (hit) found.set(block.key, hit);
+    return !hit;
+  });
+  if (missing.length > 0) {
+    const first = missing[0]!;
+    const last = missing[missing.length - 1]!;
+    const stats = await read(
+      startOfLocalDayKey(first.start, args.tz),
+      last.end,
+    );
+    for (const block of blocks) {
+      if (block.start < first.start || block.end > last.end) continue;
+      const cell = sliceDays(stats, block.start, block.end);
+      cache.set(block.key, cell, HISTORY_TTL_MS);
+      found.set(block.key, cell);
+    }
+  }
+
+  const out: DailyStats = new Map();
+  for (const block of blocks) {
+    for (const [type, days] of found.get(block.key) ?? new Map()) {
+      const into = out.get(type) ?? new Map<string, number>();
+      for (const [day, value] of days) {
+        if (day >= args.from && day <= args.to) into.set(day, value);
+      }
+      out.set(type, into);
+    }
+  }
+  return out;
 }
 
 /** The days of `stats` inside `[from, to]`, a copy. */
