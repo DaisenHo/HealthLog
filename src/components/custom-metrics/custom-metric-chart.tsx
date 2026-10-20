@@ -13,7 +13,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@/components/ui/button";
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import {
@@ -32,6 +31,7 @@ import {
 import { dateKeyOfInstant } from "../day/day-url";
 import { formatMetricValue } from "./format-value";
 import type { CustomMetricEntryDto } from "./types";
+import { Segmented } from "@/components/ui/segmented";
 
 /**
  * v1.25.5 — per-custom-metric trend chart, in the dashboard's visual language.
@@ -137,19 +137,17 @@ export function CustomMetricChart({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end gap-1">
-        {RANGE_DAYS.map((r) => (
-          <Button
-            key={r.key}
-            size="sm"
-            variant={range === r.key ? "secondary" : "ghost"}
-            aria-pressed={range === r.key}
-            className="h-7 px-2 text-xs"
-            onClick={() => setRange(r.key)}
-          >
-            {t(`customMetrics.chart.range.${r.key}`)}
-          </Button>
-        ))}
+      <div className="flex justify-end">
+        <Segmented
+          options={RANGE_DAYS.map((r) => ({
+            value: r.key,
+            label: t(`customMetrics.chart.range.${r.key}`),
+          }))}
+          value={range}
+          onChange={setRange}
+          label={t("charts.rangeLabel")}
+          slot="custom-metric-chart-range"
+        />
       </div>
 
       {points.length === 0 ? (

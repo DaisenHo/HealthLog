@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Mapa de calor de cumplimiento de medicación de {start} a {end}, {days} días activos.",
       "complianceHeatmapEmpty": "Mapa de calor de cumplimiento de medicación, aún no hay días activos."
     },
-    "medicationsEmptyAction": "Añadir un medicamento"
+    "medicationsEmptyAction": "Añadir un medicamento",
+    "rangeLabel": "Periodo"
   },
   "chart": {
     "overlay": {

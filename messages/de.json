@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Heatmap zur Medikamenteneinnahme von {start} bis {end}, {days} aktive Tage.",
       "complianceHeatmapEmpty": "Heatmap zur Medikamenteneinnahme, noch keine aktiven Tage."
     },
-    "medicationsEmptyAction": "Medikament anlegen"
+    "medicationsEmptyAction": "Medikament anlegen",
+    "rangeLabel": "Zeitraum"
   },
   "chart": {
     "overlay": {

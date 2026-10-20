@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
-import { SegmentedToggle } from "@/components/medications/detail/segmented-toggle";
+import { Segmented } from "@/components/ui/segmented";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Glp1PlateauNote } from "@/components/insights/glp1-plateau-note";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -258,7 +258,8 @@ function TargetCard({
         {target.series.length > 0 ? (
           <div className="space-y-3">
             <div className="flex justify-end">
-              <SegmentedToggle
+              <Segmented
+                mode="toggle"
                 value={scaleMode}
                 options={[
                   {
@@ -272,8 +273,8 @@ function TargetCard({
                   },
                 ]}
                 onChange={setScaleMode}
-                ariaLabel={t("medications.efficacy.scaleToggleLabel")}
-                dataSlot="medication-wirkung-scale-toggle"
+                label={t("medications.efficacy.scaleToggleLabel")}
+                slot="medication-wirkung-scale-toggle"
               />
             </div>
             <EfficacyChart

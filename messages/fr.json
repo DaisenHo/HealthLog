@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Carte thermique d'observance des médicaments du {start} au {end}, {days} jours actifs.",
       "complianceHeatmapEmpty": "Carte thermique d'observance des médicaments, aucun jour actif pour l'instant."
     },
-    "medicationsEmptyAction": "Ajouter un médicament"
+    "medicationsEmptyAction": "Ajouter un médicament",
+    "rangeLabel": "Période"
   },
   "chart": {
     "overlay": {

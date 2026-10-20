@@ -2597,7 +2597,8 @@
     "days90Title": "최근 90일",
     "daysAllLabel": "전체",
     "daysAllTitle": "전체 기간",
-    "medicationsEmptyAction": "약 추가하기"
+    "medicationsEmptyAction": "약 추가하기",
+    "rangeLabel": "기간"
   },
   "chart": {
     "overlay": {

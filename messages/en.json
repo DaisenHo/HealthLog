@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Medication compliance heatmap from {start} to {end}, {days} active days.",
       "complianceHeatmapEmpty": "Medication compliance heatmap, no active days yet."
     },
-    "medicationsEmptyAction": "Add a medication"
+    "medicationsEmptyAction": "Add a medication",
+    "rangeLabel": "Time range"
   },
   "chart": {
     "overlay": {

@@ -14,7 +14,7 @@ import { LayoutGrid, Rows3, WrapText } from "lucide-react";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { ModuleViewToggle } from "@/components/module-list/module-view-toggle";
-import { ViewToggle } from "@/components/ui/view-toggle";
+import { Segmented } from "@/components/ui/segmented";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDocumentsLayout } from "@/lib/queries/use-documents-layout";
 
@@ -39,12 +39,14 @@ export function DocumentsSection() {
           title={t("documents.layout.arrangementHeading")}
           description={t("documents.layout.arrangementDescription")}
           status={
-            <ViewToggle
-              view={layout.arrangement}
+            <Segmented
+              mode="toggle"
+              iconOnly
+              value={layout.arrangement}
               onChange={setArrangement}
-              groupLabel={t("documents.layout.arrangementHeading")}
-              dataSlotPrefix="documents-arrangement"
-              segments={[
+              label={t("documents.layout.arrangementHeading")}
+              optionSlot={(value) => `documents-arrangement-${value}`}
+              options={[
                 {
                   value: "stacked",
                   label: t("documents.layout.stacked"),

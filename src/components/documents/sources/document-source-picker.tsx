@@ -81,7 +81,7 @@ import {
   isStoppingError,
   sourceErrorMessage,
 } from "./source-errors";
-import { SegmentedChoice } from "./segmented-choice";
+import { Segmented } from "@/components/ui/segmented";
 import { systemName } from "./use-document-sources";
 import { InlineAction } from "@/components/ui/inline-action";
 
@@ -409,13 +409,16 @@ export function DocumentSourcePicker({
     >
       <div className="space-y-3" data-slot="document-source-picker">
         {systems.length > 1 && active ? (
-          <SegmentedChoice
-            options={systems}
+          <Segmented
+            options={systems.map((system) => ({
+              value: system,
+              label: systemName(system),
+            }))}
             value={active}
             onChange={switchSystem}
             label={t("documents.sourcePicker.sourceLabel")}
             disabled={running}
-            renderOption={systemName}
+            className="self-start"
           />
         ) : null}
 

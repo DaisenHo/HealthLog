@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Mapa cieplna przyjmowania leków od {start} do {end}, {days} aktywnych dni.",
       "complianceHeatmapEmpty": "Mapa cieplna przyjmowania leków, brak aktywnych dni."
     },
-    "medicationsEmptyAction": "Dodaj lek"
+    "medicationsEmptyAction": "Dodaj lek",
+    "rangeLabel": "Zakres czasu"
   },
   "chart": {
     "overlay": {

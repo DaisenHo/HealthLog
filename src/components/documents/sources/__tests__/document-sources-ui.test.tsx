@@ -50,7 +50,6 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { ImportFromSourceButton } from "../import-from-source-button";
 import { mergeIds } from "../merge-ids";
-import { nextChoiceIndex } from "../segmented-choice";
 import { errorCodeOf, sourceErrorMessage } from "../source-errors";
 
 const PAPERLESS = {
@@ -252,19 +251,6 @@ describe("source error sentences", () => {
       ),
     ).toBe("documents.sources.authRefused");
     expect(errorCodeOf(new Error("x"))).toBeUndefined();
-  });
-});
-
-describe("nextChoiceIndex", () => {
-  it("moves with the arrows, wraps, and jumps with Home and End", () => {
-    expect(nextChoiceIndex("ArrowRight", 0, 2)).toBe(1);
-    expect(nextChoiceIndex("ArrowRight", 1, 2)).toBe(0);
-    expect(nextChoiceIndex("ArrowLeft", 0, 2)).toBe(1);
-    expect(nextChoiceIndex("ArrowDown", 0, 3)).toBe(1);
-    expect(nextChoiceIndex("ArrowUp", 0, 3)).toBe(2);
-    expect(nextChoiceIndex("Home", 2, 3)).toBe(0);
-    expect(nextChoiceIndex("End", 0, 3)).toBe(2);
-    expect(nextChoiceIndex("Enter", 0, 3)).toBeNull();
   });
 });
 

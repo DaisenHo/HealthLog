@@ -65,7 +65,7 @@ import {
 } from "@/components/medications/card-parts/medication-compliance-bars";
 import { DoseHistoryLedger } from "@/components/medications/dose-history-ledger";
 import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
-import { SegmentedToggle } from "@/components/medications/detail/segmented-toggle";
+import { Segmented } from "@/components/ui/segmented";
 import { ScheduleTimesEditor } from "@/components/medications/scheduling/schedule-times-editor";
 import { ScheduleHistoryTimeline } from "@/components/medications/scheduling/schedule-history-timeline";
 import type { DoseWindowEntry } from "@/components/medications/scheduling/dose-window";
@@ -855,7 +855,8 @@ export function MedicationDetailTabs({
             Daten (the DataPortabilityRow), not in this header. */}
         <TabsContent value="verlauf" className="space-y-6 pt-2">
           <div className="flex justify-end">
-            <SegmentedToggle
+            <Segmented
+              mode="toggle"
               value={historyView}
               options={[
                 {
@@ -868,8 +869,8 @@ export function MedicationDetailTabs({
                 },
               ]}
               onChange={setHistoryView}
-              ariaLabel={t("medications.detail.intake.viewToggleLabel")}
-              dataSlot="medication-verlauf-view-toggle"
+              label={t("medications.detail.intake.viewToggleLabel")}
+              slot="medication-verlauf-view-toggle"
             />
           </div>
           {historyView === "recent" ? (

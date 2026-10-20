@@ -2597,7 +2597,8 @@
       "complianceHeatmap": "Heatmap van therapietrouw van {start} tot {end}, {days} actieve dagen.",
       "complianceHeatmapEmpty": "Heatmap van therapietrouw, nog geen actieve dagen."
     },
-    "medicationsEmptyAction": "Medicijn toevoegen"
+    "medicationsEmptyAction": "Medicijn toevoegen",
+    "rangeLabel": "Periode"
   },
   "chart": {
     "overlay": {
