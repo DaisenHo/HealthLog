@@ -612,8 +612,24 @@ export async function recordGoogleHealthBackfillEnd(
         }
       : end,
   );
+  // A fixed shape, not the whole note: the slice report carries every end in
+  // full (`googleHealth.backfill.slice`). This names the one that just ended
+  // and counts the rest. It is meta, not the event's action, because the job
+  // names the action once the slice is over and that would replace it.
+  const recorded = ended.get(key)!;
+  const final = [...ended.values()].filter(googleHealthBackfillEndIsFinal);
   annotate({
-    meta: { "googleHealth.backfill.ended": Object.fromEntries(ended) },
+    meta: {
+      "googleHealth.backfill.ended": {
+        collection: key,
+        type: recorded.type,
+        reason: recorded.reason,
+        final: googleHealthBackfillEndIsFinal(recorded),
+        endedCount: ended.size,
+        finalCount: final.length,
+        types: [...new Set([...ended.values()].map((e) => e.type))].sort(),
+      },
+    },
   });
   try {
     await persistBackfillProgress(resume, {

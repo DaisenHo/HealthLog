@@ -9,9 +9,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { prismaMock, safeFetchMock } = vi.hoisted(() => ({
+const { prismaMock, safeFetchMock, annotateMock } = vi.hoisted(() => ({
   prismaMock: { googleHealthConnection: { update: vi.fn() } },
   safeFetchMock: vi.fn(),
+  annotateMock: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 vi.mock("@/lib/safe-fetch", async (importOriginal) => ({
@@ -19,7 +20,7 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => ({
   safeFetch: safeFetchMock,
 }));
 vi.mock("@/lib/logging/context", () => ({
-  annotate: () => {},
+  annotate: annotateMock,
   getEvent: () => null,
 }));
 
@@ -319,6 +320,24 @@ describe("a collection ended short", () => {
     // Waiting for another try is not where the history ends.
     expect(googleHealthBackfillEndedList(written)).toEqual([]);
     expect(googleHealthBackfillProgressAfterCompletion(ended)).toBeNull();
+  });
+
+  it("annotates an end in one fixed shape", async () => {
+    await slice(stalls, new Map([["fetchWeight", HORIZON_END]]));
+    const notes = annotateMock.mock.calls
+      .map(([fields]) => fields.meta?.["googleHealth.backfill.ended"])
+      .filter(Boolean);
+    expect(notes).toEqual([
+      {
+        collection: "fetchHeartRate",
+        type: "PULSE",
+        reason: "no_progress",
+        final: false,
+        endedCount: 2,
+        finalCount: 1,
+        types: ["PULSE", "WEIGHT"],
+      },
+    ]);
   });
 
   it("is not walked again before its day is up", async () => {
