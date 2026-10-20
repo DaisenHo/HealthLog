@@ -5415,18 +5415,26 @@ model AuditLog {
   /// lives.
   actorUserId String? @map("actor_user_id")
 
-  action    String // e.g. "auth.login", "measurement.create", "export.csv"
-  details   String? // JSON string, no sensitive data
-  ipAddress String?  @map("ip_address")
-  location  String? // e.g. "Berlin, DE" — resolved from IP at log time
+  action         String // e.g. "auth.login", "measurement.create", "export.csv"
+  details        String? // JSON string, no sensitive data
+  ipAddress      String?   @map("ip_address")
+  location       String? // e.g. "Berlin, DE" — resolved from IP at log time
   // v1.4.27 B3 — resolved at audit-creation time from the bundled
   // GeoLite2-ASN MMDB. `asn` is the autonomous-system number,
   // `carrier` is the organisation string (e.g. "Deutsche Telekom AG").
   // Both nullable so older rows, private-IP rows, and offline-miss
   // rows stay valid.
-  asn       Int? // autonomous-system number
-  carrier   String? // autonomous-system organisation
-  createdAt DateTime @default(now()) @map("created_at")
+  asn            Int? // autonomous-system number
+  carrier        String? // autonomous-system organisation
+  /// When the geo backfill (`src/lib/jobs/geo-backfill.ts`) last tried this
+  /// row. A row it could not complete waits `GEO_BACKFILL_RETRY_DAYS` before
+  /// the next try, so an address no database will ever place (a private
+  /// range behind a proxy) is not resolved again on every hourly pass. NULL:
+  /// never tried. The backfill reads its candidates through the partial index
+  /// `audit_logs_geo_backfill_idx` (migration 0418, raw SQL only: Prisma
+  /// cannot express its predicate).
+  geoAttemptedAt DateTime? @map("geo_attempted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
