@@ -8,7 +8,7 @@
  *
  *   1. the `(type, day)` rollup buckets the mutation dirtied — recomputed
  *      inline (DAY) + enqueued (WEEK/MONTH/YEAR) via
- *      `recomputeBucketsForMeasurement`. The recompute handles deletions
+ *      `recomputeBucketsForKeys`. The recompute handles deletions
  *      inherently: a day left empty drops its rollup row.
  *   2. the cached per-metric status assessments — re-warmed via
  *      `invalidateStatusInsightsForTypes` (fire-and-forget).
@@ -20,7 +20,7 @@
  */
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import {
   invalidateStatusInsightsForTypes,
@@ -50,9 +50,7 @@ export async function afterMeasurementMutation(
   // 500-row batch fires at most one DAY recompute per touched bucket.
   const keys = collapseToTypeDayKeys(rows);
   try {
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
   } catch (err) {
     console.warn(`[${label}] rollup recompute failed`, err);
   }

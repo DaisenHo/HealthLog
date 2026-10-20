@@ -85,7 +85,7 @@ describe("dashboard summary reads — sparkline rollup buckets", () => {
     // defeat statement reuse.
     const sql = code(READS);
     const casts = sql.match(/\}::"measurement_type"\[\]/g) ?? [];
-    expect(casts.length).toBe(2);
+    expect(casts.length).toBe(3);
     expect(sql).not.toMatch(/\$queryRawUnsafe/);
   });
 });

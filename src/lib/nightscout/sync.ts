@@ -34,7 +34,7 @@ import type { IntegrationClassification } from "@/lib/integrations/http-status-c
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import {
   emitInsertedMeasurementArrivals,
@@ -327,9 +327,7 @@ export async function upsertNightscoutEntries(
 
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),

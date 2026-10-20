@@ -10,8 +10,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
+      findMany: vi.fn(),
+      createManyAndReturn: vi.fn(),
       update: vi.fn(),
     },
     withingsConnection: {
@@ -61,7 +61,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   >("@/lib/rollups/measurement-rollups");
   return {
     ...actual,
-    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+    recomputeBucketsForKeys: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -179,8 +179,10 @@ function persistedLegs(): Array<{ leg: unknown; value: unknown }> {
 
 function createdTypes(): string[] {
   return vi
-    .mocked(prisma.measurement.create)
-    .mock.calls.map((c) => (c[0] as { data: { type: string } }).data.type);
+    .mocked(prisma.measurement.createManyAndReturn)
+    .mock.calls.flatMap((c) =>
+      (c[0] as { data: Array<{ type: string }> }).data.map((d) => d.type),
+    );
 }
 
 beforeEach(() => {
@@ -193,14 +195,15 @@ beforeEach(() => {
     connection() as never,
   );
   vi.mocked(prisma.withingsConnection.update).mockResolvedValue({} as never);
-  vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
-  vi.mocked(prisma.measurement.create).mockImplementation((async (args: {
-    data: { type: string; measuredAt: Date };
-  }) => ({
-    id: `m-${args.data.type}`,
-    type: args.data.type,
-    measuredAt: args.data.measuredAt,
-  })) as never);
+  vi.mocked(prisma.measurement.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.measurement.createManyAndReturn).mockImplementation(
+    (async (args: { data: Array<{ type: string; measuredAt: Date }> }) =>
+      args.data.map((d) => ({
+        id: `m-${d.type}`,
+        type: d.type,
+        measuredAt: d.measuredAt,
+      }))) as never,
+  );
   vi.mocked(prisma.$executeRaw).mockResolvedValue(1 as never);
 });
 
@@ -338,7 +341,7 @@ describe("syncUserMeasurements inside the Withings API plan", () => {
 
     for (let run = 0; run < 4; run++) {
       vi.mocked(prisma.$executeRaw).mockClear();
-      vi.mocked(prisma.measurement.create).mockClear();
+      vi.mocked(prisma.measurement.createManyAndReturn).mockClear();
       requestedStartdates.length = 0;
       await syncUserMeasurements("user-1");
       const [persisted] = persistedLegs();

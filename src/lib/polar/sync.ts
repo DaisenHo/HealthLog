@@ -48,7 +48,7 @@ import {
 } from "@/lib/integrations/status";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
@@ -398,9 +398,7 @@ export async function upsertPolarMeasurements(
   );
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),

@@ -17,6 +17,7 @@
  */
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
 
 /** v1.4.38 — the single most recent reading per measurement
  *  type, irrespective of age. One row per metric the user has ever
@@ -164,6 +165,82 @@ export function readSparkBuckets(
     WHERE rn <= ${sparkDays}
     ORDER BY type, bucket_start ASC
   `;
+}
+
+/** One metric's all-time reading count, for a type that has any. */
+export interface AllTimeCountRow {
+  type: MeasurementType;
+  count: number;
+}
+
+/**
+ * The first UTC day the DAY rollups are trusted to hold in full: one day
+ * inside the fold window. Every fold that ever ran for the account began at
+ * or before it (its window was anchored on an earlier `now`), and the write
+ * hooks keep every later day current.
+ */
+export function allTimeRollupBoundary(now: Date): Date {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const start = now.getTime() - ROLLUP_FOLD_WINDOW_MS;
+  return new Date(Math.floor(start / DAY_MS) * DAY_MS + DAY_MS);
+}
+
+/**
+ * Total live readings per measurement type, all time.
+ *
+ * Counting them on `measurements` reads one index entry per reading: on an
+ * account with a watch that is millions of entries per request, two to four
+ * seconds whenever they are not in memory, which is the dashboard's slowest
+ * read by far. The DAY rollups already carry a count per (type, day, source)
+ * — every live reading of the day, every source — so the sum of a type's DAY
+ * buckets is its count over the days they cover. Readings before the fold
+ * window, which the fold never buckets, are counted live; that range is a
+ * small, bounded index slice. A type with no DAY bucket at all (not folded
+ * yet) is counted live in full, exactly as before. Types with no readings
+ * are absent.
+ */
+export async function readAllTimeCounts(
+  db: PrismaClient,
+  userId: string,
+  measurementTypes: readonly MeasurementType[],
+  now: Date = new Date(),
+): Promise<AllTimeCountRow[]> {
+  const boundary = allTimeRollupBoundary(now);
+  const rows = await db.$queryRaw<
+    Array<{ type: MeasurementType; count: number }>
+  >`
+    SELECT wanted."type" AS type,
+      (CASE
+        WHEN EXISTS (
+          SELECT 1 FROM measurement_rollups r
+          WHERE r."user_id" = ${userId}
+            AND r."type" = wanted."type"
+            AND r."granularity" = 'DAY'
+        )
+        THEN COALESCE((
+          SELECT SUM(r."count") FROM measurement_rollups r
+          WHERE r."user_id" = ${userId}
+            AND r."type" = wanted."type"
+            AND r."granularity" = 'DAY'
+            AND r."bucket_start" >= ${boundary}
+        ), 0) + (
+          SELECT COUNT(*) FROM measurements m
+          WHERE m."user_id" = ${userId}
+            AND m."type" = wanted."type"
+            AND m."deleted_at" IS NULL
+            AND m."measured_at" < ${boundary}
+        )
+        ELSE (
+          SELECT COUNT(*) FROM measurements m
+          WHERE m."user_id" = ${userId}
+            AND m."type" = wanted."type"
+            AND m."deleted_at" IS NULL
+        )
+      END)::int AS count
+    FROM unnest(${[...measurementTypes]}::"measurement_type"[]) AS wanted("type")
+    ORDER BY wanted."type"
+  `;
+  return rows.filter((row) => row.count > 0);
 }
 
 /**

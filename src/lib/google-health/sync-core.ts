@@ -41,7 +41,7 @@ import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import {
@@ -1587,9 +1587,7 @@ export async function upsertGoogleHealthMeasurements(
 
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),

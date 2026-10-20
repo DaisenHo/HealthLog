@@ -8,6 +8,7 @@ import {
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
 import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
 import { resolveRequestId } from "@/lib/http/request-id";
+import { redactSecrets } from "@/lib/logging/redact";
 
 /**
  * Paths that do NOT require a session cookie (public pages + external webhooks).
@@ -321,6 +322,9 @@ function applyBaselineSecurityHeaders(response: NextResponse): NextResponse {
  */
 const NOTIFICATION_ACTION_PREFIX = "/api/notifications/action/";
 
+/** The request header that marks a Next.js Server Action call. */
+const SERVER_ACTION_HEADER = "next-action";
+
 type NotificationActionRefusal =
   "method_not_allowed" | "worker_only" | "demo_mode";
 
@@ -367,6 +371,42 @@ export function proxy(request: NextRequest) {
             "This container runs the worker only — point HTTP at the web service.",
         },
         { status: 503, headers: { "X-HealthLog-Process-Type": "worker" } },
+      ),
+    );
+  }
+
+  // A Server Action call. HealthLog defines no Server Actions (no module
+  // carries `"use server"`, which `no-server-actions-guard.test.ts` holds), so
+  // no bundle of this app, old or new, ever sends `Next-Action`: the requests
+  // that do are scanners probing the Server Action surface, nightly and in
+  // bursts. Left to Next, each one printed "Failed to find Server Action" at
+  // error level, unstructured, an error with no user behind it. Refused here
+  // instead, with one countable `warn` line: a refusal by design.
+  if (request.headers.has(SERVER_ACTION_HEADER)) {
+    console.warn(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "warn",
+        kind: "http",
+        message: "Server Action call refused: this app defines none.",
+        action: { name: "proxy.server_action.refused" },
+        http: {
+          method: request.method,
+          // A probe may aim at a path that carries a secret segment.
+          path: redactSecrets(pathname),
+          status: 404,
+          user_agent: request.headers.get("user-agent") ?? undefined,
+        },
+      }),
+    );
+    return applyBaselineSecurityHeaders(
+      NextResponse.json(
+        {
+          data: null,
+          error: "Not found",
+          meta: { errorCode: "server_action.unsupported" },
+        },
+        { status: 404 },
       ),
     );
   }

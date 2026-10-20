@@ -18,7 +18,7 @@ import { getEvent } from "@/lib/logging/context";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { refreshAccessToken } from "./client";
 import { getUserFitbitCredentials } from "./credentials";
@@ -894,9 +894,7 @@ export async function upsertFitbitMeasurements(
 
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
     invalidateStatusInsightsForTypes(
       userId,
       keys.map((k) => k.type),

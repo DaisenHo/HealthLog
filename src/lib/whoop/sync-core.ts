@@ -14,7 +14,7 @@
  *     `(userId, type, source = WHOOP, externalId)` so a re-post (WHOOP
  *     re-scores recovery/sleep after the fact) overwrites in place rather than
  *     minting a duplicate. After the upserts the rollup tier is re-folded
- *     (`recomputeBucketsForMeasurement`) and the status-insight caches are
+ *     (`recomputeBucketsForKeys`) and the status-insight caches are
  *     invalidated, identical to the Withings tail.
  *
  * The incremental window starts from `lastSyncedAt - overlap`. WHOOP re-scores
@@ -37,7 +37,7 @@ import {
 } from "@/lib/integrations/status";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import {
@@ -503,9 +503,7 @@ export async function upsertWhoopMeasurements(
     );
     try {
       const keys = collapseToTypeDayKeys(touched);
-      for (const k of keys) {
-        await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-      }
+      await recomputeBucketsForKeys(userId, keys);
     } catch (err) {
       getEvent()?.addWarning(
         `whoop: rollup recompute failed for ${userId}: ${err}`,
