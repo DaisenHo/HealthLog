@@ -845,7 +845,7 @@
     "nextPage": "Nächste Seite",
     "dailyTotalCaption": "({count} Einzelwerte)",
     "openMetricInsights": "{type}-Auswertung öffnen",
-    "sleepNapCaption": "+{count} Nickerchen",
+    "sleepNapCaption": "inkl. {count} Nickerchen",
     "sleepAwakeningsCaption": "{count} Wachphasen",
     "expandDay": "Einzelwerte dieses Tages anzeigen",
     "collapseDay": "Einzelwerte dieses Tages ausblenden",

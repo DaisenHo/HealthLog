@@ -845,7 +845,7 @@
     "nextPage": "Volgende pagina",
     "dailyTotalCaption": "({count} metingen)",
     "openMetricInsights": "Inzichten voor {type} openen",
-    "sleepNapCaption": "+{count} dutje(s)",
+    "sleepNapCaption": "incl. {count} dutje(s)",
     "sleepAwakeningsCaption": "{count} keer wakker",
     "expandDay": "Metingen van deze dag tonen",
     "collapseDay": "Metingen van deze dag verbergen",

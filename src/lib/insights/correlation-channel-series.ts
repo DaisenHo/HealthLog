@@ -58,6 +58,7 @@ import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import {
   reconstructSleepSessions,
+  daySleepMinutes,
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
@@ -831,11 +832,13 @@ function buildSleepDailySeries(
     byNight.set(s.night, list);
   }
 
+  // A day's sleep is the main night plus its naps (`daySleepMinutes`), the
+  // total the series route and the sleep score read.
   const points: DailySeriesPoint[] = [];
   for (const [night, nightSessions] of byNight) {
-    const { main } = pickMainNightAndNaps(nightSessions);
-    if (!main) continue;
-    points.push({ day: night, value: main.asleepMinutes });
+    const day = pickMainNightAndNaps(nightSessions);
+    if (!day.main && day.naps.length === 0) continue;
+    points.push({ day: night, value: daySleepMinutes(day) });
   }
   return points.sort((a, b) => (a.day < b.day ? -1 : 1));
 }

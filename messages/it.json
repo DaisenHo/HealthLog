@@ -845,7 +845,7 @@
     "nextPage": "Pagina successiva",
     "dailyTotalCaption": "({count} campioni)",
     "openMetricInsights": "Apri l'analisi {type}",
-    "sleepNapCaption": "+{count} pisolino/i",
+    "sleepNapCaption": "incl. {count} pisolino/i",
     "sleepAwakeningsCaption": "{count} risveglio/i",
     "expandDay": "Mostra i campioni di questa giornata",
     "collapseDay": "Nascondi i campioni di questa giornata",

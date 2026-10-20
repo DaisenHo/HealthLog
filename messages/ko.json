@@ -845,7 +845,7 @@
     "nextPage": "다음 쪽",
     "dailyTotalCaption": "({count}개 샘플)",
     "openMetricInsights": "{type} 인사이트 열기",
-    "sleepNapCaption": "+낮잠 {count}회",
+    "sleepNapCaption": "낮잠 {count}회 포함",
     "sleepAwakeningsCaption": "깬 횟수 {count}회",
     "expandDay": "이 날의 샘플 보기",
     "collapseDay": "이 날의 샘플 숨기기",

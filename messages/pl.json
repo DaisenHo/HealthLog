@@ -845,7 +845,7 @@
     "nextPage": "Następna strona",
     "dailyTotalCaption": "({count} pomiarów)",
     "openMetricInsights": "Otwórz analizę {type}",
-    "sleepNapCaption": "+{count} drzemka/i",
+    "sleepNapCaption": "w tym {count} drzemka/i",
     "sleepAwakeningsCaption": "{count} przebudzenia",
     "expandDay": "Pokaż pomiary z tego dnia",
     "collapseDay": "Ukryj pomiary z tego dnia",

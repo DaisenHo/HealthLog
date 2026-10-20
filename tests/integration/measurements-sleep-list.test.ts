@@ -54,6 +54,7 @@ interface ListEnvelope {
       sampleCount?: number;
       sleepStage?: string | null;
       napCount?: number;
+      mainAsleepMinutes?: number | null;
       awakenings?: number;
     }>;
     meta: { total: number; groupBy?: string; windowFrom?: string };
@@ -231,7 +232,9 @@ describe("GET /api/measurements?type=SLEEP_DURATION", () => {
     expect(firstBody.data.meta.windowFrom).toBeUndefined();
     expect(firstBody.data.measurements).toHaveLength(25);
     expect(firstBody.data.measurements[0].dayKey).toBe(dayKeyOf(morning));
-    expect(firstBody.data.measurements[0].value).toBe(420);
+    // The day's sleep counts the nap; the main night rides beside it.
+    expect(firstBody.data.measurements[0].value).toBe(450);
+    expect(firstBody.data.measurements[0].mainAsleepMinutes).toBe(420);
     expect(firstBody.data.measurements[0].napCount).toBe(1);
     // The stage read covered the page's nights, not the history.
     const read = spy.mock.calls
@@ -256,7 +259,8 @@ describe("GET /api/measurements?type=SLEEP_DURATION", () => {
       expect(body.data.meta.total).toBe(NIGHTS);
       for (const row of body.data.measurements) {
         seen.push(row.dayKey!);
-        expect(row.value).toBe(420);
+        expect(row.mainAsleepMinutes).toBe(420);
+        expect(row.value).toBe(row.napCount ? 450 : 420);
       }
     }
     expect(seen).toHaveLength(NIGHTS);
