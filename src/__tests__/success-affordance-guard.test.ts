@@ -164,7 +164,6 @@ const PINNED_AFFORDANCES: Record<
     // behind the delete toast's Undo action.
     "toast.success": 3,
   },
-  "src/components/cycle/cycle-phase-crosstab.tsx": { "text-success": 1 },
   // v1.36.x — two call sites, one decision: the intake toast routes through
   // `intakeToastOptions()`, which returns `undefined` in the caller's own
   // record, and sonner's one-argument form is what the unit tests assert. So
@@ -214,25 +213,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/insights/coach-panel/suggested-action-card.tsx": {
     "text-success": 1,
   },
-  "src/components/insights/confidence-badge.ts": { "text-success": 1 },
   "src/components/insights/daily-briefing.tsx": { "text-success": 1 },
   "src/components/insights/derived/band-tokens.ts": { "text-success": 1 },
-  // The green `+N` chip beside the Health Score label. It reports a week that
-  // went up, not an action that succeeded, and it wears the same band token
-  // the score's own number does — there is no outcome here to route through
-  // the outcome module.
-  "src/components/insights/health-score-card.tsx": { "text-success": 1 },
   "src/components/insights/insights-edit-mode.tsx": { "toast.success": 2 },
   "src/components/insights/insights-tab-strip.tsx": { "toast.success": 1 },
-  "src/components/insights/mood/mood-better-days.tsx": { "text-success": 1 },
-  "src/components/insights/mood/mood-factor-metric-crosstab.tsx": {
-    "text-success": 1,
-  },
-  "src/components/insights/mood/mood-tag-influence.tsx": { "text-success": 1 },
-  "src/components/insights/mood/mood-tag-metric-crosstab.tsx": {
-    "text-success": 1,
-  },
-  "src/components/insights/personal-record-badge.tsx": { "text-success": 1 },
   "src/components/labs/biomarker-form.tsx": { "toast.success": 1 },
   "src/components/labs/biomarker-manager.tsx": { "toast.success": 2 },
   "src/components/labs/lab-biomarker-detail.tsx": { "toast.success": 1 },
@@ -430,6 +414,11 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/webhook-card.tsx": { "text-success": 1 },
   "src/components/targets/target-edit-sheet.tsx": { "toast.success": 2 },
   "src/components/ui/password-strength.tsx": { "text-success": 2 },
+  // The success tone of the grade chip (a high confidence, a score that went
+  // up). It states a grade beside a reading, never that a write succeeded;
+  // the crosstab, confidence and score chips that each carried their own copy
+  // of this class now render through it.
+  "src/components/ui/score-pill.tsx": { "text-success": 1 },
 };
 
 /**

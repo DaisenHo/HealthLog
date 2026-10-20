@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { Activity, Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
@@ -12,7 +11,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { CorrelationResult } from "@/lib/insights/correlations";
 import type { CoachScopeSource } from "@/lib/ai/coach/types";
-import { CONFIDENCE_BADGE_CLASS } from "./confidence-badge";
+import { CONFIDENCE_TONE, ScorePill } from "@/components/ui/score-pill";
 import { AskCoachAction } from "./ask-coach-action";
 import {
   PatternDismissButton,
@@ -134,16 +133,12 @@ export function CorrelationCard({ result }: CorrelationCardProps) {
             title={title}
             right={
               result.status === "ok" ? (
-                <Badge
+                <ScorePill
                   data-slot="correlation-card-confidence"
-                  variant="outline"
-                  className={cn(
-                    "shrink-0 text-xs",
-                    CONFIDENCE_BADGE_CLASS[result.confidenceBand.label],
-                  )}
+                  tone={CONFIDENCE_TONE[result.confidenceBand.label]}
                 >
                   {t(CONFIDENCE_LABEL_KEY[result.confidenceBand.label])}
-                </Badge>
+                </ScorePill>
               ) : undefined
             }
           />

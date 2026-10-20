@@ -2,7 +2,7 @@
 
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
-import { cn } from "@/lib/utils";
+import { CONFIDENCE_TONE, ScorePill } from "@/components/ui/score-pill";
 
 /**
  * v1.11.5 — tag "Influence on Mood".
@@ -42,16 +42,6 @@ const CONFIDENCE_KEY: Record<MoodInfluenceConfidence, string> = {
   low: "insights.mood.influence.confidenceLow",
   medium: "insights.mood.influence.confidenceMedium",
   high: "insights.mood.influence.confidenceHigh",
-};
-
-// Confidence chips carry COLORED TEXT, so they ride the semantic feedback
-// tokens (`--info` / `--success`) — these carry the Alucard light-mode
-// overrides that clear AA on the white card. Raw `--dracula-*` stays bright
-// green/cyan in light mode and fails AA for text.
-const CONFIDENCE_CLASS: Record<MoodInfluenceConfidence, string> = {
-  low: "bg-secondary text-muted-foreground",
-  medium: "bg-info/15 text-info",
-  high: "bg-success/15 text-success",
 };
 
 // Semantic feedback tokens (not raw `--dracula-*`): the delta read-out is
@@ -100,14 +90,9 @@ export function MoodTagInfluence({ rows }: { rows: MoodTagInfluenceRow[] }) {
                 >
                   {deltaText}
                 </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    CONFIDENCE_CLASS[row.confidence],
-                  )}
-                >
+                <ScorePill tone={CONFIDENCE_TONE[row.confidence]}>
                   {t(CONFIDENCE_KEY[row.confidence])}
-                </span>
+                </ScorePill>
               </div>
               <p className="text-muted-foreground text-xs">
                 {t("insights.mood.influence.detail", {

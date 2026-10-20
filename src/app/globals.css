@@ -232,7 +232,7 @@
   /*
    * v1.28.17 — the sleep-stage IN_BED fill. Distinct from `--dracula-comment`
    * above (an orphaned token — no `@theme` utility was ever generated for
-   * it, per the `confidence-badge.ts` note — and its `#9aa3b3` value never
+   * it — and its `#9aa3b3` value never
    * matched the classic Dracula "Comment" blue-grey this chart actually
    * paints). Minted here instead of retuning the unrelated token, so this
    * default carries the exact hex the stacked bar hardcoded before
