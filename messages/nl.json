@@ -55,7 +55,9 @@
     "errorIdLabel": "Fout-ID",
     "errorIdCopy": "Fout-ID kopiëren",
     "errorIdCopied": "Fout-ID gekopieerd",
-    "readThrottled": "Er zijn net te veel verzoeken. Probeer het later opnieuw."
+    "readThrottled": "Er zijn net te veel verzoeken. Probeer het later opnieuw.",
+    "sessionEnded": "Je sessie is verlopen. Meld je opnieuw aan om verder te gaan.",
+    "signInAgain": "Aanmelden"
   },
   "apiErrors": {
     "measurement": {
@@ -4395,7 +4397,7 @@
             "composition": "Samenstelling"
           },
           "gap": {
-            "fewNights": "nog niet genoeg nachten ({count} van 3)",
+            "fewNights": "nog niet genoeg nachten ({count} van {needed})",
             "noMainSleep": "de laatste dag had alleen een dutje"
           }
         },
@@ -4664,7 +4666,7 @@
       "description": "Hoe goed je lichaam zich heeft hersteld: de signalen voor herstel, belasting en trainingsbelasting die je wearable 's nachts vastlegt.",
       "scoreCrossLink": "Bekijk de samengestelde herstelscore",
       "emptyTitle": "Nog geen herstelgegevens",
-      "empty": "Hier is nog niets om in een grafiek te tonen. Deze pagina toont de metingen voor opladen, belasting en trainingsbelasting die WHOOP en Polar vastleggen, en het veerkrachtniveau van Oura. De paraatheid van Oura verschijnt als je herstelscore, hierboven gelinkt.",
+      "empty": "Deze pagina vult zich met de metingen voor opladen, belasting en trainingsbelasting van WHOOP of Polar en met het veerkrachtniveau van Oura.",
       "block": {
         "ansChargeExplainer": "Hoe opgeladen je autonome zenuwstelsel is voor de komende dag: een oplaadmeting op basis van je nachtelijke hart- en ademhalingssignalen.",
         "dayStrainExplainer": "De cardiovasculaire belasting van je hele lichaam over de dag, op de belastingsschaal van je apparaat. Bekijk het in samenhang met je herstel, niet als doel op zich.",
@@ -4675,8 +4677,8 @@
         "energyExpenditureKjExplainer": "De energie die je lichaam over de dag heeft verbruikt, in kilojoule, zoals je apparaat die zelf rapporteert."
       },
       "emptyAction": "Integraties openen",
-      "emptyOuraNoResilience": "Oura is verbonden, maar voor dit account is nog geen veerkrachtniveau binnengekomen. HealthLog vraagt het bij elke synchronisatie op bij Oura, dus het verschijnt hier zodra Oura er een levert. Als de Oura-app wel een niveau toont, noemt de Oura-kaart onder Instellingen, Integraties wat de verbinding niet kan leveren. De paraatheid van Oura is al je herstelscore, hierboven gelinkt.",
-      "emptyOuraPermission": "Oura is verbonden, maar de gegeven toestemming laat hartgezondheidsgegevens weg, en het veerkrachtniveau van Oura valt daaronder. Verbind Oura één keer opnieuw onder Instellingen, Integraties en sta toegang tot hartgezondheid toe; het niveau verschijnt dan bij de volgende synchronisatie. De paraatheid van Oura is al je herstelscore, hierboven gelinkt."
+      "emptyOuraNoResilience": "Oura is verbonden, en het veerkrachtniveau verschijnt hier zodra Oura er een levert.",
+      "emptyOuraPermission": "Het veerkrachtniveau van Oura heeft toegang tot hartgezondheid nodig, dus verbind Oura één keer opnieuw onder Integraties en sta dat toe."
     },
     "bodyTempDeviation": {
       "title": "Afwijking lichaamstemperatuur",
