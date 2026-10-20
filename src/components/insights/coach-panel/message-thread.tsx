@@ -42,6 +42,7 @@ import {
   COACH_MEMORY_KEYS,
   COACH_PLAN_KEYS,
 } from "@/lib/ai/coach/memory/shared";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 // v1.28.26 file-size split (pure code motion): the bubble renderer +
 // per-message actions live in `chat-bubble.tsx`, the read-aloud stack in
@@ -215,8 +216,7 @@ export function decisionReplies(
       ]
     : choices;
   for (const choice of ordered.slice(0, 4)) {
-    const local = t(choice.labelKey);
-    const label = local === choice.labelKey ? choice.label : local;
+    const label = translateOrNull(t, choice.labelKey) ?? choice.label;
     out.push({
       id: `clarify-${choice.id}`,
       label,

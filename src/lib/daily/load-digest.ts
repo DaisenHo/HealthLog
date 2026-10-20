@@ -98,6 +98,7 @@ import type {
   TodaySleep,
   TodayVital,
 } from "@/lib/daily/today-overview";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
 const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
@@ -907,8 +908,7 @@ export async function loadDailyDigest(
     if (!staysDue && row.nextDueAt.getTime() > now.getTime()) continue;
     let label = row.label;
     if (row.origin === "COACH") {
-      const translated = t(row.label);
-      if (translated !== row.label) label = translated;
+      label = translateOrNull(t, row.label) ?? label;
     }
     preventiveDue.push({ label, staysDue });
   }

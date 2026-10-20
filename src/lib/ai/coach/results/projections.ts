@@ -27,6 +27,7 @@ import {
   coachDomainLabelKey,
   coachPeriodLabelKey,
 } from "@/lib/ai/coach/dialog-keys";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 export interface ProjectionContext {
   ref: string;
@@ -58,9 +59,8 @@ export function projectWorkouts(
   for (const entry of perSport) {
     if (!isRecord(entry) || typeof entry.sport !== "string") continue;
     const labelKey = `insights.workouts.sport.${entry.sport}`;
-    const label = t(labelKey);
     rows.push([
-      label === labelKey ? entry.sport : label,
+      translateOrNull(t, labelKey) ?? entry.sport,
       numberOrNull(entry.count),
       numberOrNull(entry.totalDurationMin),
     ]);

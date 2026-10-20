@@ -30,6 +30,7 @@ import {
   useSyncOutcomeMessage,
   type SyncOutcomeState,
 } from "./sync-outcome";
+import { translateCode } from "@/lib/i18n/translate-code";
 
 export interface ProviderSync {
   syncing: boolean;
@@ -151,11 +152,12 @@ export function ActionResultLines({
   const { t } = useTranslations();
 
   function describeError(errorCode: string): string {
-    const key = `settings.testConnection.errors.${errorCode}`;
-    const translated = t(key);
-    return translated === key
-      ? t("settings.testConnection.errors.generic")
-      : translated;
+    return translateCode(
+      t,
+      "settings.testConnection.errors",
+      errorCode,
+      "settings.testConnection.errors.generic",
+    );
   }
 
   const busy = sync?.syncing || test?.testing;

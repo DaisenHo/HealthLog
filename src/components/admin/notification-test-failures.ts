@@ -2,6 +2,7 @@ import {
   CHANNEL_TYPE_LABELS,
   type ChannelType,
 } from "@/lib/notifications/types";
+import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 /** One channel's row in the admin notification test response. */
 export interface ChannelTestResult {
@@ -27,14 +28,10 @@ export function describeChannelTestFailures(
     .filter((r) => !r.success)
     .map((r) => {
       const label = CHANNEL_TYPE_LABELS[r.channel as ChannelType] ?? r.channel;
-      const key = r.errorCode
-        ? `settings.testConnection.errors.${r.errorCode}`
-        : null;
-      const translated = key ? t(key) : null;
       const cause =
-        translated && translated !== key
-          ? translated
-          : (r.error ?? t("admin.notificationTestFailed"));
+        translateCodeOrNull(t, "settings.testConnection.errors", r.errorCode) ??
+        r.error ??
+        t("admin.notificationTestFailed");
       const code =
         typeof r.upstreamStatus === "number"
           ? ` (HTTP ${r.upstreamStatus})`

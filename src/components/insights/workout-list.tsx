@@ -13,6 +13,7 @@ import type { WorkoutListEntry } from "@/hooks/use-workouts";
 import { Button } from "@/components/ui/button";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { formatDistance } from "@/components/insights/workout-detail/format";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * v1.4.32 — workout list row primitive.
@@ -63,12 +64,11 @@ export function WorkoutList({
       {workouts.map((workout) => {
         const Icon = iconForSport(workout.sportType);
         const sportLabelKey = `insights.workouts.sport.${workout.sportType}`;
-        const sportLabel = t(sportLabelKey);
         // Translation keys missing from one locale fall back to the
         // canonical sport-type string so a new HK enum value never
         // renders the raw `insights.workouts.sport.x` placeholder.
         const sportName =
-          sportLabel === sportLabelKey ? workout.sportType : sportLabel;
+          translateOrNull(t, sportLabelKey) ?? workout.sportType;
 
         return (
           // v1.42 — the row opens the workout and its date opens the day:

@@ -89,6 +89,7 @@ import {
   DEFAULT_CHART_RANGE,
   rangeWindowDays,
 } from "./chart-range-tabs";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 // The range tabs (7 / 30 / 90 / All, a calendar-day window ending now) and
 // the "All" tab's ten-year fetch span live with the shared
@@ -399,8 +400,7 @@ function getTypeLabel(
   const key = BASE_TYPE_LABEL_KEYS[type];
   if (key) return t(key);
   const measurementKey = measurementLabelKey(type);
-  const label = t(measurementKey);
-  return label === measurementKey ? type : label;
+  return translateOrNull(t, measurementKey) ?? type;
 }
 
 /**

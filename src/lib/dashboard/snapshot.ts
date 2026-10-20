@@ -145,6 +145,7 @@ import {
   hideModuleWidgets,
   unavailableWidgetIds,
 } from "@/lib/dashboard/widget-modules";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * v1.7.0 — HealthLog `MeasurementType` → iOS `MetricKind` raw value.
@@ -1217,9 +1218,8 @@ function localisedMeasurementLabel(
     )
     .join("");
   const key = `measurements.type${camel.charAt(0).toUpperCase()}${camel.slice(1)}`;
-  const resolved = t(key);
-  // The server translator echoes the key on a miss; fall back to a readable form.
-  return resolved === key ? type.replace(/_/g, " ").toLowerCase() : resolved;
+  // A type without a sentence falls back to a readable form.
+  return translateOrNull(t, key) ?? type.replace(/_/g, " ").toLowerCase();
 }
 
 /**

@@ -12,6 +12,7 @@ import { TileHeader } from "@/components/insights/tile-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { iconForSport } from "@/lib/workouts/sport-icons";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * v1.4.32 — `<RecentWorkoutsTile>`.
@@ -122,9 +123,8 @@ export function RecentWorkoutsTile() {
           <ul className="space-y-2">
             {workouts.map((workout) => {
               const sportLabelKey = `insights.workouts.sport.${workout.sportType}`;
-              const sportLabel = t(sportLabelKey);
               const sportName =
-                sportLabel === sportLabelKey ? workout.sportType : sportLabel;
+                translateOrNull(t, sportLabelKey) ?? workout.sportType;
               return (
                 <li key={workout.id}>
                   <Link

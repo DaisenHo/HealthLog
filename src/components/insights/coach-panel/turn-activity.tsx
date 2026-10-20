@@ -82,6 +82,7 @@ import type {
 
 import { COACH_FOCUS_RING } from "./focus-ring";
 import { CoachMethodLine } from "./method-line";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /** The shortest gap between two screen-reader announcements. */
 export const ANNOUNCE_THROTTLE_MS = 1500;
@@ -106,8 +107,7 @@ function tOr(
   fallback: string,
   params?: Record<string, string | number>,
 ) {
-  const value = t(key, params);
-  return value === key ? fallback : value;
+  return translateOrNull(t, key, params) ?? fallback;
 }
 
 // ── Steps (messages saved before v1.41, and the fetch rows) ────────────────
@@ -180,9 +180,8 @@ export function legacyAreaLabels(
   const out: string[] = [];
   for (const area of areas ?? []) {
     if (area === "general") continue;
-    const key = `insights.coach.metric.${area}`;
-    const label = t(key);
-    if (label === key || out.includes(label)) continue;
+    const label = translateOrNull(t, `insights.coach.metric.${area}`);
+    if (label === null || out.includes(label)) continue;
     out.push(label);
   }
   return out;

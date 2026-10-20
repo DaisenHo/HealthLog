@@ -29,14 +29,14 @@ import {
   useMeasurementReminderMutations,
   type MeasurementReminder,
 } from "@/hooks/use-measurement-reminders";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 function resolveLabel(
   reminder: MeasurementReminder,
   t: (key: string) => string,
 ): string {
   if (reminder.origin === "COACH") {
-    const translated = t(reminder.label);
-    return translated === reminder.label ? reminder.label : translated;
+    return translateOrNull(t, reminder.label) ?? reminder.label;
   }
   return reminder.label;
 }

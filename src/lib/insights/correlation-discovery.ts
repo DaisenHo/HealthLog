@@ -55,6 +55,7 @@ import {
 import { type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { shiftDateKey } from "@/lib/tz/format";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * Locale-aware string builder — the same signature the server translator
@@ -417,11 +418,9 @@ function humanise(key: string, t: Translate): string {
     return t("insights.correlation.channelFactor", { factor });
   }
   const labelKey = `insights.correlation.channel.${key}`;
-  const label = t(labelKey);
-  // The server translator echoes the key on a miss; fall back to a readable
-  // prettified form so an unmapped channel degrades gracefully, never English-
-  // leaks a raw key.
-  return label === labelKey ? key.replace(/_/g, " ").toLowerCase() : label;
+  // An unmapped channel falls back to a readable prettified form, never a
+  // raw key.
+  return translateOrNull(t, labelKey) ?? key.replace(/_/g, " ").toLowerCase();
 }
 
 /** Namespace prefix for a RATED-mood-factor discovery channel (v1.14.0). */
