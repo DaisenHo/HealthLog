@@ -78,6 +78,7 @@ import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { buildMedsTodayBlock } from "@/lib/dashboard/meds-today";
 import { computeStreak } from "@/lib/dashboard/streak";
 import {
+  readActivityDayKeys,
   readLatestEver,
   readSparkBuckets,
 } from "@/lib/dashboard/summary-reads";
@@ -329,15 +330,6 @@ function trendOf(values: number[]): MetricCard["trend"] {
   return delta > 0 ? "up" : "down";
 }
 
-/** v1.4.38 W-F — distinct activity day-keys from the streak window.
- *  The route only needs YYYY-MM-DD strings, so the aggregate runs
- *  `date_trunc('day', m.measured_at AT TIME ZONE $userTz)` and returns
- *  the day-keys directly. At most 365 rows; vs. the legacy `findMany`
- *  which could return tens of thousands. */
-interface ActivityDayRow {
-  day_key: string;
-}
-
 export const GET = apiHandler(async () => {
   // v1.37.0 — MANAGE-level read: computed over the whole record, with no
   // provider anywhere on the path.
@@ -532,27 +524,8 @@ async function buildDashboardSummary(
         select: { takenAt: true, scheduledFor: true },
       }),
     ),
-    // v1.4.38 W-F — replaces the legacy 365-day `measurement.findMany`
-    // that pulled every raw row in the window only to collapse them to
-    // day-keys in JS. The SQL `date_trunc` returns at most 365 rows
-    // even on accounts with millions of step samples. The `userTz`
-    // conversion is folded server-side so the day boundary matches
-    // `userDayKey`'s output (it formats the timestamp in the user's
-    // tz before slicing YYYY-MM-DD).
-    time(
-      "streakDays",
-      () =>
-        prisma.$queryRaw<ActivityDayRow[]>`
-        SELECT DISTINCT
-          to_char(
-            (m."measured_at" AT TIME ZONE ${userTz}),
-            'YYYY-MM-DD'
-          ) AS day_key
-        FROM measurements m
-        WHERE m."user_id" = ${userId}
-          AND m."measured_at" >= ${streakWindowStart}
-          AND m."deleted_at" IS NULL
-      `,
+    time("streakDays", () =>
+      readActivityDayKeys(prisma, userId, userTz, streakWindowStart, now),
     ),
     // v1.11.4 — raw per-stage SLEEP_DURATION rows for the night-total
     // tile. `SLEEP_DURATION` is stored one row per STAGE per night
@@ -635,13 +608,9 @@ async function buildDashboardSummary(
   }
 
   // v1.4.38 W-F — activity-day set assembled from the bounded streak
-  // queries. The measurement side already arrives as YYYY-MM-DD keys
-  // from the SQL `date_trunc + AT TIME ZONE` aggregate, byte-identical
-  // to what `userDayKey(measuredAt, userTz)` would produce in JS.
-  const activityDays = new Set<string>();
-  for (const row of measurementStreakDays) {
-    if (row.day_key) activityDays.add(row.day_key);
-  }
+  // queries. The measurement side arrives as local YYYY-MM-DD keys, the
+  // same keys `userDayKey(measuredAt, userTz)` produces for the intakes.
+  const activityDays = new Set<string>(measurementStreakDays);
   for (const e of streakActivity) {
     activityDays.add(userDayKey(e.takenAt ?? e.scheduledFor, userTz));
   }

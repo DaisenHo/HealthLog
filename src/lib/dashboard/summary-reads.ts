@@ -165,3 +165,46 @@ export function readSparkBuckets(
     ORDER BY type, bucket_start ASC
   `;
 }
+
+/**
+ * The local days in `[since, now]` that hold at least one live reading, as
+ * `YYYY-MM-DD` keys in `timeZone`: the measurement half of the streak.
+ *
+ * One existence probe per local day against `(user_id, measured_at)`, each
+ * stopping at its first row, instead of a `DISTINCT` over a year of readings
+ * (tens of thousands of rows on an account with a watch). The DAY rollups
+ * cannot answer this: their buckets are UTC days, and the streak counts the
+ * person's own days.
+ *
+ * `measured_at` is a naive UTC timestamp, so a local day's bounds are its
+ * local midnights read in `timeZone` and taken back to UTC. The read this
+ * replaced shifted the column with a single `AT TIME ZONE`, which treats the
+ * UTC value as local time and moves it the wrong way: in Berlin a reading at
+ * 23:30 UTC landed on the day before instead of the day after.
+ */
+export async function readActivityDayKeys(
+  db: PrismaClient,
+  userId: string,
+  timeZone: string,
+  since: Date,
+  now: Date,
+): Promise<string[]> {
+  const rows = await db.$queryRaw<Array<{ day_key: string }>>`
+    SELECT to_char(d, 'YYYY-MM-DD') AS day_key
+    FROM generate_series(
+      (${since}::timestamptz AT TIME ZONE ${timeZone})::date,
+      (${now}::timestamptz AT TIME ZONE ${timeZone})::date,
+      INTERVAL '1 day'
+    ) AS d
+    WHERE EXISTS (
+      SELECT 1
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" >= (d::timestamp AT TIME ZONE ${timeZone}) AT TIME ZONE 'UTC'
+        AND m."measured_at" <  ((d + INTERVAL '1 day')::timestamp AT TIME ZONE ${timeZone}) AT TIME ZONE 'UTC'
+    )
+    ORDER BY d
+  `;
+  return rows.map((row) => row.day_key);
+}
