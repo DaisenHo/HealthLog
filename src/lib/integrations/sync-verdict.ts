@@ -342,21 +342,27 @@ export function classifyMetricFreshness(
   return samples.map((sample) => {
     // A type the app writes back to the phone (#1247): what is entered here
     // goes to Apple Health and never arrives back, so a person who keeps
-    // their readings here would otherwise watch the type go quiet. The newer
-    // of the two is what says whether the type is still in use.
+    // their readings here would otherwise watch the type go quiet. That
+    // reading is in Apple Health too, so the newer of the two is the type's
+    // newest reading: it is what the row shows and what the verdict reads.
     const written = enteredHere?.has(sample.type)
       ? { lastEnteredHereAt: enteredHere.get(sample.type) ?? null }
       : {};
-    if (verdict !== "fresh" || SPARSE_METRIC_TYPES.has(sample.type)) {
-      return { ...sample, ...written, stale: false };
-    }
     const seen = newest(
       toMillis(sample.lastSeenAt),
       toMillis(written.lastEnteredHereAt),
     );
-    return {
+    const resolved = {
       ...sample,
       ...written,
+      lastSeenAt:
+        seen != null ? new Date(seen).toISOString() : sample.lastSeenAt,
+    };
+    if (verdict !== "fresh" || SPARSE_METRIC_TYPES.has(sample.type)) {
+      return { ...resolved, stale: false };
+    }
+    return {
+      ...resolved,
       stale: seen != null && nowMs - seen > METRIC_QUIET_AFTER_MS,
     };
   });
