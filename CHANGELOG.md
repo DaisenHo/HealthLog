@@ -1,5 +1,85 @@
 # Changelog
 
+## [1.43.8] — 2026-10-20
+
+### Fixed
+
+- **Numbers and units read in your language.** Decimals follow your language
+  everywhere: fever, cycle and mood figures, custom metrics, nutrient totals,
+  chart tooltips and the sentences the server writes show 37,5 instead of 37.5
+  where your language uses a comma. Units such as breaths per minute, years
+  and minutes read in the app's language instead of the stored English token,
+  and the cycle and mood comparison boards use the same unit names as the rest
+  of the app (bpm, not S/min). File sizes read the same in the document vault
+  and the admin area.
+- **Titles wrap instead of being cut.** Tile and card titles wrap onto a second
+  line with hyphenation instead of ending in an ellipsis, with room between
+  the lines, and tiles in a grid keep their values on one line when a long
+  title wraps. Dashboard trend tiles keep their full label on up to two lines.
+  Long health-score area names, mood tags, document titles, lab names and
+  token names show in full, and a long field label keeps its colon on the
+  last word.
+- **One look for the same control.** Range, filter and choice toggles (time
+  ranges, card or table view, recent or all) look and behave the same
+  everywhere. Small text links and buttons such as "Open schedule", "Select
+  all" and "View all" are easy to tap on a phone and show a focus ring.
+  Confidence, score and range chips share one look, and medium confidence has
+  the same colour on every card. Empty lists and charts say "nothing here yet"
+  the same way across the app. Page titles on the insights pages, the
+  medication detail and the check-in screens match every other page title,
+  and compact cards keep their tight spacing on wide screens.
+- The blood-pressure target card labels its systolic bar as well as its
+  diastolic one, and the sleep-stage legend lists only the stages the visible
+  nights contain.
+- The Dawarich card shows one action row; set your home place from the card
+  menu.
+- **Every published GET response is checked against its OpenAPI schema.**
+  Thirteen operations that disagreed now publish what they send, the single
+  mood entry and custom metric reads carry the same fields as their lists, and
+  the document chat list declares its `fenced`, `attachments` and
+  `documentTitle` fields.
+- **Lists say when they were cut.** Practitioners, vaccinations and encounters
+  report a cut list and accept `offset`, and the web reads them to the end.
+  `hasMore` on symptom events is no longer true for a page that is exactly
+  full. MCP tools say when a list was cut and answer a failure with a stable
+  code instead of internal error text.
+- **A deleted practitioner stays named where it still matters.** Visits and
+  doses that still show a practitioner removed from the address book keep the
+  name, in the app, the MCP read and appointment reminders, and the portable
+  export carries such a practitioner along so the visit keeps its reference
+  after a restore.
+- Renouncing a Guardian role while that Guardian's account is being deleted no
+  longer answers "add another Guardian".
+
+### Changed
+
+- **Deleted records are removed for good after 75 days.** Deleted lab results,
+  visits, practitioners, allergies, vaccinations, conditions, life events,
+  cycles and the other soft-deleted records can be restored for 75 days and
+  are then purged by a nightly job. A deleted record that a live record still
+  points to is kept for as long as it does.
+- Expired sessions, tokens, trusted devices and sign-in challenges are cleaned
+  up nightly.
+- **Writes have one per-account limit** of 300 a minute, edits and deletes
+  included; bulk sync endpoints and the chat routes keep their own limits. A
+  temporary database problem with this limit lets the write through instead of
+  failing every save; the sign-in limits stay strict.
+- **Cheaper writes.** Deleting a medication or an account no longer scans whole
+  tables for related rows, redundant indexes are gone, and writes to
+  measurements are cheaper. An unused measurement index is dropped at upgrade
+  when that can happen at once and otherwise by the nightly maintenance, so
+  upgrading no longer waits on a long-running database read. The unused
+  per-day medication compliance rollup table is removed; nothing changes in
+  what you see.
+- **Migrations are steadier.** They run in a UTC session regardless of the
+  database's default time zone, so a migration that mixes `timestamp` and
+  `timestamptz` no longer writes shifted values on a non-UTC database. A
+  migration marked safe to re-run that loses a deadlock is retried like one
+  that timed out on a lock, and the container health check allows up to ten
+  minutes for a slow migration before reporting the container unhealthy.
+- `/api/feature-flags` announces its deprecation and its sunset on 2027-03-31.
+- The document vault and the Coach load less JavaScript.
+
 ## [1.43.7] — 2026-10-20
 
 ### Added
