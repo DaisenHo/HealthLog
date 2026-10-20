@@ -394,7 +394,7 @@ export const metaPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "The operator's assistant switches (deprecated)",
       deprecated: true,
       description:
-        'Deprecated: read `ai` on GET /api/auth/me instead, which resolves each AI capability for the record from the switches, the record\'s modules, the provider, consent and who is asking. This route projects the operator switches alone and is removed in the first release after the native build that reads `ai` ships. Responses carry `Deprecation: true` and `Link: </api/auth/me>; rel="successor-version"`. The master is applied server-side, so every sub-switch is already false when it is off.\n\n' +
+        'Deprecated: read `ai` on GET /api/auth/me instead, which resolves each AI capability for the record from the switches, the record\'s modules, the provider, consent and who is asking. This route projects the operator switches alone and is removed in the first release after the native build that reads `ai` ships. Responses carry `Deprecation` (the date it was deprecated, as `@<unix seconds>`), `Sunset` (the first day it may stop answering) and `Link: </api/auth/me>; rel="successor-version"`. The master is applied server-side, so every sub-switch is already false when it is off.\n\n' +
         "An ACTOR surface: it answers about the deployment, not about a record, so it keeps answering while the caller is acting on somebody else's — the Coach launcher and the assistant chrome are gated on it, and a refusal here would delete a piece of the shell rather than a piece of the data. A request that attaches the per-request account selector (the `AccountSelector` header parameter) is refused with 403 `sharing.not_permitted` rather than quietly answered.\n\n" +
         "Served with `Cache-Control: private, max-age=60`: an operator's toggle propagates within a minute, and the flag read stays off the hot mount path in the meantime.",
       responses: {
@@ -406,6 +406,23 @@ export const metaPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 assistantFlagsResponse,
                 "AssistantFlagsEnvelope",
               ),
+            },
+          },
+          headers: {
+            Deprecation: {
+              description:
+                "When this route was deprecated, as an RFC 9745 date: `@` and Unix seconds.",
+              schema: { type: "string" as const, pattern: "^@[0-9]+$" },
+            },
+            Sunset: {
+              description:
+                "The first day this route may stop answering (RFC 8594 HTTP-date).",
+              schema: { type: "string" as const },
+            },
+            Link: {
+              description:
+                'The successor, as `</api/auth/me>; rel="successor-version"`.',
+              schema: { type: "string" as const },
             },
           },
         },

@@ -839,8 +839,9 @@ paths:
         Deprecated: read `ai` on GET /api/auth/me instead, which resolves each AI capability for the record from the
         switches, the record's modules, the provider, consent and who is asking. This route projects the operator
         switches alone and is removed in the first release after the native build that reads `ai` ships. Responses carry
-        `Deprecation: true` and `Link: </api/auth/me>; rel="successor-version"`. The master is applied server-side, so
-        every sub-switch is already false when it is off.
+        `Deprecation` (the date it was deprecated, as `@<unix seconds>`), `Sunset` (the first day it may stop answering)
+        and `Link: </api/auth/me>; rel="successor-version"`. The master is applied server-side, so every sub-switch is
+        already false when it is off.
 
 
         An ACTOR surface: it answers about the deployment, not about a record, so it keeps answering while the caller is
@@ -855,6 +856,20 @@ paths:
       responses:
         "200":
           description: The resolved assistant matrix.
+          headers:
+            Deprecation:
+              description: "When this route was deprecated, as an RFC 9745 date: `@` and Unix seconds."
+              schema:
+                type: string
+                pattern: ^@[0-9]+$
+            Sunset:
+              description: The first day this route may stop answering (RFC 8594 HTTP-date).
+              schema:
+                type: string
+            Link:
+              description: The successor, as `</api/auth/me>; rel="successor-version"`.
+              schema:
+                type: string
           content:
             application/json:
               schema:

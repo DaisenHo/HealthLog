@@ -12,8 +12,10 @@
  *                              "insightStatus", "documentAi" } } }
  *
  * The master is applied (every sub-switch reads false when it is off), and a
- * switch read that fails answers every switch off. The response carries
- * `Deprecation: true` and a `Link` to its successor.
+ * switch read that fails answers every switch off. The response carries the
+ * deprecation date, the sunset and a `Link` to its successor
+ * (`src/lib/http/deprecation.ts`), and the wide event names the client build
+ * that still asked.
  *
  * `Cache-Control: private, max-age=60`: switches flip rarely.
  */
@@ -22,9 +24,10 @@ import type { NextRequest } from "next/server";
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { getAssistantFlags } from "@/lib/feature-flags";
+import { deprecated } from "@/lib/http/deprecation";
 import { annotate } from "@/lib/logging/context";
 
-export const GET = apiHandler(async (_request: NextRequest) => {
+export const GET = apiHandler(async (request: NextRequest) => {
   // An actor surface, and the easiest call in the set: the answer comes off
   // the `AppSettings` singleton and reads no user row at all, so there is no
   // record for a switch to substitute. It stays reachable while a switch is on
@@ -45,7 +48,5 @@ export const GET = apiHandler(async (_request: NextRequest) => {
 
   const response = apiSuccess({ assistant });
   response.headers.set("Cache-Control", "private, max-age=60");
-  response.headers.set("Deprecation", "true");
-  response.headers.set("Link", '</api/auth/me>; rel="successor-version"');
-  return response;
+  return deprecated(response, "/api/feature-flags", request);
 });
