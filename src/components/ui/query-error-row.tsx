@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
  *
  * The message renders in `text-foreground`: an alert IS the content of a
  * failed surface, and §3 reserves muted for meta.
+ *
+ * `inset` drops the row's own frame for a failure inside a card or tile body
+ * that already draws one; a framed row there would be a card inside a card.
  */
 export function QueryErrorRow({
   error,
@@ -38,6 +41,7 @@ export function QueryErrorRow({
   retryLabel,
   slot,
   retrySlot,
+  inset = false,
   className,
 }: {
   /** The query's error. It decides what the row offers. */
@@ -56,6 +60,8 @@ export function QueryErrorRow({
   slot?: string;
   /** Same, for the Retry button's own `data-slot`. */
   retrySlot?: string;
+  /** Inside a card or tile body: no frame of its own. */
+  inset?: boolean;
   className?: string;
 }) {
   const failure = useReadFailure(error, { message, onRetry });
@@ -66,7 +72,8 @@ export function QueryErrorRow({
       data-slot={slot ?? "query-error-row"}
       role="alert"
       className={cn(
-        "bg-card border-border text-foreground flex flex-col items-start gap-3 rounded-xl border p-4 text-sm sm:flex-row sm:items-center sm:justify-between",
+        "text-foreground flex flex-col items-start gap-3 text-sm sm:flex-row sm:items-center sm:justify-between",
+        !inset && "bg-card border-border rounded-xl border p-4 md:p-6",
         className,
       )}
     >

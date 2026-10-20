@@ -820,7 +820,7 @@ export function HealthChart({
     );
   }, [preloadedSeries, preloadedCoverageDays, fetchWindow.windowDays, types]);
 
-  const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery({
+  const chartQuery = useQuery({
     // A range-tab change re-keys the query; without placeholder data every
     // switch dropped the painted chart to a skeleton for the fetch round-trip.
     // Keeping the previous range's series visible is only honest because the
@@ -1096,6 +1096,8 @@ export function HealthChart({
     ),
     enabled: isAuthenticated,
   });
+  const { data, isLoading, isError, error, isPlaceholderData, refetch } =
+    chartQuery;
 
   // v1.16.0 — report the settled data query to the dashboard's shared
   // reveal gate. `isLoading` only covers the INITIAL fetch (a later
@@ -1921,6 +1923,7 @@ export function HealthChart({
         // Pre-fix `isError` fell through to the empty branch and an
         // outage read as "you have no measurements".
         <ChartErrorState
+          error={error}
           title={t("charts.errorTitle")}
           actionLabel={t("common.retry")}
           actionContext={title}

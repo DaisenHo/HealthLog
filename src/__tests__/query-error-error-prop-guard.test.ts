@@ -1,7 +1,7 @@
 /**
  * Every read-failure primitive is handed the error it reports.
  *
- * `QueryErrorRow` and `QueryErrorCard` decide what a failed read offers from
+ * `QueryErrorRow`, `QueryErrorCard` and `ChartErrorState` decide what a failed read offers from
  * the error itself: nothing (or the surface's refused state) for a 403, a
  * note without a retry for a 429, sign-in for a 401, a retry otherwise. A
  * call site that renders one without the error falls back to "failed" for
@@ -49,7 +49,7 @@ function walk(
 /** The opening tag's attribute text, from the name to its closing `>`. */
 function openingTags(source: string): string[] {
   const tags: string[] = [];
-  const open = /<(QueryErrorRow|QueryErrorCard)(?=[\s/>])/g;
+  const open = /<(QueryErrorRow|QueryErrorCard|ChartErrorState)(?=[\s/>])/g;
   for (let m = open.exec(source); m; m = open.exec(source)) {
     let depth = 0;
     let i = m.index + m[0].length;
