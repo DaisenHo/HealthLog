@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+
+vi.mock("@/hooks/use-unit-display", async () => {
+  const { metricUnitDisplay } =
+    await import("@/__tests__/helpers/metric-unit-display");
+  return { useUnitDisplay: () => metricUnitDisplay() };
+});
 
 import { I18nProvider } from "@/lib/i18n/context";
 import {

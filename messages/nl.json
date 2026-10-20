@@ -4221,13 +4221,8 @@
         "metricNextDayRecovery": "Herstel de volgende dag",
         "metricNextDayRestingHr": "Rusthartslag de volgende dag",
         "metricNextDayHrv": "Hartslagvariabiliteit de volgende dag",
-        "unitHours": "u",
-        "unitKcal": "kcal",
-        "unitScore": "ptn",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "Gemiddeld {withAvg} {unit} op de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} {unit} zonder.",
-        "detailNextDay": "Gemiddeld {withAvg} {unit} op de dag na de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} {unit} op andere dagen."
+        "detailSameDay": "Gemiddeld {withAvg} op de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} zonder.",
+        "detailNextDay": "Gemiddeld {withAvg} op de dag na de {withDays} dagen dat je dit hebt getagd, tegenover {withoutAvg} op andere dagen."
       },
       "factorCrosstab": {
         "title": "Je beoordeelde factoren en je vitale waarden",
@@ -4239,15 +4234,8 @@
         "metricHrv": "Hartslagvariabiliteit",
         "metricWeight": "Gewicht",
         "metricBloodPressureSys": "Systolisch",
-        "unitHours": "u",
-        "unitScore": "ptn",
-        "unitSteps": "stappen",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "Gemiddeld {lowAvg} {unit} op de {lowDays} dagen dat je {factor} laag beoordeelde, tegenover {highAvg} {unit} op de dagen dat je die hoog beoordeelde.",
-        "detailInverse": "Gemiddeld {lowAvg} {unit} op je {lowDays} slechtere dagen voor {factor}, tegenover {highAvg} {unit} op je betere dagen."
+        "detail": "Gemiddeld {lowAvg} op de {lowDays} dagen dat je {factor} laag beoordeelde, tegenover {highAvg} op de dagen dat je die hoog beoordeelde.",
+        "detailInverse": "Gemiddeld {lowAvg} op je {lowDays} slechtere dagen voor {factor}, tegenover {highAvg} op je betere dagen."
       },
       "discovery": {
         "title": "Wat opvalt",
@@ -9158,9 +9146,9 @@
     "insights": {
       "headline": {
         "title": "Je cyclus en je lichaam",
-        "restingHeartRate": "Je rusthartslag ligt in je luteale fase ongeveer {delta} {unit} {dir} dan in je folliculaire fase.",
-        "heartRateVariability": "Je hartslagvariabiliteit ligt in je luteale fase ongeveer {delta} {unit} {dir} dan in je folliculaire fase.",
-        "generic": "Je {metric} ligt in je luteale fase ongeveer {delta} {unit} {dir} dan in je folliculaire fase.",
+        "restingHeartRate": "Je rusthartslag ligt in je luteale fase ongeveer {delta} {dir} dan in je folliculaire fase.",
+        "heartRateVariability": "Je hartslagvariabiliteit ligt in je luteale fase ongeveer {delta} {dir} dan in je folliculaire fase.",
+        "generic": "Je {metric} ligt in je luteale fase ongeveer {delta} {dir} dan in je folliculaire fase.",
         "dirHigher": "hoger",
         "dirLower": "lager",
         "empty": "Nog niet genoeg cycli en metingen om een patroon per fase te tonen. Blijf vastleggen; dit vult zich naarmate je geschiedenis groeit."
@@ -9168,7 +9156,7 @@
       "crosstab": {
         "description": "Hoe elke meting zich verhoudt tussen je luteale en folliculaire fase, op basis van je eigen gegevens.",
         "pairLabel": "{metric}: luteaal vs. folliculair",
-        "detail": "Luteaal {lutealAvg} {unit} ({lutealDays} dagen) vs. folliculair {follicularAvg} {unit} ({follicularDays} dagen).",
+        "detail": "Luteaal {lutealAvg} ({lutealDays} dagen) vs. folliculair {follicularAvg} ({follicularDays} dagen).",
         "metricRestingHeartRate": "Rusthartslag",
         "metricHrv": "Hartslagvariabiliteit",
         "metricSleepDuration": "Slaapduur",
@@ -9178,12 +9166,7 @@
         "metricWristTemperature": "Nachtelijke polstemperatuur",
         "metricSkinTemperature": "Huidtemperatuur",
         "metricBloodGlucose": "Bloedglucose",
-        "metricMood": "Stemming",
-        "unitHours": "u",
-        "unitSteps": "stappen",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitMood": "pnt"
+        "metricMood": "Stemming"
       },
       "title": "Cyclusinzichten",
       "symptomPatternsTitle": "Symptoompatronen per fase",

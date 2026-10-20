@@ -4221,13 +4221,8 @@
         "metricNextDayRecovery": "Next-day recovery",
         "metricNextDayRestingHr": "Next-day resting heart rate",
         "metricNextDayHrv": "Next-day heart-rate variability",
-        "unitHours": "h",
-        "unitKcal": "kcal",
-        "unitScore": "pts",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "Averages {withAvg} {unit} on the {withDays} days you tagged this vs {withoutAvg} {unit} without it.",
-        "detailNextDay": "Averages {withAvg} {unit} the day after the {withDays} days you tagged this vs {withoutAvg} {unit} otherwise."
+        "detailSameDay": "Averages {withAvg} on the {withDays} days you tagged this vs {withoutAvg} without it.",
+        "detailNextDay": "Averages {withAvg} the day after the {withDays} days you tagged this vs {withoutAvg} otherwise."
       },
       "factorCrosstab": {
         "title": "Your rated factors and your vitals",
@@ -4239,15 +4234,8 @@
         "metricHrv": "Heart-rate variability",
         "metricWeight": "Weight",
         "metricBloodPressureSys": "Systolic",
-        "unitHours": "h",
-        "unitScore": "pts",
-        "unitSteps": "steps",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "Averages {lowAvg} {unit} on the {lowDays} days you rated {factor} low vs {highAvg} {unit} on the days you rated it high.",
-        "detailInverse": "Averages {lowAvg} {unit} on your {lowDays} worse {factor} days vs {highAvg} {unit} on your better ones."
+        "detail": "Averages {lowAvg} on the {lowDays} days you rated {factor} low vs {highAvg} on the days you rated it high.",
+        "detailInverse": "Averages {lowAvg} on your {lowDays} worse {factor} days vs {highAvg} on your better ones."
       },
       "discovery": {
         "title": "What stands out",
@@ -9158,9 +9146,9 @@
     "insights": {
       "headline": {
         "title": "Your cycle and your body",
-        "restingHeartRate": "Your resting heart rate runs about {delta} {unit} {dir} in your luteal phase than your follicular phase.",
-        "heartRateVariability": "Your heart-rate variability runs about {delta} {unit} {dir} in your luteal phase than your follicular phase.",
-        "generic": "Your {metric} runs about {delta} {unit} {dir} in your luteal phase than your follicular phase.",
+        "restingHeartRate": "Your resting heart rate runs about {delta} {dir} in your luteal phase than your follicular phase.",
+        "heartRateVariability": "Your heart-rate variability runs about {delta} {dir} in your luteal phase than your follicular phase.",
+        "generic": "Your {metric} runs about {delta} {dir} in your luteal phase than your follicular phase.",
         "dirHigher": "higher",
         "dirLower": "lower",
         "empty": "Not enough cycles and readings yet to surface a phase pattern. Keep logging; this fills in as your history grows."
@@ -9168,7 +9156,7 @@
       "crosstab": {
         "description": "How each measurement compares between your luteal and follicular phases, on your own data.",
         "pairLabel": "{metric}: luteal vs follicular",
-        "detail": "Luteal {lutealAvg} {unit} ({lutealDays} days) vs follicular {follicularAvg} {unit} ({follicularDays} days).",
+        "detail": "Luteal {lutealAvg} ({lutealDays} days) vs follicular {follicularAvg} ({follicularDays} days).",
         "metricRestingHeartRate": "Resting heart rate",
         "metricHrv": "Heart-rate variability",
         "metricSleepDuration": "Sleep duration",
@@ -9178,12 +9166,7 @@
         "metricWristTemperature": "Overnight wrist temperature",
         "metricSkinTemperature": "Skin temperature",
         "metricBloodGlucose": "Blood glucose",
-        "metricMood": "Mood",
-        "unitHours": "h",
-        "unitSteps": "steps",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitMood": "pts"
+        "metricMood": "Mood"
       },
       "title": "Cycle insights",
       "symptomPatternsTitle": "Symptom patterns by phase",

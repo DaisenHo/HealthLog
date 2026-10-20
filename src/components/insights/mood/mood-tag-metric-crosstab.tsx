@@ -3,7 +3,13 @@
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
-import { MetricCrosstab } from "@/components/insights/metric-crosstab";
+import { useUnitDisplay } from "@/hooks/use-unit-display";
+import {
+  crosstabReading,
+  MetricCrosstab,
+  withUnit,
+  type CrosstabMeasure,
+} from "@/components/insights/metric-crosstab";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
 
 /**
@@ -63,12 +69,13 @@ const METRIC_LABEL_KEY: Record<string, string> = {
   nextDayHeartRateVariability: "insights.mood.crosstab.metricNextDayHrv",
 };
 
-const UNIT_KEY: Record<MoodCrosstabDisplay, string> = {
-  hours: "insights.mood.crosstab.unitHours",
-  kcal: "insights.mood.crosstab.unitKcal",
-  score: "insights.mood.crosstab.unitScore",
-  bpm: "insights.mood.crosstab.unitBpm",
-  ms: "insights.mood.crosstab.unitMs",
+/** The measurement each row reads (`src/lib/insights/mood-crosstab.ts`). */
+const METRIC_TYPE: Record<string, string> = {
+  activeEnergy: "ACTIVE_ENERGY_BURNED",
+  sleepDuration: "SLEEP_DURATION",
+  nextDayRecovery: "RECOVERY_SCORE",
+  nextDayRestingHeartRate: "RESTING_HEART_RATE",
+  nextDayHeartRateVariability: "HEART_RATE_VARIABILITY",
 };
 
 /** One decimal for hours/score, whole numbers for kcal. */
@@ -87,6 +94,7 @@ export function MoodTagMetricCrosstab({
 }) {
   const { t } = useTranslations();
   const nf = useFormatters();
+  const units = useUnitDisplay();
   return (
     <MetricCrosstab
       slot="mood-tag-metric-crosstab"
@@ -95,7 +103,11 @@ export function MoodTagMetricCrosstab({
       rows={rows.map((row) => {
         const tagLabel = row.label ?? t(row.labelKey);
         const metricLabel = t(METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey);
-        const unit = t(UNIT_KEY[row.display]);
+        const measure: CrosstabMeasure = {
+          type: METRIC_TYPE[row.metricKey] ?? null,
+          display: row.display,
+        };
+        const { unit, abs, delta } = crosstabReading(measure, units, t);
         return {
           key: `${row.metricKey}:${row.tag}`,
           metricKey: row.metricKey,
@@ -105,17 +117,22 @@ export function MoodTagMetricCrosstab({
           }),
           icon: moodTagIcon(row.icon),
           up: row.delta >= 0,
-          deltaValue: formatValue(row.delta, row.display, nf),
-          unit,
+          deltaValue: formatValue(delta(row.delta), row.display, nf),
+          measure,
           confidence: row.confidence,
           detail: t(
             row.mode === "nextDay"
               ? "insights.mood.crosstab.detailNextDay"
               : "insights.mood.crosstab.detailSameDay",
             {
-              withAvg: formatValue(row.withAvg, row.display, nf),
-              withoutAvg: formatValue(row.withoutAvg, row.display, nf),
-              unit,
+              withAvg: withUnit(
+                formatValue(abs(row.withAvg), row.display, nf),
+                unit,
+              ),
+              withoutAvg: withUnit(
+                formatValue(abs(row.withoutAvg), row.display, nf),
+                unit,
+              ),
               withDays: row.withDays,
             },
           ),

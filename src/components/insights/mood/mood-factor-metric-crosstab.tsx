@@ -4,7 +4,12 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { moodTagIcon } from "@/components/mood/mood-tag-icons";
-import { MetricCrosstab } from "@/components/insights/metric-crosstab";
+import {
+  crosstabReading,
+  MetricCrosstab,
+  withUnit,
+  type CrosstabMeasure,
+} from "@/components/insights/metric-crosstab";
 import type { MoodInfluenceConfidence } from "./mood-tag-influence";
 
 /**
@@ -57,14 +62,14 @@ const METRIC_LABEL_KEY: Record<string, string> = {
   bloodPressureSystolic: "insights.mood.factorCrosstab.metricBloodPressureSys",
 };
 
-const UNIT_KEY: Record<MoodFactorCrosstabDisplay, string> = {
-  hours: "insights.mood.factorCrosstab.unitHours",
-  score: "insights.mood.factorCrosstab.unitScore",
-  steps: "insights.mood.factorCrosstab.unitSteps",
-  bpm: "insights.mood.factorCrosstab.unitBpm",
-  ms: "insights.mood.factorCrosstab.unitMs",
-  kg: "insights.mood.factorCrosstab.unitKg",
-  mmHg: "insights.mood.factorCrosstab.unitMmHg",
+/** The measurement each row reads (`src/lib/insights/mood-crosstab.ts`). */
+const METRIC_TYPE: Record<string, string> = {
+  sleepDuration: "SLEEP_DURATION",
+  steps: "ACTIVITY_STEPS",
+  restingHeartRate: "RESTING_HEART_RATE",
+  heartRateVariability: "HEART_RATE_VARIABILITY",
+  weight: "WEIGHT",
+  bloodPressureSystolic: "BLOOD_PRESSURE_SYS",
 };
 
 /** Whole numbers for steps; one decimal otherwise. */
@@ -92,16 +97,13 @@ export function MoodFactorMetricCrosstab({
       rows={rows.map((row) => {
         const factorLabel = t(row.labelKey);
         const metricLabel = t(METRIC_LABEL_KEY[row.metricKey] ?? row.metricKey);
-        // The weight ("kg") row follows the metric/imperial preference: the
-        // unit symbol and the values (averages and delta, all in kg,
-        // offset-free) convert together. Every other display is unitless to
-        // the preference and keeps its i18n label and raw value.
-        const isWeightRow = row.display === "kg";
-        const unit = isWeightRow
-          ? unitDisplay.unitFor("WEIGHT")
-          : t(UNIT_KEY[row.display]);
-        const conv = (v: number) =>
-          isWeightRow ? unitDisplay.toDisplay("WEIGHT", v) : v;
+        // Weight follows the metric/imperial preference (values and unit
+        // together); every other row keeps the server's value.
+        const measure: CrosstabMeasure = {
+          type: METRIC_TYPE[row.metricKey] ?? null,
+          display: row.display,
+        };
+        const { unit, abs, delta } = crosstabReading(measure, unitDisplay, t);
         // `delta` = lowAvg − highAvg: positive = the vital runs higher on the
         // low-factor (worse) days.
         return {
@@ -113,8 +115,8 @@ export function MoodFactorMetricCrosstab({
           }),
           icon: moodTagIcon(row.icon),
           up: row.delta >= 0,
-          deltaValue: formatValue(conv(row.delta), row.display, nf),
-          unit,
+          deltaValue: formatValue(delta(row.delta), row.display, nf),
+          measure,
           confidence: row.confidence,
           detail: t(
             row.inverse
@@ -123,9 +125,14 @@ export function MoodFactorMetricCrosstab({
             {
               factor: factorLabel,
               metric: metricLabel,
-              lowAvg: formatValue(conv(row.lowAvg), row.display, nf),
-              highAvg: formatValue(conv(row.highAvg), row.display, nf),
-              unit,
+              lowAvg: withUnit(
+                formatValue(abs(row.lowAvg), row.display, nf),
+                unit,
+              ),
+              highAvg: withUnit(
+                formatValue(abs(row.highAvg), row.display, nf),
+                unit,
+              ),
               lowDays: row.lowDays,
             },
           ),

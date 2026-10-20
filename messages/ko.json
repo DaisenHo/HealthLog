@@ -4221,13 +4221,8 @@
         "metricNextDayRecovery": "다음 날 회복도",
         "metricNextDayRestingHr": "다음 날 안정 시 심박수",
         "metricNextDayHrv": "다음 날 심박변이도",
-        "unitHours": "h",
-        "unitKcal": "kcal",
-        "unitScore": "점",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "detailSameDay": "이 태그를 붙인 {withDays}일의 평균은 {withAvg}{unit}, 붙이지 않은 날의 평균은 {withoutAvg}{unit}.",
-        "detailNextDay": "이 태그를 붙인 {withDays}일의 다음 날 평균은 {withAvg}{unit}, 그 외의 날은 {withoutAvg}{unit}."
+        "detailSameDay": "이 태그를 붙인 {withDays}일의 평균은 {withAvg}, 붙이지 않은 날의 평균은 {withoutAvg}.",
+        "detailNextDay": "이 태그를 붙인 {withDays}일의 다음 날 평균은 {withAvg}, 그 외의 날은 {withoutAvg}."
       },
       "factorCrosstab": {
         "title": "직접 평가한 요인과 생체 지표",
@@ -4239,15 +4234,8 @@
         "metricHrv": "심박변이도",
         "metricWeight": "체중",
         "metricBloodPressureSys": "수축기",
-        "unitHours": "h",
-        "unitScore": "점",
-        "unitSteps": "걸음",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitKg": "kg",
-        "unitMmHg": "mmHg",
-        "detail": "{factor} 평가가 낮았던 {lowDays}일의 평균은 {lowAvg}{unit}, 높게 평가한 날의 평균은 {highAvg}{unit}.",
-        "detailInverse": "{factor} 상태가 나빴던 {lowDays}일의 평균은 {lowAvg}{unit}, 좋았던 날의 평균은 {highAvg}{unit}."
+        "detail": "{factor} 평가가 낮았던 {lowDays}일의 평균은 {lowAvg}, 높게 평가한 날의 평균은 {highAvg}.",
+        "detailInverse": "{factor} 상태가 나빴던 {lowDays}일의 평균은 {lowAvg}, 좋았던 날의 평균은 {highAvg}."
       },
       "discovery": {
         "title": "눈에 띄는 점",
@@ -9158,9 +9146,9 @@
     "insights": {
       "headline": {
         "title": "내 주기와 내 몸",
-        "restingHeartRate": "황체기의 안정 시 심박수가 난포기보다 약 {delta}{unit} {dir}.",
-        "heartRateVariability": "황체기의 심박변이도가 난포기보다 약 {delta}{unit} {dir}.",
-        "generic": "황체기의 {metric} 값이 난포기보다 약 {delta}{unit} {dir}.",
+        "restingHeartRate": "황체기의 안정 시 심박수가 난포기보다 약 {delta} {dir}.",
+        "heartRateVariability": "황체기의 심박변이도가 난포기보다 약 {delta} {dir}.",
+        "generic": "황체기의 {metric} 값이 난포기보다 약 {delta} {dir}.",
         "dirHigher": "높아요",
         "dirLower": "낮아요",
         "empty": "아직 주기와 측정값이 부족해서 단계별 패턴을 보여줄 수 없어요. 계속 기록하면 기록이 쌓이면서 채워져요."
@@ -9168,7 +9156,7 @@
       "crosstab": {
         "description": "내 데이터를 기준으로, 각 측정값이 황체기와 난포기에서 어떻게 다른지 비교했어요.",
         "pairLabel": "{metric}: 황체기와 난포기 비교",
-        "detail": "황체기 {lutealAvg}{unit} ({lutealDays}일), 난포기 {follicularAvg}{unit} ({follicularDays}일).",
+        "detail": "황체기 {lutealAvg} ({lutealDays}일), 난포기 {follicularAvg} ({follicularDays}일).",
         "metricRestingHeartRate": "안정 시 심박수",
         "metricHrv": "심박변이도",
         "metricSleepDuration": "수면 시간",
@@ -9178,12 +9166,7 @@
         "metricWristTemperature": "야간 손목 온도",
         "metricSkinTemperature": "피부 온도",
         "metricBloodGlucose": "혈당",
-        "metricMood": "기분",
-        "unitHours": "h",
-        "unitSteps": "걸음",
-        "unitBpm": "bpm",
-        "unitMs": "ms",
-        "unitMood": "점"
+        "metricMood": "기분"
       },
       "title": "주기 인사이트",
       "symptomPatternsTitle": "단계별 증상 패턴",

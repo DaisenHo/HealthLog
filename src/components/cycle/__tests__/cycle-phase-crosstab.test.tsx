@@ -86,7 +86,9 @@ describe("<CyclePhaseCrosstab>", () => {
     );
     expect(html).toContain("Mood");
     expect(html).toContain("Blood glucose");
-    expect(html).toContain("pts");
+    // A mood rating has no unit word, as everywhere else a rating is shown.
+    expect(html).not.toContain("pts");
+    expect(html).toContain("Luteal 5.0 (12 days)");
     expect(html).toContain("mg/dL");
     // Never leaks the raw metric key or the raw i18n key on a covered row.
     expect(html).not.toContain("cycle.insights.crosstab");
