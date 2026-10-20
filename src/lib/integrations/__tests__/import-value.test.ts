@@ -26,4 +26,12 @@ describe("importValue", () => {
     expect(importValue(1e-7)).toBe(0);
     expect(importValue(1e22)).toBe(1e22);
   });
+
+  it("rounds to another precision on request, halves away from zero", () => {
+    expect(importValue(72.34999, 1)).toBe(72.3);
+    expect(importValue(1.0005, 3)).toBe(1.001);
+    expect(importValue(-2.5, 0)).toBe(-3);
+    expect(importValue(0.30000000000000004, 3)).toBe(0.3);
+    expect(() => importValue(1, 7)).toThrow(RangeError);
+  });
 });
