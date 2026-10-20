@@ -30,7 +30,7 @@
  *      windowed columns (`avg7`, `avg30`, and the slope tuples). The
  *      heavy COUNT/MIN/MAX/AVG columns are NOT projected.
  *
- *   3. **`DISTINCT ON (type)` latest read** — most-recent `(type,
+ *   3. **Latest read** (`readLatestCanonical`) — most-recent `(type,
  *      value, measured_at)` triplet per type for the `latest` field
  *      and the `lastSeenByType` freshness map.
  *
@@ -77,6 +77,7 @@ import {
 import type { DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import {
   ensureUserRollupsFresh,
   readRollupBuckets,
@@ -95,6 +96,7 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsCte,
 } from "@/lib/analytics/source-rank-sql";
+import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   isFullyCovered,
   probeRollupCoverage,
@@ -221,19 +223,6 @@ interface WindowedAggregateRow extends NarrowAggregateRow {
   r2_7: number | null;
   slope30: number | null;
   r2_30: number | null;
-}
-
-interface LatestRow {
-  type: string;
-  value: number;
-  /**
-   * v1.4.34 IW-B — per-type freshness timestamp. The DISTINCT ON pass
-   * already orders by `measured_at DESC` to pick the latest row's
-   * value; surfacing `measured_at` from the same row costs zero extra
-   * round-trips and feeds the dashboard tile-strip's stale-data
-   * caption (driven via `<TrendCard staleDays>`).
-   */
-  measured_at: Date;
 }
 
 /** Same threshold/rounding contract as `trendSlope()` in `trends.ts`. */
@@ -371,6 +360,35 @@ export async function computeSummariesSlice(
     userId,
     await withSleepNightTotals(userId, await computeFromLiveAggregate(userId)),
   );
+}
+
+/**
+ * The one cache cell of the summaries slice. The tile-strip route, the thick
+ * analytics body and the dashboard snapshot all read the slice; each used to
+ * compute it inside its own cell, so one dashboard mount built it up to three
+ * times over the same rows.
+ *
+ * `serveStale` is for the caller that answers the client with the slice
+ * itself. The composing callers are stale-while-revalidate cells of their
+ * own and read fresh-only: a background refresh after a write must not
+ * compose the pre-write slice and cache it again as fresh.
+ */
+export async function readSummariesSlice(
+  userId: string,
+  options: { coverage?: RollupCoverageMap; serveStale?: boolean } = {},
+): Promise<SummariesSlice> {
+  const cache = caches.analytics as ServerCache<SummariesSlice>;
+  const key = summariesSliceCacheKey(userId);
+  const build = () => computeSummariesSlice(userId, options.coverage);
+  const { value, outcome } = options.serveStale
+    ? await cache.wrapSwr(key, build)
+    : await cache.wrap(key, build);
+  annotate({ meta: { "cache.summaries_slice.outcome": outcome } });
+  return value;
+}
+
+export function summariesSliceCacheKey(userId: string): string {
+  return `${userId}|summaries`;
 }
 
 /**
@@ -559,15 +577,13 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
   // v1.11.1 — resolve the user's source-priority ladders once, then build the
   // rank CASE expressions used to collapse overlapping sources to the canonical
   // reading per (type, day) inside each query. `"type"`/`"source"` variants for
-  // the unqualified rollup + inner-subquery columns, `m."…"` for the latest
-  // read's outer alias.
+  // the unqualified rollup + inner-subquery columns.
   const priorityJson = await loadUserSourcePriority(userId);
   const rankUnqualified = buildSourceRankCase(
     priorityJson,
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
   const rankPerSource = buildSourceRankCase(
     priorityJson,
     'p."type"',
@@ -618,22 +634,7 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
     `,
         userId,
       ),
-      // v1.11.1 — the latest tile reflects the canonical source for the latest
-      // day, matching the chart: order by latest day first, then the ladder rank
-      // (canonical source wins), then the latest reading of that source.
-      prisma.$queryRawUnsafe<LatestRow[]>(
-        `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-        userId,
-      ),
+      readLatestCanonical(userId, priorityJson),
       // v1.4.37.2 hotfix — the v1.4.35 implementation read EVERY DAY
       // rollup bucket for the user (`findMany` without a `bucketStart`
       // window) and then composed `count / min / max / mean` in JS.
@@ -1055,7 +1056,6 @@ async function computeFromLiveAggregate(
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
 
   const [allTime, windowed, latests] = await Promise.all([
     prisma.$queryRawUnsafe<AllTimeAggregateRow[]>(
@@ -1129,19 +1129,7 @@ async function computeFromLiveAggregate(
     `,
       userId,
     ),
-    prisma.$queryRawUnsafe<LatestRow[]>(
-      `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-      userId,
-    ),
+    readLatestCanonical(userId, priorityJson),
   ]);
 
   const latestByType = new Map<string, number>();

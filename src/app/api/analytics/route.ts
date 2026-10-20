@@ -6,7 +6,7 @@ import { analyticsQuerySchema } from "@/lib/validations/analytics";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
-import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { bpTargetsEqual, getBpTargets } from "@/lib/analytics/bp-targets";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
@@ -103,14 +103,7 @@ export const GET = apiHandler(async (request?: Request) => {
     // tile strip's next mount should repaint from the prior summaries
     // instantly while one background recompute refreshes them, instead
     // of paying the 2-SQL-pass rebuild inline.
-    const slim = await cachedSwr(
-      caches.analytics as ServerCache<
-        Awaited<ReturnType<typeof computeSummariesSlice>>
-      >,
-      `${user.id}|summaries`,
-      () => computeSummariesSlice(user.id),
-      annotate,
-    );
+    const slim = await readSummariesSlice(user.id, { serveStale: true });
     // Drop the types whose module the user turned off, from the SAME map
     // the snapshot builder gates on (`SUMMARY_TYPE_MODULE`, via
     // `gateSummariesByModules`). With `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false`
@@ -282,7 +275,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
   //     release; previously only the live walk produced it)
   //   - `avg30LastYear` populated for any type whose WMY tier carries
   //     the year-ago window
-  //   - `lastSeenByType` from the `DISTINCT ON (type)` latest read
+  //   - `lastSeenByType` from the per-type latest read
   //
   // `anomalyCount` and `slope90` left this wire in v1.37.19: the slim
   // path could never compute the former (it always reported 0) and no
@@ -292,7 +285,7 @@ async function buildAnalyticsResponse(user: AuthedUser, locale: Locale) {
   // `avg30LastYear` on types with no WMY coverage, which matches the
   // pre-fix behaviour for tenants whose year-ago window happened to
   // fall outside the 425-day floor.
-  const slim = await computeSummariesSlice(user.id);
+  const slim = await readSummariesSlice(user.id);
   // Same module gate as the slim slice and the snapshot builder — the
   // default slice feeds the dashboard too (it is the thick half of the
   // legacy two-cell path), so it cannot be the one feed that leaks a

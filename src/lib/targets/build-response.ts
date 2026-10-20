@@ -32,6 +32,7 @@ import {
 } from "@/lib/rollups/mood-rollups";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
 import { readSevenDayMeans } from "@/lib/analytics/summaries-slice";
+import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import {
   summarizeSleepNights,
   type SleepStageRow,
@@ -145,31 +146,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
         select: { type: true, value: true, measuredAt: true },
       }),
     ),
-    limit(() => {
-      for (const type of types) {
-        if (!/^[A-Z0-9_]+$/.test(type)) {
-          throw new Error(`invalid measurement type: ${type}`);
-        }
-      }
-      const typeList = types
-        .map((type) => `'${type}'::"measurement_type"`)
-        .join(",");
-      return prisma.$queryRawUnsafe<
-        Array<{ type: MeasurementType; value: number }>
-      >(
-        `SELECT DISTINCT ON (m."type")
-           m."type"::text AS type,
-           m."value"      AS value
-         FROM measurements m
-         WHERE m."user_id" = $1
-           AND m."type" IN (${typeList})
-           AND m."measured_at" >= $2
-           AND m."deleted_at" IS NULL
-         ORDER BY m."type" ASC, m."measured_at" DESC`,
-        userId,
-        oneYearAgo,
-      );
-    }),
+    limit(() => readLatestEver(prisma, userId, types, oneYearAgo)),
     limit(() =>
       prisma.measurement.findMany({
         where: {

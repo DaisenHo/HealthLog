@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const computeSummariesSlice = vi.fn();
+const readSummariesSlice = vi.fn();
 const probeRollupCoverage = vi.fn();
 const isFullyCovered = vi.fn();
 const readMoodDayRollups = vi.fn();
@@ -24,7 +24,7 @@ const buildMedsTodayBlock = vi.fn();
 const computeUserHealthScoreMock = vi.fn();
 
 vi.mock("@/lib/analytics/summaries-slice", () => ({
-  computeSummariesSlice: (...a: unknown[]) => computeSummariesSlice(...a),
+  readSummariesSlice: (...a: unknown[]) => readSummariesSlice(...a),
 }));
 vi.mock("@/lib/rollups/measurement-coverage", () => ({
   probeRollupCoverage: (...a: unknown[]) => probeRollupCoverage(...a),
@@ -210,7 +210,7 @@ function baseUser(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  computeSummariesSlice.mockResolvedValue({
+  readSummariesSlice.mockResolvedValue({
     summaries: { WEIGHT: { ...emptySummary, count: 3, latest: 80 } },
     lastSeenByType: {
       WEIGHT: { lastSeenAt: new Date().toISOString() },
@@ -301,7 +301,31 @@ describe("buildDashboardSnapshot — envelope shape", () => {
     expect(probeRollupCoverage).toHaveBeenCalledTimes(1);
     // The already-probed map is passed as the slice's second argument so
     // it reuses it instead of probing again.
-    expect(computeSummariesSlice).toHaveBeenCalledWith("user-1", coverageMap);
+    expect(readSummariesSlice).toHaveBeenCalledWith("user-1", {
+      coverage: coverageMap,
+    });
+  });
+});
+
+describe("buildDashboardSnapshot — the shared summaries cell", () => {
+  it("folds the water tile into a copy, never into the cached slice", async () => {
+    probeRollupCoverage.mockResolvedValue(new Map([["WEIGHT", false]]));
+    isFullyCovered.mockReturnValue(false);
+    const cached = {
+      summaries: { WEIGHT: { ...emptySummary, count: 3, latest: 80 } },
+      lastSeenByType: { WEIGHT: { lastSeenAt: new Date().toISOString() } },
+      bmi: null,
+    };
+    readSummariesSlice.mockResolvedValue(cached);
+    fakePrisma.nutrientIntakeDay.findMany.mockResolvedValue([
+      { day: new Date().toISOString().slice(0, 10), amount: 1500 },
+    ]);
+
+    const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
+
+    expect(snap.tiles.summaries.NUTRIENT_WATER).toBeDefined();
+    expect(Object.keys(cached.summaries)).toEqual(["WEIGHT"]);
+    expect(Object.keys(cached.lastSeenByType)).toEqual(["WEIGHT"]);
   });
 });
 
@@ -891,7 +915,7 @@ describe("buildDashboardSnapshot — metricStates (iOS cold-launch seed)", () =>
 
   it("keys each entry by the iOS MetricKind raw value (incl. the non-obvious raws)", async () => {
     const now = new Date().toISOString();
-    computeSummariesSlice.mockResolvedValue({
+    readSummariesSlice.mockResolvedValue({
       summaries: {
         WEIGHT: { ...emptySummary, count: 1, latest: 80 },
         OXYGEN_SATURATION: { ...emptySummary, count: 1, latest: 98 },
@@ -948,7 +972,7 @@ describe("buildDashboardSnapshot — metricStates (iOS cold-launch seed)", () =>
   });
 
   it("omits metrics with no latest value or no timestamp", async () => {
-    computeSummariesSlice.mockResolvedValue({
+    readSummariesSlice.mockResolvedValue({
       summaries: {
         WEIGHT: { ...emptySummary, count: 0, latest: null },
         PULSE: { ...emptySummary, count: 1, latest: 60 },
@@ -1162,7 +1186,7 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
       priorMonth: { pct: 60 },
       priorYear: { pct: 50 },
     });
-    computeSummariesSlice.mockResolvedValue({
+    readSummariesSlice.mockResolvedValue({
       summaries: {
         WEIGHT: { ...emptySummary, count: 3, latest: 80 },
         SLEEP_DURATION: { ...emptySummary, count: 5, latest: 420 },

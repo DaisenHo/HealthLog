@@ -114,6 +114,7 @@ import {
   type AccumulatorBucketRow,
 } from "@/lib/rollups/measurement-read";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
+import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   SESSION_DAY_FRAME,
   dayWeightedRows,
@@ -198,11 +199,9 @@ interface NarrowAggregateRow {
   // they no longer scan the raw measurements partition on the warm path.
 }
 
-/** Latest raw value per type (DISTINCT ON over the 90-day window). */
-interface LatestRow {
-  type: string;
-  value: number;
-  measured_at: Date;
+/** The latest canonical reading per type is read only inside the 90-day window. */
+function latestFloor(): Date {
+  return new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 }
 
 /**
@@ -426,8 +425,7 @@ async function buildFromRollups(
   // (`type: { in: [...] }`) plus per-sub-query wall-clock timings.
   // v1.11.1 — collapse overlapping sources to the ladder-canonical reading per
   // (type, day) before aggregating. `rankUnqualified` ranks the inner
-  // canonical-source subquery; `rankM` ranks the latest read's `m.`-aliased
-  // columns. The window_stats CTE + the main narrow both read from the
+  // canonical-source subquery. The window_stats CTE + the main narrow both read from the
   // canonical-source-filtered set so a dual-source vital isn't blended.
   const priorityJson = await loadUserSourcePriority(userId);
   const rankUnqualified = buildSourceRankCase(
@@ -435,7 +433,6 @@ async function buildFromRollups(
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
 
   const [narrows, latests, dayBuckets, bpRawRows, firstRows] =
     await Promise.all([
@@ -484,20 +481,7 @@ async function buildFromRollups(
         ),
       ),
       timeSubquery(timings, "latests", () =>
-        prisma.$queryRawUnsafe<LatestRow[]>(
-          `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days'
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-          userId,
-        ),
+        readLatestCanonical(userId, priorityJson, latestFloor()),
       ),
       // v1.4.35 — DAY rollup buckets for the trailing 90 days, every
       // type. Drives both the per-type `count / min / max / mean`
@@ -676,7 +660,6 @@ async function buildFromLiveAggregate(
     '"type"',
     '"source"',
   );
-  const rankM = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
 
   const [aggregates, latests, dayBuckets, bpRawRows] = await Promise.all([
     timeSubquery(timings, "heavy", () =>
@@ -760,20 +743,7 @@ async function buildFromLiveAggregate(
       ),
     ),
     timeSubquery(timings, "latests", () =>
-      prisma.$queryRawUnsafe<LatestRow[]>(
-        `
-      SELECT DISTINCT ON (m."type")
-        m."type"::text AS type,
-        m."value"::double precision AS value,
-        m."measured_at" AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."measured_at" >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days'
-        AND m."deleted_at" IS NULL
-      ORDER BY m."type", date_trunc('day', m."measured_at") DESC, (${rankM}), m."measured_at" DESC
-    `,
-        userId,
-      ),
+      readLatestCanonical(userId, priorityJson, latestFloor()),
     ),
     // Buckets may exist for some types even when the COUNT probe came
     // back zero (race window between the probe and a sibling

@@ -170,9 +170,9 @@ beforeEach(() => {
   (
     prisma.moodEntryRollup.findMany as ReturnType<typeof vi.fn>
   ).mockResolvedValue([]);
-  // v1.28.25 — the latest-ever-per-type read is a raw `DISTINCT ON`
-  // (Prisma's `distinct` dedups client-side after pulling every row).
   (prisma.$queryRawUnsafe as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+  // The latest-ever-per-type read (`readLatestEver`).
+  (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([]);
   vi.mocked(readGlucoseTargetSummaries).mockResolvedValue([]);
   vi.mocked(readRestingPulseProxy).mockResolvedValue([]);
 });
@@ -321,35 +321,30 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
     expect(moodTarget).toBeUndefined();
   });
 
-  it("reads latest-ever-per-type via raw DISTINCT ON with the one-year floor", async () => {
-    // Audit High finding 3 established the 365-day floor; v1.28.25 moves
-    // the read onto a real Postgres `DISTINCT ON` (Prisma's `distinct`
-    // dedups in the driver AFTER pulling every row in the window, which
-    // on a dense-type tenant shipped a year of raw rows to Node just to
-    // keep seven). Pin the raw query: DISTINCT ON, per-type descending
-    // walk, user id + floored date as bound parameters.
+  it("reads latest-ever-per-type one index probe per type, floored at one year", async () => {
+    // Audit High finding 3 established the 365-day floor. The read is the
+    // shared `readLatestEver`: driven from the type list, one LIMIT 1 probe
+    // per type, so a dense type never sorts a year of raw rows to keep one.
     await callGet(makeReq());
 
-    const rawCalls = (prisma.$queryRawUnsafe as ReturnType<typeof vi.fn>).mock
-      .calls;
-    const distinctCall = rawCalls.find(
-      (c) => typeof c[0] === "string" && c[0].includes("DISTINCT ON"),
+    const rawCalls = (prisma.$queryRaw as ReturnType<typeof vi.fn>).mock.calls;
+    const latestCall = rawCalls.find(
+      (c) =>
+        Array.isArray(c[0]) &&
+        (c[0] as string[]).join("?").includes("CROSS JOIN LATERAL"),
     );
-    expect(distinctCall).toBeDefined();
-    const [sql, boundUserId, flooredAt] = distinctCall as [
-      string,
-      string,
-      Date,
-    ];
-    expect(sql).toContain(`DISTINCT ON (m."type")`);
-    expect(sql).toContain(`ORDER BY m."type" ASC, m."measured_at" DESC`);
-    // Parameter-bound, never spliced: user id + date ride $1/$2.
-    expect(sql).toContain("$1");
-    expect(sql).toContain("$2");
-    expect(boundUserId).toBe("user-targets-1");
+    expect(latestCall).toBeDefined();
+    const [strings, ...values] = latestCall as [string[], ...unknown[]];
+    expect(strings.join("?")).not.toContain("DISTINCT ON");
+    expect(values).toContain("user-targets-1");
+    const floor = values.find(
+      (v): v is { values: unknown[] } =>
+        typeof v === "object" && v !== null && !Array.isArray(v),
+    );
+    const flooredAt = floor?.values[0];
     expect(flooredAt).toBeInstanceOf(Date);
     const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-    const ageMs = Date.now() - flooredAt.getTime();
+    const ageMs = Date.now() - (flooredAt as Date).getTime();
     // Floor is somewhere around one year ago — give a ±1-hour window
     // for clock drift between the route's `Date.now()` and the test
     // assertion.
@@ -454,7 +449,7 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
             timeZone,
           ),
       );
-      (prisma.$queryRawUnsafe as ReturnType<typeof vi.fn>).mockResolvedValue([
+      (prisma.$queryRaw as ReturnType<typeof vi.fn>).mockResolvedValue([
         { type: "WEIGHT", value: 70 },
         { type: "BLOOD_PRESSURE_SYS", value: 125 },
         { type: "BLOOD_PRESSURE_DIA", value: 75 },

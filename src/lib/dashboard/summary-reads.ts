@@ -15,7 +15,7 @@
  * an equality on the leading type column, which turns a full pass over
  * the account into one bounded lookup per type.
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 /** v1.4.38 W-F — the single most recent reading per measurement
@@ -29,7 +29,8 @@ import type { MeasurementType } from "@/generated/prisma/client";
  *  was still in the database. The all-time aggregate (`groupBy` on
  *  `measurements`) already proves the row exists; the row count is
  *  still bounded by `|measurementTypes|`, now because the query is
- *  driven FROM that list (v1.38.5) rather than grouped down to it. */
+ *  driven FROM that list (v1.38.5) rather than grouped down to it.
+ *  `since` drops a type whose latest reading is older than it. */
 export interface LatestEverRow {
   type: MeasurementType;
   value: number;
@@ -90,7 +91,11 @@ export function readLatestEver(
   db: PrismaClient,
   userId: string,
   measurementTypes: readonly MeasurementType[],
+  since: Date | null = null,
 ): Promise<LatestEverRow[]> {
+  const floor = since
+    ? Prisma.sql`AND m."measured_at" >= ${since}`
+    : Prisma.empty;
   return db.$queryRaw<LatestEverRow[]>`
     SELECT
       mt."type"                                  AS type,
@@ -105,6 +110,7 @@ export function readLatestEver(
       WHERE m."user_id" = ${userId}
         AND m."type" = mt."type"
         AND m."deleted_at" IS NULL
+        ${floor}
       ORDER BY m."measured_at" DESC
       LIMIT 1
     ) l

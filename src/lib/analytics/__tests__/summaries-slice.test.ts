@@ -66,7 +66,8 @@ vi.mock("@/lib/analytics/source-rank-sql", () => {
 import { prisma } from "@/lib/db";
 import { canonicalMeasurementsCte } from "@/lib/analytics/source-rank-sql";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
-import { computeSummariesSlice } from "../summaries-slice";
+import { caches, __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { computeSummariesSlice, readSummariesSlice } from "../summaries-slice";
 
 const RAW = prisma.$queryRaw as unknown as ReturnType<typeof vi.fn>;
 const UNSAFE = prisma.$queryRawUnsafe as unknown as ReturnType<typeof vi.fn>;
@@ -684,5 +685,39 @@ describe("computeSummariesSlice", () => {
         /WHERE m\."measured_at" >= \(?NOW\(\)( AT TIME ZONE 'UTC'\))? -/,
       );
     });
+  });
+});
+
+describe("readSummariesSlice — the one cache cell", () => {
+  beforeEach(() => {
+    __resetAllCachesForTests();
+    UNSAFE.mockResolvedValue([]);
+  });
+
+  it("builds the slice once for every consumer inside the fresh TTL", async () => {
+    const first = await readSummariesSlice("user-cell", { serveStale: true });
+    const builds = RAW.mock.calls.length;
+    expect(builds).toBeGreaterThan(0);
+
+    const composed = await readSummariesSlice("user-cell");
+    const snapshot = await readSummariesSlice("user-cell", {
+      coverage: new Map(),
+    });
+
+    expect(composed).toBe(first);
+    expect(snapshot).toBe(first);
+    expect(RAW.mock.calls.length).toBe(builds);
+  });
+
+  it("serves stale only to the edge reader; a composing reader rebuilds", async () => {
+    const before = await readSummariesSlice("user-stale");
+    caches.analytics.markStaleByPrefix("user-stale|");
+
+    const edge = await readSummariesSlice("user-stale", { serveStale: true });
+    expect(edge).toBe(before);
+
+    caches.analytics.markStaleByPrefix("user-stale|");
+    const composed = await readSummariesSlice("user-stale");
+    expect(composed).not.toBe(before);
   });
 });
