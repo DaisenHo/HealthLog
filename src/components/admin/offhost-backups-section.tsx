@@ -84,7 +84,7 @@ function freshnessLabel(
 }
 
 function AccountRow({ row }: { row: OffhostAccountRow }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
 
   return (
@@ -128,7 +128,7 @@ function AccountRow({ row }: { row: OffhostAccountRow }) {
                 })
               : `${fmt.dateTime(row.lastSuccessAt)} · ${formatBytes(
                   row.sizeBytes,
-                  fmt,
+                  locale,
                 )} · ${t("admin.section.backups.offhost.age", {
                   hours: row.ageHours ?? 0,
                 })}`}

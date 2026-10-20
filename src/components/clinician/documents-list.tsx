@@ -11,7 +11,7 @@
 import { Download } from "lucide-react";
 
 import { DOCUMENT_KIND_ICONS } from "@/components/documents/document-kind-meta";
-import { formatBytes } from "@/components/documents/vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
 import type { ShareViewDocument } from "@/lib/clinician-share/share-view-data";
 import type { InboundDocumentKindValue } from "@/lib/validations/inbound-documents";
 

@@ -75,7 +75,7 @@ import type { InboundDocumentKindValue } from "@/lib/validations/inbound-documen
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 
-import { formatBytes } from "../vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
 import {
   errorCodeOf,
   isStoppingError,

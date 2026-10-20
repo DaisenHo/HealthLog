@@ -1,22 +1,23 @@
-import type { useFormatters } from "@/lib/i18n/context";
+import { getNumberFormat } from "@/lib/intl/formatter-cache";
 
 /**
- * One spelling of "1.25 MB" for every surface that shows a byte count from
- * the admin backups response.
+ * One spelling of a byte count for every surface: 0 B / 412 KB / 1.2 MB /
+ * 2.4 GB, digits in the reader's locale ("1,2 MB" for a German reader).
  *
- * It lives here rather than beside the card that happened to need it first:
- * the second reader was importing a formatter out of a thousand-line client
- * component, which is a dependency on a page's worth of code for four lines of
- * arithmetic. Both cards render on the same route today, so it costs nothing
- * today — and it becomes a cost the moment either one moves.
+ * There used to be two: this module printed megabytes with two decimals and
+ * no gigabyte step, the document vault printed one decimal up to gigabytes, so
+ * the same backup read "1.25 MB" in the admin area and "1.2 MB" beside a
+ * document. It takes the locale rather than a formatter object so the share
+ * page, which renders on the server without the formatter hook, uses it too.
  */
-export function formatBytes(
-  bytes: number,
-  fmt: ReturnType<typeof useFormatters>,
-): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) {
-    return `${fmt.integer(Math.round(bytes / 1024))} KB`;
+export function formatBytes(bytes: number, locale: string): string {
+  const units = ["B", "KB", "MB", "GB"] as const;
+  let value = Math.max(0, bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
   }
-  return `${fmt.number(bytes / 1024 / 1024, 2)} MB`;
+  const digits = unit === 0 || value >= 100 ? 0 : 1;
+  return `${getNumberFormat(locale, { maximumFractionDigits: digits }).format(value)} ${units[unit]}`;
 }

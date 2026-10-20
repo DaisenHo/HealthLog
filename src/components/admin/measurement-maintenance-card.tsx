@@ -45,20 +45,8 @@ const ENDPOINT = "/api/admin/maintenance/measurements";
 /** How often the card asks while a run is waiting or working. */
 const POLL_MS = 10_000;
 
-const GIB = 1024 * 1024 * 1024;
-
-function sizeLabel(
-  bytes: number,
-  fmt: ReturnType<typeof useFormatters>,
-): string {
-  // The shared formatter stops at MB; this table is routinely gigabytes.
-  return bytes >= GIB
-    ? `${fmt.number(bytes / GIB, 2)} GB`
-    : formatBytes(bytes, fmt);
-}
-
 export function MeasurementMaintenanceCard() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const queryClient = useQueryClient();
 
@@ -132,11 +120,11 @@ export function MeasurementMaintenanceCard() {
         <div className="grid gap-3 sm:grid-cols-2">
           <StatTile
             label={t("admin.section.maintenance.tableSize")}
-            value={sizeLabel(s.sizes.tableBytes, fmt)}
+            value={formatBytes(s.sizes.tableBytes, locale)}
           />
           <StatTile
             label={t("admin.section.maintenance.indexSize")}
-            value={sizeLabel(s.sizes.indexBytes, fmt)}
+            value={formatBytes(s.sizes.indexBytes, locale)}
           />
         </div>
       ) : null}

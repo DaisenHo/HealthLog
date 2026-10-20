@@ -31,11 +31,8 @@ import { cn } from "@/lib/utils";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import { DOCUMENT_KIND_ICONS } from "./document-kind-meta";
 import type { UploadQueueItem } from "./use-document-upload";
-import {
-  documentCardKeyAction,
-  formatBytes,
-  isDocumentProcessing,
-} from "./vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
+import { documentCardKeyAction, isDocumentProcessing } from "./vault-utils";
 
 /** How long the "Ready" chip stays up after a card's index lands. */
 const READY_FLASH_MS = 3000;

@@ -102,7 +102,7 @@ import {
   useDocumentSummary,
   useSuggestDetails,
 } from "./use-document-assist";
-import { formatBytes } from "./vault-utils";
+import { formatBytes } from "@/lib/format/bytes";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 type PatchInput = {

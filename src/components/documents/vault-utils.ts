@@ -302,21 +302,6 @@ export function formatMonthLabel(key: string, locale: string): string {
   }).format(new Date(`${key}-15T12:00:00.000Z`));
 }
 
-/** Locale byte formatting: 0 B / 412 KB / 1.2 MB / 2.4 GB. */
-export function formatBytes(bytes: number, locale: string): string {
-  const units = ["B", "KB", "MB", "GB"] as const;
-  let value = Math.max(0, bytes);
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  const digits = unit === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 1;
-  return `${new Intl.NumberFormat(locale, {
-    maximumFractionDigits: digits,
-  }).format(value)} ${units[unit]}`;
-}
-
 /**
  * Shift-click range selection over the timeline's visual order. Selects
  * every id between the last plainly-toggled anchor and the target
