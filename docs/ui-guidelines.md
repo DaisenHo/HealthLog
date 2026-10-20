@@ -132,7 +132,8 @@ helper text explaining why. Silent disabled buttons frustrate users.
 
 ### 2.2 Inputs and forms
 
-We use `react-hook-form` + Zod schemas from `src/lib/validations/`.
+Forms keep a controlled draft in component state and validate it with the
+Zod schemas from `src/lib/validations/`; the server's schema is the authority.
 Wrap inputs in `<label>` (visible) plus `aria-describedby` for helper text.
 
 - **Text / number / email**: `<Input>`. Always set `autocomplete`. See §4.4.
@@ -425,8 +426,7 @@ control. Behavior:
 
 ### 4.6 Server actions and mutations
 
-We use `react-hook-form` + TanStack Query mutations, never raw fetch
-calls in components. Every mutation:
+Mutations go through TanStack Query, never raw fetch calls in components. Every mutation:
 
 1. Optimistically updates the cache with a rollback handler.
 2. Toast on success ("Saved" — translated) and on error (with retry).

@@ -4,7 +4,7 @@
  * The quick-entry forms, loaded when a sheet first opens rather than with the
  * page. The dashboard and the bottom bar's capture picker are on nearly every
  * authenticated paint, and both used to import all five forms eagerly (each
- * with react-hook-form, zod, its pickers and its own queries) for sheets most
+ * with zod, its pickers and its own queries) for sheets most
  * visits never open.
  *
  * Client-only (`ssr: false`): every sheet is closed on the server render. The

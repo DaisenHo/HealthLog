@@ -38,7 +38,7 @@ const DateFieldCalendar = dynamic(
  *
  * The committed VALUE is always ISO `yyyy-MM-dd` — identical to the native
  * `<input type="date">` contract `<DateInput>` ships — so this is a drop-in
- * for `<DateInput>` and existing react-hook-form wiring is unchanged.
+ * for `<DateInput>` and existing form wiring is unchanged.
  *
  * How it works:
  *   - A text overlay paints the formatted display string (or the placeholder)
@@ -52,7 +52,7 @@ const DateFieldCalendar = dynamic(
  *     quirks) is gone.
  *   - A hidden mirror input carries `name` + the ISO value so any caller that
  *     relies on native form submission still sees a normal field; the forwarded
- *     ref points at it for react-hook-form `register()` parity.
+ *     ref points at it, so a caller reads it like any native input.
  *
  * Height / a11y / target-size parity with `<DateInput>`: the same
  * `min-h-11 h-11 sm:min-h-10 sm:h-10` floor (WCAG 2.5.5 — 44 px on mobile,
