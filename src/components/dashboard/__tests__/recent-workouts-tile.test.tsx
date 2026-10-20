@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { makeFormatters } from "@/lib/format-locale";
 import type { WorkoutListEntry } from "@/hooks/use-workouts";
 
 /**
@@ -15,6 +16,13 @@ import type { WorkoutListEntry } from "@/hooks/use-workouts";
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
+}));
+
+// The day label follows the reader's date order through `useFormatters()`.
+const READER_FORMATTERS = makeFormatters("en", "UTC", "H24", "YMD");
+vi.mock("@/lib/i18n/context", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/i18n/context")>()),
+  useFormatters: () => READER_FORMATTERS,
 }));
 
 let mockResult: {
@@ -147,5 +155,8 @@ describe("<RecentWorkoutsTile>", () => {
     expect(html).toContain("Cycling");
     expect(html).toContain("30m");
     expect(html).toContain("1h 0m");
+    expect(html).toContain(
+      READER_FORMATTERS.dateWithWeekdaySmart("2026-05-15T07:00:00Z"),
+    );
   });
 });
