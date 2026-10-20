@@ -749,7 +749,7 @@ export async function runInsightPregenerate(
     // (`insights:${userId}`), so this never starves a user's manual
     // regenerate quota. The gate bounds the comprehensive cost only: a
     // blocked user still gets the refill-only status warm below, because
-    // the 02:xx status crons already skipped every pregenerate candidate
+    // the 02:00 status batch already skipped every pregenerate candidate
     // on the assumption that THIS pass warms their cards — exiting early
     // here left those cards cold until the first on-visit generation.
     const budget = briefing.available
@@ -906,7 +906,7 @@ export async function runInsightPregenerate(
     // generator's content-hash gate turns a same-data regeneration into a
     // timestamp refresh with no provider call. The warm runs on every
     // comprehensive outcome (budget-blocked, failed, timed-out,
-    // consent-skipped included) because the 02:xx status crons skip every
+    // consent-skipped included) because the 02:00 status batch skips every
     // pregenerate candidate on the assumption that THIS pass covers them.
     //
     // Nothing to warm when the status notes themselves are unavailable.

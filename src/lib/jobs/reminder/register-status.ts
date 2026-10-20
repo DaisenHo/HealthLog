@@ -1,8 +1,8 @@
 /**
  * Status / insight / computed-score queue registrar.
  *
- * Owns the nightly per-metric insight-status ladder (general / BP / weight /
- * pulse / BMI / mood / medication-compliance), the comprehensive-insight
+ * Owns the nightly status batch (every per-metric status card, one provider
+ * call per account), the comprehensive-insight
  * pre-generation, the on-demand per-metric status generation, the nightly
  * computed scores (recovery / stress / strain), the proactive Coach nudge, the
  * Coach memory refresh, the period-narrative warm, and the medication
@@ -112,24 +112,13 @@ import {
   createAndWork,
   insightRetryOptions,
   nightlyInsightPassOptions,
+  retireQueues,
   type QueuePolicyTable,
   type ScheduleEntry,
 } from "./registrar-shared";
 import {
   GeneralStatusPayload,
-  BloodPressureStatusPayload,
-  WeightStatusPayload,
-  PulseStatusPayload,
-  BmiStatusPayload,
-  MoodStatusPayload,
-  MedicationComplianceStatusPayload,
   handleGeneralStatusGenerate,
-  handleBloodPressureStatusGenerate,
-  handleWeightStatusGenerate,
-  handlePulseStatusGenerate,
-  handleBmiStatusGenerate,
-  handleMoodStatusGenerate,
-  handleMedicationComplianceStatusGenerate,
   handleInsightPregenerateJob,
   handleInsightStatusGenerate,
 } from "./insights-handlers";
@@ -138,45 +127,25 @@ const GENERAL_STATUS_QUEUE = "insights-general-status";
 
 const GENERAL_STATUS_CRON = "0 2 * * *"; // daily at 02:00
 
-const BLOOD_PRESSURE_STATUS_QUEUE = "insights-blood-pressure-status";
-
-const BLOOD_PRESSURE_STATUS_CRON = "5 2 * * *"; // daily at 02:05
-
-const WEIGHT_STATUS_QUEUE = "insights-weight-status";
-
-const WEIGHT_STATUS_CRON = "10 2 * * *"; // daily at 02:10
-
-const PULSE_STATUS_QUEUE = "insights-pulse-status";
-
-const PULSE_STATUS_CRON = "15 2 * * *"; // daily at 02:15
-
-const BMI_STATUS_QUEUE = "insights-bmi-status";
-
-const BMI_STATUS_CRON = "20 2 * * *"; // daily at 02:20
-// v1.15.20 — mood joins the nightly per-metric status ladder. Same gate +
-// discovery as the six older crons (see status-cron-candidates.ts); 02:30
-// continues the 5-minute stagger after BMI (02:20) and compliance (02:25).
-
-const MOOD_STATUS_QUEUE = "insights-mood-status";
-
-const MOOD_STATUS_CRON = "30 2 * * *"; // daily at 02:30
-
-const MEDICATION_COMPLIANCE_STATUS_QUEUE =
-  "insights-medication-compliance-status";
-
-const MEDICATION_COMPLIANCE_STATUS_CRON = "25 2 * * *"; // daily at 02:25
+/**
+ * The six per-metric status crons that followed the 02:00 batch (02:05 to
+ * 02:30). The batch builds every card and falls each metric it could not
+ * cover back to that card's own path, so they only re-read cards the batch
+ * had just written; a user who joins later is warmed by the visit or the next
+ * night. Their schedules and queues are removed on an instance that still has
+ * them.
+ */
+const RETIRED_STATUS_QUEUES = [
+  "insights-blood-pressure-status",
+  "insights-weight-status",
+  "insights-pulse-status",
+  "insights-bmi-status",
+  "insights-mood-status",
+  "insights-medication-compliance-status",
+] as const;
 
 const allQueues = [
   GENERAL_STATUS_QUEUE,
-  BLOOD_PRESSURE_STATUS_QUEUE,
-  WEIGHT_STATUS_QUEUE,
-  PULSE_STATUS_QUEUE,
-  BMI_STATUS_QUEUE,
-  // v1.15.20 — mood joins the nightly status ladder. The queue MUST be
-  // registered here or pg-boss never provisions it and the 02:30 schedule
-  // silently no-ops (the v1.4.37 dead-queue class).
-  MOOD_STATUS_QUEUE,
-  MEDICATION_COMPLIANCE_STATUS_QUEUE,
   // v1.7.0 — nightly comprehensive-insight pre-generation so the daily
   // briefing is warm before the user opens /insights or the dashboard
   // snapshot. Without this entry the 04:30 schedule silently no-ops.
@@ -238,21 +207,6 @@ const allQueues = [
 
 const schedules: ScheduleEntry[] = [
   [GENERAL_STATUS_QUEUE, GENERAL_STATUS_CRON, nightlyInsightPassOptions],
-  [
-    BLOOD_PRESSURE_STATUS_QUEUE,
-    BLOOD_PRESSURE_STATUS_CRON,
-    nightlyInsightPassOptions,
-  ],
-  [WEIGHT_STATUS_QUEUE, WEIGHT_STATUS_CRON, nightlyInsightPassOptions],
-  [PULSE_STATUS_QUEUE, PULSE_STATUS_CRON, nightlyInsightPassOptions],
-  [BMI_STATUS_QUEUE, BMI_STATUS_CRON, nightlyInsightPassOptions],
-  // v1.15.20 — mood status nightly, continuing the 02:xx ladder.
-  [MOOD_STATUS_QUEUE, MOOD_STATUS_CRON, nightlyInsightPassOptions],
-  [
-    MEDICATION_COMPLIANCE_STATUS_QUEUE,
-    MEDICATION_COMPLIANCE_STATUS_CRON,
-    nightlyInsightPassOptions,
-  ],
   // v1.7.0 — nightly 04:30 Europe/Berlin comprehensive-insight
   // pre-generation. Budget-gated per user inside the handler.
   [
@@ -383,6 +337,7 @@ export async function registerStatusQueues(
   boss: PgBoss,
 ): Promise<readonly string[]> {
   await createAndSchedule(boss, allQueues, schedules, queuePolicies);
+  await retireQueues(boss, RETIRED_STATUS_QUEUES);
 
   await createAndWork<GeneralStatusPayload>(
     boss,
@@ -392,54 +347,6 @@ export async function registerStatusQueues(
       GENERAL_STATUS_QUEUE,
       () => WHOLE_PASS,
       handleGeneralStatusGenerate,
-    ),
-  );
-  await createAndWork<BloodPressureStatusPayload>(
-    boss,
-    BLOOD_PRESSURE_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(
-      BLOOD_PRESSURE_STATUS_QUEUE,
-      () => WHOLE_PASS,
-      handleBloodPressureStatusGenerate,
-    ),
-  );
-  await createAndWork<WeightStatusPayload>(
-    boss,
-    WEIGHT_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(
-      WEIGHT_STATUS_QUEUE,
-      () => WHOLE_PASS,
-      handleWeightStatusGenerate,
-    ),
-  );
-  await createAndWork<PulseStatusPayload>(
-    boss,
-    PULSE_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(PULSE_STATUS_QUEUE, () => WHOLE_PASS, handlePulseStatusGenerate),
-  );
-  await createAndWork<BmiStatusPayload>(
-    boss,
-    BMI_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(BMI_STATUS_QUEUE, () => WHOLE_PASS, handleBmiStatusGenerate),
-  );
-  await createAndWork<MoodStatusPayload>(
-    boss,
-    MOOD_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(MOOD_STATUS_QUEUE, () => WHOLE_PASS, handleMoodStatusGenerate),
-  );
-  await createAndWork<MedicationComplianceStatusPayload>(
-    boss,
-    MEDICATION_COMPLIANCE_STATUS_QUEUE,
-    { localConcurrency: 1 },
-    lockedPass(
-      MEDICATION_COMPLIANCE_STATUS_QUEUE,
-      () => WHOLE_PASS,
-      handleMedicationComplianceStatusGenerate,
     ),
   );
   // v1.7.0 — nightly comprehensive-insight pre-generation.

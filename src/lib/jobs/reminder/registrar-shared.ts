@@ -169,7 +169,7 @@ export const insightRetryOptions = {
 } as const;
 
 /**
- * Send options for a nightly AI pass over every account (the status crons).
+ * Send options for a nightly AI pass over every account (the status batch).
  *
  * The retries of `insightRetryOptions`, plus a two-hour expiry. Each pass
  * makes a provider call per account, and on a large instance that outlasted
@@ -330,6 +330,26 @@ export async function createAndSchedule(
         ...(sendOptions ?? {}),
       },
     );
+  }
+}
+
+/**
+ * Remove queues the tree no longer declares: their schedule first, so the
+ * timekeeper stops minting jobs nobody works, then the queue with whatever it
+ * still holds. A queue that is already gone is a no-op, so every boot after
+ * the first does nothing. Never fails a boot.
+ */
+export async function retireQueues(
+  boss: PgBoss,
+  queues: readonly string[],
+): Promise<void> {
+  for (const name of queues) {
+    try {
+      await boss.unschedule(name);
+      await boss.deleteQueue(name);
+    } catch (err) {
+      workerLog("error", `[queue-retire] failed to retire ${name}`, err);
+    }
   }
 }
 

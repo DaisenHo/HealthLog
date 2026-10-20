@@ -41,10 +41,6 @@ const AI_JOBS: Record<string, JobGate> = {
     gate: "aiCapabilityForJob",
     keys: ["statusText"],
   },
-  "lib/jobs/reminder/insights-handlers.ts": {
-    gate: "aiCapabilityForJob",
-    keys: ["statusText"],
-  },
   "lib/jobs/insight-status-generate.ts": {
     gate: "aiCapabilityForJob",
     keys: ["statusText"],

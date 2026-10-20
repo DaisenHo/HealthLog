@@ -50,12 +50,6 @@ const subsystemSurface = {
 
   // register-status.ts
   "insights-general-status": { audience: "system" },
-  "insights-blood-pressure-status": { audience: "system" },
-  "insights-weight-status": { audience: "system" },
-  "insights-pulse-status": { audience: "system" },
-  "insights-bmi-status": { audience: "system" },
-  "insights-mood-status": { audience: "system" },
-  "insights-medication-compliance-status": { audience: "system" },
   "insight-pregenerate": { audience: "system" },
   "insight-status-generate": { audience: "system" },
   "morning-digest-refresh": { audience: "system" },
