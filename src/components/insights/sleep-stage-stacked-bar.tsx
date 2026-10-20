@@ -242,6 +242,26 @@ export function windowHasNap(rows: readonly CompositionRow[]): boolean {
 }
 
 /**
+ * The stages the visible window actually holds, in stack order.
+ *
+ * Recharts lists every mounted `<Bar>` in the legend, filled or not. With all
+ * five stages mounted, a week of staged nights (deep, core, REM, awake) still
+ * showed a green "Asleep" swatch for a band that appears nowhere in the
+ * columns: ASLEEP is the unspecified stage only older sources send. A stage
+ * with no minutes in the window draws nothing, so leaving it unmounted
+ * changes no column and keeps the legend to what is on screen.
+ */
+export function stagesInWindow(
+  rows: readonly CompositionRow[],
+): Array<(typeof STAGE_ORDER)[number]> {
+  return STAGE_ORDER.filter((stage) =>
+    rows.some(
+      (row) => typeof row[stage] === "number" && (row[stage] as number) > 0,
+    ),
+  );
+}
+
+/**
  * Totals for one hovered column, split the way the tooltip reports them.
  *
  * `nightMinutes` is the sum of the stacked stage bands — the main session
@@ -313,17 +333,13 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
     ).rows;
   }, [breakdown, windowDays, locale, t]);
 
-  // Mount the nap band only when the VISIBLE window holds one.
+  // Mount the nap band only when the VISIBLE window holds one, and each
+  // stage band likewise: the legend lists whatever is mounted.
   const hasNap = useMemo(() => windowHasNap(data), [data]);
+  const visibleStages = useMemo(() => stagesInWindow(data), [data]);
 
   // Empty-state guard — no perNight rows AND no aggregate.
-  const hasData =
-    data.length > 0 &&
-    data.some((row) =>
-      STAGE_ORDER.some(
-        (stage) => typeof row[stage] === "number" && (row[stage] as number) > 0,
-      ),
-    );
+  const hasData = visibleStages.length > 0;
 
   // v1.42 — each night's column opens the day it ended on (the day the
   // per-night key names, as `/api/sleep/night` does), through the same doors
@@ -347,13 +363,9 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
         : null;
     },
   });
-  const tableColumns = [...STAGE_ORDER, ...(hasNap ? [NAP_KEY] : [])]
-    .filter((stage) =>
-      data.some(
-        (row) => typeof row[stage] === "number" && (row[stage] as number) > 0,
-      ),
-    )
-    .map((stage) => ({ key: stage, label: stageLabels[stage] ?? stage }));
+  const tableColumns = [...visibleStages, ...(hasNap ? [NAP_KEY] : [])].map(
+    (stage) => ({ key: stage, label: stageLabels[stage] ?? stage }),
+  );
 
   const ariaLabel = t("insights.sleep.compositionAriaLabel", {
     nights: breakdown.nights,
@@ -563,7 +575,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
                     wrapperStyle={{ fontSize: 11 }}
                     formatter={(value: string) => stageLabels[value] ?? value}
                   />
-                  {STAGE_ORDER.map((stage) => (
+                  {visibleStages.map((stage) => (
                     <Bar
                       key={stage}
                       dataKey={stage}
