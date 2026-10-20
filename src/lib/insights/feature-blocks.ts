@@ -66,10 +66,11 @@ interface AllTimeExtremes {
  *
  *   - the DAY tier, for every whole UTC day from `tierFrom` on, for each type
  *     whose tier rows in that range all carry the reading extremes
- *     (migration 0417; the boot re-fold fills older rows);
+ *     (migration 0417; the boot re-fold fills older rows) and account for
+ *     the live record day by day (same days, same reading counts);
  *   - the raw rows for the rest: the days before `tierFrom` (older than the
  *     fold window, or the partial day the `floor` falls in), and every day of
- *     a type the tier does not cover yet.
+ *     a type the tier does not cover yet or no longer matches.
  *
  * The split is at a UTC midnight, so no day is folded from both, and the
  * canonical pick per day is the same on both sides. The tier's pulse day
@@ -104,17 +105,45 @@ export async function readAllTimeExtremes(
 
   const [priorityJson, tierRows] = await Promise.all([
     loadUserSourcePriority(userId),
+    // A type is read from the tier only when the tier accounts for the live
+    // record day by day: every day with a live reading has DAY rows whose
+    // counts add up to that day's live count, and every DAY row has its day
+    // of live readings. A bucket that outlived its rows (a hard delete with no
+    // rollup recompute) or a day the tier never got fails the comparison and
+    // the type is read raw. The figures from here are the anchor the Coach
+    // snapshot checks its coarse history against, so they must never repeat
+    // a stale bucket. The live side is a count per day off the partial
+    // `(user_id, type, measured_at)` live index, not a read of the rows.
     prisma.$queryRaw<Array<{ type: string }>>`
-      SELECT r."type"::text AS type
-      FROM measurement_rollups r
-      WHERE r."user_id" = ${userId}
-        AND r."granularity" = 'DAY'
-        AND r."type" IN (${typeList(types)})
-        AND r."bucket_start" >= ${tierFrom}
-      GROUP BY r."type"
-      HAVING bool_and(
-        r."reading_min_value" IS NOT NULL AND r."reading_max_value" IS NOT NULL
+      WITH live AS (
+        SELECT m."type", date_trunc('day', m."measured_at") AS day,
+               COUNT(*)::bigint AS n
+        FROM measurements m
+        WHERE m."user_id" = ${userId}
+          AND m."deleted_at" IS NULL
+          AND m."type" IN (${typeList(types)})
+          AND m."measured_at" >= ${tierFrom}
+        GROUP BY 1, 2
+      ),
+      tier AS (
+        SELECT r."type", r."bucket_start" AT TIME ZONE 'UTC' AS day,
+               SUM(r."count")::bigint AS n,
+               bool_and(
+                 r."reading_min_value" IS NOT NULL
+                 AND r."reading_max_value" IS NOT NULL
+               ) AS complete
+        FROM measurement_rollups r
+        WHERE r."user_id" = ${userId}
+          AND r."granularity" = 'DAY'
+          AND r."type" IN (${typeList(types)})
+          AND r."bucket_start" >= ${tierFrom}
+        GROUP BY 1, 2
       )
+      SELECT COALESCE(l."type", t."type")::text AS type
+      FROM live l
+      FULL JOIN tier t ON t."type" = l."type" AND t.day = l.day
+      GROUP BY 1
+      HAVING bool_and(COALESCE(l.n = t.n AND t.complete, false))
     `,
   ]);
   const tierTypes = new Set(tierRows.map((r) => r.type));

@@ -318,4 +318,27 @@ describe("readAllTimeExtremes over the DAY tier", () => {
     expect(actual.get("WEIGHT")?.max).toBe(reference.get("WEIGHT")?.max);
     expect(actual.get("WEIGHT")?.min).toBe(reference.get("WEIGHT")?.min);
   });
+
+  it("reads the raw rows for a type whose tier outlived a hard delete", async () => {
+    // Rebuild a clean tier, then delete the hottest pulse reading with no
+    // rollup recompute: its DAY row now counts a reading that is gone.
+    await recomputeUserRollups(USER, { granularities: ["DAY"] });
+    const hottest = await prisma.measurement.findFirst({
+      where: { userId: USER, type: "PULSE", deletedAt: null },
+      orderBy: { value: "desc" },
+    });
+    await prisma.measurement.delete({ where: { id: hottest!.id } });
+    const stale = await prisma.measurementRollup.findMany({
+      where: {
+        userId: USER,
+        type: "PULSE",
+        granularity: "DAY",
+        readingMaxValue: hottest!.value,
+      },
+    });
+    expect(stale.length).toBeGreaterThan(0);
+    await expectParity(null);
+    const out = await readAllTimeExtremes(USER, ["PULSE"]);
+    expect(out.get("PULSE")?.max).toBeLessThan(hottest!.value);
+  });
 });
