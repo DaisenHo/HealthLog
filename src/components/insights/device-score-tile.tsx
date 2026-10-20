@@ -118,7 +118,6 @@ export function DeviceScoreTile({
           icon={Icon}
           title={title}
           className="min-w-0"
-          titleClassName="min-w-0 truncate"
           right={
             latest != null ? (
               <span

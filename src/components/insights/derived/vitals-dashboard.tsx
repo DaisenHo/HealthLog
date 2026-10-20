@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
-import { getUnitForType } from "@/lib/validations/measurement";
+import { measurementUnitLabel } from "@/lib/measurements/unit-label";
+import { getUnitForType } from "@/lib/measurements/unit-map";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import {
   MEASUREMENT_TYPE_ICONS,
@@ -136,6 +137,11 @@ const CUMULATIVE_TILE_LAYOUT_ID: Record<string, string> = {
  * `null` layout (caller passed none) is treated as everything-visible so the
  * default behaviour is unchanged.
  */
+/** The reader's unit for a tile whose value has no unit preference. */
+function unitLabel(type: string, t: (key: string) => string): string {
+  return measurementUnitLabel(type, getUnitForType(type), t);
+}
+
 function tileVisible(
   layout: InsightsLayout | undefined,
   tileId: string,
@@ -431,7 +437,7 @@ function SixMinuteWalkTile({ read, isLoading }: TileProps) {
       <SparklineDeltaTile
         label={t("measurements.typeSixMinuteWalkDistance")}
         value={v.distanceM}
-        unit={getUnitForType("SIX_MINUTE_WALK_DISTANCE")}
+        unit={unitLabel("SIX_MINUTE_WALK_DISTANCE", t)}
         icon={MEASUREMENT_TYPE_ICONS.SIX_MINUTE_WALK_DISTANCE ?? Footprints}
         series={v.series}
         delta={v.trendDelta}
@@ -472,7 +478,7 @@ function FitnessAgeTile({ read, isLoading }: TileProps) {
       <SparklineDeltaTile
         label={t("measurements.typeVo2Max")}
         value={v.vo2Max}
-        unit={getUnitForType("VO2_MAX")}
+        unit={unitLabel("VO2_MAX", t)}
         icon={Gauge}
         delta={v.trendDelta}
         directionSentiment="up-good"
@@ -513,7 +519,7 @@ function VascularAgeTile({ read, isLoading }: TileProps) {
       <SparklineDeltaTile
         label={t("measurements.typeVascularAge")}
         value={v.vascularAge}
-        unit={getUnitForType("VASCULAR_AGE")}
+        unit={unitLabel("VASCULAR_AGE", t)}
         icon={HeartPulse}
         delta={v.trendDelta}
         directionSentiment="up-bad"
@@ -565,7 +571,7 @@ function HrvBalanceTile({ read, isLoading }: TileProps) {
       <SparklineDeltaTile
         label={t("measurements.typeHeartRateVariability")}
         value={v.recentAvg}
-        unit={getUnitForType("HEART_RATE_VARIABILITY")}
+        unit={unitLabel("HEART_RATE_VARIABILITY", t)}
         icon={HeartPulse}
         series={v.series}
         directionSentiment="up-good"
@@ -591,7 +597,7 @@ function BmiTile({ read, isLoading }: TileProps) {
       <SparklineDeltaTile
         label={t("measurements.typeBodyMassIndex")}
         value={v.bmi}
-        unit={getUnitForType("BODY_MASS_INDEX")}
+        unit={unitLabel("BODY_MASS_INDEX", t)}
         icon={Scale}
         series={v.series}
         directionSentiment="neutral"
@@ -636,12 +642,7 @@ function BuildingTile({
       data-state={state}
       className="gap-3"
     >
-      <TileHeader
-        icon={icon}
-        title={title}
-        titleAs="h2"
-        titleClassName="truncate"
-      />
+      <TileHeader icon={icon} title={title} titleAs="h2" />
       <p className="text-muted-foreground text-sm" data-slot={messageSlot}>
         {message}
       </p>

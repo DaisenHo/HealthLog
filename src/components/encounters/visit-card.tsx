@@ -102,7 +102,6 @@ export function VisitCard({
             size="sm"
             icon={CalendarClock}
             title={heading}
-            titleClassName="min-w-0 truncate"
             right={
               <Badge variant="outline" className="shrink-0">
                 {encounterKindText(t, encounter.kind as EncounterKind)}

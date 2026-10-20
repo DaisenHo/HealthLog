@@ -28,6 +28,8 @@ import {
   type UnitPreference,
 } from "@/lib/measurements/display-transform";
 import { resolveGlucoseUnit, type GlucoseUnit } from "@/lib/glucose";
+import { useTranslations } from "@/lib/i18n/context";
+import { measurementUnitLabel } from "@/lib/measurements/unit-label";
 
 export interface UnitDisplay {
   /** Resolved preference ("metric" by default / on a stale payload). */
@@ -46,7 +48,12 @@ export interface UnitDisplay {
   fromDisplay: (type: string, displayValue: number) => number;
   /** Convert a DELTA / slope / SD — factor only, never the affine offset. */
   toDisplayDelta: (type: string, deltaValue: number) => number;
-  /** The display unit symbol for a type under the current preference. */
+  /**
+   * The unit shown beside a value of `type` under the current preference, in
+   * the reader's language: a symbol ("kg", "°F"), a localised word
+   * ("Atemzüge/min"), or "" for a bare score or rating. Display only; the
+   * canonical token stays `getUnitForType`.
+   */
   unitFor: (type: string) => string;
   /** Display decimal places for a type under the current preference. */
   decimalsFor: (type: string) => number;
@@ -84,6 +91,7 @@ function useDisplayForPreference(
   rawPreference: string | null | undefined,
   rawGlucoseUnit: string | null | undefined,
 ): UnitDisplay {
+  const { t } = useTranslations();
   const preference = resolveUnitPreference(rawPreference);
   const glucoseUnit = resolveGlucoseUnit(rawGlucoseUnit);
 
@@ -100,9 +108,10 @@ function useDisplayForPreference(
         invertDisplayTransform(displayValue, transformFor(type)),
       toDisplayDelta: (type, deltaValue) =>
         applyDisplayTransformDelta(deltaValue, transformFor(type)),
-      unitFor: (type) => transformFor(type).displayUnit,
+      unitFor: (type) =>
+        measurementUnitLabel(type, transformFor(type).displayUnit, t),
       decimalsFor: (type) => transformFor(type).decimals,
       isTransformed: (type) => hasDisplayTransform(type),
     };
-  }, [preference, glucoseUnit]);
+  }, [preference, glucoseUnit, t]);
 }

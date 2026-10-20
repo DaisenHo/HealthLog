@@ -8901,6 +8901,7 @@
     "inTarget": "Im Zielbereich",
     "aboveTarget": "{delta} {unit} über Zielbereich",
     "belowTarget": "{delta} {unit} unter Zielbereich",
+    "systolic": "Systolisch",
     "diastolic": "Diastolisch",
     "glucoseFasting": "Glukose, nüchtern",
     "glucosePostprandial": "Glukose, postprandial",

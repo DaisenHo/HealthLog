@@ -104,9 +104,11 @@ import {
   MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS,
   MEASUREMENT_TYPE_ICONS as TYPE_ICONS,
   MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
+} from "./measurement-list-meta";
+import {
   measurementUnitLabel,
   measurementUnitMetaLead,
-} from "./measurement-list-meta";
+} from "@/lib/measurements/unit-label";
 import {
   measurementListFiltersToSearch,
   numericInputOrUndefined,

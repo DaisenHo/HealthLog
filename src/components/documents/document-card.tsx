@@ -180,7 +180,12 @@ export function DocumentCard({
 
   const titleBlock = (
     <div className="flex min-w-0 flex-1 flex-col">
-      <p className="truncate text-sm font-medium">{title}</p>
+      <p
+        className="line-clamp-2 text-sm font-medium break-words hyphens-auto"
+        title={title}
+      >
+        {title}
+      </p>
       <p className="text-muted-foreground truncate text-xs">
         {/* v1.42 — a dated document's date opens its day, above the
             whole-card button. It follows the grid's roving tab stop, so the

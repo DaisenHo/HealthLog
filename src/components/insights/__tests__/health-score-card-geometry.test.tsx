@@ -11,6 +11,7 @@ import type {
 } from "@/lib/analytics/score/types";
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
 import { HeroStrip } from "../hero-strip";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 /**
  * The hero band's geometry, measured rather than asserted from source.
@@ -42,6 +43,11 @@ import { HeroStrip } from "../hero-strip";
  * chromium` once to measure for real.
  */
 
+// Every locale's own catalog, not the English fallback: without it the
+// per-locale sweep below measured the English names eight times over and
+// never saw a German compound.
+primeLocales(...locales);
+
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: { unitPreference: "metric", glucoseUnit: "mg/dL" } }),
 }));
@@ -52,6 +58,8 @@ const COLUMN_PX = 352;
 const VIEWPORT_PX = 1024;
 /** One `text-xs` row is a 16 px line; two lines would exceed this. */
 const ONE_LINE_PX = 20;
+/** Two `text-xs` lines; a third would mean the name no longer fits. */
+const TWO_LINES_PX = 2 * ONE_LINE_PX;
 /**
  * The row's info trigger carries `-mx-2` so its 44 px tap target does not
  * inflate a 20 px row: it reaches 8 px into the card's own padding on each
@@ -358,7 +366,7 @@ describe("hero band geometry", () => {
     ).toBeLessThanOrEqual(heights.rows6);
   }, 60_000);
 
-  it("keeps every row on one line in every locale", async (ctx) => {
+  it("keeps every row inside its column and every name whole in every locale", async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
 
     const widest: Record<string, { label: string; natural: number }> = {};
@@ -408,6 +416,8 @@ describe("hero band geometry", () => {
             labelOverflow: label
               ? getComputedStyle(label).textOverflow
               : "none",
+            labelScroll: label?.scrollWidth ?? 0,
+            labelClient: label?.clientWidth ?? 0,
             barWidth: Math.round(bar?.getBoundingClientRect().width ?? 0),
             valueScroll: value?.scrollWidth ?? 0,
             valueClient: value?.clientWidth ?? 0,
@@ -416,10 +426,11 @@ describe("hero band geometry", () => {
           };
         });
 
-        // The row is the invariant, not the label: a long name may ellipsise,
-        // but it may never widen the row or wrap it onto a second line. Drop
-        // `min-w-0` or `truncate` from the label and the first grid track
-        // grows to the longest word instead, which is exactly this.
+        // The row's width is the invariant, and the name is read whole: a
+        // long name breaks onto a second line at a syllable, it is never cut.
+        // Drop `min-w-0` from the label and the first grid track grows to the
+        // longest word instead; drop `hyphens-auto` and a German compound
+        // overflows its track.
         expect(
           m.rowScroll,
           `${locale}/${m.id}: the row is pushed wider than its column by "${m.text}"`,
@@ -429,13 +440,17 @@ describe("hero band geometry", () => {
           `${locale}/${m.id}: the label track grew past 7rem for "${m.text}"`,
         ).toBeLessThanOrEqual(112 + 1);
         expect(
+          m.labelScroll,
+          `${locale}/${m.id}: "${m.text}" is cut off inside its track`,
+        ).toBeLessThanOrEqual(m.labelClient + 1);
+        expect(
           m.labelHeight,
-          `${locale}/${m.id}: "${m.text}" wrapped onto a second line`,
-        ).toBeLessThanOrEqual(ONE_LINE_PX);
+          `${locale}/${m.id}: "${m.text}" needs more than two lines`,
+        ).toBeLessThanOrEqual(TWO_LINES_PX);
         expect(
           m.labelOverflow,
-          `${locale}/${m.id}: "${m.text}" is cut without an ellipsis`,
-        ).toBe("ellipsis");
+          `${locale}/${m.id}: "${m.text}" ends in an ellipsis`,
+        ).not.toBe("ellipsis");
         // The label column may not eat the two things the row exists to show.
         expect(
           m.barWidth,

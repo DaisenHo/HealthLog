@@ -7,6 +7,7 @@ import type { DayValue } from "@/lib/day/contract";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
+import { measurementUnitLabel } from "@/lib/measurements/unit-label";
 import { getUnitForType } from "@/lib/measurements/unit-map";
 
 import type { DayValueTile } from "./day-values-model";
@@ -102,9 +103,11 @@ export function useDayValueFormat() {
   const unitFor = useCallback(
     (row: Pick<DayValue, "type" | "unit">): string => {
       if (row.type === "SLEEP_DURATION") return "";
-      const unit = isCanonicalUnit(row) ? units.unitFor(row.type) : row.unit;
       // A device score reads in points, as on its chart.
-      return unit === "score" ? t("insights.deviceScore.unitScore") : unit;
+      if (row.unit === "score") return t("insights.deviceScore.unitScore");
+      return isCanonicalUnit(row)
+        ? units.unitFor(row.type)
+        : measurementUnitLabel(row.type, row.unit, t);
     },
     [t, units],
   );

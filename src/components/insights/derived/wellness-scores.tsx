@@ -154,7 +154,7 @@ function RingTile({
         animate && "wellness-tile-rise",
       )}
     >
-      <TileHeader icon={Icon} title={label} titleClassName="truncate" />
+      <TileHeader icon={Icon} title={label} />
       <div className="flex flex-col items-center gap-1.5">
         {/* The ring keeps just the number centred; the metric name lives in
             the header above. The per-metric `hue` gradient leans the arc

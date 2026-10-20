@@ -164,7 +164,6 @@ export function SparklineDeltaTile({
         title={label}
         titleAs="h2"
         className="min-w-0"
-        titleClassName="min-w-0 truncate whitespace-nowrap"
         right={
           provenance ? (
             <span
