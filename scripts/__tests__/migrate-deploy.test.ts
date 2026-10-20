@@ -24,7 +24,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   decideLockRetry,
   lockTimeoutInReport,
+  prismaEnv,
   retryDelays,
+  utcSessionUrl,
 } from "../migrate-deploy.mjs";
 
 const P3018_LOCK = `Applying migration \`0412_measurement_hot_updates\`
@@ -164,6 +166,53 @@ describe("which failure is retried", () => {
     expect(retryDelays(undefined)).toEqual([15, 30, 60, 120, 240]);
     expect(retryDelays("0, 1")).toEqual([0, 1]);
     expect(retryDelays("a,1")).toEqual([15, 30, 60, 120, 240]);
+  });
+});
+
+describe("the session time zone Prisma migrates in", () => {
+  const options = (url: string | undefined) =>
+    new URL(url ?? "").searchParams.get("options");
+
+  it("pins TimeZone=UTC through the libpq options parameter", () => {
+    const url = utcSessionUrl(
+      "postgresql://u:p@db:5432/healthlog?schema=public",
+    );
+    expect(options(url)).toBe("-c TimeZone=UTC");
+    expect(new URL(url ?? "").searchParams.get("schema")).toBe("public");
+  });
+
+  it("appends to options the operator set, so a later -c wins", () => {
+    const url = utcSessionUrl(
+      "postgresql://u:p@db/h?options=-c%20TimeZone%3DEurope%2FBerlin",
+    );
+    expect(options(url)).toBe("-c TimeZone=Europe/Berlin -c TimeZone=UTC");
+    // Running it again adds nothing.
+    expect(utcSessionUrl(url)).toBe(url);
+  });
+
+  it("leaves a URL alone when the startup options are switched off", () => {
+    const raw = "postgresql://u:p@db/h?schema=public";
+    expect(utcSessionUrl(raw, { optionsDisabled: true })).toBe(raw);
+    expect(
+      prismaEnv({ DATABASE_URL: raw, DATABASE_SESSION_OPTIONS_DISABLED: "1" })
+        .DATABASE_URL,
+    ).toBe(raw);
+  });
+
+  it("passes an unset or unparseable URL through untouched", () => {
+    expect(utcSessionUrl(undefined)).toBeUndefined();
+    expect(utcSessionUrl("")).toBe("");
+    expect(utcSessionUrl("not a url")).toBe("not a url");
+    expect(prismaEnv({}).DATABASE_URL).toBeUndefined();
+  });
+
+  it("hands Prisma the pinned URL and keeps the rest of the environment", () => {
+    const env = prismaEnv({
+      DATABASE_URL: "postgresql://u:p@db/h",
+      HEALTHLOG_X: "1",
+    });
+    expect(options(env.DATABASE_URL)).toBe("-c TimeZone=UTC");
+    expect(env.HEALTHLOG_X).toBe("1");
   });
 });
 

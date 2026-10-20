@@ -40,6 +40,15 @@ not reachable". The entrypoint also runs the migrations on every boot, so
 step 2 is optional; it is there for when you want to see the migration
 result before the new container takes traffic.
 
+The entrypoint runs every migration in a UTC session, the zone the app's own
+connections use, whatever the database's default `TimeZone` is: it adds
+`-c TimeZone=UTC` to the `options` parameter of `DATABASE_URL` for the Prisma
+calls (an `options` value you set yourself is kept, with the pin after it).
+Behind a connection pooler that refuses `options`, the
+`DATABASE_SESSION_OPTIONS_DISABLED` switch turns this off along with the
+app's own session settings; set the database or role default to UTC there
+(`ALTER DATABASE healthlog SET timezone = 'UTC'`).
+
 ### A migration that timed out on a lock
 
 Some migrations bound how long they wait for a table lock, so that a

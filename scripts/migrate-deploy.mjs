@@ -30,6 +30,16 @@
  * after a failed one (P3009), from the `logs` Prisma stored on the failed
  * row in `_prisma_migrations`.
  *
+ * Every Prisma call runs with its session pinned to UTC, the way the app's
+ * own connections are (`src/lib/db-session.ts`). Almost every `DateTime`
+ * column is `timestamp` without a time zone and holds UTC, and Postgres
+ * converts between that and `timestamptz` / `now()` through the session time
+ * zone. A migration that mixes the two (0372 does) therefore wrote hours-off
+ * values on a database whose default zone is not UTC. Prisma ignores `PGTZ`,
+ * so the pin rides the connection URL as the libpq `options` parameter, which
+ * Prisma passes to the server. `DATABASE_SESSION_OPTIONS_DISABLED` (a pooler
+ * that refuses `options`) turns it off, as it does for the app.
+ *
  * Environment:
  *   HEALTHLOG_PRISMA_CLI      Prisma's CLI entry (default: the image's copy)
  *   HEALTHLOG_MIGRATIONS_DIR  where the migration files are (default:
@@ -49,6 +59,7 @@ const DEFAULT_RETRY_DELAYS_S = [15, 30, 60, 120, 240];
 export const RETRY_MARKER = /^--\s*@retry-on-lock-timeout\s*$/m;
 
 const LOCK_TIMEOUT = "55P03";
+const TIME_ZONE_OPTION = "-c TimeZone=UTC";
 const MIGRATION_NAME = /^[A-Za-z0-9_]+$/;
 
 /**
@@ -116,10 +127,54 @@ export function retryDelays(raw) {
     : DEFAULT_RETRY_DELAYS_S;
 }
 
+/**
+ * `DATABASE_URL` with the session time zone pinned to UTC, for Prisma.
+ *
+ * Appends to an `options` value the operator set rather than replacing it;
+ * a later `-c` wins, so an operator's own `TimeZone` gives way to UTC. A URL
+ * that does not parse, or a host that disabled the startup options, is
+ * returned unchanged.
+ *
+ * @param {string | undefined} raw
+ * @param {{ optionsDisabled?: boolean }} [opts]
+ * @returns {string | undefined}
+ */
+export function utcSessionUrl(raw, { optionsDisabled = false } = {}) {
+  if (!raw || optionsDisabled) return raw;
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return raw;
+  }
+  const existing = url.searchParams.get("options")?.trim();
+  if (existing && existing.endsWith(TIME_ZONE_OPTION)) return raw;
+  url.searchParams.set(
+    "options",
+    existing ? `${existing} ${TIME_ZONE_OPTION}` : TIME_ZONE_OPTION,
+  );
+  return url.toString();
+}
+
+/** The same switch the app reads in `src/lib/db-session.ts`. */
+function sessionOptionsDisabled(env) {
+  const raw = env.DATABASE_SESSION_OPTIONS_DISABLED?.trim();
+  return raw !== undefined && /^(1|true|yes)$/i.test(raw);
+}
+
+/** The environment every Prisma call runs in. */
+export function prismaEnv(env = process.env) {
+  const url = utcSessionUrl(env.DATABASE_URL, {
+    optionsDisabled: sessionOptionsDisabled(env),
+  });
+  return url === undefined ? { ...env } : { ...env, DATABASE_URL: url };
+}
+
 function runPrisma(cli, args) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [cli, ...args], {
       stdio: ["ignore", "pipe", "pipe"],
+      env: prismaEnv(),
     });
     let output = "";
     child.stdout.on("data", (chunk) => {
