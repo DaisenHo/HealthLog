@@ -313,6 +313,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     "At most 40 batches of 5 000 rows per leg.",
   ),
   "document-tombstone-purge": short("One deleteMany."),
+  "soft-delete-purge": short(
+    "At most 40 batches of 5 000 rows per table, over a few small tables.",
+  ),
   "document-summary-reaper": short("One updateMany."),
   "cycle-prediction-refresh": short(
     "Arithmetic per eligible account, no provider call.",

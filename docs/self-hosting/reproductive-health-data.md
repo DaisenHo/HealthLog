@@ -90,8 +90,11 @@ different things depending on which button you press.
   it out and it is gone from the app, from exports, and from the doctor
   report. The row itself stays in PostgreSQL as a tombstone, which is
   what lets a phone that was offline at delete time learn that the entry
-  went away. No job removes cycle tombstones on a schedule, so the row
-  stays until one of the two actions below.
+  went away. A nightly job removes a tombstone 75 days after the delete
+  (the same horizon as the sync feed's); until then, or until one of the
+  two actions below, the row stays. A start that was folded into a later
+  cycle stays for as long as that cycle does, because deleting the later
+  cycle gives it back.
 - **Settings → Delete All Data** removes the rows outright, tombstones
   included. Everything the account owns goes except what you sign in
   with; the confirmation dialog lists it.
