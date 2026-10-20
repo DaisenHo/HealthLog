@@ -341,8 +341,17 @@ describe("GET /api/measurements/series", () => {
   it("collapses sleep stage rows into one night point in hours (v1.11.4)", async () => {
     // SLEEP_DURATION is stored one row per STAGE per night (minutes). The
     // series must return ONE point per night carrying the TIME-ASLEEP
-    // total in hours, not a point per stage.
+    // total in hours, not a point per stage. Postgres names the night and
+    // its span; the stage rows of that span are reconstructed.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      {
+        night: "2026-06-04",
+        span_start: new Date("2026-06-03T15:00:00.000Z"),
+        span_end: new Date("2026-06-04T05:00:00.000Z"),
+        total: 1,
+      },
+    ] as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       {
         id: "s1",

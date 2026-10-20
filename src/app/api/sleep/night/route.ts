@@ -17,13 +17,16 @@
  * (WHOOP) — the client renders the hypnogram but labels it an approximate
  * layout. A real-series source (Apple Health / Withings / Fitbit) is false.
  *
- * `date` omitted → the most recent night in the trailing-year window.
+ * `date` omitted → the most recent night that holds sleep, however old.
+ *
+ * Only the stage rows within a day and a half of the night are read, as the
+ * list's drill-down reads them (`readNightSessions`), so any past night is
+ * answered and a long history never reaches the heap.
  *
  * Auth: cookie session OR Bearer token (`requireAuth`). Soft-delete-filtered.
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
-import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import {
   apiSuccess,
@@ -32,17 +35,17 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import {
-  reconstructSleepSessions,
   pickMainNightAndNaps,
   type SleepSession,
 } from "@/lib/analytics/sleep-night";
+import {
+  latestSleepNight,
+  readNightSessions,
+} from "@/lib/measurements/list/sleep-nights";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { isCalendarDateKey } from "@/lib/tz/date-only";
-
-/** Sleep is read row-per-stage, so the window is bounded to one year. */
-const SLEEP_NIGHT_MAX_DAYS = 365;
 
 const querySchema = z.object({
   // Optional wake-day key; when omitted the latest night is returned.
@@ -127,36 +130,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     loadUserSourcePriority(user.id),
   ]);
 
-  const since = new Date(Date.now() - SLEEP_NIGHT_MAX_DAYS * 86_400_000);
-  const rows = await prisma.measurement.findMany({
-    where: {
-      userId: user.id,
-      type: "SLEEP_DURATION",
-      deletedAt: null,
-      measuredAt: { gte: since },
-    },
-    orderBy: { measuredAt: "asc" },
-    select: {
-      value: true,
-      measuredAt: true,
-      sleepStage: true,
-      source: true,
-      // Writer-level collapse: two HealthKit apps behind one source (watch
-      // stages vs phone in-bed) must not blend into one night.
-      deviceType: true,
-    },
-  });
-
-  const sessions = reconstructSleepSessions(rows, tz, priorityJson);
-  // Resolve the target wake day: the requested `date`, else the most
-  // recent wake day that has a scorable session.
-  const scorable = sessions.filter((s) => s.asleepMinutes > 0);
   const targetDay =
-    date ??
-    (scorable.length > 0 ? scorable[scorable.length - 1].night : undefined);
-
-  const daySessions = sessions.filter((s) => s.night === targetDay);
-  const { main, naps } = pickMainNightAndNaps(daySessions);
+    date ?? (await latestSleepNight(user.id, tz, priorityJson)) ?? undefined;
+  const { main, naps } = targetDay
+    ? pickMainNightAndNaps(
+        (await readNightSessions(user.id, targetDay, tz, priorityJson))
+          .sessions,
+      )
+    : { main: null, naps: [] };
 
   annotate({
     action: { name: "sleep.night" },
@@ -167,13 +148,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  if (!main) {
-    return apiSuccess({ night: targetDay ?? null, main: null, naps: [] });
-  }
-
+  // A day of naps alone answers with its naps and no main night.
   return apiSuccess({
-    night: main.night,
-    main: serializeSession(main),
+    night: targetDay ?? null,
+    main: main ? serializeSession(main) : null,
     naps: naps.map(serializeSession),
   });
 });
