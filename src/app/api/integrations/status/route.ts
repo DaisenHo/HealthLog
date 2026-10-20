@@ -55,7 +55,7 @@ import { loadConnectionHealth } from "@/lib/integrations/connection-health-load"
 import {
   googleHealthBackfillEndedList,
   type GoogleHealthBackfillEndedEntry,
-} from "@/lib/google-health/sync-core";
+} from "@/lib/google-health/backfill-progress";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 
 export const dynamic = "force-dynamic";

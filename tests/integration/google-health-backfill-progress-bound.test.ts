@@ -337,7 +337,7 @@ describe("Google Health backfill bounded by progress, not pages (#1220)", () => 
     const { GOOGLE_HEALTH_NO_PROGRESS_PAGES } =
       await import("@/lib/google-health/backfill-bounds");
     const { googleHealthBackfillEndedList } =
-      await import("@/lib/google-health/sync-core");
+      await import("@/lib/google-health/backfill-progress");
     const walk = 1 + GOOGLE_HEALTH_NO_PROGRESS_PAGES;
 
     // First attempt: the first page and the twenty that repeat it. Not
@@ -413,7 +413,7 @@ describe("Google Health backfill bounded by progress, not pages (#1220)", () => 
     await runChain(5);
 
     const { googleHealthBackfillEndedList } =
-      await import("@/lib/google-health/sync-core");
+      await import("@/lib/google-health/backfill-progress");
     const c = await connection();
     expect(c.backfillCompletedAt).toBeInstanceOf(Date);
     const ended = googleHealthBackfillEndedList(c.backfillProgress);

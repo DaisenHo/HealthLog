@@ -46,13 +46,14 @@ import { GOOGLE_HEALTH_NO_PROGRESS_PAGES } from "../backfill-bounds";
 import {
   googleHealthBackfillCursor,
   noteGoogleHealthEdgeFilterUnsupported,
-  readGoogleHealthBackfillCursors,
-  readGoogleHealthBackfillEdgeFilterUnsupported,
   recordGoogleHealthBackfillPage,
   recordGoogleHealthBackfillResumePoint,
   runWithGoogleHealthBackfillResume,
-  type GoogleHealthBackfillCursor,
 } from "../sync-core";
+import {
+  readGoogleHealthBackfillProgress,
+  type GoogleHealthBackfillCursor,
+} from "../backfill-progress";
 
 const MINUTE = 60_000;
 const NOW = Date.parse("2026-01-01T00:00:00Z");
@@ -566,7 +567,8 @@ describe("the note that a collection refuses the edge filter", () => {
 
     // Slice two: starts from what slice one left on disk.
     server.requests = [];
-    const unsupported = readGoogleHealthBackfillEdgeFilterUnsupported(progress);
+    const unsupported =
+      readGoogleHealthBackfillProgress(progress).edgeFilterUnsupported;
     await runWithGoogleHealthBackfillResume(
       "u1",
       new Set(),
@@ -576,7 +578,7 @@ describe("the note that a collection refuses the edge filter", () => {
         const { rows } = await walk({ resumable: true, edge: cursor.edge });
         expect(rows).toHaveLength(TOTAL - 19);
       },
-      readGoogleHealthBackfillCursors(progress),
+      readGoogleHealthBackfillProgress(progress).cursors,
       unsupported,
     );
     expect(server.requests.some((f) => f.includes("<="))).toBe(false);
@@ -616,7 +618,7 @@ describe("the note that a collection refuses the edge filter", () => {
       page: 4,
     });
     expect(first.advanced.has("fetchHeartRate")).toBe(true);
-    const saved = readGoogleHealthBackfillCursors(lastProgress());
+    const saved = readGoogleHealthBackfillProgress(lastProgress()).cursors;
     expect(saved.get("fetchHeartRate")).toEqual({
       ...cursor,
       resume: { token: "4", page: 4, reached: 4 },
@@ -628,8 +630,9 @@ describe("the note that a collection refuses the edge filter", () => {
     const back = await run(new Map(saved), { token: "2", page: 2 });
     expect(back.advanced.size).toBe(0);
     expect(
-      readGoogleHealthBackfillCursors(lastProgress()).get("fetchHeartRate")
-        ?.resume,
+      readGoogleHealthBackfillProgress(lastProgress()).cursors.get(
+        "fetchHeartRate",
+      )?.resume,
     ).toEqual({ token: "2", page: 2, reached: 4 });
 
     // A page written keeps the place; the next slice is handed it.
@@ -644,7 +647,7 @@ describe("the note that a collection refuses the edge filter", () => {
       new Map(saved),
       new Set(["fetchHeartRate"]),
     );
-    const next = readGoogleHealthBackfillCursors(lastProgress());
+    const next = readGoogleHealthBackfillProgress(lastProgress()).cursors;
     expect(next.get("fetchHeartRate")?.resume).toEqual(
       saved.get("fetchHeartRate")?.resume,
     );
@@ -663,10 +666,12 @@ describe("the note that a collection refuses the edge filter", () => {
 
   it("reads only well-formed keys", () => {
     expect([
-      ...readGoogleHealthBackfillEdgeFilterUnsupported({
+      ...readGoogleHealthBackfillProgress({
         edgeFilterUnsupported: ["fetchHeartRate", 3, "x".repeat(65)],
-      }),
+      }).edgeFilterUnsupported,
     ]).toEqual(["fetchHeartRate"]);
-    expect(readGoogleHealthBackfillEdgeFilterUnsupported(null).size).toBe(0);
+    expect(
+      readGoogleHealthBackfillProgress(null).edgeFilterUnsupported.size,
+    ).toBe(0);
   });
 });

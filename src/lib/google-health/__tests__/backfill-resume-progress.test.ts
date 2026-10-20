@@ -20,12 +20,14 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import {
-  readGoogleHealthBackfillCursors,
   recordGoogleHealthBackfillPage,
   runGoogleHealthCollection,
   runWithGoogleHealthBackfillResume,
-  type GoogleHealthBackfillCursor,
 } from "../sync-core";
+import {
+  readGoogleHealthBackfillProgress,
+  type GoogleHealthBackfillCursor,
+} from "../backfill-progress";
 import {
   googleHealthSliceBudget,
   runWithGoogleHealthClientOutcome,
@@ -124,7 +126,7 @@ describe("the resume edge of a page-by-page collection", () => {
     });
     // And it reads back the way it was written.
     expect(
-      readGoogleHealthBackfillCursors(last.data.backfillProgress).get(
+      readGoogleHealthBackfillProgress(last.data.backfillProgress).cursors.get(
         "fetchHeartRate",
       ),
     ).toEqual(cursors.get("fetchHeartRate"));

@@ -20,15 +20,12 @@ import {
   INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
   integrationBackfillSourceOptions,
 } from "@/lib/jobs/integration-backfill-admission";
+import { runWithGoogleHealthBackfillResume } from "@/lib/google-health/sync-core";
 import {
   googleHealthBackfillProgressAfterCompletion,
-  readGoogleHealthBackfillCursors,
-  readGoogleHealthBackfillDone,
-  readGoogleHealthBackfillEdgeFilterUnsupported,
-  readGoogleHealthBackfillEnded,
   googleHealthBackfillRetryPending,
-  runWithGoogleHealthBackfillResume,
-} from "@/lib/google-health/sync-core";
+  readGoogleHealthBackfillProgress,
+} from "@/lib/google-health/backfill-progress";
 import { googleHealthBackfillEndIsFinal } from "@/lib/google-health/backfill-bounds";
 import {
   isGoogleHealthParked,
@@ -198,14 +195,12 @@ export async function runGoogleHealthBackfillForUser(
     });
     return { imported: 0 };
   }
-  const done = readGoogleHealthBackfillDone(connection?.backfillProgress);
-  const cursors = readGoogleHealthBackfillCursors(connection?.backfillProgress);
-  const edgeFilterUnsupported = readGoogleHealthBackfillEdgeFilterUnsupported(
-    connection?.backfillProgress,
-  );
-  const endedBefore = readGoogleHealthBackfillEnded(
-    connection?.backfillProgress,
-  );
+  const {
+    done,
+    cursors,
+    edgeFilterUnsupported,
+    ended: endedBefore,
+  } = readGoogleHealthBackfillProgress(connection?.backfillProgress);
   // A collection that ended short for good has read all it is going to, so
   // it counts as finished alongside the ones read to the end. One parked
   // after a first end without progress does not: it waits for another try.

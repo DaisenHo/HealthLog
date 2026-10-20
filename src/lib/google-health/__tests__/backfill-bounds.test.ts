@@ -32,14 +32,16 @@ import {
   type GoogleHealthBackfillEnd,
 } from "../backfill-bounds";
 import {
-  googleHealthBackfillEndedList,
-  googleHealthBackfillProgressAfterCompletion,
-  googleHealthBackfillRetryPending,
-  readGoogleHealthBackfillEnded,
   recordGoogleHealthBackfillEnd,
   runGoogleHealthCollection,
   runWithGoogleHealthBackfillResume,
 } from "../sync-core";
+import {
+  googleHealthBackfillEndedList,
+  googleHealthBackfillProgressAfterCompletion,
+  googleHealthBackfillRetryPending,
+  readGoogleHealthBackfillProgress,
+} from "../backfill-progress";
 import {
   forEachDataPointPage,
   GOOGLE_HEALTH_DATA_TYPES,
@@ -312,7 +314,7 @@ describe("a collection ended short", () => {
       -1,
     )![0].data.backfillProgress as unknown;
     expect(
-      readGoogleHealthBackfillEnded(written).get("fetchHeartRate"),
+      readGoogleHealthBackfillProgress(written).ended.get("fetchHeartRate"),
     ).toEqual(note);
     // Waiting for another try is not where the history ends.
     expect(googleHealthBackfillEndedList(written)).toEqual([]);

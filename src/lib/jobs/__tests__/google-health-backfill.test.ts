@@ -63,12 +63,13 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   return { ...actual, safeFetch: safeFetchMock };
 });
 
-vi.mock("@/lib/google-health/sync-core", () => ({
-  GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
-  readGoogleHealthBackfillDone: () => new Set<string>(resumeState.doneBefore),
-  readGoogleHealthBackfillCursors: () => new Map(),
-  readGoogleHealthBackfillEdgeFilterUnsupported: () => new Set<string>(),
-  readGoogleHealthBackfillEnded: () => new Map(),
+vi.mock("@/lib/google-health/backfill-progress", () => ({
+  readGoogleHealthBackfillProgress: () => ({
+    done: new Set<string>(resumeState.doneBefore),
+    cursors: new Map(),
+    edgeFilterUnsupported: new Set<string>(),
+    ended: new Map(),
+  }),
   googleHealthBackfillProgressAfterCompletion: (ended: Map<string, unknown>) =>
     ended.size > 0 ? { ended: Object.fromEntries(ended) } : null,
   googleHealthBackfillRetryPending: (
@@ -79,6 +80,10 @@ vi.mock("@/lib/google-health/sync-core", () => ({
       .map(([key]) => key);
     return keys.length > 0 ? { keys, dueAt: resumeState.retryDueAt } : null;
   },
+}));
+
+vi.mock("@/lib/google-health/sync-core", () => ({
+  GOOGLE_HEALTH_INTEGRATION_KEY: "google-health",
   runWithGoogleHealthBackfillResume: async (
     _userId: string,
     done: Set<string>,
