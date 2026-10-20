@@ -20,7 +20,7 @@ import {
   consumeForIntake,
   restoreForIntake,
 } from "@/lib/medications/inventory/consumption";
-import { localHmAsUtc } from "@/lib/tz/local-day";
+import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
@@ -597,10 +597,12 @@ export async function handleCallback(update: TelegramUpdate) {
 
     let skippedScheduledFor: Date | null = null;
     if (!existing) {
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
       const skipMoment = new Date();
       const tz = user.timezone || DEFAULT_TIMEZONE;
+      // The rest of the person's own day, not of the server's: the process
+      // runs in UTC, so a Berlin skip after 01:00 used to snooze the next
+      // local morning's reminders as well.
+      const endOfDay = getUserTodayBounds(skipMoment, tz).end;
 
       // v1.16.9 — a Telegram skip answers a specific dose prompt, so it
       // must converge onto the slot's pending row like a take does. The

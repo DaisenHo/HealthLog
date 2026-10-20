@@ -210,6 +210,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   if (ORIGINAL_SECRET === undefined) delete process.env.TELEGRAM_WEBHOOK_SECRET;
   else process.env.TELEGRAM_WEBHOOK_SECRET = ORIGINAL_SECRET;
 });
@@ -396,7 +397,11 @@ describe("Telegram webhook — callback dispatch", () => {
     expect(ackText).toMatch(/1 hour/i);
   });
 
-  it("'skip:<medId>' creates an intake event with skipped=true and snoozes through end-of-day", async () => {
+  it("'skip:<medId>' creates an intake event with skipped=true and snoozes through the person's own end of day", async () => {
+    // 23:30 UTC is already 01:30 the next day in Berlin: the snooze ends at
+    // Berlin's next midnight, not at the end of the UTC day half an hour on.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-10T23:30:00.000Z"));
     const res = await POST(tgRequest(callbackUpdate("skip:med-1")));
     expect(res.status).toBe(200);
 
@@ -417,8 +422,7 @@ describe("Telegram webhook — callback dispatch", () => {
     const updateArgs = vi.mocked(prisma.medication.update).mock.calls[0][0];
     const snoozedUntil = (updateArgs.data as { snoozedUntil: Date })
       .snoozedUntil;
-    expect(snoozedUntil.getHours()).toBe(23);
-    expect(snoozedUntil.getMinutes()).toBe(59);
+    expect(snoozedUntil.toISOString()).toBe("2026-06-11T21:59:59.999Z");
     // Skip row + rest-of-day snooze commit atomically.
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     // v1.16.10 — an explicit skip refunds a previously-consumed stamp
