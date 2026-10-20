@@ -22,6 +22,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { OuraApiError, classifyOuraResponse } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 const OURA_API_BASE = "https://api.ouraring.com";
 const OURA_OAUTH_AUTH_URL = "https://cloud.ouraring.com/oauth/authorize";
@@ -476,51 +477,48 @@ async function fetchCollection<T>(
   verb: string,
   query: DateRangeQuery,
 ): Promise<T[]> {
-  const records: T[] = [];
-  let nextToken: string | null | undefined;
-  let pageCount = 0;
-  const maxPages = query.maxPages ?? 100;
-
-  do {
-    const params = new URLSearchParams({
-      start_date: query.startDate,
-      end_date: query.endDate,
-    });
-    if (nextToken) params.set("next_token", nextToken);
-
-    const pageStart = performance.now();
-    const res = await safeFetch(`${OURA_API_BASE}${path}?${params}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-      },
-    });
-    const json = (await res
-      .json()
-      .catch(() => null)) as OuraCollection<T> | null;
-    const verdict = classifyOuraResponse(res.status);
-    getEvent()?.addExternalCall({
-      service: "oura",
-      method: `${verb}(page=${pageCount})`,
-      duration_ms: Math.round(performance.now() - pageStart),
-      status: res.status,
-      error: verdict.classification === "success" ? undefined : verdict.reason,
-    });
-    if (verdict.classification !== "success") {
-      throw new OuraApiError({
-        verb,
-        classification: verdict.classification,
-        httpStatus: verdict.httpStatus,
-        reason: verdict.reason,
+  const walk = await walkPages<string, T>(
+    `oura.${verb}`,
+    query.maxPages ?? 100,
+    async (nextToken, page) => {
+      const params = new URLSearchParams({
+        start_date: query.startDate,
+        end_date: query.endDate,
       });
-    }
-    for (const r of json?.data ?? []) records.push(r);
-    nextToken = json?.next_token ?? null;
-    pageCount += 1;
-  } while (nextToken && pageCount < maxPages);
+      if (nextToken) params.set("next_token", nextToken);
 
-  return records;
+      const pageStart = performance.now();
+      const res = await safeFetch(`${OURA_API_BASE}${path}?${params}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+      });
+      const json = (await res
+        .json()
+        .catch(() => null)) as OuraCollection<T> | null;
+      const verdict = classifyOuraResponse(res.status);
+      getEvent()?.addExternalCall({
+        service: "oura",
+        method: `${verb}(page=${page})`,
+        duration_ms: Math.round(performance.now() - pageStart),
+        status: res.status,
+        error:
+          verdict.classification === "success" ? undefined : verdict.reason,
+      });
+      if (verdict.classification !== "success") {
+        throw new OuraApiError({
+          verb,
+          classification: verdict.classification,
+          httpStatus: verdict.httpStatus,
+          reason: verdict.reason,
+        });
+      }
+      return { items: json?.data ?? [], next: json?.next_token ?? null };
+    },
+  );
+  return walk.items;
 }
 
 export function fetchSleep(

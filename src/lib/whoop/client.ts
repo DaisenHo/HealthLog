@@ -21,6 +21,7 @@ import { reconstructContiguousSleepTimeline } from "@/lib/sleep/reconstruct-time
 import { WhoopApiError, classifyWhoopResponse } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 const WHOOP_API_BASE = "https://api.prod.whoop.com/developer";
 const WHOOP_OAUTH_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth";
@@ -269,7 +270,10 @@ export interface WhoopProfile {
 interface CollectionQuery {
   start?: Date;
   end?: Date;
-  /** Hard ceiling on pages walked (defence against a runaway cursor). */
+  /**
+   * Ceiling on pages walked (defence against a runaway cursor). A walk that
+   * reaches it is reported truncated (`walkPages`).
+   */
   maxPages?: number;
 }
 
@@ -279,49 +283,45 @@ async function fetchCollection<T>(
   verb: string,
   query: CollectionQuery = {},
 ): Promise<T[]> {
-  const records: T[] = [];
-  let nextToken: string | null | undefined;
-  let pageCount = 0;
-  const maxPages = query.maxPages ?? 1000;
+  const walk = await walkPages<string, T>(
+    `whoop.${verb}`,
+    query.maxPages ?? 1000,
+    async (nextToken, page) => {
+      const params = new URLSearchParams({ limit: String(WHOOP_PAGE_LIMIT) });
+      if (query.start) params.set("start", query.start.toISOString());
+      if (query.end) params.set("end", query.end.toISOString());
+      if (nextToken) params.set("nextToken", nextToken);
 
-  do {
-    const params = new URLSearchParams({ limit: String(WHOOP_PAGE_LIMIT) });
-    if (query.start) params.set("start", query.start.toISOString());
-    if (query.end) params.set("end", query.end.toISOString());
-    if (nextToken) params.set("nextToken", nextToken);
-
-    const pageStart = performance.now();
-    const res = await safeFetch(`${WHOOP_API_BASE}${path}?${params}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    const json = (await res
-      .json()
-      .catch(() => null)) as WhoopCollection<T> | null;
-    const verdict = classifyWhoopResponse(res.status);
-    getEvent()?.addExternalCall({
-      service: "whoop",
-      method: `${verb}(page=${pageCount})`,
-      duration_ms: Math.round(performance.now() - pageStart),
-      status: res.status,
-      error: verdict.classification === "success" ? undefined : verdict.reason,
-    });
-    if (verdict.classification !== "success") {
-      throw new WhoopApiError({
-        verb,
-        classification: verdict.classification,
-        httpStatus: verdict.httpStatus,
-        reason: verdict.reason,
+      const pageStart = performance.now();
+      const res = await safeFetch(`${WHOOP_API_BASE}${path}?${params}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
-    }
 
-    for (const r of json?.records ?? []) records.push(r);
-    nextToken = json?.next_token ?? null;
-    pageCount += 1;
-  } while (nextToken && pageCount < maxPages);
-
-  return records;
+      const json = (await res
+        .json()
+        .catch(() => null)) as WhoopCollection<T> | null;
+      const verdict = classifyWhoopResponse(res.status);
+      getEvent()?.addExternalCall({
+        service: "whoop",
+        method: `${verb}(page=${page})`,
+        duration_ms: Math.round(performance.now() - pageStart),
+        status: res.status,
+        error:
+          verdict.classification === "success" ? undefined : verdict.reason,
+      });
+      if (verdict.classification !== "success") {
+        throw new WhoopApiError({
+          verb,
+          classification: verdict.classification,
+          httpStatus: verdict.httpStatus,
+          reason: verdict.reason,
+        });
+      }
+      return { items: json?.records ?? [], next: json?.next_token ?? null };
+    },
+  );
+  return walk.items;
 }
 
 async function fetchSingle<T>(

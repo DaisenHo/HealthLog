@@ -21,6 +21,10 @@ import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { isReauthRequired } from "@/lib/integrations/status";
+import {
+  backfillVerdict,
+  withPageWalkLedger,
+} from "@/lib/integrations/page-walk";
 import { syncUserWhoop } from "@/lib/whoop/sync";
 
 export const WHOOP_BACKFILL_QUEUE = "whoop-backfill";
@@ -44,16 +48,19 @@ export interface WhoopBackfillPayload {
  * reboot mid-walk) overwrites rather than duplicating. Mirrors the landed
  * `runFitbitBackfillForUser`.
  *
- * Verdict-gated: a partial hard failure (a dead token, a write failing, a
- * fetch hard-fail) THROWS so pg-boss retries the job — stamping the marker over
- * a partial multi-year walk would freeze the history gap forever and the
- * configured `retryLimit` would be dead code. A connection parked at
- * `error_reauth` is NOT clean either, but throwing against a dead grant would
- * just burn the retry budget on the same no-op: return WITHOUT stamping — boot
- * discovery re-offers the account after the user reconnects and a clean walk
- * completes. `syncUserWhoop` has its own reauth short-circuit (returns
- * `failed: true`), but the guard must still live here so a parked account
- * RETURNS instead of throwing through three retries.
+ * Verdict-gated (`backfillVerdict`, `integrations/page-walk.ts`): a partial
+ * hard failure (a dead token, a write failing, a fetch hard-fail) THROWS so
+ * pg-boss retries the job — stamping the marker over a partial multi-year
+ * walk would freeze the history gap forever and the configured `retryLimit`
+ * would be dead code. A collection whose walk reached its page ceiling leaves
+ * the marker unset WITHOUT a retry: nothing failed, and boot discovery offers
+ * the account again. A connection parked at `error_reauth` is NOT clean
+ * either, but throwing against a dead grant would just burn the retry budget
+ * on the same no-op: return WITHOUT stamping — boot discovery re-offers the
+ * account after the user reconnects and a clean walk completes.
+ * `syncUserWhoop` has its own reauth short-circuit (returns `failed: true`),
+ * but the guard must still live here so a parked account RETURNS instead of
+ * throwing through three retries.
  */
 export async function runWhoopBackfillForUser(
   userId: string,
@@ -68,9 +75,26 @@ export async function runWhoopBackfillForUser(
     return { imported: 0 };
   }
 
-  const { imported, failed } = await syncUserWhoop(userId, { fullSync: true });
+  const {
+    result: { imported, failed },
+    truncated,
+  } = await withPageWalkLedger(() => syncUserWhoop(userId, { fullSync: true }));
+  const verdict = backfillVerdict({ failed, truncated });
 
-  if (failed) {
+  if (verdict === "incomplete") {
+    // A collection longer than its walk may read in one run: the history is
+    // not complete, but nothing failed, so no retry. Boot discovery offers
+    // the account again while the marker stays unset.
+    annotate({
+      action: {
+        name: "whoop.backfill.truncated",
+        details: { imported, collections: truncated.join(",") },
+      },
+    });
+    return { imported };
+  }
+
+  if (verdict === "retry") {
     // Surface through the pg-boss retry path (retryLimit + backoff set by
     // `integrationBackfillSourceOptions`). If the failure parked the connection
     // at error_reauth meanwhile, the next attempt takes the reauth return above.

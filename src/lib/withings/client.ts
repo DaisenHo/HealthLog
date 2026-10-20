@@ -10,6 +10,7 @@ import {
 } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
+import { walkPages } from "@/lib/integrations/page-walk";
 
 const WITHINGS_OAUTH_URL =
   "https://account.withings.com/oauth2_user/authorize2";
@@ -249,6 +250,24 @@ export interface WithingsMeasureGroup {
 export const WITHINGS_MEASTYPES: readonly number[] =
   Object.keys(MEASURE_TYPE_MAP).map(Number);
 
+/** Ceiling on the pages one Withings list walk reads (`walkPages`). */
+export const WITHINGS_MAX_PAGES = 1000;
+
+/**
+ * The offset of the next page of a Withings list body, or null when it has
+ * no more. A body that says `more` without an offset past the current one
+ * hands back the current offset, which `walkPages` reports as a repeat
+ * instead of stopping quietly.
+ */
+export function withingsNextOffset(
+  body: { more?: unknown; offset?: unknown },
+  offset: number,
+): number | null {
+  if (body.more !== true && body.more !== 1) return null;
+  const next = Number(body.offset);
+  return Number.isFinite(next) && next > offset ? next : offset;
+}
+
 /**
  * Fetch measurements from Withings API.
  *
@@ -273,77 +292,69 @@ export async function fetchMeasurements(
     baseParams.enddate = String(Math.floor(endDate.getTime() / 1000));
   }
 
-  const results: WithingsMeasure[] = [];
-  let offset = 0;
-  let pageCount = 0;
-
-  while (true) {
-    const params = new URLSearchParams({
-      ...baseParams,
-      offset: String(offset),
-    });
-
-    const pageStart = performance.now();
-    const res = await safeFetch(WITHINGS_MEASURE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: params.toString(),
-    });
-
-    const json = await res.json();
-    const verdict = classifyWithingsResponse(res.status, json);
-    getEvent()?.addExternalCall({
-      service: "withings",
-      method: `fetchMeasurements(page=${pageCount})`,
-      duration_ms: Math.round(performance.now() - pageStart),
-      status: res.status,
-      error: verdict.classification === "success" ? undefined : verdict.reason,
-    });
-    if (verdict.classification !== "success") {
-      throw new WithingsApiError({
-        verb: "measure",
-        classification: verdict.classification,
-        withingsStatus: verdict.withingsStatus,
-        reason: verdict.reason,
-        upstreamError: typeof json?.error === "string" ? json.error : undefined,
+  const walk = await walkPages<number, WithingsMeasure>(
+    "withings.measure",
+    WITHINGS_MAX_PAGES,
+    async (cursor, page) => {
+      const offset = cursor ?? 0;
+      const params = new URLSearchParams({
+        ...baseParams,
+        offset: String(offset),
       });
-    }
 
-    const body = json.body ?? {};
-    const groups: WithingsMeasureGroup[] = body.measuregrps ?? [];
+      const pageStart = performance.now();
+      const res = await safeFetch(WITHINGS_MEASURE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: params.toString(),
+      });
 
-    for (const group of groups) {
-      const measuredAt = new Date(group.date * 1000);
-
-      for (const m of group.measures) {
-        const mapping = MEASURE_TYPE_MAP[m.type];
-        if (!mapping) continue;
-
-        // Withings stores value * 10^unit (unit is usually negative)
-        const value = m.value * Math.pow(10, m.unit);
-
-        results.push({
-          type: mapping.type,
-          value: importValue(value),
-          measuredAt,
+      const json = await res.json();
+      const verdict = classifyWithingsResponse(res.status, json);
+      getEvent()?.addExternalCall({
+        service: "withings",
+        method: `fetchMeasurements(page=${page})`,
+        duration_ms: Math.round(performance.now() - pageStart),
+        status: res.status,
+        error:
+          verdict.classification === "success" ? undefined : verdict.reason,
+      });
+      if (verdict.classification !== "success") {
+        throw new WithingsApiError({
+          verb: "measure",
+          classification: verdict.classification,
+          withingsStatus: verdict.withingsStatus,
+          reason: verdict.reason,
+          upstreamError:
+            typeof json?.error === "string" ? json.error : undefined,
         });
       }
-    }
 
-    const hasMore = body.more === true || body.more === 1;
-    if (!hasMore) break;
-
-    const nextOffset = Number(body.offset);
-    if (!Number.isFinite(nextOffset) || nextOffset <= offset) break;
-    offset = nextOffset;
-    pageCount += 1;
-    if (pageCount > 1000) break;
-  }
-
-  return results;
+      const body = json.body ?? {};
+      const groups: WithingsMeasureGroup[] = body.measuregrps ?? [];
+      const items: WithingsMeasure[] = [];
+      for (const group of groups) {
+        const measuredAt = new Date(group.date * 1000);
+        for (const m of group.measures) {
+          const mapping = MEASURE_TYPE_MAP[m.type];
+          if (!mapping) continue;
+          // Withings stores value * 10^unit (unit is usually negative)
+          const value = m.value * Math.pow(10, m.unit);
+          items.push({
+            type: mapping.type,
+            value: importValue(value),
+            measuredAt,
+          });
+        }
+      }
+      return { items, next: withingsNextOffset(body, offset) };
+    },
+    0,
+  );
+  return walk.items;
 }
 
 /**
