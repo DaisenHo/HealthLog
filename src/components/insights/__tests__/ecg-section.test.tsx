@@ -28,7 +28,14 @@ vi.mock("@tanstack/react-query", () => ({
   useQuery: (opts: unknown) => useQueryMock(opts),
 }));
 
+const apiGetMock = vi.fn();
+vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/api-fetch")>()),
+  apiGet: (...args: unknown[]) => apiGetMock(...args),
+}));
+
 const { EcgSection, ECG_OVERVIEW_LIMIT } = await import("../ecg-section");
+const { ApiError } = await import("@/lib/api/api-fetch");
 type EcgRecordingListItem = import("../ecg-section").EcgRecordingListItem;
 
 const IRREGULAR_REC: EcgRecordingListItem = {
@@ -68,6 +75,36 @@ function countRows(html: string): number {
 }
 
 describe("<EcgSection>", () => {
+  it("hands the read's ApiError through untouched", async () => {
+    // The error row decides sign-in vs retry from the status; a queryFn that
+    // re-threw a plain Error would turn an ended session into a retry.
+    useQueryMock.mockReturnValue({ data: undefined, isLoading: true });
+    renderSection(undefined);
+    const { queryFn } = useQueryMock.mock.calls.at(-1)![0] as {
+      queryFn: () => Promise<unknown>;
+    };
+    const refusal = new ApiError("Unauthorized", 401);
+    apiGetMock.mockRejectedValueOnce(refusal);
+    await expect(queryFn()).rejects.toBe(refusal);
+  });
+
+  it("says an ended session instead of falling through to nothing", () => {
+    useQueryMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new ApiError("Unauthorized", 401),
+      refetch: vi.fn(),
+    });
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <EcgSection />
+      </I18nProvider>,
+    );
+    expect(html).toContain('data-slot="ecg-section-error"');
+    expect(html).toContain('data-slot="query-error-sign-in"');
+  });
+
   it("renders nothing before the payload resolves", () => {
     useQueryMock.mockReturnValue({ data: undefined, isLoading: true });
     const html = renderToStaticMarkup(

@@ -327,13 +327,7 @@ export default function InsightsPageClient() {
   // the regular shell and the tiles fill in as their data lands.
   const { data, isLoading, isFetched, isError } = useQuery({
     queryKey: queryKeys.insightsComprehensive(),
-    queryFn: async () => {
-      try {
-        return await apiGet<ComprehensiveData>("/api/insights/comprehensive");
-      } catch {
-        throw new Error(t("insights.loadError"));
-      }
-    },
+    queryFn: () => apiGet<ComprehensiveData>("/api/insights/comprehensive"),
     enabled: isAuthenticated,
   });
 

@@ -14,6 +14,16 @@
  * and refuses both. The matcher is whitespace-tolerant (tags span lines) and
  * the match count is asserted, so a matcher that stops finding the tags fails
  * rather than passing over nothing.
+ *
+ * Handing the error over is only half of it: the error has to still be the
+ * `ApiError` the read threw. A `queryFn` that catches it and throws
+ * `new Error(t("…loadError"))` instead strips the status, so every primitive
+ * downstream reads "failed" and an ended session offers a retry. The second
+ * block reads every `queryFn` value under `src/` (`.ts` and `.tsx`, since
+ * query hooks live in both and a cache key is shared across files) and
+ * refuses a catch that re-throws a plain `Error`, or a translated message
+ * thrown in its place. The message belongs on the primitive (`message` /
+ * `title`), not inside the error.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -21,12 +31,16 @@ import { describe, expect, it } from "vitest";
 
 const SRC = join(__dirname, "..");
 
-function walk(dir: string, out: string[] = []): string[] {
+function walk(
+  dir: string,
+  out: string[] = [],
+  ext: RegExp = /\.tsx$/,
+): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === "__tests__" || entry.name === "generated") continue;
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) walk(path, out);
-    else if (entry.name.endsWith(".tsx") && !entry.name.includes(".test."))
+    if (entry.isDirectory()) walk(path, out, ext);
+    else if (ext.test(entry.name) && !entry.name.includes(".test."))
       out.push(path);
   }
   return out;
@@ -77,6 +91,77 @@ describe("read-failure primitives carry their error", () => {
           /\serror=\{\s*(null|undefined)\s*\}/.test(tag),
       )
       .map(({ file, tag }) => `${file}: ${tag.split("\n")[0]}`);
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * The text of every `queryFn` value: from the key to the comma, or the
+ * closing bracket, that ends the property at its own depth.
+ */
+function queryFnBodies(source: string): string[] {
+  const bodies: string[] = [];
+  const key = /\bqueryFn\s*:/g;
+  for (let m = key.exec(source); m; m = key.exec(source)) {
+    let depth = 0;
+    let i = m.index + m[0].length;
+    for (; i < source.length; i++) {
+      const ch = source[i];
+      if (ch === "(" || ch === "{" || ch === "[") depth++;
+      else if (ch === ")" || ch === "}" || ch === "]") {
+        if (depth === 0) break;
+        depth--;
+      } else if (ch === "," && depth === 0) break;
+    }
+    bodies.push(source.slice(m.index, i));
+  }
+  return bodies;
+}
+
+/** A catch that throws a plain Error, or a translated line thrown as one. */
+function masksTheReadError(body: string): boolean {
+  return (
+    /\bcatch\b\s*(\([^)]*\))?\s*\{[^}]*\bthrow\s+new\s+Error\(/.test(body) ||
+    /\bthrow\s+new\s+Error\(\s*t\(/.test(body)
+  );
+}
+
+const queryFns = walk(SRC, [], /\.tsx?$/).flatMap((file) =>
+  queryFnBodies(stripComments(readFileSync(file, "utf8"))).map((body) => ({
+    file: relative(SRC, file),
+    body,
+  })),
+);
+
+describe("a read's ApiError reaches the primitive intact", () => {
+  it("finds the queryFns it guards", () => {
+    // About 310 at the time of writing.
+    expect(queryFns.length).toBeGreaterThan(250);
+  });
+
+  it("recognises the masking shape it refuses", () => {
+    expect(
+      masksTheReadError(
+        'queryFn: async () => { try { return await apiGet(u); } catch { throw new Error(t("x.loadError")); } }',
+      ),
+    ).toBe(true);
+    expect(
+      masksTheReadError(
+        'queryFn: async () => { try { return await apiGet(u); } catch (e) { throw new Error("failed"); } }',
+      ),
+    ).toBe(true);
+    expect(masksTheReadError("queryFn: () => apiGet(u)")).toBe(false);
+    expect(
+      masksTheReadError(
+        'queryFn: async () => { if (!id) throw new Error("missing id"); return apiGet(u); }',
+      ),
+    ).toBe(false);
+  });
+
+  it("never swaps the read's error for a plain Error", () => {
+    const offenders = queryFns
+      .filter(({ body }) => masksTheReadError(body))
+      .map(({ file, body }) => `${file}: ${body.split("\n")[0]}`);
     expect(offenders).toEqual([]);
   });
 });

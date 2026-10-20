@@ -28,7 +28,14 @@ vi.mock("@tanstack/react-query", () => ({
   useQuery: (opts: unknown) => useQueryMock(opts),
 }));
 
+const apiGetMock = vi.fn();
+vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/api-fetch")>()),
+  apiGet: (...args: unknown[]) => apiGetMock(...args),
+}));
+
 const { RhythmEventsCard } = await import("../rhythm-events-card");
+const { ApiError } = await import("@/lib/api/api-fetch");
 
 interface RhythmEvent {
   id: string;
@@ -69,6 +76,21 @@ const STEADINESS_EVENT: RhythmEvent = {
 };
 
 describe("<RhythmEventsCard>", () => {
+  it("hands the read's ApiError through, so a 401 offers sign-in", async () => {
+    useQueryMock.mockReturnValue({ data: undefined, isLoading: true });
+    renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <RhythmEventsCard />
+      </I18nProvider>,
+    );
+    const { queryFn } = useQueryMock.mock.calls.at(-1)![0] as {
+      queryFn: () => Promise<unknown>;
+    };
+    const refusal = new ApiError("Unauthorized", 401);
+    apiGetMock.mockRejectedValueOnce(refusal);
+    await expect(queryFn()).rejects.toBe(refusal);
+  });
+
   it("renders nothing before the payload resolves", () => {
     useQueryMock.mockReturnValue({ data: undefined, isLoading: true });
     const html = renderToStaticMarkup(

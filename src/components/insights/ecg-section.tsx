@@ -10,6 +10,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import {
   ecgResultLabel,
   type EcgClassification,
@@ -93,17 +94,37 @@ export function EcgSection({
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsEcgList(),
-    queryFn: async () => {
-      try {
-        return await apiGet<EcgListResponse>("/api/insights/ecg");
-      } catch {
-        throw new Error(t("insights.ecg.loadError"));
-      }
-    },
+    queryFn: () => apiGet<EcgListResponse>("/api/insights/ecg"),
     enabled: enabled && isAuthenticated,
   });
+
+  // A failed read is said, never swallowed into the empty gate below: on the
+  // dedicated page this list is the whole content.
+  if (isError && !data) {
+    return (
+      <section
+        id="ecg"
+        data-slot="ecg-section"
+        aria-label={t("insights.ecg.sectionTitle")}
+        className={cn("scroll-mt-24 space-y-3", className)}
+      >
+        {!hideHeading && (
+          <SectionHeading
+            icon={Activity}
+            title={t("insights.ecg.sectionTitle")}
+          />
+        )}
+        <QueryErrorRow
+          error={error}
+          slot="ecg-section-error"
+          message={t("insights.ecg.loadError")}
+          onRetry={() => void refetch()}
+        />
+      </section>
+    );
+  }
 
   // Data-availability gate — never paint an empty card.
   if (isLoading || !data || !data.hasRecordings) return null;

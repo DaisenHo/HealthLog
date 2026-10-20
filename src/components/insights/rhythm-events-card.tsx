@@ -93,15 +93,9 @@ export function RhythmEventsCard({
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsRhythmEvents(),
-    queryFn: async () => {
-      try {
-        return await apiGet<RhythmEventsResponse>(
-          "/api/insights/rhythm-events",
-        );
-      } catch {
-        throw new Error(t("insights.rhythmEvents.loadError"));
-      }
-    },
+    // The ApiError passes through untouched: the error row reads its status
+    // to tell an ended session from a real failure.
+    queryFn: () => apiGet<RhythmEventsResponse>("/api/insights/rhythm-events"),
     enabled: enabled && isAuthenticated,
   });
 

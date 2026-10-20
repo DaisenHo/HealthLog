@@ -59,13 +59,7 @@ export function EcgCrossLink({ enabled = true, className }: EcgCrossLinkProps) {
 
   const { data } = useQuery({
     queryKey: queryKeys.insightsEcgList(),
-    queryFn: async () => {
-      try {
-        return await apiGet<EcgListResponse>("/api/insights/ecg");
-      } catch {
-        throw new Error(t("insights.ecg.loadError"));
-      }
-    },
+    queryFn: () => apiGet<EcgListResponse>("/api/insights/ecg"),
     enabled: enabled && isAuthenticated,
   });
 
