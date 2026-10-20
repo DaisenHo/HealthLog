@@ -57,6 +57,7 @@ import type {
   MeasurementType,
   MeasurementSource,
 } from "@/generated/prisma/client";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 function shapeRow(row: {
   id: string;
@@ -118,7 +119,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
   const { instrument, limit, offset } = parsed.data;
-  const rows = await prisma.mentalHealthAssessment.findMany({
+  const pageSize = limit ?? 100;
+  const found = await prisma.mentalHealthAssessment.findMany({
     where: {
       userId: user.id,
       deletedAt: null,
@@ -129,7 +131,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Unique tiebreaker — `takenAt` is day-resolution and two instruments
     // taken in one sitting tie.
     orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-    take: limit ?? 100,
+    take: overfetch(pageSize),
     skip: offset ?? 0,
     select: {
       id: true,
@@ -144,11 +146,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
       createdAt: true,
     },
   });
+  const { rows, cap } = capRows(found, pageSize);
   annotate({
     action: { name: "mental-health.list" },
     meta: { count: rows.length },
   });
-  return apiSuccess({ assessments: rows.map(shapeRow) });
+  return apiListSuccess({ assessments: rows.map(shapeRow) }, cap);
 });
 
 // `withIdempotency` lets a double-tap / retry re-send the same

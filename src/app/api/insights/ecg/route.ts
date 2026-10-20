@@ -47,6 +47,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { persistEcgRecording } from "@/lib/ecg/persist-recording";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 export const dynamic = "force-dynamic";
 
@@ -133,7 +134,7 @@ export const GET = apiHandler(async () => {
   // sync.
   const { user } = await requireRecordAuth("manage", "record");
 
-  const rows = await prisma.ecgRecording.findMany({
+  const found = await prisma.ecgRecording.findMany({
     where: { userId: user.id },
     // Everything EXCEPT `waveformEncrypted` — the list never touches the
     // encrypted blob, so no decrypt happens on this path.
@@ -149,8 +150,9 @@ export const GET = apiHandler(async () => {
       source: true,
     },
     orderBy: { recordedAt: "desc" },
-    take: MAX_RECORDINGS,
+    take: overfetch(MAX_RECORDINGS),
   });
+  const { rows, cap } = capRows(found, MAX_RECORDINGS);
 
   const recordings = rows.map((r) => ({
     id: r.id,
@@ -168,13 +170,16 @@ export const GET = apiHandler(async () => {
 
   annotate({
     action: { name: "insights.ecg.list" },
-    meta: { count: recordings.length },
+    meta: { count: recordings.length, truncated: cap.truncated },
   });
 
-  return apiSuccess({
-    recordings,
-    hasRecordings: recordings.length > 0,
-  });
+  return apiListSuccess(
+    {
+      recordings,
+      hasRecordings: recordings.length > 0,
+    },
+    cap,
+  );
 });
 
 /**

@@ -28,6 +28,7 @@ import {
   familyHistoryListQuerySchema,
 } from "@/lib/validations/family-history";
 import { toFamilyHistoryEntryDTO } from "@/lib/records/dto";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "profile");
@@ -43,18 +44,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const limit = parsed.data.limit ?? 100;
-  const rows = await prisma.familyHistoryEntry.findMany({
+  const found = await prisma.familyHistoryEntry.findMany({
     where: { userId: user.id, deletedAt: null },
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take: overfetch(limit),
   });
+  const { rows, cap } = capRows(found, limit);
 
   annotate({
     action: { name: "family-history.list", entity_type: "family_history" },
     meta: { count: rows.length },
   });
 
-  return apiSuccess(rows.map(toFamilyHistoryEntryDTO));
+  return apiListSuccess(rows.map(toFamilyHistoryEntryDTO), cap);
 });
 
 export const POST = apiHandler(

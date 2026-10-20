@@ -37257,15 +37257,32 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
+    ListCapMeta:
+      type: object
+      properties:
+        requestId:
+          type: string
+        truncated:
+          type: boolean
+          description: "True when more rows exist than this response carries: the list was cut at `limit`, newest or most relevant
+            first as the operation states. False means the list is complete. Show the person that the list is partial
+            rather than letting the last row read as the oldest there is."
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: The most rows this response could carry.
+      required:
+        - truncated
+        - limit
+      additionalProperties: false
+      description: How a capped list was cut. Present on every response of an operation that declares it.
     CycleInsightsEnvelope:
       type: object
       properties:
@@ -45178,14 +45195,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     SecurityActivityResponse:
       type: object
@@ -49458,14 +49472,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     MedicationSideEffect:
       type: object
@@ -64833,14 +64844,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     EcgListResponse:
       type: object
@@ -65103,14 +65111,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     RhythmEventsResponse:
       type: object
@@ -72819,14 +72824,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     IllnessEpisode:
       type: object
@@ -73506,14 +73508,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     ListMentalHealthAssessmentsResponse:
       type: object
@@ -73732,14 +73731,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     Allergy:
       type: object
@@ -73890,14 +73886,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     FamilyHistoryEntry:
       type: object
@@ -81283,14 +81276,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     RecordActivity:
       type: object
@@ -81374,14 +81364,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     AccountGrantList:
       type: object
@@ -83232,14 +83219,11 @@ components:
         error:
           type: "null"
         meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
+          $ref: "#/components/schemas/ListCapMeta"
       required:
         - data
         - error
+        - meta
       additionalProperties: false
     PersonalRecord:
       type: object

@@ -12,17 +12,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiSuccess,
-  apiValidationError,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiValidationError, sanitiseZodIssues } from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { cycleHistoryQuerySchema } from "@/lib/validations/cycle";
 import { toMenstrualCycleDTO } from "@/lib/cycle/dto";
 import { median, mad } from "@/lib/cycle";
 import { dayDiff } from "@/lib/cycle/day-math";
 import { MIN_CYCLES_TO_PREDICT } from "@/lib/cycle/types";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 const DEFAULT_LIMIT = 24;
 
@@ -54,11 +51,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
   const limit = parsed.data.limit ?? DEFAULT_LIMIT;
 
-  const rows = await prisma.menstrualCycle.findMany({
+  const found = await prisma.menstrualCycle.findMany({
     where: { userId: user.id, deletedAt: null },
     orderBy: { startDate: "desc" },
-    take: limit,
+    take: overfetch(limit),
   });
+  const { rows, cap } = capRows(found, limit);
 
   // Completed lengths (non-null lengthDays) drive the length stats.
   const lengths = rows
@@ -98,13 +96,16 @@ export const GET = apiHandler(async (request: NextRequest) => {
     meta: { returned: rows.length, regularity },
   });
 
-  return apiSuccess({
-    cycles: rows.map(toMenstrualCycleDTO),
-    stats: {
-      avgLengthDays,
-      lengthVariabilityDays,
-      avgPeriodLengthDays,
-      regularity,
+  return apiListSuccess(
+    {
+      cycles: rows.map(toMenstrualCycleDTO),
+      stats: {
+        avgLengthDays,
+        lengthVariabilityDays,
+        avgPeriodLengthDays,
+        regularity,
+      },
     },
-  });
+    cap,
+  );
 });

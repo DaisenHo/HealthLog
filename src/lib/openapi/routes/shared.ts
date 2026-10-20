@@ -131,6 +131,42 @@ export function dataEnvelope<T extends z.ZodType>(payload: T, id: string) {
     .meta({ id });
 }
 
+/**
+ * The success envelope of a list the server cuts at a ceiling (see
+ * `src/lib/api/list-cap.ts`). `data` is the route's own payload, unchanged;
+ * `meta.truncated` says whether rows past `meta.limit` exist.
+ */
+export const listCapMeta = z
+  .object({
+    requestId: z.string().optional(),
+    truncated: z
+      .boolean()
+      .describe(
+        "True when more rows exist than this response carries: the list was cut at `limit`, newest or most relevant first as the operation states. False means the list is complete. Show the person that the list is partial rather than letting the last row read as the oldest there is.",
+      ),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(10_000)
+      .describe("The most rows this response could carry."),
+  })
+  .meta({
+    id: "ListCapMeta",
+    description:
+      "How a capped list was cut. Present on every response of an operation that declares it.",
+  });
+
+export function listEnvelope<T extends z.ZodType>(payload: T, id: string) {
+  return z
+    .object({
+      data: payload,
+      error: z.null(),
+      meta: listCapMeta,
+    })
+    .meta({ id });
+}
+
 // ── Schemas — annotated for spec emission ────────────────────────────
 //
 // `.meta()` CLONES in Zod 4 rather than annotating in place, so the returned

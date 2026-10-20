@@ -159,7 +159,8 @@ describe("GET /api/medications/[id]/side-effects", () => {
         medicationId: "med-1",
         occurredAt: { gte: new Date(from), lt: new Date(to) },
       },
-      take: 10,
+      // One row past the limit, so the response can say it was cut.
+      take: 11,
     });
   });
 });

@@ -29,6 +29,7 @@ import {
   allergyListQuerySchema,
 } from "@/lib/validations/allergy";
 import { toAllergyDTO } from "@/lib/records/dto";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("read", "profile");
@@ -45,22 +46,23 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const limit = parsed.data.limit ?? 100;
-  const rows = await prisma.allergy.findMany({
+  const found = await prisma.allergy.findMany({
     where: {
       userId: user.id,
       deletedAt: null,
       ...(parsed.data.includeInactive === "false" ? { status: "ACTIVE" } : {}),
     },
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take: overfetch(limit),
   });
+  const { rows, cap } = capRows(found, limit);
 
   annotate({
     action: { name: "allergy.list", entity_type: "allergy" },
     meta: { count: rows.length },
   });
 
-  return apiSuccess(rows.map(toAllergyDTO));
+  return apiListSuccess(rows.map(toAllergyDTO), cap);
 });
 
 // `withIdempotency` lets an iOS retry / double-tap re-send the same

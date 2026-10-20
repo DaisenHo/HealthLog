@@ -39,6 +39,7 @@ import { categoryForEntry } from "@/lib/medications/side-effects/taxonomy";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { encryptNote, shapeSideEffectNotes } from "@/lib/crypto/note-cipher";
 import { withIdempotency } from "@/lib/idempotency";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -66,7 +67,7 @@ export const GET = apiHandler(
 
     const { from, to, limit } = parsed.data;
 
-    const items = await prisma.medicationSideEffect.findMany({
+    const found = await prisma.medicationSideEffect.findMany({
       where: {
         userId: user.id,
         medicationId: id,
@@ -80,8 +81,9 @@ export const GET = apiHandler(
           : {}),
       },
       orderBy: { occurredAt: "desc" },
-      take: limit,
+      take: overfetch(limit),
     });
+    const { rows: items, cap } = capRows(found, limit);
 
     annotate({
       action: { name: "medication.sideEffect.list" },
@@ -90,10 +92,13 @@ export const GET = apiHandler(
 
     // Decrypt each note and strip the raw `notesEncrypted` ciphertext so it
     // never leaves the server.
-    return apiSuccess({
-      items: items.map(shapeSideEffectNotes),
-      meta: { total: items.length },
-    });
+    return apiListSuccess(
+      {
+        items: items.map(shapeSideEffectNotes),
+        meta: { total: items.length },
+      },
+      cap,
+    );
   },
 );
 

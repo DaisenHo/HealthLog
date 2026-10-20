@@ -10,11 +10,11 @@
  */
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { securityActivityWhere } from "@/lib/auth/security-activity";
 import { maskIp } from "@/lib/auth/device-fingerprint";
+import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
 
 export const dynamic = "force-dynamic";
 
@@ -40,10 +40,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
       ? Math.min(Math.floor(limitParam), MAX_LIMIT)
       : DEFAULT_LIMIT;
 
-  const rows = await prisma.auditLog.findMany({
+  const found = await prisma.auditLog.findMany({
     where: securityActivityWhere(user.id),
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take: overfetch(limit),
     select: {
       action: true,
       createdAt: true,
@@ -53,6 +53,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
   });
 
+  const { rows, cap } = capRows(found, limit);
   const events: SecurityActivityDTO[] = rows.map((r) => ({
     action: r.action,
     createdAt: r.createdAt.toISOString(),
@@ -66,5 +67,5 @@ export const GET = apiHandler(async (request: NextRequest) => {
     meta: { event_count: events.length },
   });
 
-  return apiSuccess({ events });
+  return apiListSuccess({ events }, cap);
 });
