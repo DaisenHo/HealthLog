@@ -1229,9 +1229,11 @@ describe("classifyIntakeTiming", () => {
   const scheduledDate = new Date("2025-01-15T00:00:00Z");
 
   it('returns "missed" when takenAt is null', () => {
-    expect(classifyIntakeTiming(null, "08:00", "09:00", scheduledDate)).toBe(
-      "missed",
-    );
+    expect(
+      classifyIntakeTiming(null, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("missed");
   });
 
   // A degenerate POINT window (`windowStart === windowEnd`) is a real shape on
@@ -1243,14 +1245,18 @@ describe("classifyIntakeTiming", () => {
     it('keeps a dose at the point itself "on_time"', () => {
       const takenAt = new Date("2025-01-15T07:00:00Z");
       expect(
-        classifyIntakeTiming(takenAt, "07:00", "07:00", scheduledDate),
+        classifyIntakeTiming(takenAt, "07:00", "07:00", scheduledDate, {
+          tz: "UTC",
+        }),
       ).toBe("on_time");
     });
 
     it('does not classify a dose ~16h late as "on_time"', () => {
       const takenAt = new Date("2025-01-15T23:00:00Z");
       expect(
-        classifyIntakeTiming(takenAt, "07:00", "07:00", scheduledDate),
+        classifyIntakeTiming(takenAt, "07:00", "07:00", scheduledDate, {
+          tz: "UTC",
+        }),
       ).toBe("very_late");
     });
 
@@ -1258,7 +1264,9 @@ describe("classifyIntakeTiming", () => {
       // 13:00 is 6h past the point — outside the widened band + graces.
       const takenAt = new Date("2025-01-15T13:00:00Z");
       expect(
-        classifyIntakeTiming(takenAt, "07:00", "07:00", scheduledDate),
+        classifyIntakeTiming(takenAt, "07:00", "07:00", scheduledDate, {
+          tz: "UTC",
+        }),
       ).not.toBe("on_time");
     });
 
@@ -1266,30 +1274,38 @@ describe("classifyIntakeTiming", () => {
       // 00:30 the next day sits inside a 23:00 -> 01:00 window.
       const takenAt = new Date("2025-01-16T00:30:00Z");
       expect(
-        classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate),
+        classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate, {
+          tz: "UTC",
+        }),
       ).toBe("on_time");
     });
   });
 
   it('returns "on_time" when taken within the window', () => {
     const takenAt = new Date("2025-01-15T08:30:00Z");
-    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
-      "on_time",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("on_time");
   });
 
   it('returns "on_time" when taken exactly at windowStart', () => {
     const takenAt = new Date("2025-01-15T08:00:00Z");
-    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
-      "on_time",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("on_time");
   });
 
   it('returns "on_time" when taken exactly at windowEnd', () => {
     const takenAt = new Date("2025-01-15T09:00:00Z");
-    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
-      "on_time",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("on_time");
   });
 
   // Parameterised offset matrix relative to a `08:00 → 09:00` window.
@@ -1319,16 +1335,20 @@ describe("classifyIntakeTiming", () => {
     // base instant is 08:00Z; positive offsets walk forward from there.
     const baseMs = new Date("2025-01-15T08:00:00Z").getTime();
     const takenAt = new Date(baseMs + offsetMin * 60 * 1000);
-    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
-      expected,
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe(expected);
   });
 
   it('returns "very_late" when taken way before the grace period', () => {
     const takenAt = new Date("2025-01-15T03:00:00Z"); // 5h before 08:00
-    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate)).toBe(
-      "very_late",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("very_late");
   });
 
   it("respects the configurable `lateMinutes` tail", () => {
@@ -1339,6 +1359,7 @@ describe("classifyIntakeTiming", () => {
     const takenLate = new Date("2025-01-15T12:15:00Z");
     expect(
       classifyIntakeTiming(takenLate, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
         lateMinutes: 30,
       }),
     ).toBe("late");
@@ -1346,6 +1367,7 @@ describe("classifyIntakeTiming", () => {
     const takenVeryLate = new Date("2025-01-15T12:45:00Z");
     expect(
       classifyIntakeTiming(takenVeryLate, "08:00", "09:00", scheduledDate, {
+        tz: "UTC",
         lateMinutes: 30,
       }),
     ).toBe("very_late");
@@ -1354,33 +1376,41 @@ describe("classifyIntakeTiming", () => {
   it("handles overnight windows (windowEnd < windowStart)", () => {
     // Schedule: 23:00 - 01:00 (overnight)
     const takenAt = new Date("2025-01-15T23:30:00Z");
-    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
-      "on_time",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("on_time");
   });
 
   it("handles overnight window early intake", () => {
     // Schedule: 23:00 - 01:00, taken at 22:30 (30 min before windowStart)
     const takenAt = new Date("2025-01-15T22:30:00Z");
-    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
-      "early",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("early");
   });
 
   it("handles overnight window late intake", () => {
     // Schedule: 23:00 - 01:00, taken at 04:30 (3.5h past 01:00)
     const takenAt = new Date("2025-01-16T04:30:00Z");
-    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
-      "late",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("late");
   });
 
   it("handles overnight window very late intake", () => {
     // Schedule: 23:00 - 01:00, taken at 07:00 (6h past 01:00)
     const takenAt = new Date("2025-01-16T07:00:00Z");
-    expect(classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate)).toBe(
-      "very_late",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "23:00", "01:00", scheduledDate, {
+        tz: "UTC",
+      }),
+    ).toBe("very_late");
   });
 
   it("interprets the window HH:mm in the supplied tz (non-UTC user)", () => {
@@ -1400,9 +1430,11 @@ describe("classifyIntakeTiming", () => {
     // Without a tz the window HH:mm is read as UTC (08:00 UTC), so the very
     // same on-time dose reads as 7h15m off — very_late. This is the defect
     // the achievements perfect-day check hit for users far from UTC.
-    expect(classifyIntakeTiming(takenAt, "08:00", "09:00", slotInstant)).toBe(
-      "very_late",
-    );
+    expect(
+      classifyIntakeTiming(takenAt, "08:00", "09:00", slotInstant, {
+        tz: "UTC",
+      }),
+    ).toBe("very_late");
   });
 });
 
