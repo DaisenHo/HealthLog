@@ -9,9 +9,10 @@
  *  - `oura_permission`: Oura is connected and the stored grant leaves out
  *    the scope its resilience level sits behind; one reconnect fixes it.
  *  - `oura_no_resilience`: Oura is connected and no level has arrived. The
- *    server cannot tell "the grant covers it" from "not recorded yet" (the
- *    scope note is cleared on every reconnect and written only by a sync
- *    that reached Oura), so this case never claims coverage.
+ *    server cannot always tell "the grant covers it" from "not recorded yet"
+ *    (the scope note is rewritten on every reconnect from the scopes Oura
+ *    reports, when it reports them, and otherwise only by a sync that
+ *    reached Oura), so this case never claims coverage.
  *  - `general`: anyone else.
  *
  * `null` means the page has something to chart.

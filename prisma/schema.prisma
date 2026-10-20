@@ -4549,6 +4549,34 @@ model GoogleHealthOAuthState {
   @@map("google_health_oauth_states")
 }
 
+/// One row per OAuth callback the connect flows have begun to act on, keyed on
+/// a hash of the provider and the `state` it returned with. Inserting it is
+/// the claim: a second request carrying the same `state` (a browser that sends
+/// the callback twice, a reload, a retry) finds the row taken and never
+/// exchanges the code again. An authorization code works once, and Oura
+/// revokes the token the first exchange issued when it sees the code reused.
+///
+/// The claiming request records where it sent the browser, so the duplicate
+/// sends it to the same place instead of to an error page. Holds no user id,
+/// token or code: `location` is the app's own result URL (`?oura=connected`,
+/// `?whoop=error&reason=…`). Rows outlive the state they guard by a few
+/// minutes and are swept by expiry on the next settle
+/// (`src/lib/oauth/callback-claim.ts`).
+model OAuthCallbackClaim {
+  /// sha256(provider + NUL + state), hex.
+  key       String    @id
+  provider  String
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at")
+  /// When the claiming request finished, with or without a result URL.
+  settledAt DateTime? @map("settled_at")
+  /// The redirect the claiming request answered with. Null when it threw.
+  location  String?
+
+  @@index([expiresAt])
+  @@map("oauth_callback_claims")
+}
+
 // ─── Mood Entries ─────────────────────────────────────────────
 
 model MoodEntry {

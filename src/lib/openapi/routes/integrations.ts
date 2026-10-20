@@ -1146,7 +1146,7 @@ const integrationEnvelopeEntry = z
       .optional()
       .meta(
         legacy(
-          "Oura only. Collections the stored grant does not cover: they answered 401 while sibling collections succeeded with the same token. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
+          "Oura only. Collections the stored grant does not cover: Oura refused them for a missing scope (named in its 401, or inferred when sibling collections succeeded with the same token), or the scopes Oura reported at connect leave theirs out. Not a failure and not counted toward the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything HealthLog reads.",
         ),
       ),
     hasToken: z.boolean().optional().describe("Nightscout only."),

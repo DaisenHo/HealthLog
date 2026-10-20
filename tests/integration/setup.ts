@@ -66,6 +66,9 @@ export async function truncateAllTables(client: PrismaClient): Promise<void> {
     "mood_entries",
     "notification_channels",
     "notification_preferences",
+    // Instance-wide OAuth callback claims, keyed on a hash of the state: not
+    // reached by the users cascade.
+    "oauth_callback_claims",
     // Host-wide off-host backup state: not keyed to a user, so the users
     // cascade does not reach it, and a file that reads it whole (the purge
     // job, the encryption view) saw what earlier files left behind.

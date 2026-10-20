@@ -11,6 +11,7 @@ import {
   stateMatchesCookie,
   verifySignedState,
 } from "@/lib/oauth/signed-state";
+import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
 import { markReconnected } from "@/lib/integrations/status";
 import { STRAVA_BACKFILL_QUEUE } from "@/lib/jobs/strava-backfill";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -42,9 +43,7 @@ const ERR = (reason: string) =>
 export const GET = apiHandler(async (request: NextRequest) => {
   annotate({ action: { name: "strava.callback" } });
 
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
+  const state = new URL(request.url).searchParams.get("state");
   const cookieState = request.cookies.get(
     oauthStateCookieName("strava"),
   )?.value;
@@ -60,6 +59,28 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return ERR("state");
   }
   const userId = verified.userId;
+
+  // Single-use: a callback delivered twice exchanges its code once, and the
+  // duplicate follows the first request's result (src/lib/oauth/callback-claim.ts).
+  return runOAuthCallbackOnce(
+    "strava",
+    state,
+    {
+      fallbackUrl: new URL(
+        "/settings/integrations",
+        process.env.NEXT_PUBLIC_APP_URL!,
+      ).toString(),
+      stateCookie: oauthStateCookieName("strava"),
+    },
+    () => completeCallback(request, userId),
+  );
+});
+
+async function completeCallback(
+  request: NextRequest,
+  userId: string,
+): Promise<NextResponse> {
+  const code = new URL(request.url).searchParams.get("code");
 
   const evt = getEvent();
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
@@ -139,4 +160,4 @@ export const GET = apiHandler(async (request: NextRequest) => {
     getEvent()?.setError(err);
     return ERR("token");
   }
-});
+}

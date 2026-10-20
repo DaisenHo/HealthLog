@@ -4657,7 +4657,7 @@
       "scoreCrossLink": "Zobacz łączny wynik regeneracji",
       "emptyTitle": "Brak danych o regeneracji",
       "empty": "Ta strona wypełnia się wartościami regeneracji, obciążenia i obciążenia treningowego z WHOOP lub Polar oraz poziomem odporności z Oura.",
-      "emptyOuraPermission": "Poziom odporności Oura wymaga dostępu do danych o zdrowiu serca, więc połącz Oura ponownie raz w Integracjach i zezwól na niego.",
+      "emptyOuraPermission": "Poziom odporności Oura wymaga uprawnienia do danych o stresie, więc połącz Oura ponownie raz w Integracjach i zezwól na nie.",
       "emptyOuraNoResilience": "Oura jest połączona, a jej poziom odporności pojawi się tutaj, gdy tylko Oura go dostarczy.",
       "emptyAction": "Otwórz integracje",
       "block": {

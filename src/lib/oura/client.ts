@@ -23,6 +23,7 @@ import { OuraApiError, classifyOuraResponse } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
 import { walkPages } from "@/lib/integrations/page-walk";
+import { OURA_OAUTH_SCOPE, parseOuraMissingScope } from "./scope";
 
 const OURA_API_BASE = "https://api.ouraring.com";
 const OURA_OAUTH_AUTH_URL = "https://cloud.ouraring.com/oauth/authorize";
@@ -112,24 +113,11 @@ export function getOuraRedirectUri(): string {
 }
 
 /**
- * The scopes HealthLog asks Oura for.
- *
- *   - `daily`        : readiness, sleep, daily sleep, daily activity
- *   - `personal`     : profile info
- *   - `spo2`         : `daily_spo2`
- *   - `heart_health` : `vO2_max`, `daily_cardiovascular_age`,
- *                      `daily_resilience`
- *
- * Oura's current authorization server enforces these per collection: a grant
- * without `spo2` or `heart_health` answers 401 on those collections while every
- * other one succeeds. The published OpenAPI security scheme (openapi-1.41)
- * lists `spo2` and `heart_health` but maps no endpoint to them; the mapping
- * above is what the live API enforces, as recorded by integrations that probed
- * it. Grants issued before these were requested keep the old set until the
- * user reconnects once — see `syncOuraScopeDenied`.
+ * The consent-screen URL. The scopes come from `./scope`, which maps every
+ * collection HealthLog reads to the scope Oura enforces for it. A grant issued
+ * before a scope was added keeps the old set until the person reconnects once;
+ * the sync records what it lacks (`syncOuraScopeDenied`).
  */
-export const OURA_OAUTH_SCOPE = "daily personal spo2 heart_health" as const;
-
 export function getAuthorizationUrl(
   state: string,
   creds: OuraCredentials,
@@ -471,6 +459,51 @@ interface DateRangeQuery {
   maxPages?: number;
 }
 
+/**
+ * The error for a refused collection read. Oura's status alone does not say
+ * what went wrong; its body does (see `./scope`):
+ *
+ *   - 401 naming a scope: the token is fine, the grant does not cover this
+ *     collection. `missingScope` carries the name, and the sync neither
+ *     refreshes over it nor counts it toward the reconnect threshold.
+ *   - any other 401: the token is dead or expired (refresh, then reconnect).
+ *   - 403: a lapsed Oura membership, per the API reference. A reconnect does
+ *     not fix that, so it is a persistent failure rather than a reauth.
+ */
+function collectionRefusal(
+  verb: string,
+  status: number,
+  verdict: ReturnType<typeof classifyOuraResponse>,
+  body: unknown,
+): OuraApiError {
+  if (status === 401) {
+    const missingScope = parseOuraMissingScope(body);
+    if (missingScope) {
+      return new OuraApiError({
+        verb,
+        classification: "reauth_required",
+        httpStatus: status,
+        reason: "scope_missing",
+        missingScope,
+      });
+    }
+  }
+  if (status === 403) {
+    return new OuraApiError({
+      verb,
+      classification: "persistent",
+      httpStatus: status,
+      reason: "http_403",
+    });
+  }
+  return new OuraApiError({
+    verb,
+    classification: verdict.classification,
+    httpStatus: verdict.httpStatus,
+    reason: verdict.reason,
+  });
+}
+
 async function fetchCollection<T>(
   path: string,
   accessToken: string,
@@ -508,12 +541,7 @@ async function fetchCollection<T>(
           verdict.classification === "success" ? undefined : verdict.reason,
       });
       if (verdict.classification !== "success") {
-        throw new OuraApiError({
-          verb,
-          classification: verdict.classification,
-          httpStatus: verdict.httpStatus,
-          reason: verdict.reason,
-        });
+        throw collectionRefusal(verb, res.status, verdict, json);
       }
       return { items: json?.data ?? [], next: json?.next_token ?? null };
     },

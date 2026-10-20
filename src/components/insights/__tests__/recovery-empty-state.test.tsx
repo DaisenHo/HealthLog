@@ -80,7 +80,7 @@ beforeEach(() => {
 
 describe("<RecoverySection> empty note", () => {
   it.each([
-    ["oura_permission", "heart-health access"],
+    ["oura_permission", "stress permission"],
     ["general", "WHOOP or Polar"],
   ])("renders the server's %s reason with the one action", (reason, text) => {
     const html = render(reason);
