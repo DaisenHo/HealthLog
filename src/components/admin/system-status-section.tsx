@@ -277,6 +277,7 @@ export function SystemStatusSection() {
           // transient 500 (rolling deploy, DB blip) doesn't require a
           // full page reload to recover.
           <QueryErrorRow
+            inset
             error={error}
             message={t("admin.systemStatusLoadError")}
             onRetry={() => void refetch()}

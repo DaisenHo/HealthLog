@@ -54,12 +54,12 @@ const OURA_SUMMARIES = {
   HRV_RMSSD: summary(30),
 };
 
-function render(recoveryEmpty: string | null) {
+function render(recoveryEmpty: string | null, error: unknown = null) {
   analyticsMock.mockReturnValue({
-    data: { summaries: OURA_SUMMARIES, recoveryEmpty },
+    data: error ? undefined : { summaries: OURA_SUMMARIES, recoveryEmpty },
     isLoading: false,
     isEmpty: false,
-    error: null,
+    error,
     refetch: () => {},
   });
   const queryClient = new QueryClient({
@@ -81,13 +81,26 @@ beforeEach(() => {
 describe("<RecoverySection> empty note", () => {
   it.each([
     ["oura_permission", "heart-health access"],
-    ["oura_no_resilience", "as soon as Oura provides one"],
     ["general", "WHOOP or Polar"],
   ])("renders the server's %s reason with the one action", (reason, text) => {
     const html = render(reason);
     expect(html).toContain(`data-empty-case="${reason}"`);
     expect(html).toContain(text);
     expect(html).toContain('href="/settings/integrations"');
+  });
+
+  it("offers nothing to open while Oura's first level is on its way", () => {
+    // The connection is fine; there is nothing under Integrations to do.
+    const html = render("oura_no_resilience");
+    expect(html).toContain('data-empty-case="oura_no_resilience"');
+    expect(html).toContain("as soon as Oura provides one");
+    expect(html).not.toContain('href="/settings/integrations"');
+  });
+
+  it("says a failed read instead of a skeleton that never ends", () => {
+    const html = render(null, new Error("boom"));
+    expect(html).toContain('data-slot="query-error-card"');
+    expect(html).not.toContain('data-slot="recovery-loading"');
   });
 
   it("shows no note when the server says the page has data", () => {

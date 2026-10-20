@@ -49,6 +49,7 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { ApiError, apiGet, apiPut } from "@/lib/api/api-fetch";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 type PhaseMode = "MINUTES" | "PERCENT";
 
@@ -137,7 +138,7 @@ export function PhaseConfigSheet({
 }: PhaseConfigSheetProps) {
   const { t } = useTranslations();
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.medicationPhaseConfig(medicationId),
     queryFn: async () => {
       return fromApi(
@@ -170,13 +171,12 @@ export function PhaseConfigSheet({
           />
         </div>
       ) : isError ? (
-        <p
-          className="text-destructive text-sm"
-          role="alert"
-          data-slot="phase-config-error"
-        >
-          {t("common.loadFailed")}
-        </p>
+        <QueryErrorRow
+          inset
+          error={error}
+          slot="phase-config-error"
+          onRetry={() => void refetch()}
+        />
       ) : data ? (
         <PhaseConfigForm
           key={snapshotKey(data)}

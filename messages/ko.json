@@ -4678,7 +4678,8 @@
         "averageHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 평균 심박수예요.",
         "maxHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 최고 심박수예요.",
         "energyExpenditureKjExplainer": "기기가 자체 단위로 보고한, 하루 동안 몸이 쓴 에너지예요(킬로줄)."
-      }
+      },
+      "loadError": "회복 값을 불러오지 못했어요."
     },
     "bodyTempDeviation": {
       "title": "체온 편차",
@@ -11906,7 +11907,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)"
+      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)",
+      "loadError": "수분을 불러오지 못했어요."
     },
     "caffeine": {
       "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)",

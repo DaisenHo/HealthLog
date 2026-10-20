@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 
@@ -105,10 +105,11 @@ export function RecentWorkoutsTile() {
             ))}
           </div>
         ) : isError ? (
-          <QueryErrorCard
+          <QueryErrorRow
+            inset
             error={error}
-            onRetry={() => refetch()}
-            className="border-0 bg-transparent shadow-none"
+            slot="recent-workouts-error"
+            onRetry={() => void refetch()}
           />
         ) : workouts.length === 0 ? (
           <div data-slot="recent-workouts-empty" className="space-y-1">

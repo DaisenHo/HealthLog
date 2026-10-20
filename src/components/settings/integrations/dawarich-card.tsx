@@ -47,6 +47,7 @@ import {
   integrationDocsHref,
 } from "./setup-guide-link";
 import type { IntegrationStatusViewModel } from "./shared";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 interface DawarichStatus {
   connected: boolean;
@@ -298,9 +299,13 @@ function DawarichHome() {
             {t("settings.dawarichHomePlace")}
           </Label>
           {places.isError ? (
-            <p role="alert" className="text-destructive text-sm">
-              {t(errorKeyOf(places.error))}
-            </p>
+            <QueryErrorRow
+              inset
+              error={places.error}
+              slot="dawarich-places-error"
+              message={t(errorKeyOf(places.error))}
+              onRetry={() => void places.refetch()}
+            />
           ) : (
             <NativeSelect
               id="dawarich-home-place"

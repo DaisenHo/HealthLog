@@ -80,6 +80,7 @@ export function CoachConversationsMemoryCard({
       />
       {history.isError ? (
         <QueryErrorRow
+          inset
           error={history.error}
           onRetry={() => void history.refetch()}
         />

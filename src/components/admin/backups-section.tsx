@@ -1243,6 +1243,7 @@ export function BackupsSection() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          inset
           error={error}
           message={t("admin.section.backups.loadError")}
           onRetry={() => void refetch()}

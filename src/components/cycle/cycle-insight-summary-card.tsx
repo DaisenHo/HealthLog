@@ -9,6 +9,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { CyclePhaseHeadline } from "./cycle-phase-crosstab";
 import { PHASE_HUE } from "./phase-tokens";
 import { localYmd, useCycleCalendar, useCycleInsights } from "./use-cycle";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 /**
  * v1.15.2 — the gated cycle-insights summary card for the main Insights page.
@@ -56,11 +57,29 @@ export function CycleInsightSummaryCard() {
   // The server's resolved verdict — the teaser reports it, never recomputes it.
   const verdict = calendar.data?.verdict;
 
-  // Stay silent until the calendar read resolves, and on a hard error: the
-  // overview must never show a half-painted or error-framed cycle teaser. The
-  // full cycle page owns the retry affordance.
+  // Stay silent until the calendar read resolves: the overview must never
+  // show a half-painted teaser. A failed read is said with a retry, since
+  // drawing nothing would read as "no cycle tracked".
   if (calendar.isLoading && !calendar.data) return null;
-  if (calendar.isError && !calendar.data) return null;
+  if (calendar.isError && !calendar.data) {
+    return (
+      <section
+        data-slot="cycle-insight-summary-section"
+        aria-label={t("cycle.insightsSummary.title")}
+        className="space-y-3"
+      >
+        <SectionHeading
+          icon={Droplets}
+          title={t("cycle.insightsSummary.title")}
+        />
+        <QueryErrorRow
+          error={calendar.error}
+          slot="cycle-insight-summary-error"
+          onRetry={() => void calendar.refetch()}
+        />
+      </section>
+    );
+  }
 
   const phase = verdict?.phase ?? null;
   const hue = phase ? PHASE_HUE[phase] : PHASE_HUE.LUTEAL;

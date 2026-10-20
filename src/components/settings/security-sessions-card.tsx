@@ -165,6 +165,7 @@ export function SecuritySessionsCard({
 
         {isError && (
           <QueryErrorRow
+            inset
             error={error}
             message={t("settings.security.sessionsLoadError")}
             onRetry={() => refetch()}

@@ -4678,7 +4678,8 @@
         "averageHeartRateExplainer": "Deine durchschnittliche Herzfrequenz über den ganzen Tag bzw. Zyklus, wie dein Wearable sie meldet.",
         "maxHeartRateExplainer": "Deine höchste Herzfrequenz über den ganzen Tag bzw. Zyklus, wie dein Wearable sie meldet.",
         "energyExpenditureKjExplainer": "Die Energie, die dein Körper über den Tag verbraucht hat, in Kilojoule, wie dein Gerät sie nativ meldet."
-      }
+      },
+      "loadError": "Deine Erholungswerte konnten nicht geladen werden."
     },
     "bodyTempDeviation": {
       "title": "Körpertemperatur-Abweichung",
@@ -11906,7 +11907,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)"
+      "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)",
+      "loadError": "Wasser konnte nicht geladen werden."
     },
     "caffeine": {
       "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)",

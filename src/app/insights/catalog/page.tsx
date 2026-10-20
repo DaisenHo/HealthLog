@@ -368,6 +368,7 @@ export default function MetricCatalogPage() {
               <CardContent className="space-y-2">
                 {failed.length > 0 ? (
                   <QueryErrorRow
+                    inset
                     error={probes[failed[0]].error}
                     slot="catalog-group-error"
                     message={t("metricCatalog.loadError")}

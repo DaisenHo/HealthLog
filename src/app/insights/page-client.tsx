@@ -479,6 +479,7 @@ export default function InsightsPageClient() {
         read={dashboardDerived.read}
         isLoading={dashboardDerived.isLoading || cycleRing.pending}
         isError={dashboardDerived.isError}
+        error={dashboardDerived.error}
         refetch={dashboardDerived.refetch}
         // v1.15.3 — the cycle ring rides the scores strip as a gated sibling
         // tile, only for a cycle-tracking account, so its calendar read never

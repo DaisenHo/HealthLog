@@ -166,7 +166,7 @@ export function VorsorgeDashboardCard() {
         ) : isError ? (
           // A read failure must not read as "no upcoming reminders" — a missed
           // checkup is the harm behind that fall-through (§6).
-          <QueryErrorRow error={error} onRetry={() => refetch()} />
+          <QueryErrorRow inset error={error} onRetry={() => refetch()} />
         ) : upcoming.length === 0 ? (
           <div className="space-y-2">
             <p className="text-muted-foreground text-sm">

@@ -4678,7 +4678,8 @@
         "averageHeartRateExplainer": "La tua frequenza cardiaca media nell'arco dell'intera giornata o ciclo, come riportata dal tuo wearable.",
         "maxHeartRateExplainer": "La tua frequenza cardiaca massima nell'arco dell'intera giornata o ciclo, come riportata dal tuo wearable.",
         "energyExpenditureKjExplainer": "L'energia che il tuo corpo ha consumato nella giornata, in kilojoule, come la riporta nativamente il tuo dispositivo."
-      }
+      },
+      "loadError": "Non è stato possibile caricare i tuoi valori di recupero."
     },
     "bodyTempDeviation": {
       "title": "Deviazione della temperatura corporea",
@@ -11906,7 +11907,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Apporto di riferimento {value} {unit}/giorno (EFSA)"
+      "referenceMeta": "Apporto di riferimento {value} {unit}/giorno (EFSA)",
+      "loadError": "Impossibile caricare l'acqua."
     },
     "caffeine": {
       "ceilingMeta": "Limite di sicurezza {value} {unit}/giorno (EFSA)",

@@ -61,9 +61,15 @@ vi.mock("next/link", () => ({
 
 const calendarState = vi.hoisted(() => ({
   current: {
-    data: undefined as CalendarResponse | undefined,
+    data: undefined,
     isLoading: false,
     isError: false,
+  } as {
+    data: CalendarResponse | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    error?: unknown;
+    refetch?: () => unknown;
   },
 }));
 const insightsState = vi.hoisted(() => ({
@@ -223,13 +229,17 @@ describe("<CycleInsightSummaryCard>", () => {
     expect(html).toBe("");
   });
 
-  it("renders nothing on a hard calendar read error", () => {
+  it("says a hard calendar read error, with a retry", () => {
+    // Drawing nothing would read as "no cycle tracked".
     calendarState.current = {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new Error("boom"),
+      refetch: () => undefined,
     };
     const html = render(<CycleInsightSummaryCard />);
-    expect(html).toBe("");
+    expect(html).toContain('data-slot="cycle-insight-summary-error"');
+    expect(html).toContain('data-slot="query-error-row-retry"');
   });
 });

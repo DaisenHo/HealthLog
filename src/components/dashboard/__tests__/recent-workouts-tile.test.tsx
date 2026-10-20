@@ -91,10 +91,12 @@ describe("<RecentWorkoutsTile>", () => {
     expect(html).toContain('data-slot="skeleton"');
   });
 
-  it("renders a retry card instead of the empty state on a failed fetch", () => {
+  it("renders a retry row instead of the empty state on a failed fetch", () => {
     mockResult.isError = true;
     const html = render();
-    expect(html).toContain('data-slot="query-error-card"');
+    // A row without a frame of its own: the tile is already the card.
+    expect(html).toContain('data-slot="recent-workouts-error"');
+    expect(html).not.toContain('data-slot="query-error-card"');
     // A failed fetch must never read as the honest "no workouts yet"
     // empty state — that would misreport an outage as an empty account.
     expect(html).not.toContain('data-slot="recent-workouts-empty"');

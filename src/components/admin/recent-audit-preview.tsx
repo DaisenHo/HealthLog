@@ -84,6 +84,7 @@ export function RecentAuditPreview() {
           </div>
         ) : isError ? (
           <QueryErrorRow
+            inset
             error={error}
             message={t("admin.overview.auditLoadError")}
             onRetry={() => void refetch()}

@@ -21,6 +21,7 @@ import type {
   RecoveryEmptyReason,
 } from "@/lib/insights/recovery-empty";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { RestModeBanner } from "@/components/insights/rest-mode-banner";
 import type { RestModeAnnotation } from "@/lib/analytics/score/types";
 import type { ChartOverlayKey } from "@/lib/dashboard-layout";
@@ -79,7 +80,8 @@ const EMPTY_COPY = {
  */
 export function RecoverySection() {
   const { t } = useTranslations();
-  const { data, isLoading } = useInsightsAnalytics("SLEEP_DURATION");
+  const { data, isLoading, error, refetch } =
+    useInsightsAnalytics("SLEEP_DURATION");
   // v1.18.1 — Rest Mode parity. The annotation rides the thick analytics
   // payload's `healthScore` block (server-authoritative; iOS mirrors it). We
   // read it off the same `["analytics"]` cache the insights mother page
@@ -190,6 +192,17 @@ export function RecoverySection() {
   // answer (`recoveryEmpty`), so web and iOS read one decision.
   const emptyReason = data?.recoveryEmpty ?? null;
 
+  // A failed read is said, never left as a skeleton that loads forever.
+  if (error && summaries == null) {
+    return (
+      <QueryErrorCard
+        error={error}
+        title={t("insights.recovery.loadError")}
+        onRetry={refetch}
+      />
+    );
+  }
+
   if (isLoading || summaries == null) {
     return (
       <div className="space-y-3" data-slot="recovery-loading">
@@ -207,11 +220,15 @@ export function RecoverySection() {
         title={t("insights.recovery.emptyTitle")}
         description={t(EMPTY_COPY[emptyReason])}
         action={
-          <Button size="sm" variant="outline" asChild>
-            <Link href="/settings/integrations">
-              {t("insights.recovery.emptyAction")}
-            </Link>
-          </Button>
+          // Waiting for a first resilience level has nothing to open: the
+          // connection is fine, the level simply has not arrived.
+          emptyReason === "oura_no_resilience" ? undefined : (
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/settings/integrations">
+                {t("insights.recovery.emptyAction")}
+              </Link>
+            </Button>
+          )
         }
       />
     );

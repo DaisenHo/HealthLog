@@ -120,6 +120,7 @@ export function WorkoutDetailDayContext({
                   {sleep.isError ? (
                     // A failed read is not an absent night.
                     <QueryErrorRow
+                      inset
                       error={sleep.error}
                       onRetry={sleep.refetch}
                       slot="workout-detail-day-sleep-error"
@@ -170,6 +171,7 @@ export function WorkoutDetailDayContext({
                 </p>
                 {mood.isError ? (
                   <QueryErrorRow
+                    inset
                     error={mood.error}
                     onRetry={mood.refetch}
                     slot="workout-detail-day-mood-error"

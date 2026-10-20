@@ -41,14 +41,24 @@ export function CaffeineCard() {
     staleTime: 60_000,
   });
 
+  // The card keeps its frame and title on a failed read, like the hydration
+  // card beside it.
   if (isError && !data) {
     return (
-      <QueryErrorRow
-        error={error}
-        slot="nutrients-caffeine-error"
-        message={t("nutrients.caffeine.loadError")}
-        onRetry={() => void refetch()}
-      />
+      <Card data-slot="nutrients-caffeine-card">
+        <CardHeader>
+          <TileHeader icon={Coffee} title={t("nutrients.names.caffeine")} />
+        </CardHeader>
+        <CardContent>
+          <QueryErrorRow
+            inset
+            error={error}
+            slot="nutrients-caffeine-error"
+            message={t("nutrients.caffeine.loadError")}
+            onRetry={() => void refetch()}
+          />
+        </CardContent>
+      </Card>
     );
   }
 

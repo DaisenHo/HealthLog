@@ -110,6 +110,7 @@ export function SecurityActivityCard({
 
         {isError && (
           <QueryErrorRow
+            inset
             error={error}
             message={t("settings.security.activityLoadError")}
             onRetry={() => refetch()}

@@ -198,6 +198,7 @@ export function HostMetricsChart() {
           }
         />
         <QueryErrorRow
+          inset
           error={error}
           message={t("admin.hostMetrics.loadError")}
           onRetry={() => void refetch()}

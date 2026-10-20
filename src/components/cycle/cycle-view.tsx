@@ -362,10 +362,10 @@ export function CycleView() {
                   // Inside the calendar card already — a borderless row keeps
                   // it in line with the plain loading line above it (§3/§6).
                   <QueryErrorRow
+                    inset
                     error={calendar.error}
                     message={t("cycle.loadError")}
                     onRetry={() => void calendar.refetch()}
-                    className="border-0 bg-transparent p-0"
                   />
                 ) : (
                   <>

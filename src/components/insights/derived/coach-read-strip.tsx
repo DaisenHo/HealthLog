@@ -130,11 +130,12 @@ export function CoachReadStrip({
         <CardContent className={STRIP_BODY}>
           {isError ? (
             <QueryErrorRow
+              inset
               error={error}
               slot="coach-read-strip-error"
               message={t("insights.coach.readStrip.loadError")}
               onRetry={() => void refetch()}
-              className="flex-row items-center justify-between rounded-none border-0 bg-transparent p-0"
+              className="flex-row items-center justify-between"
             />
           ) : (
             <Skeleton className="h-5.5 w-3/4" />
