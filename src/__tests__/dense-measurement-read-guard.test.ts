@@ -133,6 +133,8 @@ const ALLOWED_SQL: Record<string, string> = {
     "Selects account ids; `measurements` is read inside `EXISTS`, one row per account at most.",
   "lib/rollups/measurement-coverage.ts::1":
     "Selects from `unnest` of the caller's type list; `measurements` is read inside `EXISTS`, one row per type at most.",
+  "lib/dashboard/summary-reads.ts::1":
+    "Selects from `generate_series` of the streak window's local days; `measurements` is read inside `EXISTS`, one row per day at most.",
 };
 
 interface UntakenRead {

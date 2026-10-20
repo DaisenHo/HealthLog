@@ -28,6 +28,9 @@ const SRC = join(process.cwd(), "src");
 const SINGLE_SHIFT =
   /"(?:[a-z_]+_at|scheduled_for)"\s*\)?\s*AT\s+TIME\s+ZONE\s+(?:\$\{|\$\d)/i;
 
+const DOUBLE_SHIFT =
+  /AT\s+TIME\s+ZONE\s+'UTC'\s*\)?\s*AT\s+TIME\s+ZONE\s+(?:\$\{|\$\d)/i;
+
 function stripComments(text: string): string {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -52,16 +55,17 @@ describe("naive timestamp zone shifts", () => {
   });
 
   it("no production read shifts a naive column once", () => {
-    const offenders = walkSourceFiles(SRC, { floor: 3000 })
-      .filter(
-        (file) =>
-          !file.startsWith("generated/") &&
-          !file.includes("__tests__/") &&
-          !/\.test\.tsx?$/.test(file),
-      )
-      .filter((file) =>
-        SINGLE_SHIFT.test(stripComments(readFileSync(join(SRC, file), "utf8"))),
-      );
-    expect(offenders).toEqual([]);
+    const files = walkSourceFiles(SRC, { floor: 3000 }).filter(
+      (file) =>
+        !file.startsWith("generated/") &&
+        !file.includes("__tests__/") &&
+        !/\.test\.tsx?$/.test(file),
+    );
+    const code = (file: string) =>
+      stripComments(readFileSync(join(SRC, file), "utf8"));
+    // The reads that shift correctly, so a sweep that reads nothing fails.
+    const doubleShifts = files.filter((file) => DOUBLE_SHIFT.test(code(file)));
+    expect(doubleShifts.length).toBeGreaterThanOrEqual(5);
+    expect(files.filter((file) => SINGLE_SHIFT.test(code(file)))).toEqual([]);
   });
 });

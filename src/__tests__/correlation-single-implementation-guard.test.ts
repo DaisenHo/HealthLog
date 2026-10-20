@@ -75,6 +75,14 @@ describe("one Pearson correlation", () => {
   });
 
   it("no other file defines a Pearson coefficient or calls the deleted one", () => {
+    // The homes match the definition matcher, so a matcher gone blind fails here.
+    const definers = sourceFiles().filter((file) =>
+      PEARSON_DEFINITION.test(
+        stripComments(readFileSync(join(SRC, file), "utf8")),
+      ),
+    );
+    expect(definers.length).toBeGreaterThanOrEqual(2);
+
     const offenders = sourceFiles().filter((file) => {
       const code = stripComments(readFileSync(join(SRC, file), "utf8"));
       if (DELETED.test(code)) return true;
