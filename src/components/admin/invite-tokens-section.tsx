@@ -75,6 +75,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 interface InviteRedemptionEntry {
   id: string;
@@ -192,7 +193,12 @@ export function InviteTokensSection() {
   const [copied, setCopied] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<AdminInvite | null>(null);
 
-  const { data: invites, isError } = useQuery({
+  const {
+    data: invites,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.adminInvites(),
     queryFn: async () => {
       return apiGet<AdminInvite[]>("/api/admin/invites");
@@ -313,9 +319,13 @@ export function InviteTokensSection() {
       />
 
       {isError && (
-        <p className="text-destructive text-sm">
-          {t("admin.invites.loadError")}
-        </p>
+        <QueryErrorRow
+          inset
+          error={error}
+          slot="admin-invites-error"
+          message={t("admin.invites.loadError")}
+          onRetry={() => void refetch()}
+        />
       )}
 
       {invites && invites.length === 0 && (

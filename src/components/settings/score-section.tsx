@@ -445,6 +445,7 @@ export function ScoreSection() {
 
               {analyticsQuery.isError ? (
                 <QueryErrorRow
+                  inset
                   error={analyticsQuery.error}
                   slot="score-config-eligibility-error"
                   message={t("settings.sections.score.eligibilityFailed")}

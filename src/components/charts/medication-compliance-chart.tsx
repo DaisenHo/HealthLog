@@ -270,7 +270,7 @@ export function MedicationComplianceChart({
   // `["dashboard-medication-compliance"]` lands in
   // `medicationDependentKeys` and an intake POST refreshes the chart
   // immediately rather than waiting for `staleTime` (audit L4).
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.dashboardMedicationCompliance(days),
     queryFn: async (): Promise<DailyCompliancePoint[]> => {
       return apiGet<DailyCompliancePoint[]>(
@@ -548,6 +548,7 @@ export function MedicationComplianceChart({
         // through to the empty branch (data undefined → hasData false)
         // and an outage read as "no doses tracked".
         <ChartErrorState
+          error={error}
           title={t("charts.errorTitle")}
           actionLabel={t("common.retry")}
           actionContext={displayTitle}

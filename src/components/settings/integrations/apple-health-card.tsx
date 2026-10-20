@@ -16,6 +16,7 @@ import { HeartPulse, Upload } from "lucide-react";
 
 import { formatRelative } from "@/components/settings/integration-status-pill";
 import { Button } from "@/components/ui/button";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
@@ -303,6 +304,8 @@ export function AppleHealthCard({ enabled }: { enabled: boolean }) {
     data: status,
     isLoading,
     isError,
+    error,
+    refetch,
   } = useQuery({
     queryKey: queryKeys.healthKitStatus(),
     queryFn: () => apiGet<HealthKitStatus>("/api/integrations/healthkit"),
@@ -384,9 +387,12 @@ export function AppleHealthCard({ enabled }: { enabled: boolean }) {
       }
     >
       {isError ? (
-        <p role="alert" className="text-destructive text-sm">
-          {t("settings.appleHealth.status.unavailable")}
-        </p>
+        <QueryErrorRow
+          error={error}
+          slot="apple-health-status-error"
+          message={t("settings.appleHealth.status.unavailable")}
+          onRetry={() => void refetch()}
+        />
       ) : null}
     </IntegrationCard>
   );

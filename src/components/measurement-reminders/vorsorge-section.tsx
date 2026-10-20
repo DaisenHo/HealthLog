@@ -103,6 +103,7 @@ import {
   shiftDateKey,
   userDayKey,
 } from "@/lib/tz/format";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 // v1.18.1 — the active-measurement set, grouped so the dropdown
 // doesn't read as a flat 15-item list. Mirrors the Zod allow-list in
@@ -169,10 +170,9 @@ function resolveReminderLabel(
   t: (key: string) => string,
 ): string {
   if (reminder.origin === "COACH") {
-    const translated = t(reminder.label);
-    // `t()` echoes the key back on a miss; fall back to the raw value so a
-    // future catalog addition never surfaces a bare key.
-    return translated === reminder.label ? reminder.label : translated;
+    // A label the catalogue has no sentence for shows as written, so a future
+    // catalog addition never surfaces a bare key.
+    return translateOrNull(t, reminder.label) ?? reminder.label;
   }
   return reminder.label;
 }

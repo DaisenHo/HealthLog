@@ -44,6 +44,7 @@ import {
   useMeasurementReminderMutations,
   type MeasurementReminder,
 } from "@/hooks/use-measurement-reminders";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 const SUMMARY_LIMIT = 3;
 
@@ -61,8 +62,7 @@ function resolveLabel(
   t: (key: string) => string,
 ): string {
   if (reminder.origin === "COACH") {
-    const translated = t(reminder.label);
-    return translated === reminder.label ? reminder.label : translated;
+    return translateOrNull(t, reminder.label) ?? reminder.label;
   }
   return reminder.label;
 }
@@ -166,7 +166,7 @@ export function VorsorgeDashboardCard() {
         ) : isError ? (
           // A read failure must not read as "no upcoming reminders" — a missed
           // checkup is the harm behind that fall-through (§6).
-          <QueryErrorRow error={error} onRetry={() => refetch()} />
+          <QueryErrorRow inset error={error} onRetry={() => refetch()} />
         ) : upcoming.length === 0 ? (
           <div className="space-y-2">
             <p className="text-muted-foreground text-sm">

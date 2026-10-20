@@ -105,6 +105,7 @@ export function TrustedDevicesCard({
 
         {isError && (
           <QueryErrorRow
+            inset
             error={error}
             message={t("settings.security.trustedDevices.loadError")}
             onRetry={() => refetch()}

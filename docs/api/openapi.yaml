@@ -3516,9 +3516,10 @@ paths:
                 $ref: "#/components/schemas/ApiTokenRevokeEnvelope"
         "401": *a1
         "403":
-          description: The operator has switched the API off instance-wide (`AppSettings.apiGlobal`). No `meta.errorCode`; nothing
-            was revoked. The sibling list is deliberately not gated this way — a token stays live while the switch is
-            off, so its owner can still see it here even though this call will not kill it.
+          description: The operator has switched the API off instance-wide (`AppSettings.apiGlobal`). `meta.errorCode` is the
+            status default `http.forbidden`; nothing was revoked. The sibling list is deliberately not gated this way —
+            a token stays live while the switch is off, so its owner can still see it here even though this call will
+            not kill it.
           content:
             application/json:
               schema:
@@ -7710,7 +7711,7 @@ paths:
             `health_score_config.invalid` — the body failed validation, with the per-issue list under `details.issues`;
             `invalid_base_updated_at` — `baseUpdatedAt` was present but unparseable, `null` included, which is rejected
             rather than falling back to the unconditional write. A body that is not JSON at all returns the bare message
-            `health-score-config.body.invalid_json` with no errorCode."
+            `health-score-config.body.invalid_json` with the status default `meta.errorCode: http.invalid`."
           content:
             application/json:
               schema:
@@ -21524,7 +21525,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: No account on this instance carries that identifier.
+          description: "No account on this instance carries that identifier (`meta.errorCode: sharing.invite.no_account`)."
           content:
             application/json:
               schema:
@@ -21715,8 +21716,8 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429":
-          description: More than ten profiles from one caller within the hour. No error code — rate-limit refusals carry none
-            anywhere in this API; branch on the status. Nothing was created.
+          description: "More than ten profiles from one caller within the hour (`meta.errorCode: http.rate_limited`, the status
+            default; a 429 has one meaning here, so the status alone is enough to branch on). Nothing was created."
           content:
             application/json:
               schema:
@@ -21799,8 +21800,9 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429":
-          description: More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch
-            on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.
+          description: "More than ten edits from one caller within the hour — the ceiling creation carries. `meta.errorCode:
+            http.rate_limited`, the status default. Nothing was changed, and the refusal lands before the record named
+            in the path is looked at."
           content:
             application/json:
               schema:
@@ -21885,11 +21887,10 @@ paths:
       summary: Invite another Guardian
       description: "Offers somebody else a share in looking after this profile, at MANAGE over the whole record. Cookie-only
         and step-up gated, like every act in this family — the read beside it is not. **Resolve refusals on
-        `meta.errorCode` first and fall back to the status only for the two arms that carry none**, because this route
-        answers 404 twice and the codeless one is the less serious of the two: an identifier that matches no account
-        carries no code, while `managed_profile.not_found` means the caller is not a Guardian of that profile at all. A
-        client branching on the status first would tell somebody to check a spelling when the real answer is that the
-        record is no longer theirs to administer."
+        `meta.errorCode`, not on the status**, because this route answers 404 twice and the two need different next
+        steps: `sharing.invite.no_account` means no account carries that identifier, while `managed_profile.not_found`
+        means the caller is not a Guardian of that profile at all. A client branching on the status would tell somebody
+        to check a spelling when the real answer is that the record is no longer theirs to administer."
       parameters:
         - in: path
           name: id
@@ -21916,11 +21917,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: "Two refusals share this status and only one carries a code. **No `meta.errorCode`**: no account on this
-            instance carries that identifier — the same deliberate disclosure to an authenticated caller that `POST
-            /api/account/grants` makes, and codeless there too, so this family does not answer one way here and another
-            way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the caller is
-            not one of its Guardians."
+          description: "Two refusals share this status, each with its own code. `meta.errorCode: sharing.invite.no_account`: no
+            account on this instance carries that identifier — the same deliberate disclosure to an authenticated caller
+            that `POST /api/account/grants` makes, with the same code, so this family does not answer one way here and
+            another way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the
+            caller is not one of its Guardians."
           content:
             application/json:
               schema:
@@ -21943,7 +21944,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429":
-          description: More than ten invitations from one caller within the hour. No error code, as above; branch on the status.
+          description: "More than ten invitations from one caller within the hour (`meta.errorCode: http.rate_limited`, the status
+            default)."
           content:
             application/json:
               schema:
@@ -36232,9 +36234,9 @@ components:
                 share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
                 sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
                 sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.refused, sharing.invite.self, sharing.not_permitted,
-                sharing.renounce.already_ended, sharing.renounce.not_found, sharing.revoke.already_ended,
-                sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
                 source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
                 symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;

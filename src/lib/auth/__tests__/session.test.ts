@@ -91,6 +91,11 @@ import {
 } from "../session";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
 
+/** A cookie value in the shape `mintSessionSecret` produces. */
+const SECRET = `hls_${"a".repeat(64)}`;
+const FORGED_SECRET = `hls_${"b".repeat(64)}`;
+const UNKNOWN_SECRET = `hls_${"c".repeat(64)}`;
+
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 function seed(row: Partial<SessionRow> & { id: string }): SessionRow {
@@ -155,21 +160,21 @@ describe("createSession", () => {
 
 describe("getSession — cookie resolution", () => {
   it("resolves a modern cookie by its hash, not by primary key", async () => {
-    const row = seed({ id: "sess_cuid_1", tokenHash: "hash:hls_abc" });
-    cookieState.sessionId = "hls_abc";
+    const row = seed({ id: "sess_cuid_1", tokenHash: `hash:${SECRET}` });
+    cookieState.sessionId = SECRET;
 
     const result = await getSession();
 
     expect(result?.session.id).toBe(row.id);
     // The lookup went through the hash column.
     expect(prisma.session.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { tokenHash: "hash:hls_abc" } }),
+      expect.objectContaining({ where: { tokenHash: `hash:${SECRET}` } }),
     );
   });
 
   it("refuses a modern-shaped cookie whose hash matches nothing", async () => {
     seed({ id: "sess_cuid_1", tokenHash: "hash:hls_real" });
-    cookieState.sessionId = "hls_forged";
+    cookieState.sessionId = FORGED_SECRET;
 
     await expect(getSession()).resolves.toBeNull();
   });
@@ -202,10 +207,10 @@ describe("getSession — sliding expiry", () => {
   it("extends a modern session and re-emits the same secret", async () => {
     seed({
       id: "sess_cuid_1",
-      tokenHash: "hash:hls_abc",
+      tokenHash: `hash:${SECRET}`,
       expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
     });
-    cookieState.sessionId = "hls_abc";
+    cookieState.sessionId = SECRET;
 
     await getSession();
 
@@ -215,7 +220,7 @@ describe("getSession — sliding expiry", () => {
     const cookieValue = cookieState.set.mock.calls.find(
       (c) => c[0] === "healthlog_session",
     )![1];
-    expect(cookieValue).toBe("hls_abc");
+    expect(cookieValue).toBe(SECRET);
   });
 
   it("withholds the extension from a legacy session so the id path drains", async () => {
@@ -270,7 +275,7 @@ describe("a session lookup that fails is not a missing session", () => {
   }
 
   it("getSession raises a 503 with a retryable code", async () => {
-    cookieState.sessionId = "hls_abc";
+    cookieState.sessionId = SECRET;
     failLookup();
     const err = await getSession().catch((e: unknown) => e);
     expect(err).toBeInstanceOf(SessionStoreUnavailableError);
@@ -284,26 +289,64 @@ describe("a session lookup that fails is not a missing session", () => {
 
   it("validateSessionFromCookieValue raises instead of answering null", async () => {
     failLookup();
-    await expect(
-      validateSessionFromCookieValue("hls_abc"),
-    ).rejects.toBeInstanceOf(SessionStoreUnavailableError);
+    await expect(validateSessionFromCookieValue(SECRET)).rejects.toBeInstanceOf(
+      SessionStoreUnavailableError,
+    );
   });
 
   it("validateSessionWithCreatedAt raises instead of answering null", async () => {
     failLookup();
-    await expect(
-      validateSessionWithCreatedAt("hls_abc"),
-    ).rejects.toBeInstanceOf(SessionStoreUnavailableError);
+    await expect(validateSessionWithCreatedAt(SECRET)).rejects.toBeInstanceOf(
+      SessionStoreUnavailableError,
+    );
+  });
+
+  it("raises for a pool that had no connection free (P2024)", async () => {
+    vi.mocked(prisma.session.findUnique).mockRejectedValueOnce(
+      Object.assign(new Error("connection pool exhausted"), {
+        code: "P2024",
+      }) as never,
+    );
+    await expect(validateSessionFromCookieValue(SECRET)).rejects.toBeInstanceOf(
+      SessionStoreUnavailableError,
+    );
+  });
+
+  it("answers null, not 503, when the query refused the value itself", async () => {
+    // Postgres 22021: a byte sequence it will not accept in text. Nothing is
+    // wrong with the store; a 503 here would let any anonymous caller produce
+    // server errors on demand.
+    vi.mocked(prisma.session.findUnique).mockRejectedValueOnce(
+      Object.assign(new Error("invalid byte sequence for encoding"), {
+        code: "P2010",
+        meta: { driverAdapterError: { cause: { originalCode: "22021" } } },
+      }) as never,
+    );
+    await expect(validateSessionFromCookieValue("sess_legacy")).resolves.toBe(
+      null,
+    );
+  });
+
+  it.each([
+    ["a NUL byte", "\u0000"],
+    ["a percent-encoded NUL", "%00"],
+    ["a short secret", "hls_abc"],
+    ["a secret with non-hex", `hls_${"z".repeat(64)}`],
+    ["an overlong legacy id", "c".repeat(65)],
+  ])("never asks the database about %s", async (_name, value) => {
+    vi.mocked(prisma.session.findUnique).mockClear();
+    await expect(validateSessionFromCookieValue(value)).resolves.toBe(null);
+    expect(prisma.session.findUnique).not.toHaveBeenCalled();
   });
 
   it("still answers null for a cookie that matches nothing", async () => {
-    await expect(validateSessionFromCookieValue("hls_nope")).resolves.toBe(
+    await expect(validateSessionFromCookieValue(UNKNOWN_SECRET)).resolves.toBe(
       null,
     );
   });
 
   it("logout still clears the cookie when the lookup fails", async () => {
-    cookieState.sessionId = "hls_abc";
+    cookieState.sessionId = SECRET;
     failLookup();
     await expect(destroySession()).resolves.toBeUndefined();
     expect(cookieState.delete).toHaveBeenCalledWith("healthlog_session");
@@ -314,8 +357,8 @@ describe("destroySession", () => {
   it("deletes the row the secret resolves to, not the cookie value", async () => {
     // The cookie is no longer the primary key, so a logout that deletes by
     // cookie value would no-op and leave the session alive.
-    seed({ id: "sess_cuid_1", tokenHash: "hash:hls_abc" });
-    cookieState.sessionId = "hls_abc";
+    seed({ id: "sess_cuid_1", tokenHash: `hash:${SECRET}` });
+    cookieState.sessionId = SECRET;
 
     await destroySession();
 

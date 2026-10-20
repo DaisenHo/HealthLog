@@ -56,9 +56,9 @@
     "errorIdLabel": "Error ID",
     "errorIdCopy": "Copy error ID",
     "errorIdCopied": "Error ID copied",
-    "readThrottled": "Too many requests just now. Try again later.",
-    "sessionEnded": "Your session has ended. Sign in again to continue.",
-    "signInAgain": "Sign in"
+    "readThrottled": "There are too many requests just now, so try again later.",
+    "sessionEnded": "Your session has ended, so sign in again to continue.",
+    "signIn": "Sign in"
   },
   "apiErrors": {
     "measurement": {
@@ -4679,7 +4679,8 @@
         "averageHeartRateExplainer": "Your average heart rate across the whole day or cycle, as reported by your wearable.",
         "maxHeartRateExplainer": "Your peak heart rate across the whole day or cycle, as reported by your wearable.",
         "energyExpenditureKjExplainer": "The energy your body expended over the day, in kilojoules, as your device reports it natively."
-      }
+      },
+      "loadError": "Your recovery readings could not be loaded."
     },
     "bodyTempDeviation": {
       "title": "Body temperature deviation",
@@ -11907,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Reference intake {value} {unit}/day (EFSA)"
+      "referenceMeta": "Reference intake {value} {unit}/day (EFSA)",
+      "loadError": "Could not load water."
     },
     "caffeine": {
       "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)",

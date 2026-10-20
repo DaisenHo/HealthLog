@@ -66,7 +66,11 @@ import { prisma } from "@/lib/db";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { GRANT_PARTY_SELECT, toGrantView } from "@/lib/sharing/grant-view";
+import {
+  GRANT_PARTY_SELECT,
+  INVITE_NO_ACCOUNT_CODE,
+  toGrantView,
+} from "@/lib/sharing/grant-view";
 import { GrantError, inviteGrant } from "@/lib/sharing/grants";
 import { inviteGrantSchema } from "@/lib/validations/account-sharing";
 import { apiListSuccess, capRows, overfetch } from "@/lib/api/list-cap";
@@ -221,7 +225,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     select: GRANT_PARTY_SELECT,
   });
   if (!invitee) {
-    return apiError("No account with that name or e-mail", 404);
+    return apiError("No account with that name or e-mail", 404, {
+      errorCode: INVITE_NO_ACCOUNT_CODE,
+    });
   }
 
   await auth.commitElevation();

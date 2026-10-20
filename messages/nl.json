@@ -56,9 +56,9 @@
     "errorIdLabel": "Fout-ID",
     "errorIdCopy": "Fout-ID kopiëren",
     "errorIdCopied": "Fout-ID gekopieerd",
-    "readThrottled": "Er zijn net te veel verzoeken. Probeer het later opnieuw.",
-    "sessionEnded": "Je sessie is verlopen. Meld je opnieuw aan om verder te gaan.",
-    "signInAgain": "Aanmelden"
+    "readThrottled": "Er zijn net te veel verzoeken, dus probeer het later opnieuw.",
+    "sessionEnded": "Je sessie is verlopen, dus meld je opnieuw aan om verder te gaan.",
+    "signIn": "Aanmelden"
   },
   "apiErrors": {
     "measurement": {
@@ -4679,7 +4679,8 @@
       },
       "emptyAction": "Integraties openen",
       "emptyOuraNoResilience": "Oura is verbonden, en het veerkrachtniveau verschijnt hier zodra Oura er een levert.",
-      "emptyOuraPermission": "Het veerkrachtniveau van Oura heeft toegang tot hartgezondheid nodig, dus verbind Oura één keer opnieuw onder Integraties en sta dat toe."
+      "emptyOuraPermission": "Het veerkrachtniveau van Oura heeft toegang tot hartgezondheid nodig, dus verbind Oura één keer opnieuw onder Integraties en sta dat toe.",
+      "loadError": "Je herstelwaarden konden niet worden geladen."
     },
     "bodyTempDeviation": {
       "title": "Afwijking lichaamstemperatuur",
@@ -11907,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Referentie-inname {value} {unit}/dag (EFSA)"
+      "referenceMeta": "Referentie-inname {value} {unit}/dag (EFSA)",
+      "loadError": "Water kon niet worden geladen."
     },
     "caffeine": {
       "ceilingMeta": "Veilige bovengrens {value} {unit}/dag (EFSA)",

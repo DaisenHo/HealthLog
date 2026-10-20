@@ -37,6 +37,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_KEYS, MODULE_REGISTRY } from "@/lib/modules/registry";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 interface PrivacySummary {
   retention: {
@@ -73,6 +74,8 @@ export function PrivacySection() {
     data: summary,
     isLoading: summaryLoading,
     isError: summaryError,
+    error: summaryFailure,
+    refetch: refetchSummary,
   } = useQuery({
     queryKey: queryKeys.privacySummary(),
     queryFn: () => apiGet<PrivacySummary>("/api/settings/privacy-summary"),
@@ -141,7 +144,15 @@ export function PrivacySection() {
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-4 w-1/2" />
           </div>
-        ) : summaryError || !summary ? (
+        ) : summaryError && !summary ? (
+          <QueryErrorRow
+            inset
+            error={summaryFailure}
+            slot="privacy-retention-error"
+            message={t("settings.privacy.retention.unavailable")}
+            onRetry={() => void refetchSummary()}
+          />
+        ) : !summary ? (
           <p className="text-muted-foreground text-sm">
             {t("settings.privacy.retention.unavailable")}
           </p>

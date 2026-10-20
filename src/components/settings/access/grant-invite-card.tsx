@@ -747,11 +747,10 @@ export function inviteErrorKey(err: unknown): string {
     // sent" is not.
     case "sharing.invite.manage_browser_only":
       return "recordSharing.invite.errorManageBrowserOnly";
+    case "sharing.invite.no_account":
+      return "recordSharing.invite.errorNoAccount";
     default:
       break;
-  }
-  if (err instanceof ApiError && err.status === 404) {
-    return "recordSharing.invite.errorNoAccount";
   }
   if (err instanceof ApiError && err.status === 429) {
     return "recordSharing.invite.errorRateLimited";

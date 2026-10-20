@@ -22,6 +22,7 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 interface NtfySettings {
   enabled: boolean;
@@ -80,13 +81,13 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
         };
         // A coded refusal (the private-origin policy) translates like the
         // test button's; anything else shows the server sentence.
-        const code = json.meta?.errorCode;
-        const key = code ? `settings.testConnection.errors.${code}` : null;
-        const translated = key ? t(key) : null;
         throw new Error(
-          translated && translated !== key
-            ? translated
-            : json.error || t("common.error"),
+          translateCodeOrNull(
+            t,
+            "settings.testConnection.errors",
+            json.meta?.errorCode,
+          ) ??
+            (json.error || t("common.error")),
         );
       }
     },

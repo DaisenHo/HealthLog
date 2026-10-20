@@ -21,6 +21,7 @@ import type { CoachAssumption, CoachFollowUp } from "@/lib/ai/coach/types";
 
 import { SuggestedReplies } from "./suggested-replies";
 import { COACH_FOCUS_RING } from "./focus-ring";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /** The alternatives the server offers for one assumption. */
 export function alternativesFor(
@@ -39,8 +40,7 @@ function optionLabel(
   t: (key: string) => string,
   option: CoachAssumption["value"],
 ): string {
-  const local = t(option.labelKey);
-  return local === option.labelKey ? option.label : local;
+  return translateOrNull(t, option.labelKey) ?? option.label;
 }
 
 export interface CoachAssumptionLineProps {

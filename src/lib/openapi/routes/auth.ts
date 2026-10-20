@@ -2158,7 +2158,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "The operator has switched the API off instance-wide (`AppSettings.apiGlobal`). No `meta.errorCode`; nothing was revoked. The sibling list is deliberately not gated this way — a token stays live while the switch is off, so its owner can still see it here even though this call will not kill it.",
+            "The operator has switched the API off instance-wide (`AppSettings.apiGlobal`). `meta.errorCode` is the status default `http.forbidden`; nothing was revoked. The sibling list is deliberately not gated this way — a token stays live while the switch is off, so its owner can still see it here even though this call will not kill it.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {

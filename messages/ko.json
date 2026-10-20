@@ -56,9 +56,9 @@
     "errorIdLabel": "오류 ID",
     "errorIdCopy": "오류 ID 복사",
     "errorIdCopied": "오류 ID 복사됨",
-    "readThrottled": "지금은 요청이 너무 많아요. 나중에 다시 시도해 주세요.",
-    "sessionEnded": "세션이 만료되었어요. 계속하려면 다시 로그인해 주세요.",
-    "signInAgain": "로그인"
+    "readThrottled": "지금은 요청이 너무 많으니 나중에 다시 시도해 주세요.",
+    "sessionEnded": "세션이 만료되었으니 계속하려면 다시 로그인해 주세요.",
+    "signIn": "로그인"
   },
   "apiErrors": {
     "measurement": {
@@ -4398,8 +4398,8 @@
             "composition": "구성"
           },
           "gap": {
-            "fewNights": "아직 밤이 부족함 ({count}/{needed})",
-            "noMainSleep": "최근 하루는 낮잠만 있음"
+            "fewNights": "아직 밤이 부족해요 ({needed}일 중 {count}일)",
+            "noMainSleep": "최근 하루는 낮잠만 있었어요"
           }
         },
         "READINESS": {
@@ -4679,7 +4679,8 @@
         "averageHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 평균 심박수예요.",
         "maxHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 최고 심박수예요.",
         "energyExpenditureKjExplainer": "기기가 자체 단위로 보고한, 하루 동안 몸이 쓴 에너지예요(킬로줄)."
-      }
+      },
+      "loadError": "회복 값을 불러오지 못했어요."
     },
     "bodyTempDeviation": {
       "title": "체온 편차",
@@ -11907,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)"
+      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)",
+      "loadError": "수분을 불러오지 못했어요."
     },
     "caffeine": {
       "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)",

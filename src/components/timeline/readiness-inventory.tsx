@@ -34,6 +34,7 @@ import {
 } from "./label-keys";
 import { formatMonthYear } from "./timeline-dates";
 import { orderedReadinessLanes, readinessTally } from "./readiness-model";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 type TranslateCount = ReturnType<typeof useTranslations>["tCount"];
@@ -65,11 +66,10 @@ export function wordKey(
   params: Record<string, string | number>,
 ): string | null {
   const count = typeof params.count === "number" ? params.count : null;
-  if (count !== null && t(`${base}Other`) !== `${base}Other`) {
+  if (count !== null && translateOrNull(t, `${base}Other`) !== null) {
     return tCount(base, count, params);
   }
-  const single = t(base, params);
-  return single === base ? null : single;
+  return translateOrNull(t, base, params);
 }
 
 export function laneLabel(t: Translate, key: TimelineReadinessLane["key"]) {

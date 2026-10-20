@@ -7,6 +7,7 @@ import type { WorkoutDetailPayload } from "@/hooks/use-workouts";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 
 import { formatDuration, formatDistance } from "./format";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * Hero header — the at-a-glance verdict row. Sport icon badge, source
@@ -34,9 +35,7 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
   const fmt = useFormatters();
   const { preference } = useUnitDisplay();
   const sportLabelKey = `insights.workouts.sport.${workout.sportType}`;
-  const sportLabel = t(sportLabelKey);
-  const sportName =
-    sportLabel === sportLabelKey ? workout.sportType : sportLabel;
+  const sportName = translateOrNull(t, sportLabelKey) ?? workout.sportType;
 
   return (
     <header

@@ -6,7 +6,7 @@ import { hashToken } from "@/lib/auth/hmac";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
-import { isP2025 } from "@/lib/prisma-errors";
+import { isDatabaseUnavailable, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
@@ -41,6 +41,19 @@ function mintSessionSecret(): string {
   return `${SESSION_TOKEN_PREFIX}${randomBytes(SESSION_SECRET_BYTES).toString("hex")}`;
 }
 
+/** Exactly what `mintSessionSecret` produces. */
+const SESSION_SECRET_SHAPE = new RegExp(
+  `^${SESSION_TOKEN_PREFIX}[0-9a-f]{${SESSION_SECRET_BYTES * 2}}$`,
+);
+
+/**
+ * What a legacy cookie (a `Session.id`, a cuid) can look like. Deliberately a
+ * character class rather than the cuid grammar: it exists to keep a value that
+ * cannot be an id away from the query, where a NUL byte or invalid UTF-8 makes
+ * Postgres raise instead of finding nothing.
+ */
+const LEGACY_SESSION_ID_SHAPE = /^[A-Za-z0-9_-]{1,64}$/;
+
 /**
  * Resolve the session row a cookie value refers to, or null.
  *
@@ -74,6 +87,14 @@ function mintSessionSecret(): string {
  * login from the deploy onward is on a secret immediately.
  */
 async function findSessionByCookie(cookieValue: string) {
+  // A malformed value matches no session: it is answered as one, before the
+  // database is asked, so an anonymous caller cannot turn a crafted cookie into
+  // a query error.
+  if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
+    if (!SESSION_SECRET_SHAPE.test(cookieValue)) return null;
+  } else if (!LEGACY_SESSION_ID_SHAPE.test(cookieValue)) {
+    return null;
+  }
   try {
     if (cookieValue.startsWith(SESSION_TOKEN_PREFIX)) {
       return await prisma.session.findUnique({
@@ -94,7 +115,18 @@ async function findSessionByCookie(cookieValue: string) {
     // the callers, so a database restart answered 401 and every client
     // signed its person out. It is a 503 now, with a code a client can retry
     // on (`auth.session.unavailable`).
-    throw new SessionStoreUnavailableError(error);
+    //
+    // Only for a store that could not be reached. Any other query error says
+    // something about the value asked for, not about the store, and is
+    // answered like a value that matches nothing: a 503 there would let any
+    // anonymous caller produce server errors at will.
+    if (isDatabaseUnavailable(error)) {
+      throw new SessionStoreUnavailableError(error);
+    }
+    getEvent()?.addWarning(
+      `session lookup refused the value: ${error instanceof Error ? error.name : "unknown"}`,
+    );
+    return null;
   }
 }
 

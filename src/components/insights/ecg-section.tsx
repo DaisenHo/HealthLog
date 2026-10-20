@@ -6,6 +6,7 @@ import { Activity, ChevronRight, HeartPulse } from "lucide-react";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import {
   ecgResultLabel,
   type EcgClassification,
@@ -85,8 +86,40 @@ export function EcgSection({
   const { t } = useTranslations();
   const fmt = useFormatters();
 
-  const { data: page, isLoading } = useEcgList(enabled);
+  const {
+    data: page,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useEcgList(enabled);
   const data = page?.data;
+
+  // A failed read is said, never swallowed into the empty gate below: on the
+  // dedicated page this list is the whole content.
+  if (isError && !data) {
+    return (
+      <section
+        id="ecg"
+        data-slot="ecg-section"
+        aria-label={t("insights.ecg.sectionTitle")}
+        className={cn("scroll-mt-24 space-y-3", className)}
+      >
+        {!hideHeading && (
+          <SectionHeading
+            icon={Activity}
+            title={t("insights.ecg.sectionTitle")}
+          />
+        )}
+        <QueryErrorRow
+          error={error}
+          slot="ecg-section-error"
+          message={t("insights.ecg.loadError")}
+          onRetry={() => void refetch()}
+        />
+      </section>
+    );
+  }
 
   // Data-availability gate — never paint an empty card.
   if (isLoading || !data || !data.hasRecordings) return null;

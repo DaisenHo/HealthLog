@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
 import { apiGetList } from "@/lib/api/api-fetch";
-import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import type { EcgRecordingListItem } from "./ecg-section";
@@ -22,16 +21,11 @@ export interface EcgListResponse {
  */
 export function useEcgList(enabled = true) {
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslations();
   return useQuery({
     queryKey: queryKeys.insightsEcgList(),
-    queryFn: async () => {
-      try {
-        return await apiGetList<EcgListResponse>("/api/insights/ecg");
-      } catch {
-        throw new Error(t("insights.ecg.loadError"));
-      }
-    },
+    // The ApiError passes through untouched: the error row reads its status
+    // and code to tell an ended session from a real failure.
+    queryFn: () => apiGetList<EcgListResponse>("/api/insights/ecg"),
     enabled: enabled && isAuthenticated,
   });
 }

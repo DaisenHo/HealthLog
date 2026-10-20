@@ -2,6 +2,8 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import type { ZodError, ZodIssue } from "zod/v4";
 
+import { defaultErrorCodeForStatus } from "@/lib/api/default-error-codes";
+
 export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ data, error: null }, { status });
 }
@@ -309,52 +311,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * The `meta.errorCode` an error envelope carries when its route named none.
- *
- * `meta.errorCode` is what a client is told to branch on, and roughly half of
- * the refusals in the tree carried one: the rest answered prose alone, so a
- * client could branch on the code for one 404 and had to fall back to the
- * status for the next. Every error envelope now has a code. A route that names
- * its own keeps it; one that does not gets the status's code from this table,
- * so the generic family is predictable from the status alone and a client
- * never has to special-case an absent field.
- *
- * Deliberately coarse. These say which kind of refusal it was, never why —
- * a route that has a reason worth branching on names its own code. Statuses
- * not listed fall back to `http.client_error` / `http.server_error`.
- */
-export const DEFAULT_ERROR_CODES = {
-  400: "http.bad_request",
-  401: "http.unauthenticated",
-  403: "http.forbidden",
-  404: "http.not_found",
-  405: "http.method_not_allowed",
-  409: "http.conflict",
-  410: "http.gone",
-  413: "http.payload_too_large",
-  415: "http.unsupported_media_type",
-  422: "http.invalid",
-  429: "http.rate_limited",
-  500: "http.internal",
-  502: "http.bad_gateway",
-  503: "http.unavailable",
-  504: "http.gateway_timeout",
-  client: "http.client_error",
-  server: "http.server_error",
-} as const;
-
-/** The default code for an error status, see {@link DEFAULT_ERROR_CODES}. */
-export function defaultErrorCodeForStatus(status: number): string {
-  const listed = (DEFAULT_ERROR_CODES as Record<number, string | undefined>)[
-    status
-  ];
-  if (listed) return listed;
-  return status >= 500
-    ? DEFAULT_ERROR_CODES.server
-    : DEFAULT_ERROR_CODES.client;
-}
-
-/**
  * Complete an error envelope: `meta.requestId` always, and `meta.errorCode`
  * from the status when the route named none.
  *
@@ -362,7 +318,7 @@ export function defaultErrorCodeForStatus(status: number): string {
  * envelope carries the full request id beside the `x-request-id` header, so a
  * client behind a proxy that strips headers can still show the id a person
  * reads out to the operator, who finds the event in the admin log with it.
- * The code follows {@link DEFAULT_ERROR_CODES}.
+ * The code follows `DEFAULT_ERROR_CODES` (`src/lib/api/default-error-codes.ts`).
  *
  * Applied once, by `apiHandler`, to whatever the handler answered, so a route
  * that builds its error with `apiError`, with `NextResponse.json` by hand or by

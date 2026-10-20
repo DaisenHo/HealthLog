@@ -58,6 +58,7 @@ import {
 import { AvatarSection } from "./avatar-section";
 import { SetupCard } from "./setup-card";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 export { resolveInitialTimezone } from "./account-section-utils";
 
@@ -368,10 +369,7 @@ export function AccountSection() {
       setFieldErrors(describeRejectedProfileFields(json?.details?.issues, t));
       if (errorCode === "profile.update.nothingSaved" && field) {
         setSaveMsg({ key: "settings.profileNothingSaved", params: { field } });
-      } else if (
-        errorCode &&
-        t(`apiErrors.${errorCode}`) !== `apiErrors.${errorCode}`
-      ) {
+      } else if (translateCodeOrNull(t, "apiErrors", errorCode) !== null) {
         // Only a code with a sentence of its own: every refusal carries a
         // code now, and the generic `http.*` family has no translation.
         setSaveMsg({ key: `apiErrors.${errorCode}` });

@@ -81,6 +81,7 @@ export function MoodWhatStandsOut({
         ) : null}
         {isError ? (
           <QueryErrorRow
+            inset
             error={error}
             slot="mood-discovery-error"
             message={t("insights.pattern.loadError")}

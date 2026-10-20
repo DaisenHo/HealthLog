@@ -261,7 +261,10 @@ describe("<VisitsSection> since the last visit", () => {
     expect(html).toContain('data-slot="since-last-visit-error"');
     expect(html).toContain('role="alert"');
     expect(html).not.toContain('data-slot="since-last-visit"');
-    expect(upcomingCards(html)).toBe(upcomingCards(baseline));
+    // The failed window keeps its own card and title, so the page does not
+    // jump; the visit cards beside it stay as they were.
+    expect(upcomingCards(html)).toBe(upcomingCards(baseline) + 1);
+    expect(html).toContain("Since the last visit on");
   });
 
   // Visits need the profile section, the window reads measurements, and a

@@ -38,6 +38,7 @@ import type {
   CoachMemoryNote as CoachMemoryNoteFrame,
   CoachProvenanceMetric,
 } from "@/lib/ai/coach/types";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * Per-message bubble renderer for the Coach thread, split out of
@@ -239,8 +240,8 @@ function coachChartTitle(
 ): string {
   const override = CHART_TITLE_KEY_OVERRIDE[metric];
   if (override) {
-    const resolved = t(override);
-    if (resolved !== override) return resolved;
+    const resolved = translateOrNull(t, override);
+    if (resolved !== null) return resolved;
   }
   const camel = metric
     .toLowerCase()
@@ -250,8 +251,7 @@ function coachChartTitle(
     )
     .join("");
   const key = `measurements.type${camel.charAt(0).toUpperCase()}${camel.slice(1)}`;
-  const resolved = t(key);
-  return resolved === key ? metric.replace(/_/g, " ").toLowerCase() : resolved;
+  return translateOrNull(t, key) ?? metric.replace(/_/g, " ").toLowerCase();
 }
 
 interface ChatBubbleProps {
@@ -564,16 +564,11 @@ function ChatBubbleImpl({
   // provider load (retry in ~5 min). Codes that have no dedicated
   // translation fall back to the generic provider-unavailable copy.
   const errorKey = errorCode ? errorCodeToI18nKey(errorCode) : null;
-  const errorMessage = errorKey ? t(errorKey, {}) : null;
-  // When a translated message comes back unchanged (i.e. key missing)
-  // we fall back to a generic provider error string so the bubble
-  // doesn't surface raw `coach.http.503` text to the user.
+  // A code without a sentence falls back to the generic provider error, so
+  // the bubble never surfaces raw `coach.http.503` text to the user.
   const safeError =
-    errorMessage && errorMessage !== errorKey
-      ? errorMessage
-      : errorCode
-        ? t("insights.coach.errorProvider")
-        : null;
+    (errorKey ? translateOrNull(t, errorKey) : null) ??
+    (errorCode ? t("insights.coach.errorProvider") : null);
 
   const method = metricSource?.method ?? null;
 

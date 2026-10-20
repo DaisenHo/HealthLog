@@ -23,7 +23,7 @@ import { userDayKey, shiftDateKey, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { TileHeader } from "@/components/insights/tile-header";
 import { DayLink } from "@/components/day/day-link";
 import { Button } from "@/components/ui/button";
-import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { axisUnitSuffix } from "@/lib/charts/axis-unit";
 import {
@@ -77,7 +77,7 @@ const AXIS_TICKS = [0, 360, 720, 1080, 1440];
  * coarser hourly grain instead of an empty chart — `resolution` on the DTO
  * tells the caption which, and the tension read is always absent on an
  * hourly day (it needs per-sample resolution to stay honest). A failed fetch
- * renders `<QueryErrorCard>` with a retry action instead of falling through
+ * renders `<QueryErrorRow>` with a retry action instead of falling through
  * to the empty-day copy.
  *
  * `initialDateKey` pins the first day shown, for callers that already know
@@ -254,10 +254,11 @@ export function IntradayPulseChart({
       {isLoading ? (
         <Skeleton className="h-[180px] w-full rounded-lg" />
       ) : isError ? (
-        <QueryErrorCard
+        <QueryErrorRow
+          inset
           error={error}
-          onRetry={() => refetch()}
-          className="border-0 bg-transparent shadow-none"
+          slot="intraday-pulse-error"
+          onRetry={() => void refetch()}
         />
       ) : (data?.series?.length ?? 0) < MIN_BUCKETS_FOR_COURSE ? (
         // A lone reading or two on a 24-hour axis drew a dot in an empty

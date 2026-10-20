@@ -13,6 +13,8 @@
  * unique-constraint code.
  */
 
+import { classifyRestoreFailure } from "@/lib/export/restore-failure-cause";
+
 /** Narrow a thrown Prisma error to a specific known-request code. */
 function hasPrismaCode(err: unknown, code: string): boolean {
   return (
@@ -36,4 +38,26 @@ export function isP2002(err: unknown): boolean {
  */
 export function isP2025(err: unknown): boolean {
   return hasPrismaCode(err, "P2025");
+}
+
+/**
+ * Whether a query failed because the database could not be reached, as opposed
+ * to refusing what it was asked. The first is worth a retry and is a 503; the
+ * second is an answer about the input.
+ *
+ * Reads the same signals the restore classifier does (`connection` and
+ * `timeout`: a connection SQLSTATE, a server shutting down, a statement or
+ * idle timeout, Prisma's P1001 / P1002 / P1017 / P2028, a terminated
+ * connection), plus the two that only a pooled request meets: P2024, no
+ * connection free in the pool within its timeout, and P1008, an operation that
+ * timed out.
+ */
+export function isDatabaseUnavailable(err: unknown): boolean {
+  if (hasPrismaCode(err, "P2024") || hasPrismaCode(err, "P1008")) return true;
+  const { cause } = classifyRestoreFailure(err);
+  if (cause === "connection" || cause === "timeout") return true;
+  const message = err instanceof Error ? err.message : "";
+  return /ECONNREFUSED|ECONNRESET|ETIMEDOUT|Can't reach database server|timed out/i.test(
+    message,
+  );
 }

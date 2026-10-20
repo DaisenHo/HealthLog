@@ -114,6 +114,7 @@ import {
 } from "@/components/medications/dose-history-ledger-compute";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -210,7 +211,7 @@ export function DoseHistoryLedger({
   // `from` travels: the server's `to` defaults to its own now.
   const queryKey = queryKeys.medicationDoseHistory(medicationId, windowDays);
 
-  const { data, isLoading, isError } = useQuery<LedgerPayload>({
+  const { data, isLoading, isError, error, refetch } = useQuery<LedgerPayload>({
     queryKey,
     queryFn: async () => {
       const from = new Date(Date.now() - windowDays * DAY_MS).toISOString();
@@ -465,9 +466,14 @@ export function DoseHistoryLedger({
       )}
 
       {isError && (
-        <p className="text-destructive py-6 text-sm">
-          {t("medications.detail.verlauf.loadError")}
-        </p>
+        <QueryErrorRow
+          inset
+          error={error}
+          slot="dose-history-error"
+          message={t("medications.detail.verlauf.loadError")}
+          onRetry={() => void refetch()}
+          className="py-6"
+        />
       )}
 
       {data && !isLoading && groups.length === 0 && (

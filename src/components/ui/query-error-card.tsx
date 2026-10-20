@@ -53,10 +53,10 @@ export function QueryErrorCard({
     <Card data-slot="query-error-card" className={cn(className)}>
       <CardContent
         role="alert"
-        className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center"
+        className="flex flex-col items-center justify-center gap-3 py-10 text-center"
       >
         <AlertTriangle
-          className="text-muted-foreground h-8 w-8"
+          className="text-muted-foreground size-6"
           aria-hidden="true"
         />
         <p className="text-sm font-medium">{failure.message}</p>
@@ -74,7 +74,7 @@ export function QueryErrorCard({
             size="sm"
             onClick={action.onClick}
           >
-            <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+            <RotateCw className="size-3.5" aria-hidden="true" />
             {retryLabel ?? action.label}
           </Button>
         ) : action ? (

@@ -170,6 +170,7 @@ export function OffhostBackupsSection() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          inset
           error={error}
           message={t("admin.section.backups.offhost.loadError")}
           onRetry={() => void refetch()}

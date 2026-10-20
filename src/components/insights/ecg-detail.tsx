@@ -47,15 +47,8 @@ export function EcgDetail({ recordingId }: { recordingId: string }) {
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.insightsEcgDetail(recordingId, false),
-    queryFn: async () => {
-      try {
-        return await apiGet<EcgDetailResponse>(
-          `/api/insights/ecg/${recordingId}`,
-        );
-      } catch {
-        throw new Error(t("insights.ecg.loadError"));
-      }
-    },
+    queryFn: () =>
+      apiGet<EcgDetailResponse>(`/api/insights/ecg/${recordingId}`),
   });
 
   if (isError) {

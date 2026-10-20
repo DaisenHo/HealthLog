@@ -369,7 +369,7 @@ export function MoodChart({
   // cache fresh; the chart's own subscription becomes the cache writer
   // for any insights / mood sub-page that mounts the chart without the
   // dashboard parent having fetched first.
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.moodAnalytics(),
     queryFn: async (): Promise<MoodAnalyticsData> => {
       return apiGet<MoodAnalyticsData>("/api/mood/analytics");
@@ -719,6 +719,7 @@ export function MoodChart({
     // v1.16.8 — a failed query paints as an ERROR with a retry
     // affordance instead of unmounting the card (see the gate above).
     <ChartErrorState
+      error={error}
       title={t("charts.errorTitle")}
       actionLabel={t("common.retry")}
       actionContext={displayTitle}

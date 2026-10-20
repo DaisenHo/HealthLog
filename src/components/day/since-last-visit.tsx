@@ -194,14 +194,31 @@ export function SinceLastVisit({
       })
     : [];
 
+  const lastLabel = fmt.dateShortSmartCalendar(lastDay);
+
+  // A failed read keeps the card and its title, so the page does not jump
+  // and the reader still sees what could not be loaded.
   if (window.isError && rows.length === 0) {
     return (
-      <QueryErrorRow
-        error={window.error}
-        slot="since-last-visit-error"
-        message={t("day.sinceLastVisit.loadError")}
-        onRetry={() => void window.refetch()}
-      />
+      <Card className="gap-2 py-3 md:py-4">
+        <CardHeader>
+          <TileHeader
+            size="sm"
+            icon={Stethoscope}
+            titleAs="h3"
+            title={t("day.sinceLastVisit.title", { date: lastLabel })}
+          />
+        </CardHeader>
+        <CardContent>
+          <QueryErrorRow
+            inset
+            error={window.error}
+            slot="since-last-visit-error"
+            message={t("day.sinceLastVisit.loadError")}
+            onRetry={() => void window.refetch()}
+          />
+        </CardContent>
+      </Card>
     );
   }
   // Nothing to show is nothing drawn: still loading, or a quiet window. The
@@ -209,7 +226,6 @@ export function SinceLastVisit({
   if (rows.length === 0) return null;
 
   const visible = showAll ? rows : rows.slice(0, VISIBLE_ROWS);
-  const lastLabel = fmt.dateShortSmartCalendar(lastDay);
   const nextDay = dateKeyOfInstant(next.occurredAt, timeZone);
 
   return (

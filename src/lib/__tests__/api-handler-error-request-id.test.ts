@@ -24,9 +24,9 @@ import { apiHandler, HttpError } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
-  defaultErrorCodeForStatus,
   withErrorEnvelopeDefaults,
 } from "@/lib/api-response";
+import { defaultErrorCodeForStatus } from "@/lib/api/default-error-codes";
 
 const INCOMING = "3f9a2c1b-0000-4000-8000-000000000001";
 

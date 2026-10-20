@@ -56,9 +56,9 @@
     "errorIdLabel": "ID błędu",
     "errorIdCopy": "Kopiuj ID błędu",
     "errorIdCopied": "Skopiowano ID błędu",
-    "readThrottled": "Zbyt wiele zapytań w tej chwili. Spróbuj ponownie później.",
-    "sessionEnded": "Twoja sesja wygasła. Zaloguj się ponownie, aby kontynuować.",
-    "signInAgain": "Zaloguj się"
+    "readThrottled": "W tej chwili jest zbyt wiele zapytań, więc spróbuj ponownie później.",
+    "sessionEnded": "Twoja sesja wygasła, więc zaloguj się ponownie, aby kontynuować.",
+    "signIn": "Zaloguj się"
   },
   "apiErrors": {
     "measurement": {
@@ -4679,7 +4679,8 @@
         "averageHeartRateExplainer": "Twoje średnie tętno w ciągu całego dnia lub cyklu, zgodnie z odczytem Twojego urządzenia.",
         "maxHeartRateExplainer": "Twoje maksymalne tętno w ciągu całego dnia lub cyklu, zgodnie z odczytem Twojego urządzenia.",
         "energyExpenditureKjExplainer": "Energia, którą Twój organizm wydatkował w ciągu dnia, w kilodżulach, zgodnie z natywnym odczytem urządzenia."
-      }
+      },
+      "loadError": "Nie udało się załadować Twoich wartości regeneracji."
     },
     "bodyTempDeviation": {
       "title": "Odchylenie temperatury ciała",
@@ -11907,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Zalecane spożycie {value} {unit}/dzień (EFSA)"
+      "referenceMeta": "Zalecane spożycie {value} {unit}/dzień (EFSA)",
+      "loadError": "Nie udało się załadować wody."
     },
     "caffeine": {
       "ceilingMeta": "Bezpieczny limit {value} {unit}/dzień (EFSA)",

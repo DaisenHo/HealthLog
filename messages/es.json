@@ -56,9 +56,9 @@
     "errorIdLabel": "ID de error",
     "errorIdCopy": "Copiar ID de error",
     "errorIdCopied": "ID de error copiado",
-    "readThrottled": "Demasiadas solicitudes ahora mismo. Vuelve a intentarlo más tarde.",
-    "sessionEnded": "Tu sesión ha caducado. Inicia sesión de nuevo para continuar.",
-    "signInAgain": "Iniciar sesión"
+    "readThrottled": "Hay demasiadas solicitudes ahora mismo, así que vuelve a intentarlo más tarde.",
+    "sessionEnded": "Tu sesión ha caducado, así que inicia sesión de nuevo para continuar.",
+    "signIn": "Iniciar sesión"
   },
   "apiErrors": {
     "measurement": {
@@ -4679,7 +4679,8 @@
         "averageHeartRateExplainer": "Tu frecuencia cardíaca media a lo largo de todo el día o ciclo, según informa tu wearable.",
         "maxHeartRateExplainer": "Tu frecuencia cardíaca máxima a lo largo de todo el día o ciclo, según informa tu wearable.",
         "energyExpenditureKjExplainer": "La energía que tu cuerpo gastó durante el día, en kilojulios, tal como tu dispositivo la informa de forma nativa."
-      }
+      },
+      "loadError": "No se pudieron cargar tus valores de recuperación."
     },
     "bodyTempDeviation": {
       "title": "Desviación de la temperatura corporal",
@@ -11907,7 +11908,8 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Ingesta de referencia {value} {unit}/día (EFSA)"
+      "referenceMeta": "Ingesta de referencia {value} {unit}/día (EFSA)",
+      "loadError": "No se pudo cargar el agua."
     },
     "caffeine": {
       "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)",

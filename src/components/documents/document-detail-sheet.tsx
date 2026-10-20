@@ -103,6 +103,7 @@ import {
   useSuggestDetails,
 } from "./use-document-assist";
 import { formatBytes } from "./vault-utils";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 type PatchInput = {
   title?: string | null;
@@ -895,9 +896,13 @@ export function DocumentDetailSheet({
         ) : null}
 
         {detail.isError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {t("documents.detail.loadError")}
-          </p>
+          <QueryErrorRow
+            inset
+            error={detail.error}
+            slot="document-detail-error"
+            message={t("documents.detail.loadError")}
+            onRetry={() => void detail.refetch()}
+          />
         ) : null}
 
         {doc ? (

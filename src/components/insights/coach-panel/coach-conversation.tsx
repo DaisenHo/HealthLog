@@ -67,6 +67,7 @@ import {
   useDetachCoachDocument,
   useSendCoachMessage,
 } from "./use-coach";
+import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
  * v1.12.0 (Coach v2 #6) — shared chat surface for both the Coach drawer
@@ -987,11 +988,8 @@ export function CoachConversation({
   // from a metric surface names the metric there until its first turn.
   const a2Metric = launchScope?.metric ?? null;
 
-  // `t()` returns the key string itself when a key is missing, so the only
-  // reliable "is this key defined" signal is `t(key) !== key`.
   function tOrNull(key: string): string | null {
-    const resolved = t(key);
-    return resolved === key ? null : resolved;
+    return translateOrNull(t, key);
   }
 
   // The resolved metric label: prefers a per-source i18n key, falls back to

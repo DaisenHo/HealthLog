@@ -110,6 +110,7 @@ export function SystemStatusSummary() {
         </div>
       ) : isError ? (
         <QueryErrorRow
+          inset
           error={error}
           message={t("admin.overview.snapshotLoadError")}
           onRetry={() => void refetch()}
