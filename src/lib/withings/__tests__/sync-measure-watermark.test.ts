@@ -16,8 +16,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
+      findMany: vi.fn(),
+      createManyAndReturn: vi.fn(),
       update: vi.fn(),
     },
     withingsConnection: {
@@ -66,7 +66,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   >("@/lib/rollups/measurement-rollups");
   return {
     ...actual,
-    recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+    recomputeBucketsForKeys: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -96,10 +96,6 @@ import {
 
 import { getValidToken, syncUserMeasurements } from "../sync";
 
-const P2002 = Object.assign(new Error("Unique constraint failed"), {
-  code: "P2002",
-});
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(prisma.$transaction).mockImplementation(async (run) =>
@@ -116,8 +112,15 @@ beforeEach(() => {
     lastSyncedAt: new Date(Date.now() - 60 * 60 * 1000),
   } as never);
   vi.mocked(prisma.withingsConnection.update).mockResolvedValue({} as never);
-  vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
-  vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+  vi.mocked(prisma.measurement.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.measurement.createManyAndReturn).mockImplementation(
+    (async (args: { data: Array<{ type: string; measuredAt: Date }> }) =>
+      args.data.map((row, i) => ({
+        id: `m-${i}`,
+        type: row.type,
+        measuredAt: row.measuredAt,
+      }))) as never,
+  );
   vi.mocked(prisma.measurement.update).mockResolvedValue({} as never);
 });
 
@@ -168,10 +171,20 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
         measuredAt: new Date("2026-05-16T08:05:00Z"),
       },
     ] as never);
-    // The first write hard-fails (a transient DB error), the second succeeds.
-    vi.mocked(prisma.measurement.create)
-      .mockRejectedValueOnce(new Error("connection reset by peer"))
-      .mockResolvedValue({} as never);
+    // The weight is stored with an older value; its update hard-fails (a
+    // transient DB error). The pulse is new and inserts.
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      {
+        id: "m-weight",
+        type: "WEIGHT",
+        measuredAt: new Date("2026-05-16T08:00:00Z"),
+        value: 79,
+        deletedAt: null,
+      },
+    ] as never);
+    vi.mocked(prisma.measurement.update).mockRejectedValueOnce(
+      new Error("connection reset by peer"),
+    );
 
     const result = await syncUserMeasurements("user-1");
 
@@ -187,7 +200,7 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
     );
   });
 
-  it("does NOT hold the watermark for a benign P2002 idempotent-write collision", async () => {
+  it("does NOT hold the watermark for a duplicate a concurrent run inserted first", async () => {
     vi.mocked(fetchMeasurements).mockResolvedValue([
       {
         type: "WEIGHT",
@@ -195,11 +208,15 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
         measuredAt: new Date("2026-05-16T08:00:00Z"),
       },
     ] as never);
-    vi.mocked(prisma.measurement.create).mockRejectedValueOnce(P2002);
+    // A concurrent run inserted the same reading first: the batched insert
+    // skips it as a duplicate.
+    vi.mocked(prisma.measurement.createManyAndReturn).mockResolvedValueOnce(
+      [] as never,
+    );
 
     const { imported } = await syncUserMeasurements("user-1");
 
-    // P2002 means the row is already present — nothing lost — so the cycle is
+    // A skipped duplicate is already present — nothing lost — so the cycle is
     // still healthy: stamp the watermark + success, record no failure.
     expect(imported).toBe(0);
     expect(prisma.withingsConnection.update).toHaveBeenCalledTimes(1);

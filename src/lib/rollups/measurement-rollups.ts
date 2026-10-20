@@ -358,6 +358,143 @@ export async function recomputeBucketsForMeasurement(
   );
 }
 
+/** Keys one set-based DAY refold carries; bounds the statement's arrays. */
+const KEYED_REFOLD_CHUNK = 2_000;
+
+/**
+ * The set-based sibling of {@link recomputeBucketsForMeasurement}, for a write
+ * that touched many `(type, day)` buckets at once (a sync, an import, a batch).
+ *
+ * The per-key hook costs an aggregate, a transaction and three queue sends per
+ * bucket, so a sync that re-read two years of history paid that seven thousand
+ * times over. Here the DAY tier is refolded for exactly the touched buckets in
+ * one aggregate and one transaction per chunk, and the coarser tiers are
+ * enqueued once per contiguous run of buckets rather than once per day. The
+ * result is the one the per-key loop produced: every touched day re-derived
+ * from its live rows, a day left empty dropped, untouched days left alone.
+ */
+export async function recomputeBucketsForKeys(
+  userId: string,
+  rows: Array<{ type: MeasurementType; measuredAt: Date }>,
+): Promise<void> {
+  const keys = collapseToTypeDayKeys(rows);
+  for (let i = 0; i < keys.length; i += KEYED_REFOLD_CHUNK) {
+    await refoldDayBuckets(userId, keys.slice(i, i + KEYED_REFOLD_CHUNK));
+  }
+  for (const granularity of ASYNC_GRANULARITIES) {
+    for (const run of bucketRuns(keys, granularity)) {
+      await enqueueRollupRecompute({ userId, granularity, ...run });
+    }
+  }
+}
+
+async function refoldDayBuckets(
+  userId: string,
+  keys: Array<{ type: MeasurementType; measuredAt: Date }>,
+): Promise<void> {
+  if (keys.length === 0) return;
+  const types = [...new Set(keys.map((k) => k.type))];
+  const days = [...new Set(keys.map((k) => k.measuredAt.getTime()))].sort(
+    (a, b) => a - b,
+  );
+  const wanted = new Set(
+    keys.map((k) => `${k.type}|${k.measuredAt.getTime()}`),
+  );
+  const aggregate = await runRollupAggregate({
+    userId,
+    types,
+    granularity: "DAY",
+    from: new Date(days[0]!),
+    to: new Date(days[days.length - 1]! + 24 * 60 * 60 * 1000),
+    days: days.map((d) => new Date(d)),
+  });
+  // The day filter is per day, not per (type, day): another touched type's
+  // day comes back too. Its aggregate would be right, but it was not touched,
+  // so it is not rewritten.
+  const ordered = aggregate
+    .filter((r) =>
+      wanted.has(`${r.type}|${new Date(r.bucket_start).getTime()}`),
+    )
+    .sort((a, b) =>
+      a.type !== b.type
+        ? a.type < b.type
+          ? -1
+          : 1
+        : a.source !== b.source
+          ? a.source < b.source
+            ? -1
+            : 1
+          : a.bucket_start.getTime() - b.bucket_start.getTime(),
+    );
+  // Delete exactly the touched buckets (every source, so a source that left a
+  // day does not strand its row, and a day that emptied out is dropped), then
+  // upsert the fresh aggregate, in one transaction like `persistRollupRows`.
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(
+        `DELETE FROM measurement_rollups
+          WHERE user_id = $1
+            AND granularity = 'DAY'::"measurement_rollup_granularity"
+            AND (type, bucket_start) IN (
+              SELECT k.t::"measurement_type", k.b
+                FROM unnest($2::text[], $3::timestamptz[]) AS k(t, b)
+            )`,
+        userId,
+        keys.map((k) => k.type),
+        keys.map((k) => k.measuredAt.toISOString()),
+      );
+      for (let i = 0; i < ordered.length; i += 500) {
+        const { sql, params } = buildRollupUpsert(
+          userId,
+          "DAY",
+          ordered.slice(i, i + 500),
+        );
+        await tx.$executeRawUnsafe(sql, ...params);
+      }
+    },
+    { maxWait: 10_000, timeout: 120_000 },
+  );
+}
+
+/**
+ * The coarse buckets the touched days fall in, merged per type into runs of
+ * adjacent buckets: one recompute job per run, each covering whole buckets.
+ */
+function bucketRuns(
+  keys: Array<{ type: MeasurementType; measuredAt: Date }>,
+  granularity: RollupGranularity,
+): Array<{ type: MeasurementType; from: Date; to: Date }> {
+  const spans = new Map<
+    string,
+    { type: MeasurementType; from: Date; to: Date }
+  >();
+  for (const k of keys) {
+    const span = bucketSpan(k.measuredAt, granularity);
+    spans.set(`${k.type}|${span.from.getTime()}`, { type: k.type, ...span });
+  }
+  const sorted = [...spans.values()].sort((a, b) =>
+    a.type !== b.type
+      ? a.type < b.type
+        ? -1
+        : 1
+      : a.from.getTime() - b.from.getTime(),
+  );
+  const runs: Array<{ type: MeasurementType; from: Date; to: Date }> = [];
+  for (const span of sorted) {
+    const last = runs[runs.length - 1];
+    if (
+      last &&
+      last.type === span.type &&
+      last.to.getTime() === span.from.getTime()
+    ) {
+      last.to = span.to;
+    } else {
+      runs.push({ ...span });
+    }
+  }
+  return runs;
+}
+
 /**
  * Best-effort pg-boss enqueue. Silent no-op when no boss is attached
  * (route is running in a context without the worker — typically the
@@ -399,7 +536,16 @@ export async function enqueueRollupRecompute(input: {
     // is still QUEUED — safe here precisely because the handler re-reads the
     // bucket's live rows when it starts, so the queued job still sees writes
     // that land after it was enqueued.
-    singletonKey: `${input.userId}|${input.type}|${input.granularity}|${input.from.toISOString()}`,
+    //
+    // A job covering a run of several buckets (`recomputeBucketsForKeys`)
+    // carries its end in the key too: under the bare start it would collapse
+    // into a queued single-bucket job and the rest of the run would be lost.
+    singletonKey:
+      `${input.userId}|${input.type}|${input.granularity}|${input.from.toISOString()}` +
+      (bucketSpan(input.from, input.granularity).to.getTime() ===
+      input.to.getTime()
+        ? ""
+        : `|${input.to.toISOString()}`),
   });
 }
 
@@ -480,10 +626,21 @@ async function runRollupAggregate(
     granularity: RollupGranularity;
     from: Date;
     to: Date;
+    /**
+     * Only the readings of these UTC days, inside `[from, to)`. A keyed
+     * refold (`recomputeBucketsForKeys`) passes the touched days so a handful
+     * spread across years does not aggregate everything in between.
+     */
+    days?: Date[];
   },
   db: Pick<typeof prisma, "$queryRawUnsafe"> = prisma,
 ): Promise<RollupRow[]> {
   if (input.types && input.types.length === 0) return [];
+  // Bound as the fourth parameter, never spliced.
+  const dayFilter = input.days
+    ? `AND date_trunc('day', m."measured_at") = ANY($4::timestamptz[])`
+    : "";
+  const dayParams = input.days ? [input.days.map((d) => d.toISOString())] : [];
 
   // Postgres rejects `date_trunc($1::text, m."measured_at")` in a
   // GROUP BY because the planner sees the parameterised expression
@@ -553,6 +710,7 @@ async function runRollupAggregate(
         AND m."measured_at" >= $2
         AND m."measured_at" <  $3
         AND m."deleted_at" IS NULL
+        ${dayFilter}
       GROUP BY m."type", m."source", ${dateTrunc}
     `;
     return applyHourlyMeanDay(
@@ -563,6 +721,7 @@ async function runRollupAggregate(
         input.userId,
         input.from,
         input.to,
+        ...dayParams,
       ),
     );
   }
@@ -600,6 +759,7 @@ async function runRollupAggregate(
       AND m."measured_at" >= $2
       AND m."measured_at" <  $3
       AND m."deleted_at" IS NULL
+      ${dayFilter}
     GROUP BY m."type", m."source", ${dateTrunc}
   `;
   return applyHourlyMeanDay(
@@ -610,6 +770,7 @@ async function runRollupAggregate(
       input.userId,
       input.from,
       input.to,
+      ...dayParams,
     ),
   );
 }
@@ -635,6 +796,7 @@ async function applyHourlyMeanDay(
     granularity: RollupGranularity;
     from: Date;
     to: Date;
+    days?: Date[];
   },
   rows: RollupRow[],
 ): Promise<RollupRow[]> {
@@ -685,6 +847,11 @@ async function applyHourlyMeanDay(
           AND m."measured_at" >= $2
           AND m."measured_at" <  $3
           AND m."deleted_at" IS NULL
+          ${
+            input.days
+              ? `AND date_trunc('day', m."measured_at") = ANY($4::timestamptz[])`
+              : ""
+          }
         GROUP BY m."type", m."source", date_trunc('hour', m."measured_at")
       ) h
       GROUP BY 1, 2, 3
@@ -694,6 +861,7 @@ async function applyHourlyMeanDay(
     input.userId,
     input.from,
     input.to,
+    ...(input.days ? [input.days.map((d) => d.toISOString())] : []),
   );
   const byKey = new Map(
     means.map((m) => [

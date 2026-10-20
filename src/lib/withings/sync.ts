@@ -29,7 +29,6 @@ import {
 } from "./api-plan";
 import { getUserWithingsCredentials } from "./credentials";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { isP2002 } from "@/lib/prisma-errors";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import {
@@ -45,7 +44,7 @@ import {
 } from "./response-classifier";
 import {
   collapseToTypeDayKeys,
-  recomputeBucketsForMeasurement,
+  recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import {
@@ -349,7 +348,8 @@ export async function syncUserMeasurements(
   // through Withings. We collect first, fold once at the end so a 100-
   // row monthly catch-up costs at most ~N (type, day) recomputes rather
   // than N per-row hooks. Best-effort: a populator hiccup never fails
-  // the user's sync.
+  // the user's sync. Only readings this run inserted or changed count as
+  // touched: a re-read reading that is already stored dirties nothing.
   const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
   const insertedArrivals: Array<{
     id: string;
@@ -367,69 +367,118 @@ export async function syncUserMeasurements(
   let anyRowFailed = false;
   let firstRowError: unknown = null;
 
+  // The run reads a window (the whole history on a full sync) and most of it
+  // is usually stored already. One read of the stored rows in that window
+  // splits it three ways: unchanged (nothing to write, nothing to refold),
+  // changed or tombstoned (an update), and new (one batched insert). The
+  // per-row `findFirst` + `update` this replaced cost two round trips per
+  // reading and marked every re-read day dirty, which is where a full sync's
+  // forty seconds went.
+  const latest = new Map<string, (typeof measures)[number]>();
   for (const m of measures) {
-    const measType = m.type as MeasurementType;
-    try {
-      // v1.4.25 — Migration 0055 added `sleepStage` to the
-      // composite unique with `NULLS NOT DISTINCT`, so a non-sleep
-      // upsert keyed on (userId, type, measuredAt, source) with
-      // sleepStage IS NULL is still safe. But Prisma's typed compound
-      // input requires a non-null `sleepStage`, so we model the
-      // idempotent write as a `findFirst` + `create`/`update`. The
-      // unique index still serializes concurrent inserts, so the worst
-      // case is a Prisma P2002 we catch and ignore.
-      const existing = await prisma.measurement.findFirst({
-        where: {
-          userId,
-          type: measType,
-          measuredAt: m.measuredAt,
-          source: "WITHINGS",
-          sleepStage: null,
+    latest.set(`${m.type}|${m.measuredAt.getTime()}`, m);
+  }
+  const incoming = [...latest.values()];
+  const existingByKey = new Map<
+    string,
+    { id: string; value: number; deletedAt: Date | null }
+  >();
+  if (incoming.length > 0) {
+    let first = incoming[0]!.measuredAt;
+    let last = first;
+    for (const m of incoming) {
+      if (m.measuredAt < first) first = m.measuredAt;
+      if (m.measuredAt > last) last = m.measuredAt;
+    }
+    const stored = await prisma.measurement.findMany({
+      where: {
+        userId,
+        source: "WITHINGS",
+        sleepStage: null,
+        type: {
+          in: [...new Set(incoming.map((m) => m.type as MeasurementType))],
         },
-        select: { id: true },
+        measuredAt: { gte: first, lte: last },
+      },
+      select: {
+        id: true,
+        type: true,
+        measuredAt: true,
+        value: true,
+        deletedAt: true,
+      },
+    });
+    for (const row of stored) {
+      existingByKey.set(`${row.type}|${row.measuredAt.getTime()}`, row);
+    }
+  }
+
+  const toCreate: typeof incoming = [];
+  for (const m of incoming) {
+    const measType = m.type as MeasurementType;
+    const existing = existingByKey.get(`${m.type}|${m.measuredAt.getTime()}`);
+    if (!existing) {
+      toCreate.push(m);
+      continue;
+    }
+    if (existing.value === m.value && existing.deletedAt === null) {
+      imported++;
+      continue;
+    }
+    try {
+      await prisma.measurement.update({
+        where: { id: existing.id },
+        // `deletedAt: null` is a no-op on a live row, a deliberate
+        // RESURRECTION on a tombstoned one — Withings is the source of
+        // truth for its own rows, so a re-fetched measure brings the row
+        // back (mirrors Google / Fitbit).
+        data: { value: m.value, deletedAt: null },
       });
-      if (existing) {
-        await prisma.measurement.update({
-          where: { id: existing.id },
-          // `deletedAt: null` is a no-op on a live row, a deliberate
-          // RESURRECTION on a tombstoned one — Withings is the source of
-          // truth for its own rows, so a re-fetched measure brings the row
-          // back (mirrors Google / Fitbit).
-          data: { value: m.value, deletedAt: null },
-        });
-      } else {
-        const created = await prisma.measurement.create({
-          data: {
-            userId,
-            type: measType,
-            value: m.value,
-            unit: getUnitForType(m.type),
-            measuredAt: m.measuredAt,
-            source: "WITHINGS",
-          },
-          select: { id: true, type: true, measuredAt: true },
-        });
-        insertedArrivals.push(created);
-      }
       touched.push({ type: measType, measuredAt: m.measuredAt });
       imported++;
     } catch (err) {
-      if (isP2002(err)) {
-        // Benign: the composite unique index serialised a concurrent insert of
-        // this exact reading — the row is present, nothing is lost. Warn and
-        // continue WITHOUT holding the watermark (this is the expected
-        // idempotent-write race the findFirst+create models around).
-        getEvent()?.addWarning(
-          `Withings measure upsert hit an idempotent P2002 (row already present): ${err}`,
-        );
-      } else {
-        // A genuine write failure strands this reading. Flag the cycle so the
-        // watermark is held and the next scheduled tick refetches the overlap
-        // window and retries.
-        anyRowFailed = true;
-        if (firstRowError === null) firstRowError = err;
-        getEvent()?.addWarning(`Failed to upsert measure: ${err}`);
+      // A genuine write failure strands this reading. Flag the cycle so the
+      // watermark is held and the next scheduled tick refetches the overlap
+      // window and retries.
+      anyRowFailed = true;
+      if (firstRowError === null) firstRowError = err;
+      getEvent()?.addWarning(`Failed to update measure: ${err}`);
+    }
+  }
+
+  // New readings in one statement per chunk. `skipDuplicates` absorbs the
+  // idempotent-write race the unique index serialises (a concurrent webhook
+  // run inserting the same reading): that row is present and nothing is lost,
+  // exactly the P2002 the per-row path caught and ignored.
+  for (let i = 0; i < toCreate.length; i += 1_000) {
+    const chunk = toCreate.slice(i, i + 1_000);
+    try {
+      const created = await prisma.measurement.createManyAndReturn({
+        data: chunk.map((m) => ({
+          userId,
+          type: m.type as MeasurementType,
+          value: m.value,
+          unit: getUnitForType(m.type),
+          measuredAt: m.measuredAt,
+          source: "WITHINGS" as const,
+        })),
+        skipDuplicates: true,
+        select: { id: true, type: true, measuredAt: true },
+      });
+      for (const row of created) {
+        insertedArrivals.push(row);
+        touched.push({ type: row.type, measuredAt: row.measuredAt });
       }
+      imported += created.length;
+      if (created.length < chunk.length) {
+        getEvent()?.addWarning(
+          `Withings measure insert skipped ${chunk.length - created.length} rows already present (idempotent race)`,
+        );
+      }
+    } catch (err) {
+      anyRowFailed = true;
+      if (firstRowError === null) firstRowError = err;
+      getEvent()?.addWarning(`Failed to insert measures: ${err}`);
     }
   }
 
@@ -446,9 +495,7 @@ export async function syncUserMeasurements(
   // chart at the 30-day range under-counted recent days.
   try {
     const keys = collapseToTypeDayKeys(touched);
-    for (const k of keys) {
-      await recomputeBucketsForMeasurement(userId, k.type, k.measuredAt);
-    }
+    await recomputeBucketsForKeys(userId, keys);
 
     // v1.8.0 — a Withings sync that lands new weight / BP / pulse /
     // body-comp rows dirties the matching per-metric assessment caches.
