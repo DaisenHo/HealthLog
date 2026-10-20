@@ -16,6 +16,7 @@ import {
   sentimentColorClass,
   type TrendDirectionSentiment,
 } from "@/lib/insights/trend-sentiment";
+import { TrendTile } from "@/components/ui/trend-tile";
 
 interface SecondaryMetric {
   /** Sub-value latest reading (e.g. diastolic when latest is systolic). */
@@ -204,7 +205,7 @@ export function TrendCard({
   };
 
   return (
-    <div className="bg-card border-border flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border p-4 md:p-6">
+    <TrendTile data-slot="trend-card">
       {/* v1.4.25 — single-line discipline + deterministic height for
           the heading row so the value row below sits at the same baseline
           across every tile. The label is locale-abbreviated upstream (see
@@ -465,6 +466,6 @@ export function TrendCard({
               sub-rows. */}
         </div>
       </TooltipProvider>
-    </div>
+    </TrendTile>
   );
 }

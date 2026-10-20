@@ -10,6 +10,7 @@ import {
   type TrendDirectionSentiment,
 } from "@/lib/insights/trend-sentiment";
 import { TileHeader } from "@/components/insights/tile-header";
+import { TrendTile } from "@/components/ui/trend-tile";
 
 /**
  * v1.10.0 — the Apple-Health-Highlights grid tile.
@@ -153,13 +154,7 @@ export function SparklineDeltaTile({
         : "var(--muted-foreground)";
 
   return (
-    <div
-      data-slot="sparkline-delta-tile"
-      className={cn(
-        "bg-card border-border flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border p-4 md:p-6",
-        className,
-      )}
-    >
+    <TrendTile data-slot="sparkline-delta-tile" className={className}>
       {/* The canonical tile-header primitive (was a hand-rolled copy of it):
           leading foreground icon + foreground `CardTitle` heading, provenance
           in the `right` slot. Routing through the primitive keeps this dense
@@ -269,6 +264,6 @@ export function SparklineDeltaTile({
           {footer}
         </div>
       ) : null}
-    </div>
+    </TrendTile>
   );
 }
