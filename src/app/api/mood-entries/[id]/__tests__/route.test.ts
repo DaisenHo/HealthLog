@@ -68,7 +68,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { PUT } from "../route";
+import { GET, PUT } from "../route";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { getSession } from "@/lib/auth/session";
@@ -136,6 +136,43 @@ beforeEach(() => {
   vi.mocked(prisma.moodEntry.findUnique).mockResolvedValue(
     EXISTING_ENTRY as never,
   );
+});
+
+describe("GET /api/mood-entries/[id] — the list's wire shape", () => {
+  it("carries the structured tags and rated factors, as the list does", async () => {
+    vi.mocked(prisma.moodEntry.findFirst).mockResolvedValue({
+      ...EXISTING_ENTRY,
+      tagLinks: [
+        { rating: null, moodTag: { key: "sleep_good", kind: "BINARY" } },
+        { rating: 4, moodTag: { key: "energy", kind: "RATED" } },
+      ],
+      context: null,
+    } as never);
+
+    const res = await GET(
+      new NextRequest("http://localhost/api/mood-entries/me1"),
+      ROUTE_CTX,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        tagKeys: string[];
+        ratedFactors: Array<{ key: string; rating: number }>;
+        tagLinks?: unknown;
+      };
+    };
+    expect(body.data.tagKeys).toEqual(["sleep_good"]);
+    expect(body.data.ratedFactors).toEqual([{ key: "energy", rating: 4 }]);
+    // The join is projected, never shipped raw.
+    expect(body.data.tagLinks).toBeUndefined();
+    const findCall = vi.mocked(prisma.moodEntry.findFirst).mock.calls[0][0] as {
+      include?: Record<string, unknown>;
+    };
+    expect(Object.keys(findCall.include ?? {}).sort()).toEqual([
+      "context",
+      "tagLinks",
+    ]);
+  });
 });
 
 describe("PUT /api/mood-entries/[id] — 422 multi-issue (v1.4.43 W6)", () => {

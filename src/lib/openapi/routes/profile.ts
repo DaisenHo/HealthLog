@@ -383,6 +383,18 @@ const notificationPrefsResolved = z
       nudgeFrequency: z
         .enum(["weekly", "biweekly"])
         .describe("Nudge frequency cap: one per 7 or per 14 days."),
+      nudgeAiComposed: z
+        .boolean()
+        .describe(
+          "Opt-in for model-written nudge copy. Off by default; the deterministic template is always the fallback.",
+        ),
+    }),
+    measurementReminder: z.object({
+      clientManaged: z
+        .boolean()
+        .describe(
+          "True when the iOS app owns local check-up reminders; the server-side measurement-reminder APNs send is then suppressed. Default false.",
+        ),
     }),
     content: z.object({
       detail: z

@@ -290,6 +290,13 @@ export const measurementResource = z
       .optional()
       .describe("External-system dedup key; null for manual entries."),
     externalSourceVersion: z.string().nullable().optional(),
+    aggregationProvenance: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "Authority of an aggregate stored under a `stats:` identity: `HEALTHKIT_STATISTICS`, `EXPORT_XML_SOURCE_MAX` or `LEGACY_UNKNOWN`. Null on an ordinary sample row. Decode unknown values leniently.",
+      ),
     glucoseContext: z
       .string()
       .nullable()
@@ -450,7 +457,11 @@ const sleepSessionResource = z.object({
     .describe(
       "True when the source has no per-stage onset timestamps and the server synthesised a contiguous timeline in a fixed physiological order (WHOOP). The client renders the hypnogram but labels it an approximate layout and never recomputes. False for real-series sources (Apple Health / Withings / Fitbit).",
     ),
-  stages: z.record(sleepStageEnum, z.number().int().nonnegative()),
+  stages: z
+    .partialRecord(sleepStageEnum, z.number().int().nonnegative())
+    .describe(
+      "Minutes per stage. Only the stages the night recorded are present; an absent stage is not zero minutes, it was not measured.",
+    ),
   segments: z.array(sleepSegmentResource),
   sourceDiscrepancy: z
     .object({
@@ -757,8 +768,10 @@ const seriesBatchRowSchema = z.object({
 const seriesBatchResponse = z
   .object({
     series: z
-      .record(measurementTypeEnum, z.array(seriesBatchRowSchema))
-      .describe("Per-type daily series, keyed by MeasurementType."),
+      .partialRecord(measurementTypeEnum, z.array(seriesBatchRowSchema))
+      .describe(
+        "Per-type daily series, keyed by MeasurementType. Only the requested types are present.",
+      ),
   })
   .meta({
     id: "MeasurementsSeriesBatchResponse",

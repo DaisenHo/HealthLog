@@ -1192,6 +1192,12 @@ const moodAggregatesResponse = z
             .array(z.object({ x: z.number(), y: z.number() }))
             .describe("Mood (x) versus metric (y), paired by day."),
           n: z.number().int().describe("Paired-day count."),
+          suppressed: z
+            .enum(["insufficientPairs", "notSignificant"])
+            .optional()
+            .describe(
+              "Why `result` is null: too few paired days, or a pairing that did not reach significance. Absent when `result` is set.",
+            ),
         }),
       )
       .describe(

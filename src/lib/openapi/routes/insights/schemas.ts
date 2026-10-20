@@ -32,45 +32,6 @@ import { isoDateTime } from "@/lib/validations/datetime";
 /** The retrospective periods the narrative route accepts, read off the engine. */
 const NARRATIVE_PERIOD_VALUES = Object.keys(PERIOD_DAYS);
 
-export const insightsComprehensiveResponse = z
-  .object({
-    summary: z.string(),
-    recommendations: z.array(z.record(z.string(), z.unknown())),
-    citations: z.array(z.record(z.string(), z.unknown())),
-    warnings: z.array(z.record(z.string(), z.unknown())),
-    dailyBriefing: z.record(z.string(), z.unknown()).nullable().optional(),
-    trendAnnotations: z.record(z.string(), z.unknown()).nullable().optional(),
-    storyboardAnnotations: z
-      .array(z.record(z.string(), z.unknown()))
-      .optional(),
-    metricSource: z.record(z.string(), z.unknown()).optional(),
-    revalidating: z
-      .boolean()
-      .optional()
-      .describe(
-        "True when the body is served from last-good cache (stale-while-revalidate) while a fresh aggregation runs in the background. The client keeps polling on `revalidating` (bounded) so the open page converges on the fresh body.",
-      ),
-    hasProvider: z
-      .boolean()
-      .optional()
-      .describe(
-        "Whether a configured AI provider exists for the record: provider presence and nothing else. False never means the operator switched AI off or consent is missing; `ai` says that.",
-      ),
-    ai: z
-      .object({
-        briefing: aiCapabilityState,
-        statusText: aiCapabilityState,
-      })
-      .describe(
-        "Whether the AI parts that decorate the overview can be shown: the daily briefing and the per-metric status notes. Resolved per request, never cached with the body. The overview itself is computed data and loads whatever these say.",
-      ),
-  })
-  .meta({
-    id: "InsightsComprehensiveResponse",
-    description:
-      "The Insights overview's computed read. No provider is called on this path; every figure is computed from the record.",
-  });
-
 // v1.8.7.1 — generic per-HealthKit-metric assessment. The query enum is
 // derived from the same registry the route validates against, so the
 // spec, the route, and the cache scope cannot drift. The seven
@@ -1997,6 +1958,166 @@ export const dataSummary = z
     id: "DataSummary",
     description:
       "Per-measurement-type summary. Every statistic is null on an empty series rather than 0, so a client never charts a zero it was never given. `anomalyCount` and `slope90` were computed here historically and left this wire in v1.37.19 — they are not fields of this shape.",
+  });
+
+/**
+ * A summary the overview computes in-process. The same statistics as the
+ * analytics summary, plus the count of readings the outlier rule flags, which
+ * only the in-process path can produce. Declared here rather than derived from
+ * either `DataSummary` copy so its trend component cannot collide with theirs.
+ */
+const comprehensiveTrend = z.object({
+  slope: z.number().describe("Least-squares slope in units per day."),
+  direction: z.enum(["up", "down", "stable"]),
+  confidence: z.number().describe("R² of the fit, 0..1."),
+});
+
+const comprehensiveSummary = z
+  .object({
+    count: z.number().int(),
+    latest: z.number().nullable(),
+    min: z.number().nullable(),
+    max: z.number().nullable(),
+    mean: z.number().nullable(),
+    median: z.number().nullable(),
+    avg7: z.number().nullable(),
+    avg30: z.number().nullable(),
+    slope7: comprehensiveTrend.nullable(),
+    slope30: comprehensiveTrend.nullable(),
+    anomalyCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe("Readings in the series the outlier rule flags."),
+    avg30LastMonth: z.number().nullable().optional(),
+    avg30LastYear: z.number().nullable().optional(),
+  })
+  .meta({ id: "ComprehensiveMetricSummary" });
+
+const correlationStat = z
+  .object({
+    r: z.number(),
+    strength: z
+      .enum(["stark", "moderat", "schwach", "keine"])
+      .describe(
+        "Strength bucket. The tokens are GERMAN on the wire; treat them as opaque identifiers and localise client-side.",
+      ),
+    n: z.number().int(),
+  })
+  .meta({
+    id: "CorrelationStat",
+    description:
+      "A significant Pearson correlation (n >= 20, p < 0.05). The field holding it is null when the pairing is not significant.",
+  });
+
+const classification = z.object({
+  category: z.string(),
+  color: z.string().describe("A CSS colour token for the web client."),
+  severity: z.enum(["normal", "elevated", "warning", "danger"]),
+});
+
+export const insightsComprehensiveResponse = z
+  .object({
+    summaries: z
+      .record(z.string(), comprehensiveSummary)
+      .describe(
+        "Keyed by `MeasurementType`. Only types with readings in the last 90 days are present.",
+      ),
+    bmi: z.number().nullable(),
+    bmiClassification: classification.nullable(),
+    bpClassification: classification.nullable(),
+    bpPctInTarget: z
+      .number()
+      .nullable()
+      .describe(
+        "Share of blood-pressure readings inside the target band, 0-100.",
+      ),
+    bpTargets: z
+      .object({
+        sysLow: z.number(),
+        sysHigh: z.number(),
+        diaLow: z.number(),
+        diaHigh: z.number(),
+      })
+      .nullable()
+      .describe("Age-banded targets; null without a date of birth."),
+    weightBpCorrelation: correlationStat.nullable(),
+    scatterData: z
+      .array(z.object({ weight: z.number(), sysBP: z.number() }))
+      .describe("Weight against systolic pressure, paired by day."),
+    bpMedicationCorrelation: correlationStat
+      .extend({ medicationCount: z.number().int() })
+      .nullable(),
+    bpMedicationScatterData: z.array(
+      z.object({ continuityPct: z.number(), sysBP: z.number() }),
+    ),
+    moodSummary: comprehensiveSummary.nullable(),
+    moodBpCorrelation: correlationStat.nullable(),
+    moodBpScatterData: z.array(
+      z.object({ mood: z.number(), sysBP: z.number() }),
+    ),
+    moodWeightCorrelation: correlationStat.nullable(),
+    moodWeightScatterData: z.array(
+      z.object({ mood: z.number(), weight: z.number() }),
+    ),
+    moodPulseCorrelation: correlationStat.nullable(),
+    moodPulseScatterData: z.array(
+      z.object({ mood: z.number(), pulse: z.number() }),
+    ),
+    medications: z
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          dose: z.string(),
+          category: z.string(),
+          categoryLabel: z
+            .string()
+            .nullable()
+            .describe(
+              "The label of a custom category; null for a built-in one.",
+            ),
+          compliance7: z.number().describe("Percent, 0-100."),
+          compliance30: z.number().describe("Percent, 0-100."),
+          streak: z.number().int(),
+          taken7: z.number().int(),
+          skipped7: z.number().int(),
+          missed7: z.number().int(),
+        }),
+      )
+      .describe("Cadence-aware compliance per active medication."),
+    alerts: z.array(
+      z.object({
+        level: z.enum(["success", "info", "warning", "danger"]),
+        title: z.string(),
+        message: z.string(),
+      }),
+    ),
+    hasProvider: z
+      .boolean()
+      .describe(
+        "Whether a configured AI provider exists for the record: provider presence and nothing else. False never means the operator switched AI off or consent is missing; `ai` says that.",
+      ),
+    dataSpanDays: z.number().int().nonnegative(),
+    totalMeasurements: z.number().int().nonnegative(),
+    revalidating: z
+      .boolean()
+      .describe(
+        "True when the body is served from last-good cache (stale-while-revalidate) while a fresh aggregation runs in the background. The client keeps polling on `revalidating` (bounded) so the open page converges on the fresh body.",
+      ),
+    ai: z
+      .object({
+        briefing: aiCapabilityState,
+        statusText: aiCapabilityState,
+      })
+      .describe(
+        "Whether the AI parts that decorate the overview can be shown: the daily briefing and the per-metric status notes. Resolved per request, never cached with the body. The overview itself is computed data and loads whatever these say.",
+      ),
+  })
+  .meta({
+    id: "InsightsComprehensiveResponse",
+    description:
+      "The Insights overview's computed read. No provider is called on this path; every figure is computed from the record. The model-written briefing is not part of it; it is read from `GET /api/insights/generate`.",
   });
 
 const lastSeenSlot = z
