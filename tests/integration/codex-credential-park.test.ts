@@ -319,3 +319,57 @@ describe("two refreshes of one Codex token", () => {
     expect(parkSignals("codex")).toHaveLength(0);
   });
 });
+
+describe("a Codex refresh under the lock", () => {
+  it("parks a sign-in whose every refresh the issuer answers as reused", async () => {
+    const user = await seedCodexUser();
+    // The issuer revoked the token family: no peer rotated anything, yet each
+    // refresh comes back reused.
+    vi.mocked(refreshDeviceTokens).mockRejectedValue(
+      new CodexRefreshError(400, "refresh_token_reused"),
+    );
+
+    const chain = await resolveProviderChain(user.id);
+
+    expect(chain.map((p) => p.providerType)).not.toContain("codex");
+    expect(
+      (
+        await prisma.user.findUniqueOrThrow({
+          where: { id: user.id },
+          select: { codexConnectionStatus: true },
+        })
+      ).codexConnectionStatus,
+    ).toBe("expired");
+    expect(parkSignals("codex")).toHaveLength(1);
+    expect(parkSignals("codex")[0][0].meta?.oauth_error).toBe(
+      "refresh_token_reused",
+    );
+  });
+
+  it("does not use Codex once more when the person disconnected it meanwhile", async () => {
+    const user = await seedCodexUser();
+    vi.mocked(refreshDeviceTokens).mockImplementation(async () => {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          codexAccessTokenEncrypted: null,
+          codexRefreshTokenEncrypted: null,
+          codexConnectionStatus: "disconnected",
+        },
+      });
+      return creds("rotated", 10 * HOUR_MS);
+    });
+
+    const chain = await resolveProviderChain(user.id);
+
+    expect(chain.map((p) => p.providerType)).not.toContain("codex");
+    expect(
+      (
+        await prisma.user.findUniqueOrThrow({
+          where: { id: user.id },
+          select: { codexConnectionStatus: true },
+        })
+      ).codexConnectionStatus,
+    ).toBe("disconnected");
+  });
+});
