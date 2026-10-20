@@ -11,6 +11,7 @@ import { WideEventBuilder } from "./logging/event-builder";
 import { annotate, eventStorage, getEvent } from "./logging/context";
 import { emitIfSampled } from "./logging/transports";
 import { redactOptional, redactSecrets } from "./logging/redact";
+import { routeTemplateFor } from "./logging/route-template";
 import { getSession } from "./auth/session";
 import {
   hasSecondFactorEnrolled,
@@ -241,7 +242,9 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
     evt.setHttp({
       method: safeRequestProp(request, (r) => r.method, "GET"),
       path: url.pathname,
-      route: url.pathname,
+      // The handler's template (`/api/medications/[id]`), not the concrete
+      // path: one route per handler, so dashboards can group on it.
+      route: await routeTemplateFor(url.pathname, args[1]),
       status: 200,
       user_agent:
         safeRequestProp(request, (r) => r.headers.get("user-agent"), null) ??
