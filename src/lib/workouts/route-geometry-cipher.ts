@@ -23,7 +23,7 @@ import { Buffer } from "node:buffer";
 
 import { decryptBytes, encryptBytes } from "@/lib/crypto";
 import { WORKOUT_ROUTE_GEOMETRY_AAD } from "@/lib/crypto/encrypted-columns";
-import { getEvent } from "@/lib/logging/context";
+import { readSealedOrLegacy, warnAndDrop } from "@/lib/crypto/sealed-or-legacy";
 
 /** Seal a route's GeoJSON geometry for `WorkoutRoute.geometryEncrypted`. */
 export function encryptRouteGeometry(
@@ -53,17 +53,10 @@ export function readRouteGeometry(row: {
   geometry?: unknown;
   geometryEncrypted?: Uint8Array | null;
 }): unknown {
-  if (row.geometryEncrypted && row.geometryEncrypted.byteLength > 0) {
-    try {
-      return decryptRouteGeometry(row.geometryEncrypted);
-    } catch (err) {
-      getEvent()?.addWarning(
-        `workout route decrypt failed: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
-      return null;
-    }
-  }
-  return row.geometry ?? null;
+  return readSealedOrLegacy<unknown>({
+    sealed: row.geometryEncrypted,
+    legacy: row.geometry,
+    open: decryptRouteGeometry,
+    onUndecryptable: warnAndDrop("workout route decrypt failed"),
+  });
 }
