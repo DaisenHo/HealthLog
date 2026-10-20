@@ -1,4 +1,4 @@
-import { DEFAULT_ERROR_CODES } from "@/lib/api-response";
+import { DEFAULT_ERROR_CODES } from "@/lib/api/default-error-codes";
 
 /**
  * Every `meta.errorCode` the API emits, grouped by the surface that emits it.
@@ -412,6 +412,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "sharing.invite.invalid",
       "sharing.invite.invalid_scope",
       "sharing.invite.manage_browser_only",
+      "sharing.invite.no_account",
       "sharing.invite.refused",
       "sharing.invite.self",
       "sharing.not_permitted",

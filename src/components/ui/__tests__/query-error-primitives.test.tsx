@@ -58,6 +58,21 @@ describe("readFailureKind", () => {
     expect(readFailureKind(new TypeError("Failed to fetch"))).toBe("failed");
     expect(readFailureKind(null)).toBe("failed");
   });
+
+  it("reads the code before the status", () => {
+    const withCode = (status: number, errorCode: string) =>
+      readFailureKind(new ApiError("x", status, { errorCode }));
+    // A step-up or re-proof gate answers 401 on a session that is still good:
+    // sending that reader to sign-in would end it.
+    expect(withCode(401, "auth.stepup.required")).toBe("failed");
+    expect(withCode(401, "auth.reproof.required")).toBe("failed");
+    expect(withCode(401, "auth.mfa.code_invalid")).toBe("failed");
+    expect(withCode(401, "auth.token.expired")).toBe("unauthenticated");
+    expect(withCode(401, "http.unauthenticated")).toBe("unauthenticated");
+    // An unknown code falls back to the status.
+    expect(withCode(401, "auth.something.new")).toBe("unauthenticated");
+    expect(withCode(403, "http.forbidden")).toBe("refused");
+  });
 });
 
 describe.each([

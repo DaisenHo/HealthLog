@@ -945,7 +945,8 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         "404": {
-          description: "No account on this instance carries that identifier.",
+          description:
+            "No account on this instance carries that identifier (`meta.errorCode: sharing.invite.no_account`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "409": {
@@ -1099,7 +1100,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than ten profiles from one caller within the hour. No error code — rate-limit refusals carry none anywhere in this API; branch on the status. Nothing was created.",
+            "More than ten profiles from one caller within the hour (`meta.errorCode: http.rate_limited`, the status default; a 429 has one meaning here, so the status alone is enough to branch on). Nothing was created.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -1167,7 +1168,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than ten edits from one caller within the hour — the ceiling creation carries. No error code; branch on the status. Nothing was changed, and the refusal lands before the record named in the path is looked at.",
+            "More than ten edits from one caller within the hour — the ceiling creation carries. `meta.errorCode: http.rate_limited`, the status default. Nothing was changed, and the refusal lands before the record named in the path is looked at.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -1239,7 +1240,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Invite another Guardian",
       description:
-        "Offers somebody else a share in looking after this profile, at MANAGE over the whole record. Cookie-only and step-up gated, like every act in this family — the read beside it is not. **Resolve refusals on `meta.errorCode` first and fall back to the status only for the two arms that carry none**, because this route answers 404 twice and the codeless one is the less serious of the two: an identifier that matches no account carries no code, while `managed_profile.not_found` means the caller is not a Guardian of that profile at all. A client branching on the status first would tell somebody to check a spelling when the real answer is that the record is no longer theirs to administer.",
+        "Offers somebody else a share in looking after this profile, at MANAGE over the whole record. Cookie-only and step-up gated, like every act in this family — the read beside it is not. **Resolve refusals on `meta.errorCode`, not on the status**, because this route answers 404 twice and the two need different next steps: `sharing.invite.no_account` means no account carries that identifier, while `managed_profile.not_found` means the caller is not a Guardian of that profile at all. A client branching on the status would tell somebody to check a spelling when the real answer is that the record is no longer theirs to administer.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
@@ -1272,7 +1273,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "404": {
           description:
-            "Two refusals share this status and only one carries a code. **No `meta.errorCode`**: no account on this instance carries that identifier — the same deliberate disclosure to an authenticated caller that `POST /api/account/grants` makes, and codeless there too, so this family does not answer one way here and another way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the caller is not one of its Guardians.",
+            "Two refusals share this status, each with its own code. `meta.errorCode: sharing.invite.no_account`: no account on this instance carries that identifier — the same deliberate disclosure to an authenticated caller that `POST /api/account/grants` makes, with the same code, so this family does not answer one way here and another way one page over. `meta.errorCode: managed_profile.not_found`: no such managed profile, or the caller is not one of its Guardians.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "409": {
@@ -1287,7 +1288,7 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "429": {
           description:
-            "More than ten invitations from one caller within the hour. No error code, as above; branch on the status.",
+            "More than ten invitations from one caller within the hour (`meta.errorCode: http.rate_limited`, the status default).",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

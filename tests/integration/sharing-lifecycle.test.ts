@@ -491,6 +491,8 @@ describe("who may do what to a grant", () => {
 
     const response = await invite("nobody-here@example.test");
     expect(response.status).toBe(404);
+    const body = (await response.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("sharing.invite.no_account");
     expect(await getPrismaClient().accountGrant.count()).toBe(0);
   });
 });
