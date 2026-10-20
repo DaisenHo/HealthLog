@@ -1,5 +1,82 @@
 # Changelog
 
+## [1.43.9] — 2026-10-21
+
+### Fixed
+
+- **Oura's resilience level syncs.** Resilience sits behind Oura's stress
+  permission, which HealthLog did not ask for, so it was refused even with
+  every other permission granted. HealthLog now asks for it. When Oura refuses
+  a single data type for a missing permission, the Oura card names exactly
+  that type, the refusal no longer triggers a token refresh and never counts
+  toward the reconnect warning. After updating, enable Stress for your app in
+  Oura's developer portal and connect Oura once more. (#1204)
+- **Connecting an integration survives a repeated return link.** Some
+  browsers open the provider's return link twice. The second visit spent the
+  same one-time code again, and Oura answered by revoking the connection the
+  first visit had just made. Every connect flow (Oura, Polar, Strava, WHOOP,
+  Withings, Fitbit, Google Health) now claims the return link once; a second
+  visit waits for the first and lands on the same page. (#1204)
+- **Two syncs no longer spend the same Oura sign-in.** Syncs that renewed the
+  Oura sign-in at the same moment each used the one-time renewal token, which
+  Oura can treat as reuse. Renewals now take turns.
+- **Apple Health rows show the newest reading.** A type HealthLog also writes
+  back to Apple Health, such as weight entered here, showed the age of the
+  last sample Apple Health sent while the status above it already counted the
+  newer entry. The row now shows whichever is newer. (#1247)
+- **An expired ChatGPT sign-in waits for you.** When the sign-in is refused as
+  expired, the connection is marked as needing a reconnect after the first
+  refusal and stays parked until you sign in again, instead of being retried
+  on every insight run. Signing in again puts it back in front at once. Two
+  renewals at the same moment take turns, so a working sign-in is never
+  parked by mistake.
+- The demo instance no longer shows the setup checklist, whose steps cannot be
+  done in a read-only account.
+
+### Changed
+
+- **Faster syncs.** Withings syncs, full syncs included, write a batch in one
+  pass and skip readings that did not change, so a sync that took half a
+  minute finishes in about a second. Every connected service refreshes its
+  daily charts in one pass after a sync instead of one day at a time.
+- **Faster dashboard and insights.** The all-time reading counts on the
+  dashboard and the all-time figures for weight, blood pressure and pulse are
+  read from the daily summaries instead of every reading, which makes them
+  many times faster for accounts with a lot of watch data. The all-time
+  figures fall back to the readings wherever the daily summaries do not match
+  them. The integrations settings card answers sooner on the first visit.
+- **Lighter server.** Each signed-in request loads only the small account
+  fields it needs, so the profile picture and stored credentials are no longer
+  read into memory on every call. The server loads each page's code when it
+  is first used rather than all of it at start, so it starts with less than
+  half the memory and without a pause in its first minute; a page's first
+  visit after a restart takes a few milliseconds longer.
+- The hourly sign-in location lookup no longer retries addresses it cannot
+  place on every run; it tries such an address again after a week.
+- Requests that probe for server actions, which this app does not use, are
+  turned away with a 404 and counted in one warning line instead of filling
+  the error log.
+- The periodic memory log line breaks the heap down by area, so a large heap
+  can be explained from the logs.
+
+### Security
+
+- The `hono` dependency floor is raised to 4.13.11 (GHSA-5r4p-p66f-jhc7).
+
+### Upgrade notes
+
+- Three additive migrations run at start (0417 to 0419). The first start after
+  the upgrade refills the daily summaries once in the background; until that
+  finishes, the all-time figures are read from the readings as before.
+- Oura: enable the Stress permission for your app in Oura's developer portal,
+  then connect Oura once more and leave every permission ticked.
+
+### Thanks
+
+@haritowa for tracing the Oura resilience refusal to the missing permission
+and for timing the repeated return link, @alondin for staying with #1204
+through every round, and @mills1975 for #1247.
+
 ## [1.43.8] — 2026-10-20
 
 ### Fixed
