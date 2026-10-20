@@ -87,9 +87,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function ouraCallback(state: string, code = "oura-code") {
+async function ouraCallback(state: string, code: string | null = "oura-code") {
   const { GET } = await import("@/app/api/oura/callback/route");
-  const params = new URLSearchParams({ code, state, iss: OURA_ISS });
+  const params = new URLSearchParams(
+    code === null
+      ? { error: "access_denied", state, iss: OURA_ISS }
+      : { code, state, iss: OURA_ISS },
+  );
   return GET(
     new NextRequest(`http://localhost/api/oura/callback?${params}`, {
       method: "GET",
@@ -218,6 +222,37 @@ describe("Oura callback delivered twice", () => {
     const retry = await ouraCallback(await mintOuraState(), "fresh-code");
     expect(tokenCalls).toBe(2);
     expect(retry.headers.get("location")).toContain("oura=connected");
+  });
+});
+
+describe("Oura consent denied, then allowed", () => {
+  it("still exchanges the code when the person returns to the same authorize URL", async () => {
+    let tokenCalls = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (urlOf(input) !== OURA_TOKEN_URL) throw new Error("unexpected");
+      tokenCalls++;
+      return new Response(
+        JSON.stringify({
+          access_token: "oura-access",
+          refresh_token: "oura-refresh",
+          expires_in: 86400,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
+
+    const state = await mintOuraState();
+    // Deny: Oura returns without a code. Nothing is exchanged or claimed.
+    const denied = await ouraCallback(state, null);
+    expect(denied.headers.get("location")).toContain(
+      "oura=error&reason=nocode",
+    );
+    expect(tokenCalls).toBe(0);
+
+    // Allow on the same authorize URL: same state, now with a code.
+    const allowed = await ouraCallback(state, "allowed-code");
+    expect(tokenCalls).toBe(1);
+    expect(allowed.headers.get("location")).toContain("oura=connected");
   });
 });
 

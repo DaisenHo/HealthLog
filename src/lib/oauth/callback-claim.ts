@@ -32,6 +32,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { cleanupExpiredOAuthCallbackClaims } from "@/lib/jobs/oauth-callback-claim-cleanup";
 
 /** Providers whose callbacks claim their state here. */
 export type OAuthCallbackProvider =
@@ -130,9 +131,7 @@ export async function settleOAuthCallback(
               : null,
         },
       });
-      await prisma.oAuthCallbackClaim.deleteMany({
-        where: { expiresAt: { lt: now } },
-      });
+      await cleanupExpiredOAuthCallbackClaims(prisma, now);
     } catch (err) {
       getEvent()?.addWarning(`oauth callback claim settle failed: ${err}`);
     }
