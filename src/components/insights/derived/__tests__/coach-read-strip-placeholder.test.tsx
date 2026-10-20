@@ -40,7 +40,7 @@ describe("CoachReadStrip — placeholder while the read loads", () => {
     expect(markup).toContain('aria-busy="true"');
   });
 
-  function renderFailed(error: unknown) {
+  function renderFailed(error: Error) {
     // `retryOnMount: false` keeps the seeded failure from being reset to a
     // fresh load on render.
     const client = new QueryClient({
