@@ -32,6 +32,7 @@ const apiGetMock = vi.fn();
 vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/api-fetch")>()),
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiGetList: (...args: unknown[]) => apiGetMock(...args),
 }));
 
 const { EcgSection, ECG_OVERVIEW_LIMIT } = await import("../ecg-section");
