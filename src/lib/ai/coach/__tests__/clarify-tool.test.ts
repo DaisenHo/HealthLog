@@ -229,6 +229,32 @@ describe("clarificationAllowed", () => {
     ).resolves.toBe(false);
   });
 
+  it("counts the day in the person's zone, not from UTC midnight", async () => {
+    // 23:30 UTC on 1 March is already 2 March in Auckland and still 1 March
+    // in Los Angeles; each day starts at its own local midnight.
+    const now = new Date("2026-03-01T23:30:00.000Z");
+    await clarificationAllowed({
+      userId: "u1",
+      conversationId: "c1",
+      now,
+      tz: "Pacific/Auckland",
+    });
+    await clarificationAllowed({
+      userId: "u1",
+      conversationId: "c1",
+      now,
+      tz: "America/Los_Angeles",
+    });
+    const since = db.messageCount.mock.calls.map(
+      ([q]) =>
+        (q as { where: { createdAt: { gte: Date } } }).where.createdAt.gte,
+    );
+    expect(since).toEqual([
+      new Date("2026-03-01T11:00:00.000Z"),
+      new Date("2026-03-01T08:00:00.000Z"),
+    ]);
+  });
+
   it("refuses when the count cannot be read", async () => {
     db.messageFindMany.mockRejectedValue(new Error("down"));
     await expect(

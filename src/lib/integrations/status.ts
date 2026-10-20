@@ -35,6 +35,7 @@ import { prisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate, getEvent } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 import {
   dispatchNotification,
   type DispatchOutcome,
@@ -558,7 +559,7 @@ export interface RecordSyncFailureInput {
  * Record a sync failure. Always:
  *   - increments the per-kind bucket in `consecutiveFailuresByKind`
  *   - persists the encrypted error message
- *   - writes one `AuditLog` row with `integrations.sync.failed`
+ *   - emits one `integrations.sync.failed` signal (not an audit row)
  *
  * If `kind === "reauth_required"` the row is parked at `error_reauth`
  * so the next scheduled sync skips. If `kind === "persistent"` and
@@ -746,39 +747,36 @@ export async function recordSyncFailure(
     errorCode: errorCode ?? null,
   });
 
-  // Audit log entry — fire-and-await so an integration test can assert
-  // it. The auth/audit helper is its own DB write so it's safe to call
-  // serially without bloating latency in the success path (which never
-  // calls this).
+  // One signal per failed sync, not an audit row. The audit log is the
+  // trail of what a person or an admin did to an account; a provider that
+  // answered 503 is neither, and one row per failed sync drowned that trail
+  // (and kept the provider's message there in plain text, while the status
+  // row seals it). The signal carries the same counts to the log store, and
+  // the status row keeps the current streak and the sealed message.
   //
-  // v1.4.47 — `attemptNumber` is now sourced from the bucket sum
-  // (the legacy `consecutiveFailures` column was dropped). The sum
-  // matches the legacy column's value for any row written after
-  // v1.4.43: a transient burst followed by a single persistent failure
-  // shows `attemptNumber = transient + persistent`, which is the same
-  // running total the legacy integer carried.
+  // `attempt_number` is the sum of the buckets, the running total the
+  // dropped `consecutiveFailures` column carried; the alert below uses the
+  // largest single bucket (docs/ops/attempt-number-semantics.md).
   const bucketTotal =
     buckets.transient + buckets.reauth_required + buckets.persistent;
-  await auditLog("integrations.sync.failed", {
-    userId,
-    details: {
+  emitSignal({
+    action: "integrations.sync.failed",
+    level: "warn",
+    meta: {
       integration,
       kind: effectiveKind,
-      // Non-null only when the clock overrode the classifier, so an operator
-      // reading the trail can tell "the upstream said this was permanent" from
-      // "we concluded it was after a day of retrying".
-      escalatedFrom: escalatedFromTransient ? kind : null,
-      failingLeg: leg,
-      // Every leg the row currently holds an error for, not just this one —
-      // the audit trail is where an operator reconstructs an overlapping
-      // outage, and one leg per row was never enough to do it.
-      failingLegs,
-      failingSinceAt: failingSinceAt.toISOString(),
-      streakAgeMs,
-      errorCode: errorCode ?? null,
-      message,
-      attemptNumber: bucketTotal,
-      bucketCount: buckets[effectiveKind],
+      // Non-null only when the clock overrode the classifier: "the upstream
+      // said this was permanent" against "a day of retrying concluded it".
+      escalated_from: escalatedFromTransient ? kind : null,
+      failing_leg: leg,
+      // Every leg the row holds an error for, to reconstruct an overlapping
+      // outage.
+      failing_legs: failingLegs,
+      failing_since_at: failingSinceAt.toISOString(),
+      streak_age_ms: streakAgeMs,
+      error_code: errorCode ?? null,
+      attempt_number: bucketTotal,
+      bucket_count: buckets[effectiveKind],
       state: newState,
     },
   });
@@ -941,7 +939,7 @@ export async function resumeIntegrationFromPark(
  * short-circuit. Unlike `recordSyncFailure`, this helper:
  *
  *   1. does NOT increment the per-kind failure buckets.
- *   2. does NOT write an `integrations.sync.failed` audit row through
+ *   2. does NOT emit the `integrations.sync.failed` signal of
  *      `recordSyncFailure`. A standalone `integrations.reauth_required`
  *      row is written instead so the operations trail still shows the
  *      park event.

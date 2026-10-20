@@ -27,16 +27,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
+
+/** The shared comment strip, plus SQL line comments inside template strings. */
+function stripCode(text: string): string {
+  return stripComments(text).replace(/^\s*--.*$/gm, "");
+}
 
 const SRC = join(process.cwd(), "src");
-
-function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "")
-    .replace(/^\s*--.*$/gm, "");
-}
 
 /** `DISTINCT ON (type)` or `DISTINCT ON (m."type")`, the type alone. */
 const LATEST_PER_TYPE = /DISTINCT\s+ON\s*\(\s*(?:\w+\s*\.\s*)?"?type"?\s*\)/i;
@@ -100,9 +98,7 @@ describe("latest-per-type reads", () => {
 
   it("no production read keeps one row per type with DISTINCT ON", () => {
     const offenders = productionFiles().filter((file) =>
-      LATEST_PER_TYPE.test(
-        stripComments(readFileSync(join(SRC, file), "utf8")),
-      ),
+      LATEST_PER_TYPE.test(stripCode(readFileSync(join(SRC, file), "utf8"))),
     );
     expect(offenders).toEqual([]);
   });
@@ -152,9 +148,7 @@ describe("latest-per-type reads", () => {
 
   it("the summaries slice is built only behind its cache cell", () => {
     const callers = productionFiles().filter((file) =>
-      SLICE_BUILDER_CALL.test(
-        stripComments(readFileSync(join(SRC, file), "utf8")),
-      ),
+      SLICE_BUILDER_CALL.test(stripCode(readFileSync(join(SRC, file), "utf8"))),
     );
     expect(callers).toEqual(["lib/analytics/summaries-slice.ts"]);
   });

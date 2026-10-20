@@ -286,6 +286,23 @@ describe("fetchReadiness pagination", () => {
     });
     expect(r).toHaveLength(2);
   });
+
+  it("ends on an empty next_token without reading the first page again", async () => {
+    const page = {
+      status: 200,
+      body: {
+        data: [{ id: "1", day: "2026-06-09", score: 70 }],
+        next_token: "",
+      },
+    };
+    const fetchMock = installFetchMock([page, page]);
+    const r = await fetchReadiness("tok", {
+      startDate: "2026-06-01",
+      endDate: "2026-06-10",
+    });
+    expect(r).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("mapReadiness", () => {

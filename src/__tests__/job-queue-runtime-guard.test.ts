@@ -417,16 +417,6 @@ describe("a cron-fed queue polls slowly, a sent one does not", () => {
   });
 });
 
-/** The text of the first `const NAME = …` in the tree, up to its end. */
-function constBody(texts: ReadonlyMap<string, string>, name: string): string {
-  for (const [file, raw] of texts) {
-    if (new RegExp(`\\bconst\\s+${name}\\b`).test(raw)) {
-      return bodyOf(texts, { file, fn: name }).split(/\n\n/)[0];
-    }
-  }
-  return "";
-}
-
 describe("heavy jobs share the lane", () => {
   const all = scan(source);
   const laned = all.bindings.filter((b) => /\bheavyLane\s*\(/.test(b.text));
@@ -437,7 +427,10 @@ describe("heavy jobs share the lane", () => {
     );
   });
 
-  it("holds a lockedPass outside the lane, so an expiry retry does not queue twice", () => {
+  it("holds a lockedPass outside the lane, so an expiry retry finds the run going", () => {
+    // Outside, a retry pg-boss starts while the expired run still holds the
+    // lane finds the lock and settles; inside, the lane would defer it and
+    // run the job a second time once the first is done.
     const inverted = laned
       .filter((b) => /\blockedPass\s*\(/.test(b.text))
       .filter((b) => b.text.indexOf("lockedPass") > b.text.indexOf("heavyLane"))
@@ -445,17 +438,45 @@ describe("heavy jobs share the lane", () => {
     expect(inverted).toEqual([]);
   });
 
-  it("keeps a waiter past its expiry only where nothing retries the job", () => {
-    const problems = Object.entries(HEAVY_QUEUES)
-      .filter(([, heavy]) => heavy.oneShot)
-      .flatMap(([queue]) => {
-        const entry = QUEUE_RUNTIME[queue];
-        if (entry?.runtime !== "long") return [`${queue}: not a long queue`];
-        const noRetry = entry.expiryVia.some((v) =>
-          /\bretryLimit:\s*0\b/.test(constBody(source, v)),
-        );
-        return noRetry ? [] : [`${queue}: its send options allow a retry`];
-      });
-    expect(problems).toEqual([]);
+  it("defers only on queues where a job can go back to created", () => {
+    // A deferred job returns from active to created. Under `short` (one
+    // queued job per key) and `stately` (one per state) a twin already
+    // queued would refuse it, and the job would fail instead of waiting.
+    const policies = policiesOf(source);
+    expect(policies.size).toBeGreaterThanOrEqual(40);
+    const refused = Object.keys(HEAVY_QUEUES)
+      .filter((queue) => /^(?:short|stately)$/.test(policies.get(queue) ?? ""))
+      .sort();
+    expect(refused).toEqual([]);
+    // The planted case: the same check over a table that declares one.
+    const planted = new Map(source);
+    const file = REGISTRARS[2];
+    planted.set(
+      file,
+      `const DATA_BACKUP_QUEUE = "data-backup";\nconst queuePolicies: QueuePolicyTable = {\n  [DATA_BACKUP_QUEUE]: { policy: "short", reason: "x" },\n};\n`,
+    );
+    expect(policiesOf(planted).get("data-backup")).toBe("short");
   });
 });
+
+/** Every `[QUEUE]: { policy: "…" }` in a registrar's `queuePolicies`. */
+function policiesOf(texts: ReadonlyMap<string, string>): Map<string, string> {
+  const definitions = definitionsOf(texts);
+  const out = new Map<string, string>();
+  for (const file of REGISTRARS) {
+    const text = code(texts.get(file) ?? "");
+    const m = /const\s+queuePolicies\s*:\s*QueuePolicyTable\s*=\s*\{/.exec(
+      text,
+    );
+    if (!m) continue;
+    const open = m.index + m[0].length - 1;
+    const body = text.slice(open, closeOf(text, open));
+    for (const entry of body.matchAll(
+      /\[\s*([A-Z][A-Z0-9_]*)\s*\]\s*:\s*\{\s*policy\s*:\s*"([a-z]+)"/g,
+    )) {
+      const queue = resolve(definitions, file, entry[1]);
+      if (queue) out.set(queue, entry[2]);
+    }
+  }
+  return out;
+}

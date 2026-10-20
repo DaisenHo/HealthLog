@@ -70,6 +70,7 @@ import {
   type IntegrationBackfillAdmissionPayload,
 } from "@/lib/jobs/integration-backfill-admission";
 import { drainIntegrationBackfillAdmission } from "@/lib/jobs/integration-backfill-drain";
+import { heavyLane } from "@/lib/jobs/heavy-lane";
 import {
   INTEGRATION_WATCHDOG_DAILY_CRON,
   INTEGRATION_WATCHDOG_DAILY_QUEUE,
@@ -491,7 +492,9 @@ export async function registerIntegrationSyncQueues(
   await createAndSchedule(boss, allQueues, schedules, queuePolicies);
   // pg-boss scopes groupConcurrency to one queue name, so every provider
   // reaches this shared durable queue before doing full-history work. The
-  // common group is enforced in PostgreSQL across worker processes/nodes.
+  // common group is enforced in PostgreSQL across worker processes/nodes;
+  // the heavy lane keeps an import off the heap while a backup, a restore
+  // or an upload is on it.
 
   await createAndWork<IntegrationBackfillAdmissionPayload>(
     boss,
@@ -500,7 +503,10 @@ export async function registerIntegrationSyncQueues(
       localConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
       groupConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
     },
-    drainIntegrationBackfillAdmission,
+    heavyLane(
+      INTEGRATION_BACKFILL_ADMISSION_QUEUE,
+      drainIntegrationBackfillAdmission,
+    ),
   );
 
   await createAndWork<WithingsSyncPayload>(

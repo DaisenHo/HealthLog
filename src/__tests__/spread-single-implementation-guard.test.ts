@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -32,14 +32,17 @@ const ALLOWED: Record<string, string> = {
   "lib/insights/mood-pattern-cards.ts": "A pooled variance for a t statistic.",
   "lib/insights/derived/trajectory.ts":
     "The residual standard error of a regression fit (÷ n − 2).",
+  "lib/insights/derived/sleep-score.ts":
+    "A circular SD of the sleep midpoint around its circular mean, the input of the consistency score; `spread` has no circular distance, and the score is never shown as a spread.",
 };
 
+/**
+ * A squared deviation: `(x - m) ** 2`, `(x - m) * (x - m)`, or a two-argument
+ * distance squared, `dist(x, m) ** 2` (a circular or otherwise custom
+ * deviation is still a hand-rolled spread).
+ */
 const SQUARED_DEVIATION =
-  /\(\s*[\w.[\]]+\s*-\s*[\w.[\]]+\s*\)\s*\*\*\s*2|\(\s*([\w.[\]]+)\s*-\s*([\w.[\]]+)\s*\)\s*\*\s*\(\s*\1\s*-\s*\2\s*\)/;
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
+  /\(\s*[\w.[\]]+\s*-\s*[\w.[\]]+\s*\)\s*\*\*\s*2|\(\s*([\w.[\]]+)\s*-\s*([\w.[\]]+)\s*\)\s*\*\s*\(\s*\1\s*-\s*\2\s*\)|\b[A-Za-z_]\w*\s*\(\s*[\w.[\]]+\s*,\s*[\w.[\]]+\s*\)\s*\*\*\s*2/;
 
 function computesSpread(code: string): boolean {
   return SQUARED_DEVIATION.test(code) && code.includes("Math.sqrt(");
@@ -58,6 +61,11 @@ describe("one standard deviation", () => {
     ).toBe(true);
     expect(
       computesSpread("acc += (v - mean) * (v - mean); Math.sqrt(acc / n);"),
+    ).toBe(true);
+    expect(
+      computesSpread(
+        "xs.reduce((s, v) => s + circularMinuteDistance(v, mean) ** 2, 0); Math.sqrt(x);",
+      ),
     ).toBe(true);
   });
 

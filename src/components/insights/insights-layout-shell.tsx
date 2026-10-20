@@ -13,6 +13,7 @@ import {
   nextAdvisorPollInterval,
   useInsightsAdvisorQuery,
 } from "@/components/insights/use-insights-advisor";
+import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useInsightsLayoutQuery } from "@/hooks/use-insights-layout";
 import { queryKeys } from "@/lib/query-keys";
@@ -90,7 +91,7 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
     refetchInterval: (query) =>
       nextAdvisorPollInterval(
         query.state.data?.revalidating,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
       ),
   });
 

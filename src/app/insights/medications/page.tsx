@@ -7,6 +7,7 @@ import { Loader2, Pill } from "lucide-react";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { nextStatusPollInterval } from "@/hooks/use-insight-status";
+import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import { Badge } from "@/components/ui/badge";
@@ -142,7 +143,7 @@ export default function InsightsMedikamentePage() {
     refetchInterval: (query) =>
       nextStatusPollInterval(
         query.state.data?.preparing,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
         query.state.data?.revalidating,
       ),
   });

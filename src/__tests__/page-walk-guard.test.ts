@@ -11,20 +11,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { PROVIDER_DIRS } from "./helpers/provider-dirs";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const LIB = join(process.cwd(), "src", "lib");
-const PROVIDER_DIRS = [
-  "dawarich",
-  "fitbit",
-  "google-health",
-  "nightscout",
-  "oura",
-  "polar",
-  "strava",
-  "whoop",
-  "withings",
-];
 /**
  * Page loops that stay outside `walkPages` on purpose, with how many matches
  * each file may hold and why. A file with more matches than its allowance has
@@ -58,12 +48,6 @@ const EXCEPTIONS: Readonly<Record<string, { matches: number; why: string }>> = {
 const PAGE_LOOP =
   /\b(?:pages?|pageCount|pagesRead|page)(?:\s*-\s*[A-Za-z_]\w*)?\s*(?:<|<=|>|>=)\s*(?:[A-Z_][A-Z0-9_]*|maxPages|[2-9]|[1-9]\d+)\b/g;
 
-function strip(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
 describe("provider clients walk pages through walkPages", () => {
   const files = walkSourceFiles(LIB, { floor: 1000 }).filter(
     (f) =>
@@ -72,10 +56,20 @@ describe("provider clients walk pages through walkPages", () => {
       !f.endsWith(".test.ts"),
   );
   const matches = (f: string) =>
-    strip(readFileSync(join(LIB, f), "utf8")).match(PAGE_LOOP)?.length ?? 0;
+    stripComments(readFileSync(join(LIB, f), "utf8")).match(PAGE_LOOP)
+      ?.length ?? 0;
 
   it("walks the provider directories", () => {
     expect(files.length).toBeGreaterThanOrEqual(60);
+    expect(PROVIDER_DIRS).toEqual(
+      expect.arrayContaining(["strava", "whoop", "withings", "google-health"]),
+    );
+    for (const dir of PROVIDER_DIRS) {
+      expect(
+        files.some((f) => f.startsWith(`${dir}/`)),
+        dir,
+      ).toBe(true);
+    }
   });
 
   it("finds no page loop of their own beyond the exceptions", () => {

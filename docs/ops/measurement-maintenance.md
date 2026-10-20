@@ -137,8 +137,8 @@ it.
 ## Reading the result
 
 The run's wide event `job.measurement_maintenance` carries
-`maintenance_outcome` (`completed`, `nothing_due`, `refused_purge_running`,
-`failed`), the live and dead rows the run started from, the
+`maintenance_outcome` (`completed`, `nothing_due` for the nightly check,
+`refused_purge_running`, `failed`), the live and dead rows the run started from, the
 table and index sizes before and after, and `maintenance_steps`, one entry
 per step with its target, size before and after, and duration. The same
 sizes from `psql`:
@@ -151,17 +151,22 @@ SELECT pg_size_pretty(pg_total_relation_size('measurements')) AS total,
 ## The nightly check
 
 Since v1.43.7 the same queue also runs by itself at 03:40 (Europe/Berlin).
-That run names no steps: it reads the table's live and dead rows and runs a
-plain `VACUUM (ANALYZE)` only when there are at least 10,000 dead rows and
-more than one for every ten live ones. It never rebuilds an index, and a
-plain vacuum stops neither reads nor writes. It shares the singleton key with
-the run you start, so the two never overlap. The admin card keeps showing
-only the runs you started.
+That run names no steps and changes nothing: vacuuming the table is
+autovacuum's job, which migration 0412 starts at 5 % dead rows instead of
+Postgres's 20 %. The check reads the table's live and dead rows and warns
+(`maintenance_autovacuum_behind` on the wide event) when there are at least
+10,000 dead rows and more than one for every five live ones, four times the
+point at which autovacuum should already have run. That means autovacuum is
+not keeping up: look for a transaction left open for hours
+(`pg_stat_activity`, `state = 'idle in transaction'`) or for autovacuum
+workers busy elsewhere. The check never rebuilds an index. It shares the
+singleton key with the run you start, so the two never overlap. The admin
+card keeps showing only the runs you started.
 
 The check also measures how far the table file has grown past what its live
 rows need (`maintenance_bloat_factor` on the wide event, `bloat_factor` in the
-job result). Past 3 it adds a warning to the event: a plain vacuum makes the
-space reusable but does not shrink the file, and only `VACUUM FULL` does (see
+job result). Past 3 it adds a warning to the event: a vacuum makes the space
+reusable but does not shrink the file, and only `VACUUM FULL` does (see
 below).
 
 Why the table grew in the first place: until v1.43.7 an update that changed

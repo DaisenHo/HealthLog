@@ -6,7 +6,7 @@
  * The slice has to give exactly what a live read of the window would: the
  * extremes depend on where the series starts.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const readLocalDailyStats = vi.fn();
 vi.mock("@/lib/day/daily-stats", () => ({
@@ -17,8 +17,8 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import type { MeasurementType } from "@/generated/prisma/enums";
-import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
-import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { __resetAllCachesForTests, caches } from "@/lib/cache/server-cache";
+import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 import {
   NOTABLE_LOOKBACK_DAYS,
@@ -74,6 +74,11 @@ function load(day: string, extra: { floor?: Date } = {}) {
   });
 }
 
+/** The block a day falls in, as the cache counts them. */
+function blockOf(day: string): number {
+  return Math.floor(daysBetweenDateKeys("1970-01-01", day) / 90);
+}
+
 /** What a live read of the window gives. */
 function expected(day: string) {
   const series: Array<[string, number]> = [];
@@ -93,7 +98,14 @@ describe("notable history cache", () => {
     const before = await load(shiftDateKey(SPIKE, -1));
     const after = await load(shiftDateKey(SPIKE, 1));
 
-    expect(readLocalDailyStats).toHaveBeenCalledTimes(1);
+    // One read, plus one for an earlier block when the oldest of the three
+    // windows starts across a block boundary.
+    const starts = new Set(
+      [-1, 0, 1].map((d) =>
+        blockOf(shiftDateKey(SPIKE, d - NOTABLE_LOOKBACK_DAYS)),
+      ),
+    );
+    expect(readLocalDailyStats).toHaveBeenCalledTimes(starts.size);
     expect(spike).toEqual(expected(SPIKE));
     expect(spike.map((n) => n.kind)).toEqual(["extremeHigh"]);
     expect(before).toEqual(expected(shiftDateKey(SPIKE, -1)));
@@ -117,5 +129,49 @@ describe("notable history cache", () => {
     expect(readLocalDailyStats).toHaveBeenCalledTimes(2);
     const [args] = readLocalDailyStats.mock.calls[0] as [{ from: Date }];
     expect(args.from).toEqual(floor);
+  });
+});
+
+describe("notable history cache size", () => {
+  const cached: number[] = [];
+  beforeEach(() => {
+    cached.length = 0;
+    const set = caches.analytics.set.bind(caches.analytics);
+    vi.spyOn(caches.analytics, "set").mockImplementation((key, value, ttl) => {
+      if (key.includes("|notable-history|")) {
+        let days = 0;
+        for (const series of (
+          value as Map<string, Map<string, number>>
+        ).values()) {
+          days = Math.max(days, series.size);
+        }
+        cached.push(days);
+      }
+      set(key, value, ttl);
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("holds a block of days per cell, and paging back a year adds a block per quarter", async () => {
+    for (let back = 0; back < 365; back += 1) {
+      const day = shiftDateKey(TODAY, -back);
+      expect(await load(day)).toEqual(expected(day));
+    }
+    // Two years of history plus the year paged through, in 90-day blocks,
+    // each cached once: about thirteen cells, never one per day.
+    const blocks =
+      blockOf(TODAY) -
+      blockOf(shiftDateKey(TODAY, -364 - NOTABLE_LOOKBACK_DAYS)) +
+      1;
+    expect(cached.length).toBe(blocks);
+    expect(Math.max(...cached)).toBeLessThanOrEqual(90);
+    expect(readLocalDailyStats.mock.calls.length).toBeLessThanOrEqual(blocks);
+  });
+
+  it("reads a cold day long ago up to that day's block, not up to today", async () => {
+    const day = shiftDateKey(TODAY, -700);
+    expect(await load(day)).toEqual(expected(day));
+    const [args] = readLocalDailyStats.mock.calls[0] as [{ to: Date }];
+    expect(userDayKey(args.to, TZ) <= shiftDateKey(day, 91)).toBe(true);
   });
 });

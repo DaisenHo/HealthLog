@@ -1266,7 +1266,7 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
       });
     });
 
-    it("re-imports an XML estimate onto one row with monotonic syncVersion", async () => {
+    it("re-imports an XML estimate onto one row without moving its syncVersion", async () => {
       const prisma = getPrismaClient();
       const xmlPath = writeCumulativeXml();
       await streamParseExportXml({
@@ -1288,11 +1288,15 @@ describe("POST /api/measurements/batch (real Postgres)", () => {
           externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-07-20",
         },
       });
+      // The second import writes the same value, provenance and every other
+      // column, so the update changes nothing and migration 0412 keeps the
+      // row's stamps: the phone is not sent a row that did not change. The
+      // version never goes backwards; it stays where the first import left it.
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({
         value: 8_526,
         aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
-        syncVersion: 2,
+        syncVersion: 1,
       });
     });
 

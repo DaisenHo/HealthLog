@@ -19,7 +19,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -37,24 +37,15 @@ const ALLOWED: Readonly<Record<string, string>> = {
     "fills that input field from openInsightsCachedText",
 };
 
-/** The legacy name, not its sealed sibling, outside comment lines. */
+/** The legacy name, not its sealed sibling, outside comments. */
 const LEGACY_NAME = /\binsightsCachedText\b(?!Encrypted)/;
-
-function codeLines(source: string): string[] {
-  return source.split("\n").filter((line) => {
-    const t = line.trim();
-    return !(t.startsWith("*") || t.startsWith("//") || t.startsWith("/*"));
-  });
-}
 
 function filesSpellingTheLegacyName(): string[] {
   return walkSourceFiles(SRC, { floor: 2000 })
     .filter((f) => !f.startsWith("generated/"))
     .filter((f) => !f.includes("__tests__/") && !/\.test\.tsx?$/.test(f))
     .filter((f) =>
-      codeLines(readFileSync(join(SRC, f), "utf8")).some((l) =>
-        LEGACY_NAME.test(l),
-      ),
+      LEGACY_NAME.test(stripComments(readFileSync(join(SRC, f), "utf8"))),
     );
 }
 

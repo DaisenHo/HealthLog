@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -30,10 +30,6 @@ const CALLERS: Record<string, string> = {
 };
 
 const CALL = /\breconstructDoseHistory\s*\(/;
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 describe("one compliance ledger", () => {
   it("the dose rows are built only where this file says", () => {

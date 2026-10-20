@@ -7,9 +7,12 @@
  * grew the table by a full row version and an entry in every index. Proven
  * here against Postgres: the no-op update keeps `updated_at` and
  * `sync_version` and is counted as HOT in the transaction's own statistics,
- * a real change still moves both, and the nightly check reads the table's
- * statistics and vacuums only when dead rows pass its threshold.
+ * a real change still moves both, the nightly check reads the table's
+ * statistics and leaves the vacuuming to autovacuum, and the migration gives
+ * up on a lock it cannot get instead of queueing every writer behind it.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Client } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -100,7 +103,7 @@ describe("an update that changes nothing", () => {
 });
 
 describe("the nightly check", () => {
-  it("reads the statistics and does nothing while no vacuum is due", async () => {
+  it("reads the statistics and leaves the vacuuming to autovacuum", async () => {
     await seedReading();
     const db = new Client({ connectionString: process.env.DATABASE_URL });
     await db.connect();
@@ -108,7 +111,7 @@ describe("the nightly check", () => {
       await db.query("ANALYZE measurements");
       const health = await tableHealth(db);
       expect(health.heapBytes).toBeGreaterThan(0);
-      const steps = resolveSteps({}, health);
+      const steps = resolveSteps({});
       expect(steps).toEqual({ vacuum: false, reindex: false });
       const summary = await runMeasurementMaintenance(db, steps);
       expect(summary.outcome).toBe("nothing_due");
@@ -117,4 +120,47 @@ describe("the nightly check", () => {
       await db.end();
     }
   });
+});
+
+describe("the migration's lock wait", () => {
+  it("fails within its lock timeout while another session holds the table", async () => {
+    // The migration's own text under fresh names, run the way `migrate
+    // deploy` runs a file: one multi-statement query, one transaction.
+    const sql = readFileSync(
+      join(
+        process.cwd(),
+        "prisma/migrations/0412_measurement_hot_updates/migration.sql",
+      ),
+      "utf8",
+    )
+      .replaceAll("measurements_keep_stamps_on_noop", "lock_probe_fn")
+      .replaceAll("measurements_noop_update_keeps_stamps", "lock_probe_trg");
+    const holder = new Client({ connectionString: process.env.DATABASE_URL });
+    const migrator = new Client({ connectionString: process.env.DATABASE_URL });
+    await holder.connect();
+    await migrator.connect();
+    try {
+      // What an anti-wraparound autovacuum holds, and does not give up.
+      await holder.query("BEGIN");
+      await holder.query(
+        "LOCK TABLE measurements IN SHARE UPDATE EXCLUSIVE MODE",
+      );
+      const startedAt = Date.now();
+      const error = await migrator.query(sql).then(
+        () => null,
+        (err: { code?: string }) => err,
+      );
+      expect(error?.code).toBe("55P03");
+      expect(Date.now() - startedAt).toBeLessThan(30_000);
+      // Rolled back whole: nothing of the probe is left behind.
+      const { rows } = await migrator.query(
+        "SELECT to_regproc('lock_probe_fn') AS fn",
+      );
+      expect(rows[0].fn).toBeNull();
+    } finally {
+      await holder.query("ROLLBACK").catch(() => {});
+      await holder.end();
+      await migrator.end();
+    }
+  }, 60_000);
 });

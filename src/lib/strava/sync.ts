@@ -102,10 +102,43 @@ export async function syncUserStrava(
   userId: string,
   opts: SyncUserStravaOptions = {},
 ): Promise<number> {
+  return (await runStravaSync(userId, opts)).imported;
+}
+
+/** What one history run read, for the backfill to resume from. */
+export interface StravaHistoryRun {
+  imported: number;
+  /**
+   * The start of the oldest activity the run read, when the pages came
+   * newest first as Strava serves a walk without `after`; null otherwise,
+   * so a place is never recorded from pages in an order the resume does not
+   * expect.
+   */
+  oldestStart: Date | null;
+}
+
+/**
+ * One run of the full-history walk, from `before` (or the newest activity)
+ * back as far as one run's page ceiling reaches.
+ */
+export async function syncStravaHistory(
+  userId: string,
+  before?: Date,
+): Promise<StravaHistoryRun> {
+  return runStravaSync(userId, { fullSync: true }, before);
+}
+
+async function runStravaSync(
+  userId: string,
+  opts: SyncUserStravaOptions,
+  before?: Date,
+): Promise<StravaHistoryRun> {
   const conn = await getStravaConnection(userId);
-  if (!conn) return 0;
+  if (!conn) return { imported: 0, oldestStart: null };
 
   const fullSync = opts.fullSync ?? false;
+  const beforeEpoch =
+    before === undefined ? undefined : Math.floor(before.getTime() / 1000);
 
   // Resolve the incremental cursor. On a full backfill we walk all history
   // (`after` omitted). Otherwise start at the stored newest-activity instant
@@ -167,6 +200,9 @@ export async function syncUserStrava(
 
   let rows: StravaWorkoutRow[];
   let newestStart: Date | null = null;
+  let oldestStart: Date | null = null;
+  let previousStart: number | null = null;
+  let newestFirst = true;
 
   try {
     // Strava pages by number; a short page is the last one. A walk that
@@ -178,7 +214,12 @@ export async function syncUserStrava(
       async (cursor) => {
         const page = cursor ?? 1;
         const activities = await authed((t) =>
-          fetchActivities(t, { after: afterEpoch, page, perPage: PER_PAGE }),
+          fetchActivities(t, {
+            after: afterEpoch,
+            before: beforeEpoch,
+            page,
+            perPage: PER_PAGE,
+          }),
         );
         const mapped: StravaWorkoutRow[] = [];
         for (const a of activities) {
@@ -212,11 +253,13 @@ export async function syncUserStrava(
             mapped.push(row);
             if (a.start_date) {
               const d = new Date(a.start_date);
-              if (
-                !Number.isNaN(d.getTime()) &&
-                (!newestStart || d > newestStart)
-              ) {
-                newestStart = d;
+              if (!Number.isNaN(d.getTime())) {
+                if (!newestStart || d > newestStart) newestStart = d;
+                if (!oldestStart || d < oldestStart) oldestStart = d;
+                if (previousStart !== null && d.getTime() > previousStart) {
+                  newestFirst = false;
+                }
+                previousStart = d.getTime();
               }
             }
           }
@@ -270,7 +313,7 @@ export async function syncUserStrava(
   annotate({
     action: { name: "strava.sync.complete", details: { imported } },
   });
-  return imported;
+  return { imported, oldestStart: newestFirst ? oldestStart : null };
 }
 
 /**

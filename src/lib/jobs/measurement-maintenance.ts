@@ -11,12 +11,16 @@
  *     (cookie-only admin), with the steps named; the rebuild only ever runs
  *     this way, in a window the operator picks.
  *   - The nightly check (`MEASUREMENT_MAINTENANCE_CRON`, a tick without
- *     steps). It reads the table's dead and live rows and vacuums only when
- *     the dead ones pass `vacuumDue`. A plain VACUUM takes no lock that stops
- *     reads or writes. It also measures how far the heap has grown past its
- *     live rows (`TableHealth.bloatFactor`); only a rewrite (`VACUUM FULL`,
- *     which locks the table) gives that space back, so past
- *     `TABLE_BLOAT_WARN_FACTOR` the run warns instead of acting.
+ *     steps). It measures and never acts. Vacuuming the table is
+ *     autovacuum's job, at the 5 % dead-row threshold migration 0412 gives
+ *     the table; a second trigger here at 10 % never fired before autovacuum
+ *     had already run, and two mechanisms for one task only hide which of
+ *     them is doing it. The check warns when the dead rows pass
+ *     `AUTOVACUUM_BEHIND_SHARE`, which means autovacuum is not keeping up
+ *     (a long transaction holding it back, too few workers), and when the
+ *     heap has grown past its live rows (`TableHealth.bloatFactor`) further
+ *     than `TABLE_BLOAT_WARN_FACTOR`, which only a rewrite (`VACUUM FULL`,
+ *     which locks the table) gives back.
  *
  * Why the indexes: after the purge the heap is small, but a B-tree does not
  * give back the pages its deleted entries held. VACUUM marks the heap space
@@ -84,11 +88,17 @@ export interface MaintenanceSteps {
 /** 03:40 Europe/Berlin, inside the nightly maintenance band. */
 export const MEASUREMENT_MAINTENANCE_CRON = "40 3 * * *";
 
-/** Dead rows, as a share of live ones, past which the nightly check vacuums. */
-export const DEAD_ROW_VACUUM_SHARE = 0.1;
+/** The dead-row share at which autovacuum starts on the table (0412). */
+export const AUTOVACUUM_SCALE_FACTOR = 0.05;
 
-/** Fewer dead rows than this are never worth a vacuum of their own. */
-export const DEAD_ROW_VACUUM_FLOOR = 10_000;
+/**
+ * Dead rows, as a share of live ones, past which the nightly check warns
+ * that autovacuum is behind: four times its own threshold.
+ */
+export const AUTOVACUUM_BEHIND_SHARE = 4 * AUTOVACUUM_SCALE_FACTOR;
+
+/** Fewer dead rows than this are never worth a warning. */
+export const DEAD_ROW_WARN_FLOOR = 10_000;
 
 /**
  * Heap size against what the live rows need, past which the run warns that
@@ -230,26 +240,25 @@ export async function tableHealth(
   };
 }
 
-/** Whether the dead rows are worth a vacuum of their own tonight. */
-export function vacuumDue(health: TableHealth): boolean {
+/** Whether the dead rows say autovacuum is not keeping up with the table. */
+export function autovacuumBehind(health: TableHealth): boolean {
   return (
-    health.deadRows >= DEAD_ROW_VACUUM_FLOOR &&
-    health.deadRows > health.liveRows * DEAD_ROW_VACUUM_SHARE
+    health.deadRows >= DEAD_ROW_WARN_FLOOR &&
+    health.deadRows > health.liveRows * AUTOVACUUM_BEHIND_SHARE
   );
 }
 
 /**
- * The steps a delivery takes: the operator's as asked, the nightly tick's a
- * vacuum when one is due and never a rebuild.
+ * The steps a delivery takes: the operator's as asked, none for the nightly
+ * tick, which only measures.
  */
 export function resolveSteps(
   payload: MeasurementMaintenancePayload | undefined,
-  health: TableHealth,
 ): MaintenanceSteps {
   const named =
     typeof payload?.vacuum === "boolean" ||
     typeof payload?.reindex === "boolean";
-  if (!named) return { vacuum: vacuumDue(health), reindex: false };
+  if (!named) return { vacuum: false, reindex: false };
   return { vacuum: payload?.vacuum ?? true, reindex: payload?.reindex ?? true };
 }
 
@@ -459,7 +468,7 @@ export async function handleMeasurementMaintenance(
             }
           }
           const health = await tableHealth(client);
-          const steps = resolveSteps(job?.data, health);
+          const steps = resolveSteps(job?.data);
           const summary = await runMeasurementMaintenance(client, steps);
           return { summary, health, steps };
         } finally {
@@ -486,6 +495,12 @@ export async function handleMeasurementMaintenance(
     evt.addMeta("maintenance_live_rows", health.liveRows);
     evt.addMeta("maintenance_dead_rows", health.deadRows);
     evt.addMeta("maintenance_heap_bytes", health.heapBytes);
+    if (autovacuumBehind(health)) {
+      evt.addMeta("maintenance_autovacuum_behind", true);
+      evt.addWarning(
+        `measurements holds ${health.deadRows} dead rows against ${health.liveRows} live; autovacuum starts at ${AUTOVACUUM_SCALE_FACTOR * 100} % and is not keeping up (look for a long-open transaction or too few autovacuum workers)`,
+      );
+    }
     if (health.bloatFactor !== null) {
       evt.addMeta("maintenance_bloat_factor", health.bloatFactor);
       if (health.bloatFactor > TABLE_BLOAT_WARN_FACTOR) {

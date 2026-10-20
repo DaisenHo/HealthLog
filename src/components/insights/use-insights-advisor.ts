@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import type { InsightResult } from "@/lib/ai/types";
 // Type-only — the runtime schemas load lazily inside `fetchAdvisor` so
 // the zod module graph (`@/lib/ai/schema` is ~550 lines of zod builders)
@@ -462,7 +463,7 @@ export function useInsightsAdvisorQuery(
     refetchInterval: (query) =>
       nextAdvisorPollInterval(
         query.state.data?.payload?.revalidating,
-        query.state.dataUpdateCount,
+        pollAttemptCount(query.state),
         settling,
       ),
   });
@@ -470,14 +471,12 @@ export function useInsightsAdvisorQuery(
   // `dataUpdateCount` lives on the query STATE (the refetchInterval callback
   // reads it there); the observer result only exposes `dataUpdatedAt`. Read
   // it imperatively from the cache where the settle machinery needs it.
-  const readDataUpdateCount = useCallback(
-    () =>
-      queryClient
-        .getQueryCache()
-        .find({ queryKey: queryKeys.insightsAdvisor() })?.state
-        .dataUpdateCount ?? 0,
-    [queryClient],
-  );
+  const readDataUpdateCount = useCallback(() => {
+    const state = queryClient
+      .getQueryCache()
+      .find({ queryKey: queryKeys.insightsAdvisor() })?.state;
+    return state ? pollAttemptCount(state) : 0;
+  }, [queryClient]);
 
   // Apply the settle resolution the pure seam proves. Each poll result lands
   // in `query.data` (the poll's own cache write IS the fresh payload — no

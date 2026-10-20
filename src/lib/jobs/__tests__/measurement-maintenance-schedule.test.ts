@@ -1,8 +1,11 @@
 /**
  * The nightly measurements check: what it decides from the table's
- * statistics. It vacuums only when dead rows pile up and never rebuilds; the
+ * statistics. It never vacuums and never rebuilds, since autovacuum owns the
+ * vacuuming (migration 0412); it warns when autovacuum falls behind. The
  * operator's run keeps the steps it names.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({
@@ -11,10 +14,11 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import {
-  DEAD_ROW_VACUUM_FLOOR,
+  AUTOVACUUM_SCALE_FACTOR,
+  DEAD_ROW_WARN_FLOOR,
+  autovacuumBehind,
   resolveSteps,
   tableHealth,
-  vacuumDue,
   type TableHealth,
 } from "@/lib/jobs/measurement-maintenance";
 
@@ -26,39 +30,52 @@ const health = (over: Partial<TableHealth> = {}): TableHealth => ({
   ...over,
 });
 
-describe("vacuumDue", () => {
-  it("vacuums once dead rows pass a tenth of the live ones", () => {
-    expect(vacuumDue(health({ deadRows: 100_001 }))).toBe(true);
-    expect(vacuumDue(health({ deadRows: 99_999 }))).toBe(false);
+describe("autovacuumBehind", () => {
+  it("matches the threshold migration 0412 sets on the table", () => {
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        "prisma/migrations/0412_measurement_hot_updates/migration.sql",
+      ),
+      "utf8",
+    );
+    expect(migration).toContain(
+      `autovacuum_vacuum_scale_factor = ${AUTOVACUUM_SCALE_FACTOR}`,
+    );
+  });
+
+  it("warns once dead rows pass four times autovacuum's threshold", () => {
+    expect(autovacuumBehind(health({ deadRows: 200_001 }))).toBe(true);
+    expect(autovacuumBehind(health({ deadRows: 199_999 }))).toBe(false);
   });
 
   it("leaves a small table alone below the floor", () => {
     expect(
-      vacuumDue(health({ liveRows: 100, deadRows: DEAD_ROW_VACUUM_FLOOR - 1 })),
+      autovacuumBehind(
+        health({ liveRows: 100, deadRows: DEAD_ROW_WARN_FLOOR - 1 }),
+      ),
     ).toBe(false);
   });
 });
 
 describe("resolveSteps", () => {
-  it("gives the nightly tick a vacuum when one is due and never a rebuild", () => {
-    expect(resolveSteps({}, health({ deadRows: 500_000 }))).toEqual({
-      vacuum: true,
-      reindex: false,
-    });
-    expect(resolveSteps(undefined, health())).toEqual({
-      vacuum: false,
-      reindex: false,
-    });
+  it("gives the nightly tick no step at all, whatever the dead rows", () => {
+    expect(resolveSteps({})).toEqual({ vacuum: false, reindex: false });
+    expect(resolveSteps(undefined)).toEqual({ vacuum: false, reindex: false });
   });
 
-  it("keeps the operator's steps whatever the statistics say", () => {
-    expect(resolveSteps({ vacuum: false, reindex: true }, health())).toEqual({
+  it("keeps the operator's steps", () => {
+    expect(resolveSteps({ vacuum: false, reindex: true })).toEqual({
       vacuum: false,
       reindex: true,
     });
-    expect(resolveSteps({ vacuum: true, reindex: false }, health())).toEqual({
+    expect(resolveSteps({ vacuum: true, reindex: false })).toEqual({
       vacuum: true,
       reindex: false,
+    });
+    expect(resolveSteps({ vacuum: true })).toEqual({
+      vacuum: true,
+      reindex: true,
     });
   });
 });

@@ -225,6 +225,8 @@ export interface StravaDetailedActivity extends StravaSummaryActivity {
 export interface FetchActivitiesQuery {
   /** Epoch SECONDS cursor — return activities started after this instant. */
   after?: number;
+  /** Epoch SECONDS — return activities started before this instant. */
+  before?: number;
   page?: number;
   perPage?: number;
 }
@@ -269,6 +271,8 @@ export async function fetchActivities(
   const params = new URLSearchParams();
   if (typeof query.after === "number")
     params.set("after", String(Math.floor(query.after)));
+  if (typeof query.before === "number")
+    params.set("before", String(Math.floor(query.before)));
   params.set("page", String(query.page ?? 1));
   params.set("per_page", String(query.perPage ?? 100));
   const json = await stravaGet<StravaSummaryActivity[] | null>(

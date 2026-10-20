@@ -30,6 +30,11 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/logging/signal", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/logging/signal")>();
+  return { ...actual, emitSignal: vi.fn(actual.emitSignal) };
+});
+
 vi.mock("@/lib/notifications/dispatcher", () => ({
   dispatchNotification: vi.fn().mockResolvedValue(undefined),
 }));
@@ -40,6 +45,7 @@ import {
   recordSyncFailure,
   recordSyncSuccess,
 } from "@/lib/integrations/status";
+import { emitSignal } from "@/lib/logging/signal";
 
 const TEST_USER_ID = "user-sync-escalation";
 const HOUR_MS = 60 * 60 * 1000;
@@ -85,6 +91,7 @@ async function failTransient(integration: string, leg?: string) {
 }
 
 beforeEach(async () => {
+  vi.mocked(emitSignal).mockClear();
   await truncateAllTables(getPrismaClient());
   await getPrismaClient().user.create({
     data: {
@@ -124,15 +131,15 @@ describe("failure escalation", () => {
     });
     expect(current!.persistentFailureStartedAt).toBeInstanceOf(Date);
 
-    const audits = await getPrismaClient().auditLog.findMany({
-      where: { action: "integrations.sync.failed", userId: TEST_USER_ID },
-      orderBy: { createdAt: "asc" },
-    });
-    const last = JSON.parse(audits[audits.length - 1]!.details ?? "{}");
+    const signals = vi
+      .mocked(emitSignal)
+      .mock.calls.map(([signal]) => signal)
+      .filter((signal) => signal.action === "integrations.sync.failed");
+    const last = signals[signals.length - 1]!.meta!;
     expect(last.kind).toBe("persistent");
-    // The trail keeps the classifier's own verdict, so an operator can tell
+    // The signal keeps the classifier's own verdict, so an operator can tell
     // "the upstream said this was permanent" from "we concluded it was".
-    expect(last.escalatedFrom).toBe("transient");
+    expect(last.escalated_from).toBe("transient");
   });
 
   it("parks the escalated streak a further window later and stops attempting", async () => {

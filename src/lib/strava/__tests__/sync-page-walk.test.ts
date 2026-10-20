@@ -11,13 +11,15 @@ const mocks = vi.hoisted(() => ({
   fetchActivities: vi.fn(),
   annotate: vi.fn(),
   updateUser: vi.fn(),
+  findUser: vi.fn(),
   isReauthRequired: vi.fn(),
+  send: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
-      findUnique: vi.fn(async () => ({ stravaLastActivityAt: null })),
+      findUnique: mocks.findUser,
       updateMany: vi.fn(async () => ({ count: 1 })),
       update: mocks.updateUser,
     },
@@ -62,7 +64,7 @@ vi.mock("../client", async (importOriginal) => ({
   fetchActivityById: vi.fn(async () => ({})),
 }));
 vi.mock("@/lib/jobs/boss-instance", () => ({
-  getGlobalBoss: vi.fn(() => null),
+  getGlobalBoss: vi.fn(() => ({ send: mocks.send })),
 }));
 
 import { runStravaBackfillForUser } from "@/lib/jobs/strava-backfill";
@@ -71,27 +73,36 @@ import { syncUserStrava } from "../sync";
 const PER_PAGE = 100;
 const BACKFILL_MAX_PAGES = 40;
 
-/** A page of `n` activities; ids continue across pages. */
-function page(pageNo: number, n: number) {
-  return Array.from({ length: n }, (_, i) => {
-    const id = (pageNo - 1) * PER_PAGE + i + 1;
-    return {
-      id,
-      sport_type: "Run",
-      start_date: new Date(Date.UTC(2020, 0, 1) + id * 3_600_000).toISOString(),
-      moving_time: 1800,
-      elapsed_time: 1900,
-      average_heartrate: 140,
-    };
-  });
+const HOUR = 3_600_000;
+const T0 = Date.UTC(2020, 0, 1);
+
+/** Activity `id` of a history; a higher id started later. */
+function activity(id: number) {
+  return {
+    id,
+    sport_type: "Run",
+    start_date: new Date(T0 + id * HOUR).toISOString(),
+    moving_time: 1800,
+    elapsed_time: 1900,
+    average_heartrate: 140,
+  };
 }
 
-/** A history of `total` activities, served page by page. */
+/**
+ * A history of `total` activities served as Strava serves a walk without
+ * `after`: newest first, `before` (epoch seconds) cutting off the newer ones.
+ */
 function history(total: number) {
   mocks.fetchActivities.mockImplementation(
-    async (_t: string, q: { page: number; perPage: number }) => {
-      const remaining = total - (q.page - 1) * q.perPage;
-      return page(q.page, Math.max(0, Math.min(q.perPage, remaining)));
+    async (
+      _t: string,
+      q: { page: number; perPage: number; before?: number },
+    ) => {
+      const ids = Array.from({ length: total }, (_, i) => total - i).filter(
+        (id) => q.before === undefined || T0 + id * HOUR < q.before * 1000,
+      );
+      const from = (q.page - 1) * q.perPage;
+      return ids.slice(from, from + q.perPage).map(activity);
     },
   );
 }
@@ -102,10 +113,30 @@ function truncatedAnnotations() {
   );
 }
 
+/** The resume point the user row holds, as the backfill writes it. */
+let resumeBefore: Date | null = null;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  resumeBefore = null;
   mocks.isReauthRequired.mockResolvedValue(false);
-  mocks.updateUser.mockResolvedValue({ id: "user-1" });
+  mocks.findUser.mockImplementation(async () => ({
+    stravaLastActivityAt: null,
+    stravaBackfillResumeBefore: resumeBefore,
+  }));
+  mocks.updateUser.mockImplementation(
+    async ({
+      data,
+    }: {
+      data: { stravaBackfillResumeBefore?: Date | null };
+    }) => {
+      if ("stravaBackfillResumeBefore" in data) {
+        resumeBefore = data.stravaBackfillResumeBefore ?? null;
+      }
+      return { id: "user-1" };
+    },
+  );
+  mocks.send.mockResolvedValue("job-next");
 });
 
 describe("Strava activity walk", () => {
@@ -157,25 +188,97 @@ describe("Strava backfill verdict", () => {
 
     await expect(runStravaBackfillForUser("user-1")).resolves.toEqual({
       imported: 3 * PER_PAGE - 1,
+      continued: false,
     });
     expect(mocks.updateUser).toHaveBeenCalledWith({
       where: { id: "user-1" },
-      data: { stravaBackfillCompletedAt: expect.any(Date) },
+      data: {
+        stravaBackfillCompletedAt: expect.any(Date),
+        stravaBackfillResumeBefore: null,
+      },
     });
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 
-  it("leaves the marker unset, without a retry, when the walk was cut off", async () => {
+  it("records where a cut-off walk got to and sends the next run after the rate window", async () => {
     history((BACKFILL_MAX_PAGES + 1) * PER_PAGE);
 
     await expect(runStravaBackfillForUser("user-1")).resolves.toEqual({
       imported: BACKFILL_MAX_PAGES * PER_PAGE,
+      continued: true,
     });
-    expect(mocks.updateUser).not.toHaveBeenCalled();
+    // The oldest activity read is id 101; the next run asks for those before.
+    expect(resumeBefore).toEqual(new Date(T0 + 101 * HOUR + 1000));
+    expect(mocks.updateUser).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          stravaBackfillCompletedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(mocks.send).toHaveBeenCalledWith(
+      "integration-backfill-admission",
+      expect.objectContaining({
+        kind: "strava-backfill",
+        data: expect.objectContaining({ userId: "user-1", slice: 1 }),
+      }),
+      expect.objectContaining({ startAfter: 15 * 60 }),
+    );
     expect(mocks.annotate).toHaveBeenCalledWith(
       expect.objectContaining({
         action: expect.objectContaining({ name: "strava.backfill.truncated" }),
       }),
     );
+  });
+
+  it("goes on from the recorded place instead of the newest page, and finishes", async () => {
+    const total = (BACKFILL_MAX_PAGES + 10) * PER_PAGE;
+    history(total);
+
+    await runStravaBackfillForUser("user-1");
+    const firstRun = mocks.fetchActivities.mock.calls.length;
+    mocks.fetchActivities.mockClear();
+    await expect(runStravaBackfillForUser("user-1", 1)).resolves.toEqual({
+      imported: 10 * PER_PAGE + 1,
+      continued: false,
+    });
+
+    expect(firstRun).toBe(BACKFILL_MAX_PAGES);
+    // Every page of the second run asked for activities before the place
+    // the first one recorded (the oldest it read was id 1001), and the walk
+    // ended at the oldest activity.
+    const queries = mocks.fetchActivities.mock.calls.map(([, q]) => q);
+    expect(new Set(queries.map((q) => q.before))).toEqual(
+      new Set([(T0 + 1001 * HOUR) / 1000 + 1]),
+    );
+    expect(queries.length).toBe(11);
+    expect(resumeBefore).toBeNull();
+    expect(mocks.updateUser).toHaveBeenLastCalledWith({
+      where: { id: "user-1" },
+      data: {
+        stravaBackfillCompletedAt: expect.any(Date),
+        stravaBackfillResumeBefore: null,
+      },
+    });
+  });
+
+  it("records nothing and sends nothing when a run got no further than the last", async () => {
+    history((BACKFILL_MAX_PAGES + 1) * PER_PAGE);
+    // A place older than anything the walk can read past: the provider kept
+    // handing back the same newest pages.
+    mocks.fetchActivities.mockImplementation(async (_t, q) =>
+      Array.from({ length: PER_PAGE }, (_, i) =>
+        activity(5_000 - (q.page - 1) * PER_PAGE - i),
+      ),
+    );
+    resumeBefore = new Date(T0);
+
+    await expect(runStravaBackfillForUser("user-1")).resolves.toEqual({
+      imported: BACKFILL_MAX_PAGES * PER_PAGE,
+      continued: false,
+    });
+    expect(resumeBefore).toEqual(new Date(T0));
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 
   it("returns without walking or stamping while the connection waits for re-authorisation", async () => {
@@ -184,6 +287,7 @@ describe("Strava backfill verdict", () => {
 
     await expect(runStravaBackfillForUser("user-1")).resolves.toEqual({
       imported: 0,
+      continued: false,
     });
     expect(mocks.fetchActivities).not.toHaveBeenCalled();
     expect(mocks.updateUser).not.toHaveBeenCalled();

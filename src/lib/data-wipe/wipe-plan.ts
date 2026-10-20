@@ -469,6 +469,7 @@ export const USER_RESET = {
   stravaAthleteId: null,
   stravaLastActivityAt: null,
   stravaBackfillCompletedAt: null,
+  stravaBackfillResumeBefore: null,
   healthKitConfigJson: Prisma.DbNull,
   healthKitLastSyncedAt: null,
   healthKitLastSyncTrigger: null,

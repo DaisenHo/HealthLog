@@ -26,6 +26,7 @@ import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
+import { emitSignal } from "@/lib/logging/signal";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
@@ -77,12 +78,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // content-length cannot bypass it.
   const declaredBytes = Number(request.headers.get("content-length") ?? 0);
   if (declaredBytes > MAX_UPLOAD_BYTES) {
-    await auditLog("import.apple-health.kickoff.denied", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: {
+    emitSignal({
+      action: "import.apple-health.kickoff.denied",
+      level: "warn",
+      meta: {
         reason: "content_length_exceeded",
-        contentLength: declaredBytes,
+        content_length: declaredBytes,
       },
     });
     return apiError("Upload exceeds 1.5 GB limit", 413);
@@ -107,10 +108,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "upload_failed";
-    await auditLog("import.apple-health.kickoff.denied", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: { reason: "stream_to_disk_failed", message },
+    emitSignal({
+      action: "import.apple-health.kickoff.denied",
+      level: "warn",
+      meta: { reason: "stream_to_disk_failed", message },
     });
     return apiError(`Multipart upload failed: ${message}`, 422);
   }
@@ -150,10 +151,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const boss = getGlobalBoss();
   if (!boss) {
-    await auditLog("import.apple-health.kickoff.denied", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: { reason: "worker_not_running" },
+    emitSignal({
+      action: "import.apple-health.kickoff.denied",
+      level: "warn",
+      meta: { reason: "worker_not_running" },
     });
     // Nothing will ever read the staged export; it must not stay in /tmp.
     await discardStagedUpload(uploaded.filePath);
