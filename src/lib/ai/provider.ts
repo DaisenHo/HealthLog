@@ -30,6 +30,7 @@ import {
   type ProviderWorkAuthority,
 } from "@/lib/sharing/provider-work-authority";
 import { memoizePerRequest } from "@/lib/request-cache";
+import { emitSignal } from "@/lib/logging/signal";
 import type { AiModality } from "@/lib/ai/capabilities/types";
 import type {
   ProviderEntryPresence,
@@ -41,6 +42,93 @@ import {
 } from "./vision-capability";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Whether a failed Codex refresh proves the sign-in dead: the issuer refused
+ * the grant itself (`CodexRefreshError.credentialExpired`), as opposed to a
+ * 429, a 5xx or a network error, which say nothing about the credential.
+ * Read by shape rather than `instanceof` so a mocked `codex-oauth` module
+ * classifies the same way.
+ */
+function isDeadCodexSignIn(error: unknown): boolean {
+  return (
+    (error as { credentialExpired?: unknown } | null)?.credentialExpired ===
+    true
+  );
+}
+
+function oauthErrorOf(error: unknown): string | null {
+  const code = (error as { oauthError?: unknown } | null)?.oauthError;
+  return typeof code === "string" ? code : null;
+}
+
+/**
+ * Park a Codex connection whose sign-in the issuer has refused for good.
+ *
+ * Retrying a dead refresh token cannot succeed; until this existed every
+ * generation of every card of every run asked the issuer again, failed with
+ * the same 401, and logged it. Parking flips the connection to the existing
+ * `expired` state — the one Settings already renders as "reconnect ChatGPT" —
+ * so the chain, the presence probe and with it every AI capability stop
+ * counting it, and nothing is sent until the person signs in again (the
+ * device-code flow writes `connected`).
+ *
+ * Compare-and-set on the refresh token that was refused: a reconnect that
+ * landed in between wrote a different one and is left alone, and of several
+ * workers failing at once exactly one flips the row, so the transition is
+ * signalled once and never again per run.
+ */
+async function parkUserCodex(
+  userId: string,
+  refusedRefreshEncrypted: string,
+  error: unknown,
+): Promise<void> {
+  try {
+    const parked = await prisma.user.updateMany({
+      where: {
+        id: userId,
+        codexConnectionStatus: "connected",
+        codexRefreshTokenEncrypted: refusedRefreshEncrypted,
+      },
+      data: { codexConnectionStatus: "expired" },
+    });
+    if (parked.count === 1) {
+      emitSignal({
+        action: "ai.credential.expired",
+        level: "warn",
+        meta: { provider: "codex", oauth_error: oauthErrorOf(error) },
+      });
+    }
+  } catch {
+    // Best effort: an unparked connection is retried exactly as before.
+  }
+}
+
+/** The operator's central Codex, parked the same way. */
+async function parkCentralCodex(
+  refusedRefreshEncrypted: string,
+  error: unknown,
+): Promise<void> {
+  try {
+    const parked = await prisma.appSettings.updateMany({
+      where: {
+        id: "singleton",
+        adminCodexConnectionStatus: "connected",
+        adminCodexRefreshTokenEncrypted: refusedRefreshEncrypted,
+      },
+      data: { adminCodexConnectionStatus: "expired" },
+    });
+    if (parked.count === 1) {
+      emitSignal({
+        action: "ai.credential.expired",
+        level: "warn",
+        meta: { provider: "admin-codex", oauth_error: oauthErrorOf(error) },
+      });
+    }
+  } catch {
+    // Best effort, as above.
+  }
+}
 
 class NoProvider implements AIProvider {
   readonly type = "none" as const;
@@ -308,9 +396,15 @@ async function resolveCodexProvider(
           codexTokenExpiresAt: fresh.expiresAt,
         },
       });
-    } catch {
-      // Fall through — CodexClient will trigger an on-401 refresh
-      // and persist there.
+    } catch (error) {
+      // A refused grant parks the connection and drops it from this chain:
+      // calling Codex with the expired access token could only 401 into a
+      // second refusal. Anything else falls through — CodexClient will
+      // trigger an on-401 refresh and persist there.
+      if (isDeadCodexSignIn(error)) {
+        await parkUserCodex(userId, user.codexRefreshTokenEncrypted, error);
+        return null;
+      }
     }
   }
 
@@ -336,9 +430,27 @@ async function resolveCodexProvider(
         refreshEncrypted: freshUser.codexRefreshTokenEncrypted,
       });
       if (!decoded) {
-        throw codexReconnectRequired("token storage corrupt");
+        const error = codexReconnectRequired("token storage corrupt");
+        await parkUserCodex(
+          userId,
+          freshUser.codexRefreshTokenEncrypted,
+          error,
+        );
+        throw error;
       }
-      const fresh = await refreshDeviceTokens(decoded.refreshToken);
+      let fresh;
+      try {
+        fresh = await refreshDeviceTokens(decoded.refreshToken);
+      } catch (error) {
+        if (isDeadCodexSignIn(error)) {
+          await parkUserCodex(
+            userId,
+            freshUser.codexRefreshTokenEncrypted,
+            error,
+          );
+        }
+        throw error;
+      }
       const enc = encryptCodexCreds(fresh);
       await prisma.user.update({
         where: { id: userId },
@@ -421,9 +533,14 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
           adminCodexTokenExpiresAt: enc.expiresAt,
         },
       });
-    } catch {
-      // Fall through — CodexClient triggers an on-401 refresh and persists via
-      // the callback below.
+    } catch (error) {
+      // A refused grant parks the central connection (see `parkUserCodex`);
+      // anything else falls through — CodexClient triggers an on-401 refresh
+      // and persists via the callback below.
+      if (isDeadCodexSignIn(error)) {
+        await parkCentralCodex(settings.adminCodexRefreshTokenEncrypted, error);
+        return null;
+      }
     }
   }
 
@@ -454,9 +571,19 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
         expiresAt: fresh.adminCodexTokenExpiresAt,
       });
       if (!decoded) {
-        throw codexReconnectRequired("central token storage corrupt");
+        const error = codexReconnectRequired("central token storage corrupt");
+        await parkCentralCodex(fresh.adminCodexRefreshTokenEncrypted, error);
+        throw error;
       }
-      const refreshed = await refreshDeviceTokens(decoded.refreshToken);
+      let refreshed;
+      try {
+        refreshed = await refreshDeviceTokens(decoded.refreshToken);
+      } catch (error) {
+        if (isDeadCodexSignIn(error)) {
+          await parkCentralCodex(fresh.adminCodexRefreshTokenEncrypted, error);
+        }
+        throw error;
+      }
       const enc = encryptAdminCodexCreds(refreshed);
       await prisma.appSettings.update({
         where: { id: "singleton" },

@@ -267,6 +267,33 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
 };
 
 /**
+ * Drop the recorded outcomes of a credential that has just been replaced.
+ *
+ * The ledger describes a credential, not a provider slot: once the person
+ * (or, for `admin-codex`, the operator) signs in again, the `auth_failed`
+ * row of the refused credential would otherwise keep the fresh one at the
+ * tail of the chain and reported as expired for the rest of its cooldown.
+ * Without `userId` the rows of every account are dropped — the operator's
+ * central connection is one credential shared by all of them. Best effort,
+ * like every ledger write.
+ */
+export async function forgetProviderHealth(target: {
+  providerType: ProviderChainType;
+  userId?: string;
+}): Promise<void> {
+  try {
+    await prisma.providerHealth.deleteMany({
+      where: {
+        providerType: target.providerType,
+        ...(target.userId ? { userId: target.userId } : {}),
+      },
+    });
+  } catch {
+    // A stale row only deprioritises; it never blocks.
+  }
+}
+
+/**
  * Providers whose credential is currently known-bad (auth-class failure
  * inside the cooldown window) for a user. Drives the proactive
  * `credential_expired` surfacing — the gap that let an expired codex
