@@ -322,4 +322,64 @@ describe("practitioner phone and address at rest", () => {
       ]);
     }
   });
+
+  it("carries a deleted practitioner a live visit names in a portable file, and no other tombstone", async () => {
+    const prisma = getPrismaClient();
+    const gone = new Date("2026-09-01T00:00:00.000Z");
+    for (const id of ["pr-live", "pr-named", "pr-orphan"]) {
+      await prisma.practitioner.create({
+        data: {
+          id,
+          userId: OWNER_ID,
+          name: id,
+          deletedAt: id === "pr-live" ? null : gone,
+        },
+      });
+    }
+    await prisma.encounter.create({
+      data: {
+        id: "visit-named",
+        userId: OWNER_ID,
+        occurredAt: new Date("2026-08-01T08:00:00.000Z"),
+        practitionerId: "pr-named",
+      },
+    });
+
+    const portable = await buildVisitsBackupSection(prisma, OWNER_ID, {
+      purpose: "portable-export",
+    });
+
+    expect(
+      portable.practitioners
+        .map((p) => ({ id: p.id, deleted: Boolean(p.deletedAt) }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
+    ).toEqual([
+      { id: "pr-live", deleted: false },
+      { id: "pr-named", deleted: true },
+    ]);
+    expect(portable.encounters[0].practitionerId).toBe("pr-named");
+
+    // The restore brings the named entry back as a tombstone: on the visit,
+    // not in the address book.
+    await prisma.$transaction(async (tx) => {
+      await restoreVisitsData(
+        tx,
+        OWNER_ID,
+        {
+          practitioners: portable.practitioners,
+          encounters: portable.encounters,
+          encounterDocumentLinks: [],
+          encounterLabLinks: [],
+          encounterConditionLinks: [],
+        },
+        [],
+      );
+    });
+    const visit = await prisma.encounter.findFirstOrThrow({
+      where: { userId: OWNER_ID },
+      select: { practitioner: { select: { id: true, deletedAt: true } } },
+    });
+    expect(visit.practitioner?.id).toBe("pr-named");
+    expect(visit.practitioner?.deletedAt).not.toBeNull();
+  });
 });

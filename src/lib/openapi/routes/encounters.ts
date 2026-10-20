@@ -705,7 +705,7 @@ export const encounterPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "Soft-delete a practitioner",
       description:
-        "Stamps `deletedAt`. Every visit that named this entry survives with no practice attached, because the reference nulls rather than cascades. Idempotent. Audits as `practitioner.contact.delete`.",
+        "Stamps `deletedAt`. The entry leaves the address book and the pickers; every live visit and vaccination that named it keeps showing it, and the tombstone is kept while one does. Idempotent. Audits as `practitioner.contact.delete`.",
       requestParams: idPath,
       responses: {
         ...recordRefusal(),

@@ -2236,19 +2236,15 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
             take,
             include: {
-              practitioner: {
-                select: { name: true, specialty: true, deletedAt: true },
-              },
+              practitioner: { select: { name: true, specialty: true } },
             },
           }),
       );
       const appointments = appointmentRows.map((r) => {
         const reason = decryptVisitText(r.reasonEncrypted);
-        // A practitioner the person deleted is no longer named.
-        const practitioner =
-          r.practitioner && r.practitioner.deletedAt === null
-            ? r.practitioner
-            : null;
+        // A live visit names its practitioner even after the address-book
+        // entry is deleted, as the web record does.
+        const practitioner = r.practitioner;
         return {
           occurredAt: r.occurredAt.toISOString(),
           practitioner: practitioner
@@ -2578,7 +2574,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           take,
           include: {
             practitioner: {
-              select: { name: true, specialty: true, deletedAt: true },
+              select: { name: true, specialty: true },
             },
           },
         }),
@@ -2613,11 +2609,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         const reason = decryptVisitText(r.reasonEncrypted);
         const outcome = decryptVisitText(r.outcomeEncrypted);
         const bodySite = decryptVisitText(r.bodySiteEncrypted);
-        // A practitioner the person deleted is no longer named.
-        const seenBy =
-          r.practitioner && r.practitioner.deletedAt === null
-            ? r.practitioner
-            : null;
+        // A live visit names its practitioner even after the address-book
+        // entry is deleted, as the web record does.
+        const seenBy = r.practitioner;
         return {
           occurredAt: r.occurredAt.toISOString(),
           status: r.status,

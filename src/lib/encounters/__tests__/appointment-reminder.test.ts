@@ -18,6 +18,7 @@ import { describe, expect, it } from "vitest";
 import {
   appointmentNextDueAfterFiring,
   appointmentNotifyHour,
+  appointmentReminderAddress,
 } from "@/lib/encounters/appointment-reminder";
 
 const TZ = "Europe/Berlin";
@@ -82,5 +83,36 @@ describe("the hour the nudge fires", () => {
 
   it("follows the record's zone, so the same instant differs by zone", () => {
     expect(appointmentNotifyHour(APPOINTMENT, "UTC")).toBe(7);
+  });
+});
+
+describe("the address an appointment reminder names", () => {
+  const reminder = (practitionerUserId: string) => ({
+    userId: "u1",
+    origin: "ENCOUNTER",
+    location: null,
+    encounters: [
+      {
+        userId: "u1",
+        practitioner: {
+          userId: practitionerUserId,
+          location: "Hauptstraße 1",
+          locationEncrypted: null,
+        },
+      },
+    ],
+  });
+
+  it("is the practice of the visit's practitioner, deleted from the address book or not", () => {
+    // The select carries no `deletedAt`: the booked visit still shows the
+    // practitioner, so the reminder names the same practice.
+    expect(appointmentReminderAddress(reminder("u1"))).toBe("Hauptstraße 1");
+  });
+
+  it("counter-check: another account's practitioner names nothing", () => {
+    expect(appointmentReminderAddress(reminder("u2"))).toBeNull();
+    expect(
+      appointmentReminderAddress({ ...reminder("u1"), encounters: [] }),
+    ).toBeNull();
   });
 });

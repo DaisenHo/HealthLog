@@ -322,27 +322,26 @@ function visitTitle(args: {
 }
 
 /**
- * The practitioner columns a record read selects. `deletedAt` rides along so
- * a practitioner the person removed contributes nothing: the visit keeps its
- * scalar id, but the name is no longer something the record says.
+ * The practitioner columns a record read selects. A live visit or dose names
+ * the practitioner it was with even after the address-book entry is deleted,
+ * as the web record and the doctor report do: deleting the entry takes it out
+ * of the address book and the pickers, not out of the history. The purge keeps
+ * the entry for as long as a live record names it (`soft-delete-retention.ts`).
  */
 const PRACTITIONER_SELECT = {
-  select: { name: true, specialty: true, deletedAt: true },
+  select: { name: true, specialty: true },
 } as const;
 
 type PractitionerRow = {
   name: string;
   specialty: string | null;
-  deletedAt: Date | null;
 } | null;
 
-/** The practitioner as the record may still show it, or null. */
-export function livePractitioner(
+/** The practitioner a live visit or dose names, or null. */
+export function visitPractitioner(
   row: PractitionerRow | undefined,
 ): { name: string; specialty: string | null } | null {
-  return row && row.deletedAt === null
-    ? { name: row.name, specialty: row.specialty }
-    : null;
+  return row ? { name: row.name, specialty: row.specialty } : null;
 }
 
 async function visitCandidates(
@@ -368,7 +367,7 @@ async function visitCandidates(
     withinCap(rows, read),
     read,
     (row): SearchCandidate => {
-      const practitioner = livePractitioner(row.practitioner);
+      const practitioner = visitPractitioner(row.practitioner);
       const reason = decryptText(row.reasonEncrypted);
       const outcome = decryptText(row.outcomeEncrypted);
       const bodySite = decryptText(row.bodySiteEncrypted);
@@ -728,7 +727,7 @@ async function vaccinationCandidates(
     withinCap(rows, read),
     read,
     (row): SearchCandidate => {
-      const practitioner = livePractitioner(row.practitioner);
+      const practitioner = visitPractitioner(row.practitioner);
       const entry = resolveVaccineEntry({ antigenSlug: row.antigenSlug });
       const own = ownVaccine(row);
       const catalogEn = vaccineCatalogName(row.antigenSlug, "en");
@@ -1098,7 +1097,7 @@ async function fetchVisit(
   const bodySite = decryptText(row.bodySiteEncrypted);
   const day = userDayKey(row.occurredAt, owner.timezone);
   const kindLabel = encounterKindLabel(row.kind, "en");
-  const live = livePractitioner(row.practitioner);
+  const live = visitPractitioner(row.practitioner);
   const practitioner = live?.name ?? null;
   const specialty = live?.specialty ?? null;
 
@@ -1378,7 +1377,7 @@ async function fetchVaccination(
   const own = ownVaccine(row);
   const name =
     row.vaccineName ?? catalog ?? own?.name ?? row.antigenSlug ?? "Vaccination";
-  const practitioner = livePractitioner(row.practitioner);
+  const practitioner = visitPractitioner(row.practitioner);
   const day = dateOnly(row.occurredAt);
   const dose =
     row.doseNumber !== null
