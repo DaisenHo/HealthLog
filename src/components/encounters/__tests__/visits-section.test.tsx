@@ -297,5 +297,20 @@ describe("<VisitsSection> since the last visit", () => {
     expect(html).toContain('data-slot="since-last-visit"');
     expect(html).toContain('data-slot="since-last-visit-row"');
     expect(upcomingCards(html)).toBe(upcomingCards(baseline) + 1);
+    // The card heads like every compact card: TileHeader at the small size,
+    // a real heading under the section's own, at the compact density.
+    const card = html.slice(
+      html.lastIndexOf(
+        '<div data-slot="card"',
+        html.indexOf("since-last-visit-"),
+      ),
+    );
+    expect(card).toMatch(
+      /^<div data-slot="card" class="[^"]*gap-2 py-3 md:py-4/,
+    );
+    expect(card).toContain('data-slot="tile-header"');
+    expect(card).toMatch(
+      /<h3 id="since-last-visit-[^"]+" data-slot="card-title" class="[^"]*text-sm/,
+    );
   });
 });
