@@ -297,6 +297,12 @@ import {
   type SoftDeletePurgePayload,
 } from "@/lib/jobs/soft-delete-purge";
 import {
+  AUTH_LEDGER_CLEANUP_QUEUE,
+  AUTH_LEDGER_CLEANUP_CRON,
+  handleAuthLedgerCleanup,
+  type AuthLedgerCleanupPayload,
+} from "@/lib/jobs/auth-ledger-cleanup";
+import {
   DOCUMENT_SUMMARY_REAPER_QUEUE,
   DOCUMENT_SUMMARY_REAPER_CRON,
   handleDocumentSummaryReaper,
@@ -589,6 +595,9 @@ const allQueues = [
   // Nightly purge of expired tombstones for every soft-delete model the
   // retention register hands to it (`soft-delete-retention.ts`).
   SOFT_DELETE_PURGE_QUEUE,
+  // Nightly removal of expired sessions, tokens, challenges and trusted
+  // devices.
+  AUTH_LEDGER_CLEANUP_QUEUE,
   // Document vault — hourly reaper for summary rows stuck on PENDING (a
   // job dead past its retry budget). Without this entry the schedule
   // silently no-ops and a dead "wird generiert" claim never converges to
@@ -791,6 +800,8 @@ const schedules: ScheduleEntry[] = [
   // Daily 03:42 Europe/Berlin, after the sync-domain tombstone cleanup. The
   // next night is the retry: the purge picks up whatever a failed run left.
   [SOFT_DELETE_PURGE_QUEUE, SOFT_DELETE_PURGE_CRON, cronIsTheRetry],
+  // Daily 03:35 Europe/Berlin. Same: the next night deletes what is left.
+  [AUTH_LEDGER_CLEANUP_QUEUE, AUTH_LEDGER_CLEANUP_CRON, cronIsTheRetry],
   // Document vault — hourly heal of summary rows stuck on PENDING. The next
   // tick is the retry: the updateMany is idempotent and the TTL predicate
   // re-selects anything a failed tick left behind.
@@ -1159,6 +1170,12 @@ export async function registerMaintenanceQueues(
     SOFT_DELETE_PURGE_QUEUE,
     { localConcurrency: 1 },
     handleSoftDeletePurge,
+  );
+  await createAndWork<AuthLedgerCleanupPayload>(
+    boss,
+    AUTH_LEDGER_CLEANUP_QUEUE,
+    { localConcurrency: 1 },
+    handleAuthLedgerCleanup,
   );
   // v1.40 — background document AI runs. Each job is one run, under the lock
   // `lockedPass` takes per run id, so a redelivery never reads beside the
