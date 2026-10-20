@@ -486,12 +486,14 @@ export function generateAlerts(input: AlertInput): HealthAlert[] {
       alerts.push({
         level: "info",
         title: "Weight increasing",
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- English API alert text that no screen renders
         message: `Your weight is increasing by approx. ${weeklyChange.toFixed(1)} kg per week over the last 30 days.`,
       });
     } else if (weeklyChange < -0.5) {
       alerts.push({
         level: "info",
         title: "Weight decreasing",
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- English API alert text that no screen renders
         message: `Your weight is decreasing by approx. ${Math.abs(weeklyChange).toFixed(1)} kg per week over the last 30 days.`,
       });
     }

@@ -81,6 +81,7 @@ export function computeAdiposityPillar(
       observed: {
         value: roundedRatio,
         unit: "ratio",
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- wire fallback label; the score detail prints the value through its own bundle key
         label: `waist-to-height ${roundedRatio.toFixed(3)}`,
         asOf: row.at.toISOString(),
         sources: [row.source],

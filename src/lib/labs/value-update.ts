@@ -17,6 +17,7 @@ export function valueEditSeed(value: number): string {
     MAX_SEED_DECIMALS,
     Math.max(DISPLAY_DECIMALS, SEED_SIGNIFICANT_FIGURES - 1 - magnitude),
   );
+  // eslint-disable-next-line healthlog/no-unlocalised-decimal -- seeds an input whose parser reads the full stop back
   return value
     .toFixed(decimals)
     .replace(/(\.\d*?)0+$/, "$1")

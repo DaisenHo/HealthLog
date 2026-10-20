@@ -9,6 +9,7 @@ import {
   MAX_P_VALUE,
 } from "../correlations";
 import { seededRng } from "./helpers/seeded-series";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /**
  * v1.4.20 — correlation discovery.
@@ -386,6 +387,26 @@ describe("correlateWeightWeekday", () => {
       expect(result.interpretation).not.toMatch(/causes?/i);
       expect(result.pValue).toBeLessThan(MAX_P_VALUE);
     }
+  });
+
+  it("prints the difference in the reader's notation", () => {
+    const daily: Array<{ weekday: number; weight: number }> = [];
+    for (let week = 0; week < 4; week++) {
+      daily.push({ weekday: 0, weight: 84.0 + week * 0.1 });
+      for (let d = 1; d < 7; d++) daily.push({ weekday: d, weight: 80.0 });
+    }
+    const de = correlateWeightWeekday(
+      { daily },
+      getServerTranslator("de").t,
+      "de",
+    );
+    const en = correlateWeightWeekday({ daily });
+    if (de.status !== "ok" || en.status !== "ok") throw new Error("ok");
+    // 84.15 against a grand mean of 80.59: a 3.6 difference.
+    expect(de.interpretation).toMatch(/3,6/);
+    expect(de.interpretation).not.toMatch(/3\.6/);
+    // Counter-check: English keeps the full stop.
+    expect(en.interpretation).toMatch(/3\.6/);
   });
 
   it("returns insufficient when no weekday meaningfully differs", () => {

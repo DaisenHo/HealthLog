@@ -278,6 +278,7 @@ export async function extractExportXml(
         MAX_COMPRESSION_RATIO
     ) {
       throw new Error(
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- zero fraction digits: a whole ratio, no decimal mark to localise
         `export.xml advertises a ${(
           exportXmlEntry.uncompressedSize / exportXmlEntry.compressedSize
         ).toFixed(0)}× compression ratio (cap is ${MAX_COMPRESSION_RATIO}×)` +
@@ -399,6 +400,7 @@ export async function extractHealthConnectDb(
       entry.uncompressedSize / entry.compressedSize > MAX_COMPRESSION_RATIO
     ) {
       throw new Error(
+        // eslint-disable-next-line healthlog/no-unlocalised-decimal -- zero fraction digits: a whole ratio, no decimal mark to localise
         `${HEALTH_CONNECT_DB_MEMBER} advertises a ${(
           entry.uncompressedSize / entry.compressedSize
         ).toFixed(0)}× compression ratio (cap is ${MAX_COMPRESSION_RATIO}×)` +

@@ -39,7 +39,8 @@
  * the never-causal framing survives verbatim in all six locales rather than
  * leaking English into a non-English UI.
  */
-import { defaultLocale } from "@/lib/i18n/config";
+import { formatDecimal } from "@/lib/format-locale";
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import {
   dayKeyToIndex,
@@ -919,6 +920,7 @@ export interface WeightWeekdayInput {
 export function correlateWeightWeekday(
   input: WeightWeekdayInput,
   t: Translate = defaultTranslate(),
+  locale: Locale = defaultLocale,
 ): CorrelationResult {
   const points = input.daily.map((d) => ({ x: d.weekday, y: d.weight }));
   const anova = weekdayAnova(
@@ -951,7 +953,8 @@ export function correlateWeightWeekday(
   const direction = t(
     `insights.correlation.weekdayDirection.${outlierMean > grandMean ? "above" : "below"}`,
   );
-  const delta = Math.abs(outlierMean - grandMean).toFixed(1);
+  // In the reader's notation: the sentence is theirs ("0,8 kg" in German).
+  const delta = formatDecimal(Math.abs(outlierMean - grandMean), locale, 1);
   const interpretation = t("insights.correlation.hypothesis.weightWeekday", {
     weekday: dayLabel,
     delta,
