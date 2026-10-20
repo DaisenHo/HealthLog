@@ -28,6 +28,8 @@ import type { AchievementProgress } from "@/lib/gamification/achievements";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { InlineAction } from "@/components/ui/inline-action";
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -127,84 +129,84 @@ export function RecentAchievementsCard() {
   }
 
   return (
-    <div
-      data-slot="recent-achievements-card"
-      className="bg-card border-border space-y-3 rounded-xl border p-4 md:p-6"
-    >
+    <Card data-slot="recent-achievements-card" className="gap-3 md:gap-3">
       {/* Canonical tile header (foreground h-5 icon, text-base h2) so the
           dashboard card matches its sibling tiles instead of the old muted
           h-4 / text-sm row. The "view all" link rides the header's right slot
           (§11 inline-action-row). */}
-      <TileHeader
-        icon={Trophy}
-        titleAs="h2"
-        title={t("achievements.dashboardCard.title")}
-        right={
-          <Link
-            href="/achievements"
-            className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-xs"
-          >
-            {t("achievements.dashboardCard.viewAll")}
-          </Link>
-        }
-      />
-
-      {showSkeleton ? (
-        <ul
-          data-slot="recent-achievements-skeleton"
-          aria-hidden="true"
-          className="space-y-2 motion-reduce:animate-none"
-        >
-          {Array.from({ length: RECENT_LIMIT }).map((_, idx) => (
-            <li
-              key={`achievement-skeleton-${idx}`}
-              className="border-border bg-background/40 flex items-center gap-3 rounded-md border p-2"
-            >
-              <Skeleton className="h-7 w-7 shrink-0" />
-              <div className="min-w-0 flex-1 space-y-1.5">
-                <Skeleton className="h-3 w-1/2 rounded" />
-                <Skeleton className="h-2.5 w-3/4 rounded" />
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : recent.length === 0 ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("achievements.dashboardCard.empty")}
+      <CardHeader>
+        <TileHeader
+          icon={Trophy}
+          titleAs="h2"
+          title={t("achievements.dashboardCard.title")}
+          right={
+            <InlineAction asChild tone="muted">
+              <Link href="/achievements">
+                {t("achievements.dashboardCard.viewAll")}
+              </Link>
+            </InlineAction>
+          }
         />
-      ) : (
-        <ul className="space-y-2">
-          {recent.map((achievement) => {
-            const Icon = iconMap[achievement.icon] ?? Star;
-            return (
+      </CardHeader>
+
+      <CardContent>
+        {showSkeleton ? (
+          <ul
+            data-slot="recent-achievements-skeleton"
+            aria-hidden="true"
+            className="space-y-2 motion-reduce:animate-none"
+          >
+            {Array.from({ length: RECENT_LIMIT }).map((_, idx) => (
               <li
-                key={achievement.id}
-                data-slot="recent-achievement-item"
+                key={`achievement-skeleton-${idx}`}
                 className="border-border bg-background/40 flex items-center gap-3 rounded-md border p-2"
               >
-                <div className="bg-primary/15 text-primary rounded-md p-1.5">
-                  <Icon className="h-3.5 w-3.5" />
+                <Skeleton className="h-7 w-7 shrink-0" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-1/2 rounded" />
+                  <Skeleton className="h-2.5 w-3/4 rounded" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {t(achievement.titleKey)}
-                  </p>
-                  <p className="text-muted-foreground line-clamp-1 text-xs">
-                    {t(achievement.descriptionKey)}
-                  </p>
-                </div>
-                {achievement.completedAt && (
-                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                    {formatDate(achievement.completedAt)}
-                  </span>
-                )}
               </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+            ))}
+          </ul>
+        ) : recent.length === 0 ? (
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("achievements.dashboardCard.empty")}
+          />
+        ) : (
+          <ul className="space-y-2">
+            {recent.map((achievement) => {
+              const Icon = iconMap[achievement.icon] ?? Star;
+              return (
+                <li
+                  key={achievement.id}
+                  data-slot="recent-achievement-item"
+                  className="border-border bg-background/40 flex items-center gap-3 rounded-md border p-2"
+                >
+                  <div className="bg-primary/15 text-primary rounded-md p-1.5">
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {t(achievement.titleKey)}
+                    </p>
+                    <p className="text-muted-foreground line-clamp-1 text-xs">
+                      {t(achievement.descriptionKey)}
+                    </p>
+                  </div>
+                  {achievement.completedAt && (
+                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                      {formatDate(achievement.completedAt)}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

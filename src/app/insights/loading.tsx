@@ -9,6 +9,7 @@
  * fetch; Next.js renders it instantly while the segment streams.
  */
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 export default function InsightsLoading() {
   return (
     <div data-slot="insights-subpage-loading" className="space-y-6">
@@ -18,21 +19,25 @@ export default function InsightsLoading() {
       </header>
 
       {/* Chart card */}
-      <div className="bg-card rounded-xl border p-4">
-        <Skeleton className="bg-muted mb-4 h-4 w-32 rounded" />
-        <Skeleton className="h-56 w-full rounded-lg" />
-      </div>
+      <Card>
+        <CardContent className="space-y-4">
+          <Skeleton className="bg-muted h-4 w-32 rounded" />
+          <Skeleton className="h-56 w-full rounded-lg" />
+        </CardContent>
+      </Card>
 
       {/* Assessment card */}
-      <div className="bg-card space-y-2 rounded-xl border p-4">
-        <div className="flex items-center gap-2">
-          <Skeleton className="bg-muted h-5 w-5 rounded" />
-          <Skeleton className="bg-muted h-4 w-40 rounded" />
-        </div>
-        <Skeleton className="bg-muted h-3.5 w-full rounded" />
-        <Skeleton className="bg-muted h-3.5 w-11/12 rounded" />
-        <Skeleton className="bg-muted h-3.5 w-9/12 rounded" />
-      </div>
+      <Card>
+        <CardContent className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="bg-muted h-5 w-5 rounded" />
+            <Skeleton className="bg-muted h-4 w-40 rounded" />
+          </div>
+          <Skeleton className="bg-muted h-3.5 w-full rounded" />
+          <Skeleton className="bg-muted h-3.5 w-11/12 rounded" />
+          <Skeleton className="bg-muted h-3.5 w-9/12 rounded" />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -19,6 +19,8 @@
  *   - `no-unlocalised-decimal` — a displayed number goes through the app's
  *                              formatters, not toFixed() or a locale-less
  *                              toLocaleString().
+ *   - `no-raw-card-shell`    — a card surface is a <Card> or a shell
+ *                              primitive, not bg-card + border + rounded-xl.
  */
 
 "use strict";
@@ -33,6 +35,7 @@ const noDefaultZoneLiteral = require("./no-default-zone-literal.js");
 const noUtcDayKey = require("./no-utc-day-key.js");
 const noPlanningTags = require("./no-planning-tags.js");
 const noUnlocalisedDecimal = require("./no-unlocalised-decimal.js");
+const noRawCardShell = require("./no-raw-card-shell.js");
 
 module.exports = {
   rules: {
@@ -51,5 +54,6 @@ module.exports = {
     "no-utc-day-key": noUtcDayKey,
     "no-planning-tags": noPlanningTags,
     "no-unlocalised-decimal": noUnlocalisedDecimal,
+    "no-raw-card-shell": noRawCardShell,
   },
 };

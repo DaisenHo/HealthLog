@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Loader2, Plus, RefreshCw, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -73,15 +73,15 @@ const BbtChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-card border-border rounded-xl border py-6">
-        <div className="px-6">
+      <Card>
+        <CardHeader>
           <Skeleton className="h-5 w-44" />
-        </div>
-        <div className="mt-6 px-6">
-          <Skeleton className="mb-2 h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Skeleton className="h-4 w-64" />
           <Skeleton className="h-[210px] w-full rounded-md" />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     ),
   },
 );
