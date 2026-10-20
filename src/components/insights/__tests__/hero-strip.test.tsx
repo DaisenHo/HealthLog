@@ -9,6 +9,9 @@ import type {
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // The "generated" freshness line reads the profile timezone via `useAuth`; stub
 // it so the SSR render does not reach for a QueryClient the test omits.

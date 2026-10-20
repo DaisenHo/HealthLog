@@ -35,6 +35,9 @@ vi.mock("../use-cycle", async (importOriginal) => ({
 import { CUSTOM_SYMPTOM_ICON_ALLOWLIST } from "@/lib/cycle/custom-symptoms-shared";
 import { I18nProvider } from "@/lib/i18n/context";
 import { AddSymptomChip } from "../log-day-sheet";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 describe("cycle custom-symptom icon picker", () => {
   it("has 44 px targets on a phone and translated icon names", () => {

@@ -85,6 +85,9 @@ import {
   reorderWidgets,
   setHeroItemKindEnabled,
 } from "../dashboard-layout-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactElement, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

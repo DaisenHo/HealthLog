@@ -7,6 +7,9 @@ import {
   type ChartDataTableProps,
   type ChartTablePoint,
 } from "../chart-data-table";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactNode) {
   return renderToStaticMarkup(

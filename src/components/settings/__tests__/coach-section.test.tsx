@@ -61,6 +61,9 @@ vi.mock("@/hooks/use-auth", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { SettingsSectionFrame } from "./section-frame-harness";
 import { CoachSection } from "../coach-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   // v1.18.6 (W9) — the visible heading lives in the shared frame the route

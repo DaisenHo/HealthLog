@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
 import { queryKeys } from "@/lib/query-keys";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.36 W4a — IntakeHistoryListV2 SSR smoke tests.

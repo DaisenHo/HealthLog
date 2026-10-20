@@ -12,6 +12,9 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import type { ScoreConfigRow } from "@/lib/score-config/rows";
 import { ScorePillarRow } from "../score-pillar-row";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "es", "fr", "it", "pl");
 
 function render(row: ScoreConfigRow, locale: Locale = "en"): string {
   return renderToStaticMarkup(

@@ -61,6 +61,9 @@ import {
   type MedicationOption,
 } from "../medication-intake-quick-add";
 import { pickDefaultMedicationId } from "@/lib/medications/default-medication";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function makeMed(
   id: string,

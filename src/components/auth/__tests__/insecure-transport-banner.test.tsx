@@ -9,6 +9,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import { InsecureTransportBanner } from "@/components/auth/insecure-transport-banner";
 import type { TransportVerdict } from "@/lib/auth/client-transport";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(verdict: TransportVerdict, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

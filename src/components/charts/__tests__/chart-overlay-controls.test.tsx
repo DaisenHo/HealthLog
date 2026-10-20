@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import type { AccountAccess } from "@/lib/sharing/account-access-view";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const OWNER = {
   accountId: "acct-owner",

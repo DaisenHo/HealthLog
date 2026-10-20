@@ -73,6 +73,9 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
 
 import { CoachReadStrip } from "../derived/coach-read-strip";
 import InsightsStepsPage from "@/app/insights/steps/page";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactNode, locale: "en" | "de" = "de") {
   const queryClient = new QueryClient({

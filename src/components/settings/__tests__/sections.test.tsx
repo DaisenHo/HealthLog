@@ -127,6 +127,9 @@ import { NotificationsSection } from "../notifications-section";
 // `thresholds-section.tsx` so the component name + filename match the
 // slug like every other settings section.
 import { ThresholdsSection } from "../thresholds-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const CALLBACK_URLS = {
   withings: "https://app.example/api/withings/callback",

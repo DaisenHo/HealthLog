@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import { DailyBriefing } from "../daily-briefing";
 import type { DailyBriefing as DailyBriefingPayload } from "@/lib/ai/schema";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // The updated-at footer reads the profile timezone via `useAuth`; stub it so the
 // SSR render does not reach for a QueryClient the static-markup test omits.

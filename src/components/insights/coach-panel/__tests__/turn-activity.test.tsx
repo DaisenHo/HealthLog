@@ -24,6 +24,9 @@ import {
   stepIcon,
   stepLabel,
 } from "../turn-activity";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "pl");
 
 function render(node: React.ReactNode, locale: Locale = "en") {
   return renderToStaticMarkup(

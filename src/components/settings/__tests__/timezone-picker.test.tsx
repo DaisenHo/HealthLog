@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { TimezonePicker } from "../timezone-picker";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.37 — the "Browser-Zeitzone übernehmen" / "Use browser timezone"

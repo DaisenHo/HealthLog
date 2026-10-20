@@ -12,6 +12,9 @@ import {
   type SleepStageBreakdown,
   type SleepStageNight,
 } from "../sleep-stage-stacked-bar";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.25 W4c / W3f — sleep-stage stacked-bar chart unit tests.

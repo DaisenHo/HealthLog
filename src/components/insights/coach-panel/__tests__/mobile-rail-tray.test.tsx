@@ -39,6 +39,9 @@ vi.mock("@/components/ui/sheet", () => ({
 }));
 
 import { MobileRailTray } from "../mobile-rail-tray";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

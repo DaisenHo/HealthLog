@@ -46,6 +46,9 @@ vi.mock("@/hooks/use-auth", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { SettingsSectionFrame } from "./section-frame-harness";
 import { ExportSection } from "../export-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactElement, locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

@@ -760,6 +760,9 @@ describe("<MessageThread>", () => {
 // changes can't silently demote the daily-limit / rate-limit copy
 // back to the generic provider-unavailable fallback.
 import { errorCodeToI18nKey } from "../message-thread";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 describe("errorCodeToI18nKey", () => {
   it("maps daily-budget exceedance to the dedicated key", () => {

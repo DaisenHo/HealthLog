@@ -29,6 +29,9 @@ vi.mock("@/components/ui/responsive-sheet", () => ({
 }));
 
 import { KeyboardShortcutsDialog } from "../keyboard-shortcuts-dialog";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "es", "fr", "it", "pl", "ko", "nl");
 
 const EVERYTHING = {
   navHrefs: ["/", "/medications", "/labs", "/timeline", "/insights", "/coach"],

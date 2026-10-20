@@ -166,6 +166,9 @@ vi.mock("@/lib/queries/use-achievements-query", () => ({
 }));
 
 import AchievementsPage, { groupByCategory } from "../page";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

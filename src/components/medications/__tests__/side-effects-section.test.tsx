@@ -40,6 +40,9 @@ vi.mock("@/components/ui/query-error-card", async () => {
 });
 
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.25 W19d — SideEffectsSection SSR smoke tests.

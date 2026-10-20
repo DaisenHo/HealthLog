@@ -48,6 +48,9 @@ import {
   CAPTURE_KIND_ORDER,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function renderSSR(node: React.ReactElement, locale: "en" | "de" = "de") {
   return renderToStaticMarkup(

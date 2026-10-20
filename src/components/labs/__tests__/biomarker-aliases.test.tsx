@@ -11,6 +11,9 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
 import { BiomarkerAliases } from "../biomarker-aliases";
 import { BiomarkerMergeSheet } from "../biomarker-merge-sheet";
 import type { BiomarkerDto } from "../types";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 vi.mock("@/components/ui/responsive-sheet", () => ({
   ResponsiveSheet: ({

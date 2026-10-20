@@ -59,6 +59,9 @@ import {
   SettingsShell,
   isSettingsSectionSlug,
 } from "../settings-shell";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function renderShell(props: {
   active?: (typeof SETTINGS_SECTION_SLUGS)[number];

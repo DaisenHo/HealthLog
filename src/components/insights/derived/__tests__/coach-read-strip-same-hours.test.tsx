@@ -23,6 +23,9 @@ vi.mock("@/hooks/use-auth", () => ({
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
 
 import { CoachReadStrip } from "../coach-read-strip";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const METRIC = "BLOOD_GLUCOSE";
 

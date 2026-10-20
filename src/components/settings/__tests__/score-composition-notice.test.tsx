@@ -15,6 +15,9 @@ import { I18nProvider } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import type { ScorePillarId } from "@/lib/analytics/score/types";
 import { ScoreCompositionNotice } from "../score-composition-notice";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "ko");
 
 function render(
   props: { left: ScorePillarId[]; joined: ScorePillarId[] },

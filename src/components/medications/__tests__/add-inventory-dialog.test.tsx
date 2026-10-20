@@ -16,6 +16,9 @@ import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // The Radix Dialog / Select portal at runtime, so their bodies never
 // materialise in static markup. Collapse the primitives to plain

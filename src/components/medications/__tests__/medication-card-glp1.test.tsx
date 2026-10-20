@@ -8,6 +8,9 @@ import {
   type Glp1Medication,
 } from "@/components/medications/glp1-medication-card";
 import { MedicationCard } from "@/components/medications/medication-card";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.25 W4d-tests — RTL-style component coverage for the GLP-1

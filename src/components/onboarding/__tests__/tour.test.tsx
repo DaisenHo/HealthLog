@@ -18,6 +18,9 @@ vi.mock("next/navigation", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { OnboardingTour } from "../tour";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function renderTour(modules?: Record<string, boolean>) {
   return renderToStaticMarkup(

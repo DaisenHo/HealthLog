@@ -6,6 +6,9 @@ import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { GlucoseTirBar } from "../glucose-tir-bar";
 import { GlucoseAdvancedDisclosure } from "../glucose-advanced-disclosure";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /** Minimal valid `DataSummary` — the panel + disclosure only read `count`. */
 function summary(count: number): DataSummary {

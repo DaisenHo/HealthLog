@@ -31,6 +31,9 @@ import {
   missingSectionsOf,
 } from "@/components/admin/backups-section";
 import type { MissingBackupSection } from "@/lib/export/restore-skips";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

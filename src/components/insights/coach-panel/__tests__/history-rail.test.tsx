@@ -6,6 +6,9 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { HistoryRail } from "../history-rail";
 import type { CoachConversationsPage } from "@/lib/ai/coach/types";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.20 phase B2b — history-rail render snapshot.

@@ -4,6 +4,9 @@ import { Activity, Smile } from "lucide-react";
 
 import { TrendCard } from "../trend-card";
 import { I18nProvider } from "@/lib/i18n/context";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.15 Fix 4 — "7-Tage-Schnitt" → "7-Tage-Trend".

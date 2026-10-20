@@ -51,6 +51,9 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { MoodTagPicker } from "../mood-tag-picker";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const CATALOG = {
   categories: [

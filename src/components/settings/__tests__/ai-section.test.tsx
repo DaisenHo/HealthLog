@@ -126,6 +126,9 @@ vi.mock("@tanstack/react-query", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { AiSection } from "../ai-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

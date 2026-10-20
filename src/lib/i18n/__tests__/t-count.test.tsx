@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de", "pl");
 
 /**
  * `tCount` is the plural-aware `t` the components call.

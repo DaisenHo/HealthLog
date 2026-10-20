@@ -23,6 +23,9 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { TrendDescriptorCaption } from "../trend-annotation";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function seededClient(seed: (client: QueryClient) => void): QueryClient {
   const client = new QueryClient({

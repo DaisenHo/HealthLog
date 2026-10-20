@@ -30,6 +30,9 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 import { AdvancedSection } from "../advanced-section";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(locale: "en" | "de" = "en") {
   return renderToStaticMarkup(

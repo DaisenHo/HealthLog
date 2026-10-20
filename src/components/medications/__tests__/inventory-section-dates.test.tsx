@@ -17,6 +17,9 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 // Now-anchored future expiry (the fixed 2027-06-01 was a fuse: once the
 // calendar passes it, an "expiring later" fixture silently becomes an

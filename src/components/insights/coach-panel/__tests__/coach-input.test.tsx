@@ -339,6 +339,9 @@ describe("<CoachInput>", () => {
 // textarea's auto-grow effect. Pin its math so the textarea never
 // collapses below a single line or grows past the 6-line ceiling.
 import { computeAutoGrowHeight } from "../coach-input";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 describe("computeAutoGrowHeight", () => {
   it("clamps to the single-line minimum when scrollHeight is empty", () => {

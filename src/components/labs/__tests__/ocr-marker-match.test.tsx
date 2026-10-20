@@ -11,6 +11,9 @@ import {
 } from "../ocr-review-types";
 import { toCommitRow } from "../ocr-review-validation";
 import { OcrRowEditor } from "../ocr-row-editor";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 const dto: OcrExtractedRowDto = {
   analyte: "Bilirubin ges.",

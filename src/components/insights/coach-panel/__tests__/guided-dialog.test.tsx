@@ -8,6 +8,9 @@ import {
   GuidedSummaryBubble,
 } from "../guided-dialog-bubbles";
 import { GuidedQuestionsCard } from "../guided-questions-card";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.16.5 — markup-level coverage for the guided clarifying-questions

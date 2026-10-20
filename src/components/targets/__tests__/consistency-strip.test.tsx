@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { ConsistencyStrip } from "../consistency-strip";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 /**
  * v1.4.25 W3e — `<ConsistencyStrip>` replaces the v1.4.22 per-card
