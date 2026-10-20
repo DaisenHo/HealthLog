@@ -29,9 +29,9 @@ import {
 } from "./windows";
 import {
   COMPLIANCE_LEDGER_WINDOW_DAYS,
-  buildComplianceLedgerRows,
   tallyComplianceFromLedger,
-  tallyLedgerRows,
+  trailingComplianceLedger,
+  trailingComplianceTally,
 } from "./ledger";
 import { buildCurrentCycle, type CurrentCycle } from "./cycle";
 import { rollingIntakeInstants } from "./adapters";
@@ -564,9 +564,7 @@ export function buildMedicationComplianceBundle(
       : ledgerPeriodStart;
 
   const hasSchedules = schedules.length > 0;
-  const ledgerRows = hasSchedules
-    ? buildComplianceLedgerRows(events, schedules, ctx, ledgerFrom, now, now)
-    : [];
+  const ledgerRows = trailingComplianceLedger(events, schedules, ctx, now);
 
   // ONE cadence timeline over the full ledger window. Each per-window
   // streak below walks only its own trailing `effectiveDays`, so sharing
@@ -607,10 +605,7 @@ export function buildMedicationComplianceBundle(
       1,
       Math.ceil((now.getTime() - effectiveStart.getTime()) / ONE_DAY_MS),
     );
-    const tally = tallyLedgerRows(ledgerRows, {
-      from: periodStart,
-      to: now,
-    });
+    const tally = trailingComplianceTally(ledgerRows, days, now);
     const { current: streak } = streaksFromTimeline(
       timeline,
       now,
