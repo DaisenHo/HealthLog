@@ -96,6 +96,9 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
   // as stored, schedule and switch included.
   "lib/export/full-backup-payload.ts": "backup carries the stored rows",
   "lib/export/restore-backup.ts": "restore writes the stored rows back",
+  // v1.44 — the CSV import writes new medications and reads only their names
+  // and doses to skip duplicates; it derives nothing due.
+  "lib/import/medications-csv.ts": "imports new rows, derives nothing due",
   // v1.43 — the units a taken dose consumed, resolved per slot exactly as
   // the inventory does. It reads only doses already recorded as taken.
   "lib/medications/ingredients/recompute.ts":

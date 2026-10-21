@@ -489,6 +489,7 @@ export const USER_RESET = {
   moodTagLayoutJson: Prisma.DbNull,
   documentsLayoutJson: Prisma.DbNull,
   moduleListLayoutJson: Prisma.DbNull,
+  activityGoalsJson: Prisma.DbNull,
   reportSelectionJson: Prisma.DbNull,
   modulePreferencesJson: Prisma.DbNull,
   healthScoreConfigJson: Prisma.DbNull,

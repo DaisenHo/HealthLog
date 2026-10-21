@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceProvenanceLink } from "@/components/provenance/source-provenance-link";
 import Link from "next/link";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
 
@@ -523,6 +524,9 @@ export function HealthKitMetricPage({
       {targetSummarySlug ? (
         <MetricTargetSummary slug={targetSummarySlug} />
       ) : null}
+      {/* v1.44 (#1204) — where the values come from, for a metric the
+          source priority decides for. Nothing for any other metric. */}
+      <SourceProvenanceLink type={measurementType} />
       {/* v1.17.0 — page-specific extra block (blood glucose: the clinical
           panel). Mounted on the data-bearing branch only. */}
       {afterChart}

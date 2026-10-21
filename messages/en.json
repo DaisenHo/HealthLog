@@ -13544,5 +13544,215 @@
       "clinicalUpper": "Clinical upper limit",
       "clinicalLower": "Clinical lower limit"
     }
+  },
+  "activityCalendar": {
+    "title": "Activity calendar",
+    "periodLabel": "Calendar span",
+    "period": {
+      "week": "Week",
+      "month": "Month"
+    },
+    "weekRange": "{start} to {end}",
+    "previous": "Previous period",
+    "next": "Next period",
+    "metricLabel": "Colour the days by",
+    "metric": {
+      "steps": "Steps",
+      "activeMinutes": "Active minutes",
+      "load": "Training load"
+    },
+    "empty": "No steps, active minutes or workouts in this period yet.",
+    "loadError": "The activity calendar could not be loaded.",
+    "weekGoalsColumn": "Weekly goals",
+    "weekGoalsMet": "All weekly goals met",
+    "weekGoalsNotMet": "Not all weekly goals met",
+    "cell": {
+      "steps": "{value} steps",
+      "activeMinutes": "{value} active minutes",
+      "workouts": "{value} workouts: {sports}"
+    },
+    "level": {
+      "none": "No data",
+      "unrated": "Not enough history yet",
+      "low": "Far below your usual",
+      "below": "Below your usual",
+      "usual": "About your usual",
+      "above": "Above your usual",
+      "high": "Far above your usual"
+    },
+    "legend": "Compared with your 12 weeks before:",
+    "noBaseline": "Your usual range shows after 14 days with data.",
+    "summary": {
+      "steps": "{value} steps",
+      "activeMinutes": "{value} active minutes",
+      "workouts": "{value} workouts",
+      "load": "Average training load {value}",
+      "usual": "Your usual by this point: {value}",
+      "noUsual": "Not enough earlier weeks or months to compare with yet."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Workouts per week",
+      "activeMinutesPerWeek": "Active minutes per week",
+      "stepsPerWeek": "Steps per week",
+      "stepsPerMonth": "Steps per month"
+    },
+    "goalOf": "{value} of {target}",
+    "setGoals": "Set goals",
+    "editGoals": "Change goals",
+    "goalsSheet": {
+      "title": "Activity goals",
+      "description": "Leave a field empty for no goal.",
+      "none": "No goal",
+      "invalid": "A whole number from {min} to {max}.",
+      "saveError": "The goals could not be saved."
+    },
+    "crossLink": {
+      "title": "Activity calendar",
+      "body": "Your steps as a week or a month, against your own usual.",
+      "cta": "Open calendar"
+    }
+  },
+  "sourceProvenance": {
+    "title": "Where values come from",
+    "description": "Which source delivered a metric each day, and which one your source priority uses.",
+    "metric": "Metric",
+    "day": "Day",
+    "dayTitle": "Sources on this day",
+    "loadError": "The sources could not be loaded.",
+    "dayEmpty": "No readings of this metric on this day.",
+    "reason": {
+      "only_source": "{source} is the only source on this day.",
+      "highest_on_ladder": "{source} is used: it stands highest in your source priority among this day's sources.",
+      "name_tiebreak": "{source} is used: none of this day's sources is in your source priority, so the name decided.",
+      "not_ranked": "This metric has no source priority: every source's readings count."
+    },
+    "pass": {
+      "lower_on_ladder": "Lower in your source priority.",
+      "not_on_ladder": "Not in your source priority for this metric.",
+      "name_tiebreak": "Same rank as the source used; the name decided."
+    },
+    "used": "Used",
+    "readings": "{count} readings, devices: {devices}",
+    "ladder": "Your order for this metric: {ladder}",
+    "utcNote": "The source is chosen per day from midnight to midnight UTC, the same way the charts choose it.",
+    "openSettings": "Change the order in Source priority",
+    "compareTitle": "Compare two sources",
+    "range": "Range",
+    "rangeDays": "{days} days",
+    "compareNeedsTwo": "Only one source has readings of this metric in this range.",
+    "side": {
+      "a": "First source",
+      "b": "Second source"
+    },
+    "daysBoth": "Days with both",
+    "meanOf": "Average from {source}",
+    "meanAbsDiff": "Average difference",
+    "pickedDays": "Days used (first / second)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Averages cover only the days both sources have, so they compare like with like. The value in bold is the one the charts use.",
+    "settingsHint": "To see what this order decides day by day:",
+    "settingsHintLink": "Where values come from",
+    "metricLink": "Where these values come from"
+  },
+  "recordImport": {
+    "title": "Lab results and medications from a spreadsheet",
+    "description": "Bring years of lab results or a medication list in from a CSV file.",
+    "detail": "You choose which column holds what, HealthLog checks every row first and imports nothing until you confirm. Rows already in your record are skipped.",
+    "kind": {
+      "labs": "Lab results",
+      "medications": "Medications"
+    },
+    "sheetTitle": {
+      "labs": "Import lab results",
+      "medications": "Import medications"
+    },
+    "sheetDescription": {
+      "labs": "Markers are matched to yours, units converted where the conversion is known.",
+      "medications": "Name, dose, daily times, as needed, start and end. Other rhythms you set up in the app afterwards."
+    },
+    "file": "CSV file",
+    "template": "Download template",
+    "mapping": "Which column holds what",
+    "required": "(required)",
+    "notInFile": "Not in the file",
+    "column": "Column {n}",
+    "delimiter": "Separator",
+    "delimiterOption": {
+      "comma": "Comma",
+      "semicolon": "Semicolon",
+      "tab": "Tab"
+    },
+    "decimal": "Decimal mark",
+    "decimalOption": {
+      "dot": "Dot (5.4)",
+      "comma": "Comma (5,4)"
+    },
+    "dateOrder": "Date format",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (day first)",
+      "mdy": "03/01/2025 (month first)"
+    },
+    "header": "The first row holds column names",
+    "reminders": "Turn reminders on for imported medications",
+    "timezoneNote": "Times without a time zone are read in your account's time zone. A date without a time is kept as that calendar date.",
+    "missing": "Still to choose: {fields}",
+    "check": "Check file",
+    "runIdle": "Import",
+    "run": "Import {count} rows",
+    "close": "Close",
+    "summaryCheck": "{rows} rows read: {inserted} can be imported, {duplicates} already in your record, {failed} with a problem.",
+    "summaryDone": "Imported {inserted} rows. Skipped {duplicates} already in your record, {failed} with a problem.",
+    "markersMatched": "Matched to your markers:",
+    "markersCreated": "New markers:",
+    "line": "Line {line}",
+    "errorsTruncated": "Only the first 500 problems are listed.",
+    "error": {
+      "tooLarge": "The file is larger than 16 MB.",
+      "rateLimited": "Too many imports in the last hour. Try again later.",
+      "invalid": "The file or the column choice could not be read.",
+      "failed": "The import did not go through. Please try again."
+    },
+    "reason": {
+      "missing_value": "A required cell is empty",
+      "invalid_number": "Not a number",
+      "ambiguous_number": "The number reads two ways; check the decimal mark",
+      "missing_unit": "A number needs a unit",
+      "invalid_date": "Not a date in the chosen order",
+      "invalid_time": "Not a time of day",
+      "ambiguous_date": "The date reads two ways; use a four-digit year and the chosen order",
+      "future_date": "The date lies in the future",
+      "text_too_long": "The text is too long",
+      "unit_mismatch": "This unit does not convert into the marker's unit",
+      "invalid_reference_range": "The reference range cannot be read",
+      "invalid_times": "The times cannot be read (use 08:00 20:00)",
+      "missing_times": "Add intake times, or mark the medication as needed",
+      "invalid_yes_no": "Use yes or no",
+      "as_needed_with_times": "An as-needed medication has no fixed times",
+      "end_before_start": "The end lies before the start",
+      "invalid_medication": "The medication cannot be saved like this",
+      "oversized_row": "The row is too long or too wide",
+      "row_limit": "Past the row limit for one import",
+      "duplicate": "Already in your record, skipped"
+    },
+    "field": {
+      "analyte": "Marker",
+      "value": "Result",
+      "unit": "Unit",
+      "date": "Date",
+      "time": "Time",
+      "referenceRange": "Reference range",
+      "referenceLow": "Reference low",
+      "referenceHigh": "Reference high",
+      "panel": "Panel",
+      "note": "Note",
+      "name": "Name",
+      "dose": "Dose",
+      "times": "Times",
+      "asNeeded": "As needed",
+      "startsOn": "Start",
+      "endsOn": "End"
+    }
   }
 }

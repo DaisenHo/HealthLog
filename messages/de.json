@@ -13544,5 +13544,215 @@
       "clinicalUpper": "Klinische Obergrenze",
       "clinicalLower": "Klinische Untergrenze"
     }
+  },
+  "activityCalendar": {
+    "title": "Aktivitätskalender",
+    "periodLabel": "Zeitraum",
+    "period": {
+      "week": "Woche",
+      "month": "Monat"
+    },
+    "weekRange": "{start} bis {end}",
+    "previous": "Vorheriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "metricLabel": "Tage einfärben nach",
+    "metric": {
+      "steps": "Schritte",
+      "activeMinutes": "Aktive Minuten",
+      "load": "Trainingslast"
+    },
+    "empty": "In diesem Zeitraum gibt es noch keine Schritte, aktiven Minuten oder Trainings.",
+    "loadError": "Der Aktivitätskalender konnte nicht geladen werden.",
+    "weekGoalsColumn": "Wochenziele",
+    "weekGoalsMet": "Alle Wochenziele erreicht",
+    "weekGoalsNotMet": "Nicht alle Wochenziele erreicht",
+    "cell": {
+      "steps": "{value} Schritte",
+      "activeMinutes": "{value} aktive Minuten",
+      "workouts": "{value} Trainings: {sports}"
+    },
+    "level": {
+      "none": "Keine Daten",
+      "unrated": "Noch zu wenig Verlauf",
+      "low": "Weit unter deinem Üblichen",
+      "below": "Unter deinem Üblichen",
+      "usual": "Etwa wie üblich",
+      "above": "Über deinem Üblichen",
+      "high": "Weit über deinem Üblichen"
+    },
+    "legend": "Verglichen mit deinen 12 Wochen davor:",
+    "noBaseline": "Dein üblicher Bereich erscheint nach 14 Tagen mit Daten.",
+    "summary": {
+      "steps": "{value} Schritte",
+      "activeMinutes": "{value} aktive Minuten",
+      "workouts": "{value} Trainings",
+      "load": "Durchschnittliche Trainingslast {value}",
+      "usual": "Bis hierher üblich bei dir: {value}",
+      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Trainings pro Woche",
+      "activeMinutesPerWeek": "Aktive Minuten pro Woche",
+      "stepsPerWeek": "Schritte pro Woche",
+      "stepsPerMonth": "Schritte pro Monat"
+    },
+    "goalOf": "{value} von {target}",
+    "setGoals": "Ziele festlegen",
+    "editGoals": "Ziele ändern",
+    "goalsSheet": {
+      "title": "Aktivitätsziele",
+      "description": "Lass ein Feld leer, wenn du dort kein Ziel möchtest.",
+      "none": "Kein Ziel",
+      "invalid": "Eine ganze Zahl von {min} bis {max}.",
+      "saveError": "Die Ziele konnten nicht gespeichert werden."
+    },
+    "crossLink": {
+      "title": "Aktivitätskalender",
+      "body": "Deine Schritte als Woche oder Monat, verglichen mit deinem Üblichen.",
+      "cta": "Kalender öffnen"
+    }
+  },
+  "sourceProvenance": {
+    "title": "Woher die Werte kommen",
+    "description": "Welche Quelle einen Wert an jedem Tag geliefert hat und welche deine Quellen-Priorität verwendet.",
+    "metric": "Messwert",
+    "day": "Tag",
+    "dayTitle": "Quellen an diesem Tag",
+    "loadError": "Die Quellen konnten nicht geladen werden.",
+    "dayEmpty": "An diesem Tag gibt es keine Werte dieser Art.",
+    "reason": {
+      "only_source": "{source} ist an diesem Tag die einzige Quelle.",
+      "highest_on_ladder": "{source} wird verwendet: Unter den Quellen dieses Tages steht sie in deiner Quellen-Priorität am höchsten.",
+      "name_tiebreak": "{source} wird verwendet: Keine der Quellen dieses Tages steht in deiner Quellen-Priorität, deshalb entscheidet der Name.",
+      "not_ranked": "Für diesen Wert gibt es keine Quellen-Priorität: Die Werte aller Quellen zählen."
+    },
+    "pass": {
+      "lower_on_ladder": "Steht in deiner Quellen-Priorität weiter unten.",
+      "not_on_ladder": "Steht für diesen Wert nicht in deiner Quellen-Priorität.",
+      "name_tiebreak": "Gleicher Rang wie die verwendete Quelle; der Name hat entschieden."
+    },
+    "used": "Verwendet",
+    "readings": "{count} Messungen, Geräte: {devices}",
+    "ladder": "Deine Reihenfolge für diesen Wert: {ladder}",
+    "utcNote": "Die Quelle wird pro Tag von Mitternacht bis Mitternacht UTC gewählt, genauso wie bei den Diagrammen.",
+    "openSettings": "Reihenfolge in der Quellen-Priorität ändern",
+    "compareTitle": "Zwei Quellen vergleichen",
+    "range": "Zeitraum",
+    "rangeDays": "{days} Tage",
+    "compareNeedsTwo": "In diesem Zeitraum hat nur eine Quelle Werte dieser Art.",
+    "side": {
+      "a": "Erste Quelle",
+      "b": "Zweite Quelle"
+    },
+    "daysBoth": "Tage mit beiden",
+    "meanOf": "Durchschnitt von {source}",
+    "meanAbsDiff": "Durchschnittliche Abweichung",
+    "pickedDays": "Verwendete Tage (erste / zweite)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Die Durchschnitte zählen nur Tage, an denen beide Quellen Werte haben, damit Gleiches mit Gleichem verglichen wird. Fett ist der Wert, den die Diagramme verwenden.",
+    "settingsHint": "Was diese Reihenfolge Tag für Tag entscheidet:",
+    "settingsHintLink": "Woher die Werte kommen",
+    "metricLink": "Woher diese Werte kommen"
+  },
+  "recordImport": {
+    "title": "Laborwerte und Medikamente aus einer Tabelle",
+    "description": "Hol dir Laborwerte aus Jahren oder eine Medikamentenliste aus einer CSV-Datei.",
+    "detail": "Du legst fest, welche Spalte was enthält. HealthLog prüft jede Zeile vorher und importiert erst, wenn du bestätigst. Zeilen, die schon da sind, werden übersprungen.",
+    "kind": {
+      "labs": "Laborwerte",
+      "medications": "Medikamente"
+    },
+    "sheetTitle": {
+      "labs": "Laborwerte importieren",
+      "medications": "Medikamente importieren"
+    },
+    "sheetDescription": {
+      "labs": "Marker werden deinen zugeordnet, Einheiten umgerechnet, wo die Umrechnung bekannt ist.",
+      "medications": "Name, Dosis, tägliche Uhrzeiten, bei Bedarf, Beginn und Ende. Andere Rhythmen legst du danach in der App fest."
+    },
+    "file": "CSV-Datei",
+    "template": "Vorlage herunterladen",
+    "mapping": "Welche Spalte enthält was",
+    "required": "(Pflicht)",
+    "notInFile": "Nicht in der Datei",
+    "column": "Spalte {n}",
+    "delimiter": "Trennzeichen",
+    "delimiterOption": {
+      "comma": "Komma",
+      "semicolon": "Semikolon",
+      "tab": "Tabulator"
+    },
+    "decimal": "Dezimalzeichen",
+    "decimalOption": {
+      "dot": "Punkt (5.4)",
+      "comma": "Komma (5,4)"
+    },
+    "dateOrder": "Datumsformat",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (Tag zuerst)",
+      "mdy": "03/01/2025 (Monat zuerst)"
+    },
+    "header": "Die erste Zeile enthält Spaltennamen",
+    "reminders": "Erinnerungen für importierte Medikamente einschalten",
+    "timezoneNote": "Uhrzeiten ohne Zeitzone werden in der Zeitzone deines Kontos gelesen. Ein Datum ohne Uhrzeit bleibt dieser Kalendertag.",
+    "missing": "Noch auszuwählen: {fields}",
+    "check": "Datei prüfen",
+    "runIdle": "Importieren",
+    "run": "{count} Zeilen importieren",
+    "close": "Schließen",
+    "summaryCheck": "{rows} Zeilen gelesen: {inserted} können importiert werden, {duplicates} sind schon da, {failed} haben ein Problem.",
+    "summaryDone": "{inserted} Zeilen importiert. Übersprungen: {duplicates}, die schon da waren, und {failed} mit einem Problem.",
+    "markersMatched": "Deinen Markern zugeordnet:",
+    "markersCreated": "Neue Marker:",
+    "line": "Zeile {line}",
+    "errorsTruncated": "Nur die ersten 500 Probleme werden aufgelistet.",
+    "error": {
+      "tooLarge": "Die Datei ist größer als 16 MB.",
+      "rateLimited": "Zu viele Importe in der letzten Stunde. Versuch es später noch einmal.",
+      "invalid": "Die Datei oder die Spaltenauswahl konnte nicht gelesen werden.",
+      "failed": "Der Import hat nicht geklappt. Bitte versuch es noch einmal."
+    },
+    "reason": {
+      "missing_value": "Eine Pflichtzelle ist leer",
+      "invalid_number": "Keine Zahl",
+      "ambiguous_number": "Die Zahl ist mehrdeutig; prüf das Dezimalzeichen",
+      "missing_unit": "Eine Zahl braucht eine Einheit",
+      "invalid_date": "Kein Datum im gewählten Format",
+      "invalid_time": "Keine Uhrzeit",
+      "ambiguous_date": "Das Datum ist mehrdeutig; nutz eine vierstellige Jahreszahl und das gewählte Format",
+      "future_date": "Das Datum liegt in der Zukunft",
+      "text_too_long": "Der Text ist zu lang",
+      "unit_mismatch": "Diese Einheit lässt sich nicht in die Einheit des Markers umrechnen",
+      "invalid_reference_range": "Der Referenzbereich ist nicht lesbar",
+      "invalid_times": "Die Uhrzeiten sind nicht lesbar (z. B. 08:00 20:00)",
+      "missing_times": "Trag Einnahmezeiten ein oder markier das Medikament als bei Bedarf",
+      "invalid_yes_no": "Bitte ja oder nein",
+      "as_needed_with_times": "Ein Medikament bei Bedarf hat keine festen Uhrzeiten",
+      "end_before_start": "Das Ende liegt vor dem Beginn",
+      "invalid_medication": "So lässt sich das Medikament nicht speichern",
+      "oversized_row": "Die Zeile ist zu lang oder zu breit",
+      "row_limit": "Über der Zeilengrenze für einen Import",
+      "duplicate": "Schon da, übersprungen"
+    },
+    "field": {
+      "analyte": "Marker",
+      "value": "Ergebnis",
+      "unit": "Einheit",
+      "date": "Datum",
+      "time": "Uhrzeit",
+      "referenceRange": "Referenzbereich",
+      "referenceLow": "Referenz unten",
+      "referenceHigh": "Referenz oben",
+      "panel": "Gruppe",
+      "note": "Notiz",
+      "name": "Name",
+      "dose": "Dosis",
+      "times": "Uhrzeiten",
+      "asNeeded": "Bei Bedarf",
+      "startsOn": "Beginn",
+      "endsOn": "Ende"
+    }
   }
 }

@@ -392,6 +392,12 @@ model User {
   /// Settings > System through `/api/settings/preview-features`.
   /// @pending-consumer(topics preview) the `topics` flag is stored and shown, but no surface reads it yet; the topic overview pages will.
   previewFeaturesJson      Json?                @map("preview_features_json")
+  /// Optional activity goals the person set for themselves: workouts, active
+  /// minutes and steps per week, steps per month. Null or an absent key = no
+  /// goal. Parsed by `src/lib/validations/activity-goals.ts`, written through
+  /// `/api/activity/goals`, read by the activity calendar
+  /// (`/api/activity/calendar`), which reports progress against each goal set.
+  activityGoalsJson        Json?                @map("activity_goals_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
   glucoseUnit              String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.

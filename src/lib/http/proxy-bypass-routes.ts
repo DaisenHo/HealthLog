@@ -42,6 +42,9 @@ export const PROXY_BYPASS_ROUTES: readonly string[] = [
   // Bulk JSON / CSV imports, 16 MB.
   "/api/import",
   "/api/import/csv",
+  // Lab and medication CSV imports (v1.44), streamed, 16 MB.
+  "/api/import/labs-csv",
+  "/api/import/medications-csv",
   "/api/medications/intake/dose-history-import",
   // Lab scan upload, 12 MB.
   "/api/labs/ocr/extract",

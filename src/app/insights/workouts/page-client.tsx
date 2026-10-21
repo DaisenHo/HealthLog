@@ -21,6 +21,7 @@ import { canLogWorkout } from "@/lib/workouts/manual-entry";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ActivityCalendarCard } from "@/components/activity/activity-calendar-card";
 
 /**
  * v1.4.32 — `/insights/workouts`.
@@ -107,6 +108,11 @@ export default function InsightsWorkoutsPageClient() {
       {showLog ? (
         <ManualWorkoutSheet open={logOpen} onOpenChange={setLogOpen} />
       ) : null}
+      {/* The activity calendar (D1036): steps, active minutes and workouts
+          against the person's own usual. It stands above the list and draws
+          from steps alone too, so an account without workouts still sees
+          its routine. */}
+      <ActivityCalendarCard />
       {/* No `<MetricRangeControls>` here: workouts are session records, not a
           MeasurementType series, so the period-over-period range read has
           nothing to aggregate. */}

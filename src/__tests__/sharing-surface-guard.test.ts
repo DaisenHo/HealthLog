@@ -1077,6 +1077,18 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
   },
+  "app/api/measurements/provenance/route.ts": {
+    domain: "measurements",
+    why: "Which source delivered a metric on one UTC day and which one the record's source priority picks, with the reason. Read-only aggregates of the resolved user's readings; no AI, no note text.",
+  },
+  "app/api/measurements/provenance/compare/route.ts": {
+    domain: "measurements",
+    why: "Two sources of one metric side by side over at most a year of UTC days, with the source the ladder picked each day. Read-only aggregates of the resolved user's readings; no AI, no note text.",
+  },
+  "app/api/activity/calendar/route.ts": {
+    domain: "measurements",
+    why: "The activity calendar: day totals of steps, active minutes and load, workouts by sport, and the record owner's goals, computed without AI. Read-only, scoped to the resolved user, module-gated on the record's own `workouts` switch like the workout list beside it.",
+  },
   "app/api/cycle/cycles/route.ts": {
     domain: "cycle",
     why: "The record's cycle history. Whether cycle tracking applies is a property of the record, and the gate gets there by re-loading the profile and gender for the resolved user id — note that the `gender` argument at the call site is dead (`requireCycleEnabled` names it `_gender`), so it is the id that carries the substitution, not that argument.",
@@ -2178,8 +2190,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.44 -- the module list layout and the preview-feature switch are the
  * person's own presentation and join the actor list. 268 -> 270.
+ *
+ * v1.44 -- the activity calendar read, the activity goals and the source
+ * provenance reads join the list. 270 -> 273.
  */
-const FROZEN_ENTRY_COUNT = 270;
+const FROZEN_ENTRY_COUNT = 273;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

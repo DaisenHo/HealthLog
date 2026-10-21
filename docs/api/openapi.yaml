@@ -5042,6 +5042,394 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
+  /api/activity/calendar:
+    get:
+      tags:
+        - Measurements
+      summary: Activity calendar against the person's own normal
+      description: "A week (Monday to Sunday) or a month of activity, computed server-side without AI: per local day the step
+        total (the canonical-source sum the steps chart draws), active minutes (the larger of exercise minutes and
+        workout minutes), workouts by sport after the cross-source collapse, and a training-load score when one exists.
+        Each day is placed against the person's own spread over the 84 days before the period; the period total against
+        the median of the twelve weeks or six months before it, pro-rated while the period runs. Never a population
+        norm. Weekly goals are reported per calendar row, the monthly step goal for a month. Owned by the Workouts
+        module."
+      parameters:
+        - in: query
+          name: period
+          schema:
+            default: month
+            description: "Calendar span: one week (Monday to Sunday) or one month."
+            type: string
+            enum:
+              - week
+              - month
+          description: "Calendar span: one week (Monday to Sunday) or one month."
+        - in: query
+          name: date
+          schema:
+            description: Any day inside the period to show (`YYYY-MM-DD`, the person's local day). Defaults to today. A day after
+              today, or more than ten years back, is refused.
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+          description: Any day inside the period to show (`YYYY-MM-DD`, the person's local day). Defaults to today. A day after
+            today, or more than ten years back, is refused.
+      responses:
+        "200":
+          description: The calendar.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityCalendarEnvelope"
+        "401": *a1
+        "403": *a13
+        "422": *a4
+        "429": *a5
+  /api/activity/goals:
+    get:
+      tags:
+        - Measurements
+      summary: Activity goals
+      description: "The person's own activity goals: workouts, active minutes and steps per week, steps per month. `null` =
+        not set; there is no default. Owner only; a delegate reads the goals inside the calendar."
+      responses:
+        "200":
+          description: The goals.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityGoalsEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Measurements
+      summary: Set activity goals
+      description: "Sets the goals the body names and keeps the rest; `null` clears a goal. Owner only: a shared or delegated
+        session cannot change another person's goals."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityGoalsPatch"
+      responses:
+        "200":
+          description: The goals after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityGoalsPatchEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a12
+  /api/measurements/provenance:
+    get:
+      tags:
+        - Measurements
+      summary: Which source a metric's day value comes from
+      description: "For one metric and one UTC day: every source with readings, its day value (the total for a cumulative
+        metric, sleep counting asleep stages only, the mean otherwise), its rank on the person's source-priority ladder,
+        and which source the canonical readers use, with the reason. Computed by the same rank SQL the charts, rollups
+        and summaries pick with, so the answer is what they show. A metric without a ladder reports `ranked: false` and
+        no pick: every source counts there. Read-only."
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - WEIGHT
+              - BLOOD_PRESSURE_SYS
+              - BLOOD_PRESSURE_DIA
+              - PULSE
+              - BODY_FAT
+              - SLEEP_DURATION
+              - ACTIVITY_STEPS
+              - BLOOD_GLUCOSE
+              - TOTAL_BODY_WATER
+              - BONE_MASS
+              - OXYGEN_SATURATION
+              - HEART_RATE_VARIABILITY
+              - RESTING_HEART_RATE
+              - ACTIVE_ENERGY_BURNED
+              - FLIGHTS_CLIMBED
+              - WALKING_RUNNING_DISTANCE
+              - VO2_MAX
+              - BODY_TEMPERATURE
+              - FAT_FREE_MASS
+              - FAT_MASS
+              - MUSCLE_MASS
+              - SKIN_TEMPERATURE
+              - PULSE_WAVE_VELOCITY
+              - VASCULAR_AGE
+              - VISCERAL_FAT
+              - AUDIO_EXPOSURE_ENV
+              - AUDIO_EXPOSURE_HEADPHONE
+              - TIME_IN_DAYLIGHT
+              - WALKING_STEADINESS
+              - AUDIO_EXPOSURE_EVENT
+              - RESPIRATORY_RATE
+              - BODY_MASS_INDEX
+              - LEAN_BODY_MASS
+              - WALKING_HEART_RATE_AVERAGE
+              - WALKING_ASYMMETRY
+              - WALKING_DOUBLE_SUPPORT
+              - WALKING_STEP_LENGTH
+              - WALKING_SPEED
+              - CARDIO_RECOVERY
+              - WRIST_TEMPERATURE
+              - FALL_COUNT
+              - SIX_MINUTE_WALK_DISTANCE
+              - STAIR_ASCENT_SPEED
+              - STAIR_DESCENT_SPEED
+              - BREATHING_DISTURBANCES
+              - IRREGULAR_RHYTHM_NOTIFICATION
+              - HIGH_HEART_RATE_EVENT
+              - LOW_HEART_RATE_EVENT
+              - WALKING_STEADINESS_EVENT
+              - BREATHING_DISTURBANCE_EVENT
+              - RECOVERY_SCORE
+              - STRESS_SCORE
+              - STRAIN_SCORE
+              - HRV_RMSSD
+              - DAY_STRAIN
+              - WORKOUT_STRAIN
+              - SLEEP_PERFORMANCE
+              - SLEEP_EFFICIENCY
+              - SLEEP_CONSISTENCY
+              - SLEEP_NEED
+              - ENERGY_EXPENDITURE_KJ
+              - AVERAGE_HEART_RATE
+              - MAX_HEART_RATE
+              - SLEEP_DISTURBANCE_COUNT
+              - ANS_CHARGE
+              - CARDIO_LOAD
+              - SLEEP_SCORE
+              - BODY_TEMPERATURE_DEVIATION
+              - RESILIENCE
+              - PHQ9_SCORE
+              - GAD7_SCORE
+              - GRIP_STRENGTH
+              - PAIN_NRS
+              - WAIST_CIRCUMFERENCE
+              - WAIST_TO_HEIGHT
+              - WHO5_SCORE
+              - SCI_SCORE
+              - EXERCISE_MINUTES
+              - STAND_MINUTES
+              - STAND_HOURS
+              - MINDFUL_MINUTES
+              - STATE_OF_MIND_VALENCE
+              - AFIB_BURDEN
+              - INDOOR_CO2
+              - INDOOR_TEMPERATURE
+              - INDOOR_HUMIDITY
+            description: The metric.
+          required: true
+          description: The metric.
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            description: The UTC day (`YYYY-MM-DD`). The source ladder picks one source per UTC day, so this is the day the pick is
+              explained for.
+          required: true
+          description: The UTC day (`YYYY-MM-DD`). The source ladder picks one source per UTC day, so this is the day the pick is
+            explained for.
+      responses:
+        "200":
+          description: The day's sources and the pick.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayProvenanceEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+  /api/measurements/provenance/compare:
+    get:
+      tags:
+        - Measurements
+      summary: Two sources of one metric side by side
+      description: "Per UTC day over up to 366 days: the day value from source `a` and from source `b`, and which source the
+        ladder picked that day among all of the day's sources. The summary averages only the days both sources cover.
+        Without `a` / `b` the two sources covering the most days are compared. Read-only."
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - WEIGHT
+              - BLOOD_PRESSURE_SYS
+              - BLOOD_PRESSURE_DIA
+              - PULSE
+              - BODY_FAT
+              - SLEEP_DURATION
+              - ACTIVITY_STEPS
+              - BLOOD_GLUCOSE
+              - TOTAL_BODY_WATER
+              - BONE_MASS
+              - OXYGEN_SATURATION
+              - HEART_RATE_VARIABILITY
+              - RESTING_HEART_RATE
+              - ACTIVE_ENERGY_BURNED
+              - FLIGHTS_CLIMBED
+              - WALKING_RUNNING_DISTANCE
+              - VO2_MAX
+              - BODY_TEMPERATURE
+              - FAT_FREE_MASS
+              - FAT_MASS
+              - MUSCLE_MASS
+              - SKIN_TEMPERATURE
+              - PULSE_WAVE_VELOCITY
+              - VASCULAR_AGE
+              - VISCERAL_FAT
+              - AUDIO_EXPOSURE_ENV
+              - AUDIO_EXPOSURE_HEADPHONE
+              - TIME_IN_DAYLIGHT
+              - WALKING_STEADINESS
+              - AUDIO_EXPOSURE_EVENT
+              - RESPIRATORY_RATE
+              - BODY_MASS_INDEX
+              - LEAN_BODY_MASS
+              - WALKING_HEART_RATE_AVERAGE
+              - WALKING_ASYMMETRY
+              - WALKING_DOUBLE_SUPPORT
+              - WALKING_STEP_LENGTH
+              - WALKING_SPEED
+              - CARDIO_RECOVERY
+              - WRIST_TEMPERATURE
+              - FALL_COUNT
+              - SIX_MINUTE_WALK_DISTANCE
+              - STAIR_ASCENT_SPEED
+              - STAIR_DESCENT_SPEED
+              - BREATHING_DISTURBANCES
+              - IRREGULAR_RHYTHM_NOTIFICATION
+              - HIGH_HEART_RATE_EVENT
+              - LOW_HEART_RATE_EVENT
+              - WALKING_STEADINESS_EVENT
+              - BREATHING_DISTURBANCE_EVENT
+              - RECOVERY_SCORE
+              - STRESS_SCORE
+              - STRAIN_SCORE
+              - HRV_RMSSD
+              - DAY_STRAIN
+              - WORKOUT_STRAIN
+              - SLEEP_PERFORMANCE
+              - SLEEP_EFFICIENCY
+              - SLEEP_CONSISTENCY
+              - SLEEP_NEED
+              - ENERGY_EXPENDITURE_KJ
+              - AVERAGE_HEART_RATE
+              - MAX_HEART_RATE
+              - SLEEP_DISTURBANCE_COUNT
+              - ANS_CHARGE
+              - CARDIO_LOAD
+              - SLEEP_SCORE
+              - BODY_TEMPERATURE_DEVIATION
+              - RESILIENCE
+              - PHQ9_SCORE
+              - GAD7_SCORE
+              - GRIP_STRENGTH
+              - PAIN_NRS
+              - WAIST_CIRCUMFERENCE
+              - WAIST_TO_HEIGHT
+              - WHO5_SCORE
+              - SCI_SCORE
+              - EXERCISE_MINUTES
+              - STAND_MINUTES
+              - STAND_HOURS
+              - MINDFUL_MINUTES
+              - STATE_OF_MIND_VALENCE
+              - AFIB_BURDEN
+              - INDOOR_CO2
+              - INDOOR_TEMPERATURE
+              - INDOOR_HUMIDITY
+            description: The metric.
+          required: true
+          description: The metric.
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            description: First UTC day, inclusive.
+          required: true
+          description: First UTC day, inclusive.
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            description: Last UTC day, inclusive.
+          required: true
+          description: Last UTC day, inclusive.
+        - in: query
+          name: a
+          schema:
+            description: First source. Defaults to the source covering the most days.
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+          description: First source. Defaults to the source covering the most days.
+        - in: query
+          name: b
+          schema:
+            description: Second source. Defaults to the next one.
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+          description: Second source. Defaults to the next one.
+      responses:
+        "200":
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceComparisonEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
   /api/devices:
     post:
       tags:
@@ -14956,6 +15344,400 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CsvImportTooLargeEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/import/labs-csv:
+    post:
+      tags:
+        - Import
+      summary: Import lab results from CSV
+      description: "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the
+        separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its
+        own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
+        refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
+        whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
+        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
+        `module.disabled` when the module is switched off. Each row's name resolves to the account's marker the way a
+        scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A
+        numeric result needs a unit; one in another unit is converted when the conversion is known and keeps the printed
+        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
+        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+      parameters:
+        - in: query
+          name: dryRun
+          schema:
+            description: "`1` validates every row and reports what would happen, writing nothing."
+            default: "0"
+            type: string
+            enum:
+              - "0"
+              - "1"
+              - "true"
+              - "false"
+          description: "`1` validates every row and reports what would happen, writing nothing."
+        - in: query
+          name: header
+          schema:
+            description: "`1` when the first row holds column names and is not data."
+            default: "1"
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: "`1` when the first row holds column names and is not data."
+        - in: query
+          name: delimiter
+          schema:
+            default: auto
+            description: Column separator; `auto` detects it from the first line.
+            type: string
+            enum:
+              - auto
+              - comma
+              - semicolon
+              - tab
+          description: Column separator; `auto` detects it from the first line.
+        - in: query
+          name: decimal
+          schema:
+            default: dot
+            description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+              refused per row as ambiguous.
+            type: string
+            enum:
+              - dot
+              - comma
+          description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+            refused per row as ambiguous.
+        - in: query
+          name: dateOrder
+          schema:
+            default: iso
+            description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+              years are refused."
+            type: string
+            enum:
+              - iso
+              - dmy
+              - mdy
+          description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+            years are refused."
+        - in: query
+          name: timezone
+          schema:
+            description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+              is stored as that calendar date.
+            type: string
+            maxLength: 64
+          description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+            is stored as that calendar date.
+        - in: query
+          name: analyte
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the marker name (required).
+          required: true
+          description: Column of the marker name (required).
+        - in: query
+          name: value
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the result (required). A number is a numeric result; any other text (`negative`, `<0.5`) is kept
+              as a qualitative result.
+          required: true
+          description: Column of the result (required). A number is a numeric result; any other text (`negative`, `<0.5`) is kept
+            as a qualitative result.
+        - in: query
+          name: unit
+          schema:
+            description: Column of the unit. Required for a numeric result.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the unit. Required for a numeric result.
+        - in: query
+          name: date
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the date, or date and time (required).
+          required: true
+          description: Column of the date, or date and time (required).
+        - in: query
+          name: time
+          schema:
+            description: Column of the time, when separate.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the time, when separate.
+        - in: query
+          name: referenceLow
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: 0-based index of the file column this field is read from.
+        - in: query
+          name: referenceHigh
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: 0-based index of the file column this field is read from.
+        - in: query
+          name: referenceRange
+          schema:
+            description: Column of a printed range such as `4.0-5.6` or `< 200`.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of a printed range such as `4.0-5.6` or `< 200`.
+        - in: query
+          name: panel
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: 0-based index of the file column this field is read from.
+        - in: query
+          name: note
+          schema:
+            description: Column of a note; stored encrypted.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of a note; stored encrypted.
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+              example: |-
+                Analyte;Value;Unit;Date;Range
+                HbA1c;5,4;%;01.03.2025;4,0-5,6
+                Urine protein;negative;;01.03.2025;
+      responses:
+        "200":
+          description: Per-file and per-row outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabsCsvImportEnvelope"
+        "401": *a1
+        "403":
+          description: "`module.disabled`: the module the import writes to is switched off."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: "`import.csv.too_large`: the file is larger than 16 MB."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: "`import.csv.content_type`: the body is not `text/csv`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/import/medications-csv:
+    post:
+      tags:
+        - Import
+      summary: Import medications from CSV
+      description: "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the
+        separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its
+        own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
+        refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
+        whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
+        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
+        `module.disabled` when the module is switched off. Maps name, dose (as written), daily intake times, an
+        as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A row needs times
+        unless it is marked as needed. Each row is checked against the create route's own schema; a dated window opens a
+        course. Reminders stay off unless `reminders=1`. A medication the record holds under the same name and dose is a
+        duplicate. At most 500 data rows."
+      parameters:
+        - in: query
+          name: dryRun
+          schema:
+            description: "`1` validates every row and reports what would happen, writing nothing."
+            default: "0"
+            type: string
+            enum:
+              - "0"
+              - "1"
+              - "true"
+              - "false"
+          description: "`1` validates every row and reports what would happen, writing nothing."
+        - in: query
+          name: header
+          schema:
+            description: "`1` when the first row holds column names and is not data."
+            default: "1"
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: "`1` when the first row holds column names and is not data."
+        - in: query
+          name: delimiter
+          schema:
+            default: auto
+            description: Column separator; `auto` detects it from the first line.
+            type: string
+            enum:
+              - auto
+              - comma
+              - semicolon
+              - tab
+          description: Column separator; `auto` detects it from the first line.
+        - in: query
+          name: decimal
+          schema:
+            default: dot
+            description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+              refused per row as ambiguous.
+            type: string
+            enum:
+              - dot
+              - comma
+          description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+            refused per row as ambiguous.
+        - in: query
+          name: dateOrder
+          schema:
+            default: iso
+            description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+              years are refused."
+            type: string
+            enum:
+              - iso
+              - dmy
+              - mdy
+          description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+            years are refused."
+        - in: query
+          name: timezone
+          schema:
+            description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+              is stored as that calendar date.
+            type: string
+            maxLength: 64
+          description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+            is stored as that calendar date.
+        - in: query
+          name: name
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the medication name (required).
+          required: true
+          description: Column of the medication name (required).
+        - in: query
+          name: dose
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the dose as written, e.g. `10 mg` (required).
+          required: true
+          description: Column of the dose as written, e.g. `10 mg` (required).
+        - in: query
+          name: times
+          schema:
+            description: "Column of daily intake times (`08:00`, or several: `08:00 20:00`, separated by space, comma, semicolon or
+              `|`). A medication with times is taken every day at them; any other rhythm is set up afterwards in the
+              app. A row needs times unless it is marked as needed."
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: "Column of daily intake times (`08:00`, or several: `08:00 20:00`, separated by space, comma, semicolon or
+            `|`). A medication with times is taken every day at them; any other rhythm is set up afterwards in the app.
+            A row needs times unless it is marked as needed."
+        - in: query
+          name: asNeeded
+          schema:
+            description: Column marking an as-needed medication (yes/no).
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column marking an as-needed medication (yes/no).
+        - in: query
+          name: startsOn
+          schema:
+            description: Column of the start date.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the start date.
+        - in: query
+          name: endsOn
+          schema:
+            description: Column of the end date.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the end date.
+        - in: query
+          name: reminders
+          schema:
+            description: "`1` turns reminders on for imported medications that have times. Off by default, so an import never starts
+              reminding on its own."
+            default: "0"
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: "`1` turns reminders on for imported medications that have times. Off by default, so an import never starts
+            reminding on its own."
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+              example: |-
+                name,dose,times,as needed,start,end
+                Ramipril,5 mg,08:00,,2025-01-01,
+                Ibuprofen,400 mg,,yes,,
+      responses:
+        "200":
+          description: Per-file and per-row outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicationsCsvImportEnvelope"
+        "401": *a1
+        "403":
+          description: "`module.disabled`: the module the import writes to is switched off."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: "`import.csv.too_large`: the file is larger than 16 MB."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: "`import.csv.content_type`: the body is not `text/csv`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/import:
@@ -27550,6 +28332,41 @@ components:
         speedMs?, power?, cadence? }]`, up to 30 000 points). The `samples` series is the strain-engine input for indoor
         workouts that have no GPS route. Up to 100 workouts per call; nested route geometry capped at 20 000 points.
         Withings server-to-server callers pass source: WITHINGS and ship no route (Withings reports aggregates only)."
+    ActivityGoalsPatch:
+      type: object
+      properties:
+        workoutsPerWeek:
+          description: Workouts per week (Monday to Sunday). `null` clears the goal.
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 28
+            - type: "null"
+        activeMinutesPerWeek:
+          description: "Active minutes per week: the larger of the day's exercise minutes and the day's workout minutes, summed
+            over the week. `null` clears the goal."
+          anyOf:
+            - type: integer
+              minimum: 10
+              maximum: 5000
+            - type: "null"
+        stepsPerWeek:
+          description: Steps per week. `null` clears the goal.
+          anyOf:
+            - type: integer
+              minimum: 1000
+              maximum: 700000
+            - type: "null"
+        stepsPerMonth:
+          description: Steps per calendar month. `null` clears the goal.
+          anyOf:
+            - type: integer
+              minimum: 1000
+              maximum: 3000000
+            - type: "null"
+      additionalProperties: false
+      description: The goals to change. A key that is present replaces the stored goal (`null` clears it); a key that is
+        absent stays as it is. Unknown keys are refused.
     DeviceRegisterRequest:
       type: object
       properties:
@@ -36488,10 +37305,11 @@ components:
                 one the native client names; the integration-probe classes (`credentials_rejected`, `rate_limited`,
                 `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
                 `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
-                credential of its own carries the generic `http.unauthenticated`. ai — ai.budget.exceeded,
-                ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
-                ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
-                — ai_provider.invalid, ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
+                credential of its own carries the generic `http.unauthenticated`. activity —
+                activity.calendar.future_date, activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none,
+                ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling,
+                ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid,
+                ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
                 aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
                 anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
                 anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
@@ -36542,7 +37360,8 @@ components:
                 http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
                 illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
                 illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
-                import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
+                import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
+                import.rate_limited, import.write_failed; ingest — ingest.rate_limited; insights —
                 insights.generate.budgetExceeded, insights.generate.outboundScreened,
                 insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
                 labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
@@ -39101,6 +39920,7 @@ components:
                 documentsLayoutJson: {}
                 moduleListLayoutJson: {}
                 previewFeaturesJson: {}
+                activityGoalsJson: {}
                 reportSelectionJson: {}
                 globalExcludedInjectionSites:
                   type: array
@@ -49140,6 +49960,1057 @@ components:
       required:
         - index
         - status
+      additionalProperties: false
+    ActivityCalendarEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ActivityCalendar"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ActivityCalendar:
+      type: object
+      properties:
+        period:
+          type: string
+          enum:
+            - week
+            - month
+        start:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        end:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        gridStart:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+          description: First day drawn (the Monday on or before `start`).
+        gridEnd:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+          description: Last day drawn (the Sunday on or after `end`).
+        today:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        timezone:
+          type: string
+          description: The IANA zone the days are cut in.
+        loadType:
+          anyOf:
+            - type: string
+              enum:
+                - DAY_STRAIN
+                - CARDIO_LOAD
+                - STRAIN_SCORE
+            - type: "null"
+          description: Which training-load score `load` carries; null when the account has none.
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              inPeriod:
+                type: boolean
+              future:
+                type: boolean
+              steps:
+                type:
+                  - number
+                  - "null"
+              activeMinutes:
+                description: The larger of the day's exercise minutes and workout minutes (never their sum).
+                type:
+                  - number
+                  - "null"
+              workoutCount:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              workoutsBySport:
+                type: object
+                propertyNames:
+                  type: string
+                additionalProperties:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              load:
+                type:
+                  - number
+                  - "null"
+              level:
+                type: object
+                properties:
+                  steps:
+                    type: string
+                    enum:
+                      - none
+                      - unrated
+                      - low
+                      - below
+                      - usual
+                      - above
+                      - high
+                    description: "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th
+                      percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual`
+                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with."
+                  activeMinutes:
+                    type: string
+                    enum:
+                      - none
+                      - unrated
+                      - low
+                      - below
+                      - usual
+                      - above
+                      - high
+                    description: "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th
+                      percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual`
+                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with."
+                  load:
+                    type: string
+                    enum:
+                      - none
+                      - unrated
+                      - low
+                      - below
+                      - usual
+                      - above
+                      - high
+                    description: "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th
+                      percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual`
+                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with."
+                required:
+                  - steps
+                  - activeMinutes
+                  - load
+                additionalProperties: false
+            required:
+              - date
+              - inPeriod
+              - future
+              - steps
+              - activeMinutes
+              - workoutCount
+              - workoutsBySport
+              - load
+              - level
+            additionalProperties: false
+        weeks:
+          type: array
+          items:
+            type: object
+            properties:
+              start:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              end:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              steps:
+                type:
+                  - number
+                  - "null"
+              activeMinutes:
+                type:
+                  - number
+                  - "null"
+              workouts:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              goals:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityGoalProgress"
+                description: The weekly goals for a week that has begun.
+            required:
+              - start
+              - end
+              - steps
+              - activeMinutes
+              - workouts
+              - goals
+            additionalProperties: false
+        baseline:
+          type: object
+          properties:
+            steps:
+              $ref: "#/components/schemas/ActivityBaselineStats"
+            activeMinutes:
+              $ref: "#/components/schemas/ActivityBaselineStats"
+            load:
+              $ref: "#/components/schemas/ActivityBaselineStats"
+          required:
+            - steps
+            - activeMinutes
+            - load
+          additionalProperties: false
+        summary:
+          type: object
+          properties:
+            steps:
+              $ref: "#/components/schemas/ActivityPeriodComparison"
+            activeMinutes:
+              $ref: "#/components/schemas/ActivityPeriodComparison"
+            workouts:
+              $ref: "#/components/schemas/ActivityPeriodComparison"
+            load:
+              $ref: "#/components/schemas/ActivityPeriodComparison"
+          required:
+            - steps
+            - activeMinutes
+            - workouts
+            - load
+          additionalProperties: false
+        sports:
+          type: array
+          items:
+            type: object
+            properties:
+              sportType:
+                type: string
+              count:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - sportType
+              - count
+            additionalProperties: false
+        goals:
+          $ref: "#/components/schemas/ActivityGoals"
+        goalProgress:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityGoalProgress"
+        available:
+          type: object
+          properties:
+            steps:
+              type: boolean
+            activeMinutes:
+              type: boolean
+            workouts:
+              type: boolean
+            load:
+              type: boolean
+          required:
+            - steps
+            - activeMinutes
+            - workouts
+            - load
+          additionalProperties: false
+        previous:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+          description: A day in the previous period.
+        next:
+          anyOf:
+            - type: string
+              format: date
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            - type: "null"
+          description: A day in the next period, or null when that lies after today.
+      required:
+        - period
+        - start
+        - end
+        - gridStart
+        - gridEnd
+        - today
+        - timezone
+        - loadType
+        - days
+        - weeks
+        - baseline
+        - summary
+        - sports
+        - goals
+        - goalProgress
+        - available
+        - previous
+        - next
+      additionalProperties: false
+    ActivityGoalProgress:
+      type: object
+      properties:
+        key:
+          type: string
+          enum:
+            - workoutsPerWeek
+            - activeMinutesPerWeek
+            - stepsPerWeek
+            - stepsPerMonth
+        target:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        value:
+          type: number
+        met:
+          type: boolean
+      required:
+        - key
+        - target
+        - value
+        - met
+      additionalProperties: false
+    ActivityBaselineStats:
+      anyOf:
+        - type: object
+          properties:
+            median:
+              type: number
+            p10:
+              type: number
+            p25:
+              type: number
+            p75:
+              type: number
+            p90:
+              type: number
+            days:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Days with a value the spread was computed from.
+          required:
+            - median
+            - p10
+            - p25
+            - p75
+            - p90
+            - days
+          additionalProperties: false
+        - type: "null"
+    ActivityPeriodComparison:
+      type: object
+      properties:
+        value:
+          description: "The period so far: a total (steps, active minutes, workouts) or a mean (load)."
+          type:
+            - number
+            - "null"
+        daysWithData:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        usual:
+          description: "The person's usual full period: the median of the twelve weeks (or, per day, of the six months) before it.
+            Null with fewer than three earlier periods of data."
+          type:
+            - number
+            - "null"
+        usualToDate:
+          description: The usual figure for the days elapsed so far; equals `usual` once the period is over.
+          type:
+            - number
+            - "null"
+        referencePeriods:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - value
+        - daysWithData
+        - usual
+        - usualToDate
+        - referencePeriods
+      additionalProperties: false
+    ActivityGoals:
+      type: object
+      properties:
+        workoutsPerWeek:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        activeMinutesPerWeek:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        stepsPerWeek:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        stepsPerMonth:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      required:
+        - workoutsPerWeek
+        - activeMinutesPerWeek
+        - stepsPerWeek
+        - stepsPerMonth
+      additionalProperties: false
+      description: The person's own goals; `null` = not set. There is no default goal.
+    ActivityGoalsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ActivityGoals"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ActivityGoalsPatchEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ActivityGoals"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DayProvenanceEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DayProvenance"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DayProvenance:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - BLOOD_PRESSURE_SYS
+            - BLOOD_PRESSURE_DIA
+            - PULSE
+            - BODY_FAT
+            - SLEEP_DURATION
+            - ACTIVITY_STEPS
+            - BLOOD_GLUCOSE
+            - TOTAL_BODY_WATER
+            - BONE_MASS
+            - OXYGEN_SATURATION
+            - HEART_RATE_VARIABILITY
+            - RESTING_HEART_RATE
+            - ACTIVE_ENERGY_BURNED
+            - FLIGHTS_CLIMBED
+            - WALKING_RUNNING_DISTANCE
+            - VO2_MAX
+            - BODY_TEMPERATURE
+            - FAT_FREE_MASS
+            - FAT_MASS
+            - MUSCLE_MASS
+            - SKIN_TEMPERATURE
+            - PULSE_WAVE_VELOCITY
+            - VASCULAR_AGE
+            - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
+            - RESPIRATORY_RATE
+            - BODY_MASS_INDEX
+            - LEAN_BODY_MASS
+            - WALKING_HEART_RATE_AVERAGE
+            - WALKING_ASYMMETRY
+            - WALKING_DOUBLE_SUPPORT
+            - WALKING_STEP_LENGTH
+            - WALKING_SPEED
+            - CARDIO_RECOVERY
+            - WRIST_TEMPERATURE
+            - FALL_COUNT
+            - SIX_MINUTE_WALK_DISTANCE
+            - STAIR_ASCENT_SPEED
+            - STAIR_DESCENT_SPEED
+            - BREATHING_DISTURBANCES
+            - IRREGULAR_RHYTHM_NOTIFICATION
+            - HIGH_HEART_RATE_EVENT
+            - LOW_HEART_RATE_EVENT
+            - WALKING_STEADINESS_EVENT
+            - BREATHING_DISTURBANCE_EVENT
+            - RECOVERY_SCORE
+            - STRESS_SCORE
+            - STRAIN_SCORE
+            - HRV_RMSSD
+            - DAY_STRAIN
+            - WORKOUT_STRAIN
+            - SLEEP_PERFORMANCE
+            - SLEEP_EFFICIENCY
+            - SLEEP_CONSISTENCY
+            - SLEEP_NEED
+            - ENERGY_EXPENDITURE_KJ
+            - AVERAGE_HEART_RATE
+            - MAX_HEART_RATE
+            - SLEEP_DISTURBANCE_COUNT
+            - ANS_CHARGE
+            - CARDIO_LOAD
+            - SLEEP_SCORE
+            - BODY_TEMPERATURE_DEVIATION
+            - RESILIENCE
+            - PHQ9_SCORE
+            - GAD7_SCORE
+            - GRIP_STRENGTH
+            - PAIN_NRS
+            - WAIST_CIRCUMFERENCE
+            - WAIST_TO_HEIGHT
+            - WHO5_SCORE
+            - SCI_SCORE
+            - EXERCISE_MINUTES
+            - STAND_MINUTES
+            - STAND_HOURS
+            - MINDFUL_MINUTES
+            - STATE_OF_MIND_VALENCE
+            - AFIB_BURDEN
+            - INDOOR_CO2
+            - INDOOR_TEMPERATURE
+            - INDOOR_HUMIDITY
+        date:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        aggregation:
+          type: string
+          enum:
+            - sum
+            - mean
+        ranked:
+          type: boolean
+        metricKey:
+          type:
+            - string
+            - "null"
+        ladder:
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        picked:
+          anyOf:
+            - type: string
+              enum:
+                - MANUAL
+                - WITHINGS
+                - IMPORT
+                - APPLE_HEALTH
+                - COMPUTED
+                - WHOOP
+                - FITBIT
+                - NIGHTSCOUT
+                - POLAR
+                - OURA
+                - TELEGRAM
+                - MCP
+                - GOOGLE_HEALTH
+                - STRAVA
+                - EXTERNAL
+                - HEALTH_CONNECT
+            - type: "null"
+        pickReason:
+          anyOf:
+            - type: string
+              enum:
+                - only_source
+                - highest_on_ladder
+                - name_tiebreak
+                - not_ranked
+              description: "`only_source`: one source that day. `highest_on_ladder`: it stands highest on the ladder among the day's
+                sources. `name_tiebreak`: none of them is on the ladder, the source name decided. `not_ranked`: this
+                metric has no ladder, every source counts."
+            - type: "null"
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+              rank:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+                description: Position on the ladder, 0 = highest; 90 = not on the ladder.
+              readings:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              value:
+                description: "The day's value from this source: the day total for a cumulative metric (sleep counts asleep stages only),
+                  the mean of the readings otherwise."
+                type:
+                  - number
+                  - "null"
+              min:
+                type:
+                  - number
+                  - "null"
+              max:
+                type:
+                  - number
+                  - "null"
+              firstAt:
+                type: string
+                description: ISO instant of the first reading that day.
+              lastAt:
+                type: string
+              unit:
+                type:
+                  - string
+                  - "null"
+              devices:
+                type: array
+                items:
+                  type: string
+                description: Device kinds the readings carry; `unknown` when untagged.
+              pass:
+                anyOf:
+                  - type: string
+                    enum:
+                      - lower_on_ladder
+                      - not_on_ladder
+                      - name_tiebreak
+                  - type: "null"
+                description: Why this source was not the one picked; null for the picked one.
+            required:
+              - source
+              - rank
+              - readings
+              - value
+              - min
+              - max
+              - firstAt
+              - lastAt
+              - unit
+              - devices
+              - pass
+            additionalProperties: false
+      required:
+        - type
+        - date
+        - aggregation
+        - ranked
+        - metricKey
+        - ladder
+        - picked
+        - pickReason
+        - sources
+      additionalProperties: false
+    SourceComparisonEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SourceComparison"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SourceComparison:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - BLOOD_PRESSURE_SYS
+            - BLOOD_PRESSURE_DIA
+            - PULSE
+            - BODY_FAT
+            - SLEEP_DURATION
+            - ACTIVITY_STEPS
+            - BLOOD_GLUCOSE
+            - TOTAL_BODY_WATER
+            - BONE_MASS
+            - OXYGEN_SATURATION
+            - HEART_RATE_VARIABILITY
+            - RESTING_HEART_RATE
+            - ACTIVE_ENERGY_BURNED
+            - FLIGHTS_CLIMBED
+            - WALKING_RUNNING_DISTANCE
+            - VO2_MAX
+            - BODY_TEMPERATURE
+            - FAT_FREE_MASS
+            - FAT_MASS
+            - MUSCLE_MASS
+            - SKIN_TEMPERATURE
+            - PULSE_WAVE_VELOCITY
+            - VASCULAR_AGE
+            - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
+            - RESPIRATORY_RATE
+            - BODY_MASS_INDEX
+            - LEAN_BODY_MASS
+            - WALKING_HEART_RATE_AVERAGE
+            - WALKING_ASYMMETRY
+            - WALKING_DOUBLE_SUPPORT
+            - WALKING_STEP_LENGTH
+            - WALKING_SPEED
+            - CARDIO_RECOVERY
+            - WRIST_TEMPERATURE
+            - FALL_COUNT
+            - SIX_MINUTE_WALK_DISTANCE
+            - STAIR_ASCENT_SPEED
+            - STAIR_DESCENT_SPEED
+            - BREATHING_DISTURBANCES
+            - IRREGULAR_RHYTHM_NOTIFICATION
+            - HIGH_HEART_RATE_EVENT
+            - LOW_HEART_RATE_EVENT
+            - WALKING_STEADINESS_EVENT
+            - BREATHING_DISTURBANCE_EVENT
+            - RECOVERY_SCORE
+            - STRESS_SCORE
+            - STRAIN_SCORE
+            - HRV_RMSSD
+            - DAY_STRAIN
+            - WORKOUT_STRAIN
+            - SLEEP_PERFORMANCE
+            - SLEEP_EFFICIENCY
+            - SLEEP_CONSISTENCY
+            - SLEEP_NEED
+            - ENERGY_EXPENDITURE_KJ
+            - AVERAGE_HEART_RATE
+            - MAX_HEART_RATE
+            - SLEEP_DISTURBANCE_COUNT
+            - ANS_CHARGE
+            - CARDIO_LOAD
+            - SLEEP_SCORE
+            - BODY_TEMPERATURE_DEVIATION
+            - RESILIENCE
+            - PHQ9_SCORE
+            - GAD7_SCORE
+            - GRIP_STRENGTH
+            - PAIN_NRS
+            - WAIST_CIRCUMFERENCE
+            - WAIST_TO_HEIGHT
+            - WHO5_SCORE
+            - SCI_SCORE
+            - EXERCISE_MINUTES
+            - STAND_MINUTES
+            - STAND_HOURS
+            - MINDFUL_MINUTES
+            - STATE_OF_MIND_VALENCE
+            - AFIB_BURDEN
+            - INDOOR_CO2
+            - INDOOR_TEMPERATURE
+            - INDOOR_HUMIDITY
+        from:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        to:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        aggregation:
+          type: string
+          enum:
+            - sum
+            - mean
+        ranked:
+          type: boolean
+        ladder:
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        unit:
+          type:
+            - string
+            - "null"
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+              days:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - source
+              - days
+            additionalProperties: false
+        a:
+          anyOf:
+            - type: string
+              enum:
+                - MANUAL
+                - WITHINGS
+                - IMPORT
+                - APPLE_HEALTH
+                - COMPUTED
+                - WHOOP
+                - FITBIT
+                - NIGHTSCOUT
+                - POLAR
+                - OURA
+                - TELEGRAM
+                - MCP
+                - GOOGLE_HEALTH
+                - STRAVA
+                - EXTERNAL
+                - HEALTH_CONNECT
+            - type: "null"
+        b:
+          anyOf:
+            - type: string
+              enum:
+                - MANUAL
+                - WITHINGS
+                - IMPORT
+                - APPLE_HEALTH
+                - COMPUTED
+                - WHOOP
+                - FITBIT
+                - NIGHTSCOUT
+                - POLAR
+                - OURA
+                - TELEGRAM
+                - MCP
+                - GOOGLE_HEALTH
+                - STRAVA
+                - EXTERNAL
+                - HEALTH_CONNECT
+            - type: "null"
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              a:
+                type:
+                  - number
+                  - "null"
+              b:
+                type:
+                  - number
+                  - "null"
+              picked:
+                anyOf:
+                  - type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                  - type: "null"
+            required:
+              - date
+              - a
+              - b
+              - picked
+            additionalProperties: false
+        summary:
+          type: object
+          properties:
+            daysA:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            daysB:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            daysBoth:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            meanA:
+              type:
+                - number
+                - "null"
+            meanB:
+              type:
+                - number
+                - "null"
+            meanDifference:
+              type:
+                - number
+                - "null"
+            meanAbsoluteDifference:
+              type:
+                - number
+                - "null"
+            pickedA:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            pickedB:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - daysA
+            - daysB
+            - daysBoth
+            - meanA
+            - meanB
+            - meanDifference
+            - meanAbsoluteDifference
+            - pickedA
+            - pickedB
+          additionalProperties: false
+      required:
+        - type
+        - from
+        - to
+        - aggregation
+        - ranked
+        - ladder
+        - unit
+        - sources
+        - a
+        - b
+        - days
+        - summary
       additionalProperties: false
     DeviceRegisterResponse:
       type: object
@@ -70570,6 +72441,180 @@ components:
       properties:
         data:
           type: "null"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LabsCsvImportEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RecordImportResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    RecordImportResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - labs
+            - medications
+        dryRun:
+          type: boolean
+        rows:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Data rows read (the header excluded).
+        valid:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows that passed every check.
+        inserted:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows written; in a dry run, the rows that would be.
+        duplicates:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows skipped because the record already holds them, or an earlier row of the file does. A re-upload of the
+            same file therefore writes nothing.
+        failed:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows refused; each is listed in `errors`.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              line:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+                description: 1-based line of the file.
+              reason:
+                type: string
+                enum:
+                  - missing_value
+                  - invalid_number
+                  - ambiguous_number
+                  - missing_unit
+                  - invalid_date
+                  - invalid_time
+                  - ambiguous_date
+                  - future_date
+                  - text_too_long
+                  - unit_mismatch
+                  - invalid_reference_range
+                  - invalid_times
+                  - missing_times
+                  - invalid_yes_no
+                  - as_needed_with_times
+                  - end_before_start
+                  - invalid_medication
+                  - oversized_row
+                  - row_limit
+                  - duplicate
+              field:
+                description: The mapped field at fault.
+                type: string
+            required:
+              - line
+              - reason
+            additionalProperties: false
+          description: Refused and duplicate rows, in file order, at most 500.
+        errorsTruncated:
+          type: boolean
+        markers:
+          description: "Lab imports only: how the file's names meet the markers."
+          type: object
+          properties:
+            matched:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: The name as the file writes it.
+                  marker:
+                    type: string
+                    description: The marker it resolves to.
+                  how:
+                    type: string
+                    enum:
+                      - name
+                      - alias
+                      - catalog
+                required:
+                  - name
+                  - marker
+                  - how
+                additionalProperties: false
+              description: File names that resolve to an existing marker, at most 200.
+            created:
+              type: array
+              items:
+                type: string
+              description: Names that become new markers, at most 200.
+          required:
+            - matched
+            - created
+          additionalProperties: false
+        preview:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties:
+              type:
+                - string
+                - number
+                - boolean
+                - "null"
+          description: The first 20 valid rows as they will be stored (dry run only).
+      required:
+        - kind
+        - dryRun
+        - rows
+        - valid
+        - inserted
+        - duplicates
+        - failed
+        - errors
+        - errorsTruncated
+        - preview
+      additionalProperties: false
+    MedicationsCsvImportEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RecordImportResult"
         error:
           type: "null"
         meta:

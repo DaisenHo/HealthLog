@@ -13544,5 +13544,215 @@
       "clinicalUpper": "Klinische bovengrens",
       "clinicalLower": "Klinische ondergrens"
     }
+  },
+  "activityCalendar": {
+    "title": "Activiteitenkalender",
+    "periodLabel": "Kalenderperiode",
+    "period": {
+      "week": "Week",
+      "month": "Maand"
+    },
+    "weekRange": "{start} t/m {end}",
+    "previous": "Vorige periode",
+    "next": "Volgende periode",
+    "metricLabel": "Dagen kleuren op",
+    "metric": {
+      "steps": "Stappen",
+      "activeMinutes": "Actieve minuten",
+      "load": "Trainingsbelasting"
+    },
+    "empty": "Nog geen stappen, actieve minuten of trainingen in deze periode.",
+    "loadError": "De activiteitenkalender kon niet worden geladen.",
+    "weekGoalsColumn": "Weekdoelen",
+    "weekGoalsMet": "Alle weekdoelen gehaald",
+    "weekGoalsNotMet": "Niet alle weekdoelen gehaald",
+    "cell": {
+      "steps": "{value} stappen",
+      "activeMinutes": "{value} actieve minuten",
+      "workouts": "{value} trainingen: {sports}"
+    },
+    "level": {
+      "none": "Geen gegevens",
+      "unrated": "Nog te weinig geschiedenis",
+      "low": "Ver onder je gewone niveau",
+      "below": "Onder je gewone niveau",
+      "usual": "Ongeveer zoals gewoonlijk",
+      "above": "Boven je gewone niveau",
+      "high": "Ver boven je gewone niveau"
+    },
+    "legend": "Vergeleken met je 12 weken daarvoor:",
+    "noBaseline": "Je gebruikelijke bereik verschijnt na 14 dagen met gegevens.",
+    "summary": {
+      "steps": "{value} stappen",
+      "activeMinutes": "{value} actieve minuten",
+      "workouts": "{value} trainingen",
+      "load": "Gemiddelde trainingsbelasting {value}",
+      "usual": "Gebruikelijk tot dit punt: {value}",
+      "noUsual": "Nog niet genoeg eerdere weken of maanden om mee te vergelijken."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Trainingen per week",
+      "activeMinutesPerWeek": "Actieve minuten per week",
+      "stepsPerWeek": "Stappen per week",
+      "stepsPerMonth": "Stappen per maand"
+    },
+    "goalOf": "{value} van {target}",
+    "setGoals": "Doelen instellen",
+    "editGoals": "Doelen wijzigen",
+    "goalsSheet": {
+      "title": "Activiteitsdoelen",
+      "description": "Laat een veld leeg als je geen doel wilt.",
+      "none": "Geen doel",
+      "invalid": "Een heel getal van {min} tot {max}.",
+      "saveError": "De doelen konden niet worden opgeslagen."
+    },
+    "crossLink": {
+      "title": "Activiteitenkalender",
+      "body": "Je stappen per week of maand, vergeleken met wat gewoon is voor jou.",
+      "cta": "Kalender openen"
+    }
+  },
+  "sourceProvenance": {
+    "title": "Waar de waarden vandaan komen",
+    "description": "Welke bron elke dag een waarde leverde en welke je bronprioriteit gebruikt.",
+    "metric": "Meetwaarde",
+    "day": "Dag",
+    "dayTitle": "Bronnen op deze dag",
+    "loadError": "De bronnen konden niet worden geladen.",
+    "dayEmpty": "Geen waarden van deze meting op deze dag.",
+    "reason": {
+      "only_source": "{source} is op deze dag de enige bron.",
+      "highest_on_ladder": "{source} wordt gebruikt: van de bronnen van deze dag staat die het hoogst in je bronprioriteit.",
+      "name_tiebreak": "{source} wordt gebruikt: geen enkele bron van deze dag staat in je bronprioriteit, dus de naam besliste.",
+      "not_ranked": "Deze meting heeft geen bronprioriteit: de waarden van alle bronnen tellen mee."
+    },
+    "pass": {
+      "lower_on_ladder": "Lager in je bronprioriteit.",
+      "not_on_ladder": "Staat voor deze meting niet in je bronprioriteit.",
+      "name_tiebreak": "Zelfde rang als de gebruikte bron; de naam besliste."
+    },
+    "used": "Gebruikt",
+    "readings": "{count} metingen, apparaten: {devices}",
+    "ladder": "Je volgorde voor deze meting: {ladder}",
+    "utcNote": "De bron wordt per dag gekozen, van middernacht tot middernacht UTC, net als bij de grafieken.",
+    "openSettings": "Volgorde wijzigen in Bronprioriteit",
+    "compareTitle": "Twee bronnen vergelijken",
+    "range": "Periode",
+    "rangeDays": "{days} dagen",
+    "compareNeedsTwo": "In deze periode heeft maar één bron waarden van deze meting.",
+    "side": {
+      "a": "Eerste bron",
+      "b": "Tweede bron"
+    },
+    "daysBoth": "Dagen met beide",
+    "meanOf": "Gemiddelde van {source}",
+    "meanAbsDiff": "Gemiddeld verschil",
+    "pickedDays": "Gebruikte dagen (eerste / tweede)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "De gemiddelden tellen alleen dagen waarop beide bronnen waarden hebben, zodat je gelijke dagen vergelijkt. Vetgedrukt is de waarde die de grafieken gebruiken.",
+    "settingsHint": "Om te zien wat deze volgorde per dag beslist:",
+    "settingsHintLink": "Waar de waarden vandaan komen",
+    "metricLink": "Waar deze waarden vandaan komen"
+  },
+  "recordImport": {
+    "title": "Labuitslagen en medicijnen uit een spreadsheet",
+    "description": "Haal jaren aan labuitslagen of een medicijnlijst binnen uit een CSV-bestand.",
+    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt. Rijen die er al zijn worden overgeslagen.",
+    "kind": {
+      "labs": "Labuitslagen",
+      "medications": "Medicijnen"
+    },
+    "sheetTitle": {
+      "labs": "Labuitslagen importeren",
+      "medications": "Medicijnen importeren"
+    },
+    "sheetDescription": {
+      "labs": "Markers worden aan de jouwe gekoppeld, eenheden omgerekend als de omrekening bekend is.",
+      "medications": "Naam, dosis, dagelijkse tijden, zo nodig, begin en einde. Andere ritmes stel je daarna in de app in."
+    },
+    "file": "CSV-bestand",
+    "template": "Sjabloon downloaden",
+    "mapping": "Welke kolom bevat wat",
+    "required": "(verplicht)",
+    "notInFile": "Niet in het bestand",
+    "column": "Kolom {n}",
+    "delimiter": "Scheidingsteken",
+    "delimiterOption": {
+      "comma": "Komma",
+      "semicolon": "Puntkomma",
+      "tab": "Tab"
+    },
+    "decimal": "Decimaalteken",
+    "decimalOption": {
+      "dot": "Punt (5.4)",
+      "comma": "Komma (5,4)"
+    },
+    "dateOrder": "Datumnotatie",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (dag eerst)",
+      "mdy": "03/01/2025 (maand eerst)"
+    },
+    "header": "De eerste rij bevat kolomnamen",
+    "reminders": "Herinneringen aanzetten voor geïmporteerde medicijnen",
+    "timezoneNote": "Tijden zonder tijdzone worden in de tijdzone van je account gelezen. Een datum zonder tijd blijft die kalenderdag.",
+    "missing": "Nog te kiezen: {fields}",
+    "check": "Bestand controleren",
+    "runIdle": "Importeren",
+    "run": "{count} rijen importeren",
+    "close": "Sluiten",
+    "summaryCheck": "{rows} rijen gelezen: {inserted} te importeren, {duplicates} al aanwezig, {failed} met een probleem.",
+    "summaryDone": "{inserted} rijen geïmporteerd. Overgeslagen: {duplicates} die er al waren en {failed} met een probleem.",
+    "markersMatched": "Gekoppeld aan je markers:",
+    "markersCreated": "Nieuwe markers:",
+    "line": "Regel {line}",
+    "errorsTruncated": "Alleen de eerste 500 problemen worden getoond.",
+    "error": {
+      "tooLarge": "Het bestand is groter dan 16 MB.",
+      "rateLimited": "Te veel imports in het afgelopen uur. Probeer het later opnieuw.",
+      "invalid": "Het bestand of de kolomkeuze kon niet worden gelezen.",
+      "failed": "Het importeren is niet gelukt. Probeer het opnieuw."
+    },
+    "reason": {
+      "missing_value": "Een verplichte cel is leeg",
+      "invalid_number": "Geen getal",
+      "ambiguous_number": "Het getal is op twee manieren te lezen; controleer het decimaalteken",
+      "missing_unit": "Een getal heeft een eenheid nodig",
+      "invalid_date": "Geen datum in de gekozen notatie",
+      "invalid_time": "Geen tijd",
+      "ambiguous_date": "De datum is op twee manieren te lezen; gebruik een jaartal van vier cijfers en de gekozen notatie",
+      "future_date": "De datum ligt in de toekomst",
+      "text_too_long": "De tekst is te lang",
+      "unit_mismatch": "Deze eenheid is niet om te rekenen naar die van de marker",
+      "invalid_reference_range": "Het referentiebereik is niet te lezen",
+      "invalid_times": "De tijden zijn niet te lezen (bijv. 08:00 20:00)",
+      "missing_times": "Vul innametijden in of markeer het medicijn als zo nodig",
+      "invalid_yes_no": "Gebruik ja of nee",
+      "as_needed_with_times": "Een zo-nodig-medicijn heeft geen vaste tijden",
+      "end_before_start": "Het einde ligt voor het begin",
+      "invalid_medication": "Het medicijn kan zo niet worden opgeslagen",
+      "oversized_row": "De rij is te lang of te breed",
+      "row_limit": "Boven de rijlimiet voor één import",
+      "duplicate": "Al aanwezig, overgeslagen"
+    },
+    "field": {
+      "analyte": "Marker",
+      "value": "Uitslag",
+      "unit": "Eenheid",
+      "date": "Datum",
+      "time": "Tijd",
+      "referenceRange": "Referentiebereik",
+      "referenceLow": "Referentie laag",
+      "referenceHigh": "Referentie hoog",
+      "panel": "Groep",
+      "note": "Notitie",
+      "name": "Naam",
+      "dose": "Dosis",
+      "times": "Tijden",
+      "asNeeded": "Zo nodig",
+      "startsOn": "Begin",
+      "endsOn": "Einde"
+    }
   }
 }

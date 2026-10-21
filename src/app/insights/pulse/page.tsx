@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceProvenanceLink } from "@/components/provenance/source-provenance-link";
 import Link from "next/link";
 import { Gauge, Heart } from "lucide-react";
 
@@ -211,6 +212,8 @@ export default function InsightsPulsPage() {
           cta={t("insights.vo2Max.cardioLinkCta")}
         />
       ) : null}
+      {/* v1.44 (#1204) — where these values come from. */}
+      <SourceProvenanceLink type="PULSE" />
     </SubPageShell>
   );
 }

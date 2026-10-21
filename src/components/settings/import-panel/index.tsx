@@ -14,6 +14,9 @@
  *      (file/paste, client-side parseability guard).
  *   3. CSV import                 — `csv-import-card.tsx`
  *      (file/paste, dry-run preview).
+ *   4. Lab results and medications from a spreadsheet —
+ *      `record-csv-import-card.tsx` (v1.44, #1215; column mapping, check,
+ *      import).
  *
  * Both controls surface rate-limit (429) and error states cleanly and
  * announce progress to assistive tech via `aria-live` regions.
@@ -28,6 +31,7 @@ import { HealthConnectImportCard } from "./health-connect-import-card";
 import { JsonImportCard } from "./json-import-card";
 import { CsvImportCard } from "./csv-import-card";
 import { DoseHistoryImportCard } from "./dose-history-import-card";
+import { RecordCsvImportCard } from "./record-csv-import-card";
 
 export {
   EXAMPLE_IMPORT,
@@ -55,6 +59,7 @@ export function ImportPanel() {
         <JsonImportCard />
         <CsvImportCard />
         <DoseHistoryImportCard />
+        <RecordCsvImportCard />
       </div>
     </section>
   );

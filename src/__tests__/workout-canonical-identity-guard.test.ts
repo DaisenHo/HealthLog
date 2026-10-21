@@ -46,6 +46,9 @@ const IDENTITY_OWNER: Record<string, string> = {
   // The doctor report's per-sport block (v1.44): sums sessions, so a session
   // two sources reported must count once, as it does on the list.
   "lib/doctor-report/workouts.ts": "lib/doctor-report/workouts.ts",
+  // The activity calendar counts workouts per day; a session two devices
+  // recorded must count once there, as it does in the list.
+  "lib/activity/calendar-read.ts": "lib/activity/calendar-read.ts",
   // The only indirection in the set. The Coach block is handed rows it does not
   // read itself; the snapshot builder fetches them in parallel with every other
   // block's data. Recording the owner here rather than assuming the call site

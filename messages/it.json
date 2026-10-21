@@ -13544,5 +13544,215 @@
       "clinicalUpper": "Limite clinico superiore",
       "clinicalLower": "Limite clinico inferiore"
     }
+  },
+  "activityCalendar": {
+    "title": "Calendario attività",
+    "periodLabel": "Periodo del calendario",
+    "period": {
+      "week": "Settimana",
+      "month": "Mese"
+    },
+    "weekRange": "dal {start} al {end}",
+    "previous": "Periodo precedente",
+    "next": "Periodo successivo",
+    "metricLabel": "Colora i giorni per",
+    "metric": {
+      "steps": "Passi",
+      "activeMinutes": "Minuti attivi",
+      "load": "Carico di allenamento"
+    },
+    "empty": "Ancora nessun passo, minuto attivo o allenamento in questo periodo.",
+    "loadError": "Impossibile caricare il calendario attività.",
+    "weekGoalsColumn": "Obiettivi settimanali",
+    "weekGoalsMet": "Tutti gli obiettivi settimanali raggiunti",
+    "weekGoalsNotMet": "Non tutti gli obiettivi settimanali raggiunti",
+    "cell": {
+      "steps": "{value} passi",
+      "activeMinutes": "{value} minuti attivi",
+      "workouts": "{value} allenamenti: {sports}"
+    },
+    "level": {
+      "none": "Nessun dato",
+      "unrated": "Storico ancora insufficiente",
+      "low": "Molto sotto il tuo solito",
+      "below": "Sotto il tuo solito",
+      "usual": "Come al solito",
+      "above": "Sopra il tuo solito",
+      "high": "Molto sopra il tuo solito"
+    },
+    "legend": "Rispetto alle tue 12 settimane precedenti:",
+    "noBaseline": "Il tuo intervallo abituale compare dopo 14 giorni con dati.",
+    "summary": {
+      "steps": "{value} passi",
+      "activeMinutes": "{value} minuti attivi",
+      "workouts": "{value} allenamenti",
+      "load": "Carico di allenamento medio {value}",
+      "usual": "Il tuo solito fino a questo punto: {value}",
+      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Allenamenti a settimana",
+      "activeMinutesPerWeek": "Minuti attivi a settimana",
+      "stepsPerWeek": "Passi a settimana",
+      "stepsPerMonth": "Passi al mese"
+    },
+    "goalOf": "{value} di {target}",
+    "setGoals": "Imposta obiettivi",
+    "editGoals": "Modifica obiettivi",
+    "goalsSheet": {
+      "title": "Obiettivi di attività",
+      "description": "Lascia vuoto un campo per non avere un obiettivo.",
+      "none": "Nessun obiettivo",
+      "invalid": "Un numero intero da {min} a {max}.",
+      "saveError": "Impossibile salvare gli obiettivi."
+    },
+    "crossLink": {
+      "title": "Calendario attività",
+      "body": "I tuoi passi per settimana o per mese, rispetto al tuo solito.",
+      "cta": "Apri il calendario"
+    }
+  },
+  "sourceProvenance": {
+    "title": "Da dove vengono i valori",
+    "description": "Quale fonte ha fornito un valore ogni giorno e quale usa la tua priorità delle fonti.",
+    "metric": "Misura",
+    "day": "Giorno",
+    "dayTitle": "Fonti di questo giorno",
+    "loadError": "Impossibile caricare le fonti.",
+    "dayEmpty": "Nessun valore di questa misura in questo giorno.",
+    "reason": {
+      "only_source": "{source} è l'unica fonte di questo giorno.",
+      "highest_on_ladder": "Viene usata {source}: tra le fonti di questo giorno è la più alta nella tua priorità delle fonti.",
+      "name_tiebreak": "Viene usata {source}: nessuna fonte di questo giorno è nella tua priorità, quindi ha deciso il nome.",
+      "not_ranked": "Questa misura non ha una priorità delle fonti: contano i valori di tutte le fonti."
+    },
+    "pass": {
+      "lower_on_ladder": "Più in basso nella tua priorità delle fonti.",
+      "not_on_ladder": "Non è nella tua priorità delle fonti per questa misura.",
+      "name_tiebreak": "Stesso rango della fonte usata; ha deciso il nome."
+    },
+    "used": "Usata",
+    "readings": "{count} misurazioni, dispositivi: {devices}",
+    "ladder": "Il tuo ordine per questa misura: {ladder}",
+    "utcNote": "La fonte viene scelta per giorno, da mezzanotte a mezzanotte UTC, come nei grafici.",
+    "openSettings": "Cambia l'ordine in Priorità delle fonti",
+    "compareTitle": "Confronta due fonti",
+    "range": "Periodo",
+    "rangeDays": "{days} giorni",
+    "compareNeedsTwo": "In questo periodo solo una fonte ha valori di questa misura.",
+    "side": {
+      "a": "Prima fonte",
+      "b": "Seconda fonte"
+    },
+    "daysBoth": "Giorni con entrambe",
+    "meanOf": "Media di {source}",
+    "meanAbsDiff": "Differenza media",
+    "pickedDays": "Giorni usati (prima / seconda)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Le medie contano solo i giorni in cui entrambe le fonti hanno valori, per confrontare cose confrontabili. In grassetto il valore usato dai grafici.",
+    "settingsHint": "Per vedere cosa decide questo ordine giorno per giorno:",
+    "settingsHintLink": "Da dove vengono i valori",
+    "metricLink": "Da dove vengono questi valori"
+  },
+  "recordImport": {
+    "title": "Esami di laboratorio e farmaci da un foglio di calcolo",
+    "description": "Porta dentro anni di esami o un elenco di farmaci da un file CSV.",
+    "detail": "Scegli tu quale colonna contiene cosa; HealthLog controlla ogni riga prima e non importa nulla finché non confermi. Le righe già presenti vengono saltate.",
+    "kind": {
+      "labs": "Esami di laboratorio",
+      "medications": "Farmaci"
+    },
+    "sheetTitle": {
+      "labs": "Importa esami",
+      "medications": "Importa farmaci"
+    },
+    "sheetDescription": {
+      "labs": "I marcatori vengono abbinati ai tuoi, le unità convertite quando la conversione è nota.",
+      "medications": "Nome, dose, orari giornalieri, al bisogno, inizio e fine. Gli altri ritmi si impostano poi nell'app."
+    },
+    "file": "File CSV",
+    "template": "Scarica il modello",
+    "mapping": "Quale colonna contiene cosa",
+    "required": "(obbligatorio)",
+    "notInFile": "Non nel file",
+    "column": "Colonna {n}",
+    "delimiter": "Separatore",
+    "delimiterOption": {
+      "comma": "Virgola",
+      "semicolon": "Punto e virgola",
+      "tab": "Tabulazione"
+    },
+    "decimal": "Separatore decimale",
+    "decimalOption": {
+      "dot": "Punto (5.4)",
+      "comma": "Virgola (5,4)"
+    },
+    "dateOrder": "Formato data",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (prima il giorno)",
+      "mdy": "03/01/2025 (prima il mese)"
+    },
+    "header": "La prima riga contiene i nomi delle colonne",
+    "reminders": "Attiva i promemoria per i farmaci importati",
+    "timezoneNote": "Gli orari senza fuso orario vengono letti nel fuso del tuo account. Una data senza orario resta quel giorno del calendario.",
+    "missing": "Ancora da scegliere: {fields}",
+    "check": "Controlla il file",
+    "runIdle": "Importa",
+    "run": "Importa {count} righe",
+    "close": "Chiudi",
+    "summaryCheck": "{rows} righe lette: {inserted} importabili, {duplicates} già presenti, {failed} con un problema.",
+    "summaryDone": "{inserted} righe importate. Saltate: {duplicates} già presenti e {failed} con un problema.",
+    "markersMatched": "Abbinati ai tuoi marcatori:",
+    "markersCreated": "Nuovi marcatori:",
+    "line": "Riga {line}",
+    "errorsTruncated": "Sono elencati solo i primi 500 problemi.",
+    "error": {
+      "tooLarge": "Il file supera i 16 MB.",
+      "rateLimited": "Troppe importazioni nell'ultima ora. Riprova più tardi.",
+      "invalid": "Impossibile leggere il file o la scelta delle colonne.",
+      "failed": "L'importazione non è riuscita. Riprova."
+    },
+    "reason": {
+      "missing_value": "Una cella obbligatoria è vuota",
+      "invalid_number": "Non è un numero",
+      "ambiguous_number": "Il numero si legge in due modi; controlla il separatore decimale",
+      "missing_unit": "Un numero ha bisogno di un'unità",
+      "invalid_date": "Non è una data nel formato scelto",
+      "invalid_time": "Non è un orario",
+      "ambiguous_date": "La data si legge in due modi; usa un anno a quattro cifre e il formato scelto",
+      "future_date": "La data è nel futuro",
+      "text_too_long": "Il testo è troppo lungo",
+      "unit_mismatch": "Questa unità non si converte in quella del marcatore",
+      "invalid_reference_range": "L'intervallo di riferimento non è leggibile",
+      "invalid_times": "Gli orari non sono leggibili (es. 08:00 20:00)",
+      "missing_times": "Aggiungi gli orari di assunzione o segna il farmaco al bisogno",
+      "invalid_yes_no": "Usa sì o no",
+      "as_needed_with_times": "Un farmaco al bisogno non ha orari fissi",
+      "end_before_start": "La fine precede l'inizio",
+      "invalid_medication": "Il farmaco non si può salvare così",
+      "oversized_row": "La riga è troppo lunga o troppo larga",
+      "row_limit": "Oltre il limite di righe per importazione",
+      "duplicate": "Già presente, saltata"
+    },
+    "field": {
+      "analyte": "Marcatore",
+      "value": "Risultato",
+      "unit": "Unità",
+      "date": "Data",
+      "time": "Ora",
+      "referenceRange": "Intervallo di riferimento",
+      "referenceLow": "Riferimento minimo",
+      "referenceHigh": "Riferimento massimo",
+      "panel": "Gruppo",
+      "note": "Nota",
+      "name": "Nome",
+      "dose": "Dose",
+      "times": "Orari",
+      "asNeeded": "Al bisogno",
+      "startsOn": "Inizio",
+      "endsOn": "Fine"
+    }
   }
 }

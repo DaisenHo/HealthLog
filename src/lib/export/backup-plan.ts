@@ -1019,6 +1019,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   documentsLayoutJson: "SETTING",
   moduleListLayoutJson: "SETTING",
   previewFeaturesJson: "SETTING",
+  activityGoalsJson: "SETTING",
   reportSelectionJson: "SETTING",
   globalExcludedInjectionSites: "SETTING",
   healthKitConfigJson: "SETTING",

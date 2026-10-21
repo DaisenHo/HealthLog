@@ -53,6 +53,9 @@ const LIMITING_HELPERS: Record<string, string[]> = {
     "lib/withings/webhook-handler.ts",
     "lib/whoop/webhook-handler.ts",
   ],
+  // v1.44 — the lab and medication CSV imports: a preview bucket for a dry
+  // run, the shared `import:` bucket for the import itself.
+  handleRecordImport: ["lib/import/record-import-route.ts"],
 };
 
 /** Mutating routes with no limit, each with the reason it needs none. */
