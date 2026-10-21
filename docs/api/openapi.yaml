@@ -15327,6 +15327,400 @@ paths:
                 $ref: "#/components/schemas/CsvImportTooLargeEnvelope"
         "422": *a4
         "429": *a5
+  /api/import/labs-csv:
+    post:
+      tags:
+        - Import
+      summary: Import lab results from CSV
+      description: "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the
+        separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its
+        own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
+        refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
+        whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
+        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
+        `module.disabled` when the module is switched off. Each row's name resolves to the account's marker the way a
+        scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A
+        numeric result needs a unit; one in another unit is converted when the conversion is known and keeps the printed
+        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
+        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+      parameters:
+        - in: query
+          name: dryRun
+          schema:
+            description: "`1` validates every row and reports what would happen, writing nothing."
+            default: "0"
+            type: string
+            enum:
+              - "0"
+              - "1"
+              - "true"
+              - "false"
+          description: "`1` validates every row and reports what would happen, writing nothing."
+        - in: query
+          name: header
+          schema:
+            description: "`1` when the first row holds column names and is not data."
+            default: "1"
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: "`1` when the first row holds column names and is not data."
+        - in: query
+          name: delimiter
+          schema:
+            default: auto
+            description: Column separator; `auto` detects it from the first line.
+            type: string
+            enum:
+              - auto
+              - comma
+              - semicolon
+              - tab
+          description: Column separator; `auto` detects it from the first line.
+        - in: query
+          name: decimal
+          schema:
+            default: dot
+            description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+              refused per row as ambiguous.
+            type: string
+            enum:
+              - dot
+              - comma
+          description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+            refused per row as ambiguous.
+        - in: query
+          name: dateOrder
+          schema:
+            default: iso
+            description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+              years are refused."
+            type: string
+            enum:
+              - iso
+              - dmy
+              - mdy
+          description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+            years are refused."
+        - in: query
+          name: timezone
+          schema:
+            description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+              is stored as that calendar date.
+            type: string
+            maxLength: 64
+          description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+            is stored as that calendar date.
+        - in: query
+          name: analyte
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the marker name (required).
+          required: true
+          description: Column of the marker name (required).
+        - in: query
+          name: value
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the result (required). A number is a numeric result; any other text (`negative`, `<0.5`) is kept
+              as a qualitative result.
+          required: true
+          description: Column of the result (required). A number is a numeric result; any other text (`negative`, `<0.5`) is kept
+            as a qualitative result.
+        - in: query
+          name: unit
+          schema:
+            description: Column of the unit. Required for a numeric result.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the unit. Required for a numeric result.
+        - in: query
+          name: date
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the date, or date and time (required).
+          required: true
+          description: Column of the date, or date and time (required).
+        - in: query
+          name: time
+          schema:
+            description: Column of the time, when separate.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the time, when separate.
+        - in: query
+          name: referenceLow
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: 0-based index of the file column this field is read from.
+        - in: query
+          name: referenceHigh
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: 0-based index of the file column this field is read from.
+        - in: query
+          name: referenceRange
+          schema:
+            description: Column of a printed range such as `4.0-5.6` or `< 200`.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of a printed range such as `4.0-5.6` or `< 200`.
+        - in: query
+          name: panel
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: 0-based index of the file column this field is read from.
+        - in: query
+          name: note
+          schema:
+            description: Column of a note; stored encrypted.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of a note; stored encrypted.
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+              example: |-
+                Analyte;Value;Unit;Date;Range
+                HbA1c;5,4;%;01.03.2025;4,0-5,6
+                Urine protein;negative;;01.03.2025;
+      responses:
+        "200":
+          description: Per-file and per-row outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabsCsvImportEnvelope"
+        "401": *a1
+        "403":
+          description: "`module.disabled`: the module the import writes to is switched off."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: "`import.csv.too_large`: the file is larger than 16 MB."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: "`import.csv.content_type`: the body is not `text/csv`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/import/medications-csv:
+    post:
+      tags:
+        - Import
+      summary: Import medications from CSV
+      description: "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the
+        separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its
+        own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
+        refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
+        whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
+        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
+        `module.disabled` when the module is switched off. Maps name, dose (as written), daily intake times, an
+        as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A row needs times
+        unless it is marked as needed. Each row is checked against the create route's own schema; a dated window opens a
+        course. Reminders stay off unless `reminders=1`. A medication the record holds under the same name and dose is a
+        duplicate. At most 500 data rows."
+      parameters:
+        - in: query
+          name: dryRun
+          schema:
+            description: "`1` validates every row and reports what would happen, writing nothing."
+            default: "0"
+            type: string
+            enum:
+              - "0"
+              - "1"
+              - "true"
+              - "false"
+          description: "`1` validates every row and reports what would happen, writing nothing."
+        - in: query
+          name: header
+          schema:
+            description: "`1` when the first row holds column names and is not data."
+            default: "1"
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: "`1` when the first row holds column names and is not data."
+        - in: query
+          name: delimiter
+          schema:
+            default: auto
+            description: Column separator; `auto` detects it from the first line.
+            type: string
+            enum:
+              - auto
+              - comma
+              - semicolon
+              - tab
+          description: Column separator; `auto` detects it from the first line.
+        - in: query
+          name: decimal
+          schema:
+            default: dot
+            description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+              refused per row as ambiguous.
+            type: string
+            enum:
+              - dot
+              - comma
+          description: Decimal mark of the numbers. A number that reads differently in the two conventions (`1,234` with `dot`) is
+            refused per row as ambiguous.
+        - in: query
+          name: dateOrder
+          schema:
+            default: iso
+            description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+              years are refused."
+            type: string
+            enum:
+              - iso
+              - dmy
+              - mdy
+          description: "`iso` = YYYY-MM-DD[THH:mm[:ss][offset]], `dmy` = DD.MM.YYYY (also / or -), `mdy` = MM/DD/YYYY. Two-digit
+            years are refused."
+        - in: query
+          name: timezone
+          schema:
+            description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+              is stored as that calendar date.
+            type: string
+            maxLength: 64
+          description: IANA zone a date-time without an offset is read in. Defaults to the account's zone. A date without a time
+            is stored as that calendar date.
+        - in: query
+          name: name
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the medication name (required).
+          required: true
+          description: Column of the medication name (required).
+        - in: query
+          name: dose
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 99
+            description: Column of the dose as written, e.g. `10 mg` (required).
+          required: true
+          description: Column of the dose as written, e.g. `10 mg` (required).
+        - in: query
+          name: times
+          schema:
+            description: "Column of daily intake times (`08:00`, or several: `08:00 20:00`, separated by space, comma, semicolon or
+              `|`). A medication with times is taken every day at them; any other rhythm is set up afterwards in the
+              app. A row needs times unless it is marked as needed."
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: "Column of daily intake times (`08:00`, or several: `08:00 20:00`, separated by space, comma, semicolon or
+            `|`). A medication with times is taken every day at them; any other rhythm is set up afterwards in the app.
+            A row needs times unless it is marked as needed."
+        - in: query
+          name: asNeeded
+          schema:
+            description: Column marking an as-needed medication (yes/no).
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column marking an as-needed medication (yes/no).
+        - in: query
+          name: startsOn
+          schema:
+            description: Column of the start date.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the start date.
+        - in: query
+          name: endsOn
+          schema:
+            description: Column of the end date.
+            type: integer
+            minimum: 0
+            maximum: 99
+          description: Column of the end date.
+        - in: query
+          name: reminders
+          schema:
+            description: "`1` turns reminders on for imported medications that have times. Off by default, so an import never starts
+              reminding on its own."
+            default: "0"
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: "`1` turns reminders on for imported medications that have times. Off by default, so an import never starts
+            reminding on its own."
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+              example: |-
+                name,dose,times,as needed,start,end
+                Ramipril,5 mg,08:00,,2025-01-01,
+                Ibuprofen,400 mg,,yes,,
+      responses:
+        "200":
+          description: Per-file and per-row outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicationsCsvImportEnvelope"
+        "401": *a1
+        "403":
+          description: "`module.disabled`: the module the import writes to is switched off."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: "`import.csv.too_large`: the file is larger than 16 MB."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "415":
+          description: "`import.csv.content_type`: the body is not `text/csv`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/import:
     post:
       tags:
@@ -36947,7 +37341,8 @@ components:
                 http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
                 illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
                 illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
-                import.apple_health.busy, import.write_failed; ingest — ingest.rate_limited; insights —
+                import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
+                import.rate_limited, import.write_failed; ingest — ingest.rate_limited; insights —
                 insights.generate.budgetExceeded, insights.generate.outboundScreened,
                 insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
                 labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
@@ -71816,6 +72211,180 @@ components:
       properties:
         data:
           type: "null"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    LabsCsvImportEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RecordImportResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    RecordImportResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - labs
+            - medications
+        dryRun:
+          type: boolean
+        rows:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Data rows read (the header excluded).
+        valid:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows that passed every check.
+        inserted:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows written; in a dry run, the rows that would be.
+        duplicates:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows skipped because the record already holds them, or an earlier row of the file does. A re-upload of the
+            same file therefore writes nothing.
+        failed:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Rows refused; each is listed in `errors`.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              line:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+                description: 1-based line of the file.
+              reason:
+                type: string
+                enum:
+                  - missing_value
+                  - invalid_number
+                  - ambiguous_number
+                  - missing_unit
+                  - invalid_date
+                  - invalid_time
+                  - ambiguous_date
+                  - future_date
+                  - text_too_long
+                  - unit_mismatch
+                  - invalid_reference_range
+                  - invalid_times
+                  - missing_times
+                  - invalid_yes_no
+                  - as_needed_with_times
+                  - end_before_start
+                  - invalid_medication
+                  - oversized_row
+                  - row_limit
+                  - duplicate
+              field:
+                description: The mapped field at fault.
+                type: string
+            required:
+              - line
+              - reason
+            additionalProperties: false
+          description: Refused and duplicate rows, in file order, at most 500.
+        errorsTruncated:
+          type: boolean
+        markers:
+          description: "Lab imports only: how the file's names meet the markers."
+          type: object
+          properties:
+            matched:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: The name as the file writes it.
+                  marker:
+                    type: string
+                    description: The marker it resolves to.
+                  how:
+                    type: string
+                    enum:
+                      - name
+                      - alias
+                      - catalog
+                required:
+                  - name
+                  - marker
+                  - how
+                additionalProperties: false
+              description: File names that resolve to an existing marker, at most 200.
+            created:
+              type: array
+              items:
+                type: string
+              description: Names that become new markers, at most 200.
+          required:
+            - matched
+            - created
+          additionalProperties: false
+        preview:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties:
+              type:
+                - string
+                - number
+                - boolean
+                - "null"
+          description: The first 20 valid rows as they will be stored (dry run only).
+      required:
+        - kind
+        - dryRun
+        - rows
+        - valid
+        - inserted
+        - duplicates
+        - failed
+        - errors
+        - errorsTruncated
+        - preview
+      additionalProperties: false
+    MedicationsCsvImportEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/RecordImportResult"
         error:
           type: "null"
         meta:
