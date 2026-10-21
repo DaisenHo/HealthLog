@@ -181,4 +181,32 @@ describe("Codex", () => {
       incompleteReason: "max_output_tokens",
     });
   });
+
+  it("carries what it streamed before the cut, out of any serialisation", async () => {
+    const delta = { type: "response.output_text.delta", delta: '{"rows":[{' };
+    const event = {
+      type: "response.incomplete",
+      response: { incomplete_details: { reason: "max_output_tokens" } },
+    };
+    safeFetch.mockResolvedValueOnce(
+      new Response(
+        `event: response.output_text.delta\ndata: ${JSON.stringify(delta)}\n\n` +
+          `event: response.incomplete\ndata: ${JSON.stringify(event)}\n\n`,
+        { status: 200, headers: { "content-type": "text/event-stream" } },
+      ),
+    );
+    const err = await new CodexClient({
+      accessToken: "t",
+      accountId: "a",
+      onTokenRefresh: vi.fn(),
+      slugChain: ["gpt-5.5"],
+    })
+      .generateCompletion(read())
+      .catch((e: unknown) => e);
+    expect((err as { partialContent?: string }).partialContent).toBe(
+      '{"rows":[{',
+    );
+    expect(JSON.stringify(err)).not.toContain("rows");
+    expect(Object.keys(err as object)).not.toContain("partialContent");
+  });
 });

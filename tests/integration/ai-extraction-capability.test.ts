@@ -84,6 +84,7 @@ vi.mock("@/lib/labs/ocr-extract", async (importOriginal) => ({
   runOcrExtraction: vi.fn(async () => ({
     data: { rows: [], reportDate: null, providerType: "openai" },
     spentTokens: 0,
+    cachedTokens: 0,
   })),
 }));
 vi.mock("@/lib/documents/describe", async (importOriginal) => ({

@@ -12,6 +12,8 @@ vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/documents/rasterize-pdf", () => ({ rasterizePdf: vi.fn() }));
 vi.mock("@/lib/ai/coach/budget", () => ({
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
+  reserveBudget: vi.fn(),
+  resolveDailyCap: vi.fn(() => 200_000),
 }));
 vi.mock("@/lib/labs/ocr-extract", async () => {
   const actual = await vi.importActual<typeof import("@/lib/labs/ocr-extract")>(
@@ -20,13 +22,15 @@ vi.mock("@/lib/labs/ocr-extract", async () => {
   return { ...actual, runOcrExtraction: vi.fn() };
 });
 
-import { reconcileSpend } from "@/lib/ai/coach/budget";
+import { reconcileSpend, reserveBudget } from "@/lib/ai/coach/budget";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 import { OcrExtractError, runOcrExtraction } from "@/lib/labs/ocr-extract";
+import type { RunOcrExtractionArgs } from "@/lib/labs/ocr-extract";
 import {
   executeOcrExtraction,
   OCR_MAX_PAGES,
   OCR_TEXT_READ_CHARS,
+  OCR_TEXT_READ_MAX_CHARS,
   planPageReads,
   splitOcrText,
 } from "@/lib/labs/ocr-run";
@@ -68,10 +72,18 @@ const pages = (n: number) =>
     mediaType: "image/jpeg" as const,
     dataBase64: `page${i + 1}`,
   }));
-const extraction = (spentTokens = 0) => ({
-  data: { rows: [] } as never,
-  spentTokens,
-});
+/** A read that spends `spent` tokens (of them `cached` from the cache). */
+const extraction =
+  (spent = 0, cached = 0) =>
+  async (args: RunOcrExtractionArgs) => {
+    args.meter!.spent += spent;
+    args.meter!.cached += cached;
+    return {
+      data: { rows: [] } as never,
+      spentTokens: spent,
+      cachedTokens: cached,
+    };
+  };
 const schedule = (maxModelCalls: number) => ({
   maxModelCalls: () => maxModelCalls,
   arm: vi.fn().mockResolvedValue(undefined),
@@ -140,7 +152,7 @@ describe("planning the reads", () => {
 
 describe("text mode", () => {
   it("charges what the provider reported to the provider that served", async () => {
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction(2345));
+    vi.mocked(runOcrExtraction).mockImplementation(extraction(2345));
     const out = await executeOcrExtraction({
       userId: "u1",
       input: text(),
@@ -158,7 +170,7 @@ describe("text mode", () => {
   });
 
   it("charges the reservation when the provider reported nothing", async () => {
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction(0));
+    vi.mocked(runOcrExtraction).mockImplementation(extraction(0));
     await executeOcrExtraction({ userId: "u1", input: text(), budget });
     expect(reconcileSpend).toHaveBeenCalledWith(
       "u1",
@@ -171,7 +183,7 @@ describe("text mode", () => {
   });
 
   it("sends long text in parts and moves the deadline to cover them", async () => {
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
     // ~8.8k characters: three reads of at most OCR_TEXT_READ_CHARS.
     const long = Array.from(
       { length: 400 },
@@ -190,7 +202,114 @@ describe("text mode", () => {
     expect(s.arm).toHaveBeenCalledWith(6);
   });
 
-  it("refunds the reservation in full on a clean extract failure", async () => {
+  it("passes the cached share of what was spent to the ledger", async () => {
+    vi.mocked(runOcrExtraction).mockImplementation(extraction(3000, 1200));
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500,
+      3000,
+      "2027-01-15",
+      1200,
+      { servedBy: "openai", reservedOwner: "operator" },
+    );
+  });
+
+  it("reserves every read after the first, and settles against all of it", async () => {
+    vi.mocked(reserveBudget).mockResolvedValue({
+      allowed: true,
+      reserved: 8000,
+    } as never);
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      expect(await args.reserveRead!()).toBe(true);
+      expect(await args.reserveRead!()).toBe(true);
+      return extraction(20_000)(args);
+    });
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    expect(reserveBudget).toHaveBeenCalledWith(
+      "u1",
+      8000,
+      "2027-01-15",
+      200_000,
+      "operator",
+      "coach",
+      undefined,
+      { countMessage: false },
+    );
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500 + 2 * 8000,
+      20_000,
+      "2027-01-15",
+      0,
+      { servedBy: "openai", reservedOwner: "operator" },
+    );
+  });
+
+  it("tells the read to stop when the day's budget refuses the next one", async () => {
+    vi.mocked(reserveBudget).mockResolvedValue({
+      allowed: false,
+      reserved: 8000,
+    } as never);
+    let answer: boolean | undefined;
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      answer = await args.reserveRead!();
+      return extraction(4000)(args);
+    });
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    expect(answer).toBe(false);
+    // The refused reservation was handed back by reserveBudget itself; the
+    // run settles against the first read's alone.
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500,
+      4000,
+      "2027-01-15",
+      0,
+      { servedBy: "openai", reservedOwner: "operator" },
+    );
+  });
+
+  it("refuses text one read cannot return up front, and refunds", async () => {
+    // One unbroken line: it cannot be split, and is past what a read holds.
+    const out = await executeOcrExtraction({
+      userId: "u1",
+      input: text("x".repeat(OCR_TEXT_READ_MAX_CHARS + 1)),
+      budget,
+    });
+    expect(out).toMatchObject({
+      ok: false,
+      status: 422,
+      errorCode: "labs.ocr.tooLarge",
+    });
+    expect(runOcrExtraction).not.toHaveBeenCalled();
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500,
+      0,
+      "2027-01-15",
+      0,
+      { servedBy: null, reservedOwner: "operator" },
+    );
+  });
+
+  it("charges a failed scan for the calls it made, refunding only the rest", async () => {
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      args.meter!.spent += 900;
+      throw new OcrExtractError("x");
+    });
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500,
+      900,
+      "2027-01-15",
+      0,
+      { servedBy: "openai", reservedOwner: "operator" },
+    );
+  });
+
+  it("refunds the reservation in full when a failed scan spent nothing", async () => {
     vi.mocked(runOcrExtraction).mockRejectedValue(new OcrExtractError("x"));
     const out = await executeOcrExtraction({
       userId: "u1",
@@ -262,7 +381,7 @@ describe("vision mode", () => {
       images: pages(3),
       pageCount: 3,
     });
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
     const s = schedule(Number.POSITIVE_INFINITY);
     const out = await executeOcrExtraction({
       userId: "u1",
@@ -271,15 +390,40 @@ describe("vision mode", () => {
       schedule: s,
     });
     expect(out).toEqual({ ok: true, data: { rows: [] } });
-    expect(rasterizePdf).toHaveBeenCalledWith(expect.anything(), OCR_MAX_PAGES);
+    expect(rasterizePdf).toHaveBeenCalledWith(
+      expect.anything(),
+      OCR_MAX_PAGES,
+      { withText: true },
+    );
     const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
     expect(args.totalPages).toBe(3);
     expect(args.chunks).toEqual([
-      { images: [pages(3)[0]], documents: [], pages: [1] },
-      { images: [pages(3)[1]], documents: [], pages: [2] },
-      { images: [pages(3)[2]], documents: [], pages: [3] },
+      { images: [pages(3)[0]], documents: [], pages: [1], pageText: "" },
+      { images: [pages(3)[1]], documents: [], pages: [2], pageText: "" },
+      { images: [pages(3)[2]], documents: [], pages: [3], pageText: "" },
     ]);
     expect(s.arm).toHaveBeenCalledWith(6);
+  });
+
+  it("sends each page's text layer with it, headed by page when a read holds several", async () => {
+    vi.mocked(rasterizePdf).mockResolvedValue({
+      ok: true,
+      images: pages(4),
+      pageCount: 4,
+      texts: ["Hb 14,2 g/dl", "", "TSH 1,2", "Na 140"],
+    });
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
+    await executeOcrExtraction({
+      userId: "u1",
+      input: pdf(),
+      budget,
+      schedule: schedule(4),
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.chunks.map((c) => c.pageText)).toEqual([
+      "[page 1]\nHb 14,2 g/dl",
+      "[page 3]\nTSH 1,2\n\n[page 4]\nNa 140",
+    ]);
   });
 
   it("reads a multi-page PDF page by page on a provider that reads PDFs too", async () => {
@@ -288,7 +432,7 @@ describe("vision mode", () => {
       images: pages(4),
       pageCount: 4,
     });
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
     await executeOcrExtraction({
       userId: "u1",
       input: pdf(anthropicPick),
@@ -300,7 +444,7 @@ describe("vision mode", () => {
   });
 
   it("keeps the native document for a one-page PDF, or one that cannot be rendered", async () => {
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
     vi.mocked(rasterizePdf).mockResolvedValueOnce({
       ok: true,
       images: pages(1),
@@ -329,7 +473,7 @@ describe("vision mode", () => {
       images: pages(10),
       pageCount: 10,
     });
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
     // Five sequential calls fit: two reads with their retries.
     const s = schedule(5);
     await executeOcrExtraction({
@@ -352,7 +496,7 @@ describe("vision mode", () => {
       images: pages(OCR_MAX_PAGES),
       pageCount: 23,
     });
-    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
     const out = await executeOcrExtraction({
       userId: "u1",
       input: pdf(),

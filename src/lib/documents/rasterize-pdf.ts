@@ -101,6 +101,12 @@ export type RasterResult =
        * reading covers the first pages only.
        */
       pageCount: number;
+      /**
+       * Only with `withText`: each rendered page's text layer, in order and
+       * aligned with `images`. Empty for a page that has none (a scan) or
+       * whose text could not be read.
+       */
+      texts?: string[];
     }
   | { ok: false; reason: "unsupported" | "render-failed" };
 
@@ -140,6 +146,9 @@ interface PdfPage {
     canvas: unknown;
   }): { promise: Promise<void> };
   cleanup(): void;
+  getTextContent(): Promise<{
+    items: Array<{ str?: string; hasEOL?: boolean }>;
+  }>;
 }
 interface PdfDocument {
   numPages: number;
@@ -275,6 +284,28 @@ export function __resetPdfjsAssetsForTests(): void {
 }
 
 /**
+ * A page's text layer, line by line: what a digitally produced PDF printed,
+ * character for character, which no rendering at a capped resolution can
+ * beat for small digits. Empty for a scanned page or on any failure.
+ */
+async function pageText(page: PdfPage): Promise<string> {
+  try {
+    const { items } = await page.getTextContent();
+    let text = "";
+    for (const item of items) {
+      text += (item.str ?? "") + (item.hasEOL ? "\n" : " ");
+    }
+    return text
+      .split("\n")
+      .map((line) => line.replace(/\s+/g, " ").trim())
+      .filter((line) => line.length > 0)
+      .join("\n");
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Render the first `RASTER_MAX_PAGES` pages of a PDF to bounded JPEG images
  * (or another count when `maxPages` is passed — the thumbnail path renders
  * page 1 only, the lab scan up to `RASTER_HARD_MAX_PAGES`). Returns `{ ok: false }` on any failure (malformed PDF, render throw,
@@ -284,6 +315,7 @@ export function __resetPdfjsAssetsForTests(): void {
 export async function rasterizePdf(
   buffer: Buffer,
   maxPages: number = RASTER_MAX_PAGES,
+  opts: { withText?: boolean } = {},
 ): Promise<RasterResult> {
   let doc: PdfDocument | null = null;
   let task: PdfLoadingTask | null = null;
@@ -336,6 +368,7 @@ export async function rasterizePdf(
     const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
     const pageCount = Math.min(doc.numPages, cap);
     const images: RasterImage[] = [];
+    const texts: string[] = [];
     let blankPages = 0;
 
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
@@ -370,6 +403,7 @@ export async function rasterizePdf(
           dataBase64: jpeg.toString("base64"),
         });
         factory.destroy?.(cc);
+        if (opts.withText) texts.push(await pageText(page));
       } finally {
         page.cleanup();
       }
@@ -399,7 +433,12 @@ export async function rasterizePdf(
       action: { name: "documents.rasterize.ok" },
       meta: { pages: images.length, cappedFrom: doc.numPages, blankPages },
     });
-    return { ok: true, images, pageCount: doc.numPages };
+    return {
+      ok: true,
+      images,
+      pageCount: doc.numPages,
+      ...(opts.withText ? { texts } : {}),
+    };
   } catch (err) {
     annotate({
       action: { name: "documents.rasterize.failed" },

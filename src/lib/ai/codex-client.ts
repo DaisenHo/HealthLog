@@ -992,6 +992,14 @@ export class CodexClient implements AIProvider {
                     }
                   : {}),
               });
+              // The text streamed before the cut, for a caller that can use
+              // a partial reply (the lab scan keeps the rows that closed).
+              // Not enumerable: it is model output about the person's data,
+              // and an error is serialised into logs and events.
+              Object.defineProperty(e, "partialContent", {
+                value: assembledText || deltaText,
+                enumerable: false,
+              });
               throw e;
             }
             case "error":

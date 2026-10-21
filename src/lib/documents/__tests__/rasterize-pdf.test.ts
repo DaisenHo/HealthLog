@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
-import { RASTER_MAX_PAGES, rasterizePdf } from "../rasterize-pdf";
+import {
+  RASTER_HARD_MAX_PAGES,
+  RASTER_MAX_PAGES,
+  rasterizePdf,
+} from "../rasterize-pdf";
 
 /**
  * Rasterization renders a PDF's pages to bounded JPEG images. Pins: a text-layer
@@ -83,6 +87,35 @@ describe("rasterizePdf", () => {
     if (!result.ok) return;
     expect(result.images).toHaveLength(1);
     expect(isJpeg(result.images[0]!.dataBase64)).toBe(true);
+  });
+
+  it("reads each page's text layer beside its image when asked", async () => {
+    const result = await rasterizePdf(buildPdf(2, true), 20, {
+      withText: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // The fixture's line runs off its 200 pt page; pdfjs keeps what is on it.
+    expect(result.texts).toHaveLength(2);
+    expect(result.texts?.[0]).toMatch(/^Page 1 lab/);
+    expect(result.texts?.[1]).toMatch(/^Page 2 lab/);
+  });
+
+  it("gives a page without a text layer an empty text, and none unless asked", async () => {
+    const scanned = await rasterizePdf(buildPdf(1, false), 20, {
+      withText: true,
+    });
+    expect(scanned.ok && scanned.texts).toEqual([""]);
+    const plain = await rasterizePdf(buildPdf(1, true));
+    expect(plain.ok && plain.texts).toBeUndefined();
+  });
+
+  it("lets a caller ask for more pages, never past RASTER_HARD_MAX_PAGES", async () => {
+    const result = await rasterizePdf(
+      buildPdf(RASTER_HARD_MAX_PAGES + 2, false),
+      RASTER_HARD_MAX_PAGES + 10,
+    );
+    expect(result.ok && result.images).toHaveLength(RASTER_HARD_MAX_PAGES);
   });
 
   it("caps the number of rendered pages at RASTER_MAX_PAGES", async () => {

@@ -141,6 +141,12 @@ export const ocrExtractResponse = z
       .describe(
         "Present only when part of a multi-part read produced nothing: the provider failed partway through, or a part's reply could not be read. The rows of the other parts are kept; these pages are not in `rows`. Empty when the parts were not pages (OCR'd text).",
       ),
+    stoppedBy: z
+      .enum(["budget", "unavailable"])
+      .optional()
+      .describe(
+        "Present only when the scan stopped before its last read for a reason other than the provider: `budget`, the day's AI budget ran out (every read after the first is reserved on its own); `unavailable`, AI was turned off for the record while it ran (the wire is re-checked before every read). The pages it did not reach are in `unreadPages`.",
+      ),
     rowsCapped: z
       .object({
         kept: z.number().int().positive(),
@@ -154,7 +160,7 @@ export const ocrExtractResponse = z
   .meta({
     id: "OcrExtractResponse",
     description:
-      "The proposed rows for the human review screen, served by `GET /api/ai-runs/{id}` for a `LABS_OCR_EXTRACT` run. A PDF of more than one page is read a page at a time and the pages merged in order, a reading printed on two pages listed once. Never written to the person's record; the commit route is the only write. A run in which no read produced a single complete row fails with 422 `labs.ocr.outputLimit` when the reads stopped at the provider's output limit, else `labs.ocr.extractFailed`.",
+      "The proposed rows for the human review screen, served by `GET /api/ai-runs/{id}` for a `LABS_OCR_EXTRACT` run. A PDF of more than one page is read a page at a time, each rendered page sent with its text layer, and the pages merged in order, a reading an earlier page already listed listed once. Never written to the person's record; the commit route is the only write. A run in which no read produced a single complete row fails with 422 `labs.ocr.outputLimit` when the reads stopped at the provider's output limit, else `labs.ocr.extractFailed`; OCR'd text too long for the reads the deadline allows is refused up front with 422 `labs.ocr.tooLarge`.",
   });
 
 const committedRow = z

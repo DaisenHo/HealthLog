@@ -242,6 +242,9 @@ describe("extractErrorMessage", () => {
     expect(extractErrorMessage(refusal("labs.ocr.outputLimit", 422), t)).toBe(
       "labs.ocr.outputLimit",
     );
+    expect(extractErrorMessage(refusal("labs.ocr.tooLarge", 422), t)).toBe(
+      "labs.ocr.tooLarge",
+    );
   });
 
   it("never calls an unrelated 403 a missing consent", () => {
@@ -294,6 +297,15 @@ describe("<OcrReadNotes> — what a read could not give", () => {
       "not in this list: 3, 4.",
     );
     expect(render({ unreadPages: [] })).toContain("Part of the report");
+  });
+
+  it("says why a scan stopped early when it was not the provider", () => {
+    expect(render({ unreadPages: [4], stoppedBy: "budget" })).toContain(
+      "AI budget for today ran out",
+    );
+    expect(render({ unreadPages: [4], stoppedBy: "unavailable" })).toContain(
+      "AI was turned off while the report was being read",
+    );
   });
 
   it("says how many readings the report had when it ran past the cap", () => {

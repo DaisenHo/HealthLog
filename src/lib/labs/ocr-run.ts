@@ -6,8 +6,9 @@
  * 202. This is the read itself: the report split into reads (a PDF a page at
  * a time, as many reads as the run's deadline allows; a photo as one; OCR'd
  * text in parts at line boundaries), one extraction per read with its
- * corrective retry, and the reservation settled against what the provider
- * reported it spent.
+ * corrective retry, every read after the first reserved against the day's
+ * budget on its own, and the whole settled against what the provider
+ * reported it spent, a failed scan included.
  *
  * Nothing is written to the person's record here. The proposed rows go back
  * through the run for the mandatory review screen, and the commit route stays
@@ -16,6 +17,7 @@
 import type { Buffer } from "node:buffer";
 
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { reserveBudget, resolveDailyCap } from "@/lib/ai/coach/budget";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { settleAiRunBudget } from "@/lib/documents/ai-runs/store";
 import type { AiRunBudget, AiRunOutcome } from "@/lib/documents/ai-runs/types";
@@ -26,6 +28,8 @@ import {
   OcrExtractError,
   runOcrExtraction,
   type OcrChunk,
+  type OcrMeter,
+  type RunOcrExtractionArgs,
 } from "@/lib/labs/ocr-extract";
 import { annotate } from "@/lib/logging/context";
 import type { OcrExtractResponseDto } from "@/lib/validations/labs-ocr";
@@ -106,6 +110,23 @@ export function splitOcrText(text: string, maxReads: number): string[] {
   return parts;
 }
 
+/**
+ * The most OCR'd text one read may carry. Past it the JSON for that much text
+ * no longer fits one read's output ceiling, so a part this long is refused up
+ * front instead of being read into a certain cut.
+ */
+export const OCR_TEXT_READ_MAX_CHARS = 8000;
+
+/** The text layer of these pages, each headed by its number when several. */
+function pageTextFor(pages: number[], texts: string[] | undefined): string {
+  if (!texts) return "";
+  const parts = pages
+    .map((p) => ({ p, text: texts[p - 1]?.trim() ?? "" }))
+    .filter((x) => x.text.length > 0);
+  if (pages.length === 1) return parts[0]?.text ?? "";
+  return parts.map((x) => `[page ${x.p}]\n${x.text}`).join("\n\n");
+}
+
 /** How many reads the deadline leaves room for. */
 function maxReadsFor(schedule: OcrSchedule | undefined): number {
   if (!schedule) return Number.POSITIVE_INFINITY;
@@ -181,37 +202,70 @@ export async function executeOcrExtraction(args: {
 }): Promise<AiRunOutcome<OcrExtractResponseDto>> {
   const { userId, input, budget, schedule } = args;
   const servedBy = input.pick.entry.providerType as ProviderChainType;
-  // The run is charged what the provider reported for every read; a provider
-  // that reports nothing is charged the reservation.
-  const settleSpent = (spent: number) =>
-    settleAiRunBudget(
+  const meter: OcrMeter = { spent: 0, cached: 0 };
+  // The route reserved the first read. Every further read is reserved on its
+  // own against the day's budget before it is sent, so a long report cannot
+  // spend past the budget the route checked once; when the budget runs out
+  // the scan stops there and names the pages it did not read.
+  let reserved = budget?.reserved ?? 0;
+  const reserveRead = budget
+    ? async () => {
+        const next = await reserveBudget(
+          userId,
+          AI_BUDGETS.ocrExtract.maxTokens,
+          budget.dateKey,
+          resolveDailyCap([{ providerType: servedBy }]),
+          budget.owner,
+          "coach",
+          undefined,
+          { countMessage: false },
+        );
+        if (next.allowed) reserved += next.reserved;
+        return next.allowed;
+      }
+    : undefined;
+  // Settled against everything reserved, with what the provider reported for
+  // every call made, failed scans included: a scan that fails after several
+  // reads is charged for them, and only what was never spent goes back. A
+  // successful scan whose provider reported nothing is charged its
+  // reservation.
+  const settle = (succeeded: boolean) => {
+    const spent =
+      succeeded && meter.spent <= 0 ? reserved : Math.max(0, meter.spent);
+    return settleAiRunBudget(
       userId,
-      budget,
-      spent > 0 ? spent : (budget?.reserved ?? 0),
-      servedBy,
+      budget ? { ...budget, reserved } : undefined,
+      spent,
+      spent > 0 ? servedBy : null,
+      spent > 0 ? meter.cached : 0,
     );
-
-  if (input.mode === "text") {
-    const parts = splitOcrText(input.text, maxReadsFor(schedule));
-    await schedule?.arm(parts.length * OCR_EXTRACT_MODEL_CALLS);
+  };
+  const read = async (
+    run: Omit<
+      RunOcrExtractionArgs,
+      "userId" | "provider" | "providerType" | "meter" | "reserveRead"
+    >,
+  ): Promise<AiRunOutcome<OcrExtractResponseDto>> => {
     try {
       const result = await runOcrExtraction({
         userId,
         provider: input.pick.entry.instance,
         providerType: input.pick.providerType,
-        mode: "text",
-        chunks: parts.map((text) => ({ text, pages: [] })),
+        meter,
+        reserveRead,
+        ...run,
       });
-      await settleSpent(result.spentTokens);
+      await settle(true);
       return { ok: true, data: result.data };
     } catch (err) {
-      // A failed structuring call produced no usable rows; the reservation
-      // goes back in full rather than being charged.
-      await settleAiRunBudget(userId, budget, 0, null);
+      await settle(false);
       if (err instanceof OcrExtractError) return unreadable(err);
       annotate({
         action: { name: "labs.ocr.extractFailed" },
-        meta: providerFailureMeta(err, "text"),
+        meta: providerFailureMeta(
+          err,
+          run.mode === "text" ? "text" : undefined,
+        ),
       });
       return failure({
         status: 502,
@@ -220,6 +274,30 @@ export async function executeOcrExtraction(args: {
         errorCode: "labs.ocr.extractFailed",
       });
     }
+  };
+
+  if (input.mode === "text") {
+    const parts = splitOcrText(input.text, maxReadsFor(schedule));
+    // A part that one read cannot return in full is refused before anything
+    // is sent, rather than read into a certain cut: the deadline left too
+    // few reads for this much text.
+    if (parts.some((part) => part.length > OCR_TEXT_READ_MAX_CHARS)) {
+      annotate({
+        action: { name: "labs.ocr.fileRejected" },
+        meta: { reason: "text_too_large", parts: parts.length },
+      });
+      await settle(false);
+      return failure({
+        status: 422,
+        message: "This text is too long for one scan.",
+        errorCode: "labs.ocr.tooLarge",
+      });
+    }
+    await schedule?.arm(parts.length * OCR_EXTRACT_MODEL_CALLS);
+    return read({
+      mode: "text",
+      chunks: parts.map((text) => ({ text, pages: [] })),
+    });
   }
 
   const { pick, bytes, mime } = input;
@@ -232,7 +310,12 @@ export async function executeOcrExtraction(args: {
     // page at a time, whatever the provider, so no single call has to hold
     // the whole report. A provider that reads PDFs natively still gets the
     // document itself when it is one page, or when it cannot be rendered.
-    const raster = await rasterizePdf(bytes, OCR_MAX_PAGES);
+    // With each page's text layer: a digitally produced report states its
+    // digits exactly there, and the rendered page alone is a picture at a
+    // capped resolution.
+    const raster = await rasterizePdf(bytes, OCR_MAX_PAGES, {
+      withText: true,
+    });
     if (raster.ok && (raster.images.length > 1 || !pick.pdfSupported)) {
       totalPages = raster.pageCount;
       chunks = planPageReads(raster.images.length, maxReadsFor(schedule)).map(
@@ -240,6 +323,7 @@ export async function executeOcrExtraction(args: {
           images: pages.map((p) => raster.images[p - 1]),
           documents: [],
           pages,
+          pageText: pageTextFor(pages, raster.texts),
         }),
       );
       // A PDF longer than the page cap is read from its first pages only, and
@@ -269,7 +353,7 @@ export async function executeOcrExtraction(args: {
         action: { name: "labs.ocr.fileRejected" },
         meta: { reason: "pdf_rasterize_failed" },
       });
-      await settleAiRunBudget(userId, budget, 0, null);
+      await settle(false);
       return failure({
         status: 422,
         message: "Couldn't read this PDF; upload a photo instead.",
@@ -287,32 +371,8 @@ export async function executeOcrExtraction(args: {
   }
 
   await schedule?.arm(chunks.length * OCR_EXTRACT_MODEL_CALLS);
-  try {
-    const result = await runOcrExtraction({
-      userId,
-      provider: pick.entry.instance,
-      providerType: pick.providerType,
-      mode: "vision",
-      chunks,
-      totalPages,
-    });
-    await settleSpent(result.spentTokens);
-    return {
-      ok: true,
-      data: pageCoverage ? { ...result.data, pageCoverage } : result.data,
-    };
-  } catch (err) {
-    await settleAiRunBudget(userId, budget, 0, servedBy);
-    if (err instanceof OcrExtractError) return unreadable(err);
-    annotate({
-      action: { name: "labs.ocr.extractFailed" },
-      meta: providerFailureMeta(err),
-    });
-    return failure({
-      status: 502,
-      message:
-        "The configured AI provider could not process this report. Check the provider configuration and retry.",
-      errorCode: "labs.ocr.extractFailed",
-    });
-  }
+  const outcome = await read({ mode: "vision", chunks, totalPages });
+  return outcome.ok && pageCoverage
+    ? { ok: true, data: { ...outcome.data, pageCoverage } }
+    : outcome;
 }

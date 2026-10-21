@@ -10,6 +10,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/ai/capabilities/egress", () => ({
+  aiEgressRefusal: vi.fn().mockResolvedValue(null),
+}));
 vi.mock("@/lib/tz/resolver", () => ({
   resolveUserTimezone: vi.fn().mockResolvedValue("Europe/Berlin"),
 }));
@@ -21,6 +24,8 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
+import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import type { AIProvider, CompletionResult } from "@/lib/ai/types";
 import {
   OcrExtractError,
@@ -81,7 +86,12 @@ const photo: OcrChunk = {
   pages: [],
 };
 
-const run = (p: AIProvider, chunks: OcrChunk[], totalPages?: number) =>
+const run = (
+  p: AIProvider,
+  chunks: OcrChunk[],
+  totalPages?: number,
+  extra: Partial<Parameters<typeof runOcrExtraction>[0]> = {},
+) =>
   runOcrExtraction({
     userId: "u1",
     provider: p,
@@ -89,10 +99,12 @@ const run = (p: AIProvider, chunks: OcrChunk[], totalPages?: number) =>
     mode: "vision",
     chunks,
     totalPages,
+    ...extra,
   });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(aiEgressRefusal).mockResolvedValue(null);
 });
 
 describe("salvageTruncatedJson", () => {
@@ -176,8 +188,26 @@ describe("a read cut at the output limit", () => {
         incompleteReason: "max_output_tokens",
       }),
     );
-    const err = await run(p, [photo]).catch((e: unknown) => e);
+    const meter = { spent: 0, cached: 0 };
+    const err = await run(p, [photo], undefined, { meter }).catch(
+      (e: unknown) => e,
+    );
     expect((err as OcrExtractError).reason).toBe("output_limit");
+    // A cut reply was billed; its ceiling stands in for the unreported cost.
+    expect(meter.spent).toBe(8000);
+  });
+
+  it("keeps the closed rows Codex streamed before its cut", async () => {
+    const whole = envelope([row("Hb", 14), row("MCV", 90)]);
+    const cut = whole.slice(0, whole.indexOf('"MCV"') + 10);
+    const e = Object.assign(new Error("Codex stream incomplete"), {
+      incompleteReason: "max_output_tokens",
+    });
+    Object.defineProperty(e, "partialContent", { value: cut });
+    const { provider: p } = provider(e);
+    const out = await run(p, [photo]);
+    expect(out.data.rows.map((r) => r.analyte)).toEqual(["Hb"]);
+    expect(out.data.truncated).toEqual({ pages: [] });
   });
 });
 
@@ -225,7 +255,69 @@ describe("a provider failure partway through", () => {
   });
 });
 
+describe("asked again before every read", () => {
+  it("stops when AI was turned off for the record mid-scan, keeping what was read", async () => {
+    vi.mocked(aiEgressRefusal)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(
+        new AiUnavailableError("labsOcr", "operator_disabled"),
+      );
+    const { provider: p, generateCompletion } = provider(
+      reply(envelope([row("Hb", 14)])),
+      reply(envelope([row("TSH", 2)])),
+    );
+    const out = await run(p, [page(1), page(2), page(3)], 3);
+    expect(out.data.rows.map((r) => r.analyte)).toEqual(["Hb", "TSH"]);
+    expect(out.data.unreadPages).toEqual([3]);
+    expect(out.data.stoppedBy).toBe("unavailable");
+    expect(generateCompletion).toHaveBeenCalledTimes(2);
+    // Before the second and third read; the first was checked by the worker.
+    expect(aiEgressRefusal).toHaveBeenCalledTimes(2);
+    expect(aiEgressRefusal).toHaveBeenCalledWith("labsOcr", "u1", [
+      "anthropic",
+    ]);
+  });
+
+  it("stops when the day's budget refuses the next read", async () => {
+    const reserveRead = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    const { provider: p, generateCompletion } = provider(
+      reply(envelope([row("Hb", 14)])),
+      reply(envelope([row("TSH", 2)])),
+    );
+    const out = await run(p, [page(1), page(2), page(3), page(4)], 4, {
+      reserveRead,
+    });
+    expect(out.data.unreadPages).toEqual([3, 4]);
+    expect(out.data.stoppedBy).toBe("budget");
+    expect(generateCompletion).toHaveBeenCalledTimes(2);
+    expect(reserveRead).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts what the calls cost even when the scan then fails", async () => {
+    const meter = { spent: 0, cached: 0 };
+    const { provider: p } = provider(
+      reply("nope", { tokensUsed: 700, cachedInputTokens: 100 }),
+      reply("nope again", { tokensUsed: 650 }),
+    );
+    await expect(run(p, [photo], undefined, { meter })).rejects.toBeInstanceOf(
+      OcrExtractError,
+    );
+    expect(meter).toEqual({ spent: 1350, cached: 100 });
+  });
+});
+
 describe("the merge", () => {
+  it("never merges two rows of the same page", async () => {
+    const { provider: p } = provider(
+      reply(envelope([row("Hb", 14), row("Hb", 14)])),
+    );
+    const out = await run(p, [photo]);
+    expect(out.data.rows).toHaveLength(2);
+  });
+
   it("lists a reading printed on two pages once, in report order", async () => {
     const { provider: p } = provider(
       reply(envelope([row("Hb", 14), row("MCV", 90, "fl")], "2026-03-01")),
@@ -294,6 +386,23 @@ describe("what one read sends", () => {
     expect((text as { text: string }).text).toContain(
       "page 3 of a 9-page report",
     );
+  });
+
+  it("carries a rendered page's text layer beside its image, as data", () => {
+    const params = ocrChunkParams(
+      "vision",
+      { ...page(2), pageText: "Kreatinin 0,92 mg/dl 0,50 - 0,90" },
+      1,
+      3,
+      3,
+    );
+    const content = params.messages[0].content as Array<{ text?: string }>;
+    expect(content[0].text).toContain("TEXT LAYER:\nKreatinin 0,92 mg/dl");
+    expect(content[0].text).toContain("UNTRUSTED DATA");
+    const plain = ocrChunkParams("vision", page(2), 1, 3, 3);
+    expect(
+      (plain.messages[0].content as Array<{ text?: string }>)[0].text,
+    ).not.toContain("TEXT LAYER");
   });
 
   it("carries a text part in the user turn and nothing else", () => {

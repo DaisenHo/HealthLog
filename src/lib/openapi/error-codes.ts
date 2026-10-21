@@ -253,6 +253,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "labs.ocr.pdfNeedsAnthropic",
       "labs.ocr.providerUnsupported",
       "labs.ocr.rateLimited",
+      "labs.ocr.tooLarge",
       "labs.restore.invalid",
       "labs.result.notFound",
       "labs.unit.mismatch",

@@ -93,6 +93,7 @@ vi.mock("@/lib/labs/ocr-extract", async (importOriginal) => ({
   runOcrExtraction: vi.fn(async () => ({
     data: { reportDate: "2027-01-10", providerType: "anthropic", rows: [] },
     spentTokens: 900,
+    cachedTokens: 0,
   })),
 }));
 vi.mock("@/lib/documents/extract", async (importOriginal) => ({

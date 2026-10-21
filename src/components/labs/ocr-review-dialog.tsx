@@ -107,6 +107,8 @@ export function extractErrorMessage(
         return t("labs.ocr.pdfNeedsAnthropic");
       case "labs.ocr.outputLimit":
         return t("labs.ocr.outputLimit");
+      case "labs.ocr.tooLarge":
+        return t("labs.ocr.tooLarge");
       case "consent.ai.required":
         return t("labs.ocr.consentRequired");
       case "ai.provider.none":
@@ -272,6 +274,7 @@ export function OcrReviewDialog({
         setReadNotes({
           truncated: data.truncated,
           unreadPages: data.unreadPages,
+          stoppedBy: data.stoppedBy,
           rowsCapped: data.rowsCapped,
         });
         setStage("review");
@@ -516,7 +519,7 @@ export function OcrPageCoverageNote({
 
 type OcrReadNotesValue = Pick<
   OcrExtractResponseDto,
-  "truncated" | "unreadPages" | "rowsCapped"
+  "truncated" | "unreadPages" | "stoppedBy" | "rowsCapped"
 >;
 
 /**
@@ -528,7 +531,7 @@ type OcrReadNotesValue = Pick<
  */
 export function OcrReadNotes({ notes }: { notes: OcrReadNotesValue }) {
   const { t } = useTranslations();
-  const { truncated, unreadPages, rowsCapped } = notes;
+  const { truncated, unreadPages, stoppedBy, rowsCapped } = notes;
   if (!truncated && !unreadPages && !rowsCapped) return null;
   return (
     <div data-slot="ocr-read-notes" className="text-warning space-y-1 text-sm">
@@ -539,6 +542,13 @@ export function OcrReadNotes({ notes }: { notes: OcrReadNotesValue }) {
                 pages: truncated.pages.join(", "),
               })
             : t("labs.ocr.truncated")}
+        </p>
+      ) : null}
+      {stoppedBy ? (
+        <p>
+          {stoppedBy === "budget"
+            ? t("labs.ocr.stoppedBudget")
+            : t("labs.ocr.stoppedUnavailable")}
         </p>
       ) : null}
       {unreadPages ? (
