@@ -54898,12 +54898,18 @@ components:
                                 type: integer
                                 minimum: -9007199254740991
                                 maximum: 9007199254740991
+                                description: "Newey–West lag applied: the automatic rule, at least 7 (a week of daily carry-over)."
+                              autocorrelationCaveat:
+                                type: boolean
+                                description: "True when the lag-1 residual autocorrelation exceeds 0.5: the carry-over is strong enough that the
+                                  intervals may still be too narrow, and the read-out says so."
                             required:
                               - n
                               - df
                               - rSquared
                               - residualAutocorrelation
                               - hacLag
+                              - autocorrelationCaveat
                             additionalProperties: false
                           - type: "null"
                       confounders:

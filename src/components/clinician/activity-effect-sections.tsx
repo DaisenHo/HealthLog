@@ -167,6 +167,11 @@ export function MedicationEffectSection({
                     e.days.excludedLowAdherence + e.days.excludedNotTaking,
                 })}
               </p>
+              {e.fit?.autocorrelationCaveat ? (
+                <p className="text-muted-foreground text-xs">
+                  {t("medications.efficacy.segmented.autocorrelation")}
+                </p>
+              ) : null}
               {e.confounders.map((c) => (
                 <p
                   key={`${c.medicationName}:${c.event}:${c.date}`}

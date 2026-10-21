@@ -81,7 +81,8 @@ const EFFECT: EfficacySegmented = {
     df: 141,
     rSquared: 0.55,
     residualAutocorrelation: 0.31,
-    hacLag: 4,
+    hacLag: 7,
+    autocorrelationCaveat: false,
   },
   confounders: [
     { medicationName: "Other drug", event: "started", date: "2026-02-14" },
@@ -218,6 +219,34 @@ describe("doctor report v1.44 sections", () => {
     expect(text).toContain("5 days after the start left out");
     expect(text).toContain("Other drug started on");
     expect(text).toContain("not a proven effect");
+    expect(text).not.toContain("carry-over");
+  });
+
+  it("notes strong day-to-day carry-over in the effect notes", async () => {
+    const text = (
+      await textOf(
+        render(
+          data({
+            medicationEffects: [
+              {
+                medicationName: "Example ACE inhibitor",
+                startsOn: "2026-03-02",
+                targets: [
+                  {
+                    type: "BLOOD_PRESSURE_SYS",
+                    effect: {
+                      ...EFFECT,
+                      fit: { ...EFFECT.fit!, autocorrelationCaveat: true },
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        ),
+      )
+    ).replace(/\s+/g, " ");
+    expect(text).toContain("strong day-to-day carry-over");
   });
 
   it("names the missing floor instead of printing numbers", async () => {

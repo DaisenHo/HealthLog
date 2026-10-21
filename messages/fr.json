@@ -431,7 +431,8 @@
       "notTracked": "prises non suivies, aucun jour écarté pour des doses manquées",
       "endDoseChange": "la période s'arrête le {date}, avant le premier changement de dose",
       "days": "{before} jours avant, {after} jours après le démarrage, {excluded} jours écartés",
-      "method": "Régression segmentée sur les valeurs quotidiennes, de 90 jours avant à 180 jours au plus après le démarrage, intervalles de Newey-West. Les jours après le démarrage où moins de 80 % des doses des 14 jours précédents ont été prises sont écartés. Décrit une association dans le temps, pas un effet démontré du médicament."
+      "method": "Régression segmentée sur les valeurs quotidiennes, de 90 jours avant à 180 jours au plus après le démarrage, intervalles de Newey-West. Les jours après le démarrage où moins de 80 % des doses des 14 jours précédents ont été prises sont écartés. Décrit une association dans le temps, pas un effet démontré du médicament.",
+      "autocorrelation": "forte dépendance à la veille, les plages peuvent donc rester trop étroites"
     }
   },
   "errorBoundary": {
@@ -2412,7 +2413,8 @@
         "needStart": "Indique une date de début pour voir le changement au démarrage.",
         "needBefore": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours avant le démarrage.",
         "needAfter": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours depuis le démarrage, les jours où les doses ont été prises.",
-        "fitFailed": "Ces valeurs n'ont pas pu être ajustées, aucun changement au démarrage n'est donc affiché."
+        "fitFailed": "Ces valeurs n'ont pas pu être ajustées, aucun changement au démarrage n'est donc affiché.",
+        "autocorrelation": "Les valeurs quotidiennes dépendent fortement de la veille, donc même ces plages peuvent être trop étroites."
       }
     },
     "import": {

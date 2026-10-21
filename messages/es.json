@@ -431,7 +431,8 @@
       "notTracked": "toma no registrada, así que no se omitió ningún día por dosis olvidadas",
       "endDoseChange": "el periodo termina el {date}, antes del primer cambio de dosis",
       "days": "{before} días antes, {after} días después del inicio, {excluded} días omitidos",
-      "method": "Regresión segmentada sobre los valores diarios desde 90 días antes hasta como máximo 180 días después del inicio, con intervalos de Newey-West. Se omiten los días posteriores al inicio en los que se tomó menos del 80 % de las dosis de los 14 días anteriores. Describe una asociación en el tiempo, no un efecto demostrado del medicamento."
+      "method": "Regresión segmentada sobre los valores diarios desde 90 días antes hasta como máximo 180 días después del inicio, con intervalos de Newey-West. Se omiten los días posteriores al inicio en los que se tomó menos del 80 % de las dosis de los 14 días anteriores. Describe una asociación en el tiempo, no un efecto demostrado del medicamento.",
+      "autocorrelation": "fuerte dependencia del día anterior, así que los rangos pueden seguir siendo demasiado estrechos"
     }
   },
   "errorBoundary": {
@@ -2412,7 +2413,8 @@
         "needStart": "Indica una fecha de inicio para ver el cambio al inicio.",
         "needBefore": "El cambio al inicio necesita valores de al menos {days} días repartidos en {span} días antes del inicio.",
         "needAfter": "El cambio al inicio necesita valores de al menos {days} días repartidos en {span} días desde el inicio, en días con las dosis tomadas.",
-        "fitFailed": "No se pudieron ajustar estos valores, así que no se muestra el cambio al inicio."
+        "fitFailed": "No se pudieron ajustar estos valores, así que no se muestra el cambio al inicio.",
+        "autocorrelation": "Los valores diarios dependen mucho del día anterior, así que incluso estos rangos pueden ser demasiado estrechos."
       }
     },
     "import": {

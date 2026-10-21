@@ -37,7 +37,8 @@ const present: EfficacySegmented = {
     df: 146,
     rSquared: 0.6,
     residualAutocorrelation: 0.3,
-    hacLag: 4,
+    hacLag: 7,
+    autocorrelationCaveat: false,
   },
   confounders: [
     { medicationName: "Example B", event: "started", date: "2026-02-10" },
@@ -70,6 +71,20 @@ describe("ChangeAtStartSummary", () => {
     expect(html).toContain("describes the starting dose");
     expect(html).toContain("Example B started on");
     expect(html).not.toMatch(/work(s|ing)|effective|successful/i);
+    expect(html).not.toContain("medication-wirkung-autocorrelation");
+  });
+
+  it("warns when the daily values carry over strongly", () => {
+    const html = render({
+      ...present,
+      fit: {
+        ...present.fit!,
+        residualAutocorrelation: 0.7,
+        autocorrelationCaveat: true,
+      },
+    });
+    expect(html).toContain("medication-wirkung-autocorrelation");
+    expect(html).toContain("even these ranges may be too narrow");
   });
 
   it("names the missing floor instead of a number", () => {

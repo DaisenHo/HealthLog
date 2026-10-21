@@ -232,6 +232,9 @@ export function buildMedicationEffectSection(
       if (e.adherence.status === "not_tracked") {
         extras.push(t("doctorReport.medicationEffect.notTracked"));
       }
+      if (e.fit?.autocorrelationCaveat) {
+        extras.push(t("doctorReport.medicationEffect.autocorrelation"));
+      }
       if (e.window.endReason === "dose_change") {
         extras.push(
           t("doctorReport.medicationEffect.endDoseChange", {

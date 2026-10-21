@@ -173,6 +173,25 @@ describe("buildSegmentedEffect", () => {
     expect(r.present).toBe(true);
     expect(r.levelChange!.includesZero).toBe(true);
   });
+
+  it("flags strong residual autocorrelation for a caveat, not a clean fit", () => {
+    // A slow wave around the line: neighbouring residuals share a sign.
+    const wavy = series(-60, 59).map((p, i) => ({
+      day: p.day,
+      value: p.value + 4 * Math.sin(i / 6),
+    }));
+    const r = buildSegmentedEffect(input({ dayValues: wavy }));
+    expect(r.fit!.residualAutocorrelation).toBeGreaterThan(0.5);
+    expect(r.fit!.autocorrelationCaveat).toBe(true);
+    expect(r.fit!.hacLag).toBe(7);
+    // Alternating noise: negative carry-over, no caveat.
+    const alternating = series(-60, 59).map((p, i) => ({
+      day: p.day,
+      value: p.value + (i % 2 === 0 ? 2 : -2),
+    }));
+    const clean = buildSegmentedEffect(input({ dayValues: alternating }));
+    expect(clean.fit!.autocorrelationCaveat).toBe(false);
+  });
 });
 
 describe("notTakingPredicate", () => {

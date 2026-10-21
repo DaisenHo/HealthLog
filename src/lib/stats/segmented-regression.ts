@@ -13,11 +13,14 @@
  * Daily health series are autocorrelated: today's blood pressure says a lot
  * about tomorrow's. Plain OLS standard errors ignore that and come out too
  * narrow, so the covariance here is the Newey–West estimator (Bartlett
- * kernel) with the usual automatic lag `floor(4·(n/100)^(2/9))` and the
- * small-sample factor n/(n−k). Intervals use Student's t with n−k degrees of
- * freedom. This matches `statsmodels` OLS `cov_type="HAC"` with
- * `use_correction=True` and `use_t=True`; the unit tests pin it to values
- * computed there.
+ * kernel) and the small-sample factor n/(n−k). The lag is the usual automatic
+ * `floor(4·(n/100)^(2/9))`, but never below {@link MIN_HAC_LAG}: on 30 to 270
+ * daily values the automatic rule gives 3, while a physiological series
+ * carries over for about a week (weight, resting heart rate, blood pressure
+ * under a new medication), and three lags leave most of that out. Intervals
+ * use Student's t with n−k degrees of freedom. This matches `statsmodels` OLS
+ * `cov_type="HAC"` with `use_correction=True` and `use_t=True` at the same
+ * `maxlags`; the unit tests pin it to values computed there.
  *
  * Observations are taken in the order given, which for a daily series with
  * gaps treats a gap as adjacent days. That is a known approximation of the
@@ -61,9 +64,17 @@ export interface SegmentedFit {
 
 const K = 4;
 
+/** Smallest Newey–West lag applied: a week of daily carry-over. */
+export const MIN_HAC_LAG = 7;
+
 /** Automatic Newey–West lag: floor(4·(n/100)^(2/9)). */
 export function neweyWestLag(n: number): number {
   return Math.floor(4 * Math.pow(n / 100, 2 / 9));
+}
+
+/** The lag applied by default: the automatic rule, at least {@link MIN_HAC_LAG}. */
+export function defaultHacLag(n: number): number {
+  return Math.max(MIN_HAC_LAG, neweyWestLag(n));
 }
 
 /** Invert a small symmetric positive-definite matrix (Gauss–Jordan). */
@@ -131,7 +142,7 @@ export function fitSegmentedRegression(
   );
 
   // Meat: Σ e_t² x_t x_tᵀ + Σ_l w_l Σ_t e_t e_{t−l} (x_t x_{t−l}ᵀ + x_{t−l} x_tᵀ)
-  const lag = Math.max(0, Math.min(options.hacLag ?? neweyWestLag(n), n - 1));
+  const lag = Math.max(0, Math.min(options.hacLag ?? defaultHacLag(n), n - 1));
   const meat = Array.from({ length: K }, () => new Array<number>(K).fill(0));
   for (let l = 0; l <= lag; l++) {
     const w = l === 0 ? 1 : 1 - l / (lag + 1);

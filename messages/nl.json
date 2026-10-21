@@ -431,7 +431,8 @@
       "notTracked": "inname niet bijgehouden, dus geen dagen weggelaten om gemiste doses",
       "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
       "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
-      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn."
+      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn.",
+      "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn"
     }
   },
   "errorBoundary": {
@@ -2412,7 +2413,8 @@
         "needStart": "Stel een startdatum in om de verandering bij de start te zien.",
         "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen vóór de start.",
         "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen sinds de start en op dagen waarop de doses zijn ingenomen.",
-        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond."
+        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond.",
+        "autocorrelation": "De dagwaarden hangen sterk af van de vorige dag, dus zelfs deze bereiken kunnen te smal zijn."
       }
     },
     "import": {

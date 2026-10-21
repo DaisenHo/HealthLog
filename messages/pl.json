@@ -431,7 +431,8 @@
       "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu opuszczonych dawek",
       "endDoseChange": "okres kończy się {date}, przed pierwszą zmianą dawki",
       "days": "{before} dni przed, {after} dni po rozpoczęciu, pominięto {excluded} dni",
-      "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku."
+      "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku.",
+      "autocorrelation": "silna zależność od poprzedniego dnia, więc zakresy mogą nadal być zbyt wąskie"
     }
   },
   "errorBoundary": {
@@ -2412,7 +2413,8 @@
         "needStart": "Ustaw datę rozpoczęcia, aby zobaczyć zmianę na początku.",
         "needBefore": "Do zmiany na początku potrzeba pomiarów z co najmniej {days} dni rozłożonych na {span} dni przed rozpoczęciem.",
         "needAfter": "Do zmiany na początku potrzeba pomiarów z co najmniej {days} dni rozłożonych na {span} dni od rozpoczęcia, w dni z przyjętymi dawkami.",
-        "fitFailed": "Nie udało się dopasować tych pomiarów, więc zmiana na początku nie jest pokazana."
+        "fitFailed": "Nie udało się dopasować tych pomiarów, więc zmiana na początku nie jest pokazana.",
+        "autocorrelation": "Wartości dzienne silnie zależą od poprzedniego dnia, więc nawet te zakresy mogą być zbyt wąskie."
       }
     },
     "import": {

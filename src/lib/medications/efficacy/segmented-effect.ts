@@ -48,6 +48,12 @@ export const ADHERENCE_LOOKBACK_DAYS = 14;
 export const ADHERENCE_FLOOR = 0.8;
 /** Confidence level of every interval. */
 export const SEGMENTED_LEVEL = 0.95;
+/**
+ * Lag-1 residual autocorrelation above which the read-out carries a caveat:
+ * the carry-over is then strong enough that even the widened intervals may be
+ * too narrow.
+ */
+export const AUTOCORRELATION_CAVEAT = 0.5;
 
 /** An estimate in display terms: the unit per day for a level, per week for a slope. */
 export interface EfficacyEstimate {
@@ -106,6 +112,8 @@ export interface EfficacySegmented {
     rSquared: number;
     residualAutocorrelation: number;
     hacLag: number;
+    /** True above {@link AUTOCORRELATION_CAVEAT}: renderers add the caveat line. */
+    autocorrelationCaveat: boolean;
   } | null;
   /** Other medication changes inside the window, oldest first. */
   confounders: EfficacyConfounder[];
@@ -311,6 +319,8 @@ export function buildSegmentedEffect(
       rSquared: fit.rSquared,
       residualAutocorrelation: fit.residualAutocorrelation,
       hacLag: fit.hacLag,
+      autocorrelationCaveat:
+        fit.residualAutocorrelation > AUTOCORRELATION_CAVEAT,
     },
     confounders,
   };

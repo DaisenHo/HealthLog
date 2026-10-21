@@ -137,7 +137,17 @@ const segmentedSchema = z
         df: z.number().int(),
         rSquared: z.number(),
         residualAutocorrelation: z.number(),
-        hacLag: z.number().int(),
+        hacLag: z
+          .number()
+          .int()
+          .describe(
+            "Newey–West lag applied: the automatic rule, at least 7 (a week of daily carry-over).",
+          ),
+        autocorrelationCaveat: z
+          .boolean()
+          .describe(
+            "True when the lag-1 residual autocorrelation exceeds 0.5: the carry-over is strong enough that the intervals may still be too narrow, and the read-out says so.",
+          ),
       })
       .nullable(),
     confounders: z.array(

@@ -431,7 +431,8 @@
       "notTracked": "assunzione non registrata, quindi nessun giorno escluso per dosi saltate",
       "endDoseChange": "il periodo termina il {date}, prima della prima variazione di dose",
       "days": "{before} giorni prima, {after} giorni dopo l'inizio, {excluded} giorni esclusi",
-      "method": "Regressione segmentata sui valori giornalieri da 90 giorni prima a non oltre 180 giorni dopo l'inizio, con intervalli di Newey-West. Sono esclusi i giorni dopo l'inizio in cui è stato assunto meno dell'80 % delle dosi dei 14 giorni precedenti. Descrive un'associazione nel tempo, non un effetto dimostrato del farmaco."
+      "method": "Regressione segmentata sui valori giornalieri da 90 giorni prima a non oltre 180 giorni dopo l'inizio, con intervalli di Newey-West. Sono esclusi i giorni dopo l'inizio in cui è stato assunto meno dell'80 % delle dosi dei 14 giorni precedenti. Descrive un'associazione nel tempo, non un effetto dimostrato del farmaco.",
+      "autocorrelation": "forte dipendenza dal giorno precedente, quindi gli intervalli possono restare troppo stretti"
     }
   },
   "errorBoundary": {
@@ -2412,7 +2413,8 @@
         "needStart": "Imposta una data di inizio per vedere la variazione all'inizio.",
         "needBefore": "La variazione all'inizio richiede valori in almeno {days} giorni distribuiti su {span} giorni prima dell'inizio.",
         "needAfter": "La variazione all'inizio richiede valori in almeno {days} giorni distribuiti su {span} giorni dall'inizio, nei giorni con le dosi assunte.",
-        "fitFailed": "Non è stato possibile elaborare questi valori, quindi non viene mostrata alcuna variazione all'inizio."
+        "fitFailed": "Non è stato possibile elaborare questi valori, quindi non viene mostrata alcuna variazione all'inizio.",
+        "autocorrelation": "I valori giornalieri dipendono molto dal giorno precedente, quindi anche questi intervalli possono essere troppo stretti."
       }
     },
     "import": {
