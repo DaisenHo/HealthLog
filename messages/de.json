@@ -2688,7 +2688,20 @@
         "ENV_PRESSURE_DELTA": "die Luftdruckschwankung am Tag",
         "ENV_PM25": "der Feinstaub (PM2,5)",
         "ENV_OZONE_8H": "das Ozon",
-        "ENV_POLLEN_MAX": "der Pollenflug"
+        "ENV_POLLEN_MAX": "der Pollenflug",
+        "HRV_RMSSD": "die Herzratenvariabilität (RMSSD)",
+        "HYDRATION": "die Trinkmenge",
+        "CAFFEINE": "die Koffeinmenge",
+        "ALCOHOL": "der Alkoholkonsum",
+        "WORKOUT_MINUTES": "die Workout-Dauer",
+        "TRAINING_LOAD": "die Trainingslast",
+        "EXERCISE_MINUTES": "die Trainingsminuten der Aktivitätsringe",
+        "STAND_MINUTES": "die Stehminuten",
+        "MINDFUL_MINUTES": "die Achtsamkeitsminuten",
+        "STATE_OF_MIND_VALENCE": "die erfasste Gemütslage",
+        "INDOOR_CO2": "der CO2-Wert im Raum",
+        "INDOOR_TEMPERATURE": "die Raumtemperatur",
+        "INDOOR_HUMIDITY": "die Luftfeuchtigkeit im Raum"
       },
       "daily": {
         "high": "Wenn {behaviour} höher liegt, fällt {outcome} am Folgetag in deinen Daten tendenziell {direction} aus. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
@@ -2716,6 +2729,12 @@
         "high": "Mehr {behaviour} am selben Tag und am Vortag geht in deinen Daten tendenziell mit {direction} {outcome} einher. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
         "moderate": "Mehr {behaviour} am selben Tag und am Vortag scheint in deinen Daten nach bisheriger Lage mit {direction} {outcome} einherzugehen. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
         "faint": "Mehr {behaviour} am selben Tag und am Vortag zeigt in deinen Daten allenfalls einen schwachen Hinweis auf {direction} {outcome}. Das ist zu klein, um sich darauf zu stützen, und nie eine Ursache."
+      },
+      "channelNutrient": "die Zufuhr von {nutrient}",
+      "dailyOvernight": {
+        "high": "Wenn {behaviour} über Nacht höher liegt, fällt {outcome} in derselben Nacht in deinen Daten tendenziell {direction} aus. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
+        "moderate": "Wenn {behaviour} über Nacht höher liegt, scheint {outcome} in derselben Nacht nach bisheriger Datenlage eher {direction} auszufallen. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
+        "faint": "Wenn {behaviour} über Nacht höher liegt, gibt es in deinen Daten allenfalls einen schwachen Hinweis darauf, dass {outcome} in derselben Nacht {direction} ausfällt. Das ist zu gering, um sich darauf zu verlassen, und niemals eine Ursache."
       }
     },
     "emptyTitle": "Noch nicht genug Daten",
@@ -4255,7 +4274,12 @@
         "outcomeDown": "Bessere Stimmung geht in deinen Daten tendenziell mit niedrigerem {factor} am Folgetag einher.",
         "stat": "{n} gepaarte Tage, r = {r}, q = {q}",
         "statLabel": "Wie das berechnet wurde",
-        "explainerLabel": "Wie das berechnet wurde"
+        "explainerLabel": "Wie das berechnet wurde",
+        "channel": {
+          "ALCOHOL": "Alkoholkonsum",
+          "WORKOUT_MINUTES": "Workout-Dauer",
+          "TRAINING_LOAD": "Trainingslast"
+        }
       },
       "inTargetTitle": "Im Zielbereich",
       "dimensions": {

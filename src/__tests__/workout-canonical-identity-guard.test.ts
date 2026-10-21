@@ -58,6 +58,10 @@ const IDENTITY_OWNER: Record<string, string> = {
   "lib/insights/strain-score.ts": "lib/insights/strain-score.ts",
   "lib/insights/feature-blocks.ts": "lib/insights/feature-blocks.ts",
   "lib/day/records.ts": "lib/day/records.ts",
+  // The workout-minutes correlation channel: one session per day per sport,
+  // as the list shows it.
+  "lib/insights/correlation-channel-series.ts":
+    "lib/insights/correlation-channel-series.ts",
 };
 
 /**

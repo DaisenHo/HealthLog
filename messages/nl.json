@@ -2688,7 +2688,20 @@
         "ENV_PRESSURE_DELTA": "luchtdrukschommeling gedurende de dag",
         "ENV_PM25": "fijnstof (PM2.5)",
         "ENV_OZONE_8H": "ozon",
-        "ENV_POLLEN_MAX": "pollen"
+        "ENV_POLLEN_MAX": "pollen",
+        "HRV_RMSSD": "hartslagvariabiliteit (RMSSD)",
+        "HYDRATION": "waterinname",
+        "CAFFEINE": "cafeïne-inname",
+        "ALCOHOL": "alcoholgebruik",
+        "WORKOUT_MINUTES": "trainingsminuten",
+        "TRAINING_LOAD": "trainingsbelasting",
+        "EXERCISE_MINUTES": "beweegminuten",
+        "STAND_MINUTES": "staminuten",
+        "MINDFUL_MINUTES": "mindfulnessminuten",
+        "STATE_OF_MIND_VALENCE": "vastgelegde gemoedstoestand",
+        "INDOOR_CO2": "CO2 binnen",
+        "INDOOR_TEMPERATURE": "binnentemperatuur",
+        "INDOOR_HUMIDITY": "luchtvochtigheid binnen"
       },
       "daily": {
         "high": "Bij hogere waarden voor {behaviour} ligt {outcome} de volgende dag in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
@@ -2716,6 +2729,12 @@
         "high": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor ligt {outcome} in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
         "moderate": "Op basis van het bewijs tot nu toe lijkt {outcome} in je gegevens {direction} te liggen bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor. Het is een patroon om in de gaten te houden, geen oorzaak.",
         "faint": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor is er in je gegevens hooguit een zwakke aanwijzing dat {outcome} {direction} ligt. Het is te klein om op te bouwen en nooit een oorzaak."
+      },
+      "channelNutrient": "inname van {nutrient}",
+      "dailyOvernight": {
+        "high": "Bij hogere waarden voor {behaviour} 's nachts ligt {outcome} die nacht in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
+        "moderate": "Op basis van het bewijs tot nu toe lijkt {outcome} die nacht in je gegevens {direction} te liggen bij hogere waarden voor {behaviour} 's nachts. Het is een patroon om in de gaten te houden, geen oorzaak.",
+        "faint": "Bij hogere waarden voor {behaviour} 's nachts is er in je gegevens hooguit een zwakke aanwijzing dat {outcome} die nacht {direction} ligt. Het is te klein om op te bouwen en nooit een oorzaak."
       }
     },
     "noAnalysisYet": "Nog geen beoordeling.",
@@ -4255,7 +4274,12 @@
         "outcomeDown": "Een hogere stemming gaat in je gegevens vaak samen met lagere waarden voor {factor} de volgende dag.",
         "stat": "{n} gekoppelde dagen, r = {r}, q = {q}",
         "statLabel": "Hoe dit is berekend",
-        "explainerLabel": "Hoe dit is berekend"
+        "explainerLabel": "Hoe dit is berekend",
+        "channel": {
+          "ALCOHOL": "alcoholgebruik",
+          "WORKOUT_MINUTES": "trainingsminuten",
+          "TRAINING_LOAD": "trainingsbelasting"
+        }
       },
       "inTargetTitle": "Binnen je bereik",
       "dimensions": {

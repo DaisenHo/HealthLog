@@ -2688,7 +2688,20 @@
         "ENV_PRESSURE_DELTA": "dobowa zmiana ciśnienia",
         "ENV_PM25": "pył drobny (PM2,5)",
         "ENV_OZONE_8H": "ozon",
-        "ENV_POLLEN_MAX": "pyłki"
+        "ENV_POLLEN_MAX": "pyłki",
+        "HRV_RMSSD": "zmienność rytmu serca (RMSSD)",
+        "HYDRATION": "spożycie wody",
+        "CAFFEINE": "spożycie kofeiny",
+        "ALCOHOL": "spożycie alkoholu",
+        "WORKOUT_MINUTES": "minuty treningu",
+        "TRAINING_LOAD": "obciążenie treningowe",
+        "EXERCISE_MINUTES": "minuty ćwiczeń",
+        "STAND_MINUTES": "minuty na stojąco",
+        "MINDFUL_MINUTES": "minuty uważności",
+        "STATE_OF_MIND_VALENCE": "zapisany stan ducha",
+        "INDOOR_CO2": "CO2 w pomieszczeniu",
+        "INDOOR_TEMPERATURE": "temperatura w pomieszczeniu",
+        "INDOOR_HUMIDITY": "wilgotność w pomieszczeniu"
       },
       "daily": {
         "high": "Gdy {behaviour} rośnie, {outcome} następnego dnia zwykle wykazuje tendencję do {direction} w Twoich danych. To wzorzec wart obserwacji, nie przyczyna.",
@@ -2716,6 +2729,12 @@
         "high": "Więcej {behaviour} tego samego dnia i dzień wcześniej idzie w twoich danych zwykle w parze z {direction} {outcome}. To wzorzec wart obserwacji, nie przyczyna.",
         "moderate": "Więcej {behaviour} tego samego dnia i dzień wcześniej wydaje się, na podstawie dotychczasowych danych, iść w parze z {direction} {outcome}. To wzorzec wart obserwacji, nie przyczyna.",
         "faint": "Więcej {behaviour} tego samego dnia i dzień wcześniej pokazuje w twoich danych co najwyżej słaby ślad {direction} {outcome}. To za mało, by na tym polegać, i nigdy nie jest to przyczyna."
+      },
+      "channelNutrient": "spożycie: {nutrient}",
+      "dailyOvernight": {
+        "high": "Więcej {behaviour} w nocy idzie w twoich danych zwykle w parze z {direction} {outcome} tej samej nocy. To wzorzec wart obserwacji, nie przyczyna.",
+        "moderate": "Więcej {behaviour} w nocy wydaje się, na podstawie dotychczasowych danych, iść w parze z {direction} {outcome} tej samej nocy. To wzorzec wart obserwacji, nie przyczyna.",
+        "faint": "Więcej {behaviour} w nocy pokazuje w twoich danych co najwyżej słaby ślad {direction} {outcome} tej samej nocy. To za mało, by na tym polegać, i nigdy nie jest to przyczyna."
       }
     },
     "noAnalysisYet": "Brak oceny.",
@@ -4255,7 +4274,12 @@
         "outcomeDown": "Lepszy nastrój zwykle wiąże się z niższym {factor} następnego dnia w Twoich danych.",
         "stat": "{n} sparowanych dni, r = {r}, q = {q}",
         "statLabel": "Jak to obliczono",
-        "explainerLabel": "Jak to obliczono"
+        "explainerLabel": "Jak to obliczono",
+        "channel": {
+          "ALCOHOL": "spożycie alkoholu",
+          "WORKOUT_MINUTES": "minuty treningu",
+          "TRAINING_LOAD": "obciążenie treningowe"
+        }
       },
       "inTargetTitle": "W Twoim zakresie",
       "dimensions": {

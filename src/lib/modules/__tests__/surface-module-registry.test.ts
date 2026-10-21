@@ -60,6 +60,8 @@ import {
   MOVEMENT_AWAY_CHANNEL_KEY,
   MOVEMENT_DISTANCE_CHANNEL_KEY,
   DISCOVERY_OUTCOMES,
+  EXTENDED_CHANNEL_KEYS,
+  NUTRIENT_CHANNEL_PREFIX,
   FACTOR_CHANNEL_PREFIX,
 } from "@/lib/insights/correlation-discovery";
 import { DERIVED_METRIC_IDS } from "@/lib/insights/derived/registry";
@@ -197,6 +199,9 @@ describe("every surface id names a surface that exists", () => {
       MOVEMENT_AWAY_CHANNEL_KEY,
       MOVEMENT_DISTANCE_CHANNEL_KEY,
       "LAB_DRAWS",
+      ...EXTENDED_CHANNEL_KEYS,
+      // The fold target of every `NUTRIENT:<code>` channel.
+      "NUTRIENT",
     ]);
     for (const id of localIds("correlation")) {
       expect(channels.has(id), id).toBe(true);
@@ -209,6 +214,21 @@ describe("every surface id names a surface that exists", () => {
     expect(correlationChannelSurfaceId(`${SYMPTOM_CHANNEL_PREFIX}abc`)).toBe(
       "correlation:SYMPTOM_SEVERITY",
     );
+    expect(correlationChannelSurfaceId(`${NUTRIENT_CHANNEL_PREFIX}zinc`)).toBe(
+      "correlation:NUTRIENT",
+    );
+  });
+
+  it("every extended channel has an owner or is reviewed as unowned", () => {
+    const unowned = new Set(["EXERCISE_MINUTES", "STAND_MINUTES"]);
+    for (const key of EXTENDED_CHANNEL_KEYS) {
+      if (unowned.has(key)) {
+        expect(surfaceModule(`correlation:${key}`), key).toBeUndefined();
+      } else {
+        expect(surfaceModule(`correlation:${key}`), key).toBeDefined();
+      }
+    }
+    expect(surfaceModule("correlation:NUTRIENT")).toBe("nutrients");
   });
 });
 

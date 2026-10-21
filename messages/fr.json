@@ -2688,7 +2688,20 @@
         "ENV_PRESSURE_DELTA": "la variation de pression sur la journée",
         "ENV_PM25": "les particules fines (PM2,5)",
         "ENV_OZONE_8H": "l’ozone",
-        "ENV_POLLEN_MAX": "le pollen"
+        "ENV_POLLEN_MAX": "le pollen",
+        "HRV_RMSSD": "la variabilité de la fréquence cardiaque (RMSSD)",
+        "HYDRATION": "l'apport en eau",
+        "CAFFEINE": "l'apport en caféine",
+        "ALCOHOL": "la consommation d'alcool",
+        "WORKOUT_MINUTES": "les minutes d'entraînement",
+        "TRAINING_LOAD": "la charge d'entraînement",
+        "EXERCISE_MINUTES": "les minutes d'exercice",
+        "STAND_MINUTES": "les minutes debout",
+        "MINDFUL_MINUTES": "les minutes de pleine conscience",
+        "STATE_OF_MIND_VALENCE": "l'état d'esprit noté",
+        "INDOOR_CO2": "le CO2 intérieur",
+        "INDOOR_TEMPERATURE": "la température intérieure",
+        "INDOOR_HUMIDITY": "l'humidité intérieure"
       },
       "daily": {
         "high": "Quand {behaviour} monte, {outcome} du lendemain tend à {direction} dans tes données. C'est une tendance à surveiller, pas une cause.",
@@ -2716,6 +2729,12 @@
         "high": "Plus de {behaviour} le jour même et la veille va souvent de pair avec {direction} {outcome} dans tes données : un schéma à surveiller, pas une cause.",
         "moderate": "Plus de {behaviour} le jour même et la veille semble aller de pair avec {direction} {outcome} dans tes données, d’après ce qu’on voit jusqu’ici : un schéma à surveiller, pas une cause.",
         "faint": "Plus de {behaviour} le jour même et la veille ne montre, au mieux, qu’un faible indice de {direction} {outcome} dans tes données : trop peu pour s’y fier, jamais une cause."
+      },
+      "channelNutrient": "l'apport en {nutrient}",
+      "dailyOvernight": {
+        "high": "Plus de {behaviour} pendant la nuit va souvent de pair avec {direction} {outcome} cette nuit-là dans tes données : un schéma à surveiller, pas une cause.",
+        "moderate": "Plus de {behaviour} pendant la nuit semble aller de pair avec {direction} {outcome} cette nuit-là dans tes données, d’après ce qu’on voit jusqu’ici : un schéma à surveiller, pas une cause.",
+        "faint": "Plus de {behaviour} pendant la nuit ne montre, au mieux, qu’un faible indice de {direction} {outcome} cette nuit-là dans tes données : trop peu pour s’y fier, jamais une cause."
       }
     },
     "noAnalysisYet": "Pas encore d’évaluation.",
@@ -4255,7 +4274,12 @@
         "outcomeDown": "Une meilleure humeur tend à coïncider avec un {factor} plus bas le lendemain dans vos données.",
         "stat": "{n} jours appariés, r = {r}, q = {q}",
         "statLabel": "Comment ceci est calculé",
-        "explainerLabel": "Comment ceci est calculé"
+        "explainerLabel": "Comment ceci est calculé",
+        "channel": {
+          "ALCOHOL": "consommation d'alcool",
+          "WORKOUT_MINUTES": "minutes d'entraînement",
+          "TRAINING_LOAD": "charge d'entraînement"
+        }
       },
       "inTargetTitle": "Dans votre plage",
       "dimensions": {

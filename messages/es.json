@@ -2688,7 +2688,20 @@
         "ENV_PRESSURE_DELTA": "la variación de presión del día",
         "ENV_PM25": "las partículas finas (PM2,5)",
         "ENV_OZONE_8H": "el ozono",
-        "ENV_POLLEN_MAX": "el polen"
+        "ENV_POLLEN_MAX": "el polen",
+        "HRV_RMSSD": "la variabilidad de la frecuencia cardiaca (RMSSD)",
+        "HYDRATION": "la ingesta de agua",
+        "CAFFEINE": "la ingesta de cafeína",
+        "ALCOHOL": "el consumo de alcohol",
+        "WORKOUT_MINUTES": "los minutos de entrenamiento",
+        "TRAINING_LOAD": "la carga de entrenamiento",
+        "EXERCISE_MINUTES": "los minutos de ejercicio",
+        "STAND_MINUTES": "los minutos de pie",
+        "MINDFUL_MINUTES": "los minutos de atención plena",
+        "STATE_OF_MIND_VALENCE": "el estado de ánimo registrado",
+        "INDOOR_CO2": "el CO2 interior",
+        "INDOOR_TEMPERATURE": "la temperatura interior",
+        "INDOOR_HUMIDITY": "la humedad interior"
       },
       "daily": {
         "high": "Cuando {behaviour} es mayor, {outcome} del día siguiente tiende a {direction} en tus datos. Es un patrón que conviene observar, no una causa.",
@@ -2716,6 +2729,12 @@
         "high": "Más {behaviour} el mismo día y el día anterior tiende a ir con {direction} {outcome} en tus datos: un patrón que conviene observar, no una causa.",
         "moderate": "Más {behaviour} el mismo día y el día anterior parece ir con {direction} {outcome} en tus datos, según lo visto hasta ahora: un patrón que conviene observar, no una causa.",
         "faint": "Más {behaviour} el mismo día y el día anterior muestra, como mucho, un leve indicio de {direction} {outcome} en tus datos: demasiado pequeño para fiarse, nunca una causa."
+      },
+      "channelNutrient": "la ingesta de {nutrient}",
+      "dailyOvernight": {
+        "high": "Más {behaviour} durante la noche tiende a ir con {direction} {outcome} esa misma noche en tus datos: un patrón que conviene observar, no una causa.",
+        "moderate": "Más {behaviour} durante la noche parece ir con {direction} {outcome} esa misma noche en tus datos, según lo visto hasta ahora: un patrón que conviene observar, no una causa.",
+        "faint": "Más {behaviour} durante la noche muestra, como mucho, un leve indicio de {direction} {outcome} esa misma noche en tus datos: demasiado pequeño para fiarse, nunca una causa."
       }
     },
     "noAnalysisYet": "Aún no hay valoración.",
@@ -4255,7 +4274,12 @@
         "outcomeDown": "Mejor ánimo suele coincidir con un {factor} más bajo al día siguiente en tus datos.",
         "stat": "{n} días emparejados, r = {r}, q = {q}",
         "statLabel": "Cómo se calculó esto",
-        "explainerLabel": "Cómo se calculó esto"
+        "explainerLabel": "Cómo se calculó esto",
+        "channel": {
+          "ALCOHOL": "consumo de alcohol",
+          "WORKOUT_MINUTES": "minutos de entrenamiento",
+          "TRAINING_LOAD": "carga de entrenamiento"
+        }
       },
       "inTargetTitle": "En tu rango",
       "dimensions": {

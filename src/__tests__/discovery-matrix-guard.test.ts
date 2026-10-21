@@ -96,6 +96,10 @@ describe("T1 — only the assembler fetches discovery channels", () => {
     "fetchMoodFactorWindowSeries",
     "fetchMeasurementDailySeriesTiered",
     "fetchMeasurementWindowSeries",
+    "fetchNutrientSeries",
+    "fetchAlcoholSeries",
+    "fetchTrainingSeries",
+    "fetchIndoorClimateSeries",
   ] as const;
 
   /**

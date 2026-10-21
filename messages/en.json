@@ -2688,7 +2688,20 @@
         "ENV_PRESSURE_DELTA": "intraday pressure swing",
         "ENV_PM25": "fine particles (PM2.5)",
         "ENV_OZONE_8H": "ozone",
-        "ENV_POLLEN_MAX": "pollen"
+        "ENV_POLLEN_MAX": "pollen",
+        "HRV_RMSSD": "heart-rate variability (RMSSD)",
+        "HYDRATION": "water intake",
+        "CAFFEINE": "caffeine intake",
+        "ALCOHOL": "alcohol use",
+        "WORKOUT_MINUTES": "workout minutes",
+        "TRAINING_LOAD": "training load",
+        "EXERCISE_MINUTES": "exercise minutes",
+        "STAND_MINUTES": "standing minutes",
+        "MINDFUL_MINUTES": "mindful minutes",
+        "STATE_OF_MIND_VALENCE": "logged state of mind",
+        "INDOOR_CO2": "indoor CO2",
+        "INDOOR_TEMPERATURE": "room temperature",
+        "INDOOR_HUMIDITY": "room humidity"
       },
       "daily": {
         "high": "Higher {behaviour} tends to go with {direction} next-day {outcome} in your data. It is a pattern to watch, not a cause.",
@@ -2716,6 +2729,12 @@
         "high": "Higher {behaviour} on the day and the day before tends to go with {direction} {outcome} in your data. It is a pattern to watch, not a cause.",
         "moderate": "Higher {behaviour} on the day and the day before looks like it goes with {direction} {outcome} in your data, on the evidence so far. It is a pattern to watch, not a cause.",
         "faint": "Higher {behaviour} on the day and the day before shows a faint hint, if anything, of {direction} {outcome} in your data. It is too small to lean on and never a cause."
+      },
+      "channelNutrient": "{nutrient} intake",
+      "dailyOvernight": {
+        "high": "Higher {behaviour} overnight tends to go with {direction} {outcome} that night in your data. It is a pattern to watch, not a cause.",
+        "moderate": "Higher {behaviour} overnight looks like it goes with {direction} {outcome} that night in your data, on the evidence so far. It is a pattern to watch, not a cause.",
+        "faint": "Higher {behaviour} overnight shows at most a faint hint of {direction} {outcome} that night in your data. It is too small to lean on and never a cause."
       }
     },
     "noAnalysisYet": "No assessment yet.",
@@ -4255,7 +4274,12 @@
         "outcomeDown": "Higher mood tends to go with lower next-day {factor} in your data.",
         "stat": "{n} paired days, r = {r}, q = {q}",
         "statLabel": "How this was computed",
-        "explainerLabel": "How this was computed"
+        "explainerLabel": "How this was computed",
+        "channel": {
+          "ALCOHOL": "alcohol use",
+          "WORKOUT_MINUTES": "workout minutes",
+          "TRAINING_LOAD": "training load"
+        }
       },
       "inTargetTitle": "In your range",
       "dimensions": {
