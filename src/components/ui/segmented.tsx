@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * The segmented control: a short row of mutually exclusive choices on one
- * track (zoom level, chronicle grouping, cards or table, recent or all,
+ * The segmented control: a short row of mutually exclusive choices (zoom
+ * level, chronicle grouping, cards or table, recent or all,
  * Paperless-ngx or Papra). One look everywhere, the one the dashboard chart
  * tabs always had: no track, the chosen segment filled in the primary colour,
  * the others plain until hovered. A muted track with a raised segment was
@@ -26,8 +26,9 @@
  *   setter that saves a preference is not called twice.
  *
  * Touch: every segment is at least 44 px on a coarse pointer and 36 px under
- * a mouse, the same floor `Button` carries. The four controls this replaced
- * sat at 36, 36, 44 and 44.
+ * a mouse, the same floor `Button` carries; a `sm` range row keeps 44 px
+ * under a mouse too, as the chart tabs always had. The four controls this
+ * replaced sat at 36, 36, 44 and 44.
  *
  * An option with an `icon` and `iconOnly` on the control renders the icon and
  * names the segment through `aria-label` and `title`.
@@ -150,11 +151,13 @@ export function Segmented<T extends string>({
               iconOnly
                 ? "size-9 pointer-coarse:size-11"
                 : size === "sm"
-                  ? "min-h-9 px-2 sm:px-3 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+                  ? "min-h-11 px-2 sm:px-3 pointer-coarse:min-w-11"
                   : "min-h-9 px-3 pointer-coarse:min-h-11",
               stretch && "flex-1",
               checked
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                ? // A faded fill reads ~2:1 in light mode; disabled swaps to
+                  // the token pair `Button` uses instead of the opacity.
+                  "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary-disabled disabled:text-primary-disabled-foreground disabled:opacity-100"
                 : "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
             )}
           >

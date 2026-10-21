@@ -79,7 +79,15 @@ describe("<Segmented>", () => {
     const small = html({ size: "sm" });
     expect(small).toContain("text-xs");
     expect(small).not.toContain("text-sm");
-    expect(small.match(/pointer-coarse:min-h-11/g)?.length).toBe(2);
+    expect(small.match(/min-h-11/g)?.length).toBe(2);
+  });
+
+  it("keeps a disabled chosen segment on the readable token pair", () => {
+    const chosen = html({ disabled: true })
+      .match(/<button[^>]*>/g)
+      ?.find((b) => b.includes('aria-checked="true"'));
+    expect(chosen).toContain("disabled:bg-primary-disabled");
+    expect(chosen).toContain("disabled:opacity-100");
   });
 
   it("renders pressed buttons in toggle mode", () => {

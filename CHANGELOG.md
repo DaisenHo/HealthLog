@@ -9,7 +9,7 @@
   drew them on a grey track with the chosen option raised. Above a chart that
   read heavier than the chart itself. The shared control now draws what the
   dashboard's range tabs always had: no track, the chosen option filled in
-  the accent colour. The range rows above charts are back to their smaller
+  the highlight colour. The range rows above charts are back to their smaller
   type. Keyboard navigation and the touch size the shared control brought
   stay as they are.
 
