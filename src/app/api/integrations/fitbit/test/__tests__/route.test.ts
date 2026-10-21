@@ -36,6 +36,7 @@ import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getValidToken } from "@/lib/fitbit/sync-core";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 interface ApiErrorEnvelope {
   data: null;
@@ -107,6 +108,22 @@ describe("POST /api/integrations/fitbit/test", () => {
     const response = await POST(emptyRequest() as never);
     expect(response.status).toBe(429);
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("answers 410 provider_retired once Google has turned the Web API off", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+    try {
+      const response = await POST(emptyRequest() as never);
+      expect(response.status).toBe(410);
+      const body = (await response.json()) as ApiErrorEnvelope & {
+        meta?: { errorCode?: string };
+      };
+      expect(body.meta?.errorCode).toBe("provider_retired");
+      expect(getValidToken).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isFitbitRetired).mockReturnValue(false);
+    }
   });
 
   it("returns 422 when no Fitbit connection exists", async () => {

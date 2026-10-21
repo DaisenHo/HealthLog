@@ -71,6 +71,15 @@ describe("oauthReasonKey", () => {
     );
   });
 
+  it("names the Fitbit turndown refusal with its own copy, and only for Fitbit", () => {
+    expect(oauthReasonKey("fitbit", "retired")).toBe(
+      "settings.fitbitOauthError.retired",
+    );
+    expect(oauthReasonKey("whoop", "retired")).toBe(
+      "settings.whoopOauthError.generic",
+    );
+  });
+
   it("falls back to generic for an unknown tag", () => {
     expect(oauthReasonKey("whoop", "totally_unknown")).toBe(
       "settings.whoopOauthError.generic",

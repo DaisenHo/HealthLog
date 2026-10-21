@@ -6619,7 +6619,8 @@
       "nocode": "Fitbit hat keinen Autorisierungscode zurückgegeben. Versuche es erneut und erlaube den Zugriff im Fitbit-Dialog.",
       "nocreds": "Fitbit ist nicht konfiguriert. Hinterlege oben deine Fitbit-OAuth-Zugangsdaten und versuche es erneut.",
       "token": "Der Token-Austausch mit Fitbit ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
+      "retired": "Google hat die Fitbit-Web-API abgeschaltet, deshalb lässt sich keine neue Fitbit-Verbindung mehr herstellen. Verbinde stattdessen Google Health, das dieselben Geräte liest."
     },
     "integrations": {
       "withings": {
@@ -7439,6 +7440,15 @@
       "homePlaceUnknown": "Diesen Ort kennt die Dawarich-Instanz nicht mehr.",
       "notConnected": "Dawarich ist nicht verbunden.",
       "generic": "Das hat nicht geklappt. Versuche es erneut."
+    },
+    "fitbitRetirement": {
+      "ending": "Google schaltet die Fitbit-Web-API am {date} ab. Ab dann synchronisiert diese Verbindung nicht mehr.",
+      "ended": "Google hat die Fitbit-Web-API am {date} abgeschaltet. Diese Verbindung synchronisiert nicht mehr.",
+      "move": "Google Health liest dieselben Fitbit- und Pixel-Geräte. Verbinde es unten, damit deine Daten weiter ankommen. Google fragt dich noch einmal nach deiner Zustimmung, weil sich die Fitbit-Verbindung nicht übertragen lässt. Alles bereits Importierte bleibt erhalten.",
+      "toCard": "Zu Google Health",
+      "guide": "So verbindest du Google Health",
+      "badgeEnding": "Wird abgeschaltet",
+      "badgeEnded": "Abgeschaltet"
     }
   },
   "admin": {

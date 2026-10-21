@@ -46,6 +46,7 @@ import { readOuraScopeDenied } from "@/lib/oura/credentials";
 import { ouraScopeReconnectList } from "@/lib/oura/scope";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 export type ConnectionHealthMap = Record<
   ConnectionKey,
@@ -234,7 +235,10 @@ export async function loadConnectionFacts(
   const connected: Record<ConnectionKey, boolean> = {
     withings: !!withingsConn,
     whoop: !!whoopConn?.whoopUserId,
-    fitbit: !!fitbitConn,
+    // Once Google has turned the Fitbit Web API off the row stays (it carries
+    // the imported history) but nothing will sync through it: no health to
+    // judge and nothing for the watchdog to call silent.
+    fitbit: !!fitbitConn && !isFitbitRetired(now),
     "google-health": !!googleHealthConn,
     polar: !!dbUser?.polarAccessTokenEncrypted,
     oura: !!dbUser?.ouraAccessTokenEncrypted,

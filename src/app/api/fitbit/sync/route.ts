@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { readSyncTriggerBody } from "@/lib/integrations/sync-request";
 import { syncUserFitbit } from "@/lib/fitbit/sync";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
 import { NextRequest } from "next/server";
 
@@ -29,6 +30,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many sync requests", 429, {
       errorCode: "rate_limited_self",
     });
+  }
+
+  if (isFitbitRetired()) {
+    return apiError(
+      "Google has turned the Fitbit Web API off. Connect Google Health instead.",
+      410,
+      { errorCode: "provider_retired" },
+    );
   }
 
   const body = await readSyncTriggerBody(request);

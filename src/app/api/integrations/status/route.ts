@@ -57,6 +57,10 @@ import {
   type GoogleHealthBackfillEndedEntry,
 } from "@/lib/google-health/backfill-progress";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
+import {
+  fitbitRetirement,
+  type FitbitRetirement,
+} from "@/lib/fitbit/retirement";
 
 export const dynamic = "force-dynamic";
 
@@ -378,6 +382,7 @@ export const GET = apiHandler(async () => {
           ? fitbitConn.tokenExpiresAt.getTime() <= now
           : null,
         backfillCompleted: fitbitConn ? !!fitbitConn.backfillCompletedAt : null,
+        retirement: fitbitRetirement(),
         health: health["fitbit"],
         ...resolve("fitbit", fitbitStatus, {
           connected: fitbitConnected,
@@ -558,6 +563,8 @@ interface FitbitExtras {
   tokenExpiresAt: string | null;
   tokenExpired: boolean | null;
   backfillCompleted: boolean | null;
+  /** The end of the legacy Fitbit Web API (`@/lib/fitbit/retirement`). */
+  retirement: FitbitRetirement;
 }
 
 // v1.27.0 — Google Health mirrors the Fitbit shape plus `needsReauth`: Google

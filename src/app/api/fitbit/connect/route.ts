@@ -12,6 +12,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { relativeRedirect } from "@/lib/http/relative-redirect";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 /**
  * Redirect the user to the Fitbit OAuth consent page (classic
@@ -54,6 +55,15 @@ export const GET = apiHandler(async (req: NextRequest) => {
         "/settings/integrations?fitbit=error&reason=rate_limited",
         req.url,
       ),
+    );
+  }
+
+  // A grant issued now would never sync anything: Google has turned the Web
+  // API off. The card explains the move to Google Health.
+  if (isFitbitRetired()) {
+    annotate({ action: { name: "fitbit.connect.retired" } });
+    return relativeRedirect(
+      "/settings/integrations?fitbit=error&reason=retired",
     );
   }
 

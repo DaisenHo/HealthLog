@@ -16,14 +16,24 @@ Settings. The internal integration key is `fitbit`.
 > consent screen with `unauthorized_client — Invalid client_id`, because Fitbit
 > and Google Cloud are separate client registries.
 
-> **Heads-up — new registrations are closed.** Fitbit has **discontinued
-> self-serve app registration**: the form at `dev.fitbit.com/apps/new` is
-> disabled for new applications, and the classic Fitbit Web API sunsets in
-> **September 2026**. If you already hold a registered Fitbit app, it keeps
-> working until the sunset and the setup below still applies. If you are
-> connecting Fitbit data for the first time, use the
-> [Google Health integration](google-health.md) instead — Fitbit devices sync
-> into Google's health stack, which HealthLog reads directly.
+> **The classic Fitbit Web API is turned off on 30 October 2026.** Google
+> ended support for it on 30 September 2026 and turns it off on
+> **30 October 2026**, after which it "will no longer function or sync data"
+> ([Google's migration guide](https://developers.google.com/health/migration)).
+> New app registrations at `dev.fitbit.com/apps/new` are already closed.
+>
+> From that day HealthLog stops calling the Web API for every Fitbit
+> connection: no hourly sync, no backfill, no token refresh, and no new
+> connection. Nothing is deleted. The connection and every reading it imported
+> stay, and the Fitbit card explains the move instead of asking for a
+> reconnect. To keep Fitbit and Pixel data coming, connect the
+> [Google Health integration](google-health.md). It reads the same devices,
+> but Google asks for consent once more: Fitbit tokens cannot be carried over.
+>
+> Both integrations can run side by side while you move. Where both deliver the
+> same day, the source-priority ladder keeps one of them per day (Fitbit ranks
+> just above Google Health by default), so steps, sleep and the other daily
+> values are not counted twice. After the turndown only Google Health delivers.
 
 ## 1. Use an existing Fitbit developer app
 
