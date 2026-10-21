@@ -14488,6 +14488,81 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/settings/module-list-layout:
+    get:
+      tags:
+        - Meta
+      summary: Get the list presentation of labs, illness and checkups
+      description: Every list resolved, defaults filled in, with `saved` per list. Never writes a row.
+      responses:
+        "200":
+          description: The resolved presentation of every list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleListLayoutEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+    put:
+      tags:
+        - Meta
+      summary: Change the presentation of one list
+      description: "Preserve-when-absent: the fields the body leaves out keep their stored value, and every other list stays
+        as stored. Returns every list resolved."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModuleListLayoutPutBody"
+      responses:
+        "200":
+          description: The presentation as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleListLayoutSavedEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+  /api/settings/preview-features:
+    get:
+      tags:
+        - Meta
+      summary: Get the preview-feature opt-ins
+      description: Every flag, off unless the caller switched it on.
+      responses:
+        "200":
+          description: The opt-ins.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreviewFeaturesEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Meta
+      summary: Switch preview features on or off
+      description: Sets the flags the body names and keeps the rest. An unknown flag or an empty body is refused with 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewFeaturesPatchBody"
+      responses:
+        "200":
+          description: The opt-ins as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreviewFeaturesSavedEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
   /api/settings/privacy-summary:
     get:
       tags:
@@ -31354,6 +31429,48 @@ components:
       required:
         - confirm
       description: Typed confirmation for erasing the record. No undo.
+    ModuleListLayoutPutBody:
+      type: object
+      properties:
+        version:
+          type: number
+          const: 1
+        list:
+          type: string
+          enum:
+            - labs
+            - illness
+            - vorsorge
+        view:
+          type: string
+          enum:
+            - cards
+            - list
+        order:
+          maxItems: 500
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        sortDir:
+          type: string
+          enum:
+            - recentDesc
+            - recentAsc
+            - alphaAsc
+            - alphaDesc
+            - manual
+      required:
+        - version
+        - list
+      additionalProperties: false
+    PreviewFeaturesPatchBody:
+      type: object
+      properties:
+        topics:
+          type: boolean
+      additionalProperties: false
     ConsentPostBody:
       type: object
       properties:
@@ -38796,6 +38913,8 @@ components:
                 medicationListLayoutJson: {}
                 moodTagLayoutJson: {}
                 documentsLayoutJson: {}
+                moduleListLayoutJson: {}
+                previewFeaturesJson: {}
                 reportSelectionJson: {}
                 globalExcludedInjectionSites:
                   type: array
@@ -69268,6 +69387,143 @@ components:
         - cleared
         - deletedRows
         - models
+      additionalProperties: false
+    ModuleListLayoutEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ModuleListLayout"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ModuleListLayout:
+      type: object
+      properties:
+        version:
+          type: number
+          const: 1
+        lists:
+          type: object
+          properties:
+            labs:
+              $ref: "#/components/schemas/ModuleListPrefs"
+            illness:
+              $ref: "#/components/schemas/ModuleListPrefs"
+            vorsorge:
+              $ref: "#/components/schemas/ModuleListPrefs"
+          required:
+            - labs
+            - illness
+            - vorsorge
+          additionalProperties: false
+      required:
+        - version
+        - lists
+      additionalProperties: false
+      description: Per-user presentation of the labs, illness and checkups lists. Display-only; a client that does not render
+        a list ignores it.
+    ModuleListPrefs:
+      type: object
+      properties:
+        view:
+          type: string
+          enum:
+            - cards
+            - list
+          description: '`cards` renders the card grid, `list` the compact list. Default "list" for labs, "cards" otherwise.'
+        order:
+          type: array
+          items:
+            type: string
+          description: Manual order as an id allow-list. Ids missing from the live data are ignored; items missing from the list
+            follow in the server order.
+        sortDir:
+          type: string
+          enum:
+            - recentDesc
+            - recentAsc
+            - alphaAsc
+            - alphaDesc
+            - manual
+          description: Sort of the labs list; `manual` follows `order`. Default "recentDesc". The other lists ignore it.
+        saved:
+          type: boolean
+          description: True when the server holds a choice for this list; false means every field is a default.
+      required:
+        - view
+        - order
+        - sortDir
+        - saved
+      additionalProperties: false
+    ModuleListLayoutSavedEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ModuleListLayout"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PreviewFeaturesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/PreviewFeatures"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PreviewFeatures:
+      type: object
+      properties:
+        topics:
+          type: boolean
+          description: Topic overview pages above the single-metric Insights pages. Off by default.
+      required:
+        - topics
+      additionalProperties: false
+      description: Per-user opt-in to preview features, one boolean per flag, every flag off by default.
+    PreviewFeaturesSavedEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/PreviewFeatures"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
       additionalProperties: false
     PrivacySummaryEnvelope:
       type: object

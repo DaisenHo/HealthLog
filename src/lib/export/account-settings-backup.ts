@@ -503,6 +503,8 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   medicationListLayoutJson: json("medicationListLayoutJson"),
   moodTagLayoutJson: json("moodTagLayoutJson"),
   documentsLayoutJson: json("documentsLayoutJson"),
+  moduleListLayoutJson: json("moduleListLayoutJson"),
+  previewFeaturesJson: json("previewFeaturesJson"),
   reportSelectionJson: json("reportSelectionJson"),
   globalExcludedInjectionSites: excludedSites,
   healthKitConfigJson: json("healthKitConfigJson"),

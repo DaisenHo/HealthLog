@@ -1,0 +1,78 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  MODULE_LIST_ORDER_MAX,
+  normaliseModuleListOrder,
+  resolveModuleListLayout,
+  storedModuleListLayout,
+} from "../module-list-layout";
+
+describe("resolveModuleListLayout", () => {
+  it("answers the defaults, nothing saved, for an empty column", () => {
+    const layout = resolveModuleListLayout(null);
+    expect(layout.lists.labs).toEqual({
+      view: "list",
+      order: [],
+      sortDir: "recentDesc",
+      saved: false,
+    });
+    expect(layout.lists.illness.view).toBe("cards");
+    expect(layout.lists.vorsorge.view).toBe("cards");
+    expect(layout.lists.illness.saved).toBe(false);
+  });
+
+  it("fills a partial list field by field and marks it saved", () => {
+    const layout = resolveModuleListLayout({
+      version: 1,
+      illness: { order: ["b", "a"] },
+    });
+    expect(layout.lists.illness).toEqual({
+      view: "cards",
+      order: ["b", "a"],
+      sortDir: "recentDesc",
+      saved: true,
+    });
+    expect(layout.lists.labs.saved).toBe(false);
+  });
+
+  it("drops malformed values instead of failing", () => {
+    const layout = resolveModuleListLayout({
+      labs: { view: "grid", sortDir: 3, order: "x" },
+      vorsorge: "nonsense",
+    });
+    expect(layout.lists.labs).toEqual({
+      view: "list",
+      order: [],
+      sortDir: "recentDesc",
+      saved: false,
+    });
+    expect(layout.lists.vorsorge.saved).toBe(false);
+  });
+});
+
+describe("normaliseModuleListOrder", () => {
+  it("keeps strings, drops duplicates, empties and over-long ids", () => {
+    expect(
+      normaliseModuleListOrder(["a", "a", "", 4, "b", "x".repeat(65)]),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("caps the length", () => {
+    const ids = Array.from({ length: MODULE_LIST_ORDER_MAX + 10 }, (_, i) =>
+      String(i),
+    );
+    expect(normaliseModuleListOrder(ids)).toHaveLength(MODULE_LIST_ORDER_MAX);
+  });
+
+  it("answers null for a non-array", () => {
+    expect(normaliseModuleListOrder("a")).toBeNull();
+  });
+});
+
+describe("storedModuleListLayout", () => {
+  it("lists only the lists that carry a choice", () => {
+    expect(
+      storedModuleListLayout({ labs: { sortDir: "manual" }, illness: {} }),
+    ).toEqual({ labs: { sortDir: "manual" } });
+  });
+});

@@ -1,82 +1,224 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient } from "@tanstack/react-query";
 
-import { applyOrder, parseModuleListPrefs } from "@/lib/module-list-prefs";
+vi.mock("@/lib/api/api-fetch", () => ({
+  apiGet: vi.fn(),
+  apiPut: vi.fn(),
+}));
+vi.mock("@/components/outcome/outcome-toast", () => ({
+  toastWrittenOutcome: vi.fn(),
+}));
+vi.mock("@/lib/errors/error-toast", () => ({
+  showErrorToast: vi.fn(),
+}));
 
-describe("module-list-prefs", () => {
-  describe("parseModuleListPrefs", () => {
-    it("returns defaults for null / malformed input", () => {
-      expect(parseModuleListPrefs(null)).toEqual({
-        view: "cards",
-        order: [],
-        sortDir: "recentDesc",
-      });
-      expect(parseModuleListPrefs("{not json")).toEqual({
-        view: "cards",
-        order: [],
-        sortDir: "recentDesc",
-      });
-    });
+import { apiPut } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import {
+  applyOrder,
+  carryOverLegacyModuleListPrefs,
+  legacyModuleListPatch,
+  legacyModuleListStorageKey,
+  parseModuleListPrefs,
+  resetModuleListCarryOverForTests,
+  runSetModuleListPrefs,
+} from "@/lib/module-list-prefs";
+import {
+  moduleListDefaults,
+  resolveModuleListLayout,
+} from "@/lib/settings/module-list-layout";
+import { queryKeys } from "@/lib/query-keys";
 
-    it("coerces unknown view / sortDir to defaults but keeps a valid order", () => {
-      const parsed = parseModuleListPrefs(
-        JSON.stringify({ view: "grid", sortDir: "weird", order: ["a", "b"] }),
-      );
-      expect(parsed).toEqual({
-        view: "cards",
-        sortDir: "recentDesc",
-        order: ["a", "b"],
-      });
-    });
+const store = new Map<string, string>();
+const fakeStorage = {
+  getItem: (key: string) => store.get(key) ?? null,
+  setItem: (key: string, value: string) => void store.set(key, value),
+  removeItem: (key: string) => void store.delete(key),
+};
 
-    it("round-trips valid values", () => {
-      const parsed = parseModuleListPrefs(
-        JSON.stringify({ view: "list", sortDir: "manual", order: ["x"] }),
-      );
-      expect(parsed).toEqual({
-        view: "list",
-        sortDir: "manual",
-        order: ["x"],
-      });
-    });
+beforeEach(() => {
+  vi.resetAllMocks();
+  store.clear();
+  resetModuleListCarryOverForTests();
+  vi.stubGlobal("window", { localStorage: fakeStorage });
+});
 
-    it("accepts the alphabetical sort directions (#43)", () => {
-      for (const sortDir of ["alphaAsc", "alphaDesc"]) {
-        const parsed = parseModuleListPrefs(JSON.stringify({ sortDir }));
-        expect(parsed.sortDir).toBe(sortDir);
-      }
-    });
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
-    it("applies a per-call default when no blob is stored (Labs list view, #40)", () => {
-      const labsDefaults = {
-        view: "list" as const,
-        order: [],
-        sortDir: "recentDesc" as const,
-      };
-      expect(parseModuleListPrefs(null, labsDefaults)).toEqual(labsDefaults);
-      // A stored view still wins over the default.
-      expect(
-        parseModuleListPrefs(JSON.stringify({ view: "cards" }), labsDefaults)
-          .view,
-      ).toBe("cards");
-    });
+describe("parseModuleListPrefs", () => {
+  const defaults = moduleListDefaults("illness");
+
+  it("returns defaults for null / malformed input", () => {
+    expect(parseModuleListPrefs(null, defaults)).toEqual(defaults);
+    expect(parseModuleListPrefs("{not json", defaults)).toEqual(defaults);
   });
 
-  describe("applyOrder", () => {
-    const items = [{ id: "a" }, { id: "b" }, { id: "c" }];
-    const idOf = (i: { id: string }) => i.id;
+  it("coerces unknown view / sortDir to defaults but keeps a valid order", () => {
+    expect(
+      parseModuleListPrefs(
+        JSON.stringify({ view: "grid", sortDir: "weird", order: ["a", "b"] }),
+        defaults,
+      ),
+    ).toEqual({ view: "cards", sortDir: "recentDesc", order: ["a", "b"] });
+  });
 
-    it("returns the input order when no order is persisted", () => {
-      expect(applyOrder(items, [], idOf)).toEqual(items);
+  it("applies the labs default (list view, #40) when nothing is stored", () => {
+    const labs = moduleListDefaults("labs");
+    expect(parseModuleListPrefs(null, labs).view).toBe("list");
+    expect(
+      parseModuleListPrefs(JSON.stringify({ view: "cards" }), labs).view,
+    ).toBe("cards");
+  });
+});
+
+describe("legacyModuleListPatch", () => {
+  it("carries only what differs from the default", () => {
+    expect(
+      legacyModuleListPatch(
+        "labs",
+        JSON.stringify({ view: "list", order: [], sortDir: "manual" }),
+      ),
+    ).toEqual({ sortDir: "manual" });
+    expect(
+      legacyModuleListPatch(
+        "illness",
+        JSON.stringify({ view: "list", order: ["e2", "e1"] }),
+      ),
+    ).toEqual({ view: "list", order: ["e2", "e1"] });
+    expect(legacyModuleListPatch("vorsorge", null)).toEqual({});
+  });
+});
+
+describe("carryOverLegacyModuleListPrefs", () => {
+  it("sends a browser-stored order up once and removes the browser copy after the server confirmed it", async () => {
+    store.set(
+      legacyModuleListStorageKey("illness"),
+      JSON.stringify({ view: "cards", order: ["e2", "e1"] }),
+    );
+    const saved = resolveModuleListLayout({ illness: { order: ["e2", "e1"] } });
+    vi.mocked(apiPut).mockResolvedValue(saved);
+    const queryClient = new QueryClient();
+
+    await carryOverLegacyModuleListPrefs({
+      list: "illness",
+      layout: resolveModuleListLayout(null),
+      queryClient,
     });
 
-    it("places ordered ids first, then the server-default tail", () => {
-      const result = applyOrder(items, ["c", "a"], idOf);
-      expect(result.map(idOf)).toEqual(["c", "a", "b"]);
+    expect(apiPut).toHaveBeenCalledWith("/api/settings/module-list-layout", {
+      version: 1,
+      list: "illness",
+      order: ["e2", "e1"],
+    });
+    expect(store.has(legacyModuleListStorageKey("illness"))).toBe(false);
+    expect(queryClient.getQueryData(queryKeys.moduleListLayout())).toEqual(
+      saved,
+    );
+
+    // A second mount in the same page load does not send it again.
+    await carryOverLegacyModuleListPrefs({
+      list: "illness",
+      layout: saved,
+      queryClient,
+    });
+    expect(apiPut).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the browser copy when the write fails, so the order is never lost", async () => {
+    store.set(
+      legacyModuleListStorageKey("labs"),
+      JSON.stringify({ order: ["m1"], sortDir: "manual" }),
+    );
+    vi.mocked(apiPut).mockRejectedValue(new Error("offline"));
+
+    await carryOverLegacyModuleListPrefs({
+      list: "labs",
+      layout: resolveModuleListLayout(null),
+      queryClient: new QueryClient(),
     });
 
-    it("ignores ids in the order that are absent from the data", () => {
-      const result = applyOrder(items, ["z", "b"], idOf);
-      expect(result.map(idOf)).toEqual(["b", "a", "c"]);
+    expect(store.has(legacyModuleListStorageKey("labs"))).toBe(true);
+  });
+
+  it("leaves a list the server already holds alone and drops the stale browser copy", async () => {
+    store.set(
+      legacyModuleListStorageKey("vorsorge"),
+      JSON.stringify({ order: ["r9"] }),
+    );
+    await carryOverLegacyModuleListPrefs({
+      list: "vorsorge",
+      layout: resolveModuleListLayout({ vorsorge: { order: ["r1"] } }),
+      queryClient: new QueryClient(),
     });
+    expect(apiPut).not.toHaveBeenCalled();
+    expect(store.has(legacyModuleListStorageKey("vorsorge"))).toBe(false);
+  });
+});
+
+describe("runSetModuleListPrefs", () => {
+  const t = (key: string) => key;
+
+  it("applies the change at once and confirms a view change with a toast", async () => {
+    const queryClient = new QueryClient();
+    const saved = resolveModuleListLayout({ labs: { view: "cards" } });
+    vi.mocked(apiPut).mockResolvedValue(saved);
+    await runSetModuleListPrefs({
+      list: "labs",
+      patch: { view: "cards" },
+      queryClient,
+      t,
+    });
+    expect(toastWrittenOutcome).toHaveBeenCalledWith(
+      "success",
+      "settings.saved",
+    );
+    expect(queryClient.getQueryData(queryKeys.moduleListLayout())).toEqual(
+      saved,
+    );
+  });
+
+  it("rolls back and says so when the write fails", async () => {
+    const queryClient = new QueryClient();
+    const before = resolveModuleListLayout(null);
+    queryClient.setQueryData(queryKeys.moduleListLayout(), before);
+    vi.mocked(apiPut).mockRejectedValue(new Error("nope"));
+    await runSetModuleListPrefs({
+      list: "illness",
+      patch: { order: ["x"] },
+      queryClient,
+      t,
+    });
+    expect(queryClient.getQueryData(queryKeys.moduleListLayout())).toEqual(
+      before,
+    );
+    expect(showErrorToast).toHaveBeenCalled();
+  });
+});
+
+describe("applyOrder", () => {
+  const items = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const idOf = (i: { id: string }) => i.id;
+
+  it("keeps the input order with no saved order", () => {
+    expect(applyOrder(items, [], idOf)).toEqual(items);
+  });
+
+  it("puts ordered ids first and the rest after in input order", () => {
+    expect(applyOrder(items, ["c", "a"], idOf).map(idOf)).toEqual([
+      "c",
+      "a",
+      "b",
+    ]);
+  });
+
+  it("drops unknown ids", () => {
+    expect(applyOrder(items, ["z", "b"], idOf).map(idOf)).toEqual([
+      "b",
+      "a",
+      "c",
+    ]);
   });
 });
