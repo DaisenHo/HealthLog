@@ -1506,6 +1506,60 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
         .map((i) => i.body),
     ).toEqual(["Dr. Weiss today", "Dentist tomorrow"]);
   });
+
+  // The tap opens where the appointment lives: the bare `/checkups` it carried
+  // opens the preventive-care tab an appointment is never on. Label and intent
+  // stay the check-up item's on the wire, for the shipped iOS app; the web
+  // card relabels (`priority-card.test.tsx`).
+  it("opens the visit itself, keeping the intent the app routes", () => {
+    const d = buildDailyDigest(input({ upcomingVisits: [visit()] }), t);
+    const item = d.worthALook.find((i) => i.kind === "upcoming_visit");
+    expect(item?.actions).toEqual([
+      {
+        labelKey: "daily.action.viewCheckups",
+        intent: "checkup.view",
+        href: "/checkups?visit=v1",
+      },
+    ]);
+  });
+
+  it("opens the visits list for a day with several appointments", () => {
+    const d = buildDailyDigest(
+      input({
+        upcomingVisits: [
+          visit(),
+          visit({ id: "v2", practitionerName: "Dentist" }),
+        ],
+      }),
+      t,
+    );
+    const item = d.worthALook.find((i) => i.kind === "upcoming_visit");
+    expect(item?.actions).toEqual([
+      {
+        labelKey: "daily.action.viewCheckups",
+        intent: "checkup.view",
+        href: "/checkups?view=visits",
+      },
+    ]);
+  });
+
+  it("leaves the due check-ups item on the checkups list", () => {
+    const d = buildDailyDigest(
+      input({
+        preventiveDue: [{ label: "Skin check", staysDue: true }],
+        upcomingVisits: [visit()],
+      }),
+      t,
+    );
+    const care = d.worthALook.find((i) => i.kind === "preventive_care");
+    expect(care?.actions).toEqual([
+      {
+        labelKey: "daily.action.viewCheckups",
+        intent: "checkup.view",
+        href: "/checkups",
+      },
+    ]);
+  });
 });
 
 describe("buildDailyDigest — Today overview", () => {

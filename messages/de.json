@@ -6860,7 +6860,7 @@
       "errorRateLimit": "Das Exportlimit für diese Stunde ist erreicht.",
       "errorModuleDisabled": "Der Gesundheitsakten-Export ist für dieses Konto ausgeschaltet.",
       "visitOffer": "Am {when} steht ein Termin an: {what}.",
-      "visitOfferApply": "Bericht bis dahin"
+      "visitOfferApplyWindow": "Zeitraum übernehmen"
     },
     "globalExcludedInjectionSitesLabel": "Global ausgeschlossene Injektionsstellen",
     "globalExcludedInjectionSitesHint": "Nie angeboten und beim Erfassen abgelehnt, auch wenn eine Medikation sie bevorzugt.",
@@ -12035,6 +12035,8 @@
       "logDose": "Dosis erfassen",
       "reconnect": "Neu verbinden",
       "viewCheckups": "Vorsorge ansehen",
+      "viewAppointment": "Termin ansehen",
+      "viewAppointments": "Termine ansehen",
       "checkinKeep": "Behalten",
       "checkinAdjust": "Anpassen",
       "checkinLetGo": "Loslassen",
@@ -12759,6 +12761,13 @@
       "noMatchTitle": "Nichts passt zu diesem Filter",
       "clearFilter": "Filter zurücksetzen",
       "loadError": "Die Eingriffe konnten nicht geladen werden."
+    },
+    "preparation": {
+      "practitioner": "Seit deinem letzten Termin bei {name} am {date}",
+      "specialty": "Seit deinem letzten Termin ({specialty}) am {date}",
+      "kind": "Seit deinem letzten Termin der gleichen Art ({kind}) am {date}",
+      "default": "Die letzten {days} Tage",
+      "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art."
     }
   },
   "checkups": {
@@ -13008,7 +13017,6 @@
     "meanOfReadingsFew": "Schnitt aus {count} Messungen",
     "meanOfReadingsOther": "Schnitt aus {count} Messungen",
     "sinceLastVisit": {
-      "title": "Seit dem letzten Besuch am {date}",
       "countOne": "1 Eintrag",
       "countFew": "{count} Einträge",
       "countOther": "{count} Einträge",

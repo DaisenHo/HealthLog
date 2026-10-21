@@ -30,7 +30,8 @@
  *     stands in its place — not an alarming empty card.
  *
  * Every `PriorityItem` action carries an `href` (dose.log → /medications,
- * sync.reconnect → /settings/integrations, checkup.view → /checkups), so
+ * sync.reconnect → /settings/integrations, checkup.view → /checkups, or the
+ * visit itself on an upcoming_visit item), so
  * `PriorityCard` wires each tap as a `<Link>` to its existing destination
  * by construction; S2 invents no new backend action.
  *

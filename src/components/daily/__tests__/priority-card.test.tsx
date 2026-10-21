@@ -161,6 +161,37 @@ describe("<PriorityCard>", () => {
     expect(html).toContain("View check-ups");
   });
 
+  // An appointment keeps the check-up label on the wire for the shipped iOS
+  // app; the web names what the link opens. The check-up item above is the
+  // negative control.
+  it("names an appointment's action for the visit it opens", () => {
+    const action = (href: string) => ({
+      labelKey: "daily.action.viewCheckups",
+      intent: "checkup.view",
+      href,
+    });
+    const one = render(
+      <PriorityCard
+        item={item({
+          kind: "upcoming_visit",
+          actions: [action("/checkups?visit=v1")],
+        })}
+      />,
+    );
+    expect(one).toContain("View appointment");
+    expect(one).not.toContain("View check-ups");
+    expect(one).toContain('href="/checkups?visit=v1"');
+    const several = render(
+      <PriorityCard
+        item={item({
+          kind: "upcoming_visit",
+          actions: [action("/checkups?view=visits")],
+        })}
+      />,
+    );
+    expect(several).toContain("View appointments");
+  });
+
   describe("dismiss affordance — observational kinds only", () => {
     const DISMISSIBLE: PriorityItemKind[] = [
       "milestone",

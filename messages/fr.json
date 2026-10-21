@@ -6860,7 +6860,7 @@
       "errorRateLimit": "Vous avez atteint la limite d'exports pour cette heure.",
       "errorModuleDisabled": "L'export du dossier est désactivé pour ce compte.",
       "visitOffer": "Un rendez-vous est prévu le {when} : {what}.",
-      "visitOfferApply": "Rapport jusque-là"
+      "visitOfferApplyWindow": "Utiliser cette période"
     },
     "globalExcludedInjectionSitesLabel": "Sites d'injection exclus globalement",
     "globalExcludedInjectionSitesHint": "Jamais proposés et refusés à l'enregistrement, même si un médicament les privilégie.",
@@ -12035,6 +12035,8 @@
       "logDose": "Enregistrer la dose",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
+      "viewAppointment": "Voir le rendez-vous",
+      "viewAppointments": "Voir les rendez-vous",
       "checkinKeep": "Garder",
       "checkinAdjust": "Ajuster",
       "checkinLetGo": "Laisser tomber",
@@ -12759,6 +12761,13 @@
       "noMatchTitle": "Rien ne correspond à ce filtre",
       "clearFilter": "Effacer le filtre",
       "loadError": "Les interventions n’ont pas pu être chargées."
+    },
+    "preparation": {
+      "practitioner": "Depuis votre dernière visite chez {name} le {date}",
+      "specialty": "Depuis votre dernière visite ({specialty}) le {date}",
+      "kind": "Depuis votre dernière visite du même type ({kind}) le {date}",
+      "default": "Les {days} derniers jours",
+      "defaultReason": "Aucune visite antérieure au même cabinet, dans la même spécialité ou du même type."
     }
   },
   "checkups": {
@@ -13008,7 +13017,6 @@
     "meanOfReadingsFew": "Moyenne de {count} mesures",
     "meanOfReadingsOther": "Moyenne de {count} mesures",
     "sinceLastVisit": {
-      "title": "Depuis la dernière visite le {date}",
       "countOne": "1 entrée",
       "countFew": "{count} entrées",
       "countOther": "{count} entrées",

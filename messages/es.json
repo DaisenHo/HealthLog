@@ -6860,7 +6860,7 @@
       "errorRateLimit": "Ha alcanzado el límite de exportaciones de esta hora.",
       "errorModuleDisabled": "La exportación del expediente está desactivada para esta cuenta.",
       "visitOffer": "El {when} hay una cita: {what}.",
-      "visitOfferApply": "Informe hasta esa fecha"
+      "visitOfferApplyWindow": "Usar este periodo"
     },
     "globalExcludedInjectionSitesLabel": "Sitios de inyección excluidos globalmente",
     "globalExcludedInjectionSitesHint": "Nunca se ofrecen y se rechazan al registrar una dosis, aunque un medicamento los prefiera.",
@@ -12035,6 +12035,8 @@
       "logDose": "Registrar dosis",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver revisiones",
+      "viewAppointment": "Ver cita",
+      "viewAppointments": "Ver citas",
       "checkinKeep": "Conservar",
       "checkinAdjust": "Ajustar",
       "checkinLetGo": "Dejarlo ir",
@@ -12759,6 +12761,13 @@
       "noMatchTitle": "Nada coincide con este filtro",
       "clearFilter": "Quitar filtro",
       "loadError": "No se pudieron cargar los procedimientos."
+    },
+    "preparation": {
+      "practitioner": "Desde tu última visita con {name} el {date}",
+      "specialty": "Desde tu última visita ({specialty}) el {date}",
+      "kind": "Desde tu última visita del mismo tipo ({kind}) el {date}",
+      "default": "Los últimos {days} días",
+      "defaultReason": "No hay ninguna visita anterior con la misma consulta, especialidad o tipo."
     }
   },
   "checkups": {
@@ -13008,7 +13017,6 @@
     "meanOfReadingsFew": "Media de {count} mediciones",
     "meanOfReadingsOther": "Media de {count} mediciones",
     "sinceLastVisit": {
-      "title": "Desde la última visita el {date}",
       "countOne": "1 entrada",
       "countFew": "{count} entradas",
       "countOther": "{count} entradas",

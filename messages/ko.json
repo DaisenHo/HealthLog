@@ -6860,7 +6860,7 @@
       "errorRateLimit": "이번 시간의 내보내기 한도에 도달했어요.",
       "errorModuleDisabled": "이 계정에서는 건강 기록 내보내기가 꺼져 있어요.",
       "visitOffer": "{when}에 예정된 진료가 있어요: {what}.",
-      "visitOfferApply": "그날까지로 리포트 만들기"
+      "visitOfferApplyWindow": "이 기간 사용하기"
     },
     "globalExcludedInjectionSitesLabel": "전체 제외 주사 부위",
     "globalExcludedInjectionSitesHint": "약이 선호하더라도 용량을 기록할 때 추천하지 않고 선택도 막아요.",
@@ -12035,6 +12035,8 @@
       "logDose": "복용 기록",
       "reconnect": "다시 연결",
       "viewCheckups": "건강검진 보기",
+      "viewAppointment": "예약 보기",
+      "viewAppointments": "예약 목록 보기",
       "checkinKeep": "계속하기",
       "checkinAdjust": "조정",
       "checkinLetGo": "놓아주기",
@@ -12759,6 +12761,13 @@
       "noMatchTitle": "이 필터에 맞는 항목이 없습니다",
       "clearFilter": "필터 지우기",
       "loadError": "시술 목록을 불러올 수 없습니다."
+    },
+    "preparation": {
+      "practitioner": "{date} {name} 마지막 방문 이후",
+      "specialty": "{date} 마지막 {specialty} 방문 이후",
+      "kind": "{date} 같은 유형({kind})의 마지막 방문 이후",
+      "default": "최근 {days}일",
+      "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요."
     }
   },
   "checkups": {
@@ -13008,7 +13017,6 @@
     "meanOfReadingsFew": "측정 {count}회 평균",
     "meanOfReadingsOther": "측정 {count}회 평균",
     "sinceLastVisit": {
-      "title": "{date} 마지막 방문 이후",
       "countOne": "기록 1개",
       "countFew": "기록 {count}개",
       "countOther": "기록 {count}개",

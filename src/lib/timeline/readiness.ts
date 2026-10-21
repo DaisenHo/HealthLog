@@ -30,6 +30,7 @@ import type {
   TimelineReadinessResponse,
 } from "@/lib/day/contract";
 import { readLocalDaysWithReadings } from "@/lib/day/daily-stats";
+import { VISITS_PATH } from "@/lib/encounters/visit-links";
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { prisma } from "@/lib/db";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
@@ -377,7 +378,7 @@ async function visitsLane(frame: Frame) {
       { detail: { key: "visits", params: { count: done, procedures } } },
     );
   }
-  const visitGap = gap("visitsEmpty", 0, "/checkups");
+  const visitGap = gap("visitsEmpty", 0, VISITS_PATH);
   return planned > 0
     ? lane("thin", planned, null, {
         detail: { key: "visitsPlanned", params: { count: planned } },

@@ -6860,7 +6860,7 @@
       "errorRateLimit": "Je hebt de exportlimiet voor dit uur bereikt.",
       "errorModuleDisabled": "De export van het gezondheidsdossier is uitgeschakeld voor dit account.",
       "visitOffer": "Er staat een afspraak gepland op {when}: {what}.",
-      "visitOfferApply": "Rapport tot die datum"
+      "visitOfferApplyWindow": "Deze periode gebruiken"
     },
     "globalExcludedInjectionSitesLabel": "Overal uitgesloten injectieplaatsen",
     "globalExcludedInjectionSitesHint": "Worden nooit aangeboden en geweigerd bij het vastleggen van een dosis, ook als een medicijn er de voorkeur aan geeft.",
@@ -12035,6 +12035,8 @@
       "logDose": "Dosis registreren",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
+      "viewAppointment": "Afspraak bekijken",
+      "viewAppointments": "Afspraken bekijken",
       "checkinKeep": "Aanhouden",
       "checkinAdjust": "Aanpassen",
       "checkinLetGo": "Loslaten",
@@ -12759,6 +12761,13 @@
       "noMatchTitle": "Niets komt overeen met dit filter",
       "clearFilter": "Filter wissen",
       "loadError": "Ingrepen konden niet worden geladen."
+    },
+    "preparation": {
+      "practitioner": "Sinds je laatste bezoek bij {name} op {date}",
+      "specialty": "Sinds je laatste bezoek ({specialty}) op {date}",
+      "kind": "Sinds je laatste bezoek van hetzelfde soort ({kind}) op {date}",
+      "default": "De afgelopen {days} dagen",
+      "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort."
     }
   },
   "checkups": {
@@ -13008,7 +13017,6 @@
     "meanOfReadingsFew": "Gemiddelde van {count} metingen",
     "meanOfReadingsOther": "Gemiddelde van {count} metingen",
     "sinceLastVisit": {
-      "title": "Sinds het laatste bezoek op {date}",
       "countOne": "1 registratie",
       "countFew": "{count} registraties",
       "countOther": "{count} registraties",

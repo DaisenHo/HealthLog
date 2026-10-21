@@ -6,6 +6,8 @@
  * status + dismissed-ids set) and renders against the result.
  */
 
+import { VISITS_PATH } from "@/lib/encounters/visit-links";
+
 import {
   hasEnteredOnboardingFlow,
   isOnboardingSettled,
@@ -227,7 +229,8 @@ export function buildChecklist(inputs: ChecklistInputs): ChecklistItem[] {
     items.push({
       id: "visit",
       done: inputs.upcomingVisitCount >= 1,
-      href: "/checkups",
+      // The visits tab, where a visit is added; the bare page opens checkups.
+      href: VISITS_PATH,
       dismissed: inputs.dismissedIds.has("visit"),
     });
   }

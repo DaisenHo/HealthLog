@@ -24,6 +24,7 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import type { ArrivalKind } from "@/lib/arrivals/types";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
+import { visitsPath } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
@@ -675,9 +676,14 @@ function buildPreventiveCareItem(
  * appointments alone.
  *
  * No module gate: a visit is core, like the checkups page it lives on. No
- * action beyond opening the page either — there is nothing to do about an
+ * action beyond opening the visit either — there is nothing to do about an
  * appointment except keep it, and a "mark done" here would duplicate the
  * visit's own status field with a second place to set it.
+ *
+ * The action opens where the appointment lives: the visit itself, or the
+ * visits list for a day with several. The bare `/checkups` it used to carry
+ * sent every tap on an appointment to the preventive-care list the
+ * appointment is not on.
  */
 function buildUpcomingVisitItems(
   visits: readonly DailyDigestUpcomingVisit[],
@@ -706,9 +712,15 @@ function buildUpcomingVisitItems(
       status: "info",
       actions: [
         {
+          // The wire keeps the check-up item's label and intent: the shipped
+          // iOS app routes `checkup.view` and knows no other token for this
+          // item, so a new intent would leave its tap inert. The web card
+          // relabels it from the kind (`actionLabelKey` in
+          // `priority-card.tsx`); the switch to `visit.view` waits for an
+          // app that understands it.
           labelKey: "daily.action.viewCheckups",
           intent: "checkup.view",
-          href: "/checkups",
+          href: visitsPath(group.map((visit) => visit.id)),
         },
       ],
     };

@@ -35,6 +35,7 @@ import {
 } from "@/lib/validations/encounters";
 import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { toEncounterDTO, type EncounterListDTO } from "@/lib/encounters/dto";
+import { loadVisitPreparations } from "@/lib/encounters/preparation-read";
 import {
   ENCOUNTER_INCLUDE,
   applyEncounterLinks,
@@ -143,12 +144,17 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // them makes the first read zero and the second unfile everything on save.
   // Three grouped queries for the page, not three per row.
   const visible = await actingDomainVisibility(prisma, grantId);
-  const links = await loadEncounterLinksForMany(
-    prisma,
-    user.id,
-    [...upcoming, ...past].map((row) => row.id),
-    visible,
-  );
+  // The window before each booked visit reads the whole history, not this
+  // page of it: the visit it starts at may sit outside the caller's filter.
+  const [links, preparations] = await Promise.all([
+    loadEncounterLinksForMany(
+      prisma,
+      user.id,
+      [...upcoming, ...past].map((row) => row.id),
+      visible,
+    ),
+    loadVisitPreparations(prisma, user.id, upcoming, now),
+  ]);
 
   annotate({
     action: { name: "encounter.visit.list", entity_type: "encounter" },
@@ -156,8 +162,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
   });
 
   const body: EncounterListDTO = {
-    upcoming: upcoming.map((row) => toEncounterDTO(row, links.get(row.id))),
-    past: past.map((row) => toEncounterDTO(row, links.get(row.id))),
+    upcoming: upcoming.map((row) => ({
+      ...toEncounterDTO(row, links.get(row.id)),
+      preparation: preparations.get(row.id) ?? null,
+    })),
+    past: past.map((row) => ({
+      ...toEncounterDTO(row, links.get(row.id)),
+      preparation: null,
+    })),
   };
   return apiListSuccess(body, combinedCap(upcomingCap, pastCap));
 });

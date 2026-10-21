@@ -39,6 +39,7 @@
  * edit of the address reaches a nudge that is already booked.
  */
 import type { Prisma } from "@/generated/prisma/client";
+import { visitPath } from "@/lib/encounters/visit-links";
 import { readPractitionerContact } from "@/lib/practitioners/dto";
 import {
   computeReminderNextDueAt,
@@ -188,13 +189,15 @@ export function appointmentNextDueAfterFiring(
 }
 
 /**
- * What the reminder tick reads beside an ENCOUNTER row to name the practice
- * address: the practitioner of the live visit that owns it.
+ * What the reminder tick reads beside an ENCOUNTER row: the live visit that
+ * owns it, for the push's tap target ({@link appointmentReminderVisitPath}),
+ * and its practitioner, to name the practice address.
  */
 export const APPOINTMENT_REMINDER_ADDRESS_INCLUDE = {
   encounters: {
     where: { deletedAt: null },
     select: {
+      id: true,
       userId: true,
       practitioner: {
         select: {
@@ -244,4 +247,23 @@ export function appointmentReminderAddress(reminder: {
     practitioner.location,
     "location",
   );
+}
+
+/**
+ * Where an appointment's push opens: the visit itself.
+ *
+ * The nudge rides the checkup event type, whose default target is the bare
+ * `/checkups` — the preventive-care tab, which never lists an appointment. A
+ * checkup's push keeps that default (null here); an appointment's names its
+ * visit, through the producer override `resolveTapPath` already honours.
+ */
+export function appointmentReminderVisitPath(reminder: {
+  userId: string;
+  origin: string;
+  encounters?: ReadonlyArray<{ id: string; userId: string }>;
+}): string | null {
+  if (reminder.origin !== "ENCOUNTER") return null;
+  const visit = reminder.encounters?.[0];
+  if (!visit || visit.userId !== reminder.userId) return null;
+  return visitPath(visit.id);
 }

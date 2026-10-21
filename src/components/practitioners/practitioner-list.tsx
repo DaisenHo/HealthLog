@@ -39,6 +39,7 @@ import {
   usePractitioners,
   type Practitioner,
 } from "@/hooks/use-practitioners";
+import { VISITS_PATH } from "@/lib/encounters/visit-links";
 import { useTranslations } from "@/lib/i18n/context";
 import { PractitionerSheet } from "./practitioner-sheet";
 
@@ -107,7 +108,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
       <PageHeader
         title={t("practitioners.title")}
         description={t("practitioners.description")}
-        backLink={{ href: "/checkups", label: t("encounters.sectionTitle") }}
+        backLink={{ href: VISITS_PATH, label: t("encounters.sectionTitle") }}
         actions={addButton}
       />
 

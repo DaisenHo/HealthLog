@@ -41,6 +41,7 @@ import { resolveCycleDay } from "@/lib/cycle/verdict";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { visitPath } from "@/lib/encounters/visit-links";
 
 /** Everything a section reader needs about the day. */
 export interface DayFrame {
@@ -630,7 +631,7 @@ async function visitsPart(frame: DayFrame): Promise<SectionPart> {
         meta: row.status === "PLANNED" ? "PLANNED" : row.kind,
         note: openText(row.outcomeEncrypted, "visit outcome"),
         docs: docs.get(row.id) ?? [],
-        href: `/checkups?visit=${row.id}`,
+        href: visitPath(row.id),
       }),
     ),
   };
