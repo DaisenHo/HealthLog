@@ -22,6 +22,10 @@ import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-work
 import { cached, caches } from "@/lib/cache/server-cache";
 import { workoutSportTypeEnum } from "@/lib/validations/workout";
 import { isoDateTime } from "@/lib/validations/datetime";
+import {
+  readTrainingLoad,
+  type TrainingLoad,
+} from "@/lib/insights/training-load";
 
 function emptyQueryValueToUndefined(value: unknown): unknown {
   if (value == null) return undefined;
@@ -113,6 +117,12 @@ export interface WorkoutsResult {
     offset: number;
     droppedDuplicates: number;
   };
+  /**
+   * v1.44 — fitness, fatigue and form from the stored training impulse.
+   * Account-wide (no filter applies) and on the first page only, so a client
+   * paging through history does not recompute it per page.
+   */
+  trainingLoad?: TrainingLoad;
 }
 
 export async function buildWorkoutsProjection(
@@ -257,5 +267,7 @@ export async function readWorkoutsListCached(
     annotate,
   );
 
-  return sliceWorkoutsProjection(projection, params.limit, params.offset);
+  const page = sliceWorkoutsProjection(projection, params.limit, params.offset);
+  if (params.offset !== 0) return page;
+  return { ...page, trainingLoad: await readTrainingLoad(userId) };
 }

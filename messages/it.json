@@ -3833,6 +3833,14 @@
         "editTitle": "Modifica allenamento",
         "editAction": "Modifica",
         "updated": "Allenamento aggiornato"
+      },
+      "load": {
+        "title": "Carico di allenamento",
+        "fitness": "Forma di base",
+        "fatigue": "Affaticamento",
+        "form": "Freschezza",
+        "explainer": "La forma di base è il tuo impulso di allenamento dalla frequenza cardiaca mediato su circa sei settimane, l'affaticamento su circa una settimana, e la freschezza è la differenza. I numeri si confrontano con il tuo passato, non con altre persone o altre app.",
+        "warmingUp": "Su {days} giorni finora: finché non sono coperte sei settimane, la forma di base risulta più bassa di quanto sia."
       }
     },
     "bloodGlucose": {

@@ -48526,6 +48526,10 @@ components:
             - offset
             - droppedDuplicates
           additionalProperties: false
+        trainingLoad:
+          description: v1.44 — on the first page (`offset=0`) only, account-wide whatever the filter. Absent on later pages and
+            older servers.
+          $ref: "#/components/schemas/WorkoutTrainingLoad"
       required:
         - workouts
         - meta
@@ -48602,6 +48606,94 @@ components:
         - hasRoute
         - hasHrSeries
       additionalProperties: false
+    WorkoutTrainingLoad:
+      anyOf:
+        - type: object
+          properties:
+            status:
+              type: string
+              const: ok
+            asOf:
+              type: string
+              description: The last scored UTC day the figures describe.
+            ctl:
+              type: number
+              description: "Fitness: 42-day exponentially weighted TRIMP."
+            atl:
+              type: number
+              description: "Fatigue: 7-day exponentially weighted TRIMP."
+            tsb:
+              type: number
+              description: "Form: fitness minus fatigue at `asOf`."
+            daysCovered:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            trainingDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            warmingUp:
+              type: boolean
+              description: "True below 42 covered days: both averages start at zero."
+            series:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  ctl:
+                    type: number
+                  atl:
+                    type: number
+                  tsb:
+                    type: number
+                required:
+                  - day
+                  - ctl
+                  - atl
+                  - tsb
+                additionalProperties: false
+              description: The trailing 90 days, oldest first; `tsb` is form going into the day.
+          required:
+            - status
+            - asOf
+            - ctl
+            - atl
+            - tsb
+            - daysCovered
+            - trainingDays
+            - warmingUp
+            - series
+          additionalProperties: false
+        - type: object
+          properties:
+            status:
+              type: string
+              const: insufficient
+            reason:
+              type: string
+              enum:
+                - no_impulse_history
+                - too_little_history
+            daysCovered:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            trainingDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - status
+            - reason
+            - daysCovered
+            - trainingDays
+          additionalProperties: false
+      description: "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a day
+        without a stored impulse counts as rest). Needs 28 days and three training days. TRIMP units: comparable with
+        the person's own past only."
     GetWorkoutResponse:
       type: object
       properties:

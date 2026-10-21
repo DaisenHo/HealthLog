@@ -3833,6 +3833,14 @@
         "editTitle": "Workout bewerken",
         "editAction": "Bewerken",
         "updated": "Workout bijgewerkt"
+      },
+      "load": {
+        "title": "Trainingsbelasting",
+        "fitness": "Fitheid",
+        "fatigue": "Vermoeidheid",
+        "form": "Vorm",
+        "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
+        "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is."
       }
     },
     "bloodGlucose": {

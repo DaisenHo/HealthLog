@@ -31,6 +31,7 @@ const ANALYSIS_MODULES = [
   "lib/insights/derived/changepoint.ts",
   "lib/labs/lab-trend.ts",
   "lib/mental-health/assessment-trend.ts",
+  "lib/insights/training-load.ts",
 ] as const;
 
 /** Reachable under `lib/ai/` without being a model: the at-rest cipher. */

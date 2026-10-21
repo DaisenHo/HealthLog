@@ -3833,6 +3833,14 @@
         "editTitle": "Edytuj trening",
         "editAction": "Edytuj",
         "updated": "Trening zaktualizowany"
+      },
+      "load": {
+        "title": "Obciążenie treningowe",
+        "fitness": "Wydolność",
+        "fatigue": "Zmęczenie",
+        "form": "Forma",
+        "explainer": "Wydolność to twój bodziec treningowy z tętna uśredniony z około sześciu tygodni, zmęczenie z około tygodnia, a forma to różnica. Liczby porównuje się z twoją własną przeszłością, nie z innymi osobami ani aplikacjami.",
+        "warmingUp": "Na podstawie dotychczasowych {days} dni: dopóki nie minie sześć tygodni, wydolność wychodzi niższa, niż jest."
       }
     },
     "bloodGlucose": {

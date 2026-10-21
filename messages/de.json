@@ -3833,6 +3833,14 @@
         "editTitle": "Training bearbeiten",
         "editAction": "Bearbeiten",
         "updated": "Training aktualisiert"
+      },
+      "load": {
+        "title": "Trainingslast",
+        "fitness": "Fitness",
+        "fatigue": "Ermüdung",
+        "form": "Form",
+        "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
+        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist."
       }
     },
     "bloodGlucose": {

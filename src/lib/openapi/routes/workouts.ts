@@ -110,6 +110,47 @@ const workoutListEntry = z
   })
   .meta({ id: "WorkoutListEntry" });
 
+const trainingLoadPoint = z.object({
+  day: z.string(),
+  ctl: z.number(),
+  atl: z.number(),
+  tsb: z.number(),
+});
+
+const trainingLoad = z
+  .union([
+    z.object({
+      status: z.literal("ok"),
+      asOf: z
+        .string()
+        .describe("The last scored UTC day the figures describe."),
+      ctl: z.number().describe("Fitness: 42-day exponentially weighted TRIMP."),
+      atl: z.number().describe("Fatigue: 7-day exponentially weighted TRIMP."),
+      tsb: z.number().describe("Form: fitness minus fatigue at `asOf`."),
+      daysCovered: z.number().int(),
+      trainingDays: z.number().int(),
+      warmingUp: z
+        .boolean()
+        .describe("True below 42 covered days: both averages start at zero."),
+      series: z
+        .array(trainingLoadPoint)
+        .describe(
+          "The trailing 90 days, oldest first; `tsb` is form going into the day.",
+        ),
+    }),
+    z.object({
+      status: z.literal("insufficient"),
+      reason: z.enum(["no_impulse_history", "too_little_history"]),
+      daysCovered: z.number().int(),
+      trainingDays: z.number().int(),
+    }),
+  ])
+  .meta({
+    id: "WorkoutTrainingLoad",
+    description:
+      "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a day without a stored impulse counts as rest). Needs 28 days and three training days. TRIMP units: comparable with the person's own past only.",
+  });
+
 const workoutListResponse = z
   .object({
     workouts: z.array(workoutListEntry),
@@ -119,6 +160,11 @@ const workoutListResponse = z
       offset: z.number().int().nonnegative(),
       droppedDuplicates: z.number().int().nonnegative(),
     }),
+    trainingLoad: trainingLoad
+      .optional()
+      .describe(
+        "v1.44 — on the first page (`offset=0`) only, account-wide whatever the filter. Absent on later pages and older servers.",
+      ),
   })
   .meta({ id: "WorkoutListResponse" });
 
