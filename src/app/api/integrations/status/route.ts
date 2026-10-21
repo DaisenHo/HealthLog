@@ -59,7 +59,7 @@ import {
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import {
   fitbitRetirement,
-  type FitbitRetirement,
+  type PublishedFitbitRetirement,
 } from "@/lib/fitbit/retirement";
 
 export const dynamic = "force-dynamic";
@@ -295,6 +295,19 @@ export const GET = apiHandler(async () => {
     !!dbUser?.fitbitClientIdEncrypted && !!dbUser?.fitbitClientSecretEncrypted;
   const fitbitLegacyLastSyncedAt =
     fitbitConn?.lastSyncedAt?.toISOString() ?? null;
+  // Once the Web API is gone the Fitbit card only explains the move to an
+  // account that had something to move: a connection, its own Fitbit app, or
+  // imported Fitbit data. Anyone else is shown no dead card. The data probe
+  // runs only after the turndown, for an account with neither of the others.
+  const retirementNow = fitbitRetirement();
+  const fitbitOffered =
+    !retirementNow.ended ||
+    fitbitConnected ||
+    fitbitConfigured ||
+    (await prisma.measurement.findFirst({
+      where: { userId: user.id, source: "FITBIT", deletedAt: null },
+      select: { id: true },
+    })) !== null;
   const googleHealthConnected = !!googleHealthConn;
   const googleHealthConfigured =
     !!dbUser?.googleHealthClientIdEncrypted &&
@@ -382,7 +395,7 @@ export const GET = apiHandler(async () => {
           ? fitbitConn.tokenExpiresAt.getTime() <= now
           : null,
         backfillCompleted: fitbitConn ? !!fitbitConn.backfillCompletedAt : null,
-        retirement: fitbitRetirement(),
+        retirement: { ...retirementNow, offered: fitbitOffered },
         health: health["fitbit"],
         ...resolve("fitbit", fitbitStatus, {
           connected: fitbitConnected,
@@ -564,7 +577,7 @@ interface FitbitExtras {
   tokenExpired: boolean | null;
   backfillCompleted: boolean | null;
   /** The end of the legacy Fitbit Web API (`@/lib/fitbit/retirement`). */
-  retirement: FitbitRetirement;
+  retirement: PublishedFitbitRetirement;
 }
 
 // v1.27.0 — Google Health mirrors the Fitbit shape plus `needsReauth`: Google

@@ -337,40 +337,44 @@ export function ConnectionsPanel({
           callbackUrl={callbackUrls.whoop}
         />
       </div>
-      <div id="fitbit" className="scroll-mt-28">
-        <FitbitRetirementNotice retirement={fitbitStatus?.retirement} />
-        <OAuthIntegrationCard
-          config={OAUTH_INTEGRATIONS.fitbit}
-          viewModel={fitbitStatus}
-          callbackUrl={callbackUrls.fitbit}
-          syncDisabled={fitbitRetired}
-          connectDisabled={fitbitRetired}
-          titleAccessory={
-            <>
-              <TagChip>{t("settings.fitbitTag")}</TagChip>
-              {fitbitStatus?.retirement ? (
-                <Badge
-                  variant="outline"
-                  data-testid="fitbit-retirement-badge"
-                  className="border-warning/50 text-warning"
-                >
-                  {fitbitRetired
-                    ? t("settings.fitbitRetirement.badgeEnded")
-                    : t("settings.fitbitRetirement.badgeEnding")}
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  data-testid="fitbit-experimental-badge"
-                  className="border-warning/50 text-warning"
-                >
-                  {t("settings.fitbitExperimentalBadge")}
-                </Badge>
-              )}
-            </>
-          }
-        />
-      </div>
+      {/* After the turndown the card is offered only to an account that had
+          Fitbit; the server decides (`retirement.offered`). */}
+      {fitbitStatus?.retirement?.offered !== false && (
+        <div id="fitbit" className="scroll-mt-28">
+          <FitbitRetirementNotice retirement={fitbitStatus?.retirement} />
+          <OAuthIntegrationCard
+            config={OAUTH_INTEGRATIONS.fitbit}
+            viewModel={fitbitStatus}
+            callbackUrl={callbackUrls.fitbit}
+            syncDisabled={fitbitRetired}
+            connectDisabled={fitbitRetired}
+            titleAccessory={
+              <>
+                <TagChip>{t("settings.fitbitTag")}</TagChip>
+                {fitbitStatus?.retirement ? (
+                  <Badge
+                    variant="outline"
+                    data-testid="fitbit-retirement-badge"
+                    className="border-warning/50 text-warning"
+                  >
+                    {fitbitRetired
+                      ? t("settings.fitbitRetirement.badgeEnded")
+                      : t("settings.fitbitRetirement.badgeEnding")}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    data-testid="fitbit-experimental-badge"
+                    className="border-warning/50 text-warning"
+                  >
+                    {t("settings.fitbitExperimentalBadge")}
+                  </Badge>
+                )}
+              </>
+            }
+          />
+        </div>
+      )}
       <div id="google-health" className="scroll-mt-28">
         <GoogleHealthCard
           viewModel={pickStatus(integrationStatus, "google-health")}

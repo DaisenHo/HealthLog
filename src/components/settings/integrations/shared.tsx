@@ -14,7 +14,7 @@ import type { GoogleHealthBackfillEndedEntry } from "@/lib/google-health/backfil
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import type { MetricFreshnessEntry } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
-import type { FitbitRetirement } from "@/lib/fitbit/retirement";
+import type { PublishedFitbitRetirement } from "@/lib/fitbit/retirement";
 
 export type IntegrationKey =
   | "withings"
@@ -73,7 +73,7 @@ export interface IntegrationStatusViewModel {
   /** Per-metric last-seen timestamps with the server-computed stale flag. */
   metricFreshness?: MetricFreshnessEntry[];
   /** Fitbit: the end of the legacy Web API, resolved on the server. */
-  retirement?: FitbitRetirement;
+  retirement?: PublishedFitbitRetirement;
 }
 
 export interface IntegrationStatusEnvelope {

@@ -42,6 +42,15 @@ export interface FitbitRetirement {
   successor: "google-health";
 }
 
+/**
+ * The entry as published, with whether the card is offered at all: after the
+ * turndown only to an account that had Fitbit (a connection, its own Fitbit
+ * app, or imported Fitbit data). Decided by the status route.
+ */
+export interface PublishedFitbitRetirement extends FitbitRetirement {
+  offered: boolean;
+}
+
 export function fitbitRetirement(now: Date = new Date()): FitbitRetirement {
   return {
     endsOn: FITBIT_WEB_API_TURNDOWN_DATE,

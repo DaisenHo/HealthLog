@@ -1167,6 +1167,11 @@ const integrationEnvelopeEntry = z
           .describe(
             "The integration that reads the same Fitbit and Pixel devices. Moving needs a fresh consent; the Fitbit grant cannot be carried over.",
           ),
+        offered: z
+          .boolean()
+          .describe(
+            "Whether the Fitbit card is shown. False once `ended` for an account that never connected Fitbit, has no Fitbit app of its own and holds no Fitbit data: there is nothing to explain the move for. True before the turndown and for every account that had Fitbit.",
+          ),
       })
       .optional()
       .describe("Fitbit only. The end of the legacy Fitbit Web API."),
