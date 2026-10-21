@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} heures, déclaré",
     "lifeWork": "Travail",
     "lifeNightWork": "travail de nuit",
-    "lifeExposures": "expositions : {list}"
+    "lifeExposures": "expositions : {list}",
+    "workouts": {
+      "title": "Entraînements",
+      "summary": "{sessions} séances, {hours} h au total ; en moyenne {perWeek} séances et {minutesPerWeek} minutes par semaine.",
+      "colSport": "Sport",
+      "colSessions": "Séances",
+      "colTime": "Durée",
+      "colDistance": "Distance",
+      "colEnergy": "Énergie",
+      "colHeartRate": "FC moyenne",
+      "moreSports": "{count} autres sports sont inclus dans les totaux, sans être listés."
+    },
+    "medicationEffect": {
+      "title": "Changement autour du démarrage des médicaments",
+      "colMedication": "Médicament / mesure",
+      "colStart": "Début",
+      "colLevel": "Changement de niveau (IC 95 %)",
+      "colSlope": "Changement de tendance (IC 95 %)",
+      "colDays": "Jours avant / après",
+      "to": "à",
+      "week": "semaine",
+      "reasonNoStart": "Aucune date de début enregistrée",
+      "reasonBefore": "Trop peu de valeurs avant le démarrage",
+      "reasonAfter": "Trop peu de valeurs depuis le démarrage",
+      "reasonFit": "Calcul impossible",
+      "excludedAdherence": "{count} jours après le démarrage écartés (moins de {floor} % des doses prises)",
+      "excludedNotTaking": "{count} jours écartés (en pause ou entre deux périodes de prise)",
+      "notTracked": "prises non suivies, aucun jour écarté pour des doses manquées",
+      "endDoseChange": "la période s'arrête le {date}, avant le premier changement de dose",
+      "days": "{before} jours avant, {after} jours après le démarrage, {excluded} jours écartés",
+      "method": "Régression segmentée sur les valeurs quotidiennes, de 90 jours avant à 180 jours au plus après le démarrage, intervalles de Newey-West. Les jours après le démarrage où moins de 80 % des doses des 14 jours précédents ont été prises sont écartés. Décrit une association dans le temps, pas un effet démontré du médicament."
+    }
   },
   "errorBoundary": {
     "title": "Une erreur est survenue",
@@ -2359,7 +2390,30 @@
       },
       "scaleAbsolute": "Absolu",
       "scalePercentSinceStart": "% depuis le début",
-      "scaleToggleLabel": "Échelle du graphique"
+      "scaleToggleLabel": "Échelle du graphique",
+      "segmented": {
+        "title": "Changement au démarrage",
+        "level": "Dès le démarrage, le niveau s'est déplacé de {value} {unit} (intervalle à 95 % : {low} à {high}).",
+        "slope": "Après le démarrage, la tendance hebdomadaire a changé de {value} {unit} par semaine (intervalle à 95 % : {low} à {high}).",
+        "preSlope": "Avant le démarrage, la tendance était de {value} {unit} par semaine.",
+        "includesZero": "Lorsqu'un intervalle inclut zéro, ces valeurs sont aussi compatibles avec une absence de changement.",
+        "basis": "Sur la base de {before} jours avant et {after} jours après le démarrage ({from} au {to}).",
+        "excludedAdherence": "{count} jours après le démarrage ont été écartés, car moins de {floor} % des doses ont été prises dans les {lookback} jours précédents.",
+        "excludedNotTaking": "{count} jours ont été écartés, car le médicament était en pause ou entre deux périodes de prise.",
+        "notTracked": "Les prises de ce médicament ne sont pas suivies, aucun jour n'a donc été écarté pour des doses manquées.",
+        "endDoseChange": "La période s'arrête avant le premier changement de dose et décrit donc la dose de départ.",
+        "confoundersTitle": "Autres changements de médicaments sur cette période, que cette vue ne peut pas distinguer de celui-ci :",
+        "confounderStarted": "{name} commencé le {date}",
+        "confounderStopped": "{name} arrêté le {date}",
+        "confounderDoseChange": "{name} : dose modifiée le {date}",
+        "confounderPaused": "{name} mis en pause le {date}",
+        "confounderResumed": "{name} repris le {date}",
+        "method": "Méthode : une droite est ajustée aux valeurs quotidiennes avant le démarrage, une autre à celles d'après. Le saut entre les deux au démarrage est le changement de niveau, l'écart de leurs pentes le changement de tendance. Les intervalles tiennent compte du fait que les valeurs d'un jour influencent le lendemain.",
+        "needStart": "Indique une date de début pour voir le changement au démarrage.",
+        "needBefore": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours avant le démarrage.",
+        "needAfter": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours depuis le démarrage, les jours où les doses ont été prises.",
+        "fitFailed": "Ces valeurs n'ont pas pu être ajustées, aucun changement au démarrage n'est donc affiché."
+      }
     },
     "import": {
       "resultSuccess": "{imported} prises importées",
@@ -12307,7 +12361,10 @@
     "leafVisits": "Consultations",
     "leafSurgicalHistory": "Antécédents chirurgicaux",
     "leafImmunizations": "Vaccinations",
-    "leafEmergency": "Informations d'urgence (groupe sanguin, contacts, directives)"
+    "leafEmergency": "Informations d'urgence (groupe sanguin, contacts, directives)",
+    "leafMedicationEffect": "Changement autour du démarrage de chaque médicament",
+    "leafWorkouts": "Entraînements (résumé par sport)",
+    "leafHrvSdnn": "VFC (SDNN)"
   },
   "recordSharing": {
     "banner": {

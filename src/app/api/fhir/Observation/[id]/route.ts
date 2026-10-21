@@ -2,6 +2,9 @@
  * GET /api/fhir/Observation/{id} — FHIR R4 `read` of one Observation from the
  * caller's own record.
  *
+ * A series id (`m-…` / `w-…`, v1.44) reads that one row inside the same scope
+ * the series search applies; every other id is a snapshot id.
+ *
  * The id space is the export's own (`obs-3`), stable for a given record and
  * reporting window. A `read` is a filter over the same emitter the search
  * route pages, so a resource can never differ between the two faces; an id the
@@ -16,10 +19,13 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { observationsFromReportData } from "@/lib/fhir/resources";
 import {
   FHIR_READ_SCOPE,
+  fhirJsonResponse,
   loadFhirContext,
+  loadFhirSeriesScope,
   operationOutcome,
   readResponse,
 } from "@/lib/fhir/rest";
+import { readSeriesObservation } from "@/lib/fhir/series";
 
 export const GET = apiHandler(
   async (_request: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
@@ -41,6 +47,19 @@ export const GET = apiHandler(
       return operationOutcome(429, "throttled", "Rate limit exceeded");
     }
     const { id } = await ctx.params;
+    if (id.startsWith("m-") || id.startsWith("w-")) {
+      const { scope, glucoseUnit } = await loadFhirSeriesScope(user.id, null);
+      annotate({ meta: { resourceId: id, mode: "series" } });
+      const observation = await readSeriesObservation({
+        userId: user.id,
+        id,
+        scope,
+        glucoseUnit,
+      });
+      return observation
+        ? fhirJsonResponse(observation)
+        : operationOutcome(404, "not-found", "No such resource");
+    }
     const context = await loadFhirContext(user.id);
     annotate({ meta: { resourceId: id } });
     return readResponse(observationsFromReportData(context.data), id);

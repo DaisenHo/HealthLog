@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} uur, zelf opgegeven",
     "lifeWork": "Werk",
     "lifeNightWork": "nachtwerk",
-    "lifeExposures": "blootstellingen: {list}"
+    "lifeExposures": "blootstellingen: {list}",
+    "workouts": {
+      "title": "Trainingen",
+      "summary": "{sessions} trainingen, {hours} u in totaal; gemiddeld {perWeek} trainingen en {minutesPerWeek} minuten per week.",
+      "colSport": "Sport",
+      "colSessions": "Trainingen",
+      "colTime": "Duur",
+      "colDistance": "Afstand",
+      "colEnergy": "Energie",
+      "colHeartRate": "Gem. hartslag",
+      "moreSports": "{count} andere sporten tellen mee in de totalen, maar staan niet in de lijst."
+    },
+    "medicationEffect": {
+      "title": "Verandering rond de start van medicijnen",
+      "colMedication": "Medicijn / meetwaarde",
+      "colStart": "Start",
+      "colLevel": "Niveauverandering (95%-BI)",
+      "colSlope": "Trendverandering (95%-BI)",
+      "colDays": "Dagen voor / na",
+      "to": "tot",
+      "week": "week",
+      "reasonNoStart": "Geen startdatum vastgelegd",
+      "reasonBefore": "Te weinig waarden vóór de start",
+      "reasonAfter": "Te weinig waarden sinds de start",
+      "reasonFit": "Niet te berekenen",
+      "excludedAdherence": "{count} dagen na de start weggelaten (minder dan {floor}% van de doses ingenomen)",
+      "excludedNotTaking": "{count} dagen weggelaten (gepauzeerd of tussen kuren)",
+      "notTracked": "inname niet bijgehouden, dus geen dagen weggelaten om gemiste doses",
+      "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
+      "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
+      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn."
+    }
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -2359,7 +2390,30 @@
       },
       "scaleAbsolute": "Absoluut",
       "scalePercentSinceStart": "% sinds start",
-      "scaleToggleLabel": "Schaal van grafiek"
+      "scaleToggleLabel": "Schaal van grafiek",
+      "segmented": {
+        "title": "Verandering bij de start",
+        "level": "Direct bij de start verschoof het niveau met {value} {unit} (95%-bereik {low} tot {high}).",
+        "slope": "Na de start veranderde de weektrend met {value} {unit} per week (95%-bereik {low} tot {high}).",
+        "preSlope": "Voor de start was de trend {value} {unit} per week.",
+        "includesZero": "Waar een bereik nul omvat, passen deze waarden ook bij geen verandering.",
+        "basis": "Gebaseerd op {before} dagen voor en {after} dagen na de start ({from} tot {to}).",
+        "excludedAdherence": "{count} dagen na de start zijn weggelaten, omdat in de {lookback} dagen ervoor minder dan {floor}% van de doses is ingenomen.",
+        "excludedNotTaking": "{count} dagen zijn weggelaten, omdat het medicijn gepauzeerd was of tussen twee kuren lag.",
+        "notTracked": "De inname van dit medicijn wordt niet bijgehouden, dus er zijn geen dagen weggelaten om gemiste doses.",
+        "endDoseChange": "De periode eindigt vóór de eerste dosiswijziging en beschrijft dus de startdosis.",
+        "confoundersTitle": "Andere medicijnwijzigingen in deze periode, die deze weergave niet van dit medicijn kan scheiden:",
+        "confounderStarted": "{name} gestart op {date}",
+        "confounderStopped": "{name} gestopt op {date}",
+        "confounderDoseChange": "{name}: dosis gewijzigd op {date}",
+        "confounderPaused": "{name} gepauzeerd op {date}",
+        "confounderResumed": "{name} hervat op {date}",
+        "method": "Zo wordt het berekend: door de dagwaarden vóór de start wordt een lijn gelegd en een tweede door die erna. De sprong tussen beide bij de start is de niveauverandering, het verschil in hun helling de trendverandering. De bereiken houden er rekening mee dat waarden van de ene dag doorwerken in de volgende.",
+        "needStart": "Stel een startdatum in om de verandering bij de start te zien.",
+        "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen vóór de start.",
+        "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen sinds de start en op dagen waarop de doses zijn ingenomen.",
+        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond."
+      }
     },
     "import": {
       "resultSuccess": "{imported} innames geïmporteerd",
@@ -12307,7 +12361,10 @@
     "leafVisits": "Bezoeken",
     "leafSurgicalHistory": "Operatiegeschiedenis",
     "leafImmunizations": "Vaccinaties",
-    "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)"
+    "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
+    "leafMedicationEffect": "Verandering rond de start van elk medicijn",
+    "leafWorkouts": "Trainingen (overzicht per sport)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {

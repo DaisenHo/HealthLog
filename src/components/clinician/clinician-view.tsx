@@ -53,6 +53,10 @@ import {
 } from "./history-sections";
 import { DoseLogSection, Glp1Section } from "./therapy-sections";
 import {
+  MedicationEffectSection,
+  WorkoutsSection,
+} from "./activity-effect-sections";
+import {
   CycleSection,
   FamilyHistorySection,
   MoodSection,
@@ -219,6 +223,13 @@ export function ClinicianView({
               </Section>
             ) : null}
 
+            <WorkoutsSection
+              t={t}
+              report={report}
+              scope={scope}
+              fmtDigits={fmt.number}
+            />
+
             {/* ── glucose and labs ─────────────────────────────────── */}
             <GlucoseSection
               t={t}
@@ -240,6 +251,13 @@ export function ClinicianView({
               report={report}
               scope={scope}
               fmtDate={fmtDate}
+            />
+            <MedicationEffectSection
+              t={t}
+              report={report}
+              scope={scope}
+              fmtDigits={fmt.number}
+              fmtDay={(day) => fmt.dateShortSmartCalendar(day)}
             />
             <Glp1Section
               t={t}

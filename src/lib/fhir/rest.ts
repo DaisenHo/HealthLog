@@ -24,7 +24,15 @@ import {
 } from "@/lib/doctor-report-data";
 import type { FhirRecordInputs } from "@/lib/fhir/build-bundle";
 import { GERMAN_ATC_DEFAULT_LOCALES } from "@/lib/fhir/resources";
-import { isModuleEnabled } from "@/lib/modules/gate";
+import { isModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
+import { resolveReportGate } from "@/lib/doctor-report/selection-gate";
+import {
+  resolveSeriesScope,
+  seriesGlucoseUnit,
+  type SeriesCodeFilter,
+  type SeriesScope,
+} from "@/lib/fhir/series";
+import type { GlucoseUnit } from "@/lib/glucose";
 import { toAllergyDTO, toFamilyHistoryEntryDTO } from "@/lib/records/dto";
 import type {
   FhirBundleEntry,
@@ -64,6 +72,16 @@ export const FHIR_EVERYTHING_OPERATION = "$everything";
 
 /** Search parameters honoured uniformly across the search routes. */
 export const FHIR_SEARCH_PARAMS = ["_count", "_offset"] as const;
+
+/**
+ * Further search parameters the Observation search honours (v1.44). `date`
+ * switches the answer from the snapshot to the time series of every reading
+ * in the range; `code` narrows either answer to the named codings.
+ */
+export const FHIR_OBSERVATION_SEARCH_PARAMS = [
+  { name: "date", type: "date" },
+  { name: "code", type: "token" },
+] as const;
 
 /** Canonical FHIR media type for every response (success or outcome). */
 export const FHIR_CONTENT_TYPE = "application/fhir+json; charset=utf-8";
@@ -307,4 +325,31 @@ export async function loadFhirContext(userId: string): Promise<{
       familyHistory: familyHistoryRows.map(toFamilyHistoryEntryDTO),
     },
   };
+}
+
+/**
+ * The series face's scope: the same saved selection and module map the
+ * snapshot replays, narrowed by an optional `code` filter, plus the owner's
+ * glucose unit. Reads two small rows and the selection — never the
+ * whole-record aggregate, so a series page costs what its page costs.
+ *
+ * Carries the same module backstop as {@link loadFhirContext}.
+ */
+export async function loadFhirSeriesScope(
+  userId: string,
+  codes: SeriesCodeFilter | null,
+): Promise<{ scope: SeriesScope; glucoseUnit: GlucoseUnit }> {
+  if (!(await isModuleEnabled(userId, "doctorReport"))) {
+    throw new Error(
+      'loadFhirSeriesScope called with the "doctorReport" module disabled — ' +
+        "the calling route is missing its requireModuleEnabled gate",
+    );
+  }
+  const [selection, moduleMap, glucoseUnit] = await Promise.all([
+    resolveSavedSelection(userId),
+    resolveModuleMap(userId),
+    seriesGlucoseUnit(userId),
+  ]);
+  const gate = resolveReportGate(selection, moduleMap);
+  return { scope: resolveSeriesScope(gate, codes), glucoseUnit };
 }

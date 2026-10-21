@@ -211,6 +211,34 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       category: "vital-signs",
     },
   },
+  // v1.44 — RMSSD, the heart-rate-variability statistic rings and bands
+  // report (Oura, WHOOP, Polar, Fitbit, Google Health). Registered for its FHIR
+  // coding only: every other surface reads it through its own tables today, so
+  // all surface flags stay off and nothing else derives from this entry.
+  // LOINC publishes an SDNN term (80404-7, above) and none for RMSSD, so the
+  // coding is text-only rather than borrowing SDNN's code for a different
+  // statistic.
+  HRV_RMSSD: {
+    key: "HRV_RMSSD",
+    kind: "measurement",
+    source: { measurementType: "HRV_RMSSD" },
+    displayName: "Heart-rate variability (RMSSD)",
+    unit: "ms",
+    direction: "higher-better",
+    archetype: "physiological-vital",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      loinc: null,
+      display: "Heart rate variability RMSSD",
+      unit: "ms",
+      category: "vital-signs",
+    },
+  },
   OXYGEN_SATURATION: {
     key: "OXYGEN_SATURATION",
     kind: "measurement",

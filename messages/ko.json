@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours}시간, 본인 응답",
     "lifeWork": "일",
     "lifeNightWork": "야간 근무",
-    "lifeExposures": "노출: {list}"
+    "lifeExposures": "노출: {list}",
+    "workouts": {
+      "title": "운동",
+      "summary": "총 {sessions}회, {hours}시간; 주당 평균 {perWeek}회, {minutesPerWeek}분.",
+      "colSport": "종목",
+      "colSessions": "횟수",
+      "colTime": "시간",
+      "colDistance": "거리",
+      "colEnergy": "에너지",
+      "colHeartRate": "평균 심박수",
+      "moreSports": "{count}개 종목이 합계에는 포함되지만 목록에는 없습니다."
+    },
+    "medicationEffect": {
+      "title": "약 시작 전후의 변화",
+      "colMedication": "약 / 측정값",
+      "colStart": "시작",
+      "colLevel": "수준 변화(95% CI)",
+      "colSlope": "추세 변화(95% CI)",
+      "colDays": "전 / 후 일수",
+      "to": "~",
+      "week": "주",
+      "reasonNoStart": "기록된 시작일 없음",
+      "reasonBefore": "시작 전 측정값이 너무 적음",
+      "reasonAfter": "시작 후 측정값이 너무 적음",
+      "reasonFit": "계산할 수 없음",
+      "excludedAdherence": "시작 후 {count}일 제외(복용률 {floor}% 미만)",
+      "excludedNotTaking": "{count}일 제외(일시 중지 또는 복용 기간 사이)",
+      "notTracked": "복용 미기록으로 놓친 용량에 따른 제외 없음",
+      "endDoseChange": "기간은 첫 용량 변경 전인 {date}에 끝남",
+      "days": "시작 전 {before}일, 시작 후 {after}일, 제외 {excluded}일",
+      "method": "시작 90일 전부터 최대 180일 후까지의 일별 값에 대한 분절 회귀, Newey-West 구간. 직전 14일 복용률이 80% 미만인 시작 후 날짜는 제외했습니다. 시간에 따른 연관성을 보여 줄 뿐, 약의 효과를 입증하지 않습니다."
+    }
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -2359,7 +2390,30 @@
       },
       "scaleAbsolute": "절대값",
       "scalePercentSinceStart": "시작 이후 %",
-      "scaleToggleLabel": "차트 눈금"
+      "scaleToggleLabel": "차트 눈금",
+      "segmented": {
+        "title": "시작 시점의 변화",
+        "level": "시작 직후 수준이 {value} {unit} 이동했습니다(95% 범위 {low}~{high}).",
+        "slope": "시작 후 주간 추세가 주당 {value} {unit} 변했습니다(95% 범위 {low}~{high}).",
+        "preSlope": "시작 전 추세는 주당 {value} {unit}였습니다.",
+        "includesZero": "범위에 0이 포함되면 이 측정값은 변화가 없다는 것과도 일치합니다.",
+        "basis": "시작 전 {before}일과 시작 후 {after}일 기준({from}~{to}).",
+        "excludedAdherence": "직전 {lookback}일 동안 복용한 용량이 {floor}% 미만이어서 시작 후 {count}일을 제외했습니다.",
+        "excludedNotTaking": "약을 일시 중지했거나 복용 기간 사이였던 {count}일을 제외했습니다.",
+        "notTracked": "이 약은 복용을 기록하지 않으므로 놓친 용량 때문에 제외한 날이 없습니다.",
+        "endDoseChange": "기간이 첫 용량 변경 전에 끝나므로 시작 용량을 나타냅니다.",
+        "confoundersTitle": "이 기간의 다른 약 변경 사항으로, 이 화면에서는 이 약과 구분할 수 없습니다.",
+        "confounderStarted": "{name} {date} 시작",
+        "confounderStopped": "{name} {date} 중단",
+        "confounderDoseChange": "{name}: {date} 용량 변경",
+        "confounderPaused": "{name} {date} 일시 중지",
+        "confounderResumed": "{name} {date} 재개",
+        "method": "계산 방법: 시작 전 일별 값에 직선 하나를, 시작 후 값에 또 하나를 맞춥니다. 시작 시점의 두 직선 사이 간격이 수준 변화이고, 기울기 차이가 추세 변화입니다. 범위는 하루의 값이 다음 날로 이어지는 점을 반영합니다.",
+        "needStart": "시작 시점의 변화를 보려면 시작일을 설정하세요.",
+        "needBefore": "시작 시점의 변화를 보려면 시작 전 {span}일에 걸쳐 최소 {days}일의 측정값이 필요합니다.",
+        "needAfter": "시작 시점의 변화를 보려면 시작 후 {span}일에 걸쳐, 용량을 복용한 날 기준으로 최소 {days}일의 측정값이 필요합니다.",
+        "fitFailed": "이 측정값으로는 계산할 수 없어 시작 시점의 변화를 표시하지 않습니다."
+      }
     },
     "import": {
       "resultSuccess": "복용 {imported}건을 불러왔어요",
@@ -12307,7 +12361,10 @@
     "leafVisits": "진료",
     "leafSurgicalHistory": "수술 이력",
     "leafImmunizations": "예방접종",
-    "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)"
+    "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
+    "leafMedicationEffect": "각 약 시작 전후의 변화",
+    "leafWorkouts": "운동(종목별 요약)",
+    "leafHrvSdnn": "심박변이도 (SDNN)"
   },
   "recordSharing": {
     "banner": {

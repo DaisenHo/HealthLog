@@ -26,11 +26,11 @@ import {
 } from "@/lib/doctor-report/stat-display";
 import type { FractionDigitsFormat } from "@/lib/format/recorded-number";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
-import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import {
   isReportLeafId,
   isStructuredLeafId,
   REPORT_GROUPS,
+  reportMeasurementLabelKey,
   type ReportLeafId,
 } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
@@ -248,7 +248,7 @@ export function MeasurementGroups({
             return (
               <StatRow
                 key={type}
-                label={t(MEASUREMENT_TYPE_LABEL_KEYS[type])}
+                label={t(reportMeasurementLabelKey(type))}
                 value={statSummary(t, reportStatUnit(type, glucoseUnit, t), {
                   latest: show(type, stat!.latest, digits),
                   avg: show(type, stat!.avg, digits),

@@ -3,7 +3,7 @@ import {
   type DoctorReportData,
 } from "../doctor-report-data";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { MEASUREMENT_TYPE_LABEL_KEYS } from "../measurements/type-label-keys";
+import { reportMeasurementLabelKey } from "../report-selection/catalogue";
 import type {
   DoctorReportNumberFormatter,
   DoctorReportTranslator,
@@ -34,6 +34,20 @@ export const SPARKLINE_TYPES = [
   "BLOOD_PRESSURE_SYS",
   "PULSE",
 ] as const;
+
+/**
+ * The wearable series charted at half width, two to a row, below the
+ * full-width vitals. Each still needs its leaf selected and two points in the
+ * window. The points are the report's own series: one per night for sleep,
+ * day buckets for heart-rate variability once the window or the row count
+ * passes the raw limit, and the daily totals steps arrive as.
+ */
+export const COMPACT_SPARKLINE_TYPES = [
+  "SLEEP_DURATION",
+  "HEART_RATE_VARIABILITY",
+  "HRV_RMSSD",
+  "ACTIVITY_STEPS",
+] as const satisfies readonly MeasurementType[];
 
 /** First-half vs second-half mean → "↑" / "↓" / "→". */
 export function trendArrow(values: number[]): "↑" | "↓" | "→" {
@@ -95,7 +109,7 @@ export function buildClinicalSummaryLines(
     );
     lines.push(
       t("doctorReport.summaryTrend", {
-        label: t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType] ?? ""),
+        label: t(reportMeasurementLabelKey(type as MeasurementType)),
         latest: num(stat.latest, 1),
         arrow,
       }),

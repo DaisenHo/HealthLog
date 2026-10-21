@@ -24,7 +24,6 @@ import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import {
   buildComplianceMedicationContext,
-  COURSES_COMPLIANCE_SELECT,
   buildMedicationComplianceBundle,
   dailyComplianceRatesFromLedger,
   lastNonSkippedTakenAt,
@@ -40,6 +39,11 @@ import {
   type MedTargetTier,
 } from "@/lib/medications/med-target-map";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
+import {
+  EFFECT_MEDICATION_INCLUDE,
+  loadSegmentedEffects,
+} from "@/lib/medications/efficacy/load-segmented-effects";
+import type { EfficacySegmented } from "@/lib/medications/efficacy/segmented-effect";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -93,6 +97,12 @@ export interface EfficacyTargetView {
   beforeAfter: EfficacyBeforeAfter;
   /** Metric targets only; null for lab targets (changepoint reads metrics). */
   levelShift: EfficacyLevelShift | null;
+  /**
+   * The segmented-regression effect (level + slope change with 95 %
+   * intervals, adherence-adjusted). Metric targets only; null for a lab,
+   * whose readings are too sparse for a daily time series.
+   */
+  segmented: EfficacySegmented | null;
 }
 
 export interface EfficacyMarkers {
@@ -294,6 +304,7 @@ async function buildMetricTarget(
     series,
     beforeAfter: beforeAfterFromSeries(straddle, pivotMs),
     levelShift,
+    segmented: null,
   };
 }
 
@@ -343,6 +354,7 @@ async function buildLabTarget(
     series,
     beforeAfter: beforeAfterFromSeries(straddle, pivotMs),
     levelShift: null,
+    segmented: null,
   };
 }
 
@@ -351,7 +363,7 @@ async function buildLabTarget(
  * override wins (tier "override"); otherwise the derived ATC/name resolution.
  * Returns the tier + class provenance for the DTO alongside the target list.
  */
-async function resolveEffectiveTargets(med: {
+export async function resolveEffectiveTargets(med: {
   id: string;
   name: string;
   treatmentClass: string;
@@ -417,14 +429,8 @@ export async function buildMedicationEfficacy(
 ): Promise<MedicationEfficacyDTO | null> {
   const med = await prisma.medication.findFirst({
     where: { id: medicationId, userId },
-    include: {
-      schedules: true,
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      pauseEras: { select: { pausedAt: true, resumedAt: true } },
-      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
-      courses: COURSES_COMPLIANCE_SELECT,
-      doseChanges: { orderBy: { effectiveFrom: "asc" } },
-    },
+    // The courses ride along, so a gap between two expects nothing (#1024).
+    include: EFFECT_MEDICATION_INCLUDE,
   });
   if (!med) return null;
 
@@ -567,6 +573,23 @@ export async function buildMedicationEfficacy(
         );
       }
       targets.push(view);
+    }
+  }
+
+  // The segmented effect, per metric target, around `startsOn` only: the
+  // first-reading fallback has no "before" by definition.
+  const segmented = await loadSegmentedEffects({
+    userId,
+    med,
+    targets: targets
+      .filter((t) => t.kind === "metric")
+      .map((t) => t.key as MeasurementType),
+    timezone,
+    now,
+  });
+  for (const view of targets) {
+    if (view.kind === "metric") {
+      view.segmented = segmented.get(view.key as MeasurementType) ?? null;
     }
   }
 

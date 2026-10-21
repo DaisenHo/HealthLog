@@ -59,6 +59,12 @@
     "unit": "ms",
     "category": "vital-signs"
   },
+  "HRV_RMSSD": {
+    "loinc": null,
+    "display": "Heart rate variability RMSSD",
+    "unit": "ms",
+    "category": "vital-signs"
+  },
   "ACTIVITY_STEPS": {
     "loinc": "41950-7",
     "display": "Number of steps in 24 hour Measured",

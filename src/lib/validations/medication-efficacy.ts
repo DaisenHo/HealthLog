@@ -81,6 +81,81 @@ const levelShiftSchema = z
   })
   .nullable();
 
+const estimateSchema = z
+  .object({
+    estimate: z.number(),
+    ciLow: z.number(),
+    ciHigh: z.number(),
+    standardError: z.number(),
+    includesZero: z.boolean(),
+  })
+  .nullable();
+
+/**
+ * The segmented-regression (interrupted time series) effect: the immediate
+ * level change and the change in weekly trend at the start, each with a 95 %
+ * interval (Newey–West), fitted over up to 90 days before and 180 after with
+ * low-adherence and not-taking days after the start left out. Descriptive
+ * only; `present: false` carries the reason the data floor was not met.
+ */
+const segmentedSchema = z
+  .object({
+    present: z.boolean(),
+    reason: z
+      .enum([
+        "no_start",
+        "insufficient_before",
+        "insufficient_after",
+        "fit_failed",
+      ])
+      .optional(),
+    level: z.number(),
+    window: z
+      .object({
+        from: z.string(),
+        to: z.string(),
+        endReason: z.enum(["today", "window", "dose_change"]),
+      })
+      .nullable(),
+    days: z.object({
+      before: z.number().int(),
+      after: z.number().int(),
+      excludedLowAdherence: z.number().int(),
+      excludedNotTaking: z.number().int(),
+    }),
+    adherence: z.object({
+      status: z.enum(["tracked", "not_tracked"]),
+      floorPct: z.number().int(),
+      lookbackDays: z.number().int(),
+    }),
+    levelChange: estimateSchema,
+    slopeChangePerWeek: estimateSchema,
+    preSlopePerWeek: estimateSchema,
+    fit: z
+      .object({
+        n: z.number().int(),
+        df: z.number().int(),
+        rSquared: z.number(),
+        residualAutocorrelation: z.number(),
+        hacLag: z.number().int(),
+      })
+      .nullable(),
+    confounders: z.array(
+      z.object({
+        medicationName: z.string(),
+        event: z.enum([
+          "started",
+          "stopped",
+          "dose_change",
+          "paused",
+          "resumed",
+        ]),
+        date: z.string(),
+      }),
+    ),
+  })
+  .nullable();
+
 const targetViewSchema = z.object({
   kind: z.enum(["metric", "lab"]),
   key: z.string(),
@@ -91,6 +166,7 @@ const targetViewSchema = z.object({
   series: z.array(seriesPointSchema),
   beforeAfter: beforeAfterSchema,
   levelShift: levelShiftSchema,
+  segmented: segmentedSchema,
 });
 
 export const medicationEfficacyResponseSchema = z.object({
