@@ -213,3 +213,19 @@ describe("GET /api/health while the background role starts", () => {
     }
   });
 });
+
+describe("GET /api/health — the `starting` window is bounded", () => {
+  it("drops the reason once a start outlasts any real boot", async () => {
+    const { markStartup, STARTING_MAX_MS } =
+      await import("@/lib/boot/startup-state");
+    vi.stubEnv("HEALTHLOG_PROCESS_TYPE", "web");
+    markStartup("starting", Date.now() - STARTING_MAX_MS - 1_000);
+    try {
+      const { response, body } = await health();
+      expect(response.status).toBe(503);
+      expect(body).toEqual({ status: "degraded" });
+    } finally {
+      markStartup("ready");
+    }
+  });
+});

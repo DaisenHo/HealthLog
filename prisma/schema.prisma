@@ -5421,6 +5421,10 @@ model AppSettings {
   /// Last dry-run status and result (account ordinals only, no ids); the apply
   /// step's precondition and the admin card's result.
   pulseDayMeanDryRunJson Json?     @map("pulse_day_mean_dry_run_json")
+  /// @internal: progress marker of the one-time workout climb backfill
+  /// (`src/lib/workouts/climb-backfill.ts`): the last workout id scanned,
+  /// `done` when finished, NULL before it starts. Operational, never shown.
+  workoutClimbBackfillCursor String? @map("workout_climb_backfill_cursor")
 
   @@map("app_settings")
 }

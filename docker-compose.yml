@@ -522,7 +522,11 @@ services:
       # minutes (docs/ops/deploy.md), and failed probes in that time must not
       # read as a dead container. The first probe that answers still ends
       # the start period, so a normal boot is healthy within 30 seconds of
-      # listening.
+      # listening. After it listens, the pg-boss worker starts in the
+      # background and /api/health answers 503 with reason "starting" until it
+      # is up (10–60 s under load, reported as "starting" for at most five
+      # minutes); inside the start period those probes do not count, so a slow
+      # worker start cannot mark the container unhealthy.
       start_period: 10m
 
   # Optional dedicated worker container — uncomment + set

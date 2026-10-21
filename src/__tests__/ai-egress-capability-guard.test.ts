@@ -323,6 +323,8 @@ describe("workout route geometry never reaches an AI path", () => {
     "lib/jobs/free-text-encryption-backfill.ts":
       "Seals legacy readable tracks in place.",
     "lib/workouts/route-geometry-cipher.ts": "The cipher itself.",
+    "lib/workouts/climb-backfill.ts":
+      "One-time backfill: derives metres climbed into Workout.elevationM.",
   };
 
   /** Directories whose code feeds a model. */

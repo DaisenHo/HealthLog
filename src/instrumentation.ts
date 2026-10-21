@@ -86,11 +86,30 @@ export async function register() {
     // the boss is not bound yet takes the same path as during a producer
     // reconnect: a garnish skips its enqueue (the owning cron catches up),
     // and a route that needs the worker answers 503 until it is up.
-    const [{ shouldRunWorker }, { markStartup }] = await Promise.all([
+    const [
+      { shouldRunWorker },
+      { markStartup, startupPhase, startupElapsedMs, STARTING_MAX_MS },
+    ] = await Promise.all([
       import("@/lib/process-type"),
       import("@/lib/boot/startup-state"),
     ]);
     markStartup("starting");
+    // One line when the start takes longer than any real boot; from then on
+    // the probe reports plain `degraded` instead of `starting`.
+    setTimeout(() => {
+      if (startupPhase() === "stalled") {
+        console.warn(
+          `[boot] The background role is still not up after ${Math.round(STARTING_MAX_MS / 1000)} s; /api/health now reports degraded without "starting".`,
+        );
+      }
+    }, STARTING_MAX_MS + 1_000).unref();
+    const ready = (up: boolean) => {
+      const elapsed = startupElapsedMs();
+      markStartup(up ? "ready" : "failed");
+      console.info(
+        `[boot] background role ${up ? "ready" : "failed"} after ${elapsed ?? 0} ms`,
+      );
+    };
     if (!shouldRunWorker()) {
       // Split deployment: web requests still produce queue jobs, but this
       // process owns no schedules, supervision, or consumers.
@@ -104,9 +123,9 @@ export async function register() {
               await import("@/lib/jobs/reminder/worker-lifecycle");
             registerShutdownHandlers(boss);
           }
-          markStartup(boss ? "ready" : "failed");
+          ready(boss !== null);
         } catch (err) {
-          markStartup("failed");
+          ready(false);
           // Queue-backed garnishes degrade independently; never make the web
           // server unavailable because its producer connection failed.
           console.error(
@@ -130,13 +149,13 @@ export async function register() {
         const { startReminderWorker } =
           await import("@/lib/jobs/reminder-worker");
         await startReminderWorker();
-        markStartup("ready");
+        ready(true);
 
         startupEvt.addMeta("reminder_worker", "started");
         startupEvt.finish();
         emitIfSampled(startupEvt.toJSON());
       } catch (err) {
-        markStartup("failed");
+        ready(false);
         startupEvt.setError(err);
         startupEvt.addMeta("reminder_worker", "failed");
         startupEvt.finish();

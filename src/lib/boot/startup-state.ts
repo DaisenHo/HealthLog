@@ -8,16 +8,48 @@
  * The probe reads this to say `starting` while that is under way rather than
  * hanging, and the operator sees a 503 that names a transient state.
  *
+ * The window is bounded. A start that has not finished after
+ * `STARTING_MAX_MS` is no longer reported as `starting`: it reads `stalled`,
+ * the probe drops the reason and says plainly `degraded`, and the process
+ * logs one line saying so. An uptime monitor therefore never sees the
+ * "transient" label for longer than a real boot takes.
+ *
  * `null` means no background role was started in this process at all.
  */
-export type StartupPhase = "starting" | "ready" | "failed";
+export type StartupPhase = "starting" | "ready" | "failed" | "stalled";
 
-const KEY = Symbol.for("healthlog.boot.startupPhase");
+/** Longest a start is still called `starting`. Prod boots take 10–60 s. */
+export const STARTING_MAX_MS = 5 * 60_000;
 
-export function markStartup(phase: StartupPhase): void {
-  (globalThis as Record<symbol, unknown>)[KEY] = phase;
+const KEY = Symbol.for("healthlog.boot.startupState");
+
+interface State {
+  phase: Exclude<StartupPhase, "stalled">;
+  since: number;
 }
 
-export function startupPhase(): StartupPhase | null {
-  return ((globalThis as Record<symbol, unknown>)[KEY] as StartupPhase) ?? null;
+function state(): State | undefined {
+  return (globalThis as Record<symbol, unknown>)[KEY] as State | undefined;
+}
+
+export function markStartup(
+  phase: Exclude<StartupPhase, "stalled">,
+  now: number = Date.now(),
+): void {
+  (globalThis as Record<symbol, unknown>)[KEY] = { phase, since: now };
+}
+
+export function startupPhase(now: number = Date.now()): StartupPhase | null {
+  const current = state();
+  if (!current) return null;
+  if (current.phase === "starting" && now - current.since > STARTING_MAX_MS) {
+    return "stalled";
+  }
+  return current.phase;
+}
+
+/** Milliseconds since the current phase began, or null before any start. */
+export function startupElapsedMs(now: number = Date.now()): number | null {
+  const current = state();
+  return current ? now - current.since : null;
 }
