@@ -190,7 +190,7 @@ describe("blood pressure correlations and self-closing records", () => {
         source: "APPLE_HEALTH",
         type: { in: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] },
       },
-      orderBy: [{ type: "asc" }],
+      orderBy: [{ type: "asc" }, { measuredAt: "asc" }, { value: "asc" }],
     });
     return { result, values: rows.map((r) => r.value) };
   }
@@ -479,7 +479,7 @@ describe("a sample whose HKExternalUUID is a HealthLog row id", () => {
     });
     const rows = await prisma.measurement.findMany({
       where: { userId: user.id, source: "APPLE_HEALTH" },
-      orderBy: [{ type: "asc" }],
+      orderBy: [{ type: "asc" }, { measuredAt: "asc" }, { value: "asc" }],
     });
     return { result, rows };
   }
