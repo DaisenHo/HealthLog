@@ -7,7 +7,7 @@
  *   - body/log/weight        → WEIGHT                  (kg)
  *   - body/log/fat           → BODY_FAT                (%)
  *   - spo2 summary           → OXYGEN_SATURATION       (%)
- *   - hrv summary            → HEART_RATE_VARIABILITY  (ms, dailyRmssd)
+ *   - hrv summary            → HRV_RMSSD               (ms, dailyRmssd)
  *   - activities/heart       → RESTING_HEART_RATE      (bpm)
  *   - br summary             → RESPIRATORY_RATE        (breaths/min)
  *

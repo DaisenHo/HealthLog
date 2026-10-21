@@ -332,13 +332,13 @@ describe("metric mappers (classic shapes)", () => {
     expect(out[0]!.fieldTag).toBe("2026-05-10:spo2");
   });
 
-  it("maps HRV dailyRmssd into the canonical HEART_RATE_VARIABILITY slot", () => {
+  it("maps HRV dailyRmssd into HRV_RMSSD, apart from the SDNN series", () => {
     const out = mapHeartRateVariability({
       hrv: [
         { dateTime: "2026-05-10", value: { dailyRmssd: 42.7, deepRmssd: 50 } },
       ],
     });
-    expect(out[0]!.type).toBe("HEART_RATE_VARIABILITY");
+    expect(out[0]!.type).toBe("HRV_RMSSD");
     expect(out[0]).toMatchObject({ value: 42.7, unit: "ms" });
     expect(out[0]!.fieldTag).toBe("2026-05-10:hrv");
   });

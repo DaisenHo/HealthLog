@@ -404,8 +404,17 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // on now. Mirrors the recovery ladder's native-above-computed ordering.
   sleepDebt: ["WHOOP", "OURA", "POLAR", "COMPUTED"],
   // v1.42 (#1110) — the straps and rings that measure RMSSD overnight lead;
-  // the HealthKit relay of a third-party reading is the fallback.
-  hrvRmssd: ["WHOOP", "OURA", "POLAR", "APPLE_HEALTH"],
+  // the HealthKit relay of a third-party reading is the fallback. Fitbit and
+  // Google Health report RMSSD too and take the places they hold on the SDNN
+  // ladder they used to be filed under.
+  hrvRmssd: [
+    "WHOOP",
+    "FITBIT",
+    "GOOGLE_HEALTH",
+    "OURA",
+    "POLAR",
+    "APPLE_HEALTH",
+  ],
 };
 
 /**
