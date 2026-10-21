@@ -60,10 +60,7 @@ beforeEach(() => {
 describe("/api/auth/me/workout-routes", () => {
   it("reads off when the row carries no value", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
-    const res = await GET(
-      new Request("http://localhost/api/auth/me/workout-routes") as never,
-      { params: Promise.resolve({}) } as never,
-    );
+    const res = await GET();
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
       data: { storeWorkoutRoutes: false },
@@ -74,12 +71,7 @@ describe("/api/auth/me/workout-routes", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       storeWorkoutRoutes: false,
     } as never);
-    const res = await PATCH(
-      mkPatch({ storeWorkoutRoutes: true }) as never,
-      {
-        params: Promise.resolve({}),
-      } as never,
-    );
+    const res = await PATCH(mkPatch({ storeWorkoutRoutes: true }));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
       data: { storeWorkoutRoutes: true },
@@ -97,24 +89,14 @@ describe("/api/auth/me/workout-routes", () => {
   });
 
   it("refuses a malformed body with 422 and writes nothing", async () => {
-    const res = await PATCH(
-      mkPatch({ storeWorkoutRoutes: "yes" }) as never,
-      {
-        params: Promise.resolve({}),
-      } as never,
-    );
+    const res = await PATCH(mkPatch({ storeWorkoutRoutes: "yes" }));
     expect(res.status).toBe(422);
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("refuses an unauthenticated caller", async () => {
     vi.mocked(getSession).mockResolvedValue(null);
-    const res = await PATCH(
-      mkPatch({ storeWorkoutRoutes: true }) as never,
-      {
-        params: Promise.resolve({}),
-      } as never,
-    );
+    const res = await PATCH(mkPatch({ storeWorkoutRoutes: true }));
     expect(res.status).toBe(401);
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
