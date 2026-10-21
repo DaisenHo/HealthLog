@@ -533,6 +533,84 @@ describe("parseSourcePriority — duplicate tolerance (v1.16.11)", () => {
     const ladder = resolved.metricPriority.weight;
     expect(new Set(ladder).size).toBe(ladder.length);
     expect(ladder.slice(0, 2)).toEqual(["MANUAL", "WITHINGS"]);
-    expect(ladder.length).toBeLessThanOrEqual(8);
+    // The schema caps a ladder at one entry per source.
+    expect(ladder.length).toBeLessThanOrEqual(
+      measurementSourceEnum.options.length,
+    );
+  });
+});
+
+describe("DEFAULT_SOURCE_PRIORITY — the sources that had no place (v1.43.11)", () => {
+  const HAND_ENTERED = ["EXTERNAL", "MCP", "TELEGRAM"] as const;
+  // What Health Connect imports, by ladder (`import/health-connect/mapper.ts`).
+  const HEALTH_CONNECT_LADDERS = [
+    "steps",
+    "activeEnergy",
+    "walkingRunningDistance",
+    "bloodPressure",
+    "bodyFat",
+    "bodyTemperature",
+    "hrvRmssd",
+    "spo2",
+    "respiratoryRate",
+    "restingHeartRate",
+    "vo2Max",
+    "weight",
+  ] as const;
+
+  it("ranks the hand-entered sources right after MANUAL wherever MANUAL ranks", () => {
+    for (const [key, ladder] of Object.entries(DEFAULT_SOURCE_PRIORITY)) {
+      const i = (ladder as string[]).indexOf("MANUAL");
+      if (i === -1) continue;
+      expect(ladder.slice(i + 1, i + 1 + HAND_ENTERED.length), key).toEqual([
+        ...HAND_ENTERED,
+      ]);
+    }
+  });
+
+  it("ranks Health Connect right after Apple Health on every ladder it imports for", () => {
+    for (const key of HEALTH_CONNECT_LADDERS) {
+      const ladder = DEFAULT_SOURCE_PRIORITY[key] as string[];
+      expect(ladder[ladder.indexOf("APPLE_HEALTH") + 1], key).toBe(
+        "HEALTH_CONNECT",
+      );
+    }
+  });
+
+  it("leaves the order of the sources the ladders already named alone", () => {
+    const added = new Set<string>([...HAND_ENTERED, "HEALTH_CONNECT"]);
+    const without = (key: keyof typeof DEFAULT_SOURCE_PRIORITY) =>
+      DEFAULT_SOURCE_PRIORITY[key].filter((s) => !added.has(s));
+    expect(without("weight")).toEqual([
+      "WITHINGS",
+      "APPLE_HEALTH",
+      "MANUAL",
+      "WHOOP",
+      "FITBIT",
+      "GOOGLE_HEALTH",
+    ]);
+    expect(without("bloodPressure")).toEqual([
+      "WITHINGS",
+      "APPLE_HEALTH",
+      "MANUAL",
+    ]);
+    expect(without("spo2")).toEqual([
+      "WITHINGS",
+      "WHOOP",
+      "FITBIT",
+      "GOOGLE_HEALTH",
+      "OURA",
+      "POLAR",
+      "APPLE_HEALTH",
+      "MANUAL",
+    ]);
+  });
+
+  it("fits every default ladder within the schema cap", () => {
+    for (const [key, ladder] of Object.entries(DEFAULT_SOURCE_PRIORITY)) {
+      expect(ladder.length, key).toBeLessThanOrEqual(
+        measurementSourceEnum.options.length,
+      );
+    }
   });
 });
