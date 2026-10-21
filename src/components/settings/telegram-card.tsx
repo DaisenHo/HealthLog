@@ -116,23 +116,30 @@ export function TelegramCard({
     if (botToken.trim()) body.botToken = botToken.trim();
     if (chatId !== (settings?.chatId ?? "")) body.chatId = chatId;
 
-    const res = await apiFetchRaw("/api/settings/telegram", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      // A request that never reaches the server (offline, a dropped
+      // connection) is a failed save like any other, not a stuck one.
+      const res = await apiFetchRaw("/api/settings/telegram", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }).catch(() => null);
 
-    if (res.ok) {
-      setMsg(t("settings.saved"));
-      setMsgType("success");
-      setBotToken("");
-      queryClient.invalidateQueries({ queryKey: queryKeys.telegram() });
-    } else {
-      const json = await res.json();
-      setMsg(json.error || t("settings.savingError"));
-      setMsgType("error");
+      if (res?.ok) {
+        setMsg(t("settings.saved"));
+        setMsgType("success");
+        setBotToken("");
+        queryClient.invalidateQueries({ queryKey: queryKeys.telegram() });
+      } else {
+        const json = (await res?.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setMsg(json?.error || t("settings.savingError"));
+        setMsgType("error");
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   return (

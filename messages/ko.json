@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "순서가 Codex → OpenAI → Anthropic → 로컬 → 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
       },
       "activeProviderHeading": "사용 중인 제공자",
-      "activeProviderLabel": "기본 제공자",
+      "activeProviderLabel": "설정할 제공자",
       "providerSelect": {
         "codex": "ChatGPT 계정 (Codex)",
         "openai": "OpenAI (내 API 키)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다."
       },
-      "providerCardDescription": "HealthLog가 가장 먼저 쓰는 제공자와 그 키, 모델이에요.",
+      "providerCardDescription": "제공자마다 키와 모델을 설정하고, 아래 순서로 HealthLog가 먼저 쓸 제공자를 정해요.",
       "runtimeTitle": "확인 및 새로고침",
       "usage": {
         "title": "AI 사용량",
@@ -6440,6 +6440,14 @@
         "followsDefault": "서버 기본값({level})을 따르고 있어요.",
         "useDefault": "서버 기본값 사용({level})",
         "saveError": "단계를 저장하지 못했어요. 다시 시도해 주세요."
+      },
+      "removeKey": {
+        "label": "API 키 삭제",
+        "title": "저장된 API 키를 삭제할까요?",
+        "body": "HealthLog가 저장된 키를 삭제하며 되돌릴 수 없어요. 계속 쓰려면 키를 다시 입력하세요.",
+        "confirm": "API 키 삭제",
+        "done": "API 키를 삭제했어요.",
+        "failed": "API 키를 삭제하지 못했어요."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "이 링크는 선택한 적 없는 범위를 제공하고 있어서 닫았어요. 새로 만들고 담을 내용을 골라 주세요.",
       "reselectAction": "새 링크 만들기",
       "createDetail": "토큰은 만들 때 한 번만 보여줘요. 그때 저장해 두세요. 복구할 수 없어요.",
-      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요."
+      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요.",
+      "revokedToast": "링크를 해지했어요.",
+      "revokeFailed": "링크를 해지하지 못했어요."
     },
     "genderOther": "기타",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "마지막 사용 {date}",
         "neverUsed": "사용한 적 없음",
         "added": "{date} 추가됨",
-        "nameLabel": "보안 키 이름"
+        "nameLabel": "보안 키 이름",
+        "addedToast": "보안 키를 추가했어요.",
+        "removedToast": "보안 키를 삭제했어요."
       },
       "passkeyNudge": {
         "title": "패스키를 추가하면 더 빠르게 로그인해요",
@@ -7449,7 +7461,11 @@
       "guide": "Google Health 연결 방법",
       "badgeEnding": "종료 예정",
       "badgeEnded": "종료됨"
-    }
+    },
+    "passkeyAddedToast": "패스키를 추가했어요.",
+    "passkeyRemovedToast": "패스키를 삭제했어요.",
+    "integrationDisconnected": "{provider} 연결을 해제했어요.",
+    "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요."
   },
   "admin": {
     "title": "관리자",

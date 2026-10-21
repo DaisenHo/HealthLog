@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
   AlertTriangle,
   Check,
@@ -142,6 +143,7 @@ export function PasskeyListSection({
       setReauthSecret("");
       setReauthMethod("password");
       queryClient.invalidateQueries({ queryKey: queryKeys.passkeys() });
+      toastWrittenOutcome("success", t("settings.passkeyAddedToast"));
     },
     onError: (err) => {
       if (err instanceof ApiError) {
@@ -178,6 +180,7 @@ export function PasskeyListSection({
     onSuccess: () => {
       setMsg(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.passkeys() });
+      toastWrittenOutcome("success", t("settings.passkeyRemovedToast"));
     },
     // A refusal the dialog could not take up keeps its own sentence. The
     // server's prose says "second-factor", which is wrong for the passkey-only

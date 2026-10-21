@@ -880,6 +880,7 @@ export function LogDaySheet({
           {currentRowId ? (
             <ConfirmButton
               slot="cycle-day-delete"
+              destructive
               variant="outline"
               className="text-destructive hover:text-destructive mr-auto"
               icon={<Trash2 className="h-4 w-4" />}
@@ -1471,6 +1472,7 @@ export function SymptomRow({
           </button>
           <ConfirmDialog
             slot="cycle-custom-symptom-remove"
+            destructive
             open={confirmRemove}
             onOpenChange={setConfirmRemove}
             title={t("cycle.symptom.custom.removeTitle")}

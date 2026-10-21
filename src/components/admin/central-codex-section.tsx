@@ -196,6 +196,7 @@ export function CentralCodexSection() {
           <SettingsCardActions>
             <ConfirmButton
               slot="admin-central-codex-disconnect"
+              destructive
               variant="destructive"
               size="sm"
               className="min-h-11 shrink-0 sm:min-h-9"

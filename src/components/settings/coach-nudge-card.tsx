@@ -145,45 +145,51 @@ export function CoachNudgeCard({
     // v1.32.22 — echo the base token so a concurrent notification-prefs
     // write (the iOS client, another web card) 409s instead of reverting a
     // sibling category through the server-side deep-merge.
-    const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        withBaseToken(
-          { coach: partial },
-          readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+    try {
+      // A request that never reaches the server (offline, a dropped
+      // connection) is a failed save like any other, not a stuck one: it
+      // falls through to the error branch, and `finally` lowers the flag.
+      const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          withBaseToken(
+            { coach: partial },
+            readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+          ),
         ),
-      ),
-    });
+      }).catch(() => null);
 
-    if (res.ok) {
-      if (toast) {
-        setMsg(toast);
-        setMsgType("success");
+      if (res?.ok) {
+        if (toast) {
+          setMsg(toast);
+          setMsgType("success");
+          scheduleClear();
+        }
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.authNotificationPrefs(),
+        });
+        setOptimistic({});
+      } else if (res?.status === 409) {
+        // The prefs advanced since they were loaded. Revert the optimistic knob
+        // and refetch (the active query reseeds a fresh token), then nudge — the
+        // change did not persist, so ask the user to re-apply it.
+        setOptimistic({});
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.authNotificationPrefs(),
+        });
+        setMsg(t("common.conflictReloaded"));
+        setMsgType("error");
+        scheduleClear();
+      } else {
+        setOptimistic({});
+        setMsg(t("notifications.coachNudge.saveError"));
+        setMsgType("error");
         scheduleClear();
       }
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.authNotificationPrefs(),
-      });
-      setOptimistic({});
-    } else if (res.status === 409) {
-      // The prefs advanced since they were loaded. Revert the optimistic knob
-      // and refetch (the active query reseeds a fresh token), then nudge — the
-      // change did not persist, so ask the user to re-apply it.
-      setOptimistic({});
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.authNotificationPrefs(),
-      });
-      setMsg(t("common.conflictReloaded"));
-      setMsgType("error");
-      scheduleClear();
-    } else {
-      setOptimistic({});
-      setMsg(t("notifications.coachNudge.saveError"));
-      setMsgType("error");
-      scheduleClear();
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function handleToggle(next: boolean) {

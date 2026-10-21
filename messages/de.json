@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "Die Kette wird auf Codex → OpenAI → Anthropic → Lokal → Admin-OpenAI zurückgesetzt. Gespeicherte Zugangsdaten bleiben erhalten."
       },
       "activeProviderHeading": "Aktiver Provider",
-      "activeProviderLabel": "Primärer Provider",
+      "activeProviderLabel": "Anbieter einrichten",
       "providerSelect": {
         "codex": "ChatGPT-Account (Codex)",
         "openai": "OpenAI (eigener API-Key)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen."
       },
-      "providerCardDescription": "Der Anbieter, den HealthLog zuerst fragt, mit Schlüssel und Modell.",
+      "providerCardDescription": "Richte Schlüssel und Modell je Anbieter ein; die Reihenfolge darunter bestimmt, welchen HealthLog zuerst fragt.",
       "runtimeTitle": "Prüfen und aktualisieren",
       "usage": {
         "title": "KI-Einsatz",
@@ -6440,6 +6440,14 @@
         "followsDefault": "Du folgst dem Standard des Servers ({level}).",
         "useDefault": "Standard des Servers verwenden ({level})",
         "saveError": "Die Stufe konnte nicht gespeichert werden. Bitte versuche es erneut."
+      },
+      "removeKey": {
+        "label": "API-Schlüssel entfernen",
+        "title": "Gespeicherten API-Schlüssel entfernen?",
+        "body": "HealthLog löscht den gespeicherten Schlüssel und kann ihn nicht wiederherstellen. Gib ihn erneut ein, um ihn weiter zu nutzen.",
+        "confirm": "API-Schlüssel entfernen",
+        "done": "API-Schlüssel entfernt.",
+        "failed": "Der API-Schlüssel konnte nicht entfernt werden."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "Dieser Link lieferte einen Umfang, den niemand gewählt hatte, und wurde deshalb geschlossen. Lege einen neuen an und wähle den Inhalt.",
       "reselectAction": "Ersatz anlegen",
       "createDetail": "Der Token wird nur einmal bei der Erstellung angezeigt. Sichere ihn dann; er lässt sich nicht wiederherstellen.",
-      "activeDescription": "Deine geteilten Links, wann sie ablaufen und wie oft sie geöffnet wurden."
+      "activeDescription": "Deine geteilten Links, wann sie ablaufen und wie oft sie geöffnet wurden.",
+      "revokedToast": "Link widerrufen.",
+      "revokeFailed": "Der Link konnte nicht widerrufen werden."
     },
     "genderOther": "Divers",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "Zuletzt verwendet {date}",
         "neverUsed": "Noch nie verwendet",
         "added": "hinzugefügt {date}",
-        "nameLabel": "Name des Sicherheitsschlüssels"
+        "nameLabel": "Name des Sicherheitsschlüssels",
+        "addedToast": "Sicherheitsschlüssel hinzugefügt.",
+        "removedToast": "Sicherheitsschlüssel entfernt."
       },
       "passkeyNudge": {
         "title": "Füge einen Passkey für schnellere Anmeldung hinzu",
@@ -7449,7 +7461,11 @@
       "guide": "So verbindest du Google Health",
       "badgeEnding": "Wird abgeschaltet",
       "badgeEnded": "Abgeschaltet"
-    }
+    },
+    "passkeyAddedToast": "Passkey hinzugefügt.",
+    "passkeyRemovedToast": "Passkey entfernt.",
+    "integrationDisconnected": "{provider} getrennt.",
+    "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden."
   },
   "admin": {
     "title": "Administration",

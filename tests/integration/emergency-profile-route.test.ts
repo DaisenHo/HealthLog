@@ -133,4 +133,29 @@ describe("emergency profile route — the write lands in the row", () => {
     });
     expect(row.emergencyContactsEncrypted).toBeNull();
   });
+
+  it("a select sent as null goes back to not recorded and leaves the others", async () => {
+    // The card sends a cleared select as `null` (and leaves an untouched one
+    // out). Until it did, a recorded blood type could be changed but never
+    // removed.
+    await loginAs(USER_ID);
+    const { GET, PATCH } = await import("@/app/api/anamnesis/emergency/route");
+
+    await PATCH(patch({ bloodType: "A_POS", organDonor: "YES" }));
+    const cleared = await PATCH(patch({ bloodType: null }));
+    expect(cleared.status).toBe(200);
+
+    const row = await getPrismaClient().userHealthProfile.findUniqueOrThrow({
+      where: { userId: USER_ID },
+      select: { emergencyBloodType: true, organDonorStatus: true },
+    });
+    expect(row.emergencyBloodType).toBeNull();
+    expect(row.organDonorStatus).toBe("YES");
+
+    const body = (await (await GET()).json()) as {
+      data: { bloodType: string | null; organDonor: string | null };
+    };
+    expect(body.data.bloodType).toBeNull();
+    expect(body.data.organDonor).toBe("YES");
+  });
 });

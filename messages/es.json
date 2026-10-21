@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "La cadena vuelve a Codex → OpenAI → Anthropic → Local → OpenAI de administrador. Tus credenciales guardadas no se modifican."
       },
       "activeProviderHeading": "Proveedor activo",
-      "activeProviderLabel": "Proveedor principal",
+      "activeProviderLabel": "Configurar un proveedor",
       "providerSelect": {
         "codex": "Cuenta de ChatGPT (Codex)",
         "openai": "OpenAI (tu clave de API)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
       },
-      "providerCardDescription": "El proveedor al que HealthLog pregunta primero, con su clave y su modelo.",
+      "providerCardDescription": "Configura la clave y el modelo de cada proveedor; el orden de abajo decide a cuál pregunta HealthLog primero.",
       "runtimeTitle": "Comprobar y actualizar",
       "usage": {
         "title": "Uso de la IA",
@@ -6440,6 +6440,14 @@
         "followsDefault": "Sigues el valor predeterminado del servidor ({level}).",
         "useDefault": "Usar el valor predeterminado del servidor ({level})",
         "saveError": "No se pudo guardar el nivel. Inténtalo de nuevo."
+      },
+      "removeKey": {
+        "label": "Quitar clave de API",
+        "title": "¿Quitar la clave de API guardada?",
+        "body": "HealthLog borra la clave guardada y no puede recuperarla. Vuelve a introducirla para seguir usándola.",
+        "confirm": "Quitar clave de API",
+        "done": "Clave de API quitada.",
+        "failed": "No se pudo quitar la clave de API."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "Este enlace mostraba un alcance que nadie eligió, por eso se cerró. Crea uno nuevo y elige su contenido.",
       "reselectAction": "Crear un reemplazo",
       "createDetail": "El token se muestra una sola vez al crearlo. Guárdalo entonces; no se puede recuperar.",
-      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron."
+      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron.",
+      "revokedToast": "Enlace revocado.",
+      "revokeFailed": "No se pudo revocar el enlace."
     },
     "genderOther": "Otro",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "Usada por última vez el {date}",
         "neverUsed": "Nunca usada",
         "added": "añadida el {date}",
-        "nameLabel": "Nombre de la llave de seguridad"
+        "nameLabel": "Nombre de la llave de seguridad",
+        "addedToast": "Llave de seguridad añadida.",
+        "removedToast": "Llave de seguridad eliminada."
       },
       "passkeyNudge": {
         "title": "Añade una clave de acceso para iniciar sesión más rápido",
@@ -7449,7 +7461,11 @@
       "guide": "Cómo conectar Google Health",
       "badgeEnding": "Se desactiva pronto",
       "badgeEnded": "Desactivado"
-    }
+    },
+    "passkeyAddedToast": "Passkey añadida.",
+    "passkeyRemovedToast": "Passkey eliminada.",
+    "integrationDisconnected": "{provider} desconectado.",
+    "integrationDisconnectFailed": "No se pudo desconectar {provider}."
   },
   "admin": {
     "title": "Administration",

@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "De keten wordt teruggezet naar Codex → OpenAI → Anthropic → Lokaal → OpenAI van beheerder. Je opgeslagen inloggegevens blijven onaangeroerd."
       },
       "activeProviderHeading": "Actieve provider",
-      "activeProviderLabel": "Primaire provider",
+      "activeProviderLabel": "Provider instellen",
       "providerSelect": {
         "codex": "ChatGPT-account (Codex)",
         "openai": "OpenAI (je eigen API-sleutel)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "In de Coach geldt de denkdiepte uit de Coach-instellingen."
       },
-      "providerCardDescription": "De provider die HealthLog als eerste raadpleegt, met de bijbehorende sleutel en het model.",
+      "providerCardDescription": "Stel per provider de sleutel en het model in; de volgorde hieronder bepaalt welke HealthLog als eerste raadpleegt.",
       "runtimeTitle": "Controleren en vernieuwen",
       "usage": {
         "title": "AI-gebruik",
@@ -6440,6 +6440,14 @@
         "followsDefault": "Je volgt de standaardinstelling van de server ({level}).",
         "useDefault": "Standaardinstelling van de server gebruiken ({level})",
         "saveError": "Het niveau kon niet worden opgeslagen. Probeer het opnieuw."
+      },
+      "removeKey": {
+        "label": "API-sleutel verwijderen",
+        "title": "Opgeslagen API-sleutel verwijderen?",
+        "body": "HealthLog wist de opgeslagen sleutel en kan hem niet herstellen. Voer hem opnieuw in om hem te blijven gebruiken.",
+        "confirm": "API-sleutel verwijderen",
+        "done": "API-sleutel verwijderd.",
+        "failed": "De API-sleutel kon niet worden verwijderd."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "Deze link gaf toegang tot een selectie die nooit was gekozen, daarom is hij gesloten. Maak een nieuwe link aan en kies wat erin moet staan.",
       "reselectAction": "Vervanging aanmaken",
       "createDetail": "Het token wordt één keer getoond bij het aanmaken. Bewaar het dan; het kan niet worden hersteld.",
-      "activeDescription": "Links die je hebt gedeeld, wanneer ze verlopen en hoe vaak ze zijn geopend."
+      "activeDescription": "Links die je hebt gedeeld, wanneer ze verlopen en hoe vaak ze zijn geopend.",
+      "revokedToast": "Link ingetrokken.",
+      "revokeFailed": "De link kon niet worden ingetrokken."
     },
     "genderOther": "Anders",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "Laatst gebruikt op {date}",
         "neverUsed": "Nooit gebruikt",
         "added": "toegevoegd op {date}",
-        "nameLabel": "Naam van de beveiligingssleutel"
+        "nameLabel": "Naam van de beveiligingssleutel",
+        "addedToast": "Beveiligingssleutel toegevoegd.",
+        "removedToast": "Beveiligingssleutel verwijderd."
       },
       "passkeyNudge": {
         "title": "Voeg een passkey toe om sneller in te loggen",
@@ -7449,7 +7461,11 @@
       "guide": "Zo koppel je Google Health",
       "badgeEnding": "Wordt uitgeschakeld",
       "badgeEnded": "Uitgeschakeld"
-    }
+    },
+    "passkeyAddedToast": "Passkey toegevoegd.",
+    "passkeyRemovedToast": "Passkey verwijderd.",
+    "integrationDisconnected": "{provider} ontkoppeld.",
+    "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld."
   },
   "admin": {
     "title": "Beheer",

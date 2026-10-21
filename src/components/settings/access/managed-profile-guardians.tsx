@@ -172,6 +172,7 @@ export function ManagedProfileGuardians({
                   <div className="flex shrink-0 items-center">
                     <ConfirmButton
                       slot="managed-profile-guardian-remove"
+                      destructive
                       size="sm"
                       className="min-h-11 sm:min-h-9"
                       label={t("recordSharing.managed.guardianRemove")}

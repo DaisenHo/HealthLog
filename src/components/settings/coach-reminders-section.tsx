@@ -147,6 +147,7 @@ export function CoachRemindersSection({
           )}
           <ConfirmButton
             slot="coach-reminder-delete"
+            destructive
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-foreground min-h-9"

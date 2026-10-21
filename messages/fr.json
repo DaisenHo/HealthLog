@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "La chaîne revient à Codex → OpenAI → Anthropic → Local → OpenAI administrateur. Vos identifiants enregistrés ne sont pas affectés."
       },
       "activeProviderHeading": "Fournisseur actif",
-      "activeProviderLabel": "Fournisseur principal",
+      "activeProviderLabel": "Configurer un fournisseur",
       "providerSelect": {
         "codex": "Compte ChatGPT (Codex)",
         "openai": "OpenAI (votre clé API)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique."
       },
-      "providerCardDescription": "Le fournisseur que HealthLog sollicite en premier, avec sa clé et son modèle.",
+      "providerCardDescription": "Configurez la clé et le modèle de chaque fournisseur ; l’ordre ci-dessous décide lequel HealthLog sollicite en premier.",
       "runtimeTitle": "Vérifier et actualiser",
       "usage": {
         "title": "Usage de l'IA",
@@ -6440,6 +6440,14 @@
         "followsDefault": "Vous suivez le réglage par défaut du serveur ({level}).",
         "useDefault": "Utiliser le réglage par défaut du serveur ({level})",
         "saveError": "Le niveau n'a pas pu être enregistré. Réessaie."
+      },
+      "removeKey": {
+        "label": "Supprimer la clé API",
+        "title": "Supprimer la clé API enregistrée ?",
+        "body": "HealthLog efface la clé enregistrée et ne peut pas la récupérer. Saisissez-la de nouveau pour continuer à l’utiliser.",
+        "confirm": "Supprimer la clé API",
+        "done": "Clé API supprimée.",
+        "failed": "Impossible de supprimer la clé API."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "Ce lien diffusait un périmètre que personne n'avait choisi ; il a donc été fermé. Créez-en un nouveau et choisissez son contenu.",
       "reselectAction": "Créer un remplacement",
       "createDetail": "Le jeton n'est affiché qu'une fois à la création. Conservez-le alors ; il ne peut pas être récupéré.",
-      "activeDescription": "Les liens que vous avez partagés, leur expiration et le nombre d'ouvertures."
+      "activeDescription": "Les liens que vous avez partagés, leur expiration et le nombre d'ouvertures.",
+      "revokedToast": "Lien révoqué.",
+      "revokeFailed": "Impossible de révoquer le lien."
     },
     "genderOther": "Autre",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "Dernière utilisation le {date}",
         "neverUsed": "Jamais utilisée",
         "added": "ajoutée le {date}",
-        "nameLabel": "Nom de la clé de sécurité"
+        "nameLabel": "Nom de la clé de sécurité",
+        "addedToast": "Clé de sécurité ajoutée.",
+        "removedToast": "Clé de sécurité supprimée."
       },
       "passkeyNudge": {
         "title": "Ajoutez une clé d'accès pour une connexion plus rapide",
@@ -7449,7 +7461,11 @@
       "guide": "Comment connecter Google Health",
       "badgeEnding": "Bientôt désactivé",
       "badgeEnded": "Désactivé"
-    }
+    },
+    "passkeyAddedToast": "Passkey ajoutée.",
+    "passkeyRemovedToast": "Passkey supprimée.",
+    "integrationDisconnected": "{provider} déconnecté.",
+    "integrationDisconnectFailed": "Impossible de déconnecter {provider}."
   },
   "admin": {
     "title": "Administration",

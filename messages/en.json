@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "The chain reverts to Codex → OpenAI → Anthropic → Local → Admin OpenAI. Your saved credentials are not touched."
       },
       "activeProviderHeading": "Active provider",
-      "activeProviderLabel": "Primary provider",
+      "activeProviderLabel": "Set up a provider",
       "providerSelect": {
         "codex": "ChatGPT account (Codex)",
         "openai": "OpenAI (your API key)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
       },
-      "providerCardDescription": "The provider HealthLog asks first, and its key and model.",
+      "providerCardDescription": "Set up each provider's key and model; the order below decides which one HealthLog asks first.",
       "runtimeTitle": "Check and refresh",
       "usage": {
         "title": "AI usage",
@@ -6440,6 +6440,14 @@
         "followsDefault": "You follow the server default ({level}).",
         "useDefault": "Use the server default ({level})",
         "saveError": "The level could not be saved. Please try again."
+      },
+      "removeKey": {
+        "label": "Remove API key",
+        "title": "Remove the saved API key?",
+        "body": "HealthLog deletes the stored key and cannot recover it. Enter it again to keep using it.",
+        "confirm": "Remove API key",
+        "done": "API key removed.",
+        "failed": "Could not remove the API key."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "This link served a scope that was never chosen, so it was closed. Create a new one and pick what it should contain.",
       "reselectAction": "Create a replacement",
       "createDetail": "The token is shown once on creation. Store it then; it cannot be recovered.",
-      "activeDescription": "Links you have shared, when they expire and how often they were opened."
+      "activeDescription": "Links you have shared, when they expire and how often they were opened.",
+      "revokedToast": "Link revoked.",
+      "revokeFailed": "Could not revoke the link."
     },
     "genderOther": "Other",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "Last used {date}",
         "neverUsed": "Never used",
         "added": "added {date}",
-        "nameLabel": "Security key name"
+        "nameLabel": "Security key name",
+        "addedToast": "Security key added.",
+        "removedToast": "Security key removed."
       },
       "passkeyNudge": {
         "title": "Add a passkey for faster sign-in",
@@ -7449,7 +7461,11 @@
       "guide": "How to connect Google Health",
       "badgeEnding": "Shutting down",
       "badgeEnded": "Retired"
-    }
+    },
+    "passkeyAddedToast": "Passkey added.",
+    "passkeyRemovedToast": "Passkey removed.",
+    "integrationDisconnected": "{provider} disconnected.",
+    "integrationDisconnectFailed": "Could not disconnect {provider}."
   },
   "admin": {
     "title": "Administration",

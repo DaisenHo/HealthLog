@@ -114,7 +114,8 @@ const REGISTRY: DestructiveEntry[] = [
   },
   {
     file: "components/settings/security-sessions-card.tsx",
-    destroys: "one login session, or every session other than this one",
+    destroys:
+      "one login session, or every session other than this one; and, from the list sign-out-everywhere leaves behind, another account's access grant (the same revoke the access card confirms)",
     recovery: "permanent",
     confirm: ["ConfirmButton"],
   },
@@ -135,6 +136,21 @@ const REGISTRY: DestructiveEntry[] = [
     destroys: "a WebAuthn second factor",
     recovery: "permanent",
     confirm: ["AlertDialog"],
+  },
+  {
+    file: "components/settings/ai/remove-saved-key-button.tsx",
+    destroys:
+      "one stored personal AI provider key (OpenAI, Anthropic, the local model or the gateway); the provider choice and model stay",
+    triggers: [
+      "components/settings/ai/openai-provider-form.tsx",
+      "components/settings/ai/anthropic-provider-form.tsx",
+      "components/settings/ai/local-provider-form.tsx",
+      "components/settings/ai/compat-provider-form.tsx",
+    ],
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+    undetected:
+      "No detector sees it. The body comes from `removeSavedKeyBody` with a computed key (`{ [field]: null }`), which the D3 literal pattern does not match, and `/api/user/ai-provider` names no act. Registered by hand.",
   },
   {
     file: "components/settings/api-section.tsx",

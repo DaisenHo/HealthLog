@@ -160,6 +160,59 @@ describe("ConfirmBody — the action is the only path to the callback", () => {
   });
 });
 
+describe("the destructive style reaches the action from both shapes", () => {
+  // `ConfirmButton` accepted `destructive` through its props type and dropped
+  // it on the way to the dialog, so every delete confirmation built on it
+  // offered a neutral primary where `ConfirmDialog` offered a red one.
+  function actionVariant(element: ReactElement): unknown {
+    const body = walk(element).find((el) => nameOf(el) === "ConfirmBody")!;
+    const rendered = walk(
+      (body.type as (p: unknown) => ReactElement)(body.props),
+    );
+    const action = rendered.find((el) => nameOf(el) === "AlertDialogAction")!;
+    return (action.props as Record<string, unknown>).variant;
+  }
+
+  it("ConfirmButton forwards destructive to the dialog's action", () => {
+    expect(
+      actionVariant(
+        ConfirmButton({
+          label: "Delete",
+          onConfirm: vi.fn(),
+          destructive: true,
+          ...COPY,
+        }) as ReactElement,
+      ),
+    ).toBe("destructive");
+  });
+
+  it("ConfirmButton stays neutral when the act does not destroy", () => {
+    expect(
+      actionVariant(
+        ConfirmButton({
+          label: "Reset",
+          onConfirm: vi.fn(),
+          ...COPY,
+        }) as ReactElement,
+      ),
+    ).toBe("default");
+  });
+
+  it("ConfirmDialog forwards it the same way", () => {
+    expect(
+      actionVariant(
+        ConfirmDialog({
+          open: true,
+          onOpenChange: vi.fn(),
+          onConfirm: vi.fn(),
+          destructive: true,
+          ...COPY,
+        }) as ReactElement,
+      ),
+    ).toBe("destructive");
+  });
+});
+
 describe("<ConfirmDialog> — the trigger-less half", () => {
   const onConfirm = vi.fn();
   const tree = walk(

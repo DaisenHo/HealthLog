@@ -127,6 +127,7 @@ export function GrantsGivenCard() {
     return (
       <ConfirmButton
         slot="grant-revoke"
+        destructive
         size="sm"
         label={
           grant.state === "PENDING"

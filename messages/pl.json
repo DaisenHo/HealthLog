@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "Łańcuch wraca do Codex → OpenAI → Anthropic → Lokalny → OpenAI administratora. Zapisane dane logowania pozostają nienaruszone."
       },
       "activeProviderHeading": "Aktywny dostawca",
-      "activeProviderLabel": "Główny dostawca",
+      "activeProviderLabel": "Skonfiguruj dostawcę",
       "providerSelect": {
         "codex": "Konto ChatGPT (Codex)",
         "openai": "OpenAI (Twój klucz API)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha."
       },
-      "providerCardDescription": "Dostawca, którego HealthLog pyta najpierw, wraz z kluczem i modelem.",
+      "providerCardDescription": "Skonfiguruj klucz i model każdego dostawcy; kolejność poniżej decyduje, którego HealthLog pyta najpierw.",
       "runtimeTitle": "Sprawdź i odśwież",
       "usage": {
         "title": "Użycie AI",
@@ -6440,6 +6440,14 @@
         "followsDefault": "Korzystasz z ustawienia domyślnego serwera ({level}).",
         "useDefault": "Użyj ustawienia domyślnego serwera ({level})",
         "saveError": "Nie udało się zapisać poziomu. Spróbuj ponownie."
+      },
+      "removeKey": {
+        "label": "Usuń klucz API",
+        "title": "Usunąć zapisany klucz API?",
+        "body": "HealthLog usuwa zapisany klucz i nie może go odzyskać. Wpisz go ponownie, aby dalej z niego korzystać.",
+        "confirm": "Usuń klucz API",
+        "done": "Usunięto klucz API.",
+        "failed": "Nie udało się usunąć klucza API."
       }
     },
     "dashboard": {
@@ -6910,7 +6918,9 @@
       "reselectReason": "Ten link udostępniał zakres, którego nikt nie wybrał, więc został zamknięty. Utwórz nowy i wybierz jego zawartość.",
       "reselectAction": "Utwórz zamiennik",
       "createDetail": "Token jest pokazywany tylko raz przy tworzeniu. Zapisz go wtedy; nie można go odzyskać.",
-      "activeDescription": "Udostępnione linki, termin ich wygaśnięcia i liczba otwarć."
+      "activeDescription": "Udostępnione linki, termin ich wygaśnięcia i liczba otwarć.",
+      "revokedToast": "Unieważniono link.",
+      "revokeFailed": "Nie udało się unieważnić linku."
     },
     "genderOther": "Inna",
     "nightscout": "Nightscout",
@@ -7097,7 +7107,9 @@
         "lastUsed": "Ostatnio użyty {date}",
         "neverUsed": "Nigdy nieużywany",
         "added": "dodany {date}",
-        "nameLabel": "Nazwa klucza bezpieczeństwa"
+        "nameLabel": "Nazwa klucza bezpieczeństwa",
+        "addedToast": "Dodano klucz bezpieczeństwa.",
+        "removedToast": "Usunięto klucz bezpieczeństwa."
       },
       "passkeyNudge": {
         "title": "Dodaj klucz dostępu, aby logować się szybciej",
@@ -7449,7 +7461,11 @@
       "guide": "Jak połączyć Google Health",
       "badgeEnding": "Wkrótce wyłączone",
       "badgeEnded": "Wyłączone"
-    }
+    },
+    "passkeyAddedToast": "Dodano passkey.",
+    "passkeyRemovedToast": "Usunięto passkey.",
+    "integrationDisconnected": "Rozłączono {provider}.",
+    "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}."
   },
   "admin": {
     "title": "Administracja",
