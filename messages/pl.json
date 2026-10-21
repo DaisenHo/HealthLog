@@ -3903,7 +3903,8 @@
         "form": "Forma",
         "explainer": "Wydolność to twój bodziec treningowy z tętna uśredniony z około sześciu tygodni, zmęczenie z około tygodnia, a forma to różnica. Liczby porównuje się z twoją własną przeszłością, nie z innymi osobami ani aplikacjami.",
         "warmingUp": "Na podstawie dotychczasowych {days} dni: dopóki nie minie sześć tygodni, wydolność wychodzi niższa, niż jest.",
-        "coverage": "{rated} z ostatnich {days} dni ma dane tętna. Dni bez nich są pomijane, a nie liczone jako odpoczynek."
+        "coverage": "Udało się ocenić {rated} z ostatnich {days} dni. Dzień bez danych o aktywności lub z treningiem, którego nie dało się ocenić, jest pomijany, a nie liczony jako odpoczynek.",
+        "asOf": "Stan na {date}, ostatni dzień, który dało się ocenić."
       }
     },
     "bloodGlucose": {

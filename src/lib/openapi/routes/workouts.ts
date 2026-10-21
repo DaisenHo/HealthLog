@@ -118,7 +118,7 @@ const trainingLoadPoint = z.object({
   rated: z
     .boolean()
     .describe(
-      "False for a day without a stored impulse (never scored): the averages held through it rather than counting it as rest.",
+      "False for a day that could not be rated: no stored impulse and no activity data (steps, heart rate, active energy), or a workout that was never scored. The averages held through it rather than counting it as rest. A day with activity data and no workout is rest (impulse 0).",
     ),
 });
 
@@ -129,7 +129,7 @@ const trainingLoad = z
       asOf: z
         .string()
         .describe(
-          "The last UTC day with a stored impulse, at most yesterday: a nightly run that has not happened yet never reads as a rest day.",
+          "The last rated UTC day, at most yesterday; the figures are those of this day. The series runs on to yesterday, so a later stretch without data shows as unrated days.",
         ),
       ctl: z.number().describe("Fitness: 42-day exponentially weighted TRIMP."),
       atl: z.number().describe("Fatigue: 7-day exponentially weighted TRIMP."),
@@ -140,7 +140,7 @@ const trainingLoad = z
         .number()
         .int()
         .describe(
-          "Days of the trailing `recentDays` (42, or fewer when covered less) with a stored impulse.",
+          "Rated days of the trailing `recentDays` (42 up to yesterday, or fewer when covered less): a stored impulse, or activity data without a workout.",
         ),
       recentDays: z.number().int(),
       warmingUp: z
@@ -162,7 +162,7 @@ const trainingLoad = z
   .meta({
     id: "WorkoutTrainingLoad",
     description:
-      "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a scored day without training is 0, a day without a stored impulse is not rated and the averages hold through it). Needs 28 days and three training days. TRIMP units: comparable with the person's own past only.",
+      "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a day with activity data but no training is 0, a day with no data or an unscored workout is not rated and the averages hold through it). Needs 28 days and three training days. TRIMP units: comparable with the person's own past only.",
   });
 
 const workoutListResponse = z

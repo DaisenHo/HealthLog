@@ -3903,7 +3903,8 @@
         "form": "Form",
         "explainer": "Fitness is your heart-rate training impulse averaged over about six weeks, fatigue over about one week, and form is the difference. The numbers compare with your own past, not with other people or other apps.",
         "warmingUp": "Based on {days} days so far: until six weeks are covered, fitness reads lower than it is.",
-        "coverage": "{rated} of the last {days} days have heart-rate data. Days without it are left out rather than counted as rest."
+        "coverage": "{rated} of the last {days} days could be rated. A day with no activity data, or with a workout that could not be scored, is left out rather than counted as rest.",
+        "asOf": "As of {date}, the last day that could be rated."
       }
     },
     "bloodGlucose": {
