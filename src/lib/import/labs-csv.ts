@@ -13,7 +13,14 @@
  * Memory: the file is read record by record (`readCsvRecords`) and written in
  * chunks of `CHUNK_ROWS`; what is held across chunks is the marker index, the
  * duplicate keys of rows already accepted and the bounded report.
+ *
+ * Writes: one `createMany` per chunk, so a chunk lands whole or not at all.
+ * An import cut off part way (the client went away, a proxy timed out) leaves
+ * whole chunks behind, and uploading the same file again skips them as
+ * duplicates and writes the rest: a retry is idempotent. `onWritten` reports
+ * each committed chunk so the caller can audit a partial import.
  */
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import {
   readCsvRecords,
@@ -272,6 +279,8 @@ export async function importLabsCsv(args: {
   maxBytes: number;
   query: LabsCsvQuery;
   now?: Date;
+  /** Called after each committed chunk with the rows it wrote. */
+  onWritten?: (rows: number) => void;
 }): Promise<RecordImportResult> {
   const { userId, tz, query } = args;
   const dryRun = query.dryRun;
@@ -411,7 +420,9 @@ export async function importLabsCsv(args: {
       }
     }
 
-    // 3. Write (or count) what is new.
+    // 3. Write (or count) what is new: rows are built here and written in
+    // one statement for the chunk.
+    const toWrite: Prisma.LabResultCreateManyInput[] = [];
     for (const { row, marker } of planned) {
       const probe = {
         biomarkerId:
@@ -489,26 +500,24 @@ export async function importLabsCsv(args: {
       }
 
       // Field by field, never a spread of the parsed row.
-      await prisma.labResult.create({
-        data: {
-          userId,
-          biomarkerId: biomarker.id,
-          panel: row.panel ?? biomarker.panel,
-          analyte: biomarker.name,
-          value: storedValue,
-          valueText: row.valueText,
-          unit: biomarker.unit,
-          sourceValue: convertedFrom?.sourceValue ?? null,
-          sourceUnit: convertedFrom?.sourceUnit ?? null,
-          referenceLow: biomarker.lowerBound,
-          referenceHigh: biomarker.upperBound,
-          sourceReferenceLow: storedLow,
-          sourceReferenceHigh: storedHigh,
-          sourceReferenceText: row.sourceReferenceText,
-          takenAt: row.takenAt,
-          source: "IMPORT",
-          noteEncrypted: row.note ? encryptNoteToBytes(row.note) : null,
-        },
+      toWrite.push({
+        userId,
+        biomarkerId: biomarker.id,
+        panel: row.panel ?? biomarker.panel,
+        analyte: biomarker.name,
+        value: storedValue,
+        valueText: row.valueText,
+        unit: biomarker.unit,
+        sourceValue: convertedFrom?.sourceValue ?? null,
+        sourceUnit: convertedFrom?.sourceUnit ?? null,
+        referenceLow: biomarker.lowerBound,
+        referenceHigh: biomarker.upperBound,
+        sourceReferenceLow: storedLow,
+        sourceReferenceHigh: storedHigh,
+        sourceReferenceText: row.sourceReferenceText,
+        takenAt: row.takenAt,
+        source: "IMPORT",
+        noteEncrypted: row.note ? encryptNoteToBytes(row.note) : null,
       });
       for (const k of [
         ...keys,
@@ -516,7 +525,11 @@ export async function importLabsCsv(args: {
       ])
         seen.add(k);
       report.valid += 1;
-      report.inserted += 1;
+    }
+    if (toWrite.length > 0) {
+      const { count } = await prisma.labResult.createMany({ data: toWrite });
+      report.inserted += count;
+      args.onWritten?.(count);
     }
   };
 

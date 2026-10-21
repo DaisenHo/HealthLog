@@ -47,6 +47,7 @@ export async function handleRecordImport<
       stream: ReadableStream<Uint8Array>;
       maxBytes: number;
       query: z.infer<S>;
+      onWritten: (rows: number) => void;
     }) => Promise<RecordImportResult>;
   },
 ): Promise<Response> {
@@ -102,7 +103,8 @@ export async function handleRecordImport<
   }
 
   const tz = await resolveUserTimezone(user.id);
-  let result: RecordImportResult;
+  let result: RecordImportResult | null = null;
+  let written = 0;
   try {
     result = await opts.run({
       userId: user.id,
@@ -110,6 +112,9 @@ export async function handleRecordImport<
       stream: request.body,
       maxBytes: RECORD_IMPORT_MAX_BYTES,
       query,
+      onWritten: (rows) => {
+        written += rows;
+      },
     });
   } catch (err) {
     if (err instanceof CsvTooLargeError) {
@@ -118,23 +123,34 @@ export async function handleRecordImport<
       });
     }
     throw err;
+  } finally {
+    // The audit row is written whatever happened: an import cut off part way
+    // (the client went away, a proxy timed out, the cap was hit after some
+    // chunks) has already written rows, and the trail says how many.
+    if (
+      !query.dryRun &&
+      ((result !== null && result.rows > 0) || written > 0)
+    ) {
+      await auditLog(action, {
+        userId: user.id,
+        ipAddress: getClientIp(request),
+        details:
+          result !== null
+            ? {
+                rows: result.rows,
+                inserted: result.inserted,
+                duplicates: result.duplicates,
+                failed: result.failed,
+                partial: false,
+                written,
+              }
+            : { partial: true, written },
+      });
+    }
   }
   if (result.rows === 0) {
     return apiError("The CSV file has no data rows", 422, {
       errorCode: "import.csv.empty",
-    });
-  }
-
-  if (!query.dryRun) {
-    await auditLog(action, {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: {
-        rows: result.rows,
-        inserted: result.inserted,
-        duplicates: result.duplicates,
-        failed: result.failed,
-      },
     });
   }
   annotate({

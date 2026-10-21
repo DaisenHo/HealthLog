@@ -203,6 +203,97 @@ describe("lab CSV import in a zone of the file's own", () => {
   });
 });
 
+describe("lab CSV import at the row cap", () => {
+  const BIG_USER = "csv-import-big-user";
+  // 20 000 rows: 40 markers, 500 draw days each, one reading per day.
+  const lines = ["Analyt;Wert;Einheit;Datum"];
+  for (let i = 0; i < 20_000; i++) {
+    const marker = `Marker ${i % 40}`;
+    const day = new Date(Date.UTC(2020, 0, 1) + Math.floor(i / 40) * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    lines.push(`${marker};${(i % 97) + 1};U/l;${day}`);
+  }
+  const BIG = lines.join("\n");
+  const query = () =>
+    labsCsvQuerySchema.parse({
+      analyte: "0",
+      value: "1",
+      unit: "2",
+      date: "3",
+    });
+
+  /** The file, failing like a dropped connection after `bytes`. */
+  function cutAt(bytes: number): ReadableStream<Uint8Array> {
+    const all = new TextEncoder().encode(BIG);
+    let offset = 0;
+    return new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (offset >= bytes) {
+          controller.error(new Error("connection reset"));
+          return;
+        }
+        controller.enqueue(all.slice(offset, Math.min(offset + 64_000, bytes)));
+        offset += 64_000;
+      },
+    });
+  }
+
+  beforeAll(async () => {
+    await prisma.user.create({
+      data: { id: BIG_USER, username: BIG_USER, timezone: TZ },
+    });
+  });
+
+  it("an import cut off part way leaves whole chunks, and a retry writes the rest once", async () => {
+    let written = 0;
+    await expect(
+      importLabsCsv({
+        userId: BIG_USER,
+        tz: TZ,
+        stream: cutAt(Math.floor(BIG.length / 3)),
+        maxBytes: 16 * 1024 * 1024,
+        query: query(),
+        onWritten: (n) => {
+          written += n;
+        },
+      }),
+    ).rejects.toThrow("connection reset");
+    const afterCut = await prisma.labResult.count({
+      where: { userId: BIG_USER },
+    });
+    expect(afterCut).toBe(written);
+    expect(afterCut).toBeGreaterThan(0);
+    // Whole chunks only: nothing half-written.
+    expect(afterCut % 200).toBe(0);
+
+    const started = Date.now();
+    const result = await importLabsCsv({
+      userId: BIG_USER,
+      tz: TZ,
+      stream: textToStream(BIG),
+      maxBytes: 16 * 1024 * 1024,
+      query: query(),
+    });
+    const elapsed = Date.now() - started;
+    expect(result).toMatchObject({
+      rows: 20_000,
+      inserted: 20_000 - afterCut,
+      duplicates: afterCut,
+      failed: 0,
+    });
+    expect(await prisma.labResult.count({ where: { userId: BIG_USER } })).toBe(
+      20_000,
+    );
+    expect(await prisma.biomarker.count({ where: { userId: BIG_USER } })).toBe(
+      40,
+    );
+    // Generous: the chunked write takes a few seconds here; the bound only
+    // catches a return to one statement per row.
+    expect(elapsed).toBeLessThan(120_000);
+  }, 300_000);
+});
+
 describe("medication CSV import", () => {
   const MEDS = [
     "name,dose,times,as needed,start,end",

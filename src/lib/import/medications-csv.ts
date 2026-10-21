@@ -185,6 +185,8 @@ export async function importMedicationsCsv(args: {
   maxBytes: number;
   query: MedicationsCsvQuery;
   now?: Date;
+  /** Called after each medication written. */
+  onWritten?: (rows: number) => void;
 }): Promise<RecordImportResult> {
   const { userId, tz, query } = args;
   const dryRun = query.dryRun;
@@ -207,125 +209,131 @@ export async function importMedicationsCsv(args: {
           ? "\t"
           : "auto";
 
-  let first = true;
-  for await (const record of readCsvRecords(args.stream, {
-    maxBytes: args.maxBytes,
-    delimiter,
-  })) {
-    if (first && query.header) {
-      first = false;
-      continue;
-    }
-    first = false;
-    report.rows += 1;
-    if (report.rows > MEDICATIONS_CSV_MAX_ROWS) {
-      report.fail(record.line, "row_limit");
-      continue;
-    }
-    if (record.oversized) {
-      report.fail(record.line, "oversized_row");
-      continue;
-    }
-    const result = normaliseMedicationRow(record, query, timezone);
-    if (!result.ok) {
-      report.fail(record.line, result.reason, result.field);
-      continue;
-    }
-    const row = result.row;
-    const parsed = createMedicationSchema.safeParse(
-      medicationCreateBody(row, query.reminders),
-    );
-    if (!parsed.success) {
-      report.fail(row.line, "invalid_medication");
-      continue;
-    }
-    // The course the create route would open for this window.
-    let course: { startsOn: Date; endsOn: Date | null } | null = null;
-    if (parsed.data.startsOn || parsed.data.endsOn) {
-      const endKey = parsed.data.endsOn
-        ? dayKeyOfDate(parsed.data.endsOn)
-        : null;
-      course = {
-        startsOn:
-          parsed.data.startsOn ??
-          dateOfDayKey(endKey && endKey < todayKey ? endKey : todayKey),
-        endsOn: parsed.data.endsOn ?? null,
-      };
-      if (validateCourses([course], todayKey, false)) {
-        report.fail(row.line, "end_before_start", "endsOn");
+  let written = 0;
+  try {
+    let first = true;
+    for await (const record of readCsvRecords(args.stream, {
+      maxBytes: args.maxBytes,
+      delimiter,
+    })) {
+      if (first && query.header) {
+        first = false;
         continue;
       }
-    }
-    const key = identity(row.name, row.dose);
-    if (seen.has(key)) {
-      report.duplicate(row.line);
-      continue;
-    }
-    seen.add(key);
-    report.valid += 1;
-    report.inserted += 1;
-    if (dryRun) {
-      report.addPreview({
-        line: row.line,
-        name: row.name,
-        dose: row.dose,
-        times: row.times.join(" "),
-        asNeeded: row.asNeeded,
-        startsOn: row.startsOn,
-        endsOn: row.endsOn,
-      });
-      continue;
-    }
+      first = false;
+      report.rows += 1;
+      if (report.rows > MEDICATIONS_CSV_MAX_ROWS) {
+        report.fail(record.line, "row_limit");
+        continue;
+      }
+      if (record.oversized) {
+        report.fail(record.line, "oversized_row");
+        continue;
+      }
+      const result = normaliseMedicationRow(record, query, timezone);
+      if (!result.ok) {
+        report.fail(record.line, result.reason, result.field);
+        continue;
+      }
+      const row = result.row;
+      const parsed = createMedicationSchema.safeParse(
+        medicationCreateBody(row, query.reminders),
+      );
+      if (!parsed.success) {
+        report.fail(row.line, "invalid_medication");
+        continue;
+      }
+      // The course the create route would open for this window.
+      let course: { startsOn: Date; endsOn: Date | null } | null = null;
+      if (parsed.data.startsOn || parsed.data.endsOn) {
+        const endKey = parsed.data.endsOn
+          ? dayKeyOfDate(parsed.data.endsOn)
+          : null;
+        course = {
+          startsOn:
+            parsed.data.startsOn ??
+            dateOfDayKey(endKey && endKey < todayKey ? endKey : todayKey),
+          endsOn: parsed.data.endsOn ?? null,
+        };
+        if (validateCourses([course], todayKey, false)) {
+          report.fail(row.line, "end_before_start", "endsOn");
+          continue;
+        }
+      }
+      const key = identity(row.name, row.dose);
+      if (seen.has(key)) {
+        report.duplicate(row.line);
+        continue;
+      }
+      seen.add(key);
+      report.valid += 1;
+      report.inserted += 1;
+      if (dryRun) {
+        report.addPreview({
+          line: row.line,
+          name: row.name,
+          dose: row.dose,
+          times: row.times.join(" "),
+          asNeeded: row.asNeeded,
+          startsOn: row.startsOn,
+          endsOn: row.endsOn,
+        });
+        continue;
+      }
 
-    const data = parsed.data;
-    // Field by field, with the create route's invariants for the shapes an
-    // import produces: a daily schedule (FREQ=DAILY, times dual-written), an
-    // opening course for a dated window, no schedule for as-needed.
-    const medication = await prisma.medication.create({
-      data: {
-        userId,
-        name: data.name,
-        dose: data.dose,
-        asNeeded: data.asNeeded ?? false,
-        notificationsEnabled: data.notificationsEnabled ?? false,
-        ...(course
-          ? {
-              startsOn: course.startsOn,
-              endsOn: course.endsOn,
-              courses: {
-                create: {
-                  userId,
-                  startsOn: course.startsOn,
-                  endsOn: course.endsOn,
+      const data = parsed.data;
+      // Field by field, with the create route's invariants for the shapes an
+      // import produces: a daily schedule (FREQ=DAILY, times dual-written), an
+      // opening course for a dated window, no schedule for as-needed.
+      const medication = await prisma.medication.create({
+        data: {
+          userId,
+          name: data.name,
+          dose: data.dose,
+          asNeeded: data.asNeeded ?? false,
+          notificationsEnabled: data.notificationsEnabled ?? false,
+          ...(course
+            ? {
+                startsOn: course.startsOn,
+                endsOn: course.endsOn,
+                courses: {
+                  create: {
+                    userId,
+                    startsOn: course.startsOn,
+                    endsOn: course.endsOn,
+                  },
                 },
-              },
-            }
-          : {}),
-        schedules: {
-          create: (data.schedules ?? []).map((s) => ({
-            windowStart: s.windowStart,
-            windowEnd: s.windowEnd,
-            label: null,
-            dose: null,
-            daysOfWeek: serializeScheduleRecurrence({
-              daysOfWeek: [],
-              intervalWeeks: 1,
-            }),
-            timesOfDay:
-              s.timesOfDay && s.timesOfDay.length > 0
-                ? s.timesOfDay
-                : [s.windowStart],
-            rrule: "FREQ=DAILY",
-          })),
+              }
+            : {}),
+          schedules: {
+            create: (data.schedules ?? []).map((s) => ({
+              windowStart: s.windowStart,
+              windowEnd: s.windowEnd,
+              label: null,
+              dose: null,
+              daysOfWeek: serializeScheduleRecurrence({
+                daysOfWeek: [],
+                intervalWeeks: 1,
+              }),
+              timesOfDay:
+                s.timesOfDay && s.timesOfDay.length > 0
+                  ? s.timesOfDay
+                  : [s.windowStart],
+              rrule: "FREQ=DAILY",
+            })),
+          },
         },
-      },
-      select: { id: true },
-    });
-    await setMedicationCategory(medication.id, undefined);
-  }
-
-  if (!dryRun && report.inserted > 0) {
-    invalidateUserMedications(userId, { evict: true });
+        select: { id: true },
+      });
+      await setMedicationCategory(medication.id, undefined);
+      written += 1;
+      args.onWritten?.(1);
+    }
+  } finally {
+    // Also after an import cut off part way: what was written is visible.
+    if (!dryRun && written > 0) {
+      invalidateUserMedications(userId, { evict: true });
+    }
   }
   return report.toResult();
 }
