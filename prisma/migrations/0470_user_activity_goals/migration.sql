@@ -6,4 +6,4 @@
 --
 -- Reversibility: dropping the column removes the goals; nothing else reads it.
 
-ALTER TABLE "users" ADD COLUMN "activity_goals_json" JSONB;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "activity_goals_json" JSONB;
