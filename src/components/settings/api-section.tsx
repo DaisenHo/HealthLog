@@ -619,7 +619,7 @@ function ApiTokensCard() {
                                     variant="destructive"
                                     onClick={() => handleRevoke(tok.id)}
                                   >
-                                    {t("settings.tokenRevoked")}
+                                    {t("settings.tokenRevokeAction")}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -698,7 +698,7 @@ function ApiTokensCard() {
                               className="min-h-11 w-full"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                              {t("settings.tokenRevoke")}
+                              {t("settings.tokenRevokeAction")}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -718,7 +718,7 @@ function ApiTokensCard() {
                                 variant="destructive"
                                 onClick={() => handleRevoke(tok.id)}
                               >
-                                {t("settings.tokenRevoked")}
+                                {t("settings.tokenRevokeAction")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
