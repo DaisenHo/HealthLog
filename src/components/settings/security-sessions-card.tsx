@@ -216,6 +216,7 @@ export function SecuritySessionsCard({
                 {!s.isCurrent && (
                   <ConfirmButton
                     slot="revoke-session"
+                    destructive
                     size="sm"
                     className="min-h-9 shrink-0"
                     label={t("settings.security.revokeSession")}
@@ -237,6 +238,7 @@ export function SecuritySessionsCard({
           <SettingsCardActions>
             <ConfirmButton
               slot="sign-out-everywhere"
+              destructive
               className="min-h-11 sm:min-h-9"
               label={t("settings.security.signOutEverywhere")}
               title={t("settings.security.signOutEverywhereConfirmTitle")}

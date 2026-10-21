@@ -137,6 +137,7 @@ export function TrustedDevicesCard({
                 </div>
                 <ConfirmButton
                   slot="revoke-trusted-device"
+                  destructive
                   size="sm"
                   className="min-h-9 shrink-0"
                   label={t("settings.security.trustedDevices.revoke")}
@@ -157,6 +158,7 @@ export function TrustedDevicesCard({
           <SettingsCardActions>
             <ConfirmButton
               slot="revoke-all-trusted-devices"
+              destructive
               className="min-h-11 sm:min-h-9"
               label={t("settings.security.trustedDevices.revokeAll")}
               title={t(

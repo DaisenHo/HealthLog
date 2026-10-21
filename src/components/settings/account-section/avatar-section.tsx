@@ -154,6 +154,7 @@ export function AvatarSection() {
           {avatarUrl && (
             <ConfirmButton
               slot="settings-avatar-remove"
+              destructive
               variant="ghost"
               className="text-destructive min-h-11 sm:min-h-9"
               icon={<Trash2 className="h-4 w-4" />}

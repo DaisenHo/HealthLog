@@ -229,6 +229,7 @@ export function GrantsReceivedCard() {
         </Button>
         <ConfirmButton
           slot="grant-renounce"
+          destructive
           size="sm"
           label={t("recordSharing.received.renounce")}
           title={t("recordSharing.received.renounceTitle", { name })}

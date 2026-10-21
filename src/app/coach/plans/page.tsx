@@ -191,6 +191,7 @@ function CoachPlansBody({ readOnly }: { readOnly: boolean }) {
           {(readOnly || group === "past") && (
             <ConfirmButton
               slot="coach-plan-delete"
+              destructive
               variant="ghost"
               size="sm"
               className="min-h-9"

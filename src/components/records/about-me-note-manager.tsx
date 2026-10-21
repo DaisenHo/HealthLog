@@ -194,6 +194,7 @@ export function AboutMeNoteManager() {
         {hasNote && (
           <ConfirmButton
             slot="settings-about-me-clear"
+            destructive
             label={t("settings.ai.aboutMe.clear")}
             icon={<Trash2 className="size-4" aria-hidden />}
             variant="outline"

@@ -228,6 +228,7 @@ function FactRow({
                 accessible name and the confirmation carry the words. */}
             <ConfirmButton
               slot="settings-coach-memory-forget"
+              destructive
               variant="ghost"
               size="icon"
               className="size-11 sm:size-9"
