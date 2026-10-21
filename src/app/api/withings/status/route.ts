@@ -3,9 +3,9 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
-import { decrypt, encrypt } from "@/lib/crypto";
-import { getUserWithingsCredentials } from "@/lib/withings/credentials";
-import { hasActivityScope, refreshAccessToken } from "@/lib/withings/client";
+import { hasActivityScope } from "@/lib/withings/client";
+import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
+import { withingsTokenDescriptor } from "@/lib/withings/oauth-descriptor";
 import { isWithingsRefreshReauthFailure } from "@/lib/withings/sync";
 import { markReauthRequired } from "@/lib/integrations/status";
 
@@ -33,8 +33,6 @@ export const GET = apiHandler(async () => {
     where: { userId: user.id },
     select: {
       withingsUserId: true,
-      accessToken: true,
-      refreshToken: true,
       lastSyncedAt: true,
       tokenExpiresAt: true,
       createdAt: true,
@@ -56,22 +54,14 @@ export const GET = apiHandler(async () => {
   const shouldRefresh = tokenExpiresAt.getTime() - 60_000 <= now;
   if (shouldRefresh) {
     try {
-      const creds = await getUserWithingsCredentials(user.id);
-      if (creds) {
-        const refreshToken = decrypt(connection.refreshToken);
-        const refreshed = await refreshAccessToken(refreshToken, creds);
-        tokenExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+      // The shared token lifecycle refreshes under the same lock the sync
+      // takes, so a status read and a sync never spend the one-time refresh
+      // token twice.
+      const result = await obtainAccessToken(withingsTokenDescriptor, user.id);
+      if (result.kind === "token" && result.expiresAt) {
+        tokenExpiresAt = result.expiresAt;
         tokenExpired = tokenExpiresAt.getTime() <= Date.now();
-
-        await prisma.withingsConnection.update({
-          where: { userId: user.id },
-          data: {
-            accessToken: encrypt(refreshed.access_token),
-            refreshToken: encrypt(refreshed.refresh_token),
-            tokenExpiresAt,
-          },
-        });
-      } else if (tokenExpired) {
+      } else if (result.kind !== "token" && tokenExpired) {
         tokenRefreshFailed = true;
       }
     } catch (error) {

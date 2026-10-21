@@ -126,14 +126,17 @@ beforeEach(() => {
 
 describe("getValidToken — serialized rotating refresh", () => {
   it("re-reads token state under an advisory lock and reuses a peer winner", async () => {
+    const stale = {
+      id: "conn-1",
+      withingsUserId: "wu-1",
+      accessToken: "old-access",
+      refreshToken: "old-refresh",
+      tokenExpiresAt: new Date(Date.now() - 1000),
+    };
     vi.mocked(prisma.withingsConnection.findUnique)
-      .mockResolvedValueOnce({
-        id: "conn-1",
-        withingsUserId: "wu-1",
-        accessToken: "old-access",
-        refreshToken: "old-refresh",
-        tokenExpiresAt: new Date(Date.now() - 1000),
-      } as never)
+      // The connection lookup, then the token read before the lock.
+      .mockResolvedValueOnce(stale as never)
+      .mockResolvedValueOnce(stale as never)
       .mockResolvedValueOnce({
         id: "conn-1",
         withingsUserId: "wu-1",
