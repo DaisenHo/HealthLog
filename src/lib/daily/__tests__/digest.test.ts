@@ -1507,16 +1507,17 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     ).toEqual(["Dr. Weiss today", "Dentist tomorrow"]);
   });
 
-  // The tap opens where the appointment lives. The item used to borrow the
-  // check-up item's action whole (label, intent and the bare `/checkups`),
-  // which opens the preventive-care tab an appointment is never on.
-  it("opens the visit itself, with its own label and intent", () => {
+  // The tap opens where the appointment lives: the bare `/checkups` it carried
+  // opens the preventive-care tab an appointment is never on. Label and intent
+  // stay the check-up item's on the wire, for the shipped iOS app; the web
+  // card relabels (`priority-card.test.tsx`).
+  it("opens the visit itself, keeping the intent the app routes", () => {
     const d = buildDailyDigest(input({ upcomingVisits: [visit()] }), t);
     const item = d.worthALook.find((i) => i.kind === "upcoming_visit");
     expect(item?.actions).toEqual([
       {
-        labelKey: "daily.action.viewAppointment",
-        intent: "visit.view",
+        labelKey: "daily.action.viewCheckups",
+        intent: "checkup.view",
         href: "/checkups?visit=v1",
       },
     ]);
@@ -1535,8 +1536,8 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     const item = d.worthALook.find((i) => i.kind === "upcoming_visit");
     expect(item?.actions).toEqual([
       {
-        labelKey: "daily.action.viewAppointments",
-        intent: "visit.view",
+        labelKey: "daily.action.viewCheckups",
+        intent: "checkup.view",
         href: "/checkups?view=visits",
       },
     ]);

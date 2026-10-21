@@ -681,10 +681,9 @@ function buildPreventiveCareItem(
  * visit's own status field with a second place to set it.
  *
  * The action opens where the appointment lives: the visit itself, or the
- * visits list for a day with several. It is `visit.view` and not the checkup
- * item's `checkup.view`: the two kinds used to share that intent, its label
- * and its bare `/checkups`, which sent every tap on an appointment to the
- * preventive-care list the appointment is not on.
+ * visits list for a day with several. The bare `/checkups` it used to carry
+ * sent every tap on an appointment to the preventive-care list the
+ * appointment is not on.
  */
 function buildUpcomingVisitItems(
   visits: readonly DailyDigestUpcomingVisit[],
@@ -713,11 +712,14 @@ function buildUpcomingVisitItems(
       status: "info",
       actions: [
         {
-          labelKey:
-            group.length === 1
-              ? "daily.action.viewAppointment"
-              : "daily.action.viewAppointments",
-          intent: "visit.view",
+          // The wire keeps the check-up item's label and intent: the shipped
+          // iOS app routes `checkup.view` and knows no other token for this
+          // item, so a new intent would leave its tap inert. The web card
+          // relabels it from the kind (`actionLabelKey` in
+          // `priority-card.tsx`); the switch to `visit.view` waits for an
+          // app that understands it.
+          labelKey: "daily.action.viewCheckups",
+          intent: "checkup.view",
           href: visitsPath(group.map((visit) => visit.id)),
         },
       ],
