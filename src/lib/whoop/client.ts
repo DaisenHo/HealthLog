@@ -180,6 +180,12 @@ export interface WhoopRecovery {
 /** Sleep activity record. */
 export interface WhoopSleep {
   id: string;
+  /**
+   * The cycle this sleep belongs to. A v2 recovery is read through its cycle,
+   * and the recovery webhook carries the SLEEP id, so the targeted recovery
+   * refresh resolves sleep -> cycle -> recovery through this field.
+   */
+  cycle_id?: number;
   user_id: number;
   created_at: string;
   updated_at: string;
@@ -449,8 +455,10 @@ export function fetchCycleById(
 
 /**
  * WHOOP v2 has no recovery-by-recovery-id route — a recovery is read through
- * its cycle (`GET /v2/cycle/{cycleId}/recovery`). The recovery webhook carries
- * the cycle id, so the targeted refresh resolves the recovery from there.
+ * its cycle (`GET /v2/cycle/{cycleId}/recovery`). The v2 recovery webhook
+ * carries the id of the associated SLEEP, not the cycle, so the targeted
+ * refresh first reads the sleep for its `cycle_id` (see
+ * `syncWhoopRecoveryById`).
  */
 export function fetchRecoveryByCycleId(
   accessToken: string,
@@ -522,6 +530,21 @@ export interface MappedMeasurement {
    */
   reconstructed?: boolean;
 }
+
+/**
+ * Every field-tag `mapRecovery` can emit. A recovery's rows are keyed
+ * `<sleep_id>:<fieldTag>` and share the `<sleep_id>:` prefix with the rows of
+ * the sleep it belongs to, so a recovery deletion must name these exact ids
+ * rather than match on the prefix (which would take the night's sleep rows
+ * with it). Pinned against the mapper by a test.
+ */
+export const WHOOP_RECOVERY_FIELD_TAGS = [
+  "recovery",
+  "hrv_rmssd",
+  "rhr",
+  "spo2",
+  "skin_temp",
+] as const;
 
 /**
  * Map one WHOOP recovery record into Measurement readings. An unscored record
