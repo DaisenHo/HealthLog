@@ -6665,7 +6665,9 @@
           "items": {
             "vo2max": "VO2 max",
             "cardio_age": "cardiovasculaire leeftijd",
-            "resilience": "veerkracht"
+            "resilience": "veerkracht",
+            "workout": "trainingen",
+            "heartrate": "hartslag"
           }
         }
       }

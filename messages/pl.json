@@ -6665,7 +6665,9 @@
           "items": {
             "vo2max": "VO2 max",
             "cardio_age": "wiek sercowo-naczyniowy",
-            "resilience": "odporność"
+            "resilience": "odporność",
+            "workout": "treningi",
+            "heartrate": "tętno"
           }
         }
       }

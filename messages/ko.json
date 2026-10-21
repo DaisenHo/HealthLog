@@ -6665,7 +6665,9 @@
           "items": {
             "vo2max": "VO2 max",
             "cardio_age": "심혈관 나이",
-            "resilience": "회복탄력성"
+            "resilience": "회복탄력성",
+            "workout": "운동",
+            "heartrate": "심박수"
           }
         }
       }

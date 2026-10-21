@@ -77,7 +77,9 @@ describe("getAuthorizationUrl", () => {
   it("builds the Oura authorize URL", () => {
     const url = getAuthorizationUrl("signed", CREDS);
     expect(url).toContain("cloud.ouraring.com/oauth/authorize");
-    expect(url).toContain("scope=daily+spo2+heart_health+stress+personal");
+    expect(url).toContain(
+      "scope=daily+spo2+heart_health+stress+workout+heartrate+personal",
+    );
     expect(url).toContain("state=signed");
   });
 });

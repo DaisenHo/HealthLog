@@ -79471,6 +79471,8 @@ components:
               - vo2max
               - cardio_age
               - resilience
+              - workout
+              - heartrate
         hasToken:
           description: Nightscout only.
           type: boolean

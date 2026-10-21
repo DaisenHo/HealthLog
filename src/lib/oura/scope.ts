@@ -34,6 +34,8 @@
  *   vo2max         vO2_max                           heart_health
  *   cardio_age     daily_cardiovascular_age          heart_health
  *   resilience     daily_resilience                  stress
+ *   workout        workout                           workout
+ *   heartrate      heartrate                         heartrate
  *   (profile)      personal_info                     personal
  *   (cycle)        daily_cycle_phases                reproductive_cycle
  *
@@ -53,7 +55,11 @@ export const OURA_COLLECTIONS = [
   { name: "vo2max", scope: "heart_health" },
   { name: "cardio_age", scope: "heart_health" },
   { name: "resilience", scope: "stress" },
+  { name: "workout", scope: "workout" },
+  { name: "heartrate", scope: "heartrate" },
 ] as const;
+
+export type OuraCollectionName = (typeof OURA_COLLECTIONS)[number]["name"];
 
 type OuraCollectionEntry = (typeof OURA_COLLECTIONS)[number];
 

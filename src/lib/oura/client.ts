@@ -23,6 +23,7 @@ import { OuraApiError, classifyOuraResponse } from "./response-classifier";
 import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
 import { walkPages } from "@/lib/integrations/page-walk";
+import { retryAfterMsOf } from "@/lib/integrations/oauth-kit/retry-after";
 import { OURA_OAUTH_SCOPE, parseOuraMissingScope } from "./scope";
 
 const OURA_API_BASE = "https://api.ouraring.com";
@@ -463,6 +464,13 @@ interface DateRangeQuery {
   maxPages?: number;
 }
 
+/** A time-range read (`heartrate`): instants, not calendar dates. */
+export interface DateTimeRangeQuery {
+  start: Date;
+  end: Date;
+  maxPages?: number;
+}
+
 /**
  * The error for a refused collection read. Oura's status alone does not say
  * what went wrong; its body does (see `./scope`):
@@ -473,13 +481,16 @@ interface DateRangeQuery {
  *   - any other 401: the token is dead or expired (refresh, then reconnect).
  *   - 403: a lapsed Oura membership, per the API reference. A reconnect does
  *     not fix that, so it is a persistent failure rather than a reauth.
+ *   - 429 (and 503): transient, with the `Retry-After` delay on
+ *     `retryAfterMs` so a backfill can wait it out instead of guessing.
  */
 function collectionRefusal(
   verb: string,
-  status: number,
+  res: Pick<Response, "status" | "headers">,
   verdict: ReturnType<typeof classifyOuraResponse>,
   body: unknown,
 ): OuraApiError {
+  const status = res.status;
   if (status === 401) {
     const missingScope = parseOuraMissingScope(body);
     if (missingScope) {
@@ -505,7 +516,41 @@ function collectionRefusal(
     classification: verdict.classification,
     httpStatus: verdict.httpStatus,
     reason: verdict.reason,
+    ...(status === 429 || status === 503
+      ? { retryAfterMs: retryAfterMsOf(res) }
+      : {}),
   });
+}
+
+/** Read one page of a collection; throws the classified refusal. */
+async function readCollectionPage<T>(
+  path: string,
+  accessToken: string,
+  verb: string,
+  params: URLSearchParams,
+  page: number,
+): Promise<{ items: T[]; next: string | null }> {
+  const pageStart = performance.now();
+  const res = await safeFetch(`${OURA_API_BASE}${path}?${params}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
+  });
+  const json = (await res.json().catch(() => null)) as OuraCollection<T> | null;
+  const verdict = classifyOuraResponse(res.status);
+  getEvent()?.addExternalCall({
+    service: "oura",
+    method: `${verb}(page=${page})`,
+    duration_ms: Math.round(performance.now() - pageStart),
+    status: res.status,
+    error: verdict.classification === "success" ? undefined : verdict.reason,
+  });
+  if (verdict.classification !== "success") {
+    throw collectionRefusal(verb, res, verdict, json);
+  }
+  return { items: json?.data ?? [], next: json?.next_token ?? null };
 }
 
 async function fetchCollection<T>(
@@ -517,40 +562,59 @@ async function fetchCollection<T>(
   const walk = await walkPages<string, T>(
     `oura.${verb}`,
     query.maxPages ?? 100,
-    async (nextToken, page) => {
+    (nextToken, page) => {
       const params = new URLSearchParams({
         start_date: query.startDate,
         end_date: query.endDate,
       });
       if (nextToken) params.set("next_token", nextToken);
-
-      const pageStart = performance.now();
-      const res = await safeFetch(`${OURA_API_BASE}${path}?${params}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/json",
-        },
-      });
-      const json = (await res
-        .json()
-        .catch(() => null)) as OuraCollection<T> | null;
-      const verdict = classifyOuraResponse(res.status);
-      getEvent()?.addExternalCall({
-        service: "oura",
-        method: `${verb}(page=${page})`,
-        duration_ms: Math.round(performance.now() - pageStart),
-        status: res.status,
-        error:
-          verdict.classification === "success" ? undefined : verdict.reason,
-      });
-      if (verdict.classification !== "success") {
-        throw collectionRefusal(verb, res.status, verdict, json);
-      }
-      return { items: json?.data ?? [], next: json?.next_token ?? null };
+      return readCollectionPage<T>(path, accessToken, verb, params, page);
     },
   );
   return walk.items;
+}
+
+/** What a streamed walk came to. */
+export interface OuraStreamedWalk {
+  pages: number;
+  /** Stopped at the page ceiling or on a repeated cursor with pages left. */
+  truncated: boolean;
+}
+
+/**
+ * Walk a time-range collection page by page, handing each page to `onPage`
+ * before the next is read. Nothing is collected: the walk keeps one page at a
+ * time, so a dense stream (heart rate, a sample every few minutes for years)
+ * costs the memory of a page, not of the history.
+ */
+async function streamCollection<T>(
+  path: string,
+  accessToken: string,
+  verb: string,
+  query: DateTimeRangeQuery,
+  onPage: (items: T[]) => Promise<void>,
+): Promise<OuraStreamedWalk> {
+  const walk = await walkPages<string, never>(
+    `oura.${verb}`,
+    query.maxPages ?? 200,
+    async (nextToken, page) => {
+      const params = new URLSearchParams({
+        start_datetime: query.start.toISOString(),
+        end_datetime: query.end.toISOString(),
+      });
+      if (nextToken) params.set("next_token", nextToken);
+      const { items, next } = await readCollectionPage<T>(
+        path,
+        accessToken,
+        verb,
+        params,
+        page,
+      );
+      await onPage(items);
+      return { items: [], next };
+    },
+  );
+  return { pages: walk.pages, truncated: walk.truncated };
 }
 
 export function fetchSleep(
@@ -666,6 +730,68 @@ export function fetchDailyCyclePhases(
     accessToken,
     "fetchDailyCyclePhases",
     query,
+  );
+}
+
+/**
+ * Oura `workout` — one activity session, auto-detected or entered. `activity`
+ * is Oura's own lowercase label (`walking`, `cycling`, `strength_training`,
+ * ...); `distance` is metres actually covered (a GPS or step-derived figure,
+ * unlike the daily activity-equivalent distance); `calories` is kcal.
+ */
+export interface OuraWorkout {
+  id: string;
+  day?: string;
+  activity?: string | null;
+  calories?: number | null;
+  distance?: number | null;
+  start_datetime: string;
+  end_datetime: string;
+  /** `easy` | `moderate` | `hard` */
+  intensity?: string | null;
+  /** `manual` | `autodetected` | `confirmed` | `workout_heart_rate` */
+  source?: string | null;
+  /** A name the person gave the workout. Free text; never imported. */
+  label?: string | null;
+}
+
+export function fetchWorkouts(
+  accessToken: string,
+  query: DateRangeQuery,
+): Promise<OuraWorkout[]> {
+  return fetchCollection<OuraWorkout>(
+    "/v2/usercollection/workout",
+    accessToken,
+    "fetchWorkouts",
+    query,
+  );
+}
+
+/** One `heartrate` sample: a reading at an instant, tagged with its context. */
+export interface OuraHeartRateSample {
+  bpm?: number | null;
+  /** `awake` | `rest` | `sleep` | `session` | `live` | `workout` */
+  source?: string | null;
+  timestamp?: string | null;
+}
+
+/**
+ * Stream the `heartrate` collection for a time range, one page at a time.
+ * Oura answers it by instant (`start_datetime` / `end_datetime`) and pages
+ * with `next_token`; a page goes to `onPage` and is dropped before the next
+ * is read.
+ */
+export function forEachHeartRatePage(
+  accessToken: string,
+  query: DateTimeRangeQuery,
+  onPage: (samples: OuraHeartRateSample[]) => Promise<void>,
+): Promise<OuraStreamedWalk> {
+  return streamCollection<OuraHeartRateSample>(
+    "/v2/usercollection/heartrate",
+    accessToken,
+    "fetchHeartRate",
+    query,
+    onPage,
   );
 }
 
@@ -1103,6 +1229,38 @@ export function mapResilience(
       fieldTag: "resilience",
     },
   ];
+}
+
+/** Heart-rate readings outside this band are not a ring's reading. */
+const OURA_BPM_MIN = 20;
+const OURA_BPM_MAX = 250;
+
+/**
+ * Map one `heartrate` sample → `PULSE` (bpm), the intraday heart-rate type
+ * Google Health and Fitbit write their minute stream to. Keyed on the
+ * sample's own instant (`heartrate:<ISO>`): Oura emits one reading per
+ * instant, and a sample is final once it is in the cloud, so a re-read lands
+ * on the same key. A sample without a parseable instant or with a bpm
+ * outside a human band maps to nothing.
+ */
+export function mapHeartRateSample(
+  sample: OuraHeartRateSample,
+): MappedMeasurement | null {
+  const bpm = sample.bpm;
+  if (typeof bpm !== "number" || !Number.isFinite(bpm)) return null;
+  if (bpm < OURA_BPM_MIN || bpm > OURA_BPM_MAX) return null;
+  if (typeof sample.timestamp !== "string") return null;
+  const at = new Date(sample.timestamp);
+  if (Number.isNaN(at.getTime())) return null;
+  const iso = at.toISOString();
+  return {
+    type: "PULSE",
+    value: Math.round(bpm),
+    unit: "bpm",
+    measuredAt: at,
+    fieldTag: "hr",
+    externalId: `heartrate:${iso}`,
+  };
 }
 
 // ─── Cycle-phase → CycleDayLog mapping (v1.29.x) ───────────────────

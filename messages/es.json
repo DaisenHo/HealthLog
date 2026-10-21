@@ -6665,7 +6665,9 @@
           "items": {
             "vo2max": "VO2 máx.",
             "cardio_age": "edad cardiovascular",
-            "resilience": "resiliencia"
+            "resilience": "resiliencia",
+            "workout": "entrenamientos",
+            "heartrate": "frecuencia cardiaca"
           }
         }
       }

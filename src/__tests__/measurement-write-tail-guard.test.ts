@@ -61,6 +61,8 @@ const WRITE_SITES: Record<string, string> = {
     "refolds the touched days and re-warms the touched types at the end of the upsert",
   "lib/nightscout/sync.ts":
     "refolds the touched days and re-warms the touched types at the end of the sync",
+  "lib/oura/sync-heart-rate.ts":
+    "collects the days each heart-rate page touched; refolds them and re-warms the type once per window",
   "lib/withings/sync.ts":
     "refolds the touched days and re-warms the touched types at the end of the sync",
   "lib/withings/sync-activity.ts":
