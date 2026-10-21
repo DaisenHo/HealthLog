@@ -1,5 +1,83 @@
 # Changelog
 
+## [1.43.11] — 2026-10-21
+
+### Fixed
+
+- **Long lab reports scan completely.** A report is now read page by page
+  instead of in one request, so a hospital report with several panels comes
+  back whole, up to 20 pages and 400 readings. Where the AI provider stops
+  before the end of a page, the readings it already returned are kept and the
+  review screen names the pages to check. A scan that hits your daily AI
+  budget stops there and says so, and a reading whose name or unit is too
+  long is marked on its row instead of blocking the save. Models that think
+  before answering no longer use up the room meant for the readings. When a
+  PDF carries a text layer, it helps the model tell similar characters apart,
+  but the page image always wins. (#1257)
+- **An upcoming appointment opens itself.** Tapping it on the dashboard, in
+  Today or in its reminder now opens that visit instead of the check-ups
+  list. The visit preparation and the doctor report offered for an
+  appointment start at your last visit with the same practice, otherwise the
+  same specialty or kind of visit, and say which; with no match they cover
+  the last 90 days. (#1258)
+- **Withings sleep stages arrive the next morning**, not weeks later. One
+  failing night no longer loses the other nights of a sleep sync. Steps that
+  Health Mate copies in from another app are skipped only when that other
+  app already sends them to HealthLog for the same day.
+- **Deleting a WHOOP recovery no longer removes that night's sleep.**
+- **Polar** no longer asks you to reconnect when your device simply lacks a
+  data type, and **Strava** keeps calories and progress when its rate limit
+  hits.
+- **Fitbit and Google Health HRV is filed as RMSSD**, apart from the SDNN
+  that Apple Watch and Withings report, and takes part in correlations and
+  illness views. Readiness, HRV balance and stress keep using SDNN sources
+  only; the dashboard tile, the briefing and the doctor report show RMSSD,
+  labelled, when you have no SDNN. Restoring a backup from before this
+  release keeps that split.
+- **The notification settings show the mood reminder as it is delivered.**
+- **Settings behave the same everywhere:** delete, revoke and remove
+  confirmations are red again, ending a session's kept access asks first,
+  cards no longer stay stuck saving after a network failure, and quiet
+  actions (passkeys, security keys, disconnecting an integration, share
+  links, injection sites, local OCR, check-up reminders) tell you how they
+  went.
+- **Readings entered through Telegram, the assistant API or Health Connect**
+  now rank properly against device estimates in source priority.
+
+### Changed
+
+- **Fitbit stops on 30 October 2026**, when Google turns its old Fitbit API
+  off. From then HealthLog no longer polls Fitbit, keeps everything already
+  imported, and the Fitbit card explains how to move to the Google Health
+  integration, which reads Fitbit and Pixel data. A day recorded by both
+  counts once. Accounts that never used Fitbit no longer see the card after
+  that date.
+- **Saved AI keys can be removed**, the display name can be changed in your
+  profile, and emergency fields can go back to "Not recorded". Setting or
+  removing an AI key is recorded in the audit log.
+
+### Security
+
+- **Hardened the markers that keep document and user text apart from
+  instructions** sent to an AI model. Nested markers could re-form after
+  cleaning; cleaning now repeats until nothing changes. This covers lab
+  scans, the Coach and the MCP server.
+
+### Upgrade notes
+
+- Migrations 0420 and 0421 run on start. 0420 refiles Fitbit and Google
+  Health HRV as RMSSD and clears their rollups, which are rebuilt in the
+  background on the first start; expect a few minutes of extra work then.
+  0421 adds one column for Withings sleep bookkeeping.
+- If you use Fitbit, connect Google Health before 30 October. Tokens cannot
+  be carried over, so it is a fresh sign-in.
+
+### Thanks
+
+Thanks to @asmala for pinning down both limits the lab scan ran into (#1257),
+and to @mills1975 for the appointment link and the report window idea
+(#1258).
+
 ## [1.43.10] — 2026-10-21
 
 ### Changed
