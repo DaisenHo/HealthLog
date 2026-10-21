@@ -6440,6 +6440,14 @@
         "followsDefault": "Korzystasz z ustawienia domyślnego serwera ({level}).",
         "useDefault": "Użyj ustawienia domyślnego serwera ({level})",
         "saveError": "Nie udało się zapisać poziomu. Spróbuj ponownie."
+      },
+      "removeKey": {
+        "label": "Usuń klucz API",
+        "title": "Usunąć zapisany klucz API?",
+        "body": "HealthLog usuwa zapisany klucz i nie może go odzyskać. Wpisz go ponownie, aby dalej z niego korzystać.",
+        "confirm": "Usuń klucz API",
+        "done": "Usunięto klucz API.",
+        "failed": "Nie udało się usunąć klucza API."
       }
     },
     "dashboard": {

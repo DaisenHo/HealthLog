@@ -138,6 +138,21 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "components/settings/ai/remove-saved-key-button.tsx",
+    destroys:
+      "one stored personal AI provider key (OpenAI, Anthropic, the local model or the gateway); the provider choice and model stay",
+    triggers: [
+      "components/settings/ai/openai-provider-form.tsx",
+      "components/settings/ai/anthropic-provider-form.tsx",
+      "components/settings/ai/local-provider-form.tsx",
+      "components/settings/ai/compat-provider-form.tsx",
+    ],
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+    undetected:
+      "No detector sees it. The body comes from `removeSavedKeyBody` with a computed key (`{ [field]: null }`), which the D3 literal pattern does not match, and `/api/user/ai-provider` names no act. Registered by hand.",
+  },
+  {
     file: "components/settings/api-section.tsx",
     destroys: "an API token — revoked, and the secret is never shown again",
     recovery: "permanent",

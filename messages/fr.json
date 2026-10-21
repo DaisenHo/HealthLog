@@ -6440,6 +6440,14 @@
         "followsDefault": "Vous suivez le réglage par défaut du serveur ({level}).",
         "useDefault": "Utiliser le réglage par défaut du serveur ({level})",
         "saveError": "Le niveau n'a pas pu être enregistré. Réessaie."
+      },
+      "removeKey": {
+        "label": "Supprimer la clé API",
+        "title": "Supprimer la clé API enregistrée ?",
+        "body": "HealthLog efface la clé enregistrée et ne peut pas la récupérer. Saisissez-la de nouveau pour continuer à l’utiliser.",
+        "confirm": "Supprimer la clé API",
+        "done": "Clé API supprimée.",
+        "failed": "Impossible de supprimer la clé API."
       }
     },
     "dashboard": {

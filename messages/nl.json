@@ -6440,6 +6440,14 @@
         "followsDefault": "Je volgt de standaardinstelling van de server ({level}).",
         "useDefault": "Standaardinstelling van de server gebruiken ({level})",
         "saveError": "Het niveau kon niet worden opgeslagen. Probeer het opnieuw."
+      },
+      "removeKey": {
+        "label": "API-sleutel verwijderen",
+        "title": "Opgeslagen API-sleutel verwijderen?",
+        "body": "HealthLog wist de opgeslagen sleutel en kan hem niet herstellen. Voer hem opnieuw in om hem te blijven gebruiken.",
+        "confirm": "API-sleutel verwijderen",
+        "done": "API-sleutel verwijderd.",
+        "failed": "De API-sleutel kon niet worden verwijderd."
       }
     },
     "dashboard": {

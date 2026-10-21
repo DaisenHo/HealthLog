@@ -6440,6 +6440,14 @@
         "followsDefault": "You follow the server default ({level}).",
         "useDefault": "Use the server default ({level})",
         "saveError": "The level could not be saved. Please try again."
+      },
+      "removeKey": {
+        "label": "Remove API key",
+        "title": "Remove the saved API key?",
+        "body": "HealthLog deletes the stored key and cannot recover it. Enter it again to keep using it.",
+        "confirm": "Remove API key",
+        "done": "API key removed.",
+        "failed": "Could not remove the API key."
       }
     },
     "dashboard": {

@@ -20,6 +20,8 @@ import { apiPatch } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
+import { RemoveSavedKeyButton } from "./remove-saved-key-button";
+
 import { ReasoningEffortField } from "./reasoning-effort-field";
 import {
   uiToLegacyProviderEnum,
@@ -152,6 +154,9 @@ export function CompatProviderForm({
       )}
 
       <SettingsCardActions>
+        {userProvider?.hasCompatKey && (
+          <RemoveSavedKeyButton field="compatKey" />
+        )}
         <Button
           type="submit"
           size="sm"

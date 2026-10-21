@@ -6440,6 +6440,14 @@
         "followsDefault": "서버 기본값({level})을 따르고 있어요.",
         "useDefault": "서버 기본값 사용({level})",
         "saveError": "단계를 저장하지 못했어요. 다시 시도해 주세요."
+      },
+      "removeKey": {
+        "label": "API 키 삭제",
+        "title": "저장된 API 키를 삭제할까요?",
+        "body": "HealthLog가 저장된 키를 삭제하며 되돌릴 수 없어요. 계속 쓰려면 키를 다시 입력하세요.",
+        "confirm": "API 키 삭제",
+        "done": "API 키를 삭제했어요.",
+        "failed": "API 키를 삭제하지 못했어요."
       }
     },
     "dashboard": {

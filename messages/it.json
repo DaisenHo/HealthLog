@@ -6440,6 +6440,14 @@
         "followsDefault": "Segui l'impostazione predefinita del server ({level}).",
         "useDefault": "Usa l'impostazione predefinita del server ({level})",
         "saveError": "Non è stato possibile salvare il livello. Riprova."
+      },
+      "removeKey": {
+        "label": "Rimuovi chiave API",
+        "title": "Rimuovere la chiave API salvata?",
+        "body": "HealthLog elimina la chiave salvata e non può recuperarla. Inseriscila di nuovo per continuare a usarla.",
+        "confirm": "Rimuovi chiave API",
+        "done": "Chiave API rimossa.",
+        "failed": "Impossibile rimuovere la chiave API."
       }
     },
     "dashboard": {

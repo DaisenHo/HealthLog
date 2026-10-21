@@ -6440,6 +6440,14 @@
         "followsDefault": "Sigues el valor predeterminado del servidor ({level}).",
         "useDefault": "Usar el valor predeterminado del servidor ({level})",
         "saveError": "No se pudo guardar el nivel. Inténtalo de nuevo."
+      },
+      "removeKey": {
+        "label": "Quitar clave de API",
+        "title": "¿Quitar la clave de API guardada?",
+        "body": "HealthLog borra la clave guardada y no puede recuperarla. Vuelve a introducirla para seguir usándola.",
+        "confirm": "Quitar clave de API",
+        "done": "Clave de API quitada.",
+        "failed": "No se pudo quitar la clave de API."
       }
     },
     "dashboard": {

@@ -6440,6 +6440,14 @@
         "followsDefault": "Du folgst dem Standard des Servers ({level}).",
         "useDefault": "Standard des Servers verwenden ({level})",
         "saveError": "Die Stufe konnte nicht gespeichert werden. Bitte versuche es erneut."
+      },
+      "removeKey": {
+        "label": "API-Schlüssel entfernen",
+        "title": "Gespeicherten API-Schlüssel entfernen?",
+        "body": "HealthLog löscht den gespeicherten Schlüssel und kann ihn nicht wiederherstellen. Gib ihn erneut ein, um ihn weiter zu nutzen.",
+        "confirm": "API-Schlüssel entfernen",
+        "done": "API-Schlüssel entfernt.",
+        "failed": "Der API-Schlüssel konnte nicht entfernt werden."
       }
     },
     "dashboard": {
