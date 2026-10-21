@@ -2072,6 +2072,10 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The app shell reads it on every boot, including while a switch is on: the switcher, the banner naming whose record is open, and the route back out all bind this payload. Every field it returns is the caller's own — their preferences, their modules, their identity — and the one field about the switch says only which records they may open and which they are inside. It reads no row of the owner's, and its `accountAccess` block grants nothing: the resolver re-checks the grant on every delegated request regardless of what this payload said a moment ago.",
   "app/api/auth/me/locale/route.ts":
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
+  "app/api/settings/module-list-layout/route.ts":
+    "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
+  "app/api/settings/preview-features/route.ts":
+    "The person's own opt-in to preview features. A preview entry is chrome of the person reading the screen, never a property of the record on it; it reads and writes the caller's own row and nothing of the owner's.",
   "app/api/feature-flags/route.ts":
     "Reads the `AppSettings` singleton and no user row at all, so there is no record for a switch to substitute. It answers about the deployment, which for this purpose is the caller's side of the request; the shell gates the Coach launcher and the assistant surfaces on it, so a 403 here is a piece of chrome deciding it does not exist.",
 };
@@ -2171,8 +2175,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * v1.44 -- a guardian connects and disconnects a managed profile's OAuth
  * providers: two guardian-only entries. 266 -> 268.
+ *
+ * v1.44 -- the module list layout and the preview-feature switch are the
+ * person's own presentation and join the actor list. 268 -> 270.
  */
-const FROZEN_ENTRY_COUNT = 268;
+const FROZEN_ENTRY_COUNT = 270;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

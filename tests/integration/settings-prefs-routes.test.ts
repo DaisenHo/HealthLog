@@ -15,7 +15,7 @@ process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
-import { getPrismaClient, truncateAllTables } from "./setup";
+import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -212,5 +212,113 @@ describe("/api/settings/preview-features — integration", () => {
     expect(unknown.status).toBe(422);
     const empty = await (PATCH as Handler)(json("PATCH", URL, {}));
     expect(empty.status).toBe(422);
+  });
+});
+
+describe("settings presentation follows the person, also while acting for a record", () => {
+  const LAYOUT = "http://localhost/api/settings/module-list-layout";
+  const PREVIEW = "http://localhost/api/settings/preview-features";
+
+  async function actingForAnotherRecord() {
+    const prisma = getPrismaClient();
+    const owner = await prisma.user.create({
+      data: {
+        username: "prefs-record-owner",
+        email: "prefs-owner@example.test",
+        role: "USER",
+      },
+    });
+    const actor = await prisma.user.create({
+      data: {
+        username: "prefs-delegate",
+        email: "prefs-delegate@example.test",
+        role: "USER",
+      },
+    });
+    await prisma.accountGrant.create({
+      data: {
+        grantorId: owner.id,
+        granteeId: actor.id,
+        access: "WRITE",
+        acceptedAt: new Date(),
+      },
+    });
+    const session = await prisma.session.create({
+      data: { userId: actor.id, expiresAt: new Date(Date.now() + 60_000) },
+    });
+    cookieJar.set("healthlog_session", session.id);
+    await switchSessionTo(session.id, owner.id);
+    return { ownerId: owner.id, actorId: actor.id };
+  }
+
+  it("reads and saves the actor's own layout and preview switch", async () => {
+    const { ownerId, actorId } = await actingForAnotherRecord();
+    const layout = await import("@/app/api/settings/module-list-layout/route");
+    const preview = await import("@/app/api/settings/preview-features/route");
+
+    expect((await (layout.GET as Handler)(new Request(LAYOUT))).status).toBe(
+      200,
+    );
+    const put = await (layout.PUT as Handler)(
+      json("PUT", LAYOUT, { version: 1, list: "labs", view: "cards" }),
+    );
+    expect(put.status).toBe(200);
+    expect((await (preview.GET as Handler)(new Request(PREVIEW))).status).toBe(
+      200,
+    );
+    const patch = await (preview.PATCH as Handler)(
+      json("PATCH", PREVIEW, { topics: true }),
+    );
+    expect(patch.status).toBe(200);
+
+    const rows = await getPrismaClient().user.findMany({
+      where: { id: { in: [ownerId, actorId] } },
+      select: {
+        id: true,
+        moduleListLayoutJson: true,
+        previewFeaturesJson: true,
+      },
+    });
+    const actor = rows.find((r) => r.id === actorId)!;
+    const owner = rows.find((r) => r.id === ownerId)!;
+    expect(actor.moduleListLayoutJson).toMatchObject({
+      labs: { view: "cards" },
+    });
+    expect(actor.previewFeaturesJson).toEqual({ topics: true });
+    expect(owner.moduleListLayoutJson).toBeNull();
+    expect(owner.previewFeaturesJson).toBeNull();
+  });
+});
+
+describe("layout saves for different lists do not overwrite each other", () => {
+  const URL = "http://localhost/api/settings/module-list-layout";
+
+  it("keeps every list a burst of concurrent saves touched", async () => {
+    const { userId } = await seedUser();
+    const { PUT } = await import("@/app/api/settings/module-list-layout/route");
+    const lists = ["labs", "illness", "vorsorge"] as const;
+    await Promise.all(
+      Array.from({ length: 9 }, (_, i) =>
+        (PUT as Handler)(
+          json("PUT", URL, {
+            version: 1,
+            list: lists[i % 3],
+            ...(i < 3 ? { view: "cards" } : { order: [`item-${i}`] }),
+          }),
+        ),
+      ),
+    );
+    const row = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { moduleListLayoutJson: true },
+    });
+    const stored = row.moduleListLayoutJson as Record<
+      string,
+      { view?: string; order?: string[] }
+    >;
+    for (const list of lists) {
+      expect(stored[list]?.view, list).toBe("cards");
+      expect(stored[list]?.order, list).toBeDefined();
+    }
   });
 });
