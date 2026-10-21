@@ -38,6 +38,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { daysWithOtherStepSource } from "@/lib/withings/other-step-source-days";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
@@ -367,15 +368,28 @@ export async function syncUserActivity(
     externalId: string;
   }
   const collected: PlannedRow[] = [];
+  // A day Health Mate holds from another app is that app's data. When the
+  // app reaches HealthLog through its own integration (Apple Health, Health
+  // Connect, Google Health, a wearable), the WITHINGS import was a second
+  // copy under the wrong name, and on a day that copy was the only Withings
+  // row it could outrank a native source further down the ladder. When
+  // nothing else delivered steps that day, Health Mate is the account's only
+  // way in for them, so the day is kept.
+  const externalDates = entries
+    .filter((e) => e.date && e.brand === WITHINGS_EXTERNAL_BRAND)
+    .map((e) => e.date);
+  const duplicateDays = await daysWithOtherStepSource(
+    userId,
+    externalDates,
+    timeZone,
+  );
   let external = 0;
   for (const entry of entries) {
     if (!entry.date) continue;
-    // A day Health Mate holds from another app is that app's data, which
-    // reaches HealthLog from its own integration (Apple Health, Health
-    // Connect, Google Health). Imported under WITHINGS it was a second copy
-    // under the wrong name, and on a day that copy was the only Withings row
-    // it could outrank a native source further down the ladder.
-    if (entry.brand === WITHINGS_EXTERNAL_BRAND) {
+    if (
+      entry.brand === WITHINGS_EXTERNAL_BRAND &&
+      duplicateDays.has(entry.date)
+    ) {
       external++;
       continue;
     }
@@ -402,7 +416,7 @@ export async function syncUserActivity(
 
   if (external > 0) {
     getEvent()?.addWarning(
-      `withings activity: skipped ${external} day(s) Health Mate holds from another app`,
+      `withings activity: skipped ${external} day(s) Health Mate holds from another app that syncs its own steps`,
     );
   }
 

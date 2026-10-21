@@ -121,4 +121,45 @@ describe("syncUserActivity — integration", () => {
     const distance = rows.find((r) => r.type === "WALKING_RUNNING_DISTANCE");
     expect(distance?.value).toBe(7200);
   });
+
+  it("skips a brand-18 day only when another connected source has steps that day", async () => {
+    const prisma = getPrismaClient();
+    // Apple Health delivered the 11th; the 10th holds only a hand-entered
+    // count, which is not a connected source.
+    await prisma.measurement.createMany({
+      data: [
+        {
+          userId: TEST_USER_ID,
+          type: "ACTIVITY_STEPS",
+          source: "APPLE_HEALTH",
+          value: 7300,
+          unit: "steps",
+          measuredAt: new Date("2026-05-11T10:00:00.000Z"),
+          externalId: "stats:HKQuantityTypeIdentifierStepCount:2026-05-11",
+        },
+        {
+          userId: TEST_USER_ID,
+          type: "ACTIVITY_STEPS",
+          source: "MANUAL",
+          value: 5000,
+          unit: "steps",
+          measuredAt: new Date("2026-05-10T10:00:00.000Z"),
+        },
+      ],
+    });
+    stubWithingsActivity([
+      { date: "2026-05-10", steps: 6100, calories: 300, brand: 18 },
+      { date: "2026-05-11", steps: 7290, calories: 340, brand: 18 },
+    ]);
+
+    const { syncUserActivity } = await import("@/lib/withings/sync-activity");
+    await syncUserActivity(TEST_USER_ID);
+
+    const rows = await prisma.measurement.findMany({
+      where: { userId: TEST_USER_ID, source: "WITHINGS" },
+      orderBy: [{ measuredAt: "asc" }, { type: "asc" }],
+      select: { type: true, value: true },
+    });
+    expect(rows.map((r) => r.value).sort((a, b) => a - b)).toEqual([300, 6100]);
+  });
 });
