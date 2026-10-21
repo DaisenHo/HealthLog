@@ -61,6 +61,17 @@ export function isInvalidGrant(err: unknown): boolean {
 }
 
 /**
+ * True for a collection read Polar refused with 403. AccessLink documents its
+ * 403 as "User has not accepted all mandatory consents": the token is good,
+ * the account does not share this one data type (or has nothing behind it).
+ * Only meaningful next to a read that succeeded with the same token — a 403 on
+ * every collection is the account-wide consent gap, and stays a failure.
+ */
+export function isPolarCollectionRefusal(err: unknown): boolean {
+  return err instanceof PolarApiError && err.httpStatus === 403;
+}
+
+/**
  * Read the classification from any caught error. A non-`PolarApiError` defaults
  * to `transient` so a plain `Error` retries rather than disabling the
  * integration. Falls back to parsing the status out of the message shape for a

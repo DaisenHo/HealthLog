@@ -17,20 +17,30 @@ import { syncUserPolarLegs } from "../polar-sync";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  syncUserPolar.mockResolvedValue({ imported: 0, failed: false });
+  syncUserPolar.mockResolvedValue({
+    imported: 0,
+    failed: false,
+    tokenProven: true,
+  });
   syncUserPolarWorkouts.mockResolvedValue(0);
 });
 
 describe("syncUserPolarLegs — composite independence on the shared polar ledger", () => {
   it("runs both legs and returns the summed count when both pass", async () => {
-    syncUserPolar.mockResolvedValue({ imported: 5, failed: false });
+    syncUserPolar.mockResolvedValue({
+      imported: 5,
+      failed: false,
+      tokenProven: true,
+    });
     syncUserPolarWorkouts.mockResolvedValue(2);
     await expect(syncUserPolarLegs("u1")).resolves.toEqual({
       imported: 7,
       failed: false,
     });
     expect(syncUserPolar).toHaveBeenCalledWith("u1");
-    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1");
+    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1", {
+      tokenProven: true,
+    });
   });
 
   it("sums both counts without throwing when the vitals leg returns a partial-failure count", async () => {
@@ -38,7 +48,11 @@ describe("syncUserPolarLegs — composite independence on the shared polar ledge
     // its healthy-collections import count rather than throwing. The wrapper
     // must sum it with the workout leg and complete cleanly — a partial vitals
     // failure never starves the user's success accounting at the cohort level.
-    syncUserPolar.mockResolvedValue({ imported: 4, failed: true });
+    syncUserPolar.mockResolvedValue({
+      imported: 4,
+      failed: true,
+      tokenProven: true,
+    });
     syncUserPolarWorkouts.mockResolvedValue(2);
     // The partial is carried, not swallowed: the wrapper completes with the
     // summed count AND says a leg did not settle, so the card cannot paint a
@@ -48,7 +62,9 @@ describe("syncUserPolarLegs — composite independence on the shared polar ledge
       failed: true,
     });
     expect(syncUserPolar).toHaveBeenCalledWith("u1");
-    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1");
+    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1", {
+      tokenProven: true,
+    });
   });
 
   it("still attempts the workout leg when the vitals leg fails (vice-versa isolation)", async () => {
@@ -57,11 +73,17 @@ describe("syncUserPolarLegs — composite independence on the shared polar ledge
     // The vitals error is rethrown (attributable), but only AFTER the workout
     // leg was attempted — a vitals failure never starves the workout leg.
     await expect(syncUserPolarLegs("u1")).rejects.toThrow("vitals down");
-    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1");
+    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1", {
+      tokenProven: false,
+    });
   });
 
   it("leaves the vitals leg's result intact when the workout leg fails", async () => {
-    syncUserPolar.mockResolvedValue({ imported: 4, failed: false });
+    syncUserPolar.mockResolvedValue({
+      imported: 4,
+      failed: false,
+      tokenProven: true,
+    });
     syncUserPolarWorkouts.mockRejectedValue(new Error("workouts down"));
     // The vitals leg ran to completion (its own success already recorded on
     // the shared ledger); the workout error is surfaced without undoing it.
@@ -73,6 +95,8 @@ describe("syncUserPolarLegs — composite independence on the shared polar ledge
     syncUserPolar.mockRejectedValue(new Error("vitals first"));
     syncUserPolarWorkouts.mockRejectedValue(new Error("workouts second"));
     await expect(syncUserPolarLegs("u1")).rejects.toThrow("vitals first");
-    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1");
+    expect(syncUserPolarWorkouts).toHaveBeenCalledWith("u1", {
+      tokenProven: false,
+    });
   });
 });

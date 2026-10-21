@@ -9,6 +9,7 @@ const {
   getPolarConnection,
   fetchExercises,
   recordSyncFailure,
+  recordSyncSuccess,
 } = vi.hoisted(() => ({
   createManyAndReturn: vi.fn(),
   update: vi.fn(),
@@ -16,6 +17,7 @@ const {
   getPolarConnection: vi.fn(),
   fetchExercises: vi.fn(),
   recordSyncFailure: vi.fn(async () => {}),
+  recordSyncSuccess: vi.fn(async () => {}),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -32,6 +34,7 @@ vi.mock("../credentials", () => ({ getPolarConnection }));
 vi.mock("@/lib/integrations/status", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/integrations/status")>()),
   recordSyncFailure,
+  recordSyncSuccess,
 }));
 vi.mock("../client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../client")>();
@@ -181,9 +184,9 @@ describe("syncUserPolarWorkouts", () => {
     );
   });
 
-  // Assumption #4: a 403 scope gap is a soft/recoverable ledger error, not a
-  // hard crash — recorded as reauth_required and rethrown for cohort isolation.
-  it("records a 403 scope error as a soft reauth_required failure", async () => {
+  // Without a read that proved the token, a 403 may be the account-wide
+  // consent gap: recorded as reauth_required and rethrown for cohort isolation.
+  it("records a 403 as a reauth_required failure when nothing proved the token", async () => {
     fetchExercises.mockRejectedValue(
       new PolarApiError({
         verb: "fetchExercises",
@@ -204,11 +207,54 @@ describe("syncUserPolarWorkouts", () => {
     );
   });
 
-  it("never records success on the shared ledger (vitals leg owns the single success write)", async () => {
-    const status = await import("@/lib/integrations/status");
-    const spy = vi.spyOn(status, "recordSyncSuccess");
+  it("reads a 403 as a refused data type once the vitals leg proved the token", async () => {
+    fetchExercises.mockRejectedValue(
+      new PolarApiError({
+        verb: "fetchExercises",
+        classification: "reauth_required",
+        httpStatus: 403,
+        reason: "http_403",
+      }),
+    );
+    await expect(
+      syncUserPolarWorkouts("u1", { tokenProven: true }),
+    ).resolves.toBe(0);
+    expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).toHaveBeenCalledWith("u1", "polar", {
+      leg: "workouts",
+    });
+  });
+
+  it("keeps a 401 a failure even after the vitals leg proved the token", async () => {
+    fetchExercises.mockRejectedValue(
+      new PolarApiError({
+        verb: "fetchExercises",
+        classification: "reauth_required",
+        httpStatus: 401,
+        reason: "http_401",
+      }),
+    );
+    await expect(
+      syncUserPolarWorkouts("u1", { tokenProven: true }),
+    ).rejects.toBeInstanceOf(PolarApiError);
+    expect(recordSyncFailure).toHaveBeenCalledTimes(1);
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
+  });
+
+  // A leg-scoped success clears only its own leg, so this leg has to write
+  // its own: left to the vitals leg, one workouts failure stayed on the row
+  // for good.
+  it("records its own leg's success after a clean read", async () => {
     fetchExercises.mockResolvedValue([]);
     await syncUserPolarWorkouts("u1");
-    expect(spy).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).toHaveBeenCalledWith("u1", "polar", {
+      leg: "workouts",
+    });
+  });
+
+  it("records no success when the read failed", async () => {
+    fetchExercises.mockRejectedValue(new Error("boom"));
+    await expect(syncUserPolarWorkouts("u1")).rejects.toThrow("boom");
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
   });
 });
