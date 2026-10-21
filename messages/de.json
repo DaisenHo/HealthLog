@@ -9880,6 +9880,7 @@
       "pagesCapped": "Nur die ersten {read} von {total} Seiten wurden gelesen. Werte auf späteren Seiten fehlen in dieser Liste.",
       "stoppedBudget": "Dein KI-Budget für heute war mitten im Befund aufgebraucht, deshalb wurden die übrigen Seiten nicht gelesen.",
       "stoppedUnavailable": "KI wurde abgeschaltet, während der Befund gelesen wurde, deshalb wurden die übrigen Seiten nicht gelesen.",
+      "stoppedError": "Der Scan konnte wegen eines Serverfehlers nicht weiterlaufen, deshalb wurden die übrigen Seiten nicht gelesen. Versuche es später noch einmal.",
       "tooLarge": "Dieser Text ist für einen Scan zu lang. Scanne den Befund Seite für Seite.",
       "truncated": "Der KI-Anbieter hat sein Ausgabelimit vor dem Ende des Befunds erreicht. Werte danach können fehlen, vergleiche die Liste deshalb mit dem Befund.",
       "truncatedPages": "Der KI-Anbieter hat auf diesen Seiten sein Ausgabelimit erreicht: {pages}. Werte weiter unten auf diesen Seiten können fehlen, vergleiche sie deshalb mit dem Befund.",

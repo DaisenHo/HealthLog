@@ -548,7 +548,9 @@ export function OcrReadNotes({ notes }: { notes: OcrReadNotesValue }) {
         <p>
           {stoppedBy === "budget"
             ? t("labs.ocr.stoppedBudget")
-            : t("labs.ocr.stoppedUnavailable")}
+            : stoppedBy === "error"
+              ? t("labs.ocr.stoppedError")
+              : t("labs.ocr.stoppedUnavailable")}
         </p>
       ) : null}
       {unreadPages ? (

@@ -203,18 +203,23 @@ function unreadable(err: OcrExtractError): AiRunOutcome<never> {
         errorCode: "labs.ocr.budgetExceeded",
       });
     case "unavailable": {
-      // The wire's own refusal when it gave one (the client reads its code:
-      // consent, the operator's switch, the module); else the re-check
-      // itself failed, which is the background read failing.
+      // The wire's own refusal (the client reads its code: consent, the
+      // operator's switch, the module).
       const refused = err.refusal ? refusalAsFailure(err.refusal) : null;
-      return refused
-        ? failure(refused)
-        : failure({
-            status: 500,
-            message: "The background read failed.",
-            errorCode: AI_RUN_ERROR_CODES.failed,
-          });
+      if (refused) return failure(refused);
+      return failure({
+        status: 500,
+        message: "The background read failed.",
+        errorCode: AI_RUN_ERROR_CODES.failed,
+      });
     }
+    case "error":
+      // The check before the first read failed itself.
+      return failure({
+        status: 500,
+        message: "The background read failed.",
+        errorCode: AI_RUN_ERROR_CODES.failed,
+      });
     default:
       return failure({
         status: 422,
@@ -246,8 +251,16 @@ export async function executeOcrExtraction(args: {
   let reserved = budget?.reserved ?? 0;
   const reserveRead = budget
     ? async () => {
+        // The owner's cap; a reservation that names no known owner (the
+        // params are stored JSON) stops the scan rather than taking the
+        // larger cap.
         const cap =
-          budget.owner === "operator" ? OPERATOR_COST_CAP : USER_PLAN_CAP;
+          budget.owner === "operator"
+            ? OPERATOR_COST_CAP
+            : budget.owner === "user"
+              ? USER_PLAN_CAP
+              : null;
+        if (cap === null) return false;
         const book = (tokens: number) =>
           reserveBudget(
             userId,
@@ -259,7 +272,8 @@ export async function executeOcrExtraction(args: {
             undefined,
             { countMessage: false },
           );
-        const behind = Math.max(0, meter.spent - reserved);
+        // Net of the cached share, as the settlement books it.
+        const behind = Math.max(0, meter.spent - meter.cached - reserved);
         if (behind > 0) {
           const caughtUp = await book(behind);
           if (!caughtUp.allowed) return false;

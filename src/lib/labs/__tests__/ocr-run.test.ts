@@ -310,6 +310,37 @@ describe("text mode", () => {
     );
   });
 
+  it("judges the overspend net of the cached share, as the settlement books it", async () => {
+    vi.mocked(reserveBudget).mockResolvedValue({
+      allowed: true,
+      reserved: 1,
+    } as never);
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      args.meter!.spent += 20_000;
+      args.meter!.cached += 4000;
+      await args.reserveRead!();
+      return { data: { rows: [] } as never, spentTokens: 0, cachedTokens: 0 };
+    });
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    // 20 000 spent, 4 000 of it cached: 16 000 net against 1 500 reserved.
+    expect(vi.mocked(reserveBudget).mock.calls[0][1]).toBe(14_500);
+  });
+
+  it("stops rather than takes the larger cap when the reservation names no known owner", async () => {
+    let answer: boolean | undefined;
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      answer = await args.reserveRead!();
+      return { data: { rows: [] } as never, spentTokens: 0, cachedTokens: 0 };
+    });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget: { ...budget, owner: undefined as never },
+    });
+    expect(answer).toBe(false);
+    expect(reserveBudget).not.toHaveBeenCalled();
+  });
+
   it("answers a scan stopped before any row with the stop's own reason", async () => {
     vi.mocked(runOcrExtraction).mockRejectedValueOnce(
       new OcrExtractError("x", "budget"),
@@ -330,7 +361,7 @@ describe("text mode", () => {
     ).toMatchObject({ ok: false, errorCode: "consent.ai.required" });
 
     vi.mocked(runOcrExtraction).mockRejectedValueOnce(
-      new OcrExtractError("x", "unavailable"),
+      new OcrExtractError("x", "error"),
     );
     expect(
       await executeOcrExtraction({ userId: "u1", input: text(), budget }),

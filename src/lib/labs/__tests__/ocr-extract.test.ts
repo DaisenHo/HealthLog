@@ -10,6 +10,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/logging/signal", () => ({ emitSignal: vi.fn() }));
+vi.mock("@/lib/jobs/report-worker-error", () => ({
+  reportWorkerError: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/ai/capabilities/egress", () => ({
   aiEgressRefusal: vi.fn().mockResolvedValue(null),
 }));
@@ -25,6 +29,8 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
+import { reportWorkerError } from "@/lib/jobs/report-worker-error";
+import { emitSignal } from "@/lib/logging/signal";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import type { AIProvider, CompletionResult } from "@/lib/ai/types";
 import {
@@ -324,7 +330,7 @@ describe("asked again before every read", () => {
     expect((err as OcrExtractError).reason).toBe("budget");
   });
 
-  it("treats a re-check that fails as a stop, keeping the pages read", async () => {
+  it("treats a re-check that fails as a stop of its own, kept and reported", async () => {
     vi.mocked(aiEgressRefusal)
       .mockResolvedValueOnce(null)
       .mockRejectedValueOnce(new Error("connection reset"));
@@ -332,7 +338,19 @@ describe("asked again before every read", () => {
     const out = await run(p, [page(1), page(2), page(3)], 3);
     expect(out.data.rows.map((r) => r.analyte)).toEqual(["Hb"]);
     expect(out.data.unreadPages).toEqual([2, 3]);
-    expect(out.data.stoppedBy).toBe("unavailable");
+    expect(out.data.stoppedBy).toBe("error");
+    expect(emitSignal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "labs.ocr.recheckFailed",
+        level: "error",
+        meta: { phase: "egress", readsDone: 1, reads: 3 },
+      }),
+    );
+    expect(reportWorkerError).toHaveBeenCalledWith(
+      "labs-ocr-recheck",
+      expect.any(Error),
+      { phase: "egress", readsDone: 1, reads: 3 },
+    );
 
     const reserveRead = vi.fn().mockRejectedValue(new Error("deadlock"));
     const second = provider(reply(envelope([row("Hb", 14)])));
@@ -340,7 +358,19 @@ describe("asked again before every read", () => {
       reserveRead,
     });
     expect(out2.data.unreadPages).toEqual([2]);
-    expect(out2.data.stoppedBy).toBe("unavailable");
+    expect(out2.data.stoppedBy).toBe("error");
+    expect(reportWorkerError).toHaveBeenLastCalledWith(
+      "labs-ocr-recheck",
+      expect.any(Error),
+      { phase: "budget", readsDone: 1, reads: 2 },
+    );
+  });
+
+  it("fails as an error, not an unreadable page, when the first check fails", async () => {
+    vi.mocked(aiEgressRefusal).mockRejectedValueOnce(new Error("timeout"));
+    const { provider: p } = provider();
+    const err = await run(p, [page(1)], 1).catch((e: unknown) => e);
+    expect((err as OcrExtractError).reason).toBe("error");
   });
 
   it("counts what the calls cost even when the scan then fails", async () => {
@@ -531,6 +561,10 @@ describe("what one read sends", () => {
     const cut = cutAtLine("Hb 14,2 g/dl 13,5 - 17,5 MCV 90,1 fl", 30);
     expect(cut.length).toBeLessThanOrEqual(30);
     expect(cut).toBe(`Hb 14,2\n${TEXT_LAYER_CUT_MARK}`);
+    // No line break and no space to cut at: cut hard, never down to the mark.
+    expect(cutAtLine("1".repeat(100), 40)).toBe(
+      `${"1".repeat(18)}\n${TEXT_LAYER_CUT_MARK}`,
+    );
     expect(cutAtLine("Hb 14,2\nMCV 90,1 fl 80 - 100 fl and more", 31)).toBe(
       `Hb 14,2\n${TEXT_LAYER_CUT_MARK}`,
     );

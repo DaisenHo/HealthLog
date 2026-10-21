@@ -53,7 +53,9 @@ import {
 } from "@/lib/labs/biomarker-resolve";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import { TEXT_LAYER_CUT_MARK } from "@/lib/documents/rasterize-pdf";
+import { reportWorkerError } from "@/lib/jobs/report-worker-error";
 import { annotate } from "@/lib/logging/context";
+import { emitSignal } from "@/lib/logging/signal";
 import {
   parseExtractedLabs,
   type ExtractedLabs,
@@ -132,7 +134,7 @@ const RETRY_SUFFIX =
 
 /** Why a read produced nothing usable. */
 export type OcrExtractFailureReason =
-  "unparseable" | "output_limit" | "budget" | "unavailable";
+  "unparseable" | "output_limit" | "budget" | "unavailable" | "error";
 
 export class OcrExtractError extends Error {
   constructor(
@@ -141,8 +143,9 @@ export class OcrExtractError extends Error {
      * `output_limit`: every read stopped at the provider's output limit
      * before it returned a single complete row. `unparseable`: the provider
      * answered, but not with the schema, even after the corrective retry.
-     * `budget` / `unavailable`: the scan stopped (the day's budget, AI turned
-     * off for the record) before any read produced a row.
+     * `budget` / `unavailable` / `error`: the scan stopped (the day's
+     * budget, AI turned off for the record, a check that failed) before any
+     * read produced a row.
      */
     readonly reason: OcrExtractFailureReason = "unparseable",
     /** With `unavailable`: the wire's own refusal, when it gave one. */
@@ -444,9 +447,11 @@ export interface OcrChunk {
 /**
  * Why a scan stopped before its last read. `budget`: the day's AI budget ran
  * out. `unavailable`: AI was turned off for the record (the operator's
- * switch, the module, a withdrawn consent) while the scan ran.
+ * switch, the module, a withdrawn consent) while the scan ran. `error`: the
+ * check before a read failed itself (the database, most likely), so the scan
+ * stopped closed rather than read on unchecked.
  */
-export type OcrStopReason = "budget" | "unavailable";
+export type OcrStopReason = "budget" | "unavailable" | "error";
 
 export interface RunOcrExtractionArgs {
   userId: string;
@@ -482,15 +487,19 @@ export interface OcrExtraction {
 export const OCR_READ_TEXT_MAX = 12_000;
 
 /**
- * `text` cut to at most `max` characters at the last line break (else the
- * last space) before the limit, so no number is cut in half, and marked.
+ * `text` cut to at most `max` characters and marked: at the last line break
+ * before the limit, else the last space (so no number is cut in half), else
+ * hard at the limit when the text has neither.
  */
 export function cutAtLine(text: string, max: number): string {
   if (text.length <= max) return text;
   const room = Math.max(0, max - TEXT_LAYER_CUT_MARK.length - 1);
   const head = text.slice(0, room);
-  const at = Math.max(head.lastIndexOf("\n"), head.lastIndexOf(" "));
-  return `${at > 0 ? head.slice(0, at) : ""}\n${TEXT_LAYER_CUT_MARK}`.trimStart();
+  const line = head.lastIndexOf("\n");
+  const space = head.lastIndexOf(" ");
+  const kept =
+    line > 0 ? head.slice(0, line) : space > 0 ? head.slice(0, space) : head;
+  return `${kept}\n${TEXT_LAYER_CUT_MARK}`.trimStart();
 }
 
 /** The fenced text-layer hint for a read's pages, or "" when none has one. */
@@ -613,8 +622,10 @@ export async function runOcrExtraction(
     // PDF takes a while): AI turned off for the record, or a consent
     // withdrawn, stops the scan here; so does the day's budget for every
     // read after the first, which the route already reserved. A check that
-    // itself fails stops the scan the same way, closed, with what was read.
+    // itself fails stops the scan too, closed, with what was read, and is
+    // reported as the failure it is.
     let stop: OcrStopReason | null = null;
+    let phase: "egress" | "budget" = "egress";
     try {
       const refused = await aiEgressRefusal("labsOcr", args.userId, [
         args.providerType,
@@ -622,11 +633,20 @@ export async function runOcrExtraction(
       if (refused) {
         refusal = refused;
         stop = "unavailable";
-      } else if (i > 0 && args.reserveRead && !(await args.reserveRead())) {
-        stop = "budget";
+      } else if (i > 0 && args.reserveRead) {
+        phase = "budget";
+        if (!(await args.reserveRead())) stop = "budget";
       }
-    } catch {
-      stop = "unavailable";
+    } catch (err) {
+      stop = "error";
+      const meta = { phase, readsDone: i, reads: chunks.length };
+      emitSignal({
+        action: "labs.ocr.recheckFailed",
+        level: "error",
+        error: err,
+        meta,
+      });
+      void reportWorkerError("labs-ocr-recheck", err, meta);
     }
     if (stop) {
       stoppedBy = stop;

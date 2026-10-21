@@ -9880,6 +9880,7 @@
       "pagesCapped": "Odczytano tylko pierwsze {read} z {total} stron. Wartości z dalszych stron nie ma na tej liście.",
       "stoppedBudget": "Dzisiejszy budżet AI wyczerpał się w trakcie odczytu wyniku, więc pozostałe strony nie zostały odczytane.",
       "stoppedUnavailable": "AI zostało wyłączone podczas odczytu wyniku, więc pozostałe strony nie zostały odczytane.",
+      "stoppedError": "Skan nie mógł być kontynuowany z powodu błędu serwera, więc pozostałe strony nie zostały odczytane. Spróbuj ponownie później.",
       "tooLarge": "Ten tekst jest za długi na jeden skan. Zeskanuj wynik strona po stronie.",
       "truncated": "Dostawca AI osiągnął limit odpowiedzi przed końcem wyniku. Wartości po tym miejscu mogą być pominięte, więc porównaj listę z wynikiem.",
       "truncatedPages": "Dostawca AI osiągnął limit odpowiedzi na tych stronach: {pages}. Wartości niżej na tych stronach mogą być pominięte, więc porównaj je z wynikiem.",

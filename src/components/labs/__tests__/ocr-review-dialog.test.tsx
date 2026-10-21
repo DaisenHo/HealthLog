@@ -306,6 +306,9 @@ describe("<OcrReadNotes> — what a read could not give", () => {
     expect(render({ unreadPages: [4], stoppedBy: "unavailable" })).toContain(
       "AI was turned off while the report was being read",
     );
+    const failed = render({ unreadPages: [4], stoppedBy: "error" });
+    expect(failed).toContain("because of a server error");
+    expect(failed).not.toContain("AI was turned off");
   });
 
   it("says how many readings the report had when it ran past the cap", () => {

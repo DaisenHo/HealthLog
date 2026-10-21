@@ -9880,6 +9880,7 @@
       "pagesCapped": "Alleen de eerste {read} van {total} pagina's zijn gelezen. Waarden op latere pagina's staan niet in deze lijst.",
       "stoppedBudget": "Je AI-budget voor vandaag raakte halverwege het rapport op, dus de overige pagina's zijn niet gelezen.",
       "stoppedUnavailable": "AI werd uitgeschakeld terwijl het rapport werd gelezen, dus de overige pagina's zijn niet gelezen.",
+      "stoppedError": "De scan kon door een serverfout niet verder, dus de overige pagina's zijn niet gelezen. Probeer het later opnieuw.",
       "tooLarge": "Deze tekst is te lang voor één scan. Scan het rapport pagina voor pagina.",
       "truncated": "De AI-provider bereikte zijn uitvoerlimiet vóór het einde van het rapport. Waarden daarna kunnen ontbreken, dus vergelijk de lijst met het rapport.",
       "truncatedPages": "De AI-provider bereikte zijn uitvoerlimiet op deze pagina's: {pages}. Waarden verderop op die pagina's kunnen ontbreken, dus vergelijk ze met het rapport.",

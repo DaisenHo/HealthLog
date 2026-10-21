@@ -222,10 +222,11 @@ export interface OcrExtractResponseDto {
   /**
    * Present only when the scan stopped before its last read for a reason
    * other than the provider: `budget`, the day's AI budget ran out;
-   * `unavailable`, AI was turned off for the record while it ran. The pages
-   * it did not reach are in `unreadPages`.
+   * `unavailable`, AI was turned off for the record while it ran; `error`,
+   * the check before a read failed, so the scan stopped rather than read on
+   * unchecked. The pages it did not reach are in `unreadPages`.
    */
-  stoppedBy?: "budget" | "unavailable";
+  stoppedBy?: "budget" | "unavailable" | "error";
   /**
    * Present only when the report held more readings than one scan carries
    * (`OCR_MAX_ROWS`): the first `kept` of `found` are in `rows`.
