@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "Absoluut",
       "scalePercentSinceStart": "% sinds start",
-      "scaleToggleLabel": "Schaal van grafiek"
+      "scaleToggleLabel": "Schaal van grafiek",
+      "segmented": {
+        "title": "Verandering bij de start",
+        "level": "Direct bij de start verschoof het niveau met {value} {unit} (95%-bereik {low} tot {high}).",
+        "slope": "Na de start veranderde de weektrend met {value} {unit} per week (95%-bereik {low} tot {high}).",
+        "preSlope": "Voor de start was de trend {value} {unit} per week.",
+        "includesZero": "Waar een bereik nul omvat, passen deze waarden ook bij geen verandering.",
+        "basis": "Gebaseerd op {before} dagen voor en {after} dagen na de start ({from} tot {to}).",
+        "excludedAdherence": "{count} dagen na de start zijn weggelaten, omdat in de {lookback} dagen ervoor minder dan {floor}% van de doses is ingenomen.",
+        "excludedNotTaking": "{count} dagen zijn weggelaten, omdat het medicijn gepauzeerd was of tussen twee kuren lag.",
+        "notTracked": "De inname van dit medicijn wordt niet bijgehouden, dus er zijn geen dagen weggelaten om gemiste doses.",
+        "endDoseChange": "De periode eindigt vóór de eerste dosiswijziging en beschrijft dus de startdosis.",
+        "confoundersTitle": "Andere medicijnwijzigingen in deze periode, die deze weergave niet van dit medicijn kan scheiden:",
+        "confounderStarted": "{name} gestart op {date}",
+        "confounderStopped": "{name} gestopt op {date}",
+        "confounderDoseChange": "{name}: dosis gewijzigd op {date}",
+        "confounderPaused": "{name} gepauzeerd op {date}",
+        "confounderResumed": "{name} hervat op {date}",
+        "method": "Zo wordt het berekend: door de dagwaarden vóór de start wordt een lijn gelegd en een tweede door die erna. De sprong tussen beide bij de start is de niveauverandering, het verschil in hun helling de trendverandering. De bereiken houden er rekening mee dat waarden van de ene dag doorwerken in de volgende.",
+        "needStart": "Stel een startdatum in om de verandering bij de start te zien.",
+        "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen vóór de start.",
+        "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen sinds de start en op dagen waarop de doses zijn ingenomen.",
+        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond."
+      }
     },
     "import": {
       "resultSuccess": "{imported} innames geïmporteerd",

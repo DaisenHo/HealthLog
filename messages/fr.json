@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "Absolu",
       "scalePercentSinceStart": "% depuis le début",
-      "scaleToggleLabel": "Échelle du graphique"
+      "scaleToggleLabel": "Échelle du graphique",
+      "segmented": {
+        "title": "Changement au démarrage",
+        "level": "Dès le démarrage, le niveau s'est déplacé de {value} {unit} (intervalle à 95 % : {low} à {high}).",
+        "slope": "Après le démarrage, la tendance hebdomadaire a changé de {value} {unit} par semaine (intervalle à 95 % : {low} à {high}).",
+        "preSlope": "Avant le démarrage, la tendance était de {value} {unit} par semaine.",
+        "includesZero": "Lorsqu'un intervalle inclut zéro, ces valeurs sont aussi compatibles avec une absence de changement.",
+        "basis": "Sur la base de {before} jours avant et {after} jours après le démarrage ({from} au {to}).",
+        "excludedAdherence": "{count} jours après le démarrage ont été écartés, car moins de {floor} % des doses ont été prises dans les {lookback} jours précédents.",
+        "excludedNotTaking": "{count} jours ont été écartés, car le médicament était en pause ou entre deux périodes de prise.",
+        "notTracked": "Les prises de ce médicament ne sont pas suivies, aucun jour n'a donc été écarté pour des doses manquées.",
+        "endDoseChange": "La période s'arrête avant le premier changement de dose et décrit donc la dose de départ.",
+        "confoundersTitle": "Autres changements de médicaments sur cette période, que cette vue ne peut pas distinguer de celui-ci :",
+        "confounderStarted": "{name} commencé le {date}",
+        "confounderStopped": "{name} arrêté le {date}",
+        "confounderDoseChange": "{name} : dose modifiée le {date}",
+        "confounderPaused": "{name} mis en pause le {date}",
+        "confounderResumed": "{name} repris le {date}",
+        "method": "Méthode : une droite est ajustée aux valeurs quotidiennes avant le démarrage, une autre à celles d'après. Le saut entre les deux au démarrage est le changement de niveau, l'écart de leurs pentes le changement de tendance. Les intervalles tiennent compte du fait que les valeurs d'un jour influencent le lendemain.",
+        "needStart": "Indique une date de début pour voir le changement au démarrage.",
+        "needBefore": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours avant le démarrage.",
+        "needAfter": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours depuis le démarrage, les jours où les doses ont été prises.",
+        "fitFailed": "Ces valeurs n'ont pas pu être ajustées, aucun changement au démarrage n'est donc affiché."
+      }
     },
     "import": {
       "resultSuccess": "{imported} prises importées",

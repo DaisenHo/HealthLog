@@ -52711,6 +52711,216 @@ components:
                       - present
                     additionalProperties: false
                   - type: "null"
+              segmented:
+                anyOf:
+                  - type: object
+                    properties:
+                      present:
+                        type: boolean
+                      reason:
+                        type: string
+                        enum:
+                          - no_start
+                          - insufficient_before
+                          - insufficient_after
+                          - fit_failed
+                      level:
+                        type: number
+                      window:
+                        anyOf:
+                          - type: object
+                            properties:
+                              from:
+                                type: string
+                              to:
+                                type: string
+                              endReason:
+                                type: string
+                                enum:
+                                  - today
+                                  - window
+                                  - dose_change
+                            required:
+                              - from
+                              - to
+                              - endReason
+                            additionalProperties: false
+                          - type: "null"
+                      days:
+                        type: object
+                        properties:
+                          before:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                          after:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                          excludedLowAdherence:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                          excludedNotTaking:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                        required:
+                          - before
+                          - after
+                          - excludedLowAdherence
+                          - excludedNotTaking
+                        additionalProperties: false
+                      adherence:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - tracked
+                              - not_tracked
+                          floorPct:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                          lookbackDays:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                        required:
+                          - status
+                          - floorPct
+                          - lookbackDays
+                        additionalProperties: false
+                      levelChange:
+                        anyOf:
+                          - type: object
+                            properties:
+                              estimate:
+                                type: number
+                              ciLow:
+                                type: number
+                              ciHigh:
+                                type: number
+                              standardError:
+                                type: number
+                              includesZero:
+                                type: boolean
+                            required:
+                              - estimate
+                              - ciLow
+                              - ciHigh
+                              - standardError
+                              - includesZero
+                            additionalProperties: false
+                          - type: "null"
+                      slopeChangePerWeek:
+                        anyOf:
+                          - type: object
+                            properties:
+                              estimate:
+                                type: number
+                              ciLow:
+                                type: number
+                              ciHigh:
+                                type: number
+                              standardError:
+                                type: number
+                              includesZero:
+                                type: boolean
+                            required:
+                              - estimate
+                              - ciLow
+                              - ciHigh
+                              - standardError
+                              - includesZero
+                            additionalProperties: false
+                          - type: "null"
+                      preSlopePerWeek:
+                        anyOf:
+                          - type: object
+                            properties:
+                              estimate:
+                                type: number
+                              ciLow:
+                                type: number
+                              ciHigh:
+                                type: number
+                              standardError:
+                                type: number
+                              includesZero:
+                                type: boolean
+                            required:
+                              - estimate
+                              - ciLow
+                              - ciHigh
+                              - standardError
+                              - includesZero
+                            additionalProperties: false
+                          - type: "null"
+                      fit:
+                        anyOf:
+                          - type: object
+                            properties:
+                              n:
+                                type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                              df:
+                                type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                              rSquared:
+                                type: number
+                              residualAutocorrelation:
+                                type: number
+                              hacLag:
+                                type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                            required:
+                              - n
+                              - df
+                              - rSquared
+                              - residualAutocorrelation
+                              - hacLag
+                            additionalProperties: false
+                          - type: "null"
+                      confounders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            medicationName:
+                              type: string
+                            event:
+                              type: string
+                              enum:
+                                - started
+                                - stopped
+                                - dose_change
+                                - paused
+                                - resumed
+                            date:
+                              type: string
+                          required:
+                            - medicationName
+                            - event
+                            - date
+                          additionalProperties: false
+                    required:
+                      - present
+                      - level
+                      - window
+                      - days
+                      - adherence
+                      - levelChange
+                      - slopeChangePerWeek
+                      - preSlopePerWeek
+                      - fit
+                      - confounders
+                    additionalProperties: false
+                  - type: "null"
             required:
               - kind
               - key
@@ -52721,6 +52931,7 @@ components:
               - series
               - beforeAfter
               - levelShift
+              - segmented
             additionalProperties: false
         adherence:
           type: array

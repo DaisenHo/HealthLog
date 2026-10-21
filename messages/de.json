@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "Absolut",
       "scalePercentSinceStart": "% seit Start",
-      "scaleToggleLabel": "Diagrammskala"
+      "scaleToggleLabel": "Diagrammskala",
+      "segmented": {
+        "title": "Veränderung zum Start",
+        "level": "Direkt zum Start hat sich das Niveau um {value} {unit} verschoben (95-%-Bereich {low} bis {high}).",
+        "slope": "Nach dem Start hat sich der Wochentrend um {value} {unit} pro Woche verändert (95-%-Bereich {low} bis {high}).",
+        "preSlope": "Vor dem Start lag der Trend bei {value} {unit} pro Woche.",
+        "includesZero": "Wo ein Bereich die Null einschließt, passen diese Werte auch zu gar keiner Veränderung.",
+        "basis": "Grundlage: {before} Tage vor und {after} Tage nach dem Start ({from} bis {to}).",
+        "excludedAdherence": "{count} Tage nach dem Start wurden ausgelassen, weil in den {lookback} Tagen davor weniger als {floor} % der Dosen eingenommen wurden.",
+        "excludedNotTaking": "{count} Tage wurden ausgelassen, weil das Medikament pausiert war oder zwischen zwei Einnahmezeiträumen lag.",
+        "notTracked": "Für dieses Medikament wird die Einnahme nicht erfasst, deshalb wurden keine Tage wegen ausgelassener Dosen entfernt.",
+        "endDoseChange": "Der Zeitraum endet vor der ersten Dosisänderung und beschreibt deshalb die Anfangsdosis.",
+        "confoundersTitle": "Weitere Medikamentenänderungen in diesem Zeitraum, die diese Ansicht nicht von diesem Medikament trennen kann:",
+        "confounderStarted": "{name} begonnen am {date}",
+        "confounderStopped": "{name} beendet am {date}",
+        "confounderDoseChange": "{name}: Dosis geändert am {date}",
+        "confounderPaused": "{name} pausiert am {date}",
+        "confounderResumed": "{name} fortgesetzt am {date}",
+        "method": "So wird gerechnet: Eine Gerade wird durch die Tageswerte vor dem Start gelegt, eine zweite durch die danach. Der Sprung zwischen beiden am Start ist die Niveauänderung, der Unterschied ihrer Steigungen die Trendänderung. Die Bereiche berücksichtigen, dass Werte von einem Tag auf den nächsten nachwirken.",
+        "needStart": "Lege ein Startdatum fest, um die Veränderung zum Start zu sehen.",
+        "needBefore": "Für die Veränderung zum Start braucht es Werte an mindestens {days} Tagen, verteilt über {span} Tage vor dem Start.",
+        "needAfter": "Für die Veränderung zum Start braucht es Werte an mindestens {days} Tagen, verteilt über {span} Tage seit dem Start und an Tagen mit eingenommenen Dosen.",
+        "fitFailed": "Diese Werte ließen sich nicht auswerten, deshalb wird keine Veränderung zum Start gezeigt."
+      }
     },
     "import": {
       "resultSuccess": "{imported} Einnahmen importiert",

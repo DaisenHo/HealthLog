@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "Assoluto",
       "scalePercentSinceStart": "% dall'inizio",
-      "scaleToggleLabel": "Scala del grafico"
+      "scaleToggleLabel": "Scala del grafico",
+      "segmented": {
+        "title": "Variazione all'inizio",
+        "level": "Subito all'inizio il livello si è spostato di {value} {unit} (intervallo al 95 %: da {low} a {high}).",
+        "slope": "Dopo l'inizio la tendenza settimanale è cambiata di {value} {unit} a settimana (intervallo al 95 %: da {low} a {high}).",
+        "preSlope": "Prima dell'inizio la tendenza era di {value} {unit} a settimana.",
+        "includesZero": "Quando un intervallo include lo zero, questi valori sono compatibili anche con nessuna variazione.",
+        "basis": "Basato su {before} giorni prima e {after} giorni dopo l'inizio (dal {from} al {to}).",
+        "excludedAdherence": "{count} giorni dopo l'inizio sono stati esclusi perché nei {lookback} giorni precedenti è stato assunto meno del {floor} % delle dosi.",
+        "excludedNotTaking": "{count} giorni sono stati esclusi perché il farmaco era in pausa o tra due cicli.",
+        "notTracked": "L'assunzione di questo farmaco non viene registrata, quindi nessun giorno è stato escluso per dosi saltate.",
+        "endDoseChange": "Il periodo termina prima della prima variazione di dose, quindi descrive la dose iniziale.",
+        "confoundersTitle": "Altre variazioni di farmaci in questo periodo, che questa vista non può separare da questo:",
+        "confounderStarted": "{name} iniziato il {date}",
+        "confounderStopped": "{name} terminato il {date}",
+        "confounderDoseChange": "{name}: dose modificata il {date}",
+        "confounderPaused": "{name} sospeso il {date}",
+        "confounderResumed": "{name} ripreso il {date}",
+        "method": "Come si calcola: una retta viene adattata ai valori giornalieri prima dell'inizio e un'altra a quelli successivi. Il salto tra le due all'inizio è la variazione di livello, la differenza delle pendenze la variazione di tendenza. Gli intervalli tengono conto del fatto che i valori di un giorno influenzano il successivo.",
+        "needStart": "Imposta una data di inizio per vedere la variazione all'inizio.",
+        "needBefore": "La variazione all'inizio richiede valori in almeno {days} giorni distribuiti su {span} giorni prima dell'inizio.",
+        "needAfter": "La variazione all'inizio richiede valori in almeno {days} giorni distribuiti su {span} giorni dall'inizio, nei giorni con le dosi assunte.",
+        "fitFailed": "Non è stato possibile elaborare questi valori, quindi non viene mostrata alcuna variazione all'inizio."
+      }
     },
     "import": {
       "resultSuccess": "{imported} assunzioni importate",

@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "절대값",
       "scalePercentSinceStart": "시작 이후 %",
-      "scaleToggleLabel": "차트 눈금"
+      "scaleToggleLabel": "차트 눈금",
+      "segmented": {
+        "title": "시작 시점의 변화",
+        "level": "시작 직후 수준이 {value} {unit} 이동했습니다(95% 범위 {low}~{high}).",
+        "slope": "시작 후 주간 추세가 주당 {value} {unit} 변했습니다(95% 범위 {low}~{high}).",
+        "preSlope": "시작 전 추세는 주당 {value} {unit}였습니다.",
+        "includesZero": "범위에 0이 포함되면 이 측정값은 변화가 없다는 것과도 일치합니다.",
+        "basis": "시작 전 {before}일과 시작 후 {after}일 기준({from}~{to}).",
+        "excludedAdherence": "직전 {lookback}일 동안 복용한 용량이 {floor}% 미만이어서 시작 후 {count}일을 제외했습니다.",
+        "excludedNotTaking": "약을 일시 중지했거나 복용 기간 사이였던 {count}일을 제외했습니다.",
+        "notTracked": "이 약은 복용을 기록하지 않으므로 놓친 용량 때문에 제외한 날이 없습니다.",
+        "endDoseChange": "기간이 첫 용량 변경 전에 끝나므로 시작 용량을 나타냅니다.",
+        "confoundersTitle": "이 기간의 다른 약 변경 사항으로, 이 화면에서는 이 약과 구분할 수 없습니다.",
+        "confounderStarted": "{name} {date} 시작",
+        "confounderStopped": "{name} {date} 중단",
+        "confounderDoseChange": "{name}: {date} 용량 변경",
+        "confounderPaused": "{name} {date} 일시 중지",
+        "confounderResumed": "{name} {date} 재개",
+        "method": "계산 방법: 시작 전 일별 값에 직선 하나를, 시작 후 값에 또 하나를 맞춥니다. 시작 시점의 두 직선 사이 간격이 수준 변화이고, 기울기 차이가 추세 변화입니다. 범위는 하루의 값이 다음 날로 이어지는 점을 반영합니다.",
+        "needStart": "시작 시점의 변화를 보려면 시작일을 설정하세요.",
+        "needBefore": "시작 시점의 변화를 보려면 시작 전 {span}일에 걸쳐 최소 {days}일의 측정값이 필요합니다.",
+        "needAfter": "시작 시점의 변화를 보려면 시작 후 {span}일에 걸쳐, 용량을 복용한 날 기준으로 최소 {days}일의 측정값이 필요합니다.",
+        "fitFailed": "이 측정값으로는 계산할 수 없어 시작 시점의 변화를 표시하지 않습니다."
+      }
     },
     "import": {
       "resultSuccess": "복용 {imported}건을 불러왔어요",

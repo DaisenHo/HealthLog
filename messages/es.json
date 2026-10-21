@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "Absoluto",
       "scalePercentSinceStart": "% desde el inicio",
-      "scaleToggleLabel": "Escala del gráfico"
+      "scaleToggleLabel": "Escala del gráfico",
+      "segmented": {
+        "title": "Cambio al inicio",
+        "level": "Justo al inicio, el nivel se desplazó {value} {unit} (intervalo del 95 %: {low} a {high}).",
+        "slope": "Después del inicio, la tendencia semanal cambió {value} {unit} por semana (intervalo del 95 %: {low} a {high}).",
+        "preSlope": "Antes del inicio, la tendencia era de {value} {unit} por semana.",
+        "includesZero": "Cuando un intervalo incluye el cero, estos valores también son compatibles con ningún cambio.",
+        "basis": "Basado en {before} días antes y {after} días después del inicio ({from} a {to}).",
+        "excludedAdherence": "Se omitieron {count} días después del inicio porque en los {lookback} días anteriores se tomó menos del {floor} % de las dosis.",
+        "excludedNotTaking": "Se omitieron {count} días porque el medicamento estaba en pausa o entre dos tandas.",
+        "notTracked": "La toma de este medicamento no se registra, así que no se omitió ningún día por dosis olvidadas.",
+        "endDoseChange": "El periodo termina antes del primer cambio de dosis, así que describe la dosis inicial.",
+        "confoundersTitle": "Otros cambios de medicación en este periodo, que esta vista no puede separar de este:",
+        "confounderStarted": "{name} iniciado el {date}",
+        "confounderStopped": "{name} finalizado el {date}",
+        "confounderDoseChange": "{name}: dosis cambiada el {date}",
+        "confounderPaused": "{name} en pausa desde el {date}",
+        "confounderResumed": "{name} reanudado el {date}",
+        "method": "Cómo se calcula: se ajusta una recta a los valores diarios antes del inicio y otra a los posteriores. El salto entre ambas al inicio es el cambio de nivel y la diferencia de sus pendientes, el cambio de tendencia. Los intervalos tienen en cuenta que los valores de un día influyen en el siguiente.",
+        "needStart": "Indica una fecha de inicio para ver el cambio al inicio.",
+        "needBefore": "El cambio al inicio necesita valores de al menos {days} días repartidos en {span} días antes del inicio.",
+        "needAfter": "El cambio al inicio necesita valores de al menos {days} días repartidos en {span} días desde el inicio, en días con las dosis tomadas.",
+        "fitFailed": "No se pudieron ajustar estos valores, así que no se muestra el cambio al inicio."
+      }
     },
     "import": {
       "resultSuccess": "{imported} tomas importadas",

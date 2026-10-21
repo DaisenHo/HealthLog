@@ -2359,7 +2359,30 @@
       },
       "scaleAbsolute": "Absolute",
       "scalePercentSinceStart": "% since start",
-      "scaleToggleLabel": "Chart scale"
+      "scaleToggleLabel": "Chart scale",
+      "segmented": {
+        "title": "Change at the start",
+        "level": "Right at the start, the level moved by {value} {unit} (95 % range {low} to {high}).",
+        "slope": "After the start, the weekly trend changed by {value} {unit} per week (95 % range {low} to {high}).",
+        "preSlope": "Before the start, the trend was {value} {unit} per week.",
+        "includesZero": "Where a range includes zero, these readings are also consistent with no change.",
+        "basis": "Based on {before} days before and {after} days after the start ({from} to {to}).",
+        "excludedAdherence": "{count} days after the start were left out because fewer than {floor} % of the doses in the {lookback} days before them were taken.",
+        "excludedNotTaking": "{count} days were left out because the medication was paused or between courses.",
+        "notTracked": "Intake is not tracked for this medication, so no days were left out for missed doses.",
+        "endDoseChange": "The window ends before the first dose change, so this describes the starting dose.",
+        "confoundersTitle": "Other medication changes in this window, which this view cannot separate from this one:",
+        "confounderStarted": "{name} started on {date}",
+        "confounderStopped": "{name} stopped on {date}",
+        "confounderDoseChange": "{name}: dose changed on {date}",
+        "confounderPaused": "{name} paused on {date}",
+        "confounderResumed": "{name} resumed on {date}",
+        "method": "How this is worked out: one line is fitted to the daily values before the start and one after it. The jump between them at the start is the level change, the difference in their slopes the trend change. The ranges allow for readings that carry over from one day to the next.",
+        "needStart": "Set a start date to see the change at the start.",
+        "needBefore": "The change at the start needs readings on at least {days} days spread over {span} days before the start.",
+        "needAfter": "The change at the start needs readings on at least {days} days spread over {span} days since the start, on days the doses were taken.",
+        "fitFailed": "These readings could not be fitted, so no change at the start is shown."
+      }
     },
     "import": {
       "resultSuccess": "{imported} intakes imported",
