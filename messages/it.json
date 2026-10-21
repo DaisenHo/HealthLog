@@ -431,7 +431,10 @@
       "notTracked": "assunzione non registrata, quindi nessun giorno escluso per dosi saltate",
       "endDoseChange": "il periodo termina il {date}, prima della prima variazione di dose",
       "days": "{before} giorni prima, {after} giorni dopo l'inizio, {excluded} giorni esclusi",
-      "method": "Regressione segmentata sui valori giornalieri da 90 giorni prima a non oltre 180 giorni dopo l'inizio, con intervalli di Newey-West. Sono esclusi i giorni dopo l'inizio in cui è stato assunto meno dell'80 % delle dosi dei 14 giorni precedenti. Descrive un'associazione nel tempo, non un effetto dimostrato del farmaco."
+      "method": "Regressione segmentata sui valori giornalieri da 90 giorni prima a non oltre 180 giorni dopo l'inizio, con intervalli di Newey-West. Sono esclusi i giorni dopo l'inizio in cui è stato assunto meno dell'80 % delle dosi dei 14 giorni precedenti. Descrive un'associazione nel tempo, non un effetto dimostrato del farmaco.",
+      "autocorrelation": "forte dipendenza dal giorno precedente, quindi gli intervalli possono restare troppo stretti",
+      "window": "analizzato dal {from} al {to}, può andare oltre il periodo del report",
+      "windowLine": "Analizzato dal {from} al {to}. Questo intervallo può andare oltre il periodo del report."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Imposta una data di inizio per vedere la variazione all'inizio.",
         "needBefore": "La variazione all'inizio richiede valori in almeno {days} giorni distribuiti su {span} giorni prima dell'inizio.",
         "needAfter": "La variazione all'inizio richiede valori in almeno {days} giorni distribuiti su {span} giorni dall'inizio, nei giorni con le dosi assunte.",
-        "fitFailed": "Non è stato possibile elaborare questi valori, quindi non viene mostrata alcuna variazione all'inizio."
+        "fitFailed": "Non è stato possibile elaborare questi valori, quindi non viene mostrata alcuna variazione all'inizio.",
+        "autocorrelation": "I valori giornalieri dipendono molto dal giorno precedente, quindi anche questi intervalli possono essere troppo stretti."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Affaticamento",
         "form": "Freschezza",
         "explainer": "La forma di base è il tuo impulso di allenamento dalla frequenza cardiaca mediato su circa sei settimane, l'affaticamento su circa una settimana, e la freschezza è la differenza. I numeri si confrontano con il tuo passato, non con altre persone o altre app.",
-        "warmingUp": "Su {days} giorni finora: finché non sono coperte sei settimane, la forma di base risulta più bassa di quanto sia."
+        "warmingUp": "Su {days} giorni finora: finché non sono coperte sei settimane, la forma di base risulta più bassa di quanto sia.",
+        "coverage": "{rated} degli ultimi {days} giorni hanno dati di frequenza cardiaca. I giorni senza vengono esclusi invece di contare come riposo."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Accesso condiviso",
         "subtitle": "Chi può aprire la tua cartella sanitaria e quale puoi aprire tu."
-      },
-      "preview": {
-        "title": "Funzioni in anteprima",
-        "subtitle": "Prova ciò che non è ancora finito. Qui tutto resta spento finché non lo attivi."
       }
     },
     "profile": "Profilo",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey rimossa.",
     "integrationDisconnected": "{provider} disconnesso.",
     "integrationDisconnectFailed": "Impossibile disconnettere {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Temi (beta)",
-        "description": "Aggiungerà una voce Temi separata, con pagine di panoramica sopra le pagine delle singole metriche, appena saranno pronte.",
-        "detail": "Le pagine delle analisi, la navigazione e i link restano esattamente come sono. Le pagine dei temi arrivano con un aggiornamento successivo; questo interruttore decide se le vedi.",
-        "savedOn": "Anteprima dei temi attivata.",
-        "savedOff": "Anteprima dei temi disattivata."
-      },
-      "loadError": "Impossibile caricare le impostazioni di anteprima.",
-      "feedbackLink": "Lascia un parere nelle discussioni su GitHub"
-    },
     "timezoneSaved": "Fuso orario salvato.",
     "moduleState": {
       "on": "Attivo",
@@ -10207,10 +10197,11 @@
           "high": "Se questa retta proseguisse, raggiungerebbe il limite superiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione.",
           "low": "Se questa retta proseguisse, raggiungerebbe il limite inferiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione."
         },
-        "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per almeno altri tre anni.",
+        "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per più di {years} anni, il periodo coperto dai tuoi valori.",
         "no_exit": "La retta si allontana dai limiti del tuo intervallo di riferimento.",
         "already_outside": "La retta è già fuori dal tuo intervallo di riferimento.",
-        "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla."
+        "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla.",
+        "stale": "Il valore più recente è del {date}, più di un anno fa. La retta è mostrata a quella data, senza proiezione."
       },
       "interval": "Intervallo al 95 % della variazione annua: da {lo} a {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Anamnesi chirurgica",
     "leafImmunizations": "Vaccinazioni",
     "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)",
-    "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco",
+    "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco (richiede l'elenco dei farmaci)",
     "leafWorkouts": "Allenamenti (riepilogo per sport)",
     "leafHrvSdnn": "HRV (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "Sotto il tuo solito",
       "usual": "Come al solito",
       "above": "Sopra il tuo solito",
-      "high": "Molto sopra il tuo solito"
+      "high": "Molto sopra il tuo solito",
+      "in_progress": "Oggi, ancora in corso"
     },
     "legend": "Rispetto alle tue 12 settimane precedenti:",
     "noBaseline": "Il tuo intervallo abituale compare dopo 14 giorni con dati.",
@@ -13649,7 +13641,9 @@
       "workouts": "{value} allenamenti",
       "load": "Carico di allenamento medio {value}",
       "usual": "Il tuo solito fino a questo punto: {value}",
-      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto."
+      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto.",
+      "usualThroughYesterday": "Fino a ieri {value}, il tuo solito fino a quel punto {usual}",
+      "firstDay": "Il confronto con il tuo solito arriva quando il primo giorno è finito."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

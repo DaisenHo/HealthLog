@@ -431,7 +431,10 @@
       "notTracked": "intake not tracked, so no days left out for missed doses",
       "endDoseChange": "window ends {date}, before the first dose change",
       "days": "{before} days before, {after} days after the start, {excluded} days left out",
-      "method": "Segmented regression on daily values from 90 days before to at most 180 days after the start, with Newey-West intervals. Days after the start on which fewer than 80 % of the doses of the preceding 14 days were taken are left out. Describes an association over time, not a proven effect of the medication."
+      "method": "Segmented regression on daily values from 90 days before to at most 180 days after the start, with Newey-West intervals. Days after the start on which fewer than 80 % of the doses of the preceding 14 days were taken are left out. Describes an association over time, not a proven effect of the medication.",
+      "autocorrelation": "strong day-to-day carry-over, so the ranges may still be too narrow",
+      "window": "analysed {from} to {to}, which can reach beyond the report period",
+      "windowLine": "Analysed {from} to {to}. This window can reach beyond the report period."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Set a start date to see the change at the start.",
         "needBefore": "The change at the start needs readings on at least {days} days spread over {span} days before the start.",
         "needAfter": "The change at the start needs readings on at least {days} days spread over {span} days since the start, on days the doses were taken.",
-        "fitFailed": "These readings could not be fitted, so no change at the start is shown."
+        "fitFailed": "These readings could not be fitted, so no change at the start is shown.",
+        "autocorrelation": "The daily values carry over strongly from one day to the next, so even these ranges may be too narrow."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Fatigue",
         "form": "Form",
         "explainer": "Fitness is your heart-rate training impulse averaged over about six weeks, fatigue over about one week, and form is the difference. The numbers compare with your own past, not with other people or other apps.",
-        "warmingUp": "Based on {days} days so far: until six weeks are covered, fitness reads lower than it is."
+        "warmingUp": "Based on {days} days so far: until six weeks are covered, fitness reads lower than it is.",
+        "coverage": "{rated} of the last {days} days have heart-rate data. Days without it are left out rather than counted as rest."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Shared access",
         "subtitle": "Who can open your health record, and whose you can open."
-      },
-      "preview": {
-        "title": "Preview features",
-        "subtitle": "Try what is not finished yet. Everything here stays off until you switch it on."
       }
     },
     "profile": "Profile",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey removed.",
     "integrationDisconnected": "{provider} disconnected.",
     "integrationDisconnectFailed": "Could not disconnect {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Topics (beta)",
-        "description": "Will add a separate Topics entry with overview pages above the single-metric Insights pages once they are ready.",
-        "detail": "Your Insights pages, navigation and links stay exactly as they are. The topic pages arrive in a later update; this switch decides whether you see them.",
-        "savedOn": "Topics preview switched on.",
-        "savedOff": "Topics preview switched off."
-      },
-      "loadError": "Could not load your preview settings.",
-      "feedbackLink": "Share feedback in the GitHub discussions"
-    },
     "timezoneSaved": "Timezone saved.",
     "moduleState": {
       "on": "On",
@@ -10207,10 +10197,11 @@
           "high": "If this straight line continued, it would reach the upper end of your reference range around {date}. That is a projection, not a forecast.",
           "low": "If this straight line continued, it would reach the lower end of your reference range around {date}. That is a projection, not a forecast."
         },
-        "beyond_horizon": "At this pace the line stays inside your reference range for at least three more years.",
+        "beyond_horizon": "At this pace the line stays inside your reference range for more than {years} years, the span your readings cover.",
         "no_exit": "The line heads away from the edges of your reference range.",
         "already_outside": "The line already sits outside your reference range.",
-        "no_clear_trend": "Across these readings the change is not clearly different from no change, so no projection is drawn."
+        "no_clear_trend": "Across these readings the change is not clearly different from no change, so no projection is drawn.",
+        "stale": "The newest reading is from {date}, more than a year ago. The line is shown as of then, without a projection."
       },
       "interval": "95 % interval of the yearly change: {lo} to {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Surgical history",
     "leafImmunizations": "Immunizations",
     "leafEmergency": "Emergency information (blood type, contacts, directives)",
-    "leafMedicationEffect": "Change around each medication start",
+    "leafMedicationEffect": "Change around each medication start (needs the medication list)",
     "leafWorkouts": "Workouts (summary per sport)",
     "leafHrvSdnn": "HRV (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "Below your usual",
       "usual": "About your usual",
       "above": "Above your usual",
-      "high": "Far above your usual"
+      "high": "Far above your usual",
+      "in_progress": "Today, still in progress"
     },
     "legend": "Compared with your 12 weeks before:",
     "noBaseline": "Your usual range shows after 14 days with data.",
@@ -13649,7 +13641,9 @@
       "workouts": "{value} workouts",
       "load": "Average training load {value}",
       "usual": "Your usual by this point: {value}",
-      "noUsual": "Not enough earlier weeks or months to compare with yet."
+      "noUsual": "Not enough earlier weeks or months to compare with yet.",
+      "usualThroughYesterday": "Through yesterday {value}, your usual by then {usual}",
+      "firstDay": "Compared with your usual once the first day is over."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

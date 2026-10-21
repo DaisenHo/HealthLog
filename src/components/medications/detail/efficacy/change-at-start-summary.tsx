@@ -125,6 +125,14 @@ export function ChangeAtStartSummary({
           {t("medications.efficacy.segmented.notTracked")}
         </p>
       ) : null}
+      {segmented.fit?.autocorrelationCaveat ? (
+        <p
+          className="text-muted-foreground text-xs"
+          data-slot="medication-wirkung-autocorrelation"
+        >
+          {t("medications.efficacy.segmented.autocorrelation")}
+        </p>
+      ) : null}
       {segmented.window.endReason === "dose_change" ? (
         <p className="text-muted-foreground text-xs">
           {t("medications.efficacy.segmented.endDoseChange")}

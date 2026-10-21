@@ -376,7 +376,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "At most 100000; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -401,7 +406,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "At most 100000; a larger offset is a 400 OperationOutcome.",
+            ),
           date: z.string().optional(),
           code: z.string().optional(),
         }),
@@ -428,7 +438,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "At most 100000; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -453,7 +468,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "At most 100000; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -478,7 +498,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "At most 100000; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -653,7 +678,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "At most 100000; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {

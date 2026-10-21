@@ -146,10 +146,7 @@ describe("historical Settings addresses", () => {
     // one silently. Module pages are new in v1.44 and are allowed here.
     const listed = new Set(HISTORICAL_SETTINGS_PATHS);
     const unlisted = routable.filter(
-      (path) =>
-        !listed.has(path) &&
-        !path.startsWith("/settings/modules/") &&
-        path !== "/settings/preview",
+      (path) => !listed.has(path) && !path.startsWith("/settings/modules/"),
     );
     expect(unlisted).toEqual([]);
   });

@@ -48,7 +48,15 @@ export function LabTrendCard({
         })
       : trend.projection === "no_band"
         ? null
-        : t(`labs.trend.projection.${trend.projection}`);
+        : trend.projection === "stale"
+          ? t("labs.trend.projection.stale", {
+              date: fmt.dateShortSmartCalendar(trend.lastAt),
+            })
+          : trend.projection === "beyond_horizon"
+            ? t("labs.trend.projection.beyond_horizon", {
+                years: fmt.number(trend.horizonYears, 1),
+              })
+            : t(`labs.trend.projection.${trend.projection}`);
 
   return (
     <Card data-slot="lab-trend">

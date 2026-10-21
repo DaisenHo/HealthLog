@@ -1274,7 +1274,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1310,7 +1312,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
         - in: query
           name: date
           schema:
@@ -1345,7 +1349,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1372,7 +1378,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1400,7 +1408,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1595,7 +1605,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -15308,17 +15320,21 @@ paths:
         reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is
         `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves
         earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews
-        without writing. Shares the 5/hour `import:` rate bucket."
+        without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a
+        misspelt `dryRun` never writes."
       parameters:
-        - name: dryRun
-          in: query
-          required: false
+        - in: query
+          name: dryRun
           schema:
+            description: "`1` validates every row and reports what would happen, writing nothing."
+            default: "0"
             type: string
             enum:
+              - "0"
               - "1"
               - "true"
-          description: When `1` / `true`, parse + validate + return the per-row envelope without writing.
+              - "false"
+          description: "`1` validates every row and reports what would happen, writing nothing."
       requestBody:
         required: true
         content:
@@ -15357,11 +15373,12 @@ paths:
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
         checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. Each row's name resolves to the account's marker the way a
-        scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A
-        numeric result needs a unit; one in another unit is converted when the conversion is known and keeps the printed
-        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
-        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
+        `dryRun` never writes. Each row's name resolves to the account's marker the way a scanned report's rows do
+        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit;
+        one in another unit is converted when the conversion is known and keeps the printed value beside it, otherwise
+        the row is refused with `unit_mismatch`. Any other text in the value column is a qualitative result. A date
+        without a time is stored as that calendar date. At most 20 000 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -15562,11 +15579,12 @@ paths:
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
         checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. Maps name, dose (as written), daily intake times, an
-        as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A row needs times
-        unless it is marked as needed. Each row is checked against the create route's own schema; a dated window opens a
-        course. Reminders stay off unless `reminders=1`. A medication the record holds under the same name and dose is a
-        duplicate. At most 500 data rows."
+        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
+        `dryRun` never writes. Maps name, dose (as written), daily intake times, an as-needed mark and a start and end
+        date; every other rhythm is set up afterwards in the app. A row needs times unless it is marked as needed. Each
+        row is checked against the create route's own schema; a dated window opens a course. Reminders stay off unless
+        `reminders=1`. A medication the record holds under the same name and dose is a duplicate. At most 500 data
+        rows."
       parameters:
         - in: query
           name: dryRun
@@ -49454,7 +49472,8 @@ components:
               const: ok
             asOf:
               type: string
-              description: The last scored UTC day the figures describe.
+              description: "The last UTC day with a stored impulse, at most yesterday: a nightly run that has not happened yet never
+                reads as a rest day."
             ctl:
               type: number
               description: "Fitness: 42-day exponentially weighted TRIMP."
@@ -49469,6 +49488,15 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
             trainingDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            recentRatedDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Days of the trailing `recentDays` (42, or fewer when covered less) with a stored impulse.
+            recentDays:
               type: integer
               minimum: -9007199254740991
               maximum: 9007199254740991
@@ -49488,11 +49516,16 @@ components:
                     type: number
                   tsb:
                     type: number
+                  rated:
+                    type: boolean
+                    description: "False for a day without a stored impulse (never scored): the averages held through it rather than counting
+                      it as rest."
                 required:
                   - day
                   - ctl
                   - atl
                   - tsb
+                  - rated
                 additionalProperties: false
               description: The trailing 90 days, oldest first; `tsb` is form going into the day.
           required:
@@ -49503,6 +49536,8 @@ components:
             - tsb
             - daysCovered
             - trainingDays
+            - recentRatedDays
+            - recentDays
             - warmingUp
             - series
           additionalProperties: false
@@ -49530,9 +49565,9 @@ components:
             - daysCovered
             - trainingDays
           additionalProperties: false
-      description: "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a day
-        without a stored impulse counts as rest). Needs 28 days and three training days. TRIMP units: comparable with
-        the person's own past only."
+      description: "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a
+        scored day without training is 0, a day without a stored impulse is not rated and the averages hold through it).
+        Needs 28 days and three training days. TRIMP units: comparable with the person's own past only."
     GetWorkoutResponse:
       type: object
       properties:
@@ -50159,6 +50194,7 @@ components:
                     enum:
                       - none
                       - unrated
+                      - in_progress
                       - low
                       - below
                       - usual
@@ -50166,12 +50202,14 @@ components:
                       - high
                     description: "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th
                       percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual`
-                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with."
+                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with;
+                      `in_progress` = today, which has not ended and is never rated."
                   activeMinutes:
                     type: string
                     enum:
                       - none
                       - unrated
+                      - in_progress
                       - low
                       - below
                       - usual
@@ -50179,12 +50217,14 @@ components:
                       - high
                     description: "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th
                       percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual`
-                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with."
+                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with;
+                      `in_progress` = today, which has not ended and is never rated."
                   load:
                     type: string
                     enum:
                       - none
                       - unrated
+                      - in_progress
                       - low
                       - below
                       - usual
@@ -50192,7 +50232,8 @@ components:
                       - high
                     description: "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th
                       percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual`
-                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with."
+                      between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with;
+                      `in_progress` = today, which has not ended and is never rated."
                 required:
                   - steps
                   - activeMinutes
@@ -50412,6 +50453,17 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
+        completedDays:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Days of the period that have ended (today excluded).
+        completedValue:
+          description: "`value` over the completed days only. This, not `value`, is what `usualToDate` is compared with, so a
+            running period is never judged on today's partial day."
+          type:
+            - number
+            - "null"
         usual:
           description: "The person's usual full period: the median of the twelve weeks (or, per day, of the six months) before it.
             Null with fewer than three earlier periods of data."
@@ -50419,7 +50471,8 @@ components:
             - number
             - "null"
         usualToDate:
-          description: The usual figure for the days elapsed so far; equals `usual` once the period is over.
+          description: The usual figure for the completed days (today excluded); equals `usual` once the period is over, null
+            before the period's first day has ended.
           type:
             - number
             - "null"
@@ -50430,6 +50483,8 @@ components:
       required:
         - value
         - daysWithData
+        - completedDays
+        - completedValue
         - usual
         - usualToDate
         - referencePeriods
@@ -54861,12 +54916,18 @@ components:
                                 type: integer
                                 minimum: -9007199254740991
                                 maximum: 9007199254740991
+                                description: "Newey–West lag applied: the automatic rule, at least 7 (a week of daily carry-over)."
+                              autocorrelationCaveat:
+                                type: boolean
+                                description: "True when the lag-1 residual autocorrelation exceeds 0.5: the carry-over is strong enough that the
+                                  intervals may still be too narrow, and the read-out says so."
                             required:
                               - n
                               - df
                               - rSquared
                               - residualAutocorrelation
                               - hacLag
+                              - autocorrelationCaveat
                             additionalProperties: false
                           - type: "null"
                       confounders:
@@ -74758,7 +74819,11 @@ components:
               description: The line's value on `asOf`.
             asOf:
               type: string
-              description: YYYY-MM-DD the line was evaluated on.
+              description: "YYYY-MM-DD the line was evaluated on: today, or `lastAt` when `projection` is `stale`."
+            horizonYears:
+              type: number
+              description: "How far ahead a bound may be met and still count as `exits`: three years, or the readings' span when
+                shorter."
             projection:
               type: string
               enum:
@@ -74768,6 +74833,7 @@ components:
                 - already_outside
                 - no_clear_trend
                 - no_band
+                - stale
             exitDate:
               description: "Only for `exits`: the day the straight line meets `exitBound`. A projection, never a forecast."
               type:
@@ -74791,6 +74857,7 @@ components:
             - pValue
             - fittedNow
             - asOf
+            - horizonYears
             - projection
             - exitDate
             - exitBound
@@ -74822,8 +74889,9 @@ components:
       description: "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's
         unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the
         line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the
-        line is inside the band today and reaches a bound within three years. Server-computed; clients render it as
-        given."
+        line is inside the band today and reaches a bound within `horizonYears` (three years, or the readings' span when
+        shorter). `stale` when the newest reading is more than 365 days old: the line is then reported as of `lastAt`,
+        with no projection. Server-computed; clients render it as given."
     UpdateBiomarkerResponse:
       type: object
       properties:

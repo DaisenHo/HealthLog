@@ -431,7 +431,10 @@
       "notTracked": "prises non suivies, aucun jour écarté pour des doses manquées",
       "endDoseChange": "la période s'arrête le {date}, avant le premier changement de dose",
       "days": "{before} jours avant, {after} jours après le démarrage, {excluded} jours écartés",
-      "method": "Régression segmentée sur les valeurs quotidiennes, de 90 jours avant à 180 jours au plus après le démarrage, intervalles de Newey-West. Les jours après le démarrage où moins de 80 % des doses des 14 jours précédents ont été prises sont écartés. Décrit une association dans le temps, pas un effet démontré du médicament."
+      "method": "Régression segmentée sur les valeurs quotidiennes, de 90 jours avant à 180 jours au plus après le démarrage, intervalles de Newey-West. Les jours après le démarrage où moins de 80 % des doses des 14 jours précédents ont été prises sont écartés. Décrit une association dans le temps, pas un effet démontré du médicament.",
+      "autocorrelation": "forte dépendance à la veille, les plages peuvent donc rester trop étroites",
+      "window": "analysé du {from} au {to}, ce qui peut dépasser la période du rapport",
+      "windowLine": "Analysé du {from} au {to}. Cette fenêtre peut dépasser la période du rapport."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Indique une date de début pour voir le changement au démarrage.",
         "needBefore": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours avant le démarrage.",
         "needAfter": "Le changement au démarrage demande des valeurs sur au moins {days} jours répartis sur {span} jours depuis le démarrage, les jours où les doses ont été prises.",
-        "fitFailed": "Ces valeurs n'ont pas pu être ajustées, aucun changement au démarrage n'est donc affiché."
+        "fitFailed": "Ces valeurs n'ont pas pu être ajustées, aucun changement au démarrage n'est donc affiché.",
+        "autocorrelation": "Les valeurs quotidiennes dépendent fortement de la veille, donc même ces plages peuvent être trop étroites."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Fatigue",
         "form": "Fraîcheur",
         "explainer": "La condition est ton impulsion d'entraînement par fréquence cardiaque moyennée sur environ six semaines, la fatigue sur environ une semaine, et la fraîcheur est la différence. Les chiffres se comparent à ton propre passé, pas à d'autres personnes ni à d'autres apps.",
-        "warmingUp": "Sur {days} jours pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est."
+        "warmingUp": "Sur {days} jours pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est.",
+        "coverage": "{rated} des {days} derniers jours ont des données de fréquence cardiaque. Les jours sans elles sont écartés au lieu de compter comme repos."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Accès partagé",
         "subtitle": "Qui peut ouvrir votre dossier de santé, et lequel vous pouvez ouvrir."
-      },
-      "preview": {
-        "title": "Fonctions en aperçu",
-        "subtitle": "Essayez ce qui n’est pas encore terminé. Tout reste désactivé ici tant que vous ne l’activez pas."
       }
     },
     "profile": "Profil",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey supprimée.",
     "integrationDisconnected": "{provider} déconnecté.",
     "integrationDisconnectFailed": "Impossible de déconnecter {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Thèmes (bêta)",
-        "description": "Ajoutera une entrée Thèmes distincte, avec des pages de synthèse au-dessus des pages par mesure, dès qu'elles seront prêtes.",
-        "detail": "Vos pages d’analyse, la navigation et les liens restent exactement tels quels. Les pages de thèmes arrivent dans une mise à jour ultérieure ; cet interrupteur décide si vous les voyez.",
-        "savedOn": "Aperçu des thèmes activé.",
-        "savedOff": "Aperçu des thèmes désactivé."
-      },
-      "loadError": "Impossible de charger vos réglages d’aperçu.",
-      "feedbackLink": "Donner votre avis dans les discussions GitHub"
-    },
     "timezoneSaved": "Fuseau horaire enregistré.",
     "moduleState": {
       "on": "Activé",
@@ -10207,10 +10197,11 @@
           "high": "Si cette droite se prolongeait, elle atteindrait la limite haute de ta plage de référence vers le {date}. C'est une projection, pas une prévision.",
           "low": "Si cette droite se prolongeait, elle atteindrait la limite basse de ta plage de référence vers le {date}. C'est une projection, pas une prévision."
         },
-        "beyond_horizon": "À ce rythme, la droite reste dans ta plage de référence pendant au moins trois ans encore.",
+        "beyond_horizon": "À ce rythme, la droite reste dans ta plage de référence plus de {years} ans, la durée couverte par tes valeurs.",
         "no_exit": "La droite s'éloigne des limites de ta plage de référence.",
         "already_outside": "La droite est déjà hors de ta plage de référence.",
-        "no_clear_trend": "Sur ces valeurs, la variation ne se distingue pas clairement d'une absence de variation, donc aucune projection n'est tracée."
+        "no_clear_trend": "Sur ces valeurs, la variation ne se distingue pas clairement d'une absence de variation, donc aucune projection n'est tracée.",
+        "stale": "La valeur la plus récente date du {date}, il y a plus d’un an. La droite est montrée à cette date, sans projection."
       },
       "interval": "Intervalle à 95 % de la variation annuelle : de {lo} à {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Antécédents chirurgicaux",
     "leafImmunizations": "Vaccinations",
     "leafEmergency": "Informations d'urgence (groupe sanguin, contacts, directives)",
-    "leafMedicationEffect": "Changement autour du démarrage de chaque médicament",
+    "leafMedicationEffect": "Changement autour du démarrage de chaque médicament (nécessite la liste des médicaments)",
     "leafWorkouts": "Entraînements (résumé par sport)",
     "leafHrvSdnn": "VFC (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "En dessous de ton habitude",
       "usual": "Comme d'habitude",
       "above": "Au-dessus de ton habitude",
-      "high": "Bien au-dessus de ton habitude"
+      "high": "Bien au-dessus de ton habitude",
+      "in_progress": "Aujourd’hui, en cours"
     },
     "legend": "Comparé à tes 12 semaines précédentes :",
     "noBaseline": "Ta plage habituelle apparaît après 14 jours avec des données.",
@@ -13649,7 +13641,9 @@
       "workouts": "{value} entraînements",
       "load": "Charge d'entraînement moyenne {value}",
       "usual": "Ton habitude à ce stade : {value}",
-      "noUsual": "Pas encore assez de semaines ou de mois précédents pour comparer."
+      "noUsual": "Pas encore assez de semaines ou de mois précédents pour comparer.",
+      "usualThroughYesterday": "Jusqu’à hier {value}, ton habitude à ce stade {usual}",
+      "firstDay": "Comparé à ton habitude dès que le premier jour est terminé."
     },
     "sportCount": "{sport} : {count}",
     "goal": {

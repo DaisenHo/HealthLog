@@ -115,6 +115,11 @@ const trainingLoadPoint = z.object({
   ctl: z.number(),
   atl: z.number(),
   tsb: z.number(),
+  rated: z
+    .boolean()
+    .describe(
+      "False for a day without a stored impulse (never scored): the averages held through it rather than counting it as rest.",
+    ),
 });
 
 const trainingLoad = z
@@ -123,12 +128,21 @@ const trainingLoad = z
       status: z.literal("ok"),
       asOf: z
         .string()
-        .describe("The last scored UTC day the figures describe."),
+        .describe(
+          "The last UTC day with a stored impulse, at most yesterday: a nightly run that has not happened yet never reads as a rest day.",
+        ),
       ctl: z.number().describe("Fitness: 42-day exponentially weighted TRIMP."),
       atl: z.number().describe("Fatigue: 7-day exponentially weighted TRIMP."),
       tsb: z.number().describe("Form: fitness minus fatigue at `asOf`."),
       daysCovered: z.number().int(),
       trainingDays: z.number().int(),
+      recentRatedDays: z
+        .number()
+        .int()
+        .describe(
+          "Days of the trailing `recentDays` (42, or fewer when covered less) with a stored impulse.",
+        ),
+      recentDays: z.number().int(),
       warmingUp: z
         .boolean()
         .describe("True below 42 covered days: both averages start at zero."),
@@ -148,7 +162,7 @@ const trainingLoad = z
   .meta({
     id: "WorkoutTrainingLoad",
     description:
-      "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a day without a stored impulse counts as rest). Needs 28 days and three training days. TRIMP units: comparable with the person's own past only.",
+      "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a scored day without training is 0, a day without a stored impulse is not rated and the averages hold through it). Needs 28 days and three training days. TRIMP units: comparable with the person's own past only.",
   });
 
 const workoutListResponse = z

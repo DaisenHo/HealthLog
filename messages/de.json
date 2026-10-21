@@ -431,7 +431,10 @@
       "notTracked": "Einnahme nicht erfasst, daher keine Tage wegen ausgelassener Dosen entfernt",
       "endDoseChange": "Zeitraum endet am {date}, vor der ersten Dosisänderung",
       "days": "{before} Tage vor, {after} Tage nach dem Start, {excluded} Tage ausgelassen",
-      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgelassen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments."
+      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgelassen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments.",
+      "autocorrelation": "starke Abhängigkeit vom Vortag, die Bereiche können daher noch zu eng sein",
+      "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
+      "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Lege ein Startdatum fest, um die Veränderung zum Start zu sehen.",
         "needBefore": "Für die Veränderung zum Start braucht es Werte an mindestens {days} Tagen, verteilt über {span} Tage vor dem Start.",
         "needAfter": "Für die Veränderung zum Start braucht es Werte an mindestens {days} Tagen, verteilt über {span} Tage seit dem Start und an Tagen mit eingenommenen Dosen.",
-        "fitFailed": "Diese Werte ließen sich nicht auswerten, deshalb wird keine Veränderung zum Start gezeigt."
+        "fitFailed": "Diese Werte ließen sich nicht auswerten, deshalb wird keine Veränderung zum Start gezeigt.",
+        "autocorrelation": "Die Tageswerte hängen stark vom Vortag ab, deshalb können selbst diese Bereiche zu eng sein."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Ermüdung",
         "form": "Form",
         "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
-        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist."
+        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist.",
+        "coverage": "{rated} der letzten {days} Tage haben Herzfrequenzdaten. Tage ohne sie bleiben außen vor, statt als Ruhetag zu zählen."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Geteilter Zugriff",
         "subtitle": "Wer deine Gesundheitsakte öffnen kann und wessen Akte du öffnen kannst."
-      },
-      "preview": {
-        "title": "Vorschau-Funktionen",
-        "subtitle": "Probier aus, was noch nicht fertig ist. Alles hier bleibt aus, bis du es einschaltest."
       }
     },
     "profile": "Profil",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey entfernt.",
     "integrationDisconnected": "{provider} getrennt.",
     "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden.",
-    "preview": {
-      "topics": {
-        "title": "Themen (Beta)",
-        "description": "Fügt einen eigenen Eintrag Themen hinzu, sobald die Übersichtsseiten über den einzelnen Insights-Seiten fertig sind.",
-        "detail": "Deine Insights-Seiten, die Navigation und alle Links bleiben genau wie sie sind. Die Themenseiten kommen mit einem späteren Update; dieser Schalter legt fest, ob du sie siehst.",
-        "savedOn": "Themen-Vorschau eingeschaltet.",
-        "savedOff": "Themen-Vorschau ausgeschaltet."
-      },
-      "loadError": "Deine Vorschau-Einstellungen konnten nicht geladen werden.",
-      "feedbackLink": "Feedback in den GitHub-Diskussionen geben"
-    },
     "timezoneSaved": "Zeitzone gespeichert.",
     "moduleState": {
       "on": "An",
@@ -10207,10 +10197,11 @@
           "high": "Liefe diese Gerade so weiter, erreichte sie um den {date} das obere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage.",
           "low": "Liefe diese Gerade so weiter, erreichte sie um den {date} das untere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage."
         },
-        "beyond_horizon": "In diesem Tempo bleibt die Gerade noch mindestens drei Jahre in deinem Referenzbereich.",
+        "beyond_horizon": "In diesem Tempo bleibt die Gerade länger als {years} Jahre in deinem Referenzbereich, so weit reichen deine Werte zurück.",
         "no_exit": "Die Gerade läuft von den Grenzen deines Referenzbereichs weg.",
         "already_outside": "Die Gerade liegt bereits außerhalb deines Referenzbereichs.",
-        "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben."
+        "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben.",
+        "stale": "Der neueste Wert ist vom {date}, also älter als ein Jahr. Die Gerade gilt für diesen Stand, ohne Projektion."
       },
       "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Operationen und Eingriffe",
     "leafImmunizations": "Impfungen",
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
-    "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments",
+    "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments (braucht die Medikamentenliste)",
     "leafWorkouts": "Trainings (Übersicht je Sportart)",
     "leafHrvSdnn": "HRV (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "Unter deinem Üblichen",
       "usual": "Etwa wie üblich",
       "above": "Über deinem Üblichen",
-      "high": "Weit über deinem Üblichen"
+      "high": "Weit über deinem Üblichen",
+      "in_progress": "Heute, noch nicht vorbei"
     },
     "legend": "Verglichen mit deinen 12 Wochen davor:",
     "noBaseline": "Dein üblicher Bereich erscheint nach 14 Tagen mit Daten.",
@@ -13649,7 +13641,9 @@
       "workouts": "{value} Trainings",
       "load": "Durchschnittliche Trainingslast {value}",
       "usual": "Bis hierher üblich bei dir: {value}",
-      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen."
+      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen.",
+      "usualThroughYesterday": "Bis gestern {value}, bis dahin üblich bei dir {usual}",
+      "firstDay": "Der Vergleich mit deinem Üblichen kommt, sobald der erste Tag vorbei ist."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

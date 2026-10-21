@@ -409,6 +409,33 @@ describe("the derived figures ride their own leaf", () => {
     expect(off.medications.length).toBeGreaterThan(0);
   });
 
+  it("withholds the medication effect without the medication list", async () => {
+    // The effect block names every medication it describes, so withholding
+    // the list must withhold the names here too.
+    const leaves: ReportLeafId[] = [
+      "MEDICATION_EFFECT",
+      ...MEASUREMENT_LEAF_IDS,
+    ];
+    const withList = await collectDoctorReportData(
+      "u1",
+      RANGE,
+      selectionFromLeaves([...leaves, "MEDICATION_LIST"]),
+      { moduleMap: moduleMap() },
+    );
+    expect(withList.medicationEffects?.length ?? 0).toBeGreaterThan(0);
+
+    const withoutList = await collectDoctorReportData(
+      "u1",
+      RANGE,
+      selectionFromLeaves(leaves),
+      { moduleMap: moduleMap() },
+    );
+    expect(withoutList.medicationEffects ?? null).toBeNull();
+    expect(JSON.stringify(withoutList)).not.toContain(
+      withList.medicationEffects![0].medicationName,
+    );
+  });
+
   it("withholds the glucose panel while the raw series stays", async () => {
     const withPanel = await collectDoctorReportData(
       "u1",

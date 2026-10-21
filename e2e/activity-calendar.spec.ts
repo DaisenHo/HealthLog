@@ -32,7 +32,9 @@ test.describe("activity calendar", () => {
     await page.locator('[data-slot="activity-calendar-previous"]').click();
     await expect(label).not.toHaveText(before ?? "");
 
-    await card.getByRole("radio", { name: "Week" }).click();
+    await expect(card).toHaveAttribute("data-period", "month");
+    await page.locator('[data-slot="activity-calendar-period-week"]').click();
+    await expect(card).toHaveAttribute("data-period", "week");
     if ((await days.count()) > 0) await expect(days).toHaveCount(7);
 
     // Nothing in the card pushes the page sideways on a phone.
@@ -47,22 +49,20 @@ test.describe("activity calendar", () => {
   test("saves a goal and shows its progress", async ({ page }) => {
     await page.goto("/insights/workouts");
     await page.locator('[data-slot="activity-calendar-set-goals"]').click();
-    await page.getByLabel("Steps per month").fill("150000");
+    const field = page.locator(
+      '[data-slot="activity-goals-form"] [data-goal-key="stepsPerMonth"]',
+    );
+    const goal = page.locator(
+      '[data-slot="activity-calendar-goal"][data-goal-key="stepsPerMonth"]',
+    );
+    await field.fill("150000");
     await page.locator('[data-slot="activity-goals-save"]').click();
-    await expect(
-      page
-        .locator('[data-slot="activity-calendar-goals"]')
-        .getByText("Steps per month"),
-    ).toBeVisible();
+    await expect(goal).toBeVisible();
 
     // Clear it again so the account is left as it was found.
     await page.locator('[data-slot="activity-calendar-set-goals"]').click();
-    await page.getByLabel("Steps per month").fill("");
+    await field.fill("");
     await page.locator('[data-slot="activity-goals-save"]').click();
-    await expect(
-      page
-        .locator('[data-slot="activity-calendar-goals"]')
-        .getByText("Steps per month"),
-    ).toHaveCount(0);
+    await expect(goal).toHaveCount(0);
   });
 });

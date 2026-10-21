@@ -431,7 +431,10 @@
       "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu opuszczonych dawek",
       "endDoseChange": "okres kończy się {date}, przed pierwszą zmianą dawki",
       "days": "{before} dni przed, {after} dni po rozpoczęciu, pominięto {excluded} dni",
-      "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku."
+      "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku.",
+      "autocorrelation": "silna zależność od poprzedniego dnia, więc zakresy mogą nadal być zbyt wąskie",
+      "window": "analizowano od {from} do {to}, może to wykraczać poza okres raportu",
+      "windowLine": "Analizowano od {from} do {to}. Ten okres może wykraczać poza okres raportu."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Ustaw datę rozpoczęcia, aby zobaczyć zmianę na początku.",
         "needBefore": "Do zmiany na początku potrzeba pomiarów z co najmniej {days} dni rozłożonych na {span} dni przed rozpoczęciem.",
         "needAfter": "Do zmiany na początku potrzeba pomiarów z co najmniej {days} dni rozłożonych na {span} dni od rozpoczęcia, w dni z przyjętymi dawkami.",
-        "fitFailed": "Nie udało się dopasować tych pomiarów, więc zmiana na początku nie jest pokazana."
+        "fitFailed": "Nie udało się dopasować tych pomiarów, więc zmiana na początku nie jest pokazana.",
+        "autocorrelation": "Wartości dzienne silnie zależą od poprzedniego dnia, więc nawet te zakresy mogą być zbyt wąskie."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Zmęczenie",
         "form": "Forma",
         "explainer": "Wydolność to twój bodziec treningowy z tętna uśredniony z około sześciu tygodni, zmęczenie z około tygodnia, a forma to różnica. Liczby porównuje się z twoją własną przeszłością, nie z innymi osobami ani aplikacjami.",
-        "warmingUp": "Na podstawie dotychczasowych {days} dni: dopóki nie minie sześć tygodni, wydolność wychodzi niższa, niż jest."
+        "warmingUp": "Na podstawie dotychczasowych {days} dni: dopóki nie minie sześć tygodni, wydolność wychodzi niższa, niż jest.",
+        "coverage": "{rated} z ostatnich {days} dni ma dane tętna. Dni bez nich są pomijane, a nie liczone jako odpoczynek."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Udostępniony dostęp",
         "subtitle": "Kto może otworzyć twoją kartę zdrowia i czyją kartę możesz otworzyć ty."
-      },
-      "preview": {
-        "title": "Funkcje w podglądzie",
-        "subtitle": "Wypróbuj to, co nie jest jeszcze gotowe. Wszystko tutaj pozostaje wyłączone, dopóki tego nie włączysz."
       }
     },
     "profile": "Profil",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Usunięto passkey.",
     "integrationDisconnected": "Rozłączono {provider}.",
     "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Tematy (beta)",
-        "description": "Doda osobną pozycję Tematy ze stronami przeglądowymi nad stronami poszczególnych pomiarów, gdy będą gotowe.",
-        "detail": "Strony analiz, nawigacja i linki pozostają dokładnie takie, jakie są. Strony tematów pojawią się w późniejszej aktualizacji; ten przełącznik decyduje, czy je zobaczysz.",
-        "savedOn": "Podgląd tematów włączony.",
-        "savedOff": "Podgląd tematów wyłączony."
-      },
-      "loadError": "Nie udało się wczytać ustawień podglądu.",
-      "feedbackLink": "Podziel się opinią w dyskusjach na GitHubie"
-    },
     "timezoneSaved": "Strefa czasowa zapisana.",
     "moduleState": {
       "on": "Włączone",
@@ -10207,10 +10197,11 @@
           "high": "Gdyby ta prosta biegła dalej, osiągnęłaby górną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza.",
           "low": "Gdyby ta prosta biegła dalej, osiągnęłaby dolną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza."
         },
-        "beyond_horizon": "W tym tempie prosta pozostaje w twoim zakresie referencyjnym jeszcze co najmniej trzy lata.",
+        "beyond_horizon": "W tym tempie prosta pozostaje w twoim zakresie referencyjnym dłużej niż {years} lat, czyli okres objęty twoimi wynikami.",
         "no_exit": "Prosta oddala się od granic twojego zakresu referencyjnego.",
         "already_outside": "Prosta jest już poza twoim zakresem referencyjnym.",
-        "no_clear_trend": "Na podstawie tych wyników zmiana nie różni się wyraźnie od braku zmiany, więc nie jest wyznaczana ekstrapolacja."
+        "no_clear_trend": "Na podstawie tych wyników zmiana nie różni się wyraźnie od braku zmiany, więc nie jest wyznaczana ekstrapolacja.",
+        "stale": "Najnowszy wynik pochodzi z {date}, sprzed ponad roku. Prosta jest pokazana na ten dzień, bez projekcji."
       },
       "interval": "95% przedział rocznej zmiany: od {lo} do {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Historia operacji",
     "leafImmunizations": "Szczepienia",
     "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)",
-    "leafMedicationEffect": "Zmiana wokół rozpoczęcia każdego leku",
+    "leafMedicationEffect": "Zmiana wokół rozpoczęcia każdego leku (wymaga listy leków)",
     "leafWorkouts": "Treningi (podsumowanie według dyscypliny)",
     "leafHrvSdnn": "HRV (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "Poniżej twojej normy",
       "usual": "Mniej więcej jak zwykle",
       "above": "Powyżej twojej normy",
-      "high": "Znacznie powyżej twojej normy"
+      "high": "Znacznie powyżej twojej normy",
+      "in_progress": "Dziś, jeszcze trwa"
     },
     "legend": "W porównaniu z twoimi 12 wcześniejszymi tygodniami:",
     "noBaseline": "Twój zwykły zakres pojawi się po 14 dniach z danymi.",
@@ -13649,7 +13641,9 @@
       "workouts": "Treningi: {value}",
       "load": "Średnie obciążenie treningowe {value}",
       "usual": "Twoja norma do tego momentu: {value}",
-      "noUsual": "Za mało wcześniejszych tygodni lub miesięcy do porównania."
+      "noUsual": "Za mało wcześniejszych tygodni lub miesięcy do porównania.",
+      "usualThroughYesterday": "Do wczoraj {value}, twoja zwykła wartość do tego dnia {usual}",
+      "firstDay": "Porównanie ze zwykłą wartością pojawi się po zakończeniu pierwszego dnia."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

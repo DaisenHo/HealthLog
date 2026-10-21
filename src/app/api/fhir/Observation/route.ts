@@ -57,7 +57,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return operationOutcome(429, "throttled", "Rate limit exceeded");
   }
   const params = request.nextUrl.searchParams;
-  const { count, offset } = parsePaging(params);
+  const paging = parsePaging(params);
+  if ("error" in paging) {
+    return operationOutcome(400, "invalid", paging.error);
+  }
+  const { count, offset } = paging;
   const codeValues = params.getAll("code");
   const range = parseDateParams(params.getAll("date"));
   if (range && "error" in range) {

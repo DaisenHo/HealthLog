@@ -41,6 +41,7 @@ type DayLevel = CalendarDay["level"]["steps"];
 const LEVEL_BAR: Record<DayLevel, string> = {
   none: "bg-transparent",
   unrated: "bg-muted-foreground/60",
+  in_progress: "bg-muted-foreground/30",
   low: "bg-chart-2/20",
   below: "bg-chart-2/40",
   usual: "bg-chart-2/60",
@@ -172,6 +173,7 @@ export function ActivityCalendarCard() {
     <Card
       id="activity-calendar"
       data-slot="activity-calendar"
+      data-period={period}
       className="scroll-mt-28"
     >
       <CardHeader>
@@ -412,10 +414,13 @@ export function ActivityCalendarCard() {
                 .filter((m) => data.available[m])
                 .map((m) => {
                   const s = data.summary[m];
+                  // Compared over completed days only: today has not ended.
                   const delta =
-                    s.value !== null && s.usualToDate
-                      ? (s.value - s.usualToDate) / s.usualToDate
+                    s.completedValue !== null && s.usualToDate
+                      ? (s.completedValue - s.usualToDate) / s.usualToDate
                       : null;
+                  const running =
+                    data.today >= data.start && data.today <= data.end;
                   return (
                     <li
                       key={m}
@@ -431,11 +436,24 @@ export function ActivityCalendarCard() {
                           })}
                         </p>
                         <p className="text-muted-foreground text-xs">
-                          {s.usualToDate === null
-                            ? t("activityCalendar.summary.noUsual")
-                            : t("activityCalendar.summary.usual", {
-                                value: formatMetric(m, s.usualToDate),
-                              })}
+                          {s.usual !== null && s.completedDays === 0
+                            ? t("activityCalendar.summary.firstDay")
+                            : s.usualToDate === null
+                              ? t("activityCalendar.summary.noUsual")
+                              : running
+                                ? t(
+                                    "activityCalendar.summary.usualThroughYesterday",
+                                    {
+                                      value:
+                                        s.completedValue === null
+                                          ? "–"
+                                          : formatMetric(m, s.completedValue),
+                                      usual: formatMetric(m, s.usualToDate),
+                                    },
+                                  )
+                                : t("activityCalendar.summary.usual", {
+                                    value: formatMetric(m, s.usualToDate),
+                                  })}
                         </p>
                       </div>
                       {delta !== null ? (
@@ -466,7 +484,12 @@ export function ActivityCalendarCard() {
 
             <div className="space-y-2" data-slot="activity-calendar-goals">
               {data.goalProgress.map((g) => (
-                <div key={g.key} className="space-y-1">
+                <div
+                  key={g.key}
+                  className="space-y-1"
+                  data-slot="activity-calendar-goal"
+                  data-goal-key={g.key}
+                >
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="inline-flex items-center gap-1.5">
                       <Target

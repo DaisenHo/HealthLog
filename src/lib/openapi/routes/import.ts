@@ -24,13 +24,14 @@ import {
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 import {
+  csvImportQuerySchema,
   labsCsvQuerySchema,
   medicationsCsvQuerySchema,
   recordImportResultSchema,
 } from "@/lib/validations/record-import";
 
 const RECORD_IMPORT_COMMON =
-  "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30 checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with `module.disabled` when the module is switched off.";
+  "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30 checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes.";
 
 function recordImportResponses(id: string) {
   return {
@@ -339,17 +340,8 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "Import measurements from CSV",
       description:
-        "Bulk-import measurements from a CSV file (web cold-start escape hatch). Body is raw `text/csv` (≤ 16 MB, ≤ 10 000 valid rows). Header (order-independent): `type,value,unit,measuredAt[,glucoseContext,notes,externalId]`. `measuredAt` must carry an explicit ISO-8601 offset and is bounded (no future beyond a 5-min skew, no instant before 1900). Glucose accepts `mmol/L` (converted to canonical `mg/dL`); weight accepts `lb` (converted to `kg`). `glucoseContext` is optional on a `BLOOD_GLUCOSE` row — a blank cell stores no context, which is the normal shape of a continuous-sensor export; a non-empty value is still checked against the enum, and the column is refused on any other type. Re-uploading a file is idempotent. With an `externalId` column a row upserts on `(userId, type, source=IMPORT, externalId)`: a changed row is `updated`, an unchanged one is `skipped` with reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews without writing. Shares the 5/hour `import:` rate bucket.",
-      parameters: [
-        {
-          name: "dryRun",
-          in: "query",
-          required: false,
-          schema: { type: "string", enum: ["1", "true"] },
-          description:
-            "When `1` / `true`, parse + validate + return the per-row envelope without writing.",
-        },
-      ],
+        "Bulk-import measurements from a CSV file (web cold-start escape hatch). Body is raw `text/csv` (≤ 16 MB, ≤ 10 000 valid rows). Header (order-independent): `type,value,unit,measuredAt[,glucoseContext,notes,externalId]`. `measuredAt` must carry an explicit ISO-8601 offset and is bounded (no future beyond a 5-min skew, no instant before 1900). Glucose accepts `mmol/L` (converted to canonical `mg/dL`); weight accepts `lb` (converted to `kg`). `glucoseContext` is optional on a `BLOOD_GLUCOSE` row — a blank cell stores no context, which is the normal shape of a continuous-sensor export; a non-empty value is still checked against the enum, and the column is refused on any other type. Re-uploading a file is idempotent. With an `externalId` column a row upserts on `(userId, type, source=IMPORT, externalId)`: a changed row is `updated`, an unchanged one is `skipped` with reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes.",
+      requestParams: { query: csvImportQuerySchema },
       requestBody: {
         required: true,
         content: {

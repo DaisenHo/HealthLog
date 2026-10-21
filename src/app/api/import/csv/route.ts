@@ -7,7 +7,9 @@ import {
   apiError,
   getClientIp,
   readBodyText,
+  returnAllZodIssues,
 } from "@/lib/api-response";
+import { csvImportQuerySchema } from "@/lib/validations/record-import";
 import { encryptNote, readNote } from "@/lib/crypto/note-cipher";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
@@ -109,9 +111,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "import.csv.upload" } });
 
-  const dryRun =
-    new URL(request.url).searchParams.get("dryRun") === "1" ||
-    new URL(request.url).searchParams.get("dryRun") === "true";
+  // Strict: an unknown parameter is refused, so a misspelt `dryrun=1` can
+  // never fall through to a real import.
+  const queryParse = csvImportQuerySchema.safeParse(
+    Object.fromEntries(new URL(request.url).searchParams),
+  );
+  if (!queryParse.success) return returnAllZodIssues(queryParse.error, 422);
+  const dryRun = queryParse.data.dryRun;
 
   // Same blast-radius reasoning as the JSON import — share the bucket so a
   // CSV upload counts against the same 5/hour quota.

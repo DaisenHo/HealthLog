@@ -431,7 +431,10 @@
       "notTracked": "inname niet bijgehouden, dus geen dagen weggelaten om gemiste doses",
       "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
       "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
-      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn."
+      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn.",
+      "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn",
+      "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
+      "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Stel een startdatum in om de verandering bij de start te zien.",
         "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen vóór de start.",
         "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen sinds de start en op dagen waarop de doses zijn ingenomen.",
-        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond."
+        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond.",
+        "autocorrelation": "De dagwaarden hangen sterk af van de vorige dag, dus zelfs deze bereiken kunnen te smal zijn."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Vermoeidheid",
         "form": "Vorm",
         "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
-        "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is."
+        "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
+        "coverage": "{rated} van de laatste {days} dagen hebben hartslaggegevens. Dagen zonder worden weggelaten in plaats van als rustdag te tellen."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Gedeelde toegang",
         "subtitle": "Wie je gezondheidsdossier kan openen, en wiens dossier jij kunt openen."
-      },
-      "preview": {
-        "title": "Previewfuncties",
-        "subtitle": "Probeer wat nog niet af is. Alles hier blijft uit tot je het aanzet."
       }
     },
     "profile": "Profiel",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey verwijderd.",
     "integrationDisconnected": "{provider} ontkoppeld.",
     "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld.",
-    "preview": {
-      "topics": {
-        "title": "Onderwerpen (bèta)",
-        "description": "Voegt een apart item Onderwerpen toe, met overzichtspagina’s boven de pagina’s per meting, zodra die klaar zijn.",
-        "detail": "Je inzichtpagina’s, navigatie en links blijven precies zoals ze zijn. De onderwerppagina’s komen met een latere update; deze schakelaar bepaalt of je ze ziet.",
-        "savedOn": "Preview van onderwerpen ingeschakeld.",
-        "savedOff": "Preview van onderwerpen uitgeschakeld."
-      },
-      "loadError": "Je preview-instellingen konden niet worden geladen.",
-      "feedbackLink": "Geef feedback in de GitHub-discussies"
-    },
     "timezoneSaved": "Tijdzone opgeslagen.",
     "moduleState": {
       "on": "Aan",
@@ -10207,10 +10197,11 @@
           "high": "Als deze rechte lijn zo doorliep, zou ze rond {date} de bovengrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling.",
           "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
         },
-        "beyond_horizon": "In dit tempo blijft de lijn nog minstens drie jaar binnen je referentiebereik.",
+        "beyond_horizon": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, de periode die je waarden beslaan.",
         "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
         "already_outside": "De lijn ligt al buiten je referentiebereik.",
-        "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken."
+        "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",
+        "stale": "De nieuwste waarde is van {date}, meer dan een jaar geleden. De lijn staat op die datum, zonder projectie."
       },
       "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Operatiegeschiedenis",
     "leafImmunizations": "Vaccinaties",
     "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
-    "leafMedicationEffect": "Verandering rond de start van elk medicijn",
+    "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
     "leafWorkouts": "Trainingen (overzicht per sport)",
     "leafHrvSdnn": "HRV (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "Onder je gewone niveau",
       "usual": "Ongeveer zoals gewoonlijk",
       "above": "Boven je gewone niveau",
-      "high": "Ver boven je gewone niveau"
+      "high": "Ver boven je gewone niveau",
+      "in_progress": "Vandaag, nog bezig"
     },
     "legend": "Vergeleken met je 12 weken daarvoor:",
     "noBaseline": "Je gebruikelijke bereik verschijnt na 14 dagen met gegevens.",
@@ -13649,7 +13641,9 @@
       "workouts": "{value} trainingen",
       "load": "Gemiddelde trainingsbelasting {value}",
       "usual": "Gebruikelijk tot dit punt: {value}",
-      "noUsual": "Nog niet genoeg eerdere weken of maanden om mee te vergelijken."
+      "noUsual": "Nog niet genoeg eerdere weken of maanden om mee te vergelijken.",
+      "usualThroughYesterday": "Tot en met gisteren {value}, je gebruikelijke tot dan {usual}",
+      "firstDay": "Vergeleken met je gebruikelijke zodra de eerste dag voorbij is."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

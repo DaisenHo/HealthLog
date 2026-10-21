@@ -674,7 +674,11 @@ export async function collectDoctorReportData(
       : Promise.resolve(null),
     // The effect around each listed medication's start. Its own leaf AND the
     // target's measurement leaf must both admit it; the loader asks the gate.
-    gate.admits("MEDICATION_EFFECT")
+    // The block names every medication it describes (and the confounders),
+    // so it also needs the medication list: an owner who withheld the list
+    // never releases the names through the effect block. Same rule as the
+    // clinician view's compliance rows, which are named from the list.
+    gate.admits("MEDICATION_EFFECT") && gate.admits("MEDICATION_LIST")
       ? loadReportMedicationEffects({
           userId,
           medicationIds: medications.map((m) => m.id),

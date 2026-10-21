@@ -113,7 +113,11 @@ export function MedicationEffectSection({
   /** A stated calendar day (YYYY-MM-DD) in the owner's date order. */
   fmtDay: (day: string) => string;
 }) {
-  const effects = report.medicationEffects ?? [];
+  // The block names medications: without the list leaf it shows nothing,
+  // whatever the payload carries.
+  const effects = scope.admits("MEDICATION_LIST")
+    ? (report.medicationEffects ?? [])
+    : [];
   const glucoseUnit = resolveGlucoseUnit(report.glucoseUnit ?? null);
   return (
     <LeafSection
@@ -159,6 +163,14 @@ export function MedicationEffectSection({
                   unit,
                 })}
               </p>
+              {e.window ? (
+                <p className="text-muted-foreground text-xs">
+                  {t("doctorReport.medicationEffect.windowLine", {
+                    from: fmtDay(e.window.from),
+                    to: fmtDay(e.window.to),
+                  })}
+                </p>
+              ) : null}
               <p className="text-muted-foreground text-xs">
                 {t("doctorReport.medicationEffect.days", {
                   before: e.days.before,
@@ -167,6 +179,11 @@ export function MedicationEffectSection({
                     e.days.excludedLowAdherence + e.days.excludedNotTaking,
                 })}
               </p>
+              {e.fit?.autocorrelationCaveat ? (
+                <p className="text-muted-foreground text-xs">
+                  {t("medications.efficacy.segmented.autocorrelation")}
+                </p>
+              ) : null}
               {e.confounders.map((c) => (
                 <p
                   key={`${c.medicationName}:${c.event}:${c.date}`}

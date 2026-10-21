@@ -115,6 +115,7 @@ export function ActivityGoalsSheet({
               <Label htmlFor={id}>{t(`activityCalendar.goal.${key}`)}</Label>
               <Input
                 id={id}
+                data-goal-key={key}
                 inputMode="numeric"
                 autoComplete="off"
                 value={draft[key]}

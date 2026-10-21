@@ -431,7 +431,10 @@
       "notTracked": "toma no registrada, así que no se omitió ningún día por dosis olvidadas",
       "endDoseChange": "el periodo termina el {date}, antes del primer cambio de dosis",
       "days": "{before} días antes, {after} días después del inicio, {excluded} días omitidos",
-      "method": "Regresión segmentada sobre los valores diarios desde 90 días antes hasta como máximo 180 días después del inicio, con intervalos de Newey-West. Se omiten los días posteriores al inicio en los que se tomó menos del 80 % de las dosis de los 14 días anteriores. Describe una asociación en el tiempo, no un efecto demostrado del medicamento."
+      "method": "Regresión segmentada sobre los valores diarios desde 90 días antes hasta como máximo 180 días después del inicio, con intervalos de Newey-West. Se omiten los días posteriores al inicio en los que se tomó menos del 80 % de las dosis de los 14 días anteriores. Describe una asociación en el tiempo, no un efecto demostrado del medicamento.",
+      "autocorrelation": "fuerte dependencia del día anterior, así que los rangos pueden seguir siendo demasiado estrechos",
+      "window": "analizado del {from} al {to}, puede ir más allá del periodo del informe",
+      "windowLine": "Analizado del {from} al {to}. Este intervalo puede ir más allá del periodo del informe."
     }
   },
   "errorBoundary": {
@@ -2412,7 +2415,8 @@
         "needStart": "Indica una fecha de inicio para ver el cambio al inicio.",
         "needBefore": "El cambio al inicio necesita valores de al menos {days} días repartidos en {span} días antes del inicio.",
         "needAfter": "El cambio al inicio necesita valores de al menos {days} días repartidos en {span} días desde el inicio, en días con las dosis tomadas.",
-        "fitFailed": "No se pudieron ajustar estos valores, así que no se muestra el cambio al inicio."
+        "fitFailed": "No se pudieron ajustar estos valores, así que no se muestra el cambio al inicio.",
+        "autocorrelation": "Los valores diarios dependen mucho del día anterior, así que incluso estos rangos pueden ser demasiado estrechos."
       }
     },
     "import": {
@@ -3898,7 +3902,8 @@
         "fatigue": "Fatiga",
         "form": "Estado",
         "explainer": "La forma de base es tu impulso de entrenamiento por frecuencia cardiaca promediado en unas seis semanas, la fatiga en una semana, y el estado es la diferencia. Las cifras se comparan con tu propio pasado, no con otras personas ni otras apps.",
-        "warmingUp": "Con {days} días hasta ahora: hasta cubrir seis semanas, la forma de base aparece más baja de lo que es."
+        "warmingUp": "Con {days} días hasta ahora: hasta cubrir seis semanas, la forma de base aparece más baja de lo que es.",
+        "coverage": "{rated} de los últimos {days} días tienen datos de frecuencia cardiaca. Los días sin ellos se omiten en lugar de contar como descanso."
       }
     },
     "bloodGlucose": {
@@ -6136,10 +6141,6 @@
       "access": {
         "title": "Acceso compartido",
         "subtitle": "Quién puede abrir tu historial de salud y cuál puedes abrir tú."
-      },
-      "preview": {
-        "title": "Funciones en vista previa",
-        "subtitle": "Prueba lo que aún no está terminado. Todo aquí sigue desactivado hasta que lo actives."
       }
     },
     "profile": "Perfil",
@@ -7623,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey eliminada.",
     "integrationDisconnected": "{provider} desconectado.",
     "integrationDisconnectFailed": "No se pudo desconectar {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Temas (beta)",
-        "description": "Añadirá una entrada aparte, Temas, con páginas de resumen por encima de las páginas de cada métrica cuando estén listas.",
-        "detail": "Tus páginas de análisis, la navegación y los enlaces se quedan exactamente como están. Las páginas de temas llegan en una actualización posterior; este interruptor decide si las ves.",
-        "savedOn": "Vista previa de Temas activada.",
-        "savedOff": "Vista previa de Temas desactivada."
-      },
-      "loadError": "No se pudieron cargar tus ajustes de vista previa.",
-      "feedbackLink": "Comparte tu opinión en las discusiones de GitHub"
-    },
     "timezoneSaved": "Zona horaria guardada.",
     "moduleState": {
       "on": "Activado",
@@ -10207,10 +10197,11 @@
           "high": "Si esta línea recta continuara, llegaría al límite superior de tu rango de referencia hacia el {date}. Es una proyección, no un pronóstico.",
           "low": "Si esta línea recta continuara, llegaría al límite inferior de tu rango de referencia hacia el {date}. Es una proyección, no un pronóstico."
         },
-        "beyond_horizon": "A este ritmo, la línea se mantiene dentro de tu rango de referencia al menos tres años más.",
+        "beyond_horizon": "A este ritmo, la línea se mantiene dentro de tu rango de referencia más de {years} años, el periodo que cubren tus valores.",
         "no_exit": "La línea se aleja de los límites de tu rango de referencia.",
         "already_outside": "La línea ya está fuera de tu rango de referencia.",
-        "no_clear_trend": "En estos valores, el cambio no se distingue con claridad de la ausencia de cambio, así que no se proyecta nada."
+        "no_clear_trend": "En estos valores, el cambio no se distingue con claridad de la ausencia de cambio, así que no se proyecta nada.",
+        "stale": "El valor más reciente es del {date}, hace más de un año. La línea se muestra a esa fecha, sin proyección."
       },
       "interval": "Intervalo del 95 % del cambio anual: de {lo} a {hi} {unit}."
     }
@@ -12423,7 +12414,7 @@
     "leafSurgicalHistory": "Antecedentes quirúrgicos",
     "leafImmunizations": "Vacunas",
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
-    "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento",
+    "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento (requiere la lista de medicamentos)",
     "leafWorkouts": "Entrenamientos (resumen por deporte)",
     "leafHrvSdnn": "VFC (SDNN)"
   },
@@ -13639,7 +13630,8 @@
       "below": "Por debajo de lo habitual",
       "usual": "Como de costumbre",
       "above": "Por encima de lo habitual",
-      "high": "Muy por encima de lo habitual"
+      "high": "Muy por encima de lo habitual",
+      "in_progress": "Hoy, aún en curso"
     },
     "legend": "Comparado con tus 12 semanas anteriores:",
     "noBaseline": "Tu rango habitual aparece tras 14 días con datos.",
@@ -13649,7 +13641,9 @@
       "workouts": "{value} entrenamientos",
       "load": "Carga de entrenamiento media {value}",
       "usual": "Lo habitual hasta este punto: {value}",
-      "noUsual": "Aún no hay suficientes semanas o meses anteriores para comparar."
+      "noUsual": "Aún no hay suficientes semanas o meses anteriores para comparar.",
+      "usualThroughYesterday": "Hasta ayer {value}, lo habitual para ti hasta entonces {usual}",
+      "firstDay": "Se compara con lo habitual cuando termine el primer día."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

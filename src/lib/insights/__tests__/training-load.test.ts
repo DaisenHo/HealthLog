@@ -31,23 +31,29 @@ describe("computeTrainingLoad", () => {
       ctl: 2.4,
       atl: 14.3,
       tsb: 0,
+      rated: true,
     });
+    expect(load.recentRatedDays).toBe(42);
+    expect(load.recentDays).toBe(42);
   });
 
-  it("counts a day without a stored row as a rest day", () => {
-    // Train on day 0 only, then 29 empty days up to day 29.
-    const load = computeTrainingLoad(
-      [
-        { day: day(0), dayTrimp: 84 },
-        { day: day(1), dayTrimp: 42 },
-        { day: day(2), dayTrimp: 42 },
-      ],
-      day(29),
-    );
+  it("counts a scored day of 0 as rest, and holds through a day never scored", () => {
+    // Three training days, then scored rest days 3..29 except a gap of
+    // unscored days 10..19 (no heart-rate data reached the server).
+    const rows = [
+      { day: day(0), dayTrimp: 84 },
+      { day: day(1), dayTrimp: 42 },
+      { day: day(2), dayTrimp: 42 },
+    ];
+    for (let i = 3; i < 30; i += 1) {
+      if (i < 10 || i > 19) rows.push({ day: day(i), dayTrimp: 0 });
+    }
+    const load = computeTrainingLoad(rows, day(29));
     if (load.status !== "ok") throw new Error("expected ok");
     let ctl = 0;
     let atl = 0;
     for (let i = 0; i < 30; i += 1) {
+      if (i >= 10 && i <= 19) continue; // held
       const l = i === 0 ? 84 : i < 3 ? 42 : 0;
       ctl += (l - ctl) / 42;
       atl += (l - atl) / 7;
@@ -55,7 +61,24 @@ describe("computeTrainingLoad", () => {
     expect(load.ctl).toBe(Math.round(ctl * 10) / 10);
     expect(load.atl).toBe(Math.round(atl * 10) / 10);
     expect(load.daysCovered).toBe(30);
+    expect(load.recentRatedDays).toBe(20);
+    expect(load.recentDays).toBe(30);
+    expect(load.series.find((p) => p.day === day(12))?.rated).toBe(false);
+    expect(load.series.find((p) => p.day === day(25))?.rated).toBe(true);
     expect(load.warmingUp).toBe(true);
+  });
+
+  it("describes the last stored day, so a run not yet made never zeroes it", () => {
+    // Rows through day 39; asked for day 41 (the nightly run for 40 and 41
+    // has not happened). The figures are those of day 39.
+    const rows = Array.from({ length: 40 }, (_, i) => ({
+      day: day(i),
+      dayTrimp: 60,
+    }));
+    const late = computeTrainingLoad(rows, day(41));
+    const exact = computeTrainingLoad(rows, day(39));
+    expect(late).toEqual(exact);
+    expect(late).toMatchObject({ status: "ok", asOf: day(39) });
   });
 
   it("answers insufficient without impulse or with too little history", () => {

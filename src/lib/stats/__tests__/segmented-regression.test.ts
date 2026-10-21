@@ -2,16 +2,22 @@
  * Exact statistics for the segmented (interrupted time series) regression.
  *
  * The reference values for the noisy fixtures were computed independently
- * with statsmodels 0.14 (`OLS(...).fit(cov_type="HAC", cov_kwds={"maxlags":
- * L, "use_correction": True}, use_t=True)`, L = floor(4·(n/100)^(2/9))) and
- * scipy's `stats.t`. The fixture generator below is the same deterministic
+ * with statsmodels 0.14.4 (`OLS(...).fit(cov_type="HAC", cov_kwds={"maxlags":
+ * L, "use_correction": True}, use_t=True)`) and scipy's `stats.t`, at the
+ * default lag L = max(7, floor(4·(n/100)^(2/9))) = 7 and, to pin the HAC meat
+ * at a second lag, at the automatic L = 3 passed explicitly. To recompute:
+ * build the fixture below in Python (Python's floored `%`), fit the design
+ * [1, t, D, t·D] with the call above at each L, and read `params`, `bse` and
+ * `conf_int(0.05)`; the coefficients and R² do not depend on L. The fixture generator below is the same deterministic
  * formula the reference script used, so a drift in the estimator, the HAC
  * meat, the small-sample factor or the t quantile fails here.
  */
 import { describe, expect, it } from "vitest";
 
 import {
+  defaultHacLag,
   fitSegmentedRegression,
+  MIN_HAC_LAG,
   neweyWestLag,
   studentTCdf,
   studentTQuantile,
@@ -62,8 +68,25 @@ describe("fitSegmentedRegression", () => {
     expect(fit!.rSquared).toBeCloseTo(1, 12);
   });
 
-  it("matches statsmodels HAC on a contiguous 90-day series", () => {
+  it("matches statsmodels HAC on a contiguous 90-day series at the default lag", () => {
     const fit = fitSegmentedRegression(fixture(40, 50))!;
+    expect(fit.n).toBe(90);
+    expect(fit.df).toBe(86);
+    expect(fit.hacLag).toBe(7);
+    expect(fit.levelChange.estimate).toBeCloseTo(-7.336815685253282, 9);
+    expect(fit.intercept.standardError).toBeCloseTo(0.3926378134611552, 9);
+    expect(fit.preSlope.standardError).toBeCloseTo(0.015434960504949637, 10);
+    expect(fit.levelChange.standardError).toBeCloseTo(0.5544100003043471, 9);
+    expect(fit.slopeChange.standardError).toBeCloseTo(0.02119259135971675, 10);
+    expect(fit.levelChange.ciLow).toBeCloseTo(-8.43894628913928, 8);
+    expect(fit.levelChange.ciHigh).toBeCloseTo(-6.234685081367285, 8);
+    expect(fit.slopeChange.ciLow).toBeCloseTo(-0.07897452738576954, 9);
+    expect(fit.slopeChange.ciHigh).toBeCloseTo(0.005284427179883318, 9);
+    expect(fit.rSquared).toBeCloseTo(0.8683372493940129, 10);
+  });
+
+  it("matches statsmodels HAC on a contiguous 90-day series at lag 3", () => {
+    const fit = fitSegmentedRegression(fixture(40, 50), { hacLag: 3 })!;
     expect(fit.n).toBe(90);
     expect(fit.df).toBe(86);
     expect(fit.hacLag).toBe(3);
@@ -82,8 +105,23 @@ describe("fitSegmentedRegression", () => {
     expect(fit.rSquared).toBeCloseTo(0.8683372493940129, 10);
   });
 
-  it("matches statsmodels HAC on a series with gaps", () => {
+  it("matches statsmodels HAC on a series with gaps at the default lag", () => {
     const fit = fitSegmentedRegression(fixture(30, 30, { gaps: true }))!;
+    expect(fit.n).toBe(48);
+    expect(fit.hacLag).toBe(7);
+    expect(fit.levelChange.estimate).toBeCloseTo(-6.123258149435133, 9);
+    expect(fit.levelChange.standardError).toBeCloseTo(0.7919225818543464, 9);
+    expect(fit.levelChange.ciLow).toBeCloseTo(-7.71927324237417, 8);
+    expect(fit.levelChange.ciHigh).toBeCloseTo(-4.527243056496095, 8);
+    expect(fit.slopeChange.estimate).toBeCloseTo(-0.11857109294626766, 10);
+    expect(fit.slopeChange.ciLow).toBeCloseTo(-0.22143394263874167, 9);
+    expect(fit.slopeChange.ciHigh).toBeCloseTo(-0.01570824325379365, 9);
+  });
+
+  it("matches statsmodels HAC on a series with gaps at lag 3", () => {
+    const fit = fitSegmentedRegression(fixture(30, 30, { gaps: true }), {
+      hacLag: 3,
+    })!;
     expect(fit.n).toBe(48);
     expect(fit.hacLag).toBe(3);
     expect(fit.levelChange.estimate).toBeCloseTo(-6.123258149435133, 9);
@@ -106,9 +144,16 @@ describe("fitSegmentedRegression", () => {
     expect(fitSegmentedRegression(fixture(2, 2, { noise: false }))).toBeNull();
   });
 
-  it("uses the automatic Newey–West lag", () => {
+  it("uses the automatic Newey–West lag, never below a week", () => {
     expect(neweyWestLag(90)).toBe(3);
     expect(neweyWestLag(30)).toBe(3);
     expect(neweyWestLag(10)).toBe(2);
+    expect(MIN_HAC_LAG).toBe(7);
+    expect(defaultHacLag(90)).toBe(7);
+    expect(defaultHacLag(270)).toBe(7);
+    expect(defaultHacLag(100_000)).toBe(neweyWestLag(100_000));
+    // A short series clamps to n − 1.
+    expect(fitSegmentedRegression(fixture(4, 4))!.hacLag).toBe(7);
+    expect(fitSegmentedRegression(fixture(3, 3))!.hacLag).toBe(5);
   });
 });

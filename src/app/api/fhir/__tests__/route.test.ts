@@ -147,6 +147,23 @@ describe("GET /api/fhir/Observation — searchset", () => {
     expect(bundle.entry[0].resource.id).toBe("obs-3");
   });
 
+  it("refuses an offset past the ceiling with a 400 OperationOutcome", async () => {
+    vi.mocked(observationsFromReportData).mockReturnValue([obs(1)] as never);
+    for (const offset of ["100001", "1e20", "Infinity"]) {
+      const res = await observationGet(req(`?_offset=${offset}`));
+      expect(res.status).toBe(400);
+      const outcome = (await res.json()) as {
+        resourceType: string;
+        issue: Array<{ code: string }>;
+      };
+      expect(outcome.resourceType).toBe("OperationOutcome");
+      expect(outcome.issue[0].code).toBe("invalid");
+    }
+    // The ceiling itself still pages (an empty page past the end).
+    const atCeiling = await observationGet(req("?_offset=100000"));
+    expect(atCeiling.status).toBe(200);
+  });
+
   it("enforces the fhir:read scope (Bearer narrow token without it 403s)", async () => {
     // No session → Bearer path. requireAuth(FHIR_READ_SCOPE) must reject a
     // token lacking the scope; here no auth at all yields 401, proving the

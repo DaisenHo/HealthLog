@@ -509,8 +509,9 @@ export interface DoctorReportData {
    * metric(s), around the medication's start (v1.44). Computed without AI from
    * the same day values and dose ledger the efficacy tab reads. A target rides
    * only when its own measurement leaf is admitted too, so the block never
-   * carries a figure derived from a series the owner withheld. Null when the
-   * MEDICATION_EFFECT leaf was not selected or nothing qualified.
+   * carries a figure derived from a series the owner withheld. It names the
+   * medications, so it rides only when MEDICATION_LIST is admitted as well.
+   * Null when either leaf was not selected or nothing qualified.
    */
   medicationEffects?: DoctorReportMedicationEffect[] | null;
 }

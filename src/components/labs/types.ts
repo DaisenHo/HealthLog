@@ -125,13 +125,15 @@ export type BiomarkerTrendDto =
       pValue: number;
       fittedNow: number;
       asOf: string;
+      horizonYears: number;
       projection:
         | "exits"
         | "beyond_horizon"
         | "no_exit"
         | "already_outside"
         | "no_clear_trend"
-        | "no_band";
+        | "no_band"
+        | "stale";
       exitDate: string | null;
       exitBound: "low" | "high" | null;
     }

@@ -170,10 +170,17 @@ describe("SETTINGS_SECTION_SLUGS", () => {
       // v1.23 — "Data & Privacy" assembles the export / deletion / retention /
       // encryption / session / activity pieces into one pane, after `advanced`.
       "privacy",
-      // v1.44 — per-user preview opt-ins, in the System group before About.
-      "preview",
       "about",
     ]);
+  });
+
+  it("lists no Preview features page until the topic pages ship", () => {
+    // The stored flag and its API stay; the page and its nav entry return
+    // with the first preview the switch actually turns on.
+    expect(isSettingsSectionSlug("preview")).toBe(false);
+    expect(SETTINGS_SECTIONS.some((s) => s.slug === ("preview" as never))).toBe(
+      false,
+    );
   });
 
   it("`isSettingsSectionSlug` accepts known slugs and rejects others", () => {
@@ -242,7 +249,6 @@ describe("<SettingsShell>", () => {
       gesundheitsakte: "data",
       privacy: "data",
       advanced: "data",
-      preview: "system",
       about: "system",
     });
     // Every routable section has a nav entry, and nothing else does.

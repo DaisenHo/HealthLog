@@ -7,7 +7,9 @@
  *
  * Flags:
  * - `topics`: topic overview pages above the single-metric Insights pages.
- *   Stored and shown in Settings > System; no surface reads it yet.
+ *   Stored, served by `/api/settings/preview-features` and carried by the
+ *   backup. The Settings > System switch is not listed until the topic pages
+ *   ship, because nothing reads the flag yet.
  *
  * Unknown keys in a stored blob are dropped on read, so a flag retired later
  * disappears cleanly and a malformed blob reads as everything off.
