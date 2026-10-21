@@ -7600,6 +7600,7 @@
     "heapLimitLabel": "Heaplimiet",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, laag. Stel APP_MEMORY_LIMIT=1536m in via .env",
+    "memoryBelowFloor": "Container {mb} MB, onder het ondersteunde minimum van {floor} MB. Stel APP_MEMORY_LIMIT={floor}m in via .env",
     "offlineGeoOff": "Uit",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "API-endpoints en API-tokens toestaan.",

@@ -70,6 +70,15 @@ export async function register() {
       // A diagnostic must never break boot.
     }
 
+    // One line when the container's memory limit is below the supported
+    // floor. The app keeps running.
+    try {
+      const { logMemoryFloorAtBoot } = await import("@/lib/support/heap-limit");
+      logMemoryFloorAtBoot();
+    } catch {
+      // A diagnostic must never break boot.
+    }
+
     const { shouldRunWorker } = await import("@/lib/process-type");
     if (!shouldRunWorker()) {
       // Split deployment: web requests still produce queue jobs, but this

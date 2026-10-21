@@ -164,11 +164,22 @@ export function SystemStatusSection() {
               icon={MemoryStick}
               label={t("admin.heapLimitLabel")}
               value={
-                status.memory.low
-                  ? t("admin.heapLimitLow", { mb: status.memory.heapLimitMb })
-                  : t("admin.heapLimitValue", { mb: status.memory.heapLimitMb })
+                status.memory.belowFloor && status.memory.containerLimitMb
+                  ? t("admin.memoryBelowFloor", {
+                      mb: status.memory.containerLimitMb,
+                      floor: status.memory.floorMb,
+                    })
+                  : status.memory.low
+                    ? t("admin.heapLimitLow", { mb: status.memory.heapLimitMb })
+                    : t("admin.heapLimitValue", {
+                        mb: status.memory.heapLimitMb,
+                      })
               }
-              tone={status.memory.low ? "warning" : undefined}
+              tone={
+                status.memory.belowFloor || status.memory.low
+                  ? "warning"
+                  : undefined
+              }
             />
             <StatusItem
               icon={Clock}

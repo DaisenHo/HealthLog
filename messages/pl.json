@@ -7600,6 +7600,7 @@
     "heapLimitLabel": "Limit sterty",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, za mało: ustaw APP_MEMORY_LIMIT=1536m w .env",
+    "memoryBelowFloor": "Kontener {mb} MB, poniżej obsługiwanego minimum {floor} MB: ustaw APP_MEMORY_LIMIT={floor}m w .env",
     "offlineGeoOff": "Wyłączone",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "Zezwól na punkty końcowe API i tokeny API.",

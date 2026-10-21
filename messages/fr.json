@@ -7600,6 +7600,7 @@
     "heapLimitLabel": "Limite du tas",
     "heapLimitValue": "{mb} Mo",
     "heapLimitLow": "{mb} Mo, trop juste : définissez APP_MEMORY_LIMIT=1536m dans .env",
+    "memoryBelowFloor": "Conteneur {mb} Mo, sous le minimum pris en charge de {floor} Mo : définissez APP_MEMORY_LIMIT={floor}m dans .env",
     "offlineGeoOff": "Désactivé",
     "offlineGeoChosen": "En ligne ({host})",
     "apiGlobal": "Autoriser les points de terminaison d'API et les jetons d'API.",
