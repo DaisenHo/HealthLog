@@ -61,6 +61,15 @@ import {
 
 import { hasActivityScope } from "./client";
 import {
+  nextSleepStageReads,
+  parseSleepStageReads,
+  serialiseSleepStageReads,
+  SLEEP_STAGE_MAX_EMPTY_READS,
+  sleepNightKey,
+  type SleepStageReadOutcome,
+  type SleepStageReads,
+} from "./sleep-stage-reads";
+import {
   isPlanGatedError,
   isPlanReprobeDue,
   parseWithingsApiPlanState,
@@ -409,11 +418,13 @@ export async function syncUserSleep(
   let summaries: WithingsSleepSummary[] = [];
   let summaryFailure: unknown = null;
   let nightsKnown = false;
+  let stageReads: SleepStageReads = new Map();
   try {
     const planRow = await prisma.withingsConnection.findUnique({
       where: { userId },
-      select: { apiPlanState: true },
+      select: { apiPlanState: true, sleepStageReads: true },
     });
+    stageReads = parseSleepStageReads(planRow?.sleepStageReads);
     const sleepPlan = parseWithingsApiPlanState(
       planRow?.apiPlanState,
     ).sleepSummary;
@@ -460,6 +471,7 @@ export async function syncUserSleep(
   const windows: StageWindow[] = nightsKnown
     ? await stageWindowsToFetch(userId, summaries, now, {
         all: opts.fullSync === true,
+        reads: stageReads,
       })
     : [
         {
@@ -472,6 +484,12 @@ export async function syncUserSleep(
   const segments: WithingsSleepSegment[] = [];
   const wholeNightSessions = new Set<number>();
   const seenSegments = new Set<string>();
+  // How each night's read went, for the per-night record below.
+  const outcomes = new Map<string, SleepStageReadOutcome>();
+  // The first read that failed. The nights read before and after it are
+  // still written, and the summary vitals with them; the failure is booked
+  // as the leg's once they are, and the night is read first next run.
+  let stageFailure: unknown = null;
   for (const window of windows) {
     let series: WithingsSleepSegment[];
     try {
@@ -489,33 +507,21 @@ export async function syncUserSleep(
         annotate({ meta: { withings_sleep_segments_skipped: "api_plan" } });
         break;
       }
-      // v1.4.43 — typed-classification path (see sync-activity.ts
-      // for the full rationale). The thrown `WithingsApiError` carries
-      // the classification verdict; `recordWithingsSyncFailure` routes
-      // it through `classifyError`, which falls back to the legacy regex
-      // for un-prototyped errors (pg-boss JSON round-trip).
-      //
-      // BL-P3-2 defence-in-depth — symmetric to sync-activity. A 403 on
-      // this scope-gated endpoint always means scope-missing or
-      // token-revoked; force `reauth_required` so the 3-strike alert
-      // still pages on the unexpected case.
-      const withingsStatus =
-        err instanceof WithingsApiError ? err.withingsStatus : undefined;
-      if (withingsStatus === 403) {
-        await recordSyncFailure({
-          userId,
-          integration: "withings",
-          kind: "reauth_required",
-          message: err instanceof Error ? err.message : String(err),
-          errorCode: "403",
-          leg: WITHINGS_LEG_SLEEP,
-        });
-        throw err;
+      stageFailure ??= err;
+      if (window.nightKey) outcomes.set(window.nightKey, "failed");
+      // A revoked grant or a missing scope refuses every night alike, so the
+      // rest are not asked for.
+      if (
+        err instanceof WithingsApiError &&
+        (err.withingsStatus === 403 || err.classification === "reauth_required")
+      ) {
+        break;
       }
-      await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_SLEEP);
-      throw err;
+      continue;
     }
+    let staged = false;
     for (const segment of series) {
+      if (mapWithingsSleepState(segment.state)) staged = true;
       // Two windows can return the same segment (a night longer than its
       // 24-hour slice, a nap inside a night); it is written once.
       const key = `${segment.id ?? "no-id"}:${segment.startdate}`;
@@ -525,6 +531,9 @@ export async function syncUserSleep(
       if (window.wholeNight && typeof segment.id === "number") {
         wholeNightSessions.add(segment.id);
       }
+    }
+    if (window.nightKey) {
+      outcomes.set(window.nightKey, staged ? "staged" : "empty");
     }
   }
 
@@ -703,6 +712,57 @@ export async function syncUserSleep(
     () => {},
   );
 
+  if (nightsKnown) {
+    const windowNightKeys = new Set(summaries.map(sleepNightKey));
+    try {
+      await prisma.withingsConnection.update({
+        where: { userId },
+        data: {
+          sleepStageReads: serialiseSleepStageReads(
+            nextSleepStageReads(stageReads, outcomes, windowNightKeys),
+          ),
+        },
+      });
+    } catch (err) {
+      // Bookkeeping only: without it the next run reads as it did before.
+      getEvent()?.addWarning(
+        `withings sleep: stage-read record not saved for ${userId}: ${err}`,
+      );
+    }
+  }
+
+  if (stageFailure !== null) {
+    // v1.4.43 — typed-classification path (see sync-activity.ts for the full
+    // rationale). The thrown `WithingsApiError` carries the classification
+    // verdict; `recordWithingsSyncFailure` routes it through
+    // `classifyError`, which falls back to the legacy regex for
+    // un-prototyped errors (pg-boss JSON round-trip).
+    //
+    // BL-P3-2 defence-in-depth — symmetric to sync-activity. A 403 on this
+    // scope-gated endpoint always means scope-missing or token-revoked; force
+    // `reauth_required` so the 3-strike alert still pages on the unexpected
+    // case.
+    const withingsStatus =
+      stageFailure instanceof WithingsApiError
+        ? stageFailure.withingsStatus
+        : undefined;
+    if (withingsStatus === 403) {
+      await recordSyncFailure({
+        userId,
+        integration: "withings",
+        kind: "reauth_required",
+        message:
+          stageFailure instanceof Error
+            ? stageFailure.message
+            : String(stageFailure),
+        errorCode: "403",
+        leg: WITHINGS_LEG_SLEEP,
+      });
+    } else {
+      await recordWithingsSyncFailure(userId, stageFailure, WITHINGS_LEG_SLEEP);
+    }
+    throw stageFailure;
+  }
   if (summaryFailure !== null) {
     await recordWithingsSyncFailure(userId, summaryFailure, WITHINGS_LEG_SLEEP);
     return imported;
@@ -729,6 +789,8 @@ interface StageWindow {
   enddate: number;
   /** The read covers the whole night, so its session may be swept. */
   wholeNight: boolean;
+  /** The summary night it reads (`sleepNightKey`), absent for the blind slice. */
+  nightKey?: string;
 }
 
 /**
@@ -744,7 +806,7 @@ async function stageWindowsToFetch(
   userId: string,
   summaries: readonly WithingsSleepSummary[],
   now: Date,
-  opts: { all: boolean },
+  opts: { all: boolean; reads: SleepStageReads },
 ): Promise<StageWindow[]> {
   const nights = new Map<
     string,
@@ -769,6 +831,7 @@ async function stageWindowsToFetch(
     startdate: n.startdate,
     enddate: Math.min(n.enddate, n.startdate + DAY_SECONDS),
     wholeNight: n.enddate - n.startdate <= DAY_SECONDS,
+    nightKey: sleepNightKey(n),
   });
   if (opts.all || all.length === 0) return all.map(toWindow);
 
@@ -794,12 +857,29 @@ async function stageWindowsToFetch(
     select: { measuredAt: true },
   });
   const endsAt = stored.map((row) => row.measuredAt.getTime() / 1000);
+  // A night whose last read failed goes first. One that answered without a
+  // stage `SLEEP_STAGE_MAX_EMPTY_READS` times is not asked again: the tracker
+  // does not stage it, and reading it every run for a month cost a request
+  // an hour for nothing.
+  const record = (n: { startdate: number; enddate: number }) =>
+    opts.reads.get(sleepNightKey(n));
   const missing = older
     .filter((n) => !endsAt.some((t) => t > n.startdate && t <= n.enddate))
+    .filter((n) => (record(n)?.empty ?? 0) < SLEEP_STAGE_MAX_EMPTY_READS)
     .sort((x, y) => x.enddate - y.enddate);
+  const failed = missing.filter((n) => record(n)?.failed === true);
+  const rest = missing.filter((n) => record(n)?.failed !== true);
   const budget = Math.max(0, SLEEP_STAGE_NIGHTS_PER_RUN - recent.length);
-  if (missing.length <= budget) return [...recent, ...missing].map(toWindow);
-  const offset = Math.floor(nowUnix / 3600) % missing.length;
-  const rotated = [...missing.slice(offset), ...missing.slice(0, offset)];
-  return [...recent, ...rotated.slice(0, budget)].map(toWindow);
+  if (missing.length <= budget) {
+    return [...recent, ...failed, ...rest].map(toWindow);
+  }
+  const restBudget = Math.max(0, budget - failed.length);
+  const offset =
+    rest.length === 0 ? 0 : Math.floor(nowUnix / 3600) % rest.length;
+  const rotated = [...rest.slice(offset), ...rest.slice(0, offset)];
+  return [
+    ...recent,
+    ...failed.slice(0, budget),
+    ...rotated.slice(0, restBudget),
+  ].map(toWindow);
 }

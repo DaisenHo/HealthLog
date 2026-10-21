@@ -31,7 +31,10 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
-    withingsConnection: { findUnique: vi.fn() },
+    withingsConnection: { findUnique: vi.fn(), update: vi.fn() },
+    // A failed stage read no longer throws before the writes: the nights
+    // read before it, and the summary vitals, are still written.
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn({})),
   },
 }));
 

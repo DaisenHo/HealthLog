@@ -23,7 +23,7 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       updateMany: vi.fn(),
     },
-    withingsConnection: { findUnique: vi.fn() },
+    withingsConnection: { findUnique: vi.fn(), update: vi.fn() },
     $executeRaw: vi.fn(),
     $transaction: transactionMock,
   },
@@ -98,6 +98,7 @@ import {
   mapWithingsSleepSummary,
   syncUserSleep,
 } from "../sync-sleep";
+import { SLEEP_STAGE_MAX_EMPTY_READS } from "../sleep-stage-reads";
 
 interface FakeSegment {
   startdate: number;
@@ -1022,6 +1023,125 @@ describe("syncUserSleep — one stage read per night (Sleep v2 Get answers 24 h)
     await syncUserSleep("user-1", { fullSync: true });
 
     expect(stageReads(fetchMock)).toHaveLength(12);
+  });
+
+  /** Answer the stage read of the night starting at `startdate` with an error. */
+  function failNight(
+    fetchMock: ReturnType<typeof installSleepApi>,
+    startdate: number,
+  ) {
+    const answer = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(
+      async (url: string, init: { body: string }) => {
+        const params = new URLSearchParams(init.body);
+        if (
+          params.get("action") === "get" &&
+          Number(params.get("startdate")) === startdate
+        ) {
+          return {
+            status: 200,
+            json: async () => ({ status: 293, error: "Invalid params" }),
+          } as unknown as Awaited<ReturnType<typeof answer>>;
+        }
+        return answer(url, init);
+      },
+    );
+  }
+
+  function savedReads(): Record<string, { empty: number; failed?: true }> {
+    const call = vi.mocked(prisma.withingsConnection.update).mock.calls.at(-1);
+    const data = call?.[0].data as {
+      sleepStageReads: { nights: Record<string, { empty: number }> };
+    };
+    return data.sleepStageReads.nights;
+  }
+
+  it("keeps the nights read around a failing one and books the leg failed", async () => {
+    // One failing night used to throw out of the loop, so the nights read
+    // before it and the summary vitals were never written.
+    const nights = [0, 3, 9].map((n, i) => night(n, 200 + i));
+    const fetchMock = installSleepApi(
+      nights.flatMap((x) => x.segments),
+      nights.map((x) => ({ ...x.summary, data: { hr_average: 55 } })),
+    );
+    failNight(fetchMock, nights[1]!.summary.startdate);
+
+    await expect(syncUserSleep("user-1")).rejects.toThrow(/293/);
+
+    const written = reconcileMock.mock.calls.map(
+      ([, input]) => (input as { externalId: string }).externalId,
+    );
+    // Both stage segments of the two good nights, and every night's vitals.
+    expect(written.filter((id) => !id.endsWith(":hr"))).toHaveLength(4);
+    expect(written.filter((id) => id.endsWith(":hr"))).toHaveLength(3);
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
+    expect(recordSyncFailure).toHaveBeenCalledWith(
+      expect.objectContaining({ leg: "sleep" }),
+    );
+    const failedKey = `${nights[1]!.summary.startdate}:${nights[1]!.summary.enddate}`;
+    expect(savedReads()[failedKey]).toEqual({ empty: 0, failed: true });
+  });
+
+  it("reads a night whose last read failed first on the next run", async () => {
+    const nights = Array.from({ length: 12 }, (_, i) => night(i + 3, i + 1));
+    const fetchMock = installSleepApi(
+      nights.flatMap((x) => x.segments),
+      nights.map((x) => x.summary),
+    );
+    await syncUserSleep("user-1");
+    const unread = nights.find(
+      (x) =>
+        !stageReads(fetchMock).some(([from]) => from === x.summary.startdate),
+    )!;
+    expect(unread).toBeDefined();
+
+    fetchMock.mockClear();
+    const key = `${unread.summary.startdate}:${unread.summary.enddate}`;
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics,user.activity",
+      sleepStageReads: { v: 1, nights: { [key]: { empty: 0, failed: true } } },
+    } as never);
+    await syncUserSleep("user-1");
+
+    expect(stageReads(fetchMock)[0]).toEqual([
+      unread.summary.startdate,
+      Math.min(unread.summary.enddate, unread.summary.startdate + DAY),
+    ]);
+    // Read cleanly this time: the record forgets it.
+    expect(savedReads()[key]).toBeUndefined();
+  });
+
+  it("stops reading a night that answered without a stage three times", async () => {
+    const given = night(5, 31);
+    const trying = night(6, 32);
+    const key = (x: typeof given) =>
+      `${x.summary.startdate}:${x.summary.enddate}`;
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics,user.activity",
+      sleepStageReads: {
+        v: 1,
+        nights: {
+          [key(given)]: { empty: SLEEP_STAGE_MAX_EMPTY_READS },
+          [key(trying)]: { empty: SLEEP_STAGE_MAX_EMPTY_READS - 1 },
+        },
+      },
+    } as never);
+    // Withings lists both nights and stages neither.
+    const fetchMock = installSleepApi([], [given.summary, trying.summary]);
+
+    await syncUserSleep("user-1");
+
+    expect(stageReads(fetchMock)).toEqual([
+      [trying.summary.startdate, trying.summary.enddate],
+    ]);
+    expect(savedReads()).toEqual({
+      [key(given)]: { empty: SLEEP_STAGE_MAX_EMPTY_READS },
+      [key(trying)]: { empty: SLEEP_STAGE_MAX_EMPTY_READS },
+    });
+    // A full sync still asks for it.
+    fetchMock.mockClear();
+    await syncUserSleep("user-1", { fullSync: true });
+    expect(stageReads(fetchMock)).toHaveLength(2);
   });
 
   it("caps a night longer than a day at the 24 hours one read can return", async () => {

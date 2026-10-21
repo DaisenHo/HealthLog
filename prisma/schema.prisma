@@ -4251,6 +4251,15 @@ model WithingsConnection {
   /// Withings card name what the plan withholds. Versioned and validated on
   /// read (`src/lib/withings/api-plan.ts`); reset on reconnect.
   apiPlanState               Json?     @map("api_plan_state")
+  /// v1.43.11 — what the sleep sync learned reading each night's stage
+  /// timeline: `{ v: 1, nights: { "<start>:<end>": { empty, failed } } }`,
+  /// keyed by the night's unix span. `empty` counts reads that answered with
+  /// no stage, so a night a tracker never stages stops being read after a
+  /// few tries; `failed` marks a night whose read errored, so it is read
+  /// first on the next run. Pruned to the nights of the summary window.
+  /// Validated on read (`src/lib/withings/sleep-stage-reads.ts`); reset on
+  /// reconnect.
+  sleepStageReads            Json?     @map("sleep_stage_reads")
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 
