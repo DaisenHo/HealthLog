@@ -436,7 +436,7 @@ export function ouraCollectionReader(
  * token and found it valid, the grant just does not cover this collection. A
  * refresh cannot widen a grant, so none is spent on it.
  */
-function isNamedScopeRefusal(err: unknown): boolean {
+export function isNamedScopeRefusal(err: unknown): boolean {
   return (
     err instanceof OuraApiError &&
     err.httpStatus === 401 &&
@@ -449,7 +449,7 @@ function isNamedScopeRefusal(err: unknown): boolean {
  * no body to tell. This is what the one refresh is for. A 403 is neither: Oura
  * answers it for a lapsed membership, which no refresh or reconnect fixes.
  */
-function isTokenRefusal(err: unknown): boolean {
+export function isTokenRefusal(err: unknown): boolean {
   return (
     err instanceof OuraApiError &&
     err.httpStatus === 401 &&

@@ -206,12 +206,17 @@ describe("GET /api/oura/callback — issuer", () => {
  * card for up to an hour.
  */
 describe("GET /api/oura/callback — connect-time first sync", () => {
-  it("enqueues exactly one targeted oura-sync job for the connecting user", async () => {
+  it("enqueues one targeted oura-sync job and the history backfill for the connecting user", async () => {
     const res = await GET(makeReq({ code: "c", state: "S", cookie: "S" }));
 
     expect(res.headers.get("location")).toContain("oura=connected");
-    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend).toHaveBeenCalledTimes(2);
     expect(bossSend).toHaveBeenCalledWith("oura-sync", { userId: "u1" });
+    expect(bossSend).toHaveBeenCalledWith(
+      "oura-backfill",
+      expect.objectContaining({ userId: "u1" }),
+      expect.objectContaining({ singletonKey: "oura-backfill|u1" }),
+    );
   });
 
   it("still connects when no boss instance is available", async () => {
