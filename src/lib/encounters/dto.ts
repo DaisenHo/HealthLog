@@ -21,6 +21,7 @@ import type {
   MeasurementReminder,
   Practitioner,
 } from "@/generated/prisma/client";
+import type { EncounterPreparationDTO } from "@/lib/encounters/preparation";
 import type { RestoreSkipSummary } from "@/lib/export/restore-skips";
 import {
   toPractitionerDTO,
@@ -93,6 +94,14 @@ export interface EncounterDTO {
    * at it again.
    */
   skipped?: RestoreSkipSummary;
+  /**
+   * The window before a booked visit: the day the visit preparation and the
+   * doctor report offered for it start, the rule that chose it, and the
+   * earlier visit it is the day of (`src/lib/encounters/preparation.ts`).
+   *
+   * On the list read. Null on every row but a booked upcoming one.
+   */
+  preparation?: EncounterPreparationDTO | null;
   createdAt: string;
   updatedAt: string;
 }
