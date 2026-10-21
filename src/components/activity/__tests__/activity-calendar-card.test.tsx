@@ -140,6 +140,13 @@ describe("ActivityCalendarCard", () => {
     state.data = calendar();
     const html = render();
     expect(html).toContain("Steps per month");
+    // Stable hooks for the end-to-end spec, independent of the wording.
+    expect(html).toContain(
+      'data-slot="activity-calendar-goal" data-goal-key="stepsPerMonth"',
+    );
+    expect(html).toMatch(
+      /data-slot="activity-calendar"[^>]*data-period="month"/,
+    );
     expect(html).toContain(
       'data-slot="activity-calendar-week-goal" data-met="true"',
     );

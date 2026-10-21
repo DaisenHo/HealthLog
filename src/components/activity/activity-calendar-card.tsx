@@ -173,6 +173,7 @@ export function ActivityCalendarCard() {
     <Card
       id="activity-calendar"
       data-slot="activity-calendar"
+      data-period={period}
       className="scroll-mt-28"
     >
       <CardHeader>
@@ -483,7 +484,12 @@ export function ActivityCalendarCard() {
 
             <div className="space-y-2" data-slot="activity-calendar-goals">
               {data.goalProgress.map((g) => (
-                <div key={g.key} className="space-y-1">
+                <div
+                  key={g.key}
+                  className="space-y-1"
+                  data-slot="activity-calendar-goal"
+                  data-goal-key={g.key}
+                >
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="inline-flex items-center gap-1.5">
                       <Target
