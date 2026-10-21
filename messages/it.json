@@ -13581,5 +13581,105 @@
     "settingsHint": "Per vedere cosa decide questo ordine giorno per giorno:",
     "settingsHintLink": "Da dove vengono i valori",
     "metricLink": "Da dove vengono questi valori"
+  },
+  "recordImport": {
+    "title": "Esami di laboratorio e farmaci da un foglio di calcolo",
+    "description": "Porta dentro anni di esami o un elenco di farmaci da un file CSV.",
+    "detail": "Scegli tu quale colonna contiene cosa; HealthLog controlla ogni riga prima e non importa nulla finché non confermi. Le righe già presenti vengono saltate.",
+    "kind": {
+      "labs": "Esami di laboratorio",
+      "medications": "Farmaci"
+    },
+    "sheetTitle": {
+      "labs": "Importa esami",
+      "medications": "Importa farmaci"
+    },
+    "sheetDescription": {
+      "labs": "I marcatori vengono abbinati ai tuoi, le unità convertite quando la conversione è nota.",
+      "medications": "Nome, dose, orari giornalieri, al bisogno, inizio e fine. Gli altri ritmi si impostano poi nell'app."
+    },
+    "file": "File CSV",
+    "template": "Scarica il modello",
+    "mapping": "Quale colonna contiene cosa",
+    "required": "(obbligatorio)",
+    "notInFile": "Non nel file",
+    "column": "Colonna {n}",
+    "delimiter": "Separatore",
+    "delimiterOption": {
+      "comma": "Virgola",
+      "semicolon": "Punto e virgola",
+      "tab": "Tabulazione"
+    },
+    "decimal": "Separatore decimale",
+    "decimalOption": {
+      "dot": "Punto (5.4)",
+      "comma": "Virgola (5,4)"
+    },
+    "dateOrder": "Formato data",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (prima il giorno)",
+      "mdy": "03/01/2025 (prima il mese)"
+    },
+    "header": "La prima riga contiene i nomi delle colonne",
+    "reminders": "Attiva i promemoria per i farmaci importati",
+    "timezoneNote": "Gli orari senza fuso orario vengono letti nel fuso del tuo account. Una data senza orario resta quel giorno del calendario.",
+    "missing": "Ancora da scegliere: {fields}",
+    "check": "Controlla il file",
+    "runIdle": "Importa",
+    "run": "Importa {count} righe",
+    "close": "Chiudi",
+    "summaryCheck": "{rows} righe lette: {inserted} importabili, {duplicates} già presenti, {failed} con un problema.",
+    "summaryDone": "{inserted} righe importate. Saltate: {duplicates} già presenti e {failed} con un problema.",
+    "markersMatched": "Abbinati ai tuoi marcatori:",
+    "markersCreated": "Nuovi marcatori:",
+    "line": "Riga {line}",
+    "errorsTruncated": "Sono elencati solo i primi 500 problemi.",
+    "error": {
+      "tooLarge": "Il file supera i 16 MB.",
+      "rateLimited": "Troppe importazioni nell'ultima ora. Riprova più tardi.",
+      "invalid": "Impossibile leggere il file o la scelta delle colonne.",
+      "failed": "L'importazione non è riuscita. Riprova."
+    },
+    "reason": {
+      "missing_value": "Una cella obbligatoria è vuota",
+      "invalid_number": "Non è un numero",
+      "ambiguous_number": "Il numero si legge in due modi; controlla il separatore decimale",
+      "missing_unit": "Un numero ha bisogno di un'unità",
+      "invalid_date": "Non è una data nel formato scelto",
+      "invalid_time": "Non è un orario",
+      "ambiguous_date": "La data si legge in due modi; usa un anno a quattro cifre e il formato scelto",
+      "future_date": "La data è nel futuro",
+      "text_too_long": "Il testo è troppo lungo",
+      "unit_mismatch": "Questa unità non si converte in quella del marcatore",
+      "invalid_reference_range": "L'intervallo di riferimento non è leggibile",
+      "invalid_times": "Gli orari non sono leggibili (es. 08:00 20:00)",
+      "missing_times": "Aggiungi gli orari di assunzione o segna il farmaco al bisogno",
+      "invalid_yes_no": "Usa sì o no",
+      "as_needed_with_times": "Un farmaco al bisogno non ha orari fissi",
+      "end_before_start": "La fine precede l'inizio",
+      "invalid_medication": "Il farmaco non si può salvare così",
+      "oversized_row": "La riga è troppo lunga o troppo larga",
+      "row_limit": "Oltre il limite di righe per importazione",
+      "duplicate": "Già presente, saltata"
+    },
+    "field": {
+      "analyte": "Marcatore",
+      "value": "Risultato",
+      "unit": "Unità",
+      "date": "Data",
+      "time": "Ora",
+      "referenceRange": "Intervallo di riferimento",
+      "referenceLow": "Riferimento minimo",
+      "referenceHigh": "Riferimento massimo",
+      "panel": "Gruppo",
+      "note": "Nota",
+      "name": "Nome",
+      "dose": "Dose",
+      "times": "Orari",
+      "asNeeded": "Al bisogno",
+      "startsOn": "Inizio",
+      "endsOn": "Fine"
+    }
   }
 }

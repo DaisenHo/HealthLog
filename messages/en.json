@@ -13581,5 +13581,105 @@
     "settingsHint": "To see what this order decides day by day:",
     "settingsHintLink": "Where values come from",
     "metricLink": "Where these values come from"
+  },
+  "recordImport": {
+    "title": "Lab results and medications from a spreadsheet",
+    "description": "Bring years of lab results or a medication list in from a CSV file.",
+    "detail": "You choose which column holds what, HealthLog checks every row first and imports nothing until you confirm. Rows already in your record are skipped.",
+    "kind": {
+      "labs": "Lab results",
+      "medications": "Medications"
+    },
+    "sheetTitle": {
+      "labs": "Import lab results",
+      "medications": "Import medications"
+    },
+    "sheetDescription": {
+      "labs": "Markers are matched to yours, units converted where the conversion is known.",
+      "medications": "Name, dose, daily times, as needed, start and end. Other rhythms you set up in the app afterwards."
+    },
+    "file": "CSV file",
+    "template": "Download template",
+    "mapping": "Which column holds what",
+    "required": "(required)",
+    "notInFile": "Not in the file",
+    "column": "Column {n}",
+    "delimiter": "Separator",
+    "delimiterOption": {
+      "comma": "Comma",
+      "semicolon": "Semicolon",
+      "tab": "Tab"
+    },
+    "decimal": "Decimal mark",
+    "decimalOption": {
+      "dot": "Dot (5.4)",
+      "comma": "Comma (5,4)"
+    },
+    "dateOrder": "Date format",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (day first)",
+      "mdy": "03/01/2025 (month first)"
+    },
+    "header": "The first row holds column names",
+    "reminders": "Turn reminders on for imported medications",
+    "timezoneNote": "Times without a time zone are read in your account's time zone. A date without a time is kept as that calendar date.",
+    "missing": "Still to choose: {fields}",
+    "check": "Check file",
+    "runIdle": "Import",
+    "run": "Import {count} rows",
+    "close": "Close",
+    "summaryCheck": "{rows} rows read: {inserted} can be imported, {duplicates} already in your record, {failed} with a problem.",
+    "summaryDone": "Imported {inserted} rows. Skipped {duplicates} already in your record, {failed} with a problem.",
+    "markersMatched": "Matched to your markers:",
+    "markersCreated": "New markers:",
+    "line": "Line {line}",
+    "errorsTruncated": "Only the first 500 problems are listed.",
+    "error": {
+      "tooLarge": "The file is larger than 16 MB.",
+      "rateLimited": "Too many imports in the last hour. Try again later.",
+      "invalid": "The file or the column choice could not be read.",
+      "failed": "The import did not go through. Please try again."
+    },
+    "reason": {
+      "missing_value": "A required cell is empty",
+      "invalid_number": "Not a number",
+      "ambiguous_number": "The number reads two ways; check the decimal mark",
+      "missing_unit": "A number needs a unit",
+      "invalid_date": "Not a date in the chosen order",
+      "invalid_time": "Not a time of day",
+      "ambiguous_date": "The date reads two ways; use a four-digit year and the chosen order",
+      "future_date": "The date lies in the future",
+      "text_too_long": "The text is too long",
+      "unit_mismatch": "This unit does not convert into the marker's unit",
+      "invalid_reference_range": "The reference range cannot be read",
+      "invalid_times": "The times cannot be read (use 08:00 20:00)",
+      "missing_times": "Add intake times, or mark the medication as needed",
+      "invalid_yes_no": "Use yes or no",
+      "as_needed_with_times": "An as-needed medication has no fixed times",
+      "end_before_start": "The end lies before the start",
+      "invalid_medication": "The medication cannot be saved like this",
+      "oversized_row": "The row is too long or too wide",
+      "row_limit": "Past the row limit for one import",
+      "duplicate": "Already in your record, skipped"
+    },
+    "field": {
+      "analyte": "Marker",
+      "value": "Result",
+      "unit": "Unit",
+      "date": "Date",
+      "time": "Time",
+      "referenceRange": "Reference range",
+      "referenceLow": "Reference low",
+      "referenceHigh": "Reference high",
+      "panel": "Panel",
+      "note": "Note",
+      "name": "Name",
+      "dose": "Dose",
+      "times": "Times",
+      "asNeeded": "As needed",
+      "startsOn": "Start",
+      "endsOn": "End"
+    }
   }
 }

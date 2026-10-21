@@ -13581,5 +13581,105 @@
     "settingsHint": "Pour voir ce que cet ordre décide jour après jour :",
     "settingsHintLink": "D'où viennent les valeurs",
     "metricLink": "D'où viennent ces valeurs"
+  },
+  "recordImport": {
+    "title": "Résultats d'analyses et médicaments depuis un tableur",
+    "description": "Importe des années de résultats ou une liste de médicaments depuis un fichier CSV.",
+    "detail": "Tu choisis quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant ta confirmation. Les lignes déjà présentes sont ignorées.",
+    "kind": {
+      "labs": "Résultats d'analyses",
+      "medications": "Médicaments"
+    },
+    "sheetTitle": {
+      "labs": "Importer des résultats",
+      "medications": "Importer des médicaments"
+    },
+    "sheetDescription": {
+      "labs": "Les marqueurs sont rattachés aux tiens, les unités converties quand la conversion est connue.",
+      "medications": "Nom, dose, heures quotidiennes, si besoin, début et fin. Les autres rythmes se règlent ensuite dans l'app."
+    },
+    "file": "Fichier CSV",
+    "template": "Télécharger le modèle",
+    "mapping": "Quelle colonne contient quoi",
+    "required": "(obligatoire)",
+    "notInFile": "Absent du fichier",
+    "column": "Colonne {n}",
+    "delimiter": "Séparateur",
+    "delimiterOption": {
+      "comma": "Virgule",
+      "semicolon": "Point-virgule",
+      "tab": "Tabulation"
+    },
+    "decimal": "Séparateur décimal",
+    "decimalOption": {
+      "dot": "Point (5.4)",
+      "comma": "Virgule (5,4)"
+    },
+    "dateOrder": "Format de date",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (jour d'abord)",
+      "mdy": "03/01/2025 (mois d'abord)"
+    },
+    "header": "La première ligne contient les noms de colonnes",
+    "reminders": "Activer les rappels pour les médicaments importés",
+    "timezoneNote": "Les heures sans fuseau sont lues dans le fuseau de ton compte. Une date sans heure reste ce jour du calendrier.",
+    "missing": "Encore à choisir : {fields}",
+    "check": "Vérifier le fichier",
+    "runIdle": "Importer",
+    "run": "Importer {count} lignes",
+    "close": "Fermer",
+    "summaryCheck": "{rows} lignes lues : {inserted} importables, {duplicates} déjà présentes, {failed} avec un problème.",
+    "summaryDone": "{inserted} lignes importées. Ignorées : {duplicates} déjà présentes et {failed} avec un problème.",
+    "markersMatched": "Rattachés à tes marqueurs :",
+    "markersCreated": "Nouveaux marqueurs :",
+    "line": "Ligne {line}",
+    "errorsTruncated": "Seuls les 500 premiers problèmes sont listés.",
+    "error": {
+      "tooLarge": "Le fichier dépasse 16 Mo.",
+      "rateLimited": "Trop d'importations au cours de la dernière heure. Réessaie plus tard.",
+      "invalid": "Le fichier ou le choix des colonnes n'a pas pu être lu.",
+      "failed": "L'importation n'a pas abouti. Réessaie."
+    },
+    "reason": {
+      "missing_value": "Une cellule obligatoire est vide",
+      "invalid_number": "Ce n'est pas un nombre",
+      "ambiguous_number": "Le nombre se lit de deux façons ; vérifie le séparateur décimal",
+      "missing_unit": "Un nombre a besoin d'une unité",
+      "invalid_date": "Ce n'est pas une date au format choisi",
+      "invalid_time": "Ce n'est pas une heure",
+      "ambiguous_date": "La date se lit de deux façons ; utilise une année à quatre chiffres et le format choisi",
+      "future_date": "La date est dans le futur",
+      "text_too_long": "Le texte est trop long",
+      "unit_mismatch": "Cette unité ne se convertit pas dans celle du marqueur",
+      "invalid_reference_range": "La plage de référence est illisible",
+      "invalid_times": "Les heures sont illisibles (ex. 08:00 20:00)",
+      "missing_times": "Ajoute des heures de prise ou marque le médicament si besoin",
+      "invalid_yes_no": "Utilise oui ou non",
+      "as_needed_with_times": "Un médicament si besoin n'a pas d'heures fixes",
+      "end_before_start": "La fin précède le début",
+      "invalid_medication": "Le médicament ne peut pas être enregistré ainsi",
+      "oversized_row": "La ligne est trop longue ou trop large",
+      "row_limit": "Au-delà de la limite de lignes par importation",
+      "duplicate": "Déjà présente, ignorée"
+    },
+    "field": {
+      "analyte": "Marqueur",
+      "value": "Résultat",
+      "unit": "Unité",
+      "date": "Date",
+      "time": "Heure",
+      "referenceRange": "Plage de référence",
+      "referenceLow": "Référence basse",
+      "referenceHigh": "Référence haute",
+      "panel": "Groupe",
+      "note": "Note",
+      "name": "Nom",
+      "dose": "Dose",
+      "times": "Heures",
+      "asNeeded": "Si besoin",
+      "startsOn": "Début",
+      "endsOn": "Fin"
+    }
   }
 }

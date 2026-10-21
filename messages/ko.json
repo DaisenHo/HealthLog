@@ -13581,5 +13581,105 @@
     "settingsHint": "이 순서가 날마다 무엇을 정하는지 보려면:",
     "settingsHintLink": "값의 출처",
     "metricLink": "이 값의 출처"
+  },
+  "recordImport": {
+    "title": "스프레드시트에서 검사 결과와 약 가져오기",
+    "description": "수년간의 검사 결과나 약 목록을 CSV 파일에서 가져옵니다.",
+    "detail": "어떤 열에 무엇이 있는지 직접 고르면, HealthLog가 모든 행을 먼저 확인하고 확인 전에는 아무것도 가져오지 않습니다. 이미 있는 행은 건너뜁니다.",
+    "kind": {
+      "labs": "검사 결과",
+      "medications": "약"
+    },
+    "sheetTitle": {
+      "labs": "검사 결과 가져오기",
+      "medications": "약 가져오기"
+    },
+    "sheetDescription": {
+      "labs": "마커는 내 마커에 연결되고, 변환 방법을 아는 경우 단위가 변환됩니다.",
+      "medications": "이름, 용량, 매일 복용 시간, 필요시, 시작일과 종료일. 다른 주기는 나중에 앱에서 설정합니다."
+    },
+    "file": "CSV 파일",
+    "template": "템플릿 다운로드",
+    "mapping": "각 열의 내용",
+    "required": "(필수)",
+    "notInFile": "파일에 없음",
+    "column": "{n}열",
+    "delimiter": "구분자",
+    "delimiterOption": {
+      "comma": "쉼표",
+      "semicolon": "세미콜론",
+      "tab": "탭"
+    },
+    "decimal": "소수점",
+    "decimalOption": {
+      "dot": "마침표 (5.4)",
+      "comma": "쉼표 (5,4)"
+    },
+    "dateOrder": "날짜 형식",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (일 먼저)",
+      "mdy": "03/01/2025 (월 먼저)"
+    },
+    "header": "첫 행에 열 이름이 있음",
+    "reminders": "가져온 약의 알림 켜기",
+    "timezoneNote": "시간대가 없는 시간은 계정의 시간대로 읽습니다. 시간이 없는 날짜는 그 날짜 그대로 저장됩니다.",
+    "missing": "아직 선택할 항목: {fields}",
+    "check": "파일 확인",
+    "runIdle": "가져오기",
+    "run": "{count}행 가져오기",
+    "close": "닫기",
+    "summaryCheck": "{rows}행 읽음: {inserted}행 가져오기 가능, {duplicates}행 이미 있음, {failed}행 문제 있음.",
+    "summaryDone": "{inserted}행을 가져왔습니다. 이미 있던 {duplicates}행과 문제가 있는 {failed}행은 건너뛰었습니다.",
+    "markersMatched": "내 마커에 연결됨:",
+    "markersCreated": "새 마커:",
+    "line": "{line}행",
+    "errorsTruncated": "처음 500개의 문제만 표시됩니다.",
+    "error": {
+      "tooLarge": "파일이 16MB보다 큽니다.",
+      "rateLimited": "지난 한 시간 동안 가져오기가 너무 많았습니다. 나중에 다시 시도하세요.",
+      "invalid": "파일이나 열 선택을 읽을 수 없습니다.",
+      "failed": "가져오기에 실패했습니다. 다시 시도하세요."
+    },
+    "reason": {
+      "missing_value": "필수 칸이 비어 있음",
+      "invalid_number": "숫자가 아님",
+      "ambiguous_number": "숫자를 두 가지로 읽을 수 있음. 소수점을 확인하세요",
+      "missing_unit": "숫자에는 단위가 필요함",
+      "invalid_date": "선택한 형식의 날짜가 아님",
+      "invalid_time": "시간이 아님",
+      "ambiguous_date": "날짜를 두 가지로 읽을 수 있음. 네 자리 연도와 선택한 형식을 쓰세요",
+      "future_date": "날짜가 미래임",
+      "text_too_long": "텍스트가 너무 김",
+      "unit_mismatch": "이 단위는 마커의 단위로 변환할 수 없음",
+      "invalid_reference_range": "참고 범위를 읽을 수 없음",
+      "invalid_times": "시간을 읽을 수 없음 (예: 08:00 20:00)",
+      "missing_times": "복용 시간을 넣거나 필요시 약으로 표시하세요",
+      "invalid_yes_no": "예 또는 아니오로 쓰세요",
+      "as_needed_with_times": "필요시 약에는 정해진 시간이 없음",
+      "end_before_start": "종료일이 시작일보다 앞섬",
+      "invalid_medication": "이대로는 약을 저장할 수 없음",
+      "oversized_row": "행이 너무 길거나 넓음",
+      "row_limit": "한 번에 가져올 수 있는 행 수를 넘음",
+      "duplicate": "이미 있어 건너뜀"
+    },
+    "field": {
+      "analyte": "마커",
+      "value": "결과",
+      "unit": "단위",
+      "date": "날짜",
+      "time": "시간",
+      "referenceRange": "참고 범위",
+      "referenceLow": "참고 하한",
+      "referenceHigh": "참고 상한",
+      "panel": "그룹",
+      "note": "메모",
+      "name": "이름",
+      "dose": "용량",
+      "times": "시간",
+      "asNeeded": "필요시",
+      "startsOn": "시작",
+      "endsOn": "종료"
+    }
   }
 }
