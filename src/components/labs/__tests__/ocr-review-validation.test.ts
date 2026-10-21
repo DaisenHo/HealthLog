@@ -57,6 +57,23 @@ describe("validateReviewRow", () => {
       { value: null, valueText: " ", unit: null },
       { valueText: true },
     ],
+    // The commit's own bounds, so one over-long field marks its row instead
+    // of failing the whole save with a 422.
+    [
+      "an analyte longer than a reading holds",
+      { analyte: "a".repeat(121) },
+      { analyteTooLong: true },
+    ],
+    [
+      "a unit longer than a reading holds",
+      { unit: "u".repeat(41), markerUnit: null },
+      { unitTooLong: true },
+    ],
+    [
+      "a qualitative result longer than a reading holds",
+      { value: null, valueText: "n".repeat(121), unit: null },
+      { valueTextTooLong: true },
+    ],
     [
       "several problems at once",
       { takenAt: null, unit: "", analyte: "" },
@@ -83,6 +100,10 @@ describe("toCommitRow agrees with validateReviewRow", () => {
     { unit: "" },
     { value: null, valueText: "negative", unit: null },
     { value: null, valueText: "", unit: null },
+    { analyte: "a".repeat(121) },
+    { analyte: "a".repeat(120) },
+    { unit: "u".repeat(41) },
+    { value: null, valueText: "n".repeat(121), unit: null },
   ];
 
   it.each(cases)("row %j", (overrides) => {

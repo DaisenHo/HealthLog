@@ -9,12 +9,25 @@
  */
 import { convertLabValue } from "@/lib/labs/unit-conversion/convert";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
+import {
+  OCR_ANALYTE_MAX,
+  OCR_UNIT_MAX,
+  OCR_VALUE_TEXT_MAX,
+} from "@/lib/validations/labs-ocr";
 
 import type { OcrReviewRow } from "./ocr-review-types";
 import type { OcrCommitRowInput } from "./use-ocr-extract";
 
 export type OcrRowField =
-  "analyte" | "value" | "valueText" | "unit" | "unitMismatch" | "date";
+  | "analyte"
+  | "analyteTooLong"
+  | "value"
+  | "valueText"
+  | "valueTextTooLong"
+  | "unit"
+  | "unitTooLong"
+  | "unitMismatch"
+  | "date";
 
 /** The fields of one row that block saving; empty when the row is writable. */
 export type OcrRowErrors = Partial<Record<OcrRowField, true>>;
@@ -103,14 +116,24 @@ export function readingUnitBlocked(row: {
 
 export function validateReviewRow(row: OcrReviewRow): OcrRowErrors {
   const errors: OcrRowErrors = {};
-  if (!row.analyte.trim()) errors.analyte = true;
+  const analyte = row.analyte.trim();
+  if (!analyte) errors.analyte = true;
+  // The commit's own bounds: a scan can read a longer name or result than a
+  // reading may hold, and one such row would otherwise fail the whole save.
+  else if (analyte.length > OCR_ANALYTE_MAX) errors.analyteTooLong = true;
   if (!dayAtNoonUtc(row.takenAt)) errors.date = true;
 
   if (isQualitativeRow(row)) {
-    if (!(row.valueText ?? "").trim()) errors.valueText = true;
+    const valueText = (row.valueText ?? "").trim();
+    if (!valueText) errors.valueText = true;
+    else if (valueText.length > OCR_VALUE_TEXT_MAX) {
+      errors.valueTextTooLong = true;
+    }
   } else {
     if (row.value === null || !Number.isFinite(row.value)) errors.value = true;
-    if (!(row.unit ?? "").trim()) errors.unit = true;
+    const unit = (row.unit ?? "").trim();
+    if (!unit) errors.unit = true;
+    else if (unit.length > OCR_UNIT_MAX) errors.unitTooLong = true;
     if (readingUnitBlocked(row)) errors.unitMismatch = true;
   }
   return errors;
@@ -122,6 +145,7 @@ export function hasRowErrors(errors: OcrRowErrors): boolean {
 
 /** Map a confirmed review row to the commit payload, or null when invalid. */
 export function toCommitRow(row: OcrReviewRow): OcrCommitRowInput | null {
+  if (hasRowErrors(validateReviewRow(row))) return null;
   const analyte = row.analyte.trim();
   const takenAt = dayAtNoonUtc(row.takenAt);
   if (!analyte || !takenAt) return null;
