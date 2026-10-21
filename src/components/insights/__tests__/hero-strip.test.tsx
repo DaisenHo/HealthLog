@@ -199,7 +199,7 @@ describe("<HeroStrip>", () => {
       /data-slot="insights-hero-strip-greeting"[^>]*class="([^"]*)"/,
     );
     expect(greeting).not.toBeNull();
-    // App H1 weight is bold (UI-STANDARDS §5) — never font-semibold.
+    // App H1 weight is bold (ui-standards.md §5) — never font-semibold.
     expect(greeting![1]).toContain("font-bold");
     expect(greeting![1]).not.toContain("font-semibold");
     // No off-scale arbitrary type sizes (§5) — round to the neighbouring step.

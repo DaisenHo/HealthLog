@@ -172,7 +172,7 @@ export function grantActionErrorKey(err: unknown, action: GrantAction): string {
  * a person who pressed a button and got nothing has already looked away, and
  * a screen reader that does not announce it is the same silence the panel had
  * before. `text-destructive` because this is content somebody has to act on —
- * UI-STANDARDS §3 reserves muted for meta, and a refusal rendered as meta is a
+ * ui-standards.md §3 reserves muted for meta, and a refusal rendered as meta is a
  * refusal nobody reads.
  *
  * `data-grant-error-for` carries the row id so a panel holding two failed rows

@@ -457,7 +457,7 @@ describe("the refusal stays on screen, addressed to its own row", () => {
     const alert = /<[^>]*data-slot="grant-action-error"[^>]*>/.exec(html)?.[0];
 
     expect(alert).toBeDefined();
-    // A refusal somebody has to act on is content. UI-STANDARDS §3 reserves
+    // A refusal somebody has to act on is content. ui-standards.md §3 reserves
     // muted for meta, and a sentence nobody reads is a sentence nobody acts
     // on.
     expect(alert).toContain("text-destructive");

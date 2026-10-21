@@ -1,9 +1,10 @@
 # HealthLog UI Guidelines
 
-> Single source of truth for visual & interaction patterns in the HealthLog
-> PWA. Consult this document before adding a new component, page, or
-> setting. If a pattern below doesn't fit your case, propose an addition
-> here in the same PR.
+> Visual & interaction patterns in the HealthLog PWA. The binding rules
+> for card anatomy, spacing, text colour, tokens and primitives live in
+> [`contributing/ui-standards.md`](./contributing/ui-standards.md); where
+> this document disagrees with them, the standards win. If a pattern
+> below doesn't fit your case, propose an addition in the same PR.
 
 Last updated: 2026-05-08 (v1.4 cycle)
 

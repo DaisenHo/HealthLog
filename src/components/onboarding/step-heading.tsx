@@ -13,7 +13,7 @@ import { useEffect, useRef, type ReactNode } from "react";
  * put it — the heading is at the top of the column anyway.
  *
  * Semibold rather than the app-wide bold PageHeader H1: the onboarding hero
- * is the documented exception (UI-STANDARDS §5). Do not sweep to font-bold.
+ * is the documented exception (ui-standards.md §5). Do not sweep to font-bold.
  */
 export function StepHeading({
   id,

@@ -449,7 +449,7 @@ function HandoverLink({
       </p>
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
         {/* The QR quiet zone stays white in both themes: a scanner needs the
-            contrast, and UI-STANDARDS §4 names this exemption. */}
+            contrast, and ui-standards.md §4 names this exemption. */}
         {/* eslint-disable-next-line @next/next/no-img-element -- a data: URL minted client-side; nothing for the image optimiser to do */}
         <img
           src={link.qrDataUrl}

@@ -574,7 +574,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
         // then sits at its static position (below this long list) in DOCUMENT
         // coordinates and silently makes the document itself scrollable, a
         // second vertical scrollbar next to the shell-owned `<main>` scroll
-        // (UI-STANDARDS §9 one-scroll-floor; guarded by
+        // (ui-standards.md §9 one-scroll-floor; guarded by
         // e2e/settings-overscroll.spec.ts).
         <div className="relative space-y-2">
           {/* v1.4.15 — table-style header naming the two

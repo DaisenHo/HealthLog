@@ -76,7 +76,7 @@ describe("Coach unverified-figures notice", () => {
       />,
     );
     expect(html).toContain('data-slot="coach-unverified-notice"');
-    // Muted meta treatment (UI-STANDARDS §3) — never a warning colour.
+    // Muted meta treatment (ui-standards.md §3) — never a warning colour.
     expect(html).toContain("text-muted-foreground");
   });
 

@@ -98,7 +98,7 @@ export default function InsightsWorkoutDetailPage({
           <Skeleton className="h-60 w-full rounded-lg" />
         </div>
       ) : error ? (
-        // A failed query must never read as "no data" (UI-STANDARDS §6).
+        // A failed query must never read as "no data" (ui-standards.md §6).
         <QueryErrorCard error={error} onRetry={() => refetch()} />
       ) : !data ? (
         <p

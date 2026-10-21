@@ -8,7 +8,7 @@
  * strictly association-framed, never a verdict. Each row links through to the
  * medication's Wirkung tab for the full view.
  *
- * Card anatomy per UI-STANDARDS §8: TileHeader + the inherited `px-4 md:px-6`
+ * Card anatomy per ui-standards.md §8: TileHeader + the inherited `px-4 md:px-6`
  * inset (never re-declared), foreground for content, muted for meta.
  */
 import Link from "next/link";

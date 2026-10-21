@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
  *
  * RSC-safe: no hooks, no browser API.
  *
- * @see .planning/audits/2026-07-05-fable/UI-STANDARDS.md §1
+ * @see docs/contributing/ui-standards.md §1
  */
 export function InsightSectionCard({
   children,

@@ -489,7 +489,7 @@ export function AuthShell({
               // `overflow-y-auto` never clips them: their static position sits
               // wherever the flow put them and extends the DOCUMENT's
               // scrollable overflow instead, painting a second vertical scroll
-              // surface beside `<main>` (UI-STANDARDS §9 one-scroll-floor).
+              // surface beside `<main>` (ui-standards.md §9 one-scroll-floor).
               // The class is not hypothetical and not confined to app code. A
               // Radix `<Switch>` outside a `<form>` renders a hidden
               // `position:absolute` bubble input on the first pass and drops it
