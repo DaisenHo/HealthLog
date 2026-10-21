@@ -10199,6 +10199,7 @@
           "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
         },
         "beyond_horizon": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, de periode die je waarden beslaan.",
+        "beyond_horizon_capped": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, zo ver kijkt de doortrekking vooruit.",
         "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
         "already_outside": "De lijn ligt al buiten je referentiebereik.",
         "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",

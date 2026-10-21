@@ -10199,6 +10199,7 @@
           "low": "Si esta línea recta continuara, llegaría al límite inferior de tu rango de referencia hacia el {date}. Es una proyección, no un pronóstico."
         },
         "beyond_horizon": "A este ritmo, la línea se mantiene dentro de tu rango de referencia más de {years} años, el periodo que cubren tus valores.",
+        "beyond_horizon_capped": "A este ritmo, la línea se mantiene dentro de tu rango de referencia más de {years} años, hasta donde llega la proyección.",
         "no_exit": "La línea se aleja de los límites de tu rango de referencia.",
         "already_outside": "La línea ya está fuera de tu rango de referencia.",
         "no_clear_trend": "En estos valores, el cambio no se distingue con claridad de la ausencia de cambio, así que no se proyecta nada.",

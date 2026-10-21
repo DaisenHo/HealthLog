@@ -74827,6 +74827,9 @@ components:
               type: number
               description: "How far ahead a bound may be met and still count as `exits`: three years, or the readings' span when
                 shorter."
+            horizonCapped:
+              type: boolean
+              description: True when `horizonYears` is the three-year cap, false when the readings' shorter span set it.
             projection:
               type: string
               enum:
@@ -74861,6 +74864,7 @@ components:
             - fittedNow
             - asOf
             - horizonYears
+            - horizonCapped
             - projection
             - exitDate
             - exitBound

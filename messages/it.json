@@ -10199,6 +10199,7 @@
           "low": "Se questa retta proseguisse, raggiungerebbe il limite inferiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione."
         },
         "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per più di {years} anni, il periodo coperto dai tuoi valori.",
+        "beyond_horizon_capped": "A questo ritmo la retta resta nel tuo intervallo di riferimento per più di {years} anni, fin dove arriva la proiezione.",
         "no_exit": "La retta si allontana dai limiti del tuo intervallo di riferimento.",
         "already_outside": "La retta è già fuori dal tuo intervallo di riferimento.",
         "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla.",

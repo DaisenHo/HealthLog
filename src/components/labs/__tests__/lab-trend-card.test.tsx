@@ -21,6 +21,7 @@ const OK: BiomarkerTrendDto = {
   fittedNow: 130,
   asOf: "2026-10-21",
   horizonYears: 3,
+  horizonCapped: true,
   projection: "exits",
   exitDate: "2027-11-02",
   exitBound: "high",
@@ -87,10 +88,38 @@ describe("<LabTrendCard>", () => {
     const beyond = render({
       ...OK,
       horizonYears: 1.5,
+      horizonCapped: false,
       projection: "beyond_horizon",
       exitDate: null,
       exitBound: null,
     });
     expect(beyond).toContain("for more than 1.5 years");
+    expect(beyond).toContain("the span your readings cover");
+  });
+
+  it("does not call a capped three-year horizon the span of the readings", () => {
+    for (const locale of ["en", "de"] as const) {
+      const capped = render(
+        {
+          ...OK,
+          horizonYears: 3,
+          horizonCapped: true,
+          projection: "beyond_horizon",
+          exitDate: null,
+          exitBound: null,
+        },
+        locale,
+      );
+      expect(capped).toContain(
+        locale === "en" ? "more than 3 years" : "länger als 3 Jahre",
+      );
+      expect(capped).not.toContain("the span your readings cover");
+      expect(capped).not.toContain("so weit reichen deine Werte zurück");
+      expect(capped).toContain(
+        locale === "en"
+          ? "as far ahead as the projection looks"
+          : "so weit schaut die Fortschreibung voraus",
+      );
+    }
   });
 });

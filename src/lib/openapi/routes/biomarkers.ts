@@ -103,6 +103,11 @@ const labTrend = z
         .describe(
           "How far ahead a bound may be met and still count as `exits`: three years, or the readings' span when shorter.",
         ),
+      horizonCapped: z
+        .boolean()
+        .describe(
+          "True when `horizonYears` is the three-year cap, false when the readings' shorter span set it.",
+        ),
       projection: z.enum([
         "exits",
         "beyond_horizon",

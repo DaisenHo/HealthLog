@@ -53,9 +53,17 @@ export function LabTrendCard({
               date: fmt.dateShortSmartCalendar(trend.lastAt),
             })
           : trend.projection === "beyond_horizon"
-            ? t("labs.trend.projection.beyond_horizon", {
-                years: fmt.number(trend.horizonYears, 1),
-              })
+            ? t(
+                trend.horizonCapped
+                  ? "labs.trend.projection.beyond_horizon_capped"
+                  : "labs.trend.projection.beyond_horizon",
+                {
+                  years: fmt.number(
+                    trend.horizonYears,
+                    trend.horizonCapped ? 0 : 1,
+                  ),
+                },
+              )
             : t(`labs.trend.projection.${trend.projection}`);
 
   return (
