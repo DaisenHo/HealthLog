@@ -1,5 +1,6 @@
 "use client";
 
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -213,7 +214,7 @@ function ManagedProfileEditFields({
               setError(null);
             }}
             autoComplete="off"
-            maxLength={80}
+            maxLength={DISPLAY_NAME_MAX_LENGTH}
             aria-invalid={nameIssue !== null ? "true" : undefined}
           />
           <FieldGuidance

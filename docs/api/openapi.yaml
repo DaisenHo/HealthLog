@@ -26651,9 +26651,10 @@ components:
                 - OTHER
             - type: "null"
         displayName:
+          description: Trimmed before its bound is checked. Null, an empty string or only spaces clears it; an omitted field is
+            left untouched.
           anyOf:
             - type: string
-              minLength: 1
               maxLength: 80
             - type: "null"
         locale:
@@ -33760,8 +33761,7 @@ components:
           maxLength: 64
         displayName:
           type: string
-          minLength: 1
-          maxLength: 50
+          maxLength: 80
         heightCm:
           type: number
           minimum: 50

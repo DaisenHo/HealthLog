@@ -1,5 +1,6 @@
 "use client";
 
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Languages, Loader2, Save, User } from "lucide-react";
@@ -475,7 +476,7 @@ export function AccountSection() {
                   clearFieldError("displayName");
                 }}
                 placeholder={t("onboarding.baseline.displayNamePlaceholder")}
-                maxLength={80}
+                maxLength={DISPLAY_NAME_MAX_LENGTH}
                 autoComplete="nickname"
                 enterKeyHint="next"
                 aria-invalid={fieldErrors.displayName ? true : undefined}

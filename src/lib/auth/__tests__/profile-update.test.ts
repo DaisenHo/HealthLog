@@ -17,6 +17,8 @@ vi.mock("@/lib/auth/audit", () => ({
 }));
 
 import { applyProfileUpdate as applyWithProof } from "../profile-update";
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
+import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
 
 /** These suites are about validation and the email budget, not the proof:
  *  every call is made as an owner who has just proved themselves. */
@@ -101,6 +103,49 @@ describe("applyProfileUpdate timezone validation", () => {
       expect(result.status).toBe(422);
     }
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("applyProfileUpdate display name", () => {
+  const written = () =>
+    (
+      vi.mocked(prisma.user.update).mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      }
+    ).data;
+
+  it("stores a name of only spaces as no name, never as an empty string", async () => {
+    const result = await applyProfileUpdate(USER_ID, { displayName: "   " });
+    expect(result.ok).toBe(true);
+    expect(written().displayName).toBeNull();
+  });
+
+  it("trims a name before its bound, so padding does not push it over", async () => {
+    const name = "x".repeat(DISPLAY_NAME_MAX_LENGTH);
+    const result = await applyProfileUpdate(USER_ID, {
+      displayName: `  ${name}  `,
+    });
+    expect(result.ok).toBe(true);
+    expect(written().displayName).toBe(name);
+  });
+
+  it("refuses a name past the shared bound", async () => {
+    const result = await applyProfileUpdate(USER_ID, {
+      displayName: "x".repeat(DISPLAY_NAME_MAX_LENGTH + 1),
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("takes a name the setup flow accepts, at the same bound", () => {
+    const name = "x".repeat(DISPLAY_NAME_MAX_LENGTH);
+    expect(
+      onboardingCompleteSchema.shape.displayName.safeParse(name).success,
+    ).toBe(true);
+    expect(
+      onboardingCompleteSchema.shape.displayName.safeParse(`${name}x`).success,
+    ).toBe(false);
+    // Only spaces reaches the route as "", which it leaves unset.
+    expect(onboardingCompleteSchema.shape.displayName.parse("   ")).toBe("");
   });
 });
 

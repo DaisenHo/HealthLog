@@ -1,5 +1,6 @@
 "use client";
 
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -176,7 +177,7 @@ export function ManagedProfileCreateForm({
             }}
             placeholder={t("recordSharing.managed.namePlaceholder")}
             autoComplete="off"
-            maxLength={80}
+            maxLength={DISPLAY_NAME_MAX_LENGTH}
             aria-invalid={
               displayName.length > 0 && nameIssue !== null ? "true" : undefined
             }

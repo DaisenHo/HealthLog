@@ -1,5 +1,6 @@
 "use client";
 
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
 import { FieldGroup } from "@/components/ui/field-group";
@@ -98,7 +99,7 @@ export function BaselineFields({
           onChange={(e) => onChange("displayName", e.target.value)}
           disabled={readOnlyDisplayName}
           autoComplete="nickname"
-          maxLength={50}
+          maxLength={DISPLAY_NAME_MAX_LENGTH}
           placeholder={t("onboarding.baseline.displayNamePlaceholder")}
           aria-invalid={errors.displayName ? true : undefined}
           aria-describedby={
