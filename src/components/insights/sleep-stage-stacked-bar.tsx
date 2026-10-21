@@ -392,6 +392,7 @@ export function SleepStageStackedBar({ breakdown }: SleepStageStackedBarProps) {
           {/* The page's other range controls read "7T / 30T"; this one
               printed an English "7d" beside them, hence `daysNLabel`. */}
           <Segmented
+            size="sm"
             mode="toggle"
             label={t("charts.rangeLabel")}
             slot="sleep-stage-window-toggle"

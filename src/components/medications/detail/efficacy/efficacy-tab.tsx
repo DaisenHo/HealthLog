@@ -260,6 +260,7 @@ function TargetCard({
           <div className="space-y-3">
             <div className="flex justify-end">
               <Segmented
+                size="sm"
                 mode="toggle"
                 value={scaleMode}
                 options={[

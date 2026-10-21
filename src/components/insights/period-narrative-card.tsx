@@ -177,6 +177,7 @@ export function PeriodNarrativeCard({
         <div className="flex items-start justify-between gap-2">
           {/* Calm segmented control, no chart. */}
           <Segmented
+            size="sm"
             mode="toggle"
             label={t("insights.narrativeTitle")}
             slot="period-narrative-period"

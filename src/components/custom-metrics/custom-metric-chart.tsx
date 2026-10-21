@@ -140,6 +140,7 @@ export function CustomMetricChart({
     <div className="space-y-3">
       <div className="flex justify-end">
         <Segmented
+          size="sm"
           options={RANGE_DAYS.map((r) => ({
             value: r.key,
             label: t(`customMetrics.chart.range.${r.key}`),

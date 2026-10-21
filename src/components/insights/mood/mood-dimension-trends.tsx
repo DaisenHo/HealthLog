@@ -141,6 +141,7 @@ export function MoodDimensionTrends({
   return (
     <div className="space-y-3" data-slot="mood-dimension-trends">
       <Segmented
+        size="sm"
         options={MOOD_DIMENSION_WINDOWS.map((option) => ({
           value: String(option),
           label: t("insights.mood.dimensions.window", { days: option }),
