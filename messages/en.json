@@ -5508,7 +5508,7 @@
         "deviceTypeToggle": "Device-type priority ({count})",
         "deviceTypeHelp": "Within a source, which device wins. When an Apple Watch and an iPhone both record steps, the higher-ranked device-type counts as the canonical reading.",
         "deviceTypeDefault": "Default device-type ladder",
-        "resetDeviceTypes": "Reset device-types",
+        "resetDeviceTypes": "Reset device types",
         "metrics": {
           "steps": "Steps",
           "activeEnergy": "Active energy",
