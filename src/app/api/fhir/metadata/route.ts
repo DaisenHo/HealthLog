@@ -3,7 +3,8 @@
  *
  * Declares the read-only REST face: the resource types served, the `read` +
  * `search-type` interactions on each, the search parameters honoured
- * (`_count`, `_offset`), the `Patient-everything` operation, and the
+ * (`_count`, `_offset`; `date` and `code` on Observation), the
+ * `Patient-everything` operation, and the
  * `application/fhir+json` format. Static — no per-user data — but still gated
  * behind the `fhir:read` scope so the whole `/api/fhir` tree answers
  * uniformly. Read-only: no write interactions are advertised.
@@ -22,6 +23,7 @@ import { annotate } from "@/lib/logging/context";
 import {
   FHIR_READ_SCOPE,
   FHIR_REST_RESOURCE_TYPES,
+  FHIR_OBSERVATION_SEARCH_PARAMS,
   FHIR_SEARCH_PARAMS,
   fhirJsonResponse,
 } from "@/lib/fhir/rest";
@@ -65,10 +67,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
         resource: FHIR_REST_RESOURCE_TYPES.map((type) => ({
           type,
           interaction: [{ code: "read" }, { code: "search-type" }],
-          searchParam: FHIR_SEARCH_PARAMS.map((name) => ({
-            name,
-            type: "number",
-          })),
+          searchParam: [
+            ...FHIR_SEARCH_PARAMS.map((name) => ({
+              name,
+              type: "number",
+            })),
+            // v1.44: the Observation search's time-series range and code filter.
+            ...(type === "Observation"
+              ? FHIR_OBSERVATION_SEARCH_PARAMS.map((p) => ({
+                  name: p.name,
+                  type: p.type,
+                }))
+              : []),
+          ],
           ...(type === "Patient"
             ? {
                 operation: [
