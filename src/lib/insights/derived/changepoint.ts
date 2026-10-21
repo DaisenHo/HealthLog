@@ -177,6 +177,30 @@ export function detectLevelShift(
 }
 
 /**
+ * Every validated level shift in a series, by binary segmentation: find one
+ * with {@link detectLevelShift}, then look again on each side of it with the
+ * same bar, floors and drift rejection. `breakIndex` is into `series`.
+ * Callers that want one dated shift per metric use `detectLevelShift`; this
+ * is for a reader that lists several (the MCP changepoint tool).
+ */
+export function detectLevelShifts(
+  series: readonly number[],
+  opts: DetectLevelShiftOptions = {},
+): LevelShift[] {
+  const out: LevelShift[] = [];
+  const walk = (lo: number, hi: number) => {
+    const shift = detectLevelShift(series.slice(lo, hi), opts);
+    if (!shift) return;
+    const split = lo + shift.breakIndex + 1;
+    out.push({ ...shift, breakIndex: split - 1 });
+    walk(lo, split);
+    walk(split, hi);
+  };
+  walk(0, series.length);
+  return out;
+}
+
+/**
  * True when a straight line through the whole series fits at least as well as
  * the two-level step (same parameter count, so the residual sums compare
  * directly). A drift is then the honest reading, not a dated shift.
@@ -263,6 +287,17 @@ export const CHANGEPOINT_FLOORS: Partial<
   VO2_MAX: { minDelta: 1.5, spreadFloor: 0.5 },
 };
 
+/** The {@link CHANGEPOINT_FLOORS} of a metric as detector options. */
+export function levelShiftFloors(
+  metric: MeasurementType,
+): Pick<DetectLevelShiftOptions, "minAbsDelta" | "spreadFloor"> {
+  const floors = CHANGEPOINT_FLOORS[metric];
+  return {
+    minAbsDelta: floors?.minDelta,
+    spreadFloor: floors?.spreadFloor,
+  };
+}
+
 /** Window the reader looks back over (days). */
 export const CHANGEPOINT_WINDOW_DAYS = 90;
 /** At most this many changepoints in one snapshot (strongest first). */
@@ -329,13 +364,9 @@ async function scanChangepoints(
         coverage,
       );
       if (points.length === 0) continue;
-      const floors = CHANGEPOINT_FLOORS[metric];
       const shift = detectLevelShift(
         points.map((p) => p.mean),
-        {
-          minAbsDelta: floors?.minDelta,
-          spreadFloor: floors?.spreadFloor,
-        },
+        levelShiftFloors(metric),
       );
       if (!shift) continue;
       const breakDate =
