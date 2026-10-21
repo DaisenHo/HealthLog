@@ -140,7 +140,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
     expect(await runFreeTextEncryptionBackfillForUser("ft-b")).toEqual({
       conversationTitlesMigrated: 0,
@@ -149,7 +148,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
 
     const conversations = await prisma.coachConversation.findMany({
@@ -198,7 +196,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
   });
 
@@ -283,7 +280,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
     expect(await runFreeTextEncryptionBackfillForUser("pc-b")).toEqual({
       conversationTitlesMigrated: 0,
@@ -292,7 +288,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
       routeGeometriesMigrated: 1,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
 
     const practitioners = await prisma.practitioner.findMany({
@@ -353,7 +348,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
   });
 
@@ -451,7 +445,6 @@ describe("free-text encryption backfill (real Postgres)", () => {
     expect(summaryA).toMatchObject({
       appointmentAddressesCleared: 1,
       contactAuditRowsScrubbed: 1,
-      insightsCachesMigrated: 0,
     });
     await runFreeTextEncryptionBackfillForUser("ad-b");
 
