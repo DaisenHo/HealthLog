@@ -84,8 +84,9 @@ export async function register() {
     // needs to start, provision its queues and run the boot discovery; the
     // probe now answers `starting` meanwhile. A request that enqueues while
     // the boss is not bound yet takes the same path as during a producer
-    // reconnect: a garnish skips its enqueue (the owning cron catches up),
-    // and a route that needs the worker answers 503 until it is up.
+    // reconnect: the enqueue waits for the boss in the background
+    // (`enqueueWhenBossReady`, bounded and logged when it gives up), and a
+    // route that needs the worker answers 503 until it is up.
     const [
       { shouldRunWorker },
       { markStartup, startupPhase, startupElapsedMs, STARTING_MAX_MS },

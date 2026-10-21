@@ -19,7 +19,7 @@ import {
 import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
 import { markReconnected } from "@/lib/integrations/status";
 import { STRAVA_BACKFILL_QUEUE } from "@/lib/jobs/strava-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -161,8 +161,7 @@ async function completeCallback(
     // (`stravaBackfillCompletedAt IS NULL`) is the safety net, so a missing
     // boss instance here never strands the connection. Mirrors the WHOOP /
     // Fitbit callback enqueue.
-    const boss = getGlobalBoss();
-    if (boss) {
+    await enqueueWhenBossReady("strava-backfill", async (boss) => {
       await boss
         .send(STRAVA_BACKFILL_QUEUE, {
           userId,
@@ -171,7 +170,7 @@ async function completeCallback(
         .catch((err) =>
           getEvent()?.addWarning(`strava-backfill enqueue failed: ${err}`),
         );
-    }
+    });
 
     const response = NextResponse.redirect(
       new URL(

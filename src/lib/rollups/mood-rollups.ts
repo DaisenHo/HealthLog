@@ -47,6 +47,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { annotate } from "@/lib/logging/context";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
@@ -349,8 +350,6 @@ export async function enqueueMoodRollupRecompute(input: {
   from: Date;
   to: Date;
 }): Promise<void> {
-  const boss = getGlobalBoss();
-  if (!boss) return;
   const payload: MoodRollupRecomputePayload = {
     userId: input.userId,
     granularity: input.granularity,
@@ -358,14 +357,16 @@ export async function enqueueMoodRollupRecompute(input: {
     to: input.to.toISOString(),
     enqueuedAt: new Date().toISOString(),
   };
-  await boss.send(MOOD_ROLLUP_RECOMPUTE_QUEUE, payload, {
-    retryLimit: 3,
-    retryDelay: 30,
-    retryBackoff: true,
-    // Coalesce duplicate enqueues for the same bucket key — two writes
-    // inside the same week share one queued job.
-    singletonKey: `${input.userId}|${input.granularity}|${input.from.toISOString()}`,
-  });
+  await enqueueWhenBossReady("mood-rollup-recompute", (boss) =>
+    boss.send(MOOD_ROLLUP_RECOMPUTE_QUEUE, payload, {
+      retryLimit: 3,
+      retryDelay: 30,
+      retryBackoff: true,
+      // Coalesce duplicate enqueues for the same bucket key — two writes
+      // inside the same week share one queued job.
+      singletonKey: `${input.userId}|${input.granularity}|${input.from.toISOString()}`,
+    }),
+  );
 }
 
 /**

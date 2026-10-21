@@ -16,7 +16,7 @@ import { encrypt } from "@/lib/crypto";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { markReconnected } from "@/lib/integrations/status";
 import { NIGHTSCOUT_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import {
   fetchSgvEntries,
   NightscoutApiError,
@@ -160,8 +160,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // empty card until the next hourly tick. Best-effort by design: the hourly
   // cron remains the safety net, so a missing boss instance must never fail the
   // connect response the user just earned.
-  const boss = getGlobalBoss();
-  if (boss) {
+  await enqueueWhenBossReady("nightscout-sync", async (boss) => {
     await boss
       .send(NIGHTSCOUT_SYNC_QUEUE, { userId: user.id })
       .catch((err) =>
@@ -169,7 +168,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           `nightscout-sync connect enqueue failed: ${err}`,
         ),
       );
-  }
+  });
 
   return apiSuccess({ connected: true });
 });

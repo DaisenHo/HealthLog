@@ -18,7 +18,7 @@ import {
 import { getUserGoogleHealthCredentials } from "@/lib/google-health/credentials";
 import { GOOGLE_HEALTH_OAUTH_STATE_COOKIE } from "@/lib/google-health/oauth-state";
 import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "@/lib/jobs/google-health-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
 import {
@@ -235,8 +235,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // Enqueue the self-converging history backfill. Best-effort: the boot-time
       // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
       // missing boss instance here doesn't strand the connection.
-      const boss = getGlobalBoss();
-      if (boss) {
+      await enqueueWhenBossReady("google-health-backfill", async (boss) => {
         await boss
           .send(GOOGLE_HEALTH_BACKFILL_QUEUE, {
             userId: recordUserId,
@@ -247,7 +246,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
               `google-health-backfill enqueue failed: ${err}`,
             ),
           );
-      }
+      });
 
       const response = NextResponse.redirect(
         new URL(

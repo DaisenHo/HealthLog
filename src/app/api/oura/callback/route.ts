@@ -25,7 +25,7 @@ import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
 import { ouraCollectionsMissingFromGrant } from "@/lib/oura/scope";
 import { markReconnected } from "@/lib/integrations/status";
 import { OURA_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import {
   OURA_BACKFILL_QUEUE,
@@ -184,8 +184,7 @@ async function completeCallback(
     // missing. Reconnects ride the same path. Best-effort by design: the hourly
     // cron remains the safety net, so a missing boss instance must never strand
     // the redirect.
-    const boss = getGlobalBoss();
-    if (boss) {
+    await enqueueWhenBossReady("oura-connect", async (boss) => {
       await boss
         .send(OURA_SYNC_QUEUE, { userId })
         .catch((err) =>
@@ -206,7 +205,7 @@ async function completeCallback(
             `oura-backfill connect enqueue failed: ${err}`,
           ),
         );
-    }
+    });
 
     const response = NextResponse.redirect(
       new URL(

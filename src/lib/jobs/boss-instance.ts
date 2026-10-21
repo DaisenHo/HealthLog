@@ -9,9 +9,11 @@ import { PgBoss } from "pg-boss";
 
 import { getPgBossPoolMax, getPoolConnectionTimeoutMs } from "@/lib/db";
 import { timeZoneSessionOptions } from "@/lib/db-session";
+// The slot a start is parked in; `whenBossReady` reads it to know one is
+// under way.
+import { BOSS_START_KEY } from "@/lib/jobs/boss-ready";
 
 const BOSS_KEY = "__healthlog_pgboss__" as const;
-const BOSS_START_KEY = "__healthlog_pgboss_start__" as const;
 const PRODUCER_START_MAX_ATTEMPTS = 5;
 const PRODUCER_RETRY_BASE_DELAY_MS = 250;
 const PRODUCER_RETRY_MAX_DELAY_MS = 2_000;

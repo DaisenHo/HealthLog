@@ -16,7 +16,7 @@ import {
 import { getUserFitbitCredentials } from "@/lib/fitbit/credentials";
 import { FITBIT_OAUTH_STATE_COOKIE } from "@/lib/fitbit/oauth-state";
 import { FITBIT_BACKFILL_QUEUE } from "@/lib/jobs/fitbit-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
 import {
@@ -205,8 +205,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // Enqueue the self-converging history backfill. Best-effort: the boot-time
       // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
       // missing boss instance here doesn't strand the connection.
-      const boss = getGlobalBoss();
-      if (boss) {
+      await enqueueWhenBossReady("fitbit-backfill", async (boss) => {
         await boss
           .send(FITBIT_BACKFILL_QUEUE, {
             userId: user.id,
@@ -215,7 +214,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           .catch((err) =>
             getEvent()?.addWarning(`fitbit-backfill enqueue failed: ${err}`),
           );
-      }
+      });
 
       const response = NextResponse.redirect(
         new URL(

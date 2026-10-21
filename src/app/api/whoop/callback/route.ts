@@ -15,7 +15,7 @@ import { getUserWhoopCredentials } from "@/lib/whoop/credentials";
 import { WHOOP_OAUTH_STATE_COOKIE } from "@/lib/whoop/oauth-state";
 import { buildReturnSchemeRedirect } from "@/lib/whoop/return-scheme";
 import { WHOOP_BACKFILL_QUEUE } from "@/lib/jobs/whoop-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -257,8 +257,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // Enqueue the self-converging history backfill. Best-effort: the boot-time
       // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
       // missing boss instance here doesn't strand the connection.
-      const boss = getGlobalBoss();
-      if (boss) {
+      await enqueueWhenBossReady("whoop-backfill", async (boss) => {
         await boss
           .send(WHOOP_BACKFILL_QUEUE, {
             userId,
@@ -267,7 +266,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           .catch((err) =>
             getEvent()?.addWarning(`whoop-backfill enqueue failed: ${err}`),
           );
-      }
+      });
 
       const response = outcomeRedirect(returnScheme, "connected");
       response.cookies.delete(WHOOP_OAUTH_STATE_COOKIE);
