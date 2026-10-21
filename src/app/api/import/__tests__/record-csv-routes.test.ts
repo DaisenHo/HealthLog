@@ -100,6 +100,16 @@ describe("record CSV import routes", () => {
     expect(mocks.importLabsCsv).not.toHaveBeenCalled();
   });
 
+  it("refuses an unknown parameter, so a misspelt dry run never writes", async () => {
+    for (const typo of ["dryrun=1", "dry_run=1", "dryRun=1&preview=1"]) {
+      expect((await post(labsPost, `${LABS}&${typo}`)).status).toBe(422);
+      expect((await post(medsPost, `${MEDS}&${typo}`)).status).toBe(422);
+    }
+    expect(mocks.importLabsCsv).not.toHaveBeenCalled();
+    expect(mocks.importMedicationsCsv).not.toHaveBeenCalled();
+    expect(mocks.checkRateLimit).not.toHaveBeenCalled();
+  });
+
   it("spends the preview bucket on a dry run and the import bucket otherwise", async () => {
     await post(labsPost, `${LABS}&dryRun=1`);
     expect(mocks.checkRateLimit).toHaveBeenLastCalledWith(

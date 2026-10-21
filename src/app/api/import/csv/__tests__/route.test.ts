@@ -164,6 +164,23 @@ const mMeasurement = () =>
     updateMany: ReturnType<typeof vi.fn>;
   };
 
+describe("POST /api/import/csv — strict query", () => {
+  it("refuses a misspelt dry-run flag instead of importing", async () => {
+    for (const query of ["dryrun=1", "dry_run=1", "dryRun=yes"]) {
+      const res = await POST(
+        new NextRequest(`http://localhost/api/import/csv?${query}`, {
+          method: "POST",
+          body: [HEADER, "WEIGHT,80,kg,2026-05-01T08:00:00Z,,,"].join("\n"),
+          headers: { "content-type": "text/csv" },
+        }),
+      );
+      expect(res.status).toBe(422);
+    }
+    expect(mMeasurement().createManyAndReturn).not.toHaveBeenCalled();
+    expect(checkRateLimit).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/import/csv — fatal header error", () => {
   it("returns 422 when a required column is missing", async () => {
     const res = await POST(csvRequest("type,value,unit\nWEIGHT,80,kg"));

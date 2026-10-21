@@ -15308,17 +15308,21 @@ paths:
         reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is
         `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves
         earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews
-        without writing. Shares the 5/hour `import:` rate bucket."
+        without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a
+        misspelt `dryRun` never writes."
       parameters:
-        - name: dryRun
-          in: query
-          required: false
+        - in: query
+          name: dryRun
           schema:
+            description: "`1` validates every row and reports what would happen, writing nothing."
+            default: "0"
             type: string
             enum:
+              - "0"
               - "1"
               - "true"
-          description: When `1` / `true`, parse + validate + return the per-row envelope without writing.
+              - "false"
+          description: "`1` validates every row and reports what would happen, writing nothing."
       requestBody:
         required: true
         content:
@@ -15357,11 +15361,12 @@ paths:
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
         checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. Each row's name resolves to the account's marker the way a
-        scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A
-        numeric result needs a unit; one in another unit is converted when the conversion is known and keeps the printed
-        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
-        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
+        `dryRun` never writes. Each row's name resolves to the account's marker the way a scanned report's rows do
+        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit;
+        one in another unit is converted when the conversion is known and keeps the printed value beside it, otherwise
+        the row is refused with `unit_mismatch`. Any other text in the value column is a qualitative result. A date
+        without a time is stored as that calendar date. At most 20 000 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -15562,11 +15567,12 @@ paths:
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
         checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. Maps name, dose (as written), daily intake times, an
-        as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A row needs times
-        unless it is marked as needed. Each row is checked against the create route's own schema; a dated window opens a
-        course. Reminders stay off unless `reminders=1`. A medication the record holds under the same name and dose is a
-        duplicate. At most 500 data rows."
+        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
+        `dryRun` never writes. Maps name, dose (as written), daily intake times, an as-needed mark and a start and end
+        date; every other rhythm is set up afterwards in the app. A row needs times unless it is marked as needed. Each
+        row is checked against the create route's own schema; a dated window opens a course. Reminders stay off unless
+        `reminders=1`. A medication the record holds under the same name and dose is a duplicate. At most 500 data
+        rows."
       parameters:
         - in: query
           name: dryRun

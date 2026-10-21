@@ -8,6 +8,10 @@
  * order and the zone a time without an offset is read in. The client works
  * these out with the person on the mapping screen; the server never guesses
  * a column.
+ *
+ * Both query schemas are strict: a parameter they do not know is a 422, not
+ * ignored. A misspelt `dryrun=1` or `dry_run=1` would otherwise fall back to
+ * the default `dryRun=0` and write the file the caller only meant to check.
  */
 import { z } from "zod/v4";
 
@@ -60,6 +64,14 @@ const formatFields = {
     ),
 };
 
+/**
+ * Query of `POST /api/import/csv` (the measurement CSV). Strict for the same
+ * reason as the two record imports: a misspelt flag must never write.
+ */
+export const csvImportQuerySchema = z
+  .object({ dryRun: formatFields.dryRun })
+  .strict();
+
 function distinctColumns(
   value: Record<string, unknown>,
   keys: readonly string[],
@@ -103,6 +115,7 @@ export const labsCsvQuerySchema = z
     panel: column.optional(),
     note: column.optional().describe("Column of a note; stored encrypted."),
   })
+  .strict()
   .refine((v) => distinctColumns(v, LAB_COLUMN_KEYS), {
     message: "Each column can feed one field",
     path: ["analyte"],
@@ -144,6 +157,7 @@ export const medicationsCsvQuerySchema = z
         "`1` turns reminders on for imported medications that have times. Off by default, so an import never starts reminding on its own.",
       ),
   })
+  .strict()
   .refine((v) => distinctColumns(v, MEDICATION_COLUMN_KEYS), {
     message: "Each column can feed one field",
     path: ["name"],
