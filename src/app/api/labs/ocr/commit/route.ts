@@ -157,8 +157,10 @@ function inBatchKey(
 async function commitOcrRows(request: NextRequest) {
   const { user } = await requireAuth();
 
+  // OCR_MAX_ROWS rows at every field's longest bound run past 256 KB; 512
+  // keeps a full report in one body with room to spare.
   const { data: body, error: jsonError } = await safeJson(request, {
-    maxBytes: 256 * 1024,
+    maxBytes: 512 * 1024,
   });
   if (jsonError) return jsonError;
 

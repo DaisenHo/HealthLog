@@ -982,6 +982,23 @@ export class CodexClient implements AIProvider {
                 httpStatus: 0,
                 kind: "stream_failed",
                 upstream: "codex",
+                // The documented reason (`max_output_tokens`,
+                // `content_filter`), so a caller can tell a reply cut at the
+                // output limit from any other stream failure.
+                ...(parsed.response?.incomplete_details?.reason
+                  ? {
+                      incompleteReason:
+                        parsed.response.incomplete_details.reason,
+                    }
+                  : {}),
+              });
+              // The text streamed before the cut, for a caller that can use
+              // a partial reply (the lab scan keeps the rows that closed).
+              // Not enumerable: it is model output about the person's data,
+              // and an error is serialised into logs and events.
+              Object.defineProperty(e, "partialContent", {
+                value: assembledText || deltaText,
+                enumerable: false,
               });
               throw e;
             }

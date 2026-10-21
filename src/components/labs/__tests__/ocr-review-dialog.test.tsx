@@ -12,6 +12,7 @@ import {
   extractErrorMessage,
   handleFilePickerChange,
   OcrPageCoverageNote,
+  OcrReadNotes,
   OcrReviewDialog,
   unitSkippedAnalytes,
 } from "../ocr-review-dialog";
@@ -237,6 +238,15 @@ describe("extractErrorMessage", () => {
     );
   });
 
+  it("names a read cut at the output limit instead of blaming the photo", () => {
+    expect(extractErrorMessage(refusal("labs.ocr.outputLimit", 422), t)).toBe(
+      "labs.ocr.outputLimit",
+    );
+    expect(extractErrorMessage(refusal("labs.ocr.tooLarge", 422), t)).toBe(
+      "labs.ocr.tooLarge",
+    );
+  });
+
   it("never calls an unrelated 403 a missing consent", () => {
     expect(extractErrorMessage(new ApiError("forbidden", 403), t)).toBe(
       "labs.ocr.extractFailed",
@@ -262,6 +272,53 @@ describe("<OcrPageCoverageNote> — a long PDF read from its first pages", () =>
       </I18nProvider>,
     );
     expect(html).toBe("");
+  });
+});
+
+describe("<OcrReadNotes> — what a read could not give", () => {
+  const render = (notes: Parameters<typeof OcrReadNotes>[0]["notes"]) =>
+    renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <OcrReadNotes notes={notes} />
+      </I18nProvider>,
+    );
+
+  it("names the pages a read was cut on, or the report when it was one read", () => {
+    expect(render({ truncated: { pages: [2, 5] } })).toContain(
+      "partway through these pages: 2, 5.",
+    );
+    expect(render({ truncated: { pages: [] } })).toContain(
+      "before the end of the report",
+    );
+  });
+
+  it("names the pages that were not read", () => {
+    expect(render({ unreadPages: [3, 4] })).toContain(
+      "not in this list: 3, 4.",
+    );
+    expect(render({ unreadPages: [] })).toContain("Part of the report");
+  });
+
+  it("says why a scan stopped early when it was not the provider", () => {
+    expect(render({ unreadPages: [4], stoppedBy: "budget" })).toContain(
+      "AI budget for today ran out",
+    );
+    expect(render({ unreadPages: [4], stoppedBy: "unavailable" })).toContain(
+      "AI was turned off while the report was being read",
+    );
+    const failed = render({ unreadPages: [4], stoppedBy: "error" });
+    expect(failed).toContain("because of a server error");
+    expect(failed).not.toContain("AI was turned off");
+  });
+
+  it("says how many readings the report had when it ran past the cap", () => {
+    expect(render({ rowsCapped: { kept: 400, found: 512 } })).toContain(
+      "The report lists 512 readings. One scan takes 400",
+    );
+  });
+
+  it("renders nothing for a clean read", () => {
+    expect(render({})).toBe("");
   });
 });
 
