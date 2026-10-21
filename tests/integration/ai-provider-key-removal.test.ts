@@ -111,6 +111,17 @@ describe("PATCH /api/user/ai-provider — removing one saved key", () => {
     expect(row.aiCompatKeyEncrypted).not.toBeNull();
     expect(row.aiProvider).toBe("OPENAI");
     expect(row.aiModel).toBe("gpt-4o-mini");
+    // The removal is audited, naming the slot and no value.
+    const audits = await getPrismaClient().auditLog.findMany({
+      where: { userId, action: { startsWith: "user.ai-provider.key." } },
+      select: { action: true, details: true },
+    });
+    expect(audits).toEqual([
+      {
+        action: "user.ai-provider.key.remove",
+        details: JSON.stringify({ slot: "openai" }),
+      },
+    ]);
   });
 
   it("the read the form seeds from reports the key gone", async () => {

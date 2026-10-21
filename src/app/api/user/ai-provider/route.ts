@@ -4,9 +4,11 @@ import { prisma } from "@/lib/db";
 import {
   apiSuccess,
   apiError,
+  getClientIp,
   returnAllZodIssues,
   safeJson,
 } from "@/lib/api-response";
+import { auditLog } from "@/lib/auth/audit";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "@/lib/ai/local-host-allowlist";
 import { encrypt, decrypt } from "@/lib/crypto";
@@ -372,6 +374,29 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 
   if (Object.keys(updates).length > 0) {
     await prisma.user.update({ where: { id: user.id }, data: updates });
+  }
+
+  // A stored provider key is a credential: setting or removing one is
+  // audited like every other credential change, with the slot it went into
+  // and never the value. A removal used to leave no trace at all.
+  const keySlots = [
+    ["anthropic", body.anthropicKey],
+    ["openai", body.openaiKey],
+    ["local", body.localKey],
+    ["openai-compatible", body.compatKey],
+  ] as const;
+  for (const [slot, value] of keySlots) {
+    if (value === undefined) continue;
+    await auditLog(
+      value === null || value === ""
+        ? "user.ai-provider.key.remove"
+        : "user.ai-provider.key.set",
+      {
+        userId: user.id,
+        ipAddress: getClientIp(request),
+        details: { slot },
+      },
+    );
   }
 
   return apiSuccess({ updated: true });
