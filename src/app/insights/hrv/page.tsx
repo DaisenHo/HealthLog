@@ -11,9 +11,9 @@ import { EcgCrossLink } from "@/components/insights/ecg-cross-link";
  * Heart-rate variability sub-page. Pairs with the iOS HKQuantityType
  * `heartRateVariabilitySDNN` ingest path; the user typically logs one
  * sample per night during sleep, so the chart is sparse but the
- * weekly trend is the load-bearing signal. Apple Health / Fitbit store
- * SDNN as millisecond `HEART_RATE_VARIABILITY` rows; Oura / Polar / WHOOP
- * store nightly RMSSD as `HRV_RMSSD`. The page renders SDNN when present
+ * weekly trend is the load-bearing signal. Apple Health and Health Connect
+ * store SDNN as millisecond `HEART_RATE_VARIABILITY` rows; Oura / Polar /
+ * WHOOP / Fitbit / Google Health store nightly RMSSD as `HRV_RMSSD`. The page renders SDNN when present
  * and falls back to the RMSSD series (labelled "RMSSD") otherwise, so a
  * ring / strap user's stored HRV always surfaces. Since iOS 27 an Apple
  * Watch writes both (#1110); with rows of both the page charts each on its

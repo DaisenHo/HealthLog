@@ -157,9 +157,9 @@ export interface RichMetric {
   /**
    * v1.30.4 (G4/HRV union) — a secondary `MeasurementType` to read instead of
    * `measurementType` when the user has ZERO rows of the primary type. HRV is
-   * the only metric that carries one today: Apple Health / Fitbit write SDNN
-   * (`HEART_RATE_VARIABILITY`); Oura / Polar / WHOOP write nightly RMSSD
-   * (`HRV_RMSSD`) only. Mirrors the app's HRV sub-page fallback
+   * the only metric that carries one today: Apple Health writes SDNN
+   * (`HEART_RATE_VARIABILITY`); Oura / Polar / WHOOP / Fitbit / Google Health
+   * write nightly RMSSD (`HRV_RMSSD`) only. Mirrors the app's HRV sub-page fallback
    * (`HealthKitMetricPage`'s `fallbackMeasurementType` prop) so a ring/strap
    * -only account resolves over MCP the same data it sees in the app instead
    * of a false `{ present: false }`.

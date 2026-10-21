@@ -30,6 +30,8 @@ import {
   SHARE_GROUPS,
   STRUCTURED_LEAF_IDS,
   leafLabelKey,
+  LEAF_MODULE,
+  MEASUREMENT_LEAF_GROUP,
 } from "../catalogue";
 import { STANDARD_TEMPLATE_LEAVES, standardTemplateFor } from "../template";
 
@@ -190,5 +192,19 @@ describe("the standard-report action", () => {
     expect(onShare).toEqual(
       STANDARD_TEMPLATE_LEAVES.filter((leaf) => leaf !== "INSURANCE"),
     );
+  });
+});
+
+describe("heart-rate variability in the report", () => {
+  // Fitbit and Google Health file nightly HRV as RMSSD (migration 0420), so
+  // for those accounts RMSSD is the only HRV the report can show. It is its
+  // own cardio leaf beside SDNN, never folded into it, and like SDNN no
+  // module gates it: a report with Recovery off must not lose the account's
+  // only HRV series for the estimator its device reports.
+  it("files SDNN and RMSSD as separate, ungated cardio leaves", () => {
+    for (const type of ["HEART_RATE_VARIABILITY", "HRV_RMSSD"] as const) {
+      expect(MEASUREMENT_LEAF_GROUP[type]).toBe("cardio");
+      expect(LEAF_MODULE[type]).toBeUndefined();
+    }
   });
 });

@@ -25,8 +25,9 @@ export const COACH_SOURCE_MEASUREMENT_TYPES: Readonly<
   pulse: ["PULSE"],
   mood: [],
   compliance: [],
-  // v1.30.4 (HRV union) — Oura / Polar / WHOOP write nightly HRV as RMSSD
-  // (`HRV_RMSSD`), never SDNN (`HEART_RATE_VARIABILITY`, Apple / Fitbit).
+  // v1.30.4 (HRV union) — Oura / Polar / WHOOP / Fitbit / Google Health
+  // write nightly HRV as RMSSD (`HRV_RMSSD`), never SDNN
+  // (`HEART_RATE_VARIABILITY`, Apple Health).
   // The app's HRV surface already unions both (`sub-page-metric.ts`);
   // resolving SDNN alone here made a ring/strap-only user's Coach context
   // + the `get_metric_series`/rich-read MCP paths report a false

@@ -133,6 +133,40 @@ describe("computeReadiness gating", () => {
     }
   });
 
+  it("renormalises over the other components for an account whose only HRV is RMSSD", async () => {
+    // Fitbit and Google Health file nightly HRV as `HRV_RMSSD` (migration
+    // 0420). Readiness stays on SDNN by design, so such an account has no
+    // HRV component: it must drop out with weight 0 and the rest carry the
+    // score, never an error and never an RMSSD value read as SDNN.
+    const days = (type: string, base: number) =>
+      Array.from({ length: 10 }, (_, i) => ({
+        value: base,
+        measuredAt: new Date(
+          `2026-05-${String(15 + i).padStart(2, "0")}T07:00:00Z`,
+        ),
+        type,
+      }));
+    measurementFindMany.mockImplementation(
+      async (args: { where: { type: unknown } }) => {
+        const type = args.where.type;
+        if (type === "RESTING_HEART_RATE") return days(type, 58);
+        if (type === "RESPIRATORY_RATE") return days(type, 14);
+        if (type === "HRV_RMSSD") return days(type, 42);
+        return [];
+      },
+    );
+    const result = await computeReadiness("u1", PROFILE, { now: NOW });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    const hrv = result.value.components.find((c) => c.key === "hrv");
+    expect(hrv).toMatchObject({ value: null, weight: 0 });
+    const present = result.value.components.filter((c) => c.value !== null);
+    expect(present.map((c) => c.key).sort()).toEqual(["respiratory", "rhr"]);
+    const total = present.reduce((sum, c) => sum + c.weight, 0);
+    expect(total).toBeCloseTo(1, 10);
+    expect(Number.isFinite(result.value.score)).toBe(true);
+  });
+
   it("reports confidence reflecting REAL history depth, not the constant window", async () => {
     // 10 distinct backing days on a 30-day window. Pre-fix `historyDays` was
     // pinned to `windowDays` so `historyFraction` was always 1 and confidence

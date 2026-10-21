@@ -491,8 +491,9 @@ export default function DashboardPageClient({
   // measurement-type enum), so no backend change was needed; the strip
   // tiles below self-gate on `count > 0`.
   // HRV is stored under two types and the tile has to accept either: SDNN
-  // (`HEART_RATE_VARIABILITY`, Apple / Fitbit / Google Health) or nightly
-  // RMSSD (`HRV_RMSSD`, Oura / Polar / WHOOP and bridge pushes). Reading
+  // (`HEART_RATE_VARIABILITY`, Apple Health / Health Connect) or nightly
+  // RMSSD (`HRV_RMSSD`, Oura / Polar / WHOOP / Fitbit / Google Health and
+  // bridge pushes). Reading
   // SDNN alone left a ring / strap account with a Settings toggle that
   // rendered nothing while `/insights/hrv` charted the same data. The
   // helper keeps the union in one place and hands back which type won, so

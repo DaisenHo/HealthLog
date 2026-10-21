@@ -1153,6 +1153,7 @@ function gateLayoutByModules(
   const unavailable = new Set(
     unavailableWidgetIds(modules, {
       hasSdnn: (summaries.HEART_RATE_VARIABILITY?.count ?? 0) > 0,
+      hasRmssd: (summaries.HRV_RMSSD?.count ?? 0) > 0,
     }),
   );
   return hideModuleWidgets(layout, modules, unavailable);

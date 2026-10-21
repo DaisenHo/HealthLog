@@ -235,7 +235,7 @@ export const GET = apiHandler(async () => {
   // linger for minutes after Recovery went off, which is the confusion this
   // is removing.
   //
-  // The SDNN probe is an index-only existence check
+  // The HRV probes are index-only existence checks
   // (`@@index([userId, type, measuredAt])`), not a summaries read; it runs
   // only when Recovery is off, so the common account pays nothing.
   // One flag, read the way this codebase reads one flag — not the whole
@@ -243,20 +243,22 @@ export const GET = apiHandler(async () => {
   // is the only module that decides it.
   const recoveryEnabled = await isModuleEnabled(user.id, "recovery");
   let hasSdnn = true;
+  let hasRmssd = true;
   if (!recoveryEnabled) {
-    const sdnnRow = await prisma.measurement.findFirst({
-      where: {
-        userId: user.id,
-        type: "HEART_RATE_VARIABILITY",
-        deletedAt: null,
-      },
-      select: { id: true },
-    });
+    const [sdnnRow, rmssdRow] = await Promise.all(
+      (["HEART_RATE_VARIABILITY", "HRV_RMSSD"] as const).map((type) =>
+        prisma.measurement.findFirst({
+          where: { userId: user.id, type, deletedAt: null },
+          select: { id: true },
+        }),
+      ),
+    );
     hasSdnn = sdnnRow !== null;
+    hasRmssd = rmssdRow !== null;
   }
   const unavailable = unavailableWidgetIds(
     { recovery: recoveryEnabled },
-    { hasSdnn },
+    { hasSdnn, hasRmssd },
   );
   return apiSuccess(
     unavailable.length > 0

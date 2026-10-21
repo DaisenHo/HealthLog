@@ -120,24 +120,28 @@ export function disabledSummaryTypes(
  *
  * `hrv` is that widget. The tile takes SDNN when the account has it and
  * falls back to nightly RMSSD otherwise (see `pickHrvSummary`). RMSSD is
- * recovery-owned, so with Recovery off it is stripped from every feed —
- * which leaves a ring / strap account, whose only HRV is RMSSD, holding a
- * switch that is on and a tile that can never paint, with nothing saying
- * why. That is precisely the defect the RMSSD fallback exists to remove, so
- * it must not survive one step further on. An account WITH SDNN keeps the
- * row: its tile still works with Recovery off, because SDNN is a plain
- * vital that no module owns.
+ * recovery-owned everywhere else, but on this tile it stands in for SDNN, a
+ * plain vital no module owns, so `gateSummariesByModules` keeps it with
+ * Recovery off for an account that has no SDNN. The toggle is dead only for
+ * an account with Recovery off and no HRV of either kind.
  *
  * Decided from server-resolved facts and handed to the client, so the
  * Settings screen does not have to fetch dashboard data to find out.
  */
 export function unavailableWidgetIds(
   modules: Partial<Record<ModuleKey, boolean>>,
-  facts: { hasSdnn: boolean },
+  facts: { hasSdnn: boolean; hasRmssd: boolean },
 ): string[] {
   const out: string[] = [];
-  if (modules.recovery === false && !facts.hasSdnn) out.push("hrv");
+  if (modules.recovery === false && !facts.hasSdnn && !facts.hasRmssd) {
+    out.push("hrv");
+  }
   return out;
+}
+
+function hasRows(summary: unknown): boolean {
+  const count = (summary as { count?: unknown } | undefined)?.count;
+  return typeof count === "number" && count > 0;
 }
 
 export function gateSummariesByModules<
@@ -149,6 +153,15 @@ export function gateSummariesByModules<
   modules: Partial<Record<ModuleKey, boolean>>,
 ): { summaries: S; lastSeenByType: L } {
   const dropped = disabledSummaryTypes(modules);
+  // The HRV tile's RMSSD fallback rides with SDNN, not with recovery. SDNN is
+  // a plain vital on this surface and paints with Recovery off; an account
+  // whose only HRV is RMSSD (a ring or strap, and every Fitbit or Google
+  // Health account since migration 0420 refiled their nightly HRV) would
+  // otherwise lose the tile for the estimator its device happens to report.
+  // Kept only while the account has no SDNN, so the series never mixes.
+  if (dropped.has("HRV_RMSSD") && !hasRows(summaries.HEART_RATE_VARIABILITY)) {
+    dropped.delete("HRV_RMSSD");
+  }
   if (dropped.size === 0) return { summaries, lastSeenByType };
   const outSummaries = {} as S;
   for (const [type, summary] of Object.entries(summaries)) {

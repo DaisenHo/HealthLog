@@ -46,6 +46,28 @@ export const SIGNAL_READING_TYPE: Readonly<Record<string, string>> = {
   glucose: "BLOOD_GLUCOSE",
 };
 
+/**
+ * Every type a signal's reading may be filed under. HRV is two series: SDNN
+ * (`HEART_RATE_VARIABILITY`, Apple Health / Health Connect) and nightly RMSSD
+ * (`HRV_RMSSD`, rings, straps, Fitbit and Google Health). The Coach reads the
+ * `hrv` source over both, so a signal written for an RMSSD-only account is a
+ * reading of today when either series has one; checking SDNN alone dropped
+ * every such signal. Both read in whole milliseconds, so the precision
+ * lookup keeps the one type in {@link SIGNAL_READING_TYPE}.
+ */
+export const SIGNAL_READING_TYPES: Readonly<Record<string, readonly string[]>> =
+  Object.fromEntries(
+    Object.entries(SIGNAL_READING_TYPE).map(([metric, type]) => [
+      metric,
+      metric === "hrv" ? [type, "HRV_RMSSD"] : [type],
+    ]),
+  );
+
+/** Every type any signal may be a reading of, once each. */
+export const ALL_SIGNAL_READING_TYPES: readonly string[] = [
+  ...new Set(Object.values(SIGNAL_READING_TYPES).flat()),
+];
+
 /** The locale's decimal and grouping separators ("," and "." for de). */
 function separators(locale: Locale): { decimal: string; group: string } {
   const parts = new Intl.NumberFormat(resolveIntlLocale(locale)).formatToParts(
@@ -204,8 +226,8 @@ export function briefingForToday(
   };
   const signalsOfDay = briefing.signalsOfDay
     .filter((signal) => {
-      const type = SIGNAL_READING_TYPE[signal.sourceMetric];
-      return type === undefined || measuredToday(type);
+      const types = SIGNAL_READING_TYPES[signal.sourceMetric];
+      return types === undefined || types.some(measuredToday);
     })
     .map((signal) =>
       signal.delta
