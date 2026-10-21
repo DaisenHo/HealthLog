@@ -13,5 +13,5 @@
 -- Reversibility: dropping the columns returns every list to its default
 -- presentation and switches every preview feature off.
 
-ALTER TABLE "users" ADD COLUMN "module_list_layout_json" JSONB;
-ALTER TABLE "users" ADD COLUMN "preview_features_json" JSONB;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "module_list_layout_json" JSONB;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "preview_features_json" JSONB;

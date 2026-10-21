@@ -109,6 +109,17 @@ that for you, and each boot retries). Anything else is a session you can
 judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
 You never need to run `migrate resolve` by hand for this case.
 
+### v1.44.0 notes
+
+Migration `0430` drops the `insights_cached_text` column from `users`. A
+process still running the previous image selects that column on every full
+user read and fails once it is gone, so do not run old and new containers side
+by side across this release: stop the old app container, let the new one
+apply the migrations, then start it (the sequence above does this on a single
+host). A web/worker split deployment stops both roles before the first new
+container starts. Rolling back to an image older than v1.44.0 needs the column
+back first (see Rollback below).
+
 ### v1.11.0 notes
 
 Migrations `0110`–`0114` are additive (new tables / columns for the
