@@ -30,6 +30,8 @@ const ALLOWED: Record<string, string> = {
     "The correlation engine's centred sums and the Welch t-test variances.",
   "lib/insights/mood-tag-influence.ts": "Welch t-test variances.",
   "lib/insights/mood-pattern-cards.ts": "A pooled variance for a t statistic.",
+  "lib/stats/segmented-regression.ts":
+    "The total sum of squares behind R² and the HAC standard errors of a segmented fit; neither is reported as a spread.",
   "lib/insights/derived/trajectory.ts":
     "The residual standard error of a regression fit (÷ n − 2).",
   "lib/insights/derived/sleep-score.ts":
