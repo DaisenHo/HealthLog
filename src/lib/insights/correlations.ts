@@ -388,12 +388,31 @@ function roundTo(value: number, digits: number): number {
  * gate is no longer load-bearing for correctness — only for sample
  * adequacy.
  */
-function twoSidedPFromT(absT: number, df: number): number {
+export function twoSidedPFromT(absT: number, df: number): number {
   if (!Number.isFinite(absT)) return 0;
   if (df <= 0) return 1;
   if (absT === 0) return 1;
   const x = df / (df + absT * absT);
   return regularizedIncompleteBeta(x, df / 2, 0.5);
+}
+
+/**
+ * The two-sided critical t at `alpha` with `df` degrees of freedom: the t
+ * whose two-sided p equals `alpha` (12.706 at df 1, 4.303 at df 2, 1.960 as
+ * df grows, for alpha 0.05). Bisection over {@link twoSidedPFromT}, which is
+ * monotone in t; 200 halvings of [0, 1e6] reach double precision. Null for a
+ * df below 1, where no interval exists.
+ */
+export function criticalTTwoSided(df: number, alpha = 0.05): number | null {
+  if (!(df >= 1) || !(alpha > 0 && alpha < 1)) return null;
+  let lo = 0;
+  let hi = 1e6;
+  for (let i = 0; i < 200; i += 1) {
+    const mid = (lo + hi) / 2;
+    if (twoSidedPFromT(mid, df) > alpha) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
 }
 
 // ── Welch two-sample t-test (unequal variances) ────────────────────

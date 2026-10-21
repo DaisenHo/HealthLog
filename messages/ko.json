@@ -10115,6 +10115,25 @@
       "doneToastFew": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
       "doneToastOther": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
       "error": "바이오마커를 합치지 못했어요. 다시 시도해 주세요."
+    },
+    "trend": {
+      "title": "추세",
+      "slope": {
+        "rising": "{since} 이후 {n}개 값에서 1년에 약 {amount} {unit}씩 오르고 있습니다.",
+        "falling": "{since} 이후 {n}개 값에서 1년에 약 {amount} {unit}씩 내려가고 있습니다.",
+        "flat": "{since} 이후 {n}개 값에서 변화가 없습니다."
+      },
+      "projection": {
+        "exits": {
+          "high": "이 직선이 그대로 이어진다면 {date}쯤 참고 범위의 상한에 닿습니다. 이는 연장선일 뿐 예측이 아닙니다.",
+          "low": "이 직선이 그대로 이어진다면 {date}쯤 참고 범위의 하한에 닿습니다. 이는 연장선일 뿐 예측이 아닙니다."
+        },
+        "beyond_horizon": "이 속도라면 적어도 3년 동안은 참고 범위 안에 머뭅니다.",
+        "no_exit": "직선이 참고 범위의 경계에서 멀어지고 있습니다.",
+        "already_outside": "직선이 이미 참고 범위 밖에 있습니다.",
+        "no_clear_trend": "이 값들에서는 변화가 '변화 없음'과 뚜렷이 구별되지 않아 연장선을 그리지 않습니다."
+      },
+      "interval": "연간 변화의 95% 구간: {lo}~{hi} {unit}."
     }
   },
   "modules": {

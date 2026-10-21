@@ -10115,6 +10115,25 @@
       "doneToastFew": "Scalono w {name}, przeniesiono {count} pomiary",
       "doneToastOther": "Scalono w {name}, przeniesiono {count} pomiarów",
       "error": "Nie udało się scalić biomarkerów. Spróbuj ponownie."
+    },
+    "trend": {
+      "title": "Trend",
+      "slope": {
+        "rising": "Rośnie o około {amount} {unit} rocznie na podstawie {n} wyników od {since}.",
+        "falling": "Spada o około {amount} {unit} rocznie na podstawie {n} wyników od {since}.",
+        "flat": "Brak zmian na podstawie {n} wyników od {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Gdyby ta prosta biegła dalej, osiągnęłaby górną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza.",
+          "low": "Gdyby ta prosta biegła dalej, osiągnęłaby dolną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza."
+        },
+        "beyond_horizon": "W tym tempie prosta pozostaje w twoim zakresie referencyjnym jeszcze co najmniej trzy lata.",
+        "no_exit": "Prosta oddala się od granic twojego zakresu referencyjnego.",
+        "already_outside": "Prosta jest już poza twoim zakresem referencyjnym.",
+        "no_clear_trend": "Na podstawie tych wyników zmiana nie różni się wyraźnie od braku zmiany, więc nie jest wyznaczana ekstrapolacja."
+      },
+      "interval": "95% przedział rocznej zmiany: od {lo} do {hi} {unit}."
     }
   },
   "modules": {

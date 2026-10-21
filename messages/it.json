@@ -10115,6 +10115,25 @@
       "doneToastFew": "Unito in {name}, {count} misurazioni spostate",
       "doneToastOther": "Unito in {name}, {count} misurazioni spostate",
       "error": "Non è stato possibile unire i biomarcatori. Riprova."
+    },
+    "trend": {
+      "title": "Andamento",
+      "slope": {
+        "rising": "Sale di circa {amount} {unit} all'anno su {n} valori dal {since}.",
+        "falling": "Scende di circa {amount} {unit} all'anno su {n} valori dal {since}.",
+        "flat": "Nessuna variazione su {n} valori dal {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Se questa retta proseguisse, raggiungerebbe il limite superiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione.",
+          "low": "Se questa retta proseguisse, raggiungerebbe il limite inferiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione."
+        },
+        "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per almeno altri tre anni.",
+        "no_exit": "La retta si allontana dai limiti del tuo intervallo di riferimento.",
+        "already_outside": "La retta è già fuori dal tuo intervallo di riferimento.",
+        "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla."
+      },
+      "interval": "Intervallo al 95 % della variazione annua: da {lo} a {hi} {unit}."
     }
   },
   "modules": {

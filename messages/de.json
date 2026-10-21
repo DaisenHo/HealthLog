@@ -10115,6 +10115,25 @@
       "doneToastFew": "In {name} zusammengeführt, {count} Messungen verschoben",
       "doneToastOther": "In {name} zusammengeführt, {count} Messungen verschoben",
       "error": "Die Biomarker konnten nicht zusammengeführt werden. Versuche es erneut."
+    },
+    "trend": {
+      "title": "Verlauf",
+      "slope": {
+        "rising": "Steigt um etwa {amount} {unit} pro Jahr, über {n} Werte seit {since}.",
+        "falling": "Sinkt um etwa {amount} {unit} pro Jahr, über {n} Werte seit {since}.",
+        "flat": "Keine Veränderung über {n} Werte seit {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Liefe diese Gerade so weiter, erreichte sie um den {date} das obere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage.",
+          "low": "Liefe diese Gerade so weiter, erreichte sie um den {date} das untere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage."
+        },
+        "beyond_horizon": "In diesem Tempo bleibt die Gerade noch mindestens drei Jahre in deinem Referenzbereich.",
+        "no_exit": "Die Gerade läuft von den Grenzen deines Referenzbereichs weg.",
+        "already_outside": "Die Gerade liegt bereits außerhalb deines Referenzbereichs.",
+        "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben."
+      },
+      "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
     }
   },
   "modules": {

@@ -15869,8 +15869,9 @@ paths:
       tags:
         - Labs
       summary: Fetch a single biomarker
-      description: Returns the biomarker including its decrypted `context` and, since v1.43, its `aliases`. Cross-user rows
-        surface as 404. A marker merged into another answers 404 with `meta.mergedInto`.
+      description: Returns the biomarker including its decrypted `context`, since v1.43 its `aliases`, and since v1.44 its
+        `trend` over every stored reading. Cross-user rows surface as 404. A marker merged into another answers 404 with
+        `meta.mergedInto`.
       parameters:
         - in: path
           name: id
@@ -72267,7 +72268,7 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/Biomarker"
+          $ref: "#/components/schemas/BiomarkerDetail"
         error:
           type: "null"
         meta:
@@ -72280,6 +72281,172 @@ components:
         - data
         - error
       additionalProperties: false
+    BiomarkerDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        lowerBound:
+          type:
+            - number
+            - "null"
+        upperBound:
+          type:
+            - number
+            - "null"
+        panel:
+          type:
+            - string
+            - "null"
+        analyteKey:
+          type:
+            - string
+            - "null"
+        hasContext:
+          type: boolean
+        context:
+          type:
+            - string
+            - "null"
+        hidden:
+          type: boolean
+        aliases:
+          description: v1.43 — other spellings that resolve to this marker (folded in by a merge, chosen at an import, or typed on
+            the marker), sorted, without the marker's own name. Absent on older servers.
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        trend:
+          description: v1.44 — absent on older servers.
+          $ref: "#/components/schemas/BiomarkerTrend"
+      required:
+        - id
+        - name
+        - unit
+        - lowerBound
+        - upperBound
+        - panel
+        - analyteKey
+        - hasContext
+        - context
+        - hidden
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+    BiomarkerTrend:
+      anyOf:
+        - type: object
+          properties:
+            status:
+              type: string
+              const: ok
+            n:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            firstAt:
+              type: string
+              description: YYYY-MM-DD of the first reading.
+            lastAt:
+              type: string
+              description: YYYY-MM-DD of the newest reading.
+            spanDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            slopePerYear:
+              type: number
+              description: Least-squares change per year, in the marker's unit.
+            slopeCi95:
+              type: array
+              prefixItems:
+                - type: number
+                - type: number
+              items: false
+              minItems: 2
+              maxItems: 2
+              description: 95 % interval of the slope (Student t at n − 2 df).
+            pValue:
+              type: number
+            fittedNow:
+              type: number
+              description: The line's value on `asOf`.
+            asOf:
+              type: string
+              description: YYYY-MM-DD the line was evaluated on.
+            projection:
+              type: string
+              enum:
+                - exits
+                - beyond_horizon
+                - no_exit
+                - already_outside
+                - no_clear_trend
+                - no_band
+            exitDate:
+              description: "Only for `exits`: the day the straight line meets `exitBound`. A projection, never a forecast."
+              type:
+                - string
+                - "null"
+            exitBound:
+              anyOf:
+                - type: string
+                  enum:
+                    - low
+                    - high
+                - type: "null"
+          required:
+            - status
+            - n
+            - firstAt
+            - lastAt
+            - spanDays
+            - slopePerYear
+            - slopeCi95
+            - pValue
+            - fittedNow
+            - asOf
+            - projection
+            - exitDate
+            - exitBound
+          additionalProperties: false
+        - type: object
+          properties:
+            status:
+              type: string
+              const: insufficient
+            reason:
+              type: string
+              enum:
+                - too_few_values
+                - span_too_short
+            n:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            spanDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - status
+            - reason
+            - n
+            - spanDays
+          additionalProperties: false
+      description: "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's
+        unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the
+        line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the
+        line is inside the band today and reaches a bound within three years. Server-computed; clients render it as
+        given."
     UpdateBiomarkerResponse:
       type: object
       properties:

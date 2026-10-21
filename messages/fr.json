@@ -10115,6 +10115,25 @@
       "doneToastFew": "Fusionné dans {name}, {count} mesures déplacées",
       "doneToastOther": "Fusionné dans {name}, {count} mesures déplacées",
       "error": "Les biomarqueurs n'ont pas pu être fusionnés. Réessaie."
+    },
+    "trend": {
+      "title": "Tendance",
+      "slope": {
+        "rising": "Augmente d'environ {amount} {unit} par an sur {n} valeurs depuis le {since}.",
+        "falling": "Diminue d'environ {amount} {unit} par an sur {n} valeurs depuis le {since}.",
+        "flat": "Aucune variation sur {n} valeurs depuis le {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Si cette droite se prolongeait, elle atteindrait la limite haute de ta plage de référence vers le {date}. C'est une projection, pas une prévision.",
+          "low": "Si cette droite se prolongeait, elle atteindrait la limite basse de ta plage de référence vers le {date}. C'est une projection, pas une prévision."
+        },
+        "beyond_horizon": "À ce rythme, la droite reste dans ta plage de référence pendant au moins trois ans encore.",
+        "no_exit": "La droite s'éloigne des limites de ta plage de référence.",
+        "already_outside": "La droite est déjà hors de ta plage de référence.",
+        "no_clear_trend": "Sur ces valeurs, la variation ne se distingue pas clairement d'une absence de variation, donc aucune projection n'est tracée."
+      },
+      "interval": "Intervalle à 95 % de la variation annuelle : de {lo} à {hi} {unit}."
     }
   },
   "modules": {
