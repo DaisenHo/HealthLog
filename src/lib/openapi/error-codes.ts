@@ -249,6 +249,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "labs.ocr.fileTooLarge",
       "labs.ocr.fileType",
       "labs.ocr.localOcrDisabled",
+      "labs.ocr.outputLimit",
       "labs.ocr.pdfNeedsAnthropic",
       "labs.ocr.providerUnsupported",
       "labs.ocr.rateLimited",

@@ -186,17 +186,18 @@ export const AI_BUDGETS = {
   selfContext: { temperature: 0.4 },
 
   /**
-   * v1.18.9 — Lab-OCR structured extraction. ONE vision call transcribes a
-   * photo / PDF of a paper lab report into a JSON array of analyte rows
-   * (analyte + value/valueText + unit + reference range + date + per-field
-   * confidence). A full panel is a dozen-plus rows of compact JSON; 8000
-   * tokens leaves room for GPT-5 reasoning plus the dense report envelope.
-   * Temperature 0 — the task
-   * is faithful transcription, not generation, so the lowest setting minimises
-   * invented values. Vision input tokens are expensive, so the route also
-   * gates with a tight 6/hour rate bucket + reserveBudget + upload-size cap.
+   * v1.18.9 — Lab-OCR structured extraction, PER READ. A report is read a page
+   * at a time (`src/lib/labs/ocr-run.ts`), so this ceiling covers one page's
+   * JSON, not the whole document: a dense page is 30-50 rows at roughly 90
+   * tokens each, and 8000 leaves room for that. It is the answer budget only;
+   * the call carries an explicit reasoning off, and a model that cannot stop
+   * thinking gets its minimum thinking budget added on top by its client.
+   * One call used to carry the whole report under this ceiling, and a long
+   * one stopped mid-row. Temperature 0 — faithful transcription, not
+   * generation. `timeoutMs` 120 s: one page of JSON on a slower model runs
+   * past the shared 60 s default; the person's own setting still wins.
    */
-  ocrExtract: { temperature: 0, maxTokens: 8000 },
+  ocrExtract: { temperature: 0, maxTokens: 8000, timeoutMs: 120_000 },
 
   /**
    * v1.43 — a supplement label photo read into its ingredients. One vision
@@ -206,14 +207,12 @@ export const AI_BUDGETS = {
   supplementLabel: { temperature: 0, maxTokens: 4000 },
 
   /**
-   * v1.20.1 — Lab-OCR text-mode structuring. The browser OCR's the image
-   * (tesseract.js) and POSTs only the extracted TEXT, so the provider does a
-   * plain text→JSON structuring pass — no expensive vision input tokens. The
-   * output contract is identical (the same dozen-plus analyte rows), but the
-   * spend ceiling is far lower than the vision path's 4000, so the day-budget
-   * reservation should reflect that rather than over-charging a text call at
-   * the vision rate. 1500 tokens comfortably covers a dense report's JSON
-   * envelope. Temperature 0 — faithful structuring, not generation.
+   * v1.20.1 — Lab-OCR text-mode reservation. The browser OCR's the image
+   * (tesseract.js) and POSTs only the extracted TEXT, so no vision input
+   * tokens are spent. This is what the route reserves against the day's
+   * budget when it queues the read; the structuring calls themselves run
+   * under `ocrExtract`'s per-read ceiling, and the run settles what the
+   * provider reported it spent.
    */
   ocrExtractText: { temperature: 0, maxTokens: 1500 },
 

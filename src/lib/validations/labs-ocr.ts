@@ -24,8 +24,22 @@ import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-/** Max rows a single scan / commit may carry — a dense panel is ~30 analytes. */
-export const OCR_MAX_ROWS = 100;
+/**
+ * Max rows a single scan / commit may carry. A single panel is ~30 analytes,
+ * but a multi-page hospital report with several panels runs to 150-300
+ * readings, and a scan that finds more than this keeps the first rows rather
+ * than losing all of them (`rowsCapped` on the extract response).
+ */
+export const OCR_MAX_ROWS = 400;
+
+/**
+ * The field lengths a confirmed row may carry, shared by the commit schema and
+ * the review screen so a row the screen lets through is one the commit takes.
+ * The same bounds the manual lab-entry schema applies.
+ */
+export const OCR_ANALYTE_MAX = 120;
+export const OCR_VALUE_TEXT_MAX = 120;
+export const OCR_UNIT_MAX = 40;
 
 /**
  * Far-past floor for a lab sample, mirroring `createLabResultSchema`'s
@@ -91,14 +105,42 @@ export const extractedRowSchema = z.object({
   confidence: extractedConfidenceSchema,
 });
 
-/** The full JSON envelope the provider returns. */
+/**
+ * The full JSON envelope the provider returns. Rows are checked one by one
+ * (`parseExtractedLabs`), so one malformed row costs that row and not the
+ * whole read.
+ */
 export const extractedLabsSchema = z.object({
   reportDate: z.string().nullable().catch(null),
-  rows: z.array(extractedRowSchema).max(OCR_MAX_ROWS),
+  rows: z.array(z.unknown()),
 });
 
-export type ExtractedLabs = z.infer<typeof extractedLabsSchema>;
 export type ExtractedRow = z.infer<typeof extractedRowSchema>;
+
+export interface ExtractedLabs {
+  reportDate: string | null;
+  rows: ExtractedRow[];
+  /** Rows the model returned that did not fit the row schema (no name, …). */
+  droppedRows: number;
+}
+
+/**
+ * Validate an untrusted provider envelope. Null when the envelope itself is
+ * not the documented shape (no `rows` array); otherwise every row that fits
+ * the row schema, in order, and a count of the ones that did not.
+ */
+export function parseExtractedLabs(json: unknown): ExtractedLabs | null {
+  const envelope = extractedLabsSchema.safeParse(json);
+  if (!envelope.success) return null;
+  const rows: ExtractedRow[] = [];
+  let droppedRows = 0;
+  for (const raw of envelope.data.rows) {
+    const row = extractedRowSchema.safeParse(raw);
+    if (row.success) rows.push(row.data);
+    else droppedRows += 1;
+  }
+  return { reportDate: envelope.data.reportDate, rows, droppedRows };
+}
 
 /**
  * The per-row DTO the EXTRACT route returns to the client. Carries the model's
@@ -164,6 +206,24 @@ export interface OcrExtractResponseDto {
    * pages, and the review screen says so.
    */
   pageCoverage?: { read: number; total: number };
+  /**
+   * Present only when a read stopped at the provider's output limit. The rows
+   * the read produced before the cut are kept; readings after it may be
+   * missing. `pages` names the pages whose read was cut, or is empty when the
+   * report went to the provider as one read.
+   */
+  truncated?: { pages: number[] };
+  /**
+   * Present only when the provider failed partway through a multi-page read:
+   * the rows of the pages before the failure are kept, and these pages were
+   * not read.
+   */
+  unreadPages?: number[];
+  /**
+   * Present only when the report held more readings than one scan carries
+   * (`OCR_MAX_ROWS`): the first `kept` of `found` are in `rows`.
+   */
+  rowsCapped?: { kept: number; found: number };
 }
 
 /**
@@ -173,7 +233,7 @@ export interface OcrExtractResponseDto {
  * always present (the review screen requires a name); the commit route always
  * resolves-or-mints a biomarker by `(userId, lower(analyte))`.
  */
-const requiredAnalyte = z.string().trim().min(1).max(120);
+const requiredAnalyte = z.string().trim().min(1).max(OCR_ANALYTE_MAX);
 const referenceLow = z.number().finite().optional();
 const referenceHigh = z.number().finite().optional();
 
@@ -188,8 +248,8 @@ export const ocrCommitRowSchema = z
       .optional()
       .or(z.literal("").transform(() => undefined)),
     value: z.number().finite().optional(),
-    valueText: z.string().trim().min(1).max(120).optional(),
-    unit: z.string().trim().min(1).max(40).optional(),
+    valueText: z.string().trim().min(1).max(OCR_VALUE_TEXT_MAX).optional(),
+    unit: z.string().trim().min(1).max(OCR_UNIT_MAX).optional(),
     referenceLow,
     referenceHigh,
     /**

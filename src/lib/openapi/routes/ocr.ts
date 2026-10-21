@@ -34,7 +34,7 @@ import {
 const ocrCommitRequest = ocrCommitSchema.meta({
   id: "OcrCommitRequest",
   description:
-    "The rows a human confirmed on the Lab-OCR review screen. Each row is EITHER numeric (`value` + `unit`, optional reference bounds) OR qualitative (`valueText`) — exactly one. `analyte` drives a resolve-or-mint of the user-scoped biomarker; `takenAt` is a backdatable ISO instant. No `userId` field — it is narrowed from the session. 1..100 rows. The route skips a row that duplicates a live reading (same analyte + day + value). The optional `encounterId` files the panel against a visit the caller owns — ONE link per written result row, so a marker re-run on a different day belongs to its own visit; always optional, and a link that could not be made never fails the commit.",
+    "The rows a human confirmed on the Lab-OCR review screen. Each row is EITHER numeric (`value` + `unit`, optional reference bounds) OR qualitative (`valueText`) — exactly one. `analyte` drives a resolve-or-mint of the user-scoped biomarker; `takenAt` is a backdatable ISO instant. No `userId` field — it is narrowed from the session. 1..400 rows (`analyte` and `valueText` up to 120 characters, `unit` up to 40). The route skips a row that duplicates a live reading (same analyte + day + value). The optional `encounterId` files the panel against a visit the caller owns — ONE link per written result row, so a marker re-run on a different day belongs to its own visit; always optional, and a link that could not be made never fails the commit.",
 });
 
 const capabilityResponse = z
@@ -127,13 +127,34 @@ export const ocrExtractResponse = z
       })
       .optional()
       .describe(
-        "Present only when a PDF ran past the pages a scan reads: the rows come from the first `read` of `total` pages. Absent when the whole document was read.",
+        "Present only when a PDF ran past the pages a scan reads (20): the rows come from the first `read` of `total` pages. Absent when the whole document was read.",
+      ),
+    truncated: z
+      .object({ pages: z.array(z.number().int().positive()) })
+      .optional()
+      .describe(
+        "Present only when a read stopped at the provider's output limit. The rows that read produced before the cut are kept; readings after the cut may be missing. `pages` names the pages whose read was cut, or is empty when the report went to the provider as one read (a photo, a one-page PDF, OCR'd text).",
+      ),
+    unreadPages: z
+      .array(z.number().int().positive())
+      .optional()
+      .describe(
+        "Present only when part of a multi-part read produced nothing: the provider failed partway through, or a part's reply could not be read. The rows of the other parts are kept; these pages are not in `rows`. Empty when the parts were not pages (OCR'd text).",
+      ),
+    rowsCapped: z
+      .object({
+        kept: z.number().int().positive(),
+        found: z.number().int().positive(),
+      })
+      .optional()
+      .describe(
+        "Present only when the report held more readings than one scan carries (400): `rows` holds the first `kept` of the `found` readings.",
       ),
   })
   .meta({
     id: "OcrExtractResponse",
     description:
-      "The proposed rows for the human review screen, served by `GET /api/ai-runs/{id}` for a `LABS_OCR_EXTRACT` run. Never written to the person's record; the commit route is the only write.",
+      "The proposed rows for the human review screen, served by `GET /api/ai-runs/{id}` for a `LABS_OCR_EXTRACT` run. A PDF of more than one page is read a page at a time and the pages merged in order, a reading printed on two pages listed once. Never written to the person's record; the commit route is the only write. A run in which no read produced a single complete row fails with 422 `labs.ocr.outputLimit` when the reads stopped at the provider's output limit, else `labs.ocr.extractFailed`.",
   });
 
 const committedRow = z

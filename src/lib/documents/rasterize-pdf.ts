@@ -54,6 +54,13 @@ export const RASTERIZATION_AVAILABLE = true;
 export const RASTER_MAX_PAGES = 10;
 
 /**
+ * The ceiling a caller may raise the page count to. The lab scan reads a
+ * multi-panel report page by page and asks for more than the document read's
+ * default; nothing may ask for more than this.
+ */
+export const RASTER_HARD_MAX_PAGES = 20;
+
+/**
  * Longest-edge pixel cap per page. Tighter than the client upload downscale
  * ceiling because these feed a token-metered vision model; ~1600px is legible
  * for a document read without blowing up the tile count.
@@ -269,8 +276,8 @@ export function __resetPdfjsAssetsForTests(): void {
 
 /**
  * Render the first `RASTER_MAX_PAGES` pages of a PDF to bounded JPEG images
- * (or fewer when `maxPages` is passed — the thumbnail path renders page 1
- * only). Returns `{ ok: false }` on any failure (malformed PDF, render throw,
+ * (or another count when `maxPages` is passed — the thumbnail path renders
+ * page 1 only, the lab scan up to `RASTER_HARD_MAX_PAGES`). Returns `{ ok: false }` on any failure (malformed PDF, render throw,
  * missing binary, or zero renderable pages) — the caller degrades to local
  * text or un-indexed. Never throws.
  */
@@ -326,7 +333,7 @@ export async function rasterizePdf(
     doc = await task.promise;
 
     // Never exceed the standing DoS ceiling, even if a caller asks for more.
-    const cap = Math.min(Math.max(1, maxPages), RASTER_MAX_PAGES);
+    const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
     const pageCount = Math.min(doc.numPages, cap);
     const images: RasterImage[] = [];
     let blankPages = 0;

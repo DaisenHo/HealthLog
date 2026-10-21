@@ -177,6 +177,22 @@ export function resolveReasoning(
 }
 
 /**
+ * The reasoning a transcription call carries: an explicit off. A surface that
+ * never reasons (lab OCR) cannot simply leave the field out, because several
+ * models reason when nobody asks: OpenAI's reasoning models default to
+ * `medium`, Codex's backend to its own default, and Anthropic's 5 generation
+ * thinks adaptively. Every one of those spends the same output allowance the
+ * JSON needs, and a long report then stops mid-row. `off` makes each client
+ * send its lowest setting (`none` where the model has one, else the minimum,
+ * with that minimum's thinking budget added on top of the answer budget), so
+ * the answer keeps its allowance. Never above off, so the operator's switch
+ * has nothing to lower.
+ */
+export const TRANSCRIPTION_REASONING: NonNullable<
+  CompletionParams["reasoning"]
+> = Object.freeze({ effort: "off", summaries: false });
+
+/**
  * The `CompletionParams.reasoning` one call carries for `resolved`.
  *
  * `undefined` means "send what the call sent before reasoning existed": the

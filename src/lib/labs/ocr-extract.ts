@@ -1,10 +1,19 @@
 /**
  * v1.18.9 — Lab-OCR extraction orchestration.
  *
- * Takes the sniffed upload bytes + the resolved vision provider, runs ONE
- * (retry-once) structured-extraction call, validates the untrusted model
- * output against `extractedLabsSchema`, then annotates each row with a
- * server-computed biomarker match + duplicate check before returning the DTO.
+ * Takes the report split into reads (`OcrChunk`: a page or a few, a photo,
+ * a part of the OCR'd text) and the resolved provider, runs one (retry-once)
+ * structured-extraction call per read, validates the untrusted model output
+ * row by row (`parseExtractedLabs`), merges the reads in report order, then
+ * annotates each row with a server-computed biomarker match + duplicate check
+ * before returning the DTO.
+ *
+ * Why per read: the output a call may produce is bounded, and a whole
+ * multi-panel report in one call outgrew any fixed ceiling and the response
+ * timeout alike. A page's JSON fits one call, so the work scales with the
+ * document. A read that still stops at the output limit is detected from the
+ * finish reason, keeps the rows that closed before the cut, and is named on
+ * the review screen instead of failing the scan as unreadable.
  *
  * Nothing here writes to the database — extraction is read-only. The raw image
  * / PDF bytes live in memory only and are never logged or persisted; the
@@ -23,6 +32,7 @@ import {
   type CompletionParams,
 } from "@/lib/ai/types";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { TRANSCRIPTION_REASONING } from "@/lib/ai/reasoning/resolve";
 import { prisma } from "@/lib/db";
 import {
   isUnreadableRange,
@@ -37,7 +47,8 @@ import {
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import {
-  extractedLabsSchema,
+  parseExtractedLabs,
+  type ExtractedLabs,
   type ExtractedRow,
   type OcrExtractResponseDto,
   type OcrExtractedRowDto,
@@ -107,30 +118,138 @@ function normaliseDate(raw: string | null): string | null {
   return statedDateKey(raw);
 }
 
+/** Appended to the user turn when the first answer was not the schema. */
+const RETRY_SUFFIX =
+  "\n\nYour previous response was not valid JSON matching the schema. Return ONLY the JSON object described in the system prompt, with no prose or markdown.";
+
+/** Why a read produced nothing usable. */
+export type OcrExtractFailureReason = "unparseable" | "output_limit";
+
+export class OcrExtractError extends Error {
+  constructor(
+    message: string,
+    /**
+     * `output_limit`: every read stopped at the provider's output limit
+     * before it returned a single complete row. `unparseable`: the provider
+     * answered, but not with the schema, even after the corrective retry.
+     */
+    readonly reason: OcrExtractFailureReason = "unparseable",
+  ) {
+    super(message);
+    this.name = "OcrExtractError";
+  }
+}
+
 /**
- * Run the provider extraction call once, parse + schema-validate the JSON, and
- * retry once with a corrective suffix on a parse/schema miss. Returns the
- * parsed envelope or throws (caller maps to a clear 422 extract-failed).
+ * True for a provider error that means "the reply was cut at the output
+ * limit". The Codex stream reports that as a terminal `response.incomplete`
+ * event rather than a finish reason, and its client throws on it.
  */
-async function extractOnce(
+function isOutputLimitError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { incompleteReason?: unknown }).incompleteReason ===
+      "max_output_tokens"
+  );
+}
+
+/**
+ * The rows of a JSON reply that was cut off at the output limit, up to the
+ * last row object that closed. A provider that stops mid-row leaves a prefix
+ * that no JSON parser accepts, so without this a report that ran one row too
+ * long lost every row it had already transcribed.
+ *
+ * Walks the text once, tracking strings and nesting, and remembers where the
+ * last object directly inside the top-level object's first array closed
+ * (`{ "rows": [ {…}, {…}, {…` → after the second). That prefix, closed with
+ * `]}`, is parsed. Null when the reply holds no complete row, or when it is
+ * not a cut-off object at all (a complete document is the parser's job).
+ */
+export function salvageTruncatedJson(raw: string): unknown {
+  const start = raw.indexOf("{");
+  if (start < 0) return null;
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  let lastRowEnd = -1;
+  for (let i = start; i < raw.length; i += 1) {
+    const c = raw[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{" || c === "[") stack.push(c);
+    else if (c === "}" || c === "]") {
+      stack.pop();
+      if (stack.length === 0) return null;
+      if (c === "}" && stack.length === 2 && stack[1] === "[") lastRowEnd = i;
+    }
+  }
+  if (lastRowEnd < 0) return null;
+  try {
+    return JSON.parse(`${raw.slice(start, lastRowEnd + 1)}]}`);
+  } catch {
+    return null;
+  }
+}
+
+/** What one provider call returned, reduced to what the merge needs. */
+interface OcrCallOutcome {
+  envelope: ExtractedLabs | null;
+  /** The reply stopped at the output limit. */
+  truncated: boolean;
+  /** Tokens the provider reported, or the call's ceiling when it reported none. */
+  spent: number;
+}
+
+async function callOnce(
   provider: AIProvider,
   params: CompletionParams,
-): Promise<ReturnType<typeof extractedLabsSchema.safeParse>> {
-  const raw = await provider.generateCompletion(params);
+): Promise<OcrCallOutcome> {
+  const ceiling = params.maxTokens ?? 0;
+  let raw;
+  try {
+    raw = await provider.generateCompletion(params);
+  } catch (err) {
+    if (isOutputLimitError(err)) {
+      return { envelope: null, truncated: true, spent: ceiling };
+    }
+    throw err;
+  }
+  const truncated = raw.finishReason === "length";
   let json: unknown;
   try {
     json = JSON.parse(raw.content);
   } catch {
-    return extractedLabsSchema.safeParse(undefined);
+    json = truncated ? salvageTruncatedJson(raw.content) : undefined;
   }
-  return extractedLabsSchema.safeParse(json);
+  return {
+    envelope: parseExtractedLabs(json),
+    truncated,
+    spent: raw.tokensUsed ?? ceiling,
+  };
 }
 
-export class OcrExtractError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "OcrExtractError";
-  }
+/**
+ * One read: the call, and one corrective retry when the answer was not the
+ * schema. A reply cut at the output limit is not retried — the same request
+ * stops at the same limit — and keeps whatever rows closed before the cut.
+ */
+async function readChunk(
+  provider: AIProvider,
+  params: CompletionParams,
+): Promise<OcrCallOutcome> {
+  const first = await callOnce(provider, params);
+  if (first.envelope || first.truncated) return first;
+  const retry = await callOnce(
+    provider,
+    appendToLastUserMessage(params, RETRY_SUFFIX),
+  );
+  return { ...retry, spent: first.spent + retry.spent };
 }
 
 /**
@@ -253,82 +372,217 @@ export async function annotateRow(
   };
 }
 
-export interface RunOcrExtractionArgs {
-  userId: string;
-  provider: AIProvider;
-  providerType: string;
-  /** Image inputs (jpeg/png/webp). Empty when a PDF or OCR text is sent. */
+/**
+ * One provider call's share of a report: some of its pages (images, or the
+ * whole PDF as one document), or a part of the OCR'd text.
+ */
+export interface OcrChunk {
   images?: {
     mediaType: "image/jpeg" | "image/png" | "image/webp";
     dataBase64: string;
   }[];
-  /** PDF input (Anthropic-only). Empty when images or OCR text are sent. */
+  /** PDF input (Anthropic-only), sent whole as one read. */
   documents?: { mediaType: "application/pdf"; dataBase64: string }[];
   /**
-   * TEXT-mode (local-OCR) input. When set, the extraction structures this
+   * TEXT-mode (local-OCR) input. When set, the read structures this
    * in-browser-OCR'd text via a text-only provider; `images`/`documents` are
    * left unset so the codex/text wire (which only sends `input_text`) works
    * unchanged and the raw image never reaches the server.
    */
-  ocrText?: string;
+  text?: string;
+  /**
+   * The report pages (1-based) this chunk carries. Empty when the input has
+   * no pages of its own: a photo, a PDF sent whole, a part of the OCR text.
+   */
+  pages: number[];
+}
+
+export interface RunOcrExtractionArgs {
+  userId: string;
+  provider: AIProvider;
+  providerType: string;
+  mode: "vision" | "text";
+  /** The reads, in report order. At least one. */
+  chunks: OcrChunk[];
+  /** The page count of the document the chunks come from, when it has pages. */
+  totalPages?: number;
+}
+
+export interface OcrExtraction {
+  data: OcrExtractResponseDto;
+  /** What the reads cost, as the provider reported it (else each call's ceiling). */
+  spentTokens: number;
+}
+
+/** "3", "3-4". */
+function pageSpan(pages: number[]): string {
+  if (pages.length === 1) return String(pages[0]);
+  return `${pages[0]}-${pages[pages.length - 1]}`;
+}
+
+/** The completion one chunk sends. */
+export function ocrChunkParams(
+  mode: "vision" | "text",
+  chunk: OcrChunk,
+  index: number,
+  count: number,
+  totalPages?: number,
+): CompletionParams {
+  const base = {
+    temperature: AI_BUDGETS.ocrExtract.temperature,
+    maxTokens: AI_BUDGETS.ocrExtract.maxTokens,
+    timeoutMs: AI_BUDGETS.ocrExtract.timeoutMs,
+    responseFormat: "json" as const,
+  };
+  if (mode === "text") {
+    // The text goes in the user prompt and images/documents stay UNSET, so
+    // the text-only provider wire (codex `input_text`) carries it unchanged.
+    const part = count > 1 ? ` (part ${index + 1} of ${count})` : "";
+    return {
+      ...singleUserTurn({
+        system: TEXT_SYSTEM_PROMPT,
+        user: `Structure the following OCR'd lab-report text into the JSON schema described in the system prompt. Return only the JSON object.\n\nOCR TEXT${part}:\n${chunk.text ?? ""}`,
+        ...base,
+      }),
+      reasoning: TRANSCRIPTION_REASONING,
+    };
+  }
+  const paged =
+    chunk.pages.length > 0 && totalPages !== undefined && totalPages > 1
+      ? ` The attached ${chunk.pages.length === 1 ? "image is page" : "images are pages"} ${pageSpan(chunk.pages)} of a ${totalPages}-page report; transcribe the readings printed on ${chunk.pages.length === 1 ? "it" : "them"}.`
+      : "";
+  return {
+    ...singleUserTurn({
+      system: SYSTEM_PROMPT,
+      user: `${USER_PROMPT}${paged}`,
+      ...base,
+      images: chunk.images,
+      documents: chunk.documents,
+    }),
+    reasoning: TRANSCRIPTION_REASONING,
+  };
+}
+
+/** The identity of a reading for the merge: the same row printed twice is one. */
+function readingKey(row: ExtractedRow, rowDate: string | null): string {
+  return [
+    row.analyte.trim().toLowerCase(),
+    row.value ?? "",
+    (row.valueText ?? "").trim().toLowerCase(),
+    (row.unit ?? "").trim().toLowerCase(),
+    normaliseDate(row.takenAt) ?? rowDate ?? "",
+  ].join("|");
 }
 
 /**
- * Run the extraction end-to-end: provider call → schema-validate → per-row
- * server annotation. Caps the returned rows. Throws `OcrExtractError` when the
- * provider returns nothing parseable after the retry.
+ * Run the extraction end-to-end: one read per chunk, merged in report order,
+ * then per-row server annotation. Throws `OcrExtractError` when no read
+ * produced a usable envelope, and the provider's own error when the first
+ * read fails outright (nothing to keep). A provider failure on a later read
+ * keeps what the earlier reads produced and names the pages it did not reach.
  */
 export async function runOcrExtraction(
   args: RunOcrExtractionArgs,
-): Promise<OcrExtractResponseDto> {
-  const isTextMode = typeof args.ocrText === "string";
+): Promise<OcrExtraction> {
+  const { chunks } = args;
+  const reads: { envelope: ExtractedLabs; chunk: OcrChunk }[] = [];
+  const truncatedPages: number[] = [];
+  const unreadPages: number[] = [];
+  let truncatedReads = 0;
+  let truncatedKeptReads = 0;
+  let unreadReads = 0;
+  let spentTokens = 0;
 
-  // Text mode: structure the in-browser-OCR'd text. The text goes in the user
-  // prompt and images/documents stay UNSET, so the text-only provider wire
-  // (codex `input_text`) carries it unchanged — the image never reaches here.
-  const params: CompletionParams = isTextMode
-    ? singleUserTurn({
-        system: TEXT_SYSTEM_PROMPT,
-        user: `Structure the following OCR'd lab-report text into the JSON schema described in the system prompt. Return only the JSON object.\n\nOCR TEXT:\n${args.ocrText}`,
-        temperature: AI_BUDGETS.ocrExtract.temperature,
-        maxTokens: AI_BUDGETS.ocrExtract.maxTokens,
-        responseFormat: "json",
-      })
-    : singleUserTurn({
-        system: SYSTEM_PROMPT,
-        user: USER_PROMPT,
-        temperature: AI_BUDGETS.ocrExtract.temperature,
-        maxTokens: AI_BUDGETS.ocrExtract.maxTokens,
-        responseFormat: "json",
-        images: args.images,
-        documents: args.documents,
+  for (let i = 0; i < chunks.length; i += 1) {
+    const chunk = chunks[i];
+    let read: OcrCallOutcome;
+    try {
+      read = await readChunk(
+        args.provider,
+        ocrChunkParams(args.mode, chunk, i, chunks.length, args.totalPages),
+      );
+    } catch (err) {
+      if (reads.length === 0) throw err;
+      // The provider stopped answering partway through. What the earlier
+      // pages produced is kept; the rest is named on the review screen.
+      for (const rest of chunks.slice(i)) unreadPages.push(...rest.pages);
+      unreadReads += chunks.length - i;
+      annotate({
+        action: { name: "labs.ocr.partialRead" },
+        meta: {
+          reason: "provider_error",
+          providerType: args.providerType,
+          readsDone: i,
+          reads: chunks.length,
+        },
       });
-
-  let parsed = await extractOnce(args.provider, params);
-  if (!parsed.success) {
-    // One corrective retry — re-state the schema requirement in the prompt.
-    // Reuse the mode's own user prompt (text mode carries the OCR text in it);
-    // appendToLastUserMessage keeps the single user turn, folding the
-    // correction into its text (or as a trailing text part on the vision path).
-    const retryParams = appendToLastUserMessage(
-      params,
-      "\n\nYour previous response was not valid JSON matching the schema. Return ONLY the JSON object described in the system prompt, with no prose or markdown.",
-    );
-    parsed = await extractOnce(args.provider, retryParams);
+      break;
+    }
+    spentTokens += read.spent;
+    if (read.truncated) truncatedReads += 1;
+    if (read.envelope) {
+      reads.push({ envelope: read.envelope, chunk });
+      if (read.truncated) {
+        truncatedKeptReads += 1;
+        truncatedPages.push(...chunk.pages);
+      }
+    } else {
+      unreadReads += 1;
+      unreadPages.push(...chunk.pages);
+    }
   }
 
-  if (!parsed.success) {
+  if (reads.length === 0) {
+    const outputLimit = truncatedReads > 0;
     annotate({
       action: { name: "labs.ocr.extractFailed" },
-      meta: { reason: "schema_mismatch", providerType: args.providerType },
+      meta: {
+        reason: outputLimit ? "output_limit" : "schema_mismatch",
+        providerType: args.providerType,
+        reads: chunks.length,
+      },
     });
-    throw new OcrExtractError("Provider returned no parseable extraction");
+    throw new OcrExtractError(
+      outputLimit
+        ? "Provider stopped at its output limit before returning a row"
+        : "Provider returned no parseable extraction",
+      outputLimit ? "output_limit" : "unparseable",
+    );
   }
 
-  const envelope = parsed.data;
-  const reportDate = normaliseDate(envelope.reportDate);
+  // The report's date is the first one a read found; a page that prints its
+  // own date keeps it for its rows.
+  const reportDate =
+    reads
+      .map((r) => normaliseDate(r.envelope.reportDate))
+      .find((d) => d !== null) ?? null;
 
-  // Cap defensively (the schema already bounds it) and annotate each row.
+  // Merge in report order. A reading printed twice (a summary page repeating
+  // a value, a table running across a page break) is listed once; the commit
+  // would skip the second copy as a duplicate anyway.
+  const seen = new Set<string>();
+  const merged: { row: ExtractedRow; rowDate: string | null }[] = [];
+  let mergedDuplicates = 0;
+  let droppedRows = 0;
+  for (const { envelope } of reads) {
+    droppedRows += envelope.droppedRows;
+    const rowDate = normaliseDate(envelope.reportDate) ?? reportDate;
+    for (const row of envelope.rows) {
+      const key = readingKey(row, rowDate);
+      if (seen.has(key)) {
+        mergedDuplicates += 1;
+        continue;
+      }
+      seen.add(key);
+      merged.push({ row, rowDate });
+    }
+  }
+
+  // More readings than one scan carries: keep the first ones and say so,
+  // rather than refusing the lot.
+  const found = merged.length;
+  const kept = merged.slice(0, OCR_MAX_ROWS);
+
   const rows: OcrExtractedRowDto[] = [];
   // How many rows printed a window the parser could not read. Those rows fall
   // back to whatever bounds the model itself reported, or to none — either way
@@ -338,19 +592,25 @@ export async function runOcrExtraction(
   let unreadableRanges = 0;
   const tz = await resolveUserTimezone(args.userId);
   const markerIndex = await loadMarkerIndex(prisma, args.userId);
-  for (const row of envelope.rows.slice(0, OCR_MAX_ROWS)) {
+  for (const { row, rowDate } of kept) {
     if (isUnreadableRange(parseReferenceRange(row.referenceText, row.unit))) {
       unreadableRanges += 1;
     }
-    rows.push(await annotateRow(args.userId, row, reportDate, tz, markerIndex));
+    rows.push(await annotateRow(args.userId, row, rowDate, tz, markerIndex));
   }
 
   annotate({
     action: { name: "labs.ocr.extracted" },
     meta: {
-      mode: isTextMode ? "text" : "vision",
+      mode: args.mode,
       providerType: args.providerType,
       rows: rows.length,
+      reads: chunks.length,
+      truncatedReads,
+      unreadReads,
+      droppedRows,
+      mergedDuplicates,
+      rowsCapped: found > kept.length,
       duplicates: rows.filter((r) => r.duplicateOf !== null).length,
       newBiomarkers: rows.filter((r) => r.biomarkerMatch === "new").length,
       aliasMatches: rows.filter((r) => r.matchKind === "alias").length,
@@ -360,8 +620,18 @@ export async function runOcrExtraction(
   });
 
   return {
-    reportDate,
-    providerType: args.providerType,
-    rows,
+    data: {
+      reportDate,
+      providerType: args.providerType,
+      rows,
+      ...(truncatedKeptReads > 0
+        ? { truncated: { pages: truncatedPages } }
+        : {}),
+      ...(unreadReads > 0 ? { unreadPages } : {}),
+      ...(found > kept.length
+        ? { rowsCapped: { kept: kept.length, found } }
+        : {}),
+    },
+    spentTokens,
   };
 }

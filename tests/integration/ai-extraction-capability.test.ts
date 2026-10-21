@@ -81,7 +81,10 @@ vi.mock("@/lib/documents/assist", async (importOriginal) => ({
 }));
 vi.mock("@/lib/labs/ocr-extract", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/labs/ocr-extract")>()),
-  runOcrExtraction: vi.fn(async () => ({ rows: [], reportDate: null })),
+  runOcrExtraction: vi.fn(async () => ({
+    data: { rows: [], reportDate: null, providerType: "openai" },
+    spentTokens: 0,
+  })),
 }));
 vi.mock("@/lib/documents/describe", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/documents/describe")>()),

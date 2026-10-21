@@ -215,7 +215,8 @@ describe("the surfaces that used to fall back to 60 s", () => {
         userId: "u1",
         provider: bound(),
         providerType: "local",
-        images: image,
+        mode: "vision",
+        chunks: [{ images: image, pages: [] }],
       }),
     ).rejects.toBe(STOP);
     expect(dialledTimeout()).toBe(300_000);

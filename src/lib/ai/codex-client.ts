@@ -982,6 +982,15 @@ export class CodexClient implements AIProvider {
                 httpStatus: 0,
                 kind: "stream_failed",
                 upstream: "codex",
+                // The documented reason (`max_output_tokens`,
+                // `content_filter`), so a caller can tell a reply cut at the
+                // output limit from any other stream failure.
+                ...(parsed.response?.incomplete_details?.reason
+                  ? {
+                      incompleteReason:
+                        parsed.response.incomplete_details.reason,
+                    }
+                  : {}),
               });
               throw e;
             }

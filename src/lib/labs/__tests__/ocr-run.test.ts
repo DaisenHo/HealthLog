@@ -1,10 +1,10 @@
 /**
  * The lab scan read the background worker runs (v1.40), moved out of the
  * route with the guarantees the route's own tests used to pin: the budget is
- * settled against what the provider was asked to do, a PDF is rendered for a
- * provider that cannot read one, a long PDF says which pages were read, and a
- * provider failure is named as one without the upstream body reaching the
- * stored failure or the event stream.
+ * settled against what the provider reported, a PDF is rendered and read a
+ * page at a time, a long PDF says which pages were read, the reads fit the
+ * run's deadline, and a provider failure is named as one without the upstream
+ * body reaching the stored failure or the event stream.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,7 +23,13 @@ vi.mock("@/lib/labs/ocr-extract", async () => {
 import { reconcileSpend } from "@/lib/ai/coach/budget";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 import { OcrExtractError, runOcrExtraction } from "@/lib/labs/ocr-extract";
-import { executeOcrExtraction } from "@/lib/labs/ocr-run";
+import {
+  executeOcrExtraction,
+  OCR_MAX_PAGES,
+  OCR_TEXT_READ_CHARS,
+  planPageReads,
+  splitOcrText,
+} from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
 
 const budget = {
@@ -40,22 +46,101 @@ const codexPick = {
   providerType: "codex",
   pdfSupported: false,
 } as never;
+const anthropicPick = {
+  entry: { providerType: "anthropic", instance: {} as never },
+  providerType: "anthropic",
+  pdfSupported: true,
+} as never;
 
-const text = () => ({ mode: "text" as const, text: "Hb 14", pick: textPick });
-const pdf = () => ({
+const text = (t = "Hb 14") => ({
+  mode: "text" as const,
+  text: t,
+  pick: textPick,
+});
+const pdf = (pick: never = codexPick) => ({
   mode: "vision" as const,
   bytes: Buffer.from("%PDF-1.4"),
   mime: "application/pdf" as const,
-  pick: codexPick,
+  pick,
+});
+const pages = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    mediaType: "image/jpeg" as const,
+    dataBase64: `page${i + 1}`,
+  }));
+const extraction = (spentTokens = 0) => ({
+  data: { rows: [] } as never,
+  spentTokens,
+});
+const schedule = (maxModelCalls: number) => ({
+  maxModelCalls: () => maxModelCalls,
+  arm: vi.fn().mockResolvedValue(undefined),
 });
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe("planning the reads", () => {
+  it("reads one page per call when the deadline allows it", () => {
+    expect(planPageReads(3, Number.POSITIVE_INFINITY)).toEqual([[1], [2], [3]]);
+  });
+
+  it("shares the pages out when the deadline allows fewer reads", () => {
+    expect(planPageReads(10, 4)).toEqual([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+      [10],
+    ]);
+    expect(planPageReads(5, 1)).toEqual([[1, 2, 3, 4, 5]]);
+    expect(planPageReads(5, 0)).toEqual([[1, 2, 3, 4, 5]]);
+  });
+
+  it("keeps a photo's text as one read", () => {
+    expect(splitOcrText("Hb 14\nMCV 90", Number.POSITIVE_INFINITY)).toEqual([
+      "Hb 14\nMCV 90",
+    ]);
+  });
+
+  it("splits long text at line boundaries, every line kept once", () => {
+    const lines = Array.from(
+      { length: 400 },
+      (_, i) => `Marker ${i} 1,5 mg/dl`,
+    );
+    const whole = lines.join("\n");
+    const parts = splitOcrText(whole, Number.POSITIVE_INFINITY);
+    expect(parts.length).toBeGreaterThan(1);
+    for (const part of parts) {
+      expect(part.length).toBeLessThanOrEqual(OCR_TEXT_READ_CHARS);
+    }
+    expect(parts.join("\n")).toBe(whole);
+  });
+
+  it("never splits text into more reads than the deadline allows", () => {
+    const whole = Array.from({ length: 400 }, (_, i) => `Marker ${i}`).join(
+      "\n",
+    );
+    const parts = splitOcrText(whole, 2);
+    expect(parts).toHaveLength(2);
+    expect(parts.join("\n")).toBe(whole);
+  });
+
+  it("folds the remainder in when lines do not share out evenly", () => {
+    // Seven long lines into three reads: packing two lines a read leaves a
+    // fourth read, which is folded into the third.
+    const whole = Array.from({ length: 7 }, (_, i) =>
+      String(i).repeat(5000),
+    ).join("\n");
+    const parts = splitOcrText(whole, 3);
+    expect(parts).toHaveLength(3);
+    expect(parts.join("\n")).toBe(whole);
+  });
+});
+
 describe("text mode", () => {
-  it("charges the reservation to the provider that served", async () => {
-    vi.mocked(runOcrExtraction).mockResolvedValue({ rows: [] } as never);
+  it("charges what the provider reported to the provider that served", async () => {
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction(2345));
     const out = await executeOcrExtraction({
       userId: "u1",
       input: text(),
@@ -65,14 +150,44 @@ describe("text mode", () => {
     expect(reconcileSpend).toHaveBeenCalledWith(
       "u1",
       1500,
+      2345,
+      "2027-01-15",
+      0,
+      { servedBy: "openai", reservedOwner: "operator" },
+    );
+  });
+
+  it("charges the reservation when the provider reported nothing", async () => {
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction(0));
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500,
       1500,
       "2027-01-15",
       0,
-      {
-        servedBy: "openai",
-        reservedOwner: "operator",
-      },
+      { servedBy: "openai", reservedOwner: "operator" },
     );
+  });
+
+  it("sends long text in parts and moves the deadline to cover them", async () => {
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    // ~8.8k characters: three reads of at most OCR_TEXT_READ_CHARS.
+    const long = Array.from(
+      { length: 400 },
+      (_, i) => `Marker ${i} 1,5 mg/dl`,
+    ).join("\n");
+    const s = schedule(20);
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(long),
+      budget,
+      schedule: s,
+    });
+    const chunks = vi.mocked(runOcrExtraction).mock.calls[0][0].chunks;
+    expect(chunks).toHaveLength(3);
+    expect(chunks.every((c) => c.pages.length === 0)).toBe(true);
+    expect(s.arm).toHaveBeenCalledWith(6);
   });
 
   it("refunds the reservation in full on a clean extract failure", async () => {
@@ -93,11 +208,24 @@ describe("text mode", () => {
       0,
       "2027-01-15",
       0,
-      {
-        servedBy: null,
-        reservedOwner: "operator",
-      },
+      { servedBy: null, reservedOwner: "operator" },
     );
+  });
+
+  it("names a read that stopped at the output limit as exactly that", async () => {
+    vi.mocked(runOcrExtraction).mockRejectedValue(
+      new OcrExtractError("x", "output_limit"),
+    );
+    const out = await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+    });
+    expect(out).toMatchObject({
+      ok: false,
+      status: 422,
+      errorCode: "labs.ocr.outputLimit",
+    });
   });
 
   it("names a provider failure and never keeps the upstream body", async () => {
@@ -128,37 +256,103 @@ describe("text mode", () => {
 });
 
 describe("vision mode", () => {
-  it("renders a PDF for a provider without native PDF and sends the pages", async () => {
+  it("reads a rendered PDF one page per call", async () => {
     vi.mocked(rasterizePdf).mockResolvedValue({
       ok: true,
-      images: [{ mediaType: "image/jpeg", dataBase64: "cGFnZQ==" }],
-      pageCount: 1,
+      images: pages(3),
+      pageCount: 3,
     });
-    vi.mocked(runOcrExtraction).mockResolvedValue({ rows: [] } as never);
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    const s = schedule(Number.POSITIVE_INFINITY);
     const out = await executeOcrExtraction({
       userId: "u1",
       input: pdf(),
       budget,
+      schedule: s,
     });
     expect(out).toEqual({ ok: true, data: { rows: [] } });
-    expect(runOcrExtraction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        images: [{ mediaType: "image/jpeg", dataBase64: "cGFnZQ==" }],
-        documents: [],
-      }),
-    );
+    expect(rasterizePdf).toHaveBeenCalledWith(expect.anything(), OCR_MAX_PAGES);
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.totalPages).toBe(3);
+    expect(args.chunks).toEqual([
+      { images: [pages(3)[0]], documents: [], pages: [1] },
+      { images: [pages(3)[1]], documents: [], pages: [2] },
+      { images: [pages(3)[2]], documents: [], pages: [3] },
+    ]);
+    expect(s.arm).toHaveBeenCalledWith(6);
+  });
+
+  it("reads a multi-page PDF page by page on a provider that reads PDFs too", async () => {
+    vi.mocked(rasterizePdf).mockResolvedValue({
+      ok: true,
+      images: pages(4),
+      pageCount: 4,
+    });
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    await executeOcrExtraction({
+      userId: "u1",
+      input: pdf(anthropicPick),
+      budget,
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.chunks.map((c) => c.pages)).toEqual([[1], [2], [3], [4]]);
+    expect(args.chunks.every((c) => c.documents?.length === 0)).toBe(true);
+  });
+
+  it("keeps the native document for a one-page PDF, or one that cannot be rendered", async () => {
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    vi.mocked(rasterizePdf).mockResolvedValueOnce({
+      ok: true,
+      images: pages(1),
+      pageCount: 1,
+    });
+    vi.mocked(rasterizePdf).mockResolvedValueOnce({
+      ok: false,
+      reason: "unsupported",
+    });
+    for (let i = 0; i < 2; i += 1) {
+      await executeOcrExtraction({
+        userId: "u1",
+        input: pdf(anthropicPick),
+        budget,
+      });
+      const args = vi.mocked(runOcrExtraction).mock.calls[i][0];
+      expect(args.chunks).toHaveLength(1);
+      expect(args.chunks[0].documents).toHaveLength(1);
+      expect(args.chunks[0].images).toEqual([]);
+    }
+  });
+
+  it("puts several pages in a read when the deadline allows fewer reads", async () => {
+    vi.mocked(rasterizePdf).mockResolvedValue({
+      ok: true,
+      images: pages(10),
+      pageCount: 10,
+    });
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
+    // Five sequential calls fit: two reads with their retries.
+    const s = schedule(5);
+    await executeOcrExtraction({
+      userId: "u1",
+      input: pdf(),
+      budget,
+      schedule: s,
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.chunks.map((c) => c.pages)).toEqual([
+      [1, 2, 3, 4, 5],
+      [6, 7, 8, 9, 10],
+    ]);
+    expect(s.arm).toHaveBeenCalledWith(4);
   });
 
   it("says when only the first pages of a long PDF were read", async () => {
     vi.mocked(rasterizePdf).mockResolvedValue({
       ok: true,
-      images: Array.from({ length: 10 }, () => ({
-        mediaType: "image/jpeg" as const,
-        dataBase64: "cGFnZQ==",
-      })),
+      images: pages(OCR_MAX_PAGES),
       pageCount: 23,
     });
-    vi.mocked(runOcrExtraction).mockResolvedValue({ rows: [] } as never);
+    vi.mocked(runOcrExtraction).mockResolvedValue(extraction());
     const out = await executeOcrExtraction({
       userId: "u1",
       input: pdf(),
@@ -166,7 +360,7 @@ describe("vision mode", () => {
     });
     expect(out).toEqual({
       ok: true,
-      data: { rows: [], pageCoverage: { read: 10, total: 23 } },
+      data: { rows: [], pageCoverage: { read: OCR_MAX_PAGES, total: 23 } },
     });
   });
 
@@ -192,10 +386,7 @@ describe("vision mode", () => {
       0,
       "2027-01-15",
       0,
-      {
-        servedBy: null,
-        reservedOwner: "operator",
-      },
+      { servedBy: null, reservedOwner: "operator" },
     );
   });
 });
