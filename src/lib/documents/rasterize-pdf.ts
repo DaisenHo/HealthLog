@@ -284,22 +284,47 @@ export function __resetPdfjsAssetsForTests(): void {
 }
 
 /**
- * A page's text layer, line by line: what a digitally produced PDF printed,
- * character for character, which no rendering at a capped resolution can
- * beat for small digits. Empty for a scanned page or on any failure.
+ * The most text kept from one page's text layer. Collection stops here while
+ * the items are read, so a PDF whose content streams inflate to megabytes of
+ * text cannot hold them in memory for the length of a run. A dense lab page
+ * is well below it.
  */
-async function pageText(page: PdfPage): Promise<string> {
+export const RASTER_PAGE_TEXT_MAX = 12_000;
+
+/** Marks where a text layer was cut. */
+export const TEXT_LAYER_CUT_MARK = "[text layer cut here]";
+
+/**
+ * A page's text layer, line by line: what the PDF states as characters.
+ * Empty for a page without one or on any failure; cut at a line, and marked,
+ * past `maxChars`.
+ */
+async function pageText(page: PdfPage, maxChars: number): Promise<string> {
   try {
     const { items } = await page.getTextContent();
-    let text = "";
+    const lines: string[] = [];
+    let length = 0;
+    let line = "";
+    const flush = (): boolean => {
+      const clean = line.replace(/\s+/g, " ").trim();
+      line = "";
+      if (!clean) return true;
+      if (length + clean.length + 1 > maxChars) return false;
+      lines.push(clean);
+      length += clean.length + 1;
+      return true;
+    };
     for (const item of items) {
-      text += (item.str ?? "") + (item.hasEOL ? "\n" : " ");
+      line += `${item.str ?? ""} `;
+      // A line that runs on without a break is flushed at the cap, so one
+      // endless line cannot grow past it either.
+      if ((item.hasEOL || line.length > maxChars) && !flush()) {
+        lines.push(TEXT_LAYER_CUT_MARK);
+        return lines.join("\n");
+      }
     }
-    return text
-      .split("\n")
-      .map((line) => line.replace(/\s+/g, " ").trim())
-      .filter((line) => line.length > 0)
-      .join("\n");
+    if (!flush()) lines.push(TEXT_LAYER_CUT_MARK);
+    return lines.join("\n");
   } catch {
     return "";
   }
@@ -315,7 +340,7 @@ async function pageText(page: PdfPage): Promise<string> {
 export async function rasterizePdf(
   buffer: Buffer,
   maxPages: number = RASTER_MAX_PAGES,
-  opts: { withText?: boolean } = {},
+  opts: { withText?: boolean; textMaxChars?: number } = {},
 ): Promise<RasterResult> {
   let doc: PdfDocument | null = null;
   let task: PdfLoadingTask | null = null;
@@ -403,7 +428,11 @@ export async function rasterizePdf(
           dataBase64: jpeg.toString("base64"),
         });
         factory.destroy?.(cc);
-        if (opts.withText) texts.push(await pageText(page));
+        if (opts.withText) {
+          texts.push(
+            await pageText(page, opts.textMaxChars ?? RASTER_PAGE_TEXT_MAX),
+          );
+        }
       } finally {
         page.cleanup();
       }

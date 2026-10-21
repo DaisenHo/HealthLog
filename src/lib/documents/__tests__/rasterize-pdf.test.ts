@@ -8,6 +8,7 @@ import {
   RASTER_HARD_MAX_PAGES,
   RASTER_MAX_PAGES,
   rasterizePdf,
+  TEXT_LAYER_CUT_MARK,
 } from "../rasterize-pdf";
 
 /**
@@ -108,6 +109,19 @@ describe("rasterizePdf", () => {
     expect(scanned.ok && scanned.texts).toEqual([""]);
     const plain = await rasterizePdf(buildPdf(1, true));
     expect(plain.ok && plain.texts).toBeUndefined();
+  });
+
+  it("stops collecting a page's text at the cap while reading, and marks the cut", async () => {
+    const capped = await rasterizePdf(buildPdf(1, true), 20, {
+      withText: true,
+      textMaxChars: 8,
+    });
+    expect(capped.ok && capped.texts).toEqual([TEXT_LAYER_CUT_MARK]);
+    const roomy = await rasterizePdf(buildPdf(1, true), 20, {
+      withText: true,
+      textMaxChars: 1000,
+    });
+    expect(roomy.ok && roomy.texts?.[0]).toMatch(/^Page 1 lab/);
   });
 
   it("lets a caller ask for more pages, never past RASTER_HARD_MAX_PAGES", async () => {

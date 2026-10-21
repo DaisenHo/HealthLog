@@ -17,10 +17,19 @@
 import type { Buffer } from "node:buffer";
 
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
-import { reserveBudget, resolveDailyCap } from "@/lib/ai/coach/budget";
+import {
+  OPERATOR_COST_CAP,
+  reserveBudget,
+  USER_PLAN_CAP,
+} from "@/lib/ai/coach/budget";
+import { refusalAsFailure } from "@/lib/documents/ai-runs/http";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { settleAiRunBudget } from "@/lib/documents/ai-runs/store";
-import type { AiRunBudget, AiRunOutcome } from "@/lib/documents/ai-runs/types";
+import {
+  AI_RUN_ERROR_CODES,
+  type AiRunBudget,
+  type AiRunOutcome,
+} from "@/lib/documents/ai-runs/types";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import type { VisionProviderPick } from "@/lib/labs/ocr-capability";
@@ -117,14 +126,15 @@ export function splitOcrText(text: string, maxReads: number): string[] {
  */
 export const OCR_TEXT_READ_MAX_CHARS = 8000;
 
-/** The text layer of these pages, each headed by its number when several. */
-function pageTextFor(pages: number[], texts: string[] | undefined): string {
-  if (!texts) return "";
-  const parts = pages
-    .map((p) => ({ p, text: texts[p - 1]?.trim() ?? "" }))
-    .filter((x) => x.text.length > 0);
-  if (pages.length === 1) return parts[0]?.text ?? "";
-  return parts.map((x) => `[page ${x.p}]\n${x.text}`).join("\n\n");
+/** The text layer of these pages, those that have one. */
+function pageTextsFor(
+  pages: number[],
+  texts: string[] | undefined,
+): { page: number; text: string }[] {
+  if (!texts) return [];
+  return pages
+    .map((page) => ({ page, text: texts[page - 1]?.trim() ?? "" }))
+    .filter((p) => p.text.length > 0);
 }
 
 /** How many reads the deadline leaves room for. */
@@ -176,20 +186,42 @@ const failure = (f: {
   errorCode: string;
 }): AiRunOutcome<never> => ({ ok: false, ...f });
 
-/** The 422 a read that produced nothing usable answers with. */
+/** The failure a scan that produced nothing usable answers with. */
 function unreadable(err: OcrExtractError): AiRunOutcome<never> {
-  return err.reason === "output_limit"
-    ? failure({
+  switch (err.reason) {
+    case "output_limit":
+      return failure({
         status: 422,
         message:
           "The AI provider stopped at its output limit before it returned a reading.",
         errorCode: "labs.ocr.outputLimit",
-      })
-    : failure({
+      });
+    case "budget":
+      return failure({
+        status: 429,
+        message: "Your AI usage budget for today is reached.",
+        errorCode: "labs.ocr.budgetExceeded",
+      });
+    case "unavailable": {
+      // The wire's own refusal when it gave one (the client reads its code:
+      // consent, the operator's switch, the module); else the re-check
+      // itself failed, which is the background read failing.
+      const refused = err.refusal ? refusalAsFailure(err.refusal) : null;
+      return refused
+        ? failure(refused)
+        : failure({
+            status: 500,
+            message: "The background read failed.",
+            errorCode: AI_RUN_ERROR_CODES.failed,
+          });
+    }
+    default:
+      return failure({
         status: 422,
         message: "Couldn't read the report. Try a clearer photo.",
         errorCode: "labs.ocr.extractFailed",
       });
+  }
 }
 
 /** Read one lab report into proposed rows. The caller authorised the read. */
@@ -206,20 +238,34 @@ export async function executeOcrExtraction(args: {
   // The route reserved the first read. Every further read is reserved on its
   // own against the day's budget before it is sent, so a long report cannot
   // spend past the budget the route checked once; when the budget runs out
-  // the scan stops there and names the pages it did not read.
+  // the scan stops there and names the pages it did not read. What the reads
+  // so far cost beyond what was reserved for them (an image's input, the
+  // prompt, a retry) is booked first, as its own reservation, so the day's
+  // counter the next read is judged against never lags behind the spend.
+  // The cap is the one the route judged the first read against: the owner's.
   let reserved = budget?.reserved ?? 0;
   const reserveRead = budget
     ? async () => {
-        const next = await reserveBudget(
-          userId,
-          AI_BUDGETS.ocrExtract.maxTokens,
-          budget.dateKey,
-          resolveDailyCap([{ providerType: servedBy }]),
-          budget.owner,
-          "coach",
-          undefined,
-          { countMessage: false },
-        );
+        const cap =
+          budget.owner === "operator" ? OPERATOR_COST_CAP : USER_PLAN_CAP;
+        const book = (tokens: number) =>
+          reserveBudget(
+            userId,
+            tokens,
+            budget.dateKey,
+            cap,
+            budget.owner,
+            "coach",
+            undefined,
+            { countMessage: false },
+          );
+        const behind = Math.max(0, meter.spent - reserved);
+        if (behind > 0) {
+          const caughtUp = await book(behind);
+          if (!caughtUp.allowed) return false;
+          reserved += caughtUp.reserved;
+        }
+        const next = await book(AI_BUDGETS.ocrExtract.maxTokens);
         if (next.allowed) reserved += next.reserved;
         return next.allowed;
       }
@@ -323,7 +369,7 @@ export async function executeOcrExtraction(args: {
           images: pages.map((p) => raster.images[p - 1]),
           documents: [],
           pages,
-          pageText: pageTextFor(pages, raster.texts),
+          pageTexts: pageTextsFor(pages, raster.texts),
         }),
       );
       // A PDF longer than the page cap is read from its first pages only, and

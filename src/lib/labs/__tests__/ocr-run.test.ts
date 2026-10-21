@@ -9,11 +9,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
-vi.mock("@/lib/documents/rasterize-pdf", () => ({ rasterizePdf: vi.fn() }));
+vi.mock("@/lib/documents/rasterize-pdf", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/documents/rasterize-pdf")>()),
+  rasterizePdf: vi.fn(),
+}));
 vi.mock("@/lib/ai/coach/budget", () => ({
   reconcileSpend: vi.fn().mockResolvedValue(undefined),
   reserveBudget: vi.fn(),
-  resolveDailyCap: vi.fn(() => 200_000),
+  OPERATOR_COST_CAP: 200_000,
+  USER_PLAN_CAP: 2_000_000,
 }));
 vi.mock("@/lib/labs/ocr-extract", async () => {
   const actual = await vi.importActual<typeof import("@/lib/labs/ocr-extract")>(
@@ -34,6 +38,7 @@ import {
   planPageReads,
   splitOcrText,
 } from "@/lib/labs/ocr-run";
+import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import { annotate } from "@/lib/logging/context";
 
 const budget = {
@@ -246,6 +251,92 @@ describe("text mode", () => {
     );
   });
 
+  it("judges the next read by the owner's cap, the one the route judged the first by", async () => {
+    vi.mocked(reserveBudget).mockResolvedValue({
+      allowed: true,
+      reserved: 8000,
+    } as never);
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      await args.reserveRead!();
+      return extraction(1000)(args);
+    });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget: { ...budget, owner: "user" },
+    });
+    expect(vi.mocked(reserveBudget).mock.calls[0][3]).toBe(2_000_000);
+    expect(vi.mocked(reserveBudget).mock.calls[0][4]).toBe("user");
+  });
+
+  it("books what the reads so far overspent before judging the next one", async () => {
+    // A day's counter against the operator's cap, with reserveBudget's own
+    // rule: a reservation is allowed while the spend before it is under cap.
+    let counter = 190_000;
+    vi.mocked(reserveBudget).mockImplementation(async (...a) => {
+      const [, tokens, , cap] = a as unknown as [
+        string,
+        number,
+        string,
+        number,
+      ];
+      const prior = counter;
+      if (prior >= cap) return { allowed: false, reserved: tokens } as never;
+      counter += tokens;
+      return { allowed: true, reserved: tokens } as never;
+    });
+    let answer: boolean | undefined;
+    vi.mocked(runOcrExtraction).mockImplementation(async (args) => {
+      // The first page cost 20 000 against the 1 500 the route reserved.
+      args.meter!.spent += 20_000;
+      answer = await args.reserveRead!();
+      return { data: { rows: [] } as never, spentTokens: 0, cachedTokens: 0 };
+    });
+    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    // 18 500 caught up first (allowed, the day stood at 190 000); the next
+    // read is then judged at 208 500 and refused. Booking only the 8 000
+    // ceiling, or both in one reservation, would have let it through.
+    expect(answer).toBe(false);
+    expect(vi.mocked(reserveBudget).mock.calls.map((c) => c[1])).toEqual([
+      18_500, 8000,
+    ]);
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      20_000,
+      20_000,
+      "2027-01-15",
+      0,
+      { servedBy: "openai", reservedOwner: "operator" },
+    );
+  });
+
+  it("answers a scan stopped before any row with the stop's own reason", async () => {
+    vi.mocked(runOcrExtraction).mockRejectedValueOnce(
+      new OcrExtractError("x", "budget"),
+    );
+    expect(
+      await executeOcrExtraction({ userId: "u1", input: text(), budget }),
+    ).toMatchObject({ status: 429, errorCode: "labs.ocr.budgetExceeded" });
+
+    vi.mocked(runOcrExtraction).mockRejectedValueOnce(
+      new OcrExtractError(
+        "x",
+        "unavailable",
+        new AiUnavailableError("labsOcr", "consent_required"),
+      ),
+    );
+    expect(
+      await executeOcrExtraction({ userId: "u1", input: text(), budget }),
+    ).toMatchObject({ ok: false, errorCode: "consent.ai.required" });
+
+    vi.mocked(runOcrExtraction).mockRejectedValueOnce(
+      new OcrExtractError("x", "unavailable"),
+    );
+    expect(
+      await executeOcrExtraction({ userId: "u1", input: text(), budget }),
+    ).toMatchObject({ status: 500, errorCode: "aiRuns.failed" });
+  });
+
   it("tells the read to stop when the day's budget refuses the next one", async () => {
     vi.mocked(reserveBudget).mockResolvedValue({
       allowed: false,
@@ -398,9 +489,9 @@ describe("vision mode", () => {
     const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
     expect(args.totalPages).toBe(3);
     expect(args.chunks).toEqual([
-      { images: [pages(3)[0]], documents: [], pages: [1], pageText: "" },
-      { images: [pages(3)[1]], documents: [], pages: [2], pageText: "" },
-      { images: [pages(3)[2]], documents: [], pages: [3], pageText: "" },
+      { images: [pages(3)[0]], documents: [], pages: [1], pageTexts: [] },
+      { images: [pages(3)[1]], documents: [], pages: [2], pageTexts: [] },
+      { images: [pages(3)[2]], documents: [], pages: [3], pageTexts: [] },
     ]);
     expect(s.arm).toHaveBeenCalledWith(6);
   });
@@ -420,9 +511,12 @@ describe("vision mode", () => {
       schedule: schedule(4),
     });
     const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
-    expect(args.chunks.map((c) => c.pageText)).toEqual([
-      "[page 1]\nHb 14,2 g/dl",
-      "[page 3]\nTSH 1,2\n\n[page 4]\nNa 140",
+    expect(args.chunks.map((c) => c.pageTexts)).toEqual([
+      [{ page: 1, text: "Hb 14,2 g/dl" }],
+      [
+        { page: 3, text: "TSH 1,2" },
+        { page: 4, text: "Na 140" },
+      ],
     ]);
   });
 

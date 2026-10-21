@@ -23,6 +23,10 @@ vi.mock("../local-host-allowlist", () => ({
   isLocalAiHostAllowed: () => true,
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
+// The lab scan re-checks the wire before each read; the wire is open here.
+vi.mock("@/lib/ai/capabilities/egress", () => ({
+  aiEgressRefusal: async () => null,
+}));
 
 import { AnthropicClient } from "../anthropic-client";
 import { CodexClient } from "../codex-client";
