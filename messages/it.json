@@ -13640,7 +13640,8 @@
       "below": "Sotto il tuo solito",
       "usual": "Come al solito",
       "above": "Sopra il tuo solito",
-      "high": "Molto sopra il tuo solito"
+      "high": "Molto sopra il tuo solito",
+      "in_progress": "Oggi, ancora in corso"
     },
     "legend": "Rispetto alle tue 12 settimane precedenti:",
     "noBaseline": "Il tuo intervallo abituale compare dopo 14 giorni con dati.",
@@ -13650,7 +13651,9 @@
       "workouts": "{value} allenamenti",
       "load": "Carico di allenamento medio {value}",
       "usual": "Il tuo solito fino a questo punto: {value}",
-      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto."
+      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto.",
+      "usualThroughYesterday": "Fino a ieri {value}, il tuo solito fino a quel punto {usual}",
+      "firstDay": "Il confronto con il tuo solito arriva quando il primo giorno è finito."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

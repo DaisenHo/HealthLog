@@ -11,14 +11,17 @@
  *    above the 90th `high`, everything between `usual`. With fewer than
  *    `MIN_BASELINE_DAYS` days that carry a value the day is `unrated`:
  *    there is not enough history to say what usual is, and the calendar says
- *    so instead of guessing.
+ *    so instead of guessing. TODAY is `in_progress`, never rated: a day
+ *    that has not ended would read as a low day every morning.
  *  - A PERIOD total is placed against the median total of the same kind of
  *    period before it: the twelve weeks before a week, the six months before
  *    a month. A month is compared per day (months differ in length), so the
  *    usual month is the median daily rate of the earlier months times this
- *    month's length. A period still running is compared with the usual rate
- *    times the days elapsed so far, not with a full period it cannot have
- *    reached yet. At least `MIN_REFERENCE_PERIODS` earlier periods with data
+ *    month's length. A period still running is compared over its COMPLETED
+ *    days only: the total through yesterday against the usual rate times the
+ *    days completed, never a full period it cannot have reached yet, and
+ *    never today's partial day (a morning would always read as a shortfall).
+ *    The period total shown and the goals still count today. At least `MIN_REFERENCE_PERIODS` earlier periods with data
  *    are needed; fewer gives no usual.
  *
  * What a day's value is:
@@ -62,7 +65,14 @@ export const MIN_REFERENCE_PERIODS = 3;
 export type ActivityPeriod = "week" | "month";
 export type RatedMetric = "steps" | "activeMinutes" | "load";
 export type DayLevel =
-  "none" | "unrated" | "low" | "below" | "usual" | "above" | "high";
+  | "none"
+  | "unrated"
+  | "in_progress"
+  | "low"
+  | "below"
+  | "usual"
+  | "above"
+  | "high";
 
 /** One local day of raw signals, as the reader assembles it. */
 export interface ActivityDayInput {
@@ -237,13 +247,17 @@ export function dayRange(from: string, to: string): string[] {
 }
 
 export interface PeriodComparison {
-  /** The period's total (steps, active minutes, workouts) or mean (load), over the days so far. */
+  /** The period's total (steps, active minutes, workouts) or mean (load), over the days so far, today included. */
   value: number | null;
   /** Days of the period that carry a value. */
   daysWithData: number;
+  /** Days of the period that have ended (today excluded). */
+  completedDays: number;
+  /** `value` over the completed days only: what `usualToDate` is compared with. */
+  completedValue: number | null;
   /** The usual full period, or null when there is not enough history. */
   usual: number | null;
-  /** The usual figure for the days elapsed so far (equals `usual` for a finished period). */
+  /** The usual figure for the completed days (equals `usual` for a finished period); null before the first day has ended. */
   usualToDate: number | null;
   /** Earlier periods the usual was computed from. */
   referencePeriods: number;
@@ -293,15 +307,21 @@ export function comparePeriod(input: {
 }): PeriodComparison {
   const { bounds, today, valueOf, mode } = input;
   const lastCounted = bounds.end < today ? bounds.end : today;
+  const yesterday = shiftDateKey(today, -1);
+  const lastCompleted = bounds.end < yesterday ? bounds.end : yesterday;
   const length = daysBetweenDateKeys(bounds.start, bounds.end) + 1;
-  const elapsed =
-    lastCounted < bounds.start
-      ? 0
-      : daysBetweenDateKeys(bounds.start, lastCounted) + 1;
+  const daysUpTo = (last: string) =>
+    last < bounds.start ? 0 : daysBetweenDateKeys(bounds.start, last) + 1;
+  const elapsed = daysUpTo(lastCounted);
+  const completed = daysUpTo(lastCompleted);
   const current =
     elapsed === 0
       ? { value: null, n: 0 }
       : aggregate(dayRange(bounds.start, lastCounted).map(valueOf), mode);
+  const done =
+    completed === 0
+      ? { value: null, n: 0 }
+      : aggregate(dayRange(bounds.start, lastCompleted).map(valueOf), mode);
 
   // Each earlier period becomes a per-day rate (sum) or a mean (mean), so a
   // 28-day February and a 31-day March compare on the same footing.
@@ -319,13 +339,15 @@ export function comparePeriod(input: {
     usualRate === null
       ? null
       : mode === "sum"
-        ? usualRate * elapsed
+        ? usualRate * completed
         : usualRate;
   return {
     value: current.value,
     daysWithData: current.n,
+    completedDays: completed,
+    completedValue: done.value,
     usual,
-    usualToDate: elapsed === 0 ? null : usualToDate,
+    usualToDate: completed === 0 ? null : usualToDate,
     referencePeriods: rates.length,
   };
 }
@@ -477,6 +499,14 @@ export function buildActivityCalendar(args: {
         ? null
         : activeMinutesOf(day, hasActivityOn(date));
       const load = future ? null : day.load;
+      // Today has not ended: shown, never rated against whole days.
+      const levelOf = (
+        value: number | null,
+        stats: BaselineStats | null,
+      ): DayLevel =>
+        date === today && value !== null
+          ? "in_progress"
+          : dayLevel(value, stats);
       return {
         date,
         inPeriod: date >= bounds.start && date <= bounds.end,
@@ -487,9 +517,9 @@ export function buildActivityCalendar(args: {
         workoutsBySport: future ? {} : day.workoutsBySport,
         load,
         level: {
-          steps: dayLevel(steps, baseline.steps),
-          activeMinutes: dayLevel(activeMinutes, baseline.activeMinutes),
-          load: dayLevel(load, baseline.load),
+          steps: levelOf(steps, baseline.steps),
+          activeMinutes: levelOf(activeMinutes, baseline.activeMinutes),
+          load: levelOf(load, baseline.load),
         },
       };
     },

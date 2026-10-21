@@ -41,6 +41,7 @@ type DayLevel = CalendarDay["level"]["steps"];
 const LEVEL_BAR: Record<DayLevel, string> = {
   none: "bg-transparent",
   unrated: "bg-muted-foreground/60",
+  in_progress: "bg-muted-foreground/30",
   low: "bg-chart-2/20",
   below: "bg-chart-2/40",
   usual: "bg-chart-2/60",
@@ -412,10 +413,13 @@ export function ActivityCalendarCard() {
                 .filter((m) => data.available[m])
                 .map((m) => {
                   const s = data.summary[m];
+                  // Compared over completed days only: today has not ended.
                   const delta =
-                    s.value !== null && s.usualToDate
-                      ? (s.value - s.usualToDate) / s.usualToDate
+                    s.completedValue !== null && s.usualToDate
+                      ? (s.completedValue - s.usualToDate) / s.usualToDate
                       : null;
+                  const running =
+                    data.today >= data.start && data.today <= data.end;
                   return (
                     <li
                       key={m}
@@ -431,11 +435,24 @@ export function ActivityCalendarCard() {
                           })}
                         </p>
                         <p className="text-muted-foreground text-xs">
-                          {s.usualToDate === null
-                            ? t("activityCalendar.summary.noUsual")
-                            : t("activityCalendar.summary.usual", {
-                                value: formatMetric(m, s.usualToDate),
-                              })}
+                          {s.usual !== null && s.completedDays === 0
+                            ? t("activityCalendar.summary.firstDay")
+                            : s.usualToDate === null
+                              ? t("activityCalendar.summary.noUsual")
+                              : running
+                                ? t(
+                                    "activityCalendar.summary.usualThroughYesterday",
+                                    {
+                                      value:
+                                        s.completedValue === null
+                                          ? "–"
+                                          : formatMetric(m, s.completedValue),
+                                      usual: formatMetric(m, s.usualToDate),
+                                    },
+                                  )
+                                : t("activityCalendar.summary.usual", {
+                                    value: formatMetric(m, s.usualToDate),
+                                  })}
                         </p>
                       </div>
                       {delta !== null ? (

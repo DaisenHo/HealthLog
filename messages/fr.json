@@ -13640,7 +13640,8 @@
       "below": "En dessous de ton habitude",
       "usual": "Comme d'habitude",
       "above": "Au-dessus de ton habitude",
-      "high": "Bien au-dessus de ton habitude"
+      "high": "Bien au-dessus de ton habitude",
+      "in_progress": "Aujourd’hui, en cours"
     },
     "legend": "Comparé à tes 12 semaines précédentes :",
     "noBaseline": "Ta plage habituelle apparaît après 14 jours avec des données.",
@@ -13650,7 +13651,9 @@
       "workouts": "{value} entraînements",
       "load": "Charge d'entraînement moyenne {value}",
       "usual": "Ton habitude à ce stade : {value}",
-      "noUsual": "Pas encore assez de semaines ou de mois précédents pour comparer."
+      "noUsual": "Pas encore assez de semaines ou de mois précédents pour comparer.",
+      "usualThroughYesterday": "Jusqu’à hier {value}, ton habitude à ce stade {usual}",
+      "firstDay": "Comparé à ton habitude dès que le premier jour est terminé."
     },
     "sportCount": "{sport} : {count}",
     "goal": {

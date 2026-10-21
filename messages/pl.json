@@ -13640,7 +13640,8 @@
       "below": "Poniżej twojej normy",
       "usual": "Mniej więcej jak zwykle",
       "above": "Powyżej twojej normy",
-      "high": "Znacznie powyżej twojej normy"
+      "high": "Znacznie powyżej twojej normy",
+      "in_progress": "Dziś, jeszcze trwa"
     },
     "legend": "W porównaniu z twoimi 12 wcześniejszymi tygodniami:",
     "noBaseline": "Twój zwykły zakres pojawi się po 14 dniach z danymi.",
@@ -13650,7 +13651,9 @@
       "workouts": "Treningi: {value}",
       "load": "Średnie obciążenie treningowe {value}",
       "usual": "Twoja norma do tego momentu: {value}",
-      "noUsual": "Za mało wcześniejszych tygodni lub miesięcy do porównania."
+      "noUsual": "Za mało wcześniejszych tygodni lub miesięcy do porównania.",
+      "usualThroughYesterday": "Do wczoraj {value}, twoja zwykła wartość do tego dnia {usual}",
+      "firstDay": "Porównanie ze zwykłą wartością pojawi się po zakończeniu pierwszego dnia."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

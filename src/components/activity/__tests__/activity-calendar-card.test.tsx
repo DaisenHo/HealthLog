@@ -58,6 +58,16 @@ function calendar() {
       load: null,
     });
   }
+  // This morning: a few hundred steps so far.
+  input.push({
+    date: today,
+    steps: 400,
+    exerciseMinutes: null,
+    workoutMinutes: 0,
+    workoutCount: 0,
+    workoutsBySport: {},
+    load: null,
+  });
   input.push({
     date: "2026-10-05",
     steps: 20000,
@@ -113,8 +123,17 @@ describe("ActivityCalendarCard", () => {
     state.data = calendar();
     const html = render();
     expect(html).toContain('data-metric="steps"');
-    expect(html).toContain("Your usual by this point:");
+    // A running month is compared through yesterday, not on today.
+    expect(html).toContain("Through yesterday");
+    expect(html).toContain("your usual by then");
     expect(html).toContain("Running: 1");
+  });
+
+  it("marks today as in progress rather than rating it", () => {
+    state.data = calendar();
+    const html = render();
+    expect(html).toMatch(/data-date="2026-10-21" data-level="in_progress"/);
+    expect(html).toContain("Today, still in progress");
   });
 
   it("shows goal progress and a week tick column", () => {

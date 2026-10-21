@@ -21,9 +21,18 @@ export type ActivityCalendarQuery = z.infer<typeof activityCalendarQuerySchema>;
 const dateKey = z.iso.date();
 
 const dayLevelEnum = z
-  .enum(["none", "unrated", "low", "below", "usual", "above", "high"])
+  .enum([
+    "none",
+    "unrated",
+    "in_progress",
+    "low",
+    "below",
+    "usual",
+    "above",
+    "high",
+  ])
   .describe(
-    "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual` between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with.",
+    "Where the day sits in the person's own spread over the 84 days before the period: `low` below their 10th percentile, `below` below the 25th, `above` above the 75th, `high` above the 90th, `usual` between. `none` = no value that day; `unrated` = fewer than 14 days of history to compare with; `in_progress` = today, which has not ended and is never rated.",
   );
 
 const baselineStatsSchema = z
@@ -50,6 +59,16 @@ const periodComparisonSchema = z
         "The period so far: a total (steps, active minutes, workouts) or a mean (load).",
       ),
     daysWithData: z.number().int(),
+    completedDays: z
+      .number()
+      .int()
+      .describe("Days of the period that have ended (today excluded)."),
+    completedValue: z
+      .number()
+      .nullable()
+      .describe(
+        "`value` over the completed days only. This, not `value`, is what `usualToDate` is compared with, so a running period is never judged on today's partial day.",
+      ),
     usual: z
       .number()
       .nullable()
@@ -60,7 +79,7 @@ const periodComparisonSchema = z
       .number()
       .nullable()
       .describe(
-        "The usual figure for the days elapsed so far; equals `usual` once the period is over.",
+        "The usual figure for the completed days (today excluded); equals `usual` once the period is over, null before the period's first day has ended.",
       ),
     referencePeriods: z.number().int(),
   })

@@ -13640,7 +13640,8 @@
       "below": "Unter deinem Üblichen",
       "usual": "Etwa wie üblich",
       "above": "Über deinem Üblichen",
-      "high": "Weit über deinem Üblichen"
+      "high": "Weit über deinem Üblichen",
+      "in_progress": "Heute, noch nicht vorbei"
     },
     "legend": "Verglichen mit deinen 12 Wochen davor:",
     "noBaseline": "Dein üblicher Bereich erscheint nach 14 Tagen mit Daten.",
@@ -13650,7 +13651,9 @@
       "workouts": "{value} Trainings",
       "load": "Durchschnittliche Trainingslast {value}",
       "usual": "Bis hierher üblich bei dir: {value}",
-      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen."
+      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen.",
+      "usualThroughYesterday": "Bis gestern {value}, bis dahin üblich bei dir {usual}",
+      "firstDay": "Der Vergleich mit deinem Üblichen kommt, sobald der erste Tag vorbei ist."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

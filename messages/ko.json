@@ -13640,7 +13640,8 @@
       "below": "평소보다 적음",
       "usual": "평소와 비슷함",
       "above": "평소보다 많음",
-      "high": "평소보다 훨씬 많음"
+      "high": "평소보다 훨씬 많음",
+      "in_progress": "오늘, 아직 진행 중"
     },
     "legend": "이전 12주와 비교:",
     "noBaseline": "데이터가 있는 날이 14일이 되면 평소 범위가 표시됩니다.",
@@ -13650,7 +13651,9 @@
       "workouts": "운동 {value}회",
       "load": "평균 운동 부하 {value}",
       "usual": "이 시점까지의 평소 값: {value}",
-      "noUsual": "비교할 이전 주나 달이 아직 충분하지 않습니다."
+      "noUsual": "비교할 이전 주나 달이 아직 충분하지 않습니다.",
+      "usualThroughYesterday": "어제까지 {value}, 그때까지의 평소 {usual}",
+      "firstDay": "첫날이 끝나면 평소와 비교합니다."
     },
     "sportCount": "{sport}: {count}",
     "goal": {

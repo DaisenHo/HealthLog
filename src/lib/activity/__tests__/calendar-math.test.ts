@@ -143,7 +143,7 @@ describe("period against the usual period", () => {
     expect(result.referencePeriods).toBe(12);
   });
 
-  it("pro-rates the usual for a period still running", () => {
+  it("compares a running period over its completed days, never today's partial day", () => {
     const bounds = periodBounds("week", "2026-10-21");
     const values = new Map<string, number>();
     for (let i = 1; i <= 84; i++)
@@ -155,9 +155,27 @@ describe("period against the usual period", () => {
         values.get(d) ?? (d <= "2026-10-21" && d >= bounds.start ? 2000 : null),
       mode: "sum",
     });
+    // The total shown counts today; the comparison stops at yesterday.
     expect(result.value).toBe(6000);
     expect(result.usual).toBe(7000);
-    expect(result.usualToDate).toBe(3000);
+    expect(result.completedDays).toBe(2);
+    expect(result.completedValue).toBe(4000);
+    expect(result.usualToDate).toBe(2000);
+  });
+
+  it("has nothing to compare on the first day of a period", () => {
+    const bounds = periodBounds("week", "2026-10-19");
+    const result = comparePeriod({
+      bounds,
+      today: "2026-10-19", // Monday
+      valueOf: (d) => (d <= "2026-10-19" ? 1000 : null),
+      mode: "sum",
+    });
+    expect(result.value).toBe(1000);
+    expect(result.usual).toBe(7000);
+    expect(result.completedDays).toBe(0);
+    expect(result.completedValue).toBeNull();
+    expect(result.usualToDate).toBeNull();
   });
 
   it("compares months per day, so February meets March fairly", () => {
@@ -256,6 +274,28 @@ describe("the assembled calendar", () => {
     expect(
       calendar.days.find((d) => d.date === "2026-10-04")?.level.steps,
     ).toBe("none");
+  });
+
+  it("shows today as in progress, never rated against whole days", () => {
+    const morning = buildActivityCalendar({
+      bounds,
+      today,
+      input: [...input, day(today, { steps: 800 })],
+      goals: NO_ACTIVITY_GOALS,
+    });
+    const todayCell = morning.days.find((d) => d.date === today);
+    expect(todayCell?.steps).toBe(800);
+    expect(todayCell?.level.steps).toBe("in_progress");
+    expect(todayCell?.level.activeMinutes).toBe("in_progress");
+    expect(todayCell?.level.load).toBe("none");
+    // Yesterday, with the same value, is rated.
+    const yesterday = buildActivityCalendar({
+      bounds,
+      today,
+      input: [...input, day("2026-10-20", { steps: 800 })],
+      goals: NO_ACTIVITY_GOALS,
+    }).days.find((d) => d.date === "2026-10-20");
+    expect(yesterday?.level.steps).toBe("low");
   });
 
   it("counts workouts by sport in the period", () => {

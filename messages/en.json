@@ -13640,7 +13640,8 @@
       "below": "Below your usual",
       "usual": "About your usual",
       "above": "Above your usual",
-      "high": "Far above your usual"
+      "high": "Far above your usual",
+      "in_progress": "Today, still in progress"
     },
     "legend": "Compared with your 12 weeks before:",
     "noBaseline": "Your usual range shows after 14 days with data.",
@@ -13650,7 +13651,9 @@
       "workouts": "{value} workouts",
       "load": "Average training load {value}",
       "usual": "Your usual by this point: {value}",
-      "noUsual": "Not enough earlier weeks or months to compare with yet."
+      "noUsual": "Not enough earlier weeks or months to compare with yet.",
+      "usualThroughYesterday": "Through yesterday {value}, your usual by then {usual}",
+      "firstDay": "Compared with your usual once the first day is over."
     },
     "sportCount": "{sport}: {count}",
     "goal": {
