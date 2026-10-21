@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.43.10] — 2026-10-21
+
+### Changed
+
+- **Range and view switches look the way the chart tabs used to.** Since
+  1.43.8 every row of mutually exclusive choices shares one control, and it
+  drew them on a grey track with the chosen option raised. Above a chart that
+  read heavier than the chart itself. The shared control now draws what the
+  dashboard's range tabs always had: no track, the chosen option filled in
+  the accent colour. The range rows above charts are back to their smaller
+  type. Keyboard navigation and the touch size the shared control brought
+  stay as they are.
+
 ## [1.43.9] — 2026-10-21
 
 ### Fixed
