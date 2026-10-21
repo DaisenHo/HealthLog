@@ -75,6 +75,10 @@ import { annotate } from "@/lib/logging/context";
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
 import type { BackupMeasurement } from "@/lib/validations/backup";
 import {
+  isLegacyRmssdRow,
+  LEGACY_RMSSD_SOURCES,
+} from "@/lib/export/legacy-rmssd";
+import {
   isCompatibleSchemaVersion,
   summarizeBackup,
   type BackupSummary,
@@ -225,6 +229,15 @@ export function restoreTransactionTimeoutMs(
 
 function readingsPhrase(count: number): string {
   return `${count} ${count === 1 ? "reading" : "readings"}`;
+}
+
+/** Both unique identities of a row, as it would be filed under `HRV_RMSSD`. */
+function rmssdTwinKeysOf(row: BackupMeasurement): string[] {
+  const keys = [
+    `at|${row.source}|${new Date(row.measuredAt).toISOString()}|${row.sleepStage ?? ""}`,
+  ];
+  if (row.externalId) keys.push(`ext|${row.source}|${row.externalId}`);
+  return keys;
 }
 
 function decodeEncryptedBytes(encoded: string): Uint8Array<ArrayBuffer> {
@@ -448,6 +461,29 @@ export async function restoreBackup(
       liveFoldStatsIds.add(foldStatsKey(row.source, row.type, row.externalId));
     }
   };
+  // Migration 0420 refiled Fitbit and Google Health HRV as `HRV_RMSSD`: both
+  // providers report a nightly RMSSD, which their mappers had written as the
+  // SDNN series. A file written before that release still carries those rows
+  // as `HEART_RATE_VARIABILITY`, and restoring it verbatim would undo the
+  // migration for the account. The restore applies the same move, and skips a
+  // legacy row whose RMSSD twin the file also holds (the migration leaves that
+  // row behind; a restore must not write it under either type, since writing
+  // it as RMSSD would collide with the twin on the unique key and writing it
+  // as SDNN would put RMSSD back into the SDNN series). The twins are gathered
+  // on the first read, under both unique identities of a measurement.
+  const rmssdTwinKeys = new Set<string>();
+  const noteRmssdTwin = (row: BackupMeasurement) => {
+    if (
+      row.type === "HRV_RMSSD" &&
+      row.source !== undefined &&
+      LEGACY_RMSSD_SOURCES.has(row.source)
+    ) {
+      for (const key of rmssdTwinKeysOf(row)) rmssdTwinKeys.add(key);
+    }
+  };
+  const isShadowedLegacyRmssd = (row: BackupMeasurement) =>
+    isLegacyRmssdRow(row) &&
+    rmssdTwinKeysOf(row).some((key) => rmssdTwinKeys.has(key));
   // Set inside the transaction when the restore takes the account's fold
   // repair marker away; the repair is queued once the transaction commits.
   let foldRepairReset = false;
@@ -460,6 +496,7 @@ export async function restoreBackup(
         progress.measurementsChecked = checked;
         report("validating");
         noteLiveFoldRow(row);
+        noteRmssdTwin(row);
       },
     });
     progress.measurementsTotal = streamed.measurementCount;
@@ -917,7 +954,9 @@ export async function restoreBackup(
         }
 
         const toRestoredMeasurementData = (measurement: BackupMeasurement) => ({
-          type: measurement.type,
+          type: isLegacyRmssdRow(measurement)
+            ? ("HRV_RMSSD" as const)
+            : measurement.type,
           value: measurement.value,
           valueMin: measurement.valueMin ?? null,
           valueMax: measurement.valueMax ?? null,
@@ -1094,10 +1133,13 @@ export async function restoreBackup(
         await streamed.forEachMeasurementBatch(
           measurementBatchSize,
           async (fileBatch) => {
-            const batch = fileBatch.filter(
+            const kept = fileBatch.filter(
               (measurement) => !isExpiredTombstone(measurement),
             );
-            expiredTombstonesSkipped += fileBatch.length - batch.length;
+            expiredTombstonesSkipped += fileBatch.length - kept.length;
+            const batch = kept.filter(
+              (measurement) => !isShadowedLegacyRmssd(measurement),
+            );
             const stableRows = batch.flatMap(
               (measurement): MeasurementInsertRow[] =>
                 measurement.id
