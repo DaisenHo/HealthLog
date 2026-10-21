@@ -169,7 +169,7 @@ describe("getValidToken — rotating refresh", () => {
       refresh_token: "new-refresh",
       expires_in: 3600,
     });
-    prismaMock.whoopConnection.update.mockResolvedValue({});
+    prismaMock.whoopConnection.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await getValidToken("user1");
 
@@ -178,15 +178,28 @@ describe("getValidToken — rotating refresh", () => {
       clientId: "cid",
       clientSecret: "csecret",
     });
-    const updateArg = prismaMock.whoopConnection.update.mock.calls[0]![0];
-    expect(updateArg.where.id).toBe("conn1");
+    // Written only while the stored refresh token is still the one spent.
+    const updateArg = prismaMock.whoopConnection.updateMany.mock.calls[0]![0];
+    expect(updateArg.where).toEqual({
+      userId: "user1",
+      refreshToken: "enc(old-refresh)",
+    });
     expect(updateArg.data.accessToken).toBe("enc(new-access)");
     expect(updateArg.data.refreshToken).toBe("enc(new-refresh)");
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it("re-reads token state under an advisory lock and reuses a peer winner", async () => {
+    const stale = {
+      id: "conn1",
+      whoopUserId: "42",
+      accessToken: "enc(old-access)",
+      refreshToken: "enc(old-refresh)",
+      tokenExpiresAt: new Date(Date.now() - 1000),
+    };
     prismaMock.whoopConnection.findUnique
+      // The connection lookup, then the token read before the lock.
+      .mockResolvedValueOnce(stale)
       .mockResolvedValueOnce({
         id: "conn1",
         whoopUserId: "42",
