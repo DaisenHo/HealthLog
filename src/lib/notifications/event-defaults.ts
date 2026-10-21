@@ -28,7 +28,6 @@ import {
 export {
   eventDefaultFor,
   eventDefaultsFor,
-  type EventDefaultInputs,
 } from "@/lib/notifications/event-default-rule";
 
 async function readInputs(userId: string): Promise<EventDefaultInputs> {
