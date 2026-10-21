@@ -13539,5 +13539,47 @@
       "body": "Deine Schritte als Woche oder Monat, verglichen mit deinem Üblichen.",
       "cta": "Kalender öffnen"
     }
+  },
+  "sourceProvenance": {
+    "title": "Woher die Werte kommen",
+    "description": "Welche Quelle einen Wert an jedem Tag geliefert hat und welche deine Quellen-Priorität verwendet.",
+    "metric": "Messwert",
+    "day": "Tag",
+    "dayTitle": "Quellen an diesem Tag",
+    "loadError": "Die Quellen konnten nicht geladen werden.",
+    "dayEmpty": "An diesem Tag gibt es keine Werte dieser Art.",
+    "reason": {
+      "only_source": "{source} ist an diesem Tag die einzige Quelle.",
+      "highest_on_ladder": "{source} wird verwendet: Unter den Quellen dieses Tages steht sie in deiner Quellen-Priorität am höchsten.",
+      "name_tiebreak": "{source} wird verwendet: Keine der Quellen dieses Tages steht in deiner Quellen-Priorität, deshalb entscheidet der Name.",
+      "not_ranked": "Für diesen Wert gibt es keine Quellen-Priorität: Die Werte aller Quellen zählen."
+    },
+    "pass": {
+      "lower_on_ladder": "Steht in deiner Quellen-Priorität weiter unten.",
+      "not_on_ladder": "Steht für diesen Wert nicht in deiner Quellen-Priorität.",
+      "name_tiebreak": "Gleicher Rang wie die verwendete Quelle; der Name hat entschieden."
+    },
+    "used": "Verwendet",
+    "readings": "{count} Messungen, Geräte: {devices}",
+    "ladder": "Deine Reihenfolge für diesen Wert: {ladder}",
+    "utcNote": "Die Quelle wird pro Tag von Mitternacht bis Mitternacht UTC gewählt, genauso wie bei den Diagrammen.",
+    "openSettings": "Reihenfolge in der Quellen-Priorität ändern",
+    "compareTitle": "Zwei Quellen vergleichen",
+    "range": "Zeitraum",
+    "rangeDays": "{days} Tage",
+    "compareNeedsTwo": "In diesem Zeitraum hat nur eine Quelle Werte dieser Art.",
+    "side": {
+      "a": "Erste Quelle",
+      "b": "Zweite Quelle"
+    },
+    "daysBoth": "Tage mit beiden",
+    "meanOf": "Durchschnitt von {source}",
+    "meanAbsDiff": "Durchschnittliche Abweichung",
+    "pickedDays": "Verwendete Tage (erste / zweite)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Die Durchschnitte zählen nur Tage, an denen beide Quellen Werte haben, damit Gleiches mit Gleichem verglichen wird. Fett ist der Wert, den die Diagramme verwenden.",
+    "settingsHint": "Was diese Reihenfolge Tag für Tag entscheidet:",
+    "settingsHintLink": "Woher die Werte kommen",
+    "metricLink": "Woher diese Werte kommen"
   }
 }

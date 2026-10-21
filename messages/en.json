@@ -13539,5 +13539,47 @@
       "body": "Your steps as a week or a month, against your own usual.",
       "cta": "Open calendar"
     }
+  },
+  "sourceProvenance": {
+    "title": "Where values come from",
+    "description": "Which source delivered a metric each day, and which one your source priority uses.",
+    "metric": "Metric",
+    "day": "Day",
+    "dayTitle": "Sources on this day",
+    "loadError": "The sources could not be loaded.",
+    "dayEmpty": "No readings of this metric on this day.",
+    "reason": {
+      "only_source": "{source} is the only source on this day.",
+      "highest_on_ladder": "{source} is used: it stands highest in your source priority among this day's sources.",
+      "name_tiebreak": "{source} is used: none of this day's sources is in your source priority, so the name decided.",
+      "not_ranked": "This metric has no source priority: every source's readings count."
+    },
+    "pass": {
+      "lower_on_ladder": "Lower in your source priority.",
+      "not_on_ladder": "Not in your source priority for this metric.",
+      "name_tiebreak": "Same rank as the source used; the name decided."
+    },
+    "used": "Used",
+    "readings": "{count} readings, devices: {devices}",
+    "ladder": "Your order for this metric: {ladder}",
+    "utcNote": "The source is chosen per day from midnight to midnight UTC, the same way the charts choose it.",
+    "openSettings": "Change the order in Source priority",
+    "compareTitle": "Compare two sources",
+    "range": "Range",
+    "rangeDays": "{days} days",
+    "compareNeedsTwo": "Only one source has readings of this metric in this range.",
+    "side": {
+      "a": "First source",
+      "b": "Second source"
+    },
+    "daysBoth": "Days with both",
+    "meanOf": "Average from {source}",
+    "meanAbsDiff": "Average difference",
+    "pickedDays": "Days used (first / second)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Averages cover only the days both sources have, so they compare like with like. The value in bold is the one the charts use.",
+    "settingsHint": "To see what this order decides day by day:",
+    "settingsHintLink": "Where values come from",
+    "metricLink": "Where these values come from"
   }
 }

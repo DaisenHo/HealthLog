@@ -13539,5 +13539,47 @@
       "body": "주 또는 월 단위의 걸음 수를 내 평소 값과 비교합니다.",
       "cta": "캘린더 열기"
     }
+  },
+  "sourceProvenance": {
+    "title": "값의 출처",
+    "description": "날마다 어떤 소스가 값을 보냈고, 소스 우선순위가 어느 것을 쓰는지 보여 줍니다.",
+    "metric": "측정 항목",
+    "day": "날짜",
+    "dayTitle": "이 날의 소스",
+    "loadError": "소스를 불러오지 못했습니다.",
+    "dayEmpty": "이 날에는 이 항목의 값이 없습니다.",
+    "reason": {
+      "only_source": "이 날의 소스는 {source}뿐입니다.",
+      "highest_on_ladder": "{source}을(를) 사용합니다. 이 날의 소스 중 소스 우선순위가 가장 높습니다.",
+      "name_tiebreak": "{source}을(를) 사용합니다. 이 날의 소스가 모두 우선순위에 없어 이름으로 정했습니다.",
+      "not_ranked": "이 항목에는 소스 우선순위가 없어 모든 소스의 값이 반영됩니다."
+    },
+    "pass": {
+      "lower_on_ladder": "소스 우선순위에서 더 아래에 있습니다.",
+      "not_on_ladder": "이 항목의 소스 우선순위에 없습니다.",
+      "name_tiebreak": "사용한 소스와 순위가 같아 이름으로 정했습니다."
+    },
+    "used": "사용됨",
+    "readings": "측정 {count}회, 기기: {devices}",
+    "ladder": "이 항목의 순서: {ladder}",
+    "utcNote": "소스는 차트와 같은 방식으로 UTC 자정부터 자정까지 하루 단위로 선택됩니다.",
+    "openSettings": "소스 우선순위에서 순서 변경",
+    "compareTitle": "두 소스 비교",
+    "range": "기간",
+    "rangeDays": "{days}일",
+    "compareNeedsTwo": "이 기간에는 한 소스에만 이 항목의 값이 있습니다.",
+    "side": {
+      "a": "첫 번째 소스",
+      "b": "두 번째 소스"
+    },
+    "daysBoth": "둘 다 있는 날",
+    "meanOf": "{source} 평균",
+    "meanAbsDiff": "평균 차이",
+    "pickedDays": "사용된 날 (첫 번째 / 두 번째)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "평균은 두 소스 모두 값이 있는 날만 계산하여 같은 조건으로 비교합니다. 굵은 값이 차트에 쓰이는 값입니다.",
+    "settingsHint": "이 순서가 날마다 무엇을 정하는지 보려면:",
+    "settingsHintLink": "값의 출처",
+    "metricLink": "이 값의 출처"
   }
 }

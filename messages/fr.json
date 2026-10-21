@@ -13539,5 +13539,47 @@
       "body": "Tes pas par semaine ou par mois, comparés à ton habitude.",
       "cta": "Ouvrir le calendrier"
     }
+  },
+  "sourceProvenance": {
+    "title": "D'où viennent les valeurs",
+    "description": "Quelle source a fourni une valeur chaque jour, et laquelle ta priorité des sources utilise.",
+    "metric": "Mesure",
+    "day": "Jour",
+    "dayTitle": "Sources de ce jour",
+    "loadError": "Les sources n'ont pas pu être chargées.",
+    "dayEmpty": "Aucune valeur de cette mesure ce jour-là.",
+    "reason": {
+      "only_source": "{source} est la seule source ce jour-là.",
+      "highest_on_ladder": "{source} est utilisée : c'est la plus haute dans ta priorité des sources parmi celles de ce jour.",
+      "name_tiebreak": "{source} est utilisée : aucune source de ce jour n'est dans ta priorité, le nom a donc décidé.",
+      "not_ranked": "Cette mesure n'a pas de priorité des sources : les valeurs de toutes les sources comptent."
+    },
+    "pass": {
+      "lower_on_ladder": "Plus bas dans ta priorité des sources.",
+      "not_on_ladder": "Absente de ta priorité des sources pour cette mesure.",
+      "name_tiebreak": "Même rang que la source utilisée ; le nom a décidé."
+    },
+    "used": "Utilisée",
+    "readings": "{count} mesures, appareils : {devices}",
+    "ladder": "Ton ordre pour cette mesure : {ladder}",
+    "utcNote": "La source est choisie par jour, de minuit à minuit UTC, comme pour les graphiques.",
+    "openSettings": "Modifier l'ordre dans Priorité des sources",
+    "compareTitle": "Comparer deux sources",
+    "range": "Période",
+    "rangeDays": "{days} jours",
+    "compareNeedsTwo": "Une seule source a des valeurs de cette mesure sur cette période.",
+    "side": {
+      "a": "Première source",
+      "b": "Deuxième source"
+    },
+    "daysBoth": "Jours avec les deux",
+    "meanOf": "Moyenne de {source}",
+    "meanAbsDiff": "Écart moyen",
+    "pickedDays": "Jours utilisés (première / deuxième)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Les moyennes ne comptent que les jours où les deux sources ont des valeurs, pour comparer ce qui est comparable. En gras, la valeur utilisée par les graphiques.",
+    "settingsHint": "Pour voir ce que cet ordre décide jour après jour :",
+    "settingsHintLink": "D'où viennent les valeurs",
+    "metricLink": "D'où viennent ces valeurs"
   }
 }

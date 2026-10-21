@@ -13539,5 +13539,47 @@
       "body": "Twoje kroki w tygodniu lub miesiącu na tle twojej normy.",
       "cta": "Otwórz kalendarz"
     }
+  },
+  "sourceProvenance": {
+    "title": "Skąd pochodzą wartości",
+    "description": "Które źródło dostarczyło wartość każdego dnia i którego używa twój priorytet źródeł.",
+    "metric": "Pomiar",
+    "day": "Dzień",
+    "dayTitle": "Źródła tego dnia",
+    "loadError": "Nie udało się wczytać źródeł.",
+    "dayEmpty": "Brak wartości tego pomiaru w tym dniu.",
+    "reason": {
+      "only_source": "{source} to jedyne źródło tego dnia.",
+      "highest_on_ladder": "Używane jest {source}: spośród źródeł tego dnia stoi najwyżej w twoim priorytecie źródeł.",
+      "name_tiebreak": "Używane jest {source}: żadnego ze źródeł tego dnia nie ma w twoim priorytecie, więc zdecydowała nazwa.",
+      "not_ranked": "Ten pomiar nie ma priorytetu źródeł: liczą się wartości ze wszystkich źródeł."
+    },
+    "pass": {
+      "lower_on_ladder": "Niżej w twoim priorytecie źródeł.",
+      "not_on_ladder": "Nie ma go w twoim priorytecie źródeł dla tego pomiaru.",
+      "name_tiebreak": "Ta sama pozycja co użyte źródło; zdecydowała nazwa."
+    },
+    "used": "Używane",
+    "readings": "Pomiary: {count}, urządzenia: {devices}",
+    "ladder": "Twoja kolejność dla tego pomiaru: {ladder}",
+    "utcNote": "Źródło jest wybierane na dzień, od północy do północy UTC, tak samo jak na wykresach.",
+    "openSettings": "Zmień kolejność w priorytecie źródeł",
+    "compareTitle": "Porównaj dwa źródła",
+    "range": "Okres",
+    "rangeDays": "{days} dni",
+    "compareNeedsTwo": "W tym okresie tylko jedno źródło ma wartości tego pomiaru.",
+    "side": {
+      "a": "Pierwsze źródło",
+      "b": "Drugie źródło"
+    },
+    "daysBoth": "Dni z oboma",
+    "meanOf": "Średnia z {source}",
+    "meanAbsDiff": "Średnia różnica",
+    "pickedDays": "Użyte dni (pierwsze / drugie)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Średnie liczą tylko dni, w których oba źródła mają wartości, aby porównywać podobne dni. Pogrubiona jest wartość używana na wykresach.",
+    "settingsHint": "Aby zobaczyć, co ta kolejność rozstrzyga dzień po dniu:",
+    "settingsHintLink": "Skąd pochodzą wartości",
+    "metricLink": "Skąd pochodzą te wartości"
   }
 }

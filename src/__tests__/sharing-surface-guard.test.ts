@@ -1077,6 +1077,14 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
   },
+  "app/api/measurements/provenance/route.ts": {
+    domain: "measurements",
+    why: "Which source delivered a metric on one UTC day and which one the record's source priority picks, with the reason. Read-only aggregates of the resolved user's readings; no AI, no note text.",
+  },
+  "app/api/measurements/provenance/compare/route.ts": {
+    domain: "measurements",
+    why: "Two sources of one metric side by side over at most a year of UTC days, with the source the ladder picked each day. Read-only aggregates of the resolved user's readings; no AI, no note text.",
+  },
   "app/api/activity/calendar/route.ts": {
     domain: "measurements",
     why: "The activity calendar: day totals of steps, active minutes and load, workouts by sport, and the record owner's goals, computed without AI. Read-only, scoped to the resolved user, module-gated on the record's own `workouts` switch like the workout list beside it.",
@@ -2176,7 +2184,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.44 -- a guardian connects and disconnects a managed profile's OAuth
  * providers: two guardian-only entries. 266 -> 268.
  */
-const FROZEN_ENTRY_COUNT = 269;
+const FROZEN_ENTRY_COUNT = 271;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

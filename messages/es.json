@@ -13539,5 +13539,47 @@
       "body": "Tus pasos por semana o por mes, frente a lo que es habitual para ti.",
       "cta": "Abrir calendario"
     }
+  },
+  "sourceProvenance": {
+    "title": "De dónde vienen los valores",
+    "description": "Qué fuente aportó un valor cada día y cuál usa tu prioridad de fuentes.",
+    "metric": "Medida",
+    "day": "Día",
+    "dayTitle": "Fuentes de este día",
+    "loadError": "No se pudieron cargar las fuentes.",
+    "dayEmpty": "No hay valores de esta medida en este día.",
+    "reason": {
+      "only_source": "{source} es la única fuente de este día.",
+      "highest_on_ladder": "Se usa {source}: es la más alta en tu prioridad de fuentes entre las fuentes de este día.",
+      "name_tiebreak": "Se usa {source}: ninguna fuente de este día está en tu prioridad, así que decidió el nombre.",
+      "not_ranked": "Esta medida no tiene prioridad de fuentes: cuentan los valores de todas las fuentes."
+    },
+    "pass": {
+      "lower_on_ladder": "Más abajo en tu prioridad de fuentes.",
+      "not_on_ladder": "No está en tu prioridad de fuentes para esta medida.",
+      "name_tiebreak": "Mismo rango que la fuente usada; decidió el nombre."
+    },
+    "used": "Usada",
+    "readings": "{count} mediciones, dispositivos: {devices}",
+    "ladder": "Tu orden para esta medida: {ladder}",
+    "utcNote": "La fuente se elige por día, de medianoche a medianoche UTC, igual que en los gráficos.",
+    "openSettings": "Cambiar el orden en Prioridad de fuentes",
+    "compareTitle": "Comparar dos fuentes",
+    "range": "Periodo",
+    "rangeDays": "{days} días",
+    "compareNeedsTwo": "Solo una fuente tiene valores de esta medida en este periodo.",
+    "side": {
+      "a": "Primera fuente",
+      "b": "Segunda fuente"
+    },
+    "daysBoth": "Días con ambas",
+    "meanOf": "Media de {source}",
+    "meanAbsDiff": "Diferencia media",
+    "pickedDays": "Días usados (primera / segunda)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Las medias solo cuentan los días en que ambas fuentes tienen valores, para comparar lo comparable. En negrita, el valor que usan los gráficos.",
+    "settingsHint": "Para ver lo que decide este orden día a día:",
+    "settingsHintLink": "De dónde vienen los valores",
+    "metricLink": "De dónde vienen estos valores"
   }
 }

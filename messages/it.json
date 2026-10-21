@@ -13539,5 +13539,47 @@
       "body": "I tuoi passi per settimana o per mese, rispetto al tuo solito.",
       "cta": "Apri il calendario"
     }
+  },
+  "sourceProvenance": {
+    "title": "Da dove vengono i valori",
+    "description": "Quale fonte ha fornito un valore ogni giorno e quale usa la tua priorità delle fonti.",
+    "metric": "Misura",
+    "day": "Giorno",
+    "dayTitle": "Fonti di questo giorno",
+    "loadError": "Impossibile caricare le fonti.",
+    "dayEmpty": "Nessun valore di questa misura in questo giorno.",
+    "reason": {
+      "only_source": "{source} è l'unica fonte di questo giorno.",
+      "highest_on_ladder": "Viene usata {source}: tra le fonti di questo giorno è la più alta nella tua priorità delle fonti.",
+      "name_tiebreak": "Viene usata {source}: nessuna fonte di questo giorno è nella tua priorità, quindi ha deciso il nome.",
+      "not_ranked": "Questa misura non ha una priorità delle fonti: contano i valori di tutte le fonti."
+    },
+    "pass": {
+      "lower_on_ladder": "Più in basso nella tua priorità delle fonti.",
+      "not_on_ladder": "Non è nella tua priorità delle fonti per questa misura.",
+      "name_tiebreak": "Stesso rango della fonte usata; ha deciso il nome."
+    },
+    "used": "Usata",
+    "readings": "{count} misurazioni, dispositivi: {devices}",
+    "ladder": "Il tuo ordine per questa misura: {ladder}",
+    "utcNote": "La fonte viene scelta per giorno, da mezzanotte a mezzanotte UTC, come nei grafici.",
+    "openSettings": "Cambia l'ordine in Priorità delle fonti",
+    "compareTitle": "Confronta due fonti",
+    "range": "Periodo",
+    "rangeDays": "{days} giorni",
+    "compareNeedsTwo": "In questo periodo solo una fonte ha valori di questa misura.",
+    "side": {
+      "a": "Prima fonte",
+      "b": "Seconda fonte"
+    },
+    "daysBoth": "Giorni con entrambe",
+    "meanOf": "Media di {source}",
+    "meanAbsDiff": "Differenza media",
+    "pickedDays": "Giorni usati (prima / seconda)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "Le medie contano solo i giorni in cui entrambe le fonti hanno valori, per confrontare cose confrontabili. In grassetto il valore usato dai grafici.",
+    "settingsHint": "Per vedere cosa decide questo ordine giorno per giorno:",
+    "settingsHintLink": "Da dove vengono i valori",
+    "metricLink": "Da dove vengono questi valori"
   }
 }

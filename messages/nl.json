@@ -13539,5 +13539,47 @@
       "body": "Je stappen per week of maand, vergeleken met wat gewoon is voor jou.",
       "cta": "Kalender openen"
     }
+  },
+  "sourceProvenance": {
+    "title": "Waar de waarden vandaan komen",
+    "description": "Welke bron elke dag een waarde leverde en welke je bronprioriteit gebruikt.",
+    "metric": "Meetwaarde",
+    "day": "Dag",
+    "dayTitle": "Bronnen op deze dag",
+    "loadError": "De bronnen konden niet worden geladen.",
+    "dayEmpty": "Geen waarden van deze meting op deze dag.",
+    "reason": {
+      "only_source": "{source} is op deze dag de enige bron.",
+      "highest_on_ladder": "{source} wordt gebruikt: van de bronnen van deze dag staat die het hoogst in je bronprioriteit.",
+      "name_tiebreak": "{source} wordt gebruikt: geen enkele bron van deze dag staat in je bronprioriteit, dus de naam besliste.",
+      "not_ranked": "Deze meting heeft geen bronprioriteit: de waarden van alle bronnen tellen mee."
+    },
+    "pass": {
+      "lower_on_ladder": "Lager in je bronprioriteit.",
+      "not_on_ladder": "Staat voor deze meting niet in je bronprioriteit.",
+      "name_tiebreak": "Zelfde rang als de gebruikte bron; de naam besliste."
+    },
+    "used": "Gebruikt",
+    "readings": "{count} metingen, apparaten: {devices}",
+    "ladder": "Je volgorde voor deze meting: {ladder}",
+    "utcNote": "De bron wordt per dag gekozen, van middernacht tot middernacht UTC, net als bij de grafieken.",
+    "openSettings": "Volgorde wijzigen in Bronprioriteit",
+    "compareTitle": "Twee bronnen vergelijken",
+    "range": "Periode",
+    "rangeDays": "{days} dagen",
+    "compareNeedsTwo": "In deze periode heeft maar één bron waarden van deze meting.",
+    "side": {
+      "a": "Eerste bron",
+      "b": "Tweede bron"
+    },
+    "daysBoth": "Dagen met beide",
+    "meanOf": "Gemiddelde van {source}",
+    "meanAbsDiff": "Gemiddeld verschil",
+    "pickedDays": "Gebruikte dagen (eerste / tweede)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "De gemiddelden tellen alleen dagen waarop beide bronnen waarden hebben, zodat je gelijke dagen vergelijkt. Vetgedrukt is de waarde die de grafieken gebruiken.",
+    "settingsHint": "Om te zien wat deze volgorde per dag beslist:",
+    "settingsHintLink": "Waar de waarden vandaan komen",
+    "metricLink": "Waar deze waarden vandaan komen"
   }
 }

@@ -5106,6 +5106,311 @@ paths:
         "401": *a1
         "422": *a4
         "429": *a12
+  /api/measurements/provenance:
+    get:
+      tags:
+        - Measurements
+      summary: Which source a metric's day value comes from
+      description: "For one metric and one UTC day: every source with readings, its day value (the total for a cumulative
+        metric, sleep counting asleep stages only, the mean otherwise), its rank on the person's source-priority ladder,
+        and which source the canonical readers use, with the reason. Computed by the same rank SQL the charts, rollups
+        and summaries pick with, so the answer is what they show. A metric without a ladder reports `ranked: false` and
+        no pick: every source counts there. Read-only."
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - WEIGHT
+              - BLOOD_PRESSURE_SYS
+              - BLOOD_PRESSURE_DIA
+              - PULSE
+              - BODY_FAT
+              - SLEEP_DURATION
+              - ACTIVITY_STEPS
+              - BLOOD_GLUCOSE
+              - TOTAL_BODY_WATER
+              - BONE_MASS
+              - OXYGEN_SATURATION
+              - HEART_RATE_VARIABILITY
+              - RESTING_HEART_RATE
+              - ACTIVE_ENERGY_BURNED
+              - FLIGHTS_CLIMBED
+              - WALKING_RUNNING_DISTANCE
+              - VO2_MAX
+              - BODY_TEMPERATURE
+              - FAT_FREE_MASS
+              - FAT_MASS
+              - MUSCLE_MASS
+              - SKIN_TEMPERATURE
+              - PULSE_WAVE_VELOCITY
+              - VASCULAR_AGE
+              - VISCERAL_FAT
+              - AUDIO_EXPOSURE_ENV
+              - AUDIO_EXPOSURE_HEADPHONE
+              - TIME_IN_DAYLIGHT
+              - WALKING_STEADINESS
+              - AUDIO_EXPOSURE_EVENT
+              - RESPIRATORY_RATE
+              - BODY_MASS_INDEX
+              - LEAN_BODY_MASS
+              - WALKING_HEART_RATE_AVERAGE
+              - WALKING_ASYMMETRY
+              - WALKING_DOUBLE_SUPPORT
+              - WALKING_STEP_LENGTH
+              - WALKING_SPEED
+              - CARDIO_RECOVERY
+              - WRIST_TEMPERATURE
+              - FALL_COUNT
+              - SIX_MINUTE_WALK_DISTANCE
+              - STAIR_ASCENT_SPEED
+              - STAIR_DESCENT_SPEED
+              - BREATHING_DISTURBANCES
+              - IRREGULAR_RHYTHM_NOTIFICATION
+              - HIGH_HEART_RATE_EVENT
+              - LOW_HEART_RATE_EVENT
+              - WALKING_STEADINESS_EVENT
+              - BREATHING_DISTURBANCE_EVENT
+              - RECOVERY_SCORE
+              - STRESS_SCORE
+              - STRAIN_SCORE
+              - HRV_RMSSD
+              - DAY_STRAIN
+              - WORKOUT_STRAIN
+              - SLEEP_PERFORMANCE
+              - SLEEP_EFFICIENCY
+              - SLEEP_CONSISTENCY
+              - SLEEP_NEED
+              - ENERGY_EXPENDITURE_KJ
+              - AVERAGE_HEART_RATE
+              - MAX_HEART_RATE
+              - SLEEP_DISTURBANCE_COUNT
+              - ANS_CHARGE
+              - CARDIO_LOAD
+              - SLEEP_SCORE
+              - BODY_TEMPERATURE_DEVIATION
+              - RESILIENCE
+              - PHQ9_SCORE
+              - GAD7_SCORE
+              - GRIP_STRENGTH
+              - PAIN_NRS
+              - WAIST_CIRCUMFERENCE
+              - WAIST_TO_HEIGHT
+              - WHO5_SCORE
+              - SCI_SCORE
+              - EXERCISE_MINUTES
+              - STAND_MINUTES
+              - STAND_HOURS
+              - MINDFUL_MINUTES
+              - STATE_OF_MIND_VALENCE
+              - AFIB_BURDEN
+              - INDOOR_CO2
+              - INDOOR_TEMPERATURE
+              - INDOOR_HUMIDITY
+            description: The metric.
+          required: true
+          description: The metric.
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            description: The UTC day (`YYYY-MM-DD`). The source ladder picks one source per UTC day, so this is the day the pick is
+              explained for.
+          required: true
+          description: The UTC day (`YYYY-MM-DD`). The source ladder picks one source per UTC day, so this is the day the pick is
+            explained for.
+      responses:
+        "200":
+          description: The day's sources and the pick.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayProvenanceEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
+  /api/measurements/provenance/compare:
+    get:
+      tags:
+        - Measurements
+      summary: Two sources of one metric side by side
+      description: "Per UTC day over up to 366 days: the day value from source `a` and from source `b`, and which source the
+        ladder picked that day among all of the day's sources. The summary averages only the days both sources cover.
+        Without `a` / `b` the two sources covering the most days are compared. Read-only."
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - WEIGHT
+              - BLOOD_PRESSURE_SYS
+              - BLOOD_PRESSURE_DIA
+              - PULSE
+              - BODY_FAT
+              - SLEEP_DURATION
+              - ACTIVITY_STEPS
+              - BLOOD_GLUCOSE
+              - TOTAL_BODY_WATER
+              - BONE_MASS
+              - OXYGEN_SATURATION
+              - HEART_RATE_VARIABILITY
+              - RESTING_HEART_RATE
+              - ACTIVE_ENERGY_BURNED
+              - FLIGHTS_CLIMBED
+              - WALKING_RUNNING_DISTANCE
+              - VO2_MAX
+              - BODY_TEMPERATURE
+              - FAT_FREE_MASS
+              - FAT_MASS
+              - MUSCLE_MASS
+              - SKIN_TEMPERATURE
+              - PULSE_WAVE_VELOCITY
+              - VASCULAR_AGE
+              - VISCERAL_FAT
+              - AUDIO_EXPOSURE_ENV
+              - AUDIO_EXPOSURE_HEADPHONE
+              - TIME_IN_DAYLIGHT
+              - WALKING_STEADINESS
+              - AUDIO_EXPOSURE_EVENT
+              - RESPIRATORY_RATE
+              - BODY_MASS_INDEX
+              - LEAN_BODY_MASS
+              - WALKING_HEART_RATE_AVERAGE
+              - WALKING_ASYMMETRY
+              - WALKING_DOUBLE_SUPPORT
+              - WALKING_STEP_LENGTH
+              - WALKING_SPEED
+              - CARDIO_RECOVERY
+              - WRIST_TEMPERATURE
+              - FALL_COUNT
+              - SIX_MINUTE_WALK_DISTANCE
+              - STAIR_ASCENT_SPEED
+              - STAIR_DESCENT_SPEED
+              - BREATHING_DISTURBANCES
+              - IRREGULAR_RHYTHM_NOTIFICATION
+              - HIGH_HEART_RATE_EVENT
+              - LOW_HEART_RATE_EVENT
+              - WALKING_STEADINESS_EVENT
+              - BREATHING_DISTURBANCE_EVENT
+              - RECOVERY_SCORE
+              - STRESS_SCORE
+              - STRAIN_SCORE
+              - HRV_RMSSD
+              - DAY_STRAIN
+              - WORKOUT_STRAIN
+              - SLEEP_PERFORMANCE
+              - SLEEP_EFFICIENCY
+              - SLEEP_CONSISTENCY
+              - SLEEP_NEED
+              - ENERGY_EXPENDITURE_KJ
+              - AVERAGE_HEART_RATE
+              - MAX_HEART_RATE
+              - SLEEP_DISTURBANCE_COUNT
+              - ANS_CHARGE
+              - CARDIO_LOAD
+              - SLEEP_SCORE
+              - BODY_TEMPERATURE_DEVIATION
+              - RESILIENCE
+              - PHQ9_SCORE
+              - GAD7_SCORE
+              - GRIP_STRENGTH
+              - PAIN_NRS
+              - WAIST_CIRCUMFERENCE
+              - WAIST_TO_HEIGHT
+              - WHO5_SCORE
+              - SCI_SCORE
+              - EXERCISE_MINUTES
+              - STAND_MINUTES
+              - STAND_HOURS
+              - MINDFUL_MINUTES
+              - STATE_OF_MIND_VALENCE
+              - AFIB_BURDEN
+              - INDOOR_CO2
+              - INDOOR_TEMPERATURE
+              - INDOOR_HUMIDITY
+            description: The metric.
+          required: true
+          description: The metric.
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            description: First UTC day, inclusive.
+          required: true
+          description: First UTC day, inclusive.
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            description: Last UTC day, inclusive.
+          required: true
+          description: Last UTC day, inclusive.
+        - in: query
+          name: a
+          schema:
+            description: First source. Defaults to the source covering the most days.
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+          description: First source. Defaults to the source covering the most days.
+        - in: query
+          name: b
+          schema:
+            description: Second source. Defaults to the next one.
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+          description: Second source. Defaults to the next one.
+      responses:
+        "200":
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceComparisonEnvelope"
+        "401": *a1
+        "403": *a11
+        "422": *a4
+        "429": *a5
   /api/devices:
     post:
       tags:
@@ -49689,6 +49994,609 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    DayProvenanceEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DayProvenance"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DayProvenance:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - BLOOD_PRESSURE_SYS
+            - BLOOD_PRESSURE_DIA
+            - PULSE
+            - BODY_FAT
+            - SLEEP_DURATION
+            - ACTIVITY_STEPS
+            - BLOOD_GLUCOSE
+            - TOTAL_BODY_WATER
+            - BONE_MASS
+            - OXYGEN_SATURATION
+            - HEART_RATE_VARIABILITY
+            - RESTING_HEART_RATE
+            - ACTIVE_ENERGY_BURNED
+            - FLIGHTS_CLIMBED
+            - WALKING_RUNNING_DISTANCE
+            - VO2_MAX
+            - BODY_TEMPERATURE
+            - FAT_FREE_MASS
+            - FAT_MASS
+            - MUSCLE_MASS
+            - SKIN_TEMPERATURE
+            - PULSE_WAVE_VELOCITY
+            - VASCULAR_AGE
+            - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
+            - RESPIRATORY_RATE
+            - BODY_MASS_INDEX
+            - LEAN_BODY_MASS
+            - WALKING_HEART_RATE_AVERAGE
+            - WALKING_ASYMMETRY
+            - WALKING_DOUBLE_SUPPORT
+            - WALKING_STEP_LENGTH
+            - WALKING_SPEED
+            - CARDIO_RECOVERY
+            - WRIST_TEMPERATURE
+            - FALL_COUNT
+            - SIX_MINUTE_WALK_DISTANCE
+            - STAIR_ASCENT_SPEED
+            - STAIR_DESCENT_SPEED
+            - BREATHING_DISTURBANCES
+            - IRREGULAR_RHYTHM_NOTIFICATION
+            - HIGH_HEART_RATE_EVENT
+            - LOW_HEART_RATE_EVENT
+            - WALKING_STEADINESS_EVENT
+            - BREATHING_DISTURBANCE_EVENT
+            - RECOVERY_SCORE
+            - STRESS_SCORE
+            - STRAIN_SCORE
+            - HRV_RMSSD
+            - DAY_STRAIN
+            - WORKOUT_STRAIN
+            - SLEEP_PERFORMANCE
+            - SLEEP_EFFICIENCY
+            - SLEEP_CONSISTENCY
+            - SLEEP_NEED
+            - ENERGY_EXPENDITURE_KJ
+            - AVERAGE_HEART_RATE
+            - MAX_HEART_RATE
+            - SLEEP_DISTURBANCE_COUNT
+            - ANS_CHARGE
+            - CARDIO_LOAD
+            - SLEEP_SCORE
+            - BODY_TEMPERATURE_DEVIATION
+            - RESILIENCE
+            - PHQ9_SCORE
+            - GAD7_SCORE
+            - GRIP_STRENGTH
+            - PAIN_NRS
+            - WAIST_CIRCUMFERENCE
+            - WAIST_TO_HEIGHT
+            - WHO5_SCORE
+            - SCI_SCORE
+            - EXERCISE_MINUTES
+            - STAND_MINUTES
+            - STAND_HOURS
+            - MINDFUL_MINUTES
+            - STATE_OF_MIND_VALENCE
+            - AFIB_BURDEN
+            - INDOOR_CO2
+            - INDOOR_TEMPERATURE
+            - INDOOR_HUMIDITY
+        date:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        aggregation:
+          type: string
+          enum:
+            - sum
+            - mean
+        ranked:
+          type: boolean
+        metricKey:
+          type:
+            - string
+            - "null"
+        ladder:
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        picked:
+          anyOf:
+            - type: string
+              enum:
+                - MANUAL
+                - WITHINGS
+                - IMPORT
+                - APPLE_HEALTH
+                - COMPUTED
+                - WHOOP
+                - FITBIT
+                - NIGHTSCOUT
+                - POLAR
+                - OURA
+                - TELEGRAM
+                - MCP
+                - GOOGLE_HEALTH
+                - STRAVA
+                - EXTERNAL
+                - HEALTH_CONNECT
+            - type: "null"
+        pickReason:
+          anyOf:
+            - type: string
+              enum:
+                - only_source
+                - highest_on_ladder
+                - name_tiebreak
+                - not_ranked
+              description: "`only_source`: one source that day. `highest_on_ladder`: it stands highest on the ladder among the day's
+                sources. `name_tiebreak`: none of them is on the ladder, the source name decided. `not_ranked`: this
+                metric has no ladder, every source counts."
+            - type: "null"
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+              rank:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+                description: Position on the ladder, 0 = highest; 90 = not on the ladder.
+              readings:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              value:
+                description: "The day's value from this source: the day total for a cumulative metric (sleep counts asleep stages only),
+                  the mean of the readings otherwise."
+                type:
+                  - number
+                  - "null"
+              min:
+                type:
+                  - number
+                  - "null"
+              max:
+                type:
+                  - number
+                  - "null"
+              firstAt:
+                type: string
+                description: ISO instant of the first reading that day.
+              lastAt:
+                type: string
+              unit:
+                type:
+                  - string
+                  - "null"
+              devices:
+                type: array
+                items:
+                  type: string
+                description: Device kinds the readings carry; `unknown` when untagged.
+              pass:
+                anyOf:
+                  - type: string
+                    enum:
+                      - lower_on_ladder
+                      - not_on_ladder
+                      - name_tiebreak
+                  - type: "null"
+                description: Why this source was not the one picked; null for the picked one.
+            required:
+              - source
+              - rank
+              - readings
+              - value
+              - min
+              - max
+              - firstAt
+              - lastAt
+              - unit
+              - devices
+              - pass
+            additionalProperties: false
+      required:
+        - type
+        - date
+        - aggregation
+        - ranked
+        - metricKey
+        - ladder
+        - picked
+        - pickReason
+        - sources
+      additionalProperties: false
+    SourceComparisonEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SourceComparison"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SourceComparison:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - WEIGHT
+            - BLOOD_PRESSURE_SYS
+            - BLOOD_PRESSURE_DIA
+            - PULSE
+            - BODY_FAT
+            - SLEEP_DURATION
+            - ACTIVITY_STEPS
+            - BLOOD_GLUCOSE
+            - TOTAL_BODY_WATER
+            - BONE_MASS
+            - OXYGEN_SATURATION
+            - HEART_RATE_VARIABILITY
+            - RESTING_HEART_RATE
+            - ACTIVE_ENERGY_BURNED
+            - FLIGHTS_CLIMBED
+            - WALKING_RUNNING_DISTANCE
+            - VO2_MAX
+            - BODY_TEMPERATURE
+            - FAT_FREE_MASS
+            - FAT_MASS
+            - MUSCLE_MASS
+            - SKIN_TEMPERATURE
+            - PULSE_WAVE_VELOCITY
+            - VASCULAR_AGE
+            - VISCERAL_FAT
+            - AUDIO_EXPOSURE_ENV
+            - AUDIO_EXPOSURE_HEADPHONE
+            - TIME_IN_DAYLIGHT
+            - WALKING_STEADINESS
+            - AUDIO_EXPOSURE_EVENT
+            - RESPIRATORY_RATE
+            - BODY_MASS_INDEX
+            - LEAN_BODY_MASS
+            - WALKING_HEART_RATE_AVERAGE
+            - WALKING_ASYMMETRY
+            - WALKING_DOUBLE_SUPPORT
+            - WALKING_STEP_LENGTH
+            - WALKING_SPEED
+            - CARDIO_RECOVERY
+            - WRIST_TEMPERATURE
+            - FALL_COUNT
+            - SIX_MINUTE_WALK_DISTANCE
+            - STAIR_ASCENT_SPEED
+            - STAIR_DESCENT_SPEED
+            - BREATHING_DISTURBANCES
+            - IRREGULAR_RHYTHM_NOTIFICATION
+            - HIGH_HEART_RATE_EVENT
+            - LOW_HEART_RATE_EVENT
+            - WALKING_STEADINESS_EVENT
+            - BREATHING_DISTURBANCE_EVENT
+            - RECOVERY_SCORE
+            - STRESS_SCORE
+            - STRAIN_SCORE
+            - HRV_RMSSD
+            - DAY_STRAIN
+            - WORKOUT_STRAIN
+            - SLEEP_PERFORMANCE
+            - SLEEP_EFFICIENCY
+            - SLEEP_CONSISTENCY
+            - SLEEP_NEED
+            - ENERGY_EXPENDITURE_KJ
+            - AVERAGE_HEART_RATE
+            - MAX_HEART_RATE
+            - SLEEP_DISTURBANCE_COUNT
+            - ANS_CHARGE
+            - CARDIO_LOAD
+            - SLEEP_SCORE
+            - BODY_TEMPERATURE_DEVIATION
+            - RESILIENCE
+            - PHQ9_SCORE
+            - GAD7_SCORE
+            - GRIP_STRENGTH
+            - PAIN_NRS
+            - WAIST_CIRCUMFERENCE
+            - WAIST_TO_HEIGHT
+            - WHO5_SCORE
+            - SCI_SCORE
+            - EXERCISE_MINUTES
+            - STAND_MINUTES
+            - STAND_HOURS
+            - MINDFUL_MINUTES
+            - STATE_OF_MIND_VALENCE
+            - AFIB_BURDEN
+            - INDOOR_CO2
+            - INDOOR_TEMPERATURE
+            - INDOOR_HUMIDITY
+        from:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        to:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        aggregation:
+          type: string
+          enum:
+            - sum
+            - mean
+        ranked:
+          type: boolean
+        ladder:
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+        unit:
+          type:
+            - string
+            - "null"
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+              days:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - source
+              - days
+            additionalProperties: false
+        a:
+          anyOf:
+            - type: string
+              enum:
+                - MANUAL
+                - WITHINGS
+                - IMPORT
+                - APPLE_HEALTH
+                - COMPUTED
+                - WHOOP
+                - FITBIT
+                - NIGHTSCOUT
+                - POLAR
+                - OURA
+                - TELEGRAM
+                - MCP
+                - GOOGLE_HEALTH
+                - STRAVA
+                - EXTERNAL
+                - HEALTH_CONNECT
+            - type: "null"
+        b:
+          anyOf:
+            - type: string
+              enum:
+                - MANUAL
+                - WITHINGS
+                - IMPORT
+                - APPLE_HEALTH
+                - COMPUTED
+                - WHOOP
+                - FITBIT
+                - NIGHTSCOUT
+                - POLAR
+                - OURA
+                - TELEGRAM
+                - MCP
+                - GOOGLE_HEALTH
+                - STRAVA
+                - EXTERNAL
+                - HEALTH_CONNECT
+            - type: "null"
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              a:
+                type:
+                  - number
+                  - "null"
+              b:
+                type:
+                  - number
+                  - "null"
+              picked:
+                anyOf:
+                  - type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                  - type: "null"
+            required:
+              - date
+              - a
+              - b
+              - picked
+            additionalProperties: false
+        summary:
+          type: object
+          properties:
+            daysA:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            daysB:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            daysBoth:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            meanA:
+              type:
+                - number
+                - "null"
+            meanB:
+              type:
+                - number
+                - "null"
+            meanDifference:
+              type:
+                - number
+                - "null"
+            meanAbsoluteDifference:
+              type:
+                - number
+                - "null"
+            pickedA:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            pickedB:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - daysA
+            - daysB
+            - daysBoth
+            - meanA
+            - meanB
+            - meanDifference
+            - meanAbsoluteDifference
+            - pickedA
+            - pickedB
+          additionalProperties: false
+      required:
+        - type
+        - from
+        - to
+        - aggregation
+        - ranked
+        - ladder
+        - unit
+        - sources
+        - a
+        - b
+        - days
+        - summary
       additionalProperties: false
     DeviceRegisterResponse:
       type: object
