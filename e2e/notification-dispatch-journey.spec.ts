@@ -270,6 +270,21 @@ async function saveCard(
   return (await settled).status();
 }
 
+/** Flip a channel card's enable switch and wait for the route to answer. */
+async function toggleCard(
+  page: Page,
+  switchId: string,
+  endpoint: string,
+): Promise<number> {
+  const settled = page.waitForResponse(
+    (res) =>
+      new URL(res.url()).pathname === endpoint &&
+      res.request().method() === "PUT",
+  );
+  await page.locator(switchId).click();
+  return (await settled).status();
+}
+
 /**
  * Configure both channels the way a person would: email on with a recipient,
  * ntfy saved and left off. Everything here happens on the settings surface.
@@ -277,10 +292,11 @@ async function saveCard(
 async function configureChannels(page: Page): Promise<void> {
   await openChannels(page);
 
-  // The enable switch is a field of the form: it saves with the one Save.
   await fillField(page, "#email-recipient", EMAIL_RECIPIENT);
-  await page.locator("#email-toggle").click();
   expect(await saveCard(page, "#email", "/api/settings/email")).toBe(200);
+  expect(await toggleCard(page, "#email-toggle", "/api/settings/email")).toBe(
+    200,
+  );
   await expect(page.locator("#email-toggle")).toHaveAttribute(
     "data-state",
     "checked",

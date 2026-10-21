@@ -16,7 +16,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isWebhookFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { showErrorToast } from "@/lib/errors/error-toast";
+import { useChannelEnabledToggle } from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -38,8 +38,6 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [headerName, setHeaderName] = useState("");
   const [headerValue, setHeaderValue] = useState("");
   const [format, setFormat] = useState<WebhookPayloadFormat>("generic");
-  // The enable switch is a draft field: it saves with the form's one Save.
-  const [enabled, setEnabled] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: settings } = useQuery({
@@ -52,7 +50,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   // React-recommended sync-from-server pattern (no setState-in-effect).
   const settingsKey = settings
-    ? `${settings.url}|${settings.headerName}|${settings.format ?? "generic"}|${settings.enabled}`
+    ? `${settings.url}|${settings.headerName}|${settings.format ?? "generic"}`
     : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (settingsKey && settingsKey !== seededKey) {
@@ -60,11 +58,15 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     setUrl(settings!.url);
     setHeaderName(settings!.headerName);
     setFormat(settings!.format === "gotify" ? "gotify" : "generic");
-    setEnabled(settings!.enabled);
   }
   const dirty = isWebhookFormDirty(
-    { url, headerName, headerValue, format, enabled },
+    { url, headerName, headerValue, format },
     settings,
+  );
+  // The enable switch saves on tap; the form's Save covers the fields below.
+  const toggle = useChannelEnabledToggle<WebhookSettings>(
+    "/api/settings/webhook",
+    queryKeys.settingsWebhook(),
   );
 
   const save = useMutation({
@@ -77,7 +79,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           headerName: headerName || undefined,
           headerValue: headerValue || undefined,
           format,
-          enabled,
+          enabled: settings?.enabled ?? false,
         }),
       });
       if (!res.ok) {
@@ -103,9 +105,9 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       toastWrittenOutcome("success", t("settings.saved"));
       setHeaderValue("");
     },
+    // A form shows its refusal inline, next to the fields it is about.
     onError: (err: Error) => {
       setSaveError(err.message);
-      showErrorToast(err.message, { cause: err });
     },
   });
 
@@ -122,9 +124,9 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Label htmlFor="webhook-toggle">{t("settings.webhookEnable")}</Label>
           <Switch
             id="webhook-toggle"
-            checked={enabled}
-            onCheckedChange={setEnabled}
-            disabled={save.isPending}
+            checked={settings?.enabled ?? false}
+            onCheckedChange={(checked) => toggle.mutate(checked)}
+            disabled={!settings || save.isPending || toggle.isPending}
           />
         </div>
 
@@ -214,7 +216,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             />
             <Button
               type="submit"
-              disabled={save.isPending}
+              disabled={save.isPending || toggle.isPending}
               className="min-h-11"
             >
               {save.isPending && (

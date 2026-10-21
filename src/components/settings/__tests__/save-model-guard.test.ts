@@ -10,10 +10,19 @@
  *
  * The guard splits every settings source into card units (each
  * `<SettingsCard>…</SettingsCard>` block; a file without one is a single
- * unit) and fails a unit that both
+ * unit), and each card into save units: every `<form>…</form>` inside it is
+ * one, and the rest of the card is one more. It fails a save unit that both
  *   - saves explicitly: a `type="submit"` control or the `common.save` label,
  *   - saves instantly: a Switch / NativeSelect / Select / Segmented / Checkbox
  *     whose change handler does more than set local draft state.
+ *
+ * So a card may carry an instant switch beside a form with its own Save, as
+ * long as the switch is outside that form: the channel cards (Telegram, ntfy,
+ * webhook, email) switch delivery on and off on tap, and their Save covers
+ * the address, topic or token fields inside the form. What stays refused is
+ * an instant control inside the form its Save submits, or a Save outside any
+ * form next to an instant control, where nothing marks which change the
+ * button covers.
  *
  * Its limit, written down: the handler check is textual. It follows calls to
  * functions declared in the same file two levels deep; a write hidden behind
@@ -179,6 +188,45 @@ function savesInstantly(unit: string, source: string = unit): boolean {
   return false;
 }
 
+/**
+ * A card's save units: each `<form>` block inside it, then whatever of the
+ * card lies outside every form.
+ */
+function splitSaveUnits(card: string): string[] {
+  const forms: string[] = [];
+  let rest = "";
+  let cursor = 0;
+  const open = /<form\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = open.exec(card)) !== null) {
+    if (match.index < cursor) continue;
+    let depth = 0;
+    const token = /<form\b|<\/form>/g;
+    token.lastIndex = match.index;
+    let t: RegExpExecArray | null;
+    let end = card.length;
+    while ((t = token.exec(card)) !== null) {
+      depth += t[0] === "</form>" ? -1 : 1;
+      if (depth === 0) {
+        end = t.index + t[0].length;
+        break;
+      }
+    }
+    rest += card.slice(cursor, match.index);
+    forms.push(card.slice(match.index, end));
+    cursor = end;
+  }
+  rest += card.slice(cursor);
+  return [...forms, rest];
+}
+
+/** Does any save unit of this card mix both models? */
+function mixesSaveModels(card: string, source: string = card): boolean {
+  return splitSaveUnits(card).some(
+    (unit) => savesInstantly(unit, source) && savesExplicitly(unit),
+  );
+}
+
 function savesExplicitly(unit: string): boolean {
   return /type="submit"/.test(unit) || /t\("common\.save"\)/.test(unit);
 }
@@ -195,7 +243,7 @@ function scan() {
     const source = readFileSync(file, "utf8");
     splitCardUnits(source).forEach((unit, index) => {
       units++;
-      if (savesInstantly(unit, source) && savesExplicitly(unit)) {
+      if (mixesSaveModels(unit, source)) {
         const key = `${rel}#${index}`;
         if (!ALLOWLIST[key]) mixed.push(key);
       }
@@ -231,6 +279,15 @@ describe("settings save model", () => {
     expect(savesInstantly(splitCardUnits(draftCard)[0])).toBe(false);
   });
 
+  it("accepts an instant switch beside a form with its own Save, nothing looser", () => {
+    const split = `<SettingsCard><Switch onCheckedChange={(v) => toggle.mutate(v)} /><form onSubmit={save}><Input /><Button type="submit">{t("common.save")}</Button></form></SettingsCard>`;
+    const inside = `<SettingsCard><form onSubmit={save}><Switch onCheckedChange={(v) => toggle.mutate(v)} /><Button type="submit">{t("common.save")}</Button></form></SettingsCard>`;
+    const formless = `<SettingsCard><Switch onCheckedChange={(v) => toggle.mutate(v)} /><Button onClick={save}>{t("common.save")}</Button></SettingsCard>`;
+    expect(mixesSaveModels(split)).toBe(false);
+    expect(mixesSaveModels(inside)).toBe(true);
+    expect(mixesSaveModels(formless)).toBe(true);
+  });
+
   it("finds no card that mixes instant and explicit saving", () => {
     const { mixed, units, files } = scan();
     // An empty scan would pass for the wrong reason.
@@ -248,9 +305,7 @@ describe("settings save model", () => {
       const source = readFileSync(join(ROOT, file), "utf8");
       const unit = splitCardUnits(source)[Number(index)];
       expect(unit, key).toBeDefined();
-      expect(savesInstantly(unit, source) && savesExplicitly(unit), key).toBe(
-        true,
-      );
+      expect(mixesSaveModels(unit, source), key).toBe(true);
     }
   });
 });

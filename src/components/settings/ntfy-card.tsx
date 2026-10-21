@@ -15,7 +15,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isNtfyFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { showErrorToast } from "@/lib/errors/error-toast";
+import { useChannelEnabledToggle } from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -34,8 +34,6 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [serverUrl, setServerUrl] = useState("https://ntfy.sh");
   const [topic, setTopic] = useState("");
   const [authToken, setAuthToken] = useState("");
-  // The enable switch is a draft field: it saves with the form's one Save.
-  const [enabled, setEnabled] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: settings } = useQuery({
@@ -48,18 +46,19 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   // React-recommended sync-from-server pattern (no setState-in-effect).
   const settingsKey = settings
-    ? `${settings.serverUrl}|${settings.topic}|${settings.enabled}`
+    ? `${settings.serverUrl}|${settings.topic}`
     : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (settingsKey && settingsKey !== seededKey) {
     setSeededKey(settingsKey);
     setServerUrl(settings!.serverUrl);
     setTopic(settings!.topic);
-    setEnabled(settings!.enabled);
   }
-  const dirty = isNtfyFormDirty(
-    { serverUrl, topic, authToken, enabled },
-    settings,
+  const dirty = isNtfyFormDirty({ serverUrl, topic, authToken }, settings);
+  // The enable switch saves on tap; the form's Save covers the fields below.
+  const toggle = useChannelEnabledToggle<NtfySettings>(
+    "/api/settings/ntfy",
+    queryKeys.settingsNtfy(),
   );
 
   const save = useMutation({
@@ -71,7 +70,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           serverUrl,
           topic,
           authToken: authToken || undefined,
-          enabled,
+          enabled: settings?.enabled ?? false,
         }),
       });
       if (!res.ok) {
@@ -97,9 +96,9 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       toastWrittenOutcome("success", t("settings.saved"));
       setAuthToken("");
     },
+    // A form shows its refusal inline, next to the fields it is about.
     onError: (err: Error) => {
       setSaveError(err.message);
-      showErrorToast(err.message, { cause: err });
     },
   });
 
@@ -116,9 +115,9 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Label htmlFor="ntfy-toggle">{t("settings.ntfyEnable")}</Label>
           <Switch
             id="ntfy-toggle"
-            checked={enabled}
-            onCheckedChange={setEnabled}
-            disabled={save.isPending}
+            checked={settings?.enabled ?? false}
+            onCheckedChange={(checked) => toggle.mutate(checked)}
+            disabled={!settings || save.isPending || toggle.isPending}
           />
         </div>
 
@@ -180,7 +179,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             />
             <Button
               type="submit"
-              disabled={save.isPending}
+              disabled={save.isPending || toggle.isPending}
               className="min-h-11"
             >
               {save.isPending && (

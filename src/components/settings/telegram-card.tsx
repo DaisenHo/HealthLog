@@ -16,7 +16,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isTelegramFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { showErrorToast } from "@/lib/errors/error-toast";
+import { useChannelEnabledToggle } from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -36,8 +36,6 @@ export function TelegramCard({
   const queryClient = useQueryClient();
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
-  // The enable switch is a draft field: it saves with the form's one Save.
-  const [enabled, setEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,25 +48,28 @@ export function TelegramCard({
   });
 
   // Sync from server using the React-recommended "previous-payload-id"
-  // pattern instead of setState-in-effect. Reseeds after every save, so the
-  // switch reads what the server stored.
-  const settingsKey = settings
-    ? `${settings.chatId ?? ""}|${settings.enabled}`
-    : null;
+  // pattern instead of setState-in-effect.
+  const settingsKey = settings ? (settings.chatId ?? "") : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (settingsKey && settingsKey !== seededKey) {
     setSeededKey(settingsKey);
     if (settings!.chatId) setChatId(settings!.chatId);
-    setEnabled(settings!.enabled);
   }
-  const dirty = isTelegramFormDirty({ botToken, chatId, enabled }, settings);
+  const dirty = isTelegramFormDirty({ botToken, chatId }, settings);
+  // The enable switch saves on tap; the form's Save covers token and chat.
+  const toggle = useChannelEnabledToggle<TelegramSettings>(
+    "/api/settings/telegram",
+    queryKeys.telegramSettings(),
+  );
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
 
-    const body: Record<string, unknown> = { enabled };
+    const body: Record<string, unknown> = {
+      enabled: settings?.enabled ?? false,
+    };
     if (botToken.trim()) body.botToken = botToken.trim();
     if (chatId !== (settings?.chatId ?? "")) body.chatId = chatId;
 
@@ -89,9 +90,8 @@ export function TelegramCard({
         const json = (await res?.json().catch(() => null)) as {
           error?: string;
         } | null;
-        const message = json?.error || t("settings.savingError");
-        setError(message);
-        showErrorToast(message);
+        // A form shows its refusal inline, next to the fields it is about.
+        setError(json?.error || t("settings.savingError"));
       }
     } finally {
       setSaving(false);
@@ -107,6 +107,18 @@ export function TelegramCard({
       />
 
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="tg-enabled">
+            {t("settings.enableNotifications")}
+          </Label>
+          <Switch
+            id="tg-enabled"
+            checked={settings?.enabled ?? false}
+            onCheckedChange={(checked) => toggle.mutate(checked)}
+            disabled={!settings || saving || toggle.isPending}
+          />
+        </div>
+
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -145,18 +157,6 @@ export function TelegramCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Switch
-              id="tg-enabled"
-              checked={enabled}
-              onCheckedChange={setEnabled}
-              disabled={saving}
-            />
-            <Label htmlFor="tg-enabled" className="cursor-pointer">
-              {t("settings.enableNotifications")}
-            </Label>
-          </div>
-
           <SettingsInfoTile icon={Info} tone="neutral">
             <ol className="list-decimal space-y-1 pl-4">
               <li>{t("settings.telegramStep1")}</li>
@@ -177,7 +177,11 @@ export function TelegramCard({
               disabled={!settings?.hasBotToken}
               unsavedChanges={dirty}
             />
-            <Button type="submit" disabled={saving} className="min-h-11">
+            <Button
+              type="submit"
+              disabled={saving || toggle.isPending}
+              className="min-h-11"
+            >
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (

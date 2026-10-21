@@ -21,7 +21,6 @@ describe("channel form dirty state", () => {
     headerName: "X-Gotify-Key",
     headerValue: "",
     format: "gotify" as const,
-    enabled: false,
   };
 
   it("webhook: a form that matches the saved config is clean", () => {
@@ -57,12 +56,7 @@ describe("channel form dirty state", () => {
 
   it("ntfy: server, topic and a typed auth token count", () => {
     const saved = { serverUrl: "https://ntfy.sh", topic: "t" };
-    const form = {
-      serverUrl: "https://ntfy.sh",
-      topic: "t",
-      authToken: "",
-      enabled: false,
-    };
+    const form = { serverUrl: "https://ntfy.sh", topic: "t", authToken: "" };
     expect(isNtfyFormDirty(form, saved)).toBe(false);
     expect(isNtfyFormDirty({ ...form, topic: "u" }, saved)).toBe(true);
     expect(isNtfyFormDirty({ ...form, serverUrl: "https://x" }, saved)).toBe(
@@ -73,86 +67,39 @@ describe("channel form dirty state", () => {
 
   it("email: the recipient counts", () => {
     expect(
-      isEmailFormDirty(
-        { recipient: "a@x.io", enabled: false },
-        { recipient: "a@x.io" },
-      ),
+      isEmailFormDirty({ recipient: "a@x.io" }, { recipient: "a@x.io" }),
     ).toBe(false);
     expect(
-      isEmailFormDirty(
-        { recipient: "b@x.io", enabled: false },
-        { recipient: "a@x.io" },
-      ),
+      isEmailFormDirty({ recipient: "b@x.io" }, { recipient: "a@x.io" }),
     ).toBe(true);
   });
 
   it("telegram: a typed bot token or a changed chat id counts; whitespace alone does not", () => {
     expect(
-      isTelegramFormDirty(
-        { botToken: "", chatId: "1", enabled: false },
-        { chatId: "1" },
-      ),
+      isTelegramFormDirty({ botToken: "", chatId: "1" }, { chatId: "1" }),
+    ).toBe(false);
+    expect(
+      isTelegramFormDirty({ botToken: "  ", chatId: "" }, { chatId: null }),
     ).toBe(false);
     expect(
       isTelegramFormDirty(
-        { botToken: "  ", chatId: "", enabled: false },
-        { chatId: null },
-      ),
-    ).toBe(false);
-    expect(
-      isTelegramFormDirty(
-        { botToken: "123:abc", chatId: "1", enabled: false },
+        { botToken: "123:abc", chatId: "1" },
         { chatId: "1" },
       ),
     ).toBe(true);
     expect(
-      isTelegramFormDirty(
-        { botToken: "", chatId: "2", enabled: false },
-        { chatId: "1" },
-      ),
+      isTelegramFormDirty({ botToken: "", chatId: "2" }, { chatId: "1" }),
     ).toBe(true);
-  });
-
-  it("a flipped enable switch is a change on every channel, since it saves with the form", () => {
-    expect(
-      isWebhookFormDirty({ ...webhookForm, enabled: true }, webhookSaved),
-    ).toBe(true);
-    expect(
-      isNtfyFormDirty(
-        { serverUrl: "s", topic: "t", authToken: "", enabled: true },
-        { serverUrl: "s", topic: "t", enabled: false },
-      ),
-    ).toBe(true);
-    expect(
-      isEmailFormDirty(
-        { recipient: "a@x.io", enabled: false },
-        { recipient: "a@x.io", enabled: true },
-      ),
-    ).toBe(true);
-    expect(
-      isTelegramFormDirty(
-        { botToken: "", chatId: "1", enabled: true },
-        { chatId: "1", enabled: true },
-      ),
-    ).toBe(false);
   });
 
   it("nothing loaded yet is never a change", () => {
     expect(isWebhookFormDirty(webhookForm, undefined)).toBe(false);
     expect(
-      isNtfyFormDirty(
-        { serverUrl: "", topic: "", authToken: "x", enabled: true },
-        undefined,
-      ),
+      isNtfyFormDirty({ serverUrl: "", topic: "", authToken: "x" }, undefined),
     ).toBe(false);
-    expect(isEmailFormDirty({ recipient: "x", enabled: true }, undefined)).toBe(
+    expect(isEmailFormDirty({ recipient: "x" }, undefined)).toBe(false);
+    expect(isTelegramFormDirty({ botToken: "x", chatId: "" }, undefined)).toBe(
       false,
     );
-    expect(
-      isTelegramFormDirty(
-        { botToken: "x", chatId: "", enabled: true },
-        undefined,
-      ),
-    ).toBe(false);
   });
 });
