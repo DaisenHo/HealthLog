@@ -54,10 +54,11 @@ export interface VisitReportWindow {
 
 /**
  * What pressing the offer for `visit` applies. Both ends are days of the
- * record's own calendar (`timeZone`, the profile zone): the server cuts
- * `preparation.from` there, and the appointment's day has to be cut in the
- * same zone, or a browser in another zone moved the end a day against the
- * start for a late-evening or early-morning visit.
+ * viewed record's own calendar, as the server cut them (`preparation.from`
+ * and `preparation.to`). Cutting the end in the browser's zone moved it a day
+ * against the start for a late-evening or early-morning visit, and a
+ * guardian viewing a managed profile would have cut it in their own zone.
+ * `timeZone` serves only a visit without a preparation.
  */
 export function visitReportWindow(
   visit: Encounter,
@@ -65,7 +66,8 @@ export function visitReportWindow(
 ): VisitReportWindow {
   return {
     from: visit.preparation?.from ?? null,
-    to: userDayKey(new Date(visit.occurredAt), timeZone),
+    to:
+      visit.preparation?.to ?? userDayKey(new Date(visit.occurredAt), timeZone),
   };
 }
 

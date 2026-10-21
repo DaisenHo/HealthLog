@@ -194,6 +194,7 @@ describe("<VisitsSection> since the last visit", () => {
     occurredAt: "2026-09-20T09:00:00.000Z",
     preparation: {
       from: "2026-03-02",
+      to: "2026-12-01",
       basis: "practitioner",
       since: sameDoctor,
     },
@@ -340,7 +341,12 @@ describe("<VisitsSection> since the last visit", () => {
         upcoming: [
           visit({
             ...next,
-            preparation: { from: "2026-03-02", basis: "default", since: null },
+            preparation: {
+              from: "2026-03-02",
+              to: "2026-12-01",
+              basis: "default",
+              since: null,
+            },
           }),
         ],
         past: [last],

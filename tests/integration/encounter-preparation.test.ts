@@ -142,6 +142,7 @@ describe("GET /api/encounters — the window before a booked visit", () => {
     const booked = body.upcoming.find((v) => v.id === next.id);
     expect(booked?.preparation).toEqual({
       from: berlinDay(dermVisit.occurredAt),
+      to: berlinDay(next.occurredAt),
       basis: "practitioner",
       since: {
         id: dermVisit.id,
@@ -207,6 +208,7 @@ describe("GET /api/encounters — the window before a booked visit", () => {
     const booked = (await list()).upcoming.find((v) => v.id === next.id);
     expect(booked?.preparation).toEqual({
       from: shiftDateKey(berlinDay(new Date()), -90),
+      to: berlinDay(next.occurredAt),
       basis: "default",
       since: null,
     });

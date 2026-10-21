@@ -191,6 +191,11 @@ const encounterPreparation = z
       .describe(
         "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before today on `default`.",
       ),
+    to: z
+      .string()
+      .describe(
+        "The booked visit's own day, `YYYY-MM-DD` on the same calendar as `from` (the record's, not the reader's). A report window offered for the appointment ends here.",
+      ),
     basis: z
       .enum(PREPARATION_BASES)
       .describe(

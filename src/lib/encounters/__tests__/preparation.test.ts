@@ -67,6 +67,7 @@ describe("the window before a booked visit", () => {
     ]);
     expect(prep).toEqual({
       from: "2026-03-02",
+      to: "2026-10-23",
       basis: "practitioner",
       since: {
         id: "derm",
@@ -99,6 +100,7 @@ describe("the window before a booked visit", () => {
     const prep = resolve(next, [internist("int", "2026-10-16T09:00:00.000Z")]);
     expect(prep).toEqual({
       from: "2026-07-23",
+      to: "2026-10-23",
       basis: "default",
       since: null,
     });
@@ -163,6 +165,21 @@ describe("the window before a booked visit", () => {
       visit("late", "2026-05-04T23:30:00.000Z", { practitionerId: "p-derm" }),
     ]);
     expect(prep.from).toBe("2026-05-05");
+  });
+
+  it("ends on the booked visit's own day in the record's zone, whatever the rule", () => {
+    // 23:30 UTC on the 22nd is the 23rd in Berlin.
+    const late = visit("late-next", "2026-10-22T23:30:00.000Z", {
+      practitionerId: "p-derm",
+    });
+    expect(resolve(late, []).to).toBe("2026-10-23");
+    expect(
+      resolve(late, [
+        visit("before", "2026-05-04T08:00:00.000Z", {
+          practitionerId: "p-derm",
+        }),
+      ]).to,
+    ).toBe("2026-10-23");
   });
 });
 

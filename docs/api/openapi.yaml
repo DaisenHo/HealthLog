@@ -72152,6 +72152,10 @@ components:
           type: string
           description: "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before
             today on `default`."
+        to:
+          type: string
+          description: The booked visit's own day, `YYYY-MM-DD` on the same calendar as `from` (the record's, not the reader's). A
+            report window offered for the appointment ends here.
         basis:
           type: string
           enum:
@@ -72169,6 +72173,7 @@ components:
             - type: "null"
       required:
         - from
+        - to
         - basis
         - since
       additionalProperties: false

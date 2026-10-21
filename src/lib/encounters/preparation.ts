@@ -68,6 +68,8 @@ export interface PreparationAnchorDTO {
 export interface EncounterPreparationDTO {
   /** First day of the window, `YYYY-MM-DD` on the record's own calendar. */
   from: string;
+  /** The booked visit's own day, on the same calendar as `from`. */
+  to: string;
   /** Which rule chose `from`. */
   basis: PreparationBasis;
   /** The visit `from` is the day of; null on `default`. */
@@ -107,6 +109,7 @@ export function resolvePreparation(args: {
   today: string;
 }): EncounterPreparationDTO {
   const { next, tz, today } = args;
+  const to = userDayKey(next.occurredAt, tz);
   const earlier = args.done.filter(
     (visit) =>
       visit.id !== next.id &&
@@ -139,6 +142,7 @@ export function resolvePreparation(args: {
     if (!hit) continue;
     return {
       from: userDayKey(hit.occurredAt, tz),
+      to,
       basis,
       since: {
         id: hit.id,
@@ -151,6 +155,7 @@ export function resolvePreparation(args: {
   }
   return {
     from: shiftDateKey(today, -PREPARATION_DEFAULT_DAYS),
+    to,
     basis: "default",
     since: null,
   };

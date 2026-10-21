@@ -118,6 +118,7 @@ describe("<ReportVisitOffer>", () => {
         id: "derm",
         preparation: {
           from: "2026-03-02",
+          to: "2026-12-01",
           basis: "specialty",
           since: {
             id: "old-derm",
@@ -138,7 +139,12 @@ describe("<ReportVisitOffer>", () => {
     const html = render([
       visit({
         id: "first",
-        preparation: { from: "2026-07-23", basis: "default", since: null },
+        preparation: {
+          from: "2026-07-23",
+          to: "2026-12-01",
+          basis: "default",
+          since: null,
+        },
       }),
     ]);
     expect(html).toContain("The last 90 days");
@@ -153,7 +159,12 @@ describe("<ReportVisitOffer>", () => {
       visit({
         id: "derm",
         occurredAt: at.toISOString(),
-        preparation: { from: "2026-03-02", basis: "default", since: null },
+        preparation: {
+          from: "2026-03-02",
+          to: "2026-12-01",
+          basis: "default",
+          since: null,
+        },
       }),
       "Europe/Berlin",
     );
@@ -165,16 +176,29 @@ describe("<ReportVisitOffer>", () => {
     ).toBeNull();
   });
 
-  it("cuts the appointment's day on the record's calendar, like the start", () => {
+  it("ends on the record's day the server cut, not the reader's", () => {
     // 04:30 on the 12th in Berlin is still the evening of the 11th in New
-    // York. The start comes from the server on the record's calendar; the
-    // end is cut in the zone it is handed, never the browser's own.
+    // York. A guardian in New York viewing a Berlin record gets the record's
+    // day: both ends come from the server, on the record's calendar.
     const early = visit({
       id: "early",
       occurredAt: "2026-11-12T03:30:00.000Z",
-      preparation: { from: "2026-08-12", basis: "default", since: null },
+      preparation: {
+        from: "2026-08-12",
+        to: "2026-11-12",
+        basis: "default",
+        since: null,
+      },
     });
-    expect(visitReportWindow(early, "Europe/Berlin").to).toBe("2026-11-12");
-    expect(visitReportWindow(early, "America/New_York").to).toBe("2026-11-11");
+    expect(visitReportWindow(early, "America/New_York")).toEqual({
+      from: "2026-08-12",
+      to: "2026-11-12",
+    });
+    // Without a preparation the zone handed in decides.
+    const plain = visit({
+      id: "plain",
+      occurredAt: "2026-11-12T03:30:00.000Z",
+    });
+    expect(visitReportWindow(plain, "America/New_York").to).toBe("2026-11-11");
   });
 });
