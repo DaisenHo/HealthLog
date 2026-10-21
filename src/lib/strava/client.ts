@@ -23,6 +23,7 @@
  */
 import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
+import { parseRetryAfterMs } from "@/lib/integrations/oauth-kit/retry-after";
 import type { Prisma } from "@/generated/prisma/client";
 import { StravaApiError, classifyStravaResponse } from "./response-classifier";
 import { mapStravaSportType } from "./sport-map";
@@ -282,9 +283,12 @@ export function stravaRateLimitRetryAfterSeconds(
   headers: Headers,
   now: Date = new Date(),
 ): number {
-  const retryAfter = Number(headers.get("retry-after"));
-  if (Number.isFinite(retryAfter) && retryAfter > 0) {
-    return Math.ceil(retryAfter);
+  const retryAfterMs = parseRetryAfterMs(
+    headers.get("retry-after"),
+    now.getTime(),
+  );
+  if (retryAfterMs !== undefined && retryAfterMs > 0) {
+    return Math.ceil(retryAfterMs / 1000);
   }
   const pair = (name: string): [number, number] | null => {
     const parts = (headers.get(name) ?? "").split(",").map(Number);
