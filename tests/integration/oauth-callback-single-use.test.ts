@@ -128,7 +128,7 @@ describe("Oura callback delivered twice", () => {
             refresh_token: "oura-refresh",
             expires_in: 86400,
             scope:
-              "extapi:daily extapi:personal extapi:spo2 extapi:heart_health extapi:stress",
+              "extapi:daily extapi:personal extapi:spo2 extapi:heart_health extapi:stress extapi:workout extapi:heartrate",
           }),
           { status: 200, headers: { "content-type": "application/json" } },
         );
@@ -169,7 +169,8 @@ describe("Oura callback delivered twice", () => {
           access_token: "oura-access",
           refresh_token: "oura-refresh",
           expires_in: 86400,
-          scope: "extapi:daily extapi:personal extapi:spo2 extapi:heart_health",
+          scope:
+            "extapi:daily extapi:personal extapi:spo2 extapi:heart_health extapi:workout extapi:heartrate",
         }),
         { status: 200, headers: { "content-type": "application/json" } },
       );
