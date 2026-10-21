@@ -3275,7 +3275,11 @@
         "noProvider": "Geen provider beschikbaar",
         "allSettings": "Alle AI-instellingen",
         "operatorCodex": "ChatGPT (gedeeld door de serverbeheerder)",
-        "changeModel": "Wijzigen in Instellingen > AI"
+        "changeModel": "Wijzigen in Instellingen > AI",
+        "saving": "Opslaan…",
+        "saveFailed": "Die wijziging kon niet worden opgeslagen.",
+        "providerNotActive": "{provider} kon het niet overnemen: er is geen werkende aanmelding of sleutel. Stel deze provider in bij de AI-instellingen.",
+        "operatorManaged": "De beheerder van je server beheert deze verbinding. Zodra een van je eigen providers is ingesteld, antwoordt die als eerste."
       },
       "answer": {
         "scrollToBottom": "Naar het nieuwste bericht",

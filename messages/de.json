@@ -3275,7 +3275,11 @@
         "noProvider": "Kein Anbieter verfügbar",
         "allSettings": "Alle KI-Einstellungen",
         "operatorCodex": "ChatGPT (vom Betreiber bereitgestellt)",
-        "changeModel": "In Einstellungen > KI ändern"
+        "changeModel": "In Einstellungen > KI ändern",
+        "saving": "Wird gespeichert…",
+        "saveFailed": "Die Änderung ließ sich nicht speichern.",
+        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein.",
+        "operatorManaged": "Diese Verbindung verwaltet der Betreiber deines Servers. Sobald einer deiner eigenen Anbieter eingerichtet ist, antwortet er zuerst."
       },
       "answer": {
         "scrollToBottom": "Zur neuesten Nachricht",

@@ -807,14 +807,12 @@ test.describe("Coach page frame", () => {
     const popover = page.locator('[data-slot="coach-settings-popover"]');
     await expect(popover).toBeVisible();
     await expect(popover).toHaveAttribute("role", "dialog");
-    // The model is chosen in Settings > AI; the overlay shows what is in
-    // effect and links there.
     await expect(
       popover.locator('[data-slot="coach-quick-provider"]'),
-    ).toHaveAttribute("data-value", "local");
+    ).toHaveValue("local");
     await expect(
       popover.locator('[data-slot="coach-quick-model"]'),
-    ).toHaveAttribute("data-value", "qwen2.5");
+    ).toHaveValue("qwen2.5");
     await expect(
       popover.locator('[data-slot="coach-sources-window"]'),
     ).toBeVisible();

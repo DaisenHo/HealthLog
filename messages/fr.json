@@ -3275,7 +3275,11 @@
         "noProvider": "Aucun fournisseur disponible",
         "allSettings": "Tous les paramètres IA",
         "operatorCodex": "ChatGPT (partagé par l'opérateur)",
-        "changeModel": "Modifier dans Réglages > IA"
+        "changeModel": "Modifier dans Réglages > IA",
+        "saving": "Enregistrement…",
+        "saveFailed": "Impossible d’enregistrer cette modification.",
+        "providerNotActive": "{provider} n'a pas pu prendre le relais : aucune connexion ni clé valide. Configurez-le dans les réglages IA.",
+        "operatorManaged": "L'opérateur de votre serveur gère cette connexion. Dès qu'un de vos propres fournisseurs est configuré, c'est lui qui répond en premier."
       },
       "answer": {
         "scrollToBottom": "Aller au dernier message",

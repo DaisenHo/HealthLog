@@ -70,32 +70,43 @@ describe("<CoachSettingsBody>", () => {
     expect(html).toMatch(/href="\/settings\/ai"[^>]*>All AI settings</);
   });
 
-  it("shows the provider and model in effect and links to the one place they are chosen", () => {
+  it("offers only the providers that can answer, with the active one selected", () => {
     const html = render(<CoachSettingsBody />);
-    expect(html).toMatch(
-      /data-slot="coach-quick-provider"[^>]*data-value="local"/,
-    );
-    expect(html).toMatch(
-      /data-slot="coach-quick-model"[^>]*data-value="qwen2.5"/,
-    );
+    const select = html.match(
+      /<select[^>]*data-slot="coach-quick-provider"[\s\S]*?<\/select>/,
+    )?.[0];
+    expect(select).toBeDefined();
+    expect(select).toContain('value="local"');
+    expect(select).toContain('value="admin-openai"');
+    expect(select).not.toContain('value="codex"');
+    // The same preference Settings > AI writes; the link there stays.
     expect(html).toContain('href="/settings/ai#ai-provider"');
-    // v1.44 — no second copy of the selects here.
-    expect(html).not.toMatch(/<select[^>]*data-slot="coach-quick-provider"/);
-    expect(html).not.toMatch(/<select[^>]*data-slot="coach-quick-model"/);
-    expect(html).toContain('id="coach-quick-reasoning"');
-    // Keys and base URLs are not here.
-    expect(html).not.toContain("http://localhost:11434/v1");
-    expect(html).not.toMatch(/type="password"/);
   });
 
-  it("names the operator's central Codex when it answers", () => {
+  it("shows the operator's central Codex as the active provider when it answers", () => {
+    // `admin-codex` is never a chain entry, so no option matched it and the
+    // select showed its first option as the one answering.
     const html = render(<CoachSettingsBody />, {
       ...CHAIN,
       activeProvider: "admin-codex" as ProviderChainData["activeProvider"],
     });
-    expect(html).toMatch(
-      /data-slot="coach-quick-provider"[^>]*data-value="admin-codex"[^>]*>ChatGPT \(shared by the operator\)</,
+    const select = html.match(
+      /<select[^>]*data-slot="coach-quick-provider"[\s\S]*?<\/select>/,
+    )?.[0];
+    expect(select).toMatch(
+      /<option value="admin-codex" disabled="" selected="">ChatGPT \(shared by the operator\)<\/option>/,
     );
+    expect(select).not.toMatch(/value="local"[^>]*selected/);
+    expect(html).toContain('data-slot="coach-quick-provider-operator"');
+  });
+
+  it("shows the model and reasoning controls the active provider owns", () => {
+    const html = render(<CoachSettingsBody />);
+    expect(html).toContain('data-slot="coach-quick-model"');
+    expect(html).toContain('id="coach-quick-reasoning"');
+    // Keys, base URLs and the chain order are not here.
+    expect(html).not.toContain("http://localhost:11434/v1");
+    expect(html).not.toMatch(/type="password"/);
   });
 
   it("locks the reasoning select while a change is saving", async () => {

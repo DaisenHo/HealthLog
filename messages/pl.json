@@ -3275,7 +3275,11 @@
         "noProvider": "Brak dostępnego dostawcy",
         "allSettings": "Wszystkie ustawienia AI",
         "operatorCodex": "ChatGPT (udostępniony przez operatora)",
-        "changeModel": "Zmień w Ustawieniach > AI"
+        "changeModel": "Zmień w Ustawieniach > AI",
+        "saving": "Zapisywanie…",
+        "saveFailed": "Nie udało się zapisać zmiany.",
+        "providerNotActive": "{provider} nie mógł przejąć odpowiedzi: brak działającego logowania lub klucza. Skonfiguruj go w ustawieniach AI.",
+        "operatorManaged": "Tym połączeniem zarządza operator Twojego serwera. Gdy skonfigurujesz własnego dostawcę, to on odpowie jako pierwszy."
       },
       "answer": {
         "scrollToBottom": "Przejdź do najnowszej wiadomości",
