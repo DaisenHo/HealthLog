@@ -36,6 +36,12 @@ export class OuraApiError extends IntegrationApiError {
    * scope."}`). Undefined for every other failure, a dead token included.
    */
   readonly missingScope: string | undefined;
+  /**
+   * How long Oura asked to be left alone, from the `Retry-After` of a 429 (or
+   * 503). Undefined when the refusal carried none or was not a rate limit.
+   * A backfill waits at least this long before its next slice.
+   */
+  readonly retryAfterMs: number | undefined;
 
   constructor(opts: {
     verb: string;
@@ -44,8 +50,9 @@ export class OuraApiError extends IntegrationApiError {
     reason: string;
     upstreamError?: string;
     missingScope?: string;
+    retryAfterMs?: number;
   }) {
-    const { missingScope, ...rest } = opts;
+    const { missingScope, retryAfterMs, ...rest } = opts;
     super({
       vendor: "Oura",
       ...rest,
@@ -55,6 +62,7 @@ export class OuraApiError extends IntegrationApiError {
     });
     this.name = "OuraApiError";
     this.missingScope = missingScope;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 

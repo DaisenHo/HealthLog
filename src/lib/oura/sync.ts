@@ -4,7 +4,7 @@
  * Pulls daily readiness (→ RECOVERY_SCORE + BODY_TEMPERATURE_DEVIATION), sleep
  * (real per-segment hypnogram timeline when present, else per-stage totals;
  * efficiency, HRV, RHR, respiratory rate), daily activity (steps, active
- * energy, equivalent walking distance), the daily Sleep Score (→ SLEEP_SCORE),
+ * energy), the daily Sleep Score (→ SLEEP_SCORE),
  * daily SpO2 (→ OXYGEN_SATURATION), the dedicated vO2_max collection (→
  * VO2_MAX), and the daily cardiovascular-age estimate (→ VASCULAR_AGE) for one
  * connected user, mapping each into `Measurement` rows tagged `source = OURA`.
@@ -75,6 +75,7 @@ import {
   fetchResilience,
   fetchSleep,
   fetchVo2Max,
+  fetchWorkouts,
   isRetiredOuraSleepPeriod,
   mapCardiovascularAge,
   mapDailyActivity,
@@ -90,7 +91,18 @@ import { getOuraConnection, syncOuraScopeDenied } from "./credentials";
 import { refreshOuraAfterRefusal } from "./oauth-descriptor";
 import { OuraApiError, classifyOuraError } from "./response-classifier";
 import { syncUserOuraCyclePhases } from "./cycle-sync";
-import { isOuraScopeGatedCollection } from "./scope";
+import {
+  OURA_COLLECTIONS,
+  isOuraScopeGatedCollection,
+  type OuraCollectionName,
+} from "./scope";
+import { writeOuraWorkouts } from "./sync-workouts";
+import {
+  refoldOuraTouchedDays,
+  resolveOuraHeartRateWindow,
+  syncOuraHeartRateRange,
+  TouchedDays,
+} from "./sync-heart-rate";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
@@ -220,9 +232,12 @@ function toUpsert(
 
 /** One Oura collection: its ledger name and a self-contained fetch+map closure
  * that resolves to the collection's mapped upserts. Each closure owns its own
- * client call and mapper so a throw is contained to this one collection. */
+ * client call and mapper so a throw is contained to this one collection. A
+ * collection that writes rows of its own (workouts, the heart-rate stream)
+ * writes inside the closure, counts on `OuraRunContext.sideImported`, and
+ * resolves to no upserts. */
 interface OuraCollectionSpec {
-  name: string;
+  name: OuraCollectionName;
   collect: (token: string) => Promise<OuraMeasurementUpsert[]>;
 }
 
@@ -262,11 +277,166 @@ export interface OuraFetchResult {
 }
 
 /**
+ * What one run reads: the day window of the day-keyed collections, the time
+ * range of the heart-rate stream, the user's zone, and the sinks the sleep
+ * collection and the self-writing collections fill as they go.
+ */
+export interface OuraRunContext {
+  userId: string;
+  tz: string;
+  query: { startDate: string; endDate: string };
+  heartRate: { start: Date; end: Date };
+  /** False on a history backfill: old rows are not arrivals. */
+  emitArrivals: boolean;
+  sleepSweeps: SleepSegmentSweep[];
+  sleepRetirements: string[];
+  /** Rows written by the collections that write their own. */
+  sideImported: number;
+  /** Days the heart-rate stream touched; refolded once by the caller. */
+  heartRateTouched: TouchedDays;
+}
+
+export function ouraRunContext(
+  userId: string,
+  tz: string,
+  query: { startDate: string; endDate: string },
+  heartRate: { start: Date; end: Date },
+  emitArrivals = true,
+): OuraRunContext {
+  return {
+    userId,
+    tz,
+    query,
+    heartRate,
+    emitArrivals,
+    sleepSweeps: [],
+    sleepRetirements: [],
+    sideImported: 0,
+    heartRateTouched: new TouchedDays(),
+  };
+}
+
+/**
+ * The fetch+map (or fetch+write) closure of one collection over the context's
+ * window. The one place each collection's read is defined, for the hourly
+ * sync and the history backfill alike.
+ */
+export function ouraCollectionReader(
+  name: OuraCollectionName,
+  ctx: OuraRunContext,
+): (token: string) => Promise<OuraMeasurementUpsert[]> {
+  const { tz, query } = ctx;
+  switch (name) {
+    case "readiness":
+      return async (t) =>
+        (await fetchReadiness(t, query)).flatMap((r) =>
+          toUpsert(
+            mapReadiness(r, tz),
+            "readiness",
+            r.timestamp ? undefined : r.day,
+          ),
+        );
+    case "sleep":
+      return async (t) => {
+        const records = await fetchSleep(t, query);
+        const ups: OuraMeasurementUpsert[] = [];
+        for (const s of records) {
+          if (isRetiredOuraSleepPeriod(s)) {
+            if (s.id) ctx.sleepRetirements.push(`sleep:${s.id}:`);
+            continue;
+          }
+          const rows = toUpsert(
+            mapSleep(s, tz),
+            "sleep",
+            s.bedtime_end ? undefined : s.day,
+          );
+          ups.push(...rows);
+          // Record-scoped sweep entry: every SLEEP_DURATION row of this
+          // record keys under `sleep:<id>:` (hypnogram runs AND the
+          // stage-total fallback), so the prefix bounds the cleanup to this
+          // one record. Clears whatever a revised hypnogram orphaned —
+          // shifted run boundaries, legacy run-indexed `seg:<i>` rows, and a
+          // stale stage-total set once the hypnogram appears.
+          ctx.sleepSweeps.push({
+            prefix: `sleep:${s.id}:`,
+            keepIds: rows
+              .filter((r) => r.type === "SLEEP_DURATION")
+              .map((r) => r.externalId),
+          });
+        }
+        return ups;
+      };
+    case "activity":
+      return async (t) =>
+        (await fetchDailyActivity(t, query)).flatMap((a) =>
+          toUpsert(
+            mapDailyActivity(a, tz),
+            "activity",
+            a.timestamp ? undefined : a.day,
+          ),
+        );
+    case "daily_sleep":
+      return async (t) =>
+        (await fetchDailySleep(t, query)).flatMap((d) =>
+          toUpsert(
+            mapDailySleep(d, tz),
+            "daily_sleep",
+            d.timestamp ? undefined : d.day,
+          ),
+        );
+    case "spo2":
+      return async (t) =>
+        (await fetchDailySpo2(t, query)).flatMap((s) =>
+          toUpsert(mapDailySpo2(s, tz), "spo2", s.day),
+        );
+    case "vo2max":
+      return async (t) =>
+        (await fetchVo2Max(t, query)).flatMap((v) =>
+          toUpsert(mapVo2Max(v, tz), "vo2max", v.timestamp ? undefined : v.day),
+        );
+    case "cardio_age":
+      return async (t) =>
+        (await fetchCardiovascularAge(t, query)).flatMap((c) =>
+          toUpsert(mapCardiovascularAge(c, tz), "cardio_age", c.day),
+        );
+    case "resilience":
+      return async (t) =>
+        (await fetchResilience(t, query)).flatMap((r) =>
+          toUpsert(mapResilience(r, tz), "resilience", r.day),
+        );
+    case "workout":
+      return async (t) => {
+        const workouts = await fetchWorkouts(t, query);
+        ctx.sideImported += await writeOuraWorkouts(ctx.userId, workouts, {
+          emitArrivals: ctx.emitArrivals,
+        });
+        return [];
+      };
+    case "heartrate":
+      return async (t) => {
+        const { imported, truncated } = await syncOuraHeartRateRange(
+          ctx.userId,
+          t,
+          ctx.heartRate,
+          { emitArrivals: ctx.emitArrivals, touched: ctx.heartRateTouched },
+        );
+        ctx.sideImported += imported;
+        if (truncated) {
+          // A window Oura could not page to its end is not read: fail it so
+          // the run is not reported clean over a gap.
+          throw new Error("oura heart-rate walk stopped short of its window");
+        }
+        return [];
+      };
+  }
+}
+
+/**
  * A 401 whose body names the missing scope (see `./scope`): Oura checked the
  * token and found it valid, the grant just does not cover this collection. A
  * refresh cannot widen a grant, so none is spent on it.
  */
-function isNamedScopeRefusal(err: unknown): boolean {
+export function isNamedScopeRefusal(err: unknown): boolean {
   return (
     err instanceof OuraApiError &&
     err.httpStatus === 401 &&
@@ -279,7 +449,7 @@ function isNamedScopeRefusal(err: unknown): boolean {
  * no body to tell. This is what the one refresh is for. A 403 is neither: Oura
  * answers it for a lapsed membership, which no refresh or reconnect fixes.
  */
-function isTokenRefusal(err: unknown): boolean {
+export function isTokenRefusal(err: unknown): boolean {
   return (
     err instanceof OuraApiError &&
     err.httpStatus === 401 &&
@@ -346,124 +516,17 @@ function splitScopeDenied(
  * connection at `reauth_required`.
  */
 async function fetchAll(
-  userId: string,
+  ctx: OuraRunContext,
   accessToken: string,
   refreshTokenCiphertext: string,
-  lookbackDays: number,
   knownScopeDenied: readonly string[] = [],
 ): Promise<OuraFetchResult> {
-  // Oura keys its daily collections by the user's calendar date, so the
-  // window is cut on the user's own days, and date-only records are anchored
-  // at local noon of their date in this zone.
-  const tz = await resolveUserTimezone(userId);
-  const today = userDayKey(new Date(), tz);
-  const query = {
-    startDate: shiftDateKey(today, -lookbackDays),
-    endDate: today,
-  };
-
-  // Filled by the sleep collection's closure as it maps records; carried on
-  // the result so the caller can run the record-scoped sweep before the
-  // upsert. A collection that throws pushes nothing (the fetch is its first
-  // await), so a 401-retry cannot double-enter a record.
-  const sleepSweeps: SleepSegmentSweep[] = [];
-  const sleepRetirements: string[] = [];
-
-  const collections: OuraCollectionSpec[] = [
-    {
-      name: "readiness",
-      collect: async (t) =>
-        (await fetchReadiness(t, query)).flatMap((r) =>
-          toUpsert(
-            mapReadiness(r, tz),
-            "readiness",
-            r.timestamp ? undefined : r.day,
-          ),
-        ),
-    },
-    {
-      name: "sleep",
-      collect: async (t) => {
-        const records = await fetchSleep(t, query);
-        const ups: OuraMeasurementUpsert[] = [];
-        for (const s of records) {
-          if (isRetiredOuraSleepPeriod(s)) {
-            if (s.id) sleepRetirements.push(`sleep:${s.id}:`);
-            continue;
-          }
-          const rows = toUpsert(
-            mapSleep(s, tz),
-            "sleep",
-            s.bedtime_end ? undefined : s.day,
-          );
-          ups.push(...rows);
-          // Record-scoped sweep entry: every SLEEP_DURATION row of this
-          // record keys under `sleep:<id>:` (hypnogram runs AND the
-          // stage-total fallback), so the prefix bounds the cleanup to this
-          // one record. Clears whatever a revised hypnogram orphaned —
-          // shifted run boundaries, legacy run-indexed `seg:<i>` rows, and a
-          // stale stage-total set once the hypnogram appears.
-          sleepSweeps.push({
-            prefix: `sleep:${s.id}:`,
-            keepIds: rows
-              .filter((r) => r.type === "SLEEP_DURATION")
-              .map((r) => r.externalId),
-          });
-        }
-        return ups;
-      },
-    },
-    {
-      name: "activity",
-      collect: async (t) =>
-        (await fetchDailyActivity(t, query)).flatMap((a) =>
-          toUpsert(
-            mapDailyActivity(a, tz),
-            "activity",
-            a.timestamp ? undefined : a.day,
-          ),
-        ),
-    },
-    {
-      name: "daily_sleep",
-      collect: async (t) =>
-        (await fetchDailySleep(t, query)).flatMap((d) =>
-          toUpsert(
-            mapDailySleep(d, tz),
-            "daily_sleep",
-            d.timestamp ? undefined : d.day,
-          ),
-        ),
-    },
-    {
-      name: "spo2",
-      collect: async (t) =>
-        (await fetchDailySpo2(t, query)).flatMap((s) =>
-          toUpsert(mapDailySpo2(s, tz), "spo2", s.day),
-        ),
-    },
-    {
-      name: "vo2max",
-      collect: async (t) =>
-        (await fetchVo2Max(t, query)).flatMap((v) =>
-          toUpsert(mapVo2Max(v, tz), "vo2max", v.timestamp ? undefined : v.day),
-        ),
-    },
-    {
-      name: "cardio_age",
-      collect: async (t) =>
-        (await fetchCardiovascularAge(t, query)).flatMap((c) =>
-          toUpsert(mapCardiovascularAge(c, tz), "cardio_age", c.day),
-        ),
-    },
-    {
-      name: "resilience",
-      collect: async (t) =>
-        (await fetchResilience(t, query)).flatMap((r) =>
-          toUpsert(mapResilience(r, tz), "resilience", r.day),
-        ),
-    },
-  ];
+  const userId = ctx.userId;
+  const { sleepSweeps, sleepRetirements } = ctx;
+  const collections: OuraCollectionSpec[] = OURA_COLLECTIONS.map((c) => ({
+    name: c.name,
+    collect: ouraCollectionReader(c.name, ctx),
+  }));
 
   // Run a set of collections isolated from one another. A rejection is captured
   // per-collection, never propagated, so siblings still resolve.
@@ -629,13 +692,25 @@ export async function syncUserOura(
   const lookbackDays =
     opts.lookbackDays ?? (await resolveOuraLookbackDays(userId));
 
+  // Oura keys its daily collections by the user's calendar date, so the
+  // window is cut on the user's own days, and date-only records are anchored
+  // at local noon of their date in this zone. Heart rate is read by instant
+  // over a window of hours (`resolveOuraHeartRateWindow`).
+  const tz = await resolveUserTimezone(userId);
+  const today = userDayKey(new Date(), tz);
+  const ctx = ouraRunContext(
+    userId,
+    tz,
+    { startDate: shiftDateKey(today, -lookbackDays), endDate: today },
+    await resolveOuraHeartRateWindow(userId),
+  );
+
   let result: OuraFetchResult;
   try {
     result = await fetchAll(
-      userId,
+      ctx,
       conn.accessToken,
       conn.refreshTokenCiphertext,
-      lookbackDays,
       conn.scopeDenied,
     );
   } catch (err) {
@@ -677,13 +752,15 @@ export async function syncUserOura(
   // Import everything the healthy collections returned regardless of whether a
   // sibling collection failed — one bad collection must not blank the source.
   let insertedSleepMeasuredAts: Date[] = [];
-  const imported = await upsertOuraMeasurements(userId, result.readings, {
-    onInserted: (rows) => {
-      insertedSleepMeasuredAts = rows
-        .filter((row) => row.type === "SLEEP_DURATION")
-        .map((row) => row.measuredAt);
-    },
-  });
+  const imported =
+    (await upsertOuraMeasurements(userId, result.readings, {
+      onInserted: (rows) => {
+        insertedSleepMeasuredAts = rows
+          .filter((row) => row.type === "SLEEP_DURATION")
+          .map((row) => row.measuredAt);
+      },
+    })) + ctx.sideImported;
+  await refoldOuraTouchedDays(userId, ctx.heartRateTouched);
 
   // v1.29.x — best-effort Cycle Insights import. Fully isolated from the
   // measurement sync's status ledger on purpose: `daily_cycle_phases` sits
@@ -695,14 +772,7 @@ export async function syncUserOura(
   try {
     const freshConn = await getOuraConnection(userId);
     if (freshConn) {
-      const cycleToday = userDayKey(
-        new Date(),
-        await resolveUserTimezone(userId),
-      );
-      await syncUserOuraCyclePhases(userId, freshConn.accessToken, {
-        startDate: shiftDateKey(cycleToday, -lookbackDays),
-        endDate: cycleToday,
-      });
+      await syncUserOuraCyclePhases(userId, freshConn.accessToken, ctx.query);
     }
   } catch (err) {
     getEvent()?.addWarning(
@@ -761,6 +831,8 @@ export async function upsertOuraMeasurements(
   readings: OuraMeasurementUpsert[],
   opts: {
     onInserted?: (rows: InsertedMeasurementArrivalRow[]) => void;
+    /** False on a history backfill: old rows are not arrivals. */
+    emitArrivals?: boolean;
   } = {},
 ): Promise<number> {
   if (readings.length === 0) return 0;
@@ -818,9 +890,11 @@ export async function upsertOuraMeasurements(
   }
 
   opts.onInserted?.(insertedRows);
-  void emitInsertedMeasurementArrivals(userId, insertedRows, "oura").catch(
-    () => {},
-  );
+  if (opts.emitArrivals !== false) {
+    void emitInsertedMeasurementArrivals(userId, insertedRows, "oura").catch(
+      () => {},
+    );
+  }
   try {
     const keys = collapseToTypeDayKeys(touched);
     await recomputeBucketsForKeys(userId, keys);

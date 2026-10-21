@@ -130,6 +130,10 @@ export function unavailableItemLabel(item: string, t: Translate): string {
       return t("settings.integrations.oura.scope.items.cardio_age");
     case "resilience":
       return t("settings.integrations.oura.scope.items.resilience");
+    case "workout":
+      return t("settings.integrations.oura.scope.items.workout");
+    case "heartrate":
+      return t("settings.integrations.oura.scope.items.heartrate");
     case "activity":
       return t("settings.integrationCard.items.activity");
     case "sleep":

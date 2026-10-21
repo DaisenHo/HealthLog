@@ -6672,7 +6672,9 @@
           "items": {
             "vo2max": "la VO2 max",
             "cardio_age": "l’âge cardiovasculaire",
-            "resilience": "la résilience"
+            "resilience": "la résilience",
+            "workout": "les entraînements",
+            "heartrate": "la fréquence cardiaque"
           }
         }
       }

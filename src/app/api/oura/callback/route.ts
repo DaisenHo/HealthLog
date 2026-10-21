@@ -18,6 +18,11 @@ import { ouraCollectionsMissingFromGrant } from "@/lib/oura/scope";
 import { markReconnected } from "@/lib/integrations/status";
 import { OURA_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
+import {
+  OURA_BACKFILL_QUEUE,
+  type OuraBackfillPayload,
+} from "@/lib/jobs/oura-backfill";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -143,6 +148,10 @@ async function completeCallback(
         ouraRefreshTokenEncrypted: encrypt(tokens.refresh_token),
         ouraScopeDenied:
           missing && missing.length > 0 ? missing : Prisma.DbNull,
+        // Open the history backfill again: a first connect has none yet,
+        // and a reconnect may grant what the old grant refused. What was
+        // already walked stays in the progress note and is not read again.
+        ouraBackfillCompletedAt: null,
       },
     });
 
@@ -164,6 +173,21 @@ async function completeCallback(
         .send(OURA_SYNC_QUEUE, { userId })
         .catch((err) =>
           getEvent()?.addWarning(`oura-sync connect enqueue failed: ${err}`),
+        );
+      const backfill: OuraBackfillPayload = {
+        userId,
+        enqueuedAt: new Date().toISOString(),
+      };
+      await boss
+        .send(
+          OURA_BACKFILL_QUEUE,
+          backfill,
+          integrationBackfillSourceOptions(`oura-backfill|${userId}`),
+        )
+        .catch((err) =>
+          getEvent()?.addWarning(
+            `oura-backfill connect enqueue failed: ${err}`,
+          ),
         );
     }
 

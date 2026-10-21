@@ -959,6 +959,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   stravaLastActivityAt: "OPERATIONAL",
   stravaBackfillCompletedAt: "OPERATIONAL",
   stravaBackfillResumeBefore: "OPERATIONAL",
+  // The restored account's Oura backfill reads its history again from the
+  // provider; a carried note would claim history this host never imported.
+  ouraBackfillProgress: "OPERATIONAL",
+  ouraBackfillCompletedAt: "OPERATIONAL",
   healthKitLastSyncedAt: "OPERATIONAL",
   healthKitLastSyncTrigger: "OPERATIONAL",
   healthKitLastBackgroundSyncAt: "OPERATIONAL",

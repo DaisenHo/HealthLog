@@ -62,6 +62,7 @@ const WRITERS: Record<string, Disposition> = {
   "lib/fitbit/sync-core.ts": { kind: "gate" },
   "lib/google-health/sync-core.ts": { kind: "gate" },
   "lib/nightscout/sync.ts": { kind: "gate" },
+  "lib/oura/sync-heart-rate.ts": { kind: "gate" },
   // The shared identity seam. Polar, Oura, WHOOP, the Withings sleep leg,
   // the Apple export importer and the batch endpoint all write through it,
   // so the gate here is what makes a new provider fail closed.
