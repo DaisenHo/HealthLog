@@ -465,6 +465,8 @@ export const USER_RESET = {
   ouraScopeDenied: Prisma.DbNull,
   ouraBackfillProgress: Prisma.DbNull,
   ouraBackfillCompletedAt: null,
+  ouraUserId: null,
+  clientAppSharedBy: Prisma.DbNull,
   stravaClientIdEncrypted: null,
   stravaClientSecretEncrypted: null,
   stravaAccessTokenEncrypted: null,

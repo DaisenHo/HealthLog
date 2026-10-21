@@ -296,6 +296,18 @@ model User {
   /// v1.44 — the Oura history backfill finished (self-converging discovery
   /// predicate `oura_backfill_completed_at IS NULL`). Cleared on connect.
   ouraBackfillCompletedAt   DateTime? @map("oura_backfill_completed_at")
+  /// v1.44 — the Oura account id (`personal_info.id`) of the current grant,
+  /// read at connect when the `personal` scope is granted. A connect whose
+  /// account another record already holds is refused
+  /// (`src/lib/integrations/oauth-kit/account-link.ts`). Cleared on disconnect.
+  ouraUserId                String?   @map("oura_user_id")
+  /// v1.44 — which provider apps on this record were copied from a
+  /// guardian at connect, and from whom: `{ "<provider>": "<guardianUserId>" }`.
+  /// A managed profile has no settings page for its own app, so a guardian's is
+  /// borrowed (`shareGuardianClientApp`). The copy is removed again when the
+  /// provider is disconnected or that guardian no longer holds a live MANAGE
+  /// grant on the record (`src/lib/integrations/oauth-kit/connect-target.ts`).
+  clientAppSharedBy         Json?     @map("client_app_shared_by")
 
   // v1.28.x — Strava OAuth credentials (per-user BYO-app, encrypted at app
   // level). Strava caps every newly-created API app at single-player mode
@@ -5438,16 +5450,16 @@ model AppSettings {
   /// Active pulse day-mean method (CHECK in migration 0407). Readers: every
   /// process's mirror (`pulse-day-mean-method.ts`) and the rollup tier
   /// (`storedHourWeightSql`); the admin status route.
-  pulseDayMeanMethod     String    @default("hour_mean_v1") @map("pulse_day_mean_method")
+  pulseDayMeanMethod         String    @default("hour_mean_v1") @map("pulse_day_mean_method")
   /// When the admin applied the current method; shown on the admin card.
-  pulseDayMeanAppliedAt  DateTime? @map("pulse_day_mean_applied_at")
+  pulseDayMeanAppliedAt      DateTime? @map("pulse_day_mean_applied_at")
   /// Last dry-run status and result (account ordinals only, no ids); the apply
   /// step's precondition and the admin card's result.
-  pulseDayMeanDryRunJson Json?     @map("pulse_day_mean_dry_run_json")
+  pulseDayMeanDryRunJson     Json?     @map("pulse_day_mean_dry_run_json")
   /// @internal: progress marker of the one-time workout climb backfill
   /// (`src/lib/workouts/climb-backfill.ts`): the last workout id scanned,
   /// `done` when finished, NULL before it starts. Operational, never shown.
-  workoutClimbBackfillCursor String? @map("workout_climb_backfill_cursor")
+  workoutClimbBackfillCursor String?   @map("workout_climb_backfill_cursor")
 
   @@map("app_settings")
 }

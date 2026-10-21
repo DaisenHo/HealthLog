@@ -19,7 +19,13 @@ vi.mock("@/lib/sharing/grants", () => ({
     (need !== "manage" || grant.access === "MANAGE"),
 }));
 
-import { shareGuardianClientApp, verifyCallbackActor } from "../connect-target";
+import {
+  releaseSharedClientApp,
+  releaseUnbackedClientApps,
+  shareGuardianClientApp,
+  verifyCallbackActor,
+} from "../connect-target";
+import { Prisma } from "@/generated/prisma/client";
 
 const MANAGED = { managedProfileAt: new Date("2026-01-01T00:00:00Z") };
 const ADULT = { managedProfileAt: null };
@@ -127,6 +133,7 @@ describe("shareGuardianClientApp", () => {
       data: {
         ouraClientIdEncrypted: "sealed-id",
         ouraClientSecretEncrypted: "sealed-secret",
+        clientAppSharedBy: { oura: "guardian" },
       },
     });
     expect(auditLog).toHaveBeenCalledWith("integration.client_app.shared", {
@@ -144,5 +151,73 @@ describe("shareGuardianClientApp", () => {
     await shareGuardianClientApp("strava", target, async () => false);
     expect(update).not.toHaveBeenCalled();
     expect(auditLog).not.toHaveBeenCalled();
+  });
+});
+
+describe("releasing a borrowed provider app", () => {
+  it("removes the borrowed app on disconnect and audits it", async () => {
+    findUnique.mockResolvedValue({
+      clientAppSharedBy: { oura: "guardian", strava: "guardian" },
+    });
+    await expect(
+      releaseSharedClientApp("oura", "rec", "disconnected"),
+    ).resolves.toBe(true);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "rec" },
+      data: {
+        ouraClientIdEncrypted: null,
+        ouraClientSecretEncrypted: null,
+        clientAppSharedBy: { strava: "guardian" },
+      },
+    });
+    expect(auditLog).toHaveBeenCalledWith(
+      "integration.client_app.removed",
+      expect.objectContaining({
+        userId: "rec",
+        details: {
+          provider: "oura",
+          reason: "disconnected",
+          sharedBy: "guardian",
+        },
+      }),
+    );
+  });
+
+  it("leaves an app the record holds of its own", async () => {
+    findUnique.mockResolvedValue({ clientAppSharedBy: null });
+    await expect(
+      releaseSharedClientApp("oura", "rec", "disconnected"),
+    ).resolves.toBe(false);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("clears the marker when the last borrowed app goes", async () => {
+    findUnique.mockResolvedValue({ clientAppSharedBy: { polar: "g" } });
+    await releaseSharedClientApp("polar", "rec", "guardian_left");
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ clientAppSharedBy: Prisma.DbNull }),
+      }),
+    );
+  });
+
+  it("removes only the apps of guardians without a live MANAGE grant", async () => {
+    findUnique.mockResolvedValue({
+      clientAppSharedBy: { oura: "left", strava: "stays" },
+    });
+    findActiveGrant.mockImplementation(
+      async ({ granteeId }: { granteeId: string }) =>
+        granteeId === "stays" ? { access: "MANAGE", revokedAt: null } : null,
+    );
+    await expect(releaseUnbackedClientApps("rec")).resolves.toBe(1);
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          ouraClientIdEncrypted: null,
+          ouraClientSecretEncrypted: null,
+        }),
+      }),
+    );
   });
 });

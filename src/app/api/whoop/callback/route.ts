@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { ALREADY_LINKED_REASON } from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
 import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
@@ -213,8 +214,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
         select: { userId: true },
       });
       if (owner && owner.userId !== userId) {
-        annotate({ meta: { reason: "owner_conflict" } });
-        return outcomeRedirect(returnScheme, "error", "owner_conflict");
+        annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+        return outcomeRedirect(returnScheme, "error", ALREADY_LINKED_REASON);
       }
 
       try {
@@ -239,8 +240,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
         });
       } catch (err) {
         if (isP2002(err)) {
-          annotate({ meta: { reason: "owner_conflict" } });
-          return outcomeRedirect(returnScheme, "error", "owner_conflict");
+          annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+          return outcomeRedirect(returnScheme, "error", ALREADY_LINKED_REASON);
         }
         throw err;
       }

@@ -6553,7 +6553,8 @@
       "nocode": "Withings no devolvió ningún código de autorización. Inténtalo de nuevo y permite el acceso en el diálogo de Withings.",
       "nocreds": "No hay credenciales de la API de Withings guardadas. Guarda primero el Client ID y el Client Secret y vuelve a conectar.",
       "token": "El intercambio de tokens con Withings falló. Comprueba el Client ID y el Client Secret e inténtalo de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "already_linked": "Esta cuenta de Withings ya está conectada a otro perfil de HealthLog. Inicia sesión en Withings con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "withingsSynchronize": "Sincronizar",
     "withingsDisconnect": "Desconectar",
@@ -6592,7 +6593,8 @@
       "nocode": "WHOOP no devolvió un código de autorización. Inténtalo de nuevo y permite el acceso en el diálogo de WHOOP.",
       "nocreds": "WHOOP no está configurado. Añade tus credenciales OAuth de WHOOP arriba e inténtalo de nuevo.",
       "token": "El intercambio de token con WHOOP falló. Inicia la conexión de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "already_linked": "Esta cuenta de WHOOP ya está conectada a otro perfil de HealthLog. Inicia sesión en WHOOP con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit y Pixel",
@@ -6671,7 +6673,8 @@
       "nocode": "Google no devolvió un código de autorización. Inténtalo de nuevo y concede el acceso en el diálogo de Google.",
       "nocreds": "Google Health no está configurado. Añade arriba tus credenciales de OAuth de Google e inténtalo de nuevo.",
       "token": "El intercambio de token con Google falló. Vuelve a iniciar la conexión.",
-      "generic": "Error desconocido al conectar. Vuelve a iniciar la conexión."
+      "generic": "Error desconocido al conectar. Vuelve a iniciar la conexión.",
+      "already_linked": "Esta cuenta de Google ya está conectada a otro perfil de HealthLog. Inicia sesión en Google con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "fitbitOauthError": {
       "csrf1": "La verificación de seguridad falló porque faltaba la cookie del navegador. Inicia la conexión de nuevo en el mismo navegador.",
@@ -6682,7 +6685,8 @@
       "nocreds": "Fitbit no está configurado. Añade tus credenciales OAuth de Fitbit arriba e inténtalo de nuevo.",
       "token": "El intercambio de token con Fitbit falló. Inicia la conexión de nuevo.",
       "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
-      "retired": "Google desactivó la API web de Fitbit, así que ya no se puede crear una nueva conexión de Fitbit. Conecta Google Health, que lee los mismos dispositivos."
+      "retired": "Google desactivó la API web de Fitbit, así que ya no se puede crear una nueva conexión de Fitbit. Conecta Google Health, que lee los mismos dispositivos.",
+      "already_linked": "Esta cuenta de Fitbit ya está conectada a otro perfil de HealthLog. Inicia sesión en Fitbit con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "integrations": {
       "withings": {
@@ -7028,7 +7032,8 @@
       "nocreds": "Polar no está configurado en este servidor. Pide a tu administrador que añada las credenciales OAuth de Polar.",
       "token": "El intercambio de token con Polar falló. Inicia la conexión de nuevo.",
       "rate_limited": "Demasiados intentos de conexión. Espera un momento e inténtalo de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "already_linked": "Esta cuenta de Polar ya está conectada a otro perfil de HealthLog. Inicia sesión en Polar con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "oura": "Oura",
     "ouraDescription": "Conecta tu cuenta de Oura para sincronizar disposición, fases de sueño, variabilidad cardíaca y actividad diaria.",
@@ -7058,7 +7063,8 @@
       "token": "El intercambio de token con Oura falló. Inicia la conexión de nuevo.",
       "rate_limited": "Demasiados intentos de conexión. Espera un momento e inténtalo de nuevo.",
       "issuer": "La respuesta de inicio de sesión no procedía del servidor de autorización de Oura, así que la conexión se detuvo por tu seguridad. Vuelve a iniciar la conexión. Si sigue ocurriendo, avisa a tu administrador.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "already_linked": "Esta cuenta de Oura ya está conectada a otro perfil de HealthLog. Inicia sesión en Oura con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "integrationSetupGuide": "Guía de configuración",
     "coach": {
@@ -7286,7 +7292,8 @@
       "nocreds": "Strava no está configurado en este servidor. Pide a tu administrador que añada las credenciales de API de Strava.",
       "token": "El intercambio de tokens con Strava falló. Inicia la conexión de nuevo.",
       "rate_limited": "Demasiados intentos de conexión. Espera un momento e inténtalo de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "already_linked": "Esta cuenta de Strava ya está conectada a otro perfil de HealthLog. Inicia sesión en Strava con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "appleHealth": {
       "title": "Apple Health",

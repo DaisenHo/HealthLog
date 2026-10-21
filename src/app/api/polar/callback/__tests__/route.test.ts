@@ -58,7 +58,9 @@ vi.mock("@/lib/integrations/oauth-kit/connect-target", () => ({
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
-vi.mock("@/lib/db", () => ({ prisma: { user: { update: vi.fn() } } }));
+vi.mock("@/lib/db", () => ({
+  prisma: { user: { update: vi.fn(), findMany: vi.fn(async () => []) } },
+}));
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
   getEvent: () => ({
@@ -68,7 +70,10 @@ vi.mock("@/lib/logging/context", () => ({
   }),
 }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
-vi.mock("@/lib/crypto", () => ({ encrypt: (s: string) => `enc:${s}` }));
+vi.mock("@/lib/crypto", () => ({
+  encrypt: (s: string) => `enc:${s}`,
+  decrypt: (s: string) => s.replace(/^enc:/, ""),
+}));
 vi.mock("@/lib/auth/session", () => ({ getSession: getSessionMock }));
 vi.mock("@/lib/polar/client", () => ({
   exchangeCode: exchangeCodeMock,
@@ -121,6 +126,17 @@ describe("GET /api/polar/callback", () => {
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("polar=connected");
     expect(markReconnectedMock).toHaveBeenCalledWith("u1", "polar");
+  });
+
+  it("refuses a Polar member another record already holds, before registering it", async () => {
+    const { prisma } = await import("@/lib/db");
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
+      { id: "guardian-1", polarUserIdEncrypted: "enc:42" },
+    ] as never);
+    const res = await run(makeReq());
+    expect(res.headers.get("location")).toContain("reason=already_linked");
+    expect(registerUserMock).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("rejects a CSRF cookie/param mismatch before exchanging the code", async () => {

@@ -138,9 +138,22 @@ export async function processWithingsNotification(
     },
   });
 
-  const connection = await prisma.withingsConnection.findFirst({
+  // A Withings account belongs to one record; callbacks refuse a second
+  // holder. A pair linked before that rule routes to the record that linked
+  // the account first, never to whichever row a lookup happens to find.
+  const holders = await prisma.withingsConnection.findMany({
     where: { withingsUserId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { userId: true },
+    take: 2,
   });
+  const connection = holders[0] ?? null;
+  if (holders.length > 1) {
+    annotate({ meta: { withings_account_shared: true } });
+    getEvent()?.addWarning(
+      "Withings account held by more than one record; routed to the first",
+    );
+  }
 
   if (!connection) {
     getEvent()?.addWarning(

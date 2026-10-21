@@ -9,7 +9,7 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    withingsConnection: { findFirst: vi.fn() },
+    withingsConnection: { findMany: vi.fn() },
   },
 }));
 
@@ -58,6 +58,7 @@ const ORIGINAL_SECRET = process.env.WITHINGS_WEBHOOK_SECRET;
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(prisma.withingsConnection.findMany).mockResolvedValue([]);
   process.env.WITHINGS_WEBHOOK_SECRET = "test-secret";
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
@@ -113,7 +114,7 @@ describe("POST /api/withings/webhook", () => {
     const res = await POST(jsonRequest({ userid: "wu-1" }));
     expect(res.status).toBe(401);
     expect(syncUserMeasurements).not.toHaveBeenCalled();
-    expect(prisma.withingsConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.withingsConnection.findMany).not.toHaveBeenCalled();
   });
 
   it("returns 401 when the X-Withings-Webhook-Secret header is wrong", async () => {
@@ -145,10 +146,12 @@ describe("POST /api/withings/webhook", () => {
   });
 
   it("happy path: valid header secret + JSON body triggers sync for the resolved user", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-42",
-      withingsUserId: "wu-1",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-42",
+        withingsUserId: "wu-1",
+      },
+    ] as never);
 
     const res = await POST(
       jsonRequest(
@@ -160,11 +163,33 @@ describe("POST /api/withings/webhook", () => {
     const body = (await res.json()) as { status: string };
     expect(body.status).toBe("ok");
 
-    expect(prisma.withingsConnection.findFirst).toHaveBeenCalledWith({
-      where: { withingsUserId: "wu-1" },
-    });
+    expect(prisma.withingsConnection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { withingsUserId: "wu-1" } }),
+    );
     expect(syncUserMeasurements).toHaveBeenCalledTimes(1);
     expect(syncUserMeasurements).toHaveBeenCalledWith("user-42");
+  });
+
+  it("an account two records hold routes to the record that linked it first, ordered by the query", async () => {
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      { userId: "first-holder" },
+      { userId: "second-holder" },
+    ] as never);
+
+    const res = await POST(
+      jsonRequest(
+        { userid: "wu-1" },
+        { "x-withings-webhook-secret": "test-secret" },
+      ),
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.withingsConnection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      }),
+    );
+    expect(syncUserMeasurements).toHaveBeenCalledTimes(1);
+    expect(syncUserMeasurements).toHaveBeenCalledWith("first-holder");
   });
 
   it("legacy ?secret=… query path still authorises and emits a Wide Event warning with the migration URL (Fix-K sec-M2)", async () => {
@@ -173,10 +198,12 @@ describe("POST /api/withings/webhook", () => {
       setAuth: vi.fn(),
       addWarning,
     } as never);
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-99",
-      withingsUserId: "wu-2",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-99",
+        withingsUserId: "wu-2",
+      },
+    ] as never);
 
     const res = await POST(
       jsonRequest({ userid: "wu-2" }, {}, "?secret=test-secret"),
@@ -194,10 +221,12 @@ describe("POST /api/withings/webhook", () => {
   });
 
   it("accepts form-encoded payloads (Withings legacy delivery format)", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-form",
-      withingsUserId: "wu-form",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-form",
+        withingsUserId: "wu-form",
+      },
+    ] as never);
 
     const res = await POST(
       formRequest(
@@ -216,12 +245,12 @@ describe("POST /api/withings/webhook", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { status: string };
     expect(body.status).toBe("ignored");
-    expect(prisma.withingsConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.withingsConnection.findMany).not.toHaveBeenCalled();
     expect(syncUserMeasurements).not.toHaveBeenCalled();
   });
 
   it("returns 200 unknown_user when no WithingsConnection matches the wire userid", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([]);
     const res = await POST(
       jsonRequest(
         { userid: "wu-ghost" },
@@ -248,16 +277,18 @@ describe("POST /api/withings/webhook", () => {
     );
     expect(res.status).toBe(429);
     expect(syncUserMeasurements).not.toHaveBeenCalled();
-    expect(prisma.withingsConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.withingsConnection.findMany).not.toHaveBeenCalled();
   });
 });
 
 describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   it("appli=16 enqueues onto withings-activity-sync (not the measure path)", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-act",
-      withingsUserId: "wu-act",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-act",
+        withingsUserId: "wu-act",
+      },
+    ] as never);
     const send = vi.fn().mockResolvedValue(undefined);
     vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
 
@@ -276,10 +307,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   });
 
   it("appli=44 enqueues onto withings-sleep-sync (not the measure path)", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-sleep",
-      withingsUserId: "wu-sleep",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-sleep",
+        withingsUserId: "wu-sleep",
+      },
+    ] as never);
     const send = vi.fn().mockResolvedValue(undefined);
     vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
 
@@ -297,10 +330,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   });
 
   it("appli=16 falls back to inline activity sync when pg-boss is unavailable", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-act-inline",
-      withingsUserId: "wu-act-inline",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-act-inline",
+        withingsUserId: "wu-act-inline",
+      },
+    ] as never);
     vi.mocked(getGlobalBoss).mockReturnValue(null);
 
     const res = await POST(
@@ -315,10 +350,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   });
 
   it("appli=44 falls back to inline sleep sync when pg-boss is unavailable", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-sleep-inline",
-      withingsUserId: "wu-sleep-inline",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-sleep-inline",
+        withingsUserId: "wu-sleep-inline",
+      },
+    ] as never);
     vi.mocked(getGlobalBoss).mockReturnValue(null);
 
     const res = await POST(
@@ -333,10 +370,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   });
 
   it("appli=4 (BP) keeps the legacy measure path", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-bp",
-      withingsUserId: "wu-bp",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-bp",
+        withingsUserId: "wu-bp",
+      },
+    ] as never);
 
     const res = await POST(
       formRequest(
@@ -351,10 +390,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   });
 
   it("a missing appli falls back to the measure path (legacy Withings subscriptions)", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-legacy",
-      withingsUserId: "wu-legacy",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-legacy",
+        withingsUserId: "wu-legacy",
+      },
+    ] as never);
 
     const res = await POST(
       formRequest(
@@ -366,10 +407,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
     expect(syncUserMeasurements).toHaveBeenCalledWith("user-legacy");
   });
   it("returns retryable non-2xx when the ECG event cannot be durably enqueued", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValue({
-      userId: "user-ecg",
-      withingsUserId: "wu-ecg",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValue([
+      {
+        userId: "user-ecg",
+        withingsUserId: "wu-ecg",
+      },
+    ] as never);
     const send = vi.fn().mockRejectedValue(new Error("queue unavailable"));
     vi.mocked(getGlobalBoss).mockReturnValue({ send } as never);
 
@@ -390,10 +433,12 @@ describe("POST /api/withings/webhook — appli dispatch (W17b/c)", () => {
   });
 
   it("uses one logical ECG job identity for a provider replay", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValue({
-      userId: "user-ecg",
-      withingsUserId: "wu-ecg",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValue([
+      {
+        userId: "user-ecg",
+        withingsUserId: "wu-ecg",
+      },
+    ] as never);
     const send = vi
       .fn()
       .mockResolvedValueOnce("job-1")

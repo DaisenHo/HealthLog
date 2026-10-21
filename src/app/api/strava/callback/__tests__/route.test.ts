@@ -13,6 +13,7 @@ const {
   exchangeCodeMock,
   getCredsMock,
   userFindUnique,
+  userFindMany,
   userUpdate,
   markReconnectedMock,
 } = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ const {
   exchangeCodeMock: vi.fn(),
   getCredsMock: vi.fn(),
   userFindUnique: vi.fn(),
+  userFindMany: vi.fn(),
   userUpdate: vi.fn(async () => ({})),
   markReconnectedMock: vi.fn(async () => {}),
 }));
@@ -62,7 +64,13 @@ vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 vi.mock("@/lib/db", () => ({
-  prisma: { user: { findUnique: userFindUnique, update: userUpdate } },
+  prisma: {
+    user: {
+      findUnique: userFindUnique,
+      findMany: userFindMany,
+      update: userUpdate,
+    },
+  },
 }));
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn(async () => null) }));
 vi.mock("@/lib/logging/context", () => ({
@@ -116,6 +124,7 @@ beforeEach(() => {
     athlete: { id: 42 },
   });
   userFindUnique.mockResolvedValue({ stravaAthleteId: null });
+  userFindMany.mockResolvedValue([]);
   getGlobalBossMock.mockReturnValue({ send: bossSend });
 });
 
@@ -139,6 +148,22 @@ describe("GET /api/strava/callback — S-1 backfill enqueue", () => {
 
     expect(res.headers.get("location")).toContain("strava=connected");
     expect(bossSend).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/strava/callback — one athlete, one record", () => {
+  it("refuses an athlete another record already holds", async () => {
+    userFindMany.mockResolvedValueOnce([{ id: "guardian-1" }]);
+
+    const res = await callback();
+
+    expect(res.headers.get("location")).toContain("reason=already_linked");
+    expect(userFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { stravaAthleteId: "42", id: { not: "u1" } },
+      }),
+    );
+    expect(userUpdate).not.toHaveBeenCalled();
   });
 });
 

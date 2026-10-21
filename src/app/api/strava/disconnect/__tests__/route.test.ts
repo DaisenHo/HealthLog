@@ -11,7 +11,15 @@ vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
   requireAuth: vi.fn(async () => ({ user: { id: "u1" } })),
 }));
-vi.mock("@/lib/db", () => ({ prisma: { user: { update: vi.fn() } } }));
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    user: {
+      update: vi.fn(),
+      findUnique: vi.fn(async () => null),
+      findMany: vi.fn(async () => []),
+    },
+  },
+}));
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
   getEvent: () => null,

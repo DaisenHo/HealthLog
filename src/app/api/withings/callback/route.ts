@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler, AUTH_ERROR_CODES, HttpError } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
 import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
@@ -206,6 +210,26 @@ export const GET = apiHandler(async (request: NextRequest) => {
       }
 
       const tokens = await exchangeCode(code, creds);
+
+      // One Withings account, one record. A guardian signed in to their own
+      // Health Mate account must not attach it to the profile they manage:
+      // its webhooks would route to one of the two rows, and a disconnect on
+      // either would unsubscribe the other.
+      if (
+        await accountLinkedElsewhere(
+          "withings",
+          String(tokens.userid),
+          recordUserId,
+        )
+      ) {
+        annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+        return NextResponse.redirect(
+          new URL(
+            `/settings/integrations?withings=error&reason=${ALREADY_LINKED_REASON}`,
+            process.env.NEXT_PUBLIC_APP_URL!,
+          ),
+        );
+      }
 
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
       const subscriptionRetryAt = new Date();

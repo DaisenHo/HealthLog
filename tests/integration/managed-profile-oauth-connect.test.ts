@@ -286,3 +286,163 @@ describe("verifyCallbackActor against real grants", () => {
     });
   });
 });
+
+describe("one provider account, one record", () => {
+  it("refuses to attach the guardian's own Oura account to the profile", async () => {
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: GUARDIAN },
+      data: { ouraUserId: "oura-account-guardian" },
+    });
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = urlOf(input);
+      if (url.endsWith("/v2/usercollection/personal_info")) {
+        return new Response(JSON.stringify({ id: "oura-account-guardian" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (url !== OURA_TOKEN_URL) throw new Error(`Unexpected fetch: ${url}`);
+      return new Response(
+        JSON.stringify({
+          access_token: "guardian-access",
+          refresh_token: "guardian-refresh",
+          expires_in: 86400,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
+
+    await grant(PROFILE);
+    const session = await signIn(GUARDIAN);
+    await switchSessionTo(session.id, PROFILE);
+    const started = await startConnect();
+    const { data } = (await started.json()) as {
+      data: { authorizationUrl: string };
+    };
+
+    const res = await ouraCallback(stateOf(data.authorizationUrl));
+    expect(res.headers.get("location")).toContain("reason=already_linked");
+    const profile = await prisma.user.findUniqueOrThrow({
+      where: { id: PROFILE },
+      select: { ouraAccessTokenEncrypted: true, ouraUserId: true },
+    });
+    expect(profile.ouraAccessTokenEncrypted).toBeNull();
+    expect(profile.ouraUserId).toBeNull();
+  });
+
+  it("finds the other holder of a Withings account and routes its webhook to the first", async () => {
+    const prisma = getPrismaClient();
+    const { encrypt } = await import("@/lib/crypto");
+    const base = {
+      withingsUserId: "withings-shared",
+      accessToken: encrypt("a"),
+      refreshToken: encrypt("r"),
+      tokenExpiresAt: new Date(Date.now() + 3_600_000),
+    };
+    await prisma.withingsConnection.create({
+      data: {
+        ...base,
+        userId: GUARDIAN,
+        createdAt: new Date(Date.now() - 60_000),
+      },
+    });
+    await prisma.withingsConnection.create({
+      data: { ...base, userId: PROFILE },
+    });
+
+    const { otherHoldersOfAccount } =
+      await import("@/lib/integrations/oauth-kit/account-link");
+    await expect(
+      otherHoldersOfAccount("withings", "withings-shared", PROFILE),
+    ).resolves.toEqual([GUARDIAN]);
+    await expect(
+      otherHoldersOfAccount("withings", "withings-shared", ADULT),
+    ).resolves.toHaveLength(2);
+    await expect(
+      otherHoldersOfAccount("withings", "withings-elsewhere", PROFILE),
+    ).resolves.toEqual([]);
+  });
+});
+
+describe("a borrowed provider app leaves with its reason", () => {
+  async function connectForProfile() {
+    await grant(PROFILE);
+    const session = await signIn(GUARDIAN);
+    await switchSessionTo(session.id, PROFILE);
+    const started = await startConnect();
+    const { data } = (await started.json()) as {
+      data: { authorizationUrl: string };
+    };
+    const res = await ouraCallback(stateOf(data.authorizationUrl));
+    expect(res.headers.get("location")).toContain("oura=connected");
+  }
+
+  async function profileApp() {
+    return getPrismaClient().user.findUniqueOrThrow({
+      where: { id: PROFILE },
+      select: {
+        ouraClientIdEncrypted: true,
+        ouraClientSecretEncrypted: true,
+        clientAppSharedBy: true,
+      },
+    });
+  }
+
+  it("removes the guardian's app when the profile's Oura is disconnected", async () => {
+    await connectForProfile();
+    expect((await profileApp()).clientAppSharedBy).toEqual({ oura: GUARDIAN });
+
+    const { disconnectOAuth } =
+      await import("@/lib/integrations/oauth-kit/disconnect");
+    await expect(disconnectOAuth("oura", PROFILE)).resolves.toBe(
+      "disconnected",
+    );
+    expect(await profileApp()).toEqual({
+      ouraClientIdEncrypted: null,
+      ouraClientSecretEncrypted: null,
+      clientAppSharedBy: null,
+    });
+    const removed = await getPrismaClient().auditLog.findFirst({
+      where: { userId: PROFILE, action: "integration.client_app.removed" },
+    });
+    expect(removed).not.toBeNull();
+  });
+
+  it("removes the guardian's app when their MANAGE grant ends", async () => {
+    const prisma = getPrismaClient();
+    await prisma.user.create({
+      data: {
+        id: "second-guardian",
+        username: "second-guardian",
+        email: "second-guardian@example.test",
+        role: "USER",
+      },
+    });
+    await prisma.accountGrant.create({
+      data: {
+        grantorId: PROFILE,
+        granteeId: "second-guardian",
+        access: "MANAGE",
+        acceptedAt: new Date(),
+      },
+    });
+    await connectForProfile();
+    const leaving = await prisma.accountGrant.findFirstOrThrow({
+      where: { grantorId: PROFILE, granteeId: GUARDIAN, revokedAt: null },
+    });
+
+    const { revokeManagedProfileGuardian } =
+      await import("@/lib/sharing/grants");
+    await revokeManagedProfileGuardian({
+      profileId: PROFILE,
+      guardianId: "second-guardian",
+      grantId: leaving.id,
+    });
+
+    const app = await profileApp();
+    expect(app.ouraClientIdEncrypted).toBeNull();
+    expect(app.ouraClientSecretEncrypted).toBeNull();
+    expect(app.clientAppSharedBy).toBeNull();
+  });
+});

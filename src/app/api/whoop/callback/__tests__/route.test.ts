@@ -165,7 +165,7 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
     const res = await GET(makeReq("nonce-owner"));
 
     expect(res.headers.get("location")).toBe(
-      "https://app.example/settings/integrations?whoop=error&reason=owner_conflict",
+      "https://app.example/settings/integrations?whoop=error&reason=already_linked",
     );
     expect(res.headers.get("location")).not.toContain("42");
     expect(connUpsert).not.toHaveBeenCalled();
@@ -188,7 +188,7 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
     const res = await GET(makeReq("nonce-race"));
 
     expect(res.headers.get("location")).toBe(
-      "dev.healthlog.app://whoop?whoop=error&reason=owner_conflict",
+      "dev.healthlog.app://whoop?whoop=error&reason=already_linked",
     );
     expect(res.headers.get("location")).not.toContain("42");
   });

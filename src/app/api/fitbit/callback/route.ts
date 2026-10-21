@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -163,6 +167,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
       const profile = await fetchProfile(tokens.access_token);
       const fitbitUserId = resolveFitbitUserId(profile);
+      // One Fitbit account, one record.
+      if (await accountLinkedElsewhere("fitbit", fitbitUserId, user.id)) {
+        annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+        return ERR(ALREADY_LINKED_REASON);
+      }
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
       await prisma.fitbitConnection.upsert({

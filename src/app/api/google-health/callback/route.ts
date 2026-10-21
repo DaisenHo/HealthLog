@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler, AUTH_ERROR_CODES, HttpError } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
 import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
@@ -176,6 +180,17 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
       const profile = await fetchProfile(tokens.access_token);
       const googleUserId = resolveGoogleHealthUserId(profile);
+      // One Google account, one record.
+      if (
+        await accountLinkedElsewhere(
+          "google-health",
+          googleUserId,
+          recordUserId,
+        )
+      ) {
+        annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+        return ERR(ALREADY_LINKED_REASON);
+      }
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
       const scope = tokens.scope ?? getGoogleHealthScopeString();
 

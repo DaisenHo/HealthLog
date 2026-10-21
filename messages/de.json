@@ -6553,7 +6553,8 @@
       "nocode": "Withings hat keinen Freigabe-Code übermittelt. Versuche es erneut und erlaube den Zugriff im Withings-Dialog.",
       "nocreds": "Es sind keine Withings-API-Zugangsdaten hinterlegt. Speichere zuerst Client-ID und Client-Secret, dann verbinde erneut.",
       "token": "Der Token-Austausch mit Withings ist fehlgeschlagen. Prüfe Client-ID und Client-Secret und versuche es erneut.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Starte die Verbindung bitte erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Starte die Verbindung bitte erneut.",
+      "already_linked": "Dieses Withings-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Withings mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "withingsSynchronize": "Synchronisieren",
     "withingsDisconnect": "Trennen",
@@ -6592,7 +6593,8 @@
       "nocode": "WHOOP hat keinen Autorisierungscode zurückgegeben. Versuche es erneut und erlaube den Zugriff im WHOOP-Dialog.",
       "nocreds": "WHOOP ist nicht konfiguriert. Hinterlege oben deine WHOOP-OAuth-Zugangsdaten und versuche es erneut.",
       "token": "Der Token-Austausch mit WHOOP ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
+      "already_linked": "Dieses WHOOP-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei WHOOP mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit & Pixel",
@@ -6671,7 +6673,8 @@
       "nocode": "Google hat keinen Autorisierungscode zurückgegeben. Versuche es erneut und erlaube den Zugriff im Google-Dialog.",
       "nocreds": "Google Health ist nicht konfiguriert. Hinterlege oben deine Google-OAuth-Zugangsdaten und versuche es erneut.",
       "token": "Der Token-Austausch mit Google ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
+      "already_linked": "Dieses Google-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Google mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "fitbitOauthError": {
       "csrf1": "Die Sicherheitsprüfung ist fehlgeschlagen, weil das Browser-Cookie fehlte. Bitte starte die Verbindung im selben Browser erneut.",
@@ -6682,7 +6685,8 @@
       "nocreds": "Fitbit ist nicht konfiguriert. Hinterlege oben deine Fitbit-OAuth-Zugangsdaten und versuche es erneut.",
       "token": "Der Token-Austausch mit Fitbit ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
       "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
-      "retired": "Google hat die Fitbit-Web-API abgeschaltet, deshalb lässt sich keine neue Fitbit-Verbindung mehr herstellen. Verbinde stattdessen Google Health, das dieselben Geräte liest."
+      "retired": "Google hat die Fitbit-Web-API abgeschaltet, deshalb lässt sich keine neue Fitbit-Verbindung mehr herstellen. Verbinde stattdessen Google Health, das dieselben Geräte liest.",
+      "already_linked": "Dieses Fitbit-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Fitbit mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "integrations": {
       "withings": {
@@ -7028,7 +7032,8 @@
       "nocreds": "Polar ist auf diesem Server nicht konfiguriert. Bitte deinen Administrator, die Polar-OAuth-Zugangsdaten zu hinterlegen.",
       "token": "Der Token-Austausch mit Polar ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
       "rate_limited": "Zu viele Verbindungsversuche. Warte einen Moment und versuche es erneut.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
+      "already_linked": "Dieses Polar-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Polar mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "oura": "Oura",
     "ouraDescription": "Verbinde dein Oura-Konto, um Readiness, Schlafphasen, Herzfrequenzvariabilität und tägliche Aktivität zu synchronisieren.",
@@ -7058,7 +7063,8 @@
       "token": "Der Token-Austausch mit Oura ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
       "rate_limited": "Zu viele Verbindungsversuche. Warte einen Moment und versuche es erneut.",
       "issuer": "Die Anmeldeantwort kam nicht vom Autorisierungsserver von Oura, deshalb wurde die Verbindung zu deiner Sicherheit abgebrochen. Bitte starte die Verbindung erneut. Wenn das wieder passiert, sag deinem Administrator Bescheid.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
+      "already_linked": "Dieses Oura-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Oura mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "integrationSetupGuide": "Einrichtungsanleitung",
     "coach": {
@@ -7286,7 +7292,8 @@
       "nocreds": "Strava ist auf diesem Server nicht konfiguriert. Bitte deinen Administrator, die Strava-API-Zugangsdaten hinzuzufügen.",
       "token": "Der Token-Austausch mit Strava ist fehlgeschlagen. Bitte starte die Verbindung erneut.",
       "rate_limited": "Zu viele Verbindungsversuche. Warte einen Moment und versuche es erneut.",
-      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut."
+      "generic": "Unbekannter Fehler bei der Verbindung. Bitte starte die Verbindung erneut.",
+      "already_linked": "Dieses Strava-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Strava mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "appleHealth": {
       "title": "Apple Health",

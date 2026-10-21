@@ -38,7 +38,7 @@ vi.mock("@/lib/api-handler", () => ({
 }));
 
 vi.mock("@/lib/db", () => ({
-  prisma: { user: { update: vi.fn() } },
+  prisma: { user: { update: vi.fn(), findMany: vi.fn(async () => []) } },
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn(async () => null) }));
@@ -79,6 +79,7 @@ vi.mock("@/lib/oura/client", async (importOriginal) => ({
     await importOriginal<typeof import("@/lib/oura/client")>()
   ).isAcceptedOuraIssuer,
   exchangeCode: exchangeMock,
+  fetchOuraAccountId: vi.fn(async () => "oura-account-1"),
 }));
 vi.mock("@/lib/oura/credentials", () => ({
   getOuraClientCredentials: getCredsMock,
@@ -179,7 +180,25 @@ describe("GET /api/oura/callback", () => {
       userId: "u1",
       actorUserId: null,
     });
+    expect(data.ouraUserId).toBe("oura-account-1");
     expect(res.headers.get("location")).toContain("oura=connected");
+  });
+
+  it("refuses an Oura account another record already holds", async () => {
+    const { prisma } = await import("@/lib/db");
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
+      { id: "guardian-1" },
+    ] as never);
+    const res = await GET(
+      makeReq({ code: "auth-code", state: "S", cookie: "S" }),
+    );
+    expect(res.headers.get("location")).toContain("reason=already_linked");
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ouraUserId: "oura-account-1", id: { not: "u1" } },
+      }),
+    );
+    expect(userUpdate).not.toHaveBeenCalled();
   });
 });
 

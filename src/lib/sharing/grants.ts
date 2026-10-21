@@ -55,6 +55,7 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { isP2002 } from "@/lib/prisma-errors";
 import { clearActingSessions } from "@/lib/sharing/acting-session";
+import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import {
   activeGuardianWhere,
   LastManagedGuardianError,
@@ -617,6 +618,8 @@ export async function revokeManagedProfileGuardian(input: {
         { grantorId: profile.id, granteeId: target.granteeId },
         tx,
       );
+      // A provider app the profile borrowed from this guardian goes with them.
+      await releaseUnbackedClientApps(profile.id, tx);
       // v1.42 (#959) — a handover link the removed Guardian minted dies with
       // their access. The claim refuses it anyway (its creator must still be
       // an active Guardian); withdrawing it here keeps the other Guardians'
@@ -771,6 +774,8 @@ export async function settleHandoverGuardianGrant(
   }
 
   const sessionsCleared = await clearActingSessions(pair, tx);
+  // A Guardian who keeps no MANAGE takes back the provider app they lent.
+  await releaseUnbackedClientApps(input.recordId, tx);
   return { access: input.target, grantId, changed: true, sessionsCleared };
 }
 
@@ -939,6 +944,8 @@ async function endAndClear(
       { grantorId: grant.grantorId, granteeId: grant.granteeId },
       tx,
     );
+    // An ended MANAGE grant takes back the provider app it lent the record.
+    await releaseUnbackedClientApps(grant.grantorId, tx);
     return { grant, sessionsCleared };
   });
 }

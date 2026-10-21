@@ -6,7 +6,15 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import { exchangeCode, isAcceptedOuraIssuer } from "@/lib/oura/client";
+import {
+  exchangeCode,
+  fetchOuraAccountId,
+  isAcceptedOuraIssuer,
+} from "@/lib/oura/client";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { getOuraClientCredentials } from "@/lib/oura/credentials";
 import {
   oauthStateCookieName,
@@ -133,6 +141,14 @@ async function completeCallback(
 
     const tokens = await exchangeCode(code, creds, iss);
 
+    // One Oura account, one record: a guardian signed in to their own Oura
+    // account must not attach it to the profile they manage.
+    const ouraUserId = await fetchOuraAccountId(tokens.access_token);
+    if (await accountLinkedElsewhere("oura", ouraUserId, userId)) {
+      annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+      return ERR(ALREADY_LINKED_REASON);
+    }
+
     // The token response names the granted scopes when Oura sends them; a
     // permission the person unticked on the consent screen is known from it
     // at once. Without them, the first sync finds out per collection.
@@ -146,6 +162,7 @@ async function completeCallback(
       data: {
         ouraAccessTokenEncrypted: encrypt(tokens.access_token),
         ouraRefreshTokenEncrypted: encrypt(tokens.refresh_token),
+        ouraUserId,
         ouraScopeDenied:
           missing && missing.length > 0 ? missing : Prisma.DbNull,
         // Open the history backfill again: a first connect has none yet,

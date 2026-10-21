@@ -522,6 +522,36 @@ function collectionRefusal(
   });
 }
 
+/**
+ * The Oura account id of a grant (`personal_info.id`), or null when the grant
+ * does not cover the `personal` scope or Oura does not answer. Read once at
+ * connect so one Oura account cannot be attached to two records; a null id
+ * skips that check rather than failing the connect.
+ */
+export async function fetchOuraAccountId(
+  accessToken: string,
+): Promise<string | null> {
+  try {
+    const res = await safeFetch(
+      `${OURA_API_BASE}/v2/usercollection/personal_info`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+      },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json().catch(() => null)) as {
+      id?: unknown;
+    } | null;
+    return typeof json?.id === "string" && json.id.length > 0 ? json.id : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Read one page of a collection; throws the classified refusal. */
 async function readCollectionPage<T>(
   path: string,

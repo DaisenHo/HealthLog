@@ -940,6 +940,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   // What the Oura grant on this host does not cover; meaningless beside a
   // grant that does not travel, and found out again by the first sync.
   ouraScopeDenied: "CREDENTIAL",
+  ouraUserId: "CREDENTIAL",
+  // Names the guardian whose provider app the record borrows; the app itself
+  // does not travel, so neither does the marker.
+  clientAppSharedBy: "CREDENTIAL",
   stravaClientIdEncrypted: "CREDENTIAL",
   stravaClientSecretEncrypted: "CREDENTIAL",
   stravaAccessTokenEncrypted: "CREDENTIAL",

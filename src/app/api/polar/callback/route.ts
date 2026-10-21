@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
 import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
@@ -122,6 +126,13 @@ async function completeCallback(
       return ERR("token");
     }
     const polarUserId = String(tokens.x_user_id);
+
+    // One Polar member, one record. Checked before the registration so a
+    // refused connect registers nothing.
+    if (await accountLinkedElsewhere("polar", polarUserId, userId)) {
+      annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+      return ERR(ALREADY_LINKED_REASON);
+    }
 
     // Register the user with the Polar app (idempotent; 409 = already linked).
     await registerUser(tokens.access_token, polarUserId);

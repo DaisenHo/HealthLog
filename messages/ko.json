@@ -6553,7 +6553,8 @@
       "nocode": "Withings가 인증 코드를 보내지 않았어요. 다시 시도하고 Withings 창에서 접근을 허용해 주세요.",
       "nocreds": "저장된 Withings API 자격 증명이 없어요. 클라이언트 ID와 클라이언트 시크릿을 먼저 저장한 뒤 다시 연결해 주세요.",
       "token": "Withings와의 토큰 교환에 실패했어요. 클라이언트 ID와 클라이언트 시크릿을 확인하고 다시 시도해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Withings 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Withings 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "withingsSynchronize": "동기화",
     "withingsDisconnect": "연결 해제",
@@ -6592,7 +6593,8 @@
       "nocode": "WHOOP이 인증 코드를 보내지 않았어요. 다시 시도하고 WHOOP 창에서 접근을 허용해 주세요.",
       "nocreds": "WHOOP이 설정되지 않았어요. 위에 WHOOP OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "WHOOP과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 WHOOP 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 WHOOP 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit & Pixel",
@@ -6671,7 +6673,8 @@
       "nocode": "Google이 인증 코드를 보내지 않았어요. 다시 시도하고 Google 창에서 접근을 허용해 주세요.",
       "nocreds": "Google Health가 설정되지 않았어요. 위에 Google OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "Google과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Google 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Google 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "fitbitOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6682,7 +6685,8 @@
       "nocreds": "Fitbit이 설정되지 않았어요. 위에 Fitbit OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "Fitbit과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
-      "retired": "Google이 Fitbit Web API를 종료해서 새 Fitbit 연결을 만들 수 없어요. 같은 기기의 데이터를 읽는 Google Health를 대신 연결해 주세요."
+      "retired": "Google이 Fitbit Web API를 종료해서 새 Fitbit 연결을 만들 수 없어요. 같은 기기의 데이터를 읽는 Google Health를 대신 연결해 주세요.",
+      "already_linked": "이 Fitbit 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Fitbit 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "integrations": {
       "withings": {
@@ -7028,7 +7032,8 @@
       "nocreds": "이 서버에는 Polar가 설정돼 있지 않아요. 관리자에게 Polar OAuth 자격 증명을 추가해 달라고 요청하세요.",
       "token": "Polar와의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "rate_limited": "연결 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Polar 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Polar 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "oura": "Oura",
     "ouraDescription": "Oura 계정을 연결해 준비도, 수면 단계, 심박변이도, 일일 활동을 동기화해요.",
@@ -7058,7 +7063,8 @@
       "token": "Oura와의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "rate_limited": "연결 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
       "issuer": "로그인 응답이 Oura의 인증 서버에서 오지 않아서 안전을 위해 연결을 중단했어요. 연결을 다시 시작해 주세요. 계속 발생하면 관리자에게 알려 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Oura 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Oura 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "integrationSetupGuide": "설정 가이드",
     "coach": {
@@ -7286,7 +7292,8 @@
       "nocreds": "이 서버에는 Strava가 설정돼 있지 않아요. 관리자에게 Strava API 자격 증명을 추가해 달라고 요청하세요.",
       "token": "Strava와의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "rate_limited": "연결 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Strava 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Strava 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "appleHealth": {
       "title": "Apple Health",

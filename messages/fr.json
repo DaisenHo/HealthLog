@@ -6553,7 +6553,8 @@
       "nocode": "Withings n'a renvoyé aucun code d'autorisation. Réessayez et autorisez l'accès dans la fenêtre Withings.",
       "nocreds": "Aucun identifiant d'API Withings n'est enregistré. Enregistrez d'abord le Client ID et le Client Secret, puis reconnectez.",
       "token": "L'échange de jetons avec Withings a échoué. Vérifiez le Client ID et le Client Secret, puis réessayez.",
-      "generic": "Erreur inconnue lors de la connexion. Relancez la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Relancez la connexion.",
+      "already_linked": "Ce compte Withings est déjà connecté à un autre profil HealthLog. Connecte-toi à Withings avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "withingsSynchronize": "Synchroniser",
     "withingsDisconnect": "Déconnecter",
@@ -6592,7 +6593,8 @@
       "nocode": "WHOOP n'a pas renvoyé de code d'autorisation. Réessayez et autorisez l'accès dans la fenêtre WHOOP.",
       "nocreds": "WHOOP n'est pas configuré. Ajoutez vos identifiants OAuth WHOOP ci-dessus et réessayez.",
       "token": "L'échange de jeton avec WHOOP a échoué. Veuillez relancer la connexion.",
-      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion.",
+      "already_linked": "Ce compte WHOOP est déjà connecté à un autre profil HealthLog. Connecte-toi à WHOOP avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit et Pixel",
@@ -6671,7 +6673,8 @@
       "nocode": "Google n'a pas renvoyé de code d'autorisation. Réessaie et autorise l'accès dans la fenêtre Google.",
       "nocreds": "Google Health n'est pas configuré. Ajoute tes identifiants OAuth Google ci-dessus et réessaie.",
       "token": "L'échange de jeton avec Google a échoué. Relance la connexion.",
-      "generic": "Erreur inconnue lors de la connexion. Relance la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Relance la connexion.",
+      "already_linked": "Ce compte Google est déjà connecté à un autre profil HealthLog. Connecte-toi à Google avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "fitbitOauthError": {
       "csrf1": "La vérification de sécurité a échoué car le cookie du navigateur était absent. Veuillez relancer la connexion dans le même navigateur.",
@@ -6682,7 +6685,8 @@
       "nocreds": "Fitbit n'est pas configuré. Ajoutez vos identifiants OAuth Fitbit ci-dessus et réessayez.",
       "token": "L'échange de jeton avec Fitbit a échoué. Veuillez relancer la connexion.",
       "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion.",
-      "retired": "Google a désactivé l'API Web Fitbit : il n'est plus possible de créer une nouvelle connexion Fitbit. Connectez plutôt Google Health, qui lit les mêmes appareils."
+      "retired": "Google a désactivé l'API Web Fitbit : il n'est plus possible de créer une nouvelle connexion Fitbit. Connectez plutôt Google Health, qui lit les mêmes appareils.",
+      "already_linked": "Ce compte Fitbit est déjà connecté à un autre profil HealthLog. Connecte-toi à Fitbit avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "integrations": {
       "withings": {
@@ -7028,7 +7032,8 @@
       "nocreds": "Polar n'est pas configuré sur ce serveur. Demandez à votre administrateur d'ajouter les identifiants OAuth Polar.",
       "token": "L'échange de jeton avec Polar a échoué. Veuillez relancer la connexion.",
       "rate_limited": "Trop de tentatives de connexion. Patientez un instant et réessayez.",
-      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion.",
+      "already_linked": "Ce compte Polar est déjà connecté à un autre profil HealthLog. Connecte-toi à Polar avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "oura": "Oura",
     "ouraDescription": "Connecte ton compte Oura pour synchroniser readiness, phases de sommeil, variabilité cardiaque et activité quotidienne.",
@@ -7058,7 +7063,8 @@
       "token": "L'échange de jeton avec Oura a échoué. Veuillez relancer la connexion.",
       "rate_limited": "Trop de tentatives de connexion. Patientez un instant et réessayez.",
       "issuer": "La réponse de connexion ne provenait pas du serveur d'autorisation d'Oura, la connexion a donc été interrompue par sécurité. Veuillez relancer la connexion. Si cela se reproduit, prévenez votre administrateur.",
-      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion.",
+      "already_linked": "Ce compte Oura est déjà connecté à un autre profil HealthLog. Connecte-toi à Oura avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "integrationSetupGuide": "Guide de configuration",
     "coach": {
@@ -7286,7 +7292,8 @@
       "nocreds": "Strava n'est pas configuré sur ce serveur. Demande à ton administrateur d'ajouter les identifiants API Strava.",
       "token": "L'échange de jeton avec Strava a échoué. Relance la connexion.",
       "rate_limited": "Trop de tentatives de connexion. Attends un instant et réessaie.",
-      "generic": "Erreur inconnue lors de la connexion. Relance la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Relance la connexion.",
+      "already_linked": "Ce compte Strava est déjà connecté à un autre profil HealthLog. Connecte-toi à Strava avec le compte de ce profil, ou déconnecte-le d'abord de l'autre profil."
     },
     "appleHealth": {
       "title": "Apple Health",

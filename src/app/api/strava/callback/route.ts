@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
 import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
@@ -129,6 +133,11 @@ async function completeCallback(
     ) {
       annotate({ meta: { reason: "cross_user" } });
       return ERR("cross_user");
+    }
+    // One Strava athlete, one record.
+    if (await accountLinkedElsewhere("strava", athleteId, userId)) {
+      annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+      return ERR(ALREADY_LINKED_REASON);
     }
 
     await prisma.user.update({

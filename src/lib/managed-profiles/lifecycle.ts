@@ -4,6 +4,7 @@ import {
 } from "@/lib/jobs/offhost-purge";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
+import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import type { Prisma } from "@/generated/prisma/client";
 import { dayKeyAsUtcMidnight, dateOnlyKey } from "@/lib/tz/date-only";
 import {
@@ -148,7 +149,13 @@ export async function deleteGuardianAccountWithLifecycle<T>(
       });
     }
 
-    return deleteAccount(tx);
+    const result = await deleteAccount(tx);
+    // The guardian's grants went with their account; a provider app any of
+    // their profiles borrowed from them goes too.
+    for (const { grantorId } of grants) {
+      await releaseUnbackedClientApps(grantorId, tx);
+    }
+    return result;
   }, ACCOUNT_DELETION_TRANSACTION_OPTIONS);
 }
 
@@ -167,7 +174,7 @@ export async function deleteGuardianAccountWithLifecycle<T>(
 export async function protectManagedProfilesDuringDataWipe(
   tx: Transaction,
   userId: string,
-): Promise<void> {
+): Promise<string[]> {
   const affectedProfiles = await tx.accountGrant.findMany({
     where: {
       OR: [{ grantorId: userId }, { granteeId: userId }],
@@ -212,6 +219,9 @@ export async function protectManagedProfilesDuringDataWipe(
       }
     });
   }
+  // The profiles whose grants the wipe touches, for the caller to settle
+  // what those grants carried once they are gone.
+  return affectedProfiles.map((p) => p.grantorId);
 }
 
 export async function deleteManagedProfile(input: {

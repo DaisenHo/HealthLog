@@ -6553,7 +6553,8 @@
       "nocode": "Withings did not return an authorization code. Try again and allow access in the Withings dialog.",
       "nocreds": "No Withings API credentials are stored. Save the client ID and client secret first, then connect again.",
       "token": "The token exchange with Withings failed. Check the client ID and client secret and try again.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "already_linked": "This Withings account is already connected to another HealthLog profile. Sign in to Withings with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "withingsSynchronize": "Synchronize",
     "withingsDisconnect": "Disconnect",
@@ -6592,7 +6593,8 @@
       "nocode": "WHOOP did not return an authorization code. Try again and allow access in the WHOOP dialog.",
       "nocreds": "WHOOP is not configured. Add your WHOOP OAuth credentials above and try again.",
       "token": "The token exchange with WHOOP failed. Please start the connection again.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "already_linked": "This WHOOP account is already connected to another HealthLog profile. Sign in to WHOOP with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit & Pixel",
@@ -6671,7 +6673,8 @@
       "nocode": "Google did not return an authorization code. Try again and allow access in the Google dialog.",
       "nocreds": "Google Health is not configured. Add your Google OAuth credentials above and try again.",
       "token": "The token exchange with Google failed. Please start the connection again.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "already_linked": "This Google account is already connected to another HealthLog profile. Sign in to Google with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "fitbitOauthError": {
       "csrf1": "The security check failed because the browser cookie was missing. Please start the connection again in the same browser.",
@@ -6682,7 +6685,8 @@
       "nocreds": "Fitbit is not configured. Add your Fitbit OAuth credentials above and try again.",
       "token": "The token exchange with Fitbit failed. Please start the connection again.",
       "generic": "Unknown error while connecting. Please start the connection again.",
-      "retired": "Google has turned the Fitbit Web API off, so no new Fitbit connection can be made. Connect Google Health instead, which reads the same devices."
+      "retired": "Google has turned the Fitbit Web API off, so no new Fitbit connection can be made. Connect Google Health instead, which reads the same devices.",
+      "already_linked": "This Fitbit account is already connected to another HealthLog profile. Sign in to Fitbit with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "integrations": {
       "withings": {
@@ -7028,7 +7032,8 @@
       "nocreds": "Polar is not configured on this server. Ask your administrator to add the Polar OAuth credentials.",
       "token": "The token exchange with Polar failed. Please start the connection again.",
       "rate_limited": "Too many connection attempts. Wait a moment and try again.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "already_linked": "This Polar account is already connected to another HealthLog profile. Sign in to Polar with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "oura": "Oura",
     "ouraDescription": "Connect your Oura account to sync readiness, sleep stages, heart-rate variability, and daily activity.",
@@ -7058,7 +7063,8 @@
       "token": "The token exchange with Oura failed. Please start the connection again.",
       "rate_limited": "Too many connection attempts. Wait a moment and try again.",
       "issuer": "The sign-in answer did not come from Oura's own authorization server, so the connection was stopped for your safety. Please start the connection again. If this keeps happening, tell your administrator.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "already_linked": "This Oura account is already connected to another HealthLog profile. Sign in to Oura with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "integrationSetupGuide": "Setup guide",
     "coach": {
@@ -7286,7 +7292,8 @@
       "nocreds": "Strava is not configured on this server. Ask your administrator to add the Strava API credentials.",
       "token": "The token exchange with Strava failed. Please start the connection again.",
       "rate_limited": "Too many connection attempts. Wait a moment and try again.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "already_linked": "This Strava account is already connected to another HealthLog profile. Sign in to Strava with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "appleHealth": {
       "title": "Apple Health",
