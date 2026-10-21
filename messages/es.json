@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Rutas de entrenamiento",
         "description": "Guardar el recorrido GPS de los entrenamientos nuevos de la app de iPhone y de la exportación de Apple Salud.",
-        "detail": "Desactivado por defecto. Una ruta muestra dónde vives, trabajas y entrenas, así que solo se guarda cuando lo activas. Los entrenamientos se guardan siempre y ninguna función de IA lee nunca una ruta. Al desactivarlo dejan de guardarse rutas nuevas; las ya guardadas se quedan hasta que borres el entrenamiento.",
+        "detail": "Desactivado en las cuentas nuevas. Una ruta muestra dónde vives, trabajas y entrenas, así que solo se guarda cuando lo activas. Los entrenamientos se guardan siempre y ninguna función de IA lee nunca una ruta. Al desactivarlo dejan de guardarse rutas nuevas; las ya guardadas se quedan hasta que borres el entrenamiento.",
         "loadError": "No se pudo cargar el ajuste de rutas."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Temas (beta)",
-        "description": "Añade una entrada aparte, Temas, con páginas de resumen por encima de las páginas de cada métrica.",
+        "description": "Añadirá una entrada aparte, Temas, con páginas de resumen por encima de las páginas de cada métrica cuando estén listas.",
         "detail": "Tus páginas de análisis, la navegación y los enlaces se quedan exactamente como están. Las páginas de temas llegan en una actualización posterior; este interruptor decide si las ves.",
         "savedOn": "Vista previa de Temas activada.",
         "savedOff": "Vista previa de Temas desactivada."

@@ -53,3 +53,40 @@ describe("German Settings glossary", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("German wording settled in v1.44", () => {
+  const at = (path: string): string =>
+    path
+      .split(".")
+      .reduce<unknown>(
+        (node, key) => (node as Record<string, unknown> | undefined)?.[key],
+        de,
+      ) as string;
+
+  it("names the Tracking group with a German word", () => {
+    expect(at("settings.shell.groups.tracking")).toBe("Erfassung");
+  });
+
+  it("points to another Settings page with 'Unter …' and returns to the Modules", () => {
+    expect(at("settings.sections.modules.backToHub")).toBe(
+      "Zurück zu den Modulen",
+    );
+    expect(at("settings.moduleState.change")).toBe("Unter Module ändern");
+    expect(at("settings.sections.modules.pages.openArrangement")).toBe(
+      "Unter Anordnung öffnen",
+    );
+    expect(at("settings.sections.modules.manageIn")).toMatch(/^Unter /);
+  });
+
+  it("calls the Insights area Insights where a string names it", () => {
+    for (const key of [
+      "measurements.openMetricInsights",
+      "medications.category.custom.bpGateNote",
+      "admin.aiQuality.title",
+      "recordSharing.invite.accessManageDetail",
+    ]) {
+      expect(at(key), key).not.toMatch(/Auswertung/);
+      expect(at(key), key).toMatch(/Insights/);
+    }
+  });
+});

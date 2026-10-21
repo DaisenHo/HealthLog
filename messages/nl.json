@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Trainingsroutes",
         "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app en de Apple Gezondheid-export bewaren.",
-        "detail": "Standaard uit. Een route laat zien waar je woont, werkt en traint, dus hij wordt pas bewaard als je dit aanzet. Trainingen worden altijd bewaard en geen enkele AI-functie leest ooit een route. Uitzetten stopt nieuwe routes; al bewaarde routes blijven tot je de training verwijdert.",
+        "detail": "Uit voor nieuwe accounts. Een route laat zien waar je woont, werkt en traint, dus hij wordt pas bewaard als je dit aanzet. Trainingen worden altijd bewaard en geen enkele AI-functie leest ooit een route. Uitzetten stopt nieuwe routes; al bewaarde routes blijven tot je de training verwijdert.",
         "loadError": "De route-instelling kon niet worden geladen."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Onderwerpen (bèta)",
-        "description": "Voegt een apart item Onderwerpen toe, met overzichtspagina’s boven de pagina’s per meting.",
+        "description": "Voegt een apart item Onderwerpen toe, met overzichtspagina’s boven de pagina’s per meting, zodra die klaar zijn.",
         "detail": "Je inzichtpagina’s, navigatie en links blijven precies zoals ze zijn. De onderwerppagina’s komen met een latere update; deze schakelaar bepaalt of je ze ziet.",
         "savedOn": "Preview van onderwerpen ingeschakeld.",
         "savedOff": "Preview van onderwerpen uitgeschakeld."

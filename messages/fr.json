@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Parcours d’entraînement",
         "description": "Conserver le tracé GPS des nouveaux entraînements de l’app iPhone et de l’export Apple Santé.",
-        "detail": "Désactivé par défaut. Un parcours montre où vous habitez, travaillez et vous entraînez : il n’est donc conservé qu’une fois l’option activée. Les entraînements sont conservés dans tous les cas, et aucune fonction d’IA ne lit jamais un parcours. Désactiver l’option arrête les nouveaux parcours ; ceux déjà conservés restent jusqu’à la suppression de l’entraînement.",
+        "detail": "Désactivé pour les nouveaux comptes. Un parcours montre où vous habitez, travaillez et vous entraînez : il n’est donc conservé qu’une fois l’option activée. Les entraînements sont conservés dans tous les cas, et aucune fonction d’IA ne lit jamais un parcours. Désactiver l’option arrête les nouveaux parcours ; ceux déjà conservés restent jusqu’à la suppression de l’entraînement.",
         "loadError": "Impossible de charger le réglage des parcours."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Thèmes (bêta)",
-        "description": "Ajoute une entrée Thèmes distincte, avec des pages de synthèse au-dessus des pages par mesure.",
+        "description": "Ajoutera une entrée Thèmes distincte, avec des pages de synthèse au-dessus des pages par mesure, dès qu'elles seront prêtes.",
         "detail": "Vos pages d’analyse, la navigation et les liens restent exactement tels quels. Les pages de thèmes arrivent dans une mise à jour ultérieure ; cet interrupteur décide si vous les voyez.",
         "savedOn": "Aperçu des thèmes activé.",
         "savedOff": "Aperçu des thèmes désactivé."

@@ -845,7 +845,7 @@
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",
     "dailyTotalCaption": "({count} Einzelwerte)",
-    "openMetricInsights": "{type}-Auswertung öffnen",
+    "openMetricInsights": "{type} in Insights öffnen",
     "sleepNapCaption": "inkl. {count} Nickerchen",
     "sleepAwakeningsCaption": "{count} Wachphasen",
     "expandDay": "Einzelwerte dieses Tages anzeigen",
@@ -2406,7 +2406,7 @@
         "create": "Hinzufügen",
         "limitReached": "Du hast die Grenze von 20 eigenen Kategorien erreicht.",
         "saveFailed": "Das wurde nicht gespeichert. Bitte versuch es noch einmal.",
-        "bpGateNote": "Die Blutdruck-Auswertung zählt nur Medikamente in der eingebauten Kategorie Blutdruck.",
+        "bpGateNote": "Die Blutdruck-Insights zählen nur Medikamente in der eingebauten Kategorie Blutdruck.",
         "manage": "Kategorien verwalten",
         "manageDescription": "Deine eigenen Kategorien, neben den eingebauten.",
         "hidden": "Ausgeblendet",
@@ -5304,7 +5304,7 @@
         "ai": "KI",
         "connectivity": "Konnektivität",
         "system": "System",
-        "tracking": "Tracking",
+        "tracking": "Erfassung",
         "arrangement": "Anordnung",
         "notifications": "Benachrichtigungen",
         "connections": "Verbindungen",
@@ -5883,10 +5883,10 @@
           "title": "Was du trackst",
           "description": "Deaktivierte Module verschwinden aus Navigation, Kacheln und Insights, deine Daten bleiben erhalten."
         },
-        "manageIn": "In {section} verwalten",
+        "manageIn": "Unter {section} verwalten",
         "operatorDisabled": "Serverweit deaktiviert",
         "subtitle": "Lege fest, welche Tracking-Bereiche HealthLog überall anzeigt.",
-        "backToHub": "Zurück zu Module",
+        "backToHub": "Zurück zu den Modulen",
         "openModuleSettings": "Moduleinstellungen",
         "pages": {
           "medications": {
@@ -5903,7 +5903,7 @@
           },
           "arrangementTitle": "Reihenfolge und Ansicht",
           "arrangementDescription": "Wie diese Liste sortiert und angezeigt wird, legst du unter Anordnung fest.",
-          "openArrangement": "In Anordnung öffnen",
+          "openArrangement": "Unter Anordnung öffnen",
           "moduleSettingsTitle": "Moduleinstellungen",
           "moduleSettingsDescription": "Alles außer Reihenfolge und Ansicht findest du auf der Seite des Moduls unter Module."
         }
@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Trainingsrouten",
         "description": "Den GPS-Verlauf neuer Trainings aus der iPhone-App und dem Apple-Health-Export speichern.",
-        "detail": "Standardmäßig aus. Eine Route zeigt, wo du wohnst, arbeitest und trainierst, deshalb wird sie erst gespeichert, wenn du das einschaltest. Die Trainings selbst werden immer gespeichert, und keine KI-Funktion liest jemals eine Route. Ausschalten stoppt neue Routen; schon gespeicherte bleiben, bis du das Training löschst.",
+        "detail": "Für neue Konten aus. Eine Route zeigt, wo du wohnst, arbeitest und trainierst, deshalb wird sie erst gespeichert, wenn du das einschaltest. Die Trainings selbst werden immer gespeichert, und keine KI-Funktion liest jemals eine Route. Ausschalten stoppt neue Routen; schon gespeicherte bleiben, bis du das Training löschst.",
         "loadError": "Die Routen-Einstellung konnte nicht geladen werden."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Themen (Beta)",
-        "description": "Fügt einen eigenen Eintrag Themen hinzu, mit Übersichtsseiten über den einzelnen Insights-Seiten.",
+        "description": "Fügt einen eigenen Eintrag Themen hinzu, sobald die Übersichtsseiten über den einzelnen Insights-Seiten fertig sind.",
         "detail": "Deine Insights-Seiten, die Navigation und alle Links bleiben genau wie sie sind. Die Themenseiten kommen mit einem späteren Update; dieser Schalter legt fest, ob du sie siehst.",
         "savedOn": "Themen-Vorschau eingeschaltet.",
         "savedOff": "Themen-Vorschau ausgeschaltet."
@@ -7551,7 +7551,7 @@
     "moduleState": {
       "on": "An",
       "off": "Aus",
-      "change": "In Module ändern"
+      "change": "Unter Module ändern"
     },
     "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})"
   },
@@ -7633,7 +7633,7 @@
       "usageLevels": "Konten je KI-Stufe: {frugal} sparsam, {standard} Standard, {full} voll."
     },
     "aiQuality": {
-      "title": "Auswertungs-Qualität",
+      "title": "Insights-Qualität",
       "loading": "Feedback-Zusammenfassung wird geladen…",
       "loadError": "Qualitätszusammenfassung konnte nicht geladen werden. Bitte die Seite neu laden.",
       "empty": "Noch kein Feedback. Der Aggregator läuft täglich um 04:00. Sobald Nutzer Empfehlungen bewerten, erscheinen hier die Hilfreich-Quoten.",
@@ -12367,7 +12367,7 @@
       "accessWriteDetail": "Sie kann Messwerte, Laborergebnisse, einen neuen Laborwert, einen Krankheitseintrag, eine Nebenwirkung zu einem Medikament und ein neues Medikament hinzufügen sowie eine Dosis als genommen oder ausgelassen markieren. Ändern oder löschen kann sie nichts, auch nicht das Eigene, und eine deiner Erinnerungen verschieben kann sie nicht. Das kannst nur du.",
       "accessManageLabel": "Darf verwalten",
       "accessManageCapability": "Sie kann Einträge anlegen, ändern und löschen, auch solche, die du selbst erfasst hast.",
-      "accessManageDetail": "Sie kann außerdem die daraus erzeugten Auswertungen lesen. Deine Anmeldung, deine Sicherheitseinstellungen, deine Verbindungen und den Zugriff anderer Personen kann sie nicht ändern. Du kannst das jederzeit beenden.",
+      "accessManageDetail": "Sie kann außerdem die daraus erzeugten Insights lesen. Deine Anmeldung, deine Sicherheitseinstellungen, deine Verbindungen und den Zugriff anderer Personen kann sie nicht ändern. Du kannst das jederzeit beenden.",
       "manageStepUpNote": "Das geht nur im Browser, und falls du einen zweiten Faktor eingerichtet hast, wird er abgefragt.",
       "scopeLegend": "Was die Person öffnen darf",
       "scopeAllLabel": "Gesamte Akte",

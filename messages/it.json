@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Percorsi degli allenamenti",
         "description": "Conserva il tracciato GPS dei nuovi allenamenti dall’app per iPhone e dall’esportazione di Apple Salute.",
-        "detail": "Disattivato di default. Un percorso mostra dove vivi, lavori e ti alleni, quindi viene conservato solo dopo averlo attivato. Gli allenamenti vengono conservati comunque e nessuna funzione IA legge mai un percorso. Disattivandolo si fermano i nuovi percorsi; quelli già conservati restano finché non elimini l’allenamento.",
+        "detail": "Disattivato per i nuovi account. Un percorso mostra dove vivi, lavori e ti alleni, quindi viene conservato solo dopo averlo attivato. Gli allenamenti vengono conservati comunque e nessuna funzione IA legge mai un percorso. Disattivandolo si fermano i nuovi percorsi; quelli già conservati restano finché non elimini l’allenamento.",
         "loadError": "Impossibile caricare l’impostazione dei percorsi."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Temi (beta)",
-        "description": "Aggiunge una voce Temi separata, con pagine di panoramica sopra le pagine delle singole metriche.",
+        "description": "Aggiungerà una voce Temi separata, con pagine di panoramica sopra le pagine delle singole metriche, appena saranno pronte.",
         "detail": "Le pagine delle analisi, la navigazione e i link restano esattamente come sono. Le pagine dei temi arrivano con un aggiornamento successivo; questo interruttore decide se le vedi.",
         "savedOn": "Anteprima dei temi attivata.",
         "savedOff": "Anteprima dei temi disattivata."

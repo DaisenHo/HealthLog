@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Trasy treningów",
         "description": "Zapisuj ślad GPS nowych treningów z aplikacji na iPhone’a i z eksportu Apple Zdrowie.",
-        "detail": "Domyślnie wyłączone. Trasa pokazuje, gdzie mieszkasz, pracujesz i trenujesz, więc zapisujemy ją dopiero po włączeniu. Treningi są zapisywane zawsze, a żadna funkcja AI nigdy nie odczytuje trasy. Wyłączenie zatrzymuje nowe trasy; już zapisane zostają do usunięcia treningu.",
+        "detail": "Wyłączone dla nowych kont. Trasa pokazuje, gdzie mieszkasz, pracujesz i trenujesz, więc zapisujemy ją dopiero po włączeniu. Treningi są zapisywane zawsze, a żadna funkcja AI nigdy nie odczytuje trasy. Wyłączenie zatrzymuje nowe trasy; już zapisane zostają do usunięcia treningu.",
         "loadError": "Nie udało się wczytać ustawienia tras."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Tematy (beta)",
-        "description": "Dodaje osobną pozycję Tematy ze stronami przeglądowymi nad stronami poszczególnych pomiarów.",
+        "description": "Doda osobną pozycję Tematy ze stronami przeglądowymi nad stronami poszczególnych pomiarów, gdy będą gotowe.",
         "detail": "Strony analiz, nawigacja i linki pozostają dokładnie takie, jakie są. Strony tematów pojawią się w późniejszej aktualizacji; ten przełącznik decyduje, czy je zobaczysz.",
         "savedOn": "Podgląd tematów włączony.",
         "savedOff": "Podgląd tematów wyłączony."

@@ -7222,7 +7222,7 @@
       "workoutRoutes": {
         "title": "Workout routes",
         "description": "Keep the GPS track of new workouts from the iPhone app and the Apple Health export.",
-        "detail": "Off by default. A route shows where you live, work and train, so it is only kept once you turn this on. Workouts are kept either way, and no AI feature ever reads a route. Turning it off stops new routes; routes already kept stay until you delete the workout.",
+        "detail": "Off for new accounts. A route shows where you live, work and train, so it is only kept once you turn this on. Workouts are kept either way, and no AI feature ever reads a route. Turning it off stops new routes; routes already kept stay until you delete the workout.",
         "loadError": "The route setting could not be loaded."
       },
       "retention": {
@@ -7539,7 +7539,7 @@
     "preview": {
       "topics": {
         "title": "Topics (beta)",
-        "description": "Adds a separate Topics entry with overview pages above the single-metric Insights pages.",
+        "description": "Will add a separate Topics entry with overview pages above the single-metric Insights pages once they are ready.",
         "detail": "Your Insights pages, navigation and links stay exactly as they are. The topic pages arrive in a later update; this switch decides whether you see them.",
         "savedOn": "Topics preview switched on.",
         "savedOff": "Topics preview switched off."
