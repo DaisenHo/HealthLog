@@ -13,10 +13,6 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import Link from "next/link";
 import { Bell, Settings, AlertCircle } from "lucide-react";
 import {
-  EVENT_DEFAULT_ENABLED,
-  type EventType,
-} from "@/lib/notifications/types";
-import {
   eventDescriptionTranslationKey,
   eventTranslationKey,
 } from "@/lib/notifications/event-labels";
@@ -48,6 +44,11 @@ interface PreferencesData {
   channels: ChannelInfo[];
   preferences: Preference[];
   eventTypes: string[];
+  /**
+   * What each event does on a channel with no stored row, resolved by the
+   * server for this account with the function the dispatcher uses.
+   */
+  eventDefaults: Record<string, boolean>;
 }
 
 export default function NotificationsPage() {
@@ -116,10 +117,10 @@ export default function NotificationsPage() {
       (p) => p.channelId === channelId && p.eventType === eventType,
     );
     if (pref) return pref.enabled;
-    // v1.4.25 — per-event default. Most events stay opt-out
-    // (no row = ON); PERSONAL_RECORD flips to opt-in (no row = OFF)
-    // so a backfill doesn't fire hundreds of pushes on first sync.
-    return EVENT_DEFAULT_ENABLED[eventType as EventType] ?? true;
+    // No row: the server's resolved default for this account. Read, never
+    // recomputed here: the mood reminder's follows the reminder card, and a
+    // copy of the constant table showed it off while it was being delivered.
+    return data?.eventDefaults?.[eventType] === true;
   }
 
   // Cross-links to the other two notification surfaces (reminder types +

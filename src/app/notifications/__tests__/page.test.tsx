@@ -126,4 +126,58 @@ describe("NotificationsPage", () => {
     const html = render();
     expect(html).toContain("won’t receive notifications");
   });
+
+  it("a switch without a stored row shows the server's default for this account", () => {
+    // The mood reminder is delivered when the reminder card is on, with no
+    // per-channel row. The constant table says OFF for it, so a matrix that
+    // read the table showed the switch off while the reminder kept arriving.
+    // The page renders what the server resolved, row-less events included.
+    queryState.data = {
+      channels: [
+        {
+          id: "c1",
+          type: "TELEGRAM",
+          label: "Telegram",
+          enabled: true,
+          globallyEnabled: true,
+        },
+      ],
+      preferences: [],
+      eventTypes: ["MOOD_REMINDER", "PERSONAL_RECORD"],
+      eventDefaults: { MOOD_REMINDER: true, PERSONAL_RECORD: false },
+    };
+    const html = render();
+    const state = (label: string) =>
+      new RegExp(
+        `aria-label="${label} - Telegram"[^>]*data-state="(checked|unchecked)"|data-state="(checked|unchecked)"[^>]*aria-label="${label} - Telegram"`,
+      ).exec(html);
+    const mood = state("Mood reminder");
+    const record = state("Personal record");
+    expect(mood, "mood switch rendered").not.toBeNull();
+    expect(mood?.[1] ?? mood?.[2]).toBe("checked");
+    expect(record?.[1] ?? record?.[2]).toBe("unchecked");
+  });
+
+  it("a stored row still wins over the default", () => {
+    queryState.data = {
+      channels: [
+        {
+          id: "c1",
+          type: "TELEGRAM",
+          label: "Telegram",
+          enabled: true,
+          globallyEnabled: true,
+        },
+      ],
+      preferences: [
+        { channelId: "c1", eventType: "MOOD_REMINDER", enabled: false },
+      ],
+      eventTypes: ["MOOD_REMINDER"],
+      eventDefaults: { MOOD_REMINDER: true },
+    };
+    const html = render();
+    expect(html).toMatch(
+      /aria-label="Mood reminder - Telegram"[^>]*data-state="unchecked"|data-state="unchecked"[^>]*aria-label="Mood reminder - Telegram"/,
+    );
+  });
 });

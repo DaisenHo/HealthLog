@@ -112,9 +112,16 @@ export function MoodReminderCard({
           : t("notifications.moodReminder.disabledToast"),
       );
       setMsgType("success");
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.userProfile(),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.userProfile(),
+        }),
+        // The /notifications matrix shows the reminder's channel switches
+        // from the server's `eventDefaults`, which follow this card.
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.notificationsPreferences(),
+        }),
+      ]);
       setOptimistic(null);
       scheduleClear();
     } else {

@@ -82724,10 +82724,58 @@ components:
           items:
             type: string
           description: Every event category the server knows, in declaration order — the list a client renders rows for.
+        eventDefaults:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - MEDICATION_REMINDER
+              - MEASUREMENT_ANOMALY
+              - COMPLIANCE_LOW
+              - WITHINGS_SYNC_FAILED
+              - SYSTEM_ALERT
+              - PERSONAL_RECORD
+              - MOOD_REMINDER
+              - CYCLE_PERIOD_SOON
+              - CYCLE_PERIOD_CONFIRM
+              - CYCLE_FERTILE_SOON
+              - COACH_NUDGE
+              - MEDICATION_LOW_STOCK
+              - MEASUREMENT_REMINDER
+              - MEDICATION_INTAKE_SYNC
+              - SECURITY_ALERT
+              - DAILY_BRIEFING
+              - SHARED_RECORD_INTAKE
+            description: Notification category a per-channel preference can toggle.
+          additionalProperties:
+            type: boolean
+          required:
+            - MEDICATION_REMINDER
+            - MEASUREMENT_ANOMALY
+            - COMPLIANCE_LOW
+            - WITHINGS_SYNC_FAILED
+            - SYSTEM_ALERT
+            - PERSONAL_RECORD
+            - MOOD_REMINDER
+            - CYCLE_PERIOD_SOON
+            - CYCLE_PERIOD_CONFIRM
+            - CYCLE_FERTILE_SOON
+            - COACH_NUDGE
+            - MEDICATION_LOW_STOCK
+            - MEASUREMENT_REMINDER
+            - MEDICATION_INTAKE_SYNC
+            - SECURITY_ALERT
+            - DAILY_BRIEFING
+            - SHARED_RECORD_INTAKE
+          description: What each event does on a channel with no stored row, resolved for this account by the function delivery
+            uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
+            (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
+            a copy of the defaults. Since v1.43.11.
       required:
         - channels
         - preferences
         - eventTypes
+        - eventDefaults
       additionalProperties: false
       description: The caller's notification channels, their stored per-event overrides, and the full event vocabulary.
     NotificationChannelSummary:
@@ -82797,9 +82845,8 @@ components:
         - eventType
         - enabled
       additionalProperties: false
-      description: An explicit per-(channel, event) override. Only STORED rows appear — an event with no row here follows the
-        server-side default for that category, which is ON for most and OFF for the opt-in ones (personal records, mood
-        and cycle reminders). Absence is therefore not 'disabled'.
+      description: An explicit per-(channel, event) override. Only STORED rows appear — an event with no row here follows
+        `eventDefaults` on the same response. Absence is therefore not 'disabled'.
     PutNotificationPreferenceResponse:
       type: object
       properties:

@@ -66,7 +66,7 @@ const notificationPreference = z
   .meta({
     id: "NotificationPreference",
     description:
-      "An explicit per-(channel, event) override. Only STORED rows appear — an event with no row here follows the server-side default for that category, which is ON for most and OFF for the opt-in ones (personal records, mood and cycle reminders). Absence is therefore not 'disabled'.",
+      "An explicit per-(channel, event) override. Only STORED rows appear — an event with no row here follows `eventDefaults` on the same response. Absence is therefore not 'disabled'.",
   });
 
 const notificationPreferencesResponse = z
@@ -77,6 +77,11 @@ const notificationPreferencesResponse = z
       .array(z.string())
       .describe(
         "Every event category the server knows, in declaration order — the list a client renders rows for.",
+      ),
+    eventDefaults: z
+      .record(eventTypeEnum, z.boolean())
+      .describe(
+        "What each event does on a channel with no stored row, resolved for this account by the function delivery uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from a copy of the defaults. Since v1.43.11.",
       ),
   })
   .meta({
