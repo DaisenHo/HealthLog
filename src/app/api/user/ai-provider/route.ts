@@ -372,23 +372,40 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     updates.aiBaseUrl = null;
   }
 
+  // A stored provider key is a credential: setting or removing one is
+  // audited like every other credential change, with the slot it went into
+  // and never the value. A removal used to leave no trace at all. Clearing a
+  // slot that held no key removes nothing and is not audited, so the slots a
+  // removal names are read before the write.
+  const keySlots = [
+    ["anthropic", body.anthropicKey, "aiAnthropicKeyEncrypted"],
+    ["openai", body.openaiKey, "aiOpenaiKeyEncrypted"],
+    ["local", body.localKey, "aiLocalKeyEncrypted"],
+    ["openai-compatible", body.compatKey, "aiCompatKeyEncrypted"],
+  ] as const;
+  const isRemoval = (value: string | null | undefined) =>
+    value === null || value === "";
+  const storedKeys = keySlots.some(([, value]) => isRemoval(value))
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          aiAnthropicKeyEncrypted: true,
+          aiOpenaiKeyEncrypted: true,
+          aiLocalKeyEncrypted: true,
+          aiCompatKeyEncrypted: true,
+        },
+      })
+    : null;
+
   if (Object.keys(updates).length > 0) {
     await prisma.user.update({ where: { id: user.id }, data: updates });
   }
 
-  // A stored provider key is a credential: setting or removing one is
-  // audited like every other credential change, with the slot it went into
-  // and never the value. A removal used to leave no trace at all.
-  const keySlots = [
-    ["anthropic", body.anthropicKey],
-    ["openai", body.openaiKey],
-    ["local", body.localKey],
-    ["openai-compatible", body.compatKey],
-  ] as const;
-  for (const [slot, value] of keySlots) {
+  for (const [slot, value, column] of keySlots) {
     if (value === undefined) continue;
+    if (isRemoval(value) && storedKeys?.[column] == null) continue;
     await auditLog(
-      value === null || value === ""
+      isRemoval(value)
         ? "user.ai-provider.key.remove"
         : "user.ai-provider.key.set",
       {
