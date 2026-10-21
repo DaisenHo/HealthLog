@@ -12427,7 +12427,7 @@
     "leafSurgicalHistory": "Operatiegeschiedenis",
     "leafImmunizations": "Vaccinaties",
     "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
-    "leafMedicationEffect": "Verandering rond de start van elk medicijn",
+    "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
     "leafWorkouts": "Trainingen (overzicht per sport)",
     "leafHrvSdnn": "HRV (SDNN)"
   },

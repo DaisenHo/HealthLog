@@ -12427,7 +12427,7 @@
     "leafSurgicalHistory": "Antecedentes quirúrgicos",
     "leafImmunizations": "Vacunas",
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
-    "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento",
+    "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento (requiere la lista de medicamentos)",
     "leafWorkouts": "Entrenamientos (resumen por deporte)",
     "leafHrvSdnn": "VFC (SDNN)"
   },

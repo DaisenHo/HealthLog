@@ -12427,7 +12427,7 @@
     "leafSurgicalHistory": "Operationen und Eingriffe",
     "leafImmunizations": "Impfungen",
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
-    "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments",
+    "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments (braucht die Medikamentenliste)",
     "leafWorkouts": "Trainings (Übersicht je Sportart)",
     "leafHrvSdnn": "HRV (SDNN)"
   },

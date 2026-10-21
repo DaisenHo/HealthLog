@@ -12427,7 +12427,7 @@
     "leafSurgicalHistory": "Anamnesi chirurgica",
     "leafImmunizations": "Vaccinazioni",
     "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)",
-    "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco",
+    "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco (richiede l'elenco dei farmaci)",
     "leafWorkouts": "Allenamenti (riepilogo per sport)",
     "leafHrvSdnn": "HRV (SDNN)"
   },

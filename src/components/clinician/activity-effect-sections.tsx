@@ -113,7 +113,11 @@ export function MedicationEffectSection({
   /** A stated calendar day (YYYY-MM-DD) in the owner's date order. */
   fmtDay: (day: string) => string;
 }) {
-  const effects = report.medicationEffects ?? [];
+  // The block names medications: without the list leaf it shows nothing,
+  // whatever the payload carries.
+  const effects = scope.admits("MEDICATION_LIST")
+    ? (report.medicationEffects ?? [])
+    : [];
   const glucoseUnit = resolveGlucoseUnit(report.glucoseUnit ?? null);
   return (
     <LeafSection

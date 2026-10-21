@@ -12427,7 +12427,7 @@
     "leafSurgicalHistory": "수술 이력",
     "leafImmunizations": "예방접종",
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
-    "leafMedicationEffect": "각 약 시작 전후의 변화",
+    "leafMedicationEffect": "각 약 시작 전후의 변화 (약 목록 필요)",
     "leafWorkouts": "운동(종목별 요약)",
     "leafHrvSdnn": "심박변이도 (SDNN)"
   },

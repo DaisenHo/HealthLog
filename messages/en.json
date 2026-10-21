@@ -12427,7 +12427,7 @@
     "leafSurgicalHistory": "Surgical history",
     "leafImmunizations": "Immunizations",
     "leafEmergency": "Emergency information (blood type, contacts, directives)",
-    "leafMedicationEffect": "Change around each medication start",
+    "leafMedicationEffect": "Change around each medication start (needs the medication list)",
     "leafWorkouts": "Workouts (summary per sport)",
     "leafHrvSdnn": "HRV (SDNN)"
   },
