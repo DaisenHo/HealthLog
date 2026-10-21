@@ -13,7 +13,7 @@ one value you must keep yourself: the encryption key.
 | Port         | `3000` (HTTP)                                                                            |
 | User         | runs as uid `1001`; no extra capabilities, `no-new-privileges` is fine                   |
 | Health check | `GET /api/health`, `200` when ready                                                      |
-| Start period | at least 60 s, with more retries than the image's 3 × 30 s: migrations run at every boot |
+| Start period | at least 60 s, with more retries than the image's 5 × 30 s: migrations run at every boot |
 | Database     | PostgreSQL 16 (17 and later are not a drop-in), no extensions                            |
 | Volumes      | none for the app; the database gets its own dataset                                      |
 

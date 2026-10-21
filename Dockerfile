@@ -320,8 +320,11 @@ ENV HOSTNAME="0.0.0.0"
 
 # Start period: the entrypoint migrates before the server listens, and a
 # migration waiting out a held lock retries for up to about eight minutes.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
+# Five retries: a pool saturated for a minute during a boot storm makes the
+# probe's 2 s database check miss once or twice without marking the container
+# unhealthy (docker-compose.yml explains the numbers).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=5 \
+  CMD wget --no-verbose --tries=1 --timeout=4 --spider http://127.0.0.1:3000/api/health || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]
