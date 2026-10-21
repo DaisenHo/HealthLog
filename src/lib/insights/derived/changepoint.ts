@@ -16,7 +16,18 @@
  *   - the post-break level must PERSIST (≥ `minPersistDays` after the break),
  *   - the level change must exceed the metric's own robust spread
  *     (|Δmean| ≥ `magnitudeK` · MAD · 1.4826), the personal yardstick, and
- *   - the series must be long enough overall.
+ *   - the series must be long enough overall,
+ *   - the step must explain the series better than a straight line does
+ *     (a slow drift splits into two halves with different means, but it is a
+ *     drift, not a shift), and
+ *   - with the per-metric floors the scan passes ({@link CHANGEPOINT_FLOORS}):
+ *     the step must reach a minimum absolute size, and the spread it is
+ *     measured against never drops below the device / clinical resolution,
+ *     so a device that reports in 0.3 steps cannot make a 0.3 plateau change
+ *     look like a many-sigma event.
+ *
+ * `magnitude` is capped at {@link MAX_MAGNITUDE} so the cross-metric ranking
+ * is not won by whichever series happens to be the flattest.
  *
  * Below the bar the detector emits `null` and the Coach keeps saying "lately".
  * One changepoint per metric per window — no multi-break hunting in v1.22.
@@ -30,8 +41,11 @@ import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
 import type { SurfaceModuleMap } from "@/lib/modules/surface";
+import { linearFit } from "@/lib/stats/linear-fit";
 
 const MAD_TO_SIGMA = 1.4826;
+/** Upper bound of the reported (and ranked) magnitude, in robust-σ units. */
+export const MAX_MAGNITUDE = 10;
 
 /** A validated level shift in a numeric series. */
 export interface LevelShift {
@@ -55,6 +69,10 @@ export interface DetectLevelShiftOptions {
   minPersistDays?: number;
   /** |Δmean| floor in robust-σ units. Default 1.4 (high firing bar). */
   magnitudeK?: number;
+  /** |Δmean| floor in the metric's own unit. Default 0 (none). */
+  minAbsDelta?: number;
+  /** Lower bound of the pooled spread, in the metric's unit. Default 0. */
+  spreadFloor?: number;
 }
 
 function mean(xs: readonly number[]): number {
@@ -94,6 +112,8 @@ export function detectLevelShift(
   const minSegmentLength = opts.minSegmentLength ?? 5;
   const minPersistDays = opts.minPersistDays ?? 10;
   const magnitudeK = opts.magnitudeK ?? 1.4;
+  const minAbsDelta = opts.minAbsDelta ?? 0;
+  const spreadFloor = opts.spreadFloor ?? 0;
 
   const n = series.length;
   if (n < minSeriesLength) return null;
@@ -128,6 +148,7 @@ export function detectLevelShift(
   const beforeMean = mean(before);
   const afterMean = mean(after);
   const delta = afterMean - beforeMean;
+  if (Math.abs(delta) < minAbsDelta) return null;
 
   // Magnitude bar: the step must exceed the WITHIN-segment robust spread (the
   // metric's day-to-day noise), NOT the whole-series spread — a clean step
@@ -138,19 +159,47 @@ export function detectLevelShift(
   const pooledSpread = Math.max(
     robustSpread(before),
     robustSpread(after),
+    spreadFloor,
     1e-9,
   );
   const magnitude = Math.abs(delta) / pooledSpread;
   if (magnitude < magnitudeK) return null;
+  if (isDrift(series, before, after, beforeMean, afterMean)) return null;
 
   return {
     breakIndex,
     beforeMean,
     afterMean,
     delta,
-    magnitude,
+    magnitude: Math.min(magnitude, MAX_MAGNITUDE),
     direction: delta >= 0 ? "up" : "down",
   };
+}
+
+/**
+ * True when a straight line through the whole series fits at least as well as
+ * the two-level step (same parameter count, so the residual sums compare
+ * directly). A drift is then the honest reading, not a dated shift.
+ */
+function isDrift(
+  series: readonly number[],
+  before: readonly number[],
+  after: readonly number[],
+  beforeMean: number,
+  afterMean: number,
+): boolean {
+  let sseStep = 0;
+  for (const x of before) sseStep += (x - beforeMean) ** 2;
+  for (const x of after) sseStep += (x - afterMean) ** 2;
+
+  const fit = linearFit(
+    series.map((_, i) => i),
+    series,
+  );
+  if (!fit) return false;
+  // Residual sum of the line from the centred sums: SSR = Syy − Sxy² / Sxx.
+  const sseLine = Math.max(0, fit.syy - (fit.sxy * fit.sxy) / fit.sxx);
+  return sseLine <= sseStep;
 }
 
 /** One detected changepoint, ready for the snapshot. */
@@ -177,6 +226,42 @@ const CHANGEPOINT_METRICS: readonly MeasurementType[] = [
   "BLOOD_PRESSURE_SYS",
   "BLOOD_GLUCOSE",
 ];
+
+/**
+ * Per-metric floors, in the metric's stored unit: `minDelta` is the smallest
+ * level change worth calling a shift (about the smallest change a clinician
+ * would note for that vital), `spreadFloor` the smallest day-to-day spread the
+ * step is measured against (about the measurement resolution / repeat error of
+ * a consumer device). A metric without an entry has neither floor.
+ *
+ *  - heart rates (bpm): a 3 bpm change, 1 bpm resolution.
+ *  - HRV (ms): 5 ms, 2 ms (beat detection jitter).
+ *  - weight (kg): 1 kg, 0.2 kg (scale repeat error).
+ *  - blood pressure (mmHg): 5 / 3 mmHg, 2 mmHg (cuff repeat error).
+ *  - glucose (mg/dL): 10 mg/dL, 3 mg/dL (meter accuracy).
+ *  - body fat (%): 1 point, 0.3 point (impedance repeat error).
+ *  - respiratory rate (breaths/min): 1, 0.3.
+ *  - SpO₂ (%): 1 point, 0.5 point (reported in whole percent).
+ *  - VO₂ max (ml/kg/min): 1.5, 0.5 (a modelled estimate that moves in 0.1–0.3
+ *    steps; a plateau stepping by 0.3 is the estimator, not the person).
+ */
+export const CHANGEPOINT_FLOORS: Partial<
+  Record<MeasurementType, { minDelta: number; spreadFloor: number }>
+> = {
+  RESTING_HEART_RATE: { minDelta: 3, spreadFloor: 1 },
+  PULSE: { minDelta: 3, spreadFloor: 1 },
+  WALKING_HEART_RATE_AVERAGE: { minDelta: 3, spreadFloor: 1 },
+  HEART_RATE_VARIABILITY: { minDelta: 5, spreadFloor: 2 },
+  HRV_RMSSD: { minDelta: 5, spreadFloor: 2 },
+  WEIGHT: { minDelta: 1, spreadFloor: 0.2 },
+  BLOOD_PRESSURE_SYS: { minDelta: 5, spreadFloor: 2 },
+  BLOOD_PRESSURE_DIA: { minDelta: 3, spreadFloor: 2 },
+  BLOOD_GLUCOSE: { minDelta: 10, spreadFloor: 3 },
+  BODY_FAT: { minDelta: 1, spreadFloor: 0.3 },
+  RESPIRATORY_RATE: { minDelta: 1, spreadFloor: 0.3 },
+  OXYGEN_SATURATION: { minDelta: 1, spreadFloor: 0.5 },
+  VO2_MAX: { minDelta: 1.5, spreadFloor: 0.5 },
+};
 
 /** Window the reader looks back over (days). */
 export const CHANGEPOINT_WINDOW_DAYS = 90;
@@ -244,7 +329,14 @@ async function scanChangepoints(
         coverage,
       );
       if (points.length === 0) continue;
-      const shift = detectLevelShift(points.map((p) => p.mean));
+      const floors = CHANGEPOINT_FLOORS[metric];
+      const shift = detectLevelShift(
+        points.map((p) => p.mean),
+        {
+          minAbsDelta: floors?.minDelta,
+          spreadFloor: floors?.spreadFloor,
+        },
+      );
       if (!shift) continue;
       const breakDate =
         points[shift.breakIndex + 1]?.day ?? points[shift.breakIndex].day;
