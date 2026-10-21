@@ -55,6 +55,7 @@ import { importWithRetry } from "@/lib/retry-import";
 import { BiomarkerAliases } from "./biomarker-aliases";
 import { BiomarkerForm } from "./biomarker-form";
 import { LabForm } from "./lab-form";
+import { LabTrendCard } from "./lab-trend-card";
 import type {
   BiomarkerDto,
   LabResultDto,
@@ -505,6 +506,10 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               />
             </CardContent>
           </Card>
+          <LabTrendCard
+            trend={marker?.trend}
+            unit={marker?.unit ?? latest?.unit ?? ""}
+          />
         </>
       )}
 

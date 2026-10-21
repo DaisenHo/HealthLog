@@ -100,8 +100,48 @@ const createResponse = z
   })
   .meta({ id: "CreateMentalHealthAssessmentResponse" });
 
+const scorePoint = z.object({
+  score: z.number(),
+  takenAt: z.string(),
+});
+const changeVerdict = z
+  .enum(["improved", "worsened", "within_threshold"])
+  .nullable();
+
+const assessmentTrend = z
+  .object({
+    instrument: z.enum(["PHQ9", "GAD7", "WHO5"]),
+    n: z.number().int(),
+    threshold: z
+      .number()
+      .describe(
+        "Meaningful-change threshold in reported points: PHQ-9 5, GAD-7 4, WHO-5 10 (0–100 scale).",
+      ),
+    higherIsBetter: z.boolean(),
+    first: scorePoint,
+    previous: scorePoint.nullable(),
+    latest: scorePoint,
+    changeFromPrevious: z.number().nullable(),
+    changeFromFirst: z.number().nullable(),
+    sincePrevious: changeVerdict,
+    sinceFirst: changeVerdict,
+  })
+  .meta({
+    id: "MentalHealthAssessmentTrend",
+    description:
+      "v1.44 — the latest total against the previous and the first administration, classified against the instrument's meaningful-change threshold in its own direction. A change below the threshold is `within_threshold`. Server-computed over the whole history, not the page.",
+  });
+
 const listResponse = z
-  .object({ assessments: z.array(assessmentRow) })
+  .object({
+    assessments: z.array(assessmentRow),
+    trends: z
+      .array(assessmentTrend)
+      .optional()
+      .describe(
+        "v1.44 — one per PHQ-9 / GAD-7 / WHO-5 with at least one administration. Absent on older servers.",
+      ),
+  })
   .meta({ id: "ListMentalHealthAssessmentsResponse" });
 
 const detailResponse = z

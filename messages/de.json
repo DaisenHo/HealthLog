@@ -2742,7 +2742,20 @@
         "ENV_PRESSURE_DELTA": "die Luftdruckschwankung am Tag",
         "ENV_PM25": "der Feinstaub (PM2,5)",
         "ENV_OZONE_8H": "das Ozon",
-        "ENV_POLLEN_MAX": "der Pollenflug"
+        "ENV_POLLEN_MAX": "der Pollenflug",
+        "HRV_RMSSD": "die Herzratenvariabilität (RMSSD)",
+        "HYDRATION": "die Trinkmenge",
+        "CAFFEINE": "die Koffeinmenge",
+        "ALCOHOL": "der Alkoholkonsum",
+        "WORKOUT_MINUTES": "die Workout-Dauer",
+        "TRAINING_LOAD": "die Trainingslast",
+        "EXERCISE_MINUTES": "die Trainingsminuten der Aktivitätsringe",
+        "STAND_MINUTES": "die Stehminuten",
+        "MINDFUL_MINUTES": "die Achtsamkeitsminuten",
+        "STATE_OF_MIND_VALENCE": "die erfasste Gemütslage",
+        "INDOOR_CO2": "der CO2-Wert im Raum",
+        "INDOOR_TEMPERATURE": "die Raumtemperatur",
+        "INDOOR_HUMIDITY": "die Luftfeuchtigkeit im Raum"
       },
       "daily": {
         "high": "Wenn {behaviour} höher liegt, fällt {outcome} am Folgetag in deinen Daten tendenziell {direction} aus. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
@@ -2770,6 +2783,12 @@
         "high": "Mehr {behaviour} am selben Tag und am Vortag geht in deinen Daten tendenziell mit {direction} {outcome} einher. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
         "moderate": "Mehr {behaviour} am selben Tag und am Vortag scheint in deinen Daten nach bisheriger Lage mit {direction} {outcome} einherzugehen. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
         "faint": "Mehr {behaviour} am selben Tag und am Vortag zeigt in deinen Daten allenfalls einen schwachen Hinweis auf {direction} {outcome}. Das ist zu klein, um sich darauf zu stützen, und nie eine Ursache."
+      },
+      "channelNutrient": "die Zufuhr von {nutrient}",
+      "dailyOvernight": {
+        "high": "Wenn {behaviour} über Nacht höher liegt, fällt {outcome} in derselben Nacht in deinen Daten tendenziell {direction} aus. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
+        "moderate": "Wenn {behaviour} über Nacht höher liegt, scheint {outcome} in derselben Nacht nach bisheriger Datenlage eher {direction} auszufallen. Das ist ein Muster, das Beachtung verdient, keine Ursache.",
+        "faint": "Wenn {behaviour} über Nacht höher liegt, gibt es in deinen Daten allenfalls einen schwachen Hinweis darauf, dass {outcome} in derselben Nacht {direction} ausfällt. Das ist zu gering, um sich darauf zu verlassen, und niemals eine Ursache."
       }
     },
     "emptyTitle": "Noch nicht genug Daten",
@@ -3872,6 +3891,14 @@
         "editTitle": "Training bearbeiten",
         "editAction": "Bearbeiten",
         "updated": "Training aktualisiert"
+      },
+      "load": {
+        "title": "Trainingslast",
+        "fitness": "Fitness",
+        "fatigue": "Ermüdung",
+        "form": "Form",
+        "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
+        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist."
       }
     },
     "bloodGlucose": {
@@ -4313,7 +4340,12 @@
         "outcomeDown": "Bessere Stimmung geht in deinen Daten tendenziell mit niedrigerem {factor} am Folgetag einher.",
         "stat": "{n} gepaarte Tage, r = {r}, q = {q}",
         "statLabel": "Wie das berechnet wurde",
-        "explainerLabel": "Wie das berechnet wurde"
+        "explainerLabel": "Wie das berechnet wurde",
+        "channel": {
+          "ALCOHOL": "Alkoholkonsum",
+          "WORKOUT_MINUTES": "Workout-Dauer",
+          "TRAINING_LOAD": "Trainingslast"
+        }
       },
       "inTargetTitle": "Im Zielbereich",
       "dimensions": {
@@ -4774,7 +4806,8 @@
       "shiftDown": "{vital} hat sich gegenüber deiner jüngsten Norm nach unten verschoben.",
       "rangeContext": "Aktuell {value}, sonst {low}–{high}.",
       "rangeContextTimeOfDay": "Aktuell {value}, zu dieser Tageszeit sonst {low}–{high}.",
-      "shiftContext": "Etwa {before} davor, {after} seitdem."
+      "shiftContext": "Etwa {before} davor, {after} seitdem.",
+      "shiftDays": "Grundlage: {before} Tage davor und {after} seither."
     },
     "breathingScreening": {
       "sectionTitle": "Atmung im Schlaf",
@@ -10161,6 +10194,25 @@
       "doneToastFew": "In {name} zusammengeführt, {count} Messungen verschoben",
       "doneToastOther": "In {name} zusammengeführt, {count} Messungen verschoben",
       "error": "Die Biomarker konnten nicht zusammengeführt werden. Versuche es erneut."
+    },
+    "trend": {
+      "title": "Verlauf",
+      "slope": {
+        "rising": "Steigt um etwa {amount} {unit} pro Jahr, über {n} Werte seit {since}.",
+        "falling": "Sinkt um etwa {amount} {unit} pro Jahr, über {n} Werte seit {since}.",
+        "flat": "Keine Veränderung über {n} Werte seit {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Liefe diese Gerade so weiter, erreichte sie um den {date} das obere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage.",
+          "low": "Liefe diese Gerade so weiter, erreichte sie um den {date} das untere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage."
+        },
+        "beyond_horizon": "In diesem Tempo bleibt die Gerade noch mindestens drei Jahre in deinem Referenzbereich.",
+        "no_exit": "Die Gerade läuft von den Grenzen deines Referenzbereichs weg.",
+        "already_outside": "Die Gerade liegt bereits außerhalb deines Referenzbereichs.",
+        "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben."
+      },
+      "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
     }
   },
   "modules": {
@@ -11102,7 +11154,16 @@
     "openDetail": "Details anzeigen",
     "historyLoadError": "Dein Testverlauf konnte nicht geladen werden",
     "historyLoadErrorHint": "Das heißt nicht, dass keine Ergebnisse vorliegen. Die Liste konnte nicht abgerufen werden. Versuche es erneut.",
-    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert und erreichen den KI-Coach nicht."
+    "privacyNote": "Deine Antworten sind verschlüsselt gespeichert und erreichen den KI-Coach nicht.",
+    "trend": {
+      "sincePrevious": "Seit deinem vorigen Check-in am {date}: {change} Punkte.",
+      "sinceFirst": "Seit deinem ersten Check-in am {date}: {change} Punkte.",
+      "verdict": {
+        "improved": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die bessere Richtung.",
+        "worsened": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die weniger gute Richtung.",
+        "within_threshold": "Das ist weniger als die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen."
+      }
+    }
   },
   "records": {
     "aiInclusion": {

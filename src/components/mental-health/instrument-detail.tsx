@@ -21,16 +21,20 @@ import { relativeCalendarDate } from "@/lib/i18n/relative-time";
 import { INSTRUMENTS } from "@/lib/mental-health/instruments";
 
 import { AssessmentHistory } from "./assessment-history";
-import type { AssessmentRow, InstrumentId } from "./types";
+import type { AssessmentRow, AssessmentTrendDto, InstrumentId } from "./types";
+import { AssessmentTrendNote } from "./assessment-trend-note";
 
 export function InstrumentDetail({
   instrument,
   rows,
+  trend,
   onStart,
 }: {
   instrument: InstrumentId;
   /** ALL assessments; the pinned history filters to this instrument. */
   rows: AssessmentRow[];
+  /** v1.44 — the server's change against the meaningful-change threshold. */
+  trend?: AssessmentTrendDto;
   /** Start a check-in for this instrument (closes the host sheet). */
   onStart: () => void;
 }) {
@@ -74,6 +78,8 @@ export function InstrumentDetail({
           </div>
         </div>
       )}
+
+      {trend ? <AssessmentTrendNote trend={trend} /> : null}
 
       {/* The Start action stays reachable here too — the detail is a calm
           reading surface, not a dead end. */}

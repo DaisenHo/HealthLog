@@ -48,6 +48,29 @@ vi.mock("@/lib/insights/correlation-channel-series", () => ({
   fetchSymptomEventSeries: vi.fn(async () => [
     { key: "SYMPTOM:def1", label: "Aura", role: "outcome", points: pts },
   ]),
+  fetchNutrientSeries: vi.fn(async () => [
+    { key: "HYDRATION", role: "behaviour", points: pts },
+    { key: "CAFFEINE", role: "behaviour", points: pts },
+    { key: "NUTRIENT:zinc", role: "behaviour", points: pts },
+  ]),
+  fetchAlcoholSeries: vi.fn(async () => ({
+    key: "ALCOHOL",
+    role: "behaviour",
+    points: pts,
+  })),
+  fetchTrainingSeries: vi.fn(async () => [
+    { key: "WORKOUT_MINUTES", role: "behaviour", points: pts },
+    { key: "TRAINING_LOAD", role: "behaviour", points: pts },
+  ]),
+  fetchIndoorClimateSeries: vi.fn(async () => [
+    {
+      key: "INDOOR_CO2",
+      role: "behaviour",
+      lagDays: 0,
+      targets: ["SLEEP_DURATION"],
+      points: pts,
+    },
+  ]),
 }));
 vi.mock("@/lib/rollups/measurement-read", () => ({
   loadUserSourcePriority: vi.fn(),
@@ -58,8 +81,12 @@ import {
   maskSeriesByModules,
 } from "@/lib/insights/discovery-matrix";
 import {
+  fetchAlcoholSeries,
   fetchEnvironmentSeries,
+  fetchIndoorClimateSeries,
   fetchMovementSeries,
+  fetchNutrientSeries,
+  fetchTrainingSeries,
 } from "@/lib/insights/correlation-channel-series";
 
 const OPTS = {
@@ -174,6 +201,77 @@ describe("assembleDiscoveryMatrix — switched-off modules", () => {
       modules: { insights: false },
     });
     expect(off.series.map((s) => s.key)).toEqual(all.series.map((s) => s.key));
+  });
+});
+
+describe("assembleDiscoveryMatrix — the extended families (v1.44)", () => {
+  const EXTENDED = [
+    "HYDRATION",
+    "CAFFEINE",
+    "NUTRIENT:zinc",
+    "ALCOHOL",
+    "WORKOUT_MINUTES",
+    "TRAINING_LOAD",
+    "EXERCISE_MINUTES",
+    "STAND_MINUTES",
+    "MINDFUL_MINUTES",
+    "STATE_OF_MIND_VALENCE",
+    "INDOOR_CO2",
+  ];
+
+  it("folds every extended family in after the earlier ones", async () => {
+    const { series, byMetric } = await assembleDiscoveryMatrix("u1", OPTS);
+    const keys = series.map((s) => s.key);
+    for (const key of EXTENDED) expect(keys, key).toContain(key);
+    // Earlier families keep their place: the first extended key comes after
+    // the last person-defined symptom.
+    expect(keys.indexOf("EXERCISE_MINUTES")).toBeGreaterThan(
+      keys.indexOf("SYMPTOM:def1"),
+    );
+    expect(series.find((s) => s.key === "STATE_OF_MIND_VALENCE")?.role).toBe(
+      "outcome",
+    );
+    // The extended types feed the scan only, never the narrative's metrics.
+    for (const key of ["EXERCISE_MINUTES", "STATE_OF_MIND_VALENCE"]) {
+      expect(byMetric.has(key), key).toBe(false);
+    }
+  });
+
+  it("reads and keeps each family only while its module is on", async () => {
+    const reads = [
+      fetchNutrientSeries,
+      fetchAlcoholSeries,
+      fetchTrainingSeries,
+      fetchIndoorClimateSeries,
+    ].map((fn) => vi.mocked(fn));
+    for (const read of reads) read.mockClear();
+    const { series } = await assembleDiscoveryMatrix("u1", {
+      ...OPTS,
+      modules: {
+        nutrients: false,
+        mood: false,
+        workouts: false,
+        environment: false,
+      },
+    });
+    for (const read of reads) expect(read).not.toHaveBeenCalled();
+    const keys = series.map((s) => s.key);
+    for (const gone of [
+      "HYDRATION",
+      "CAFFEINE",
+      "NUTRIENT:zinc",
+      "ALCOHOL",
+      "WORKOUT_MINUTES",
+      "TRAINING_LOAD",
+      "MINDFUL_MINUTES",
+      "STATE_OF_MIND_VALENCE",
+      "INDOOR_CO2",
+    ]) {
+      expect(keys, gone).not.toContain(gone);
+    }
+    // Exercise and stand minutes are ambient movement and carry no owner.
+    expect(keys).toContain("EXERCISE_MINUTES");
+    expect(keys).toContain("STAND_MINUTES");
   });
 });
 

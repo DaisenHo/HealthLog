@@ -2,6 +2,11 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // v1.44 — the extended channel families (intake, training, room climate).
+    nutrientIntakeDay: { findMany: async () => [] },
+    workout: { findMany: async () => [] },
+    strainTrimpCache: { findMany: async () => [] },
+    $queryRaw: async () => [],
     user: { findUnique: vi.fn() },
     measurement: { findMany: vi.fn() },
     moodEntry: { findMany: vi.fn() },

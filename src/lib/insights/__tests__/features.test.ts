@@ -557,6 +557,30 @@ describe("extractFeatures — v1.22 workouts block", () => {
     expect(f.workouts?.last7.totalDistanceKm).toBe(5);
     expect(f.workouts?.latest?.sportType).toBe("running");
   });
+
+  it("counts a session synced by two services once", async () => {
+    const startedAt = new Date(Date.now() - 1 * DAY_MS);
+    prismaMock.workout.findMany.mockResolvedValue([
+      {
+        source: "APPLE_HEALTH",
+        sportType: "running",
+        startedAt,
+        durationSec: 1800,
+        totalDistanceM: 5000,
+      },
+      {
+        source: "STRAVA",
+        sportType: "running",
+        startedAt: new Date(startedAt.getTime() + 30_000),
+        durationSec: 1795,
+        totalDistanceM: 5010,
+      },
+    ]);
+    const f = await extractFeatures("user-1", false);
+    expect(f.workouts?.last7.count).toBe(1);
+    expect(f.workouts?.last7.totalDurationMin).toBe(30);
+    expect(f.workouts?.last7.totalDistanceKm).toBe(5);
+  });
 });
 
 describe("extractFeatures — v1.22 integration blocks are briefing-scoped", () => {

@@ -2742,7 +2742,20 @@
         "ENV_PRESSURE_DELTA": "l'oscillazione di pressione nella giornata",
         "ENV_PM25": "il particolato fine (PM2,5)",
         "ENV_OZONE_8H": "l’ozono",
-        "ENV_POLLEN_MAX": "i pollini"
+        "ENV_POLLEN_MAX": "i pollini",
+        "HRV_RMSSD": "la variabilità della frequenza cardiaca (RMSSD)",
+        "HYDRATION": "l'assunzione di acqua",
+        "CAFFEINE": "l'assunzione di caffeina",
+        "ALCOHOL": "il consumo di alcol",
+        "WORKOUT_MINUTES": "i minuti di allenamento",
+        "TRAINING_LOAD": "il carico di allenamento",
+        "EXERCISE_MINUTES": "i minuti di esercizio",
+        "STAND_MINUTES": "i minuti in piedi",
+        "MINDFUL_MINUTES": "i minuti di consapevolezza",
+        "STATE_OF_MIND_VALENCE": "lo stato d'animo registrato",
+        "INDOOR_CO2": "la CO2 interna",
+        "INDOOR_TEMPERATURE": "la temperatura interna",
+        "INDOOR_HUMIDITY": "l'umidità interna"
       },
       "daily": {
         "high": "Quando {behaviour} sale, {outcome} del giorno dopo tende a {direction} nei tuoi dati. È un andamento da osservare, non una causa.",
@@ -2770,6 +2783,12 @@
         "high": "Più {behaviour} nello stesso giorno e in quello prima tende ad accompagnarsi a {direction} {outcome} nei tuoi dati: uno schema da osservare, non una causa.",
         "moderate": "Più {behaviour} nello stesso giorno e in quello prima sembra accompagnarsi a {direction} {outcome} nei tuoi dati, per quanto visto finora: uno schema da osservare, non una causa.",
         "faint": "Più {behaviour} nello stesso giorno e in quello prima mostra al massimo un debole indizio di {direction} {outcome} nei tuoi dati: troppo poco per contarci, mai una causa."
+      },
+      "channelNutrient": "l'assunzione di {nutrient}",
+      "dailyOvernight": {
+        "high": "Più {behaviour} durante la notte tende ad accompagnarsi a {direction} {outcome} quella stessa notte nei tuoi dati: uno schema da osservare, non una causa.",
+        "moderate": "Più {behaviour} durante la notte sembra accompagnarsi a {direction} {outcome} quella stessa notte nei tuoi dati, per quanto visto finora: uno schema da osservare, non una causa.",
+        "faint": "Più {behaviour} durante la notte mostra al massimo un debole indizio di {direction} {outcome} quella stessa notte nei tuoi dati: troppo poco per contarci, mai una causa."
       }
     },
     "noAnalysisYet": "Ancora nessuna valutazione.",
@@ -3872,6 +3891,14 @@
         "editTitle": "Modifica allenamento",
         "editAction": "Modifica",
         "updated": "Allenamento aggiornato"
+      },
+      "load": {
+        "title": "Carico di allenamento",
+        "fitness": "Forma di base",
+        "fatigue": "Affaticamento",
+        "form": "Freschezza",
+        "explainer": "La forma di base è il tuo impulso di allenamento dalla frequenza cardiaca mediato su circa sei settimane, l'affaticamento su circa una settimana, e la freschezza è la differenza. I numeri si confrontano con il tuo passato, non con altre persone o altre app.",
+        "warmingUp": "Su {days} giorni finora: finché non sono coperte sei settimane, la forma di base risulta più bassa di quanto sia."
       }
     },
     "bloodGlucose": {
@@ -4313,7 +4340,12 @@
         "outcomeDown": "Un umore migliore tende a coincidere con un {factor} più basso il giorno dopo nei tuoi dati.",
         "stat": "{n} giorni appaiati, r = {r}, q = {q}",
         "statLabel": "Come è stato calcolato",
-        "explainerLabel": "Come è stato calcolato"
+        "explainerLabel": "Come è stato calcolato",
+        "channel": {
+          "ALCOHOL": "consumo di alcol",
+          "WORKOUT_MINUTES": "minuti di allenamento",
+          "TRAINING_LOAD": "carico di allenamento"
+        }
       },
       "inTargetTitle": "Nel tuo intervallo",
       "dimensions": {
@@ -4774,7 +4806,8 @@
       "shiftDown": "{vital} si è spostato verso il basso rispetto alla tua norma recente.",
       "rangeContext": "Ora {value}, di solito {low}–{high}.",
       "rangeContextTimeOfDay": "Ora {value}, di solito {low}–{high} a quest'ora del giorno.",
-      "shiftContext": "Circa {before} prima, {after} da allora."
+      "shiftContext": "Circa {before} prima, {after} da allora.",
+      "shiftDays": "Su {before} giorni prima e {after} da allora."
     },
     "breathingScreening": {
       "sectionTitle": "Respirazione durante il sonno",
@@ -10161,6 +10194,25 @@
       "doneToastFew": "Unito in {name}, {count} misurazioni spostate",
       "doneToastOther": "Unito in {name}, {count} misurazioni spostate",
       "error": "Non è stato possibile unire i biomarcatori. Riprova."
+    },
+    "trend": {
+      "title": "Andamento",
+      "slope": {
+        "rising": "Sale di circa {amount} {unit} all'anno su {n} valori dal {since}.",
+        "falling": "Scende di circa {amount} {unit} all'anno su {n} valori dal {since}.",
+        "flat": "Nessuna variazione su {n} valori dal {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Se questa retta proseguisse, raggiungerebbe il limite superiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione.",
+          "low": "Se questa retta proseguisse, raggiungerebbe il limite inferiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione."
+        },
+        "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per almeno altri tre anni.",
+        "no_exit": "La retta si allontana dai limiti del tuo intervallo di riferimento.",
+        "already_outside": "La retta è già fuori dal tuo intervallo di riferimento.",
+        "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla."
+      },
+      "interval": "Intervallo al 95 % della variazione annua: da {lo} a {hi} {unit}."
     }
   },
   "modules": {
@@ -11102,7 +11154,16 @@
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
-    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA."
+    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA.",
+    "trend": {
+      "sincePrevious": "Dal tuo check-in precedente del {date}: {change} punti.",
+      "sinceFirst": "Dal tuo primo check-in del {date}: {change} punti.",
+      "verdict": {
+        "improved": "Raggiunge la variazione di {threshold} punti che gli studi considerano rilevante, nella direzione migliore.",
+        "worsened": "Raggiunge la variazione di {threshold} punti che gli studi considerano rilevante, nella direzione meno buona.",
+        "within_threshold": "È meno della variazione di {threshold} punti che gli studi considerano rilevante."
+      }
+    }
   },
   "records": {
     "aiInclusion": {

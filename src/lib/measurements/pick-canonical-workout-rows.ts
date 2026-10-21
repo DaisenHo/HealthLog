@@ -127,6 +127,15 @@ function deduplicateWinningRows<T extends WorkoutPickerRow>(rows: T[]): T[] {
  */
 const BUCKET_SLOT_MS = 5 * 60 * 1000;
 
+/**
+ * The cross-source duplicate slot a workout falls in. Exported for the one
+ * reader that has to look past the picked row: the strain engine, whose winner
+ * may carry no heart-rate series while its dropped twin does.
+ */
+export function workoutDuplicateSlotKey(row: WorkoutPickerRow): string {
+  return bucketKey(row);
+}
+
 function bucketKey(row: WorkoutPickerRow): string {
   const slot = Math.floor(row.startedAt.getTime() / BUCKET_SLOT_MS);
   return `${row.userId ?? ""}:${slot}:${row.sportType}`;

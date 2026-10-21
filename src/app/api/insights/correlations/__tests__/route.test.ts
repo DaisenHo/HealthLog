@@ -3,6 +3,10 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // v1.44 — the extended channel families (intake, training, room climate).
+    nutrientIntakeDay: { findMany: async () => [] },
+    workout: { findMany: async () => [] },
+    strainTrimpCache: { findMany: async () => [] },
     auditLog: { create: vi.fn() },
     appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
     user: {

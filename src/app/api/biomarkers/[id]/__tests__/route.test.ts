@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => {
       createMany: vi.fn(),
     },
     biomarkerMerge: { findFirst: vi.fn(async () => null) },
-    labResult: { deleteMany: vi.fn() },
+    labResult: { deleteMany: vi.fn(), findMany: vi.fn(async () => []) },
     auditLog: { create: vi.fn().mockResolvedValue({}) },
   };
   // `$transaction` is set in `beforeEach`: the batch form for the delete, the
@@ -50,7 +50,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { PUT, DELETE } from "../route";
+import { GET, PUT, DELETE } from "../route";
 import { getSession } from "@/lib/auth/session";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -103,6 +103,56 @@ beforeEach(() => {
   vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null as never);
+});
+
+describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
+  const YEAR_MS = 365.25 * 86_400_000;
+  const getReq = () =>
+    new NextRequest("http://localhost/api/biomarkers/bm-1", { method: "GET" });
+
+  it("carries the marker's slope over every stored reading", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
+    const t0 = Date.now() - 2 * YEAR_MS;
+    vi.mocked(prisma.labResult.findMany).mockResolvedValue([
+      { takenAt: new Date(t0), value: 60 },
+      { takenAt: new Date(t0 + YEAR_MS), value: 70 },
+      { takenAt: new Date(t0 + 2 * YEAR_MS), value: 80 },
+    ] as never);
+    const res = await GET(getReq(), params("bm-1"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.name).toBe("LDL");
+    expect(body.data.trend).toMatchObject({
+      status: "ok",
+      n: 3,
+      slopePerYear: 10,
+      projection: "exits",
+      exitBound: "high",
+    });
+    expect(prisma.labResult.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "user-1",
+          biomarkerId: "bm-1",
+          deletedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it("answers insufficient below three readings", async () => {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
+    vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
+    const body = await (await GET(getReq(), params("bm-1"))).json();
+    expect(body.data.trend).toEqual({
+      status: "insufficient",
+      reason: "too_few_values",
+      n: 0,
+      spanDays: 0,
+    });
+  });
 });
 
 describe("DELETE /api/biomarkers/[id]", () => {

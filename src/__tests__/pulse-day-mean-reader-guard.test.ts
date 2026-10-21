@@ -104,6 +104,10 @@ const SQL_READERS: Record<string, Entry> = {
   "lib/measurements/daily-series-read.ts": HELPER,
   "lib/rollups/measurement-rollups.ts": HELPER,
   "lib/rollups/tiered-context.ts": HELPER,
+  "lib/insights/correlation-channel-series.ts": {
+    exempt:
+      "the one SQL mean is the room-climate hour mean, over INDOOR_CO2 / INDOOR_TEMPERATURE / INDOOR_HUMIDITY only; pulse reaches the correlation channels through `dayValueRows` and the rollup compose",
+  },
 };
 
 /** Files that name pulse and hold an in-memory mean or a mean-making fold. */

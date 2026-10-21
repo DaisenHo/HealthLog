@@ -58,6 +58,16 @@ const IDENTITY_OWNER: Record<string, string> = {
   // about to insert, so a duplicate inside one batch is dropped by the rule
   // the list later applies.
   "app/api/workouts/batch/route.ts": "app/api/workouts/batch/route.ts",
+  // The day-total training impulse, the briefing's workout tally and the day
+  // view's workout section: each counted a session synced by two services
+  // twice while the list showed it once.
+  "lib/insights/strain-score.ts": "lib/insights/strain-score.ts",
+  "lib/insights/feature-blocks.ts": "lib/insights/feature-blocks.ts",
+  "lib/day/records.ts": "lib/day/records.ts",
+  // The workout-minutes correlation channel: one session per day per sport,
+  // as the list shows it.
+  "lib/insights/correlation-channel-series.ts":
+    "lib/insights/correlation-channel-series.ts",
 };
 
 /**

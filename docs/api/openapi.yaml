@@ -16670,8 +16670,9 @@ paths:
       tags:
         - Labs
       summary: Fetch a single biomarker
-      description: Returns the biomarker including its decrypted `context` and, since v1.43, its `aliases`. Cross-user rows
-        surface as 404. A marker merged into another answers 404 with `meta.mergedInto`.
+      description: Returns the biomarker including its decrypted `context`, since v1.43 its `aliases`, and since v1.44 its
+        `trend` over every stored reading. Cross-user rows surface as 404. A marker merged into another answers 404 with
+        `meta.mergedInto`.
       parameters:
         - in: path
           name: id
@@ -49364,6 +49365,10 @@ components:
             - offset
             - droppedDuplicates
           additionalProperties: false
+        trainingLoad:
+          description: v1.44 — on the first page (`offset=0`) only, account-wide whatever the filter. Absent on later pages and
+            older servers.
+          $ref: "#/components/schemas/WorkoutTrainingLoad"
       required:
         - workouts
         - meta
@@ -49440,6 +49445,94 @@ components:
         - hasRoute
         - hasHrSeries
       additionalProperties: false
+    WorkoutTrainingLoad:
+      anyOf:
+        - type: object
+          properties:
+            status:
+              type: string
+              const: ok
+            asOf:
+              type: string
+              description: The last scored UTC day the figures describe.
+            ctl:
+              type: number
+              description: "Fitness: 42-day exponentially weighted TRIMP."
+            atl:
+              type: number
+              description: "Fatigue: 7-day exponentially weighted TRIMP."
+            tsb:
+              type: number
+              description: "Form: fitness minus fatigue at `asOf`."
+            daysCovered:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            trainingDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            warmingUp:
+              type: boolean
+              description: "True below 42 covered days: both averages start at zero."
+            series:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  ctl:
+                    type: number
+                  atl:
+                    type: number
+                  tsb:
+                    type: number
+                required:
+                  - day
+                  - ctl
+                  - atl
+                  - tsb
+                additionalProperties: false
+              description: The trailing 90 days, oldest first; `tsb` is form going into the day.
+          required:
+            - status
+            - asOf
+            - ctl
+            - atl
+            - tsb
+            - daysCovered
+            - trainingDays
+            - warmingUp
+            - series
+          additionalProperties: false
+        - type: object
+          properties:
+            status:
+              type: string
+              const: insufficient
+            reason:
+              type: string
+              enum:
+                - no_impulse_history
+                - too_little_history
+            daysCovered:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            trainingDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - status
+            - reason
+            - daysCovered
+            - trainingDays
+          additionalProperties: false
+      description: "v1.44 — the fitness-fatigue model over the stored daily heart-rate training impulse (Banister TRIMP; a day
+        without a stored impulse counts as rest). Needs 28 days and three training days. TRIMP units: comparable with
+        the person's own past only."
     GetWorkoutResponse:
       type: object
       properties:
@@ -68706,6 +68799,16 @@ components:
                 enum:
                   - up
                   - down
+              beforeDays:
+                description: v1.44 — days with a value before the break.
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              afterDays:
+                description: v1.44 — days with a value from the break on.
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
             required:
               - metric
               - breakDate
@@ -74542,7 +74645,7 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/Biomarker"
+          $ref: "#/components/schemas/BiomarkerDetail"
         error:
           type: "null"
         meta:
@@ -74555,6 +74658,172 @@ components:
         - data
         - error
       additionalProperties: false
+    BiomarkerDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        lowerBound:
+          type:
+            - number
+            - "null"
+        upperBound:
+          type:
+            - number
+            - "null"
+        panel:
+          type:
+            - string
+            - "null"
+        analyteKey:
+          type:
+            - string
+            - "null"
+        hasContext:
+          type: boolean
+        context:
+          type:
+            - string
+            - "null"
+        hidden:
+          type: boolean
+        aliases:
+          description: v1.43 — other spellings that resolve to this marker (folded in by a merge, chosen at an import, or typed on
+            the marker), sorted, without the marker's own name. Absent on older servers.
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        trend:
+          description: v1.44 — absent on older servers.
+          $ref: "#/components/schemas/BiomarkerTrend"
+      required:
+        - id
+        - name
+        - unit
+        - lowerBound
+        - upperBound
+        - panel
+        - analyteKey
+        - hasContext
+        - context
+        - hidden
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+    BiomarkerTrend:
+      anyOf:
+        - type: object
+          properties:
+            status:
+              type: string
+              const: ok
+            n:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            firstAt:
+              type: string
+              description: YYYY-MM-DD of the first reading.
+            lastAt:
+              type: string
+              description: YYYY-MM-DD of the newest reading.
+            spanDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            slopePerYear:
+              type: number
+              description: Least-squares change per year, in the marker's unit.
+            slopeCi95:
+              type: array
+              prefixItems:
+                - type: number
+                - type: number
+              items: false
+              minItems: 2
+              maxItems: 2
+              description: 95 % interval of the slope (Student t at n − 2 df).
+            pValue:
+              type: number
+            fittedNow:
+              type: number
+              description: The line's value on `asOf`.
+            asOf:
+              type: string
+              description: YYYY-MM-DD the line was evaluated on.
+            projection:
+              type: string
+              enum:
+                - exits
+                - beyond_horizon
+                - no_exit
+                - already_outside
+                - no_clear_trend
+                - no_band
+            exitDate:
+              description: "Only for `exits`: the day the straight line meets `exitBound`. A projection, never a forecast."
+              type:
+                - string
+                - "null"
+            exitBound:
+              anyOf:
+                - type: string
+                  enum:
+                    - low
+                    - high
+                - type: "null"
+          required:
+            - status
+            - n
+            - firstAt
+            - lastAt
+            - spanDays
+            - slopePerYear
+            - slopeCi95
+            - pValue
+            - fittedNow
+            - asOf
+            - projection
+            - exitDate
+            - exitBound
+          additionalProperties: false
+        - type: object
+          properties:
+            status:
+              type: string
+              const: insufficient
+            reason:
+              type: string
+              enum:
+                - too_few_values
+                - span_too_short
+            n:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            spanDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - status
+            - reason
+            - n
+            - spanDays
+          additionalProperties: false
+      description: "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's
+        unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the
+        line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the
+        line is inside the band today and reaches a bound within three years. Server-computed; clients render it as
+        given."
     UpdateBiomarkerResponse:
       type: object
       properties:
@@ -77030,6 +77299,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MentalHealthAssessment"
+        trends:
+          description: v1.44 — one per PHQ-9 / GAD-7 / WHO-5 with at least one administration. Absent on older servers.
+          type: array
+          items:
+            $ref: "#/components/schemas/MentalHealthAssessmentTrend"
       required:
         - assessments
       additionalProperties: false
@@ -77079,6 +77353,99 @@ components:
         diagnosis). `item9Flagged` is true when the PHQ-9 self-harm item was answered > 0 — the client MUST show crisis
         resources when it is. Raw per-item answers are intentionally absent from list rows; the by-id detail read
         returns them decrypted.
+    MentalHealthAssessmentTrend:
+      type: object
+      properties:
+        instrument:
+          type: string
+          enum:
+            - PHQ9
+            - GAD7
+            - WHO5
+        n:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        threshold:
+          type: number
+          description: "Meaningful-change threshold in reported points: PHQ-9 5, GAD-7 4, WHO-5 10 (0–100 scale)."
+        higherIsBetter:
+          type: boolean
+        first:
+          type: object
+          properties:
+            score:
+              type: number
+            takenAt:
+              type: string
+          required:
+            - score
+            - takenAt
+          additionalProperties: false
+        previous:
+          anyOf:
+            - type: object
+              properties:
+                score:
+                  type: number
+                takenAt:
+                  type: string
+              required:
+                - score
+                - takenAt
+              additionalProperties: false
+            - type: "null"
+        latest:
+          type: object
+          properties:
+            score:
+              type: number
+            takenAt:
+              type: string
+          required:
+            - score
+            - takenAt
+          additionalProperties: false
+        changeFromPrevious:
+          type:
+            - number
+            - "null"
+        changeFromFirst:
+          type:
+            - number
+            - "null"
+        sincePrevious:
+          anyOf:
+            - type: string
+              enum:
+                - improved
+                - worsened
+                - within_threshold
+            - type: "null"
+        sinceFirst:
+          anyOf:
+            - type: string
+              enum:
+                - improved
+                - worsened
+                - within_threshold
+            - type: "null"
+      required:
+        - instrument
+        - n
+        - threshold
+        - higherIsBetter
+        - first
+        - previous
+        - latest
+        - changeFromPrevious
+        - changeFromFirst
+        - sincePrevious
+        - sinceFirst
+      additionalProperties: false
+      description: v1.44 — the latest total against the previous and the first administration, classified against the
+        instrument's meaningful-change threshold in its own direction. A change below the threshold is
+        `within_threshold`. Server-computed over the whole history, not the page.
     CreateMentalHealthAssessmentEnvelope:
       type: object
       properties:

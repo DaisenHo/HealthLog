@@ -38,6 +38,11 @@ vi.mock("@/lib/modules/gate", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // v1.44 — the extended channel families (intake, training, room climate).
+    nutrientIntakeDay: { findMany: async () => [] },
+    workout: { findMany: async () => [] },
+    strainTrimpCache: { findMany: async () => [] },
+    $queryRaw: async () => [],
     user: { findUnique: (a: unknown) => userFindUnique(a) },
     measurement: { findMany: (a: unknown) => measurementFindMany(a) },
     moodEntry: { findMany: (a: unknown) => moodFindMany(a) },

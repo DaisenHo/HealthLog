@@ -1,0 +1,59 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+
+import { I18nProvider } from "@/lib/i18n/context";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+import type { TrainingLoad } from "@/lib/insights/training-load";
+
+import { TrainingLoadCard } from "../training-load-card";
+
+primeLocales("de");
+
+const OK: TrainingLoad = {
+  status: "ok",
+  asOf: "2026-10-20",
+  ctl: 54.2,
+  atl: 61.8,
+  tsb: -7.6,
+  daysCovered: 30,
+  trainingDays: 18,
+  warmingUp: true,
+  series: [],
+};
+
+const render = (load: TrainingLoad | undefined, locale: "en" | "de" = "en") =>
+  renderToStaticMarkup(
+    <I18nProvider initialLocale={locale}>
+      <TrainingLoadCard trainingLoad={load} />
+    </I18nProvider>,
+  );
+
+describe("<TrainingLoadCard>", () => {
+  it("shows the server's fitness, fatigue and form", () => {
+    const html = render(OK);
+    expect(html).toContain("Training load");
+    expect(html).toMatch(/training-load-fitness[^]*?>54</);
+    expect(html).toMatch(/training-load-fatigue[^]*?>62</);
+    expect(html).toContain("-8");
+    expect(html).toContain("Based on 30 days so far");
+  });
+
+  it("signs a positive form and drops the warm-up note once covered", () => {
+    const html = render({ ...OK, tsb: 4.4, warmingUp: false }, "de");
+    expect(html).toContain("+");
+    expect(html).toContain("Trainingslast");
+    expect(html).not.toContain("bisher");
+  });
+
+  it("renders nothing while insufficient", () => {
+    expect(
+      render({
+        status: "insufficient",
+        reason: "too_little_history",
+        daysCovered: 12,
+        trainingDays: 2,
+      }),
+    ).toBe("");
+    expect(render(undefined)).toBe("");
+  });
+});

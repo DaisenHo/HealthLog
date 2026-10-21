@@ -46,6 +46,10 @@ export interface HealthStatusShift {
   beforeMean: number;
   afterMean: number;
   direction: "up" | "down";
+  /** v1.44 — days with a value before the break, when the scan reports it. */
+  beforeDays?: number;
+  /** v1.44 — days with a value from the break on. */
+  afterDays?: number;
 }
 
 export interface HealthStatusSummary {
@@ -62,7 +66,9 @@ export interface HealthStatusSummary {
  */
 export function summariseHealthStatus(
   vitals: readonly VitalDeviation[],
-  shifts: readonly ChangepointSignal[],
+  shifts: ReadonlyArray<
+    ChangepointSignal & { beforeDays?: number; afterDays?: number }
+  >,
 ): HealthStatusSummary {
   const deviations: HealthStatusDeviation[] = vitals
     // Present tense, so present readings only. "Your pulse is above your usual
@@ -88,6 +94,9 @@ export function summariseHealthStatus(
     beforeMean: s.beforeMean,
     afterMean: s.afterMean,
     direction: s.direction,
+    ...(s.beforeDays !== undefined && s.afterDays !== undefined
+      ? { beforeDays: s.beforeDays, afterDays: s.afterDays }
+      : {}),
   }));
 
   return {

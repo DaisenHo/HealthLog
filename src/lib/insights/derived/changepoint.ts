@@ -28,6 +28,8 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
+import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
+import type { SurfaceModuleMap } from "@/lib/modules/surface";
 
 const MAD_TO_SIGMA = 1.4826;
 
@@ -184,24 +186,60 @@ const MAX_CHANGEPOINTS = 2;
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 
 /**
- * Read the DAY-mean series for a small set of stable metrics and surface any
- * validated level shift. Best-effort + fault-isolated per metric: a read
- * failure on one metric never sinks the others. Returns the strongest
- * changepoints (by magnitude), capped, or an empty array when nothing fires.
+ * v1.44 — the metrics the health-status surface scans: the five above plus
+ * every other vital with a stable daily level and enough readings to carry a
+ * 180-day window. Activity volumes, audio and sleep stay out: the first two are
+ * day-to-day behaviour rather than a level, and a sleep "day mean" over stage
+ * rows is not a night. Wrist temperature stays out for the same privacy reason
+ * it is not a correlation channel.
  */
-export async function buildChangepointSignals(
-  userId: string,
-  now: Date = new Date(),
-): Promise<ChangepointSignal[]> {
-  const coverage = await probeRollupCoverage(userId);
-  const found: ChangepointSignal[] = [];
+export const EXTENDED_CHANGEPOINT_METRICS: readonly MeasurementType[] = [
+  ...CHANGEPOINT_METRICS,
+  "HRV_RMSSD",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "BODY_FAT",
+  "RESPIRATORY_RATE",
+  "OXYGEN_SATURATION",
+  "WALKING_HEART_RATE_AVERAGE",
+  "VO2_MAX",
+];
 
-  for (const metric of CHANGEPOINT_METRICS) {
+/** Window of the extended scan (days). */
+export const EXTENDED_CHANGEPOINT_WINDOW_DAYS = 180;
+/** At most this many shifts on the health-status surface. */
+const MAX_EXTENDED_CHANGEPOINTS = 5;
+
+/** A changepoint with the day counts of the two segments it compares. */
+export interface ExtendedChangepointSignal extends ChangepointSignal {
+  /** Days with a value before the break. */
+  beforeDays: number;
+  /** Days with a value from the break on. */
+  afterDays: number;
+}
+
+/**
+ * Scan a metric set for one validated shift each, fault-isolated per metric,
+ * strongest first, capped. One per-day read per metric (DAY rollups, or the
+ * per-day SQL fold for a window past the DAY tier), never raw readings in
+ * process, so the cost is a row per day per metric whatever the density.
+ */
+async function scanChangepoints(
+  userId: string,
+  now: Date,
+  metrics: readonly MeasurementType[],
+  windowDays: number,
+  max: number,
+): Promise<ExtendedChangepointSignal[]> {
+  const coverage = await probeRollupCoverage(userId);
+  const found: ExtendedChangepointSignal[] = [];
+
+  for (const metric of metrics) {
     try {
       const { points } = await readDayMeanSeries(
         userId,
         metric,
-        CHANGEPOINT_WINDOW_DAYS,
+        windowDays,
         now,
         coverage,
       );
@@ -217,6 +255,8 @@ export async function buildChangepointSignals(
         afterMean: round1(shift.afterMean),
         direction: shift.direction,
         magnitude: round1(shift.magnitude),
+        beforeDays: shift.breakIndex + 1,
+        afterDays: points.length - shift.breakIndex - 1,
       });
     } catch {
       // Fault-isolated — skip this metric, keep scanning.
@@ -224,5 +264,57 @@ export async function buildChangepointSignals(
   }
 
   found.sort((a, b) => b.magnitude - a.magnitude);
-  return found.slice(0, MAX_CHANGEPOINTS);
+  return found.slice(0, max);
+}
+
+/**
+ * v1.44 — the health-status scan: {@link EXTENDED_CHANGEPOINT_METRICS} over
+ * {@link EXTENDED_CHANGEPOINT_WINDOW_DAYS} days, a metric whose module is off
+ * left unread. The Coach keeps {@link buildChangepointSignals}: what reaches a
+ * model is not widened by this.
+ */
+export async function buildExtendedChangepointSignals(
+  userId: string,
+  now: Date,
+  modules: SurfaceModuleMap,
+): Promise<ExtendedChangepointSignal[]> {
+  const metrics = EXTENDED_CHANGEPOINT_METRICS.filter((metric) => {
+    const owner = moduleForMeasurementType(metric);
+    return owner === null || modules[owner] !== false;
+  });
+  return scanChangepoints(
+    userId,
+    now,
+    metrics,
+    EXTENDED_CHANGEPOINT_WINDOW_DAYS,
+    MAX_EXTENDED_CHANGEPOINTS,
+  );
+}
+
+/**
+ * Read the DAY-mean series for a small set of stable metrics and surface any
+ * validated level shift. Best-effort + fault-isolated per metric: a read
+ * failure on one metric never sinks the others. Returns the strongest
+ * changepoints (by magnitude), capped, or an empty array when nothing fires.
+ */
+export async function buildChangepointSignals(
+  userId: string,
+  now: Date = new Date(),
+): Promise<ChangepointSignal[]> {
+  const found = await scanChangepoints(
+    userId,
+    now,
+    CHANGEPOINT_METRICS,
+    CHANGEPOINT_WINDOW_DAYS,
+    MAX_CHANGEPOINTS,
+  );
+  // The Coach snapshot's shape is unchanged: no segment day counts.
+  return found.map((signal) => ({
+    metric: signal.metric,
+    breakDate: signal.breakDate,
+    beforeMean: signal.beforeMean,
+    afterMean: signal.afterMean,
+    direction: signal.direction,
+    magnitude: signal.magnitude,
+  }));
 }

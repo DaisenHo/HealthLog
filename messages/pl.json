@@ -2742,7 +2742,20 @@
         "ENV_PRESSURE_DELTA": "dobowa zmiana ciśnienia",
         "ENV_PM25": "pył drobny (PM2,5)",
         "ENV_OZONE_8H": "ozon",
-        "ENV_POLLEN_MAX": "pyłki"
+        "ENV_POLLEN_MAX": "pyłki",
+        "HRV_RMSSD": "zmienność rytmu serca (RMSSD)",
+        "HYDRATION": "spożycie wody",
+        "CAFFEINE": "spożycie kofeiny",
+        "ALCOHOL": "spożycie alkoholu",
+        "WORKOUT_MINUTES": "minuty treningu",
+        "TRAINING_LOAD": "obciążenie treningowe",
+        "EXERCISE_MINUTES": "minuty ćwiczeń",
+        "STAND_MINUTES": "minuty na stojąco",
+        "MINDFUL_MINUTES": "minuty uważności",
+        "STATE_OF_MIND_VALENCE": "zapisany stan ducha",
+        "INDOOR_CO2": "CO2 w pomieszczeniu",
+        "INDOOR_TEMPERATURE": "temperatura w pomieszczeniu",
+        "INDOOR_HUMIDITY": "wilgotność w pomieszczeniu"
       },
       "daily": {
         "high": "Gdy {behaviour} rośnie, {outcome} następnego dnia zwykle wykazuje tendencję do {direction} w Twoich danych. To wzorzec wart obserwacji, nie przyczyna.",
@@ -2770,6 +2783,12 @@
         "high": "Więcej {behaviour} tego samego dnia i dzień wcześniej idzie w twoich danych zwykle w parze z {direction} {outcome}. To wzorzec wart obserwacji, nie przyczyna.",
         "moderate": "Więcej {behaviour} tego samego dnia i dzień wcześniej wydaje się, na podstawie dotychczasowych danych, iść w parze z {direction} {outcome}. To wzorzec wart obserwacji, nie przyczyna.",
         "faint": "Więcej {behaviour} tego samego dnia i dzień wcześniej pokazuje w twoich danych co najwyżej słaby ślad {direction} {outcome}. To za mało, by na tym polegać, i nigdy nie jest to przyczyna."
+      },
+      "channelNutrient": "spożycie: {nutrient}",
+      "dailyOvernight": {
+        "high": "Więcej {behaviour} w nocy idzie w twoich danych zwykle w parze z {direction} {outcome} tej samej nocy. To wzorzec wart obserwacji, nie przyczyna.",
+        "moderate": "Więcej {behaviour} w nocy wydaje się, na podstawie dotychczasowych danych, iść w parze z {direction} {outcome} tej samej nocy. To wzorzec wart obserwacji, nie przyczyna.",
+        "faint": "Więcej {behaviour} w nocy pokazuje w twoich danych co najwyżej słaby ślad {direction} {outcome} tej samej nocy. To za mało, by na tym polegać, i nigdy nie jest to przyczyna."
       }
     },
     "noAnalysisYet": "Brak oceny.",
@@ -3872,6 +3891,14 @@
         "editTitle": "Edytuj trening",
         "editAction": "Edytuj",
         "updated": "Trening zaktualizowany"
+      },
+      "load": {
+        "title": "Obciążenie treningowe",
+        "fitness": "Wydolność",
+        "fatigue": "Zmęczenie",
+        "form": "Forma",
+        "explainer": "Wydolność to twój bodziec treningowy z tętna uśredniony z około sześciu tygodni, zmęczenie z około tygodnia, a forma to różnica. Liczby porównuje się z twoją własną przeszłością, nie z innymi osobami ani aplikacjami.",
+        "warmingUp": "Na podstawie dotychczasowych {days} dni: dopóki nie minie sześć tygodni, wydolność wychodzi niższa, niż jest."
       }
     },
     "bloodGlucose": {
@@ -4313,7 +4340,12 @@
         "outcomeDown": "Lepszy nastrój zwykle wiąże się z niższym {factor} następnego dnia w Twoich danych.",
         "stat": "{n} sparowanych dni, r = {r}, q = {q}",
         "statLabel": "Jak to obliczono",
-        "explainerLabel": "Jak to obliczono"
+        "explainerLabel": "Jak to obliczono",
+        "channel": {
+          "ALCOHOL": "spożycie alkoholu",
+          "WORKOUT_MINUTES": "minuty treningu",
+          "TRAINING_LOAD": "obciążenie treningowe"
+        }
       },
       "inTargetTitle": "W Twoim zakresie",
       "dimensions": {
@@ -4774,7 +4806,8 @@
       "shiftDown": "{vital} przesunął się w dół względem Twojej ostatniej normy.",
       "rangeContext": "Teraz {value}, zwykle {low}–{high}.",
       "rangeContextTimeOfDay": "Teraz {value}, zwykle {low}–{high} o tej porze dnia.",
-      "shiftContext": "Około {before} wcześniej, {after} od tego czasu."
+      "shiftContext": "Około {before} wcześniej, {after} od tego czasu.",
+      "shiftDays": "Na podstawie {before} dni wcześniej i {after} od tego czasu."
     },
     "breathingScreening": {
       "sectionTitle": "Oddychanie podczas snu",
@@ -10161,6 +10194,25 @@
       "doneToastFew": "Scalono w {name}, przeniesiono {count} pomiary",
       "doneToastOther": "Scalono w {name}, przeniesiono {count} pomiarów",
       "error": "Nie udało się scalić biomarkerów. Spróbuj ponownie."
+    },
+    "trend": {
+      "title": "Trend",
+      "slope": {
+        "rising": "Rośnie o około {amount} {unit} rocznie na podstawie {n} wyników od {since}.",
+        "falling": "Spada o około {amount} {unit} rocznie na podstawie {n} wyników od {since}.",
+        "flat": "Brak zmian na podstawie {n} wyników od {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Gdyby ta prosta biegła dalej, osiągnęłaby górną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza.",
+          "low": "Gdyby ta prosta biegła dalej, osiągnęłaby dolną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza."
+        },
+        "beyond_horizon": "W tym tempie prosta pozostaje w twoim zakresie referencyjnym jeszcze co najmniej trzy lata.",
+        "no_exit": "Prosta oddala się od granic twojego zakresu referencyjnego.",
+        "already_outside": "Prosta jest już poza twoim zakresem referencyjnym.",
+        "no_clear_trend": "Na podstawie tych wyników zmiana nie różni się wyraźnie od braku zmiany, więc nie jest wyznaczana ekstrapolacja."
+      },
+      "interval": "95% przedział rocznej zmiany: od {lo} do {hi} {unit}."
     }
   },
   "modules": {
@@ -11102,7 +11154,16 @@
     "openDetail": "Pokaż szczegóły",
     "historyLoadError": "Nie udało się wczytać historii testów",
     "historyLoadErrorHint": "To nie znaczy, że nie masz wyników; nie udało się pobrać listy. Spróbuj ponownie.",
-    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej i nigdy nie trafiają do Coacha AI."
+    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej i nigdy nie trafiają do Coacha AI.",
+    "trend": {
+      "sincePrevious": "Od poprzedniego sprawdzenia {date}: {change} pkt.",
+      "sinceFirst": "Od pierwszego sprawdzenia {date}: {change} pkt.",
+      "verdict": {
+        "improved": "To osiąga zmianę o {threshold} pkt, którą badania uznają za istotną, w lepszym kierunku.",
+        "worsened": "To osiąga zmianę o {threshold} pkt, którą badania uznają za istotną, w mniej korzystnym kierunku.",
+        "within_threshold": "To mniej niż zmiana o {threshold} pkt, którą badania uznają za istotną."
+      }
+    }
   },
   "records": {
     "aiInclusion": {

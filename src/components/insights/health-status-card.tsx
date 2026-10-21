@@ -155,6 +155,12 @@ export function HealthStatusCard({
                   before: metricValue(s.metric, s.beforeMean),
                   after: metricValue(s.metric, s.afterMean),
                 })}
+                {s.beforeDays !== undefined && s.afterDays !== undefined
+                  ? ` ${t("insights.healthStatus.shiftDays", {
+                      before: s.beforeDays,
+                      after: s.afterDays,
+                    })}`
+                  : null}
               </p>
             </div>
           </div>

@@ -245,6 +245,11 @@ async function buildCorrelationsResponse(
       custom_metric_channels: diagnostics.customMetricChannels,
       symptom_event_channels: diagnostics.symptomEventChannels,
       custom_metric_days: diagnostics.customMetricDays,
+      // v1.44 — reach of the extended families.
+      nutrient_days: diagnostics.nutrientDays,
+      alcohol_days: diagnostics.alcoholDays,
+      training_days: diagnostics.trainingDays,
+      indoor_nights: diagnostics.indoorNights,
     },
   });
 

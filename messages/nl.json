@@ -2742,7 +2742,20 @@
         "ENV_PRESSURE_DELTA": "luchtdrukschommeling gedurende de dag",
         "ENV_PM25": "fijnstof (PM2.5)",
         "ENV_OZONE_8H": "ozon",
-        "ENV_POLLEN_MAX": "pollen"
+        "ENV_POLLEN_MAX": "pollen",
+        "HRV_RMSSD": "hartslagvariabiliteit (RMSSD)",
+        "HYDRATION": "waterinname",
+        "CAFFEINE": "cafeïne-inname",
+        "ALCOHOL": "alcoholgebruik",
+        "WORKOUT_MINUTES": "trainingsminuten",
+        "TRAINING_LOAD": "trainingsbelasting",
+        "EXERCISE_MINUTES": "beweegminuten",
+        "STAND_MINUTES": "staminuten",
+        "MINDFUL_MINUTES": "mindfulnessminuten",
+        "STATE_OF_MIND_VALENCE": "vastgelegde gemoedstoestand",
+        "INDOOR_CO2": "CO2 binnen",
+        "INDOOR_TEMPERATURE": "binnentemperatuur",
+        "INDOOR_HUMIDITY": "luchtvochtigheid binnen"
       },
       "daily": {
         "high": "Bij hogere waarden voor {behaviour} ligt {outcome} de volgende dag in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
@@ -2770,6 +2783,12 @@
         "high": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor ligt {outcome} in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
         "moderate": "Op basis van het bewijs tot nu toe lijkt {outcome} in je gegevens {direction} te liggen bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor. Het is een patroon om in de gaten te houden, geen oorzaak.",
         "faint": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor is er in je gegevens hooguit een zwakke aanwijzing dat {outcome} {direction} ligt. Het is te klein om op te bouwen en nooit een oorzaak."
+      },
+      "channelNutrient": "inname van {nutrient}",
+      "dailyOvernight": {
+        "high": "Bij hogere waarden voor {behaviour} 's nachts ligt {outcome} die nacht in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
+        "moderate": "Op basis van het bewijs tot nu toe lijkt {outcome} die nacht in je gegevens {direction} te liggen bij hogere waarden voor {behaviour} 's nachts. Het is een patroon om in de gaten te houden, geen oorzaak.",
+        "faint": "Bij hogere waarden voor {behaviour} 's nachts is er in je gegevens hooguit een zwakke aanwijzing dat {outcome} die nacht {direction} ligt. Het is te klein om op te bouwen en nooit een oorzaak."
       }
     },
     "noAnalysisYet": "Nog geen beoordeling.",
@@ -3872,6 +3891,14 @@
         "editTitle": "Workout bewerken",
         "editAction": "Bewerken",
         "updated": "Workout bijgewerkt"
+      },
+      "load": {
+        "title": "Trainingsbelasting",
+        "fitness": "Fitheid",
+        "fatigue": "Vermoeidheid",
+        "form": "Vorm",
+        "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
+        "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is."
       }
     },
     "bloodGlucose": {
@@ -4313,7 +4340,12 @@
         "outcomeDown": "Een hogere stemming gaat in je gegevens vaak samen met lagere waarden voor {factor} de volgende dag.",
         "stat": "{n} gekoppelde dagen, r = {r}, q = {q}",
         "statLabel": "Hoe dit is berekend",
-        "explainerLabel": "Hoe dit is berekend"
+        "explainerLabel": "Hoe dit is berekend",
+        "channel": {
+          "ALCOHOL": "alcoholgebruik",
+          "WORKOUT_MINUTES": "trainingsminuten",
+          "TRAINING_LOAD": "trainingsbelasting"
+        }
       },
       "inTargetTitle": "Binnen je bereik",
       "dimensions": {
@@ -4774,7 +4806,8 @@
       "shiftDown": "{vital} is gedaald ten opzichte van wat recent normaal was voor jou.",
       "rangeContext": "Nu {value}, meestal {low}–{high}.",
       "rangeContextTimeOfDay": "Nu {value}, op dit moment van de dag meestal {low}–{high}.",
-      "shiftContext": "Eerst rond {before}, sindsdien {after}."
+      "shiftContext": "Eerst rond {before}, sindsdien {after}.",
+      "shiftDays": "Op basis van {before} dagen ervoor en {after} sindsdien."
     },
     "breathingScreening": {
       "sectionTitle": "Ademhaling tijdens de slaap",
@@ -10161,6 +10194,25 @@
       "doneToastFew": "Samengevoegd in {name}, {count} metingen verplaatst",
       "doneToastOther": "Samengevoegd in {name}, {count} metingen verplaatst",
       "error": "De biomarkers konden niet worden samengevoegd. Probeer het opnieuw."
+    },
+    "trend": {
+      "title": "Verloop",
+      "slope": {
+        "rising": "Stijgt met ongeveer {amount} {unit} per jaar over {n} waarden sinds {since}.",
+        "falling": "Daalt met ongeveer {amount} {unit} per jaar over {n} waarden sinds {since}.",
+        "flat": "Geen verandering over {n} waarden sinds {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Als deze rechte lijn zo doorliep, zou ze rond {date} de bovengrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling.",
+          "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
+        },
+        "beyond_horizon": "In dit tempo blijft de lijn nog minstens drie jaar binnen je referentiebereik.",
+        "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
+        "already_outside": "De lijn ligt al buiten je referentiebereik.",
+        "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken."
+      },
+      "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
     }
   },
   "modules": {
@@ -11102,7 +11154,16 @@
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
-    "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht."
+    "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht.",
+    "trend": {
+      "sincePrevious": "Sinds je vorige check-in op {date}: {change} punten.",
+      "sinceFirst": "Sinds je eerste check-in op {date}: {change} punten.",
+      "verdict": {
+        "improved": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de betere richting.",
+        "worsened": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de minder goede richting.",
+        "within_threshold": "Dat is minder dan de verandering van {threshold} punten die studies als betekenisvol zien."
+      }
+    }
   },
   "records": {
     "aiInclusion": {
