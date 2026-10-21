@@ -16,7 +16,6 @@ import { ChevronDown, Loader2, MonitorSmartphone } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -24,7 +23,12 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiDelete } from "@/lib/api/api-fetch";
-import { useRevokeGrant } from "@/lib/queries/use-account-grants";
+import {
+  useAccountGrants,
+  useRevokeGrant,
+} from "@/lib/queries/use-account-grants";
+import { revokeBody } from "@/components/settings/access/grants-given-card";
+import { accountLabel } from "@/lib/sharing/account-access-view";
 import { cn } from "@/lib/utils";
 
 /** An accepted grant sign-out-everywhere left standing (`grantsKept`). */
@@ -75,6 +79,10 @@ export function SecuritySessionsCard({
   // a one-click end instead. Held only until the card unmounts.
   const [keptGrants, setKeptGrants] = useState<KeptGrant[]>([]);
   const revokeGrant = useRevokeGrant();
+  // Ending one of them is the same act as on the access card, so it asks the
+  // same question with the same disclosure — and that names the audit window,
+  // which rides the grant list. Read only once there is a row to end.
+  const { data: grantList } = useAccountGrants(keptGrants.length > 0);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.sessions(),
@@ -295,32 +303,44 @@ export function SecuritySessionsCard({
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm">
-                      {grant.account.displayName ?? grant.account.username}
+                      {accountLabel(grant.account)}
                     </p>
                     <p className="text-muted-foreground text-xs">
                       {t(ACCESS_LABEL_KEY[grant.access])}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11 shrink-0 sm:min-h-9"
-                    disabled={revokeGrant.isPending}
-                    onClick={() =>
-                      revokeGrant.mutate(grant.id, {
-                        onSuccess: () =>
-                          setKeptGrants((current) =>
-                            current.filter((g) => g.id !== grant.id),
-                          ),
-                        onError: () =>
-                          setStatus(
-                            t("recordSharing.actionError.revokeFailed"),
-                          ),
-                      })
-                    }
-                  >
-                    {t("recordSharing.given.revoke")}
-                  </Button>
+                  {grantList ? (
+                    <ConfirmButton
+                      slot="kept-grant-revoke"
+                      destructive
+                      size="sm"
+                      className="min-h-11 shrink-0 sm:min-h-9"
+                      label={t("recordSharing.given.revoke")}
+                      title={t("recordSharing.given.revokeTitle", {
+                        name: accountLabel(grant.account),
+                      })}
+                      body={revokeBody({
+                        t,
+                        access: grant.access,
+                        name: accountLabel(grant.account),
+                        retentionDays: grantList.retentionDays,
+                      })}
+                      confirmLabel={t("recordSharing.given.revokeConfirm")}
+                      pending={revokeGrant.isPending}
+                      onConfirm={() =>
+                        revokeGrant.mutate(grant.id, {
+                          onSuccess: () =>
+                            setKeptGrants((current) =>
+                              current.filter((g) => g.id !== grant.id),
+                            ),
+                          onError: () =>
+                            setStatus(
+                              t("recordSharing.actionError.revokeFailed"),
+                            ),
+                        })
+                      }
+                    />
+                  ) : null}
                 </li>
               ))}
             </ul>

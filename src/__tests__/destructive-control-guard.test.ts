@@ -114,7 +114,8 @@ const REGISTRY: DestructiveEntry[] = [
   },
   {
     file: "components/settings/security-sessions-card.tsx",
-    destroys: "one login session, or every session other than this one",
+    destroys:
+      "one login session, or every session other than this one; and, from the list sign-out-everywhere leaves behind, another account's access grant (the same revoke the access card confirms)",
     recovery: "permanent",
     confirm: ["ConfirmButton"],
   },
